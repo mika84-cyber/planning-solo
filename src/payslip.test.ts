@@ -113,6 +113,39 @@ const janvier2026 = [
   "R",
 ];
 
+/** Le bulletin de mars 2024 : un jour de carence posé le 20 mars, les
+ *  titres repas, le Navigo et le taux de PAS — quatre lignes absentes des
+ *  bulletins ci-dessus. Le taux et l'assiette diffèrent du montant réel sur
+ *  la ligne des titres repas (20 tickets à 4,12 €), ce que confond une
+ *  lecture au premier nombre plutôt qu'au second. */
+const mars2024 = [
+  "1.00",
+  "648.60",
+  "Jour de carence 20/3/2024",
+  "77.50",
+  "-77.50",
+  "1.00",
+  "823.22",
+  "Forfait  Navigo TZ mensuel",
+  "64.80",
+  "64.80",
+  "20.00",
+  "870.02",
+  "Titres repas carte",
+  "4.12",
+  "-82.40",
+  "1.90",
+  "884.70",
+  "PAS prélèvement à la source",
+  "2200.00",
+  "41.80",
+  "884.71",
+  "PAS - Taux",
+  "1.90",
+  "886.15",
+  "MONTANT NET SOCIAL",
+];
+
 describe("lecture d'un bulletin", () => {
   it("relève le brut, le traitement et l'IFSE", () => {
     expect(readPayslip(juin2026)).toEqual({
@@ -172,5 +205,60 @@ describe("lecture du nombre de dimanches", () => {
         "240.00",
       ]).sundaysBeyondTen,
     ).toBe(0);
+  });
+});
+
+describe("lecture des éléments de paie ajoutés au profil", () => {
+  it("relève le CIA, second nombre après le libellé", () => {
+    // Le premier nombre (l'assiette) vaut aussi 476 ici, donc ce test seul
+    // ne distinguerait pas un offset de l'autre — corrigé par le suivant.
+    expect(readPayslip(juillet2026).cia).toBe(476);
+  });
+
+  it("additionne les cinq lignes des « Autres éléments fixes »", () => {
+    // 55.68 + 11.14 + 17.94 + 5.00 - 13.92 = 75.84 (le signe du transfert
+    // est déjà négatif sur le bulletin, pas de moins à appliquer ici).
+    expect(readPayslip(juillet2026).otherFixed).toBe(75.84);
+  });
+
+  it("ne renvoie pas de total pour « Autres éléments fixes » tant qu'une des cinq lignes manque", () => {
+    // juin2026 n'a ni ICHCSG ni Aide employeur options MGEN ni Transfert.
+    expect(readPayslip(juin2026).otherFixed).toBeUndefined();
+  });
+
+  it("relève un jour de carence malgré la date dans le libellé", () => {
+    // Le libellé exact (« Jour de carence 20/3/2024 ») ne se reverra jamais
+    // à l'identique : seul le préfixe permet de le repérer.
+    expect(readPayslip(mars2024).carenceDay).toBe(77.5);
+  });
+
+  it("ramène la retenue des titres repas à une valeur positive", () => {
+    // -82.40 sur le bulletin (20 tickets à 4,12 €) : le champ du profil
+    // attend un montant positif.
+    expect(readPayslip(mars2024).mealVoucherDeduction).toBe(82.4);
+  });
+
+  it("ne prend pas le prix unitaire du ticket pour le montant retenu", () => {
+    // Le premier nombre après le libellé (4.12, le prix d'un ticket) n'est
+    // pas la retenue totale (-82.40, pour 20 tickets).
+    expect(readPayslip(mars2024).mealVoucherDeduction).not.toBe(4.12);
+  });
+
+  it("relève le Navigo remboursé", () => {
+    expect(readPayslip(mars2024).navigo).toBe(64.8);
+  });
+
+  it("relève le taux de PAS, une ligne à un seul nombre", () => {
+    expect(readPayslip(mars2024).pasRate).toBe(1.9);
+  });
+
+  it("ne renvoie rien pour les lignes absentes du bulletin", () => {
+    const reading = readPayslip(janvier2026);
+    expect(reading.cia).toBeUndefined();
+    expect(reading.navigo).toBeUndefined();
+    expect(reading.mealVoucherDeduction).toBeUndefined();
+    expect(reading.carenceDay).toBeUndefined();
+    expect(reading.pasRate).toBeUndefined();
+    expect(reading.otherFixed).toBeUndefined();
   });
 });

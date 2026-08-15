@@ -25,6 +25,31 @@ export type PayslipReading = {
    *  trav. dom > 10 dim ». Vaut 0 quand la ligne est absente — la plupart des
    *  mois n'en portent pas, ce n'est pas un échec de lecture. */
   sundaysBeyondTen: number;
+  /** Ligne « CIA » : versée une seule fois l'an, absente le reste du temps —
+   *  la présence de ce champ dit sur quel bulletin elle est tombée. */
+  cia?: number;
+  /** Ligne « Forfait  Navigo TZ mensuel » (deux espaces après « Forfait »
+   *  dans le PDF). */
+  navigo?: number;
+  /** Ligne « Titres repas carte » : une retenue, négative sur le bulletin,
+   *  ramenée ici à sa valeur absolue comme le champ du profil l'attend.
+   *  Absente en décembre la plupart des années. */
+  mealVoucherDeduction?: number;
+  /** Ligne « Jour de carence AAAA/MM/JJ » : le libellé porte la date du jour
+   *  posé, donc jamais deux fois le même texte — on ne peut le repérer que
+   *  par préfixe. Absente la plupart des mois : normal, ce n'est pas un
+   *  échec de lecture. Ramenée à sa valeur absolue. */
+  carenceDay?: number;
+  /** Ligne « PAS - Taux » : le taux lui-même, pas une assiette — une seule
+   *  valeur suit le libellé, contrairement aux lignes de cotisation. */
+  pasRate?: number;
+  /** Somme de cinq lignes fixes (Indemnité de Résidence, Indemnité comp. au
+   *  SMIC, ICHCSG, Aide employeur options MGEN, moins Transfert
+   *  primes/points) — la même formule que l'infobulle du champ « Autres
+   *  éléments fixes » décrit déjà. N'est renvoyée que si les cinq sont
+   *  présentes : deux d'entre elles n'existent que sur les bulletins les
+   *  plus récents, une somme partielle serait fausse plutôt qu'incomplète. */
+  otherFixed?: number;
 };
 
 const MONTH_NAMES = [
@@ -123,19 +148,71 @@ export async function extractPayslipTokens(
 
 const NUMBER = /^-?\d+([.,]\d+)?$/;
 
-/** Le premier nombre écrit après un libellé donné.
+/** Le n-ième nombre écrit après un libellé donné (`offset` = 1 par défaut :
+ *  le tout premier).
  *
- *  Les lignes du bulletin n'ont pas toutes le même nombre de colonnes : celles
- *  qui portent une assiette en ont deux, les autres une seule. Seuls les trois
- *  libellés lus ici ont leur montant en première position dans les deux cas,
- *  ce qui rend la lecture sûre sans modéliser la mise en page.
+ *  Les lignes du bulletin n'ont pas toutes le même nombre de colonnes.
+ *  Beaucoup suivent le format [taux, code, libellé, assiette, montant] : le
+ *  montant réellement payé est le second nombre (`offset: 2`), pas le
+ *  premier — l'assiette et le montant ne coïncident que quand le taux vaut
+ *  100 %, ce qui a longtemps trompé la lecture du traitement et de l'IFSE
+ *  (où les deux se valent) mais aurait donné un chiffre faux sur une ligne
+ *  comme les titres repas ou le jour de carence, où ils diffèrent. Les
+ *  lignes de simple total (CUMUL BRUT, PAS - Taux) n'ont qu'un seul nombre :
+ *  `offset: 1` continue de s'appliquer telles quelles.
  */
-function amountAfter(tokens: string[], label: string): number | undefined {
+function amountAfter(
+  tokens: string[],
+  label: string,
+  offset = 1,
+): number | undefined {
   const index = tokens.findIndex((token) => token.trim() === label);
   if (index === -1) return undefined;
-  const next = tokens[index + 1]?.trim().replace(",", ".");
+  const next = tokens[index + offset]?.trim().replace(",", ".");
   if (!next || !NUMBER.test(next)) return undefined;
   return Number(next);
+}
+
+/** Comme `amountAfter`, mais pour un libellé qui n'est jamais deux fois
+ *  identique — le seul cas ici est « Jour de carence AAAA/MM/JJ », dont la
+ *  date fait partie du texte. On ne peut donc repérer la ligne que par
+ *  préfixe plutôt que par égalité stricte. */
+function amountAfterPrefix(
+  tokens: string[],
+  prefix: string,
+  offset: number,
+): number | undefined {
+  const index = tokens.findIndex((token) => token.trim().startsWith(prefix));
+  if (index === -1) return undefined;
+  const next = tokens[index + offset]?.trim().replace(",", ".");
+  if (!next || !NUMBER.test(next)) return undefined;
+  return Number(next);
+}
+
+/** Une retenue est écrite en négatif sur le bulletin ; les champs du profil
+ *  attendent un montant positif. */
+function magnitude(value: number | undefined): number | undefined {
+  return value === undefined ? undefined : Math.abs(value);
+}
+
+/** Les cinq lignes qui composent « Autres éléments fixes », dans le même
+ *  ordre que l'infobulle du champ (résidence + SMIC comp. + ICHCSG + MGEN −
+ *  transfert). Deux d'entre elles (indemnité comp. au SMIC, aide employeur
+ *  options MGEN) ne sont apparues qu'à partir de 2025-2026 : sur un bulletin
+ *  plus ancien qui ne les porte pas encore, la somme serait fausse par
+ *  omission plutôt qu'absente — on renvoie donc `undefined` plutôt qu'un
+ *  total partiel dès qu'une des cinq manque. */
+function readOtherFixed(tokens: string[]): number | undefined {
+  const parts = [
+    amountAfter(tokens, "Indemnité de Résidence", 2),
+    amountAfter(tokens, "Indemnité comp. au SMIC", 1),
+    amountAfter(tokens, "ICHCSG", 2),
+    amountAfter(tokens, "Aide employeur options MGEN", 2),
+    amountAfter(tokens, "Transfert primes/points", 2),
+  ];
+  if (parts.some((part) => part === undefined)) return undefined;
+  const sum = (parts as number[]).reduce((total, part) => total + part, 0);
+  return Math.round(sum * 100) / 100;
 }
 
 /** Le taux qui suit la ligne « Indemnité trav. dom > 10 dim » : fixe depuis
@@ -170,6 +247,14 @@ export function readPayslip(tokens: string[]): PayslipReading {
     baseSalary: amountAfter(tokens, "Traitement de Base"),
     ifse: amountAfter(tokens, "IFSE"),
     sundaysBeyondTen: readSundaysBeyondTen(tokens),
+    cia: amountAfter(tokens, "CIA", 2),
+    navigo: amountAfter(tokens, "Forfait  Navigo TZ mensuel", 2),
+    mealVoucherDeduction: magnitude(
+      amountAfter(tokens, "Titres repas carte", 2),
+    ),
+    carenceDay: magnitude(amountAfterPrefix(tokens, "Jour de carence", 2)),
+    pasRate: amountAfter(tokens, "PAS - Taux"),
+    otherFixed: readOtherFixed(tokens),
     ...readPeriod(tokens),
   };
 }

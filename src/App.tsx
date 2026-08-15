@@ -347,6 +347,12 @@ export default function Home() {
     reading: PayslipReading;
   } | null>(null);
   const [payslipError, setPayslipError] = useState("");
+  const [payslipImportBusy, setPayslipImportBusy] = useState(false);
+  const [payslipImportError, setPayslipImportError] = useState("");
+  const [payslipImportResult, setPayslipImportResult] = useState<{
+    applied: Array<{ label: string; value: string }>;
+    missing: string[];
+  } | null>(null);
   const [payDrafts, setPayDrafts] = useState({
     baseSalary: "",
     ifse: "",
@@ -497,13 +503,6 @@ export default function Home() {
       const actualToday = new Date();
       setNow(actualToday);
       setView(localDate(actualToday.getFullYear(), actualToday.getMonth(), 1));
-      try {
-        const profile = JSON.parse(
-          localStorage.getItem("demandes:v6:profil") || "{}",
-        );
-        if ([1, 2, 3].includes(Number(profile.groupe)))
-          setGroup(Number(profile.groupe));
-      } catch {}
       if (
         import.meta.env.DEV &&
         new URLSearchParams(location.search).has("demo")
@@ -954,6 +953,11 @@ export default function Home() {
       past: boolean;
     }> = [];
     const compensated: Array<{ key: string; name: string }> = [];
+    // Dimanches que le cycle programme jusqu'à aujourd'hui, sans tenir compte
+    // des congés ni des arrêts maladie : le repère pour « combien j'en aurais
+    // fait sans rien avoir posé », à comparer à `sundayDone` plus bas, qui lui
+    // exclut les dimanches couverts par un congé.
+    let sundaysScheduledPast = 0;
     for (let month = 0; month < 12; month++)
       for (let day = 1; day <= monthDays(year, month); day++) {
         const date = localDate(year, month, day);
@@ -964,6 +968,8 @@ export default function Home() {
             compensated.push({ key, name: info.holiday });
           continue;
         }
+        if (!info.holiday && date.getDay() === 0 && key <= todayKey)
+          sundaysScheduledPast++;
         if (onLeave(key)) continue;
         if (info.holiday) {
           holidays.push({
@@ -984,6 +990,7 @@ export default function Home() {
       sundays,
       sundayCount: worked,
       sundayTotal: sundayAllowance(worked),
+      sundaysScheduledPast,
       holidays,
       holidayPending: holidays.length - decided.length,
       compensated,
@@ -2483,7 +2490,10 @@ export default function Home() {
           </span>
         )}
         {visibleNote && (
-          <span className="note-band" aria-hidden="true">
+          <span
+            className={`note-band${myHalfMoment ? ` note-band-half-${myHalfMoment}` : ""}`}
+            aria-hidden="true"
+          >
             <svg viewBox="0 0 24 24">
               <path d="m6 18 1.2-4.3L16.4 4.5l3.1 3.1-9.2 9.2L6 18Z" />
               <path d="m14.8 6.1 3.1 3.1" />
@@ -2820,6 +2830,152 @@ export default function Home() {
       setPayslipCheck({ name: file.name, reading });
     } catch {
       setPayslipError("Ce fichier n’a pas pu être ouvert.");
+    }
+  }
+
+  /** Les huit champs des « Éléments de paie » qu'un bulletin peut renseigner
+   *  tout seul. Les deux taux net/brut n'y figurent pas : ce sont des ratios
+   *  qui se calculent à la main à partir de plusieurs lignes de
+   *  cotisations, pas un montant écrit tel quel sur le bulletin. */
+  const PAYSLIP_IMPORT_FIELDS = [
+    { key: "baseSalary" as const, label: "Traitement de base" },
+    { key: "ifse" as const, label: "IFSE" },
+    { key: "carenceDay" as const, label: "Jour de carence" },
+    { key: "otherFixed" as const, label: "Autres éléments fixes" },
+    { key: "cia" as const, label: "CIA" },
+    { key: "navigo" as const, label: "Navigo remboursé" },
+    { key: "mealVoucherDeduction" as const, label: "Titres repas (retenue)" },
+    { key: "pasRate" as const, label: "Taux d’imposition (PAS)" },
+  ];
+
+  /** Lit plusieurs bulletins sur l'appareil et remplit tout seul ce qui s'y
+   *  trouve. Les fichiers ne sont ni envoyés, ni conservés : seuls les
+   *  montants reconnus quittent l'appareil, dans le même appel que la
+   *  saisie manuelle utilise déjà.
+   *
+   *  Certains éléments (Navigo, autres éléments fixes) évoluent d'une année
+   *  à l'autre : entre plusieurs bulletins qui les portent, c'est celui du
+   *  mois le plus récent qui l'emporte plutôt que le premier trouvé. */
+  async function importPayslips(files: File[]) {
+    setPayslipImportError("");
+    setPayslipImportResult(null);
+    if (!files.length) return;
+    setPayslipImportBusy(true);
+    try {
+      const readings: PayslipReading[] = [];
+      for (const file of files) {
+        try {
+          readings.push(
+            readPayslip(await extractPayslipTokens(await file.arrayBuffer())),
+          );
+        } catch {
+          // Un fichier illisible ne doit pas empêcher de lire les autres.
+        }
+      }
+      if (!readings.length) {
+        setPayslipImportError("Aucun de ces fichiers n’a pu être ouvert.");
+        return;
+      }
+      readings.sort((a, b) => {
+        const rank = (r: PayslipReading) =>
+          r.year !== undefined && r.month !== undefined
+            ? r.year * 12 + r.month
+            : -1;
+        return rank(b) - rank(a);
+      });
+      const found: Partial<Record<(typeof PAYSLIP_IMPORT_FIELDS)[number]["key"], number>> =
+        {};
+      let ciaMonth: number | undefined;
+      for (const field of PAYSLIP_IMPORT_FIELDS) {
+        for (const reading of readings) {
+          const value = reading[field.key];
+          if (value === undefined) continue;
+          found[field.key] = value;
+          if (field.key === "cia") ciaMonth = reading.month;
+          break;
+        }
+      }
+      const applied = PAYSLIP_IMPORT_FIELDS.filter(
+        (field) => found[field.key] !== undefined,
+      );
+      if (!applied.length) {
+        setPayslipImportError(
+          "Aucun des montants attendus n’a été reconnu sur ces bulletins.",
+        );
+        return;
+      }
+      const nextProfile: FormProfile = {
+        fullName: formProfile?.fullName || "",
+        group: formProfile?.group || String(group),
+        signature: formProfile?.signature || "",
+        baseSalary: found.baseSalary ?? formProfile?.baseSalary,
+        ifse: found.ifse ?? formProfile?.ifse,
+        carenceDay: found.carenceDay ?? formProfile?.carenceDay,
+        otherFixed: found.otherFixed ?? formProfile?.otherFixed,
+        cia: found.cia ?? formProfile?.cia,
+        ciaMonth: ciaMonth ?? formProfile?.ciaMonth,
+        netRatioFixed: formProfile?.netRatioFixed,
+        netRatioVariable: formProfile?.netRatioVariable,
+        navigo: found.navigo ?? formProfile?.navigo,
+        mealVoucherDeduction:
+          found.mealVoucherDeduction ?? formProfile?.mealVoucherDeduction,
+        pasRate: found.pasRate ?? formProfile?.pasRate,
+      };
+      if (
+        !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+      ) {
+        const body: Record<string, unknown> = {
+          action: "save-form-profile",
+          fullName: nextProfile.fullName,
+          group: nextProfile.group,
+          signature: nextProfile.signature,
+        };
+        if (found.baseSalary !== undefined)
+          body.baseSalaryCents = Math.round(found.baseSalary * 100);
+        if (found.ifse !== undefined)
+          body.ifseCents = Math.round(found.ifse * 100);
+        if (found.carenceDay !== undefined)
+          body.carenceCents = Math.round(found.carenceDay * 100);
+        if (found.otherFixed !== undefined)
+          body.otherFixedCents = Math.round(found.otherFixed * 100);
+        if (found.cia !== undefined)
+          body.ciaCents = Math.round(found.cia * 100);
+        if (ciaMonth !== undefined) body.ciaMonth = ciaMonth;
+        if (found.navigo !== undefined)
+          body.navigoCents = Math.round(found.navigo * 100);
+        if (found.mealVoucherDeduction !== undefined)
+          body.mealVoucherDeductionCents = Math.round(
+            found.mealVoucherDeduction * 100,
+          );
+        if (found.pasRate !== undefined)
+          body.pasRateBp = Math.round(found.pasRate * 100);
+        const response = await fetch("/api/calendar", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) throw new Error("sync");
+      }
+      setFormProfile(nextProfile);
+      setPayslipImportResult({
+        applied: applied.map((field) => ({
+          label: field.label,
+          value:
+            field.key === "pasRate"
+              ? `${found[field.key]!.toLocaleString("fr-FR")} %`
+              : euros(found[field.key]!),
+        })),
+        missing: PAYSLIP_IMPORT_FIELDS.filter(
+          (field) => found[field.key] === undefined,
+        ).map((field) => field.label),
+      });
+    } catch {
+      setPayslipImportError(
+        "La mise à jour n’a pas pu être enregistrée. Réessayez.",
+      );
+    } finally {
+      setPayslipImportBusy(false);
     }
   }
 
@@ -3190,6 +3346,10 @@ export default function Home() {
               <em>à venir</em>
             </strong>
           </header>
+          <p className="allowance-note">
+            {allowances.sundayDone} fait sur {allowances.sundaysScheduledPast}{" "}
+            à ce jour
+          </p>
           <table className="allowance-table">
             <tbody>
               {SUNDAY_TIERS.map((tier) => {
@@ -3337,6 +3497,61 @@ export default function Home() {
           </section>
         )}
 
+        <section className="allowance-card">
+          <header>
+            <span>Remplir depuis des bulletins</span>
+          </header>
+          <p className="allowance-note">
+            Choisissez un ou plusieurs bulletins PDF : ce qui s’y reconnaît
+            remplit tout seul les champs ci-dessous. Les fichiers sont lus
+            sur cet appareil et ne sont ni envoyés, ni conservés.
+          </p>
+          <label className="payslip-drop">
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              disabled={payslipImportBusy}
+              onChange={(event) => {
+                // Copier chaque fichier dans un tableau avant de vider le
+                // champ : `event.target.value = ""` vide aussi la FileList
+                // déjà récupérée (elle n'est pas figée), une simple
+                // affectation ne suffit pas comme pour un input à un seul
+                // fichier.
+                const files = Array.from(event.target.files || []);
+                event.target.value = "";
+                if (files.length) void importPayslips(files);
+              }}
+            />
+            <span>
+              {payslipImportBusy
+                ? "Lecture en cours…"
+                : "Choisir un ou plusieurs bulletins PDF"}
+            </span>
+          </label>
+          {payslipImportError ? (
+            <p className="allowance-note warn">{payslipImportError}</p>
+          ) : null}
+          {payslipImportResult ? (
+            <>
+              <p className="allowance-note">
+                {payslipImportResult.applied.length} champ
+                {s(payslipImportResult.applied.length)} rempli
+                {s(payslipImportResult.applied.length)} :{" "}
+                {payslipImportResult.applied
+                  .map((item) => `${item.label} (${item.value})`)
+                  .join(", ")}
+                .
+              </p>
+              {payslipImportResult.missing.length ? (
+                <p className="allowance-note warn">
+                  Pas trouvé sur ces bulletins :{" "}
+                  {payslipImportResult.missing.join(", ")}.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </section>
 
         <section className="allowance-card">
           <header>

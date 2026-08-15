@@ -198,9 +198,6 @@ export default async (request: Request) => {
       typeof body.fullName === "string"
         ? body.fullName.trim().slice(0, 120)
         : "";
-    const group = ["1", "2", "3"].includes(String(body.group || ""))
-      ? String(body.group)
-      : "";
     const signature = typeof body.signature === "string" ? body.signature : "";
     if (
       signature &&
@@ -214,6 +211,12 @@ export default async (request: Request) => {
     const previousProfile = (await store.get("form-profile", {
       type: "json",
     })) as FormProfile | null;
+    // Même règle pour le groupe : un appel qui ne le renvoie pas ne doit pas
+    // effacer le cycle enregistré, qui fausserait ensuite tous les décomptes
+    // de dimanches et fériés sans qu'on ait touché au planning.
+    const group = ["1", "2", "3"].includes(String(body.group || ""))
+      ? String(body.group)
+      : previousProfile?.group || "";
     const amountCents = (sent: unknown, previous: number | undefined) => {
       if (sent === undefined) return previous;
       const value = Number(sent);

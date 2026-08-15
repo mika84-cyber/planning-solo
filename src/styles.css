@@ -1223,33 +1223,18 @@ h1 {
   cursor: pointer;
   transition: transform 140ms ease, box-shadow 140ms ease;
 }
-/* Une teinte par rubrique, à peine perceptible, et une ombre assortie plutôt
-   que le même gris partout : de quoi repérer congés et paie l'un de l'autre
-   au premier coup d'œil, sans que ça devienne criard — la variation reste
-   dans la nuance, jamais dans la saturation. */
-.home-panel-toggle.tone-notes {
-  background: linear-gradient(145deg, #fffaf2 0%, #fbf0dd 100%);
-  box-shadow:
-    0 10px 24px rgba(211, 148, 61, 0.14),
-    0 2px 7px rgba(211, 148, 61, 0.08);
-}
-.home-panel-toggle.tone-balances {
-  background: linear-gradient(145deg, #f2fbf6 0%, #e5f5ec 100%);
-  box-shadow:
-    0 10px 24px rgba(18, 169, 87, 0.14),
-    0 2px 7px rgba(18, 169, 87, 0.08);
-}
-.home-panel-toggle.tone-allowances {
+/* Les quatre rubriques portaient chacune leur propre teinte ; elles
+   partagent maintenant la couleur d'accent par défaut de l'appli
+   (`--accent`, déjà celle qu'« Infos primes » utilisait), avec la même
+   ombre assortie plutôt que le même gris partout. */
+.home-panel-toggle.tone-notes,
+.home-panel-toggle.tone-balances,
+.home-panel-toggle.tone-allowances,
+.home-panel-toggle.tone-payslip {
   background: linear-gradient(145deg, #f3f8ff 0%, #e6effd 100%);
   box-shadow:
     0 10px 24px rgba(40, 89, 184, 0.14),
     0 2px 7px rgba(40, 89, 184, 0.08);
-}
-.home-panel-toggle.tone-payslip {
-  background: linear-gradient(145deg, #f1faff 0%, #e1f2fd 100%);
-  box-shadow:
-    0 10px 24px rgba(25, 167, 242, 0.14),
-    0 2px 7px rgba(25, 167, 242, 0.08);
 }
 .home-panel-body {
   border: 1px solid rgba(40, 89, 184, 0.28);
@@ -1294,24 +1279,12 @@ h1 {
   font-size: 12px;
   white-space: nowrap;
 }
-/* Chaque rubrique porte sa propre teinte : à cette taille la couleur aide
-   à viser la bonne ligne sans concurrencer celle du calendrier. */
+/* Les quatre icônes partagent la couleur d'accent par défaut, comme les
+   cartes qui les portent. */
 .home-panel-icon {
   display: grid;
   place-items: center;
   color: var(--accent);
-}
-.home-panel-icon.notes {
-  color: var(--note);
-}
-.home-panel-icon.balances {
-  color: var(--green);
-}
-.home-panel-icon.allowances {
-  color: var(--accent);
-}
-.home-panel-icon.payslip {
-  color: var(--blue);
 }
 .home-panel-icon svg {
   width: 23px;
@@ -2533,7 +2506,10 @@ h1 {
   --half-frame-radius: 12px;
   content: "";
   position: absolute;
-  z-index: 1;
+  /* Au-dessus du ruban de note (z-index: 5) : sinon le ruban, plaqué sur
+     toute la largeur du haut de la case, masque le bord supérieur du
+     liseré (et l'arrondi du coin qu'il traverse) sur cette portion. */
+  z-index: 6;
   top: 0;
   bottom: 0;
   border-top: var(--half-frame-width) solid var(--leave);
@@ -2617,6 +2593,17 @@ h1 {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
+}
+/* Demi-journée posée sur un jour à note : le crayon, sinon centré pile là où
+   le liseré rejoint le ruban au milieu de la case, part du côté opposé à la
+   moitié marquée pour rester lisible plutôt que de longer le liseré. */
+.note-band.note-band-half-afternoon {
+  justify-content: flex-start;
+  padding-left: 4px;
+}
+.note-band.note-band-half-morning {
+  justify-content: flex-end;
+  padding-right: 4px;
 }
 .leave-band {
   position: absolute;
@@ -2803,6 +2790,12 @@ h1 {
   width: 5px;
   height: 5px;
   stroke-width: 2.4;
+}
+.mini-day .note-band.note-band-half-afternoon {
+  padding-left: 2px;
+}
+.mini-day .note-band.note-band-half-morning {
+  padding-right: 2px;
 }
 .mini-day .selection-corner {
   width: 17px;
@@ -3870,6 +3863,12 @@ h1 {
     width: 6px;
     height: 6px;
     stroke-width: 2.3;
+  }
+  .day .note-band.note-band-half-afternoon {
+    padding-left: 3px;
+  }
+  .day .note-band.note-band-half-morning {
+    padding-right: 3px;
   }
   .leave-band {
     right: 3px;
