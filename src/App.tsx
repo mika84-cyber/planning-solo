@@ -371,6 +371,11 @@ export default function Home() {
     applied: Array<{ label: string; value: string }>;
     missing: string[];
   } | null>(null);
+  // Repliés dès que les champs essentiels sont déjà remplis : utile une fois
+  // pour comprendre et importer, plus après. `true` force l'affichage même
+  // dans ce cas — posé manuellement, ou automatiquement après un import.
+  const [payslipHelpOpen, setPayslipHelpOpen] = useState(false);
+  const [payslipToolsOpen, setPayslipToolsOpen] = useState(false);
   const [payDrafts, setPayDrafts] = useState({
     baseSalary: "",
     ifse: "",
@@ -2950,27 +2955,6 @@ export default function Home() {
     }));
   }
 
-  /** Lit un bulletin sur l'appareil pour le comparer au calcul. Le fichier
-   *  n'est ni envoyé, ni conservé : seuls trois montants en sont tirés. */
-  async function checkPayslip(file: File) {
-    setPayslipError("");
-    setPayslipCheck(null);
-    try {
-      const reading = readPayslip(
-        await extractPayslipTokens(await file.arrayBuffer()),
-      );
-      if (!reading.gross && !reading.baseSalary) {
-        setPayslipError(
-          "Ce bulletin n’a pas pu être lu. Sa mise en page a peut-être changé.",
-        );
-        return;
-      }
-      setPayslipCheck({ name: file.name, reading });
-    } catch {
-      setPayslipError("Ce fichier n’a pas pu être ouvert.");
-    }
-  }
-
   /** Les huit champs des « Éléments de paie » qu'un bulletin peut renseigner
    *  tout seul. Les deux taux net/brut n'y figurent pas : ce sont des ratios
    *  qui se calculent à la main à partir de plusieurs lignes de
@@ -2999,39 +2983,57 @@ export default function Home() {
   async function importPayslips(files: File[]) {
     setPayslipImportError("");
     setPayslipImportResult(null);
+    setPayslipError("");
+    setPayslipCheck(null);
     if (!files.length) return;
     setPayslipImportBusy(true);
+    setPayslipToolsOpen(true);
     try {
-      const readings: PayslipReading[] = [];
+      const items: Array<{ name: string; reading: PayslipReading }> = [];
       for (const file of files) {
         try {
-          readings.push(
-            readPayslip(await extractPayslipTokens(await file.arrayBuffer())),
-          );
+          items.push({
+            name: file.name,
+            reading: readPayslip(
+              await extractPayslipTokens(await file.arrayBuffer()),
+            ),
+          });
         } catch {
           // Un fichier illisible ne doit pas empêcher de lire les autres.
         }
       }
-      if (!readings.length) {
+      if (!items.length) {
         setPayslipImportError("Aucun de ces fichiers n’a pu être ouvert.");
         return;
       }
-      readings.sort((a, b) => {
+      items.sort((a, b) => {
         const rank = (r: PayslipReading) =>
           r.year !== undefined && r.month !== undefined
             ? r.year * 12 + r.month
             : -1;
-        return rank(b) - rank(a);
+        return rank(b.reading) - rank(a.reading);
       });
+      // Comparaison au calcul de l'appli : le bulletin le plus récent
+      // (une fois triés ci-dessus) qui porte au moins un montant lisible.
+      const bestForCheck = items.find(
+        (item) => item.reading.gross || item.reading.baseSalary,
+      );
+      if (bestForCheck) {
+        setPayslipCheck(bestForCheck);
+      } else {
+        setPayslipError(
+          "Aucun bulletin n’a pu être lu pour la comparaison. Sa mise en page a peut-être changé.",
+        );
+      }
       const found: Partial<Record<(typeof PAYSLIP_IMPORT_FIELDS)[number]["key"], number>> =
         {};
       let ciaMonth: number | undefined;
       for (const field of PAYSLIP_IMPORT_FIELDS) {
-        for (const reading of readings) {
-          const value = reading[field.key];
+        for (const item of items) {
+          const value = item.reading[field.key];
           if (value === undefined) continue;
           found[field.key] = value;
-          if (field.key === "cia") ciaMonth = reading.month;
+          if (field.key === "cia") ciaMonth = item.reading.month;
           break;
         }
       }
@@ -3146,6 +3148,8 @@ export default function Home() {
     if (!allowances || !monthPay || !sickLeaves) return null;
     const missing =
       !baseSalary || (!isContractuel && !ifse) || !carenceDay || !otherFixed;
+    const showPayslipHelp = missing || payslipHelpOpen;
+    const showPayslipTools = missing || payslipToolsOpen;
     /* Seules les primes qui varient d'un mois à l'autre sont détaillées : le
        traitement, l'IFSE et les éléments fixes se retrouvent dans le brut sans
        qu'il soit utile de les répéter chaque mois. */
@@ -3212,135 +3216,143 @@ export default function Home() {
     ].filter((row): row is NonNullable<typeof row> => Boolean(row));
     return (
       <div className="request-archive-content allowances">
-        <section className="allowance-card">
-          <div className="leave-type-field">
-            <span>Je suis</span>
-            <div className="view-switch" aria-label="Statut">
-              {PAY_STATUS_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={
-                    (formProfile?.status || "fonctionnaire") === option.value
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() => changeStatus(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+        <div className="status-field">
+          <span>Je suis</span>
+          <div className="view-switch status-switch" aria-label="Statut">
+            {PAY_STATUS_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={
+                  (formProfile?.status || "fonctionnaire") === option.value
+                    ? "active"
+                    : ""
+                }
+                onClick={() => changeStatus(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
-        </section>
+        </div>
 
-        <section className="allowance-card">
-          <header>
-            <span>Comment ça marche</span>
-          </header>
-          <p className="allowance-note">
-            Estimer votre salaire en brut et en net demande des informations
-            qui n’existent que sur un vrai bulletin de paie : le traitement de
-            base (votre rémunération hors primes), le montant exact d’un jour
-            de carence lors d’un arrêt maladie, et quelques lignes fixes plus
-            rares (indemnité de résidence…). Donnez-lui quelques bulletins PDF
-            ci-dessous : elle y reconnaît ces valeurs et remplit les champs
-            toute seule, sans que vous ayez à les recopier.
-          </p>
-          {!isContractuel ? (
-            <p className="allowance-note">
-              Pour un fonctionnaire, s’y ajoutent l’IFSE et le CIA.
-            </p>
-          ) : null}
-          <p className="allowance-note">
-            Tout se passe sur cet appareil, en toute sécurité : vos bulletins
-            et les montants qu’ils contiennent ne sont jamais envoyés ni
-            conservés, nulle part.
-          </p>
-        </section>
-
-        <section className="allowance-card">
-          <header>
-            <span>Upload des bulletins</span>
-          </header>
-          <p className="allowance-note">
-            Choisissez un ou plusieurs bulletins PDF : les valeurs de vos
-            bulletins se remplissent toutes seules dans les champs d’«
-            Éléments de paie ». Les fichiers sont lus sur cet appareil et ne
-            sont ni envoyés, ni conservés.
-          </p>
-          <label className="payslip-drop">
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              multiple
-              disabled={payslipImportBusy}
-              onChange={(event) => {
-                // Copier chaque fichier dans un tableau avant de vider le
-                // champ : `event.target.value = ""` vide aussi la FileList
-                // déjà récupérée (elle n'est pas figée), une simple
-                // affectation ne suffit pas comme pour un input à un seul
-                // fichier.
-                const files = Array.from(event.target.files || []);
-                event.target.value = "";
-                if (files.length) void importPayslips(files);
-              }}
-            />
-            <span>
-              {payslipImportBusy
-                ? "Lecture en cours…"
-                : "Choisir un ou plusieurs bulletins PDF"}
-            </span>
-          </label>
-          {payslipImportError ? (
-            <p className="allowance-note warn">{payslipImportError}</p>
-          ) : null}
-          {payslipImportResult ? (
-            <>
-              <p className="allowance-note">
-                {payslipImportResult.applied.length} champ
-                {s(payslipImportResult.applied.length)} rempli
-                {s(payslipImportResult.applied.length)} :{" "}
-                {payslipImportResult.applied
-                  .map((item) => `${item.label} (${item.value})`)
-                  .join(", ")}
-                .
-              </p>
-              {payslipImportResult.missing.length ? (
-                <p className="allowance-note warn">
-                  Pas trouvé sur ces bulletins :{" "}
-                  {payslipImportResult.missing.join(", ")}.
-                </p>
+        {showPayslipHelp ? (
+          <section className="allowance-card">
+            <header>
+              <span>Comment ça marche</span>
+              {!missing ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setPayslipHelpOpen(false)}
+                >
+                  Masquer
+                </button>
               ) : null}
-            </>
-          ) : null}
-        </section>
-
-        <section className="allowance-card">
-          <header>
-            <span>Vérifier un bulletin</span>
-          </header>
+            </header>
+            <p className="allowance-note">
+              Estimer votre salaire en brut et en net demande des informations
+              qui n’existent que sur un vrai bulletin de paie : le traitement
+              de base (votre rémunération hors primes), le montant exact d’un
+              jour de carence lors d’un arrêt maladie, et quelques lignes
+              fixes plus rares (indemnité de résidence…). Donnez-lui quelques
+              bulletins PDF : elle y reconnaît ces valeurs et remplit les
+              champs toute seule, sans que vous ayez à les recopier.
+            </p>
+            {!isContractuel ? (
+              <p className="allowance-note">
+                Pour un fonctionnaire, s’y ajoutent l’IFSE et le CIA.
+              </p>
+            ) : null}
+            <p className="allowance-note">
+              Tout se passe sur cet appareil, en toute sécurité : vos
+              bulletins et les montants qu’ils contiennent ne sont jamais
+              envoyés ni conservés, nulle part.
+            </p>
+          </section>
+        ) : (
           <p className="allowance-note">
-            Le mois du bulletin est reconnu tout seul. Si une erreur est
-            repérée par l’application, vous en serez informé. Le fichier est
-            lu sur cet appareil et n’est ni envoyé, ni conservé.
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => setPayslipHelpOpen(true)}
+            >
+              Comment ça marche ?
+            </button>
           </p>
-          <label className="payslip-drop">
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (file) void checkPayslip(file);
-              }}
-            />
-            <span>Choisir un bulletin PDF</span>
-          </label>
-          {payslipError ? (
-            <p className="allowance-note warn">{payslipError}</p>
-          ) : null}
-          {payslipCheck ? (
+        )}
+
+        {showPayslipTools ? (
+          <section className="allowance-card">
+            <header>
+              <span>Vérifier un bulletin</span>
+              {!missing ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setPayslipToolsOpen(false)}
+                >
+                  Replier
+                </button>
+              ) : null}
+            </header>
+            <p className="allowance-note">
+              Choisissez un ou plusieurs bulletins PDF : les valeurs de vos
+              bulletins se remplissent toutes seules dans les champs d’«
+              Éléments de paie », et le bulletin le plus récent est comparé au
+              calcul de l’appli. Si une erreur est repérée, vous en serez
+              informé. Les fichiers sont lus sur cet appareil et ne sont ni
+              envoyés, ni conservés.
+            </p>
+            <label className="payslip-drop">
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                multiple
+                disabled={payslipImportBusy}
+                onChange={(event) => {
+                  // Copier chaque fichier dans un tableau avant de vider le
+                  // champ : `event.target.value = ""` vide aussi la FileList
+                  // déjà récupérée (elle n'est pas figée), une simple
+                  // affectation ne suffit pas comme pour un input à un seul
+                  // fichier.
+                  const files = Array.from(event.target.files || []);
+                  event.target.value = "";
+                  if (files.length) void importPayslips(files);
+                }}
+              />
+              <span>
+                {payslipImportBusy
+                  ? "Lecture en cours…"
+                  : "Choisir un ou plusieurs bulletins PDF"}
+              </span>
+            </label>
+            {payslipImportError ? (
+              <p className="allowance-note warn">{payslipImportError}</p>
+            ) : null}
+            {payslipImportResult ? (
+              <>
+                <p className="allowance-note">
+                  {payslipImportResult.applied.length} champ
+                  {s(payslipImportResult.applied.length)} rempli
+                  {s(payslipImportResult.applied.length)} :{" "}
+                  {payslipImportResult.applied
+                    .map((item) => `${item.label} (${item.value})`)
+                    .join(", ")}
+                  .
+                </p>
+                {payslipImportResult.missing.length ? (
+                  <p className="allowance-note warn">
+                    Pas trouvé sur ces bulletins :{" "}
+                    {payslipImportResult.missing.join(", ")}.
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+            {payslipError ? (
+              <p className="allowance-note warn">{payslipError}</p>
+            ) : null}
+            {payslipCheck ? (
             payslipCheck.reading.month === undefined ||
             payslipCheck.reading.year !== allowances.year ? (
               <p className="allowance-note warn">
@@ -3500,7 +3512,18 @@ export default function Home() {
               </button>
             </p>
           ) : null}
-        </section>
+          </section>
+        ) : (
+          <p className="allowance-note">
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => setPayslipToolsOpen(true)}
+            >
+              Vérifier un bulletin
+            </button>
+          </p>
+        )}
 
         <section className="allowance-card allowance-card-lead">
           <header>
@@ -3880,7 +3903,8 @@ export default function Home() {
                           choice && void chooseHolidayPay(item.key, choice)
                         }
                         ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                        className="leave-type-picker"
+                        className="holiday-pay-picker"
+                        layout="list"
                         placeholder="À décider"
                       />
                       {item.choice ? (
@@ -3932,7 +3956,8 @@ export default function Home() {
                           choice && void chooseHolidayPay(item.key, choice)
                         }
                         ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                        className="leave-type-picker"
+                        className="holiday-pay-picker"
+                        layout="list"
                         placeholder="À décider"
                       />
                       {item.choice && baseSalary ? (

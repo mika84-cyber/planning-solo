@@ -3110,6 +3110,53 @@ h1 {
   font-size: 15px;
   font-weight: 800;
 }
+/* Le statut n'a que deux choix et se décide une fois pour toutes : un
+   simple commutateur discret, sans l'encadré ni le menu déroulant réservés
+   aux décisions plus lourdes comme le type de congé. */
+.status-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.status-field > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.status-switch {
+  padding: 2px;
+}
+.status-switch button {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+/* Choix d'une compensation de férié directement dans la ligne du tableau :
+   un déclencheur qui n'occupe que la place de son texte, pas toute la
+   colonne, avec les options en liste plutôt qu'en grille (deux options
+   assez longues pour ne pas tenir côte à côte sans se serrer). */
+.holiday-pay-picker {
+  display: inline-block;
+  width: auto;
+}
+.holiday-pay-picker .choice-picker-trigger {
+  width: auto;
+  min-height: 32px;
+  padding: 0 8px 0 10px;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 750;
+}
+.holiday-pay-picker .choice-picker-trigger svg {
+  width: 13px;
+}
+.holiday-pay-picker .choice-picker-menu {
+  min-width: 180px;
+  width: max-content;
+}
 .leave-type-picker .choice-picker-menu {
   width: min(360px, calc(100vw - 58px));
 }
