@@ -24,6 +24,7 @@ import {
   LEAVE_TYPE_OPTIONS,
   MONTHS,
   MONTH_OPTIONS,
+  RESIDENCE_ALLOWANCE_RATE,
   SUNDAY_ALLOWANCE,
   SUNDAY_TIERS,
   sickLeaveDeduction,
@@ -97,10 +98,20 @@ type LeavePeriod = {
   updatedAt: string;
   legacy?: boolean;
 };
+/** Les primes automatiques (dimanche, férié, net estimé) et les champs IFSE/
+ *  CIA sont calés sur les règles d'un fonctionnaire, vérifiées sur des
+ *  bulletins réels. Pour une contractuelle, ni les coefficients ni même
+ *  l'existence de ces primes ne sont connus : plutôt que d'afficher les
+ *  siens en les faisant passer pour les siens propres, ces cartes restent
+ *  cachées tant qu'elles n'ont pas été calibrées sur un vrai bulletin. */
+type PayStatus = "fonctionnaire" | "contractuel";
 type FormProfile = {
   fullName: string;
   group: string;
   signature: string;
+  /** Absent sur les profils créés avant l'ajout de ce champ : traité comme
+   *  « fonctionnaire », le statut jusque-là implicite de l'appli. */
+  status?: PayStatus;
   /** Traitement de base mensuel hors primes, en euros. Il sert au calcul des
    *  indemnités de jour férié. Absent tant qu'il n'est pas saisi. */
   baseSalary?: number;
@@ -233,6 +244,11 @@ function workedDayCount(
 const HOLIDAY_PAY_OPTIONS: Array<{ value: HolidayPay | ""; label: string }> = [
   { value: "prime", label: "Prime seule" },
   { value: "recovery", label: "Prime + 1 jour de récup" },
+];
+
+const PAY_STATUS_OPTIONS: Array<{ value: PayStatus; label: string }> = [
+  { value: "fonctionnaire", label: "Fonctionnaire" },
+  { value: "contractuel", label: "Contractuel" },
 ];
 
 const EUROS = new Intl.NumberFormat("fr-FR", {
@@ -565,6 +581,10 @@ export default function Home() {
           fullName: data.form_profile.full_name || "",
           group: data.form_profile.group || "",
           signature: data.form_profile.signature || "",
+          status:
+            data.form_profile.status === "contractuel"
+              ? "contractuel"
+              : "fonctionnaire",
           // Stockés en centimes côté serveur pour éviter les arrondis.
           baseSalary:
             typeof data.form_profile.base_salary_cents === "number"
@@ -739,6 +759,7 @@ export default function Home() {
       fullName: formProfile?.fullName || "",
       group: String(nextGroup),
       signature: formProfile?.signature || "",
+      status: formProfile?.status,
       baseSalary: formProfile?.baseSalary,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
@@ -763,6 +784,44 @@ export default function Home() {
         fullName: nextProfile.fullName,
         group: nextProfile.group,
         signature: nextProfile.signature,
+      }),
+    }).catch(() => undefined);
+  }
+  /** IFSE, CIA et les primes automatiques (dimanche, férié, net estimé) sont
+   *  calées sur les règles d'un fonctionnaire. Passer sur « Contractuel »
+   *  ne touche à aucun montant déjà saisi : ça change seulement ce qui
+   *  s'affiche, au cas où ce statut serait choisi puis annulé. */
+  function changeStatus(nextStatus: PayStatus) {
+    const nextProfile: FormProfile = {
+      fullName: formProfile?.fullName || "",
+      group: formProfile?.group || String(group),
+      signature: formProfile?.signature || "",
+      status: nextStatus,
+      baseSalary: formProfile?.baseSalary,
+      ifse: formProfile?.ifse,
+      carenceDay: formProfile?.carenceDay,
+      otherFixed: formProfile?.otherFixed,
+      cia: formProfile?.cia,
+      ciaMonth: formProfile?.ciaMonth,
+      netRatioFixed: formProfile?.netRatioFixed,
+      netRatioVariable: formProfile?.netRatioVariable,
+      navigo: formProfile?.navigo,
+      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
+      pasRate: formProfile?.pasRate,
+    };
+    setFormProfile(nextProfile);
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+      return;
+    void fetch("/api/calendar", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        action: "save-form-profile",
+        fullName: nextProfile.fullName,
+        group: nextProfile.group,
+        signature: nextProfile.signature,
+        status: nextStatus,
       }),
     }).catch(() => undefined);
   }
@@ -835,10 +894,21 @@ export default function Home() {
     };
   }, [view, group, periods, entries, now]);
 
+  // Fonctionnaire tant que le statut n'a pas encore été choisi : c'était le
+  // seul cas géré avant l'ajout de ce champ.
+  const isContractuel = formProfile?.status === "contractuel";
   const baseSalary = formProfile?.baseSalary || 0;
   const ifse = formProfile?.ifse || 0;
   const carenceDay = formProfile?.carenceDay || 0;
-  const otherFixed = formProfile?.otherFixed || 0;
+  // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
+  // résidence (3 % du traitement) : calculée toute seule plutôt que saisie,
+  // et pas la somme à cinq lignes propre à un fonctionnaire (résidence +
+  // SMIC comp. + ICHCSG + MGEN − transfert), dont rien ne dit qu'elle
+  // s'applique à elle. Une valeur déjà saisie à la main reste prioritaire,
+  // au cas où son bulletin réel montrerait autre chose.
+  const otherFixed =
+    formProfile?.otherFixed ??
+    (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
   const cia = formProfile?.cia || 0;
   const ciaMonth = formProfile?.ciaMonth;
   const netRatioFixed = formProfile?.netRatioFixed || 0;
@@ -1157,7 +1227,13 @@ export default function Home() {
     if (!allowances || !sickLeaves) return null;
     const index = view.getMonth();
     const month = allowances.monthly.find((slot) => slot.index === index);
-    const sick = sickLeaves.byMonth[index];
+    // La retenue maladie d'un fonctionnaire (carence + 10 %/jour) ne
+    // s'applique pas telle quelle à une contractuelle (IJSS, subrogation) :
+    // ignorée ici, pas seulement cachée, pour ne pas fausser le brut/net en
+    // silence dès qu'un arrêt est posé au calendrier.
+    const sick = isContractuel
+      ? { days: 0, total: 0 }
+      : sickLeaves.byMonth[index];
     const sunday = month?.sunday || 0;
     const holiday = month?.holiday || 0;
     const compensated = month?.compensated || 0;
@@ -1213,6 +1289,7 @@ export default function Home() {
     otherFixed,
     cia,
     ciaMonth,
+    isContractuel,
   ]);
 
   /** Le net estimé du mois affiché : cotisations d'abord, avec deux taux —
@@ -2586,6 +2663,7 @@ export default function Home() {
       fullName: formProfile?.fullName || "",
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
+      status: formProfile?.status,
       baseSalary: formProfile?.baseSalary,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
@@ -2654,6 +2732,7 @@ export default function Home() {
       fullName: formProfile?.fullName || "",
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
+      status: formProfile?.status,
       baseSalary: formProfile?.baseSalary,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
@@ -2715,6 +2794,7 @@ export default function Home() {
       fullName: formProfile?.fullName || "",
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
+      status: formProfile?.status,
       baseSalary: formProfile?.baseSalary,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
@@ -2772,6 +2852,7 @@ export default function Home() {
       fullName: formProfile?.fullName || "",
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
+      status: formProfile?.status,
       baseSalary: formProfile?.baseSalary,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
@@ -2908,6 +2989,7 @@ export default function Home() {
         fullName: formProfile?.fullName || "",
         group: formProfile?.group || String(group),
         signature: formProfile?.signature || "",
+        status: formProfile?.status,
         baseSalary: found.baseSalary ?? formProfile?.baseSalary,
         ifse: found.ifse ?? formProfile?.ifse,
         carenceDay: found.carenceDay ?? formProfile?.carenceDay,
@@ -2983,6 +3065,9 @@ export default function Home() {
    *  bulletin au mois qu'il porte et non à celui qui est ouvert. */
   function grossForMonth(index: number) {
     const month = allowances?.monthly.find((slot) => slot.index === index);
+    // Même règle que dans `monthPay` : la retenue maladie de fonctionnaire ne
+    // s'applique pas à une contractuelle.
+    const sick = isContractuel ? 0 : sickLeaves?.byMonth[index]?.total || 0;
     return (
       baseSalary +
       ifse +
@@ -2991,7 +3076,7 @@ export default function Home() {
       SUNDAY_ALLOWANCE.monthlyFlat +
       (month?.sunday || 0) +
       (month?.holiday || 0) -
-      (sickLeaves?.byMonth[index]?.total || 0)
+      sick
     );
   }
 
@@ -3192,7 +3277,11 @@ export default function Home() {
   function renderAllowances() {
     if (!allowances || !monthPay || !sickLeaves) return null;
     const { sundayTotal } = allowances;
-    const missing = !baseSalary || !ifse || !carenceDay || !otherFixed;
+    const missing =
+      !baseSalary ||
+      (!isContractuel && !ifse) ||
+      !carenceDay ||
+      !otherFixed;
     /* Seules les primes qui varient d'un mois à l'autre sont détaillées : le
        traitement, l'IFSE et les éléments fixes se retrouvent dans le brut sans
        qu'il soit utile de les répéter chaque mois. */
@@ -3472,7 +3561,10 @@ export default function Home() {
           </section>
         )}
 
-        {sickLeaves.arrets.length > 0 && (
+        {/* La retenue (un jour de carence puis 10 %/jour) est une règle de
+            fonctionnaire ; le régime d'une contractuelle (IJSS, subrogation)
+            est différent et n'est pas vérifié ici. */}
+        {!isContractuel && sickLeaves.arrets.length > 0 && (
           <section className="allowance-card">
             <header>
               <span>Arrêts maladie {allowances.year}</span>
@@ -3557,6 +3649,27 @@ export default function Home() {
           <header>
             <span>Éléments de paie</span>
           </header>
+          <div className="leave-type-field">
+            <span>Statut</span>
+            <ChoicePicker
+              value={formProfile?.status || "fonctionnaire"}
+              options={PAY_STATUS_OPTIONS}
+              onChange={changeStatus}
+              ariaLabel="Sélectionner le statut"
+              className="leave-type-picker"
+            />
+          </div>
+          {isContractuel ? (
+            <p className="allowance-note">
+              IFSE et CIA sont réservés aux fonctionnaires : ces deux champs
+              sont masqués, et l'indemnité de résidence (3 % du traitement)
+              se calcule toute seule. Les primes dimanche et férié suivent la
+              même grille que pour un fonctionnaire. Seul le calcul du net
+              reste à part : il dépend d'un taux de cotisation propre à un
+              autre régime, à caler sur un vrai bulletin — les arrêts maladie
+              aussi, pour la même raison, restent masqués.
+            </p>
+          ) : null}
           {missing ? (
             <p className="allowance-note warn">
               Renseignez ces montants pour que les calculs soient justes. Ils se
@@ -3589,10 +3702,14 @@ export default function Home() {
               },
               {
                 field: "otherFixed" as const,
-                label: "Autres éléments fixes",
+                label: isContractuel
+                  ? "Indemnité de résidence"
+                  : "Autres éléments fixes",
                 value: otherFixed,
-                hint: "Ex. 75,84",
-                use: "résidence + SMIC comp. + ICHCSG + MGEN − transfert",
+                hint: isContractuel ? "3 % du traitement, déjà calculée" : "Ex. 75,84",
+                use: isContractuel
+                  ? "3 % du traitement de base ; ne modifiez que si votre bulletin montre un autre montant"
+                  : "résidence + SMIC comp. + ICHCSG + MGEN − transfert",
               },
               {
                 field: "cia" as const,
@@ -3640,7 +3757,12 @@ export default function Home() {
                 percent: true,
               },
             ]
-          ).map((item) => (
+          )
+            .filter(
+              (item) =>
+                !isContractuel || (item.field !== "ifse" && item.field !== "cia"),
+            )
+            .map((item) => (
             <div className="pay-field" key={item.field}>
               <span className="pay-field-head">
                 {item.label}
@@ -4134,7 +4256,9 @@ export default function Home() {
                   ),
                   title: "Infos primes",
                   // Le net, pas le brut : c'est ce qui tombe sur le compte.
-                  // Le brut reprend la main tant que les taux manquent.
+                  // Le brut reprend la main tant que les taux manquent — ce
+                  // qui est aussi le cas par défaut pour une contractuelle,
+                  // tant qu'elle n'a pas calibré ses propres taux.
                   summary: `${
                     monthNet !== null && monthPay
                       ? `${euros(monthNet)} net en ${MONTHS[monthPay.index]}`

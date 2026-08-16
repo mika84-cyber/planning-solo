@@ -48,6 +48,9 @@ type FormProfile = {
   full_name: string;
   group: string;
   signature: string;
+  /** Absent sur les profils créés avant l'ajout de ce champ : traité comme
+   *  « fonctionnaire », le statut jusque-là implicite de l'appli. */
+  status?: "fonctionnaire" | "contractuel";
   /** Traitement de base mensuel, hors primes : il sert à calculer les
    *  indemnités de jour férié, qui en sont un multiple. Stocké en centimes
    *  pour éviter les arrondis flottants. */
@@ -217,6 +220,12 @@ export default async (request: Request) => {
     const group = ["1", "2", "3"].includes(String(body.group || ""))
       ? String(body.group)
       : previousProfile?.group || "";
+    // Même règle qu'ailleurs : un appel qui ne renvoie pas le statut ne doit
+    // pas l'effacer.
+    const status =
+      body.status === "fonctionnaire" || body.status === "contractuel"
+        ? body.status
+        : previousProfile?.status;
     const amountCents = (sent: unknown, previous: number | undefined) => {
       if (sent === undefined) return previous;
       const value = Number(sent);
@@ -237,6 +246,7 @@ export default async (request: Request) => {
       full_name: fullName,
       group,
       signature,
+      status,
       base_salary_cents: amountCents(
         body.baseSalaryCents,
         previousProfile?.base_salary_cents,

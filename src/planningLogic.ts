@@ -342,6 +342,14 @@ export const HOLIDAY_ALLOWANCE = {
   daysPerMonth: 30,
 } as const;
 
+/** Indemnité de résidence : 3 % du traitement de base, d'après la grille
+ *  affichée dans les locaux — commune aux deux tableaux (contractuels et
+ *  fonctionnaires), contrairement à l'IFSE qui n'apparaît que sous celui des
+ *  fonctionnaires. Les indemnités dominicale et de jour férié ci-dessus
+ *  viennent de la même grille et n'y sont pas non plus scindées par statut :
+ *  les deux coefficients s'appliquent donc tels quels aux deux statuts. */
+export const RESIDENCE_ALLOWANCE_RATE = 0.03;
+
 /** Les socles du barème dominical, tels que le document les présente. Les deux
  *  socles indemnisés partagent le même taux ; ils restent distincts parce que
  *  c'est ainsi que la progression se lit. */
