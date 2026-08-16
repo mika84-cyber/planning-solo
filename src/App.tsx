@@ -3150,6 +3150,10 @@ export default function Home() {
       !baseSalary || (!isContractuel && !ifse) || !carenceDay || !otherFixed;
     const showPayslipHelp = missing || payslipHelpOpen;
     const showPayslipTools = missing || payslipToolsOpen;
+    const statusValue = formProfile?.status || "fonctionnaire";
+    const statusIndex = PAY_STATUS_OPTIONS.findIndex(
+      (option) => option.value === statusValue,
+    );
     /* Seules les primes qui varient d'un mois à l'autre sont détaillées : le
        traitement, l'IFSE et les éléments fixes se retrouvent dans le brut sans
        qu'il soit utile de les répéter chaque mois. */
@@ -3218,16 +3222,16 @@ export default function Home() {
       <div className="request-archive-content allowances">
         <div className="status-field">
           <span>Je suis</span>
-          <div className="view-switch status-switch" aria-label="Statut">
+          <div
+            className="status-switch"
+            aria-label="Statut"
+            style={{ "--status-index": statusIndex } as React.CSSProperties}
+          >
             {PAY_STATUS_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 type="button"
-                className={
-                  (formProfile?.status || "fonctionnaire") === option.value
-                    ? "active"
-                    : ""
-                }
+                className={statusValue === option.value ? "active" : ""}
                 onClick={() => changeStatus(option.value)}
               >
                 {option.label}
@@ -3896,22 +3900,24 @@ export default function Home() {
                       </small>
                     </th>
                     <td className={item.choice ? "" : "pending"}>
-                      <ChoicePicker
-                        value={item.choice || ""}
-                        options={HOLIDAY_PAY_OPTIONS}
-                        onChange={(choice) =>
-                          choice && void chooseHolidayPay(item.key, choice)
-                        }
-                        ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                        className="holiday-pay-picker"
-                        layout="list"
-                        placeholder="À décider"
-                      />
-                      {item.choice ? (
-                        <small>
-                          {euros(holidayAllowance(baseSalary, item.choice))}
-                        </small>
-                      ) : null}
+                      <div className="holiday-pay-cell">
+                        <ChoicePicker
+                          value={item.choice || ""}
+                          options={HOLIDAY_PAY_OPTIONS}
+                          onChange={(choice) =>
+                            choice && void chooseHolidayPay(item.key, choice)
+                          }
+                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                          className="holiday-pay-picker"
+                          layout="list"
+                          placeholder="À décider"
+                        />
+                        {item.choice ? (
+                          <small>
+                            {euros(holidayAllowance(baseSalary, item.choice))}
+                          </small>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -3949,22 +3955,24 @@ export default function Home() {
                       </small>
                     </th>
                     <td className={item.choice ? "" : "pending"}>
-                      <ChoicePicker
-                        value={item.choice || ""}
-                        options={HOLIDAY_PAY_OPTIONS}
-                        onChange={(choice) =>
-                          choice && void chooseHolidayPay(item.key, choice)
-                        }
-                        ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                        className="holiday-pay-picker"
-                        layout="list"
-                        placeholder="À décider"
-                      />
-                      {item.choice && baseSalary ? (
-                        <small>
-                          {euros(holidayAllowance(baseSalary, item.choice))}
-                        </small>
-                      ) : null}
+                      <div className="holiday-pay-cell">
+                        <ChoicePicker
+                          value={item.choice || ""}
+                          options={HOLIDAY_PAY_OPTIONS}
+                          onChange={(choice) =>
+                            choice && void chooseHolidayPay(item.key, choice)
+                          }
+                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                          className="holiday-pay-picker"
+                          layout="list"
+                          placeholder="À décider"
+                        />
+                        {item.choice && baseSalary ? (
+                          <small>
+                            {euros(holidayAllowance(baseSalary, item.choice))}
+                          </small>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

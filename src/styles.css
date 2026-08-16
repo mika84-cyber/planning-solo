@@ -3111,8 +3111,8 @@ h1 {
   font-weight: 800;
 }
 /* Le statut n'a que deux choix et se décide une fois pour toutes : un
-   simple commutateur discret, sans l'encadré ni le menu déroulant réservés
-   aux décisions plus lourdes comme le type de congé. */
+   commutateur discret, sans l'encadré ni le menu déroulant réservés aux
+   décisions plus lourdes comme le type de congé. */
 .status-field {
   display: flex;
   align-items: center;
@@ -3126,18 +3126,61 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+/* Pastille qui glisse derrière l'option active plutôt qu'un simple fond
+   blanc posé au clic : `--status-index` (0 ou 1, posé en ligne depuis
+   App.tsx) déplace la pastille en pourcentage de sa propre largeur, donc
+   sans jamais recalculer de pixels si une troisième option s'ajoutait. */
 .status-switch {
-  padding: 2px;
+  position: relative;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2f8 0%, #e3e9f3 100%);
+  box-shadow: inset 0 1px 3px rgba(31, 46, 78, 0.1);
+}
+.status-switch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent) 0%, #3b79dc 100%);
+  box-shadow: 0 3px 10px rgba(40, 89, 184, 0.35);
+  transform: translateX(calc(var(--status-index, 0) * 100%));
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .status-switch button {
-  height: 30px;
-  padding: 0 12px;
-  font-size: 12px;
+  position: relative;
+  z-index: 1;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 9px;
+  transition: color 200ms ease;
+}
+.status-switch button.active {
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
 }
 /* Choix d'une compensation de férié directement dans la ligne du tableau :
    un déclencheur qui n'occupe que la place de son texte, pas toute la
    colonne, avec les options en liste plutôt qu'en grille (deux options
-   assez longues pour ne pas tenir côte à côte sans se serrer). */
+   assez longues pour ne pas tenir côte à côte sans se serrer), et le
+   montant sous le choix plutôt qu'à côté — les deux tiennent mal sur une
+   même ligne à cette largeur. */
+.holiday-pay-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
 .holiday-pay-picker {
   display: inline-block;
   width: auto;
