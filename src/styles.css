@@ -183,6 +183,32 @@ button {
     transform: rotate(360deg);
   }
 }
+/* Plein écran pendant la seule vérification de connexion : la peinture
+   occupe tout l'espace, sans carte ni texte, jusqu'à ce que l'écran de
+   connexion (ou le planning) prenne le relais. */
+.auth-splash {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+.auth-splash-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.auth-splash-loader {
+  position: absolute;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  border-radius: 50%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.22);
+}
 
 .app-shell {
   width: min(1440px, 100%);

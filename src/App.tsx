@@ -4121,6 +4121,19 @@ export default function Home() {
     ? periods.filter((period) => dayDate >= period.from && dayDate <= period.to)
     : [];
 
+  if (authStatus === "loading") {
+    return (
+      <main className="auth-splash">
+        <img
+          src="/grand-palais-splash.jpg"
+          alt=""
+          className="auth-splash-image"
+        />
+        <div className="auth-loader auth-splash-loader" aria-label="Chargement" />
+      </main>
+    );
+  }
+
   if (authStatus !== "ready") {
     return (
       <main className="auth-shell">
@@ -4129,15 +4142,7 @@ export default function Home() {
             <span>31</span>
           </div>
           <p className="eyebrow">Planning privé</p>
-          {authStatus === "loading" ? (
-            <>
-              <h1>Ouverture du planning…</h1>
-              <p className="auth-intro">
-                Vérification de votre connexion sécurisée.
-              </p>
-              <div className="auth-loader" aria-label="Chargement" />
-            </>
-          ) : authStatus === "invite" ? (
+          {authStatus === "invite" ? (
             <form onSubmit={submitInvite}>
               <h1>Bienvenue</h1>
               <p className="auth-intro">
