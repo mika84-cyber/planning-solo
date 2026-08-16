@@ -3145,7 +3145,7 @@ h1 {
   left: 3px;
   width: calc(50% - 3px);
   height: calc(100% - 6px);
-  border-radius: 9px;
+  border-radius: 8px;
   background: linear-gradient(135deg, var(--accent) 0%, #3b79dc 100%);
   box-shadow: 0 3px 10px rgba(40, 89, 184, 0.35);
   transform: translateX(calc(var(--status-index, 0) * 100%));
@@ -3156,12 +3156,15 @@ h1 {
   z-index: 1;
   height: 32px;
   padding: 0 14px;
+  border: 0;
+  outline-offset: 2px;
   font-size: 12.5px;
   font-weight: 800;
   letter-spacing: 0.01em;
   color: var(--muted);
   background: transparent;
   border-radius: 9px;
+  cursor: pointer;
   transition: color 200ms ease;
 }
 .status-switch button.active {
@@ -3178,7 +3181,7 @@ h1 {
 .holiday-pay-cell {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 3px;
 }
 .holiday-pay-picker {
