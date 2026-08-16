@@ -249,8 +249,8 @@ const HOLIDAY_PAY_OPTIONS: Array<{ value: HolidayPay | ""; label: string }> = [
 ];
 
 const PAY_STATUS_OPTIONS: Array<{ value: PayStatus; label: string }> = [
-  { value: "fonctionnaire", label: "Fonctionnaire" },
   { value: "contractuel", label: "Contractuel" },
+  { value: "fonctionnaire", label: "Fonctionnaire" },
 ];
 
 const EUROS = new Intl.NumberFormat("fr-FR", {
@@ -3146,7 +3146,73 @@ export default function Home() {
   /** Le volet de vérification d'un bulletin, séparé des primes : on y va pour
    *  contrôler, pas pour consulter. */
   function renderPayslipCheck() {
-    if (!allowances || !monthPay) return null;
+    if (!allowances || !monthPay || !sickLeaves) return null;
+    const missing =
+      !baseSalary || (!isContractuel && !ifse) || !carenceDay || !otherFixed;
+    /* Seules les primes qui varient d'un mois à l'autre sont détaillées : le
+       traitement, l'IFSE et les éléments fixes se retrouvent dans le brut sans
+       qu'il soit utile de les répéter chaque mois. */
+    const monthPayRows = [
+      monthPay.sundayCount || monthPay.reported
+        ? {
+            key: "sundays",
+            label: `Dimanches (${monthPay.sundayCount})`,
+            detail: monthPay.carryover
+              ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} du bulletin précédent`
+              : monthPay.reported
+                ? `${monthPay.reported} pas encore payé${s(monthPay.reported)}, en attente sur un prochain bulletin`
+                : `${monthPay.sundayCount} × ${euros(SUNDAY_ALLOWANCE.perSunday)}`,
+            amount: monthPay.sunday,
+          }
+        : null,
+      monthPay.holidayCount
+        ? {
+            key: "holidays",
+            label: `Jours fériés (${monthPay.holidayCount})`,
+            detail: monthPay.holiday
+              ? "travaillés le mois précédent"
+              : "compensation à décider",
+            amount: monthPay.holiday,
+          }
+        : null,
+      monthPay.compensatedCount
+        ? {
+            key: "compensated",
+            label: `Fériés compensés (${monthPay.compensatedCount})`,
+            detail: monthPay.compensated
+              ? `non travaillés en ${allowances.compensatedYear}`
+              : `non travaillés en ${allowances.compensatedYear}, compensation à décider`,
+            amount: monthPay.compensated,
+          }
+        : null,
+      monthPay.cia
+        ? {
+            key: "cia",
+            label: "CIA",
+            detail: "complément indemnitaire annuel",
+            amount: monthPay.cia,
+          }
+        : null,
+      monthPay.sickDays
+        ? {
+            key: "sick",
+            label: `Arrêt maladie (${monthPay.sickDays} j)`,
+            detail: "carence et retenue de 10 %",
+            amount: -monthPay.sick,
+          }
+        : null,
+      // Jamais prélevés en décembre (confirmé sur les bulletins de 2024 et
+      // 2025) : signalé ici comme les autres lignes qui varient d'un mois
+      // sur l'autre, plutôt que de laisser deviner pourquoi le net grimpe.
+      monthPay.index === 11 && mealVoucherDeduction
+        ? {
+            key: "mealVoucher",
+            label: "Titres repas",
+            detail: "jamais prélevés en décembre",
+            amount: mealVoucherDeduction,
+          }
+        : null,
+    ].filter((row): row is NonNullable<typeof row> => Boolean(row));
     return (
       <div className="request-archive-content allowances">
         <section className="allowance-card">
@@ -3163,6 +3229,27 @@ export default function Home() {
               className="leave-type-picker"
             />
           </div>
+        </section>
+
+        <section className="allowance-card">
+          <header>
+            <span>Comment ça marche</span>
+          </header>
+          <p className="allowance-note">
+            Estimer votre salaire en brut et en net demande des informations
+            qui n’existent que sur un vrai bulletin de paie : le traitement de
+            base (votre rémunération hors primes), le montant exact d’un jour
+            de carence lors d’un arrêt maladie, l’IFSE, et quelques lignes
+            fixes plus rares (indemnité de résidence, CIA…). Donnez-lui
+            quelques bulletins PDF ci-dessous : elle y reconnaît ces valeurs
+            et remplit les champs toute seule, sans que vous ayez à les
+            recopier.
+          </p>
+          <p className="allowance-note">
+            Tout se passe sur cet appareil, en toute sécurité : vos bulletins
+            et les montants qu’ils contiennent ne sont jamais envoyés ni
+            conservés, nulle part.
+          </p>
         </section>
 
         <section className="allowance-card">
@@ -3405,84 +3492,7 @@ export default function Home() {
             </p>
           ) : null}
         </section>
-      </div>
-    );
-  }
-  function renderAllowances() {
-    if (!allowances || !monthPay || !sickLeaves) return null;
-    const { sundayTotal } = allowances;
-    const missing =
-      !baseSalary ||
-      (!isContractuel && !ifse) ||
-      !carenceDay ||
-      !otherFixed;
-    /* Seules les primes qui varient d'un mois à l'autre sont détaillées : le
-       traitement, l'IFSE et les éléments fixes se retrouvent dans le brut sans
-       qu'il soit utile de les répéter chaque mois. */
-    const monthRows = [
-      monthPay.sundayCount || monthPay.reported
-        ? {
-            key: "sundays",
-            label: `Dimanches (${monthPay.sundayCount})`,
-            detail: monthPay.carryover
-              ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} du bulletin précédent`
-              : monthPay.reported
-                ? `${monthPay.reported} pas encore payé${s(monthPay.reported)}, en attente sur un prochain bulletin`
-                : `${monthPay.sundayCount} × ${euros(SUNDAY_ALLOWANCE.perSunday)}`,
-            amount: monthPay.sunday,
-          }
-        : null,
-      monthPay.holidayCount
-        ? {
-            key: "holidays",
-            label: `Jours fériés (${monthPay.holidayCount})`,
-            detail: monthPay.holiday
-              ? "travaillés le mois précédent"
-              : "compensation à décider",
-            amount: monthPay.holiday,
-          }
-        : null,
-      monthPay.compensatedCount
-        ? {
-            key: "compensated",
-            label: `Fériés compensés (${monthPay.compensatedCount})`,
-            detail: monthPay.compensated
-              ? `non travaillés en ${allowances.compensatedYear}`
-              : `non travaillés en ${allowances.compensatedYear}, compensation à décider`,
-            amount: monthPay.compensated,
-          }
-        : null,
-      monthPay.cia
-        ? {
-            key: "cia",
-            label: "CIA",
-            detail: "complément indemnitaire annuel",
-            amount: monthPay.cia,
-          }
-        : null,
-      monthPay.sickDays
-        ? {
-            key: "sick",
-            label: `Arrêt maladie (${monthPay.sickDays} j)`,
-            detail: "carence et retenue de 10 %",
-            amount: -monthPay.sick,
-          }
-        : null,
-      // Jamais prélevés en décembre (confirmé sur les bulletins de 2024 et
-      // 2025) : signalé ici comme les autres lignes qui varient d'un mois
-      // sur l'autre, plutôt que de laisser deviner pourquoi le net grimpe.
-      monthPay.index === 11 && mealVoucherDeduction
-        ? {
-            key: "mealVoucher",
-            label: "Titres repas",
-            detail: "jamais prélevés en décembre",
-            amount: mealVoucherDeduction,
-          }
-        : null,
-    ].filter((row): row is NonNullable<typeof row> => Boolean(row));
 
-    return (
-      <>
         <section className="allowance-card allowance-card-lead">
           <header>
             <div className="pay-month-nav">
@@ -3512,7 +3522,7 @@ export default function Home() {
             </div>
             {/* Cette carte suit le mois affiché dans le planning, pas
                 forcément le mois en cours : un raccourci pour y revenir sans
-                quitter Infos primes, seulement quand on s'en est éloigné. */}
+                quitter Infos paye, seulement quand on s'en est éloigné. */}
             {(view.getMonth() !== now.getMonth() ||
               view.getFullYear() !== now.getFullYear()) && (
               <button
@@ -3536,10 +3546,10 @@ export default function Home() {
               </p>
             )}
           </div>
-          {monthRows.length ? (
+          {monthPayRows.length ? (
             <table className="allowance-table">
               <tbody>
-                {monthRows.map((row) => (
+                {monthPayRows.map((row) => (
                   <tr key={row.key}>
                     <th scope="row">
                       {row.label}
@@ -3562,154 +3572,6 @@ export default function Home() {
             </table>
           ) : null}
         </section>
-
-        <section className="allowance-card">
-          <header>
-            <span>Dimanches {allowances.year}</span>
-            <strong>
-              {allowances.sundayDone} <em>faits</em> · {allowances.sundayLeft}{" "}
-              <em>à venir</em>
-            </strong>
-          </header>
-          <p className="allowance-note">
-            {allowances.sundayDone} fait sur {allowances.sundaysScheduledPast}{" "}
-            à ce jour
-          </p>
-          <table className="allowance-table">
-            <tbody>
-              {SUNDAY_TIERS.map((tier) => {
-                const size = Number.isFinite(tier.to)
-                  ? tier.to - tier.from + 1
-                  : 0;
-                const reached = Math.max(
-                  0,
-                  Math.min(
-                    allowances.sundayDone,
-                    size ? tier.to : allowances.sundayDone,
-                  ) -
-                    (tier.from - 1),
-                );
-                const current = tier.label === allowances.tier.label;
-                return (
-                  <tr key={tier.label} className={current ? "current" : ""}>
-                    <th scope="row">
-                      Socle {tier.label}
-                      {current ? <small>vous y êtes</small> : null}
-                    </th>
-                    <td>
-                      {size ? (
-                        <>
-                          <span className="allowance-progress">
-                            <i style={{ width: `${(reached / size) * 100}%` }} />
-                          </span>
-                          {reached} / {size}
-                        </>
-                      ) : (
-                        reached
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <p className="allowance-note">
-            {allowances.sundayCount} dimanches sur l’année.{" "}
-            {sundayTotal.unpaid
-              ? `${sundayTotal.unpaid} au-delà du ${SUNDAY_ALLOWANCE.paidUntil}e : travaillés pour rien.`
-              : `Plafond à ${SUNDAY_ALLOWANCE.paidUntil}, vous restez en dessous.`}
-          </p>
-        </section>
-
-        <section className="allowance-card">
-          <header>
-            <span>Jours fériés {allowances.year}</span>
-            <strong>
-              {allowances.holidays.length} <em>travaillés</em>
-            </strong>
-          </header>
-          {allowances.holidays.length ? (
-            <table className="allowance-table">
-              <tbody>
-                {allowances.holidays.map((item) => (
-                  <tr key={item.key}>
-                    <th scope="row">
-                      {item.name}
-                      <small>
-                        {shortDate(item.key)} · {holidayPayslip(item.key).label}
-                      </small>
-                    </th>
-                    <td className={item.choice ? "" : "pending"}>
-                      {item.choice
-                        ? euros(holidayAllowance(baseSalary, item.choice))
-                        : "à décider"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="allowance-note">Aucun férié travaillé cette année.</p>
-          )}
-          {allowances.holidayPending ? (
-            <p className="allowance-note warn">
-              {allowances.holidayPending} férié
-              {s(allowances.holidayPending)} sans compensation choisie : ouvrez
-              le jour dans le calendrier pour trancher.
-            </p>
-          ) : null}
-        </section>
-
-        {allowances.compensated.length > 0 && (
-          <section className="allowance-card">
-            <header>
-              <span>Fériés compensés {allowances.year}</span>
-              <strong>
-                {allowances.compensated.length} <em>non travaillés</em>
-              </strong>
-            </header>
-            <table className="allowance-table">
-              <tbody>
-                {allowances.compensated.map((item) => (
-                  <tr key={item.key}>
-                    <th scope="row">
-                      {item.name}
-                      <small>
-                        {shortDate(item.key)} · paie de février{" "}
-                        {allowances.year + 1}
-                      </small>
-                    </th>
-                    <td className={item.choice ? "" : "pending"}>
-                      {decidingCompensatedKey === item.key ? (
-                        <ChoicePicker
-                          value={item.choice || ""}
-                          options={HOLIDAY_PAY_OPTIONS}
-                          onChange={(choice) =>
-                            choice &&
-                            void chooseCompensatedHolidayPay(item.key, choice)
-                          }
-                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                          className="leave-type-picker"
-                          placeholder="À décider"
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          className="text-button"
-                          onClick={() => setDecidingCompensatedKey(item.key)}
-                        >
-                          {item.choice && baseSalary
-                            ? euros(holidayAllowance(baseSalary, item.choice))
-                            : "à décider"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
 
         {/* La retenue (un jour de carence puis 10 %/jour) est une règle de
             fonctionnaire ; le régime d'une contractuelle (IJSS, subrogation)
@@ -3917,6 +3779,161 @@ export default function Home() {
           )}
           </div>
         </section>
+      </div>
+    );
+  }
+  function renderAllowances() {
+    if (!allowances) return null;
+    const { sundayTotal } = allowances;
+    return (
+      <>
+        <section className="allowance-card">
+          <header>
+            <span>Dimanches {allowances.year}</span>
+            <strong>
+              {allowances.sundayDone} <em>faits</em> · {allowances.sundayLeft}{" "}
+              <em>à venir</em>
+            </strong>
+          </header>
+          <p className="allowance-note">
+            {allowances.sundayDone} fait sur {allowances.sundaysScheduledPast}{" "}
+            à ce jour
+          </p>
+          <table className="allowance-table">
+            <tbody>
+              {SUNDAY_TIERS.map((tier) => {
+                const size = Number.isFinite(tier.to)
+                  ? tier.to - tier.from + 1
+                  : 0;
+                const reached = Math.max(
+                  0,
+                  Math.min(
+                    allowances.sundayDone,
+                    size ? tier.to : allowances.sundayDone,
+                  ) -
+                    (tier.from - 1),
+                );
+                const current = tier.label === allowances.tier.label;
+                return (
+                  <tr key={tier.label} className={current ? "current" : ""}>
+                    <th scope="row">
+                      Socle {tier.label}
+                      {current ? <small>vous y êtes</small> : null}
+                    </th>
+                    <td>
+                      {size ? (
+                        <>
+                          <span className="allowance-progress">
+                            <i style={{ width: `${(reached / size) * 100}%` }} />
+                          </span>
+                          {reached} / {size}
+                        </>
+                      ) : (
+                        reached
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="allowance-note">
+            {allowances.sundayCount} dimanches sur l’année.{" "}
+            {sundayTotal.unpaid
+              ? `${sundayTotal.unpaid} au-delà du ${SUNDAY_ALLOWANCE.paidUntil}e : travaillés pour rien.`
+              : `Plafond à ${SUNDAY_ALLOWANCE.paidUntil}, vous restez en dessous.`}
+          </p>
+        </section>
+
+        <section className="allowance-card">
+          <header>
+            <span>Jours fériés {allowances.year}</span>
+            <strong>
+              {allowances.holidays.length} <em>travaillés</em>
+            </strong>
+          </header>
+          {allowances.holidays.length ? (
+            <table className="allowance-table">
+              <tbody>
+                {allowances.holidays.map((item) => (
+                  <tr key={item.key}>
+                    <th scope="row">
+                      {item.name}
+                      <small>
+                        {shortDate(item.key)} · {holidayPayslip(item.key).label}
+                      </small>
+                    </th>
+                    <td className={item.choice ? "" : "pending"}>
+                      {item.choice
+                        ? euros(holidayAllowance(baseSalary, item.choice))
+                        : "à décider"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="allowance-note">Aucun férié travaillé cette année.</p>
+          )}
+          {allowances.holidayPending ? (
+            <p className="allowance-note warn">
+              {allowances.holidayPending} férié
+              {s(allowances.holidayPending)} sans compensation choisie : ouvrez
+              le jour dans le calendrier pour trancher.
+            </p>
+          ) : null}
+        </section>
+
+        {allowances.compensated.length > 0 && (
+          <section className="allowance-card">
+            <header>
+              <span>Fériés compensés {allowances.year}</span>
+              <strong>
+                {allowances.compensated.length} <em>non travaillés</em>
+              </strong>
+            </header>
+            <table className="allowance-table">
+              <tbody>
+                {allowances.compensated.map((item) => (
+                  <tr key={item.key}>
+                    <th scope="row">
+                      {item.name}
+                      <small>
+                        {shortDate(item.key)} · paie de février{" "}
+                        {allowances.year + 1}
+                      </small>
+                    </th>
+                    <td className={item.choice ? "" : "pending"}>
+                      {decidingCompensatedKey === item.key ? (
+                        <ChoicePicker
+                          value={item.choice || ""}
+                          options={HOLIDAY_PAY_OPTIONS}
+                          onChange={(choice) =>
+                            choice &&
+                            void chooseCompensatedHolidayPay(item.key, choice)
+                          }
+                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                          className="leave-type-picker"
+                          placeholder="À décider"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() => setDecidingCompensatedKey(item.key)}
+                        >
+                          {item.choice && baseSalary
+                            ? euros(holidayAllowance(baseSalary, item.choice))
+                            : "à décider"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
       </>
     );
   }
@@ -4340,17 +4357,7 @@ export default function Home() {
                     <path d="M12 3v18M8 7h6a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7" />
                   ),
                   title: "Infos primes",
-                  // Le net, pas le brut : c'est ce qui tombe sur le compte.
-                  // Le brut reprend la main tant que les taux manquent — ce
-                  // qui est aussi le cas par défaut pour une contractuelle,
-                  // tant qu'elle n'a pas calibré ses propres taux.
-                  summary: `${
-                    monthNet !== null && monthPay
-                      ? `${euros(monthNet)} net en ${MONTHS[monthPay.index]}`
-                      : monthPay
-                        ? `${euros(monthPay.gross)} brut en ${MONTHS[monthPay.index]}`
-                        : ""
-                  }${
+                  summary: `${allowances.sundayDone} dimanche${s(allowances.sundayDone)} · ${allowances.holidays.length} férié${s(allowances.holidays.length)}${
                     allowances.holidayPending
                       ? ` · ${allowances.holidayPending} à décider`
                       : ""
@@ -4358,11 +4365,7 @@ export default function Home() {
                   open: allowancesOpen,
                   toggle: () => setAllowancesOpen((current) => !current),
                   content: () => (
-                    <div
-                      className="request-archive-content allowances"
-                      onTouchStart={startAllowancesSwipe}
-                      onTouchEnd={endAllowancesSwipe}
-                    >
+                    <div className="request-archive-content allowances">
                       {renderAllowances()}
                     </div>
                   ),
@@ -4376,15 +4379,27 @@ export default function Home() {
                       <path d="M15 3v4h4M9 12h6M9 16h4" />
                     </>
                   ),
-                  title: "Vérifier ma paye",
-                  summary: isContractuel
-                    ? "Contractuel"
-                    : payslipCheck?.reading.month !== undefined
-                      ? MONTHS[payslipCheck.reading.month]
-                      : "PDF",
+                  title: "Infos paye",
+                  // Le net, pas le brut : c'est ce qui tombe sur le compte.
+                  // Le brut reprend la main tant que les taux manquent — ce
+                  // qui est aussi le cas par défaut pour une contractuelle,
+                  // tant qu'elle n'a pas calibré ses propres taux.
+                  summary:
+                    monthNet !== null && monthPay
+                      ? `${euros(monthNet)} net en ${MONTHS[monthPay.index]}`
+                      : monthPay
+                        ? `${euros(monthPay.gross)} brut en ${MONTHS[monthPay.index]}`
+                        : "",
                   open: payslipOpen,
                   toggle: () => setPayslipOpen((current) => !current),
-                  content: renderPayslipCheck,
+                  content: () => (
+                    <div
+                      onTouchStart={startAllowancesSwipe}
+                      onTouchEnd={endAllowancesSwipe}
+                    >
+                      {renderPayslipCheck()}
+                    </div>
+                  ),
                 },
               ]
             : []),
