@@ -2918,12 +2918,14 @@ export default function Home() {
    *  tout seul. Les deux taux net/brut n'y figurent pas : ce sont des ratios
    *  qui se calculent à la main à partir de plusieurs lignes de
    *  cotisations, pas un montant écrit tel quel sur le bulletin. */
+  // IFSE et CIA écartés d'entrée pour une contractuelle : pas la peine de
+  // les chercher sur un bulletin qui ne les porte pas.
   const PAYSLIP_IMPORT_FIELDS = [
     { key: "baseSalary" as const, label: "Traitement de base" },
-    { key: "ifse" as const, label: "IFSE" },
+    ...(isContractuel ? [] : [{ key: "ifse" as const, label: "IFSE" }]),
     { key: "carenceDay" as const, label: "Jour de carence" },
     { key: "otherFixed" as const, label: "Autres éléments fixes" },
-    { key: "cia" as const, label: "CIA" },
+    ...(isContractuel ? [] : [{ key: "cia" as const, label: "CIA" }]),
     { key: "navigo" as const, label: "Navigo remboursé" },
     { key: "mealVoucherDeduction" as const, label: "Titres repas (retenue)" },
     { key: "pasRate" as const, label: "Taux d’imposition (PAS)" },
@@ -3814,6 +3816,7 @@ export default function Home() {
               </div>
             </div>
           ))}
+          {!isContractuel && (
           <div className="pay-field">
             <span className="pay-field-head">
               Mois du CIA
@@ -3840,6 +3843,7 @@ export default function Home() {
               />
             </div>
           </div>
+          )}
           </div>
         </section>
       </>
@@ -4322,6 +4326,27 @@ export default function Home() {
                     setView(localDate(year, view.getMonth(), 1))
                   }
                   ariaLabel="Sélectionner l’année"
+                  className="year-choice-picker"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="year-choice" aria-label="Choix du groupe">
+            <span className="year-choice-label">Groupe</span>
+            <div className="year-stepper">
+              <div className="year-select-display">
+                <span className="year-calendar-mark" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="7" cy="12" r="2.4" />
+                    <circle cx="12" cy="12" r="2.4" />
+                    <circle cx="17" cy="12" r="2.4" />
+                  </svg>
+                </span>
+                <ChoicePicker
+                  value={group}
+                  options={GROUP_OPTIONS}
+                  onChange={changeGroup}
+                  ariaLabel="Sélectionner le groupe"
                   className="year-choice-picker"
                 />
               </div>

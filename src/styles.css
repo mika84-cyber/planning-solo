@@ -1527,12 +1527,15 @@ h1 {
   gap: 12px;
   margin-bottom: 9px;
 }
+/* Titre de chapitre (Dimanches, Jours fériés, Éléments de paie…) : assez
+   voyant pour se repérer d'un coup d'œil en descendant la carte, plutôt
+   qu'une légende discrète qu'un montant en gras à côté écrase. */
 .allowance-card > header span {
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 /* Le mois de « La paie de … » est entouré de deux flèches plutôt qu'un
    span nu : la carte suit `.allowance-card > header span` par cascade, mais
