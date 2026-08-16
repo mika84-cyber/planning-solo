@@ -371,9 +371,6 @@ export default function Home() {
     applied: Array<{ label: string; value: string }>;
     missing: string[];
   } | null>(null);
-  // Date du férié compensé dont la ligne « à décider » est ouverte : un seul
-  // choix affiché à la fois, comme le menu d'actions d'une période.
-  const [decidingCompensatedKey, setDecidingCompensatedKey] = useState("");
   const [payDrafts, setPayDrafts] = useState({
     baseSalary: "",
     ifse: "",
@@ -2918,12 +2915,12 @@ export default function Home() {
     }
   }
 
-  /** Choisit la compensation d'un férié compensé (prime seule ou prime +
-   *  récup) : ces dates ne passent pas par la fiche du jour (ce sont des
-   *  jours de repos, pas travaillés), la ligne du tableau reste donc le seul
-   *  endroit où trancher. */
-  async function chooseCompensatedHolidayPay(key: string, choice: HolidayPay) {
-    setDecidingCompensatedKey("");
+  /** Choisit la compensation d'un jour férié (prime seule ou prime + récup),
+   *  travaillé ou compensé : utilisé directement depuis les tableaux
+   *  d'Infos primes, sans passer par la fiche du jour. Pour un férié
+   *  compensé (jour de repos, pas travaillé), c'est même le seul endroit où
+   *  trancher. */
+  async function chooseHolidayPay(key: string, choice: HolidayPay) {
     const current = entries[key];
     if (
       !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
@@ -3216,18 +3213,24 @@ export default function Home() {
     return (
       <div className="request-archive-content allowances">
         <section className="allowance-card">
-          <header>
-            <span>Statut</span>
-          </header>
           <div className="leave-type-field">
-            <span>Statut</span>
-            <ChoicePicker
-              value={formProfile?.status || "fonctionnaire"}
-              options={PAY_STATUS_OPTIONS}
-              onChange={changeStatus}
-              ariaLabel="Sélectionner le statut"
-              className="leave-type-picker"
-            />
+            <span>Je suis</span>
+            <div className="view-switch" aria-label="Statut">
+              {PAY_STATUS_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={
+                    (formProfile?.status || "fonctionnaire") === option.value
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => changeStatus(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -3239,12 +3242,16 @@ export default function Home() {
             Estimer votre salaire en brut et en net demande des informations
             qui n’existent que sur un vrai bulletin de paie : le traitement de
             base (votre rémunération hors primes), le montant exact d’un jour
-            de carence lors d’un arrêt maladie, l’IFSE, et quelques lignes
-            fixes plus rares (indemnité de résidence, CIA…). Donnez-lui
-            quelques bulletins PDF ci-dessous : elle y reconnaît ces valeurs
-            et remplit les champs toute seule, sans que vous ayez à les
-            recopier.
+            de carence lors d’un arrêt maladie, et quelques lignes fixes plus
+            rares (indemnité de résidence…). Donnez-lui quelques bulletins PDF
+            ci-dessous : elle y reconnaît ces valeurs et remplit les champs
+            toute seule, sans que vous ayez à les recopier.
           </p>
+          {!isContractuel ? (
+            <p className="allowance-note">
+              Pour un fonctionnaire, s’y ajoutent l’IFSE et le CIA.
+            </p>
+          ) : null}
           <p className="allowance-note">
             Tout se passe sur cet appareil, en toute sécurité : vos bulletins
             et les montants qu’ils contiennent ne sont jamais envoyés ni
@@ -3254,12 +3261,13 @@ export default function Home() {
 
         <section className="allowance-card">
           <header>
-            <span>Remplir depuis des bulletins</span>
+            <span>Upload des bulletins</span>
           </header>
           <p className="allowance-note">
-            Choisissez un ou plusieurs bulletins PDF : ce qui s’y reconnaît
-            remplit tout seul les champs d’« Éléments de paie ». Les fichiers
-            sont lus sur cet appareil et ne sont ni envoyés, ni conservés.
+            Choisissez un ou plusieurs bulletins PDF : les valeurs de vos
+            bulletins se remplissent toutes seules dans les champs d’«
+            Éléments de paie ». Les fichiers sont lus sur cet appareil et ne
+            sont ni envoyés, ni conservés.
           </p>
           <label className="payslip-drop">
             <input
@@ -3313,8 +3321,9 @@ export default function Home() {
             <span>Vérifier un bulletin</span>
           </header>
           <p className="allowance-note">
-            Le mois du bulletin est reconnu tout seul. Le fichier est lu sur cet
-            appareil et n’est ni envoyé, ni conservé.
+            Le mois du bulletin est reconnu tout seul. Si une erreur est
+            repérée par l’application, vous en serez informé. Le fichier est
+            lu sur cet appareil et n’est ni envoyé, ni conservé.
           </p>
           <label className="payslip-drop">
             <input
@@ -3864,9 +3873,21 @@ export default function Home() {
                       </small>
                     </th>
                     <td className={item.choice ? "" : "pending"}>
-                      {item.choice
-                        ? euros(holidayAllowance(baseSalary, item.choice))
-                        : "à décider"}
+                      <ChoicePicker
+                        value={item.choice || ""}
+                        options={HOLIDAY_PAY_OPTIONS}
+                        onChange={(choice) =>
+                          choice && void chooseHolidayPay(item.key, choice)
+                        }
+                        ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                        className="leave-type-picker"
+                        placeholder="À décider"
+                      />
+                      {item.choice ? (
+                        <small>
+                          {euros(holidayAllowance(baseSalary, item.choice))}
+                        </small>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -3878,8 +3899,8 @@ export default function Home() {
           {allowances.holidayPending ? (
             <p className="allowance-note warn">
               {allowances.holidayPending} férié
-              {s(allowances.holidayPending)} sans compensation choisie : ouvrez
-              le jour dans le calendrier pour trancher.
+              {s(allowances.holidayPending)} sans compensation choisie :
+              cliquez sur « À décider » pour trancher.
             </p>
           ) : null}
         </section>
@@ -3904,29 +3925,21 @@ export default function Home() {
                       </small>
                     </th>
                     <td className={item.choice ? "" : "pending"}>
-                      {decidingCompensatedKey === item.key ? (
-                        <ChoicePicker
-                          value={item.choice || ""}
-                          options={HOLIDAY_PAY_OPTIONS}
-                          onChange={(choice) =>
-                            choice &&
-                            void chooseCompensatedHolidayPay(item.key, choice)
-                          }
-                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                          className="leave-type-picker"
-                          placeholder="À décider"
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          className="text-button"
-                          onClick={() => setDecidingCompensatedKey(item.key)}
-                        >
-                          {item.choice && baseSalary
-                            ? euros(holidayAllowance(baseSalary, item.choice))
-                            : "à décider"}
-                        </button>
-                      )}
+                      <ChoicePicker
+                        value={item.choice || ""}
+                        options={HOLIDAY_PAY_OPTIONS}
+                        onChange={(choice) =>
+                          choice && void chooseHolidayPay(item.key, choice)
+                        }
+                        ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                        className="leave-type-picker"
+                        placeholder="À décider"
+                      />
+                      {item.choice && baseSalary ? (
+                        <small>
+                          {euros(holidayAllowance(baseSalary, item.choice))}
+                        </small>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -4790,7 +4803,7 @@ export default function Home() {
                 <strong>
                   {pdfExporting === "my-leaves"
                     ? "Création…"
-                    : `Groupe ${group} + congés`}
+                    : `Groupe ${group} + mes congés`}
                 </strong>
                 <small>1 page</small>
               </span>

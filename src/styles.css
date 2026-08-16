@@ -3691,6 +3691,19 @@ h1 {
 .year-choice:only-child {
     grid-column: 1/-1;
   }
+  /* Année affichée et Jours travaillés partagent la rangée du haut ; le
+     Groupe descend seul sur toute la largeur, plutôt que de suivre l'ordre
+     du DOM (Année, Groupe, Jours travaillés) qui laisserait une case vide. */
+  .controls [aria-label="Choix de l’année affichée"] {
+    order: 1;
+  }
+  .controls .worked-days {
+    order: 2;
+  }
+  .controls [aria-label="Choix du groupe"] {
+    order: 3;
+    grid-column: 1 / -1;
+  }
   .controls label:first-child {
     grid-column: 1/-1;
   }
