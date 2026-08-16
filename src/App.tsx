@@ -4125,7 +4125,7 @@ export default function Home() {
     return (
       <main className="auth-splash">
         <img
-          src="/grand-palais-splash.jpg"
+          src="/grand-palais-verriere.jpg"
           alt=""
           className="auth-splash-image"
         />
@@ -4137,6 +4137,11 @@ export default function Home() {
   if (authStatus !== "ready") {
     return (
       <main className="auth-shell">
+        <img
+          src="/grand-palais-verriere.jpg"
+          alt=""
+          className="auth-shell-image"
+        />
         <section className="auth-card">
           <div className="auth-mark" aria-hidden="true">
             <span>31</span>

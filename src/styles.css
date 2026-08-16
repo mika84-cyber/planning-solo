@@ -57,10 +57,19 @@ button {
   cursor: pointer;
 }
 .auth-shell {
+  position: relative;
   min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 22px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.auth-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   background:
     radial-gradient(
       circle at 20% 10%,
@@ -72,9 +81,19 @@ button {
       rgba(53, 165, 111, 0.13),
       transparent 34%
     ),
-    var(--bg);
+    linear-gradient(rgba(12, 22, 38, 0.32), rgba(12, 22, 38, 0.18));
+}
+.auth-shell-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
 }
 .auth-card {
+  position: relative;
+  z-index: 2;
   width: min(440px, 100%);
   border: 1px solid rgba(210, 220, 234, 0.9);
   border-radius: 26px;
