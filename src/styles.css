@@ -3602,6 +3602,11 @@ h1 {
     padding: 10px;
     align-items: center;
   }
+  .auth-shell-image {
+    inset: 0 0 auto 0;
+    height: auto;
+    aspect-ratio: 905 / 577;
+  }
   .auth-card {
     border-radius: 22px;
     padding: 25px 20px;
