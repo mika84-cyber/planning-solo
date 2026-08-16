@@ -156,6 +156,55 @@ export const YEAR_OPTIONS = Array.from({ length: 13 }, (_, index) => ({
 }));
 export const MONTH_OPTIONS = MONTHS.map((label, value) => ({ value, label }));
 
+export type SchoolVacation = { name: string; from: string; to: string };
+export type SchoolZone = "A" | "B" | "C";
+export const SCHOOL_ZONE_OPTIONS: Array<{ value: SchoolZone; label: string }> =
+  [
+    { value: "A", label: "Zone A" },
+    { value: "B", label: "Zone B" },
+    { value: "C", label: "Zone C" },
+  ];
+
+/** Toussaint, Noël et été sont les mêmes trois dates pour les trois zones ;
+ *  seuls hiver et printemps diffèrent. Dates officielles (education.gouv.fr,
+ *  vérifiées le 16 août 2026) : la date de fin indiquée par les calendriers
+ *  scolaires est celle de la reprise des cours, pas un jour de vacances —
+ *  chaque période est donc bornée à la veille de la reprise. */
+const SCHOOL_VACATIONS_SHARED: SchoolVacation[] = [
+  { name: "Vacances de la Toussaint", from: "2026-10-17", to: "2026-11-01" },
+  { name: "Vacances de Noël", from: "2026-12-19", to: "2027-01-03" },
+  { name: "Vacances d’été", from: "2027-07-03", to: "2027-09-01" },
+  { name: "Vacances de la Toussaint", from: "2027-10-23", to: "2027-11-07" },
+  { name: "Vacances de Noël", from: "2027-12-18", to: "2028-01-02" },
+  { name: "Vacances d’été", from: "2028-07-04", to: "2028-08-31" },
+];
+const SCHOOL_VACATIONS_BY_ZONE: Record<SchoolZone, SchoolVacation[]> = {
+  A: [
+    { name: "Vacances d’hiver", from: "2027-02-13", to: "2027-02-28" },
+    { name: "Vacances de printemps", from: "2027-04-10", to: "2027-04-25" },
+    { name: "Vacances d’hiver", from: "2028-02-19", to: "2028-03-05" },
+    { name: "Vacances de printemps", from: "2028-04-22", to: "2028-05-08" },
+  ],
+  B: [
+    { name: "Vacances d’hiver", from: "2027-02-20", to: "2027-03-07" },
+    { name: "Vacances de printemps", from: "2027-04-17", to: "2027-05-02" },
+    { name: "Vacances d’hiver", from: "2028-02-05", to: "2028-02-20" },
+    { name: "Vacances de printemps", from: "2028-04-08", to: "2028-04-23" },
+  ],
+  C: [
+    { name: "Vacances d’hiver", from: "2027-02-06", to: "2027-02-21" },
+    { name: "Vacances de printemps", from: "2027-04-03", to: "2027-04-18" },
+    { name: "Vacances d’hiver", from: "2028-02-12", to: "2028-02-27" },
+    { name: "Vacances de printemps", from: "2028-04-15", to: "2028-05-01" },
+  ],
+};
+
+export function schoolVacationsForZone(zone: SchoolZone): SchoolVacation[] {
+  return [...SCHOOL_VACATIONS_SHARED, ...SCHOOL_VACATIONS_BY_ZONE[zone]].sort(
+    (a, b) => a.from.localeCompare(b.from),
+  );
+}
+
 export function localDate(year: number, month: number, day: number) {
   return new Date(year, month, day, 12, 0, 0, 0);
 }

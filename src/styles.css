@@ -2210,6 +2210,53 @@ h1 {
 .annual-pdf-buttons[hidden] {
   display: none;
 }
+/* Sur toute la largeur, au-dessus des trois boutons plutôt que dans l'une
+   de leurs colonnes : c'est un réglage commun aux trois exports, pas un
+   quatrième export. */
+.school-vacation-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+.school-vacation-toggle {
+  --chip-color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 11px;
+  background: #f6f8fb;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.school-vacation-toggle i {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--chip-color);
+  border-radius: 50%;
+  background: transparent;
+}
+.school-vacation-toggle.active {
+  border-color: color-mix(in srgb, var(--chip-color) 42%, white);
+  background: color-mix(in srgb, var(--chip-color) 9%, white);
+  color: var(--text);
+}
+.school-vacation-toggle.active i {
+  background: var(--chip-color);
+}
+.school-vacation-zone-picker {
+  max-width: 140px;
+}
 .pdf-action {
   display: flex;
   align-items: center;

@@ -6,9 +6,11 @@ import {
   dateKey,
   fromKey,
   getDayInfo,
+  schoolVacationsForZone,
   wasPompidouHolidayWorked,
   type HalfMoment,
   type LeaveType,
+  type SchoolZone,
 } from "./planningLogic";
 
 type PdfExportPeriod = {
@@ -29,13 +31,40 @@ export function useAnnualPdfExport(
     "selected" | "all" | "my-leaves" | null
   >(null);
 
-  async function exportAnnualPlanning(scope: "selected" | "all" | "my-leaves") {
+  async function exportAnnualPlanning(
+    scope: "selected" | "all" | "my-leaves",
+    schoolZone?: SchoolZone | null,
+  ) {
     if (pdfExporting) return;
     setPdfExporting(scope);
     try {
       const { createAnnualPlanningPdf } = await import("./planningPdf");
       const leaveTypes = new Map<string, LeaveType>();
       const halfMoments = new Map<string, HalfMoment>();
+      // Bornée à l'année affichée, comme le reste du PDF : une case déborde
+      // volontairement de part et d'autre pour qu'une période à cheval sur
+      // le 1er janvier affiche quand même son vrai repère de début ou de fin.
+      let schoolVacationDates: Set<string> | undefined;
+      let schoolVacations:
+        | Array<{ name: string; from: string; to: string }>
+        | undefined;
+      if (schoolZone) {
+        const year = view.getFullYear();
+        const first = `${year}-01-01`;
+        const last = `${year}-12-31`;
+        schoolVacations = [];
+        schoolVacationDates = new Set();
+        for (const vacation of schoolVacationsForZone(schoolZone)) {
+          if (vacation.to < first || vacation.from > last) continue;
+          schoolVacations.push(vacation);
+          for (
+            let date = fromKey(vacation.from);
+            dateKey(date) <= vacation.to;
+            date = addDays(date, 1)
+          )
+            schoolVacationDates.add(dateKey(date));
+        }
+      }
       if (scope === "my-leaves") {
         const year = view.getFullYear();
         const first = `${year}-01-01`;
@@ -93,6 +122,8 @@ export function useAnnualPdfExport(
               }
             : undefined,
         wishDates: scope === "my-leaves" ? wishDates : undefined,
+        schoolVacationDates,
+        schoolVacations,
         filenameLabel:
           scope === "my-leaves" ? `groupe-${group}-avec-conges` : undefined,
       });

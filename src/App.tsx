@@ -25,6 +25,7 @@ import {
   MONTHS,
   MONTH_OPTIONS,
   RESIDENCE_ALLOWANCE_RATE,
+  SCHOOL_ZONE_OPTIONS,
   SUNDAY_ALLOWANCE,
   SUNDAY_TIERS,
   sickLeaveDeduction,
@@ -64,6 +65,7 @@ import {
   type HolidayPay,
   type LeaveType,
   type MultiDatePerson,
+  type SchoolZone,
   type SelectionType,
 } from "./planningLogic";
 
@@ -369,6 +371,9 @@ export default function Home() {
     applied: Array<{ label: string; value: string }>;
     missing: string[];
   } | null>(null);
+  // Date du férié compensé dont la ligne « à décider » est ouverte : un seul
+  // choix affiché à la fois, comme le menu d'actions d'une période.
+  const [decidingCompensatedKey, setDecidingCompensatedKey] = useState("");
   const [payDrafts, setPayDrafts] = useState({
     baseSalary: "",
     ifse: "",
@@ -472,6 +477,10 @@ export default function Home() {
       ),
     [entries],
   );
+  const [showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf] =
+    useState(false);
+  const [schoolVacationZone, setSchoolVacationZone] =
+    useState<SchoolZone>("C");
   const { pdfExporting, exportAnnualPlanning } = useAnnualPdfExport(
     view,
     group,
@@ -1022,7 +1031,11 @@ export default function Home() {
       choice: HolidayPay | "";
       past: boolean;
     }> = [];
-    const compensated: Array<{ key: string; name: string }> = [];
+    const compensated: Array<{
+      key: string;
+      name: string;
+      choice: HolidayPay | "";
+    }> = [];
     // Dimanches que le cycle programme jusqu'à aujourd'hui, sans tenir compte
     // des congés ni des arrêts maladie : le repère pour « combien j'en aurais
     // fait sans rien avoir posé », à comparer à `sundayDone` plus bas, qui lui
@@ -1035,7 +1048,11 @@ export default function Home() {
         const key = dateKey(date);
         if (info.kind !== "work") {
           if (info.holiday && wasPompidouHolidayWorked(date, group))
-            compensated.push({ key, name: info.holiday });
+            compensated.push({
+              key,
+              name: info.holiday,
+              choice: entries[key]?.holidayPay || "",
+            });
           continue;
         }
         if (!info.holiday && date.getDay() === 0 && key <= todayKey)
@@ -1173,8 +1190,16 @@ export default function Home() {
         : 0;
     if (compensatedCount) {
       monthly[1].compensatedCount = compensatedCount;
-      monthly[1].compensated =
-        compensatedCount * holidayAllowance(baseSalary, "prime");
+      // Comme un férié travaillé : la prime seule et la prime + récup ne
+      // valent pas le même montant, donc rien n'est compté tant que le choix
+      // n'a pas été fait, plutôt que de supposer la prime seule par défaut.
+      monthly[1].compensated = previous.compensated.reduce(
+        (total, item) =>
+          item.choice
+            ? total + holidayAllowance(baseSalary, item.choice)
+            : total,
+        0,
+      );
     }
     const done = current.sundays.filter((item) => item.past).length;
     const months = monthly
@@ -2893,6 +2918,41 @@ export default function Home() {
     }
   }
 
+  /** Choisit la compensation d'un férié compensé (prime seule ou prime +
+   *  récup) : ces dates ne passent pas par la fiche du jour (ce sont des
+   *  jours de repos, pas travaillés), la ligne du tableau reste donc le seul
+   *  endroit où trancher. */
+  async function chooseCompensatedHolidayPay(key: string, choice: HolidayPay) {
+    setDecidingCompensatedKey("");
+    const current = entries[key];
+    if (
+      !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+    ) {
+      try {
+        const response = await fetch("/api/calendar", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            action: "save-leaves",
+            date: key,
+            leave: Boolean(current?.leave),
+            wish: Boolean(current?.wish),
+            holidayPay: choice,
+          }),
+        });
+        if (!response.ok) throw new Error();
+      } catch {
+        notify("Le choix n’a pas pu être enregistré. Réessayez.");
+        return;
+      }
+    }
+    setEntries((currentEntries) => ({
+      ...currentEntries,
+      [key]: { ...(currentEntries[key] || emptyEntry()), holidayPay: choice },
+    }));
+  }
+
   /** Lit un bulletin sur l'appareil pour le comparer au calcul. Le fichier
    *  n'est ni envoyé, ni conservé : seuls trois montants en sont tirés. */
   async function checkPayslip(file: File) {
@@ -3089,6 +3149,78 @@ export default function Home() {
     if (!allowances || !monthPay) return null;
     return (
       <div className="request-archive-content allowances">
+        <section className="allowance-card">
+          <header>
+            <span>Statut</span>
+          </header>
+          <div className="leave-type-field">
+            <span>Statut</span>
+            <ChoicePicker
+              value={formProfile?.status || "fonctionnaire"}
+              options={PAY_STATUS_OPTIONS}
+              onChange={changeStatus}
+              ariaLabel="Sélectionner le statut"
+              className="leave-type-picker"
+            />
+          </div>
+        </section>
+
+        <section className="allowance-card">
+          <header>
+            <span>Remplir depuis des bulletins</span>
+          </header>
+          <p className="allowance-note">
+            Choisissez un ou plusieurs bulletins PDF : ce qui s’y reconnaît
+            remplit tout seul les champs d’« Éléments de paie ». Les fichiers
+            sont lus sur cet appareil et ne sont ni envoyés, ni conservés.
+          </p>
+          <label className="payslip-drop">
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              disabled={payslipImportBusy}
+              onChange={(event) => {
+                // Copier chaque fichier dans un tableau avant de vider le
+                // champ : `event.target.value = ""` vide aussi la FileList
+                // déjà récupérée (elle n'est pas figée), une simple
+                // affectation ne suffit pas comme pour un input à un seul
+                // fichier.
+                const files = Array.from(event.target.files || []);
+                event.target.value = "";
+                if (files.length) void importPayslips(files);
+              }}
+            />
+            <span>
+              {payslipImportBusy
+                ? "Lecture en cours…"
+                : "Choisir un ou plusieurs bulletins PDF"}
+            </span>
+          </label>
+          {payslipImportError ? (
+            <p className="allowance-note warn">{payslipImportError}</p>
+          ) : null}
+          {payslipImportResult ? (
+            <>
+              <p className="allowance-note">
+                {payslipImportResult.applied.length} champ
+                {s(payslipImportResult.applied.length)} rempli
+                {s(payslipImportResult.applied.length)} :{" "}
+                {payslipImportResult.applied
+                  .map((item) => `${item.label} (${item.value})`)
+                  .join(", ")}
+                .
+              </p>
+              {payslipImportResult.missing.length ? (
+                <p className="allowance-note warn">
+                  Pas trouvé sur ces bulletins :{" "}
+                  {payslipImportResult.missing.join(", ")}.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+
         <section className="allowance-card">
           <header>
             <span>Vérifier un bulletin</span>
@@ -3314,7 +3446,9 @@ export default function Home() {
         ? {
             key: "compensated",
             label: `Fériés compensés (${monthPay.compensatedCount})`,
-            detail: `non travaillés en ${allowances.compensatedYear}, en prime seule`,
+            detail: monthPay.compensated
+              ? `non travaillés en ${allowances.compensatedYear}`
+              : `non travaillés en ${allowances.compensatedYear}, compensation à décider`,
             amount: monthPay.compensated,
           }
         : null,
@@ -3545,21 +3679,35 @@ export default function Home() {
                         {allowances.year + 1}
                       </small>
                     </th>
-                    <td>
-                      {baseSalary
-                        ? euros(holidayAllowance(baseSalary, "prime"))
-                        : "—"}
+                    <td className={item.choice ? "" : "pending"}>
+                      {decidingCompensatedKey === item.key ? (
+                        <ChoicePicker
+                          value={item.choice || ""}
+                          options={HOLIDAY_PAY_OPTIONS}
+                          onChange={(choice) =>
+                            choice &&
+                            void chooseCompensatedHolidayPay(item.key, choice)
+                          }
+                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                          className="leave-type-picker"
+                          placeholder="À décider"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() => setDecidingCompensatedKey(item.key)}
+                        >
+                          {item.choice && baseSalary
+                            ? euros(holidayAllowance(baseSalary, item.choice))
+                            : "à décider"}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="allowance-note">
-              Le cycle vous les aurait fait travailler, mais le Grand Palais
-              ferme le lundi là où Pompidou fermait le mardi. Ils se paient en
-              prime seule sur la paie de février {allowances.year + 1}, ligne
-              « Compens. Indem jf ac public n-1 ».
-            </p>
           </section>
         )}
 
@@ -3593,85 +3741,8 @@ export default function Home() {
 
         <section className="allowance-card">
           <header>
-            <span>Remplir depuis des bulletins</span>
-          </header>
-          <p className="allowance-note">
-            Choisissez un ou plusieurs bulletins PDF : ce qui s’y reconnaît
-            remplit tout seul les champs ci-dessous. Les fichiers sont lus
-            sur cet appareil et ne sont ni envoyés, ni conservés.
-          </p>
-          <label className="payslip-drop">
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              multiple
-              disabled={payslipImportBusy}
-              onChange={(event) => {
-                // Copier chaque fichier dans un tableau avant de vider le
-                // champ : `event.target.value = ""` vide aussi la FileList
-                // déjà récupérée (elle n'est pas figée), une simple
-                // affectation ne suffit pas comme pour un input à un seul
-                // fichier.
-                const files = Array.from(event.target.files || []);
-                event.target.value = "";
-                if (files.length) void importPayslips(files);
-              }}
-            />
-            <span>
-              {payslipImportBusy
-                ? "Lecture en cours…"
-                : "Choisir un ou plusieurs bulletins PDF"}
-            </span>
-          </label>
-          {payslipImportError ? (
-            <p className="allowance-note warn">{payslipImportError}</p>
-          ) : null}
-          {payslipImportResult ? (
-            <>
-              <p className="allowance-note">
-                {payslipImportResult.applied.length} champ
-                {s(payslipImportResult.applied.length)} rempli
-                {s(payslipImportResult.applied.length)} :{" "}
-                {payslipImportResult.applied
-                  .map((item) => `${item.label} (${item.value})`)
-                  .join(", ")}
-                .
-              </p>
-              {payslipImportResult.missing.length ? (
-                <p className="allowance-note warn">
-                  Pas trouvé sur ces bulletins :{" "}
-                  {payslipImportResult.missing.join(", ")}.
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </section>
-
-        <section className="allowance-card">
-          <header>
             <span>Éléments de paie</span>
           </header>
-          <div className="leave-type-field">
-            <span>Statut</span>
-            <ChoicePicker
-              value={formProfile?.status || "fonctionnaire"}
-              options={PAY_STATUS_OPTIONS}
-              onChange={changeStatus}
-              ariaLabel="Sélectionner le statut"
-              className="leave-type-picker"
-            />
-          </div>
-          {isContractuel ? (
-            <p className="allowance-note">
-              IFSE et CIA sont réservés aux fonctionnaires : ces deux champs
-              sont masqués, et l'indemnité de résidence (3 % du traitement)
-              se calcule toute seule. Les primes dimanche et férié suivent la
-              même grille que pour un fonctionnaire. Seul le calcul du net
-              reste à part : il dépend d'un taux de cotisation propre à un
-              autre régime, à caler sur un vrai bulletin — les arrêts maladie
-              aussi, pour la même raison, restent masqués.
-            </p>
-          ) : null}
           {missing ? (
             <p className="allowance-note warn">
               Renseignez ces montants pour que les calculs soient justes. Ils se
@@ -4295,9 +4366,10 @@ export default function Home() {
                       <path d="M15 3v4h4M9 12h6M9 16h4" />
                     </>
                   ),
-                  title: "Vérifier mon bulletin",
-                  summary:
-                    payslipCheck?.reading.month !== undefined
+                  title: "Vérifier ma paye",
+                  summary: isContractuel
+                    ? "Contractuel"
+                    : payslipCheck?.reading.month !== undefined
                       ? MONTHS[payslipCheck.reading.month]
                       : "PDF",
                   open: payslipOpen,
@@ -4598,11 +4670,43 @@ export default function Home() {
             className="annual-pdf-buttons"
             hidden={narrowScreen && !pdfOpen}
           >
+            <div className="school-vacation-choice">
+              <button
+                type="button"
+                className={
+                  showSchoolVacationsOnPdf
+                    ? "school-vacation-toggle active"
+                    : "school-vacation-toggle"
+                }
+                aria-pressed={showSchoolVacationsOnPdf}
+                onClick={() =>
+                  setShowSchoolVacationsOnPdf((current) => !current)
+                }
+              >
+                <i aria-hidden="true" />
+                Afficher les vacances scolaires
+              </button>
+              {showSchoolVacationsOnPdf && (
+                <ChoicePicker
+                  value={schoolVacationZone}
+                  options={SCHOOL_ZONE_OPTIONS}
+                  onChange={setSchoolVacationZone}
+                  ariaLabel="Choisir la zone de vacances scolaires"
+                  layout="list"
+                  className="leave-type-picker school-vacation-zone-picker"
+                />
+              )}
+            </div>
             <button
               type="button"
               className="pdf-action selected-group"
               disabled={pdfExporting !== null}
-              onClick={() => void exportAnnualPlanning("selected")}
+              onClick={() =>
+                void exportAnnualPlanning(
+                  "selected",
+                  showSchoolVacationsOnPdf ? schoolVacationZone : null,
+                )
+              }
             >
               <span className="pdf-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
@@ -4622,7 +4726,12 @@ export default function Home() {
               type="button"
               className="pdf-action all-groups"
               disabled={pdfExporting !== null}
-              onClick={() => void exportAnnualPlanning("all")}
+              onClick={() =>
+                void exportAnnualPlanning(
+                  "all",
+                  showSchoolVacationsOnPdf ? schoolVacationZone : null,
+                )
+              }
             >
               <span className="pdf-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
@@ -4640,7 +4749,12 @@ export default function Home() {
               type="button"
               className="pdf-action my-leaves"
               disabled={pdfExporting !== null}
-              onClick={() => void exportAnnualPlanning("my-leaves")}
+              onClick={() =>
+                void exportAnnualPlanning(
+                  "my-leaves",
+                  showSchoolVacationsOnPdf ? schoolVacationZone : null,
+                )
+              }
             >
               <span className="pdf-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
