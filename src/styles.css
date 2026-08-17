@@ -6,10 +6,14 @@
   --line: #dde3ec;
   --accent: #2859b8;
   --work: #fffefa;
-  --off: #687180;
-  --training: #c9b6f0;
+  --off: #000000;
+  --training: #b4b4b4;
   --holiday: #c83f4d;
-  --leave: #ef233c;
+  --leave: #6cbdf0;
+  --leave-annual: #6cbdf0;
+  --leave-rtt: #f2b950;
+  --leave-fraction: #c9a6ea;
+  --wish: #7ad39c;
   /* Deux teintes d'appoint : le vert des congés souhaités et des montants
      positifs, le bleu des rubriques de paie. */
   --green: #12a957;
@@ -964,13 +968,13 @@ h1 {
     color-mix(in srgb, var(--balance-color) 15%, transparent);
 }
 .leave-balance-grid button.annual {
-  --balance-color: #ef233c;
+  --balance-color: var(--leave-annual);
 }
 .leave-balance-grid button.rtt {
-  --balance-color: #168bca;
+  --balance-color: var(--leave-rtt);
 }
 .leave-balance-grid button.fraction {
-  --balance-color: #12a957;
+  --balance-color: var(--leave-fraction);
 }
 .leave-balance-grid button.sick {
   --balance-color: #c2557a;
@@ -2525,17 +2529,17 @@ h1 {
     border-color 0.14s;
 }
 .day.off {
-  border-color: #5f6877;
+  border-color: #000;
   background: var(--off);
   color: #fff;
 }
 .day.training {
-  border-color: #9b7fd4;
+  border-color: #8b8b8b;
   background: var(--training);
-  color: #3a2560;
+  color: #171717;
 }
-/* Un congé professionnel encadre toute la case d'un liseré rouge vif, au
-   lieu d'une bande en pied de case. */
+/* Un congé professionnel encadre toute la case. Les trois droits principaux
+   reçoivent ensuite l'aplat de la palette fournie. */
 .day.leave-day {
   outline: 2px solid var(--leave);
   outline-offset: -2px;
@@ -2544,6 +2548,24 @@ h1 {
   outline: 1.5px solid var(--leave);
   outline-offset: -1.5px;
 }
+.day.leave-day.leave-annual,
+.mini-grid .mini-day.leave-day.leave-annual {
+  background: var(--leave-annual);
+  color: #10283a;
+  outline-color: #000;
+}
+.day.leave-day.leave-rtt,
+.mini-grid .mini-day.leave-day.leave-rtt {
+  background: var(--leave-rtt);
+  color: #352608;
+  outline-color: #000;
+}
+.day.leave-day.leave-fraction,
+.mini-grid .mini-day.leave-day.leave-fraction {
+  background: var(--leave-fraction);
+  color: #302040;
+  outline-color: #000;
+}
 /* Congé souhaité : la case entière prend un vert doux. Un aplat se repère en
    balayant le mois, là où un liseré demandait de regarder chaque bordure. Le
    texte repasse en foncé, la case pouvant être noire par ailleurs. */
@@ -2551,7 +2573,7 @@ h1 {
 /* `.mini-day.off` est déclaré plus bas dans ce fichier : sans la classe du
    conteneur, la case resterait noire en vue Année. */
 .mini-grid .mini-day.wish-day {
-  background: #a7e0bd;
+  background: var(--wish);
   color: #10402a;
 }
 /* Un liseré noir cerne l'aplat vert pour le détacher des cases voisines. La
@@ -2586,7 +2608,7 @@ h1 {
 .day.recovery-day small {
   color: #7a4712;
 }
-/* Demi-journée : le liseré rouge ne suit que l'encadrement d'une moitié de
+/* Demi-journée : le liseré bleu CA ne suit que l'encadrement d'une moitié de
    case — la gauche pour le matin, la droite pour l'après-midi. Le côté qui
    donne sur l'autre moitié reste ouvert : aucun trait ne traverse la case.
    Les bords se déclarent un par un, la forme abrégée `border-width` du bloc
@@ -2865,9 +2887,9 @@ h1 {
   color: #fff;
 }
 .mini-day.training {
-  border-color: #9b7fd4;
+  border-color: #8b8b8b;
   background: var(--training);
-  color: #3a2560;
+  color: #171717;
 }
 .mini-day .date-number,
 .mini-day .holiday-date {
@@ -4441,4 +4463,80 @@ h1 {
 }
 .period-menu-panel .period-menu-delete {
   color: #a92f3b;
+}
+
+/* État réseau et sauvegarde : une information courte, lisible sans masquer le
+   planning. `aria-live` dans le composant fournit le même retour au lecteur
+   d'écran. */
+.connection-status {
+  position: sticky;
+  z-index: 45;
+  top: 8px;
+  width: fit-content;
+  max-width: calc(100% - 16px);
+  margin: -6px auto 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 13px;
+  background: #eef4ff;
+  color: #234f9b;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(31, 46, 78, 0.12);
+}
+.connection-status.offline,
+.connection-status.error {
+  border-color: #edc4c8;
+  background: #fff0f1;
+  color: #9f2f3b;
+}
+.connection-status.saved {
+  border-color: #b9dfd1;
+  background: #edf9f4;
+  color: #176a50;
+}
+.pay-year-notice {
+  margin: 4px 0 12px;
+  border-left: 3px solid var(--accent);
+  padding: 8px 10px;
+  background: #f4f7fd;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.pay-year-notice strong {
+  color: var(--text);
+}
+
+/* Repère clavier commun à tous les composants, y compris ceux ajoutés plus
+   tard : le focus ne dépend plus de quelques sélecteurs isolés. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #f1a93b;
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .filter-chip,
+  .type-tabs button,
+  .modal-actions button,
+  .period-menu-trigger,
+  .period-menu-panel button {
+    min-height: 44px;
+  }
+  .legend,
+  .summary span,
+  .weekdays span {
+    font-size: max(10px, 0.68rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

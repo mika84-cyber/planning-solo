@@ -102,10 +102,10 @@ export const TYPE_LABELS: Record<SelectionType, string> = {
   recovery_holiday: "Récupération jour férié",
 };
 export const TYPE_COLORS: Record<SelectionType, string> = {
-  annual: "#2f68d1",
-  half: "#7957c7",
-  rtt: "#188471",
-  fraction: "#c7771c",
+  annual: "#6cbdf0",
+  half: "#6cbdf0",
+  rtt: "#f2b950",
+  fraction: "#c9a6ea",
   recovery: "#e08a1e",
   sick: "#c2557a",
   childcare: "#0891b2",

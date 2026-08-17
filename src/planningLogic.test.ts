@@ -18,8 +18,17 @@ import {
   sickLeaveDeduction,
   sundayAllowance,
   sundayPayslip,
+  TYPE_COLORS,
   wasPompidouHolidayWorked,
 } from "./planningLogic";
+
+describe("palette du planning", () => {
+  it("reprend exactement les couleurs CA, RTT et fractionnement fournies", () => {
+    expect(TYPE_COLORS.annual).toBe("#6cbdf0");
+    expect(TYPE_COLORS.rtt).toBe("#f2b950");
+    expect(TYPE_COLORS.fraction).toBe("#c9a6ea");
+  });
+});
 
 describe("cycle (baseKind / getDayInfo)", () => {
   it("matches the anchor index for each group on the anchor date", () => {

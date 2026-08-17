@@ -14,6 +14,8 @@
 export type PayslipReading = {
   /** Ligne « CUMUL BRUT » : le total sur lequel tout se recoupe. */
   gross?: number;
+  /** Somme versée avant prélèvement à la source, lue au pied du bulletin. */
+  netBeforeTax?: number;
   /** Ligne « Traitement de Base ». */
   baseSalary?: number;
   /** Ligne « IFSE ». */
@@ -43,12 +45,11 @@ export type PayslipReading = {
   /** Ligne « PAS - Taux » : le taux lui-même, pas une assiette — une seule
    *  valeur suit le libellé, contrairement aux lignes de cotisation. */
   pasRate?: number;
-  /** Somme de cinq lignes fixes (Indemnité de Résidence, Indemnité comp. au
+  /** Somme des lignes fixes présentes (Indemnité de Résidence, Indemnité comp. au
    *  SMIC, ICHCSG, Aide employeur options MGEN, moins Transfert
    *  primes/points) — la même formule que l'infobulle du champ « Autres
-   *  éléments fixes » décrit déjà. N'est renvoyée que si les cinq sont
-   *  présentes : deux d'entre elles n'existent que sur les bulletins les
-   *  plus récents, une somme partielle serait fausse plutôt qu'incomplète. */
+   *  éléments fixes » décrit déjà. Les lignes absentes valent zéro pour le
+   *  mois du bulletin. */
   otherFixed?: number;
 };
 
@@ -189,19 +190,46 @@ function amountAfterPrefix(
   return Number(next);
 }
 
+function normalizedLabel(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+/** Les éditeurs de paie changent parfois les accents ou la casse de cette
+ * ligne, mais pas son sens. */
+function readNetBeforeTax(tokens: string[]): number | undefined {
+  const labels = [
+    "NET A PAYER AVANT IMPOT SUR LE REVENU",
+    "NET A PAYER AVANT IMPOT",
+    "NET AVANT IMPOT",
+  ];
+  const index = tokens.findIndex((token) => {
+    const normalized = normalizedLabel(token);
+    return labels.some((label) => normalized.startsWith(label));
+  });
+  if (index === -1) return undefined;
+  const value = tokens[index + 1]?.trim().replace(",", ".");
+  return value && NUMBER.test(value) ? Number(value) : undefined;
+}
+
 /** Une retenue est écrite en négatif sur le bulletin ; les champs du profil
  *  attendent un montant positif. */
 function magnitude(value: number | undefined): number | undefined {
   return value === undefined ? undefined : Math.abs(value);
 }
 
-/** Les cinq lignes qui composent « Autres éléments fixes », dans le même
+/** Les lignes qui composent « Autres éléments fixes », dans le même
  *  ordre que l'infobulle du champ (résidence + SMIC comp. + ICHCSG + MGEN −
  *  transfert). Deux d'entre elles (indemnité comp. au SMIC, aide employeur
  *  options MGEN) ne sont apparues qu'à partir de 2025-2026 : sur un bulletin
- *  plus ancien qui ne les porte pas encore, la somme serait fausse par
- *  omission plutôt qu'absente — on renvoie donc `undefined` plutôt qu'un
- *  total partiel dès qu'une des cinq manque. */
+ *  plus ancien qui ne les porte pas encore valent simplement zéro pour le
+ *  mois concerné. On additionne donc toutes les lignes effectivement
+ *  présentes, au lieu d'obliger l'utilisateur à refaire le calcul. */
 function readOtherFixed(tokens: string[]): number | undefined {
   const parts = [
     amountAfter(tokens, "Indemnité de Résidence", 2),
@@ -210,9 +238,64 @@ function readOtherFixed(tokens: string[]): number | undefined {
     amountAfter(tokens, "Aide employeur options MGEN", 2),
     amountAfter(tokens, "Transfert primes/points", 2),
   ];
-  if (parts.some((part) => part === undefined)) return undefined;
-  const sum = (parts as number[]).reduce((total, part) => total + part, 0);
+  const present = parts.filter((part): part is number => part !== undefined);
+  if (!present.length) return undefined;
+  const sum = present.reduce((total, part) => total + part, 0);
   return Math.round(sum * 100) / 100;
+}
+
+/** Calibre les deux taux net/brut avec plusieurs bulletins dont les primes
+ * varient. Le calcul résout y = fixe × tauxFixe + variable × tauxPrime par
+ * moindres carrés. Deux bulletins identiques ne suffisent pas : il faut une
+ * variation réelle des primes pour séparer les deux effets. */
+export function calculateNetRatios(readings: PayslipReading[]) {
+  const rows = readings.flatMap((reading) => {
+    if (
+      reading.gross === undefined ||
+      reading.baseSalary === undefined ||
+      reading.netBeforeTax === undefined
+    )
+      return [];
+    const fixed =
+      reading.baseSalary +
+      (reading.ifse || 0) +
+      (reading.otherFixed || 0) -
+      (reading.carenceDay || 0);
+    const variable = reading.gross - fixed;
+    const netFromGross =
+      reading.netBeforeTax -
+      (reading.navigo || 0) +
+      (reading.mealVoucherDeduction || 0);
+    return Number.isFinite(fixed) && Number.isFinite(variable)
+      ? [{ fixed, variable, netFromGross }]
+      : [];
+  });
+  if (rows.length < 2) return undefined;
+  const ff = rows.reduce((sum, row) => sum + row.fixed * row.fixed, 0);
+  const fv = rows.reduce((sum, row) => sum + row.fixed * row.variable, 0);
+  const vv = rows.reduce((sum, row) => sum + row.variable * row.variable, 0);
+  const fy = rows.reduce((sum, row) => sum + row.fixed * row.netFromGross, 0);
+  const vy = rows.reduce(
+    (sum, row) => sum + row.variable * row.netFromGross,
+    0,
+  );
+  const determinant = ff * vv - fv * fv;
+  if (Math.abs(determinant) < 1) return undefined;
+  const fixed = ((fy * vv - vy * fv) / determinant) * 100;
+  const variable = ((vy * ff - fy * fv) / determinant) * 100;
+  if (
+    !Number.isFinite(fixed) ||
+    !Number.isFinite(variable) ||
+    fixed < 40 ||
+    fixed > 105 ||
+    variable < 40 ||
+    variable > 105
+  )
+    return undefined;
+  return {
+    netRatioFixed: Math.round(fixed * 100) / 100,
+    netRatioVariable: Math.round(variable * 100) / 100,
+  };
 }
 
 /** Le taux qui suit la ligne « Indemnité trav. dom > 10 dim » : fixe depuis
@@ -244,6 +327,7 @@ function readSundaysBeyondTen(tokens: string[]): number {
 export function readPayslip(tokens: string[]): PayslipReading {
   return {
     gross: amountAfter(tokens, "CUMUL BRUT"),
+    netBeforeTax: readNetBeforeTax(tokens),
     baseSalary: amountAfter(tokens, "Traitement de Base"),
     ifse: amountAfter(tokens, "IFSE"),
     sundaysBeyondTen: readSundaysBeyondTen(tokens),

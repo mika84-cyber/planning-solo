@@ -24,6 +24,8 @@ export type SharedEntry = {
   leave: boolean;
   wish: boolean;
   holidayPay: HolidayPay | "";
+  /** Version serveur utilisée pour détecter une modification concurrente. */
+  updatedAt: string;
 };
 export type Entries = Record<string, SharedEntry>;
 export type LeavePeriod = {
@@ -37,6 +39,19 @@ export type LeavePeriod = {
   legacy?: boolean;
 };
 export type PayStatus = "fonctionnaire" | "contractuel";
+export type PayProfile = {
+  baseSalary?: number;
+  ifse?: number;
+  carenceDay?: number;
+  otherFixed?: number;
+  cia?: number;
+  ciaMonth?: number;
+  netRatioFixed?: number;
+  netRatioVariable?: number;
+  navigo?: number;
+  mealVoucherDeduction?: number;
+  pasRate?: number;
+};
 export type FormProfile = {
   fullName: string;
   group: string;
@@ -129,6 +144,7 @@ export function emptyEntry(): SharedEntry {
     leave: false,
     wish: false,
     holidayPay: "",
+    updatedAt: "",
   };
 }
 
