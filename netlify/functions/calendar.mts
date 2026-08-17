@@ -1,5 +1,9 @@
 import { getStore } from "@netlify/blobs";
 import { getUser } from "@netlify/identity";
+import {
+  migrateLegacyData,
+  userDataKey,
+} from "../lib/userScopedStore.mts";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
@@ -154,13 +158,18 @@ async function clearNote(
 }
 export default async (request: Request) => {
   const user = await getUser();
-  if (!user?.email) return json({ error: "Connexion requise" }, 401);
+  if (!user?.id || !user.email)
+    return json({ error: "Connexion requise" }, 401);
   const store = getStore({ name: "planning-solo", consistency: "strong" });
+  await migrateLegacyData(store, user.id);
+  const scopedKey = (key: string) => userDataKey(user.id, key);
+  const entryPrefix = scopedKey("entry/");
+  const periodPrefix = scopedKey("period/");
   if (request.method === "GET") {
     const [listed, listedPeriods, formProfile] = await Promise.all([
-      store.list({ prefix: "entry/" }),
-      store.list({ prefix: "period/" }),
-      store.get("form-profile", {
+      store.list({ prefix: entryPrefix }),
+      store.list({ prefix: periodPrefix }),
+      store.get(scopedKey("form-profile"), {
         type: "json",
       }) as Promise<FormProfile | null>,
     ]);
@@ -211,7 +220,7 @@ export default async (request: Request) => {
     // Le traitement n'est envoyé que par l'écran qui le modifie : les autres
     // appels (changement de groupe, formulaire) l'ignorent et doivent le
     // laisser intact plutôt que de l'effacer.
-    const previousProfile = (await store.get("form-profile", {
+    const previousProfile = (await store.get(scopedKey("form-profile"), {
       type: "json",
     })) as FormProfile | null;
     // Même règle pour le groupe : un appel qui ne le renvoie pas ne doit pas
@@ -321,7 +330,7 @@ export default async (request: Request) => {
             : undefined,
       updated_at: new Date().toISOString(),
     };
-    await store.setJSON("form-profile", formProfile);
+    await store.setJSON(scopedKey("form-profile"), formProfile);
     return json({ ok: true, form_profile: formProfile });
   }
   if (body.action === "save-period") {
@@ -355,7 +364,7 @@ export default async (request: Request) => {
       return json({ error: "Identifiant invalide" }, 400);
     const id = requestedId || crypto.randomUUID();
     const previous = requestedId
-      ? ((await store.get(`period/${id}`, {
+      ? ((await store.get(scopedKey(`period/${id}`), {
           type: "json",
         })) as LeavePeriod | null)
       : null;
@@ -374,13 +383,13 @@ export default async (request: Request) => {
       group: periodGroup || previous?.group,
       updated_at: new Date().toISOString(),
     };
-    await store.setJSON(`period/${id}`, period);
+    await store.setJSON(scopedKey(`period/${id}`), period);
     return json({ ok: true, period });
   }
   if (body.action === "delete-period") {
     const id = typeof body.id === "string" ? body.id : "";
     if (!validId(id)) return json({ error: "Identifiant invalide" }, 400);
-    await store.delete(`period/${id}`);
+    await store.delete(scopedKey(`period/${id}`));
     return json({ ok: true, deleted: true });
   }
   if (body.action === "clear-legacy-period") {
@@ -388,9 +397,9 @@ export default async (request: Request) => {
     const to = typeof body.to === "string" ? body.to : "";
     if (!DATE_RE.test(from) || !DATE_RE.test(to) || to < from)
       return json({ error: "Période invalide" }, 400);
-    const listed = await store.list({ prefix: "entry/" });
+    const listed = await store.list({ prefix: entryPrefix });
     for (const blob of listed.blobs) {
-      const date = blob.key.slice("entry/".length);
+      const date = blob.key.slice(entryPrefix.length);
       if (date < from || date > to) continue;
       const entry = (await store.get(blob.key, {
         type: "json",
@@ -426,7 +435,7 @@ export default async (request: Request) => {
     if (requestedId && !validId(requestedId))
       return json({ error: "Identifiant invalide" }, 400);
     const groupId = requestedId || crypto.randomUUID();
-    const listed = await store.list({ prefix: "entry/" });
+    const listed = await store.list({ prefix: entryPrefix });
     if (requestedId) {
       for (const blob of listed.blobs) {
         const entry = (await store.get(blob.key, {
@@ -438,7 +447,7 @@ export default async (request: Request) => {
     }
     const updatedAt = new Date().toISOString();
     for (const date of dateKeys(from, to)) {
-      const key = `entry/${date}`;
+      const key = scopedKey(`entry/${date}`);
       const previous = (await store.get(key, {
         type: "json",
       })) as CalendarEntry | null;
@@ -464,7 +473,7 @@ export default async (request: Request) => {
     if (!groupId && !DATE_RE.test(date))
       return json({ error: "Note invalide" }, 400);
     if (groupId) {
-      const listed = await store.list({ prefix: "entry/" });
+      const listed = await store.list({ prefix: entryPrefix });
       for (const blob of listed.blobs) {
         const entry = (await store.get(blob.key, {
           type: "json",
@@ -473,7 +482,7 @@ export default async (request: Request) => {
           await clearNote(store, blob.key, entry);
       }
     } else {
-      const key = `entry/${date}`;
+      const key = scopedKey(`entry/${date}`);
       const entry = (await store.get(key, {
         type: "json",
       })) as CalendarEntry | null;
@@ -484,7 +493,7 @@ export default async (request: Request) => {
   if (body.action === "save-leaves") {
     const date = typeof body.date === "string" ? body.date : "";
     if (!DATE_RE.test(date)) return json({ error: "Date invalide" }, 400);
-    const key = `entry/${date}`;
+    const key = scopedKey(`entry/${date}`);
     const previous = (await store.get(key, {
       type: "json",
     })) as CalendarEntry | null;
@@ -516,7 +525,7 @@ export default async (request: Request) => {
       : "#D3943D";
   const leave = body.leave === true,
     wish = body.wish === true,
-    key = `entry/${date}`;
+    key = scopedKey(`entry/${date}`);
   const previous = (await store.get(key, {
     type: "json",
   })) as CalendarEntry | null;
