@@ -40,6 +40,23 @@ Autres commandes :
 - `npm test` — tests unitaires (cycle, congés, indemnités, PDF) ;
 - `npm run build` — build de production, comme sur Netlify.
 
+## Données, confidentialité et sauvegardes
+
+Les entrées, périodes et réglages sont isolés par identifiant Netlify Identity.
+Le menu du compte ouvre **Gérer mes données**, qui permet :
+
+- d’exporter une sauvegarde JSON complète et réimportable ;
+- de restaurer une sauvegarde après validation de son format (l’état remplacé
+  est archivé côté serveur avant la restauration) ;
+- d’archiver les anciennes clés globales dans l’espace privé du compte ;
+- d’effacer les données du compte après confirmation explicite.
+
+Le fichier exporté contient des informations personnelles et des paramètres de
+paie : il doit être conservé dans un emplacement privé. Les écritures liées
+(par exemple une période couvrant plusieurs jours) sont envoyées en lot et
+restaurées automatiquement si une sous-opération échoue. Une modification
+concurrente connue est refusée avec un conflit plutôt qu’écrasée.
+
 ## À personnaliser avant usage
 
 - **Groupe du cycle** : se choisit dans l'appli (vue Année) et se retient dans

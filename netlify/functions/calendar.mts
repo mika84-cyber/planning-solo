@@ -1,11 +1,16 @@
 import { getStore } from "@netlify/blobs";
 import { getUser } from "@netlify/identity";
 import {
+  LEGACY_OWNER_KEY,
   migrateLegacyData,
   userDataKey,
 } from "../lib/userScopedStore.mts";
+import {
+  isValidDateKey,
+  readCalendarBody,
+} from "../lib/calendarValidation.mts";
+import { sanitizeCalendarBackup } from "../lib/calendarBackup.mts";
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
 type LeaveType =
   | "annual"
@@ -47,6 +52,19 @@ type LeavePeriod = {
   half_moment?: HalfMoment;
   group?: number;
   updated_at: string;
+};
+type PayProfileValues = {
+  base_salary_cents?: number;
+  ifse_cents?: number;
+  carence_cents?: number;
+  other_fixed_cents?: number;
+  cia_cents?: number;
+  cia_month?: number;
+  net_ratio_fixed_bp?: number;
+  net_ratio_variable_bp?: number;
+  navigo_cents?: number;
+  meal_voucher_deduction_cents?: number;
+  pas_rate_bp?: number;
 };
 type FormProfile = {
   full_name: string;
@@ -95,6 +113,9 @@ type FormProfile = {
    *  a été réellement payé, pas ce que le cycle laissait attendre. */
   sunday_carryover_from_year?: number;
   sunday_carryover_from_month?: number;
+  /** Valeurs de paie historisées par année d'effet. Les champs historiques
+   *  ci-dessus restent le repli des profils créés avant cette évolution. */
+  pay_profiles?: Record<string, PayProfileValues>;
   updated_at: string;
 };
 /** Le choix de compensation d'un férié travaillé.
@@ -141,6 +162,15 @@ function dateKeys(from: string, to: string) {
     keys.push(new Date(timestamp).toISOString().slice(0, 10));
   return keys;
 }
+async function listBlobs(
+  store: ReturnType<typeof getStore>,
+  prefix: string,
+) {
+  const blobs: Array<{ key: string }> = [];
+  for await (const page of store.list({ prefix, paginate: true }))
+    blobs.push(...page.blobs);
+  return { blobs };
+}
 async function clearNote(
   store: ReturnType<typeof getStore>,
   key: string,
@@ -156,7 +186,7 @@ async function clearNote(
   if (!next.leave && !next.wish && !next.holiday_pay) await store.delete(key);
   else await store.setJSON(key, next);
 }
-export default async (request: Request) => {
+async function calendarHandler(request: Request): Promise<Response> {
   const user = await getUser();
   if (!user?.id || !user.email)
     return json({ error: "Connexion requise" }, 401);
@@ -167,8 +197,8 @@ export default async (request: Request) => {
   const periodPrefix = scopedKey("period/");
   if (request.method === "GET") {
     const [listed, listedPeriods, formProfile] = await Promise.all([
-      store.list({ prefix: entryPrefix }),
-      store.list({ prefix: periodPrefix }),
+      listBlobs(store, entryPrefix),
+      listBlobs(store, periodPrefix),
       store.get(scopedKey("form-profile"), {
         type: "json",
       }) as Promise<FormProfile | null>,
@@ -200,11 +230,206 @@ export default async (request: Request) => {
   }
   if (request.method !== "POST")
     return json({ error: "Méthode non autorisée" }, 405);
-  const body = (await request.json().catch(() => null)) as Record<
-    string,
-    unknown
-  > | null;
-  if (!body) return json({ error: "Requête invalide" }, 400);
+  const parsed = await readCalendarBody(request);
+  if ("error" in parsed)
+    return json(
+      { error: parsed.error },
+      parsed.error === "Requête trop volumineuse" ? 413 : 400,
+    );
+  const body = parsed.body;
+  if (body.action === "batch") {
+    const operations = Array.isArray(body.operations) ? body.operations : [];
+    const forbidden = new Set([
+      "batch",
+      "restore-backup",
+      "delete-user-data",
+      "archive-legacy-data",
+    ]);
+    if (
+      operations.length < 1 ||
+      operations.length > 400 ||
+      operations.some(
+        (operation) =>
+          !operation ||
+          typeof operation !== "object" ||
+          forbidden.has(String((operation as Record<string, unknown>).action)),
+      )
+    )
+      return json({ error: "Lot d’opérations invalide" }, 400);
+
+    // Netlify Blobs n'offre pas de transaction multi-clés. On prend donc un
+    // instantané privé avant le lot et on le restaure si une sous-opération
+    // échoue : l'utilisateur ne reste jamais avec une sauvegarde partielle.
+    const [entryList, periodList, profile] = await Promise.all([
+      listBlobs(store, entryPrefix),
+      listBlobs(store, periodPrefix),
+      store.get(scopedKey("form-profile"), { type: "json" }),
+    ]);
+    const snapshot = await Promise.all(
+      [...entryList.blobs, ...periodList.blobs].map(async (blob) => ({
+        key: blob.key,
+        value: await store.get(blob.key, { type: "json" }),
+      })),
+    );
+    const rollback = async () => {
+      const [newEntries, newPeriods] = await Promise.all([
+        listBlobs(store, entryPrefix),
+        listBlobs(store, periodPrefix),
+      ]);
+      await Promise.all([
+        ...newEntries.blobs.map((blob) => store.delete(blob.key)),
+        ...newPeriods.blobs.map((blob) => store.delete(blob.key)),
+        store.delete(scopedKey("form-profile")),
+      ]);
+      await Promise.all([
+        ...snapshot.map(({ key, value }) =>
+          value === null ? Promise.resolve() : store.setJSON(key, value),
+        ),
+        profile === null
+          ? Promise.resolve()
+          : store.setJSON(scopedKey("form-profile"), profile),
+      ]);
+    };
+
+    const results: unknown[] = [];
+    try {
+      for (const operation of operations) {
+        const response = await calendarHandler(
+          new Request(request.url, {
+            method: "POST",
+            headers: request.headers,
+            body: JSON.stringify(operation),
+          }),
+        );
+        const result = await response.json().catch(() => null);
+        if (!response.ok) {
+          await rollback();
+          return json(
+            {
+              error:
+                result && typeof result === "object" && "error" in result
+                  ? result.error
+                  : "Le lot n’a pas pu être enregistré",
+              rolled_back: true,
+            },
+            response.status,
+          );
+        }
+        results.push(result);
+      }
+      return json({ ok: true, results });
+    } catch {
+      await rollback();
+      return json(
+        { error: "Le lot n’a pas pu être enregistré", rolled_back: true },
+        500,
+      );
+    }
+  }
+  if (body.action === "restore-backup") {
+    const sanitized = sanitizeCalendarBackup(body.backup);
+    if ("error" in sanitized) return json({ error: sanitized.error }, 400);
+    const [currentEntries, currentPeriods, currentProfile] = await Promise.all([
+      listBlobs(store, entryPrefix),
+      listBlobs(store, periodPrefix),
+      store.get(scopedKey("form-profile"), { type: "json" }),
+    ]);
+    // Une restauration ne détruit jamais silencieusement l'état précédent :
+    // on en conserve une copie privée, datée, dans le même espace utilisateur.
+    const archivePrefix = scopedKey(
+      `restore-archive/${new Date().toISOString().replace(/[:.]/g, "-")}/`,
+    );
+    await Promise.all([
+      ...currentEntries.blobs.map(async (blob) => {
+        const value = await store.get(blob.key, { type: "json" });
+        if (value !== null)
+          await store.setJSON(
+            `${archivePrefix}entry/${blob.key.slice(entryPrefix.length)}`,
+            value,
+          );
+      }),
+      ...currentPeriods.blobs.map(async (blob) => {
+        const value = await store.get(blob.key, { type: "json" });
+        if (value !== null)
+          await store.setJSON(
+            `${archivePrefix}period/${blob.key.slice(periodPrefix.length)}`,
+            value,
+          );
+      }),
+      currentProfile === null
+        ? Promise.resolve()
+        : store.setJSON(`${archivePrefix}form-profile`, currentProfile),
+    ]);
+    await Promise.all([
+      ...currentEntries.blobs.map((blob) => store.delete(blob.key)),
+      ...currentPeriods.blobs.map((blob) => store.delete(blob.key)),
+      store.delete(scopedKey("form-profile")),
+    ]);
+    await Promise.all([
+      ...sanitized.backup.entries.map((entry) =>
+        store.setJSON(scopedKey(`entry/${entry.date}`), entry),
+      ),
+      ...sanitized.backup.periods.map((period) =>
+        store.setJSON(scopedKey(`period/${period.id}`), period),
+      ),
+      sanitized.backup.form_profile
+        ? store.setJSON(
+            scopedKey("form-profile"),
+            sanitized.backup.form_profile,
+          )
+        : Promise.resolve(),
+    ]);
+    return json({ ok: true, restored: true });
+  }
+  if (body.action === "delete-user-data") {
+    if (body.confirmation !== "SUPPRIMER")
+      return json({ error: "Confirmation invalide" }, 400);
+    const allUserData = await listBlobs(store, scopedKey(""));
+    await Promise.all(allUserData.blobs.map((blob) => store.delete(blob.key)));
+    return json({
+      ok: true,
+      deleted: allUserData.blobs.length,
+    });
+  }
+  if (body.action === "archive-legacy-data") {
+    if (body.confirmation !== "ARCHIVER")
+      return json({ error: "Confirmation invalide" }, 400);
+    const owner = (await store.get(LEGACY_OWNER_KEY, {
+      type: "json",
+    })) as { user_id?: string } | null;
+    if (owner?.user_id !== user.id)
+      return json({ error: "Ces données historiques ne vous appartiennent pas" }, 403);
+    const [legacyEntries, legacyPeriods, legacyProfile] = await Promise.all([
+      listBlobs(store, "entry/"),
+      listBlobs(store, "period/"),
+      store.get("form-profile", { type: "json" }),
+    ]);
+    const legacyKeys = [
+      ...legacyEntries.blobs.map((blob) => blob.key),
+      ...legacyPeriods.blobs.map((blob) => blob.key),
+    ];
+    await Promise.all([
+      ...legacyKeys.map(async (key) => {
+        const value = await store.get(key, { type: "json" });
+        if (value !== null)
+          await store.setJSON(scopedKey(`legacy-archive-v1/${key}`), value);
+      }),
+      legacyProfile === null
+        ? Promise.resolve()
+        : store.setJSON(
+            scopedKey("legacy-archive-v1/form-profile"),
+            legacyProfile,
+          ),
+    ]);
+    await Promise.all([
+      ...legacyKeys.map((key) => store.delete(key)),
+      ...(legacyProfile === null ? [] : [store.delete("form-profile")]),
+    ]);
+    return json({
+      ok: true,
+      archived: legacyKeys.length + (legacyProfile === null ? 0 : 1),
+    });
+  }
   if (body.action === "save-form-profile") {
     const fullName =
       typeof body.fullName === "string"
@@ -328,8 +553,71 @@ export default async (request: Request) => {
               Number(body.sundayCarryoverFromMonth) <= 11
             ? Number(body.sundayCarryoverFromMonth)
             : undefined,
+      pay_profiles: previousProfile?.pay_profiles,
       updated_at: new Date().toISOString(),
     };
+    const payYear = Number(body.payYear);
+    if (Number.isInteger(payYear) && payYear >= 2000 && payYear <= 2100) {
+      const key = String(payYear);
+      const previousYear = previousProfile?.pay_profiles?.[key] || {
+        base_salary_cents: previousProfile?.base_salary_cents,
+        ifse_cents: previousProfile?.ifse_cents,
+        carence_cents: previousProfile?.carence_cents,
+        other_fixed_cents: previousProfile?.other_fixed_cents,
+        cia_cents: previousProfile?.cia_cents,
+        cia_month: previousProfile?.cia_month,
+        net_ratio_fixed_bp: previousProfile?.net_ratio_fixed_bp,
+        net_ratio_variable_bp: previousProfile?.net_ratio_variable_bp,
+        navigo_cents: previousProfile?.navigo_cents,
+        meal_voucher_deduction_cents:
+          previousProfile?.meal_voucher_deduction_cents,
+        pas_rate_bp: previousProfile?.pas_rate_bp,
+      };
+      formProfile.pay_profiles = {
+        ...(previousProfile?.pay_profiles || {}),
+        [key]: {
+          base_salary_cents: amountCents(
+            body.baseSalaryCents,
+            previousYear.base_salary_cents,
+          ),
+          ifse_cents: amountCents(body.ifseCents, previousYear.ifse_cents),
+          carence_cents: amountCents(
+            body.carenceCents,
+            previousYear.carence_cents,
+          ),
+          other_fixed_cents: amountCents(
+            body.otherFixedCents,
+            previousYear.other_fixed_cents,
+          ),
+          cia_cents: amountCents(body.ciaCents, previousYear.cia_cents),
+          cia_month:
+            body.ciaMonth === undefined
+              ? previousYear.cia_month
+              : body.ciaMonth === 6 ||
+                  body.ciaMonth === 7 ||
+                  body.ciaMonth === 8
+                ? body.ciaMonth
+                : undefined,
+          net_ratio_fixed_bp: ratioBp(
+            body.netRatioFixedBp,
+            previousYear.net_ratio_fixed_bp,
+          ),
+          net_ratio_variable_bp: ratioBp(
+            body.netRatioVariableBp,
+            previousYear.net_ratio_variable_bp,
+          ),
+          navigo_cents: amountCents(
+            body.navigoCents,
+            previousYear.navigo_cents,
+          ),
+          meal_voucher_deduction_cents: amountCents(
+            body.mealVoucherDeductionCents,
+            previousYear.meal_voucher_deduction_cents,
+          ),
+          pas_rate_bp: ratioBp(body.pasRateBp, previousYear.pas_rate_bp),
+        },
+      };
+    }
     await store.setJSON(scopedKey("form-profile"), formProfile);
     return json({ ok: true, form_profile: formProfile });
   }
@@ -355,7 +643,7 @@ export default async (request: Request) => {
       ? Number(body.group)
       : undefined;
     const requestedId = typeof body.id === "string" ? body.id : "";
-    if (!DATE_RE.test(from) || !DATE_RE.test(to) || to < from)
+    if (!isValidDateKey(from) || !isValidDateKey(to) || to < from)
       return json({ error: "Période invalide" }, 400);
     const span = rangeSpan(from, to);
     if (span < 1 || span > 366)
@@ -368,6 +656,14 @@ export default async (request: Request) => {
           type: "json",
         })) as LeavePeriod | null)
       : null;
+    if (
+      typeof body.expectedUpdatedAt === "string" &&
+      body.expectedUpdatedAt !== (previous?.updated_at || "")
+    )
+      return json(
+        { error: "Cette période a été modifiée sur un autre appareil" },
+        409,
+      );
     const resolvedType: LeaveType = leaveType || previous?.leave_type || "";
     const period: LeavePeriod = {
       id,
@@ -389,15 +685,25 @@ export default async (request: Request) => {
   if (body.action === "delete-period") {
     const id = typeof body.id === "string" ? body.id : "";
     if (!validId(id)) return json({ error: "Identifiant invalide" }, 400);
+    if (typeof body.expectedUpdatedAt === "string") {
+      const previous = (await store.get(scopedKey(`period/${id}`), {
+        type: "json",
+      })) as LeavePeriod | null;
+      if (body.expectedUpdatedAt !== (previous?.updated_at || ""))
+        return json(
+          { error: "Cette période a été modifiée sur un autre appareil" },
+          409,
+        );
+    }
     await store.delete(scopedKey(`period/${id}`));
     return json({ ok: true, deleted: true });
   }
   if (body.action === "clear-legacy-period") {
     const from = typeof body.from === "string" ? body.from : "";
     const to = typeof body.to === "string" ? body.to : "";
-    if (!DATE_RE.test(from) || !DATE_RE.test(to) || to < from)
+    if (!isValidDateKey(from) || !isValidDateKey(to) || to < from)
       return json({ error: "Période invalide" }, 400);
-    const listed = await store.list({ prefix: entryPrefix });
+    const listed = await listBlobs(store, entryPrefix);
     for (const blob of listed.blobs) {
       const date = blob.key.slice(entryPrefix.length);
       if (date < from || date > to) continue;
@@ -428,14 +734,14 @@ export default async (request: Request) => {
         ? body.noteColor
         : "#D3943D";
     const requestedId = typeof body.groupId === "string" ? body.groupId : "";
-    if (!DATE_RE.test(from) || !DATE_RE.test(to) || to < from || !noteText)
+    if (!isValidDateKey(from) || !isValidDateKey(to) || to < from || !noteText)
       return json({ error: "Période de note invalide" }, 400);
     if (rangeSpan(from, to) > 366)
       return json({ error: "Période trop longue" }, 400);
     if (requestedId && !validId(requestedId))
       return json({ error: "Identifiant invalide" }, 400);
     const groupId = requestedId || crypto.randomUUID();
-    const listed = await store.list({ prefix: entryPrefix });
+    const listed = await listBlobs(store, entryPrefix);
     if (requestedId) {
       for (const blob of listed.blobs) {
         const entry = (await store.get(blob.key, {
@@ -470,10 +776,10 @@ export default async (request: Request) => {
     const date = typeof body.date === "string" ? body.date : "";
     if (groupId && !validId(groupId))
       return json({ error: "Identifiant invalide" }, 400);
-    if (!groupId && !DATE_RE.test(date))
+    if (!groupId && !isValidDateKey(date))
       return json({ error: "Note invalide" }, 400);
     if (groupId) {
-      const listed = await store.list({ prefix: entryPrefix });
+      const listed = await listBlobs(store, entryPrefix);
       for (const blob of listed.blobs) {
         const entry = (await store.get(blob.key, {
           type: "json",
@@ -492,11 +798,19 @@ export default async (request: Request) => {
   }
   if (body.action === "save-leaves") {
     const date = typeof body.date === "string" ? body.date : "";
-    if (!DATE_RE.test(date)) return json({ error: "Date invalide" }, 400);
+    if (!isValidDateKey(date)) return json({ error: "Date invalide" }, 400);
     const key = scopedKey(`entry/${date}`);
     const previous = (await store.get(key, {
       type: "json",
     })) as CalendarEntry | null;
+    if (
+      typeof body.expectedUpdatedAt === "string" &&
+      body.expectedUpdatedAt !== (previous?.updated_at || "")
+    )
+      return json(
+        { error: "Cette journée a été modifiée sur un autre appareil" },
+        409,
+      );
     const next: CalendarEntry = {
       date,
       note_text: previous?.note_text || "",
@@ -516,7 +830,7 @@ export default async (request: Request) => {
   if (body.action !== "save-entry")
     return json({ error: "Requête invalide" }, 400);
   const date = typeof body.date === "string" ? body.date : "";
-  if (!DATE_RE.test(date)) return json({ error: "Date invalide" }, 400);
+  if (!isValidDateKey(date)) return json({ error: "Date invalide" }, 400);
   const noteText =
     typeof body.noteText === "string" ? body.noteText.trim().slice(0, 300) : "";
   const noteColor =
@@ -529,6 +843,14 @@ export default async (request: Request) => {
   const previous = (await store.get(key, {
     type: "json",
   })) as CalendarEntry | null;
+  if (
+    typeof body.expectedUpdatedAt === "string" &&
+    body.expectedUpdatedAt !== (previous?.updated_at || "")
+  )
+    return json(
+      { error: "Cette journée a été modifiée sur un autre appareil" },
+      409,
+    );
   const holidayPay = holidayPayFrom(body, previous?.holiday_pay);
   const noteChanged = (previous?.note_text || "") !== noteText;
   const noteUpdatedAt = noteText
@@ -553,5 +875,6 @@ export default async (request: Request) => {
     updated_at: new Date().toISOString(),
   } satisfies CalendarEntry);
   return json({ ok: true, noteUpdatedAt });
-};
+}
+export default calendarHandler;
 export const config = { path: "/api/calendar" };

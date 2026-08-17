@@ -8,6 +8,15 @@ import {
 } from "@netlify/identity";
 import { ChoicePicker } from "./ChoicePicker";
 import { AuthScreen } from "./AuthScreen";
+import { ConnectionStatus } from "./ConnectionStatus";
+import { DataManagementDialog } from "./DataManagementDialog";
+import {
+  CalendarApiError,
+  calendarErrorMessage,
+  getCalendar,
+  postCalendar,
+  postCalendarBatch,
+} from "./calendarApi";
 import {
   HOLIDAY_PAY_OPTIONS,
   PAY_STATUS_OPTIONS,
@@ -23,6 +32,7 @@ import {
   type FormProfile,
   type LeavePeriod,
   type NoteListItem,
+  type PayProfile,
   type PayStatus,
   type RequestKind,
   type SelectedDay,
@@ -31,6 +41,8 @@ import {
 } from "./appModel";
 import { useAnnualPdfExport } from "./useAnnualPdfExport";
 import { useInstallPrompt } from "./useInstallPrompt";
+import { useConnectionStatus } from "./useConnectionStatus";
+import { useModalAccessibility } from "./useModalAccessibility";
 import {
   extractPayslipTokens,
   readPayslip,
@@ -93,7 +105,29 @@ import {
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
 
+function payProfileFromApi(value: any): PayProfile {
+  const eurosFromCents = (field: unknown) =>
+    typeof field === "number" ? field / 100 : undefined;
+  return {
+    baseSalary: eurosFromCents(value?.base_salary_cents),
+    ifse: eurosFromCents(value?.ifse_cents),
+    carenceDay: eurosFromCents(value?.carence_cents),
+    otherFixed: eurosFromCents(value?.other_fixed_cents),
+    cia: eurosFromCents(value?.cia_cents),
+    ciaMonth: typeof value?.cia_month === "number" ? value.cia_month : undefined,
+    netRatioFixed: eurosFromCents(value?.net_ratio_fixed_bp),
+    netRatioVariable: eurosFromCents(value?.net_ratio_variable_bp),
+    navigo: eurosFromCents(value?.navigo_cents),
+    mealVoucherDeduction: eurosFromCents(
+      value?.meal_voucher_deduction_cents,
+    ),
+    pasRate: eurosFromCents(value?.pas_rate_bp),
+  };
+}
+
 export default function Home() {
+  useModalAccessibility();
+  const connectionStatus = useConnectionStatus();
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
@@ -110,6 +144,7 @@ export default function Home() {
   const [entries, setEntries] = useState<Entries>({});
   const [periods, setPeriods] = useState<LeavePeriod[]>([]);
   const [formProfile, setFormProfile] = useState<FormProfile | null>(null);
+  const [payProfiles, setPayProfiles] = useState<Record<string, PayProfile>>({});
   const [dayDate, setDayDate] = useState<string | null>(null);
   // Identifiant de la période dont le menu d'actions est ouvert. Un seul à la
   // fois : trois boutons par ligne saturaient la fenêtre du jour.
@@ -237,6 +272,8 @@ export default function Home() {
   }, []);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [dataManagementOpen, setDataManagementOpen] = useState(false);
+  const [dataManagementBusy, setDataManagementBusy] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
@@ -394,16 +431,16 @@ export default function Home() {
   }, [authStatus, entries]);
 
   async function loadCalendar() {
-    const response = await fetch("/api/calendar", {
-      cache: "no-store",
-      credentials: "same-origin",
-    });
-    if (response.status === 401) {
-      setAuthStatus("guest");
-      return;
+    let data: any;
+    try {
+      data = await getCalendar<any>();
+    } catch (error) {
+      if (error instanceof CalendarApiError && error.status === 401) {
+        setAuthStatus("guest");
+        return;
+      }
+      throw error;
     }
-    if (!response.ok) throw new Error("sync");
-    const data = await response.json();
     setUserEmail(data.email || "Compte connecté");
     const syncedProfile: FormProfile | null = data.form_profile
       ? {
@@ -482,6 +519,13 @@ export default function Home() {
         }
       : null;
     setFormProfile(syncedProfile);
+    setPayProfiles(
+      Object.fromEntries(
+        Object.entries(data.form_profile?.pay_profiles || {}).map(
+          ([year, profile]) => [year, payProfileFromApi(profile)],
+        ),
+      ),
+    );
     if ([1, 2, 3].includes(Number(syncedProfile?.group)))
       setGroup(Number(syncedProfile?.group));
     const next: Entries = {};
@@ -497,6 +541,7 @@ export default function Home() {
           row.holiday_pay === "prime" || row.holiday_pay === "recovery"
             ? row.holiday_pay
             : "",
+        updatedAt: row.updated_at || "",
       };
     setEntries(next);
     setAuthStatus("ready");
@@ -579,10 +624,112 @@ export default function Home() {
     setEntries({});
     setPeriods([]);
     setFormProfile(null);
+    setPayProfiles({});
     setUserEmail("");
     setAuthStatus("guest");
   }
+
+  async function exportDataBackup() {
+    setDataManagementBusy(true);
+    try {
+      const data = await getCalendar<any>();
+      const backup = {
+        version: 1,
+        exported_at: new Date().toISOString(),
+        entries: data.entries || [],
+        periods: data.periods || [],
+        form_profile: data.form_profile || null,
+      };
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(backup, null, 2)], {
+          type: "application/json",
+        }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `planning-solo-sauvegarde-${dateKey(new Date())}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      notify("La sauvegarde JSON a été téléchargée.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La sauvegarde n’a pas pu être créée."));
+    } finally {
+      setDataManagementBusy(false);
+    }
+  }
+
+  async function importDataBackup(file: File) {
+    if (file.size > 5_000_000) {
+      notify("Cette sauvegarde dépasse la taille maximale de 5 Mo.");
+      return;
+    }
+    if (
+      !window.confirm(
+        "Restaurer cette sauvegarde remplacera le planning et le profil actuels. Continuer ?",
+      )
+    )
+      return;
+    setDataManagementBusy(true);
+    try {
+      const backup = JSON.parse(await file.text()) as unknown;
+      await postCalendar({ action: "restore-backup", backup });
+      await loadCalendar();
+      setDataManagementOpen(false);
+      notify("La sauvegarde a été restaurée.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La sauvegarde est invalide ou illisible."));
+    } finally {
+      setDataManagementBusy(false);
+    }
+  }
+
+  async function archiveLegacyData() {
+    if (
+      !window.confirm(
+        "Archiver les anciennes clés globales dans votre espace privé ? Une copie récupérable sera conservée.",
+      )
+    )
+      return;
+    setDataManagementBusy(true);
+    try {
+      const result = await postCalendar<{ ok: true; archived: number }>({
+        action: "archive-legacy-data",
+        confirmation: "ARCHIVER",
+      });
+      notify(
+        result.archived
+          ? `${result.archived} élément${result.archived > 1 ? "s" : ""} historique${result.archived > 1 ? "s" : ""} archivé${result.archived > 1 ? "s" : ""}.`
+          : "Aucune ancienne donnée ne restait à archiver.",
+      );
+    } catch (error) {
+      notify(calendarErrorMessage(error, "L’archivage n’a pas pu être effectué."));
+    } finally {
+      setDataManagementBusy(false);
+    }
+  }
+
+  async function deleteAllUserData() {
+    const confirmation = window.prompt(
+      "Cette action efface le planning, le profil et les paramètres de paie. Tapez SUPPRIMER pour confirmer.",
+    );
+    if (confirmation !== "SUPPRIMER") return;
+    setDataManagementBusy(true);
+    try {
+      await postCalendar({ action: "delete-user-data", confirmation });
+      await loadCalendar();
+      setDataManagementOpen(false);
+      notify("Toutes les données du compte ont été effacées.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Les données n’ont pas pu être effacées."));
+    } finally {
+      setDataManagementBusy(false);
+    }
+  }
   function changeGroup(nextGroup: number) {
+    const previousGroup = group;
+    const previousProfile = formProfile;
     setGroup(nextGroup);
     const nextProfile: FormProfile = {
       fullName: formProfile?.fullName || "",
@@ -604,23 +751,25 @@ export default function Home() {
     setFormProfile(nextProfile);
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
       return;
-    void fetch("/api/calendar", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    void postCalendar({
         action: "save-form-profile",
         fullName: nextProfile.fullName,
         group: nextProfile.group,
         signature: nextProfile.signature,
-      }),
-    }).catch(() => undefined);
+      }).catch((error) => {
+        setGroup(previousGroup);
+        setFormProfile(previousProfile);
+        notify(
+          calendarErrorMessage(error, "Le groupe n’a pas pu être enregistré."),
+        );
+      });
   }
   /** IFSE, CIA et les primes automatiques (dimanche, férié, net estimé) sont
    *  calées sur les règles d'un fonctionnaire. Passer sur « Contractuel »
    *  ne touche à aucun montant déjà saisi : ça change seulement ce qui
    *  s'affiche, au cas où ce statut serait choisi puis annulé. */
   function changeStatus(nextStatus: PayStatus) {
+    const previousProfile = formProfile;
     const nextProfile: FormProfile = {
       fullName: formProfile?.fullName || "",
       group: formProfile?.group || String(group),
@@ -641,18 +790,18 @@ export default function Home() {
     setFormProfile(nextProfile);
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
       return;
-    void fetch("/api/calendar", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    void postCalendar({
         action: "save-form-profile",
         fullName: nextProfile.fullName,
         group: nextProfile.group,
         signature: nextProfile.signature,
         status: nextStatus,
-      }),
-    }).catch(() => undefined);
+      }).catch((error) => {
+        setFormProfile(previousProfile);
+        notify(
+          calendarErrorMessage(error, "Le statut n’a pas pu être enregistré."),
+        );
+      });
   }
   const selectedList = useMemo(
     () =>
@@ -726,9 +875,11 @@ export default function Home() {
   // Fonctionnaire tant que le statut n'a pas encore été choisi : c'était le
   // seul cas géré avant l'ajout de ce champ.
   const isContractuel = formProfile?.status === "contractuel";
-  const baseSalary = formProfile?.baseSalary || 0;
-  const ifse = formProfile?.ifse || 0;
-  const carenceDay = formProfile?.carenceDay || 0;
+  const payYear = String(view.getFullYear());
+  const activePayProfile = payProfiles[payYear];
+  const baseSalary = activePayProfile?.baseSalary ?? formProfile?.baseSalary ?? 0;
+  const ifse = activePayProfile?.ifse ?? formProfile?.ifse ?? 0;
+  const carenceDay = activePayProfile?.carenceDay ?? formProfile?.carenceDay ?? 0;
   // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
   // résidence (3 % du traitement) : calculée toute seule plutôt que saisie,
   // et pas la somme à cinq lignes propre à un fonctionnaire (résidence +
@@ -736,15 +887,21 @@ export default function Home() {
   // s'applique à elle. Une valeur déjà saisie à la main reste prioritaire,
   // au cas où son bulletin réel montrerait autre chose.
   const otherFixed =
+    activePayProfile?.otherFixed ??
     formProfile?.otherFixed ??
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
-  const cia = formProfile?.cia || 0;
-  const ciaMonth = formProfile?.ciaMonth;
-  const netRatioFixed = formProfile?.netRatioFixed || 0;
-  const netRatioVariable = formProfile?.netRatioVariable || 0;
-  const navigo = formProfile?.navigo || 0;
-  const mealVoucherDeduction = formProfile?.mealVoucherDeduction || 0;
-  const pasRate = formProfile?.pasRate || 0;
+  const cia = activePayProfile?.cia ?? formProfile?.cia ?? 0;
+  const ciaMonth = activePayProfile?.ciaMonth ?? formProfile?.ciaMonth;
+  const netRatioFixed =
+    activePayProfile?.netRatioFixed ?? formProfile?.netRatioFixed ?? 0;
+  const netRatioVariable =
+    activePayProfile?.netRatioVariable ?? formProfile?.netRatioVariable ?? 0;
+  const navigo = activePayProfile?.navigo ?? formProfile?.navigo ?? 0;
+  const mealVoucherDeduction =
+    activePayProfile?.mealVoucherDeduction ??
+    formProfile?.mealVoucherDeduction ??
+    0;
+  const pasRate = activePayProfile?.pasRate ?? formProfile?.pasRate ?? 0;
   /** Première année de mise à disposition au Grand Palais, où le jour de
    *  fermeture est le lundi et non le mardi comme à Pompidou — tout est
    *  décalé d'un jour, et les fériés compensés (voir plus bas) s'appliquent.
@@ -1424,22 +1581,26 @@ export default function Home() {
       const demo =
         import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
       if (!demo) {
-        const post = async (payload: Record<string, unknown>) => {
-          const response = await fetch("/api/calendar", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) throw new Error();
-        };
+        const operations: Array<Record<string, unknown>> = [];
         if (noteGroupId)
-          await post({ action: "delete-note-period", groupId: noteGroupId });
-        await post({ action: "save-entry", date: dayDate, ...nextEntry });
+          operations.push({
+            action: "delete-note-period",
+            groupId: noteGroupId,
+          });
+        operations.push({
+          action: "save-entry",
+          date: dayDate,
+          ...nextEntry,
+          expectedUpdatedAt: current.updatedAt,
+        });
         if (useLeaveRange)
-          await post({
+          operations.push({
             action: "save-period",
             id: editingPeriodId || undefined,
+            expectedUpdatedAt: editingPeriodId
+              ? periods.find((period) => period.id === editingPeriodId)
+                  ?.updatedAt || ""
+              : "",
             from: leaveRangeFrom,
             to: leaveRangeTo,
             leaveType: dayLeaveType,
@@ -1452,12 +1613,14 @@ export default function Home() {
         if (dayWish && leaveRangeEnabled && leaveRangeFrom && leaveRangeTo)
           for (const key of rangeKeys(leaveRangeFrom, leaveRangeTo))
             if (key !== dayDate)
-              await post({
+              operations.push({
                 action: "save-entry",
                 date: key,
                 ...(entries[key] || emptyEntry()),
+                expectedUpdatedAt: entries[key]?.updatedAt || "",
                 wish: true,
               });
+        await postCalendarBatch(operations);
         await loadCalendar();
       } else
         setEntries((currentEntries) => {
@@ -1507,8 +1670,13 @@ export default function Home() {
       }
       setEditingPeriodId(null);
       setDayDate(null);
-    } catch {
-      notify("La modification n’a pas pu être synchronisée. Réessayez.");
+    } catch (error) {
+      notify(
+        calendarErrorMessage(
+          error,
+          "La modification n’a pas pu être synchronisée. Réessayez.",
+        ),
+      );
     } finally {
       setSavingDay(false);
     }
@@ -1540,25 +1708,16 @@ export default function Home() {
       const groupId = noteGroupId || crypto.randomUUID();
       const updatedAt = new Date().toISOString();
       if (!demo) {
-        const post = async (payload: Record<string, unknown>) => {
-          const response = await fetch("/api/calendar", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) throw new Error();
-        };
-        for (const range of groupConsecutive(noteDates)) {
-          await post({
+        await postCalendarBatch(
+          groupConsecutive(noteDates).map((range) => ({
             action: "save-note-period",
             groupId,
             from: range.from,
             to: range.to,
             noteText: trimmedNote,
             noteColor,
-          });
-        }
+          })),
+        );
         await loadCalendar();
       } else {
         setEntries((currentEntries) => {
@@ -1594,8 +1753,13 @@ export default function Home() {
       setNoteText("");
       setNoteGroupId("");
       setNoteColor("#D3943D");
-    } catch {
-      notify("La note n’a pas pu être enregistrée. Réessayez.");
+    } catch (error) {
+      notify(
+        calendarErrorMessage(
+          error,
+          "La note n’a pas pu être enregistrée. Réessayez.",
+        ),
+      );
     } finally {
       setSavingDay(false);
     }
@@ -1682,17 +1846,11 @@ export default function Home() {
     if (
       !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
     ) {
-      const response = await fetch("/api/calendar", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      await postCalendar({
           action: "clear-legacy-period",
           from: period.from,
           to: period.to,
-        }),
       });
-      if (!response.ok) throw new Error();
     }
     setEntries((current) => {
       const next = { ...current };
@@ -1724,6 +1882,8 @@ export default function Home() {
       const saved: LeavePeriod[] = [];
       const demo =
         import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
+      const operations: Array<Record<string, unknown>> = [];
+      const periodResultIndexes: number[] = [];
       for (const date of [...separateDates].sort()) {
         for (const person of separatePeople) {
           // « Divers » et « souhaité » sont des marques posées sur la journée,
@@ -1732,47 +1892,27 @@ export default function Home() {
           if (person === "personal" || person === "wish") {
             if (!demo) {
               const current = entries[date];
-              const response = await fetch("/api/calendar", {
-                method: "POST",
-                credentials: "same-origin",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                  action: "save-leaves",
-                  date,
-                  leave:
-                    person === "personal" ? true : Boolean(current?.leave),
-                  wish: person === "wish" ? true : Boolean(current?.wish),
-                }),
+              operations.push({
+                action: "save-leaves",
+                date,
+                leave:
+                  person === "personal" ? true : Boolean(current?.leave),
+                wish: person === "wish" ? true : Boolean(current?.wish),
+                expectedUpdatedAt: current?.updatedAt || "",
               });
-              if (!response.ok) throw new Error();
             }
             continue;
           }
           if (!demo) {
-            const response = await fetch("/api/calendar", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({
-                action: "save-period",
-                from: date,
-                to: date,
-                leaveType: rangeLeaveType,
-                halfMoment:
-                  rangeLeaveType === "half" ? rangeHalfMoment : undefined,
-                group,
-              }),
-            });
-            if (!response.ok) throw new Error();
-            const data = await response.json();
-            saved.push({
-              id: data.period.id,
-              from: data.period.from,
-              to: data.period.to,
-              leaveType: data.period.leave_type || "",
-              halfMoment: data.period.half_moment || "",
-              group: data.period.group,
-              updatedAt: data.period.updated_at,
+            periodResultIndexes.push(operations.length);
+            operations.push({
+              action: "save-period",
+              from: date,
+              to: date,
+              leaveType: rangeLeaveType,
+              halfMoment:
+                rangeLeaveType === "half" ? rangeHalfMoment : undefined,
+              group,
             });
           } else {
             saved.push({
@@ -1787,19 +1927,47 @@ export default function Home() {
           }
         }
       }
-      if (editingLegacyPeriod) {
-        await clearLegacyPeriod(editingLegacyPeriod);
-      } else if (editingPeriodId && !demo) {
-        const response = await fetch("/api/calendar", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+      if (!demo) {
+        if (editingLegacyPeriod)
+          operations.push({
+            action: "clear-legacy-period",
+            from: editingLegacyPeriod.from,
+            to: editingLegacyPeriod.to,
+          });
+        else if (editingPeriodId)
+          operations.push({
             action: "delete-period",
             id: editingPeriodId,
-          }),
-        });
-        if (!response.ok) throw new Error();
+            expectedUpdatedAt:
+              periods.find((period) => period.id === editingPeriodId)
+                ?.updatedAt || "",
+          });
+        const batch = await postCalendarBatch<{
+          period?: {
+            id: string;
+            from: string;
+            to: string;
+            leave_type?: LeaveType;
+            half_moment?: HalfMoment;
+            group?: number;
+            updated_at: string;
+          };
+        }>(operations);
+        for (const index of periodResultIndexes) {
+          const period = batch.results[index]?.period;
+          if (!period) continue;
+          saved.push({
+            id: period.id,
+            from: period.from,
+            to: period.to,
+            leaveType: period.leave_type || "",
+            halfMoment: period.half_moment || "",
+            group: period.group,
+            updatedAt: period.updated_at,
+          });
+        }
+      } else if (editingLegacyPeriod) {
+        await clearLegacyPeriod(editingLegacyPeriod);
       }
       setPeriods((current) =>
         [
@@ -1823,10 +1991,13 @@ export default function Home() {
       }
       if (!demo) await loadCalendar();
       cancelRangeSelection();
-    } catch {
+    } catch (error) {
       await loadCalendar().catch(() => undefined);
       notify(
-        "Les dates n’ont pas toutes pu être synchronisées. Vérifiez le planning puis réessayez.",
+        calendarErrorMessage(
+          error,
+          "Les dates n’ont pas pu être synchronisées. Réessayez.",
+        ),
       );
     } finally {
       setSavingRange(false);
@@ -1845,13 +2016,7 @@ export default function Home() {
           new URLSearchParams(location.search).has("demo")
         )
       ) {
-        const response = await fetch("/api/calendar", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ action: "delete-period", id: target.id }),
-        });
-        if (!response.ok) throw new Error();
+        await postCalendar({ action: "delete-period", id: target.id });
       }
       if (!target.legacy)
         setPeriods((current) =>
@@ -1873,28 +2038,32 @@ export default function Home() {
       const demo =
         import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
       if (!demo) {
-        const post = async (payload: Record<string, unknown>) => {
-          const response = await fetch("/api/calendar", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) throw new Error();
-        };
-        if (target.legacy) await clearLegacyPeriod(target);
-        else await post({ action: "delete-period", id: target.id });
+        const operations: Array<Record<string, unknown>> = [
+          target.legacy
+            ? {
+                action: "clear-legacy-period",
+                from: target.from,
+                to: target.to,
+              }
+            : {
+                action: "delete-period",
+                id: target.id,
+                expectedUpdatedAt: target.updatedAt,
+              },
+        ];
         for (const key of rangeKeys(target.from, target.to)) {
           const current = entries[key];
-          await post({
+          operations.push({
             action: "save-leaves",
             date: key,
             // Un congé « Divers » posé sur le même jour ne doit pas partir
             // avec la période : on ne touche qu'à la marque de souhait.
             leave: Boolean(current?.leave),
             wish: true,
+            expectedUpdatedAt: current?.updatedAt || "",
           });
         }
+        await postCalendarBatch(operations);
       }
       if (!target.legacy)
         setPeriods((current) =>
@@ -1911,8 +2080,13 @@ export default function Home() {
       });
       await loadCalendar();
       setDayDate(null);
-    } catch {
-      notify("Le congé n’a pas pu être repassé en souhaité. Réessayez.");
+    } catch (error) {
+      notify(
+        calendarErrorMessage(
+          error,
+          "Le congé n’a pas pu être repassé en souhaité. Réessayez.",
+        ),
+      );
     } finally {
       setSavingRange(false);
     }
@@ -2287,19 +2461,14 @@ export default function Home() {
             new URLSearchParams(location.search).has("demo")
           )
         ) {
-          for (const period of leavePeriods) {
-            const response = await fetch("/api/calendar", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({
+          if (leavePeriods.length)
+            await postCalendarBatch(
+              leavePeriods.map((period) => ({
                 action: "save-period",
                 group,
                 ...period,
-              }),
-            });
-            if (!response.ok) throw new Error("sync");
-          }
+              })),
+            );
         }
       }
       localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
@@ -2531,12 +2700,9 @@ export default function Home() {
       if (
         !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
       ) {
-        const response = await fetch("/api/calendar", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        await postCalendar({
             action: "save-form-profile",
+            payYear: Number(payYear),
             fullName: nextProfile.fullName,
             group: nextProfile.group,
             signature: nextProfile.signature,
@@ -2554,11 +2720,13 @@ export default function Home() {
               ? { mealVoucherDeductionCents: cents }
               : {}),
             ...(field === "pasRate" ? { pasRateBp: cents } : {}),
-          }),
         });
-        if (!response.ok) throw new Error("sync");
       }
       setFormProfile(nextProfile);
+      setPayProfiles((current) => ({
+        ...current,
+        [payYear]: { ...(current[payYear] || {}), [field]: value },
+      }));
       // Pas de message de succès : `notify` est la fenêtre d'erreur. Le montant
       // affiché juste au-dessus se met à jour, et le champ se vide — la
       // confirmation est dans l'écran lui-même.
@@ -2594,19 +2762,18 @@ export default function Home() {
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
       return;
     try {
-      const response = await fetch("/api/calendar", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      await postCalendar({
           action: "save-form-profile",
+          payYear: Number(payYear),
           fullName: nextProfile.fullName,
           group: nextProfile.group,
           signature: nextProfile.signature,
           ciaMonth: month,
-        }),
       });
-      if (!response.ok) throw new Error("sync");
+      setPayProfiles((current) => ({
+        ...current,
+        [payYear]: { ...(current[payYear] || {}), ciaMonth: month },
+      }));
     } catch {
       notify("Le mois du CIA n’a pas pu être enregistré. Réessayez.");
     }
@@ -2664,11 +2831,7 @@ export default function Home() {
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
       return;
     try {
-      const response = await fetch("/api/calendar", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      await postCalendar({
           action: "save-form-profile",
           fullName: nextProfile.fullName,
           group: nextProfile.group,
@@ -2678,9 +2841,7 @@ export default function Home() {
           sundayCarryoverMonth: target.month,
           sundayCarryoverFromYear: fromYear,
           sundayCarryoverFromMonth: fromMonth,
-        }),
       });
-      if (!response.ok) throw new Error("sync");
       // Pas de message de succès : la note « en attente » qui apparaît juste
       // en dessous, et la case d'origine qui se met à jour, sont déjà la
       // confirmation.
@@ -2719,19 +2880,13 @@ export default function Home() {
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
       return;
     try {
-      const response = await fetch("/api/calendar", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      await postCalendar({
           action: "save-form-profile",
           fullName: nextProfile.fullName,
           group: nextProfile.group,
           signature: nextProfile.signature,
           sundayCarryover: 0,
-        }),
       });
-      if (!response.ok) throw new Error("sync");
     } catch {
       setFormProfile(previous);
       notify("Le report n’a pas pu être retiré. Réessayez.");
@@ -2749,19 +2904,13 @@ export default function Home() {
       !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
     ) {
       try {
-        const response = await fetch("/api/calendar", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        await postCalendar({
             action: "save-leaves",
             date: key,
             leave: Boolean(current?.leave),
             wish: Boolean(current?.wish),
             holidayPay: choice,
-          }),
         });
-        if (!response.ok) throw new Error();
       } catch {
         notify("Le choix n’a pas pu être enregistré. Réessayez.");
         return;
@@ -2887,6 +3036,7 @@ export default function Home() {
       ) {
         const body: Record<string, unknown> = {
           action: "save-form-profile",
+          payYear: Number(payYear),
           fullName: nextProfile.fullName,
           group: nextProfile.group,
           signature: nextProfile.signature,
@@ -2910,15 +3060,21 @@ export default function Home() {
           );
         if (found.pasRate !== undefined)
           body.pasRateBp = Math.round(found.pasRate * 100);
-        const response = await fetch("/api/calendar", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (!response.ok) throw new Error("sync");
+        await postCalendar(body);
       }
       setFormProfile(nextProfile);
+      setPayProfiles((current) => ({
+        ...current,
+        [payYear]: {
+          ...(current[payYear] || {}),
+          ...Object.fromEntries(
+            PAYSLIP_IMPORT_FIELDS.filter(
+              (field) => found[field.key] !== undefined,
+            ).map((field) => [field.key, found[field.key]]),
+          ),
+          ...(ciaMonth !== undefined ? { ciaMonth } : {}),
+        },
+      }));
       setPayslipImportResult({
         applied: applied.map((field) => ({
           label: field.label,
@@ -3057,6 +3213,12 @@ export default function Home() {
             ))}
           </div>
         </div>
+        <p className="pay-year-notice">
+          Paramètres de paie pour <strong>{payYear}</strong>
+          {payProfiles[payYear]
+            ? " — valeurs enregistrées pour cette année."
+            : " — valeurs actuelles utilisées comme point de départ ; la première modification créera l’historique de cette année."}
+        </p>
 
         {showPayslipHelp ? (
           <section className="allowance-card">
@@ -4080,6 +4242,17 @@ export default function Home() {
                   <small>{userEmail}</small>
                 </div>
                 <button
+                  className="account-menu-data"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    setDataManagementOpen(true);
+                  }}
+                >
+                  Gérer mes données
+                </button>
+                <button
                   className="account-menu-leave"
                   type="button"
                   role="menuitem"
@@ -4095,6 +4268,8 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      <ConnectionStatus {...connectionStatus} />
 
       {renderHomePanels("Résumé du planning", [
           {
@@ -5446,6 +5621,7 @@ export default function Home() {
               <button
                 className="secondary-button"
                 type="button"
+                data-modal-close
                 onClick={() => setWarningDate(null)}
               >
                 Annuler
@@ -5480,6 +5656,7 @@ export default function Home() {
               <button
                 className="secondary-button"
                 type="button"
+                data-modal-close
                 onClick={() => setDeletingPeriod(null)}
               >
                 Conserver
@@ -5532,6 +5709,15 @@ export default function Home() {
           </section>
         </div>
       )}
+      <DataManagementDialog
+        open={dataManagementOpen}
+        busy={dataManagementBusy}
+        onClose={() => setDataManagementOpen(false)}
+        onExport={() => void exportDataBackup()}
+        onImport={(file) => void importDataBackup(file)}
+        onArchiveLegacy={() => void archiveLegacyData()}
+        onDeleteAll={() => void deleteAllUserData()}
+      />
       {installPrompt && (
         <button
           className="install-app-button"

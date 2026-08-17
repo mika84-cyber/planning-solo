@@ -1,0 +1,53 @@
+.account-menu-data {
+  color: var(--text);
+}
+
+.data-management-modal {
+  width: min(560px, calc(100vw - 24px));
+}
+
+.data-management-actions {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 14px;
+}
+
+.data-management-actions button {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #f7f9fc;
+  color: var(--text);
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.data-management-actions button:hover:not(:disabled) {
+  border-color: #9bb3df;
+  background: #eef4ff;
+}
+
+.data-management-actions .danger-data-button {
+  border-color: #e2b4ba;
+  background: #fff3f4;
+  color: #9f2f3b;
+}
+
+.data-management-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  clip-path: inset(50%) !important;
+}

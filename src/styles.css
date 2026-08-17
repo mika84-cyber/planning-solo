@@ -4442,3 +4442,79 @@ h1 {
 .period-menu-panel .period-menu-delete {
   color: #a92f3b;
 }
+
+/* État réseau et sauvegarde : une information courte, lisible sans masquer le
+   planning. `aria-live` dans le composant fournit le même retour au lecteur
+   d'écran. */
+.connection-status {
+  position: sticky;
+  z-index: 45;
+  top: 8px;
+  width: fit-content;
+  max-width: calc(100% - 16px);
+  margin: -6px auto 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 13px;
+  background: #eef4ff;
+  color: #234f9b;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(31, 46, 78, 0.12);
+}
+.connection-status.offline,
+.connection-status.error {
+  border-color: #edc4c8;
+  background: #fff0f1;
+  color: #9f2f3b;
+}
+.connection-status.saved {
+  border-color: #b9dfd1;
+  background: #edf9f4;
+  color: #176a50;
+}
+.pay-year-notice {
+  margin: 4px 0 12px;
+  border-left: 3px solid var(--accent);
+  padding: 8px 10px;
+  background: #f4f7fd;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.pay-year-notice strong {
+  color: var(--text);
+}
+
+/* Repère clavier commun à tous les composants, y compris ceux ajoutés plus
+   tard : le focus ne dépend plus de quelques sélecteurs isolés. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #f1a93b;
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .filter-chip,
+  .type-tabs button,
+  .modal-actions button,
+  .period-menu-trigger,
+  .period-menu-panel button {
+    min-height: 44px;
+  }
+  .legend,
+  .summary span,
+  .weekdays span {
+    font-size: max(10px, 0.68rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

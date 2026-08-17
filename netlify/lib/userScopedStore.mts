@@ -2,13 +2,30 @@ import type { getStore } from "@netlify/blobs";
 
 type Store = ReturnType<typeof getStore>;
 
-const LEGACY_OWNER_KEY = "migration/legacy-owner-v1";
+export const LEGACY_OWNER_KEY = "migration/legacy-owner-v1";
 const MIGRATION_MARKER = "migration/legacy-import-v1";
 
 type LegacyOwner = {
   user_id: string;
   claimed_at: string;
 };
+
+async function listAll(store: Store, prefix: string) {
+  const blobs: Array<{ key: string }> = [];
+  const pages = store.list({ prefix, paginate: true });
+  // Les doubles de test historiques renvoient une Promise d'une seule page ;
+  // le vrai client renvoie un itérateur paginé. Accepter les deux garde la
+  // migration testable sans réduire la pagination en production.
+  if (Symbol.asyncIterator in Object(pages)) {
+    for await (const page of pages) blobs.push(...page.blobs);
+  } else {
+    const page = await (pages as unknown as Promise<{
+      blobs: Array<{ key: string }>;
+    }>);
+    blobs.push(...page.blobs);
+  }
+  return { blobs };
+}
 
 /** Toutes les données fonctionnelles d'un compte vivent sous ce préfixe. */
 export function userDataPrefix(userId: string) {
@@ -31,8 +48,8 @@ export async function migrateLegacyData(store: Store, userId: string) {
   if (await store.get(markerKey, { type: "json" })) return;
 
   const [legacyEntries, legacyPeriods, legacyProfile] = await Promise.all([
-    store.list({ prefix: "entry/" }),
-    store.list({ prefix: "period/" }),
+    listAll(store, "entry/"),
+    listAll(store, "period/"),
     store.get("form-profile", { type: "json" }),
   ]);
   const hasLegacyData =
