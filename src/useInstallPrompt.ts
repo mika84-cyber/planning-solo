@@ -5,6 +5,10 @@ export type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+export function isNetlifyDeployPreview(hostname: string) {
+  return /^deploy-preview-\d+--planning-solo\.netlify\.app$/i.test(hostname);
+}
+
 export function useInstallPrompt() {
   const [installPrompt, setInstallPrompt] =
     useState<InstallPromptEvent | null>(null);
@@ -12,6 +16,9 @@ export function useInstallPrompt() {
   useEffect(() => {
     const onInstallPrompt = (event: Event) => {
       event.preventDefault();
+      // Netlify injecte sa barre d'outils dans les deploy previews. Une PWA
+      // installée depuis cette adresse conserverait donc cette barre.
+      if (isNetlifyDeployPreview(window.location.hostname)) return;
       setInstallPrompt(event as InstallPromptEvent);
     };
     const onInstalled = () => setInstallPrompt(null);
