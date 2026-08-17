@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readPayslip } from "./payslip";
+import { calculateNetRatios, readPayslip } from "./payslip";
 
 /** Les fragments de texte relevés sur le bulletin de juin 2026, dans l'ordre
  *  où le PDF les écrit. Le libellé précède son montant, et les lignes n'ont
@@ -148,10 +148,11 @@ const mars2024 = [
 
 describe("lecture d'un bulletin", () => {
   it("relève le brut, le traitement et l'IFSE", () => {
-    expect(readPayslip(juin2026)).toEqual({
+    expect(readPayslip(juin2026)).toMatchObject({
       gross: 2962.07,
       baseSalary: 1855.88,
       ifse: 416.66,
+      otherFixed: 66.82,
       sundaysBeyondTen: 0,
     });
   });
@@ -221,9 +222,58 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
     expect(readPayslip(juillet2026).otherFixed).toBe(75.84);
   });
 
-  it("ne renvoie pas de total pour « Autres éléments fixes » tant qu'une des cinq lignes manque", () => {
-    // juin2026 n'a ni ICHCSG ni Aide employeur options MGEN ni Transfert.
-    expect(readPayslip(juin2026).otherFixed).toBeUndefined();
+  it("calcule les « Autres éléments fixes » avec les lignes présentes ce mois-là", () => {
+    // Juin ne porte encore que résidence + compensation SMIC.
+    expect(readPayslip(juin2026).otherFixed).toBe(66.82);
+  });
+
+  it("lit le net avant impôt malgré les accents et la casse", () => {
+    expect(
+      readPayslip([
+        "Net à payer avant impôt sur le revenu",
+        "1938,46",
+      ]).netBeforeTax,
+    ).toBe(1938.46);
+  });
+
+  it("calcule séparément les taux du traitement et des primes", () => {
+    expect(
+      calculateNetRatios([
+        {
+          gross: 2450,
+          baseSalary: 1850,
+          ifse: 425,
+          otherFixed: 75,
+          netBeforeTax: 1938.46,
+          navigo: 64.8,
+          mealVoucherDeduction: 82.4,
+          sundaysBeyondTen: 0,
+        },
+        {
+          gross: 2950,
+          baseSalary: 1850,
+          ifse: 425,
+          otherFixed: 75,
+          netBeforeTax: 2388.06,
+          navigo: 64.8,
+          mealVoucherDeduction: 82.4,
+          sundaysBeyondTen: 4,
+        },
+      ]),
+    ).toEqual({ netRatioFixed: 79.41, netRatioVariable: 89.92 });
+  });
+
+  it("demande au moins deux bulletins différenciés pour séparer les taux", () => {
+    expect(
+      calculateNetRatios([
+        {
+          gross: 2450,
+          baseSalary: 1850,
+          netBeforeTax: 1950,
+          sundaysBeyondTen: 0,
+        },
+      ]),
+    ).toBeUndefined();
   });
 
   it("relève un jour de carence malgré la date dans le libellé", () => {

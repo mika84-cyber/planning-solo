@@ -44,6 +44,7 @@ import { useInstallPrompt } from "./useInstallPrompt";
 import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
 import {
+  calculateNetRatios,
   extractPayslipTokens,
   readPayslip,
   type PayslipReading,
@@ -2499,13 +2500,13 @@ export default function Home() {
     // vert, sans entrer dans les soldes.
     const wishDay = Boolean(showLeaves && entry?.wish);
     // Un congé posé sur un jour de repos n'a rien à marquer : la case est
-    // déjà grise.
+    // déjà noire.
     const visibleLeave = Boolean(
       showLeaves && hasLeavePeriod && info.kind !== "off",
     );
     const wishOutline = wishDay && info.kind !== "off" && !hasLeavePeriod;
-    // Deux types se distinguent du liseré rouge plein : la récupération prend
-    // un aplat orange, la demi-journée un liseré sur sa seule moitié. Une
+    // La récupération prend un aplat orange et la demi-journée un liseré sur
+    // sa seule moitié. Une
     // demi-journée sans moment (celles venues du formulaire) garde le liseré
     // entier : rien n'indique quelle moitié marquer.
     const myLeaveType = visibleLeave ? myPeriod?.leaveType || "" : "";
@@ -2543,7 +2544,7 @@ export default function Home() {
       <button
         type="button"
         key={key}
-        className={`${compact ? "mini-day" : "day"} ${info.kind}${visibleLeave && !myRecovery && !myHalfMoment ? " leave-day" : ""}${myRecovery ? " recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected ? " request-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
+        className={`${compact ? "mini-day" : "day"} ${info.kind}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${myRecovery ? " recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected ? " request-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
         style={
           selected
             ? ({
@@ -2922,10 +2923,9 @@ export default function Home() {
     }));
   }
 
-  /** Les huit champs des « Éléments de paie » qu'un bulletin peut renseigner
-   *  tout seul. Les deux taux net/brut n'y figurent pas : ce sont des ratios
-   *  qui se calculent à la main à partir de plusieurs lignes de
-   *  cotisations, pas un montant écrit tel quel sur le bulletin. */
+  /** Les champs directement lisibles sur un bulletin. Les deux taux net/brut
+   *  sont calculés séparément à partir d'au moins deux bulletins dont les
+   *  primes diffèrent. */
   // IFSE et CIA écartés d'entrée pour une contractuelle : pas la peine de
   // les chercher sur un bulletin qui ne les porte pas.
   const PAYSLIP_IMPORT_FIELDS = [
@@ -3004,10 +3004,13 @@ export default function Home() {
           break;
         }
       }
+      const calculatedRates = calculateNetRatios(
+        items.map((item) => item.reading),
+      );
       const applied = PAYSLIP_IMPORT_FIELDS.filter(
         (field) => found[field.key] !== undefined,
       );
-      if (!applied.length) {
+      if (!applied.length && !calculatedRates) {
         setPayslipImportError(
           "Aucun des montants attendus n’a été reconnu sur ces bulletins.",
         );
@@ -3024,8 +3027,10 @@ export default function Home() {
         otherFixed: found.otherFixed ?? formProfile?.otherFixed,
         cia: found.cia ?? formProfile?.cia,
         ciaMonth: ciaMonth ?? formProfile?.ciaMonth,
-        netRatioFixed: formProfile?.netRatioFixed,
-        netRatioVariable: formProfile?.netRatioVariable,
+        netRatioFixed:
+          calculatedRates?.netRatioFixed ?? formProfile?.netRatioFixed,
+        netRatioVariable:
+          calculatedRates?.netRatioVariable ?? formProfile?.netRatioVariable,
         navigo: found.navigo ?? formProfile?.navigo,
         mealVoucherDeduction:
           found.mealVoucherDeduction ?? formProfile?.mealVoucherDeduction,
@@ -3060,6 +3065,14 @@ export default function Home() {
           );
         if (found.pasRate !== undefined)
           body.pasRateBp = Math.round(found.pasRate * 100);
+        if (calculatedRates) {
+          body.netRatioFixedBp = Math.round(
+            calculatedRates.netRatioFixed * 100,
+          );
+          body.netRatioVariableBp = Math.round(
+            calculatedRates.netRatioVariable * 100,
+          );
+        }
         await postCalendar(body);
       }
       setFormProfile(nextProfile);
@@ -3073,19 +3086,42 @@ export default function Home() {
             ).map((field) => [field.key, found[field.key]]),
           ),
           ...(ciaMonth !== undefined ? { ciaMonth } : {}),
+          ...(calculatedRates || {}),
         },
       }));
       setPayslipImportResult({
-        applied: applied.map((field) => ({
-          label: field.label,
-          value:
-            field.key === "pasRate"
-              ? `${found[field.key]!.toLocaleString("fr-FR")} %`
-              : euros(found[field.key]!),
-        })),
-        missing: PAYSLIP_IMPORT_FIELDS.filter(
-          (field) => found[field.key] === undefined,
-        ).map((field) => field.label),
+        applied: [
+          ...applied.map((field) => ({
+            label: field.label,
+            value:
+              field.key === "pasRate"
+                ? `${found[field.key]!.toLocaleString("fr-FR")} %`
+                : euros(found[field.key]!),
+          })),
+          ...(calculatedRates
+            ? [
+                {
+                  label: "Taux net avant impôt — traitement",
+                  value: `${calculatedRates.netRatioFixed.toLocaleString("fr-FR")} %`,
+                },
+                {
+                  label: "Taux net avant impôt — primes",
+                  value: `${calculatedRates.netRatioVariable.toLocaleString("fr-FR")} %`,
+                },
+              ]
+            : []),
+        ],
+        missing: [
+          ...PAYSLIP_IMPORT_FIELDS.filter(
+            (field) => found[field.key] === undefined,
+          ).map((field) => field.label),
+          ...(!calculatedRates
+            ? [
+                "Taux net avant impôt — traitement (2 bulletins différents requis)",
+                "Taux net avant impôt — primes (2 bulletins différents requis)",
+              ]
+            : []),
+        ],
       });
     } catch {
       setPayslipImportError(
@@ -3284,9 +3320,10 @@ export default function Home() {
               Choisissez un ou plusieurs bulletins PDF : les valeurs de vos
               bulletins se remplissent toutes seules dans les champs d’«
               Éléments de paie », et le bulletin le plus récent est comparé au
-              calcul de l’appli. Si une erreur est repérée, vous en serez
-              informé. Les fichiers sont lus sur cet appareil et ne sont ni
-              envoyés, ni conservés.
+              calcul de l’appli. Avec au moins deux mois dont les primes
+              diffèrent, les taux nets avant impôt du traitement et des primes
+              sont également calculés automatiquement. Les fichiers sont lus
+              sur cet appareil et ne sont ni envoyés, ni conservés.
             </p>
             <label className="payslip-drop">
               <input

@@ -75,7 +75,9 @@ const COLORS = {
   groupValue: [226, 243, 219] as const,
   holidaysHeader: [242, 154, 98] as const,
   holidaysValue: [252, 226, 210] as const,
-  leave: [74, 190, 241] as const,
+  leave: [108, 189, 240] as const,
+  rtt: [242, 185, 80] as const,
+  fraction: [201, 166, 234] as const,
   /** Récupération : violet doux. Elle ne se décompte pas comme un congé, donc
    *  elle ne reprend pas son bleu. */
   recovery: [206, 189, 240] as const,
@@ -83,13 +85,19 @@ const COLORS = {
   schoolVacation: [32, 185, 107] as const,
   /** Fond des congés souhaités : vert clair, pour rester lisible sous le
    *  texte noir des dates. */
-  wish: [178, 233, 199] as const,
+  wish: [122, 211, 156] as const,
   money: [242, 174, 39] as const,
   /** Bleu ardoise du tableau des vacances : sobre, il ferme la page sans
    *  reprendre une couleur déjà porteuse de sens dans la grille. */
   slate: [45, 62, 84] as const,
   slateLine: [214, 223, 235] as const,
 };
+
+function leaveFill(leaveType: PdfLeaveType | undefined) {
+  if (leaveType === "rtt") return COLORS.rtt;
+  if (leaveType === "fraction") return COLORS.fraction;
+  return COLORS.leave;
+}
 
 function daysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -228,7 +236,7 @@ function drawGroupPage(
         : isRecovery
           ? COLORS.recovery
           : isFullLeave
-            ? COLORS.leave
+            ? leaveFill(leaveType)
             : isOff
               ? COLORS.black
               : isWorkedHoliday
