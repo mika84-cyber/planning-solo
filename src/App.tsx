@@ -7,6 +7,28 @@ import {
   logout,
 } from "@netlify/identity";
 import { ChoicePicker } from "./ChoicePicker";
+import { AuthScreen } from "./AuthScreen";
+import {
+  HOLIDAY_PAY_OPTIONS,
+  PAY_STATUS_OPTIONS,
+  dayCountLabel,
+  emptyEntry,
+  euros,
+  notePeriodFor,
+  rangeKeys,
+  workedDayCount,
+  type AuthStatus,
+  type BalanceType,
+  type Entries,
+  type FormProfile,
+  type LeavePeriod,
+  type NoteListItem,
+  type PayStatus,
+  type RequestKind,
+  type SelectedDay,
+  type SharedEntry,
+  type ViewMode,
+} from "./appModel";
 import { useAnnualPdfExport } from "./useAnnualPdfExport";
 import { useInstallPrompt } from "./useInstallPrompt";
 import {
@@ -69,211 +91,7 @@ import {
   type SelectionType,
 } from "./planningLogic";
 
-type ViewMode = "month" | "year";
-type RequestKind = "leave" | "recovery";
-type BalanceType = "annual" | "rtt" | "fraction";
-type AuthStatus = "loading" | "guest" | "invite" | "ready";
-
-type SharedEntry = {
-  noteText: string;
-  noteColor: string;
-  noteUpdatedAt: string;
-  noteGroupId: string;
-  /** Jour marqué « Divers » : une absence posée sur la seule journée, hors
-   *  période de congé enregistrée. */
-  leave: boolean;
-  /** Congé souhaité, pas encore validé : affiché mais hors du solde. */
-  wish: boolean;
-  /** Sur un férié travaillé : la compensation choisie. Vide tant que le choix
-   *  n'est pas tranché — le férié est alors signalé comme en attente. */
-  holidayPay: HolidayPay | "";
-};
-type Entries = Record<string, SharedEntry>;
-type LeavePeriod = {
-  id: string;
-  from: string;
-  to: string;
-  leaveType?: LeaveType | "";
-  /** Moitié posée, pour les seules demi-journées. */
-  halfMoment?: HalfMoment | "";
-  group?: number;
-  updatedAt: string;
-  legacy?: boolean;
-};
-/** Les primes automatiques (dimanche, férié, net estimé) et les champs IFSE/
- *  CIA sont calés sur les règles d'un fonctionnaire, vérifiées sur des
- *  bulletins réels. Pour une contractuelle, ni les coefficients ni même
- *  l'existence de ces primes ne sont connus : plutôt que d'afficher les
- *  siens en les faisant passer pour les siens propres, ces cartes restent
- *  cachées tant qu'elles n'ont pas été calibrées sur un vrai bulletin. */
-type PayStatus = "fonctionnaire" | "contractuel";
-type FormProfile = {
-  fullName: string;
-  group: string;
-  signature: string;
-  /** Absent sur les profils créés avant l'ajout de ce champ : traité comme
-   *  « fonctionnaire », le statut jusque-là implicite de l'appli. */
-  status?: PayStatus;
-  /** Traitement de base mensuel hors primes, en euros. Il sert au calcul des
-   *  indemnités de jour férié. Absent tant qu'il n'est pas saisi. */
-  baseSalary?: number;
-  /** Régime indemnitaire mensuel : seconde assiette de la retenue maladie. */
-  ifse?: number;
-  /** Montant d'un jour de carence, relevé sur le bulletin. Il est saisi plutôt
-   *  que calculé : son assiette comporte un élément que les lignes du bulletin
-   *  ne permettent pas d'isoler. */
-  carenceDay?: number;
-  /** Les éléments fixes du bulletin hors traitement et IFSE : indemnité de
-   *  résidence, ICHCSG, aide MGEN, moins le transfert primes/points. Une seule
-   *  saisie plutôt que quatre, puisqu'ils ne bougent jamais séparément. */
-  otherFixed?: number;
-  /** Complément indemnitaire annuel : prime unique, versée une fois par an. */
-  cia?: number;
-  /** Mois de versement du CIA cette année-là : 6 = juillet, 7 = août,
-   *  8 = septembre. Les trois se sont produits — septembre en 2024, août en
-   *  2025, juillet en 2026. */
-  ciaMonth?: number;
-  /** Taux net-avant-impôt/brut, en pourcentage, calibrés sur des bulletins
-   *  réels plutôt que sur une dizaine de cotisations modélisées une à une —
-   *  deux taux, pas un seul, car le traitement porte la pension civile
-   *  (perdue sur chaque euro) alors que les primes n'y sont pas soumises et
-   *  n'en gardent que le socle CSG/CRDS. Ne couvrent que les cotisations :
-   *  l'impôt (PAS) est retiré à part par `pasRate`, pour rester à jour sans
-   *  refaire toute la calibration si le taux d'imposition change. */
-  netRatioFixed?: number;
-  netRatioVariable?: number;
-  /** Remboursement Navigo, hors cumul brut : un montant fixe, pas un ratio. */
-  navigo?: number;
-  /** Retenue titres repas, hors cumul brut, elle aussi fixe d'un mois sur
-   *  l'autre — la part salariale seule, celle qui réduit le net. */
-  mealVoucherDeduction?: number;
-  /** Taux du prélèvement à la source, en pourcentage — recopié tel quel de
-   *  la ligne « PAS - Taux » du bulletin. Appliqué avec un facteur correcteur
-   *  fixe (voir `PAS_BASE_ADJUSTMENT`) car l'administration le prélève sur
-   *  une assiette « net imposable » légèrement supérieure au net avant
-   *  impôt, jamais détaillée sur le bulletin. */
-  pasRate?: number;
-  /** Dimanches manqués sur un bulletin, en attente sur le prochain mois de
-   *  versement qu'ils visent. */
-  sundayCarryover?: number;
-  sundayCarryoverYear?: number;
-  sundayCarryoverMonth?: number;
-  /** Le bulletin d'où vient le report, pour que sa propre ligne retire les
-   *  dimanches partis ailleurs plutôt que d'afficher le compte du cycle. */
-  sundayCarryoverFromYear?: number;
-  sundayCarryoverFromMonth?: number;
-};
-type SelectedDay = {
-  date: string;
-  type: SelectionType;
-  start?: string;
-  end?: string;
-};
-
 const HANDOFF_KEY = "planning:form-handoff-v1";
-
-/** Étendue d'une note : sa seule date, ou celle du groupe si elle couvre
-    plusieurs jours (les dates d'un groupe peuvent être non consécutives). */
-function notePeriodFor(entries: Entries, key: string, entry: SharedEntry) {
-  if (!entry.noteGroupId) return { from: key, to: key };
-  const groupKeys = Object.entries(entries)
-    .filter(([, candidate]) => candidate.noteGroupId === entry.noteGroupId)
-    .map(([date]) => date)
-    .sort();
-  return groupKeys.length
-    ? { from: groupKeys[0], to: groupKeys.at(-1)! }
-    : { from: key, to: key };
-}
-
-function emptyEntry(): SharedEntry {
-  return {
-    noteText: "",
-    noteColor: "#D3943D",
-    noteUpdatedAt: "",
-    noteGroupId: "",
-    leave: false,
-    wish: false,
-    holidayPay: "",
-  };
-}
-
-/** Les clés de jour d'une période, bornes comprises. */
-function rangeKeys(from: string, to: string) {
-  const keys: string[] = [];
-  let cursor = fromKey(from);
-  const last = fromKey(to);
-  for (let guard = 0; cursor <= last && guard < 400; guard++) {
-    keys.push(dateKey(cursor));
-    cursor = addDays(cursor, 1);
-  }
-  return keys;
-}
-
-/** Les jours réellement travaillés sur une tranche de mois.
- *
- *  Le cycle donne les jours prévus ; les congés posés les retirent. Une
- *  demi-journée n'en retire que la moitié. Les congés souhaités ne comptent
- *  pas : ils ne sont pas encore accordés, ces jours-là sont travaillés.
- *  Les formations restent à part, comme dans le récapitulatif de l'année.
- */
-function workedDayCount(
-  year: number,
-  firstMonth: number,
-  lastMonth: number,
-  group: number,
-  periods: LeavePeriod[],
-  entries: Entries,
-) {
-  let scheduled = 0;
-  let onLeave = 0;
-  for (let month = firstMonth; month <= lastMonth; month++)
-    for (let day = 1; day <= monthDays(year, month); day++) {
-      const date = localDate(year, month, day);
-      if (getDayInfo(date, group).kind !== "work") continue;
-      scheduled++;
-      const key = dateKey(date);
-      const period = periods.find(
-        (item) => key >= item.from && key <= item.to,
-      );
-      if (period) onLeave += period.leaveType === "half" ? 0.5 : 1;
-      else if (entries[key]?.leave) onLeave += 1;
-    }
-  return { scheduled, onLeave, worked: scheduled - onLeave };
-}
-
-/* « À décider » n'est pas une option : c'est l'état de départ, affiché tant
-   que rien n'est choisi. Le proposer reviendrait à inviter à ne pas trancher. */
-const HOLIDAY_PAY_OPTIONS: Array<{ value: HolidayPay | ""; label: string }> = [
-  { value: "prime", label: "Prime seule" },
-  { value: "recovery", label: "Prime + 1 jour de récup" },
-];
-
-const PAY_STATUS_OPTIONS: Array<{ value: PayStatus; label: string }> = [
-  { value: "contractuel", label: "Contractuel" },
-  { value: "fonctionnaire", label: "Fonctionnaire" },
-];
-
-const EUROS = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: "EUR",
-});
-function euros(value: number) {
-  return EUROS.format(value);
-}
-
-/** « 18 » ou « 18,5 » : la demi-journée est le seul cas décimal. */
-function dayCountLabel(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(".", ",");
-}
-
-type NoteListItem = {
-  key: string;
-  date: string;
-  label: string;
-  detail: string;
-  kind: "leave" | "note";
-  color?: string;
-};
 
 export default function Home() {
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
@@ -4184,102 +4002,19 @@ export default function Home() {
     ? periods.filter((period) => dayDate >= period.from && dayDate <= period.to)
     : [];
 
-  if (authStatus === "loading") {
-    return (
-      <main className="auth-splash">
-        <img
-          src="/grand-palais-verriere.jpg"
-          alt=""
-          className="auth-splash-image"
-        />
-        <div className="auth-loader auth-splash-loader" aria-label="Chargement" />
-      </main>
-    );
-  }
-
   if (authStatus !== "ready") {
     return (
-      <main className="auth-shell">
-        <img
-          src="/grand-palais-verriere.jpg"
-          alt=""
-          className="auth-shell-image"
-        />
-        <section className="auth-card">
-          <div className="auth-mark" aria-hidden="true">
-            <span>31</span>
-          </div>
-          <p className="eyebrow">Planning privé</p>
-          {authStatus === "invite" ? (
-            <form onSubmit={submitInvite}>
-              <h1>Bienvenue</h1>
-              <p className="auth-intro">
-                Choisissez votre mot de passe pour activer votre accès au
-                planning.
-              </p>
-              <label className="auth-field">
-                <span>Nouveau mot de passe</span>
-                <input
-                  autoFocus
-                  type="password"
-                  autoComplete="new-password"
-                  value={loginPassword}
-                  onChange={(event) => setLoginPassword(event.target.value)}
-                  minLength={8}
-                  required
-                />
-              </label>
-              {authError && (
-                <p className="auth-error" role="alert">
-                  {authError}
-                </p>
-              )}
-              <button className="auth-submit" type="submit" disabled={authBusy}>
-                {authBusy ? "Activation…" : "Activer mon accès"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={submitLogin}>
-              <h1>Votre planning</h1>
-              <p className="auth-intro">
-                Connectez-vous pour retrouver vos congés et vos notes.
-              </p>
-              <label className="auth-field">
-                <span>Adresse e-mail</span>
-                <input
-                  autoFocus
-                  type="email"
-                  autoComplete="email"
-                  value={loginEmail}
-                  onChange={(event) => setLoginEmail(event.target.value)}
-                  required
-                />
-              </label>
-              <label className="auth-field">
-                <span>Mot de passe</span>
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  value={loginPassword}
-                  onChange={(event) => setLoginPassword(event.target.value)}
-                  required
-                />
-              </label>
-              {authError && (
-                <p className="auth-error" role="alert">
-                  {authError}
-                </p>
-              )}
-              <button className="auth-submit" type="submit" disabled={authBusy}>
-                {authBusy ? "Connexion…" : "Se connecter"}
-              </button>
-              <p className="auth-help">
-                L’accès est réservé au compte invité sur ce planning.
-              </p>
-            </form>
-          )}
-        </section>
-      </main>
+      <AuthScreen
+        status={authStatus}
+        email={loginEmail}
+        password={loginPassword}
+        busy={authBusy}
+        error={authError}
+        setEmail={setLoginEmail}
+        setPassword={setLoginPassword}
+        submitLogin={submitLogin}
+        submitInvite={submitInvite}
+      />
     );
   }
 
