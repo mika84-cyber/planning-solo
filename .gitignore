@@ -6,3 +6,7 @@ dist
 *.msi
 
 .claude/
+.ai-context/
+playwright-report/
+test-results/
+partage-ia-*.zip

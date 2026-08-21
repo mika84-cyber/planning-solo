@@ -370,9 +370,10 @@ function drawGroupPage(
 
   // Colonne d'identification, puis légende des couleurs dans son prolongement.
   const sidebarHeight = 9 + 4 * 14;
+  const panelBorderWidth = 0.42;
   doc.setFillColor(248, 250, 253);
   doc.setDrawColor(...COLORS.black);
-  doc.setLineWidth(0.35);
+  doc.setLineWidth(panelBorderWidth);
   doc.roundedRect(sidebarX, tableY, sidebarWidth, sidebarHeight, 1.6, 1.6, "FD");
   doc.setFillColor(...COLORS.slate);
   doc.roundedRect(sidebarX, tableY, sidebarWidth, 9, 1.6, 1.6, "F");
@@ -434,7 +435,7 @@ function drawGroupPage(
   // légende des couleurs. Son contour est redessiné après les aplats afin que
   // ceux-ci ne viennent pas l'atténuer.
   doc.setDrawColor(...COLORS.black);
-  doc.setLineWidth(0.42);
+  doc.setLineWidth(panelBorderWidth);
   doc.roundedRect(sidebarX, tableY, sidebarWidth, sidebarHeight, 1.6, 1.6, "S");
   doc.line(sidebarX, tableY + 9, sidebarX + sidebarWidth, tableY + 9);
 
@@ -488,7 +489,7 @@ function drawGroupPage(
     // Dans les deux variantes, l'en-tête reste visuellement attaché à la
     // légende tout en étant séparé par un trait fin et net.
     doc.setDrawColor(...COLORS.black);
-    doc.setLineWidth(0.22);
+    doc.setLineWidth(panelBorderWidth);
     doc.rect(legendX, legendY, legendWidth, legendHeaderHeight, "S");
     doc.setTextColor(...COLORS.black);
     doc.setFont("helvetica", "bold");
@@ -532,7 +533,7 @@ function drawGroupPage(
       });
     });
     doc.setDrawColor(...COLORS.black);
-    doc.setLineWidth(0.22);
+    doc.setLineWidth(panelBorderWidth);
     doc.roundedRect(
       legendX,
       legendY,

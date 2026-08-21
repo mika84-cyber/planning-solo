@@ -11,6 +11,28 @@ import { AuthScreen } from "./AuthScreen";
 import { ConnectionStatus } from "./ConnectionStatus";
 import { DataManagementDialog } from "./DataManagementDialog";
 import {
+  CalendarCleanupPanel,
+  CalendarCleanupTrigger,
+} from "./CalendarCleanup";
+import { LeaveBalancesSection } from "./LeaveBalancesSection";
+import { PayEstimateDetails } from "./PayEstimateDetails";
+import { ManualAdjustmentsDialog, RangeLeaveDialog } from "./LeaveDialogs";
+import { MonthCalendar, NotesPanelContent } from "./PlanningView";
+import { RequestValidationSummary } from "./RequestValidationSummary";
+import {
+  DeletePeriodDialog,
+  MessageDialog,
+  NonWorkingDayWarningDialog,
+  SuccessToast,
+  TimeSelectionDialog,
+} from "./PlanningDialogs";
+import {
+  MecenatDialog,
+  OvertimeDialog,
+  RecoveryUseDialog,
+  SolidarityHoursDialog,
+} from "./WorkTimeDialogs";
+import {
   CalendarApiError,
   calendarErrorMessage,
   getCalendar,
@@ -110,7 +132,6 @@ import {
   yearThirdFor,
   yearThirdRange,
   YEAR_THIRDS,
-  SHORT_DAYS,
   TYPE_COLORS,
   TYPE_LABELS,
   YEAR_OPTIONS,
@@ -265,26 +286,6 @@ export default function Home() {
     end: "00:00",
   });
   const [dayDate, setDayDate] = useState<string | null>(null);
-  // Identifiant de la période dont le menu d'actions est ouvert. Un seul à la
-  // fois : trois boutons par ligne saturaient la fenêtre du jour.
-  const [periodMenuId, setPeriodMenuId] = useState("");
-  const periodMenuRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!periodMenuId) return;
-    const close = (event: MouseEvent) => {
-      if (!periodMenuRef.current?.contains(event.target as Node))
-        setPeriodMenuId("");
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPeriodMenuId("");
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [periodMenuId]);
   const [noteText, setNoteText] = useState("");
   const [noteColor, setNoteColor] = useState("#D3943D");
   const [noteGroupId, setNoteGroupId] = useState("");
@@ -469,6 +470,7 @@ export default function Home() {
   }, []);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [checkingAppUpdate, setCheckingAppUpdate] = useState(false);
   const [dataManagementOpen, setDataManagementOpen] = useState(false);
   const [dataManagementBusy, setDataManagementBusy] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1711,6 +1713,27 @@ export default function Home() {
     };
   }
 
+  async function checkForAppUpdate() {
+    if (checkingAppUpdate) return;
+    setCheckingAppUpdate(true);
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration =
+          (await navigator.serviceWorker.getRegistration()) ??
+          (await navigator.serviceWorker.register("/sw.js", {
+            updateViaCache: "none",
+          }));
+        await registration.update();
+        registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+      }
+    } catch {
+      // Le rechargement ci-dessous reste utile même si le contrôle du service
+      // worker échoue (hors connexion, navigateur ancien ou cache corrompu).
+    } finally {
+      window.setTimeout(() => window.location.reload(), 250);
+    }
+  }
+
   function rememberGuideSeen() {
     const demo = demoMode;
     const identity = demo
@@ -1995,6 +2018,24 @@ export default function Home() {
       ),
     [balanceDetail],
   );
+  const balanceDetailMonths = useMemo(() => {
+    const months = MONTHS.map((label, monthIndex) => ({
+      key: `${absenceYear}-${String(monthIndex + 1).padStart(2, "0")}`,
+      label: `${label} ${absenceYear}`,
+      units: 0,
+      details: [] as NonNullable<typeof balanceDetail>["details"],
+    }));
+    for (const detail of balanceDetail?.details ?? []) {
+      const month = months[Number(detail.date.slice(5, 7)) - 1];
+      if (!month) continue;
+      month.units += detail.units;
+      month.details.push(detail);
+    }
+    return months.map((month) => ({
+      ...month,
+      details: month.details.sort((a, b) => b.date.localeCompare(a.date)),
+    }));
+  }, [absenceYear, balanceDetail]);
 
   const upcoming = useMemo(() => {
     const todayKey = dateKey(now);
@@ -3068,67 +3109,6 @@ export default function Home() {
       setSavingRange(false);
     }
   }
-  /** Repasse un congé accordé en congé souhaité : la période enregistrée est
-   *  supprimée — donc rendue au solde — et chacun de ses jours reçoit la
-   *  marque verte. Le chemin inverse de la validation. */
-  async function revertPeriodToWish(target: LeavePeriod) {
-    setSavingRange(true);
-    try {
-      const demo = demoMode;
-      if (!demo) {
-        const operations: Array<Record<string, unknown>> = [
-          target.legacy
-            ? {
-                action: "clear-legacy-period",
-                from: target.from,
-                to: target.to,
-              }
-            : {
-                action: "delete-period",
-                id: target.id,
-                expectedUpdatedAt: target.updatedAt,
-              },
-        ];
-        for (const key of rangeKeys(target.from, target.to)) {
-          const current = entries[key];
-          operations.push({
-            action: "save-leaves",
-            date: key,
-            // Un congé « Divers » posé sur le même jour ne doit pas partir
-            // avec la période : on ne touche qu'à la marque de souhait.
-            leave: Boolean(current?.leave),
-            wish: true,
-            expectedUpdatedAt: current?.updatedAt || "",
-          });
-        }
-        await postCalendarBatch(operations);
-      }
-      if (!target.legacy)
-        setPeriods((current) =>
-          current.filter((period) => period.id !== target.id),
-        );
-      // La marque est posée localement avant le rechargement : sans cela, la
-      // case restait sans couleur le temps de l'aller-retour, et le passage
-      // paraissait n'avoir rien fait.
-      setEntries((current) => {
-        const next = { ...current };
-        for (const key of rangeKeys(target.from, target.to))
-          next[key] = { ...(next[key] || emptyEntry()), wish: true };
-        return next;
-      });
-      await loadCalendar();
-      setDayDate(null);
-    } catch (error) {
-      notify(
-        calendarErrorMessage(
-          error,
-          "Le congé n’a pas pu être repassé en souhaité. Réessayez.",
-        ),
-      );
-    } finally {
-      setSavingRange(false);
-    }
-  }
   function beginRequest(
     kind: RequestKind,
     initialDate?: string,
@@ -3386,6 +3366,65 @@ export default function Home() {
     }
   }
 
+  async function saveOtherDateDirect(date: string) {
+    const alreadyRecorded = periods.some(
+      (period) =>
+        period.leaveType === "other" && date >= period.from && date <= period.to,
+    );
+    if (alreadyRecorded) {
+      confirm("Ce repère Divers est déjà enregistré dans le planning.");
+      setDayDate(null);
+      return;
+    }
+    const input = {
+      id: createClientId("period"),
+      from: date,
+      to: date,
+      leaveType: "other" as const,
+      group,
+    };
+    setSavingDay(true);
+    setDayDate(null);
+    try {
+      let saved: LeavePeriod;
+      if (demoMode) {
+        saved = {
+          ...input,
+          halfMoment: "",
+          updatedAt: new Date().toISOString(),
+        };
+      } else {
+        const result = await postCalendarPeriodsVerified<{
+          id: string;
+          from: string;
+          to: string;
+          leave_type?: LeaveType;
+          half_moment?: HalfMoment;
+          group?: number;
+          updated_at: string;
+        }>([input]);
+        const period = result.periods[0];
+        saved = {
+          id: period.id,
+          from: period.from,
+          to: period.to,
+          leaveType: period.leave_type || "other",
+          halfMoment: period.half_moment || "",
+          group: period.group,
+          updatedAt: period.updated_at,
+        };
+      }
+      setPeriods((current) =>
+        [...current, saved].sort((a, b) => a.from.localeCompare(b.from)),
+      );
+      confirm("Divers est ajouté directement au planning.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Divers n’a pas pu être enregistré."));
+    } finally {
+      setSavingDay(false);
+    }
+  }
+
   async function deleteMultiplePlanningDates(
     dates: string[],
     target: "absences" | "notes",
@@ -3537,6 +3576,19 @@ export default function Home() {
     } finally {
       setDeletingMultipleDates(false);
     }
+  }
+
+  function startCalendarCleanup() {
+    cancelRequest();
+    cancelRangeSelection();
+    cancelNoteSelection();
+    setCalendarDeleteDates([]);
+    setCalendarDeleteMode(true);
+  }
+
+  function cancelCalendarCleanup() {
+    setCalendarDeleteMode(false);
+    setCalendarDeleteDates([]);
   }
 
   function openManualAdjustments() {
@@ -3967,7 +4019,7 @@ export default function Home() {
       <button
         type="button"
         key={key}
-        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
+        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
         style={
           selected
             ? ({
@@ -4011,14 +4063,13 @@ export default function Home() {
                 : ""}
           </span>
         ) : null}
-        {personalDay && (
-          <span
-            className={`personal-marker${visibleLeave ? " with-companions" : ""}`}
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 24 24">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M5.5 20c.6-4.2 2.8-6.4 6.5-6.4s5.9 2.2 6.5 6.4z" />
+        {(myLeaveType === "other" || personalDay) && (
+          <span className={`other-pin${compact ? " compact" : ""}`} aria-hidden="true">
+            <svg viewBox="0 0 30 30">
+              <path className="other-pin-needle" d="m13.5 18.2-2.2 10.3 5.3-10.9Z" />
+              <path className="other-pin-body" d="M10 7.2h8l-1.1 7.1 3.5 2.6c1 .7.6 2.2-.6 2.4L9.2 20.8c-1.2.2-2-.9-1.4-2l2.9-3.4L10 7.2Z" />
+              <ellipse className="other-pin-head" cx="14" cy="7" rx="6.4" ry="3.8" />
+              <path className="other-pin-highlight" d="M10.7 5.9c1.6-1.3 4.5-1.7 6.5-.5" />
             </svg>
           </span>
         )}
@@ -5045,144 +5096,20 @@ export default function Home() {
       : null;
 
     const payEstimateDetails = (
-      <section className="allowance-card allowance-card-lead">
-        <header className="pay-detail-month-heading">
-          <div>
-            <span>Détail de la paie du mois affiché</span>
-            <strong>{MONTHS[monthPay.index]} {allowances.year}</strong>
-          </div>
-          <div className="pay-month-nav compact">
-            <button type="button" className="pay-nav-arrow" onClick={() => changeAllowancesMonth(-1)} aria-label="Mois précédent">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-            </button>
-            <button type="button" className="pay-nav-arrow" onClick={() => changeAllowancesMonth(1)} aria-label="Mois suivant">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
-            </button>
-            <button type="button" className="pay-today-button" onClick={goToday}>
-              Aujourd’hui
-            </button>
-          </div>
-        </header>
-        <div className="pay-headline">
-          <p className="pay-amount">
-            <span>Brut</span>
-            <strong>{euros(grossEstimateComplete ? monthPay.gross : 0)}</strong>
-          </p>
-          {monthNet === null ? null : (
-            <p className="pay-amount net">
-              <span>Net estimé</span>
-              <strong>{euros(monthNet)}</strong>
-            </p>
-          )}
-        </div>
-        {monthPayRows.length ? (
-          <table className="allowance-table">
-            <tbody>
-              {monthPayRows.map((row) => (
-                <tr key={row.key}>
-                  <th scope="row">
-                    {row.label}
-                    <small>{row.detail}</small>
-                  </th>
-                  <td
-                    className={
-                      row.amount !== null && row.amount < 0
-                        ? "negative"
-                        : row.amount !== null && row.amount > 0
-                          ? "positive"
-                          : ""
-                    }
-                  >
-                    {row.amount === null ? "À compléter" : euros(row.amount)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : null}
-        {overtimeForPayMonth.totalMinutes ? (
-          <div className="overtime-pay-detail">
-            <div className="overtime-pay-detail-heading">
-              <div>
-                <strong>Heures supplémentaires</strong>
-                <span>
-                  Effectuées en {MONTHS[overtimeForPayMonth.performedMonth]} {overtimeForPayMonth.performedYear}
-                </span>
-              </div>
-              <strong>
-                {overtimeForPayMonth.ready
-                  ? euros(overtimeForPayMonth.amount)
-                  : "À compléter"}
-              </strong>
-            </div>
-            {overtimeForPayMonth.ready ? (
-              <>
-                <p>
-                  Base horaire : {euros(overtimeForPayMonth.hourlyBase)}/h. {workQuota === "full"
-                    ? `14 premières heures : ${euros(overtimeForPayMonth.hourlyBase * 1.25)}/h de jour et ${euros(overtimeForPayMonth.hourlyBase * 1.25 * 2)}/h de nuit. À partir de la 15e : ${euros(overtimeForPayMonth.hourlyBase * 1.27)}/h de jour et ${euros(overtimeForPayMonth.hourlyBase * 1.27 * 2)}/h de nuit.`
-                    : "À temps partiel, le taux de base s’applique sans coefficient 1,25/1,27 ni majoration de nuit."}
-                </p>
-                <div className="overtime-pay-lines">
-                  {overtimeForPayMonth.lines.map((line) => (
-                    <article key={line.entryId}>
-                      <div>
-                        <strong>{longDate(fromKey(line.date))}</strong>
-                        <span>
-                          {line.dayMinutes ? `${minutesLabel(line.dayMinutes)} de jour` : ""}
-                          {line.dayMinutes && line.nightMinutes ? " · " : ""}
-                          {line.nightMinutes ? `${minutesLabel(line.nightMinutes)} de nuit` : ""}
-                        </span>
-                      </div>
-                      <strong>{euros(line.amount)}</strong>
-                    </article>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p>Renseignez le traitement de base pour calculer automatiquement les tarifs et le montant brut.</p>
-            )}
-          </div>
-        ) : null}
-        {mecenatForCurrentPayMonth.lines.length ? (
-          <div className="overtime-pay-detail mecenat-pay-detail">
-            <div className="overtime-pay-detail-heading">
-              <div>
-                <strong>Mécénats</strong>
-                <span>Tarifs fixes, indépendants de la quotité et des IHTS</span>
-              </div>
-              <strong>{euros(mecenatForCurrentPayMonth.grossAmountCents / 100)}</strong>
-            </div>
-            <p>
-              {euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h de 7 h à 22 h · {euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h de 22 h à 7 h.
-            </p>
-            <div className="overtime-pay-lines">
-              {mecenatForCurrentPayMonth.lines.map((entry) => (
-                <article key={entry.id}>
-                  <div>
-                    <strong>{longDate(fromKey(entry.date))} · {entry.start} → {entry.end}</strong>
-                    <span>
-                      {entry.dayMinutes
-                        ? `${minutesLabel(entry.dayMinutes)} tarif jour (${euros(
-                            (entry.dayMinutes / 60) *
-                              (MECENAT_REGULATORY_RATES.dayRateCents / 100),
-                          )})`
-                        : ""}
-                      {entry.dayMinutes && entry.nightMinutes ? " · " : ""}
-                      {entry.nightMinutes
-                        ? `${minutesLabel(entry.nightMinutes)} tarif nuit (${euros(
-                            (entry.nightMinutes / 60) *
-                              (MECENAT_REGULATORY_RATES.nightRateCents / 100),
-                          )})`
-                        : ""}
-                    </span>
-                  </div>
-                  <strong>{euros(entry.grossAmountCents / 100)}</strong>
-                </article>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </section>
+      <PayEstimateDetails
+        monthIndex={monthPay.index}
+        year={allowances.year}
+        gross={monthPay.gross}
+        grossEstimateComplete={grossEstimateComplete}
+        net={monthNet}
+        rows={monthPayRows}
+        overtime={overtimeForPayMonth}
+        workQuota={workQuota}
+        mecenat={mecenatForCurrentPayMonth}
+        onPreviousMonth={() => changeAllowancesMonth(-1)}
+        onNextMonth={() => changeAllowancesMonth(1)}
+        onToday={goToday}
+      />
     );
     return (
       <div className="request-archive-content allowances pay-functions-layout">
@@ -6153,22 +6080,31 @@ export default function Home() {
                     </th>
                     <td className={item.choice ? "" : "pending"}>
                       <div className="holiday-pay-cell">
-                        <ChoicePicker
-                          value={item.choice || ""}
-                          options={HOLIDAY_PAY_OPTIONS}
-                          onChange={(choice) =>
-                            choice && void chooseHolidayPay(item.key, choice)
-                          }
-                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                          className="holiday-pay-picker"
-                          layout="list"
-                          placeholder="À décider"
-                        />
-                        {item.choice && baseSalary ? (
-                          <small>
+                        {item.choice && holidayChoiceEditing !== item.key ? (
+                          <button
+                            type="button"
+                            className="holiday-pay-amount"
+                            onClick={() => setHolidayChoiceEditing(item.key)}
+                            aria-label={`${euros(holidayAllowance(baseSalary, item.choice))}. Modifier le choix de compensation du ${shortDate(item.key)}`}
+                            title="Cliquer pour modifier le choix"
+                          >
                             {euros(holidayAllowance(baseSalary, item.choice))}
-                          </small>
-                        ) : null}
+                          </button>
+                        ) : (
+                          <ChoicePicker
+                            value={item.choice || ""}
+                            options={HOLIDAY_PAY_OPTIONS}
+                            onChange={(choice) => {
+                              if (!choice) return;
+                              setHolidayChoiceEditing(null);
+                              void chooseHolidayPay(item.key, choice);
+                            }}
+                            ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                            className="holiday-pay-picker"
+                            layout="list"
+                            placeholder="À décider"
+                          />
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -6182,166 +6118,6 @@ export default function Home() {
     );
   }
 
-  function renderLeaveBalances() {
-    return (
-      <div className="request-archive-content direct-balances-content">
-        <div className="leave-balance-grid">
-          {leaveStats.balances.map((balance) => (
-            <button
-              type="button"
-              key={balance.type}
-              className={balance.type}
-              onClick={() => {
-                setBalanceDetailType(balance.type);
-              }}
-              aria-label={`Afficher le détail de ${leaveTypeLabel(balance.type)}`}
-            >
-              <span>{typeLabelFor(balance.type, balance.remaining)}</span>
-              <strong>
-                {balance.remaining.toLocaleString("fr-FR")}
-                <i>restant{s(balance.remaining)}</i>
-              </strong>
-              <small>
-                {balance.used.toLocaleString("fr-FR")} utilisé
-                {s(balance.used)} sur {balance.allowance}
-              </small>
-              {balance.manualUsed > 0 ? (
-                <small className="manual-balance-note">
-                  dont {balance.manualUsed.toLocaleString("fr-FR")} saisi{s(balance.manualUsed)} sans date
-                </small>
-              ) : null}
-              <em>Voir le détail</em>
-            </button>
-          ))}
-          {COUNTED_ONLY_TYPES.map((type) => (
-            <button
-              type="button"
-              key={type}
-              className={type}
-              onClick={() => {
-                setBalanceDetailType(type);
-              }}
-              aria-label={`Afficher le détail de ${TYPE_LABELS[type]}`}
-            >
-              <span>
-                {typeLabelFor(type, leaveStats.countedOnly[type].used)}
-              </span>
-              <strong>
-                {leaveStats.countedOnly[type].used.toLocaleString("fr-FR")}
-                <i>pris</i>
-              </strong>
-              <small>sans effet sur les congés</small>
-              <em>Voir le détail</em>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  /** Les volets d'accueil : une grille d'onglets figée, puis le contenu de
-   *  ceux qui sont ouverts, en dessous.
-   *
-   *  Les deux sont séparés à dessein. Tant que le volet ouvert portait son
-   *  propre contenu, il devait s'élargir sur toute la ligne pour l'afficher —
-   *  et la grille le renvoyait alors à la ligne suivante, si bien que
-   *  l'onglet de droite plongeait d'un cran sous le doigt qui venait de le
-   *  toucher. Les onglets occupent maintenant des cases fixes, quoi qu'il
-   *  arrive. */
-  function renderHomePanels(
-    label: string,
-    panels: Array<{
-      key: string;
-      tone: string;
-      icon: React.ReactNode;
-      title: string;
-      summary: string;
-      open: boolean;
-      toggle: () => void;
-      content: () => React.ReactNode;
-    }>,
-    extraClass = "",
-  ) {
-    return (
-      <section
-        className={`home-panels${extraClass ? ` ${extraClass}` : ""}`}
-        aria-label={label}
-      >
-        <div className="home-panel-grid">
-          {panels.map((panel) => (
-            <button
-              key={panel.key}
-              id={`home-panel-${panel.key}`}
-              className={`home-panel-toggle tone-${panel.tone}${panel.open ? " open" : ""}`}
-              type="button"
-              onClick={panel.toggle}
-              aria-expanded={panel.open}
-              aria-controls={`home-panel-body-${panel.key}`}
-            >
-              <span
-                className={`home-panel-icon ${panel.tone}`}
-                aria-hidden="true"
-              >
-                <svg viewBox="0 0 24 24">{panel.icon}</svg>
-              </span>
-              <strong>{panel.title}</strong>
-              <small>{panel.summary}</small>
-              <span className="home-panel-caret" aria-hidden="true">
-                <svg viewBox="0 0 20 20">
-                  <path d="m5 7.5 5 5 5-5" />
-                </svg>
-              </span>
-            </button>
-          ))}
-        </div>
-        {panels
-          .filter((panel) => panel.open)
-          .map((panel) => (
-            <div
-              key={panel.key}
-              id={`home-panel-body-${panel.key}`}
-              className={`home-panel-body ${panel.tone}`}
-              role="region"
-              aria-labelledby={`home-panel-${panel.key}`}
-            >
-              {panel.content()}
-            </div>
-          ))}
-      </section>
-    );
-  }
-
-  function renderNotesContent() {
-    const query = noteQuery.trim();
-    return (
-      <div className="request-archive-content">
-        {hasAnyNote && (
-          <input
-            type="search"
-            className="note-search-input"
-            value={noteQuery}
-            onChange={(event) => setNoteQuery(event.target.value)}
-            placeholder="Rechercher dans les notes…"
-            aria-label="Rechercher dans les notes"
-          />
-        )}
-        {query ? (
-          noteSearchResults.length ? (
-            renderNoteItems(noteSearchResults)
-          ) : (
-            <p className="upcoming-empty">
-              Aucune note ne correspond à « {query} ».
-            </p>
-          )
-        ) : upcoming.length ? (
-          renderNoteItems(upcoming)
-        ) : (
-          <p className="upcoming-empty">Aucune note à venir.</p>
-        )}
-      </div>
-    );
-  }
-
   // Le titre d'un mois de la vue Année l'ouvre en grand. On bascule sur la
   // vue Mois plutôt que d'agrandir sur place : c'est elle qui porte la barre
   // d'outils, donc « Poser un congé » et le reste restent accessibles.
@@ -6349,42 +6125,6 @@ export default function Home() {
     setView(localDate(view.getFullYear(), month, 1));
     setMode("month");
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function renderMonthCalendar(year: number, month: number, compact = false) {
-    const offset = (localDate(year, month, 1).getDay() + 6) % 7;
-    const days = monthDays(year, month);
-    const trailingDays = 42 - offset - days;
-    return (
-      <>
-        <div className={compact ? "mini-weekdays" : "weekdays"}>
-          {SHORT_DAYS.map((day, index) => (
-            <span key={`${day}-${index}`}>
-              {compact
-                ? day
-                : ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"][index]}
-            </span>
-          ))}
-        </div>
-        <div className={compact ? "mini-grid" : "calendar-grid"}>
-          {Array.from({ length: offset }, (_, index) => (
-            <span
-              className={compact ? "mini-blank" : "day-blank"}
-              key={`blank-${index}`}
-            />
-          ))}
-          {Array.from({ length: days }, (_, index) =>
-            renderDay(localDate(year, month, index + 1), compact),
-          )}
-          {Array.from({ length: trailingDays }, (_, index) => (
-            <span
-              className={compact ? "mini-blank" : "day-blank"}
-              key={`trailing-blank-${index}`}
-            />
-          ))}
-        </div>
-      </>
-    );
   }
 
   const dayStoredPeriods = dayDate
@@ -6408,7 +6148,7 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell app-shell-${homeSection}`}>
       <header className="top-header">
         <div className="top-header-title">
           <p className="eyebrow">Planning Solo</p>
@@ -6426,27 +6166,30 @@ export default function Home() {
                       : "Ma paie"}
           </h1>
         </div>
-        <div className="header-control-cluster">
-        <div className="header-actions">
-          {homeSection === "home" ? (
-          <div className="view-switch" aria-label="Mode d’affichage">
-            <button
-              className={mode === "month" ? "active" : ""}
-              onClick={() => setMode("month")}
-              type="button"
-            >
-              Mois
-            </button>
-            <button
-              className={mode === "year" ? "active" : ""}
-              onClick={() => setMode("year")}
-              type="button"
-            >
-              Année
-            </button>
-          </div>
-          ) : null}
-          <div className="account-menu" ref={accountMenuRef}>
+        <div className="header-command-area">
+          <div className="header-control-cluster">
+            <div className="header-actions">
+              {homeSection === "home" ? (
+              <div className="view-switch" aria-label="Mode d’affichage">
+                <button
+                  className={mode === "month" ? "active" : ""}
+                  aria-pressed={mode === "month"}
+                  onClick={() => setMode("month")}
+                  type="button"
+                >
+                  Mois
+                </button>
+                <button
+                  className={mode === "year" ? "active" : ""}
+                  aria-pressed={mode === "year"}
+                  onClick={() => setMode("year")}
+                  type="button"
+                >
+                  Année
+                </button>
+              </div>
+              ) : null}
+              <div className="account-menu" ref={accountMenuRef}>
             <button
               className={`account-button ${accountMenuOpen ? "open" : ""}`}
               type="button"
@@ -6488,23 +6231,35 @@ export default function Home() {
                 </button>
               </div>
             )}
+              </div>
+            </div>
+            <button
+              className="main-menu-button"
+              type="button"
+              onClick={() => setMainMenuOpen(true)}
+              aria-label="Ouvrir le menu principal"
+              aria-expanded={mainMenuOpen}
+              aria-controls="main-menu-drawer"
+            >
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+            </button>
           </div>
-        </div>
-        <button
-          className="main-menu-button"
-          type="button"
-          onClick={() => setMainMenuOpen(true)}
-          aria-label="Ouvrir le menu principal"
-          aria-expanded={mainMenuOpen}
-          aria-controls="main-menu-drawer"
-        >
-          <span aria-hidden="true" />
-          <span aria-hidden="true" />
-          <span aria-hidden="true" />
-        </button>
+          <button
+            className={`app-update-button header-update-button${checkingAppUpdate ? " checking" : ""}`}
+            type="button"
+            onClick={() => void checkForAppUpdate()}
+            disabled={checkingAppUpdate}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+              <path d="M20 4v7h-7" />
+            </svg>
+            {checkingAppUpdate ? "Chargement de la mise à jour…" : "Vérifier les mises à jour"}
+          </button>
         </div>
       </header>
-
       {mainMenuOpen ? (
         <div
           className="main-menu-backdrop"
@@ -6544,11 +6299,22 @@ export default function Home() {
                   <span aria-hidden="true">›</span>
                 </button>
               ))}
+              <button
+                type="button"
+                className="guide-menu-entry"
+                onClick={() => {
+                  setMainMenuOpen(false);
+                  setGuideOpen(true);
+                }}
+              >
+                <span className="main-menu-copy">
+                  <strong>Mode d’emploi</strong>
+                  <small>Comprendre le planning, les congés et la paie</small>
+                </span>
+                <span aria-hidden="true">›</span>
+              </button>
             </nav>
             <div className="main-menu-secondary">
-              <button type="button" onClick={() => { setMainMenuOpen(false); setGuideOpen(true); }}>
-                Mode d’emploi
-              </button>
               <button type="button" onClick={() => { setMainMenuOpen(false); setDataManagementOpen(true); }}>
                 Sauvegarde et restauration
               </button>
@@ -6582,7 +6348,7 @@ export default function Home() {
                 Consulter
               </button>
             </div>
-            <small>Le mode d’emploi restera accessible depuis le menu ☰.</small>
+            <small>Le mode d’emploi restera accessible dans le menu ☰, juste sous les plannings PDF.</small>
           </section>
         </div>
       ) : null}
@@ -6658,10 +6424,11 @@ export default function Home() {
                   <p>
                     Touchez <strong>Poser un congé</strong>, puis choisissez Congé,
                     Récupération, Arrêt maladie ou Divers. Chaque point d’entrée
-                    propose ensuite le formulaire ou l’ajout manuel au planning.
+                    ouvre ensuite le formulaire ou l’ajout manuel au planning. Divers,
+                    lui, s’ajoute directement au calendrier.
                   </p>
                   <ul>
-                    <li>Divers sert uniquement de repère visuel : il ne modifie ni la paie ni les soldes ;</li>
+                    <li>Divers peut servir notamment pour une grève, une décharge syndicale ou une fermeture exceptionnelle ; il ne modifie ni la paie ni les soldes ;</li>
                     <li>depuis une case du calendrier : la date est déjà ciblée ;</li>
                     <li>un arrêt maladie est suivi séparément : il ne diminue pas vos droits à congés, mais intervient dans le suivi et l’estimation de paie ;</li>
                     <li>pour plusieurs jours : sélectionnez une période ou plusieurs dates distinctes.</li>
@@ -6671,7 +6438,10 @@ export default function Home() {
                     ouvrez <strong>Congés et récupérations → Reprendre mes absences précédentes</strong> :
                     vous pouvez saisir vos CA, RTT, fractionnements et dimanches déjà posés sans retrouver chaque date.
                   </p>
-                  <p>Après validation, vérifiez la confirmation, le planning et le solde correspondant.</p>
+                  <p>
+                    Avant de valider, relisez le résumé des dates, des types de congés et de leur effet.
+                    Pour modifier ou annuler un congé déjà posé, ouvrez sa date : les deux actions sont affichées directement dans la fiche.
+                  </p>
                 </div>
               </section>
 
@@ -6700,9 +6470,11 @@ export default function Home() {
                   <h3>Utiliser l’accueil, le menu et le planning</h3>
                   <p>
                     L’accueil réunit Aujourd’hui en un coup d’œil, les notes et le planning.
-                    Le groupe de cycle se modifie en touchant sa carte. Le menu ☰ reste
-                    accessible pendant le défilement et ouvre Congés et récupérations,
-                    Ma paie, les PDF, ce mode d’emploi et les sauvegardes.
+                    Le groupe de cycle se modifie en touchant sa carte. Le menu ☰ placé
+                    dans l’en-tête ouvre Congés et récupérations,
+                    Ma paie, les PDF, puis ce mode d’emploi. La vérification des mises à jour
+                    se trouve sous les commandes Mois, Année et menu de l’en-tête ; les
+                    sauvegardes restent en bas du menu.
                   </p>
                   <p>Une note peut être associée à un ou plusieurs jours, même dans des mois différents.</p>
                 </div>
@@ -6885,7 +6657,14 @@ export default function Home() {
             </div>
             <button type="button" onClick={beginQuickNote}>Ajouter une note</button>
           </div>
-          {renderNotesContent()}
+          <NotesPanelContent
+            hasAnyNote={hasAnyNote}
+            query={noteQuery}
+            onQueryChange={setNoteQuery}
+            searchResults={noteSearchResults}
+            upcoming={upcoming}
+            renderItems={renderNoteItems}
+          />
         </section>
       ) : null}
 
@@ -6905,47 +6684,19 @@ export default function Home() {
               Poser un congé
             </button>
           </section>
-          <section className="leave-balances-direct" aria-labelledby="leave-balances-title">
-            <div className="leave-balances-heading">
-              <div>
-                <span className="step-label">Soldes disponibles</span>
-                <h3 id="leave-balances-title">Mes soldes de congés</h3>
-              </div>
-              <div className="leave-year-tools">
-                <label>
-                  <span>Année</span>
-                  <ChoicePicker
-                    value={absenceYear}
-                    options={YEAR_OPTIONS}
-                    onChange={(year) => {
-                      setAbsenceYear(year);
-                      setBalanceDetailType(null);
-                    }}
-                    ariaLabel="Choisir l’année des absences"
-                    className="leave-year-picker"
-                  />
-                </label>
-                <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jours restants</strong>
-              </div>
-            </div>
-            {renderLeaveBalances()}
-            <button
-              className="manual-adjustments-trigger"
-              type="button"
-              onClick={openManualAdjustments}
-            >
-              <span className="manual-adjustments-icon" aria-hidden="true">＋</span>
-              <span>
-                <strong>Reprendre mes absences précédentes</strong>
-                <small>Ajouter des jours et dimanches déjà posés, sans connaître leurs dates</small>
-              </span>
-              <span className="manual-adjustments-summary">
-                {manualSundayLeaveTotal
-                  ? `${manualSundayLeaveTotal} dimanche${s(manualSundayLeaveTotal)}`
-                  : "Configurer"}
-              </span>
-            </button>
-          </section>
+          <LeaveBalancesSection
+            year={absenceYear}
+            totalRemaining={totalLeaveRemaining}
+            balances={leaveStats.balances}
+            countedOnly={leaveStats.countedOnly}
+            manualSundayLeaveTotal={manualSundayLeaveTotal}
+            onYearChange={(year) => {
+              setAbsenceYear(year);
+              setBalanceDetailType(null);
+            }}
+            onSelectBalance={setBalanceDetailType}
+            onOpenManualAdjustments={openManualAdjustments}
+          />
           <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
             <button
               className="request-archive-toggle"
@@ -7599,41 +7350,17 @@ export default function Home() {
       )}
 
       {calendarDeleteMode ? (
-        <section className="calendar-delete-panel" aria-label="Suppression multiple">
-          <div>
-            <span className="step-label">Nettoyer le planning</span>
-            <h2>{calendarDeleteDates.length} date{s(calendarDeleteDates.length)} sélectionnée{s(calendarDeleteDates.length)}</h2>
-            <p>Touchez plusieurs cases, puis choisissez uniquement ce que vous souhaitez effacer.</p>
-          </div>
-          <div className="calendar-delete-actions">
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={() => {
-                setCalendarDeleteMode(false);
-                setCalendarDeleteDates([]);
-              }}
-            >
-              Annuler
-            </button>
-            <button
-              className="danger-button delete-absences-button"
-              type="button"
-              disabled={!calendarDeleteDates.length || deletingMultipleDates}
-              onClick={() => void deleteMultiplePlanningDates(calendarDeleteDates, "absences")}
-            >
-              Effacer les absences
-            </button>
-            <button
-              className="warning-button delete-notes-button"
-              type="button"
-              disabled={!calendarDeleteDates.length || deletingMultipleDates}
-              onClick={() => void deleteMultiplePlanningDates(calendarDeleteDates, "notes")}
-            >
-              Effacer les notes
-            </button>
-          </div>
-        </section>
+        <CalendarCleanupPanel
+          selectedCount={calendarDeleteDates.length}
+          busy={deletingMultipleDates}
+          onCancel={cancelCalendarCleanup}
+          onDeleteAbsences={() =>
+            void deleteMultiplePlanningDates(calendarDeleteDates, "absences")
+          }
+          onDeleteNotes={() =>
+            void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
+          }
+        />
       ) : null}
 
       <section
@@ -7673,19 +7400,10 @@ export default function Home() {
           Aujourd’hui
         </button>
         {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
-          <button
+          <CalendarCleanupTrigger
             className="calendar-bulk-delete-mobile"
-            type="button"
-            onClick={() => {
-              cancelRequest();
-              cancelRangeSelection();
-              cancelNoteSelection();
-              setCalendarDeleteDates([]);
-              setCalendarDeleteMode(true);
-            }}
-          >
-            Effacer plusieurs dates ou notes
-          </button>
+            onStart={startCalendarCleanup}
+          />
         ) : null}
         <button
           className={`primary-action ${mode === "month" ? "planning-leave-desktop" : "planning-leave-annual"}`}
@@ -7697,19 +7415,10 @@ export default function Home() {
       </section>
 
       {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
-        <button
+        <CalendarCleanupTrigger
           className="calendar-bulk-delete-button"
-          type="button"
-          onClick={() => {
-            cancelRequest();
-            cancelRangeSelection();
-            cancelNoteSelection();
-            setCalendarDeleteDates([]);
-            setCalendarDeleteMode(true);
-          }}
-        >
-          Effacer plusieurs dates ou notes
-        </button>
+          onStart={startCalendarCleanup}
+        />
       ) : null}
 
       {mode === "year" && homeSection === "pdf" && (
@@ -7890,7 +7599,7 @@ export default function Home() {
 
       {requestKind && (
         <section
-          className="request-panel calendar-request-panel"
+          className={`request-panel calendar-request-panel${sickRequest ? " sick-request-panel" : requestKind === "other" ? " other-request-panel" : ""}`}
           id="request-panel"
           style={
             { "--active-color": TYPE_COLORS[activeType] } as React.CSSProperties
@@ -8016,6 +7725,11 @@ export default function Home() {
               </p>
             </div>
           )}
+          <RequestValidationSummary
+            items={selectedList}
+            requestKind={requestKind}
+            sickRequest={sickRequest}
+          />
           <div className="request-bottom">
             <p>
               <strong>{selectedList.length}</strong>{" "}
@@ -8062,7 +7776,11 @@ export default function Home() {
           onTouchStart={startMonthSwipe}
           onTouchEnd={endMonthSwipe}
         >
-          {renderMonthCalendar(view.getFullYear(), view.getMonth())}
+          <MonthCalendar
+            year={view.getFullYear()}
+            month={view.getMonth()}
+            renderDay={renderDay}
+          />
         </section>
       ) : (
         <section className="year-grid">
@@ -8085,7 +7803,12 @@ export default function Home() {
                   {month}
                 </button>
               </h3>
-              {renderMonthCalendar(view.getFullYear(), index, true)}
+              <MonthCalendar
+                year={view.getFullYear()}
+                month={index}
+                compact
+                renderDay={renderDay}
+              />
             </article>
           ))}
         </section>
@@ -8153,10 +7876,16 @@ export default function Home() {
                 className="other-leave-choice"
                 onClick={() => {
                   setRequestChooser(false);
-                  openPlanningRequestMethod("other", undefined, "other");
+                  beginRequest("other", undefined, "other");
                 }}
               >
-                <strong>Divers</strong>
+                <strong>
+                  <i className="other-choice-dot" aria-hidden="true" />
+                  Divers
+                  <small className="other-choice-examples">
+                    (Grève, décharge syndicale, fermeture exceptionnelle)
+                  </small>
+                </strong>
                 <span>Visible dans le planning, sans effet sur la paie ni sur vos soldes.</span>
               </button>
             </div>
@@ -8406,9 +8135,7 @@ export default function Home() {
                             ? "other-day active"
                             : "other-day"
                         }
-                        onClick={() =>
-                          openPlanningRequestMethod("other", dayDate, "other")
-                        }
+                        onClick={() => void saveOtherDateDirect(dayDate)}
                       >
                         <i />
                         Divers
@@ -8541,68 +8268,24 @@ export default function Home() {
                           {periodLabel(period.from, period.to)}
                           <small>{leaveTypeLabel(period.leaveType)}</small>
                         </span>
-                        <div
-                          className="period-menu"
-                          ref={
-                            periodMenuId === period.id ? periodMenuRef : null
-                          }
-                        >
+                        <div className="period-direct-actions" aria-label={`Gérer ${periodLabel(period.from, period.to)}`}>
                           <button
-                            className="period-menu-trigger"
+                            className="period-edit-button"
                             type="button"
-                            aria-haspopup="menu"
-                            aria-expanded={periodMenuId === period.id}
-                            aria-label={`Actions pour ${periodLabel(period.from, period.to)}`}
-                            onClick={() =>
-                              setPeriodMenuId((current) =>
-                                current === period.id ? "" : period.id,
-                              )
-                            }
+                            onClick={() => editDayLeavePeriod(period)}
                           >
-                            Actions
-                            <svg viewBox="0 0 20 20" aria-hidden="true">
-                              <path d="m5 7.5 5 5 5-5" />
-                            </svg>
+                            Modifier
                           </button>
-                          {periodMenuId === period.id && (
-                            <div className="period-menu-panel" role="menu">
-                              <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setPeriodMenuId("");
-                                  editDayLeavePeriod(period);
-                                }}
-                              >
-                                Modifier
-                              </button>
-                              {(
-                                  <button
-                                    type="button"
-                                    role="menuitem"
-                                    disabled={savingRange}
-                                    onClick={() => {
-                                      setPeriodMenuId("");
-                                      void revertPeriodToWish(period);
-                                    }}
-                                  >
-                                    Repasser en souhaité
-                                  </button>
-                                )}
-                              <button
-                                className="period-menu-delete"
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setPeriodMenuId("");
-                                  setDayDate(null);
-                                  setDeletingPeriod(period);
-                                }}
-                              >
-                                Annuler ce congé
-                              </button>
-                            </div>
-                          )}
+                          <button
+                            className="period-delete-button"
+                            type="button"
+                            onClick={() => {
+                              setDayDate(null);
+                              setDeletingPeriod(period);
+                            }}
+                          >
+                            Annuler le congé
+                          </button>
                         </div>
                       </article>
                     ))}
@@ -8716,7 +8399,7 @@ export default function Home() {
               ×
             </button>
             <span className="step-label">
-              {balanceDetail.quota ? "Solde" : "Suivi"} {view.getFullYear()}
+              {balanceDetail.quota ? "Solde" : "Suivi"} {absenceYear}
             </span>
             <h2 id="balance-detail-title">{balanceDetail.title}</h2>
             <div className="balance-detail-summary">
@@ -8742,55 +8425,62 @@ export default function Home() {
                 <button type="button" onClick={openManualAdjustments}>Modifier</button>
               </div>
             ) : null}
-            {balanceDetail.details.length ? (
-              <>
-                <p className="balance-detail-guidance">
-                  Touchez une date pour consulter sa fiche. Le menu <strong>Actions</strong>{" "}
-                  permet ensuite de modifier ou d’annuler le congé.
-                </p>
-                <div className="balance-detail-list">
-                {balanceDetail.details.map((detail, index) => (
-                  <article
-                    key={`${detail.date}-${detail.units}-${index}`}
-                    className={recentBalanceDetailDates.has(detail.date) ? "recent-leave-date" : ""}
-                  >
-                    <button
-                      className="balance-detail-open"
-                      type="button"
-                      onClick={() => {
-                        const date = fromKey(detail.date);
-                        setBalanceDetailType(null);
-                        setView(localDate(date.getFullYear(), date.getMonth(), 1));
-                        setMode("month");
-                        openDay(date);
-                      }}
-                      aria-label={`Ouvrir la fiche du ${longDate(fromKey(detail.date))} pour gérer cette absence`}
+            <p className="balance-detail-guidance">
+              Ouvrez un mois pour consulter les dates enregistrées. Touchez ensuite une date
+              pour la gérer depuis sa fiche.
+            </p>
+            <div className="balance-detail-months">
+            {balanceDetailMonths.map((month) => (
+              <details className="balance-detail-month" key={month.key}>
+                <summary>
+                  <span className="balance-detail-month-label">
+                    <strong>{month.label}</strong>
+                    <small>{month.units.toLocaleString("fr-FR")} jour{s(month.units)}</small>
+                  </span>
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5" /></svg>
+                </summary>
+                {month.details.length ? (
+                  <div className="balance-detail-list">
+                  {month.details.map((detail, index) => (
+                    <article
+                      key={`${detail.date}-${detail.units}-${index}`}
+                      className={recentBalanceDetailDates.has(detail.date) ? "recent-leave-date" : ""}
                     >
-                      <span className="balance-detail-date-copy">
-                        <strong>{longDate(fromKey(detail.date))}</strong>
-                        <small>Voir et gérer cette absence</small>
-                      </span>
-                      <span className="balance-detail-value">
-                        <strong>
-                          {balanceDetail.quota ? "−" : ""}
-                          {detail.units.toLocaleString("fr-FR")} jour
-                        </strong>
-                        <svg viewBox="0 0 20 20" aria-hidden="true">
-                          <path d="m7 4 6 6-6 6" />
-                        </svg>
-                      </span>
-                    </button>
-                  </article>
-                ))}
-                </div>
-              </>
-            ) : (
-              <p className="balance-detail-empty">
-                {balanceDetail.quota
-                  ? "Aucun jour n’est encore déduit dans cette catégorie."
-                  : "Aucun jour d’arrêt enregistré cette année."}
-              </p>
-            )}
+                      <button
+                        className="balance-detail-open"
+                        type="button"
+                        onClick={() => {
+                          const date = fromKey(detail.date);
+                          setBalanceDetailType(null);
+                          setView(localDate(date.getFullYear(), date.getMonth(), 1));
+                          setMode("month");
+                          openDay(date);
+                        }}
+                        aria-label={`Ouvrir la fiche du ${longDate(fromKey(detail.date))} pour gérer cette absence`}
+                      >
+                        <span className="balance-detail-date-copy">
+                          <strong>{longDate(fromKey(detail.date))}</strong>
+                          <small>Voir et gérer cette absence</small>
+                        </span>
+                        <span className="balance-detail-value">
+                          <strong>
+                            {balanceDetail.quota ? "−" : ""}
+                            {detail.units.toLocaleString("fr-FR")} jour
+                          </strong>
+                          <svg viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="m7 4 6 6-6 6" />
+                          </svg>
+                        </span>
+                      </button>
+                    </article>
+                  ))}
+                  </div>
+                ) : (
+                  <p className="balance-detail-month-empty">Aucune date enregistrée ce mois-ci.</p>
+                )}
+              </details>
+            ))}
+            </div>
             <div className="modal-actions">
               <button
                 className="secondary-button"
@@ -8804,886 +8494,89 @@ export default function Home() {
         </div>
       )}
 
-      {manualAdjustmentsOpen && (
-        <div
-          className="modal-backdrop manual-adjustments-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setManualAdjustmentsOpen(false)
-          }
-        >
-          <section
-            className="modal-card manual-adjustments-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="manual-adjustments-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setManualAdjustmentsOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Rattrapage {absenceYear}</span>
-            <h2 id="manual-adjustments-title">Mes absences avant l’application</h2>
-            <p className="manual-adjustments-intro">
-              Indiquez uniquement ce qui n’est pas déjà enregistré dans le planning.
-              Les nouvelles demandes seront ensuite ajoutées automatiquement.
-            </p>
+      <ManualAdjustmentsDialog
+        open={manualAdjustmentsOpen}
+        year={absenceYear}
+        draft={manualAdjustmentDraft}
+        setDraft={setManualAdjustmentDraft}
+        saving={savingManualAdjustments}
+        onClose={() => setManualAdjustmentsOpen(false)}
+        onSave={() => void saveManualAdjustments()}
+      />
 
-            <section className="manual-adjustment-section">
-              <div className="manual-adjustment-heading">
-                <span aria-hidden="true">1</span>
-                <div>
-                  <h3>Jours déjà pris sans date</h3>
-                  <p>Ces nombres sont directement déduits de vos soldes {absenceYear}.</p>
-                </div>
-              </div>
-              <div className="manual-leave-inputs">
-                {([
-                  ["annualUsed", "Congés annuels", LEAVE_ALLOWANCES.annual],
-                  ["rttUsed", "RTT", LEAVE_ALLOWANCES.rtt],
-                  ["fractionUsed", "Fractionnement", LEAVE_ALLOWANCES.fraction],
-                ] as const).map(([key, label, allowance]) => (
-                  <label key={key}>
-                    <span>{label}</span>
-                    <span className="manual-number-field">
-                      <input
-                        type="number"
-                        min="0"
-                        max={allowance}
-                        step="0.5"
-                        inputMode="decimal"
-                        value={manualAdjustmentDraft[key]}
-                        onChange={(event) =>
-                          setManualAdjustmentDraft((current) => ({
-                            ...current,
-                            [key]: event.target.value,
-                          }))
-                        }
-                      />
-                      <small>jour{s(Number(manualAdjustmentDraft[key]) || 0)}</small>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </section>
+      <RangeLeaveDialog
+        open={rangeOpen}
+        leaveType={rangeLeaveType}
+        setLeaveType={setRangeLeaveType}
+        halfMoment={rangeHalfMoment}
+        setHalfMoment={setRangeHalfMoment}
+        onClose={() => setRangeOpen(false)}
+        onStartSelection={beginRangeSelection}
+      />
 
-            <section className="manual-adjustment-section sunday-adjustment-section">
-              <div className="manual-adjustment-heading">
-                <span aria-hidden="true">2</span>
-                <div>
-                  <h3>Dimanches posés en congé</h3>
-                  <p>Ils sont retirés des dimanches travaillés avant le calcul de chaque prime.</p>
-                </div>
-              </div>
-              <div className="manual-sunday-inputs">
-                {([
-                  ["sundayLeaveJanJun", "Janvier à juin", "Prime de juillet"],
-                  ["sundayLeaveJulSep", "Juillet à septembre", "Prime d’octobre"],
-                  ["sundayLeaveOctNov", "Octobre à novembre", "Prime de décembre"],
-                  ["sundayLeaveDec", "Décembre", `Prime de janvier ${absenceYear + 1}`],
-                ] as const).map(([key, period, pay]) => (
-                  <label key={key}>
-                    <span className="manual-sunday-period">
-                      <strong>{period}</strong>
-                      <small>→ {pay}</small>
-                    </span>
-                    <span className="manual-number-field">
-                      <input
-                        type="number"
-                        min="0"
-                        max="53"
-                        step="1"
-                        inputMode="numeric"
-                        value={manualAdjustmentDraft[key]}
-                        onChange={(event) =>
-                          setManualAdjustmentDraft((current) => ({
-                            ...current,
-                            [key]: event.target.value,
-                          }))
-                        }
-                        aria-label={`Dimanches posés de ${period.toLowerCase()}`}
-                      />
-                      <small>dimanche{s(Number(manualAdjustmentDraft[key]) || 0)}</small>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <p className="manual-sunday-help">
-                Les dimanches couverts par un congé daté dans l’application sont déjà comptés : ne les ajoutez pas ici.
-              </p>
-            </section>
+      <MecenatDialog
+        open={mecenatDialogOpen}
+        draft={mecenatDraft}
+        setDraft={setMecenatDraft}
+        calculation={mecenatDraftCalculation}
+        saving={savingMecenat}
+        onClose={() => setMecenatDialogOpen(false)}
+        onSave={() => void saveMecenatEntry()}
+      />
 
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setManualAdjustmentsOpen(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="save-button"
-                type="button"
-                onClick={() => void saveManualAdjustments()}
-                disabled={savingManualAdjustments}
-              >
-                {savingManualAdjustments ? "Enregistrement…" : "Enregistrer et recalculer"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <OvertimeDialog
+        open={overtimeDialogOpen}
+        draft={overtimeDraft}
+        setDraft={setOvertimeDraft}
+        saving={savingOvertime}
+        onClose={() => setOvertimeDialogOpen(false)}
+        onSave={() => void saveOvertimeEntry()}
+      />
 
-      {rangeOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setRangeOpen(false)
-          }
-        >
-          <section
-            className="modal-card range-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="range-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setRangeOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Mon planning</span>
-            <h2 id="range-title">Ajouter une période de congés</h2>
-            <p>
-              Choisissez le type de congé, puis sélectionnez une ou plusieurs
-              dates directement dans le calendrier.
-            </p>
-            {rangeLeaveType === "other" ? (
-              <div className="request-option-groups manual-leave-options">
-                <section className="request-option-group">
-                  <h3>Divers</h3>
-                  <div className="type-tabs">
-                    <button
-                      type="button"
-                      className="active"
-                      style={{ "--type-color": TYPE_COLORS.other } as React.CSSProperties}
-                    >
-                      <i />
-                      {TYPE_LABELS.other}
-                    </button>
-                  </div>
-                  <p className="request-help">Sans effet sur la paie ni sur les soldes.</p>
-                </section>
-              </div>
-            ) : (
-            <div className="request-option-groups manual-leave-options">
-              {([
-                ["Congés courants", ["annual", "half", "rtt"]],
-                ["Autres congés", ["fraction", "childcare", "exceptional"]],
-              ] as Array<[string, LeaveType[]]>).map(([label, types]) => (
-                <section className="request-option-group" key={label}>
-                  <h3>{label}</h3>
-                  <div className="type-tabs" aria-label={label}>
-                    {types.map((type) => (
-                      <button
-                        type="button"
-                        className={rangeLeaveType === type ? "active" : ""}
-                        style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties}
-                        onClick={() => setRangeLeaveType(type)}
-                        key={type}
-                      >
-                        <i />
-                        {TYPE_LABELS[type]}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-            )}
-            {rangeLeaveType === "half" && (
-                <div className="leave-type-field">
-                  <span>Moitié de journée</span>
-                  <ChoicePicker
-                    value={rangeHalfMoment}
-                    options={HALF_MOMENT_OPTIONS}
-                    onChange={setRangeHalfMoment}
-                    ariaLabel="Choisir le matin ou l’après-midi"
-                    className="leave-type-picker"
-                  />
-                </div>
-              )}
-            <div className="modal-actions range-create-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setRangeOpen(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="save-button"
-                type="button"
-                onClick={beginRangeSelection}
-              >
-                Sélectionner dans le calendrier
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <SolidarityHoursDialog
+        open={solidarityDialogOpen}
+        draft={solidarityDraft}
+        setDraft={setSolidarityDraft}
+        saving={savingOvertime}
+        onClose={() => setSolidarityDialogOpen(false)}
+        onSave={() => void saveSolidarityHours()}
+      />
 
-      {mecenatDialogOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setMecenatDialogOpen(false)
-          }
-        >
-          <section
-            className="modal-card overtime-modal mecenat-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="mecenat-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setMecenatDialogOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Ma paie</span>
-            <h2 id="mecenat-title">Déclarer un mécénat</h2>
-            <p>
-              Indiquez les horaires : Planning Solo sépare automatiquement les heures avant et après 22 h, y compris après minuit.
-            </p>
-            <div className="overtime-form">
-              <label>
-                <span>Date du mécénat</span>
-                <input
-                  type="date"
-                  value={mecenatDraft.date}
-                  onChange={(event) =>
-                    setMecenatDraft((current) => ({
-                      ...current,
-                      date: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <div className="overtime-time-grid">
-                <label>
-                  <span>Début</span>
-                  <input
-                    type="time"
-                    step="900"
-                    value={mecenatDraft.start}
-                    onChange={(event) =>
-                      setMecenatDraft((current) => ({
-                        ...current,
-                        start: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <label>
-                  <span>Fin</span>
-                  <input
-                    type="time"
-                    step="900"
-                    value={mecenatDraft.end}
-                    onChange={(event) =>
-                      setMecenatDraft((current) => ({
-                        ...current,
-                        end: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <small>Si l’heure de fin est antérieure au début, la vacation se termine le lendemain.</small>
-              </div>
-              <p className="mecenat-next-month-note">
-                Le paiement sera automatiquement intégré à la paie du mois suivant.
-              </p>
-              {mecenatDraftCalculation ? (
-                <section className="mecenat-preview" aria-live="polite">
-                  <div>
-                    <span>De 7 h à 22 h</span>
-                    <strong>
-                      {minutesLabel(mecenatDraftCalculation.dayMinutes)} · {euros(
-                        (mecenatDraftCalculation.dayMinutes / 60) *
-                          (MECENAT_REGULATORY_RATES.dayRateCents / 100),
-                      )}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>De 22 h à 7 h</span>
-                    <strong>
-                      {minutesLabel(mecenatDraftCalculation.nightMinutes)} · {euros(
-                        (mecenatDraftCalculation.nightMinutes / 60) *
-                          (MECENAT_REGULATORY_RATES.nightRateCents / 100),
-                      )}
-                    </strong>
-                  </div>
-                  <p>
-                    <span>Total brut</span>
-                    <strong>{euros(mecenatDraftCalculation.grossAmountCents / 100)}</strong>
-                  </p>
-                </section>
-              ) : (
-                <p className="allowance-note warn">Les heures de début et de fin doivent être différentes.</p>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setMecenatDialogOpen(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="save-button"
-                type="button"
-                onClick={() => void saveMecenatEntry()}
-                disabled={savingMecenat || !mecenatDraftCalculation}
-              >
-                {savingMecenat ? "Enregistrement…" : "Enregistrer le mécénat"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <RecoveryUseDialog
+        open={recoveryDialogOpen}
+        draft={recoveryDraft}
+        setDraft={setRecoveryDraft}
+        workDayMinutes={workDayMinutes}
+        remainingMinutes={recoveryBalance.remaining}
+        saving={savingOvertime}
+        onClose={() => setRecoveryDialogOpen(false)}
+        onSave={() => void saveRecoveryUse()}
+      />
 
-      {overtimeDialogOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setOvertimeDialogOpen(false)
-          }
-        >
-          <section
-            className="modal-card overtime-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="overtime-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setOvertimeDialogOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Ma paie et mes récupérations</span>
-            <h2 id="overtime-title">Déclarer des heures supplémentaires</h2>
-            <p>Saisissez la date et les horaires, puis choisissez leur destination.</p>
-            <div className="overtime-form">
-              <label>
-                <span>Date</span>
-                <input
-                  type="date"
-                  value={overtimeDraft.date}
-                  onChange={(event) =>
-                    setOvertimeDraft((current) => ({
-                      ...current,
-                      date: event.target.value,
-                    }))
-                  }
-                />
-                <small>Hors dimanche et jour férié</small>
-              </label>
-              <div className="overtime-time-grid">
-                  <strong className="overtime-time-title">Horaires</strong>
-                  <label>
-                    <span>De</span>
-                    <input
-                      type="time"
-                      step="900"
-                      value={overtimeDraft.start}
-                      onChange={(event) =>
-                        setOvertimeDraft((current) => ({
-                          ...current,
-                          start: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>À</span>
-                    <input
-                      type="time"
-                      step="900"
-                      value={overtimeDraft.end}
-                      onChange={(event) =>
-                        setOvertimeDraft((current) => ({
-                          ...current,
-                          end: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <small>La nuit est reconnue automatiquement de 22 h à 7 h. Les horaires peuvent passer minuit.</small>
-              </div>
-              <fieldset className="overtime-choice-field disposition-choice">
-                <legend>Que faire de ces heures ?</legend>
-                <div className="overtime-destination-grid">
-                  <button
-                    type="button"
-                    className={overtimeDraft.disposition === "paid" ? "active paid" : "paid"}
-                    onClick={() =>
-                      setOvertimeDraft((current) => ({
-                        ...current,
-                        disposition: "paid",
-                      }))
-                    }
-                  >
-                    <strong>À payer</strong>
-                    <span>Ajoutées à la paie du mois suivant</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={overtimeDraft.disposition === "recovery" ? "active recovery" : "recovery"}
-                    onClick={() =>
-                      setOvertimeDraft((current) => ({
-                        ...current,
-                        disposition: "recovery",
-                      }))
-                    }
-                  >
-                    <strong>À récupérer</strong>
-                    <span>Ajoutées au solde heure pour heure</span>
-                  </button>
-                </div>
-              </fieldset>
-            </div>
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setOvertimeDialogOpen(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="save-button"
-                type="button"
-                onClick={() => void saveOvertimeEntry()}
-                disabled={savingOvertime}
-              >
-                {savingOvertime ? "Enregistrement…" : "Enregistrer les heures"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {solidarityDialogOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setSolidarityDialogOpen(false)
-          }
-        >
-          <section
-            className="modal-card overtime-modal solidarity-hours-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="solidarity-hours-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setSolidarityDialogOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Solde de récupération</span>
-            <h2 id="solidarity-hours-title">Ajouter des heures manuellement</h2>
-            <p>
-              Indiquez le total personnel accumulé au fil des années. Ces heures
-              créditent uniquement votre solde de récupération.
-            </p>
-            <div className="overtime-duration-grid solidarity-duration-grid">
-              <label>
-                <span>Heures</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="10000"
-                  step="0.25"
-                  inputMode="decimal"
-                  value={solidarityDraft.hours}
-                  onChange={(event) =>
-                    setSolidarityDraft((current) => ({ ...current, hours: event.target.value }))
-                  }
-                  autoFocus
-                />
-              </label>
-              <label>
-                <span>Minutes</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  step="5"
-                  inputMode="numeric"
-                  value={solidarityDraft.minutes}
-                  onChange={(event) =>
-                    setSolidarityDraft((current) => ({ ...current, minutes: event.target.value }))
-                  }
-                />
-              </label>
-            </div>
-            <p className="solidarity-hours-note">
-              Chaque ajout reste visible dans l’historique et peut être supprimé en cas d’erreur.
-            </p>
-            <div className="modal-actions">
-              <button className="secondary-button" type="button" onClick={() => setSolidarityDialogOpen(false)}>
-                Annuler
-              </button>
-              <button className="save-button" type="button" onClick={() => void saveSolidarityHours()} disabled={savingOvertime}>
-                {savingOvertime ? "Enregistrement…" : "Ajouter au solde"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {recoveryDialogOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setRecoveryDialogOpen(false)
-          }
-        >
-          <section
-            className="modal-card overtime-modal recovery-use-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="recovery-use-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setRecoveryDialogOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Congés et récupérations</span>
-            <h2 id="recovery-use-title">Utiliser mes heures de récupération</h2>
-            <p className="recovery-available">
-              Solde disponible <strong>{minutesLabel(recoveryBalance.remaining)}</strong>
-            </p>
-            <div className="overtime-form">
-              <label>
-                <span>Date</span>
-                <input
-                  type="date"
-                  value={recoveryDraft.date}
-                  onChange={(event) =>
-                    setRecoveryDraft((current) => ({
-                      ...current,
-                      date: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <fieldset className="overtime-choice-field">
-                <legend>Durée</legend>
-                <div className="recovery-duration-choice">
-                  {([
-                    ["hours", "Durée libre"],
-                    ["half", `Demi-journée · ${minutesLabel(workDayMinutes / 2)}`],
-                    ["day", `Journée · ${minutesLabel(workDayMinutes)}`],
-                    ["holiday", `Jour férié · ${minutesLabel(workDayMinutes)}`],
-                  ] as const).map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className={recoveryDraft.kind === value ? "active" : ""}
-                      onClick={() =>
-                        setRecoveryDraft((current) => ({ ...current, kind: value }))
-                      }
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-              {recoveryDraft.kind === "hours" ? (
-                <div className="overtime-duration-grid recovery-custom-duration">
-                  <label>
-                    <span>Heures</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.25"
-                      inputMode="decimal"
-                      value={recoveryDraft.hours}
-                      onChange={(event) =>
-                        setRecoveryDraft((current) => ({
-                          ...current,
-                          hours: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>Minutes</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      step="5"
-                      inputMode="numeric"
-                      value={recoveryDraft.minutes}
-                      onChange={(event) =>
-                        setRecoveryDraft((current) => ({
-                          ...current,
-                          minutes: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-              ) : null}
-              <label>
-                <span>Heure de début <small>(facultatif)</small></span>
-                <input
-                  type="time"
-                  step="900"
-                  value={recoveryDraft.start}
-                  onChange={(event) =>
-                    setRecoveryDraft((current) => ({
-                      ...current,
-                      start: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setRecoveryDialogOpen(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="save-button"
-                type="button"
-                onClick={() => void saveRecoveryUse()}
-                disabled={savingOvertime || recoveryBalance.remaining <= 0}
-              >
-                {savingOvertime ? "Enregistrement…" : "Poser la récupération"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {timeDate && (
-        <div className="modal-backdrop" role="presentation">
-          <section
-            className="modal-card time-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="time-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setTimeDate(null)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">{TYPE_LABELS[activeType]}</span>
-            <h2 id="time-title">Indiquez les horaires</h2>
-            <p>{longDate(fromKey(timeDate))}</p>
-            <div className="time-fields">
-              <label htmlFor="request-time-start">
-                <span>De</span>
-                <input
-                  id="request-time-start"
-                  aria-label="De"
-                  type="time"
-                  min="09:00"
-                  max="19:30"
-                  step="900"
-                  value={timeStart}
-                  onChange={(event) => setTimeStart(event.target.value)}
-                />
-              </label>
-              <label htmlFor="request-time-end">
-                <span>À</span>
-                <input
-                  id="request-time-end"
-                  aria-label="À"
-                  type="time"
-                  min="09:00"
-                  max="19:30"
-                  step="900"
-                  value={timeEnd}
-                  onChange={(event) => setTimeEnd(event.target.value)}
-                />
-              </label>
-            </div>
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setTimeDate(null)}
-              >
-                Annuler
-              </button>
-              <button
-                className="save-button"
-                type="button"
-                onClick={commitTime}
-              >
-                Valider les horaires
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {warningDate && (
-        <div className="modal-backdrop" role="presentation">
-          <section
-            className="modal-card warning-modal"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="warning-title"
-          >
-            <span className="warning-symbol">!</span>
-            <h2 id="warning-title">Journée non travaillée</h2>
-            <p>
-              Le {shortDate(warningDate)} est un jour de repos ou un jour férié
-              non travaillé pour le groupe {group}. Voulez-vous vraiment
-              l’ajouter à la demande ?
-            </p>
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                data-modal-close
-                onClick={() => setWarningDate(null)}
-              >
-                Annuler
-              </button>
-              <button
-                className="warning-button"
-                type="button"
-                onClick={confirmWarning}
-              >
-                Sélectionner quand même
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {deletingPeriod && (
-        <div className="modal-backdrop" role="presentation">
-          <section
-            className="modal-card warning-modal"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-period-title"
-          >
-            <span className="warning-symbol">!</span>
-            <h2 id="delete-period-title">Annuler cette période ?</h2>
-            <p>
-              {periodLabel(deletingPeriod.from, deletingPeriod.to)} ·{" "}
-              {leaveTypeLabel(deletingPeriod.leaveType)}
-            </p>
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                data-modal-close
-                onClick={() => setDeletingPeriod(null)}
-              >
-                Conserver
-              </button>
-              <button
-                className="delete-confirm-button"
-                type="button"
-                onClick={deleteLeavePeriod}
-                disabled={savingRange}
-              >
-                {savingRange ? "Annulation…" : "Annuler la période"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {message && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && dismiss()
-          }
-        >
-          <section
-            className="modal-card message-modal"
-            role="alertdialog"
-            aria-modal="true"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => dismiss()}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <h2>Impossible de continuer</h2>
-            <p>{message}</p>
-            <div className="modal-actions">
-              <button
-                className="save-button"
-                type="button"
-                onClick={() => dismiss()}
-              >
-                Compris
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-      {successMessage ? (
-        <div className="success-toast" role="status" aria-live="polite">
-          <span aria-hidden="true">✓</span>
-          <p>{successMessage}</p>
-          <button type="button" onClick={dismissSuccess} aria-label="Fermer la confirmation">
-            ×
-          </button>
-        </div>
-      ) : null}
+      <TimeSelectionDialog
+        date={timeDate}
+        activeType={activeType}
+        start={timeStart}
+        end={timeEnd}
+        onStartChange={setTimeStart}
+        onEndChange={setTimeEnd}
+        onClose={() => setTimeDate(null)}
+        onConfirm={commitTime}
+      />
+      <NonWorkingDayWarningDialog
+        date={warningDate}
+        group={group}
+        onCancel={() => setWarningDate(null)}
+        onConfirm={confirmWarning}
+      />
+      <DeletePeriodDialog
+        period={deletingPeriod}
+        saving={savingRange}
+        onCancel={() => setDeletingPeriod(null)}
+        onConfirm={deleteLeavePeriod}
+      />
+      <MessageDialog message={message} onClose={dismiss} />
+      <SuccessToast message={successMessage} onClose={dismissSuccess} />
       <DataManagementDialog
         open={dataManagementOpen}
         busy={dataManagementBusy}

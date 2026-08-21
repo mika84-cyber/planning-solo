@@ -156,9 +156,9 @@ export const GROUP_OPTIONS = [1, 2, 3].map((value) => ({
   value,
   label: `Groupe ${value}`,
 }));
-export const YEAR_OPTIONS = Array.from({ length: 13 }, (_, index) => ({
-  value: 2024 + index,
-  label: String(2024 + index),
+export const YEAR_OPTIONS = Array.from({ length: 25 }, (_, index) => ({
+  value: 2026 + index,
+  label: String(2026 + index),
 }));
 export const MONTH_OPTIONS = MONTHS.map((label, value) => ({ value, label }));
 
