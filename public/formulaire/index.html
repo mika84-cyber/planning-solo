@@ -464,6 +464,35 @@
   html.device-desktop .bar-actions #btnPdf{grid-column:3;grid-row:1;padding-left:12px;padding-right:12px}
   html.device-desktop .bar-actions #btnOutlook{display:none}
   html.device-desktop .bar-actions #btnPrint{grid-column:4;grid-row:1;width:44px;min-width:44px;padding:0}
+  .back-app-button{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .bar-actions #btnBackApp{grid-column:1 / -1;grid-row:1;min-height:38px}
+  .bar-actions #btnReset{grid-row:2}
+  .bar-actions #btnSecond{grid-row:2}
+  .bar-actions #btnPdf{grid-row:2}
+  .bar-actions #btnOutlook{grid-row:2}
+  .bar-actions #btnPrint{grid-row:2}
+  html.device-desktop .bar-actions #btnBackApp{grid-column:1 / -1;grid-row:1}
+  html.device-desktop .bar-actions #btnReset{grid-column:1;grid-row:2}
+  html.device-desktop .bar-actions #btnSecond{grid-column:2;grid-row:2}
+  html.device-desktop .bar-actions #btnPdf{grid-column:3;grid-row:2}
+  html.device-desktop .bar-actions #btnPrint{grid-column:4;grid-row:2}
+  html.device-touch .bar-actions #btnBackApp{grid-column:1 / -1;grid-row:1}
+  html.device-touch .bar-actions #btnReset{grid-row:2}
+  html.device-touch .bar-actions #btnSecond{grid-row:2}
+  html.device-touch .bar-actions #btnPdf{grid-row:2}
+  html.device-touch .bar-actions #btnOutlook{grid-row:2}
+  html.device-touch .bar-actions #btnPrint{grid-row:2}
+  @media(max-width:760px){
+    .bar-actions{grid-template-columns:repeat(2,minmax(0,1fr)) 46px}
+    .bar-actions #btnBackApp{grid-column:1 / -1;grid-row:1}
+    .bar-actions #btnReset{grid-column:1;grid-row:2}
+    .bar-actions #btnSecond{grid-column:2;grid-row:2}
+    .bar-actions #btnPrint{grid-column:3;grid-row:2}
+    .bar-actions #btnOutlook{grid-column:1 / -1;grid-row:3}
+    .bar-actions #btnPdf{grid-column:1 / -1;grid-row:3}
+    html.device-touch .bar-actions #btnOutlook{grid-column:1 / -1;grid-row:3}
+    html.device-touch .bar-actions #btnPdf{grid-column:1 / -1;grid-row:4}
+  }
   #observationBox{max-width:1000px;margin:16px auto 26px;padding:14px 16px;background:var(--panel);border:1px solid rgba(64,120,220,.28);border-radius:12px;box-sizing:border-box;box-shadow:0 2px 10px rgba(0,0,0,.06)}
   #observationBox label{display:block;font-weight:800;color:var(--ui);margin-bottom:8px}
   #observationBox textarea{width:100%;min-height:96px;resize:vertical;box-sizing:border-box;border:1px solid rgba(64,120,220,.35);border-radius:9px;padding:11px 12px;font:inherit;line-height:1.4;background:var(--field-bg);color:var(--text);outline:none}
@@ -485,6 +514,7 @@
       </div>
     </div>
     <div class="bar-actions">
+      <a class="btn secondary back-app-button" id="btnBackApp" href="/">← Revenir à l’application</a>
       <button class="btn neutral" id="btnReset">Vider</button>
       <button class="btn secondary" id="btnSecond">Ajouter une feuille</button>
       <button class="btn" id="btnPdf">Télécharger le PDF</button>

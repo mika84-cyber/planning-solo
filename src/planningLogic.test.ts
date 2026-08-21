@@ -24,8 +24,19 @@ import {
   sundayPayslip,
   unpaidSundays,
   TYPE_COLORS,
+  YEAR_OPTIONS,
   wasPompidouHolidayWorked,
 } from "./planningLogic";
+
+describe("années proposées", () => {
+  it("commence en 2026 et va jusqu’en 2050", () => {
+    expect(YEAR_OPTIONS).toHaveLength(25);
+    expect(YEAR_OPTIONS[0]).toEqual({ value: 2026, label: "2026" });
+    expect(YEAR_OPTIONS.at(-1)).toEqual({ value: 2050, label: "2050" });
+    expect(YEAR_OPTIONS.map(({ value }) => value)).not.toContain(2024);
+    expect(YEAR_OPTIONS.map(({ value }) => value)).not.toContain(2025);
+  });
+});
 
 describe("reprise des dimanches posés sans date", () => {
   const sundays = [

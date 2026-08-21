@@ -1741,6 +1741,44 @@ h1 {
   gap: 9px;
   margin-left: auto;
 }
+.app-update-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(360px, 100%);
+  min-height: 42px;
+  margin: -10px auto 18px;
+  border: 1px solid #b9cce3;
+  border-radius: 13px;
+  padding: 8px 14px;
+  background: #f8faff;
+  color: #2d5da7;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(45, 93, 167, 0.08);
+}
+.app-update-button:hover,
+.app-update-button:focus-visible {
+  border-color: #7fa3d2;
+  background: #eef4ff;
+  outline: 2px solid rgba(45, 93, 167, 0.15);
+  outline-offset: 2px;
+}
+.app-update-button:disabled { cursor: wait; opacity: 0.72; }
+.app-update-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+.app-update-button.checking svg { animation: update-button-spin 700ms linear infinite; }
+@keyframes update-button-spin { to { transform: rotate(360deg); } }
 .success-toast {
   position: fixed;
   z-index: 180;
@@ -2983,7 +3021,9 @@ h1 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  /* Toujours au-dessus de l’en-tête sticky (1000) et du menu (1200), sinon
+     le bouton de fermeture d’une fenêtre haute peut devenir incliquable. */
+  z-index: 1250;
   display: grid;
   place-items: center;
   padding: 12px;
@@ -4425,64 +4465,6 @@ h1 {
   font-weight: 800;
 }
 
-/* Un seul déclencheur par période, les trois actions dans un menu : à trois
-   boutons alignés, la ligne débordait sur écran plié. */
-.period-menu {
-  position: relative;
-}
-.period-menu-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 13px;
-  font-size: 13px;
-}
-.period-menu-trigger svg {
-  width: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-}
-.period-menu-trigger[aria-expanded="true"] svg {
-  transform: rotate(180deg);
-}
-.period-menu-panel {
-  position: absolute;
-  z-index: 30;
-  top: calc(100% + 6px);
-  right: 0;
-  display: grid;
-  gap: 2px;
-  width: 232px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 5px;
-  background: #fff;
-  box-shadow: 0 10px 26px rgba(31, 46, 78, 0.16);
-}
-.period-menu-panel button {
-  width: 100%;
-  min-height: 46px;
-  border: 0;
-  border-radius: 10px;
-  padding: 10px 13px;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 800;
-  text-align: left;
-  cursor: pointer;
-}
-.period-menu-panel button:hover:not(:disabled) {
-  background: #f2f6fd;
-}
-.period-menu-panel .period-menu-delete {
-  color: #a92f3b;
-}
-
 /* État réseau et sauvegarde : une information courte, lisible sans masquer le
    planning. `aria-live` dans le composant fournit le même retour au lecteur
    d'écran. */
@@ -5770,8 +5752,6 @@ h1 {
   .filter-chip,
   .type-tabs button,
   .modal-actions button,
-  .period-menu-trigger,
-  .period-menu-panel button,
   .advanced-options-toggle {
     min-height: 44px;
   }
@@ -8367,7 +8347,148 @@ h1 {
 
 .other-leave-choice,
 .leave-choices .other-day {
-  --choice-accent: #707b8d;
+  --choice-accent: #4caee8;
+  --person-color: var(--leave);
+}
+.other-leave-choice strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.other-choice-dot {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--leave);
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.other-choice-examples {
+  color: #617087;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Les actions d'une absence sont immédiatement visibles dans la fiche du jour. */
+.day-stored-periods article {
+  grid-template-columns: 7px minmax(0, 1fr);
+  gap: 9px 10px;
+  border-color: #aac1dc;
+  padding: 11px;
+  background: linear-gradient(145deg, #f7faff, #eef4fb);
+  box-shadow: 0 5px 14px rgba(48, 83, 123, 0.09);
+}
+.day-stored-periods article > i {
+  width: 7px;
+  min-height: 46px;
+  height: 100%;
+}
+.period-direct-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.day-stored-periods article .period-direct-actions button {
+  min-height: 44px;
+  border-radius: 11px;
+  padding: 8px 10px;
+  font-size: 12px;
+  text-align: center;
+}
+.day-stored-periods article .period-edit-button {
+  border-color: #9db8d8;
+  background: #fff;
+  color: #245a94;
+}
+.day-stored-periods article .period-delete-button {
+  border-color: #efc3ca;
+  background: #fff8f9;
+  color: #ae3043;
+}
+
+/* Contrôle final lisible avant l'enregistrement ou l'ouverture du formulaire. */
+.request-validation-summary {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+  border: 1px solid #b8cbe1;
+  border-radius: 15px;
+  padding: 12px;
+  background: #f7faff;
+}
+.request-validation-summary > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.request-validation-summary > header span {
+  color: #315d8e;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.request-validation-summary > header strong {
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #dfeafa;
+  color: #28588f;
+  font-size: 11px;
+}
+.request-validation-dates {
+  display: grid;
+  gap: 5px;
+  max-height: 168px;
+  overflow-y: auto;
+}
+.request-validation-dates article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 8px 9px;
+  background: #fff;
+}
+.request-validation-dates article > span { display: grid; gap: 2px; }
+.request-validation-dates strong { font-size: 11.5px; }
+.request-validation-dates small { color: #68798c; font-size: 10px; }
+.request-validation-dates em {
+  color: #405e7d;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.request-validation-summary > p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  border-top: 1px solid #dce5f0;
+  padding-top: 8px;
+}
+.request-validation-summary > p strong { color: #3a5877; font-size: 10.5px; }
+.request-validation-summary > p span { color: #607286; font-size: 10.5px; line-height: 1.35; }
+
+/* Le guide suit les PDF dans le menu. */
+.main-menu-drawer nav > button.guide-menu-entry {
+  border-color: #ecc7d2;
+  background: linear-gradient(145deg, #fff4f7, #fbe8ee);
+  color: #7f3d52;
+  box-shadow: inset 4px 0 #e6a9b9;
+}
+.main-menu-drawer nav > button.guide-menu-entry:hover {
+  background: #fff7f9;
+}
+@media (max-width: 520px) {
+  .period-direct-actions { grid-template-columns: minmax(0, 1fr); }
+  .other-choice-examples { display: block; width: 100%; }
 }
 
 .holiday-pay-amount {
@@ -8584,4 +8705,636 @@ h1 {
   .calendar-delete-actions .secondary-button { grid-column: 1; width: auto; }
   .balance-detail-list article { display: block; }
   .balance-detail-date-copy > strong { font-size: 11px; }
+}
+
+/* Ajustements de confort du planning et de la paie. */
+.holiday-pay-amount {
+  width: fit-content;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  white-space: nowrap;
+}
+
+.leave-day.leave-other,
+.day.personal-day,
+.mini-day.personal-day {
+  background: var(--leave);
+  color: #123b55;
+  box-shadow: inset 0 0 0 1px rgba(18, 59, 85, 0.42);
+}
+.day.leave-day.leave-other,
+.day.personal-day {
+  outline: 2px solid #000;
+  outline-offset: -2px;
+}
+.mini-day.leave-day.leave-other,
+.mini-day.personal-day {
+  outline: 1.5px solid #000;
+  outline-offset: -1.5px;
+}
+.other-pin {
+  position: absolute;
+  z-index: 6;
+  right: 3px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  color: #d51f3b;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(73, 17, 25, 0.3));
+  transform: rotate(24deg);
+  transform-origin: 55% 60%;
+}
+.other-pin svg {
+  width: 19px;
+  height: 19px;
+  overflow: visible;
+}
+.other-pin-head { fill: #ef5361; stroke: #b6162f; stroke-width: 0.8; }
+.other-pin-body { fill: currentColor; stroke: #ad152b; stroke-width: 0.8; stroke-linejoin: round; }
+.other-pin-needle { fill: #d6dce5; stroke: #727b88; stroke-width: 0.55; }
+.other-pin-highlight { fill: none; stroke: rgba(255, 255, 255, 0.72); stroke-width: 1.1; stroke-linecap: round; }
+.other-pin.compact {
+  right: 1px;
+  bottom: 1px;
+  width: 11px;
+  height: 11px;
+}
+.other-pin.compact svg { width: 10px; height: 10px; }
+
+.calendar-bulk-delete-button,
+.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
+  border-color: #cbd6e6;
+  background: #f8faff;
+  color: #a9243a;
+  box-shadow: none;
+}
+.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
+  padding-inline: 3px;
+  font-size: 10.5px;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+.calendar-bulk-delete-button:hover,
+.calendar-bulk-delete-button:focus-visible,
+.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile:hover,
+.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile:focus-visible {
+  border-color: #b7c7dc;
+  background: #f1f5ff;
+  outline: 2px solid rgba(190, 45, 68, 0.16);
+  outline-offset: 2px;
+}
+
+.balance-detail-months {
+  display: grid;
+  gap: 12px;
+  max-height: min(44vh, 390px);
+  overflow-y: auto;
+  padding: 1px 4px 2px 0;
+}
+.balance-detail-month {
+  display: grid;
+  gap: 7px;
+}
+.balance-detail-month > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #eef4fb;
+  color: #294e78;
+  cursor: pointer;
+  list-style: none;
+}
+.balance-detail-month > summary::-webkit-details-marker { display: none; }
+.balance-detail-month > summary:hover,
+.balance-detail-month > summary:focus-visible { background: #e4eef9; }
+.balance-detail-month-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+.balance-detail-month-label strong {
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.balance-detail-month-label small {
+  color: #5e7188;
+  font-size: 10px;
+  font-weight: 800;
+}
+.balance-detail-month > summary svg {
+  flex: 0 0 auto;
+  width: 16px;
+  margin-left: 8px;
+  fill: none;
+  stroke: #537398;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition: transform 160ms ease;
+}
+.balance-detail-month[open] > summary svg { transform: rotate(180deg); }
+.balance-detail-month > .balance-detail-list { margin-top: 7px; }
+.balance-detail-month-empty {
+  margin: 7px 0 0;
+  border: 1px dashed #d7e1ed;
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: #fafcff;
+  color: #738397;
+  font-size: 10px;
+}
+.balance-detail-month .balance-detail-list {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+}
+
+.pay-month-nav.compact.pay-detail-month-nav {
+  display: grid;
+  grid-template-columns: 36px 36px;
+  justify-content: end;
+  gap: 8px 12px;
+  min-width: 84px;
+  margin-left: auto;
+}
+.pay-detail-month-nav .pay-nav-arrow {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #cad8e8;
+  background: #f8fbff;
+}
+.pay-detail-month-nav .pay-nav-arrow svg { width: 15px; }
+.pay-detail-month-nav .pay-today-button {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 38px;
+}
+
+@media (max-width: 720px) {
+  .worked-days-panel {
+    right: auto;
+    left: 0;
+    top: auto;
+    bottom: calc(100% + 8px);
+    box-sizing: border-box;
+    width: min(400px, calc(100vw - 52px));
+    max-height: min(58dvh, 420px);
+    overflow-y: auto;
+  }
+
+  .calendar-toolbar.month-toolbar {
+    display: grid;
+    grid-template-columns: minmax(112px, 0.72fr) minmax(0, 1.28fr);
+    gap: 8px;
+  }
+  .calendar-toolbar.month-toolbar .period-navigation {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .calendar-toolbar.month-toolbar .today-button {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+  }
+  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+  }
+
+  .pay-detail-month-heading {
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .pay-detail-month-nav { flex-wrap: nowrap; }
+  .pay-detail-month-nav .pay-today-button { flex: initial; }
+  .holiday-pay-amount { width: fit-content; }
+}
+
+@media (max-width: 360px) {
+  .worked-days-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* En-tête plus respirant : les commandes principales occupent une vraie zone
+   et la mise à jour reste disponible juste sous Mois / Année / menu. */
+:root { --line: #c7d3e1; }
+
+.top-header {
+  position: relative;
+  top: auto;
+  min-height: 136px;
+  gap: 30px;
+  border-width: 2px;
+  border-color: #aebfd4;
+  padding: 24px 28px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 251, 255, 0.88) 0%,
+      rgba(240, 247, 255, 0.76) 42%,
+      rgba(225, 239, 252, 0.56) 100%
+    ),
+    url("/header-art.webp") center 44% / cover no-repeat;
+  box-shadow: 0 14px 34px rgba(37, 68, 107, 0.11);
+}
+.top-header-title { padding-left: 18px; }
+.top-header-title::before { width: 4px; }
+.top-header-title h1 {
+  font-size: clamp(30px, 3.2vw, 43px);
+  letter-spacing: -0.045em;
+}
+.header-command-area {
+  display: grid;
+  flex: 0 1 470px;
+  gap: 9px;
+  width: min(470px, 52%);
+  min-width: 340px;
+}
+.header-control-cluster {
+  width: 100%;
+  margin-left: 0;
+}
+.header-actions {
+  flex: 1 1 auto;
+}
+.view-switch {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(82px, 1fr));
+  gap: 5px;
+  min-width: 190px;
+  border: 1px solid #bacbe0;
+  border-radius: 17px;
+  padding: 5px;
+  background: linear-gradient(145deg, #dfe9f6, #edf3fb);
+  box-shadow: inset 0 2px 5px rgba(57, 82, 116, 0.08);
+}
+.view-switch button {
+  min-height: 43px;
+  height: auto;
+  border-radius: 12px;
+  padding: 0 18px;
+  color: #65758a;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.view-switch button:hover { color: #254f84; }
+.view-switch button:active { transform: scale(0.97); }
+.view-switch button.active {
+  background: linear-gradient(145deg, #356ac5, #2757aa);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(39, 87, 170, 0.25), inset 0 1px rgba(255, 255, 255, 0.25);
+}
+.account-button,
+.main-menu-button {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #becde0;
+  box-shadow: 0 5px 12px rgba(51, 80, 117, 0.09);
+}
+.header-update-button {
+  width: 100%;
+  min-height: 37px;
+  margin: 0;
+  border-color: #b7c8dc;
+  border-radius: 12px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #315f98;
+  font-size: 11px;
+  box-shadow: none;
+}
+.header-update-button svg { width: 16px; height: 16px; }
+
+/* La demande Maladie devient une carte cohérente et aérée : aucun texte ne
+   chevauche plus le choix actif. */
+.sick-request-panel {
+  border-width: 2px;
+  background: linear-gradient(145deg, #fff 0%, #fff8fb 100%);
+  box-shadow: 0 10px 28px rgba(166, 49, 87, 0.09);
+}
+.sick-request-panel .request-heading .text-button.danger {
+  min-height: 40px;
+  border: 1px solid #efbdcb;
+  border-radius: 11px;
+  padding: 8px 13px;
+  background: #fff5f8;
+  white-space: nowrap;
+}
+.request-option-groups.sick-request-options,
+.request-option-groups.other-request-options {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sick-request-options .request-option-group {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.62fr) minmax(240px, 1.38fr);
+  align-items: center;
+  gap: 10px 18px;
+  border: 1.5px solid #d9b0c0;
+  padding: 15px;
+  background: linear-gradient(145deg, #fff7fa, #f8fbff);
+}
+.sick-request-options .request-option-group h3 { grid-column: 1 / -1; }
+.sick-request-options .type-tabs { margin: 0; }
+.sick-request-options .type-tabs button {
+  min-height: 52px;
+  border-width: 1.5px;
+  padding: 9px 13px;
+  background: #fff;
+}
+.sick-request-options .request-help {
+  margin: 0;
+  border-left: 3px solid color-mix(in srgb, var(--active-color) 42%, white);
+  padding: 7px 0 7px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.sick-request-panel .request-bottom {
+  border: 1px solid #ead8df;
+  border-radius: 13px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+/* Les encadrés restent pastel, avec un liseré suffisamment net pour bien
+   séparer chaque bloc sur écran clair. */
+.today-overview,
+.home-notes-section,
+.planning-workspace-shell.framed,
+.section-intro,
+.leave-balances-direct,
+.overtime-balance-card,
+.pay-app-screen,
+.pdf-download-screen,
+.controls,
+.calendar-toolbar,
+.month-card,
+.request-panel,
+.request-option-group,
+.today-overview-grid > article,
+.today-overview-grid > button,
+.leave-balance-grid button,
+.pay-category-grid > button {
+  border-width: 1.5px;
+  border-color: #aebdce;
+}
+
+@media (max-width: 720px) {
+  .top-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px 44px;
+    min-height: 0;
+    gap: 10px 8px;
+    border-radius: 20px;
+    padding: 15px 14px;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(246, 250, 255, 0.8) 0%,
+        rgba(230, 241, 253, 0.62) 100%
+      ),
+      url("/header-art.webp") center 42% / cover no-repeat;
+  }
+  .top-header-title {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    padding-left: 14px;
+  }
+  .top-header-title h1 { font-size: 24px; }
+  .top-header-title .eyebrow { margin-bottom: 4px; }
+  .header-command-area {
+    display: contents;
+    min-width: 0;
+  }
+  .header-control-cluster {
+    display: contents;
+  }
+  .header-actions { display: contents; }
+  .header-actions .view-switch {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+    order: initial;
+  }
+  .header-actions .view-switch button {
+    min-height: 42px;
+    padding: 0 10px;
+  }
+  .header-actions .account-menu {
+    grid-column: 2;
+    grid-row: 1;
+    order: initial;
+  }
+  .header-control-cluster .main-menu-button {
+    grid-column: 3;
+    grid-row: 1;
+    order: initial;
+  }
+  .account-button,
+  .main-menu-button { width: 44px; height: 44px; }
+  .header-update-button {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    min-height: 38px;
+  }
+
+  .year-choice-picker .choice-picker-menu {
+    max-height: min(58dvh, 460px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .sick-request-panel .request-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+  }
+  .sick-request-panel .request-heading .text-button.danger {
+    align-self: center;
+    font-size: 11px;
+  }
+  .sick-request-options .request-option-group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .sick-request-options .request-option-group h3 { grid-column: 1; }
+  .sick-request-options .request-help {
+    border-top: 1px solid #ead8df;
+    border-left: 0;
+    padding: 10px 2px 0;
+  }
+  .sick-request-panel .request-bottom {
+    align-items: stretch;
+    margin: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .sick-request-panel .request-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sick-request-panel .request-heading .text-button.danger {
+    justify-self: start;
+  }
+  .view-switch button { font-size: 12px; }
+}
+
+/* L’œuvre accompagne le menu sans nuire à la lisibilité de ses commandes. */
+.main-menu-drawer {
+  background:
+    linear-gradient(180deg, rgba(10, 14, 22, 0.42), rgba(10, 14, 22, 0.58)),
+    url("/menu-art.jpg") 58% center / cover no-repeat;
+  color: #fff;
+}
+.main-menu-drawer header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+}
+.main-menu-drawer header .step-label { color: #d9e7f7; }
+.main-menu-drawer header h2 {
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.72);
+}
+.main-menu-drawer header > button {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.9);
+}
+.main-menu-drawer nav > button {
+  border-color: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.main-menu-drawer nav > button.active {
+  border-color: #8ebbe8;
+  background: rgba(231, 242, 253, 0.82);
+  color: #174f82;
+  box-shadow: inset 4px 0 #5f9bd3, 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+.main-menu-drawer nav > button:hover {
+  background: rgba(255, 255, 255, 0.84);
+}
+.main-menu-copy small { color: #5c6d80; }
+.main-menu-secondary {
+  border-top-color: rgba(255, 255, 255, 0.3);
+}
+.main-menu-secondary button {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.72);
+}
+
+/* Le mode d’emploi reprend le style neutre des autres rubriques. */
+.main-menu-drawer nav > button.guide-menu-entry {
+  border-color: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.68);
+  color: #253f5c;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+.main-menu-drawer nav > button.guide-menu-entry:hover {
+  background: rgba(255, 255, 255, 0.84);
+}
+
+/* L’œuvre abstraite donne une identité à Ma paie tout en laissant les cartes
+   et les montants parfaitement lisibles. */
+.pay-app-screen {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(249, 248, 255, 0.64)),
+    url("/pay-art.jpg") center top / cover no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.46),
+    0 14px 34px rgba(52, 63, 83, 0.09);
+}
+
+/* Toutes les rubriques conservent la hauteur de référence de l’en-tête
+   Accueil, même lorsque le sélecteur Mois / Année n’est pas affiché. */
+.top-header { min-height: 153px; }
+
+/* L’œuvre colorée habille l’espace de téléchargement des plannings PDF. */
+.pdf-download-screen {
+  border: 1.5px solid rgba(31, 35, 40, 0.62);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(255, 249, 251, 0.58)),
+    url("/pdf-art.jpg") center top / cover no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.44),
+    0 14px 34px rgba(86, 41, 63, 0.1);
+}
+
+.pdf-download-settings > label,
+.pdf-download-settings > .school-vacation-choice,
+.pdf-download-actions .pdf-action {
+  border: 1.5px solid rgba(31, 35, 40, 0.62);
+}
+
+@media (max-width: 720px) {
+  .top-header { min-height: 195px; }
+}
+
+/* Un dessin très léger accompagne uniquement l’écran d’accueil. */
+.app-shell-home {
+  position: relative;
+  isolation: isolate;
+}
+.app-shell-home::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: 183px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background:
+    linear-gradient(rgba(247, 250, 254, 0.81), rgba(247, 250, 254, 0.81)),
+    url("/home-art.jpg") center / cover no-repeat;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .app-shell-home::before { top: 211px; }
+}
+
+/* L’œuvre bleue distingue la rubrique Congés et récupérations sans passer
+   derrière l’en-tête ni concurrencer les cartes de contenu. */
+.app-shell-leave {
+  position: relative;
+  isolation: isolate;
+}
+.app-shell-leave::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: 183px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background:
+    linear-gradient(rgba(244, 249, 255, 0.76), rgba(244, 249, 255, 0.76)),
+    url("/leave-art.jpg") center / cover no-repeat;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .app-shell-leave::before { top: 211px; }
 }
