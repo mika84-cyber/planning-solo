@@ -16,6 +16,7 @@ import {
   getCalendar,
   postCalendar,
   postCalendarBatch,
+  postCalendarPeriodsVerified,
 } from "./calendarApi";
 import {
   HOLIDAY_PAY_OPTIONS,
@@ -31,6 +32,7 @@ import {
   type Entries,
   type FormProfile,
   type LeavePeriod,
+  type ManualYearAdjustments,
   type NoteListItem,
   type PayProfile,
   type PayStatus,
@@ -43,13 +45,48 @@ import { useAnnualPdfExport } from "./useAnnualPdfExport";
 import { useInstallPrompt } from "./useInstallPrompt";
 import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
+import { archivedRequestDate, useRequestArchive } from "./useRequestArchive";
 import {
   calculateNetRatios,
+  defaultNetRatiosForPeriod,
   extractPayslipTokens,
+  inspectNetRatioCalibration,
+  payCalibrationRegime,
   readPayslip,
+  readingsForCalibrationRegime,
+  type PayCalibrationRegime,
   type PayslipReading,
 } from "./payslip";
+import { summarizePayslipReview } from "./payslipReview";
+import {
+  payEstimateReadiness,
+  type PayEstimateField,
+} from "./payEstimate";
+import {
+  MECENAT_REGULATORY_RATES,
+  calculateMecenatVacation,
+  mecenatForPayMonth,
+  type MecenatEntry,
+} from "./mecenat";
+import {
+  WORK_QUOTA_OPTIONS,
+  allocateRecoveryUses,
+  calculatePaidOvertime,
+  dailyMinutesForQuota,
+  holidayRecoveryEntries,
+  minutesLabel,
+  monthlyRecoveryBalance,
+  nextPayPeriod,
+  recoveryRequestMinutes,
+  splitOvertimeRange,
+  type OvertimeDisposition,
+  type OvertimeEntry,
+  type RecoveryUse,
+  type RecoveryRequestType,
+  type WorkQuota,
+} from "./overtime";
 import { useToast } from "./useToast";
+import { createClientId } from "./clientId";
 import {
   COUNTED_ONLY_TYPES,
   DAY_LABELS,
@@ -60,7 +97,6 @@ import {
   MONTHS,
   MONTH_OPTIONS,
   RESIDENCE_ALLOWANCE_RATE,
-  SCHOOL_ZONE_OPTIONS,
   SUNDAY_ALLOWANCE,
   SUNDAY_TIERS,
   sickLeaveDeduction,
@@ -69,6 +105,7 @@ import {
   holidayPayslip,
   sundayAllowance,
   sundayPayslip,
+  unpaidSundays,
   wasPompidouHolidayWorked,
   yearThirdFor,
   yearThirdRange,
@@ -77,7 +114,9 @@ import {
   TYPE_COLORS,
   TYPE_LABELS,
   YEAR_OPTIONS,
+  applyManualSundayLeave,
   addDays,
+  coWorkingGroupsForDate,
   dateKey,
   dateTimeLabel,
   dayNumber,
@@ -92,6 +131,7 @@ import {
   longDate,
   monthDays,
   multiDatePersonLabel,
+  nextAttendanceDay,
   periodLabel,
   sameDate,
   shortDate,
@@ -100,17 +140,27 @@ import {
   type HolidayPay,
   type LeaveType,
   type MultiDatePerson,
-  type SchoolZone,
   type SelectionType,
 } from "./planningLogic";
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
+
+const EMPTY_MANUAL_ADJUSTMENTS: ManualYearAdjustments = {
+  annualUsed: 0,
+  rttUsed: 0,
+  fractionUsed: 0,
+  sundayLeaveJanJun: 0,
+  sundayLeaveJulSep: 0,
+  sundayLeaveOctNov: 0,
+  sundayLeaveDec: 0,
+};
 
 function payProfileFromApi(value: any): PayProfile {
   const eurosFromCents = (field: unknown) =>
     typeof field === "number" ? field / 100 : undefined;
   return {
     baseSalary: eurosFromCents(value?.base_salary_cents),
+    residenceAllowance: eurosFromCents(value?.residence_allowance_cents),
     ifse: eurosFromCents(value?.ifse_cents),
     carenceDay: eurosFromCents(value?.carence_cents),
     otherFixed: eurosFromCents(value?.other_fixed_cents),
@@ -118,6 +168,11 @@ function payProfileFromApi(value: any): PayProfile {
     ciaMonth: typeof value?.cia_month === "number" ? value.cia_month : undefined,
     netRatioFixed: eurosFromCents(value?.net_ratio_fixed_bp),
     netRatioVariable: eurosFromCents(value?.net_ratio_variable_bp),
+    netRatioRegime:
+      value?.net_ratio_regime === "pre-culture-psc" ||
+      value?.net_ratio_regime === "culture-psc"
+        ? value.net_ratio_regime
+        : undefined,
     navigo: eurosFromCents(value?.navigo_cents),
     mealVoucherDeduction: eurosFromCents(
       value?.meal_voucher_deduction_cents,
@@ -126,9 +181,40 @@ function payProfileFromApi(value: any): PayProfile {
   };
 }
 
+function manualAdjustmentsFromApi(value: unknown) {
+  if (!value || typeof value !== "object")
+    return {} as Record<string, ManualYearAdjustments>;
+  const numberOrZero = (candidate: unknown) =>
+    typeof candidate === "number" && Number.isFinite(candidate)
+      ? Math.max(0, candidate)
+      : 0;
+  return Object.fromEntries(
+    Object.entries(value).map(([year, raw]) => {
+      const item = (raw || {}) as Record<string, unknown>;
+      return [
+        year,
+        {
+          annualUsed: numberOrZero(item.annual_used),
+          rttUsed: numberOrZero(item.rtt_used),
+          fractionUsed: numberOrZero(item.fraction_used),
+          sundayLeaveJanJun: numberOrZero(item.sunday_leave_jan_jun),
+          sundayLeaveJulSep: numberOrZero(item.sunday_leave_jul_sep),
+          sundayLeaveOctNov: numberOrZero(item.sunday_leave_oct_nov),
+          sundayLeaveDec: numberOrZero(item.sunday_leave_dec),
+        },
+      ];
+    }),
+  );
+}
+
 export default function Home() {
   useModalAccessibility();
   const connectionStatus = useConnectionStatus();
+  // Cette option n'est activée que dans une compilation de démonstration
+  // séparée. Elle reste donc désactivée dans la version de production.
+  const demoMode =
+    new URLSearchParams(location.search).has("demo") &&
+    (import.meta.env.DEV || import.meta.env.VITE_PUBLIC_DEMO === "true");
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
@@ -141,11 +227,43 @@ export default function Home() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
   const { installPrompt, installApp } = useInstallPrompt();
-  const [refreshingCalendar, setRefreshingCalendar] = useState(false);
   const [entries, setEntries] = useState<Entries>({});
   const [periods, setPeriods] = useState<LeavePeriod[]>([]);
   const [formProfile, setFormProfile] = useState<FormProfile | null>(null);
   const [payProfiles, setPayProfiles] = useState<Record<string, PayProfile>>({});
+  const [overtimeEntries, setOvertimeEntries] = useState<OvertimeEntry[]>([]);
+  const [recoveryUses, setRecoveryUses] = useState<RecoveryUse[]>([]);
+  const [mecenatEntries, setMecenatEntries] = useState<MecenatEntry[]>([]);
+  const [overtimeDialogOpen, setOvertimeDialogOpen] = useState(false);
+  const [solidarityDialogOpen, setSolidarityDialogOpen] = useState(false);
+  const [recoveryDialogOpen, setRecoveryDialogOpen] = useState(false);
+  const [overtimeHistoryOpen, setOvertimeHistoryOpen] = useState(false);
+  const [mecenatDialogOpen, setMecenatDialogOpen] = useState(false);
+  const [mecenatHistoryOpen, setMecenatHistoryOpen] = useState(false);
+  const [savingMecenat, setSavingMecenat] = useState(false);
+  const [savingOvertime, setSavingOvertime] = useState(false);
+  const [overtimeDraft, setOvertimeDraft] = useState({
+    date: dateKey(new Date()),
+    start: "18:00",
+    end: "20:00",
+    disposition: "paid" as OvertimeDisposition,
+  });
+  const [solidarityDraft, setSolidarityDraft] = useState({
+    hours: "",
+    minutes: "0",
+  });
+  const [recoveryDraft, setRecoveryDraft] = useState({
+    date: dateKey(new Date()),
+    kind: "hours" as "hours" | "half" | "day" | "holiday",
+    hours: "2",
+    minutes: "0",
+    start: "",
+  });
+  const [mecenatDraft, setMecenatDraft] = useState({
+    date: dateKey(new Date()),
+    start: "19:00",
+    end: "00:00",
+  });
   const [dayDate, setDayDate] = useState<string | null>(null);
   // Identifiant de la période dont le menu d'actions est ouvert. Un seul à la
   // fois : trois boutons par ligne saturaient la fenêtre du jour.
@@ -199,7 +317,22 @@ export default function Home() {
   );
   const [savingRange, setSavingRange] = useState(false);
   const [requestChooser, setRequestChooser] = useState(false);
+  const [requestOrigin, setRequestOrigin] = useState<"general" | "planning">("general");
+  const [planningRequestMethod, setPlanningRequestMethod] =
+    useState<RequestKind | null>(null);
+  const [planningRequestDate, setPlanningRequestDate] = useState<string | null>(
+    null,
+  );
+  const [recoveryTypeChooser, setRecoveryTypeChooser] = useState<{
+    origin: "general" | "planning";
+    date: string | null;
+  } | null>(null);
+  const [pendingRecoveryType, setPendingRecoveryType] =
+    useState<SelectionType>("recovery_day");
+  const [pendingLeaveType, setPendingLeaveType] =
+    useState<SelectionType>("annual");
   const [requestKind, setRequestKind] = useState<RequestKind | null>(null);
+  const [sickRequest, setSickRequest] = useState(false);
   const [savingRequest, setSavingRequest] = useState(false);
   const [activeType, setActiveType] = useState<SelectionType>("annual");
   const [selections, setSelections] = useState<Record<string, SelectedDay>>({});
@@ -207,13 +340,52 @@ export default function Home() {
   const [timeStart, setTimeStart] = useState("09:15");
   const [timeEnd, setTimeEnd] = useState("13:00");
   const [warningDate, setWarningDate] = useState<string | null>(null);
-  const { message, notify, dismiss } = useToast();
+  const {
+    message,
+    notify,
+    dismiss,
+    successMessage,
+    confirm,
+    dismissSuccess,
+  } = useToast();
+  const {
+    archiveOpen,
+    setArchiveOpen,
+    archivedRequests,
+    openArchivedRequest,
+    deleteArchivedRequest,
+  } = useRequestArchive(authStatus, "mika", notify);
+  const overtimeSaveInFlightRef = useRef(false);
+  const mecenatSaveInFlightRef = useRef(false);
+  const lastOvertimeSubmissionRef = useRef({ key: "", at: 0 });
+  const lastRecoverySubmissionRef = useRef({ key: "", at: 0 });
+  const lastMecenatSubmissionRef = useRef({ key: "", at: 0 });
   const [balanceDetailType, setBalanceDetailType] = useState<
     BalanceType | CountedOnlyType | null
   >(null);
-  const [balancesOpen, setBalancesOpen] = useState(false);
-  const [allowancesOpen, setAllowancesOpen] = useState(false);
-  const [payslipOpen, setPayslipOpen] = useState(false);
+  const [calendarDeleteMode, setCalendarDeleteMode] = useState(false);
+  const [calendarDeleteDates, setCalendarDeleteDates] = useState<string[]>([]);
+  const [deletingMultipleDates, setDeletingMultipleDates] = useState(false);
+  const [holidayChoiceEditing, setHolidayChoiceEditing] = useState<string | null>(null);
+  const [absenceYear, setAbsenceYear] = useState(() => now.getFullYear());
+  const [manualAdjustmentsOpen, setManualAdjustmentsOpen] = useState(false);
+  const [savingManualAdjustments, setSavingManualAdjustments] = useState(false);
+  const [manualAdjustmentDraft, setManualAdjustmentDraft] = useState<
+    Record<keyof ManualYearAdjustments, string>
+  >(() =>
+    Object.fromEntries(
+      Object.keys(EMPTY_MANUAL_ADJUSTMENTS).map((key) => [key, "0"]),
+    ) as Record<keyof ManualYearAdjustments, string>,
+  );
+  const [payScreen, setPayScreen] = useState<
+    "overview" | "allowances" | "payslip"
+  >("overview");
+  const [payProfileOpen, setPayProfileOpen] = useState(false);
+  const [payPeriodOpen, setPayPeriodOpen] = useState(false);
+  const [payMonthSlide, setPayMonthSlide] = useState<
+    "" | "out-left" | "out-right" | "in-left" | "in-right"
+  >("");
+  const payMonthSlideTimer = useRef<number | null>(null);
   const [payslipCheck, setPayslipCheck] = useState<{
     name: string;
     reading: PayslipReading;
@@ -224,12 +396,28 @@ export default function Home() {
   const [payslipImportResult, setPayslipImportResult] = useState<{
     applied: Array<{ label: string; value: string }>;
     missing: string[];
+    adjustment?: string;
   } | null>(null);
+  const [payslipImportMode, setPayslipImportMode] = useState<
+    "verify" | "calibrate" | null
+  >(null);
+  const [payslipNeedsPeriod, setPayslipNeedsPeriod] = useState(false);
+  const [payslipFallbackMonth, setPayslipFallbackMonth] = useState(0);
+  const [payslipFallbackYear, setPayslipFallbackYear] = useState(2026);
+  // Les PDF ne sont jamais conservés. On garde uniquement leurs montants
+  // extraits en mémoire, le temps de réunir assez de mois pour séparer le
+  // taux du traitement de celui des primes. Un rechargement efface tout.
+  const [payslipRateSamples, setPayslipRateSamples] = useState<
+    Array<{ name: string; reading: PayslipReading }>
+  >([]);
   // Repliés dès que les champs essentiels sont déjà remplis : utile une fois
   // pour comprendre et importer, plus après. `true` force l'affichage même
   // dans ce cas — posé manuellement, ou automatiquement après un import.
   const [payslipHelpOpen, setPayslipHelpOpen] = useState(false);
-  const [payslipToolsOpen, setPayslipToolsOpen] = useState(false);
+  const [payslipResultDetailsOpen, setPayslipResultDetailsOpen] =
+    useState(false);
+  const [paySettingsOpen, setPaySettingsOpen] = useState(false);
+  const [payEstimateDetailsOpen, setPayEstimateDetailsOpen] = useState(false);
   const [payDrafts, setPayDrafts] = useState({
     baseSalary: "",
     ifse: "",
@@ -259,6 +447,14 @@ export default function Home() {
   const workedDaysRef = useRef<HTMLDivElement | null>(null);
   const [quickNoteMode, setQuickNoteMode] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [homeSection, setHomeSection] = useState<
+    "home" | "leave" | "pay" | "pdf"
+  >("home");
+  const [mainMenuOpen, setMainMenuOpen] = useState(false);
+  const [guidePromptOpen, setGuidePromptOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const guidePromptCheckedRef = useRef(false);
+  const [groupChooserOpen, setGroupChooserOpen] = useState(false);
   const [noteQuery, setNoteQuery] = useState("");
   // « Écran fermé » : certaines briques se replient pour ne pas occuper tout
   // l'écran. Au-dessus de ce seuil elles restent dépliées en permanence.
@@ -277,6 +473,27 @@ export default function Home() {
   const [dataManagementBusy, setDataManagementBusy] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!mainMenuOpen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMainMenuOpen(false);
+    };
+    document.addEventListener("keydown", close);
+    return () => document.removeEventListener("keydown", close);
+  }, [mainMenuOpen]);
+  useEffect(() => {
+    if (authStatus !== "ready" || !userEmail || guidePromptCheckedRef.current)
+      return;
+    guidePromptCheckedRef.current = true;
+    const demo = demoMode;
+    const identity = demo
+      ? "demo"
+      : userEmail.trim().toLowerCase();
+    if (!demo && !localStorage.getItem(`planning:guide-pending-v1:${identity}`))
+      return;
+    if (!localStorage.getItem(`planning:guide-seen-v1:${identity}`))
+      setGuidePromptOpen(true);
+  }, [authStatus, userEmail]);
   useEffect(() => {
     if (!accountMenuOpen) return;
     const close = (event: MouseEvent) => {
@@ -337,8 +554,6 @@ export default function Home() {
   );
   const [showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf] =
     useState(false);
-  const [schoolVacationZone, setSchoolVacationZone] =
-    useState<SchoolZone>("C");
   const { pdfExporting, exportAnnualPlanning } = useAnnualPdfExport(
     view,
     group,
@@ -352,6 +567,13 @@ export default function Home() {
   const monthRefs = useRef<Record<number, HTMLElement | null>>({});
   const monthSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const allowancesSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  useEffect(
+    () => () => {
+      if (payMonthSlideTimer.current)
+        window.clearTimeout(payMonthSlideTimer.current);
+    },
+    [],
+  );
   const ignoreNextDayClick = useRef(false);
   const openedNotificationDate = useRef("");
   const noteFieldRef = useRef<HTMLTextAreaElement | null>(null);
@@ -386,12 +608,90 @@ export default function Home() {
       const actualToday = new Date();
       setNow(actualToday);
       setView(localDate(actualToday.getFullYear(), actualToday.getMonth(), 1));
-      if (
-        import.meta.env.DEV &&
-        new URLSearchParams(location.search).has("demo")
-      ) {
+      if (demoMode) {
+        try {
+          const raw = localStorage.getItem("planning:demo-completed-request-v1");
+          const completed = raw ? JSON.parse(raw) : null;
+          if (completed?.requestId) {
+            if (completed.requestKind === "recovery") {
+              const quota: WorkQuota = completed.profile?.workQuota || "full";
+              const recoverySelections = [
+                ...(completed.periods || []).flatMap((item: any) =>
+                  item.type === "recovery_day"
+                    ? rangeKeys(item.from, item.to || item.from).map((date) => ({
+                        date,
+                        type: "recovery_day" as RecoveryRequestType,
+                        start: "",
+                        end: "",
+                      }))
+                    : [],
+                ),
+                ...(completed.timed || [])
+                  .filter((item: any) =>
+                    ["recovery_half", "recovery_hours", "recovery_holiday"].includes(item.type),
+                  )
+                  .map((item: any) => ({
+                    date: item.date,
+                    type: item.type as RecoveryRequestType,
+                    start: item.start || "",
+                    end: item.end || "",
+                  })),
+              ];
+              const mappedUses: RecoveryUse[] = recoverySelections.map(
+                (item, index) => ({
+                  id: `${completed.requestId}-recovery-${index + 1}`,
+                  date: item.date,
+                  minutes: recoveryRequestMinutes(
+                    item.type,
+                    quota,
+                    item.start,
+                    item.end,
+                  ),
+                  start: item.start || undefined,
+                  end: item.end || undefined,
+                  updatedAt: new Date().toISOString(),
+                }),
+              );
+              setRecoveryUses((current) => [
+                ...current.filter(
+                  (item) => !item.id.startsWith(`${completed.requestId}-recovery-`),
+                ),
+                ...mappedUses,
+              ]);
+            } else {
+              const mapped: LeavePeriod[] = [
+                ...(completed.periods || []).map((item: any, index: number) => ({
+                  id: `${completed.requestId}-${index + 1}`,
+                  from: item.from,
+                  to: item.to || item.from,
+                  leaveType: item.type,
+                  group: Number(completed.group),
+                  updatedAt: new Date().toISOString(),
+                })),
+                ...(completed.timed || [])
+                  .filter((item: any) => item.type === "half")
+                  .map((item: any, index: number) => ({
+                    id: `${completed.requestId}-timed-${index + 1}`,
+                    from: item.date,
+                    to: item.date,
+                    leaveType: "half",
+                    halfMoment: halfMomentFromStart(item.start || "13:30"),
+                    group: Number(completed.group),
+                    updatedAt: new Date().toISOString(),
+                  })),
+              ];
+              setPeriods((current) => [
+                ...current.filter((item) => !item.id.startsWith(completed.requestId)),
+                ...mapped,
+              ]);
+            }
+            localStorage.removeItem("planning:demo-completed-request-v1");
+          }
+        } catch {}
         setUserEmail("demo@demo.local");
         setAuthStatus("ready");
+        if (new URLSearchParams(location.search).get("request") === "saved")
+          confirm("La demande est enregistrée : le planning et les soldes sont à jour.");
         return;
       }
       try {
@@ -408,6 +708,10 @@ export default function Home() {
         }
         setUserEmail(user.email || "Compte connecté");
         await loadCalendar();
+        if (new URLSearchParams(location.search).get("request") === "saved") {
+          confirm("La demande est enregistrée : le planning et les soldes sont à jour.");
+          history.replaceState({}, "", location.pathname);
+        }
       } catch {
         setAuthStatus("guest");
         setAuthError("La connexion n’a pas pu être vérifiée. Réessayez.");
@@ -452,10 +756,19 @@ export default function Home() {
             data.form_profile.status === "contractuel"
               ? "contractuel"
               : "fonctionnaire",
+          workQuota:
+            data.form_profile.work_quota === "half" ||
+            data.form_profile.work_quota === "three_quarters"
+              ? data.form_profile.work_quota
+              : "full",
           // Stockés en centimes côté serveur pour éviter les arrondis.
           baseSalary:
             typeof data.form_profile.base_salary_cents === "number"
               ? data.form_profile.base_salary_cents / 100
+              : undefined,
+          residenceAllowance:
+            typeof data.form_profile.residence_allowance_cents === "number"
+              ? data.form_profile.residence_allowance_cents / 100
               : undefined,
           ifse:
             typeof data.form_profile.ifse_cents === "number"
@@ -484,6 +797,11 @@ export default function Home() {
           netRatioVariable:
             typeof data.form_profile.net_ratio_variable_bp === "number"
               ? data.form_profile.net_ratio_variable_bp / 100
+              : undefined,
+          netRatioRegime:
+            data.form_profile.net_ratio_regime === "pre-culture-psc" ||
+            data.form_profile.net_ratio_regime === "culture-psc"
+              ? data.form_profile.net_ratio_regime
               : undefined,
           navigo:
             typeof data.form_profile.navigo_cents === "number"
@@ -517,6 +835,9 @@ export default function Home() {
             typeof data.form_profile.sunday_carryover_from_month === "number"
               ? data.form_profile.sunday_carryover_from_month
               : undefined,
+          manualAdjustments: manualAdjustmentsFromApi(
+            data.form_profile.manual_adjustments,
+          ),
         }
       : null;
     setFormProfile(syncedProfile);
@@ -545,6 +866,44 @@ export default function Home() {
         updatedAt: row.updated_at || "",
       };
     setEntries(next);
+    setOvertimeEntries(
+      (data.overtime_entries || []).map((item: any) => ({
+        id: item.id,
+        date: item.date,
+        minutes: item.minutes,
+        dayMinutes: item.day_minutes,
+        nightMinutes: item.night_minutes,
+        disposition: item.disposition,
+        inputMode: item.input_mode,
+        start: item.start || undefined,
+        end: item.end || undefined,
+        updatedAt: item.updated_at || "",
+      })),
+    );
+    setRecoveryUses(
+      (data.recovery_uses || []).map((item: any) => ({
+        id: item.id,
+        date: item.date,
+        minutes: item.minutes,
+        start: item.start || undefined,
+        end: item.end || undefined,
+        updatedAt: item.updated_at || "",
+      })),
+    );
+    setMecenatEntries(
+      (data.mecenat_entries || []).map((item: any) => ({
+        id: item.id,
+        date: item.date,
+        start: item.start,
+        end: item.end,
+        dayMinutes: item.day_minutes,
+        nightMinutes: item.night_minutes,
+        grossAmountCents: item.gross_amount_cents,
+        payYear: item.pay_year,
+        payMonth: item.pay_month,
+        updatedAt: item.updated_at || "",
+      })),
+    );
     setAuthStatus("ready");
     setPeriods(
       (data.periods || []).map(
@@ -568,22 +927,6 @@ export default function Home() {
       ),
     );
   }
-  async function refreshCalendar() {
-    if (refreshingCalendar) return;
-    setRefreshingCalendar(true);
-    try {
-      const registration = await navigator.serviceWorker?.getRegistration();
-      await registration?.update();
-      await loadCalendar();
-    } catch {
-      notify(
-        "Le planning n’a pas pu être rafraîchi. Vérifiez votre connexion.",
-      );
-    } finally {
-      setRefreshingCalendar(false);
-    }
-  }
-
   async function submitLogin(event: React.FormEvent) {
     event.preventDefault();
     setAuthBusy(true);
@@ -610,6 +953,11 @@ export default function Home() {
     try {
       const user = await acceptInvite(inviteToken, loginPassword);
       setUserEmail(user.email || "Compte connecté");
+      if (user.email)
+        localStorage.setItem(
+          `planning:guide-pending-v1:${user.email.trim().toLowerCase()}`,
+          "1",
+        );
       history.replaceState({}, "", location.pathname);
       setLoginPassword("");
       await loadCalendar();
@@ -622,8 +970,12 @@ export default function Home() {
 
   async function disconnect() {
     await logout();
+    guidePromptCheckedRef.current = false;
     setEntries({});
     setPeriods([]);
+    setOvertimeEntries([]);
+    setRecoveryUses([]);
+    setMecenatEntries([]);
     setFormProfile(null);
     setPayProfiles({});
     setUserEmail("");
@@ -639,6 +991,9 @@ export default function Home() {
         exported_at: new Date().toISOString(),
         entries: data.entries || [],
         periods: data.periods || [],
+        overtime_entries: data.overtime_entries || [],
+        recovery_uses: data.recovery_uses || [],
+        mecenat_entries: data.mecenat_entries || [],
         form_profile: data.form_profile || null,
       };
       const url = URL.createObjectURL(
@@ -737,7 +1092,9 @@ export default function Home() {
       group: String(nextGroup),
       signature: formProfile?.signature || "",
       status: formProfile?.status,
+      workQuota: formProfile?.workQuota,
       baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
       otherFixed: formProfile?.otherFixed,
@@ -748,9 +1105,10 @@ export default function Home() {
       navigo: formProfile?.navigo,
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
     };
     setFormProfile(nextProfile);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+    if (demoMode)
       return;
     void postCalendar({
         action: "save-form-profile",
@@ -776,7 +1134,9 @@ export default function Home() {
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
       status: nextStatus,
+      workQuota: formProfile?.workQuota,
       baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
       otherFixed: formProfile?.otherFixed,
@@ -787,9 +1147,10 @@ export default function Home() {
       navigo: formProfile?.navigo,
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
     };
     setFormProfile(nextProfile);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+    if (demoMode)
       return;
     void postCalendar({
         action: "save-form-profile",
@@ -819,11 +1180,6 @@ export default function Home() {
         {} as Record<string, number>,
       ),
     [selectedList],
-  );
-
-  const managedPeriods = useMemo(
-    () => [...periods].sort((a, b) => a.from.localeCompare(b.from)),
-    [periods],
   );
 
   const totals = useMemo(() => {
@@ -856,7 +1212,16 @@ export default function Home() {
     const currentThird =
       now.getFullYear() === year ? yearThirdFor(now.getMonth()) : null;
     return {
-      month: workedDayCount(year, month, month, group, periods, entries),
+      month: workedDayCount(
+        year,
+        month,
+        month,
+        group,
+        periods,
+        entries,
+        recoveryUses,
+        dailyMinutesForQuota(formProfile?.workQuota || "full"),
+      ),
       thirds: YEAR_THIRDS.map((third) => ({
         label: third.label,
         range: yearThirdRange(third),
@@ -868,17 +1233,37 @@ export default function Home() {
           group,
           periods,
           entries,
+          recoveryUses,
+          dailyMinutesForQuota(formProfile?.workQuota || "full"),
         ),
       })),
     };
-  }, [view, group, periods, entries, now]);
+  }, [view, group, periods, entries, recoveryUses, formProfile?.workQuota, now]);
 
-  // Fonctionnaire tant que le statut n'a pas encore été choisi : c'était le
-  // seul cas géré avant l'ajout de ce champ.
-  const isContractuel = formProfile?.status === "contractuel";
+  // Au premier usage, le statut demandé est désormais « contractuel ». Dès
+  // qu'un choix est enregistré, la valeur persistée reprend naturellement la
+  // priorité lors des ouvertures suivantes.
+  const isContractuel = formProfile?.status !== "fonctionnaire";
+  const workQuota: WorkQuota = formProfile?.workQuota || "full";
+  const workDayMinutes = dailyMinutesForQuota(workQuota);
+  const mecenatDraftCalculation = useMemo(
+    () =>
+      calculateMecenatVacation(
+        mecenatDraft.start,
+        mecenatDraft.end,
+        workQuota,
+      ),
+    [mecenatDraft.start, mecenatDraft.end, workQuota],
+  );
   const payYear = String(view.getFullYear());
   const activePayProfile = payProfiles[payYear];
+  const hasPayValue = (field: keyof PayProfile) =>
+    activePayProfile?.[field] !== undefined || formProfile?.[field] !== undefined;
   const baseSalary = activePayProfile?.baseSalary ?? formProfile?.baseSalary ?? 0;
+  const residenceAllowance =
+    activePayProfile?.residenceAllowance ??
+    formProfile?.residenceAllowance ??
+    baseSalary * RESIDENCE_ALLOWANCE_RATE;
   const ifse = activePayProfile?.ifse ?? formProfile?.ifse ?? 0;
   const carenceDay = activePayProfile?.carenceDay ?? formProfile?.carenceDay ?? 0;
   // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
@@ -893,10 +1278,43 @@ export default function Home() {
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
   const cia = activePayProfile?.cia ?? formProfile?.cia ?? 0;
   const ciaMonth = activePayProfile?.ciaMonth ?? formProfile?.ciaMonth;
+  const viewedPayRegime = payCalibrationRegime(
+    view.getFullYear(),
+    view.getMonth(),
+  );
+  const defaultNetRatios = defaultNetRatiosForPeriod(
+    view.getFullYear(),
+    view.getMonth(),
+  );
+  // Les profils antérieurs à ce champ ont tous été calibrés sous le régime
+  // collectif actuel : on les traite comme tels pour ne pas changer les
+  // estimations récentes déjà validées.
+  const storedNetRatioRegime =
+    activePayProfile?.netRatioRegime ??
+    formProfile?.netRatioRegime ??
+    "culture-psc";
+  const storedNetRatioFixed =
+    activePayProfile?.netRatioFixed ?? formProfile?.netRatioFixed;
+  const storedNetRatioVariable =
+    activePayProfile?.netRatioVariable ?? formProfile?.netRatioVariable;
   const netRatioFixed =
-    activePayProfile?.netRatioFixed ?? formProfile?.netRatioFixed ?? 0;
+    storedNetRatioRegime === viewedPayRegime &&
+    storedNetRatioFixed &&
+    storedNetRatioFixed > 0
+      ? storedNetRatioFixed
+      : defaultNetRatios.netRatioFixed;
   const netRatioVariable =
-    activePayProfile?.netRatioVariable ?? formProfile?.netRatioVariable ?? 0;
+    storedNetRatioRegime === viewedPayRegime &&
+    storedNetRatioVariable &&
+    storedNetRatioVariable > 0
+      ? storedNetRatioVariable
+      : defaultNetRatios.netRatioVariable;
+  const payslipRateCalibration = inspectNetRatioCalibration(
+    readingsForCalibrationRegime(
+      payslipRateSamples.map((item) => item.reading),
+      viewedPayRegime,
+    ),
+  );
   const navigo = activePayProfile?.navigo ?? formProfile?.navigo ?? 0;
   const mealVoucherDeduction =
     activePayProfile?.mealVoucherDeduction ??
@@ -999,6 +1417,7 @@ export default function Home() {
       Boolean(entries[key]?.leave) ||
       periods.some(
         (period) =>
+          period.leaveType !== "other" &&
           key >= period.from &&
           key <= period.to,
       );
@@ -1048,11 +1467,25 @@ export default function Home() {
         if (date.getDay() === 0)
           sundays.push({ key, rank: sundays.length + 1, past: key <= todayKey });
       }
-    const worked = sundays.length;
+    // Les personnes qui commencent à utiliser l'application en cours d'année
+    // peuvent reprendre uniquement un nombre de dimanches déjà posés, sans
+    // ressaisir toutes les dates. On retire ces dimanches des périodes de paie
+    // correspondantes ; les congés datés enregistrés ensuite ont déjà été
+    // écartés par `onLeave` et continuent donc de s'ajouter naturellement.
+    const manual =
+      formProfile?.manualAdjustments?.[String(year)] ??
+      EMPTY_MANUAL_ADJUSTMENTS;
+    const adjustedSundays = applyManualSundayLeave(sundays, {
+      janJun: manual.sundayLeaveJanJun,
+      julSep: manual.sundayLeaveJulSep,
+      octNov: manual.sundayLeaveOctNov,
+      dec: manual.sundayLeaveDec,
+    });
+    const worked = adjustedSundays.length;
     const decided = holidays.filter((item) => item.choice);
     return {
       year,
-      sundays,
+      sundays: adjustedSundays,
       sundayCount: worked,
       sundayTotal: sundayAllowance(worked),
       sundaysScheduledPast,
@@ -1222,7 +1655,96 @@ export default function Home() {
     sundayCarryoverMonth,
     sundayCarryoverFromYear,
     sundayCarryoverFromMonth,
+    formProfile?.manualAdjustments,
   ]);
+
+  const holidayRecoveryEarnings = useMemo(
+    () =>
+      holidayRecoveryEntries(
+        Object.entries(entries)
+          .filter(([, entry]) => entry.holidayPay === "recovery")
+          .map(([date]) => date),
+        workQuota,
+      ),
+    [entries, workQuota],
+  );
+  const recoveryEarnings = useMemo(
+    () => [...overtimeEntries, ...holidayRecoveryEarnings],
+    [overtimeEntries, holidayRecoveryEarnings],
+  );
+  const recoveryBalance = useMemo(
+    () => monthlyRecoveryBalance(recoveryEarnings, recoveryUses),
+    [recoveryEarnings, recoveryUses],
+  );
+  const recoveryEarningStates = useMemo(
+    () =>
+      new Map(
+        allocateRecoveryUses(recoveryEarnings, recoveryUses).map((item) => [
+          item.entryId,
+          item,
+        ]),
+      ),
+    [recoveryEarnings, recoveryUses],
+  );
+
+  function paidOvertimeForPayPeriod(payYear: number, payMonth: number) {
+    const performedMonth = (payMonth + 11) % 12;
+    const performedYear = payYear - (payMonth === 0 ? 1 : 0);
+    const performedProfile = payProfiles[String(performedYear)];
+    const performedBase =
+      performedProfile?.baseSalary ?? formProfile?.baseSalary ?? 0;
+    const performedResidence =
+      performedProfile?.residenceAllowance ??
+      formProfile?.residenceAllowance ??
+      performedBase * RESIDENCE_ALLOWANCE_RATE;
+    return {
+      performedMonth,
+      performedYear,
+      ...calculatePaidOvertime(
+        overtimeEntries,
+        performedYear,
+        performedMonth,
+        workQuota,
+        performedBase,
+        performedResidence,
+      ),
+    };
+  }
+
+  function rememberGuideSeen() {
+    const demo = demoMode;
+    const identity = demo
+      ? "demo"
+      : userEmail.trim().toLowerCase();
+    localStorage.setItem(`planning:guide-seen-v1:${identity}`, "1");
+    localStorage.removeItem(`planning:guide-pending-v1:${identity}`);
+  }
+
+  function openGuideFromPrompt() {
+    rememberGuideSeen();
+    setGuidePromptOpen(false);
+    setGuideOpen(true);
+  }
+
+  function skipGuidePrompt() {
+    rememberGuideSeen();
+    setGuidePromptOpen(false);
+  }
+
+  function scrollGuideTo(sectionId: string) {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  const overtimeForPayMonth = useMemo(() => {
+    return paidOvertimeForPayPeriod(view.getFullYear(), view.getMonth());
+  }, [view, payProfiles, formProfile, overtimeEntries, workQuota]);
+  const mecenatForCurrentPayMonth = useMemo(
+    () => mecenatForPayMonth(mecenatEntries, view.getFullYear(), view.getMonth()),
+    [mecenatEntries, view],
+  );
 
   /* La paie du mois affiché : les primes de ce mois-là, retenues déduites.
      C'est la question qu'on se pose en ouvrant un mois. */
@@ -1234,9 +1756,10 @@ export default function Home() {
     // s'applique pas telle quelle à une contractuelle (IJSS, subrogation) :
     // ignorée ici, pas seulement cachée, pour ne pas fausser le brut/net en
     // silence dès qu'un arrêt est posé au calendrier.
+    const sickForMonth = sickLeaves.byMonth[index];
     const sick = isContractuel
-      ? { days: 0, total: 0 }
-      : sickLeaves.byMonth[index];
+      ? { days: sickForMonth.days, total: 0 }
+      : sickForMonth;
     const sunday = month?.sunday || 0;
     const holiday = month?.holiday || 0;
     const compensated = month?.compensated || 0;
@@ -1259,7 +1782,8 @@ export default function Home() {
         sunday +
         holiday +
         compensated -
-        sick.total,
+        sick.total +
+        mecenatForCurrentPayMonth.grossAmountCents / 100,
       // Le brut du bulletin est la somme de toutes ces lignes : c'est
       // reconstituable exactement, contrairement au net qui suppose de
       // modéliser une dizaine de cotisations. Scindé en deux pour
@@ -1271,7 +1795,9 @@ export default function Home() {
         SUNDAY_ALLOWANCE.monthlyFlat +
         sunday +
         holiday +
-        compensated,
+        compensated +
+        overtimeForPayMonth.amount +
+        mecenatForCurrentPayMonth.grossAmountCents / 100,
       gross:
         baseSalary +
         ifse +
@@ -1281,7 +1807,9 @@ export default function Home() {
         sunday +
         holiday +
         compensated -
-        sick.total,
+        sick.total +
+        overtimeForPayMonth.amount +
+        mecenatForCurrentPayMonth.grossAmountCents / 100,
     };
   }, [
     allowances,
@@ -1293,14 +1821,37 @@ export default function Home() {
     cia,
     ciaMonth,
     isContractuel,
+    overtimeForPayMonth,
+    mecenatForCurrentPayMonth,
   ]);
+
+  /* Le forfait dominical existe même lorsque le traitement n'a jamais été
+   * renseigné. L'afficher seul comme « brut estimé » donnerait donc un
+   * montant précis mais trompeur. Le calcul reste intact et n'est présenté
+   * qu'une fois les éléments fixes indispensables connus. */
+  const availablePayEstimateFields = new Set<PayEstimateField>(
+    (["baseSalary", "ifse", "otherFixed", "carenceDay", "pasRate"] as const)
+      .filter((field) => hasPayValue(field)),
+  );
+  const estimateReadiness = payEstimateReadiness({
+    isContractuel,
+    availableFields: availablePayEstimateFields,
+    sickDays: monthPay?.sickDays || 0,
+  });
+  const grossEstimateMissing = estimateReadiness.grossMissing;
+  const grossEstimateComplete = estimateReadiness.grossReady;
+  const netEstimateMissing = estimateReadiness.netMissing;
+  const netEstimateComplete = estimateReadiness.netReady;
 
   /** Le net estimé du mois affiché : cotisations d'abord, avec deux taux —
    *  le traitement porte la pension civile, les primes non —, puis l'impôt à
    *  part, pour qu'un changement de taux se corrige sans tout recalibrer.
    *  `null` tant que les taux ne sont pas renseignés. */
   const monthNet =
-    monthPay && netRatioFixed && netRatioVariable && pasRate
+    netEstimateComplete &&
+    monthPay &&
+    netRatioFixed > 0 &&
+    netRatioVariable > 0
       ? (monthPay.grossFixed * (netRatioFixed / 100) +
           monthPay.grossVariable * (netRatioVariable / 100) +
           navigo -
@@ -1311,18 +1862,21 @@ export default function Home() {
       : null;
 
   const leaveStats = useMemo(() => {
-    const year = view.getFullYear();
+    const year = absenceYear;
     const first = `${year}-01-01`;
     const last = `${year}-12-31`;
     const counted = new Set<string>();
+    const manual =
+      formProfile?.manualAdjustments?.[String(year)] ??
+      EMPTY_MANUAL_ADJUSTMENTS;
     const used: Record<BalanceType, number> = {
-      annual: 0,
-      rtt: 0,
-      fraction: 0,
+      annual: manual.annualUsed,
+      rtt: manual.rttUsed,
+      fraction: manual.fractionUsed,
     };
     const details: Record<
       BalanceType,
-      Array<{ date: string; units: number }>
+      Array<{ date: string; units: number; period: LeavePeriod }>
     > = {
       annual: [],
       rtt: [],
@@ -1331,7 +1885,7 @@ export default function Home() {
     // Suivis à part : comptés, mais sans droit à consommer.
     const countedOnly: Record<
       CountedOnlyType,
-      { used: number; details: Array<{ date: string; units: number }> }
+      { used: number; details: Array<{ date: string; units: number; period: LeavePeriod }> }
     > = {
       sick: { used: 0, details: [] },
       childcare: { used: 0, details: [] },
@@ -1346,7 +1900,8 @@ export default function Home() {
         continue;
       // Une récupération rend des heures déjà travaillées : rien n'est déduit,
       // et elle n'alimente aucun compteur non plus.
-      if (period.leaveType === "recovery") continue;
+      if (period.leaveType === "recovery" || period.leaveType === "other")
+        continue;
       const countedType = COUNTED_ONLY_TYPES.includes(
         period.leaveType as CountedOnlyType,
       )
@@ -1370,24 +1925,34 @@ export default function Home() {
         counted.add(countKey);
         if (countedType) {
           countedOnly[countedType].used += units;
-          countedOnly[countedType].details.push({ date: key, units });
+          countedOnly[countedType].details.push({ date: key, units, period });
           continue;
         }
         used[category as BalanceType] += units;
-        details[category as BalanceType].push({ date: key, units });
+        details[category as BalanceType].push({ date: key, units, period });
       }
     }
     return {
       balances: (["annual", "rtt", "fraction"] as const).map((type) => ({
         type,
         allowance: LEAVE_ALLOWANCES[type],
+        manualUsed: manual[`${type}Used` as "annualUsed" | "rttUsed" | "fractionUsed"],
         used: used[type],
         remaining: LEAVE_ALLOWANCES[type] - used[type],
         details: details[type].sort((a, b) => a.date.localeCompare(b.date)),
       })),
       countedOnly,
     };
-  }, [periods, view, group]);
+  }, [periods, absenceYear, group, formProfile?.manualAdjustments]);
+
+  const activeManualAdjustments =
+    formProfile?.manualAdjustments?.[String(absenceYear)] ??
+    EMPTY_MANUAL_ADJUSTMENTS;
+  const manualSundayLeaveTotal =
+    activeManualAdjustments.sundayLeaveJanJun +
+    activeManualAdjustments.sundayLeaveJulSep +
+    activeManualAdjustments.sundayLeaveOctNov +
+    activeManualAdjustments.sundayLeaveDec;
 
   // Totaux des seuls congés à quota : la maladie n'y entre pas.
   const totalLeaveRemaining = leaveStats.balances.reduce(
@@ -1407,6 +1972,7 @@ export default function Home() {
         title: TYPE_LABELS[balanceDetailType],
         quota: false,
         allowance: 0,
+        manualUsed: 0,
         remaining: 0,
         used: counted.used,
         details: counted.details,
@@ -1419,6 +1985,16 @@ export default function Home() {
       ? { title: leaveTypeLabel(balance.type), quota: true, ...balance }
       : null;
   }, [balanceDetailType, leaveStats]);
+  const recentBalanceDetailDates = useMemo(
+    () =>
+      new Set(
+        (balanceDetail?.details ?? [])
+          .map((detail) => detail.date)
+          .sort((a, b) => b.localeCompare(a))
+          .slice(0, 3),
+      ),
+    [balanceDetail],
+  );
 
   const upcoming = useMemo(() => {
     const todayKey = dateKey(now);
@@ -1488,6 +2064,89 @@ export default function Home() {
     return items.slice(0, 50);
   }, [entries, noteQuery]);
 
+  const todayOverview = useMemo(() => {
+    const key = dateKey(now);
+    const info = getDayInfo(now, group);
+    const coWorkingGroups = coWorkingGroupsForDate(now, group);
+    const coWorkingLabel =
+      coWorkingGroups.length === 1
+        ? `avec le groupe ${coWorkingGroups[0]}`
+        : coWorkingGroups.length > 1
+          ? `avec les groupes ${coWorkingGroups.join(" et ")}`
+          : "sans autre groupe programmé";
+    const period = periods.find((item) => key >= item.from && key <= item.to);
+    const entry = entries[key];
+    const todayRecoveryMinutes = recoveryUses
+      .filter((item) => item.date === key)
+      .reduce((total, item) => total + item.minutes, 0);
+    const scheduledStatus =
+      info.kind === "work"
+        ? `${DAY_LABELS[info.kind]} (${coWorkingLabel})`
+        : DAY_LABELS[info.kind];
+    let status = scheduledStatus;
+    let tone: string = info.kind;
+    if (todayRecoveryMinutes) {
+      status =
+        todayRecoveryMinutes >= workDayMinutes
+          ? `Récupération · ${minutesLabel(todayRecoveryMinutes)}`
+          : `${scheduledStatus} + récup. ${minutesLabel(todayRecoveryMinutes)}`;
+      tone = "recovery";
+    } else if (period && info.kind !== "off") {
+      status =
+        period.leaveType === "other"
+          ? "Divers"
+          : leaveTypeLabel(period.leaveType || "annual");
+      tone = period.leaveType === "recovery" ? "recovery" : "leave";
+    } else if (entry?.leave) {
+      status = "Divers";
+      tone = "leave";
+    } else if (info.holiday) {
+      status = `${scheduledStatus} · ${info.holiday}`;
+    }
+
+    const nextWork = nextAttendanceDay(now, group, (candidateKey) =>
+      Boolean(entries[candidateKey]?.leave) ||
+      periods.some(
+        (item) =>
+          item.leaveType !== "other" &&
+          candidateKey >= item.from &&
+          candidateKey <= item.to,
+      ) ||
+      recoveryUses
+        .filter((item) => item.date === candidateKey)
+        .reduce((total, item) => total + item.minutes, 0) >= workDayMinutes,
+    );
+    const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
+
+    return {
+      status,
+      tone,
+      nextWork,
+      nextWorkKind,
+    };
+  }, [now, group, periods, entries, recoveryUses, workDayMinutes]);
+
+  const importantAlert =
+    view.getFullYear() === now.getFullYear() && sundayCarryover
+      ? `${sundayCarryover} dimanche${s(sundayCarryover)} en attente sur la paye${
+          sundayCarryoverMonth !== undefined && sundayCarryoverYear !== undefined
+            ? ` de ${MONTHS[sundayCarryoverMonth]}${
+                sundayCarryoverYear !== now.getFullYear()
+                  ? ` ${sundayCarryoverYear}`
+                  : ""
+              }`
+            : " d’un prochain mois"
+        }`
+      : view.getFullYear() === now.getFullYear() && allowances?.holidayPending
+        ? `${allowances.holidayPending} jour${s(allowances.holidayPending)} férié${s(allowances.holidayPending)} à préciser pour la paie`
+        : "";
+
+  const showCalendarWorkspace =
+    homeSection === "home" ||
+    Boolean(requestKind) ||
+    rangeSelecting ||
+    noteSelecting;
+
   function openDay(date: Date) {
     const key = dateKey(date);
     const entry = entries[key];
@@ -1528,6 +2187,371 @@ export default function Home() {
     setLeaveRangeFrom(key);
     setLeaveRangeTo(key);
     setEditingPeriodId(null);
+    setHomeSection("home");
+    setRequestChooser(false);
+  }
+  function changeWorkQuota(nextQuota: WorkQuota) {
+    const previousProfile = formProfile;
+    const nextProfile: FormProfile = {
+      fullName: formProfile?.fullName || "",
+      group: formProfile?.group || String(group),
+      signature: formProfile?.signature || "",
+      status: formProfile?.status,
+      workQuota: nextQuota,
+      baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
+      ifse: formProfile?.ifse,
+      carenceDay: formProfile?.carenceDay,
+      otherFixed: formProfile?.otherFixed,
+      cia: formProfile?.cia,
+      ciaMonth: formProfile?.ciaMonth,
+      netRatioFixed: formProfile?.netRatioFixed,
+      netRatioVariable: formProfile?.netRatioVariable,
+      navigo: formProfile?.navigo,
+      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
+      pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
+    };
+    setFormProfile(nextProfile);
+    if (demoMode)
+      return;
+    void postCalendar({
+      action: "save-form-profile",
+      fullName: nextProfile.fullName,
+      group: nextProfile.group,
+      signature: nextProfile.signature,
+      workQuota: nextQuota,
+    }).catch((error) => {
+      setFormProfile(previousProfile);
+      notify(
+        calendarErrorMessage(error, "La quotité n’a pas pu être enregistrée."),
+      );
+    });
+  }
+
+  async function saveOvertimeEntry() {
+    if (overtimeSaveInFlightRef.current) return;
+    const overtimeDateIsValid =
+      /^\d{4}-\d{2}-\d{2}$/.test(overtimeDraft.date) &&
+      dateKey(fromKey(overtimeDraft.date)) === overtimeDraft.date;
+    if (!overtimeDateIsValid) {
+      notify("Choisissez une date valide pour les heures supplémentaires.");
+      return;
+    }
+    const duration = splitOvertimeRange(overtimeDraft.start, overtimeDraft.end);
+    if (!duration) {
+      notify(
+        "Indiquez des heures de début et de fin valides et différentes. Une plage peut passer minuit.",
+      );
+      return;
+    }
+    const overtimeDate = fromKey(overtimeDraft.date);
+    if (overtimeDate.getDay() === 0 || getDayInfo(overtimeDate, group).holiday) {
+      notify("Les heures supplémentaires ne sont pas déclarées un dimanche ou un jour férié.");
+      return;
+    }
+    const crossesIntoFollowingDate =
+      overtimeDraft.end < overtimeDraft.start &&
+      overtimeDraft.end !== "00:00";
+    if (crossesIntoFollowingDate) {
+      const followingDate = addDays(overtimeDate, 1);
+      if (
+        followingDate.getDay() === 0 ||
+        getDayInfo(followingDate, group).holiday
+      ) {
+        notify(
+          "Cette plage se prolonge sur un dimanche ou un jour férié. Modifiez l’heure de fin.",
+        );
+        return;
+      }
+    }
+    const submissionKey = [
+      overtimeDraft.date,
+      duration.minutes,
+      duration.dayMinutes,
+      duration.nightMinutes,
+      overtimeDraft.disposition,
+    ].join("|");
+    if (
+      lastOvertimeSubmissionRef.current.key === submissionKey &&
+      Date.now() - lastOvertimeSubmissionRef.current.at < 1500
+    )
+      return;
+    lastOvertimeSubmissionRef.current = { key: submissionKey, at: Date.now() };
+    overtimeSaveInFlightRef.current = true;
+    setSavingOvertime(true);
+    try {
+      const id = createClientId("overtime");
+      const localEntry: OvertimeEntry = {
+        id,
+        date: overtimeDraft.date,
+        ...duration,
+        disposition: overtimeDraft.disposition,
+        inputMode: "range",
+        start: overtimeDraft.start,
+        end: overtimeDraft.end,
+        updatedAt: new Date().toISOString(),
+      };
+      if (!demoMode) {
+        const result = await postCalendar<any>({
+          action: "save-overtime",
+          id,
+          date: localEntry.date,
+          minutes: localEntry.minutes,
+          dayMinutes: localEntry.dayMinutes,
+          nightMinutes: localEntry.nightMinutes,
+          disposition: localEntry.disposition,
+          inputMode: localEntry.inputMode,
+          start: localEntry.start,
+          end: localEntry.end,
+        });
+        localEntry.updatedAt = result.overtime_entry?.updated_at || localEntry.updatedAt;
+      }
+      setOvertimeEntries((current) =>
+        current.some((item) => item.id === localEntry.id)
+          ? current
+          : [...current, localEntry],
+      );
+      setOvertimeDialogOpen(false);
+      confirm(
+        localEntry.disposition === "paid"
+          ? `Heures enregistrées pour la paie du mois suivant.`
+          : `${minutesLabel(localEntry.minutes)} ajoutées au solde de récupération.`,
+      );
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Les heures n’ont pas pu être enregistrées."));
+    } finally {
+      overtimeSaveInFlightRef.current = false;
+      setSavingOvertime(false);
+    }
+  }
+
+  async function saveSolidarityHours() {
+    if (overtimeSaveInFlightRef.current) return;
+    const minutes = Math.round(
+      Number(solidarityDraft.hours.replace(",", ".")) * 60 +
+        Number(solidarityDraft.minutes),
+    );
+    if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 600_000) {
+      notify("Indiquez un nombre d’heures de solidarité valide.");
+      return;
+    }
+    overtimeSaveInFlightRef.current = true;
+    setSavingOvertime(true);
+    try {
+      const id = createClientId("solidarity");
+      const localEntry: OvertimeEntry = {
+        id,
+        date: dateKey(new Date()),
+        minutes,
+        dayMinutes: minutes,
+        nightMinutes: 0,
+        disposition: "recovery",
+        inputMode: "duration",
+        updatedAt: new Date().toISOString(),
+      };
+      if (!demoMode) {
+        const result = await postCalendar<any>({
+          action: "save-overtime",
+          id,
+          date: localEntry.date,
+          minutes,
+          dayMinutes: minutes,
+          nightMinutes: 0,
+          disposition: "recovery",
+          inputMode: "duration",
+        });
+        localEntry.updatedAt = result.overtime_entry?.updated_at || localEntry.updatedAt;
+      }
+      setOvertimeEntries((current) => [...current, localEntry]);
+      setSolidarityDialogOpen(false);
+      setSolidarityDraft({ hours: "", minutes: "0" });
+      confirm(`${minutesLabel(minutes)} de solidarité ajoutées au solde de récupération.`);
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Les heures de solidarité n’ont pas pu être enregistrées."));
+    } finally {
+      overtimeSaveInFlightRef.current = false;
+      setSavingOvertime(false);
+    }
+  }
+
+  async function deleteOvertimeEntry(entry: OvertimeEntry) {
+    if (
+      entry.disposition === "recovery" &&
+      recoveryBalance.remaining < entry.minutes
+    ) {
+      notify(
+        "Cette récupération a déjà été utilisée. Annulez d’abord les récupérations posées correspondantes.",
+      );
+      return;
+    }
+    if (!window.confirm("Supprimer cette déclaration d’heures supplémentaires ?"))
+      return;
+    try {
+      if (!demoMode)
+        await postCalendar({ action: "delete-overtime", id: entry.id });
+      setOvertimeEntries((current) => current.filter((item) => item.id !== entry.id));
+      confirm("La déclaration a été supprimée.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La déclaration n’a pas pu être supprimée."));
+    }
+  }
+
+  async function saveRecoveryUse() {
+    if (overtimeSaveInFlightRef.current) return;
+    const custom = Math.round(
+      Number(recoveryDraft.hours.replace(",", ".")) * 60 +
+        Number(recoveryDraft.minutes),
+    );
+    const minutes =
+      recoveryDraft.kind === "day" || recoveryDraft.kind === "holiday"
+        ? workDayMinutes
+        : recoveryDraft.kind === "half"
+          ? workDayMinutes / 2
+          : custom;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(recoveryDraft.date) || minutes <= 0) {
+      notify("Vérifiez la date et la durée de récupération.");
+      return;
+    }
+    if (minutes > recoveryBalance.remaining) {
+      notify(`Votre solde disponible est de ${minutesLabel(recoveryBalance.remaining)}.`);
+      return;
+    }
+    const submissionKey = `${recoveryDraft.date}|${minutes}`;
+    if (
+      lastRecoverySubmissionRef.current.key === submissionKey &&
+      Date.now() - lastRecoverySubmissionRef.current.at < 1500
+    )
+      return;
+    lastRecoverySubmissionRef.current = { key: submissionKey, at: Date.now() };
+    overtimeSaveInFlightRef.current = true;
+    setSavingOvertime(true);
+    try {
+      const id = createClientId("recovery");
+      const localUse: RecoveryUse = {
+        id,
+        date: recoveryDraft.date,
+        minutes,
+        start: recoveryDraft.start || undefined,
+        updatedAt: new Date().toISOString(),
+      };
+      if (!demoMode) {
+        const result = await postCalendar<any>({
+          action: "save-recovery-use",
+          id,
+          date: localUse.date,
+          minutes,
+          start: localUse.start,
+        });
+        localUse.updatedAt = result.recovery_use?.updated_at || localUse.updatedAt;
+      }
+      setRecoveryUses((current) =>
+        current.some((item) => item.id === localUse.id)
+          ? current
+          : [...current, localUse],
+      );
+      setRecoveryDialogOpen(false);
+      confirm(`${minutesLabel(minutes)} de récupération posées.`);
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La récupération n’a pas pu être enregistrée."));
+    } finally {
+      overtimeSaveInFlightRef.current = false;
+      setSavingOvertime(false);
+    }
+  }
+
+  async function deleteRecoveryUse(entry: RecoveryUse) {
+    if (!window.confirm("Annuler cette utilisation de récupération ?")) return;
+    try {
+      if (!demoMode)
+        await postCalendar({ action: "delete-recovery-use", id: entry.id });
+      setRecoveryUses((current) => current.filter((item) => item.id !== entry.id));
+      confirm("La récupération a été remise dans votre solde.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La récupération n’a pas pu être annulée."));
+    }
+  }
+
+  async function saveMecenatEntry() {
+    if (mecenatSaveInFlightRef.current) return;
+    const calculation = calculateMecenatVacation(
+      mecenatDraft.start,
+      mecenatDraft.end,
+      workQuota,
+    );
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(mecenatDraft.date) || !calculation) {
+      notify("Vérifiez la date et les horaires du mécénat.");
+      return;
+    }
+    const { year: payYear, month: payMonth } = nextPayPeriod(mecenatDraft.date);
+    const submissionKey = [
+      mecenatDraft.date,
+      mecenatDraft.start,
+      mecenatDraft.end,
+      payYear,
+      payMonth,
+    ].join("|");
+    if (
+      lastMecenatSubmissionRef.current.key === submissionKey &&
+      Date.now() - lastMecenatSubmissionRef.current.at < 1500
+    )
+      return;
+    lastMecenatSubmissionRef.current = { key: submissionKey, at: Date.now() };
+    mecenatSaveInFlightRef.current = true;
+    setSavingMecenat(true);
+    try {
+      const id = createClientId("mecenat");
+      const localEntry: MecenatEntry = {
+        id,
+        date: mecenatDraft.date,
+        start: mecenatDraft.start,
+        end: mecenatDraft.end,
+        dayMinutes: calculation.dayMinutes,
+        nightMinutes: calculation.nightMinutes,
+        grossAmountCents: calculation.grossAmountCents,
+        payYear,
+        payMonth,
+        updatedAt: new Date().toISOString(),
+      };
+      if (!demoMode) {
+        const result = await postCalendar<any>({
+          action: "save-mecenat",
+          id,
+          date: localEntry.date,
+          start: localEntry.start,
+          end: localEntry.end,
+          payYear,
+          payMonth,
+        });
+        localEntry.updatedAt = result.mecenat_entry?.updated_at || localEntry.updatedAt;
+      }
+      setMecenatEntries((current) =>
+        current.some((item) => item.id === localEntry.id)
+          ? current
+          : [...current, localEntry],
+      );
+      setMecenatDialogOpen(false);
+      confirm(`Mécénat enregistré : ${euros(localEntry.grossAmountCents / 100)} brut, intégré automatiquement à la paie du mois suivant.`);
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être enregistré."));
+    } finally {
+      mecenatSaveInFlightRef.current = false;
+      setSavingMecenat(false);
+    }
+  }
+
+  async function deleteMecenatEntry(entry: MecenatEntry) {
+    if (!window.confirm("Supprimer ce mécénat ?")) return;
+    try {
+      if (!demoMode)
+        await postCalendar({ action: "delete-mecenat", id: entry.id });
+      setMecenatEntries((current) =>
+        current.filter((item) => item.id !== entry.id),
+      );
+      confirm("Le mécénat a été supprimé.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être supprimé."));
+    }
   }
   function editDayLeavePeriod(period: LeavePeriod) {
     setEditingPeriodId(period.id);
@@ -1579,8 +2603,7 @@ export default function Home() {
         : "";
     setSavingDay(true);
     try {
-      const demo =
-        import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
+      const demo = demoMode;
       if (!demo) {
         const operations: Array<Record<string, unknown>> = [];
         if (noteGroupId)
@@ -1659,7 +2682,7 @@ export default function Home() {
             (period) => !editingPeriodId || period.id !== editingPeriodId,
           ),
           {
-            id: editingPeriodId || crypto.randomUUID(),
+            id: editingPeriodId || createClientId("period"),
             from: leaveRangeFrom,
             to: leaveRangeTo,
             leaveType: dayLeaveType,
@@ -1704,9 +2727,8 @@ export default function Home() {
     if (!trimmedNote || !noteDates.length) return;
     setSavingDay(true);
     try {
-      const demo =
-        import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
-      const groupId = noteGroupId || crypto.randomUUID();
+      const demo = demoMode;
+      const groupId = noteGroupId || createClientId("note");
       const updatedAt = new Date().toISOString();
       if (!demo) {
         await postCalendarBatch(
@@ -1765,14 +2787,14 @@ export default function Home() {
       setSavingDay(false);
     }
   }
-  function openRange() {
+  function openRange(initialType: LeaveType = "annual") {
     if (requestKind) {
       notify(
         "Terminez ou annulez d’abord la demande professionnelle en cours.",
       );
       return;
     }
-    setRangeLeaveType("annual");
+    setRangeLeaveType(initialType);
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
     setSeparateDates([]);
@@ -1799,30 +2821,6 @@ export default function Home() {
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
   }
-  function editLeavePeriod(period: LeavePeriod) {
-    const dates: string[] = [];
-    for (
-      let date = fromKey(period.from);
-      dateKey(date) <= period.to;
-      date = addDays(date, 1)
-    )
-      dates.push(dateKey(date));
-    setRangeLeaveType(period.leaveType || "annual");
-    setRangeHalfMoment(period.halfMoment || "morning");
-    setEditingPeriodId(period.legacy ? null : period.id);
-    setEditingLegacyPeriod(period.legacy ? period : null);
-    setSeparateDates(dates);
-    setSeparatePeople(["leave"]);
-    setRangeOpen(false);
-    setRangeSelecting(true);
-    setTimeout(
-      () =>
-        document
-          .getElementById("range-selection-panel")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      80,
-    );
-  }
   function beginMultipleDateSelectionFromDay() {
     if (!dayDate) return;
     const people: MultiDatePerson[] = dayLeave ? ["leave"] : [];
@@ -1845,7 +2843,7 @@ export default function Home() {
   }
   async function clearLegacyPeriod(period: LeavePeriod) {
     if (
-      !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+      !demoMode
     ) {
       await postCalendar({
           action: "clear-legacy-period",
@@ -1881,10 +2879,15 @@ export default function Home() {
     setSavingRange(true);
     try {
       const saved: LeavePeriod[] = [];
-      const demo =
-        import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
+      const demo = demoMode;
       const operations: Array<Record<string, unknown>> = [];
       const periodResultIndexes: number[] = [];
+      const useFastPeriodBatch =
+        !editingLegacyPeriod &&
+        !editingPeriodId &&
+        separatePeople.length === 1 &&
+        separatePeople[0] === "leave";
+      const bulkPeriods: Array<Record<string, unknown>> = [];
       for (const date of [...separateDates].sort()) {
         for (const person of separatePeople) {
           // « Divers » et « souhaité » sont des marques posées sur la journée,
@@ -1905,19 +2908,26 @@ export default function Home() {
             continue;
           }
           if (!demo) {
-            periodResultIndexes.push(operations.length);
-            operations.push({
+            const periodInput = {
               action: "save-period",
+              id: createClientId("period"),
               from: date,
               to: date,
               leaveType: rangeLeaveType,
               halfMoment:
                 rangeLeaveType === "half" ? rangeHalfMoment : undefined,
               group,
-            });
+            };
+            if (useFastPeriodBatch) {
+              const { action: _action, ...bulkPeriod } = periodInput;
+              bulkPeriods.push(bulkPeriod);
+            } else {
+              periodResultIndexes.push(operations.length);
+              operations.push(periodInput);
+            }
           } else {
             saved.push({
-              id: crypto.randomUUID(),
+              id: createClientId("period"),
               from: date,
               to: date,
               leaveType: rangeLeaveType,
@@ -1943,7 +2953,7 @@ export default function Home() {
               periods.find((period) => period.id === editingPeriodId)
                 ?.updatedAt || "",
           });
-        const batch = await postCalendarBatch<{
+        type SavedPeriodResponse = {
           period?: {
             id: string;
             from: string;
@@ -1953,9 +2963,27 @@ export default function Home() {
             group?: number;
             updated_at: string;
           };
-        }>(operations);
-        for (const index of periodResultIndexes) {
-          const period = batch.results[index]?.period;
+        };
+        const periodResults: SavedPeriodResponse[] = [];
+        if (useFastPeriodBatch) {
+          const bulk = await postCalendarPeriodsVerified<
+            NonNullable<SavedPeriodResponse["period"]>
+          >(
+            bulkPeriods as Array<
+              Record<string, unknown> & { id: string; from: string; to: string }
+            >,
+          );
+          periodResults.push(
+            ...bulk.periods.map((period) => ({ period })),
+          );
+        } else {
+          const batch = await postCalendarBatch<SavedPeriodResponse>(operations);
+          periodResults.push(
+            ...periodResultIndexes.map((index) => batch.results[index]),
+          );
+        }
+        for (const result of periodResults) {
+          const period = result?.period;
           if (!period) continue;
           saved.push({
             id: period.id,
@@ -1990,8 +3018,23 @@ export default function Home() {
           return next;
         });
       }
-      if (!demo) await loadCalendar();
+      let refreshDelayed = false;
+      if (!demo) {
+        try {
+          await loadCalendar();
+        } catch {
+          // Les périodes renvoyées par l'écriture sont déjà appliquées juste
+          // au-dessus. Une relecture momentanément indisponible ne transforme
+          // donc plus un enregistrement réussi en faux échec.
+          refreshDelayed = true;
+        }
+      }
       cancelRangeSelection();
+      confirm(
+        refreshDelayed
+          ? "Les congés sont enregistrés. La vérification distante se terminera automatiquement à la prochaine ouverture."
+          : "Les congés sont enregistrés : le planning et les soldes sont à jour.",
+      );
     } catch (error) {
       await loadCalendar().catch(() => undefined);
       notify(
@@ -2011,12 +3054,7 @@ export default function Home() {
     try {
       if (target.legacy) {
         await clearLegacyPeriod(target);
-      } else if (
-        !(
-          import.meta.env.DEV &&
-          new URLSearchParams(location.search).has("demo")
-        )
-      ) {
+      } else if (!demoMode) {
         await postCalendar({ action: "delete-period", id: target.id });
       }
       if (!target.legacy)
@@ -2036,8 +3074,7 @@ export default function Home() {
   async function revertPeriodToWish(target: LeavePeriod) {
     setSavingRange(true);
     try {
-      const demo =
-        import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
+      const demo = demoMode;
       if (!demo) {
         const operations: Array<Record<string, unknown>> = [
           target.legacy
@@ -2092,10 +3129,33 @@ export default function Home() {
       setSavingRange(false);
     }
   }
-  function beginRequest(kind: RequestKind) {
+  function beginRequest(
+    kind: RequestKind,
+    initialDate?: string,
+    requestedType?: SelectionType,
+  ) {
     setRequestKind(kind);
-    setActiveType(kind === "leave" ? "annual" : "recovery_day");
-    setSelections({});
+    const initialType: SelectionType =
+      requestedType ||
+      (kind === "leave"
+        ? "annual"
+        : kind === "other"
+          ? "other"
+          : "recovery_day");
+    const initialDateIsSelectable = Boolean(
+      initialDate && getDayInfo(fromKey(initialDate), group).selectable,
+    );
+    setActiveType(initialType);
+    setSickRequest(kind === "leave" && initialType === "sick");
+    setSelections(
+      initialDate && initialDateIsSelectable
+        ? { [initialDate]: { date: initialDate, type: initialType } }
+        : {},
+    );
+    setWarningDate(
+      initialDate && !initialDateIsSelectable ? initialDate : null,
+    );
+    setHomeSection("home");
     setRequestChooser(false);
     window.setTimeout(
       () =>
@@ -2107,6 +3167,7 @@ export default function Home() {
   }
   function cancelRequest() {
     setRequestKind(null);
+    setSickRequest(false);
     setSelections({});
     setWarningDate(null);
     setTimeDate(null);
@@ -2135,6 +3196,14 @@ export default function Home() {
       return;
     }
     const key = dateKey(date);
+    if (calendarDeleteMode) {
+      setCalendarDeleteDates((current) =>
+        current.includes(key)
+          ? current.filter((date) => date !== key)
+          : [...current, key].sort(),
+      );
+      return;
+    }
     if (rangeSelecting) {
       setSeparateDates((current) =>
         current.includes(key)
@@ -2255,6 +3324,325 @@ export default function Home() {
       localDate(current.getFullYear(), current.getMonth() + delta, 1),
     );
   }
+
+  async function saveSickDateDirect(date: string) {
+    const alreadyRecorded = periods.some(
+      (period) =>
+        period.leaveType === "sick" && date >= period.from && date <= period.to,
+    );
+    if (alreadyRecorded) {
+      confirm("Cet arrêt maladie est déjà enregistré dans le planning.");
+      setDayDate(null);
+      return;
+    }
+    const input = {
+      id: createClientId("period"),
+      from: date,
+      to: date,
+      leaveType: "sick" as const,
+      group,
+    };
+    setSavingDay(true);
+    setDayDate(null);
+    try {
+      let saved: LeavePeriod;
+      if (demoMode) {
+        saved = {
+          ...input,
+          halfMoment: "",
+          updatedAt: new Date().toISOString(),
+        };
+      } else {
+        const result = await postCalendarPeriodsVerified<{
+          id: string;
+          from: string;
+          to: string;
+          leave_type?: LeaveType;
+          half_moment?: HalfMoment;
+          group?: number;
+          updated_at: string;
+        }>([input]);
+        const period = result.periods[0];
+        saved = {
+          id: period.id,
+          from: period.from,
+          to: period.to,
+          leaveType: period.leave_type || "sick",
+          halfMoment: period.half_moment || "",
+          group: period.group,
+          updatedAt: period.updated_at,
+        };
+      }
+      setPeriods((current) =>
+        [...current, saved].sort((a, b) => a.from.localeCompare(b.from)),
+      );
+      confirm("L’arrêt maladie est enregistré et l’estimation de paie est à jour.");
+    } catch (error) {
+      notify(
+        calendarErrorMessage(error, "L’arrêt maladie n’a pas pu être enregistré."),
+      );
+    } finally {
+      setSavingDay(false);
+    }
+  }
+
+  async function deleteMultiplePlanningDates(
+    dates: string[],
+    target: "absences" | "notes",
+  ) {
+    const selected = new Set(dates);
+    if (!selected.size) return;
+    const label = target === "notes" ? "les notes" : "les absences et récupérations";
+    if (
+      !window.confirm(
+        `Effacer ${label} sur ${selected.size} date${s(selected.size)} sélectionnée${s(selected.size)} ?`,
+      )
+    )
+      return;
+
+    setDeletingMultipleDates(true);
+    try {
+      const operations: Array<Record<string, unknown>> = [];
+      if (target === "notes") {
+        for (const key of selected) {
+          const current = entries[key];
+          if (!current?.noteText) continue;
+          operations.push({
+            action: "save-entry",
+            date: key,
+            ...current,
+            noteText: "",
+            noteGroupId: "",
+            noteUpdatedAt: new Date().toISOString(),
+            expectedUpdatedAt: current.updatedAt || "",
+          });
+        }
+      } else {
+        const legacyCleared = new Set<string>();
+        for (const period of periods) {
+          const removed = rangeKeys(period.from, period.to).filter((key) =>
+            selected.has(key),
+          );
+          if (!removed.length) continue;
+          if (period.legacy) {
+            for (const key of removed) {
+              legacyCleared.add(key);
+              const current = entries[key];
+              operations.push({
+                action: "save-leaves",
+                date: key,
+                leave: false,
+                wish: Boolean(current?.wish),
+                expectedUpdatedAt: current?.updatedAt || "",
+              });
+            }
+            continue;
+          }
+          operations.push({
+            action: "delete-period",
+            id: period.id,
+            expectedUpdatedAt: period.updatedAt,
+          });
+          const remaining = rangeKeys(period.from, period.to).filter(
+            (key) => !selected.has(key),
+          );
+          for (const segment of groupConsecutive(remaining))
+            operations.push({
+              action: "save-period",
+              id: createClientId("period"),
+              from: segment.from,
+              to: segment.to,
+              leaveType: period.leaveType || "annual",
+              halfMoment:
+                period.leaveType === "half" ? period.halfMoment || "" : "",
+              group: period.group || group,
+            });
+        }
+        for (const key of selected) {
+          const current = entries[key];
+          if (current?.leave && !legacyCleared.has(key))
+            operations.push({
+              action: "save-leaves",
+              date: key,
+              leave: false,
+              wish: Boolean(current.wish),
+              expectedUpdatedAt: current.updatedAt || "",
+            });
+        }
+        for (const recovery of recoveryUses)
+          if (selected.has(recovery.date))
+            operations.push({ action: "delete-recovery-use", id: recovery.id });
+      }
+
+      if (!operations.length) {
+        notify(`Aucune donnée à effacer sur les dates sélectionnées.`);
+        return;
+      }
+      if (!demoMode) {
+        await postCalendarBatch(operations);
+        await loadCalendar();
+      } else if (target === "notes") {
+        setEntries((current) => {
+          const next = { ...current };
+          for (const key of selected) {
+            const entry = next[key];
+            if (!entry?.noteText) continue;
+            next[key] = {
+              ...entry,
+              noteText: "",
+              noteGroupId: "",
+              noteUpdatedAt: new Date().toISOString(),
+            };
+          }
+          return next;
+        });
+      } else {
+        setPeriods((current) =>
+          current.flatMap((period) => {
+            const remaining = rangeKeys(period.from, period.to).filter(
+              (key) => !selected.has(key),
+            );
+            if (remaining.length === rangeKeys(period.from, period.to).length)
+              return [period];
+            return groupConsecutive(remaining).map((segment) => ({
+              ...period,
+              id: createClientId("period"),
+              from: segment.from,
+              to: segment.to,
+              updatedAt: new Date().toISOString(),
+            }));
+          }),
+        );
+        setEntries((current) => {
+          const next = { ...current };
+          for (const key of selected)
+            if (next[key]?.leave) next[key] = { ...next[key], leave: false };
+          return next;
+        });
+        setRecoveryUses((current) =>
+          current.filter((item) => !selected.has(item.date)),
+        );
+      }
+      setCalendarDeleteMode(false);
+      setCalendarDeleteDates([]);
+      setBalanceDetailType(null);
+      confirm(`${selected.size} date${s(selected.size)} mise${s(selected.size)} à jour.`);
+    } catch (error) {
+      notify(
+        calendarErrorMessage(
+          error,
+          "La suppression multiple n’a pas pu être synchronisée.",
+        ),
+      );
+    } finally {
+      setDeletingMultipleDates(false);
+    }
+  }
+
+  function openManualAdjustments() {
+    const current =
+      formProfile?.manualAdjustments?.[String(absenceYear)] ??
+      EMPTY_MANUAL_ADJUSTMENTS;
+    setManualAdjustmentDraft(
+      Object.fromEntries(
+        Object.entries(current).map(([key, value]) => [key, String(value)]),
+      ) as Record<keyof ManualYearAdjustments, string>,
+    );
+    setBalanceDetailType(null);
+    setManualAdjustmentsOpen(true);
+  }
+
+  async function saveManualAdjustments() {
+    const parseDays = (key: keyof ManualYearAdjustments) =>
+      Number(manualAdjustmentDraft[key].replace(",", "."));
+    const next: ManualYearAdjustments = {
+      annualUsed: parseDays("annualUsed"),
+      rttUsed: parseDays("rttUsed"),
+      fractionUsed: parseDays("fractionUsed"),
+      sundayLeaveJanJun: parseDays("sundayLeaveJanJun"),
+      sundayLeaveJulSep: parseDays("sundayLeaveJulSep"),
+      sundayLeaveOctNov: parseDays("sundayLeaveOctNov"),
+      sundayLeaveDec: parseDays("sundayLeaveDec"),
+    };
+    const leaveValues = [next.annualUsed, next.rttUsed, next.fractionUsed];
+    const sundayValues = [
+      next.sundayLeaveJanJun,
+      next.sundayLeaveJulSep,
+      next.sundayLeaveOctNov,
+      next.sundayLeaveDec,
+    ];
+    if (
+      leaveValues.some((value) => !Number.isFinite(value) || value < 0 || value * 2 % 1 !== 0) ||
+      sundayValues.some((value) => !Number.isInteger(value) || value < 0 || value > 53)
+    ) {
+      notify("Indiquez des jours entiers ou des demi-journées, et un nombre entier de dimanches.");
+      return;
+    }
+    if (
+      next.annualUsed > LEAVE_ALLOWANCES.annual ||
+      next.rttUsed > LEAVE_ALLOWANCES.rtt ||
+      next.fractionUsed > LEAVE_ALLOWANCES.fraction
+    ) {
+      notify("Le nombre de jours déjà pris ne peut pas dépasser le droit annuel de la catégorie.");
+      return;
+    }
+    const nextProfile: FormProfile = {
+      ...(formProfile || {
+        fullName: "",
+        group: String(group),
+        signature: "",
+      }),
+      manualAdjustments: {
+        ...(formProfile?.manualAdjustments || {}),
+        [String(absenceYear)]: next,
+      },
+    };
+    setSavingManualAdjustments(true);
+    try {
+      if (!demoMode)
+        await postCalendar({
+          action: "save-form-profile",
+          fullName: nextProfile.fullName,
+          group: nextProfile.group,
+          signature: nextProfile.signature,
+          manualYear: absenceYear,
+          manualAnnualUsed: next.annualUsed,
+          manualRttUsed: next.rttUsed,
+          manualFractionUsed: next.fractionUsed,
+          manualSundayLeaveJanJun: next.sundayLeaveJanJun,
+          manualSundayLeaveJulSep: next.sundayLeaveJulSep,
+          manualSundayLeaveOctNov: next.sundayLeaveOctNov,
+          manualSundayLeaveDec: next.sundayLeaveDec,
+        });
+      setFormProfile(nextProfile);
+      setManualAdjustmentsOpen(false);
+      confirm(`Le rattrapage ${absenceYear} est enregistré et les calculs sont à jour.`);
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Le rattrapage n’a pas pu être enregistré."));
+    } finally {
+      setSavingManualAdjustments(false);
+    }
+  }
+  function slideAllowancesMonth(delta: 1 | -1) {
+    if (
+      payMonthSlide ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      changeAllowancesMonth(delta);
+      return;
+    }
+    if (payMonthSlideTimer.current)
+      window.clearTimeout(payMonthSlideTimer.current);
+    setPayMonthSlide(delta > 0 ? "out-left" : "out-right");
+    payMonthSlideTimer.current = window.setTimeout(() => {
+      changeAllowancesMonth(delta);
+      setPayMonthSlide(delta > 0 ? "in-right" : "in-left");
+      payMonthSlideTimer.current = window.setTimeout(() => {
+        setPayMonthSlide("");
+        payMonthSlideTimer.current = null;
+      }, 190);
+    }, 150);
+  }
   function startAllowancesSwipe(event: React.TouchEvent<HTMLElement>) {
     const touch = event.changedTouches[0];
     allowancesSwipeStart.current = { x: touch.clientX, y: touch.clientY };
@@ -2267,7 +3655,7 @@ export default function Home() {
     allowancesSwipeStart.current = null;
     if (Math.abs(deltaX) < 55 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25)
       return;
-    changeAllowancesMonth(deltaX < 0 ? 1 : -1);
+    slideAllowancesMonth(deltaX < 0 ? 1 : -1);
   }
   /** Ouvre le formulaire vierge, sans rien pré-remplir depuis le planning. */
   function openBlankForm() {
@@ -2282,6 +3670,95 @@ export default function Home() {
         "Sélectionnez au moins une date avant d’intégrer la demande au formulaire.",
       );
       return;
+    }
+    // Maladie et Divers n'ont pas de rubrique adaptée dans le PDF officiel.
+    // Leur « formulaire » reste donc dans l'application : choix des dates,
+    // validation explicite, puis enregistrement synchronisé. Divers est un
+    // repère de planning uniquement et est exclu plus bas de tous les calculs.
+    if (requestKind === "other" || sickRequest) {
+      const leaveType: LeaveType = requestKind === "other" ? "other" : "sick";
+      const grouped = groupConsecutive(selectedList.map((item) => item.date));
+      const inputs = grouped.map((period) => ({
+        id: createClientId("period"),
+        from: period.from,
+        to: period.to,
+        leaveType,
+        group,
+      }));
+      setSavingRequest(true);
+      try {
+        let saved: LeavePeriod[];
+        if (demoMode) {
+          saved = inputs.map((period) => ({
+            ...period,
+            halfMoment: "",
+            updatedAt: new Date().toISOString(),
+          }));
+        } else {
+          const result = await postCalendarPeriodsVerified<{
+            id: string;
+            from: string;
+            to: string;
+            leave_type?: LeaveType;
+            half_moment?: HalfMoment;
+            group?: number;
+            updated_at: string;
+          }>(inputs);
+          saved = result.periods.map((period) => ({
+            id: period.id,
+            from: period.from,
+            to: period.to,
+            leaveType: period.leave_type || leaveType,
+            halfMoment: period.half_moment || "",
+            group: period.group,
+            updatedAt: period.updated_at,
+          }));
+        }
+        setPeriods((current) =>
+          [...current, ...saved].sort((a, b) => a.from.localeCompare(b.from)),
+        );
+        cancelRequest();
+        confirm(
+          leaveType === "other"
+            ? "Divers est ajouté au planning, sans modifier la paie ni les soldes."
+            : "L’arrêt maladie est enregistré et l’estimation de paie est à jour.",
+        );
+      } catch (error) {
+        notify(
+          calendarErrorMessage(
+            error,
+            leaveType === "other"
+              ? "Divers n’a pas pu être enregistré."
+              : "L’arrêt maladie n’a pas pu être enregistré.",
+          ),
+        );
+      } finally {
+        setSavingRequest(false);
+      }
+      return;
+    }
+    if (requestKind === "recovery") {
+      const requestedMinutes = selectedList.reduce(
+        (total, item) =>
+          total +
+          recoveryRequestMinutes(
+            item.type as RecoveryRequestType,
+            workQuota,
+            item.start,
+            item.end,
+          ),
+        0,
+      );
+      if (requestedMinutes <= 0) {
+        notify("Vérifiez les horaires de la récupération.");
+        return;
+      }
+      if (requestedMinutes > recoveryBalance.remaining) {
+        notify(
+          `Cette demande utilise ${minutesLabel(requestedMinutes)}, mais votre solde disponible est de ${minutesLabel(recoveryBalance.remaining)}.`,
+        );
+        return;
+      }
     }
     const groups = {
       annual: groupConsecutive(
@@ -2314,9 +3791,9 @@ export default function Home() {
           .filter((item) => item.type === "recovery_day")
           .map((item) => item.date),
       ),
-      // La récupération d'un jour férié suit le même critère qu'une
-      // récupération en journée : un jour entier, sans solde. Elle se marque
-      // donc de la même façon sur le planning.
+      // La récupération d'un jour férié conserve sa rubrique du formulaire ;
+      // elle sera débitée comme une journée entière du solde d'heures lors de
+      // l'enregistrement final.
       recoveryHoliday: groupConsecutive(
         selectedList
           .filter((item) => item.type === "recovery_holiday")
@@ -2372,6 +3849,7 @@ export default function Home() {
     }
     const payload = {
       version: 1,
+      requestId: createClientId("request"),
       requestKind,
       group,
       createdAt: new Date().toISOString(),
@@ -2403,81 +3881,17 @@ export default function Home() {
     };
     setSavingRequest(true);
     try {
-      if (requestKind === "leave" || requestKind === "recovery") {
-        // La récupération n'a qu'une seule brique sur le planning — en
-        // journée entière, sans solde. « recovery_day » et
-        // « recovery_holiday » y répondent tous les deux ; les variantes en
-        // demi-journée ou en heures restent propres au formulaire, sans
-        // équivalent à marquer.
-        const leavePeriods: Array<{
-          from: string;
-          to: string;
-          leaveType: LeaveType;
-          halfMoment?: HalfMoment;
-        }> =
-          requestKind === "leave"
-            ? [
-                ...groups.annual.map((period) => ({
-                  ...period,
-                  leaveType: "annual" as const,
-                })),
-                ...groups.rtt.map((period) => ({
-                  ...period,
-                  leaveType: "rtt" as const,
-                })),
-                ...groups.fraction.map((period) => ({
-                  ...period,
-                  leaveType: "fraction" as const,
-                })),
-                ...groups.childcare.map((period) => ({
-                  ...period,
-                  leaveType: "childcare" as const,
-                })),
-                ...groups.exceptional.map((period) => ({
-                  ...period,
-                  leaveType: "exceptional" as const,
-                })),
-                ...selectedList
-                  .filter((item) => item.type === "half")
-                  .map((item) => ({
-                    from: item.date,
-                    to: item.date,
-                    leaveType: "half" as const,
-                    // L'horaire choisi dans le formulaire dit quelle moitié
-                    // colorer sur le planning : avant 13 h 30, c'est le matin.
-                    halfMoment: item.start
-                      ? halfMomentFromStart(item.start)
-                      : undefined,
-                  })),
-              ]
-            : [...groups.recoveryDay, ...groups.recoveryHoliday].map(
-                (period) => ({
-                  ...period,
-                  leaveType: "recovery" as const,
-                }),
-              );
-        if (
-          !(
-            import.meta.env.DEV &&
-            new URLSearchParams(location.search).has("demo")
-          )
-        ) {
-          if (leavePeriods.length)
-            await postCalendarBatch(
-              leavePeriods.map((period) => ({
-                action: "save-period",
-                group,
-                ...period,
-              })),
-            );
-        }
-      }
       localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
-      window.location.href = "/formulaire/index.html?planning=1";
-    } catch {
+      const demo = demoMode
+        ? "&demo=1"
+        : "";
+      window.location.href = `/formulaire/index.html?planning=1${demo}`;
+    } catch (error) {
       setSavingRequest(false);
       notify(
-        "La demande n’a pas pu être synchronisée avec le planning. Réessayez.",
+        error instanceof DOMException
+          ? "Le navigateur n’a pas pu préparer le formulaire. Vérifiez que le stockage du site est autorisé."
+          : "Le formulaire n’a pas pu être préparé. Réessayez.",
       );
     }
   }
@@ -2487,7 +3901,13 @@ export default function Home() {
     const key = dateKey(date);
     const entry = entries[key];
     const selected = selections[key];
+    const cleanupSelected =
+      calendarDeleteMode && calendarDeleteDates.includes(key);
     const today = sameDate(date, now);
+    const hourlyRecoveryMinutes = recoveryUses
+      .filter((item) => item.date === key)
+      .reduce((total, item) => total + item.minutes, 0);
+    const hasHourlyRecovery = hourlyRecoveryMinutes > 0;
     // La période elle-même, et pas seulement son existence : son type décide
     // de l'habillage de la case (récupération, demi-journée).
     const myPeriod = periods.find(
@@ -2525,7 +3945,7 @@ export default function Home() {
           ? "Récupération"
           : myHalfMoment
             ? `Demi-journée ${myHalfMoment === "morning" ? "matin" : "après-midi"}`
-            : "Congé professionnel"
+            : leaveTypeLabel(myLeaveType as LeaveType)
         : "",
       personalDay ? "Divers" : "",
     ]
@@ -2536,6 +3956,9 @@ export default function Home() {
       DAY_LABELS[info.kind],
       selected ? TYPE_LABELS[selected.type] : "",
       leaveLabel,
+      hasHourlyRecovery
+        ? `Récupération en heures (${minutesLabel(hourlyRecoveryMinutes)})`
+        : "",
       visibleNote ? "Note enregistrée" : "",
     ]
       .filter(Boolean)
@@ -2544,12 +3967,14 @@ export default function Home() {
       <button
         type="button"
         key={key}
-        className={`${compact ? "mini-day" : "day"} ${info.kind}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${myRecovery ? " recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected ? " request-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
+        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
         style={
           selected
             ? ({
                 "--selection-color": TYPE_COLORS[selected.type],
               } as React.CSSProperties)
+            : cleanupSelected
+              ? ({ "--selection-color": "#c43d43" } as React.CSSProperties)
             : rangeSelecting
               ? ({ "--range-preview": "var(--leave)" } as React.CSSProperties)
               : noteSelecting
@@ -2558,11 +3983,34 @@ export default function Home() {
         }
         onClick={() => handleDay(date)}
         title={title}
-        aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${visibleNote ? ", note enregistrée" : ""}`}
+        aria-current={today ? "date" : undefined}
+        aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}`}
       >
         <span className={info.holiday ? "holiday-date" : "date-number"}>
           {date.getDate()}
         </span>
+        {hasHourlyRecovery && !compact ? (
+          <span className="hourly-recovery-label">
+            Récup. {minutesLabel(hourlyRecoveryMinutes)}
+          </span>
+        ) : null}
+        {visibleLeave &&
+        (myLeaveType === "exceptional" ||
+          myLeaveType === "childcare" ||
+          myLeaveType === "sick") ? (
+          <span
+            className={`leave-calendar-marker leave-calendar-marker-${myLeaveType}${compact ? " compact" : ""}`}
+            aria-hidden="true"
+          >
+            {myLeaveType === "exceptional"
+              ? "ASA"
+              : myLeaveType === "childcare"
+                ? "👶"
+                : myLeaveType === "sick"
+                  ? "🤒"
+                : ""}
+          </span>
+        ) : null}
         {personalDay && (
           <span
             className={`personal-marker${visibleLeave ? " with-companions" : ""}`}
@@ -2574,7 +4022,7 @@ export default function Home() {
             </svg>
           </span>
         )}
-        {selected && <span className="selection-corner" aria-hidden="true" />}
+        {(selected || cleanupSelected) && <span className="selection-corner" aria-hidden="true" />}
         {selected && !compact && (
           <span className="selection-label">
             {TYPE_LABELS[selected.type]}
@@ -2679,7 +4127,9 @@ export default function Home() {
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
       status: formProfile?.status,
+      workQuota: formProfile?.workQuota,
       baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
       otherFixed: formProfile?.otherFixed,
@@ -2690,6 +4140,7 @@ export default function Home() {
       navigo: formProfile?.navigo,
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
       [field]: value,
     };
     // Le taux net/brut est un pourcentage, pas un montant : le même calcul
@@ -2699,7 +4150,7 @@ export default function Home() {
     setSavingPay(field);
     try {
       if (
-        !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+      !demoMode
       ) {
         await postCalendar({
             action: "save-form-profile",
@@ -2747,7 +4198,9 @@ export default function Home() {
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
       status: formProfile?.status,
+      workQuota: formProfile?.workQuota,
       baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
       otherFixed: formProfile?.otherFixed,
@@ -2758,9 +4211,10 @@ export default function Home() {
       navigo: formProfile?.navigo,
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
     };
     setFormProfile(nextProfile);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+    if (demoMode)
       return;
     try {
       await postCalendar({
@@ -2808,7 +4262,9 @@ export default function Home() {
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
       status: formProfile?.status,
+      workQuota: formProfile?.workQuota,
       baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
       otherFixed: formProfile?.otherFixed,
@@ -2819,6 +4275,7 @@ export default function Home() {
       navigo: formProfile?.navigo,
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
       sundayCarryover: count,
       sundayCarryoverYear: target.year,
       sundayCarryoverMonth: target.month,
@@ -2829,7 +4286,7 @@ export default function Home() {
     // report qui semble pris alors qu'il ne l'est pas serait pire qu'une
     // erreur visible.
     setFormProfile(nextProfile);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+    if (demoMode)
       return;
     try {
       await postCalendar({
@@ -2860,7 +4317,9 @@ export default function Home() {
       group: formProfile?.group || String(group),
       signature: formProfile?.signature || "",
       status: formProfile?.status,
+      workQuota: formProfile?.workQuota,
       baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
       carenceDay: formProfile?.carenceDay,
       otherFixed: formProfile?.otherFixed,
@@ -2871,6 +4330,7 @@ export default function Home() {
       navigo: formProfile?.navigo,
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
       sundayCarryover: 0,
       sundayCarryoverYear,
       sundayCarryoverMonth,
@@ -2878,7 +4338,7 @@ export default function Home() {
       sundayCarryoverFromMonth,
     };
     setFormProfile(nextProfile);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+    if (demoMode)
       return;
     try {
       await postCalendar({
@@ -2902,7 +4362,7 @@ export default function Home() {
   async function chooseHolidayPay(key: string, choice: HolidayPay) {
     const current = entries[key];
     if (
-      !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+      !demoMode
     ) {
       try {
         await postCalendar({
@@ -2930,6 +4390,10 @@ export default function Home() {
   // les chercher sur un bulletin qui ne les porte pas.
   const PAYSLIP_IMPORT_FIELDS = [
     { key: "baseSalary" as const, label: "Traitement de base" },
+    {
+      key: "residenceAllowance" as const,
+      label: "Indemnité de résidence",
+    },
     ...(isContractuel ? [] : [{ key: "ifse" as const, label: "IFSE" }]),
     { key: "carenceDay" as const, label: "Jour de carence" },
     { key: "otherFixed" as const, label: "Autres éléments fixes" },
@@ -2947,14 +4411,27 @@ export default function Home() {
    *  Certains éléments (Navigo, autres éléments fixes) évoluent d'une année
    *  à l'autre : entre plusieurs bulletins qui les portent, c'est celui du
    *  mois le plus récent qui l'emporte plutôt que le premier trouvé. */
-  async function importPayslips(files: File[]) {
+  async function importPayslips(
+    files: File[],
+    mode: "verify" | "calibrate" = "verify",
+  ) {
+    setPayslipImportMode(mode);
     setPayslipImportError("");
     setPayslipImportResult(null);
     setPayslipError("");
-    setPayslipCheck(null);
+    setPayslipNeedsPeriod(false);
+    if (mode === "verify") {
+      setPayslipCheck(null);
+      setPayslipResultDetailsOpen(false);
+    }
     if (!files.length) return;
+    if (mode === "calibrate" && files.length < 2) {
+      setPayslipImportError(
+        "Choisissez au moins deux bulletins de mois différents pour affiner les taux.",
+      );
+      return;
+    }
     setPayslipImportBusy(true);
-    setPayslipToolsOpen(true);
     try {
       const items: Array<{ name: string; reading: PayslipReading }> = [];
       for (const file of files) {
@@ -2982,16 +4459,51 @@ export default function Home() {
       });
       // Comparaison au calcul de l'appli : le bulletin le plus récent
       // (une fois triés ci-dessus) qui porte au moins un montant lisible.
-      const bestForCheck = items.find(
+      const readableItems = items.filter(
         (item) => item.reading.gross || item.reading.baseSalary,
       );
-      if (bestForCheck) {
+      const bestForCheck =
+        readableItems.find(
+          (item) =>
+            item.reading.year === view.getFullYear() &&
+            item.reading.month === view.getMonth(),
+        ) || readableItems[0];
+      if (bestForCheck && mode === "verify") {
         setPayslipCheck(bestForCheck);
+        if (
+          bestForCheck.reading.year !== undefined &&
+          bestForCheck.reading.month !== undefined
+        ) {
+          setView(
+            localDate(
+              bestForCheck.reading.year,
+              bestForCheck.reading.month,
+              1,
+            ),
+          );
+        } else {
+          setPayslipFallbackMonth(view.getMonth());
+          setPayslipFallbackYear(view.getFullYear());
+          setPayslipNeedsPeriod(true);
+        }
       } else {
-        setPayslipError(
-          "Aucun bulletin n’a pu être lu pour la comparaison. Sa mise en page a peut-être changé.",
-        );
+        if (mode === "verify")
+          setPayslipError(
+            "Aucun bulletin n’a pu être lu pour la comparaison. Sa mise en page a peut-être changé.",
+          );
       }
+      const profileSource =
+        mode === "verify" ? bestForCheck || items[0] : readableItems[0] || items[0];
+      const targetPayYear = String(
+        profileSource?.reading.year ?? view.getFullYear(),
+      );
+      const targetPayMonth =
+        profileSource?.reading.month ?? view.getMonth();
+      const targetNetRatioRegime: PayCalibrationRegime = payCalibrationRegime(
+        Number(targetPayYear),
+        targetPayMonth,
+      );
+      const targetPayProfile = payProfiles[targetPayYear];
       const found: Partial<Record<(typeof PAYSLIP_IMPORT_FIELDS)[number]["key"], number>> =
         {};
       let ciaMonth: number | undefined;
@@ -3004,9 +4516,58 @@ export default function Home() {
           break;
         }
       }
-      const calculatedRates = calculateNetRatios(
-        items.map((item) => item.reading),
+      // Un seul bulletin donne un net total pour deux taux inconnus. On
+      // réunit donc les lectures successives de la session. Un même mois
+      // réimporté remplace sa lecture précédente au lieu de compter deux fois.
+      const rateSamplesByPeriod = new Map<
+        string,
+        { name: string; reading: PayslipReading }
+      >();
+      for (const item of [...payslipRateSamples, ...items]) {
+        const period =
+          item.reading.year !== undefined && item.reading.month !== undefined
+            ? `${item.reading.year}-${item.reading.month}`
+            : `file-${item.name}`;
+        rateSamplesByPeriod.set(period, item);
+      }
+      const nextRateSamples = Array.from(rateSamplesByPeriod.values());
+      setPayslipRateSamples(nextRateSamples);
+      const compatibleRateReadings = readingsForCalibrationRegime(
+        nextRateSamples.map((item) => item.reading),
+        targetNetRatioRegime,
       );
+      const calculatedRates = calculateNetRatios(compatibleRateReadings);
+      const ignoredRateSampleCount =
+        nextRateSamples.length - compatibleRateReadings.length;
+      const automaticSundayReport = (() => {
+        if (
+          !bestForCheck ||
+          bestForCheck.reading.year === undefined ||
+          bestForCheck.reading.month === undefined ||
+          bestForCheck.reading.year !== allowances?.year
+        )
+          return null;
+        const expected =
+          allowances.monthly.find(
+            (slot) => slot.index === bestForCheck.reading.month,
+          )?.sundayCount || 0;
+        const count = unpaidSundays(
+          expected,
+          bestForCheck.reading.sundaysBeyondTen,
+        );
+        const target = nextSundayPayoutSlot(
+          bestForCheck.reading.year,
+          bestForCheck.reading.month,
+        );
+        return count > 0 && target
+          ? {
+              count,
+              fromYear: bestForCheck.reading.year,
+              fromMonth: bestForCheck.reading.month,
+              target,
+            }
+          : null;
+      })();
       const applied = PAYSLIP_IMPORT_FIELDS.filter(
         (field) => found[field.key] !== undefined,
       );
@@ -3021,33 +4582,69 @@ export default function Home() {
         group: formProfile?.group || String(group),
         signature: formProfile?.signature || "",
         status: formProfile?.status,
-        baseSalary: found.baseSalary ?? formProfile?.baseSalary,
-        ifse: found.ifse ?? formProfile?.ifse,
-        carenceDay: found.carenceDay ?? formProfile?.carenceDay,
-        otherFixed: found.otherFixed ?? formProfile?.otherFixed,
-        cia: found.cia ?? formProfile?.cia,
-        ciaMonth: ciaMonth ?? formProfile?.ciaMonth,
+        workQuota: formProfile?.workQuota,
+        baseSalary:
+          found.baseSalary ?? targetPayProfile?.baseSalary ?? formProfile?.baseSalary,
+        residenceAllowance:
+          found.residenceAllowance ??
+          targetPayProfile?.residenceAllowance ??
+          formProfile?.residenceAllowance,
+        ifse: found.ifse ?? targetPayProfile?.ifse ?? formProfile?.ifse,
+        carenceDay:
+          found.carenceDay ?? targetPayProfile?.carenceDay ?? formProfile?.carenceDay,
+        otherFixed:
+          found.otherFixed ?? targetPayProfile?.otherFixed ?? formProfile?.otherFixed,
+        cia: found.cia ?? targetPayProfile?.cia ?? formProfile?.cia,
+        ciaMonth: ciaMonth ?? targetPayProfile?.ciaMonth ?? formProfile?.ciaMonth,
         netRatioFixed:
-          calculatedRates?.netRatioFixed ?? formProfile?.netRatioFixed,
+          calculatedRates?.netRatioFixed ??
+          targetPayProfile?.netRatioFixed ??
+          formProfile?.netRatioFixed,
         netRatioVariable:
-          calculatedRates?.netRatioVariable ?? formProfile?.netRatioVariable,
-        navigo: found.navigo ?? formProfile?.navigo,
+          calculatedRates?.netRatioVariable ??
+          targetPayProfile?.netRatioVariable ??
+          formProfile?.netRatioVariable,
+        netRatioRegime: calculatedRates
+          ? targetNetRatioRegime
+          : targetPayProfile?.netRatioRegime ?? formProfile?.netRatioRegime,
+        navigo: found.navigo ?? targetPayProfile?.navigo ?? formProfile?.navigo,
         mealVoucherDeduction:
-          found.mealVoucherDeduction ?? formProfile?.mealVoucherDeduction,
-        pasRate: found.pasRate ?? formProfile?.pasRate,
+          found.mealVoucherDeduction ??
+          targetPayProfile?.mealVoucherDeduction ??
+          formProfile?.mealVoucherDeduction,
+        pasRate: found.pasRate ?? targetPayProfile?.pasRate ?? formProfile?.pasRate,
+        sundayCarryover:
+          automaticSundayReport?.count ?? formProfile?.sundayCarryover,
+        sundayCarryoverYear:
+          automaticSundayReport?.target.year ??
+          formProfile?.sundayCarryoverYear,
+        sundayCarryoverMonth:
+          automaticSundayReport?.target.month ??
+          formProfile?.sundayCarryoverMonth,
+        sundayCarryoverFromYear:
+          automaticSundayReport?.fromYear ??
+          formProfile?.sundayCarryoverFromYear,
+        sundayCarryoverFromMonth:
+          automaticSundayReport?.fromMonth ??
+          formProfile?.sundayCarryoverFromMonth,
+        manualAdjustments: formProfile?.manualAdjustments,
       };
       if (
-        !(import.meta.env.DEV && new URLSearchParams(location.search).has("demo"))
+      !demoMode
       ) {
         const body: Record<string, unknown> = {
           action: "save-form-profile",
-          payYear: Number(payYear),
+          payYear: Number(targetPayYear),
           fullName: nextProfile.fullName,
           group: nextProfile.group,
           signature: nextProfile.signature,
         };
         if (found.baseSalary !== undefined)
           body.baseSalaryCents = Math.round(found.baseSalary * 100);
+        if (found.residenceAllowance !== undefined)
+          body.residenceAllowanceCents = Math.round(
+            found.residenceAllowance * 100,
+          );
         if (found.ifse !== undefined)
           body.ifseCents = Math.round(found.ifse * 100);
         if (found.carenceDay !== undefined)
@@ -3072,14 +4669,22 @@ export default function Home() {
           body.netRatioVariableBp = Math.round(
             calculatedRates.netRatioVariable * 100,
           );
+          body.netRatioRegime = targetNetRatioRegime;
+        }
+        if (automaticSundayReport) {
+          body.sundayCarryover = automaticSundayReport.count;
+          body.sundayCarryoverYear = automaticSundayReport.target.year;
+          body.sundayCarryoverMonth = automaticSundayReport.target.month;
+          body.sundayCarryoverFromYear = automaticSundayReport.fromYear;
+          body.sundayCarryoverFromMonth = automaticSundayReport.fromMonth;
         }
         await postCalendar(body);
       }
       setFormProfile(nextProfile);
       setPayProfiles((current) => ({
         ...current,
-        [payYear]: {
-          ...(current[payYear] || {}),
+        [targetPayYear]: {
+          ...(current[targetPayYear] || {}),
           ...Object.fromEntries(
             PAYSLIP_IMPORT_FIELDS.filter(
               (field) => found[field.key] !== undefined,
@@ -3087,6 +4692,9 @@ export default function Home() {
           ),
           ...(ciaMonth !== undefined ? { ciaMonth } : {}),
           ...(calculatedRates || {}),
+          ...(calculatedRates
+            ? { netRatioRegime: targetNetRatioRegime }
+            : {}),
         },
       }));
       setPayslipImportResult({
@@ -3115,13 +4723,27 @@ export default function Home() {
           ...PAYSLIP_IMPORT_FIELDS.filter(
             (field) => found[field.key] === undefined,
           ).map((field) => field.label),
-          ...(!calculatedRates
-            ? [
-                "Taux net avant impôt — traitement (2 bulletins différents requis)",
-                "Taux net avant impôt — primes (2 bulletins différents requis)",
-              ]
-            : []),
         ],
+        adjustment: [
+          automaticSundayReport
+            ? `${automaticSundayReport.count} dimanche${s(
+              automaticSundayReport.count,
+            )} non payé${s(
+              automaticSundayReport.count,
+            )} retiré${s(
+              automaticSundayReport.count,
+            )} automatiquement du net de ${MONTHS[automaticSundayReport.fromMonth]} et reporté${s(
+              automaticSundayReport.count,
+            )} sur ${MONTHS[automaticSundayReport.target.month]}.`
+            : undefined,
+          ignoredRateSampleCount > 0
+            ? `${ignoredRateSampleCount} bulletin${s(ignoredRateSampleCount)} d’un ancien régime de cotisations n’${
+                ignoredRateSampleCount > 1 ? "ont" : "a"
+              } pas été mélangé${s(ignoredRateSampleCount)} à la calibration.`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" ") || undefined,
       });
     } catch {
       setPayslipImportError(
@@ -3132,10 +4754,115 @@ export default function Home() {
     }
   }
 
+  function openRequestChooser(origin: "general" | "planning" = "general") {
+    setRequestOrigin(origin);
+    setRequestChooser(true);
+  }
+
+  function openPlanningRequestMethod(
+    kind: RequestKind,
+    date?: string,
+    requestedType?: SelectionType,
+  ) {
+    setDayDate(null);
+    setPlanningRequestDate(date || null);
+    if (kind === "leave" || kind === "other")
+      setPendingLeaveType(requestedType || (kind === "other" ? "other" : "annual"));
+    setPlanningRequestMethod(kind);
+  }
+
+  function openRecoveryTypeChooser(
+    origin: "general" | "planning",
+    date?: string,
+  ) {
+    setRequestChooser(false);
+    setDayDate(null);
+    setRecoveryTypeChooser({ origin, date: date || null });
+  }
+
+  function chooseRecoveryType(type: SelectionType) {
+    const context = recoveryTypeChooser;
+    if (!context) return;
+    setPendingRecoveryType(type);
+    setRecoveryTypeChooser(null);
+    setPlanningRequestDate(context.date);
+    setPlanningRequestMethod("recovery");
+  }
+
+  function closePlanningRequestMethod() {
+    setPlanningRequestMethod(null);
+    setPlanningRequestDate(null);
+  }
+
+  function startManualPlanningRequest() {
+    const kind = planningRequestMethod;
+    const date = planningRequestDate;
+    closePlanningRequestMethod();
+    if (kind === "recovery") {
+      const manualKind =
+        pendingRecoveryType === "recovery_day"
+          ? "day"
+          : pendingRecoveryType === "recovery_half"
+            ? "half"
+            : pendingRecoveryType === "recovery_holiday"
+              ? "holiday"
+              : "hours";
+      setRecoveryDraft((current) => ({
+        ...current,
+        date: date || current.date,
+        kind: manualKind,
+      }));
+      setRecoveryDialogOpen(true);
+      return;
+    }
+    if (kind === "other") {
+      if (date) {
+        openDay(fromKey(date));
+        setDayLeave(true);
+        setDayLeaveType("other");
+        setLeaveRangeEnabled(true);
+        setLeaveRangeFrom(date);
+        setLeaveRangeTo(date);
+      } else {
+        openRange("other");
+      }
+      return;
+    }
+    if (date) {
+      openDay(fromKey(date));
+      setDayLeave(true);
+      setDayLeaveType(pendingLeaveType as LeaveType);
+      setLeaveRangeEnabled(true);
+      setLeaveRangeFrom(date);
+      setLeaveRangeTo(date);
+      return;
+    }
+    openRange(pendingLeaveType as LeaveType);
+  }
+
+  /** Utilisé uniquement lorsque l'en-tête du PDF ne permet pas de reconnaître
+   * sa période. Dans le cas normal, le mois et l'année sont automatiques. */
+  function applyPayslipFallbackPeriod() {
+    if (!payslipCheck) return;
+    setPayslipCheck({
+      ...payslipCheck,
+      reading: {
+        ...payslipCheck.reading,
+        month: payslipFallbackMonth,
+        year: payslipFallbackYear,
+      },
+    });
+    setView(localDate(payslipFallbackYear, payslipFallbackMonth, 1));
+    setPayslipNeedsPeriod(false);
+    setPayslipResultDetailsOpen(false);
+  }
+
   /** Le brut d'un mois quelconque de l'année affichée, pour comparer un
    *  bulletin au mois qu'il porte et non à celui qui est ouvert. */
   function grossForMonth(index: number) {
     const month = allowances?.monthly.find((slot) => slot.index === index);
+    const overtime = paidOvertimeForPayPeriod(view.getFullYear(), index);
+    const mecenat = mecenatForPayMonth(mecenatEntries, view.getFullYear(), index);
     // Même règle que dans `monthPay` : la retenue maladie de fonctionnaire ne
     // s'applique pas à une contractuelle.
     const sick = isContractuel ? 0 : sickLeaves?.byMonth[index]?.total || 0;
@@ -3147,7 +4874,9 @@ export default function Home() {
       SUNDAY_ALLOWANCE.monthlyFlat +
       (month?.sunday || 0) +
       (month?.holiday || 0) -
-      sick
+      sick +
+      overtime.amount +
+      mecenat.grossAmountCents / 100
     );
   }
 
@@ -3156,14 +4885,8 @@ export default function Home() {
    *  contrôler, pas pour consulter. */
   function renderPayslipCheck() {
     if (!allowances || !monthPay || !sickLeaves) return null;
-    const missing =
-      !baseSalary || (!isContractuel && !ifse) || !carenceDay || !otherFixed;
-    const showPayslipHelp = missing || payslipHelpOpen;
-    const showPayslipTools = missing || payslipToolsOpen;
-    const statusValue = formProfile?.status || "fonctionnaire";
-    const statusIndex = PAY_STATUS_OPTIONS.findIndex(
-      (option) => option.value === statusValue,
-    );
+    const missing = netEstimateMissing.length > 0;
+    const showPayslipHelp = payslipHelpOpen;
     /* Seules les primes qui varient d'un mois à l'autre sont détaillées : le
        traitement, l'IFSE et les éléments fixes se retrouvent dans le brut sans
        qu'il soit utile de les répéter chaque mois. */
@@ -3208,12 +4931,38 @@ export default function Home() {
             amount: monthPay.cia,
           }
         : null,
+      overtimeForPayMonth.totalMinutes
+        ? {
+            key: "overtime",
+            label: `Heures supplémentaires (${minutesLabel(
+              overtimeForPayMonth.totalMinutes,
+            )})`,
+            detail: overtimeForPayMonth.ready
+              ? `effectuées en ${MONTHS[overtimeForPayMonth.performedMonth]} · base ${euros(
+                  overtimeForPayMonth.hourlyBase,
+                )}/h${workQuota === "full" ? " · majorations appliquées" : " · règle temps partiel"}`
+              : "traitement de base à compléter pour calculer le montant",
+            amount: overtimeForPayMonth.ready
+              ? overtimeForPayMonth.amount
+              : null,
+          }
+        : null,
+      mecenatForCurrentPayMonth.lines.length
+        ? {
+            key: "mecenat",
+            label: `Mécénats (${mecenatForCurrentPayMonth.lines.length})`,
+            detail: `${minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} · tarifs réglementaires fixes`,
+            amount: mecenatForCurrentPayMonth.grossAmountCents / 100,
+          }
+        : null,
       monthPay.sickDays
         ? {
             key: "sick",
             label: `Arrêt maladie (${monthPay.sickDays} j)`,
-            detail: "carence et retenue de 10 %",
-            amount: -monthPay.sick,
+            detail: isContractuel
+              ? "impact à vérifier selon le maintien de salaire, les IJSS et la subrogation"
+              : "carence et retenue de 10 %",
+            amount: isContractuel ? null : -monthPay.sick,
           }
         : null,
       // Jamais prélevés en décembre (confirmé sur les bulletins de 2024 et
@@ -3228,27 +4977,215 @@ export default function Home() {
           }
         : null,
     ].filter((row): row is NonNullable<typeof row> => Boolean(row));
-    return (
-      <div className="request-archive-content allowances">
-        <div className="status-field">
-          <span>Je suis</span>
-          <div
-            className="status-switch"
-            aria-label="Statut"
-            style={{ "--status-index": statusIndex } as React.CSSProperties}
-          >
-            {PAY_STATUS_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={statusValue === option.value ? "active" : ""}
-                onClick={() => changeStatus(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
+    const comparablePayslip =
+      payslipCheck?.reading.month !== undefined &&
+      payslipCheck.reading.year === allowances.year &&
+      payslipCheck.reading.month === view.getMonth();
+    const payslipMonth = comparablePayslip
+      ? (payslipCheck.reading.month as number)
+      : view.getMonth();
+    const payslipExpectedSundays = comparablePayslip
+      ? allowances.monthly.find(
+          (slot) => slot.index === payslipMonth,
+        )?.sundayCount || 0
+      : 0;
+    const payslipReview = comparablePayslip
+      ? summarizePayslipReview([
+          {
+            key: "gross",
+            label: "Cumul brut",
+            found: payslipCheck.reading.gross,
+            expected: grossForMonth(payslipMonth),
+          },
+          {
+            key: "base",
+            label: "Traitement de base",
+            found: payslipCheck.reading.baseSalary,
+            expected: baseSalary,
+          },
+          ...(!isContractuel
+            ? [
+                {
+                  key: "ifse",
+                  label: "IFSE",
+                  found: payslipCheck.reading.ifse,
+                  expected: ifse,
+                },
+              ]
+            : []),
+          {
+            key: "sundays",
+            label: "Dimanches payés",
+            found: payslipCheck.reading.sundaysBeyondTen,
+            expected: payslipExpectedSundays,
+            tolerance: 1,
+          },
+          ...(overtimeForPayMonth.totalMinutes
+            ? [
+                {
+                  key: "overtime",
+                  label: "Heures supplémentaires",
+                  found: undefined,
+                  expected: overtimeForPayMonth.amount,
+                },
+              ]
+            : []),
+          ...(mecenatForCurrentPayMonth.totalMinutes
+            ? [
+                {
+                  key: "mecenat",
+                  label: "Mécénats",
+                  found: undefined,
+                  expected:
+                    mecenatForCurrentPayMonth.grossAmountCents / 100,
+                },
+              ]
+            : []),
+        ])
+      : null;
+
+    const payEstimateDetails = (
+      <section className="allowance-card allowance-card-lead">
+        <header className="pay-detail-month-heading">
+          <div>
+            <span>Détail de la paie du mois affiché</span>
+            <strong>{MONTHS[monthPay.index]} {allowances.year}</strong>
           </div>
+          <div className="pay-month-nav compact">
+            <button type="button" className="pay-nav-arrow" onClick={() => changeAllowancesMonth(-1)} aria-label="Mois précédent">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
+            </button>
+            <button type="button" className="pay-nav-arrow" onClick={() => changeAllowancesMonth(1)} aria-label="Mois suivant">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
+            </button>
+            <button type="button" className="pay-today-button" onClick={goToday}>
+              Aujourd’hui
+            </button>
+          </div>
+        </header>
+        <div className="pay-headline">
+          <p className="pay-amount">
+            <span>Brut</span>
+            <strong>{euros(grossEstimateComplete ? monthPay.gross : 0)}</strong>
+          </p>
+          {monthNet === null ? null : (
+            <p className="pay-amount net">
+              <span>Net estimé</span>
+              <strong>{euros(monthNet)}</strong>
+            </p>
+          )}
         </div>
+        {monthPayRows.length ? (
+          <table className="allowance-table">
+            <tbody>
+              {monthPayRows.map((row) => (
+                <tr key={row.key}>
+                  <th scope="row">
+                    {row.label}
+                    <small>{row.detail}</small>
+                  </th>
+                  <td
+                    className={
+                      row.amount !== null && row.amount < 0
+                        ? "negative"
+                        : row.amount !== null && row.amount > 0
+                          ? "positive"
+                          : ""
+                    }
+                  >
+                    {row.amount === null ? "À compléter" : euros(row.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
+        {overtimeForPayMonth.totalMinutes ? (
+          <div className="overtime-pay-detail">
+            <div className="overtime-pay-detail-heading">
+              <div>
+                <strong>Heures supplémentaires</strong>
+                <span>
+                  Effectuées en {MONTHS[overtimeForPayMonth.performedMonth]} {overtimeForPayMonth.performedYear}
+                </span>
+              </div>
+              <strong>
+                {overtimeForPayMonth.ready
+                  ? euros(overtimeForPayMonth.amount)
+                  : "À compléter"}
+              </strong>
+            </div>
+            {overtimeForPayMonth.ready ? (
+              <>
+                <p>
+                  Base horaire : {euros(overtimeForPayMonth.hourlyBase)}/h. {workQuota === "full"
+                    ? `14 premières heures : ${euros(overtimeForPayMonth.hourlyBase * 1.25)}/h de jour et ${euros(overtimeForPayMonth.hourlyBase * 1.25 * 2)}/h de nuit. À partir de la 15e : ${euros(overtimeForPayMonth.hourlyBase * 1.27)}/h de jour et ${euros(overtimeForPayMonth.hourlyBase * 1.27 * 2)}/h de nuit.`
+                    : "À temps partiel, le taux de base s’applique sans coefficient 1,25/1,27 ni majoration de nuit."}
+                </p>
+                <div className="overtime-pay-lines">
+                  {overtimeForPayMonth.lines.map((line) => (
+                    <article key={line.entryId}>
+                      <div>
+                        <strong>{longDate(fromKey(line.date))}</strong>
+                        <span>
+                          {line.dayMinutes ? `${minutesLabel(line.dayMinutes)} de jour` : ""}
+                          {line.dayMinutes && line.nightMinutes ? " · " : ""}
+                          {line.nightMinutes ? `${minutesLabel(line.nightMinutes)} de nuit` : ""}
+                        </span>
+                      </div>
+                      <strong>{euros(line.amount)}</strong>
+                    </article>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p>Renseignez le traitement de base pour calculer automatiquement les tarifs et le montant brut.</p>
+            )}
+          </div>
+        ) : null}
+        {mecenatForCurrentPayMonth.lines.length ? (
+          <div className="overtime-pay-detail mecenat-pay-detail">
+            <div className="overtime-pay-detail-heading">
+              <div>
+                <strong>Mécénats</strong>
+                <span>Tarifs fixes, indépendants de la quotité et des IHTS</span>
+              </div>
+              <strong>{euros(mecenatForCurrentPayMonth.grossAmountCents / 100)}</strong>
+            </div>
+            <p>
+              {euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h de 7 h à 22 h · {euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h de 22 h à 7 h.
+            </p>
+            <div className="overtime-pay-lines">
+              {mecenatForCurrentPayMonth.lines.map((entry) => (
+                <article key={entry.id}>
+                  <div>
+                    <strong>{longDate(fromKey(entry.date))} · {entry.start} → {entry.end}</strong>
+                    <span>
+                      {entry.dayMinutes
+                        ? `${minutesLabel(entry.dayMinutes)} tarif jour (${euros(
+                            (entry.dayMinutes / 60) *
+                              (MECENAT_REGULATORY_RATES.dayRateCents / 100),
+                          )})`
+                        : ""}
+                      {entry.dayMinutes && entry.nightMinutes ? " · " : ""}
+                      {entry.nightMinutes
+                        ? `${minutesLabel(entry.nightMinutes)} tarif nuit (${euros(
+                            (entry.nightMinutes / 60) *
+                              (MECENAT_REGULATORY_RATES.nightRateCents / 100),
+                          )})`
+                        : ""}
+                    </span>
+                  </div>
+                  <strong>{euros(entry.grossAmountCents / 100)}</strong>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </section>
+    );
+    return (
+      <div className="request-archive-content allowances pay-functions-layout">
         <p className="pay-year-notice">
           Paramètres de paie pour <strong>{payYear}</strong>
           {payProfiles[payYear]
@@ -3275,9 +5212,10 @@ export default function Home() {
               qui n’existent que sur un vrai bulletin de paie : le traitement
               de base (votre rémunération hors primes), le montant exact d’un
               jour de carence lors d’un arrêt maladie, et quelques lignes
-              fixes plus rares (indemnité de résidence…). Donnez-lui quelques
-              bulletins PDF : elle y reconnaît ces valeurs et remplit les
-              champs toute seule, sans que vous ayez à les recopier.
+              fixes plus rares (indemnité de résidence…). Un bulletin peut
+              remplir ces valeurs automatiquement. Deux bulletins de mois
+              différents permettent aussi d’affiner séparément le taux du
+              traitement et celui des primes.
             </p>
             {!isContractuel ? (
               <p className="allowance-note">
@@ -3285,9 +5223,9 @@ export default function Home() {
               </p>
             ) : null}
             <p className="allowance-note">
-              Tout se passe sur cet appareil, en toute sécurité : vos
-              bulletins et les montants qu’ils contiennent ne sont jamais
-              envoyés ni conservés, nulle part.
+              Le PDF est lu uniquement sur cet appareil et n’est jamais
+              conservé. Seules les valeurs utiles à vos estimations sont
+              enregistrées dans votre espace Planning Solo.
             </p>
           </section>
         ) : (
@@ -3302,56 +5240,96 @@ export default function Home() {
           </p>
         )}
 
-        {showPayslipTools ? (
-          <section className="allowance-card">
+        {payEstimateDetails}
+
+          <section className="allowance-card pay-function-card payslip-verify-card">
             <header>
-              <span>Vérifier un bulletin</span>
-              {!missing ? (
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => setPayslipToolsOpen(false)}
-                >
-                  Replier
-                </button>
-              ) : null}
+              <div>
+                <span className="step-label">Contrôler une fiche réelle</span>
+                <h3>Vérifier un bulletin</h3>
+                <small>Pour voir si rien ne manque</small>
+              </div>
+              <small>Un seul PDF suffit</small>
             </header>
-            <p className="allowance-note">
-              Choisissez un ou plusieurs bulletins PDF : les valeurs de vos
-              bulletins se remplissent toutes seules dans les champs d’«
-              Éléments de paie », et le bulletin le plus récent est comparé au
-              calcul de l’appli. Avec au moins deux mois dont les primes
-              diffèrent, les taux nets avant impôt du traitement et des primes
-              sont également calculés automatiquement. Les fichiers sont lus
-              sur cet appareil et ne sont ni envoyés, ni conservés.
-            </p>
-            <label className="payslip-drop">
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                multiple
-                disabled={payslipImportBusy}
-                onChange={(event) => {
-                  // Copier chaque fichier dans un tableau avant de vider le
-                  // champ : `event.target.value = ""` vide aussi la FileList
-                  // déjà récupérée (elle n'est pas figée), une simple
-                  // affectation ne suffit pas comme pour un input à un seul
-                  // fichier.
-                  const files = Array.from(event.target.files || []);
-                  event.target.value = "";
-                  if (files.length) void importPayslips(files);
-                }}
-              />
-              <span>
-                {payslipImportBusy
-                  ? "Lecture en cours…"
-                  : "Choisir un ou plusieurs bulletins PDF"}
-              </span>
-            </label>
-            {payslipImportError ? (
+            <div className="payslip-guide-step active">
+              <span className="payslip-guide-number">1</span>
+              <div>
+                <strong>Choisir le bulletin à vérifier</strong>
+                <small>Son mois et son année seront reconnus automatiquement.</small>
+              </div>
+              <label className="payslip-drop">
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  disabled={payslipImportBusy}
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files || []);
+                    event.target.value = "";
+                    if (files.length) void importPayslips(files, "verify");
+                  }}
+                />
+                <span>
+                  {payslipImportBusy && payslipImportMode === "verify"
+                    ? "Lecture en cours…"
+                    : "Choisir le PDF"}
+                </span>
+              </label>
+            </div>
+            {payslipCheck && !payslipNeedsPeriod && payslipCheck.reading.month !== undefined && payslipCheck.reading.year !== undefined ? (
+              <>
+                <div className="payslip-detected-period" role="status">
+                  <span>Période reconnue</span>
+                  <strong>{MONTHS[payslipCheck.reading.month]} {payslipCheck.reading.year}</strong>
+                </div>
+                {payslipCheck.reading.gross !== undefined ||
+                payslipCheck.reading.netBeforeTax !== undefined ? (
+                  <div className="payslip-actual-values" aria-label="Valeurs réellement lues sur le bulletin">
+                    <span>Valeurs du bulletin</span>
+                    {payslipCheck.reading.gross !== undefined ? (
+                      <div>
+                        <small>Brut réel</small>
+                        <strong>{euros(payslipCheck.reading.gross)}</strong>
+                      </div>
+                    ) : null}
+                    {payslipCheck.reading.netBeforeTax !== undefined ? (
+                      <div>
+                        <small>Net avant impôt réel</small>
+                        <strong>{euros(payslipCheck.reading.netBeforeTax)}</strong>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+            {payslipCheck && payslipNeedsPeriod ? (
+              <div className="payslip-period-fallback">
+                <div>
+                  <strong>Période non reconnue</strong>
+                  <small>Indiquez exceptionnellement le mois et l’année de ce bulletin.</small>
+                </div>
+                <ChoicePicker
+                  value={payslipFallbackMonth}
+                  options={MONTH_OPTIONS}
+                  onChange={setPayslipFallbackMonth}
+                  ariaLabel="Mois du bulletin"
+                  className="payslip-month-picker"
+                />
+                <ChoicePicker
+                  value={payslipFallbackYear}
+                  options={YEAR_OPTIONS}
+                  onChange={setPayslipFallbackYear}
+                  ariaLabel="Année du bulletin"
+                  className="payslip-year-picker"
+                />
+                <button type="button" className="secondary-button" onClick={applyPayslipFallbackPeriod}>
+                  Utiliser cette période
+                </button>
+              </div>
+            ) : null}
+            {payslipImportMode === "verify" && payslipImportError ? (
               <p className="allowance-note warn">{payslipImportError}</p>
             ) : null}
-            {payslipImportResult ? (
+            {payslipImportMode === "verify" && payslipImportResult ? (
               <>
                 <p className="allowance-note">
                   {payslipImportResult.applied.length} champ
@@ -3368,6 +5346,11 @@ export default function Home() {
                     {payslipImportResult.missing.join(", ")}.
                   </p>
                 ) : null}
+                {payslipImportResult.adjustment ? (
+                  <p className="allowance-note positive">
+                    {payslipImportResult.adjustment}
+                  </p>
+                ) : null}
               </>
             ) : null}
             {payslipError ? (
@@ -3375,17 +5358,49 @@ export default function Home() {
             ) : null}
             {payslipCheck ? (
             payslipCheck.reading.month === undefined ||
-            payslipCheck.reading.year !== allowances.year ? (
+            payslipCheck.reading.year !== allowances.year ||
+            payslipCheck.reading.month !== view.getMonth() ? (
               <p className="allowance-note warn">
                 Ce bulletin
                 {payslipCheck.reading.month !== undefined
                   ? ` porte ${MONTHS[payslipCheck.reading.month]} ${payslipCheck.reading.year}`
                   : " n’indique pas sa période"}{" "}
-                : affichez {payslipCheck.reading.year || "l’année"} dans le
-                planning pour le comparer.
+                mais sa période ne correspond pas encore au mois affiché.
+                Réessayez ou indiquez sa période manuellement.
               </p>
             ) : (
             <>
+              {payslipReview ? (
+                <div className={`payslip-result-summary ${payslipReview.tone}`}>
+                  <span className="payslip-result-icon" aria-hidden="true">
+                    {payslipReview.tone === "ok" ? "✓" : payslipReview.tone === "warning" ? "!" : "?"}
+                  </span>
+                  <div>
+                    <strong>{payslipReview.verdict}</strong>
+                    <small>
+                      {payslipReview.verified.length} contrôle
+                      {s(payslipReview.verified.length)} fiable
+                      {s(payslipReview.verified.length)} effectué
+                      {s(payslipReview.verified.length)}
+                      {payslipReview.unavailable.length
+                        ? ` · ${payslipReview.unavailable.length} non vérifiable${s(payslipReview.unavailable.length)}`
+                        : ""}
+                    </small>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      setPayslipResultDetailsOpen((current) => !current)
+                    }
+                    aria-expanded={payslipResultDetailsOpen}
+                  >
+                    {payslipResultDetailsOpen ? "Masquer le détail" : "Voir le détail"}
+                  </button>
+                </div>
+              ) : null}
+              {payslipResultDetailsOpen ? (
+                <>
               <table className="allowance-table">
                 <thead>
                   <tr>
@@ -3415,6 +5430,31 @@ export default function Home() {
                         found: payslipCheck.reading.ifse,
                         computed: ifse,
                       },
+                      ...(overtimeForPayMonth.totalMinutes
+                        ? [
+                            {
+                              key: "overtime",
+                              label: `Heures supplémentaires (${minutesLabel(
+                                overtimeForPayMonth.totalMinutes,
+                              )})`,
+                              found: undefined,
+                              computed: overtimeForPayMonth.amount,
+                            },
+                          ]
+                        : []),
+                      ...(mecenatForCurrentPayMonth.totalMinutes
+                        ? [
+                            {
+                              key: "mecenat",
+                              label: `Mécénats (${minutesLabel(
+                                mecenatForCurrentPayMonth.totalMinutes,
+                              )})`,
+                              found: undefined,
+                              computed:
+                                mecenatForCurrentPayMonth.grossAmountCents / 100,
+                            },
+                          ]
+                        : []),
                     ] as const
                   ).map((row) => {
                     const gap =
@@ -3476,6 +5516,24 @@ export default function Home() {
                   })()}
                 </tbody>
               </table>
+              {overtimeForPayMonth.totalMinutes ? (
+                <p className="allowance-note">
+                  {minutesLabel(overtimeForPayMonth.totalMinutes)} sont attendues
+                  sur ce bulletin pour un montant brut estimé de {euros(
+                    overtimeForPayMonth.amount,
+                  )}. La ligne du PDF n’est pas encore reconnue de façon assez
+                  fiable : vérifiez-la visuellement sur le bulletin.
+                </p>
+              ) : null}
+              {mecenatForCurrentPayMonth.totalMinutes ? (
+                <p className="allowance-note">
+                  {minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} de mécénat
+                  sont attendues sur ce bulletin pour {euros(
+                    mecenatForCurrentPayMonth.grossAmountCents / 100,
+                  )} brut. La ligne du PDF n’est pas reconnue de façon assez
+                  fiable : vérifiez-la visuellement sur le bulletin.
+                </p>
+              ) : null}
               <p className="allowance-note">
                 {payslipCheck.name} · comparé à{" "}
                 {MONTHS[payslipCheck.reading.month]} {payslipCheck.reading.year}
@@ -3515,6 +5573,8 @@ export default function Home() {
                   </p>
                 );
               })()}
+                </>
+              ) : null}
             </>
             )
           ) : null}
@@ -3534,95 +5594,59 @@ export default function Home() {
             </p>
           ) : null}
           </section>
-        ) : (
-          <p className="allowance-note">
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => setPayslipToolsOpen(true)}
-            >
-              Vérifier un bulletin
-            </button>
-          </p>
-        )}
 
-        <section className="allowance-card allowance-card-lead">
+        <section className="allowance-card pay-function-card payslip-calibration-card">
           <header>
-            <div className="pay-month-nav">
-              {/* Au clic pour la souris (PC) ; le glissé fait déjà ce travail
-                  au doigt sur ce même bloc plus bas. */}
-              <button
-                type="button"
-                className="pay-nav-arrow"
-                onClick={() => changeAllowancesMonth(-1)}
-                aria-label="Mois précédent"
-              >
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="m12.5 5-5 5 5 5" />
-                </svg>
-              </button>
-              <span>La paie de {MONTHS[monthPay.index]}</span>
-              <button
-                type="button"
-                className="pay-nav-arrow"
-                onClick={() => changeAllowancesMonth(1)}
-                aria-label="Mois suivant"
-              >
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="m7.5 5 5 5-5 5" />
-                </svg>
-              </button>
+            <div>
+              <span className="step-label">Améliorer la précision</span>
+              <h3>Affiner mes estimations</h3>
+              <small>Pour remplir automatiquement les éléments de paie</small>
             </div>
-            {/* Cette carte suit le mois affiché dans le planning, pas
-                forcément le mois en cours : un raccourci pour y revenir sans
-                quitter Infos paye, seulement quand on s'en est éloigné. */}
-            {(view.getMonth() !== now.getMonth() ||
-              view.getFullYear() !== now.getFullYear()) && (
-              <button
-                type="button"
-                className="text-button"
-                onClick={goToday}
-              >
-                Aujourd’hui
-              </button>
-            )}
+            <small>Facultatif</small>
           </header>
-          <div className="pay-headline">
-            <p className="pay-amount">
-              <span>Brut</span>
-              <strong>{euros(monthPay.gross)}</strong>
-            </p>
-            {monthNet === null ? null : (
-              <p className="pay-amount net">
-                <span>Net estimé</span>
-                <strong>{euros(monthNet)}</strong>
-              </p>
-            )}
-          </div>
-          {monthPayRows.length ? (
-            <table className="allowance-table">
-              <tbody>
-                {monthPayRows.map((row) => (
-                  <tr key={row.key}>
-                    <th scope="row">
-                      {row.label}
-                      <small>{row.detail}</small>
-                    </th>
-                    <td
-                      className={
-                        row.amount < 0
-                          ? "negative"
-                          : row.amount > 0
-                            ? "positive"
-                            : ""
-                      }
-                    >
-                      {euros(row.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <p className="allowance-note">
+            Sélectionnez ensemble au moins deux bulletins de mois différents.
+            Ils servent uniquement à distinguer plus précisément le taux du
+            traitement de celui des primes ; les PDF ne sont pas conservés.
+          </p>
+          <label className="payslip-drop payslip-calibration-drop">
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              disabled={payslipImportBusy}
+              onChange={(event) => {
+                const files = Array.from(event.target.files || []);
+                event.target.value = "";
+                if (files.length) void importPayslips(files, "calibrate");
+              }}
+            />
+            <span>
+              {payslipImportBusy && payslipImportMode === "calibrate"
+                ? "Analyse en cours…"
+                : "Choisir plusieurs bulletins"}
+            </span>
+          </label>
+          {payslipImportMode === "calibrate" && payslipImportError ? (
+            <p className="allowance-note warn">{payslipImportError}</p>
+          ) : null}
+          {payslipRateSamples.length ? (
+            <div className={`payslip-calibration-status ${payslipRateCalibration.reason}`} role="status">
+              <strong>
+                {payslipRateCalibration.reason === "ready"
+                  ? "Taux affinés automatiquement"
+                  : payslipRateCalibration.reason === "not-enough-variation"
+                    ? "Bulletins trop similaires"
+                    : payslipRateCalibration.reason === "inconsistent"
+                      ? "Calcul encore trop incertain"
+                      : `${payslipRateCalibration.usableCount} bulletin${s(payslipRateCalibration.usableCount)} utilisable${s(payslipRateCalibration.usableCount)}`}
+              </strong>
+              <small>
+                {payslipRateCalibration.reason === "ready"
+                  ? "Les taux du traitement et des primes ont été mis à jour."
+                  : "Il faut au moins deux mois lisibles avec des montants de primes différents."}
+              </small>
+            </div>
           ) : null}
         </section>
 
@@ -3654,14 +5678,28 @@ export default function Home() {
           </section>
         )}
 
-        <section className="allowance-card">
+        <section className="allowance-card pay-function-card pay-elements-card">
           <header>
-            <span>Éléments de paie</span>
+            <div>
+              <span className="step-label">Références utilisées par les calculs</span>
+              <h3>Éléments de paie</h3>
+            </div>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => setPaySettingsOpen((current) => !current)}
+              aria-expanded={paySettingsOpen}
+            >
+              {paySettingsOpen ? "Replier" : missing ? "À compléter" : "Voir"}
+            </button>
           </header>
+          {paySettingsOpen ? (
+            <>
           {missing ? (
             <p className="allowance-note warn">
-              Renseignez ces montants pour que les calculs soient justes. Ils se
-              lisent tous sur un bulletin.
+              Information{netEstimateMissing.length > 1 ? "s" : ""} encore
+              manquante{netEstimateMissing.length > 1 ? "s" : ""} : {netEstimateMissing.join(", ")}.
+              Un bulletin lisible peut les remplir automatiquement.
             </p>
           ) : null}
           <div className="pay-field-grid">
@@ -3710,17 +5748,19 @@ export default function Home() {
                 field: "netRatioFixed" as const,
                 label: "Taux net avant impôt — traitement",
                 value: netRatioFixed,
-                hint: "Ex. 79,41",
-                use: "cotisations sur le traitement, l’IFSE et les éléments fixes, qui portent la pension civile",
+                hint: "",
+                use: "estimation automatique, affinée lorsque les bulletins permettent un calcul fiable",
                 percent: true,
+                automatic: true,
               },
               {
                 field: "netRatioVariable" as const,
                 label: "Taux net avant impôt — primes",
                 value: netRatioVariable,
-                hint: "Ex. 89,92",
-                use: "cotisations sur les dimanches, fériés et le CIA, non soumis à la pension civile : bien moins ponctionnés",
+                hint: "",
+                use: "estimation automatique pour les dimanches, fériés et le CIA",
                 percent: true,
+                automatic: true,
               },
               {
                 field: "navigo" as const,
@@ -3764,7 +5804,10 @@ export default function Home() {
               </span>
               {/* L'explication ne sert qu'à trouver la ligne sur le bulletin :
                   une fois le montant saisi, elle n'est plus que du bruit. */}
-              {item.value ? null : <small>{item.use}</small>}
+              {item.automatic || !item.value ? <small>{item.use}</small> : null}
+              {item.automatic ? (
+                <span className="pay-field-automatic">Automatique</span>
+              ) : (
               <div className="salary-field">
                 <input
                   type="text"
@@ -3800,6 +5843,7 @@ export default function Home() {
                   )}
                 </button>
               </div>
+              )}
             </div>
           ))}
           {!isContractuel && (
@@ -3831,6 +5875,21 @@ export default function Home() {
           </div>
           )}
           </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="pay-settings-summary"
+              onClick={() => setPaySettingsOpen(true)}
+            >
+              <strong>{missing ? "Des informations restent à renseigner" : "Paramètres enregistrés"}</strong>
+              <span>
+                {missing
+                  ? "Le bulletin PDF peut remplir automatiquement les principaux champs."
+                  : "Ouvrir seulement si un montant de votre bulletin change."}
+              </span>
+            </button>
+          )}
         </section>
       </div>
     );
@@ -3838,8 +5897,120 @@ export default function Home() {
   function renderAllowances() {
     if (!allowances) return null;
     const { sundayTotal } = allowances;
+    const variableRows = [
+      {
+        label: "Dimanches",
+        quantity: monthPay?.sundayCount
+          ? `${monthPay.sundayCount} dimanche${s(monthPay.sundayCount)} versé${s(monthPay.sundayCount)} sur cette paie`
+          : "Aucun dimanche versé sur cette paie",
+        amount: monthPay?.sunday || 0,
+      },
+      {
+        label: "Jours fériés",
+        quantity: `${monthPay?.holidayCount || 0} concerné${s(monthPay?.holidayCount || 0)}`,
+        amount: monthPay?.holiday || 0,
+      },
+      {
+        label: "Heures supplémentaires payées",
+        quantity: minutesLabel(overtimeForPayMonth.totalMinutes),
+        amount: overtimeForPayMonth.ready ? overtimeForPayMonth.amount : null,
+      },
+      {
+        label: "Mécénats",
+        quantity: minutesLabel(mecenatForCurrentPayMonth.totalMinutes),
+        amount: mecenatForCurrentPayMonth.grossAmountCents / 100,
+      },
+    ];
+    const variableTotal = variableRows.reduce(
+      (total, row) => total + (row.amount || 0),
+      0,
+    );
     return (
       <>
+        <section className="allowance-card variable-pay-card" aria-labelledby="variable-pay-title">
+          <header
+            role="button"
+            tabIndex={0}
+            aria-expanded={payPeriodOpen}
+            onClick={() => setPayPeriodOpen((current) => !current)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              setPayPeriodOpen((current) => !current);
+            }}
+          >
+            <div className="pay-period-toggle">
+              <span>
+              <span className="step-label">Primes pour le mois</span>
+              <h3 id="variable-pay-title">{MONTHS[view.getMonth()]} {view.getFullYear()}</h3>
+              </span>
+              <i aria-hidden="true">⌄</i>
+            </div>
+            <div className="variable-pay-heading-actions">
+              <div className="pay-month-nav compact">
+                <button type="button" className="pay-nav-arrow" onClick={(event) => { event.stopPropagation(); changeAllowancesMonth(-1); }} aria-label="Mois précédent">
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
+                </button>
+                <button type="button" className="pay-nav-arrow" onClick={(event) => { event.stopPropagation(); changeAllowancesMonth(1); }} aria-label="Mois suivant">
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
+                </button>
+                <button type="button" className="pay-today-button" onClick={(event) => { event.stopPropagation(); goToday(); }}>
+                  Aujourd’hui
+                </button>
+              </div>
+              <span className="variable-pay-total">
+                <small>{payPeriodOpen ? "Fermer les détails" : "Ouvrir pour les détails"}</small>
+                <strong>{euros(variableTotal)} <em>brut variable</em></strong>
+              </span>
+            </div>
+          </header>
+          {payPeriodOpen ? <div className="variable-pay-list">
+            {variableRows.map((row) => (
+              <article key={row.label}>
+                <span><strong>{row.label}</strong><small>{row.quantity}</small></span>
+                <b className={row.amount === null ? "pending" : ""}>
+                  {row.amount === null ? "À calculer" : euros(row.amount)}
+                </b>
+              </article>
+            ))}
+          </div> : null}
+        </section>
+        <section className="allowance-overview" aria-labelledby="allowance-overview-title">
+          <div className="allowance-overview-heading">
+            <div>
+              <span className="step-label">Résumé {allowances.year}</span>
+              <h3 id="allowance-overview-title">Mes primes en un coup d’œil</h3>
+            </div>
+          </div>
+          <div className="allowance-overview-grid">
+            <article>
+              <span>Dimanches travaillés</span>
+              <strong>{allowances.sundayDone}</strong>
+              <small>{allowances.sundayLeft} encore à venir</small>
+            </article>
+            <article>
+              <span>Jours fériés dans l’année</span>
+              <strong>{allowances.holidays.length}</strong>
+              <small>{allowances.holidayPending ? `${allowances.holidayPending} à préciser` : "Tous renseignés"}</small>
+            </article>
+            <article>
+              <span>Primes variables prévues</span>
+              <strong>{euros(allowances.monthlyTotal)}</strong>
+              <small>hors forfait mensuel</small>
+            </article>
+          </div>
+          {allowances.holidayPending ? (
+            <div className="allowance-summary-alert">
+              <span aria-hidden="true">!</span>
+              <strong>
+                {allowances.holidayPending} jour{s(allowances.holidayPending)} férié{s(allowances.holidayPending)} à préciser
+              </strong>
+              <small>Choisissez la compensation dans le détail ci-dessous.</small>
+            </div>
+          ) : null}
+        </section>
+
+        <div className="allowance-detail-stack">
         <section className="allowance-card">
           <header>
             <span>Dimanches {allowances.year}</span>
@@ -3918,22 +6089,31 @@ export default function Home() {
                     </th>
                     <td className={item.choice ? "" : "pending"}>
                       <div className="holiday-pay-cell">
-                        <ChoicePicker
-                          value={item.choice || ""}
-                          options={HOLIDAY_PAY_OPTIONS}
-                          onChange={(choice) =>
-                            choice && void chooseHolidayPay(item.key, choice)
-                          }
-                          ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                          className="holiday-pay-picker"
-                          layout="list"
-                          placeholder="À décider"
-                        />
-                        {item.choice ? (
-                          <small>
+                        {item.choice && holidayChoiceEditing !== item.key ? (
+                          <button
+                            type="button"
+                            className="holiday-pay-amount"
+                            onClick={() => setHolidayChoiceEditing(item.key)}
+                            aria-label={`${euros(holidayAllowance(baseSalary, item.choice))}. Modifier le choix de compensation du ${shortDate(item.key)}`}
+                            title="Cliquer pour modifier le choix"
+                          >
                             {euros(holidayAllowance(baseSalary, item.choice))}
-                          </small>
-                        ) : null}
+                          </button>
+                        ) : (
+                          <ChoicePicker
+                            value={item.choice || ""}
+                            options={HOLIDAY_PAY_OPTIONS}
+                            onChange={(choice) => {
+                              if (!choice) return;
+                              setHolidayChoiceEditing(null);
+                              void chooseHolidayPay(item.key, choice);
+                            }}
+                            ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
+                            className="holiday-pay-picker"
+                            layout="list"
+                            placeholder="À décider"
+                          />
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -3997,20 +6177,23 @@ export default function Home() {
             </table>
           </section>
         )}
+        </div>
       </>
     );
   }
 
   function renderLeaveBalances() {
     return (
-      <div className="request-archive-content">
+      <div className="request-archive-content direct-balances-content">
         <div className="leave-balance-grid">
           {leaveStats.balances.map((balance) => (
             <button
               type="button"
               key={balance.type}
               className={balance.type}
-              onClick={() => setBalanceDetailType(balance.type)}
+              onClick={() => {
+                setBalanceDetailType(balance.type);
+              }}
               aria-label={`Afficher le détail de ${leaveTypeLabel(balance.type)}`}
             >
               <span>{typeLabelFor(balance.type, balance.remaining)}</span>
@@ -4022,6 +6205,11 @@ export default function Home() {
                 {balance.used.toLocaleString("fr-FR")} utilisé
                 {s(balance.used)} sur {balance.allowance}
               </small>
+              {balance.manualUsed > 0 ? (
+                <small className="manual-balance-note">
+                  dont {balance.manualUsed.toLocaleString("fr-FR")} saisi{s(balance.manualUsed)} sans date
+                </small>
+              ) : null}
               <em>Voir le détail</em>
             </button>
           ))}
@@ -4030,7 +6218,9 @@ export default function Home() {
               type="button"
               key={type}
               className={type}
-              onClick={() => setBalanceDetailType(type)}
+              onClick={() => {
+                setBalanceDetailType(type);
+              }}
               aria-label={`Afficher le détail de ${TYPE_LABELS[type]}`}
             >
               <span>
@@ -4221,29 +6411,24 @@ export default function Home() {
     <main className="app-shell">
       <header className="top-header">
         <div className="top-header-title">
-          <p className="eyebrow">Mon planning</p>
-          <h1>Planning et congés</h1>
+          <p className="eyebrow">Planning Solo</p>
+          <h1>
+            {homeSection === "home"
+              ? "Accueil"
+              : homeSection === "leave"
+                ? "Congés et récupérations"
+                : homeSection === "pdf"
+                  ? "Plannings PDF"
+                  : payScreen === "allowances"
+                    ? "Primes et jours fériés"
+                    : payScreen === "payslip"
+                      ? "Bulletins et estimations"
+                      : "Ma paie"}
+          </h1>
         </div>
+        <div className="header-control-cluster">
         <div className="header-actions">
-          <div className="header-tools">
-            <button
-              className="refresh-button header-refresh-button"
-              type="button"
-              onClick={() => void refreshCalendar()}
-              disabled={refreshingCalendar}
-              aria-label={
-                refreshingCalendar
-                  ? "Actualisation du planning"
-                  : "Rafraîchir le planning"
-              }
-              title="Rafraîchir"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M20 6v5h-5" />
-                <path d="M19 11a7.5 7.5 0 1 0 .15 4.1" />
-              </svg>
-            </button>
-          </div>
+          {homeSection === "home" ? (
           <div className="view-switch" aria-label="Mode d’affichage">
             <button
               className={mode === "month" ? "active" : ""}
@@ -4260,6 +6445,7 @@ export default function Home() {
               Année
             </button>
           </div>
+          ) : null}
           <div className="account-menu" ref={accountMenuRef}>
             <button
               className={`account-button ${accountMenuOpen ? "open" : ""}`}
@@ -4304,103 +6490,909 @@ export default function Home() {
             )}
           </div>
         </div>
+        <button
+          className="main-menu-button"
+          type="button"
+          onClick={() => setMainMenuOpen(true)}
+          aria-label="Ouvrir le menu principal"
+          aria-expanded={mainMenuOpen}
+          aria-controls="main-menu-drawer"
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+        </div>
       </header>
+
+      {mainMenuOpen ? (
+        <div
+          className="main-menu-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setMainMenuOpen(false)
+          }
+        >
+          <aside className="main-menu-drawer" id="main-menu-drawer" aria-label="Menu principal">
+            <header>
+              <div>
+                <span className="step-label">Planning Solo</span>
+                <h2>Menu principal</h2>
+              </div>
+              <button type="button" onClick={() => setMainMenuOpen(false)} aria-label="Fermer le menu">×</button>
+            </header>
+            <nav>
+              {([
+                ["home", "Accueil", "Aujourd’hui, notes et planning"],
+                ["leave", "Congés et récupérations", "Soldes, heures sup et mécénats"],
+                ["pay", "Ma paie", "Estimations, primes et bulletins"],
+                ["pdf", "Télécharger les plannings en PDF", "Choisir le planning puis générer le document"],
+              ] as const).map(([key, title, detail]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={homeSection === key ? "active" : ""}
+                  aria-current={homeSection === key ? "page" : undefined}
+                  onClick={() => {
+                    setHomeSection(key);
+                    if (key === "pay") setPayScreen("overview");
+                    setMainMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  <span className="main-menu-copy"><strong>{title}</strong><small>{detail}</small></span>
+                  <span aria-hidden="true">›</span>
+                </button>
+              ))}
+            </nav>
+            <div className="main-menu-secondary">
+              <button type="button" onClick={() => { setMainMenuOpen(false); setGuideOpen(true); }}>
+                Mode d’emploi
+              </button>
+              <button type="button" onClick={() => { setMainMenuOpen(false); setDataManagementOpen(true); }}>
+                Sauvegarde et restauration
+              </button>
+            </div>
+          </aside>
+        </div>
+      ) : null}
 
       <ConnectionStatus {...connectionStatus} />
 
-      {renderHomePanels("Résumé du planning", [
-          {
-            key: "notes",
-            tone: "notes",
-            icon: (
-              <>
-                <path d="M4 6h16v12H4z" />
-                <path d="M7 10h10M7 14h6" />
-              </>
-            ),
-            title: "Prochaines notes",
-            summary: upcoming.length
-              ? `${upcoming.length} ${upcoming.length > 1 ? "notes" : "note"}`
-              : "aucune",
-            open: notesOpen,
-            toggle: () => setNotesOpen((current) => !current),
-            content: renderNotesContent,
-          },
-          {
-            key: "balances",
-            tone: "balances",
-            icon: (
-              <>
-                <path d="M4 6h16v12H4z" />
-                <path d="M8 10v4M12 9v5M16 11v3" />
-              </>
-            ),
-            title: "Solde de congés",
-            summary: `${totalLeaveRemaining.toLocaleString("fr-FR")} j restants`,
-            open: balancesOpen,
-            toggle: () => setBalancesOpen((current) => !current),
-            content: renderLeaveBalances,
-          },
-          ...(allowances
-            ? [
-                {
-                  key: "allowances",
-                  tone: "allowances",
-                  icon: (
-                    <path d="M12 3v18M8 7h6a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7" />
-                  ),
-                  title: "Infos primes",
-                  summary: `${allowances.sundayDone} dimanche${s(allowances.sundayDone)} · ${allowances.holidays.length} férié${s(allowances.holidays.length)}${
-                    allowances.holidayPending
-                      ? ` · ${allowances.holidayPending} à décider`
-                      : ""
-                  }`,
-                  open: allowancesOpen,
-                  toggle: () => setAllowancesOpen((current) => !current),
-                  content: () => (
-                    <div className="request-archive-content allowances">
-                      {renderAllowances()}
-                    </div>
-                  ),
-                },
-                {
-                  key: "payslip",
-                  tone: "payslip",
-                  icon: (
-                    <>
-                      <path d="M6 3h9l4 4v14H6z" />
-                      <path d="M15 3v4h4M9 12h6M9 16h4" />
-                    </>
-                  ),
-                  title: "Infos paye",
-                  // Le net, pas le brut : c'est ce qui tombe sur le compte.
-                  // Le brut reprend la main tant que les taux manquent — ce
-                  // qui est aussi le cas par défaut pour une contractuelle,
-                  // tant qu'elle n'a pas calibré ses propres taux.
-                  summary:
-                    monthNet !== null && monthPay
-                      ? `${euros(monthNet)} net en ${MONTHS[monthPay.index]}`
-                      : monthPay
-                        ? `${euros(monthPay.gross)} brut en ${MONTHS[monthPay.index]}`
-                        : "",
-                  open: payslipOpen,
-                  toggle: () => setPayslipOpen((current) => !current),
-                  content: () => (
-                    <div
-                      onTouchStart={startAllowancesSwipe}
-                      onTouchEnd={endAllowancesSwipe}
-                    >
-                      {renderPayslipCheck()}
-                    </div>
-                  ),
-                },
-              ]
-            : []),
-        ])}
+      {guidePromptOpen ? (
+        <div className="modal-backdrop guide-prompt-backdrop" role="presentation">
+          <section
+            className="modal-card guide-prompt-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guide-prompt-title"
+          >
+            <span className="guide-prompt-icon" aria-hidden="true">?</span>
+            <span className="step-label">Bienvenue dans Planning Solo</span>
+            <h2 id="guide-prompt-title">Souhaitez-vous consulter le mode d’emploi ?</h2>
+            <p>
+              Quelques minutes suffisent pour comprendre comment obtenir un
+              planning et une estimation de paie fiables.
+            </p>
+            <div className="guide-prompt-actions">
+              <button className="secondary-button" type="button" onClick={skipGuidePrompt}>
+                Passer
+              </button>
+              <button className="primary-action" type="button" onClick={openGuideFromPrompt}>
+                Consulter
+              </button>
+            </div>
+            <small>Le mode d’emploi restera accessible depuis le menu ☰.</small>
+          </section>
+        </div>
+      ) : null}
 
+      {guideOpen ? (
+        <div className="modal-backdrop guide-backdrop" role="presentation">
+          <section
+            className="modal-card guide-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guide-title"
+          >
+            <button className="modal-close" type="button" onClick={() => setGuideOpen(false)} aria-label="Fermer le mode d’emploi">×</button>
+            <header className="guide-heading">
+              <span className="step-label">Mode d’emploi</span>
+              <h2 id="guide-title">Bien démarrer avec Planning Solo</h2>
+              <p>Les étapes essentielles sont présentées en premier.</p>
+            </header>
+
+            <nav className="guide-toc" aria-label="Table des matières du mode d’emploi">
+              <strong>Accès rapide</strong>
+              {([
+                ["guide-reliable-estimate", "1. Fiabiliser mes estimations"],
+                ["guide-payslips", "2. Choisir mes bulletins"],
+                ["guide-leave", "3. Poser un congé"],
+                ["guide-recovery", "4. Récupérations et heures"],
+                ["guide-navigation", "5. Accueil, menu et planning"],
+                ["guide-pay", "6. Comprendre Ma paie"],
+                ["guide-pdf", "7. Télécharger les plannings PDF"],
+                ["guide-data", "8. Données et sauvegarde"],
+              ] as const).map(([id, label]) => (
+                <button type="button" key={id} onClick={() => scrollGuideTo(id)}>{label}</button>
+              ))}
+            </nav>
+
+            <div className="guide-content">
+              <section id="guide-reliable-estimate" className="guide-section important">
+                <span className="guide-number">1</span>
+                <div>
+                  <h3>Commencer par fiabiliser les estimations</h3>
+                  <p>
+                    Enregistrez dans le planning tous vos <strong>congés validés</strong>.
+                    Ils permettent à l’application de connaître les jours réellement
+                    travaillés et d’estimer correctement les primes, les dimanches,
+                    les jours fériés et la paie du mois.
+                  </p>
+                  <p>Un congé seulement souhaité reste indicatif et ne doit pas être traité comme un congé validé.</p>
+                </div>
+              </section>
+
+              <section id="guide-payslips" className="guide-section important">
+                <span className="guide-number">2</span>
+                <div>
+                  <h3>Déposer un ou, idéalement, plusieurs bulletins</h3>
+                  <p>
+                    Dans <strong>Ma paie → Bulletins et estimations → Affiner mes estimations</strong>,
+                    un bulletin récent permet de préremplir les éléments de paie reconnus.
+                    Plusieurs bulletins de mois différents donnent une estimation plus précise.
+                  </p>
+                  <ul>
+                    <li>un mois ordinaire, pour identifier les éléments fixes ;</li>
+                    <li>un mois avec primes, dimanche, jour férié ou heures payées, pour distinguer les éléments variables ;</li>
+                    <li>si possible, un mois présentant une situation différente, par exemple une absence ou une régularisation.</li>
+                  </ul>
+                  <p>Les fichiers PDF analysés ne sont pas conservés par Planning Solo.</p>
+                </div>
+              </section>
+
+              <section id="guide-leave" className="guide-section">
+                <span className="guide-number">3</span>
+                <div>
+                  <h3>Poser un congé</h3>
+                  <p>
+                    Touchez <strong>Poser un congé</strong>, puis choisissez Congé,
+                    Récupération, Arrêt maladie ou Divers. Chaque point d’entrée
+                    propose ensuite le formulaire ou l’ajout manuel au planning.
+                  </p>
+                  <ul>
+                    <li>Divers sert uniquement de repère visuel : il ne modifie ni la paie ni les soldes ;</li>
+                    <li>depuis une case du calendrier : la date est déjà ciblée ;</li>
+                    <li>un arrêt maladie est suivi séparément : il ne diminue pas vos droits à congés, mais intervient dans le suivi et l’estimation de paie ;</li>
+                    <li>pour plusieurs jours : sélectionnez une période ou plusieurs dates distinctes.</li>
+                  </ul>
+                  <p>
+                    Si vous commencez à utiliser l’application en cours d’année,
+                    ouvrez <strong>Congés et récupérations → Reprendre mes absences précédentes</strong> :
+                    vous pouvez saisir vos CA, RTT, fractionnements et dimanches déjà posés sans retrouver chaque date.
+                  </p>
+                  <p>Après validation, vérifiez la confirmation, le planning et le solde correspondant.</p>
+                </div>
+              </section>
+
+              <section id="guide-recovery" className="guide-section">
+                <span className="guide-number">4</span>
+                <div>
+                  <h3>Récupérations, heures supplémentaires et mécénats</h3>
+                  <p>
+                    Le parcours Récupération conserve les choix journée, demi-journée,
+                    heures et jour férié. Toutes les récupérations concernées utilisent
+                    le solde d’heures de récupération.
+                  </p>
+                  <p>
+                    Dans Congés et récupérations, déclarez les heures supplémentaires
+                    avec leurs horaires de début et de fin,
+                    ajoutez manuellement un ancien solde d’heures si nécessaire et
+                    consultez l’historique. Les mécénats restent séparés et sont rattachés
+                    automatiquement à la paie du mois suivant.
+                  </p>
+                </div>
+              </section>
+
+              <section id="guide-navigation" className="guide-section">
+                <span className="guide-number">5</span>
+                <div>
+                  <h3>Utiliser l’accueil, le menu et le planning</h3>
+                  <p>
+                    L’accueil réunit Aujourd’hui en un coup d’œil, les notes et le planning.
+                    Le groupe de cycle se modifie en touchant sa carte. Le menu ☰ reste
+                    accessible pendant le défilement et ouvre Congés et récupérations,
+                    Ma paie, les PDF, ce mode d’emploi et les sauvegardes.
+                  </p>
+                  <p>Une note peut être associée à un ou plusieurs jours, même dans des mois différents.</p>
+                </div>
+              </section>
+
+              <section id="guide-pay" className="guide-section">
+                <span className="guide-number">6</span>
+                <div>
+                  <h3>Comprendre la rubrique Ma paie</h3>
+                  <p>
+                    Commencez par vérifier votre quotité et votre statut dans Mon profil paie.
+                    Primes et jours fériés détaille les éléments variables par mois.
+                    Bulletins et estimations permet de contrôler une fiche réelle, d’affiner
+                    les paramètres et de consulter le détail estimé du mois affiché.
+                  </p>
+                </div>
+              </section>
+
+              <section id="guide-pdf" className="guide-section">
+                <span className="guide-number">7</span>
+                <div>
+                  <h3>Télécharger les plannings en PDF</h3>
+                  <p>
+                    Ouvrez la rubrique dédiée depuis le menu, choisissez l’année et le groupe,
+                    puis générez un groupe, les trois groupes ou votre planning avec congés.
+                    L’option vacances scolaires ajoute le tableau annuel complet des zones A,
+                    B et C, y compris les périodes déjà passées de l’année choisie.
+                  </p>
+                </div>
+              </section>
+
+              <section id="guide-data" className="guide-section">
+                <span className="guide-number">8</span>
+                <div>
+                  <h3>Conserver et restaurer les données</h3>
+                  <p>
+                    La synchronisation du compte conserve les données distantes. Le menu
+                    Sauvegarde et restauration permet aussi d’exporter une sauvegarde JSON
+                    et de la restaurer. Attendez toujours la confirmation après une saisie.
+                  </p>
+                </div>
+              </section>
+            </div>
+
+            <footer className="guide-footer">
+              <button className="primary-action" type="button" onClick={() => setGuideOpen(false)}>J’ai compris</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {homeSection === "home" ? (
+      <section className="today-overview" aria-labelledby="today-title">
+        <div className="today-overview-heading">
+          <div>
+            <span className="step-label">En un coup d’œil</span>
+            <h2 id="today-title">Aujourd’hui</h2>
+            <small>{longDate(now)}</small>
+          </div>
+          <button
+            className="primary-action add-action"
+            type="button"
+            onClick={() => openRequestChooser("general")}
+          >
+            Poser un congé
+          </button>
+        </div>
+        <div className="today-overview-grid">
+          <article className={`today-status tone-${todayOverview.tone}`}>
+            <span className="today-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+            </span>
+            <span className="today-card-copy">
+              <span>Aujourd’hui</span>
+              <strong>{todayOverview.status}</strong>
+            </span>
+          </article>
+          <button
+            className="today-next-work"
+            type="button"
+            onClick={() => {
+              if (!todayOverview.nextWork) return;
+              setHomeSection("home");
+              setMode("month");
+              setView(
+                localDate(
+                  todayOverview.nextWork.getFullYear(),
+                  todayOverview.nextWork.getMonth(),
+                  1,
+                ),
+              );
+            }}
+          >
+            <span className="today-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
+                <path d="m9 14 2 2 4-4" />
+              </svg>
+            </span>
+            <span className="today-card-copy">
+              <span>Prochain jour travaillé</span>
+              <strong>
+                {todayOverview.nextWork
+                  ? `${longDate(todayOverview.nextWork)}${
+                      todayOverview.nextWorkKind === "training"
+                        ? " — Formation"
+                        : ""
+                    }`
+                  : "Aucun à venir"}
+              </strong>
+            </span>
+          </button>
+          <button
+            className="today-leave-balance"
+            type="button"
+            onClick={() => {
+              setHomeSection("leave");
+            }}
+            aria-label={`Congés restant : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
+          >
+            <span className="today-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
+                <path d="M8 13h8M8 17h5" />
+              </svg>
+            </span>
+            <span className="today-card-copy">
+              <span>Congés restant :</span>
+              <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jours à poser</strong>
+              <small>Voir le détail des soldes</small>
+            </span>
+          </button>
+          <button
+            className="today-group-card"
+            type="button"
+            onClick={() => setGroupChooserOpen(true)}
+            aria-label={`Modifier le groupe de cycle. Groupe actuel : ${group}`}
+          >
+            <span className="today-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="7" cy="12" r="2.2" />
+                <circle cx="12" cy="12" r="2.2" />
+                <circle cx="17" cy="12" r="2.2" />
+              </svg>
+            </span>
+            <span className="today-card-copy">
+              <span>Groupe de cycle</span>
+              <strong>Groupe {group}</strong>
+              <small>Modifier</small>
+            </span>
+            <span className="today-card-chevron" aria-hidden="true">›</span>
+          </button>
+        </div>
+        {importantAlert ? (
+          <button
+            className="important-alert"
+            type="button"
+            onClick={() => {
+              setHomeSection("pay");
+              setPayScreen(sundayCarryover ? "payslip" : "allowances");
+            }}
+          >
+            <span aria-hidden="true">!</span>
+            <strong>{importantAlert}</strong>
+            <small>Voir dans Ma paie</small>
+          </button>
+        ) : null}
+      </section>
+      ) : null}
+
+      {homeSection === "home" ? (
+        <section className="home-notes-section" aria-labelledby="home-notes-title">
+          <div className="home-content-heading">
+            <div>
+              <span className="step-label">À ne pas oublier</span>
+              <h2 id="home-notes-title">Mes notes</h2>
+            </div>
+            <button type="button" onClick={beginQuickNote}>Ajouter une note</button>
+          </div>
+          {renderNotesContent()}
+        </section>
+      ) : null}
+
+      {homeSection === "leave" ? (
+        <>
+          <section className="section-intro leave-intro">
+            <div>
+              <span className="step-label">Congés et récupérations</span>
+              <h2>Mes absences et mes demandes</h2>
+              <p>Vos soldes sont visibles immédiatement. Touchez une carte, puis une date pour ouvrir la fiche du jour.</p>
+            </div>
+            <button
+              className="primary-action"
+              type="button"
+              onClick={() => openRequestChooser("general")}
+            >
+              Poser un congé
+            </button>
+          </section>
+          <section className="leave-balances-direct" aria-labelledby="leave-balances-title">
+            <div className="leave-balances-heading">
+              <div>
+                <span className="step-label">Soldes disponibles</span>
+                <h3 id="leave-balances-title">Mes soldes de congés</h3>
+              </div>
+              <div className="leave-year-tools">
+                <label>
+                  <span>Année</span>
+                  <ChoicePicker
+                    value={absenceYear}
+                    options={YEAR_OPTIONS}
+                    onChange={(year) => {
+                      setAbsenceYear(year);
+                      setBalanceDetailType(null);
+                    }}
+                    ariaLabel="Choisir l’année des absences"
+                    className="leave-year-picker"
+                  />
+                </label>
+                <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jours restants</strong>
+              </div>
+            </div>
+            {renderLeaveBalances()}
+            <button
+              className="manual-adjustments-trigger"
+              type="button"
+              onClick={openManualAdjustments}
+            >
+              <span className="manual-adjustments-icon" aria-hidden="true">＋</span>
+              <span>
+                <strong>Reprendre mes absences précédentes</strong>
+                <small>Ajouter des jours et dimanches déjà posés, sans connaître leurs dates</small>
+              </span>
+              <span className="manual-adjustments-summary">
+                {manualSundayLeaveTotal
+                  ? `${manualSundayLeaveTotal} dimanche${s(manualSundayLeaveTotal)}`
+                  : "Configurer"}
+              </span>
+            </button>
+          </section>
+          <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
+            <button
+              className="request-archive-toggle"
+              type="button"
+              onClick={() => setArchiveOpen((current) => !current)}
+              aria-expanded={archiveOpen}
+            >
+              <span className="request-archive-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 7h5l2 2h7v10H5zM7 4h7l2 2" />
+                </svg>
+              </span>
+              <span className="request-archive-copy">
+                <span className="step-label">Documents conservés sur cet appareil</span>
+                <strong id="leave-request-archive-title">Mes demandes archivées</strong>
+              </span>
+              <span className="request-archive-summary">
+                <small>{archivedRequests.length} formulaire{s(archivedRequests.length)}</small>
+                <span className="request-archive-caret" aria-hidden="true">⌄</span>
+              </span>
+            </button>
+            {archiveOpen ? (
+              <div className="request-archive-list">
+                {archivedRequests.length ? archivedRequests.map((request) => (
+                  <article className="archived-request" key={request.id}>
+                    <button className="archived-request-open" type="button" onClick={() => openArchivedRequest(request)}>
+                      <span className="archived-request-pdf">PDF</span>
+                      <span><strong>{request.name}</strong><small>{archivedRequestDate(request.updatedAt)}</small></span>
+                    </button>
+                    <button className="archived-request-delete" type="button" onClick={() => void deleteArchivedRequest(request)} aria-label={`Supprimer ${request.name}`}>×</button>
+                  </article>
+                )) : <p className="request-archive-empty">Aucune demande archivée sur cet appareil.</p>}
+              </div>
+            ) : null}
+          </section>
+          <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
+            <div className="overtime-balance-heading">
+              <div>
+                <span className="step-label">Récupérations en heures</span>
+                <h3 id="overtime-balance-title">Mes heures supplémentaires</h3>
+                <p>Les heures à récupérer restent séparées de vos congés en jours.</p>
+              </div>
+              <strong>{minutesLabel(recoveryBalance.remaining)} disponibles</strong>
+            </div>
+            <div className="overtime-balance-summary">
+              <article>
+                <span>Gagnées</span>
+                <strong>{minutesLabel(recoveryBalance.earned)}</strong>
+              </article>
+              <article>
+                <span>Utilisées</span>
+                <strong>{minutesLabel(recoveryBalance.used)}</strong>
+              </article>
+              <article className="remaining">
+                <span>Restantes</span>
+                <strong>{minutesLabel(recoveryBalance.remaining)}</strong>
+              </article>
+            </div>
+            <div className="overtime-actions">
+              <button
+                type="button"
+                className="primary-action"
+                onClick={() => setOvertimeDialogOpen(true)}
+              >
+                Déclarer des heures sup
+              </button>
+              <button
+                type="button"
+                className="secondary-button solidarity-hours-action"
+                onClick={() => setSolidarityDialogOpen(true)}
+              >
+                Ajouter des heures manuellement
+              </button>
+            </div>
+            <button
+              type="button"
+              className="soft-detail-button overtime-history-toggle"
+              onClick={() => setOvertimeHistoryOpen((current) => !current)}
+              aria-expanded={overtimeHistoryOpen}
+            >
+              {overtimeHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
+            </button>
+            {overtimeHistoryOpen ? (
+              <div className="overtime-history">
+                {!recoveryEarnings.length && !recoveryUses.length ? (
+                  <p className="empty-state">Aucune heure supplémentaire enregistrée.</p>
+                ) : null}
+                {[...overtimeEntries]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((entry) => {
+                    const payPeriod = nextPayPeriod(entry.date);
+                    const state = recoveryEarningStates.get(entry.id);
+                    return (
+                      <article key={entry.id}>
+                        <span className={`overtime-kind ${entry.disposition}`} aria-hidden="true" />
+                        <div>
+                          <strong>
+                            {entry.id.startsWith("solidarity-")
+                              ? `Heures de solidarité · +${minutesLabel(entry.minutes)}`
+                              : `${minutesLabel(entry.minutes)} · ${entry.disposition === "paid" ? "À payer" : "À récupérer"}`}
+                          </strong>
+                          <span>{longDate(fromKey(entry.date))}</span>
+                          <small>
+                            {entry.id.startsWith("solidarity-")
+                              ? state?.remainingMinutes
+                                ? `${minutesLabel(state.remainingMinutes)} encore disponibles sur cet ajout manuel`
+                                : "Ajout manuel entièrement utilisé"
+                              : entry.disposition === "paid"
+                              ? `Paiement prévu en ${MONTHS[payPeriod.month]} ${payPeriod.year}`
+                              : state?.remainingMinutes
+                                ? `${minutesLabel(state.remainingMinutes)} encore disponibles sur ce gain`
+                                : "Gain entièrement utilisé"}
+                          </small>
+                        </div>
+                        <button type="button" onClick={() => void deleteOvertimeEntry(entry)}>
+                          Supprimer
+                        </button>
+                      </article>
+                    );
+                  })}
+                {[...holidayRecoveryEarnings]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((entry) => {
+                    const state = recoveryEarningStates.get(entry.id);
+                    return (
+                      <article key={entry.id} className="holiday-recovery-history">
+                        <span className="overtime-kind recovery" aria-hidden="true" />
+                        <div>
+                          <strong>Prime + récupération · +{minutesLabel(entry.minutes)}</strong>
+                          <span>{longDate(fromKey(entry.date))}</span>
+                          <small>
+                            Crédit automatique selon votre quotité
+                            {state?.remainingMinutes
+                              ? ` · ${minutesLabel(state.remainingMinutes)} disponibles`
+                              : " · gain utilisé"}
+                          </small>
+                        </div>
+                      </article>
+                    );
+                  })}
+                {[...recoveryUses]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((entry) => (
+                    <article key={entry.id} className="recovery-use-history">
+                      <span className="overtime-kind used" aria-hidden="true" />
+                      <div>
+                        <strong>− {minutesLabel(entry.minutes)} · Récupération posée</strong>
+                        <span>{longDate(fromKey(entry.date))}</span>
+                        <small>Déduite du solde en heures</small>
+                      </div>
+                      <button type="button" onClick={() => void deleteRecoveryUse(entry)}>
+                        Annuler
+                      </button>
+                    </article>
+                  ))}
+              </div>
+            ) : null}
+          </section>
+          <section className="overtime-balance-card mecenat-balance-card" aria-labelledby="mecenat-history-title">
+            <div className="overtime-balance-heading">
+              <div>
+                <span className="step-label">Distinct des heures supplémentaires</span>
+                <h3 id="mecenat-history-title">Mécénats</h3>
+                <p>Les montants bruts sont ajoutés automatiquement à l’estimation du mois suivant.</p>
+              </div>
+              <strong>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</strong>
+            </div>
+            <div className="mecenat-rate-summary" aria-label="Tarifs réglementaires des mécénats">
+              <article>
+                <span>De 7 h à 22 h</span>
+                <strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong>
+              </article>
+              <article>
+                <span>De 22 h à 7 h</span>
+                <strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong>
+              </article>
+            </div>
+            <div className="overtime-actions">
+              <button
+                type="button"
+                className="primary-action mecenat-action"
+                onClick={() => {
+                  setMecenatDraft((current) => ({
+                    ...current,
+                    date: dateKey(now),
+                  }));
+                  setMecenatDialogOpen(true);
+                }}
+              >
+                Déclarer un mécénat
+              </button>
+            </div>
+            <button
+              type="button"
+              className="soft-detail-button overtime-history-toggle"
+              onClick={() => setMecenatHistoryOpen((current) => !current)}
+              aria-expanded={mecenatHistoryOpen}
+            >
+              {mecenatHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
+            </button>
+            {mecenatHistoryOpen ? (
+              <div className="overtime-history mecenat-history">
+                {!mecenatEntries.length ? (
+                  <p className="empty-state">Aucun mécénat enregistré.</p>
+                ) : null}
+                {[...mecenatEntries]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((entry) => (
+                    <article key={entry.id}>
+                      <span className="overtime-kind mecenat" aria-hidden="true" />
+                      <div>
+                        <strong>{entry.start} → {entry.end} · {euros(entry.grossAmountCents / 100)} brut</strong>
+                        <span>{longDate(fromKey(entry.date))} · {minutesLabel(entry.dayMinutes + entry.nightMinutes)}</span>
+                        <small>Intégré automatiquement à la paie du mois suivant</small>
+                      </div>
+                      <button type="button" onClick={() => void deleteMecenatEntry(entry)}>
+                        Supprimer
+                      </button>
+                    </article>
+                  ))}
+              </div>
+            ) : null}
+          </section>
+        </>
+      ) : null}
+
+      {homeSection === "pay" && allowances ? (
+        <section className="pay-app-screen" aria-label="Ma paie">
+          {payScreen === "overview" ? (
+            <>
+              <div className="native-screen-heading">
+                <span className="step-label">Ma paie</span>
+                <h2>Choisissez une rubrique</h2>
+                <p>Chaque rubrique s’ouvre dans son propre écran.</p>
+              </div>
+              <section className={`pay-profile-settings${payProfileOpen ? " open" : ""}`} aria-labelledby="pay-profile-settings-title">
+                <button
+                  type="button"
+                  className="pay-profile-summary"
+                  onClick={() => setPayProfileOpen((current) => !current)}
+                  aria-expanded={payProfileOpen}
+                >
+                  <span>
+                    <span className="step-label">Configuration générale</span>
+                    <strong id="pay-profile-settings-title">Mon profil de paie</strong>
+                    <small>
+                      {WORK_QUOTA_OPTIONS.find((option) => option.value === workQuota)?.label}
+                      {" · "}
+                      {PAY_STATUS_OPTIONS.find((option) => option.value === (formProfile?.status || "contractuel"))?.label}
+                    </small>
+                    {netEstimateComplete ? (
+                      <span
+                        className="pay-profile-completeness complete"
+                        title="Les informations nécessaires à l’estimation du mois sont renseignées."
+                      >
+                        Profil complet
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="pay-profile-scroll-hint">Faire défiler</span>
+                  <i aria-hidden="true">⌄</i>
+                </button>
+                {payProfileOpen ? <div className="pay-profile-settings-grid">
+                  <label>
+                    <span>Quotité de travail</span>
+                    <ChoicePicker
+                      value={workQuota}
+                      options={WORK_QUOTA_OPTIONS.map(({ value, label }) => ({ value, label }))}
+                      onChange={changeWorkQuota}
+                      ariaLabel="Choisir la quotité de travail"
+                      layout="list"
+                      className="pay-profile-picker"
+                    />
+                    <small>{minutesLabel(workDayMinutes)} par jour</small>
+                  </label>
+                  <label>
+                    <span>Statut</span>
+                    <ChoicePicker
+                      value={formProfile?.status || "contractuel"}
+                      options={PAY_STATUS_OPTIONS}
+                      onChange={changeStatus}
+                      ariaLabel="Choisir le statut"
+                      layout="list"
+                      className="pay-profile-picker"
+                    />
+                    <small>Calculs adaptés à votre statut</small>
+                  </label>
+                </div> : null}
+              </section>
+              <div className="pay-category-grid">
+                <button type="button" onClick={() => setPayScreen("allowances")}>
+                  <span className="pay-category-icon allowances" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v18M8 7h6a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7" /></svg>
+                  </span>
+                  <span>
+                    <strong>Primes et jours fériés</strong>
+                    <small>Dimanches, fériés, heures payées et mécénats</small>
+                  </span>
+                  <i aria-hidden="true">›</i>
+                </button>
+                <button type="button" onClick={() => setPayScreen("payslip")}>
+                  <span className="pay-category-icon payslip" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 12h6M9 16h4" /></svg>
+                  </span>
+                  <span>
+                    <strong>Bulletins et estimations</strong>
+                    <small>Vérifier un bulletin et consulter le détail de la paie</small>
+                  </span>
+                  <i aria-hidden="true">›</i>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="pay-detail-screen">
+              <header className="pay-detail-sticky-header">
+                <button className="native-back-button" type="button" onClick={() => setPayScreen("overview")} aria-label="Revenir aux catégories de paie">
+                  <span aria-hidden="true">←</span>
+                </button>
+                <button
+                  type="button"
+                  className="pay-detail-title-button"
+                  onClick={() => setPayScreen("overview")}
+                  aria-label="Fermer cette catégorie et revenir à Ma paie"
+                >
+                  <span className="step-label">Ma paie</span>
+                  <h2>{payScreen === "allowances" ? "Primes et jours fériés" : "Bulletins et estimations"}</h2>
+                  <small>{MONTHS[view.getMonth()]} {view.getFullYear()}</small>
+                </button>
+                <button className="pay-detail-close" type="button" onClick={() => setPayScreen("overview")} aria-label="Fermer cette catégorie">
+                  ×
+                </button>
+              </header>
+              {payScreen === "allowances" ? (
+                <div
+                  className={`request-archive-content allowances pay-dedicated-content${payMonthSlide ? ` pay-month-${payMonthSlide}` : ""}`}
+                  onTouchStart={startAllowancesSwipe}
+                  onTouchEnd={endAllowancesSwipe}
+                >
+                  {renderAllowances()}
+                </div>
+              ) : (
+                <div
+                  className={`pay-dedicated-content${payMonthSlide ? ` pay-month-${payMonthSlide}` : ""}`}
+                  onTouchStart={startAllowancesSwipe}
+                  onTouchEnd={endAllowancesSwipe}
+                >
+                  <aside className="payslip-leave-notice" aria-label="Conseil pour une estimation correcte">
+                    <span aria-hidden="true">i</span>
+                    <p>
+                      <strong>Avant de vérifier votre bulletin</strong>
+                      Pour que l’estimation soit correcte, renseignez dans le planning tous vos congés validés.
+                    </p>
+                  </aside>
+                  {renderPayslipCheck()}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {homeSection === "pdf" ? (
+        <section className="pdf-download-screen" id="planning-pdf" aria-labelledby="pdf-download-title">
+          <div className="native-screen-heading">
+            <span className="step-label">Documents</span>
+            <h2 id="pdf-download-title">Télécharger les plannings en PDF</h2>
+            <p>Choisissez l’année, le groupe et les informations à afficher, puis générez le document.</p>
+          </div>
+          <div className="pdf-download-settings">
+            <label>
+              <span>Année du planning</span>
+              <ChoicePicker
+                value={view.getFullYear()}
+                options={YEAR_OPTIONS}
+                onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
+                ariaLabel="Sélectionner l’année du PDF"
+                className="year-choice-picker"
+              />
+            </label>
+            <label>
+              <span>Groupe</span>
+              <ChoicePicker
+                value={group}
+                options={GROUP_OPTIONS}
+                onChange={changeGroup}
+                ariaLabel="Sélectionner le groupe du PDF"
+                className="year-choice-picker"
+              />
+            </label>
+            <div className="school-vacation-choice">
+              <button
+                type="button"
+                className={showSchoolVacationsOnPdf ? "school-vacation-toggle active" : "school-vacation-toggle"}
+                aria-pressed={showSchoolVacationsOnPdf}
+                onClick={() => setShowSchoolVacationsOnPdf((current) => !current)}
+              >
+                <i aria-hidden="true" />
+                Afficher les vacances scolaires
+              </button>
+              {showSchoolVacationsOnPdf ? (
+                <small>Les dates des zones A, B et C seront récapitulées sous le planning.</small>
+              ) : null}
+            </div>
+          </div>
+          <div className="pdf-download-actions">
+            {([
+              ["selected", `Groupe ${group}`, "Planning annuel · 1 page"],
+              ["all", "Les 3 groupes", "Planning annuel · 3 pages"],
+              ["my-leaves", `Groupe ${group} + mes congés`, "Planning annuel personnel · 1 page"],
+            ] as const).map(([scope, title, detail]) => (
+              <button
+                key={scope}
+                type="button"
+                className={`pdf-action ${scope}`}
+                disabled={pdfExporting !== null}
+                onClick={() => void exportAnnualPlanning(scope, showSchoolVacationsOnPdf)}
+              >
+                <span className="pdf-action-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 15v4h14v-4" /></svg>
+                </span>
+                <span className="pdf-action-copy">
+                  <strong>{pdfExporting === scope ? "Création…" : title}</strong>
+                  <small>{detail}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
+      {homeSection === "home" ? (
+        <section className="home-planning-heading" aria-labelledby="home-planning-title">
+          <div className="home-content-heading">
+            <div>
+              <span className="step-label">Calendrier</span>
+              <h2 id="home-planning-title">Mon planning</h2>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {showCalendarWorkspace ? (
+        <>
       {mode !== "year" && (
         <section className="controls" aria-label="Choix du planning">
-          <div className="year-choice" aria-label="Choix de l’année affichée">
+          <div className="year-choice planning-year-choice" aria-label="Choix de l’année affichée">
             <span className="year-choice-label">Année affichée</span>
             <div className="year-stepper">
               <div className="year-select-display">
@@ -4421,8 +7413,9 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="year-choice" aria-label="Choix du groupe">
+          <div className="year-choice planning-group-choice" aria-label="Choix du groupe">
             <span className="year-choice-label">Groupe</span>
+            <div className="planning-group-action-row">
             <div className="year-stepper">
               <div className="year-select-display">
                 <span className="year-calendar-mark" aria-hidden="true">
@@ -4440,6 +7433,7 @@ export default function Home() {
                   className="year-choice-picker"
                 />
               </div>
+            </div>
             </div>
           </div>
           {(
@@ -4504,6 +7498,13 @@ export default function Home() {
               </div>
             </div>
           )}
+          <button
+            className="primary-action planning-leave-mobile"
+            type="button"
+            onClick={() => openRequestChooser("planning")}
+          >
+            Poser un congé
+          </button>
         </section>
       )}
 
@@ -4597,6 +7598,44 @@ export default function Home() {
         </section>
       )}
 
+      {calendarDeleteMode ? (
+        <section className="calendar-delete-panel" aria-label="Suppression multiple">
+          <div>
+            <span className="step-label">Nettoyer le planning</span>
+            <h2>{calendarDeleteDates.length} date{s(calendarDeleteDates.length)} sélectionnée{s(calendarDeleteDates.length)}</h2>
+            <p>Touchez plusieurs cases, puis choisissez uniquement ce que vous souhaitez effacer.</p>
+          </div>
+          <div className="calendar-delete-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => {
+                setCalendarDeleteMode(false);
+                setCalendarDeleteDates([]);
+              }}
+            >
+              Annuler
+            </button>
+            <button
+              className="danger-button delete-absences-button"
+              type="button"
+              disabled={!calendarDeleteDates.length || deletingMultipleDates}
+              onClick={() => void deleteMultiplePlanningDates(calendarDeleteDates, "absences")}
+            >
+              Effacer les absences
+            </button>
+            <button
+              className="warning-button delete-notes-button"
+              type="button"
+              disabled={!calendarDeleteDates.length || deletingMultipleDates}
+              onClick={() => void deleteMultiplePlanningDates(calendarDeleteDates, "notes")}
+            >
+              Effacer les notes
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       <section
         className={`calendar-toolbar ${mode === "month" ? "month-toolbar" : "year-toolbar"}${mode === "year" ? " annual-toolbar" : ""}`}
       >
@@ -4633,26 +7672,50 @@ export default function Home() {
         <button className="today-button" type="button" onClick={goToday}>
           Aujourd’hui
         </button>
-        {!rangeSelecting && (
+        {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
           <button
-            className="primary-action toolbar-leave-action"
+            className="calendar-bulk-delete-mobile"
             type="button"
-            onClick={() =>
-              requestKind
-                ? document
-                    .getElementById("request-panel")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                : setRequestChooser(true)
-            }
+            onClick={() => {
+              cancelRequest();
+              cancelRangeSelection();
+              cancelNoteSelection();
+              setCalendarDeleteDates([]);
+              setCalendarDeleteMode(true);
+            }}
           >
-            {requestKind ? "Demande en cours" : "Poser un congé"}
+            Effacer plusieurs dates ou notes
           </button>
-        )}
+        ) : null}
+        <button
+          className={`primary-action ${mode === "month" ? "planning-leave-desktop" : "planning-leave-annual"}`}
+          type="button"
+          onClick={() => openRequestChooser("planning")}
+        >
+          Poser un congé
+        </button>
       </section>
 
-      {mode === "year" && (
-        <section
-          className="annual-pdf-actions"
+      {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
+        <button
+          className="calendar-bulk-delete-button"
+          type="button"
+          onClick={() => {
+            cancelRequest();
+            cancelRangeSelection();
+            cancelNoteSelection();
+            setCalendarDeleteDates([]);
+            setCalendarDeleteMode(true);
+          }}
+        >
+          Effacer plusieurs dates ou notes
+        </button>
+      ) : null}
+
+      {mode === "year" && homeSection === "pdf" && (
+          <section
+            id="planning-pdf"
+            className="annual-pdf-actions"
           aria-label="Enregistrer le planning annuel en PDF"
         >
           {narrowScreen ? (
@@ -4705,14 +7768,7 @@ export default function Home() {
                 Afficher les vacances scolaires
               </button>
               {showSchoolVacationsOnPdf && (
-                <ChoicePicker
-                  value={schoolVacationZone}
-                  options={SCHOOL_ZONE_OPTIONS}
-                  onChange={setSchoolVacationZone}
-                  ariaLabel="Choisir la zone de vacances scolaires"
-                  layout="list"
-                  className="leave-type-picker school-vacation-zone-picker"
-                />
+                <small>Zones A, B et C incluses dans le récapitulatif.</small>
               )}
             </div>
             <button
@@ -4722,7 +7778,7 @@ export default function Home() {
               onClick={() =>
                 void exportAnnualPlanning(
                   "selected",
-                  showSchoolVacationsOnPdf ? schoolVacationZone : null,
+                  showSchoolVacationsOnPdf,
                 )
               }
             >
@@ -4747,7 +7803,7 @@ export default function Home() {
               onClick={() =>
                 void exportAnnualPlanning(
                   "all",
-                  showSchoolVacationsOnPdf ? schoolVacationZone : null,
+                  showSchoolVacationsOnPdf,
                 )
               }
             >
@@ -4770,7 +7826,7 @@ export default function Home() {
               onClick={() =>
                 void exportAnnualPlanning(
                   "my-leaves",
-                  showSchoolVacationsOnPdf ? schoolVacationZone : null,
+                  showSchoolVacationsOnPdf,
                 )
               }
             >
@@ -4845,8 +7901,12 @@ export default function Home() {
               <span className="step-label">Demande en préparation</span>
               <h2>
                 {requestKind === "leave"
-                  ? "Sélectionnez vos congés"
-                  : "Sélectionnez vos récupérations"}
+                  ? sickRequest
+                    ? "Sélectionnez votre arrêt maladie"
+                    : "Sélectionnez vos congés"
+                  : requestKind === "other"
+                    ? "Sélectionnez vos dates Divers"
+                    : "Sélectionnez vos récupérations"}
               </h2>
             </div>
             <button
@@ -4857,74 +7917,104 @@ export default function Home() {
               Annuler la demande
             </button>
           </div>
-          {requestKind === "leave" ? (
-            <div className="type-tabs" aria-label="Type de congé">
-              {(
-                [
-                  "annual",
-                  "half",
-                  "rtt",
-                  "fraction",
-                  "childcare",
-                  "exceptional",
-                ] as SelectionType[]
-              ).map(
-                (type) => (
+          {requestKind === "other" ? (
+            <div className="request-option-groups other-request-options">
+              <section className="request-option-group">
+                <h3>Divers</h3>
+                <div className="type-tabs" aria-label="Divers">
                   <button
                     type="button"
-                    className={activeType === type ? "active" : ""}
-                    style={
-                      {
-                        "--type-color": TYPE_COLORS[type],
-                      } as React.CSSProperties
-                    }
-                    onClick={() => setActiveType(type)}
-                    key={type}
+                    className="active"
+                    style={{ "--type-color": TYPE_COLORS.other } as React.CSSProperties}
                   >
                     <i />
-                    {TYPE_LABELS[type]}
-                    {selectedCounts[type] ? (
-                      <b>{selectedCounts[type]}</b>
-                    ) : null}
+                    {TYPE_LABELS.other}
+                    {selectedCounts.other ? <b>{selectedCounts.other}</b> : null}
                   </button>
-                ),
-              )}
+                </div>
+                <p className="request-help">
+                  Ces dates seront seulement visibles dans le planning : aucun effet sur la paie ou les soldes.
+                </p>
+              </section>
             </div>
-          ) : (
-            <>
-              <div className="type-tabs" aria-label="Type de récupération">
-                {(
-                  [
-                    "recovery_day",
-                    "recovery_half",
-                    "recovery_hours",
-                    "recovery_holiday",
-                  ] as SelectionType[]
-                ).map((type) => (
-                  <button
-                    type="button"
-                    className={activeType === type ? "active" : ""}
-                    style={
-                      {
-                        "--type-color": TYPE_COLORS[type],
-                      } as React.CSSProperties
-                    }
-                    onClick={() => setActiveType(type)}
-                    key={type}
-                  >
-                    <i />
-                    {TYPE_LABELS[type]}
-                    {selectedCounts[type] ? (
-                      <b>{selectedCounts[type]}</b>
-                    ) : null}
-                  </button>
-                ))}
+          ) : requestKind === "leave" ? (
+            sickRequest ? (
+              <div className="request-option-groups sick-request-options">
+                <section className="request-option-group">
+                  <h3>Arrêt maladie</h3>
+                  <div className="type-tabs" aria-label="Arrêt maladie">
+                    <button
+                      type="button"
+                      className="active"
+                      style={{ "--type-color": TYPE_COLORS.sick } as React.CSSProperties}
+                    >
+                      <i />
+                      {TYPE_LABELS.sick}
+                      {selectedCounts.sick ? <b>{selectedCounts.sick}</b> : null}
+                    </button>
+                  </div>
+                  <p className="request-help">
+                    L’arrêt sera compté dans votre suivi sans diminuer vos droits à congés.
+                  </p>
+                </section>
               </div>
+            ) : (
+            <div className="request-option-groups">
+              {([
+                ["Congés courants", ["annual", "half", "rtt"]],
+                ["Autres congés", ["fraction", "childcare", "exceptional"]],
+              ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
+                <section className="request-option-group" key={label}>
+                  <h3>{label}</h3>
+                  <div className="type-tabs" aria-label={label}>
+                    {types.map((type) => (
+                      <button
+                        type="button"
+                        className={activeType === type ? "active" : ""}
+                        style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties}
+                        onClick={() => setActiveType(type)}
+                        key={type}
+                      >
+                        <i />
+                        {TYPE_LABELS[type]}
+                        {selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+            )
+          ) : (
+            <div className="request-option-groups">
+              {([
+                ["Récupération à la journée", ["recovery_day", "recovery_half"]],
+                ["Autres récupérations", ["recovery_hours", "recovery_holiday"]],
+              ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
+                <section className="request-option-group" key={label}>
+                  <h3>{label}</h3>
+                  <div className="type-tabs" aria-label={label}>
+                    {types.map((type) => (
+                      <button
+                        type="button"
+                        className={activeType === type ? "active" : ""}
+                        style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties}
+                        onClick={() => setActiveType(type)}
+                        key={type}
+                      >
+                        <i />
+                        {TYPE_LABELS[type]}
+                        {selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
               <p className="request-help">
                 Un horaire sera demandé pour les demi-journées, les heures et
                 les récupérations de jours fériés.
               </p>
-            </>
+            </div>
           )}
           <div className="request-bottom">
             <p>
@@ -4935,14 +8025,16 @@ export default function Home() {
               . Cliquez sur une date colorée pour la retirer.
             </p>
             <div className="request-actions">
-              <button
-                className="text-button"
-                type="button"
-                onClick={openBlankForm}
-                disabled={savingRequest}
-              >
-                Ouvrir le formulaire vierge
-              </button>
+              {requestKind !== "other" && !sickRequest ? (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openBlankForm}
+                  disabled={savingRequest}
+                >
+                  Ouvrir le formulaire vierge
+                </button>
+              ) : null}
               <button
                 className="validate-button"
                 type="button"
@@ -4950,8 +8042,14 @@ export default function Home() {
                 disabled={!selectedList.length || savingRequest}
               >
                 {savingRequest
-                  ? "Synchronisation…"
-                  : "Valider et remplir le formulaire"}
+                  ? requestKind === "other" || sickRequest
+                    ? "Enregistrement…"
+                    : "Ouverture du formulaire…"
+                  : requestKind === "other"
+                    ? "Enregistrer Divers"
+                    : sickRequest
+                      ? "Enregistrer l’arrêt maladie"
+                      : "Valider et remplir le formulaire"}
               </button>
             </div>
           </div>
@@ -4992,6 +8090,9 @@ export default function Home() {
           ))}
         </section>
       )}
+        </>
+      ) : null}
+      </div>
       {requestChooser && (
         <div
           className="modal-backdrop"
@@ -5014,24 +8115,209 @@ export default function Home() {
             >
               ×
             </button>
-            <span className="step-label">Nouvelle demande</span>
-            <h2 id="request-choice-title">Que souhaitez-vous préparer ?</h2>
+            <span className="step-label">Poser un congé</span>
+            <h2 id="request-choice-title">Que souhaitez-vous poser ?</h2>
             <div className="choice-grid">
-              <button type="button" onClick={() => beginRequest("leave")}>
-                <strong>Demande de congé</strong>
-                <span>
-                  Congés annuels, demi-journée, RTT, fractionnement, garde
-                  d’enfant ou jour exceptionnel
-                </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setRequestChooser(false);
+                  openPlanningRequestMethod("leave");
+                }}
+              >
+                <strong>Un congé</strong>
+                <span>Choisissez les dates puis ouvrez le formulaire de demande prérempli.</span>
               </button>
-              <button type="button" onClick={() => beginRequest("recovery")}>
-                <strong>Demande de récupérations</strong>
-                <span>Sélection d’une date puis saisie des horaires</span>
+              <button
+                type="button"
+                onClick={() => {
+                  openRecoveryTypeChooser(requestOrigin);
+                }}
+              >
+                <strong>Une récupération</strong>
+                <span>Retrouvez le formulaire complet : journée, demi-journée, heures ou jour férié.</span>
+              </button>
+              <button
+                type="button"
+                className="sick-leave-choice"
+                onClick={() => {
+                  setRequestChooser(false);
+                  beginRequest("leave", undefined, "sick");
+                }}
+              >
+                <strong>Un arrêt maladie</strong>
+                <span>Comptabilisé dans votre suivi et pris en compte dans l’estimation de paie.</span>
+              </button>
+              <button
+                type="button"
+                className="other-leave-choice"
+                onClick={() => {
+                  setRequestChooser(false);
+                  openPlanningRequestMethod("other", undefined, "other");
+                }}
+              >
+                <strong>Divers</strong>
+                <span>Visible dans le planning, sans effet sur la paie ni sur vos soldes.</span>
               </button>
             </div>
           </section>
         </div>
       )}
+
+      {recoveryTypeChooser ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setRecoveryTypeChooser(null)
+          }
+        >
+          <section
+            className="modal-card request-choice recovery-type-choice"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recovery-type-choice-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={() => setRecoveryTypeChooser(null)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Récupération</span>
+            <h2 id="recovery-type-choice-title">Quel type de récupération souhaitez-vous poser ?</h2>
+            <div className="choice-grid recovery-type-choice-grid">
+              {([
+                "recovery_day",
+                "recovery_half",
+                "recovery_hours",
+                "recovery_holiday",
+              ] as SelectionType[]).map((type) => (
+                <button type="button" key={type} onClick={() => chooseRecoveryType(type)}>
+                  <strong>{TYPE_LABELS[type]}</strong>
+                  <span>Utilise votre solde d’heures de récupération.</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {planningRequestMethod ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && closePlanningRequestMethod()
+          }
+        >
+          <section
+            className="modal-card request-choice"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="planning-leave-method-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={closePlanningRequestMethod}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Depuis le planning</span>
+            <h2 id="planning-leave-method-title">
+              Comment souhaitez-vous enregistrer {planningRequestMethod === "recovery" ? "cette récupération" : planningRequestMethod === "other" ? "ce Divers" : "cette demande"} ?
+            </h2>
+            <div className="choice-grid">
+              <button
+                type="button"
+                onClick={() => {
+                  const kind = planningRequestMethod;
+                  const date = planningRequestDate || undefined;
+                  closePlanningRequestMethod();
+                  beginRequest(
+                    kind,
+                    date,
+                    kind === "recovery" ? pendingRecoveryType : pendingLeaveType,
+                  );
+                }}
+              >
+                <strong>Remplir le formulaire</strong>
+                <span>
+                  {planningRequestMethod === "other"
+                    ? "Sélectionnez les dates puis enregistrez-les dans le planning."
+                    : "Le parcours normal, avec demande préremplie et archive."}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  startManualPlanningRequest();
+                }}
+              >
+                <strong>Ajouter manuellement au planning</strong>
+                <span>
+                  {planningRequestMethod === "leave"
+                    ? "Ajoutez directement le congé au planning."
+                    : planningRequestMethod === "other"
+                      ? "Ajoutez directement une ou plusieurs dates Divers."
+                      : "Choisissez journée, demi-journée, heures ou jour férié."}
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {groupChooserOpen ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setGroupChooserOpen(false)
+          }
+        >
+          <section
+            className="modal-card group-choice-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="group-choice-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={() => setGroupChooserOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Cycle de travail</span>
+            <h2 id="group-choice-title">Choisir mon groupe</h2>
+            <p>Le planning est recalculé immédiatement avec le groupe choisi.</p>
+            <div className="group-choice-grid">
+              {GROUP_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={group === option.value ? "active" : ""}
+                  aria-pressed={group === option.value}
+                  onClick={() => {
+                    changeGroup(option.value);
+                    setGroupChooserOpen(false);
+                  }}
+                >
+                  <span>Groupe</span>
+                  <strong>{option.value}</strong>
+                  {group === option.value ? <small>Actuel</small> : null}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {dayDate && (
         <div
@@ -5066,7 +8352,7 @@ export default function Home() {
               </p>
             ) : (
               <p>
-                Congés, jours « Divers », congés souhaités et notes se posent
+                Congés, arrêts maladie, congés souhaités et notes se posent
                 sur cette journée, y compris pendant un jour de repos.
               </p>
             )}
@@ -5076,37 +8362,57 @@ export default function Home() {
                   <button
                         type="button"
                         className={dayLeave ? "leave active" : "leave"}
-                        onClick={() => {
-                          setDayLeave((value) => {
-                            if (!value) {
-                              setLeaveRangeEnabled(true);
-                              setLeaveRangeFrom(dayDate);
-                              setLeaveRangeTo(dayDate);
-                            }
-                            return !value;
-                          });
-                        }}
+                        onClick={() =>
+                          openPlanningRequestMethod("leave", dayDate)
+                        }
                       >
                         <i />
                         Congé professionnel
-                        <span>{dayLeave ? "Ajouté" : "Ajouter"}</span>
+                        <span>{dayLeave ? "Modifier" : "Choisir"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="recovery"
+                        onClick={() =>
+                          openRecoveryTypeChooser("planning", dayDate)
+                        }
+                      >
+                        <i />
+                        Récupération
+                        <span>Choisir</span>
                       </button>
                       <button
                         type="button"
                         className={
-                          dayPersonalLeave
-                            ? "personal-day active"
-                            : "personal-day"
+                          dayLeave && dayLeaveType === "sick"
+                            ? "sick-day active"
+                            : "sick-day"
+                        }
+                        onClick={() => {
+                          const date = dayDate;
+                          void saveSickDateDirect(date);
+                        }}
+                      >
+                        <i />
+                        Maladie
+                        <span>
+                          {dayLeave && dayLeaveType === "sick" ? "Sélectionné" : "Ajouter"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          dayLeave && dayLeaveType === "other"
+                            ? "other-day active"
+                            : "other-day"
                         }
                         onClick={() =>
-                          setDayPersonalLeave((value) => !value)
+                          openPlanningRequestMethod("other", dayDate, "other")
                         }
                       >
                         <i />
                         Divers
-                        <span>
-                          {dayPersonalLeave ? "Ajouté" : "Ajouter"}
-                        </span>
+                        <span>Sans effet paie/solde</span>
                       </button>
                       <button
                         type="button"
@@ -5158,12 +8464,15 @@ export default function Home() {
                       </div>
                     </div>
                   )}
-                {dayLeave && (
+                {dayLeave &&
+                  (["annual", "half", "rtt", "fraction", "childcare", "exceptional"] as LeaveType[]).includes(dayLeaveType) && (
                   <div className="leave-type-field">
                     <span>Type de congé</span>
                     <ChoicePicker
                       value={dayLeaveType}
-                      options={LEAVE_TYPE_OPTIONS}
+                      options={LEAVE_TYPE_OPTIONS.filter((option) =>
+                        ["annual", "half", "rtt", "fraction", "childcare", "exceptional"].includes(option.value),
+                      )}
                       onChange={setDayLeaveType}
                       ariaLabel="Sélectionner le type de congé"
                       className="leave-type-picker"
@@ -5327,21 +8636,19 @@ export default function Home() {
               maxLength={300}
               placeholder="Ex. Dentiste à 15 h…"
             />
-            {noteText.trim() && (
-              <div className="leave-range-box">
-                <button
-                  className="separate-date-button"
-                  type="button"
-                  onClick={beginNoteDateSelection}
-                >
-                  <strong>Choisir plusieurs dates</strong>
-                  <span>
-                    Sélectionnez plusieurs jours, même dans des mois
-                    différents
-                  </span>
-                </button>
-              </div>
-            )}
+            <div className="leave-range-box note-date-choice">
+              <button
+                className="separate-date-button"
+                type="button"
+                onClick={beginNoteDateSelection}
+              >
+                <strong>Choisir le ou les jours</strong>
+                <span>
+                  Sélectionnez un seul jour ou plusieurs dates, même dans des
+                  mois différents
+                </span>
+              </button>
+            </div>
             {entries[dayDate]?.noteText && entries[dayDate].noteUpdatedAt && (
               <p className="note-meta">
                 {dateTimeLabel(entries[dayDate].noteUpdatedAt)}
@@ -5426,30 +8733,57 @@ export default function Home() {
               </span>
             </div>
             <h3>{balanceDetail.quota ? "Jours déduits" : "Jours d’arrêt"}</h3>
-            {balanceDetail.details.length ? (
-              <div className="balance-detail-list">
-                {balanceDetail.details.map((detail, index) => (
-                  <button
-                    type="button"
-                    key={`${detail.date}-${detail.units}-${index}`}
-                    onClick={() => {
-                      const date = fromKey(detail.date);
-                      setBalanceDetailType(null);
-                      setView(
-                        localDate(date.getFullYear(), date.getMonth(), 1),
-                      );
-                      setMode("month");
-                      openDay(date);
-                    }}
-                  >
-                    <span>{longDate(fromKey(detail.date))}</span>
-                    <strong>
-                      {balanceDetail.quota ? "−" : ""}
-                      {detail.units.toLocaleString("fr-FR")} jour
-                    </strong>
-                  </button>
-                ))}
+            {balanceDetail.quota && balanceDetail.manualUsed > 0 ? (
+              <div className="balance-manual-summary">
+                <span>
+                  <strong>{balanceDetail.manualUsed.toLocaleString("fr-FR")} jour{s(balanceDetail.manualUsed)}</strong>
+                  saisi{s(balanceDetail.manualUsed)} sans date
+                </span>
+                <button type="button" onClick={openManualAdjustments}>Modifier</button>
               </div>
+            ) : null}
+            {balanceDetail.details.length ? (
+              <>
+                <p className="balance-detail-guidance">
+                  Touchez une date pour consulter sa fiche. Le menu <strong>Actions</strong>{" "}
+                  permet ensuite de modifier ou d’annuler le congé.
+                </p>
+                <div className="balance-detail-list">
+                {balanceDetail.details.map((detail, index) => (
+                  <article
+                    key={`${detail.date}-${detail.units}-${index}`}
+                    className={recentBalanceDetailDates.has(detail.date) ? "recent-leave-date" : ""}
+                  >
+                    <button
+                      className="balance-detail-open"
+                      type="button"
+                      onClick={() => {
+                        const date = fromKey(detail.date);
+                        setBalanceDetailType(null);
+                        setView(localDate(date.getFullYear(), date.getMonth(), 1));
+                        setMode("month");
+                        openDay(date);
+                      }}
+                      aria-label={`Ouvrir la fiche du ${longDate(fromKey(detail.date))} pour gérer cette absence`}
+                    >
+                      <span className="balance-detail-date-copy">
+                        <strong>{longDate(fromKey(detail.date))}</strong>
+                        <small>Voir et gérer cette absence</small>
+                      </span>
+                      <span className="balance-detail-value">
+                        <strong>
+                          {balanceDetail.quota ? "−" : ""}
+                          {detail.units.toLocaleString("fr-FR")} jour
+                        </strong>
+                        <svg viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="m7 4 6 6-6 6" />
+                        </svg>
+                      </span>
+                    </button>
+                  </article>
+                ))}
+                </div>
+              </>
             ) : (
               <p className="balance-detail-empty">
                 {balanceDetail.quota
@@ -5464,6 +8798,140 @@ export default function Home() {
                 onClick={() => setBalanceDetailType(null)}
               >
                 Fermer
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {manualAdjustmentsOpen && (
+        <div
+          className="modal-backdrop manual-adjustments-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setManualAdjustmentsOpen(false)
+          }
+        >
+          <section
+            className="modal-card manual-adjustments-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manual-adjustments-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={() => setManualAdjustmentsOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Rattrapage {absenceYear}</span>
+            <h2 id="manual-adjustments-title">Mes absences avant l’application</h2>
+            <p className="manual-adjustments-intro">
+              Indiquez uniquement ce qui n’est pas déjà enregistré dans le planning.
+              Les nouvelles demandes seront ensuite ajoutées automatiquement.
+            </p>
+
+            <section className="manual-adjustment-section">
+              <div className="manual-adjustment-heading">
+                <span aria-hidden="true">1</span>
+                <div>
+                  <h3>Jours déjà pris sans date</h3>
+                  <p>Ces nombres sont directement déduits de vos soldes {absenceYear}.</p>
+                </div>
+              </div>
+              <div className="manual-leave-inputs">
+                {([
+                  ["annualUsed", "Congés annuels", LEAVE_ALLOWANCES.annual],
+                  ["rttUsed", "RTT", LEAVE_ALLOWANCES.rtt],
+                  ["fractionUsed", "Fractionnement", LEAVE_ALLOWANCES.fraction],
+                ] as const).map(([key, label, allowance]) => (
+                  <label key={key}>
+                    <span>{label}</span>
+                    <span className="manual-number-field">
+                      <input
+                        type="number"
+                        min="0"
+                        max={allowance}
+                        step="0.5"
+                        inputMode="decimal"
+                        value={manualAdjustmentDraft[key]}
+                        onChange={(event) =>
+                          setManualAdjustmentDraft((current) => ({
+                            ...current,
+                            [key]: event.target.value,
+                          }))
+                        }
+                      />
+                      <small>jour{s(Number(manualAdjustmentDraft[key]) || 0)}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="manual-adjustment-section sunday-adjustment-section">
+              <div className="manual-adjustment-heading">
+                <span aria-hidden="true">2</span>
+                <div>
+                  <h3>Dimanches posés en congé</h3>
+                  <p>Ils sont retirés des dimanches travaillés avant le calcul de chaque prime.</p>
+                </div>
+              </div>
+              <div className="manual-sunday-inputs">
+                {([
+                  ["sundayLeaveJanJun", "Janvier à juin", "Prime de juillet"],
+                  ["sundayLeaveJulSep", "Juillet à septembre", "Prime d’octobre"],
+                  ["sundayLeaveOctNov", "Octobre à novembre", "Prime de décembre"],
+                  ["sundayLeaveDec", "Décembre", `Prime de janvier ${absenceYear + 1}`],
+                ] as const).map(([key, period, pay]) => (
+                  <label key={key}>
+                    <span className="manual-sunday-period">
+                      <strong>{period}</strong>
+                      <small>→ {pay}</small>
+                    </span>
+                    <span className="manual-number-field">
+                      <input
+                        type="number"
+                        min="0"
+                        max="53"
+                        step="1"
+                        inputMode="numeric"
+                        value={manualAdjustmentDraft[key]}
+                        onChange={(event) =>
+                          setManualAdjustmentDraft((current) => ({
+                            ...current,
+                            [key]: event.target.value,
+                          }))
+                        }
+                        aria-label={`Dimanches posés de ${period.toLowerCase()}`}
+                      />
+                      <small>dimanche{s(Number(manualAdjustmentDraft[key]) || 0)}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="manual-sunday-help">
+                Les dimanches couverts par un congé daté dans l’application sont déjà comptés : ne les ajoutez pas ici.
+              </p>
+            </section>
+
+            <div className="modal-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setManualAdjustmentsOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                className="save-button"
+                type="button"
+                onClick={() => void saveManualAdjustments()}
+                disabled={savingManualAdjustments}
+              >
+                {savingManualAdjustments ? "Enregistrement…" : "Enregistrer et recalculer"}
               </button>
             </div>
           </section>
@@ -5498,16 +8966,49 @@ export default function Home() {
               Choisissez le type de congé, puis sélectionnez une ou plusieurs
               dates directement dans le calendrier.
             </p>
-            <div className="leave-type-field">
-              <span>Type de congé</span>
-              <ChoicePicker
-                value={rangeLeaveType}
-                options={LEAVE_TYPE_OPTIONS}
-                onChange={setRangeLeaveType}
-                ariaLabel="Sélectionner le type de congé"
-                className="leave-type-picker"
-              />
+            {rangeLeaveType === "other" ? (
+              <div className="request-option-groups manual-leave-options">
+                <section className="request-option-group">
+                  <h3>Divers</h3>
+                  <div className="type-tabs">
+                    <button
+                      type="button"
+                      className="active"
+                      style={{ "--type-color": TYPE_COLORS.other } as React.CSSProperties}
+                    >
+                      <i />
+                      {TYPE_LABELS.other}
+                    </button>
+                  </div>
+                  <p className="request-help">Sans effet sur la paie ni sur les soldes.</p>
+                </section>
+              </div>
+            ) : (
+            <div className="request-option-groups manual-leave-options">
+              {([
+                ["Congés courants", ["annual", "half", "rtt"]],
+                ["Autres congés", ["fraction", "childcare", "exceptional"]],
+              ] as Array<[string, LeaveType[]]>).map(([label, types]) => (
+                <section className="request-option-group" key={label}>
+                  <h3>{label}</h3>
+                  <div className="type-tabs" aria-label={label}>
+                    {types.map((type) => (
+                      <button
+                        type="button"
+                        className={rangeLeaveType === type ? "active" : ""}
+                        style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties}
+                        onClick={() => setRangeLeaveType(type)}
+                        key={type}
+                      >
+                        <i />
+                        {TYPE_LABELS[type]}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
             </div>
+            )}
             {rangeLeaveType === "half" && (
                 <div className="leave-type-field">
                   <span>Moitié de journée</span>
@@ -5536,38 +9037,466 @@ export default function Home() {
                 Sélectionner dans le calendrier
               </button>
             </div>
-            {managedPeriods.length > 0 && (
-              <div className="saved-periods">
-                <div className="saved-periods-heading">
-                  <span>Périodes enregistrées</span>
-                  <small>{managedPeriods.length}</small>
+          </section>
+        </div>
+      )}
+
+      {mecenatDialogOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setMecenatDialogOpen(false)
+          }
+        >
+          <section
+            className="modal-card overtime-modal mecenat-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mecenat-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={() => setMecenatDialogOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Ma paie</span>
+            <h2 id="mecenat-title">Déclarer un mécénat</h2>
+            <p>
+              Indiquez les horaires : Planning Solo sépare automatiquement les heures avant et après 22 h, y compris après minuit.
+            </p>
+            <div className="overtime-form">
+              <label>
+                <span>Date du mécénat</span>
+                <input
+                  type="date"
+                  value={mecenatDraft.date}
+                  onChange={(event) =>
+                    setMecenatDraft((current) => ({
+                      ...current,
+                      date: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <div className="overtime-time-grid">
+                <label>
+                  <span>Début</span>
+                  <input
+                    type="time"
+                    step="900"
+                    value={mecenatDraft.start}
+                    onChange={(event) =>
+                      setMecenatDraft((current) => ({
+                        ...current,
+                        start: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  <span>Fin</span>
+                  <input
+                    type="time"
+                    step="900"
+                    value={mecenatDraft.end}
+                    onChange={(event) =>
+                      setMecenatDraft((current) => ({
+                        ...current,
+                        end: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <small>Si l’heure de fin est antérieure au début, la vacation se termine le lendemain.</small>
+              </div>
+              <p className="mecenat-next-month-note">
+                Le paiement sera automatiquement intégré à la paie du mois suivant.
+              </p>
+              {mecenatDraftCalculation ? (
+                <section className="mecenat-preview" aria-live="polite">
+                  <div>
+                    <span>De 7 h à 22 h</span>
+                    <strong>
+                      {minutesLabel(mecenatDraftCalculation.dayMinutes)} · {euros(
+                        (mecenatDraftCalculation.dayMinutes / 60) *
+                          (MECENAT_REGULATORY_RATES.dayRateCents / 100),
+                      )}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>De 22 h à 7 h</span>
+                    <strong>
+                      {minutesLabel(mecenatDraftCalculation.nightMinutes)} · {euros(
+                        (mecenatDraftCalculation.nightMinutes / 60) *
+                          (MECENAT_REGULATORY_RATES.nightRateCents / 100),
+                      )}
+                    </strong>
+                  </div>
+                  <p>
+                    <span>Total brut</span>
+                    <strong>{euros(mecenatDraftCalculation.grossAmountCents / 100)}</strong>
+                  </p>
+                </section>
+              ) : (
+                <p className="allowance-note warn">Les heures de début et de fin doivent être différentes.</p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setMecenatDialogOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                className="save-button"
+                type="button"
+                onClick={() => void saveMecenatEntry()}
+                disabled={savingMecenat || !mecenatDraftCalculation}
+              >
+                {savingMecenat ? "Enregistrement…" : "Enregistrer le mécénat"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {overtimeDialogOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setOvertimeDialogOpen(false)
+          }
+        >
+          <section
+            className="modal-card overtime-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="overtime-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={() => setOvertimeDialogOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Ma paie et mes récupérations</span>
+            <h2 id="overtime-title">Déclarer des heures supplémentaires</h2>
+            <p>Saisissez la date et les horaires, puis choisissez leur destination.</p>
+            <div className="overtime-form">
+              <label>
+                <span>Date</span>
+                <input
+                  type="date"
+                  value={overtimeDraft.date}
+                  onChange={(event) =>
+                    setOvertimeDraft((current) => ({
+                      ...current,
+                      date: event.target.value,
+                    }))
+                  }
+                />
+                <small>Hors dimanche et jour férié</small>
+              </label>
+              <div className="overtime-time-grid">
+                  <strong className="overtime-time-title">Horaires</strong>
+                  <label>
+                    <span>De</span>
+                    <input
+                      type="time"
+                      step="900"
+                      value={overtimeDraft.start}
+                      onChange={(event) =>
+                        setOvertimeDraft((current) => ({
+                          ...current,
+                          start: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>À</span>
+                    <input
+                      type="time"
+                      step="900"
+                      value={overtimeDraft.end}
+                      onChange={(event) =>
+                        setOvertimeDraft((current) => ({
+                          ...current,
+                          end: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <small>La nuit est reconnue automatiquement de 22 h à 7 h. Les horaires peuvent passer minuit.</small>
+              </div>
+              <fieldset className="overtime-choice-field disposition-choice">
+                <legend>Que faire de ces heures ?</legend>
+                <div className="overtime-destination-grid">
+                  <button
+                    type="button"
+                    className={overtimeDraft.disposition === "paid" ? "active paid" : "paid"}
+                    onClick={() =>
+                      setOvertimeDraft((current) => ({
+                        ...current,
+                        disposition: "paid",
+                      }))
+                    }
+                  >
+                    <strong>À payer</strong>
+                    <span>Ajoutées à la paie du mois suivant</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={overtimeDraft.disposition === "recovery" ? "active recovery" : "recovery"}
+                    onClick={() =>
+                      setOvertimeDraft((current) => ({
+                        ...current,
+                        disposition: "recovery",
+                      }))
+                    }
+                  >
+                    <strong>À récupérer</strong>
+                    <span>Ajoutées au solde heure pour heure</span>
+                  </button>
                 </div>
-                <div className="saved-periods-list">
-                  {managedPeriods.map((period) => (
-                    <article className="saved-period" key={period.id}>
-                      <i className="leave" />
-                      <div>
-                        <strong>{periodLabel(period.from, period.to)}</strong>
-                        <span>{leaveTypeLabel(period.leaveType)}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => editLeavePeriod(period)}
-                      >
-                        Modifier
-                      </button>
-                      <button
-                        className="period-delete"
-                        type="button"
-                        onClick={() => setDeletingPeriod(period)}
-                      >
-                        Supprimer
-                      </button>
-                    </article>
+              </fieldset>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setOvertimeDialogOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                className="save-button"
+                type="button"
+                onClick={() => void saveOvertimeEntry()}
+                disabled={savingOvertime}
+              >
+                {savingOvertime ? "Enregistrement…" : "Enregistrer les heures"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {solidarityDialogOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setSolidarityDialogOpen(false)
+          }
+        >
+          <section
+            className="modal-card overtime-modal solidarity-hours-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="solidarity-hours-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={() => setSolidarityDialogOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Solde de récupération</span>
+            <h2 id="solidarity-hours-title">Ajouter des heures manuellement</h2>
+            <p>
+              Indiquez le total personnel accumulé au fil des années. Ces heures
+              créditent uniquement votre solde de récupération.
+            </p>
+            <div className="overtime-duration-grid solidarity-duration-grid">
+              <label>
+                <span>Heures</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="10000"
+                  step="0.25"
+                  inputMode="decimal"
+                  value={solidarityDraft.hours}
+                  onChange={(event) =>
+                    setSolidarityDraft((current) => ({ ...current, hours: event.target.value }))
+                  }
+                  autoFocus
+                />
+              </label>
+              <label>
+                <span>Minutes</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  step="5"
+                  inputMode="numeric"
+                  value={solidarityDraft.minutes}
+                  onChange={(event) =>
+                    setSolidarityDraft((current) => ({ ...current, minutes: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+            <p className="solidarity-hours-note">
+              Chaque ajout reste visible dans l’historique et peut être supprimé en cas d’erreur.
+            </p>
+            <div className="modal-actions">
+              <button className="secondary-button" type="button" onClick={() => setSolidarityDialogOpen(false)}>
+                Annuler
+              </button>
+              <button className="save-button" type="button" onClick={() => void saveSolidarityHours()} disabled={savingOvertime}>
+                {savingOvertime ? "Enregistrement…" : "Ajouter au solde"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {recoveryDialogOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setRecoveryDialogOpen(false)
+          }
+        >
+          <section
+            className="modal-card overtime-modal recovery-use-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recovery-use-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              onClick={() => setRecoveryDialogOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className="step-label">Congés et récupérations</span>
+            <h2 id="recovery-use-title">Utiliser mes heures de récupération</h2>
+            <p className="recovery-available">
+              Solde disponible <strong>{minutesLabel(recoveryBalance.remaining)}</strong>
+            </p>
+            <div className="overtime-form">
+              <label>
+                <span>Date</span>
+                <input
+                  type="date"
+                  value={recoveryDraft.date}
+                  onChange={(event) =>
+                    setRecoveryDraft((current) => ({
+                      ...current,
+                      date: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <fieldset className="overtime-choice-field">
+                <legend>Durée</legend>
+                <div className="recovery-duration-choice">
+                  {([
+                    ["hours", "Durée libre"],
+                    ["half", `Demi-journée · ${minutesLabel(workDayMinutes / 2)}`],
+                    ["day", `Journée · ${minutesLabel(workDayMinutes)}`],
+                    ["holiday", `Jour férié · ${minutesLabel(workDayMinutes)}`],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={recoveryDraft.kind === value ? "active" : ""}
+                      onClick={() =>
+                        setRecoveryDraft((current) => ({ ...current, kind: value }))
+                      }
+                    >
+                      {label}
+                    </button>
                   ))}
                 </div>
-              </div>
-            )}
+              </fieldset>
+              {recoveryDraft.kind === "hours" ? (
+                <div className="overtime-duration-grid recovery-custom-duration">
+                  <label>
+                    <span>Heures</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.25"
+                      inputMode="decimal"
+                      value={recoveryDraft.hours}
+                      onChange={(event) =>
+                        setRecoveryDraft((current) => ({
+                          ...current,
+                          hours: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Minutes</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="5"
+                      inputMode="numeric"
+                      value={recoveryDraft.minutes}
+                      onChange={(event) =>
+                        setRecoveryDraft((current) => ({
+                          ...current,
+                          minutes: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              ) : null}
+              <label>
+                <span>Heure de début <small>(facultatif)</small></span>
+                <input
+                  type="time"
+                  step="900"
+                  value={recoveryDraft.start}
+                  onChange={(event) =>
+                    setRecoveryDraft((current) => ({
+                      ...current,
+                      start: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setRecoveryDialogOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                className="save-button"
+                type="button"
+                onClick={() => void saveRecoveryUse()}
+                disabled={savingOvertime || recoveryBalance.remaining <= 0}
+              >
+                {savingOvertime ? "Enregistrement…" : "Poser la récupération"}
+              </button>
+            </div>
           </section>
         </div>
       )}
@@ -5746,6 +9675,15 @@ export default function Home() {
           </section>
         </div>
       )}
+      {successMessage ? (
+        <div className="success-toast" role="status" aria-live="polite">
+          <span aria-hidden="true">✓</span>
+          <p>{successMessage}</p>
+          <button type="button" onClick={dismissSuccess} aria-label="Fermer la confirmation">
+            ×
+          </button>
+        </div>
+      ) : null}
       <DataManagementDialog
         open={dataManagementOpen}
         busy={dataManagementBusy}

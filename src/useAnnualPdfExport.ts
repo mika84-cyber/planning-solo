@@ -10,7 +10,6 @@ import {
   wasPompidouHolidayWorked,
   type HalfMoment,
   type LeaveType,
-  type SchoolZone,
 } from "./planningLogic";
 
 type PdfExportPeriod = {
@@ -33,36 +32,38 @@ export function useAnnualPdfExport(
 
   async function exportAnnualPlanning(
     scope: "selected" | "all" | "my-leaves",
-    schoolZone?: SchoolZone | null,
+    includeSchoolVacations = false,
   ) {
     if (pdfExporting) return;
     setPdfExporting(scope);
     try {
       const { createAnnualPlanningPdf } = await import("./planningPdf");
-      const leaveTypes = new Map<string, LeaveType>();
+      const leaveTypes = new Map<string, Exclude<LeaveType, "other">>();
       const halfMoments = new Map<string, HalfMoment>();
       // Bornée à l'année affichée, comme le reste du PDF : une case déborde
       // volontairement de part et d'autre pour qu'une période à cheval sur
       // le 1er janvier affiche quand même son vrai repère de début ou de fin.
       let schoolVacationDates: Set<string> | undefined;
-      let schoolVacations:
-        | Array<{ name: string; from: string; to: string }>
+      let schoolVacationsByZone:
+        | Record<"A" | "B" | "C", Array<{ name: string; from: string; to: string }>>
         | undefined;
-      if (schoolZone) {
+      if (includeSchoolVacations) {
         const year = view.getFullYear();
         const first = `${year}-01-01`;
         const last = `${year}-12-31`;
-        schoolVacations = [];
+        schoolVacationsByZone = { A: [], B: [], C: [] };
         schoolVacationDates = new Set();
-        for (const vacation of schoolVacationsForZone(schoolZone)) {
-          if (vacation.to < first || vacation.from > last) continue;
-          schoolVacations.push(vacation);
-          for (
-            let date = fromKey(vacation.from);
-            dateKey(date) <= vacation.to;
-            date = addDays(date, 1)
-          )
-            schoolVacationDates.add(dateKey(date));
+        for (const zone of ["A", "B", "C"] as const) {
+          for (const vacation of schoolVacationsForZone(zone)) {
+            if (vacation.to < first || vacation.from > last) continue;
+            schoolVacationsByZone[zone].push(vacation);
+            for (
+              let date = fromKey(vacation.from);
+              dateKey(date) <= vacation.to;
+              date = addDays(date, 1)
+            )
+              schoolVacationDates.add(dateKey(date));
+          }
         }
       }
       if (scope === "my-leaves") {
@@ -71,7 +72,13 @@ export function useAnnualPdfExport(
         const last = `${year}-12-31`;
         for (const period of periods) {
           const leaveType = period.leaveType;
-          if (!leaveType || period.to < first || period.from > last) continue;
+          if (
+            !leaveType ||
+            leaveType === "other" ||
+            period.to < first ||
+            period.from > last
+          )
+            continue;
           const from = period.from < first ? first : period.from;
           const to = period.to > last ? last : period.to;
           for (
@@ -123,7 +130,7 @@ export function useAnnualPdfExport(
             : undefined,
         wishDates: scope === "my-leaves" ? wishDates : undefined,
         schoolVacationDates,
-        schoolVacations,
+        schoolVacationsByZone,
         filenameLabel:
           scope === "my-leaves" ? `groupe-${group}-avec-conges` : undefined,
       });

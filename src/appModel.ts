@@ -10,9 +10,10 @@ import {
   type LeaveType,
   type SelectionType,
 } from "./planningLogic";
+import type { WorkQuota } from "./overtime";
 
 export type ViewMode = "month" | "year";
-export type RequestKind = "leave" | "recovery";
+export type RequestKind = "leave" | "recovery" | "other";
 export type BalanceType = "annual" | "rtt" | "fraction";
 export type AuthStatus = "loading" | "guest" | "invite" | "ready";
 
@@ -39,8 +40,10 @@ export type LeavePeriod = {
   legacy?: boolean;
 };
 export type PayStatus = "fonctionnaire" | "contractuel";
+export type PayCalibrationRegime = "pre-culture-psc" | "culture-psc";
 export type PayProfile = {
   baseSalary?: number;
+  residenceAllowance?: number;
   ifse?: number;
   carenceDay?: number;
   otherFixed?: number;
@@ -48,16 +51,28 @@ export type PayProfile = {
   ciaMonth?: number;
   netRatioFixed?: number;
   netRatioVariable?: number;
+  netRatioRegime?: PayCalibrationRegime;
   navigo?: number;
   mealVoucherDeduction?: number;
   pasRate?: number;
+};
+export type ManualYearAdjustments = {
+  annualUsed: number;
+  rttUsed: number;
+  fractionUsed: number;
+  sundayLeaveJanJun: number;
+  sundayLeaveJulSep: number;
+  sundayLeaveOctNov: number;
+  sundayLeaveDec: number;
 };
 export type FormProfile = {
   fullName: string;
   group: string;
   signature: string;
   status?: PayStatus;
+  workQuota?: WorkQuota;
   baseSalary?: number;
+  residenceAllowance?: number;
   ifse?: number;
   carenceDay?: number;
   otherFixed?: number;
@@ -65,6 +80,7 @@ export type FormProfile = {
   ciaMonth?: number;
   netRatioFixed?: number;
   netRatioVariable?: number;
+  netRatioRegime?: PayCalibrationRegime;
   navigo?: number;
   mealVoucherDeduction?: number;
   pasRate?: number;
@@ -73,6 +89,8 @@ export type FormProfile = {
   sundayCarryoverMonth?: number;
   sundayCarryoverFromYear?: number;
   sundayCarryoverFromMonth?: number;
+  /** Reprise sans dates des absences antérieures à l'utilisation de l'app. */
+  manualAdjustments?: Record<string, ManualYearAdjustments>;
 };
 export type SelectedDay = {
   date: string;
@@ -94,7 +112,7 @@ export const HOLIDAY_PAY_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "prime", label: "Prime seule" },
-  { value: "recovery", label: "Prime + 1 jour de récup" },
+  { value: "recovery", label: "Prime + récup" },
 ];
 
 export const PAY_STATUS_OPTIONS: Array<{
@@ -166,6 +184,8 @@ export function workedDayCount(
   group: number,
   periods: LeavePeriod[],
   entries: Entries,
+  recoveryUses: Array<{ date: string; minutes: number }> = [],
+  workDayMinutes = 8 * 60,
 ) {
   let scheduled = 0;
   let onLeave = 0;
@@ -178,8 +198,15 @@ export function workedDayCount(
       const period = periods.find(
         (item) => key >= item.from && key <= item.to,
       );
-      if (period) onLeave += period.leaveType === "half" ? 0.5 : 1;
+      if (period && period.leaveType !== "other")
+        onLeave += period.leaveType === "half" ? 0.5 : 1;
       else if (entries[key]?.leave) onLeave += 1;
+      else {
+        const recoveredMinutes = recoveryUses
+          .filter((item) => item.date === key)
+          .reduce((total, item) => total + item.minutes, 0);
+        onLeave += Math.min(1, recoveredMinutes / workDayMinutes);
+      }
     }
   return { scheduled, onLeave, worked: scheduled - onLeave };
 }

@@ -5,6 +5,8 @@ import {
   getCalendar,
   postCalendar,
   postCalendarBatch,
+  postCalendarIdempotent,
+  postCalendarPeriodsVerified,
 } from "./calendarApi";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -83,5 +85,88 @@ describe("client de l'API calendrier", () => {
     expect(error).toBeInstanceOf(CalendarApiError);
     expect(error).toMatchObject({ message: "Date invalide", status: 400 });
     expect(calendarErrorMessage(error, "Échec")).toBe("Date invalide");
+  });
+
+  it("réessaie une écriture idempotente après une erreur réseau transitoire", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, periods: [] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      postCalendarIdempotent({ action: "save-periods", periods: [] }),
+    ).resolves.toMatchObject({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][1].body).toBe(fetchMock.mock.calls[1][1].body);
+  });
+
+  it("ne réessaie pas une erreur métier", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: "Date invalide" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      postCalendarIdempotent({ action: "save-periods", periods: [] }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirme par relecture un lot enregistré malgré deux réponses perdues", async () => {
+    const savedPeriods = Array.from({ length: 7 }, (_, index) => ({
+      id: `period-confirmed-${index}`,
+      from: `2026-08-${String(index + 4).padStart(2, "0")}`,
+      to: `2026-08-${String(index + 4).padStart(2, "0")}`,
+    }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ periods: savedPeriods }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      postCalendarPeriodsVerified(savedPeriods),
+    ).resolves.toMatchObject({
+      ok: true,
+      recovered: true,
+      periods: savedPeriods,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[2][1]).toMatchObject({ cache: "no-store" });
+  });
+
+  it("conserve une vraie erreur lorsque le lot est absent à la relecture", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ periods: [] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      postCalendarPeriodsVerified([
+        { id: "period-missing-1234", from: "2026-08-04", to: "2026-08-04" },
+      ]),
+    ).rejects.toMatchObject({ status: 503 });
   });
 });

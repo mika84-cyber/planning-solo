@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  applyManualSundayLeave,
+  coWorkingGroupsForDate,
   dateKey,
   fromKey,
   getDayInfo,
@@ -13,19 +15,72 @@ import {
   leaveTypeLabel,
   localDate,
   multiDatePersonLabel,
+  nextAttendanceDay,
   periodLabel,
   sameDate,
+  schoolVacationsForZone,
   sickLeaveDeduction,
   sundayAllowance,
   sundayPayslip,
+  unpaidSundays,
   TYPE_COLORS,
   wasPompidouHolidayWorked,
 } from "./planningLogic";
 
+describe("reprise des dimanches posés sans date", () => {
+  const sundays = [
+    "2026-01-04",
+    "2026-03-01",
+    "2026-07-05",
+    "2026-09-06",
+    "2026-10-04",
+    "2026-11-01",
+    "2026-12-06",
+    "2026-12-13",
+  ].map((key) => ({ key }));
+
+  it("retire séparément les dimanches des quatre périodes de paie", () => {
+    expect(
+      applyManualSundayLeave(sundays, {
+        janJun: 1,
+        julSep: 2,
+        octNov: 1,
+        dec: 1,
+      }).map((item) => item.key),
+    ).toEqual(["2026-03-01", "2026-11-01", "2026-12-13"]);
+  });
+
+  it("ne retire jamais les dimanches d'une autre période", () => {
+    expect(
+      applyManualSundayLeave(sundays, {
+        janJun: 0,
+        julSep: 0,
+        octNov: 0,
+        dec: 8,
+      }).map((item) => item.key),
+    ).toEqual(sundays.slice(0, 6).map((item) => item.key));
+  });
+});
+
+describe("vacances scolaires annuelles", () => {
+  it.each(["A", "B", "C"] as const)(
+    "conserve toutes les périodes 2026 de la zone %s, même déjà passées",
+    (zone) => {
+      const periods = schoolVacationsForZone(zone).filter(
+        ({ from, to }) => from <= "2026-12-31" && to >= "2026-01-01",
+      );
+      expect(periods).toHaveLength(6);
+      expect(periods[0].name).toBe("Vacances de Noël");
+      expect(periods.some(({ name }) => name === "Vacances d’été")).toBe(true);
+      expect(periods.at(-1)?.from).toBe("2026-12-19");
+    },
+  );
+});
+
 describe("palette du planning", () => {
   it("reprend exactement les couleurs CA, RTT et fractionnement fournies", () => {
     expect(TYPE_COLORS.annual).toBe("#6cbdf0");
-    expect(TYPE_COLORS.rtt).toBe("#f2b950");
+    expect(TYPE_COLORS.rtt).toBe("#72b7ad");
     expect(TYPE_COLORS.fraction).toBe("#c9a6ea");
   });
 });
@@ -43,6 +98,35 @@ describe("cycle (baseKind / getDayInfo)", () => {
     expect(getDayInfo(addDays(anchor, 3), 2).kind).toBe("off");
     expect(getDayInfo(addDays(anchor, 6), 2).kind).toBe("off");
     expect(getDayInfo(addDays(anchor, 19), 2).kind).toBe("training");
+  });
+
+  it("considère le mercredi de formation comme prochain jour travaillé", () => {
+    const tuesday = localDate(2026, 7, 18);
+    const next = nextAttendanceDay(tuesday, 2);
+    expect(next && dateKey(next)).toBe("2026-08-19");
+    expect(next?.getDay()).toBe(3);
+    expect(next && getDayInfo(next, 2).kind).toBe("training");
+  });
+
+  it("ignore une formation couverte par un congé", () => {
+    const next = nextAttendanceDay(
+      localDate(2026, 7, 18),
+      2,
+      (key) => key === "2026-08-19",
+    );
+    expect(next && dateKey(next)).not.toBe("2026-08-19");
+  });
+
+  it("n'annonce que le groupe réellement au travail le mercredi", () => {
+    const wednesday = localDate(2026, 7, 19);
+    expect(getDayInfo(wednesday, 1).kind).toBe("work");
+    expect(getDayInfo(wednesday, 2).kind).toBe("training");
+    expect(getDayInfo(wednesday, 3).kind).toBe("work");
+    expect(coWorkingGroupsForDate(wednesday, 1)).toEqual([3]);
+  });
+
+  it("n'annonce aucun groupe quand l'utilisatrice est en formation", () => {
+    expect(coWorkingGroupsForDate(localDate(2026, 7, 19), 2)).toEqual([]);
   });
 });
 
@@ -190,6 +274,11 @@ describe("indemnité de jour férié", () => {
 });
 
 describe("indemnité dominicale", () => {
+  it("retire automatiquement les dimanches absents du bulletin", () => {
+    expect(unpaidSundays(6, 4)).toBe(2);
+    expect(unpaidSundays(4, 6)).toBe(0);
+  });
+
   it("ne verse que le forfait en deçà du onzième dimanche", () => {
     for (const count of [0, 5, 10]) {
       const montant = sundayAllowance(count);

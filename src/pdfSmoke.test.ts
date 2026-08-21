@@ -81,7 +81,36 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(dateKey(new Date(2026, 1, 14))).toBe("2026-02-14");
   });
 
-  it("affiche la légende Année / Groupe / Jours fériés quand il n'y a pas de tableau de vacances", async () => {
+  it("identifie chaque type de congé, y compris une demi-journée", async () => {
+    const leaveTypes = new Map([
+      ["2026-01-01", "annual"],
+      ["2026-01-02", "rtt"],
+      ["2026-01-03", "fraction"],
+      ["2026-01-04", "sick"],
+      ["2026-01-05", "childcare"],
+      ["2026-01-06", "exceptional"],
+      ["2026-01-07", "half"],
+    ] as const);
+    const result = createAnnualPlanningPdf({
+      year: 2026,
+      groups: [1],
+      getDayInfo: () => ({ kind: "work", holiday: "" }),
+      wasPompidouHolidayWorked: () => false,
+      leaveTypes,
+      halfMoments: new Map([["2026-01-07", "afternoon"]]),
+      filenameLabel: "test-types",
+    });
+    const text = await extractPdfText(await result.blob.arrayBuffer());
+    expect(text).toContain("CA");
+    expect(text).toContain("RTT");
+    expect(text).toContain("Fraction.");
+    expect(text).toContain("Maladie");
+    expect(text).toContain("Garde enf.");
+    expect(text).toContain("ASA");
+    expect(text).toContain("½ CA");
+  });
+
+  it("affiche la colonne Année / Groupe / Fériés et sa légende", async () => {
     const result = createAnnualPlanningPdf({
       year: 2026,
       groups: [2],
@@ -92,10 +121,13 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     const text = await extractPdfText(await result.blob.arrayBuffer());
     expect(text).toContain("Année");
     expect(text).toContain("Groupe");
-    expect(text).toContain("Jours fériés");
+    expect(text).toContain("Fériés travaillés");
+    expect(text).toContain("Fériés compensés");
+    expect(text).toContain("Férié compensé");
+    expect(text).toContain("Congé validé");
   });
 
-  it("n'affiche pas la légende quand le tableau de vacances est présent", async () => {
+  it("conserve la légende lisible avec le tableau de vacances des trois zones", async () => {
     const result = createAnnualPlanningPdf({
       year: 2026,
       groups: [2],
@@ -103,17 +135,25 @@ describe("createAnnualPlanningPdf (fumée)", () => {
       wasPompidouHolidayWorked,
       leaveSummary: { used: 0, remaining: 29 },
       schoolVacationDates: new Set(["2026-02-14"]),
-      schoolVacations: [
-        { name: "Vacances d'hiver", from: "2026-02-14", to: "2026-03-01" },
-      ],
+      schoolVacationsByZone: {
+        A: [{ name: "Vacances d'hiver", from: "2026-02-14", to: "2026-03-01" }],
+        B: [{ name: "Vacances d'hiver", from: "2026-02-21", to: "2026-03-08" }],
+        C: [{ name: "Vacances d'hiver", from: "2026-02-07", to: "2026-02-22" }],
+      },
       filenameLabel: "test-tableau",
     });
     const text = await extractPdfText(await result.blob.arrayBuffer());
     expect(text).not.toContain("Jours fériés");
+    expect(text).toContain("Congé validé");
     expect(text).toContain("Vacances scolaires");
+    expect(text).toContain("Zone A");
+    expect(text).toContain("Zone B");
+    expect(text).toContain("Zone C");
     // « 14 février 26 » et « 01 mars 26 », pas « 14/02/2026 ».
     expect(text).toContain("14 février 26");
     expect(text).toContain("01 mars 26");
+    expect(text).toContain("21 février 26");
+    expect(text).toContain("07 février 26");
     expect(text).not.toContain("14/02/2026");
     expect(text).not.toContain("/");
   });

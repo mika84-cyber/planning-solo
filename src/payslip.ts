@@ -18,6 +18,8 @@ export type PayslipReading = {
   netBeforeTax?: number;
   /** Ligne « Traitement de Base ». */
   baseSalary?: number;
+  /** Ligne « Indemnité de Résidence », utilisée séparément pour les IHTS. */
+  residenceAllowance?: number;
   /** Ligne « IFSE ». */
   ifse?: number;
   /** Mois du bulletin, lu sur l'en-tête « Juin 2026 ». */
@@ -52,6 +54,61 @@ export type PayslipReading = {
    *  mois du bulletin. */
   otherFixed?: number;
 };
+
+export type NetRatioCalibration = {
+  rates?: { netRatioFixed: number; netRatioVariable: number };
+  totalCount: number;
+  usableCount: number;
+  missing: Array<"gross" | "baseSalary" | "netBeforeTax">;
+  reason: "ready" | "need-more-readable" | "not-enough-variation" | "inconsistent";
+};
+
+/** Les cotisations ont changé avec l'entrée en vigueur du contrat collectif
+ * Culture/MGEN en octobre 2025. Des bulletins placés de part et d'autre de
+ * cette date ne doivent jamais servir à une même calibration. */
+export type PayCalibrationRegime = "pre-culture-psc" | "culture-psc";
+
+/** Estimation de départ confirmée sur les bulletins qui ont servi à calibrer
+ * l'application personnelle. Elle permet de calculer immédiatement le net,
+ * puis une calibration PDF fiable la remplace automatiquement si disponible. */
+export const DEFAULT_NET_RATIO_FIXED = 79.41;
+export const DEFAULT_NET_RATIO_VARIABLE = 89.92;
+export const PRE_PSC_NET_RATIO_FIXED = 81.39;
+export const PRE_PSC_NET_RATIO_VARIABLE = 90.49;
+
+export function payCalibrationRegime(
+  year: number | undefined,
+  month: number | undefined,
+): PayCalibrationRegime {
+  if (year === undefined || month === undefined) return "culture-psc";
+  return year > 2025 || (year === 2025 && month >= 9)
+    ? "culture-psc"
+    : "pre-culture-psc";
+}
+
+export function defaultNetRatiosForPeriod(year: number, month: number) {
+  return payCalibrationRegime(year, month) === "culture-psc"
+    ? {
+        netRatioFixed: DEFAULT_NET_RATIO_FIXED,
+        netRatioVariable: DEFAULT_NET_RATIO_VARIABLE,
+      }
+    : {
+        netRatioFixed: PRE_PSC_NET_RATIO_FIXED,
+        netRatioVariable: PRE_PSC_NET_RATIO_VARIABLE,
+      };
+}
+
+export function readingsForCalibrationRegime(
+  readings: PayslipReading[],
+  regime: PayCalibrationRegime,
+) {
+  return readings.filter(
+    (reading) =>
+      reading.year !== undefined &&
+      reading.month !== undefined &&
+      payCalibrationRegime(reading.year, reading.month) === regime,
+  );
+}
 
 const MONTH_NAMES = [
   "janvier",
@@ -149,6 +206,20 @@ export async function extractPayslipTokens(
 
 const NUMBER = /^-?\d+([.,]\d+)?$/;
 
+/** Les PDF de paie n'écrivent pas tous les milliers de la même façon :
+ * certains produisent `2403.10`, d'autres `2 403,10`, avec parfois une espace
+ * insécable. On ramène ces variantes au même nombre avant de le valider. */
+function parseAmount(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const normalized = value
+    .trim()
+    .replace(/[\s\u00a0\u202f]/g, "")
+    .replace(",", ".");
+  if (!NUMBER.test(normalized)) return undefined;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) ? amount : undefined;
+}
+
 /** Le n-ième nombre écrit après un libellé donné (`offset` = 1 par défaut :
  *  le tout premier).
  *
@@ -169,25 +240,23 @@ function amountAfter(
 ): number | undefined {
   const index = tokens.findIndex((token) => token.trim() === label);
   if (index === -1) return undefined;
-  const next = tokens[index + offset]?.trim().replace(",", ".");
-  if (!next || !NUMBER.test(next)) return undefined;
-  return Number(next);
+  return parseAmount(tokens[index + offset]);
 }
 
-/** Comme `amountAfter`, mais pour un libellé qui n'est jamais deux fois
- *  identique — le seul cas ici est « Jour de carence AAAA/MM/JJ », dont la
- *  date fait partie du texte. On ne peut donc repérer la ligne que par
- *  préfixe plutôt que par égalité stricte. */
-function amountAfterPrefix(
+/** Certaines régularisations portent plusieurs lignes « Jour de carence »
+ * sur un même bulletin. Elles doivent toutes être prises en compte. */
+function sumAmountsAfterPrefix(
   tokens: string[],
   prefix: string,
   offset: number,
 ): number | undefined {
-  const index = tokens.findIndex((token) => token.trim().startsWith(prefix));
-  if (index === -1) return undefined;
-  const next = tokens[index + offset]?.trim().replace(",", ".");
-  if (!next || !NUMBER.test(next)) return undefined;
-  return Number(next);
+  const values = tokens.flatMap((token, index) => {
+    if (!token.trim().startsWith(prefix)) return [];
+    const value = parseAmount(tokens[index + offset]);
+    return value === undefined ? [] : [Math.abs(value)];
+  });
+  if (!values.length) return undefined;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) * 100) / 100;
 }
 
 function normalizedLabel(value: string) {
@@ -213,8 +282,22 @@ function readNetBeforeTax(tokens: string[]): number | undefined {
     return labels.some((label) => normalized.startsWith(label));
   });
   if (index === -1) return undefined;
-  const value = tokens[index + 1]?.trim().replace(",", ".");
-  return value && NUMBER.test(value) ? Number(value) : undefined;
+  // Selon le générateur du PDF, le montant est le fragment suivant ou se
+  // trouve après un petit libellé / taux. Le net mensuel est le premier
+  // montant significatif dans cette courte zone ; un taux de PAS (1,7 par
+  // exemple) est volontairement ignoré.
+  for (let offset = 1; offset <= 50; offset++) {
+    const token = tokens[index + offset]?.trim();
+    if (!token || !/[.,]\d{2}(?:\s|$)/.test(token)) continue;
+    const value = parseAmount(token);
+    if (
+      value !== undefined &&
+      Math.abs(value) >= 100 &&
+      Math.abs(value) <= 20000
+    )
+      return Math.abs(value);
+  }
+  return undefined;
 }
 
 /** Une retenue est écrite en négatif sur le bulletin ; les champs du profil
@@ -271,6 +354,13 @@ export function calculateNetRatios(readings: PayslipReading[]) {
       : [];
   });
   if (rows.length < 2) return undefined;
+  // Deux mois presque identiques rendent les deux taux mathématiquement
+  // séparables en théorie, mais le moindre centime d'arrondi peut alors les
+  // fausser fortement. Exiger un écart réel évite d'enregistrer un résultat
+  // trompeur ; un mois avec environ une prime de dimanche d'écart suffit.
+  const exposureRatios = rows.map((row) => row.variable / row.fixed);
+  if (Math.max(...exposureRatios) - Math.min(...exposureRatios) < 0.01)
+    return undefined;
   const ff = rows.reduce((sum, row) => sum + row.fixed * row.fixed, 0);
   const fv = rows.reduce((sum, row) => sum + row.fixed * row.variable, 0);
   const vv = rows.reduce((sum, row) => sum + row.variable * row.variable, 0);
@@ -295,6 +385,54 @@ export function calculateNetRatios(readings: PayslipReading[]) {
   return {
     netRatioFixed: Math.round(fixed * 100) / 100,
     netRatioVariable: Math.round(variable * 100) / 100,
+  };
+}
+
+/** Donne à l'interface la raison exacte d'un calcul encore impossible. */
+export function inspectNetRatioCalibration(
+  readings: PayslipReading[],
+): NetRatioCalibration {
+  const usable = readings.filter(
+    (reading) =>
+      reading.gross !== undefined &&
+      reading.baseSalary !== undefined &&
+      reading.netBeforeTax !== undefined,
+  );
+  const missing = (["gross", "baseSalary", "netBeforeTax"] as const).filter(
+    (field) => !readings.some((reading) => reading[field] !== undefined),
+  );
+  const rates = calculateNetRatios(readings);
+  if (rates)
+    return {
+      rates,
+      totalCount: readings.length,
+      usableCount: usable.length,
+      missing,
+      reason: "ready",
+    };
+  if (usable.length < 2)
+    return {
+      totalCount: readings.length,
+      usableCount: usable.length,
+      missing,
+      reason: "need-more-readable",
+    };
+  const exposureRatios = usable.map((reading) => {
+    const fixed =
+      reading.baseSalary! +
+      (reading.ifse || 0) +
+      (reading.otherFixed || 0) -
+      (reading.carenceDay || 0);
+    return (reading.gross! - fixed) / fixed;
+  });
+  return {
+    totalCount: readings.length,
+    usableCount: usable.length,
+    missing,
+    reason:
+      Math.max(...exposureRatios) - Math.min(...exposureRatios) < 0.01
+        ? "not-enough-variation"
+        : "inconsistent",
   };
 }
 
@@ -329,6 +467,7 @@ export function readPayslip(tokens: string[]): PayslipReading {
     gross: amountAfter(tokens, "CUMUL BRUT"),
     netBeforeTax: readNetBeforeTax(tokens),
     baseSalary: amountAfter(tokens, "Traitement de Base"),
+    residenceAllowance: amountAfter(tokens, "Indemnité de Résidence", 2),
     ifse: amountAfter(tokens, "IFSE"),
     sundaysBeyondTen: readSundaysBeyondTen(tokens),
     cia: amountAfter(tokens, "CIA", 2),
@@ -336,7 +475,7 @@ export function readPayslip(tokens: string[]): PayslipReading {
     mealVoucherDeduction: magnitude(
       amountAfter(tokens, "Titres repas carte", 2),
     ),
-    carenceDay: magnitude(amountAfterPrefix(tokens, "Jour de carence", 2)),
+    carenceDay: sumAmountsAfterPrefix(tokens, "Jour de carence", 2),
     pasRate: amountAfter(tokens, "PAS - Taux"),
     otherFixed: readOtherFixed(tokens),
     ...readPeriod(tokens),

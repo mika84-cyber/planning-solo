@@ -7,9 +7,17 @@ import {
 } from "../lib/userScopedStore.mts";
 import {
   isValidDateKey,
+  normalizeBulkPeriods,
   readCalendarBody,
 } from "../lib/calendarValidation.mts";
 import { sanitizeCalendarBackup } from "../lib/calendarBackup.mts";
+import { calculateRegulatoryMecenatVacation } from "../../src/mecenatRegulation.ts";
+import { LeaveRequestValidationError, normalizeLeaveRequest } from "../../src/leaveRequest.ts";
+import {
+  holidayRecoveryCreditMinutes,
+  nextPayPeriod,
+  recoveryRequestMinutes,
+} from "../../src/overtime.ts";
 
 const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
 type LeaveType =
@@ -19,6 +27,7 @@ type LeaveType =
   | "half"
   | "recovery"
   | "sick"
+  | "other"
   | "childcare"
   | "exceptional"
   | "";
@@ -55,6 +64,7 @@ type LeavePeriod = {
 };
 type PayProfileValues = {
   base_salary_cents?: number;
+  residence_allowance_cents?: number;
   ifse_cents?: number;
   carence_cents?: number;
   other_fixed_cents?: number;
@@ -62,9 +72,19 @@ type PayProfileValues = {
   cia_month?: number;
   net_ratio_fixed_bp?: number;
   net_ratio_variable_bp?: number;
+  net_ratio_regime?: "pre-culture-psc" | "culture-psc";
   navigo_cents?: number;
   meal_voucher_deduction_cents?: number;
   pas_rate_bp?: number;
+};
+type ManualYearAdjustments = {
+  annual_used: number;
+  rtt_used: number;
+  fraction_used: number;
+  sunday_leave_jan_jun: number;
+  sunday_leave_jul_sep: number;
+  sunday_leave_oct_nov: number;
+  sunday_leave_dec: number;
 };
 type FormProfile = {
   full_name: string;
@@ -73,10 +93,12 @@ type FormProfile = {
   /** Absent sur les profils créés avant l'ajout de ce champ : traité comme
    *  « fonctionnaire », le statut jusque-là implicite de l'appli. */
   status?: "fonctionnaire" | "contractuel";
+  work_quota?: "full" | "three_quarters" | "half";
   /** Traitement de base mensuel, hors primes : il sert à calculer les
    *  indemnités de jour férié, qui en sont un multiple. Stocké en centimes
    *  pour éviter les arrondis flottants. */
   base_salary_cents?: number;
+  residence_allowance_cents?: number;
   /** Régime indemnitaire mensuel : seconde assiette de la retenue maladie. */
   ifse_cents?: number;
   /** Montant d'un jour de carence, relevé sur le bulletin. */
@@ -95,6 +117,7 @@ type FormProfile = {
    *  pas soumises et gardent une part bien plus grande. */
   net_ratio_fixed_bp?: number;
   net_ratio_variable_bp?: number;
+  net_ratio_regime?: "pre-culture-psc" | "culture-psc";
   /** Remboursement transport et retenue titres repas, en centimes : hors
    *  cumul brut, des montants fixes plutôt qu'un ratio. */
   navigo_cents?: number;
@@ -116,6 +139,39 @@ type FormProfile = {
   /** Valeurs de paie historisées par année d'effet. Les champs historiques
    *  ci-dessus restent le repli des profils créés avant cette évolution. */
   pay_profiles?: Record<string, PayProfileValues>;
+  manual_adjustments?: Record<string, ManualYearAdjustments>;
+  updated_at: string;
+};
+type OvertimeEntry = {
+  id: string;
+  date: string;
+  minutes: number;
+  day_minutes: number;
+  night_minutes: number;
+  disposition: "paid" | "recovery";
+  input_mode: "range" | "duration";
+  start?: string;
+  end?: string;
+  updated_at: string;
+};
+type RecoveryUse = {
+  id: string;
+  date: string;
+  minutes: number;
+  start?: string;
+  end?: string;
+  updated_at: string;
+};
+type MecenatEntry = {
+  id: string;
+  date: string;
+  start: string;
+  end: string;
+  day_minutes: number;
+  night_minutes: number;
+  gross_amount_cents: number;
+  pay_year: number;
+  pay_month: number;
   updated_at: string;
 };
 /** Le choix de compensation d'un férié travaillé.
@@ -195,15 +251,21 @@ async function calendarHandler(request: Request): Promise<Response> {
   const scopedKey = (key: string) => userDataKey(user.id, key);
   const entryPrefix = scopedKey("entry/");
   const periodPrefix = scopedKey("period/");
+  const overtimePrefix = scopedKey("overtime/");
+  const recoveryUsePrefix = scopedKey("recovery-use/");
+  const mecenatPrefix = scopedKey("mecenat/");
   if (request.method === "GET") {
-    const [listed, listedPeriods, formProfile] = await Promise.all([
+    const [listed, listedPeriods, listedOvertime, listedRecoveryUses, listedMecenat, formProfile] = await Promise.all([
       listBlobs(store, entryPrefix),
       listBlobs(store, periodPrefix),
+      listBlobs(store, overtimePrefix),
+      listBlobs(store, recoveryUsePrefix),
+      listBlobs(store, mecenatPrefix),
       store.get(scopedKey("form-profile"), {
         type: "json",
       }) as Promise<FormProfile | null>,
     ]);
-    const [entries, periods] = await Promise.all([
+    const [entries, periods, overtimeEntries, recoveryUses, mecenatEntries] = await Promise.all([
       Promise.all(
         listed.blobs.map((blob) => store.get(blob.key, { type: "json" })),
       ),
@@ -211,6 +273,15 @@ async function calendarHandler(request: Request): Promise<Response> {
         listedPeriods.blobs.map((blob) =>
           store.get(blob.key, { type: "json" }),
         ),
+      ),
+      Promise.all(
+        listedOvertime.blobs.map((blob) => store.get(blob.key, { type: "json" })),
+      ),
+      Promise.all(
+        listedRecoveryUses.blobs.map((blob) => store.get(blob.key, { type: "json" })),
+      ),
+      Promise.all(
+        listedMecenat.blobs.map((blob) => store.get(blob.key, { type: "json" })),
       ),
     ]);
     const cleanEntries = entries.filter((entry): entry is CalendarEntry =>
@@ -221,10 +292,19 @@ async function calendarHandler(request: Request): Promise<Response> {
     );
     cleanEntries.sort((a, b) => a.date.localeCompare(b.date));
     cleanPeriods.sort((a, b) => a.from.localeCompare(b.from));
+    const cleanOvertime = overtimeEntries.filter((item): item is OvertimeEntry => Boolean(item));
+    const cleanRecoveryUses = recoveryUses.filter((item): item is RecoveryUse => Boolean(item));
+    const cleanMecenat = mecenatEntries.filter((item): item is MecenatEntry => Boolean(item));
+    cleanOvertime.sort((a, b) => a.date.localeCompare(b.date));
+    cleanRecoveryUses.sort((a, b) => a.date.localeCompare(b.date));
+    cleanMecenat.sort((a, b) => a.date.localeCompare(b.date));
     return json({
       email: user.email,
       entries: cleanEntries,
       periods: cleanPeriods,
+      overtime_entries: cleanOvertime,
+      recovery_uses: cleanRecoveryUses,
+      mecenat_entries: cleanMecenat,
       form_profile: formProfile || null,
     });
   }
@@ -237,6 +317,208 @@ async function calendarHandler(request: Request): Promise<Response> {
       parsed.error === "Requête trop volumineuse" ? 413 : 400,
     );
   const body = parsed.body;
+  if (body.action === "save-request") {
+    let normalized;
+    try {
+      normalized = normalizeLeaveRequest(body);
+    } catch (error) {
+      return json(
+        { error: error instanceof LeaveRequestValidationError ? error.message : "Demande de congé invalide" },
+        400,
+      );
+    }
+
+    // Les identifiants sont stables : un nouvel appui après une réponse réseau
+    // perdue remplace la même demande au lieu de la dupliquer.
+    const periodTargets = normalized.periods.map((candidate) => ({
+      key: scopedKey(`period/${candidate.id}`),
+      value: {
+        id: candidate.id,
+        from: candidate.from,
+        to: candidate.to,
+        leave_type: candidate.leaveType as LeaveType,
+        half_moment: candidate.leaveType === "half" ? candidate.halfMoment || "" : "",
+        group: candidate.group,
+        updated_at: new Date().toISOString(),
+      } satisfies LeavePeriod,
+    }));
+    let recoveryTargets: Array<{ key: string; value: RecoveryUse }> = [];
+    if (normalized.requestKind === "recovery") {
+      const [profile, overtimeList, recoveryList, calendarList] = await Promise.all([
+        store.get(scopedKey("form-profile"), { type: "json" }) as Promise<FormProfile | null>,
+        listBlobs(store, overtimePrefix),
+        listBlobs(store, recoveryUsePrefix),
+        listBlobs(store, entryPrefix),
+      ]);
+      const quota = profile?.work_quota || "full";
+      const [overtimeValues, recoveryValues, calendarValues] = await Promise.all([
+        Promise.all(
+          overtimeList.blobs.map((blob) =>
+            store.get(blob.key, { type: "json" }) as Promise<OvertimeEntry | null>,
+          ),
+        ),
+        Promise.all(
+          recoveryList.blobs.map((blob) =>
+            store.get(blob.key, { type: "json" }) as Promise<RecoveryUse | null>,
+          ),
+        ),
+        Promise.all(
+          calendarList.blobs.map((blob) =>
+            store.get(blob.key, { type: "json" }) as Promise<CalendarEntry | null>,
+          ),
+        ),
+      ]);
+      recoveryTargets = normalized.recoverySelections.map((selection) => ({
+        key: scopedKey(`recovery-use/${selection.id}`),
+        value: {
+          id: selection.id,
+          date: selection.date,
+          minutes: recoveryRequestMinutes(
+            selection.type,
+            quota,
+            selection.start,
+            selection.end,
+          ),
+          start: selection.start || "",
+          end: selection.end || "",
+          updated_at: new Date().toISOString(),
+        } satisfies RecoveryUse,
+      }));
+      if (recoveryTargets.some(({ value }) => value.minutes < 1))
+        return json({ error: "La durée d’une récupération est invalide" }, 400);
+      const earnedFromOvertime = overtimeValues
+        .filter((item): item is OvertimeEntry => Boolean(item))
+        .filter((item) => item.disposition === "recovery")
+        .reduce((total, item) => total + item.minutes, 0);
+      const earnedFromHolidays = holidayRecoveryCreditMinutes(
+        calendarValues
+          .filter((item): item is CalendarEntry => Boolean(item))
+          .filter((item) => item.holiday_pay === "recovery")
+          .map((item) => item.date),
+        quota,
+      );
+      const targetIds = new Set(recoveryTargets.map(({ value }) => value.id));
+      const usedOutsideRequest = recoveryValues
+        .filter((item): item is RecoveryUse => Boolean(item))
+        .filter((item) => !targetIds.has(item.id))
+        .reduce((total, item) => total + item.minutes, 0);
+      const requested = recoveryTargets.reduce(
+        (total, { value }) => total + value.minutes,
+        0,
+      );
+      if (usedOutsideRequest + requested > earnedFromOvertime + earnedFromHolidays)
+        return json(
+          {
+            error:
+              "Le solde d’heures de récupération est insuffisant pour cette demande.",
+          },
+          409,
+        );
+    }
+    const targets: Array<{ key: string; value: LeavePeriod | RecoveryUse }> = [
+      ...periodTargets,
+      ...recoveryTargets,
+    ];
+    const previous = await Promise.all(
+      targets.map(({ key }) => store.get(key, { type: "json" })),
+    );
+    try {
+      for (const target of targets) await store.setJSON(target.key, target.value);
+    } catch {
+      for (let index = 0; index < targets.length; index++) {
+        if (previous[index] === null) await store.delete(targets[index].key);
+        else await store.setJSON(targets[index].key, previous[index]);
+      }
+      return json({ error: "La demande n’a pas pu être enregistrée. Aucune donnée n’a été modifiée." }, 500);
+    }
+    return json({
+      ok: true,
+      periods: periodTargets.map(({ value }) => value),
+      recovery_uses: recoveryTargets.map(({ value }) => value),
+    });
+  }
+  if (body.action === "save-periods") {
+    const normalized = normalizeBulkPeriods(body.periods);
+    if ("error" in normalized) return json({ error: normalized.error }, 400);
+
+    // Seules les clés de ce lot sont sauvegardées. Contrairement au batch
+    // générique, le coût ne dépend donc plus de tout l'historique du compte.
+    // Les identifiants fournis par le navigateur rendent aussi une seconde
+    // tentative strictement idempotente après une coupure de connexion.
+    const targets = normalized.periods.map((period) => ({
+      key: scopedKey(`period/${period.id}`),
+      period,
+    }));
+    const previous: any[] = [];
+    for (const { key } of targets)
+      previous.push(await store.get(key, { type: "json" }));
+    const samePeriod = (left: any, right: typeof normalized.periods[number]) =>
+      left?.id === right.id &&
+      left?.from === right.from &&
+      left?.to === right.to &&
+      left?.leave_type === right.leave_type &&
+      (left?.half_moment || "") === right.half_moment &&
+      Number(left?.group) === Number(right.group);
+    try {
+      // Les écritures séquentielles évitent les rafales de requêtes fortes
+      // vers Blobs. Lors d'une seconde tentative, une période déjà identique
+      // est laissée intacte : le lot est réellement idempotent.
+      for (let index = 0; index < targets.length; index++) {
+        const { key, period } = targets[index];
+        if (samePeriod(previous[index], period)) continue;
+        await store.setJSON(key, period);
+      }
+    } catch (writeError) {
+      // Une réponse Blobs peut être perdue après acceptation de l'écriture.
+      // Avant d'annoncer un échec, on relit donc chaque identifiant.
+      const confirmed: any[] = [];
+      for (const { key } of targets) {
+        try {
+          confirmed.push(await store.get(key, { type: "json" }));
+        } catch {
+          confirmed.push(null);
+        }
+      }
+      if (confirmed.every((period, index) => samePeriod(period, targets[index].period))) {
+        console.warn("save-periods: réponse d'écriture perdue, lot confirmé par relecture", {
+          count: targets.length,
+        });
+        return json({
+          ok: true,
+          periods: confirmed,
+          recovered: true,
+        });
+      }
+      let rollbackFailed = false;
+      for (let index = 0; index < targets.length; index++) {
+        try {
+          if (previous[index] === null) await store.delete(targets[index].key);
+          else await store.setJSON(targets[index].key, previous[index]);
+        } catch {
+          rollbackFailed = true;
+        }
+      }
+      console.error("save-periods: échec réel du lot", {
+        count: targets.length,
+        rollbackFailed,
+        cause: writeError instanceof Error ? writeError.message : String(writeError),
+      });
+      return json(
+        {
+          error: rollbackFailed
+            ? "La synchronisation est incomplète. Rouvrez l’application avant de réessayer."
+            : "Les congés n’ont pas pu être enregistrés. Aucune donnée n’a été modifiée.",
+        },
+        500,
+      );
+    }
+    return json({
+      ok: true,
+      periods: targets.map(({ period }, index) =>
+        samePeriod(previous[index], period) ? previous[index] : period,
+      ),
+    });
+  }
   if (body.action === "batch") {
     const operations = Array.isArray(body.operations) ? body.operations : [];
     const forbidden = new Set([
@@ -244,6 +526,8 @@ async function calendarHandler(request: Request): Promise<Response> {
       "restore-backup",
       "delete-user-data",
       "archive-legacy-data",
+      "save-request",
+      "save-periods",
     ]);
     if (
       operations.length < 1 ||
@@ -260,25 +544,34 @@ async function calendarHandler(request: Request): Promise<Response> {
     // Netlify Blobs n'offre pas de transaction multi-clés. On prend donc un
     // instantané privé avant le lot et on le restaure si une sous-opération
     // échoue : l'utilisateur ne reste jamais avec une sauvegarde partielle.
-    const [entryList, periodList, profile] = await Promise.all([
+    const [entryList, periodList, overtimeList, recoveryUseList, mecenatList, profile] = await Promise.all([
       listBlobs(store, entryPrefix),
       listBlobs(store, periodPrefix),
+      listBlobs(store, overtimePrefix),
+      listBlobs(store, recoveryUsePrefix),
+      listBlobs(store, mecenatPrefix),
       store.get(scopedKey("form-profile"), { type: "json" }),
     ]);
     const snapshot = await Promise.all(
-      [...entryList.blobs, ...periodList.blobs].map(async (blob) => ({
+      [...entryList.blobs, ...periodList.blobs, ...overtimeList.blobs, ...recoveryUseList.blobs, ...mecenatList.blobs].map(async (blob) => ({
         key: blob.key,
         value: await store.get(blob.key, { type: "json" }),
       })),
     );
     const rollback = async () => {
-      const [newEntries, newPeriods] = await Promise.all([
+      const [newEntries, newPeriods, newOvertime, newRecoveryUses, newMecenat] = await Promise.all([
         listBlobs(store, entryPrefix),
         listBlobs(store, periodPrefix),
+        listBlobs(store, overtimePrefix),
+        listBlobs(store, recoveryUsePrefix),
+        listBlobs(store, mecenatPrefix),
       ]);
       await Promise.all([
         ...newEntries.blobs.map((blob) => store.delete(blob.key)),
         ...newPeriods.blobs.map((blob) => store.delete(blob.key)),
+        ...newOvertime.blobs.map((blob) => store.delete(blob.key)),
+        ...newRecoveryUses.blobs.map((blob) => store.delete(blob.key)),
+        ...newMecenat.blobs.map((blob) => store.delete(blob.key)),
         store.delete(scopedKey("form-profile")),
       ]);
       await Promise.all([
@@ -329,9 +622,12 @@ async function calendarHandler(request: Request): Promise<Response> {
   if (body.action === "restore-backup") {
     const sanitized = sanitizeCalendarBackup(body.backup);
     if ("error" in sanitized) return json({ error: sanitized.error }, 400);
-    const [currentEntries, currentPeriods, currentProfile] = await Promise.all([
+    const [currentEntries, currentPeriods, currentOvertime, currentRecoveryUses, currentMecenat, currentProfile] = await Promise.all([
       listBlobs(store, entryPrefix),
       listBlobs(store, periodPrefix),
+      listBlobs(store, overtimePrefix),
+      listBlobs(store, recoveryUsePrefix),
+      listBlobs(store, mecenatPrefix),
       store.get(scopedKey("form-profile"), { type: "json" }),
     ]);
     // Une restauration ne détruit jamais silencieusement l'état précédent :
@@ -356,6 +652,24 @@ async function calendarHandler(request: Request): Promise<Response> {
             value,
           );
       }),
+      ...currentOvertime.blobs.map(async (blob) => {
+        const value = await store.get(blob.key, { type: "json" });
+        if (value !== null)
+          await store.setJSON(`${archivePrefix}overtime/${blob.key.slice(overtimePrefix.length)}`, value);
+      }),
+      ...currentRecoveryUses.blobs.map(async (blob) => {
+        const value = await store.get(blob.key, { type: "json" });
+        if (value !== null)
+          await store.setJSON(`${archivePrefix}recovery-use/${blob.key.slice(recoveryUsePrefix.length)}`, value);
+      }),
+      ...currentMecenat.blobs.map(async (blob) => {
+        const value = await store.get(blob.key, { type: "json" });
+        if (value !== null)
+          await store.setJSON(
+            `${archivePrefix}mecenat/${blob.key.slice(mecenatPrefix.length)}`,
+            value,
+          );
+      }),
       currentProfile === null
         ? Promise.resolve()
         : store.setJSON(`${archivePrefix}form-profile`, currentProfile),
@@ -363,6 +677,9 @@ async function calendarHandler(request: Request): Promise<Response> {
     await Promise.all([
       ...currentEntries.blobs.map((blob) => store.delete(blob.key)),
       ...currentPeriods.blobs.map((blob) => store.delete(blob.key)),
+      ...currentOvertime.blobs.map((blob) => store.delete(blob.key)),
+      ...currentRecoveryUses.blobs.map((blob) => store.delete(blob.key)),
+      ...currentMecenat.blobs.map((blob) => store.delete(blob.key)),
       store.delete(scopedKey("form-profile")),
     ]);
     await Promise.all([
@@ -371,6 +688,15 @@ async function calendarHandler(request: Request): Promise<Response> {
       ),
       ...sanitized.backup.periods.map((period) =>
         store.setJSON(scopedKey(`period/${period.id}`), period),
+      ),
+      ...sanitized.backup.overtime_entries.map((entry) =>
+        store.setJSON(scopedKey(`overtime/${entry.id}`), entry),
+      ),
+      ...sanitized.backup.recovery_uses.map((entry) =>
+        store.setJSON(scopedKey(`recovery-use/${entry.id}`), entry),
+      ),
+      ...sanitized.backup.mecenat_entries.map((entry) =>
+        store.setJSON(scopedKey(`mecenat/${entry.id}`), entry),
       ),
       sanitized.backup.form_profile
         ? store.setJSON(
@@ -459,7 +785,18 @@ async function calendarHandler(request: Request): Promise<Response> {
     const status =
       body.status === "fonctionnaire" || body.status === "contractuel"
         ? body.status
-        : previousProfile?.status;
+        : previousProfile?.status || "contractuel";
+    const workQuota =
+      body.workQuota === "full" ||
+      body.workQuota === "three_quarters" ||
+      body.workQuota === "half"
+        ? body.workQuota
+        : previousProfile?.work_quota || "full";
+    const netRatioRegime =
+      body.netRatioRegime === "pre-culture-psc" ||
+      body.netRatioRegime === "culture-psc"
+        ? body.netRatioRegime
+        : previousProfile?.net_ratio_regime;
     const amountCents = (sent: unknown, previous: number | undefined) => {
       if (sent === undefined) return previous;
       const value = Number(sent);
@@ -481,9 +818,14 @@ async function calendarHandler(request: Request): Promise<Response> {
       group,
       signature,
       status,
+      work_quota: workQuota,
       base_salary_cents: amountCents(
         body.baseSalaryCents,
         previousProfile?.base_salary_cents,
+      ),
+      residence_allowance_cents: amountCents(
+        body.residenceAllowanceCents,
+        previousProfile?.residence_allowance_cents,
       ),
       ifse_cents: amountCents(body.ifseCents, previousProfile?.ifse_cents),
       carence_cents: amountCents(
@@ -503,6 +845,7 @@ async function calendarHandler(request: Request): Promise<Response> {
         body.netRatioVariableBp,
         previousProfile?.net_ratio_variable_bp,
       ),
+      net_ratio_regime: netRatioRegime,
       navigo_cents: amountCents(body.navigoCents, previousProfile?.navigo_cents),
       meal_voucher_deduction_cents: amountCents(
         body.mealVoucherDeductionCents,
@@ -554,13 +897,48 @@ async function calendarHandler(request: Request): Promise<Response> {
             ? Number(body.sundayCarryoverFromMonth)
             : undefined,
       pay_profiles: previousProfile?.pay_profiles,
+      manual_adjustments: previousProfile?.manual_adjustments,
       updated_at: new Date().toISOString(),
     };
+    const manualYear = Number(body.manualYear);
+    if (body.manualYear !== undefined) {
+      if (!Number.isInteger(manualYear) || manualYear < 2000 || manualYear > 2100)
+        return json({ error: "Année de rattrapage invalide" }, 400);
+      const leaveValue = (value: unknown, maximum: number) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed >= 0 && parsed <= maximum &&
+          Number.isInteger(parsed * 2)
+          ? parsed
+          : null;
+      };
+      const sundayValue = (value: unknown) => {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 && parsed <= 53
+          ? parsed
+          : null;
+      };
+      const manual: ManualYearAdjustments = {
+        annual_used: leaveValue(body.manualAnnualUsed, 29) as number,
+        rtt_used: leaveValue(body.manualRttUsed, 15) as number,
+        fraction_used: leaveValue(body.manualFractionUsed, 2) as number,
+        sunday_leave_jan_jun: sundayValue(body.manualSundayLeaveJanJun) as number,
+        sunday_leave_jul_sep: sundayValue(body.manualSundayLeaveJulSep) as number,
+        sunday_leave_oct_nov: sundayValue(body.manualSundayLeaveOctNov) as number,
+        sunday_leave_dec: sundayValue(body.manualSundayLeaveDec) as number,
+      };
+      if (Object.values(manual).some((value) => value === null))
+        return json({ error: "Valeurs de rattrapage invalides" }, 400);
+      formProfile.manual_adjustments = {
+        ...(previousProfile?.manual_adjustments || {}),
+        [String(manualYear)]: manual,
+      };
+    }
     const payYear = Number(body.payYear);
     if (Number.isInteger(payYear) && payYear >= 2000 && payYear <= 2100) {
       const key = String(payYear);
       const previousYear = previousProfile?.pay_profiles?.[key] || {
         base_salary_cents: previousProfile?.base_salary_cents,
+        residence_allowance_cents: previousProfile?.residence_allowance_cents,
         ifse_cents: previousProfile?.ifse_cents,
         carence_cents: previousProfile?.carence_cents,
         other_fixed_cents: previousProfile?.other_fixed_cents,
@@ -568,6 +946,7 @@ async function calendarHandler(request: Request): Promise<Response> {
         cia_month: previousProfile?.cia_month,
         net_ratio_fixed_bp: previousProfile?.net_ratio_fixed_bp,
         net_ratio_variable_bp: previousProfile?.net_ratio_variable_bp,
+        net_ratio_regime: previousProfile?.net_ratio_regime,
         navigo_cents: previousProfile?.navigo_cents,
         meal_voucher_deduction_cents:
           previousProfile?.meal_voucher_deduction_cents,
@@ -579,6 +958,10 @@ async function calendarHandler(request: Request): Promise<Response> {
           base_salary_cents: amountCents(
             body.baseSalaryCents,
             previousYear.base_salary_cents,
+          ),
+          residence_allowance_cents: amountCents(
+            body.residenceAllowanceCents,
+            previousYear.residence_allowance_cents,
           ),
           ifse_cents: amountCents(body.ifseCents, previousYear.ifse_cents),
           carence_cents: amountCents(
@@ -606,6 +989,11 @@ async function calendarHandler(request: Request): Promise<Response> {
             body.netRatioVariableBp,
             previousYear.net_ratio_variable_bp,
           ),
+          net_ratio_regime:
+            body.netRatioRegime === "pre-culture-psc" ||
+            body.netRatioRegime === "culture-psc"
+              ? body.netRatioRegime
+              : previousYear.net_ratio_regime,
           navigo_cents: amountCents(
             body.navigoCents,
             previousYear.navigo_cents,
@@ -621,6 +1009,208 @@ async function calendarHandler(request: Request): Promise<Response> {
     await store.setJSON(scopedKey("form-profile"), formProfile);
     return json({ ok: true, form_profile: formProfile });
   }
+  if (body.action === "save-mecenat") {
+    const requestedId = typeof body.id === "string" ? body.id : "";
+    const id = requestedId || crypto.randomUUID();
+    const date = typeof body.date === "string" ? body.date : "";
+    const start = typeof body.start === "string" ? body.start.slice(0, 5) : "";
+    const end = typeof body.end === "string" ? body.end.slice(0, 5) : "";
+    const payPeriod = nextPayPeriod(date);
+    const payYear = payPeriod.year;
+    const payMonth = payPeriod.month;
+    const calculation = calculateRegulatoryMecenatVacation(start, end);
+    if (
+      !validId(id) ||
+      !isValidDateKey(date) ||
+      !calculation
+    )
+      return json({ error: "Déclaration de mécénat invalide" }, 400);
+    const entry: MecenatEntry = {
+      id,
+      date,
+      start,
+      end,
+      day_minutes: calculation.dayMinutes,
+      night_minutes: calculation.nightMinutes,
+      gross_amount_cents: calculation.grossAmountCents,
+      pay_year: payYear,
+      pay_month: payMonth,
+      updated_at: new Date().toISOString(),
+    };
+    await store.setJSON(scopedKey(`mecenat/${id}`), entry);
+    return json({ ok: true, mecenat_entry: entry });
+  }
+  if (body.action === "delete-mecenat") {
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!validId(id)) return json({ error: "Mécénat invalide" }, 400);
+    await store.delete(scopedKey(`mecenat/${id}`));
+    return json({ ok: true, deleted: true });
+  }
+  if (body.action === "save-overtime") {
+    const requestedId = typeof body.id === "string" ? body.id : "";
+    const id = requestedId || crypto.randomUUID();
+    const date = typeof body.date === "string" ? body.date : "";
+    const minutes = Math.round(Number(body.minutes));
+    const dayMinutes = Math.round(Number(body.dayMinutes));
+    const nightMinutes = Math.round(Number(body.nightMinutes));
+    const disposition = body.disposition === "paid" || body.disposition === "recovery"
+      ? body.disposition
+      : null;
+    const inputMode = body.inputMode === "range" || body.inputMode === "duration"
+      ? body.inputMode
+      : null;
+    if (
+      !validId(id) ||
+      !isValidDateKey(date) ||
+      !Number.isInteger(minutes) ||
+      minutes < 1 ||
+      minutes > (id.startsWith("solidarity-") ? 600_000 : 24 * 60) ||
+      !Number.isInteger(dayMinutes) ||
+      !Number.isInteger(nightMinutes) ||
+      dayMinutes < 0 ||
+      nightMinutes < 0 ||
+      dayMinutes + nightMinutes !== minutes ||
+      !disposition ||
+      !inputMode
+    )
+      return json({ error: "Déclaration d’heures supplémentaires invalide" }, 400);
+    const entry: OvertimeEntry = {
+      id,
+      date,
+      minutes,
+      day_minutes: dayMinutes,
+      night_minutes: nightMinutes,
+      disposition,
+      input_mode: inputMode,
+      start: typeof body.start === "string" ? body.start.slice(0, 5) : "",
+      end: typeof body.end === "string" ? body.end.slice(0, 5) : "",
+      updated_at: new Date().toISOString(),
+    };
+    await store.setJSON(scopedKey(`overtime/${id}`), entry);
+    return json({ ok: true, overtime_entry: entry });
+  }
+  if (body.action === "delete-overtime") {
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!validId(id)) return json({ error: "Heure supplémentaire invalide" }, 400);
+    const target = (await store.get(scopedKey(`overtime/${id}`), {
+      type: "json",
+    })) as OvertimeEntry | null;
+    if (target?.disposition === "recovery") {
+      const [overtimeList, recoveryList, calendarList, formProfile] = await Promise.all([
+        listBlobs(store, overtimePrefix),
+        listBlobs(store, recoveryUsePrefix),
+        listBlobs(store, entryPrefix),
+        store.get(scopedKey("form-profile"), { type: "json" }) as Promise<FormProfile | null>,
+      ]);
+      const [overtimeValues, recoveryValues, calendarValues] = await Promise.all([
+        Promise.all(
+          overtimeList.blobs.map((blob) =>
+            store.get(blob.key, { type: "json" }) as Promise<OvertimeEntry | null>,
+          ),
+        ),
+        Promise.all(
+          recoveryList.blobs.map((blob) =>
+            store.get(blob.key, { type: "json" }) as Promise<RecoveryUse | null>,
+          ),
+        ),
+        Promise.all(
+          calendarList.blobs.map((blob) =>
+            store.get(blob.key, { type: "json" }) as Promise<CalendarEntry | null>,
+          ),
+        ),
+      ]);
+      const overtimeEarned = overtimeValues
+        .filter((item): item is OvertimeEntry => Boolean(item))
+        .filter((item) => item.disposition === "recovery")
+        .reduce((total, item) => total + item.minutes, 0);
+      const earned = overtimeEarned + holidayRecoveryCreditMinutes(
+        calendarValues
+          .filter((item): item is CalendarEntry => Boolean(item))
+          .filter((item) => item.holiday_pay === "recovery")
+          .map((item) => item.date),
+        formProfile?.work_quota || "full",
+      );
+      const used = recoveryValues
+        .filter((item): item is RecoveryUse => Boolean(item))
+        .reduce((total, item) => total + item.minutes, 0);
+      if (earned - target.minutes < used)
+        return json(
+          {
+            error:
+              "Cette récupération a déjà été utilisée. Annulez d’abord les récupérations posées.",
+          },
+          409,
+        );
+    }
+    await store.delete(scopedKey(`overtime/${id}`));
+    return json({ ok: true, deleted: true });
+  }
+  if (body.action === "save-recovery-use") {
+    const requestedId = typeof body.id === "string" ? body.id : "";
+    const id = requestedId || crypto.randomUUID();
+    const date = typeof body.date === "string" ? body.date : "";
+    const minutes = Math.round(Number(body.minutes));
+    if (!validId(id) || !isValidDateKey(date) || !Number.isInteger(minutes) || minutes < 1 || minutes > 24 * 60)
+      return json({ error: "Utilisation de récupération invalide" }, 400);
+    const [overtimeList, recoveryList, calendarList, formProfile, previousUse] = await Promise.all([
+      listBlobs(store, overtimePrefix),
+      listBlobs(store, recoveryUsePrefix),
+      listBlobs(store, entryPrefix),
+      store.get(scopedKey("form-profile"), { type: "json" }) as Promise<FormProfile | null>,
+      store.get(scopedKey(`recovery-use/${id}`), { type: "json" }) as Promise<RecoveryUse | null>,
+    ]);
+    const [overtimeValues, recoveryValues, calendarValues] = await Promise.all([
+      Promise.all(
+        overtimeList.blobs.map((blob) =>
+          store.get(blob.key, { type: "json" }) as Promise<OvertimeEntry | null>,
+        ),
+      ),
+      Promise.all(
+        recoveryList.blobs.map((blob) =>
+          store.get(blob.key, { type: "json" }) as Promise<RecoveryUse | null>,
+        ),
+      ),
+      Promise.all(
+        calendarList.blobs.map((blob) =>
+          store.get(blob.key, { type: "json" }) as Promise<CalendarEntry | null>,
+        ),
+      ),
+    ]);
+    const overtimeEarned = overtimeValues
+      .filter((item): item is OvertimeEntry => Boolean(item))
+      .filter((item) => item.disposition === "recovery")
+      .reduce((total, item) => total + item.minutes, 0);
+    const holidayEarned = holidayRecoveryCreditMinutes(
+      calendarValues
+        .filter((item): item is CalendarEntry => Boolean(item))
+        .filter((item) => item.holiday_pay === "recovery")
+        .map((item) => item.date),
+      formProfile?.work_quota || "full",
+    );
+    const earned = overtimeEarned + holidayEarned;
+    const alreadyUsed = recoveryValues
+      .filter((item): item is RecoveryUse => Boolean(item))
+      .reduce((total, item) => total + item.minutes, 0);
+    const usedAfterSave = alreadyUsed - (previousUse?.minutes || 0) + minutes;
+    if (usedAfterSave > earned)
+      return json({ error: "Le solde de récupération est insuffisant" }, 409);
+    const entry: RecoveryUse = {
+      id,
+      date,
+      minutes,
+      start: typeof body.start === "string" ? body.start.slice(0, 5) : "",
+      end: typeof body.end === "string" ? body.end.slice(0, 5) : "",
+      updated_at: new Date().toISOString(),
+    };
+    await store.setJSON(scopedKey(`recovery-use/${id}`), entry);
+    return json({ ok: true, recovery_use: entry });
+  }
+  if (body.action === "delete-recovery-use") {
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!validId(id)) return json({ error: "Récupération invalide" }, 400);
+    await store.delete(scopedKey(`recovery-use/${id}`));
+    return json({ ok: true, deleted: true });
+  }
   if (body.action === "save-period") {
     const from = typeof body.from === "string" ? body.from : "";
     const to = typeof body.to === "string" ? body.to : "";
@@ -631,6 +1221,7 @@ async function calendarHandler(request: Request): Promise<Response> {
       body.leaveType === "half" ||
       body.leaveType === "recovery" ||
       body.leaveType === "sick" ||
+      body.leaveType === "other" ||
       body.leaveType === "childcare" ||
       body.leaveType === "exceptional"
         ? body.leaveType

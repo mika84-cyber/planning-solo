@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { calculateNetRatios, readPayslip } from "./payslip";
+import {
+  calculateNetRatios,
+  defaultNetRatiosForPeriod,
+  inspectNetRatioCalibration,
+  payCalibrationRegime,
+  readPayslip,
+  readingsForCalibrationRegime,
+} from "./payslip";
 
 /** Les fragments de texte relevés sur le bulletin de juin 2026, dans l'ordre
  *  où le PDF les écrit. Le libellé précède son montant, et les lignes n'ont
@@ -147,10 +154,21 @@ const mars2024 = [
 ];
 
 describe("lecture d'un bulletin", () => {
+  it("reconnaît automatiquement le mois et l’année inscrits dans l’en-tête", () => {
+    expect(readPayslip(["Juillet 2026"])).toMatchObject({ month: 6, year: 2026 });
+    expect(readPayslip(["Août 2025"])).toMatchObject({ month: 7, year: 2025 });
+  });
+
+  it("laisse la période vide uniquement quand l’en-tête est illisible", () => {
+    expect(readPayslip(["Bulletin sans période"]).month).toBeUndefined();
+    expect(readPayslip(["Bulletin sans période"]).year).toBeUndefined();
+  });
+
   it("relève le brut, le traitement et l'IFSE", () => {
     expect(readPayslip(juin2026)).toMatchObject({
       gross: 2962.07,
       baseSalary: 1855.88,
+      residenceAllowance: 55.68,
       ifse: 416.66,
       otherFixed: 66.82,
       sundaysBeyondTen: 0,
@@ -236,6 +254,42 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
     ).toBe(1938.46);
   });
 
+  it("lit un net avec espace des milliers et fragments intermédiaires", () => {
+    expect(
+      readPayslip([
+        "NET À PAYER AVANT IMPÔT SUR LE REVENU",
+        "PAS - Taux",
+        "1,70",
+        "2 403,10",
+      ]).netBeforeTax,
+    ).toBe(2403.1);
+  });
+
+  it("retrouve le net dans l’ordre réel des fragments du pied de bulletin", () => {
+    expect(
+      readPayslip([
+        "NET A PAYER",
+        "NET A PAYER AVANT IMPOT",
+        "Impot Annuel",
+        "Cotis. patronales",
+        "Base SS déplafon.",
+        "Cumul net imp.",
+        "Cotis. salariales",
+        "Base SS plafon.",
+        "Net imposable",
+        "EN EUROS",
+        "Etablissement",
+        "CENTRE POMPIDOU",
+        "4 rue brantome",
+        "75004",
+        "N° Siret",
+        "18004602100028",
+        "2556.51",
+        "2510.70",
+      ]).netBeforeTax,
+    ).toBe(2556.51);
+  });
+
   it("calcule séparément les taux du traitement et des primes", () => {
     expect(
       calculateNetRatios([
@@ -276,10 +330,94 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
     ).toBeUndefined();
   });
 
+  it("refuse deux mois trop proches pour éviter des taux instables", () => {
+    expect(
+      calculateNetRatios([
+        {
+          gross: 2450,
+          baseSalary: 1850,
+          ifse: 425,
+          otherFixed: 75,
+          netBeforeTax: 1938.46,
+          navigo: 64.8,
+          mealVoucherDeduction: 82.4,
+          sundaysBeyondTen: 0,
+        },
+        {
+          gross: 2460,
+          baseSalary: 1850,
+          ifse: 425,
+          otherFixed: 75,
+          netBeforeTax: 1947.45,
+          navigo: 64.8,
+          mealVoucherDeduction: 82.4,
+          sundaysBeyondTen: 0,
+        },
+      ]),
+    ).toBeUndefined();
+  });
+
+  it("explique quand le net avant impôt n'a pas été reconnu", () => {
+    expect(
+      inspectNetRatioCalibration([
+        {
+          gross: 2450,
+          baseSalary: 1850,
+          sundaysBeyondTen: 0,
+        },
+        {
+          gross: 2950,
+          baseSalary: 1850,
+          sundaysBeyondTen: 4,
+        },
+      ]),
+    ).toMatchObject({
+      usableCount: 0,
+      missing: ["netBeforeTax"],
+      reason: "need-more-readable",
+    });
+  });
+
   it("relève un jour de carence malgré la date dans le libellé", () => {
     // Le libellé exact (« Jour de carence 20/3/2024 ») ne se reverra jamais
     // à l'identique : seul le préfixe permet de le repérer.
     expect(readPayslip(mars2024).carenceDay).toBe(77.5);
+  });
+
+  it("additionne les rappels de plusieurs jours de carence", () => {
+    expect(
+      readPayslip([
+        "Jour de carence 05/10/2025",
+        "78.17",
+        "-78.17",
+        "Jour de carence 16/09/2025",
+        "78.17",
+        "-78.17",
+      ]).carenceDay,
+    ).toBe(156.34);
+  });
+
+  it("sépare les calibrations avant et après le contrat collectif MGEN", () => {
+    expect(payCalibrationRegime(2025, 8)).toBe("pre-culture-psc");
+    expect(payCalibrationRegime(2025, 9)).toBe("culture-psc");
+    expect(defaultNetRatiosForPeriod(2024, 6)).toEqual({
+      netRatioFixed: 81.39,
+      netRatioVariable: 90.49,
+    });
+    expect(defaultNetRatiosForPeriod(2026, 6)).toEqual({
+      netRatioFixed: 79.41,
+      netRatioVariable: 89.92,
+    });
+    expect(
+      readingsForCalibrationRegime(
+        [
+          { year: 2024, month: 6, sundaysBeyondTen: 0 },
+          { year: 2025, month: 9, sundaysBeyondTen: 0 },
+          { year: 2026, month: 6, sundaysBeyondTen: 0 },
+        ],
+        "culture-psc",
+      ),
+    ).toHaveLength(2);
   });
 
   it("ramène la retenue des titres repas à une valeur positive", () => {

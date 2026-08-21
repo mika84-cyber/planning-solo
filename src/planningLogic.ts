@@ -6,6 +6,7 @@ export type LeaveType =
   | "half"
   | "recovery"
   | "sick"
+  | "other"
   | "childcare"
   | "exceptional";
 export type SelectionType =
@@ -15,6 +16,7 @@ export type SelectionType =
   | "fraction"
   | "recovery"
   | "sick"
+  | "other"
   | "childcare"
   | "exceptional"
   | "recovery_day"
@@ -94,6 +96,7 @@ export const TYPE_LABELS: Record<SelectionType, string> = {
   fraction: "Jour de fractionnement",
   recovery: "Récupération",
   sick: "Maladie",
+  other: "Divers",
   childcare: "Congé garde d’enfant",
   exceptional: "Jour exceptionnel",
   recovery_day: "Récupération en journée",
@@ -104,10 +107,11 @@ export const TYPE_LABELS: Record<SelectionType, string> = {
 export const TYPE_COLORS: Record<SelectionType, string> = {
   annual: "#6cbdf0",
   half: "#6cbdf0",
-  rtt: "#f2b950",
+  rtt: "#72b7ad",
   fraction: "#c9a6ea",
   recovery: "#e08a1e",
   sick: "#c2557a",
+  other: "#7b8494",
   childcare: "#0891b2",
   exceptional: "#854d0e",
   recovery_day: "#2f68d1",
@@ -126,6 +130,7 @@ export const LEAVE_ALLOWANCES: Record<LeaveType, number> = {
   // aucun droit et n'entre dans aucune brique de solde.
   recovery: 0,
   sick: 0,
+  other: 0,
   childcare: 0,
   exceptional: 0,
 };
@@ -143,6 +148,7 @@ export const LEAVE_TYPE_OPTIONS: Array<{ value: LeaveType; label: string }> = [
   { value: "half", label: "Demi-journée" },
   { value: "recovery", label: "Récupération" },
   { value: "sick", label: "Maladie" },
+  { value: "other", label: "Divers" },
   { value: "childcare", label: "Garde d’enfant" },
   { value: "exceptional", label: "Jour exceptionnel" },
 ];
@@ -171,6 +177,8 @@ export const SCHOOL_ZONE_OPTIONS: Array<{ value: SchoolZone; label: string }> =
  *  scolaires est celle de la reprise des cours, pas un jour de vacances —
  *  chaque période est donc bornée à la veille de la reprise. */
 const SCHOOL_VACATIONS_SHARED: SchoolVacation[] = [
+  { name: "Vacances de Noël", from: "2025-12-20", to: "2026-01-04" },
+  { name: "Vacances d’été", from: "2026-07-04", to: "2026-08-31" },
   { name: "Vacances de la Toussaint", from: "2026-10-17", to: "2026-11-01" },
   { name: "Vacances de Noël", from: "2026-12-19", to: "2027-01-03" },
   { name: "Vacances d’été", from: "2027-07-03", to: "2027-09-01" },
@@ -180,18 +188,24 @@ const SCHOOL_VACATIONS_SHARED: SchoolVacation[] = [
 ];
 const SCHOOL_VACATIONS_BY_ZONE: Record<SchoolZone, SchoolVacation[]> = {
   A: [
+    { name: "Vacances d’hiver", from: "2026-02-07", to: "2026-02-22" },
+    { name: "Vacances de printemps", from: "2026-04-04", to: "2026-04-19" },
     { name: "Vacances d’hiver", from: "2027-02-13", to: "2027-02-28" },
     { name: "Vacances de printemps", from: "2027-04-10", to: "2027-04-25" },
     { name: "Vacances d’hiver", from: "2028-02-19", to: "2028-03-05" },
     { name: "Vacances de printemps", from: "2028-04-22", to: "2028-05-08" },
   ],
   B: [
+    { name: "Vacances d’hiver", from: "2026-02-14", to: "2026-03-01" },
+    { name: "Vacances de printemps", from: "2026-04-11", to: "2026-04-26" },
     { name: "Vacances d’hiver", from: "2027-02-20", to: "2027-03-07" },
     { name: "Vacances de printemps", from: "2027-04-17", to: "2027-05-02" },
     { name: "Vacances d’hiver", from: "2028-02-05", to: "2028-02-20" },
     { name: "Vacances de printemps", from: "2028-04-08", to: "2028-04-23" },
   ],
   C: [
+    { name: "Vacances d’hiver", from: "2026-02-21", to: "2026-03-08" },
+    { name: "Vacances de printemps", from: "2026-04-18", to: "2026-05-03" },
     { name: "Vacances d’hiver", from: "2027-02-06", to: "2027-02-21" },
     { name: "Vacances de printemps", from: "2027-04-03", to: "2027-04-18" },
     { name: "Vacances d’hiver", from: "2028-02-12", to: "2028-02-27" },
@@ -316,6 +330,36 @@ export function getDayInfo(date: Date, group: number): DayInfo {
     return { kind: "off", holiday, selectable: false };
   return { kind: base, holiday, selectable: base !== "off" };
 }
+
+/** Groupes qui travaillent réellement avec le groupe choisi à cette date.
+ * Les groupes en formation sont volontairement exclus. Si le groupe choisi
+ * est lui-même en formation, aucun autre groupe n'est annoncé. */
+export function coWorkingGroupsForDate(date: Date, group: number) {
+  if (getDayInfo(date, group).kind !== "work") return [];
+  return GROUP_OPTIONS.map((option) => option.value).filter(
+    (candidateGroup) =>
+      candidateGroup !== group && getDayInfo(date, candidateGroup).kind === "work",
+  );
+}
+
+/** Renvoie le prochain jour où l'utilisatrice doit se rendre au travail.
+ * Une formation fait partie des jours de présence, au même titre qu'un jour
+ * de travail classique. Le passage par `getDayInfo` conserve les exceptions
+ * du cycle, notamment une formation annulée par un jour férié non travaillé. */
+export function nextAttendanceDay(
+  from: Date,
+  group: number,
+  isUnavailable: (key: string) => boolean = () => false,
+  maxDays = 366,
+) {
+  for (let offset = 1; offset <= maxDays; offset++) {
+    const candidate = addDays(from, offset);
+    const kind = getDayInfo(candidate, group).kind;
+    if ((kind === "work" || kind === "training") && !isUnavailable(dateKey(candidate)))
+      return candidate;
+  }
+  return null;
+}
 export function wasPompidouHolidayWorked(date: Date, group: number) {
   if (!holidayName(date)) return false;
   if (date.getMonth() === 4 && date.getDate() === 1) return false;
@@ -369,6 +413,13 @@ export const SUNDAY_ALLOWANCE = {
   paidUntil: 31,
   perSunday: 54.93,
 } as const;
+
+/** Écart confirmé par un bulletin entre les dimanches attendus et réellement
+ * payés. Le bulletin fait foi pour le net du mois ; les jours manquants restent
+ * dus et seront reportés sur le prochain rappel. */
+export function unpaidSundays(expected: number, paid: number) {
+  return Math.max(0, Math.round(expected) - Math.round(paid));
+}
 
 /** Coefficients de l'indemnité de jour férié travaillé, à multiplier par le
  *  traitement de base mensuel : `coefficient × traitement × 1,18 / 30`. */
@@ -499,6 +550,37 @@ export function sundayPayslip(key: string): { label: string; order: number } {
   if (month <= 9) return { label: "paie d’octobre", order: 1 };
   if (month <= 11) return { label: "paie de décembre", order: 2 };
   return { label: "paie de janvier", order: 3 };
+}
+
+export type ManualSundayLeaveCounts = {
+  janJun: number;
+  julSep: number;
+  octNov: number;
+  dec: number;
+};
+
+/** Retire d'une année les dimanches posés avant l'adoption de l'application.
+ * Les congés datés ont déjà été écartés en amont : cette reprise ne porte que
+ * sur les absences sans date, réparties selon les quatre périodes de paie. */
+export function applyManualSundayLeave<T extends { key: string }>(
+  sundays: T[],
+  counts: ManualSundayLeaveCounts,
+) {
+  const remaining = { ...counts };
+  return sundays.filter((item) => {
+    const month = Number(item.key.slice(5, 7));
+    const period =
+      month <= 6
+        ? "janJun"
+        : month <= 9
+          ? "julSep"
+          : month <= 11
+            ? "octNov"
+            : "dec";
+    if (remaining[period] <= 0) return true;
+    remaining[period]--;
+    return false;
+  });
 }
 export function groupConsecutive(keys: string[]) {
   const sorted = [...new Set(keys)].sort();

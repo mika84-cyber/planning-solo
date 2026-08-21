@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isValidDateKey,
   MAX_CALENDAR_BODY_BYTES,
+  normalizeBulkPeriods,
   readCalendarBody,
 } from "./calendarValidation.mts";
 
@@ -14,6 +15,91 @@ describe("validation des dates de l'API", () => {
     expect(isValidDateKey("2026-02-29")).toBe(false);
     expect(isValidDateKey("2026-13-01")).toBe(false);
     expect(isValidDateKey("2026-04-31")).toBe(false);
+  });
+});
+
+describe("lots de congés", () => {
+  it("accepte Divers comme repère de planning", () => {
+    const result = normalizeBulkPeriods([
+      {
+        id: "period-other-1",
+        from: "2026-09-03",
+        to: "2026-09-03",
+        leaveType: "other",
+        group: 2,
+      },
+    ]);
+    expect(result).toMatchObject({
+      periods: [{ leave_type: "other" }],
+    });
+  });
+
+  it("normalise plusieurs dates avec des identifiants stables", () => {
+    expect(
+      normalizeBulkPeriods(
+        [
+          {
+            id: "period-0001",
+            from: "2026-09-02",
+            to: "2026-09-02",
+            leaveType: "annual",
+            group: 2,
+          },
+          {
+            id: "period-0002",
+            from: "2026-09-04",
+            to: "2026-09-04",
+            leaveType: "half",
+            halfMoment: "afternoon",
+            group: 2,
+          },
+        ],
+        "2026-08-20T19:23:00.000Z",
+      ),
+    ).toEqual({
+      periods: [
+        {
+          id: "period-0001",
+          from: "2026-09-02",
+          to: "2026-09-02",
+          leave_type: "annual",
+          half_moment: "",
+          group: 2,
+          updated_at: "2026-08-20T19:23:00.000Z",
+        },
+        {
+          id: "period-0002",
+          from: "2026-09-04",
+          to: "2026-09-04",
+          leave_type: "half",
+          half_moment: "afternoon",
+          group: 2,
+          updated_at: "2026-08-20T19:23:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("refuse un doublon, une date impossible et un lot démesuré", () => {
+    const valid = {
+      id: "period-0001",
+      from: "2026-09-02",
+      to: "2026-09-02",
+      leaveType: "annual",
+      group: 2,
+    };
+    expect(normalizeBulkPeriods([valid, valid])).toHaveProperty("error");
+    expect(
+      normalizeBulkPeriods([{ ...valid, id: "period-0002", from: "2026-02-29" }]),
+    ).toHaveProperty("error");
+    expect(
+      normalizeBulkPeriods(
+        Array.from({ length: 401 }, (_, index) => ({
+          ...valid,
+          id: `period-${String(index).padStart(4, "0")}`,
+        })),
+      ),
+    ).toHaveProperty("error");
   });
 });
 
