@@ -8941,14 +8941,14 @@ h1 {
   min-height: 136px;
   gap: 30px;
   border-width: 2px;
-  border-color: #aebfd4;
+  border-color: rgba(0, 0, 0, 0.65);
   padding: 24px 28px;
   background:
     linear-gradient(
       90deg,
-      rgba(248, 251, 255, 0.7) 0%,
-      rgba(240, 247, 255, 0.58) 42%,
-      rgba(225, 239, 252, 0.38) 100%
+      rgba(248, 251, 255, 0.48) 0%,
+      rgba(240, 247, 255, 0.34) 42%,
+      rgba(225, 239, 252, 0.18) 100%
     ),
     url("/header-art.jpg") center 44% / cover no-repeat;
   box-shadow: 0 14px 34px rgba(37, 68, 107, 0.11);
@@ -9109,8 +9109,8 @@ h1 {
     background:
       linear-gradient(
         180deg,
-        rgba(246, 250, 255, 0.62) 0%,
-        rgba(230, 241, 253, 0.44) 100%
+        rgba(246, 250, 255, 0.42) 0%,
+        rgba(230, 241, 253, 0.24) 100%
       ),
       url("/header-art.jpg") center 42% / cover no-repeat;
   }
@@ -9276,7 +9276,7 @@ h1 {
   .top-header { min-height: 195px; }
   .auth-splash-image {
     object-fit: cover;
-    object-position: center center;
+    object-position: 46% 50%;
   }
 }
 
@@ -9287,4 +9287,80 @@ h1 {
 .today-overview-heading .add-action {
   align-self: flex-start;
   margin-top: 0;
+}
+
+/* La rubrique Congés et récupérations possède son propre visuel d’en-tête. */
+.top-header.top-header-leave {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 251, 255, 0.48) 0%,
+      rgba(240, 247, 255, 0.34) 42%,
+      rgba(225, 239, 252, 0.18) 100%
+    ),
+    url("/leave-header-art.jpg") center / cover no-repeat;
+}
+
+/* Ma paie utilise le dessin aux lignes noires uniquement dans son en-tête. */
+.top-header.top-header-pay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 251, 255, 0.48) 0%,
+      rgba(240, 247, 255, 0.34) 42%,
+      rgba(225, 239, 252, 0.18) 100%
+    ),
+    url("/pay-header-art.jpg") center / cover no-repeat;
+}
+
+/* Les téléchargements PDF utilisent la galerie multicolore dans l’en-tête. */
+.top-header.top-header-pdf {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 251, 255, 0.48) 0%,
+      rgba(240, 247, 255, 0.34) 42%,
+      rgba(225, 239, 252, 0.18) 100%
+    ),
+    url("/pdf-header-art.webp") center 44% / cover no-repeat;
+}
+
+@media (max-width: 720px) {
+  .top-header.top-header-leave {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(246, 250, 255, 0.42) 0%,
+        rgba(230, 241, 253, 0.24) 100%
+      ),
+      url("/leave-header-art.jpg") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pay {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(246, 250, 255, 0.42) 0%,
+        rgba(230, 241, 253, 0.24) 100%
+      ),
+      url("/pay-header-art.jpg") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pdf {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(246, 250, 255, 0.42) 0%,
+        rgba(230, 241, 253, 0.24) 100%
+      ),
+      url("/pdf-header-art.webp") center 44% / cover no-repeat;
+  }
+}
+
+/* Les commandes de navigation restent clairement détachées des œuvres. */
+.top-header .view-switch {
+  border: 1.5px solid rgba(0, 0, 0, 0.62);
+}
+.top-header .view-switch button {
+  border: 1px solid rgba(0, 0, 0, 0.5);
 }
