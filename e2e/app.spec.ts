@@ -99,10 +99,17 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(switcher).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.38)");
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
+  const headerBox = await header.boundingBox();
+  const todayOverviewBox = await page.locator(".today-overview").boundingBox();
   const leaveActionBox = await page.locator(".today-overview-heading .add-action").boundingBox();
+  expect(headerBox).not.toBeNull();
+  expect(todayOverviewBox).not.toBeNull();
   expect(todayHeadingBox).not.toBeNull();
   expect(leaveActionBox).not.toBeNull();
   expect(Math.abs(leaveActionBox!.y - todayHeadingBox!.y)).toBeLessThan(1);
+  if ((page.viewportSize()?.width || 0) >= 1200) {
+    expect(headerBox!.width - todayOverviewBox!.width).toBeGreaterThan(50);
+  }
   await expect(switcher.getByRole("button", { name: "Mois" })).toHaveAttribute("aria-pressed", "true");
   await expect(switcher.getByRole("button", { name: "Mois" })).toHaveCSS("background-image", /gradient/);
   const switchBox = await switcher.boundingBox();
@@ -110,6 +117,7 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   expect(switchBox).not.toBeNull();
   expect(updateBox).not.toBeNull();
   expect(updateBox!.y).toBeGreaterThan(switchBox!.y);
+  expect(updateBox!.width).toBeLessThan(switchBox!.width);
 
   await page.locator('.calendar-toolbar button[aria-label="Sélectionner l’année"]').click();
   const years = page.locator(".calendar-toolbar .choice-picker-menu button");

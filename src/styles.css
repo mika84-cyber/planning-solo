@@ -9012,18 +9012,19 @@ h1 {
   box-shadow: 0 5px 12px rgba(51, 80, 117, 0.09);
 }
 .header-update-button {
-  width: 100%;
-  min-height: 37px;
+  justify-self: end;
+  width: fit-content;
+  min-height: 32px;
   margin: 0;
   border-color: #b7c8dc;
-  border-radius: 12px;
-  padding: 7px 12px;
+  border-radius: 10px;
+  padding: 5px 10px;
   background: rgba(255, 255, 255, 0.68);
   color: #315f98;
-  font-size: 11px;
+  font-size: 10px;
   box-shadow: none;
 }
-.header-update-button svg { width: 16px; height: 16px; }
+.header-update-button svg { width: 14px; height: 14px; }
 
 /* La demande Maladie devient une carte cohérente et aérée : aucun texte ne
    chevauche plus le choix actif. */
@@ -9158,7 +9159,7 @@ h1 {
   .header-update-button {
     grid-column: 1 / -1;
     grid-row: 3;
-    min-height: 38px;
+    min-height: 32px;
   }
 
   .year-choice-picker .choice-picker-menu {
@@ -9363,4 +9364,16 @@ h1 {
 }
 .top-header .view-switch button {
   border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+/* Sur un grand écran, l’en-tête profite davantage de la largeur disponible
+   sans élargir les cartes et le calendrier placés dessous. */
+@media (min-width: 1200px) {
+  .top-header {
+    width: calc(100% + 64px);
+    margin-right: -32px;
+    margin-left: -32px;
+    padding-right: 40px;
+    padding-left: 40px;
+  }
 }
