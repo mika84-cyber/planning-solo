@@ -375,8 +375,8 @@ describe("finitions d’interface", () => {
 
   it("intègre l’œuvre en texture discrète dans l’en-tête", () => {
     expect(styles).toContain('url("/header-art.jpg")');
-    expect(styles).toContain("rgba(248, 251, 255, 0.7)");
-    expect(styles).toContain("rgba(230, 241, 253, 0.44)");
+    expect(styles).toContain("rgba(248, 251, 255, 0.48)");
+    expect(styles).toContain("rgba(230, 241, 253, 0.24)");
     expect(styles).toContain("border-color: rgba(31, 35, 40, 0.38)");
   });
 
@@ -397,12 +397,39 @@ describe("finitions d’interface", () => {
   });
 
   it("centre l’image de chargement sur téléphone", () => {
-    expect(styles).toContain(".auth-splash-image {\n    object-fit: cover;\n    object-position: center center;");
+    expect(styles).toContain(".auth-splash-image {\n    object-fit: cover;\n    object-position: 46% 50%;");
+  });
+
+  it("dessine un liseré noir autour des en-têtes et de leurs onglets", () => {
+    expect(styles).toContain("border-color: rgba(0, 0, 0, 0.65)");
+    expect(styles).toContain(".top-header .view-switch {\n  border: 1.5px solid rgba(0, 0, 0, 0.62)");
+    expect(styles).toContain(".top-header .view-switch button {\n  border: 1px solid rgba(0, 0, 0, 0.5)");
   });
 
   it("place l’action Poser un congé en haut à droite de l’encadré Aujourd’hui", () => {
     expect(styles).toContain(".today-overview-heading {\n  align-items: flex-start;");
     expect(styles).toContain(".today-overview-heading .add-action {\n  align-self: flex-start;");
+  });
+
+  it("réserve l’œuvre bleue à l’en-tête Congés et récupérations", () => {
+    expect(app).toContain('homeSection === "leave"');
+    expect(app).toContain('"top-header top-header-leave"');
+    expect(styles).toContain(".top-header.top-header-leave {");
+    expect(styles).toContain('url("/leave-header-art.jpg")');
+  });
+
+  it("réserve le dessin aux lignes noires à l’en-tête Ma paie", () => {
+    expect(app).toContain('homeSection === "pay"');
+    expect(app).toContain('"top-header top-header-pay"');
+    expect(styles).toContain(".top-header.top-header-pay {");
+    expect(styles).toContain('url("/pay-header-art.jpg")');
+  });
+
+  it("réserve la galerie multicolore à l’en-tête des PDF", () => {
+    expect(app).toContain('homeSection === "pdf"');
+    expect(app).toContain('"top-header top-header-pdf"');
+    expect(styles).toContain(".top-header.top-header-pdf {");
+    expect(styles).toContain('url("/pdf-header-art.webp")');
   });
 
   it("garde toutes les fenêtres au-dessus de l’en-tête fixe", () => {

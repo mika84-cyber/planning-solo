@@ -61,12 +61,14 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   await openMainMenu(page);
   await menu.getByRole("button", { name: /Congés et récupérations/ }).click();
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
+  await expect(page.locator(".top-header-leave")).toHaveCSS("background-image", /leave-header-art\.jpg/);
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 
   await openMainMenu(page);
   await menu.getByRole("button", { name: /Ma paie/ }).click();
   const payScreen = page.getByRole("region", { name: "Ma paie" });
   await expect(payScreen).toBeVisible();
+  await expect(page.locator(".top-header-pay")).toHaveCSS("background-image", /pay-header-art\.jpg/);
   expect(await payScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pay-art.jpg");
   await expect(page.getByRole("heading", { name: "Choisissez une rubrique" })).toBeVisible();
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
@@ -74,6 +76,7 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   await openMainMenu(page);
   await menu.getByRole("button", { name: /Télécharger les plannings en PDF/ }).click();
   await expect(page.getByRole("heading", { name: "Télécharger les plannings en PDF" })).toBeVisible();
+  await expect(page.locator(".top-header-pdf")).toHaveCSS("background-image", /pdf-header-art\.webp/);
   const pdfScreen = page.locator(".pdf-download-screen");
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
   await expect(pdfScreen).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.62)");
@@ -92,6 +95,8 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(header).toBeVisible();
   await expect(header).toHaveCSS("background-image", /header-art\.jpg/);
   await expect(header).toHaveCSS("border-top-width", "2px");
+  await expect(header).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.65)");
+  await expect(switcher).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.38)");
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const leaveActionBox = await page.locator(".today-overview-heading .add-action").boundingBox();

@@ -6149,7 +6149,17 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <header className="top-header">
+      <header
+        className={
+          homeSection === "leave"
+            ? "top-header top-header-leave"
+            : homeSection === "pay"
+              ? "top-header top-header-pay"
+              : homeSection === "pdf"
+                ? "top-header top-header-pdf"
+                : "top-header"
+        }
+      >
         <div className="top-header-title">
           <p className="eyebrow">Planning Solo</p>
           <h1>
