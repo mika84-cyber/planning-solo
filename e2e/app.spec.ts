@@ -61,18 +61,13 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   await openMainMenu(page);
   await menu.getByRole("button", { name: /Congés et récupérations/ }).click();
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
-  await expect(page.locator(".app-shell")).toHaveClass(/app-shell-leave/);
-  const leaveBackdrop = await page.locator(".app-shell-leave").evaluate((node) =>
-    getComputedStyle(node, "::before").backgroundImage,
-  );
-  expect(leaveBackdrop).toContain("leave-art.jpg");
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 
   await openMainMenu(page);
   await menu.getByRole("button", { name: /Ma paie/ }).click();
   const payScreen = page.getByRole("region", { name: "Ma paie" });
   await expect(payScreen).toBeVisible();
-  await expect(payScreen).toHaveCSS("background-image", /pay-art\.jpg/);
+  expect(await payScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pay-art.jpg");
   await expect(page.getByRole("heading", { name: "Choisissez une rubrique" })).toBeVisible();
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 
@@ -80,7 +75,7 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   await menu.getByRole("button", { name: /Télécharger les plannings en PDF/ }).click();
   await expect(page.getByRole("heading", { name: "Télécharger les plannings en PDF" })).toBeVisible();
   const pdfScreen = page.locator(".pdf-download-screen");
-  await expect(pdfScreen).toHaveCSS("background-image", /pdf-art\.jpg/);
+  expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
   await expect(pdfScreen).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.62)");
   await expect(pdfScreen.locator(".pdf-download-settings > label").first()).toHaveCSS("border-top-width", "1px");
   await expect(pdfScreen.locator(".pdf-download-actions .pdf-action")).toHaveCount(3);
@@ -90,24 +85,19 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
 
 test("l’en-tête, le sélecteur d’affichage et les années sont confortables", async ({ page }) => {
   await prepareDemo(page);
-  await expect(page.locator(".app-shell")).toHaveClass(/app-shell-home/);
-  const homeBackdrop = await page.locator(".app-shell-home").evaluate((node) =>
-    getComputedStyle(node, "::before").backgroundImage,
-  );
-  expect(homeBackdrop).toContain("home-art.jpg");
   const header = page.locator(".top-header");
-  const backdropTop = await page.locator(".app-shell-home").evaluate((node) =>
-    Number.parseFloat(getComputedStyle(node, "::before").top),
-  );
-  const headerBox = await header.boundingBox();
-  expect(headerBox).not.toBeNull();
-  expect(backdropTop).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height - 1);
   const switcher = page.getByLabel("Mode d’affichage");
   const update = page.getByRole("button", { name: "Vérifier les mises à jour" });
 
   await expect(header).toBeVisible();
+  await expect(header).toHaveCSS("background-image", /header-art\.jpg/);
   await expect(header).toHaveCSS("border-top-width", "2px");
-  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgb(174, 189, 206)");
+  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.38)");
+  const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
+  const leaveActionBox = await page.locator(".today-overview-heading .add-action").boundingBox();
+  expect(todayHeadingBox).not.toBeNull();
+  expect(leaveActionBox).not.toBeNull();
+  expect(Math.abs(leaveActionBox!.y - todayHeadingBox!.y)).toBeLessThan(1);
   await expect(switcher.getByRole("button", { name: "Mois" })).toHaveAttribute("aria-pressed", "true");
   await expect(switcher.getByRole("button", { name: "Mois" })).toHaveCSS("background-image", /gradient/);
   const switchBox = await switcher.boundingBox();
