@@ -4837,7 +4837,7 @@ h1 {
   color: #33445d;
 }
 .home-section-nav button.active {
-  border-color: #aebfd4;
+  border-color: rgba(31, 35, 40, 0.42);
   background: linear-gradient(145deg, #edf3fa 0%, #dfeaf6 100%);
   box-shadow:
     inset 0 0 0 1px rgba(113, 142, 177, 0.12),
@@ -8946,11 +8946,11 @@ h1 {
   background:
     linear-gradient(
       90deg,
-      rgba(248, 251, 255, 0.88) 0%,
-      rgba(240, 247, 255, 0.76) 42%,
-      rgba(225, 239, 252, 0.56) 100%
+      rgba(248, 251, 255, 0.7) 0%,
+      rgba(240, 247, 255, 0.58) 42%,
+      rgba(225, 239, 252, 0.38) 100%
     ),
-    url("/header-art.webp") center 44% / cover no-repeat;
+    url("/header-art.jpg") center 44% / cover no-repeat;
   box-shadow: 0 14px 34px rgba(37, 68, 107, 0.11);
 }
 .top-header-title { padding-left: 18px; }
@@ -9095,7 +9095,7 @@ h1 {
 .leave-balance-grid button,
 .pay-category-grid > button {
   border-width: 1.5px;
-  border-color: #aebdce;
+  border-color: rgba(31, 35, 40, 0.38);
 }
 
 @media (max-width: 720px) {
@@ -9109,10 +9109,10 @@ h1 {
     background:
       linear-gradient(
         180deg,
-        rgba(246, 250, 255, 0.8) 0%,
-        rgba(230, 241, 253, 0.62) 100%
+        rgba(246, 250, 255, 0.62) 0%,
+        rgba(230, 241, 253, 0.44) 100%
       ),
-      url("/header-art.webp") center 42% / cover no-repeat;
+      url("/header-art.jpg") center 42% / cover no-repeat;
   }
   .top-header-title {
     grid-column: 1;
@@ -9258,28 +9258,12 @@ h1 {
   background: rgba(255, 255, 255, 0.84);
 }
 
-/* L’œuvre abstraite donne une identité à Ma paie tout en laissant les cartes
-   et les montants parfaitement lisibles. */
-.pay-app-screen {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(249, 248, 255, 0.64)),
-    url("/pay-art.jpg") center top / cover no-repeat;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.46),
-    0 14px 34px rgba(52, 63, 83, 0.09);
-}
-
 /* Toutes les rubriques conservent la hauteur de référence de l’en-tête
    Accueil, même lorsque le sélecteur Mois / Année n’est pas affiché. */
 .top-header { min-height: 153px; }
 
-/* L’œuvre colorée habille l’espace de téléchargement des plannings PDF. */
 .pdf-download-screen {
   border: 1.5px solid rgba(31, 35, 40, 0.62);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(255, 249, 251, 0.58)),
-    url("/pdf-art.jpg") center top / cover no-repeat;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.44),
-    0 14px 34px rgba(86, 41, 63, 0.1);
 }
 
 .pdf-download-settings > label,
@@ -9290,51 +9274,17 @@ h1 {
 
 @media (max-width: 720px) {
   .top-header { min-height: 195px; }
+  .auth-splash-image {
+    object-fit: cover;
+    object-position: center center;
+  }
 }
 
-/* Un dessin très léger accompagne uniquement l’écran d’accueil. */
-.app-shell-home {
-  position: relative;
-  isolation: isolate;
+/* L’action principale commence au même niveau que le haut du titre quotidien. */
+.today-overview-heading {
+  align-items: flex-start;
 }
-.app-shell-home::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: 183px;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background:
-    linear-gradient(rgba(247, 250, 254, 0.81), rgba(247, 250, 254, 0.81)),
-    url("/home-art.jpg") center / cover no-repeat;
-  pointer-events: none;
-}
-
-@media (max-width: 720px) {
-  .app-shell-home::before { top: 211px; }
-}
-
-/* L’œuvre bleue distingue la rubrique Congés et récupérations sans passer
-   derrière l’en-tête ni concurrencer les cartes de contenu. */
-.app-shell-leave {
-  position: relative;
-  isolation: isolate;
-}
-.app-shell-leave::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: 183px;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background:
-    linear-gradient(rgba(244, 249, 255, 0.76), rgba(244, 249, 255, 0.76)),
-    url("/leave-art.jpg") center / cover no-repeat;
-  pointer-events: none;
-}
-
-@media (max-width: 720px) {
-  .app-shell-leave::before { top: 211px; }
+.today-overview-heading .add-action {
+  align-self: flex-start;
+  margin-top: 0;
 }

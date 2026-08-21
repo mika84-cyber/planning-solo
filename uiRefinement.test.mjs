@@ -374,35 +374,35 @@ describe("finitions d’interface", () => {
   });
 
   it("intègre l’œuvre en texture discrète dans l’en-tête", () => {
-    expect(styles).toContain('url("/header-art.webp")');
-    expect(styles).toContain("rgba(248, 251, 255, 0.88)");
-    expect(styles).toContain("rgba(230, 241, 253, 0.62)");
+    expect(styles).toContain('url("/header-art.jpg")');
+    expect(styles).toContain("rgba(248, 251, 255, 0.7)");
+    expect(styles).toContain("rgba(230, 241, 253, 0.44)");
+    expect(styles).toContain("border-color: rgba(31, 35, 40, 0.38)");
   });
 
-  it("intègre une œuvre en fond de Ma paie", () => {
-    expect(styles).toContain('url("/pay-art.jpg")');
-    expect(styles).toContain("rgba(249, 248, 255, 0.64)");
-  });
-
-  it("uniformise l’en-tête et illustre les téléchargements PDF", () => {
+  it("uniformise l’en-tête et conserve les contours des téléchargements PDF", () => {
     expect(styles).toContain(".top-header { min-height: 153px; }");
     expect(styles).toContain(".top-header { min-height: 195px; }");
-    expect(styles).toContain('url("/pdf-art.jpg")');
     expect(styles).toContain(".pdf-download-actions .pdf-action {\n  border: 1.5px solid rgba(31, 35, 40, 0.62)");
   });
 
-  it("affiche un dessin léger uniquement derrière l’accueil", () => {
-    expect(app).toContain('className={`app-shell app-shell-${homeSection}`}');
-    expect(styles).toContain(".app-shell-home::before");
-    expect(styles).toContain('url("/home-art.jpg")');
-    expect(styles).toContain("rgba(247, 250, 254, 0.81)");
-    expect(styles).toContain(".app-shell-home::before { top: 211px; }");
+  it("ne conserve que les fonds illustrés de l’en-tête et du menu", () => {
+    expect(app).toContain('<main className="app-shell">');
+    expect(styles).toContain('url("/header-art.jpg")');
+    expect(styles).toContain('url("/menu-art.jpg")');
+    expect(styles).not.toContain("/home-art.jpg");
+    expect(styles).not.toContain("/leave-art.jpg");
+    expect(styles).not.toContain("/pay-art.jpg");
+    expect(styles).not.toContain("/pdf-art.jpg");
   });
 
-  it("affiche l’œuvre bleue derrière Congés et récupérations", () => {
-    expect(styles).toContain(".app-shell-leave::before");
-    expect(styles).toContain('url("/leave-art.jpg")');
-    expect(styles).toContain("rgba(244, 249, 255, 0.76)");
+  it("centre l’image de chargement sur téléphone", () => {
+    expect(styles).toContain(".auth-splash-image {\n    object-fit: cover;\n    object-position: center center;");
+  });
+
+  it("place l’action Poser un congé en haut à droite de l’encadré Aujourd’hui", () => {
+    expect(styles).toContain(".today-overview-heading {\n  align-items: flex-start;");
+    expect(styles).toContain(".today-overview-heading .add-action {\n  align-self: flex-start;");
   });
 
   it("garde toutes les fenêtres au-dessus de l’en-tête fixe", () => {

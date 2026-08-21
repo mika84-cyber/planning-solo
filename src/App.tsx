@@ -6148,7 +6148,7 @@ export default function Home() {
   }
 
   return (
-    <main className={`app-shell app-shell-${homeSection}`}>
+    <main className="app-shell">
       <header className="top-header">
         <div className="top-header-title">
           <p className="eyebrow">Planning Solo</p>
