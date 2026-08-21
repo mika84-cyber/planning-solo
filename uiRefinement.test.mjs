@@ -361,6 +361,9 @@ describe("finitions d’interface", () => {
     expect(app).toContain("header-command-area");
     expect(app).toContain("header-update-button");
     expect(styles).toContain(".header-update-button");
+    expect(styles).toContain("width: fit-content");
+    expect(styles).toContain("min-height: 32px");
+    expect(styles).toContain("font-size: 10px");
     expect(app).not.toContain("menu-update-button");
   });
 
@@ -404,6 +407,12 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("border-color: rgba(0, 0, 0, 0.65)");
     expect(styles).toContain(".top-header .view-switch {\n  border: 1.5px solid rgba(0, 0, 0, 0.62)");
     expect(styles).toContain(".top-header .view-switch button {\n  border: 1px solid rgba(0, 0, 0, 0.5)");
+  });
+
+  it("élargit uniquement l’en-tête sur les grands écrans", () => {
+    expect(styles).toContain("@media (min-width: 1200px)");
+    expect(styles).toContain("width: calc(100% + 64px)");
+    expect(styles).toContain("margin-left: -32px");
   });
 
   it("place l’action Poser un congé en haut à droite de l’encadré Aujourd’hui", () => {
