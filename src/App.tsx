@@ -66,7 +66,11 @@ import {
   type ViewMode,
 } from "./appModel";
 import { useAnnualPdfExport } from "./useAnnualPdfExport";
-import { useInstallPrompt } from "./useInstallPrompt";
+import {
+  canEnableInstallation,
+  setInstallMetadataEnabled,
+  useInstallPrompt,
+} from "./useInstallPrompt";
 import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
 import { archivedRequestDate, useRequestArchive } from "./useRequestArchive";
@@ -254,7 +258,13 @@ export default function Home() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authNotice, setAuthNotice] = useState("");
-  const { installPrompt, installApp } = useInstallPrompt();
+  const installationEnabled = canEnableInstallation(
+    authStatus,
+    demoMode,
+    location.hostname,
+    location.search,
+  );
+  const { installPrompt, installApp } = useInstallPrompt(installationEnabled);
   const [entries, setEntries] = useState<Entries>({});
   const [periods, setPeriods] = useState<LeavePeriod[]>([]);
   const [formProfile, setFormProfile] = useState<FormProfile | null>(null);
@@ -468,6 +478,11 @@ export default function Home() {
   const [narrowScreen, setNarrowScreen] = useState(
     () => window.matchMedia("(max-width: 720px)").matches,
   );
+  useEffect(() => {
+    setInstallMetadataEnabled(installationEnabled);
+    return () => setInstallMetadataEnabled(false);
+  }, [installationEnabled]);
+
   useEffect(() => {
     const query = window.matchMedia("(max-width: 720px)");
     const update = () => setNarrowScreen(query.matches);
@@ -1802,7 +1817,7 @@ export default function Home() {
     if (checkingAppUpdate) return;
     setCheckingAppUpdate(true);
     try {
-      if ("serviceWorker" in navigator) {
+      if (!demoMode && "serviceWorker" in navigator) {
         const registration =
           (await navigator.serviceWorker.getRegistration()) ??
           (await navigator.serviceWorker.register("/sw.js", {
@@ -8729,7 +8744,7 @@ export default function Home() {
         onArchiveLegacy={() => void archiveLegacyData()}
         onDeleteAll={() => void deleteAllUserData()}
       />
-      {installPrompt && (
+      {installationEnabled && installPrompt && (
         <button
           className="install-app-button"
           type="button"

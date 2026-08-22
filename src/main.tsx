@@ -3,10 +3,16 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles.css";
 import "./dataManagement.css";
+import { isDemoInstallationLink } from "./useInstallPrompt";
 
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
 
-if ("serviceWorker" in navigator) {
+const installationDemo = isDemoInstallationLink(
+  window.location.hostname,
+  window.location.search,
+);
+
+if ("serviceWorker" in navigator && !installationDemo) {
   if (import.meta.env.PROD) {
     window.addEventListener("load", () => {
       let reloadingForUpdate = false;

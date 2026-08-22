@@ -168,6 +168,12 @@ test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, t
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
 });
 
+test("un lien de démonstration ne propose jamais l’installation", async ({ page }) => {
+  await prepareDemo(page);
+  await expect(page.locator('link[rel="manifest"]')).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Installer l’application" })).toHaveCount(0);
+});
+
 test("Divers est explicite et le résumé apparaît avant validation", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".today-overview .primary-action").click();
