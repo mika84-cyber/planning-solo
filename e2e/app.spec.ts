@@ -288,6 +288,31 @@ test("les deux rubriques de paie s’ouvrent et se referment", async ({ page }) 
 
   await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");
+  if ((page.viewportSize()?.width || 0) <= 720) {
+    const card = page.locator(".variable-pay-card");
+    const previous = card.getByRole("button", { name: "Mois précédent", exact: true });
+    const next = card.getByRole("button", { name: "Mois suivant", exact: true });
+    const month = card.locator("#variable-pay-title");
+    const chevron = card.locator(".pay-period-chevron");
+    const [cardBox, previousBox, nextBox, monthBox, chevronBox] = await Promise.all([
+      card.boundingBox(),
+      previous.boundingBox(),
+      next.boundingBox(),
+      month.boundingBox(),
+      chevron.boundingBox(),
+    ]);
+    expect(cardBox).not.toBeNull();
+    expect(previousBox).not.toBeNull();
+    expect(nextBox).not.toBeNull();
+    expect(monthBox).not.toBeNull();
+    expect(chevronBox).not.toBeNull();
+    expect(previousBox!.y - cardBox!.y).toBeLessThan(28);
+    expect(nextBox!.x - (previousBox!.x + previousBox!.width)).toBeGreaterThanOrEqual(10);
+    expect(cardBox!.x + cardBox!.width - (nextBox!.x + nextBox!.width)).toBeLessThan(28);
+    expect(Math.abs(
+      chevronBox!.y + chevronBox!.height / 2 - (monthBox!.y + monthBox!.height / 2),
+    )).toBeLessThan(3);
+  }
   await page.getByRole("button", { name: "Revenir aux catégories de paie" }).click();
   await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Bulletins et estimations");

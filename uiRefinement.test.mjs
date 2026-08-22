@@ -71,6 +71,16 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("Jours fériés concernés");
   });
 
+  it("rend la navigation mensuelle des primes confortable sur téléphone", () => {
+    expect(app).toContain('className="pay-period-month"');
+    expect(styles).toContain(".variable-pay-card .pay-month-nav.compact .pay-nav-arrow {");
+    expect(styles).toContain("position: absolute;");
+    expect(styles).toContain("width: 44px;");
+    expect(styles).toContain("right: 60px;");
+    expect(app).toContain('className="pay-period-chevron"');
+    expect(styles).toContain(".variable-pay-card .pay-period-chevron {");
+  });
+
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {
     expect(app).toContain("Un arrêt maladie");
     expect(app).toContain('beginRequest("leave", undefined, "sick")');

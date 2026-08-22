@@ -6266,7 +6266,7 @@ h1 {
   outline: 3px solid rgba(47, 97, 184, 0.2);
   outline-offset: 3px;
 }
-.variable-pay-card > header[role="button"][aria-expanded="true"] .pay-period-toggle > i {
+.variable-pay-card > header[role="button"][aria-expanded="true"] .pay-period-chevron {
   transform: rotate(180deg);
 }
 .variable-pay-total { display: grid; justify-items: end; gap: 3px; }
@@ -6419,13 +6419,29 @@ h1 {
   cursor: pointer;
 }
 .pay-period-toggle > span { display: grid; }
-.pay-period-toggle > i {
+.pay-period-month {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pay-period-chevron {
+  display: grid;
+  place-items: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
   color: #496985;
-  font-size: 21px;
-  font-style: normal;
   transition: transform 170ms ease;
 }
-.pay-period-toggle[aria-expanded="true"] > i { transform: rotate(180deg); }
+.pay-period-chevron svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
 .variable-pay-card header h3 {
   color: #173f70;
   font-size: clamp(1.7rem, 4vw, 2.25rem);
@@ -9379,5 +9395,48 @@ h1 {
     margin-left: -32px;
     padding-right: 40px;
     padding-left: 40px;
+  }
+}
+
+/* Sur téléphone, les changements de mois sont immédiatement accessibles en
+   haut à droite de la carte, avec de vraies zones tactiles espacées. */
+@media (max-width: 720px) {
+  .variable-pay-card > header[role="button"] {
+    position: relative;
+  }
+  .variable-pay-card .pay-period-toggle {
+    padding-right: 112px;
+  }
+  .variable-pay-card .pay-period-month {
+    gap: 9px;
+  }
+  .variable-pay-card .pay-period-chevron {
+    align-self: center;
+  }
+  .variable-pay-card .variable-pay-heading-actions {
+    align-items: flex-end;
+  }
+  .variable-pay-card .pay-month-nav.compact {
+    display: block;
+    flex: 0 0 168px;
+    width: 168px;
+  }
+  .variable-pay-card .pay-month-nav.compact .pay-nav-arrow {
+    position: absolute;
+    top: 4px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid #bccde0;
+    background: rgba(248, 251, 255, 0.94);
+  }
+  .variable-pay-card .pay-month-nav.compact .pay-nav-arrow:first-child {
+    right: 60px;
+  }
+  .variable-pay-card .pay-month-nav.compact .pay-nav-arrow:nth-child(2) {
+    right: 4px;
+  }
+  .variable-pay-card .pay-month-nav.compact .pay-today-button {
+    width: 168px;
+    min-height: 46px;
   }
 }
