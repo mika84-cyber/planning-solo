@@ -57,9 +57,23 @@ describe("fenêtres de temps de travail", () => {
     const recovery = renderToStaticMarkup(
       <RecoveryUseDialog
         open
-        draft={{ date: "2026-08-21", kind: "hours", hours: "2", minutes: "0", start: "" }}
+        draft={{ date: "2026-08-21", kind: "hours", hours: "2", minutes: "0", start: "", trainingMinutes: 360 }}
         setDraft={vi.fn()}
         workDayMinutes={480}
+        trainingMinutes={360}
+        remainingMinutes={600}
+        saving={false}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+    const training = renderToStaticMarkup(
+      <RecoveryUseDialog
+        open
+        draft={{ date: "2026-08-21", kind: "training", hours: "2", minutes: "0", start: "", trainingMinutes: 180 }}
+        setDraft={vi.fn()}
+        workDayMinutes={480}
+        trainingMinutes={360}
         remainingMinutes={600}
         saving={false}
         onClose={vi.fn()}
@@ -73,5 +87,9 @@ describe("fenêtres de temps de travail", () => {
     expect(mecenat).toContain("Total brut");
     expect(solidarity).toContain("Ajouter des heures manuellement");
     expect(recovery).toContain("Utiliser mes heures de récupération");
+    expect(recovery).toContain("Formation · 6 h");
+    expect(training).toContain(">3 h</button>");
+    expect(training).toContain(">6 h</button>");
+    expect(training).not.toContain("Durée libre");
   });
 });

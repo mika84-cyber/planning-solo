@@ -6,7 +6,8 @@ export type RecoveryRequestType =
   | "recovery_day"
   | "recovery_half"
   | "recovery_hours"
-  | "recovery_holiday";
+  | "recovery_holiday"
+  | "recovery_training";
 
 export type OvertimeEntry = {
   id: string;
@@ -27,6 +28,7 @@ export type RecoveryUse = {
   minutes: number;
   start?: string;
   end?: string;
+  kind?: "training";
   updatedAt: string;
 };
 
@@ -45,6 +47,19 @@ export function dailyMinutesForQuota(quota: WorkQuota) {
     WORK_QUOTA_OPTIONS.find((option) => option.value === quota)?.dailyMinutes ??
     8 * 60
   );
+}
+
+/** Durée proposée par défaut pour une formation ; la fenêtre permet ensuite
+ * de choisir explicitement entre 3 h et 6 h. */
+export function trainingRecoveryMinutes(quota: WorkQuota): 180 | 360 {
+  return quota === "half" ? 180 : 360;
+}
+
+export function trainingRecoveryTimes(quota: WorkQuota) {
+  return {
+    start: "09:00",
+    end: quota === "half" ? "12:00" : "15:00",
+  };
 }
 
 /** Crédit attaché au choix « prime + récupération » d'un jour férié.
@@ -125,6 +140,10 @@ export function recoveryRequestMinutes(
   end = "",
 ) {
   const dailyMinutes = dailyMinutesForQuota(quota);
+  if (type === "recovery_training") {
+    const selected = splitOvertimeRange(start, end)?.minutes ?? 0;
+    return selected === 3 * 60 || selected === 6 * 60 ? selected : 0;
+  }
   if (type === "recovery_day" || type === "recovery_holiday")
     return dailyMinutes;
   if (type === "recovery_half") return dailyMinutes / 2;
