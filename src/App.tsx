@@ -5870,10 +5870,14 @@ export default function Home() {
           >
             <div className="pay-period-toggle">
               <span>
-              <span className="step-label">Primes pour le mois</span>
-              <h3 id="variable-pay-title">{MONTHS[view.getMonth()]} {view.getFullYear()}</h3>
+                <span className="step-label">Primes pour le mois</span>
+                <span className="pay-period-month">
+                  <h3 id="variable-pay-title">{MONTHS[view.getMonth()]} {view.getFullYear()}</h3>
+                  <span className="pay-period-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg>
+                  </span>
+                </span>
               </span>
-              <i aria-hidden="true">⌄</i>
             </div>
             <div className="variable-pay-heading-actions">
               <div className="pay-month-nav compact">
