@@ -5,6 +5,8 @@ import {
   handleAuthCallback,
   login,
   logout,
+  requestPasswordRecovery,
+  updateUser,
 } from "@netlify/identity";
 import { ChoicePicker } from "./ChoicePicker";
 import { AuthScreen } from "./AuthScreen";
@@ -247,9 +249,11 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [inviteToken, setInviteToken] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
   const { installPrompt, installApp } = useInstallPrompt();
   const [entries, setEntries] = useState<Entries>({});
   const [periods, setPeriods] = useState<LeavePeriod[]>([]);
@@ -705,6 +709,14 @@ export default function Home() {
           setAuthStatus("invite");
           return;
         }
+        if (callback?.type === "recovery" && callback.user) {
+          setUserEmail(callback.user.email || "Compte connecté");
+          setLoginEmail(callback.user.email || "");
+          setLoginPassword("");
+          setPasswordConfirmation("");
+          setAuthStatus("recovery");
+          return;
+        }
         const user = await getUser();
         if (!user) {
           setAuthStatus("guest");
@@ -935,12 +947,81 @@ export default function Home() {
     event.preventDefault();
     setAuthBusy(true);
     setAuthError("");
+    setAuthNotice("");
     try {
-      await login(loginEmail.trim(), loginPassword);
-      setLoginPassword("");
-      await loadCalendar();
+      await login(loginEmail.trim().toLowerCase(), loginPassword);
     } catch {
-      setAuthError("Adresse ou mot de passe incorrect.");
+      setAuthError(
+        "Connexion impossible. Vérifiez l’adresse et le mot de passe. Pour une première connexion, activez d’abord le compte depuis l’e-mail d’invitation.",
+      );
+      setAuthBusy(false);
+      return;
+    }
+    setLoginPassword("");
+    try {
+      await loadCalendar();
+    } catch (error) {
+      setAuthError(
+        calendarErrorMessage(
+          error,
+          "La connexion a réussi, mais le planning n’a pas pu être chargé. Réessayez dans un instant.",
+        ),
+      );
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function requestPasswordReset() {
+    const email = loginEmail.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setAuthError("Indiquez d’abord l’adresse e-mail de votre compte.");
+      setAuthNotice("");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthNotice("");
+    try {
+      if (!demoMode) await requestPasswordRecovery(email);
+      setAuthNotice(
+        "Si ce compte est activé, un e-mail vient d’être envoyé. Ouvrez son lien pour choisir un nouveau mot de passe. Vérifiez aussi les courriers indésirables.",
+      );
+    } catch {
+      setAuthError(
+        "L’e-mail de réinitialisation n’a pas pu être envoyé. Vérifiez votre connexion puis réessayez.",
+      );
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function submitPasswordReset(event: React.FormEvent) {
+    event.preventDefault();
+    if (loginPassword.length < 8) {
+      setAuthError("Choisissez un mot de passe d’au moins 8 caractères.");
+      return;
+    }
+    if (loginPassword !== passwordConfirmation) {
+      setAuthError("Les deux mots de passe ne sont pas identiques.");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthNotice("");
+    try {
+      await updateUser({ password: loginPassword });
+      setLoginPassword("");
+      setPasswordConfirmation("");
+      await loadCalendar();
+      confirm("Votre nouveau mot de passe est enregistré.");
+    } catch (error) {
+      setAuthError(
+        calendarErrorMessage(
+          error,
+          "Le mot de passe n’a pas pu être modifié. Le lien a peut-être expiré : demandez-en un nouveau.",
+        ),
+      );
     } finally {
       setAuthBusy(false);
     }
@@ -954,6 +1035,7 @@ export default function Home() {
     }
     setAuthBusy(true);
     setAuthError("");
+    setAuthNotice("");
     try {
       const user = await acceptInvite(inviteToken, loginPassword);
       setUserEmail(user.email || "Compte connecté");
@@ -964,6 +1046,7 @@ export default function Home() {
         );
       history.replaceState({}, "", location.pathname);
       setLoginPassword("");
+      setPasswordConfirmation("");
       await loadCalendar();
     } catch {
       setAuthError("Cette invitation est invalide ou a expiré.");
@@ -6181,12 +6264,17 @@ export default function Home() {
         status={authStatus}
         email={loginEmail}
         password={loginPassword}
+        passwordConfirmation={passwordConfirmation}
         busy={authBusy}
         error={authError}
+        notice={authNotice}
         setEmail={setLoginEmail}
         setPassword={setLoginPassword}
+        setPasswordConfirmation={setPasswordConfirmation}
         submitLogin={submitLogin}
         submitInvite={submitInvite}
+        submitPasswordReset={submitPasswordReset}
+        requestPasswordReset={() => void requestPasswordReset()}
       />
     );
   }

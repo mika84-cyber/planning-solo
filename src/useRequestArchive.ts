@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { AuthStatus } from "./appModel";
 
 export type ArchivedRequest = {
   id: string;
@@ -62,7 +63,7 @@ export function archivedRequestDate(value: string) {
 }
 
 export function useRequestArchive(
-  authStatus: "loading" | "guest" | "invite" | "ready",
+  authStatus: AuthStatus,
   profile: "mika" | "agnes" | null | undefined,
   notify: (text: string) => void,
 ) {
