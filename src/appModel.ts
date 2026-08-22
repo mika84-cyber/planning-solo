@@ -15,7 +15,7 @@ import type { WorkQuota } from "./overtime";
 export type ViewMode = "month" | "year";
 export type RequestKind = "leave" | "recovery" | "other";
 export type BalanceType = "annual" | "rtt" | "fraction";
-export type AuthStatus = "loading" | "guest" | "invite" | "ready";
+export type AuthStatus = "loading" | "guest" | "invite" | "recovery" | "ready";
 
 export type SharedEntry = {
   noteText: string;

@@ -187,6 +187,52 @@ button {
   font-size: 12px;
   line-height: 1.4;
 }
+.auth-notice {
+  margin: 10px 0;
+  border: 1px solid #b9d9ca;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #effaf4;
+  color: #23694f;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.auth-forgot-password {
+  display: block;
+  margin: 14px auto 0;
+  border: 0;
+  padding: 5px 8px;
+  background: transparent;
+  color: #2859b8;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.auth-forgot-password:disabled { opacity: 0.55; cursor: default; }
+.auth-account-help {
+  margin-top: 16px;
+  border: 1px solid #cbd8e8;
+  border-radius: 13px;
+  padding: 12px 13px;
+  background: #f4f8fd;
+  color: #425169;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.auth-account-help strong { color: #1e3659; font-size: 12px; }
+.auth-account-help p { margin: 5px 0; }
+.auth-account-help small { color: #65738a; }
+.auth-recovery-email {
+  overflow-wrap: anywhere;
+  margin: -10px 0 18px;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: #f1f5fb;
+  color: #5a687c;
+  font-size: 12px;
+}
 .auth-help {
   margin: 16px 0 0;
   color: var(--muted);
