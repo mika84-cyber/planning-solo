@@ -2,9 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createClientId } from "./clientId";
 
 describe("identifiants compatibles avec la démo téléphone", () => {
-  it("utilise randomUUID lorsqu'il est disponible", () => {
+  it("conserve le préfixe quand randomUUID est disponible", () => {
     expect(createClientId("overtime", () => "uuid-fiable")).toBe(
-      "uuid-fiable",
+      "overtime-uuid-fiable",
+    );
+  });
+
+  it("identifie toujours un ajout manuel de solde, y compris en HTTPS", () => {
+    expect(createClientId("solidarity", () => "uuid-fiable")).toBe(
+      "solidarity-uuid-fiable",
     );
   });
 
