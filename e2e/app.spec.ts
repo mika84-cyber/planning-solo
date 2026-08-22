@@ -174,6 +174,58 @@ test("un lien de démonstration ne propose jamais l’installation", async ({ pa
   await expect(page.getByRole("button", { name: "Installer l’application" })).toHaveCount(0);
 });
 
+test("une formation utilise le bon nombre d’heures et apparaît en REC", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+
+  await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
+  const balanceDialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
+  await balanceDialog.getByLabel("Heures").fill("10");
+  await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Accueil/ })
+    .click();
+  await page.locator(".today-overview .primary-action").click();
+  await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
+    .getByRole("button", { name: /Une récupération/ })
+    .click();
+  await page.getByRole("dialog", { name: /Quel type de récupération/ })
+    .getByRole("button", { name: /Formation/ })
+    .click();
+  const methodDialog = page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ });
+  await expect(methodDialog.getByRole("button", { name: /Remplir le formulaire/ })).toBeVisible();
+  await expect(methodDialog.getByRole("button", { name: /Ajouter manuellement au planning/ })).toBeVisible();
+  await methodDialog.getByRole("button", { name: /Ajouter manuellement au planning/ }).click();
+
+  const recoveryDialog = page.getByRole("dialog", { name: "Utiliser mes heures de récupération" });
+  await expect(recoveryDialog.getByRole("button", { name: "3 h", exact: true })).toBeVisible();
+  await recoveryDialog.getByRole("button", { name: "6 h", exact: true }).click();
+  await recoveryDialog.getByRole("button", { name: "Poser la récupération" }).click();
+
+  const recoveryDay = page.getByRole("button", { name: /formation en récupération de 6 h/i });
+  await expect(recoveryDay).toHaveCSS("background-color", "rgb(243, 179, 166)");
+  await expect(recoveryDay).toHaveCSS("border-color", "rgb(0, 0, 0)");
+  const recoveryLabel = recoveryDay.getByText("REC", { exact: true });
+  await expect(recoveryLabel).toBeVisible();
+  await expect(recoveryLabel).toHaveCSS("border-top-width", "0px");
+  await expect(recoveryLabel).toHaveCSS("color", "rgb(17, 17, 17)");
+  await recoveryDay.click();
+  const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await expect(dayDialog.locator(".day-recovery-details")).toContainText("Formation");
+  await expect(dayDialog.locator(".day-recovery-details")).toContainText("6 h prises sur votre solde");
+  const deleteButton = dayDialog.getByRole("button", { name: "Effacer la récupération" });
+  const deleteButtonBox = await deleteButton.boundingBox();
+  expect(deleteButtonBox?.width ?? 0).toBeGreaterThan(180);
+  page.once("dialog", (dialog) => void dialog.accept());
+  await deleteButton.click();
+  await expect(page.locator(".training-recovery-day")).toHaveCount(0);
+});
+
 test("Divers est explicite et le résumé apparaît avant validation", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".today-overview .primary-action").click();
@@ -246,7 +298,8 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
     .getByRole("button", { name: /Une récupération/ })
     .click();
   const recovery = page.getByRole("dialog", { name: /Quel type de récupération/ });
-  await expect(recovery.locator(".recovery-type-choice-grid > button")).toHaveCount(4);
+  await expect(recovery.locator(".recovery-type-choice-grid > button")).toHaveCount(5);
+  await expect(recovery.getByRole("button", { name: /Formation/ })).toBeVisible();
   await recovery.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".today-overview .primary-action").click();

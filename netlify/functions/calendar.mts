@@ -160,6 +160,7 @@ type RecoveryUse = {
   minutes: number;
   start?: string;
   end?: string;
+  kind?: "training" | "";
   updated_at: string;
 };
 type MecenatEntry = {
@@ -381,6 +382,7 @@ async function calendarHandler(request: Request): Promise<Response> {
           ),
           start: selection.start || "",
           end: selection.end || "",
+          kind: selection.type === "recovery_training" ? "training" : "",
           updated_at: new Date().toISOString(),
         } satisfies RecoveryUse,
       }));
@@ -1200,6 +1202,7 @@ async function calendarHandler(request: Request): Promise<Response> {
       minutes,
       start: typeof body.start === "string" ? body.start.slice(0, 5) : "",
       end: typeof body.end === "string" ? body.end.slice(0, 5) : "",
+      kind: body.kind === "training" ? "training" : "",
       updated_at: new Date().toISOString(),
     };
     await store.setJSON(scopedKey(`recovery-use/${id}`), entry);

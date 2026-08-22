@@ -22,7 +22,8 @@ export type SelectionType =
   | "recovery_day"
   | "recovery_half"
   | "recovery_hours"
-  | "recovery_holiday";
+  | "recovery_holiday"
+  | "recovery_training";
 /** Moitié de journée posée. Une demi-journée sans moment reste possible : les
  *  demandes venues du formulaire n'en portent pas. */
 export type HalfMoment = "morning" | "afternoon";
@@ -103,6 +104,7 @@ export const TYPE_LABELS: Record<SelectionType, string> = {
   recovery_half: "Récupération en demi-journée",
   recovery_hours: "Récupération en heures",
   recovery_holiday: "Récupération jour férié",
+  recovery_training: "Formation",
 };
 export const TYPE_COLORS: Record<SelectionType, string> = {
   annual: "#6cbdf0",
@@ -118,6 +120,7 @@ export const TYPE_COLORS: Record<SelectionType, string> = {
   recovery_half: "#7957c7",
   recovery_hours: "#c64f62",
   recovery_holiday: "#b87518",
+  recovery_training: "#2f68d1",
 };
 /** Maladie, garde d'enfant et jours exceptionnels n'ouvrent aucun droit :
     ils sont comptés, jamais décomptés du solde de congés. */
@@ -622,6 +625,7 @@ const PLURAL_TYPE_LABELS: Partial<Record<SelectionType, string>> = {
   recovery_half: "Récupérations en demi-journée",
   recovery_hours: "Récupérations en heures",
   recovery_holiday: "Récupérations jour férié",
+  recovery_training: "Formations en récupération",
 };
 
 /** Le libellé d'un type accordé au nombre d'éléments qu'il compte. */

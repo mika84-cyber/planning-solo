@@ -354,10 +354,11 @@ export function SolidarityHoursDialog({
 
 type RecoveryDraft = {
   date: string;
-  kind: "hours" | "half" | "day" | "holiday";
+  kind: "hours" | "half" | "day" | "holiday" | "training";
   hours: string;
   minutes: string;
   start: string;
+  trainingMinutes: 180 | 360;
 };
 
 export function RecoveryUseDialog({
@@ -365,6 +366,7 @@ export function RecoveryUseDialog({
   draft,
   setDraft,
   workDayMinutes,
+  trainingMinutes,
   remainingMinutes,
   saving,
   onClose,
@@ -374,6 +376,7 @@ export function RecoveryUseDialog({
   draft: RecoveryDraft;
   setDraft: Dispatch<SetStateAction<RecoveryDraft>>;
   workDayMinutes: number;
+  trainingMinutes: number;
   remainingMinutes: number;
   saving: boolean;
   onClose: () => void;
@@ -414,11 +417,24 @@ export function RecoveryUseDialog({
           <fieldset className="overtime-choice-field">
             <legend>Durée</legend>
             <div className="recovery-duration-choice">
-              {([
+              {draft.kind === "training" ? ([
+                [180, "3 h"],
+                [360, "6 h"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={draft.trainingMinutes === value ? "active" : ""}
+                  onClick={() => setDraft((current) => ({ ...current, trainingMinutes: value }))}
+                >
+                  {label}
+                </button>
+              )) : ([
                 ["hours", "Durée libre"],
                 ["half", `Demi-journée · ${minutesLabel(workDayMinutes / 2)}`],
                 ["day", `Journée · ${minutesLabel(workDayMinutes)}`],
                 ["holiday", `Jour férié · ${minutesLabel(workDayMinutes)}`],
+                ["training", `Formation · ${minutesLabel(trainingMinutes)}`],
               ] as const).map(([value, label]) => (
                 <button
                   key={value}
@@ -462,7 +478,7 @@ export function RecoveryUseDialog({
               </label>
             </div>
           ) : null}
-          <label>
+          {draft.kind !== "training" ? <label>
             <span>
               Heure de début <small>(facultatif)</small>
             </span>
@@ -474,7 +490,7 @@ export function RecoveryUseDialog({
                 setDraft((current) => ({ ...current, start: event.target.value }))
               }
             />
-          </label>
+          </label> : null}
         </div>
         <div className="modal-actions">
           <button className="secondary-button" type="button" onClick={onClose}>

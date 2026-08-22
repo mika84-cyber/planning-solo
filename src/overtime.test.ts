@@ -150,6 +150,12 @@ describe("solde de récupération", () => {
     expect(recoveryRequestMinutes("recovery_hours", "half", "22:30", "00:30")).toBe(120);
   });
 
+  it("décompte la durée de formation choisie entre 3 h et 6 h", () => {
+    expect(recoveryRequestMinutes("recovery_training", "full", "09:00", "12:00")).toBe(180);
+    expect(recoveryRequestMinutes("recovery_training", "half", "09:00", "15:00")).toBe(360);
+    expect(recoveryRequestMinutes("recovery_training", "full", "09:00", "13:00")).toBe(0);
+  });
+
   it.each([
     ["full", 480],
     ["three_quarters", 360],

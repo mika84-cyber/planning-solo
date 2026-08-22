@@ -2969,7 +2969,7 @@ async function applyPlanningImport(data){
     buckets[prefix].push(period);
   });
   (data.timed||[]).forEach(function(item){
-    var prefix=item.type==='half'?'half':(item.type==='recovery_half'?'rdemi':(item.type==='recovery_hours'?'rheur':(item.type==='recovery_holiday'?'rferi':'')));
+    var prefix=item.type==='half'?'half':(item.type==='recovery_half'?'rdemi':((item.type==='recovery_hours'||item.type==='recovery_training')?'rheur':(item.type==='recovery_holiday'?'rferi':'')));
     if(!prefix) return;
     buckets[prefix].push(item);
   });

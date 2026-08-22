@@ -21,7 +21,8 @@ export type NormalizedRecoverySelection = {
     | "recovery_day"
     | "recovery_half"
     | "recovery_hours"
-    | "recovery_holiday";
+    | "recovery_holiday"
+    | "recovery_training";
   start?: string;
   end?: string;
 };
@@ -105,7 +106,8 @@ export function normalizeLeaveRequest(body: Record<string, unknown>) {
         ? type === "half"
         : type === "recovery_half" ||
           type === "recovery_hours" ||
-          type === "recovery_holiday";
+          type === "recovery_holiday" ||
+          type === "recovery_training";
     if (!allowed) continue;
     if (!validDate(item.date))
       throw new LeaveRequestValidationError("Une date de la demande est invalide");

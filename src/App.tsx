@@ -106,6 +106,8 @@ import {
   monthlyRecoveryBalance,
   nextPayPeriod,
   recoveryRequestMinutes,
+  trainingRecoveryMinutes,
+  trainingRecoveryTimes,
   splitOvertimeRange,
   type OvertimeDisposition,
   type OvertimeEntry,
@@ -275,6 +277,7 @@ export default function Home() {
   const [overtimeDialogOpen, setOvertimeDialogOpen] = useState(false);
   const [solidarityDialogOpen, setSolidarityDialogOpen] = useState(false);
   const [recoveryDialogOpen, setRecoveryDialogOpen] = useState(false);
+  const [trainingRecoveryMode, setTrainingRecoveryMode] = useState<"manual" | "form">("manual");
   const [overtimeHistoryOpen, setOvertimeHistoryOpen] = useState(false);
   const [mecenatDialogOpen, setMecenatDialogOpen] = useState(false);
   const [mecenatHistoryOpen, setMecenatHistoryOpen] = useState(false);
@@ -292,10 +295,11 @@ export default function Home() {
   });
   const [recoveryDraft, setRecoveryDraft] = useState({
     date: dateKey(new Date()),
-    kind: "hours" as "hours" | "half" | "day" | "holiday",
+    kind: "hours" as "hours" | "half" | "day" | "holiday" | "training",
     hours: "2",
     minutes: "0",
     start: "",
+    trainingMinutes: 360 as 180 | 360,
   });
   const [mecenatDraft, setMecenatDraft] = useState({
     date: dateKey(new Date()),
@@ -651,7 +655,7 @@ export default function Home() {
                 ),
                 ...(completed.timed || [])
                   .filter((item: any) =>
-                    ["recovery_half", "recovery_hours", "recovery_holiday"].includes(item.type),
+                    ["recovery_half", "recovery_hours", "recovery_holiday", "recovery_training"].includes(item.type),
                   )
                   .map((item: any) => ({
                     date: item.date,
@@ -672,6 +676,7 @@ export default function Home() {
                   ),
                   start: item.start || undefined,
                   end: item.end || undefined,
+                  kind: item.type === "recovery_training" ? "training" : undefined,
                   updatedAt: new Date().toISOString(),
                 }),
               );
@@ -908,6 +913,7 @@ export default function Home() {
         inputMode: item.input_mode,
         start: item.start || undefined,
         end: item.end || undefined,
+        kind: item.kind === "training" ? "training" : undefined,
         updatedAt: item.updated_at || "",
       })),
     );
@@ -2549,13 +2555,43 @@ export default function Home() {
         ? workDayMinutes
         : recoveryDraft.kind === "half"
           ? workDayMinutes / 2
-          : custom;
+          : recoveryDraft.kind === "training"
+            ? recoveryDraft.trainingMinutes
+            : custom;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(recoveryDraft.date) || minutes <= 0) {
       notify("Vérifiez la date et la durée de récupération.");
       return;
     }
     if (minutes > recoveryBalance.remaining) {
       notify(`Votre solde disponible est de ${minutesLabel(recoveryBalance.remaining)}.`);
+      return;
+    }
+    if (recoveryDraft.kind === "training" && trainingRecoveryMode === "form") {
+      const times = {
+        start: "09:00",
+        end: minutes === 180 ? "12:00" : "15:00",
+      };
+      const payload = {
+        version: 1,
+        requestId: createClientId("request"),
+        requestKind: "recovery" as const,
+        group,
+        createdAt: new Date().toISOString(),
+        profile: formProfile,
+        periods: [],
+        timed: [{
+          date: recoveryDraft.date,
+          type: "recovery_training",
+          ...times,
+        }],
+      };
+      try {
+        localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
+        setRecoveryDialogOpen(false);
+        window.location.href = `/formulaire/index.html?planning=1${demoMode ? "&demo=1" : ""}`;
+      } catch {
+        notify("Le formulaire n’a pas pu être préparé. Réessayez.");
+      }
       return;
     }
     const submissionKey = `${recoveryDraft.date}|${minutes}`;
@@ -2574,6 +2610,7 @@ export default function Home() {
         date: recoveryDraft.date,
         minutes,
         start: recoveryDraft.start || undefined,
+        kind: recoveryDraft.kind === "training" ? "training" : undefined,
         updatedAt: new Date().toISOString(),
       };
       if (!demoMode) {
@@ -2583,6 +2620,7 @@ export default function Home() {
           date: localUse.date,
           minutes,
           start: localUse.start,
+          kind: localUse.kind,
         });
         localUse.updatedAt = result.recovery_use?.updated_at || localUse.updatedAt;
       }
@@ -3227,9 +3265,13 @@ export default function Home() {
     );
     setActiveType(initialType);
     setSickRequest(kind === "leave" && initialType === "sick");
+    const initialTimes =
+      initialType === "recovery_training"
+        ? trainingRecoveryTimes(workQuota)
+        : {};
     setSelections(
       initialDate && initialDateIsSelectable
-        ? { [initialDate]: { date: initialDate, type: initialType } }
+        ? { [initialDate]: { date: initialDate, type: initialType, ...initialTimes } }
         : {},
     );
     setWarningDate(
@@ -3253,6 +3295,14 @@ export default function Home() {
     setTimeDate(null);
   }
   function recordSelection(key: string) {
+    if (activeType === "recovery_training") {
+      const times = trainingRecoveryTimes(workQuota);
+      setSelections((current) => ({
+        ...current,
+        [key]: { date: key, type: activeType, ...times },
+      }));
+      return;
+    }
     if (
       activeType === "half" ||
       activeType === "recovery_half" ||
@@ -3985,7 +4035,11 @@ export default function Home() {
                 .length / 5,
             ),
             Math.ceil(
-              selectedList.filter((item) => item.type === "recovery_hours")
+              selectedList.filter(
+                (item) =>
+                  item.type === "recovery_hours" ||
+                  item.type === "recovery_training",
+              )
                 .length / 5,
             ),
             Math.ceil(
@@ -4028,7 +4082,8 @@ export default function Home() {
           item.type === "half" ||
           item.type === "recovery_half" ||
           item.type === "recovery_hours" ||
-          item.type === "recovery_holiday",
+          item.type === "recovery_holiday" ||
+          item.type === "recovery_training",
       ),
     };
     setSavingRequest(true);
@@ -4056,10 +4111,14 @@ export default function Home() {
     const cleanupSelected =
       calendarDeleteMode && calendarDeleteDates.includes(key);
     const today = sameDate(date, now);
-    const hourlyRecoveryMinutes = recoveryUses
-      .filter((item) => item.date === key)
+    const dayRecoveryEntries = recoveryUses.filter((item) => item.date === key);
+    const hourlyRecoveryMinutes = dayRecoveryEntries
       .reduce((total, item) => total + item.minutes, 0);
     const hasHourlyRecovery = hourlyRecoveryMinutes > 0;
+    const trainingMinutesOnDay = dayRecoveryEntries
+      .filter((item) => item.kind === "training")
+      .reduce((total, item) => total + item.minutes, 0);
+    const hasTrainingRecovery = trainingMinutesOnDay > 0;
     // La période elle-même, et pas seulement son existence : son type décide
     // de l'habillage de la case (récupération, demi-journée).
     const myPeriod = periods.find(
@@ -4109,7 +4168,9 @@ export default function Home() {
       selected ? TYPE_LABELS[selected.type] : "",
       leaveLabel,
       hasHourlyRecovery
-        ? `Récupération en heures (${minutesLabel(hourlyRecoveryMinutes)})`
+        ? hasTrainingRecovery
+          ? `Formation en récupération (${minutesLabel(trainingMinutesOnDay)})`
+          : `Récupération en heures (${minutesLabel(hourlyRecoveryMinutes)})`
         : "",
       visibleNote ? "Note enregistrée" : "",
     ]
@@ -4119,7 +4180,7 @@ export default function Home() {
       <button
         type="button"
         key={key}
-        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
+        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
         style={
           selected
             ? ({
@@ -4136,14 +4197,14 @@ export default function Home() {
         onClick={() => handleDay(date)}
         title={title}
         aria-current={today ? "date" : undefined}
-        aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}`}
+        aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}`}
       >
         <span className={info.holiday ? "holiday-date" : "date-number"}>
           {date.getDate()}
         </span>
         {hasHourlyRecovery && !compact ? (
-          <span className="hourly-recovery-label">
-            Récup. {minutesLabel(hourlyRecoveryMinutes)}
+          <span className={hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}>
+            {hasTrainingRecovery ? "REC" : `Récup. ${minutesLabel(hourlyRecoveryMinutes)}`}
           </span>
         ) : null}
         {visibleLeave &&
@@ -4957,12 +5018,19 @@ export default function Home() {
             ? "half"
             : pendingRecoveryType === "recovery_holiday"
               ? "holiday"
+              : pendingRecoveryType === "recovery_training"
+                ? "training"
               : "hours";
       setRecoveryDraft((current) => ({
         ...current,
         date: date || current.date,
         kind: manualKind,
+        trainingMinutes:
+          manualKind === "training"
+            ? trainingRecoveryMinutes(workQuota)
+            : current.trainingMinutes,
       }));
+      setTrainingRecoveryMode("manual");
       setRecoveryDialogOpen(true);
       return;
     }
@@ -6272,6 +6340,9 @@ export default function Home() {
   const dayStoredPeriods = dayDate
     ? periods.filter((period) => dayDate >= period.from && dayDate <= period.to)
     : [];
+  const dayRecoveryUses = dayDate
+    ? recoveryUses.filter((entry) => entry.date === dayDate)
+    : [];
 
   if (authStatus !== "ready") {
     return (
@@ -7004,9 +7075,11 @@ export default function Home() {
                     <article key={entry.id} className="recovery-use-history">
                       <span className="overtime-kind used" aria-hidden="true" />
                       <div>
-                        <strong>− {minutesLabel(entry.minutes)} · Récupération posée</strong>
+                        <strong>
+                          − {minutesLabel(entry.minutes)} · {entry.kind === "training" ? "Formation" : "Récupération posée"}
+                        </strong>
                         <span>{longDate(fromKey(entry.date))}</span>
-                        <small>Déduite du solde en heures</small>
+                        <small>{entry.kind === "training" ? "Formation déduite comme récupération en heures" : "Déduite du solde en heures"}</small>
                       </div>
                       <button type="button" onClick={() => void deleteRecoveryUse(entry)}>
                         Annuler
@@ -7859,7 +7932,7 @@ export default function Home() {
             <div className="request-option-groups">
               {([
                 ["Récupération à la journée", ["recovery_day", "recovery_half"]],
-                ["Autres récupérations", ["recovery_hours", "recovery_holiday"]],
+                ["Autres récupérations", ["recovery_hours", "recovery_holiday", "recovery_training"]],
               ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
                 <section className="request-option-group" key={label}>
                   <h3>{label}</h3>
@@ -8019,7 +8092,7 @@ export default function Home() {
                 }}
               >
                 <strong>Une récupération</strong>
-                <span>Retrouvez le formulaire complet : journée, demi-journée, heures ou jour férié.</span>
+                <span>Retrouvez le formulaire complet : journée, demi-journée, heures, jour férié ou formation.</span>
               </button>
               <button
                 type="button"
@@ -8081,6 +8154,7 @@ export default function Home() {
                 "recovery_half",
                 "recovery_hours",
                 "recovery_holiday",
+                "recovery_training",
               ] as SelectionType[]).map((type) => (
                 <button type="button" key={type} onClick={() => chooseRecoveryType(type)}>
                   <strong>{TYPE_LABELS[type]}</strong>
@@ -8124,6 +8198,18 @@ export default function Home() {
                 onClick={() => {
                   const kind = planningRequestMethod;
                   const date = planningRequestDate || undefined;
+                  if (kind === "recovery" && pendingRecoveryType === "recovery_training") {
+                    closePlanningRequestMethod();
+                    setTrainingRecoveryMode("form");
+                    setRecoveryDraft((current) => ({
+                      ...current,
+                      date: date || current.date,
+                      kind: "training",
+                      trainingMinutes: trainingRecoveryMinutes(workQuota),
+                    }));
+                    setRecoveryDialogOpen(true);
+                    return;
+                  }
                   closePlanningRequestMethod();
                   beginRequest(
                     kind,
@@ -8151,7 +8237,7 @@ export default function Home() {
                     ? "Ajoutez directement le congé au planning."
                     : planningRequestMethod === "other"
                       ? "Ajoutez directement une ou plusieurs dates Divers."
-                      : "Choisissez journée, demi-journée, heures ou jour férié."}
+                      : "Choisissez journée, demi-journée, heures, jour férié ou formation."}
                 </span>
               </button>
             </div>
@@ -8449,6 +8535,29 @@ export default function Home() {
                     ))}
                   </div>
                 )}
+                {dayRecoveryUses.length > 0 && (
+                  <div className="day-stored-periods day-recovery-details">
+                    <strong>Récupérations prises ce jour</strong>
+                    {dayRecoveryUses.map((entry) => (
+                      <article key={entry.id}>
+                        <i className="recovery" />
+                        <span>
+                          {entry.kind === "training" ? "Formation" : "Récupération"}
+                          <small>{minutesLabel(entry.minutes)} prises sur votre solde</small>
+                        </span>
+                        <div className="period-direct-actions recovery-direct-actions">
+                          <button
+                            className="period-delete-button"
+                            type="button"
+                            onClick={() => void deleteRecoveryUse(entry)}
+                          >
+                            Effacer la récupération
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </>
             )}
             <div className="note-field-heading">
@@ -8705,6 +8814,7 @@ export default function Home() {
         draft={recoveryDraft}
         setDraft={setRecoveryDraft}
         workDayMinutes={workDayMinutes}
+        trainingMinutes={trainingRecoveryMinutes(workQuota)}
         remainingMinutes={recoveryBalance.remaining}
         saving={savingOvertime}
         onClose={() => setRecoveryDialogOpen(false)}
