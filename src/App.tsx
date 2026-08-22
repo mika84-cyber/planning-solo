@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import {
   acceptInvite,
   getUser,
@@ -228,6 +228,9 @@ function manualAdjustmentsFromApi(value: unknown) {
   );
 }
 
+const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf"] as const;
+type MainSection = (typeof MAIN_SECTION_ORDER)[number];
+
 export default function Home() {
   useModalAccessibility();
   const connectionStatus = useConnectionStatus();
@@ -448,9 +451,8 @@ export default function Home() {
   const workedDaysRef = useRef<HTMLDivElement | null>(null);
   const [quickNoteMode, setQuickNoteMode] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
-  const [homeSection, setHomeSection] = useState<
-    "home" | "leave" | "pay" | "pdf"
-  >("home");
+  const [homeSection, setHomeSection] = useState<MainSection>("home");
+  const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const [mainMenuOpen, setMainMenuOpen] = useState(false);
   const [guidePromptOpen, setGuidePromptOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -6127,6 +6129,44 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function startSectionSwipe(event: TouchEvent<HTMLElement>) {
+    if (!narrowScreen || event.touches.length !== 1) return;
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest(
+        "input, textarea, select, [role='dialog'], .modal-backdrop, .main-menu-backdrop, .main-menu-drawer, .choice-picker-menu",
+      )
+    ) {
+      sectionSwipeStartRef.current = null;
+      return;
+    }
+    const touch = event.touches[0];
+    sectionSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function finishSectionSwipe(event: TouchEvent<HTMLElement>) {
+    const start = sectionSwipeStartRef.current;
+    sectionSwipeStartRef.current = null;
+    if (!narrowScreen || !start || event.changedTouches.length !== 1) return;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 70 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+
+    const currentIndex = MAIN_SECTION_ORDER.indexOf(homeSection);
+    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
+    const nextSection = MAIN_SECTION_ORDER[nextIndex];
+    if (!nextSection) return;
+
+    setHomeSection(nextSection);
+    if (nextSection === "pay") setPayScreen("overview");
+    setMainMenuOpen(false);
+    setAccountMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   const dayStoredPeriods = dayDate
     ? periods.filter((period) => dayDate >= period.from && dayDate <= period.to)
     : [];
@@ -6148,7 +6188,11 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
+    <main
+      className="app-shell"
+      onTouchStart={startSectionSwipe}
+      onTouchEnd={finishSectionSwipe}
+    >
       <header
         className={
           homeSection === "leave"
@@ -7892,9 +7936,6 @@ export default function Home() {
                 <strong>
                   <i className="other-choice-dot" aria-hidden="true" />
                   Divers
-                  <small className="other-choice-examples">
-                    (Grève, décharge syndicale, fermeture exceptionnelle)
-                  </small>
                 </strong>
                 <span>Visible dans le planning, sans effet sur la paie ni sur vos soldes.</span>
               </button>

@@ -30,6 +30,27 @@ async function openMainMenu(page: Page) {
   await expect(page.getByRole("complementary", { name: "Menu principal" })).toBeVisible();
 }
 
+async function swipeMainSection(page: Page, fromX: number, toX: number) {
+  const shell = page.locator(".app-shell");
+  const touch = (clientX: number) => ({
+    identifier: 1,
+    clientX,
+    clientY: 420,
+    pageX: clientX,
+    pageY: 420,
+    screenX: clientX,
+    screenY: 420,
+  });
+  await shell.dispatchEvent("touchstart", {
+    touches: [touch(fromX)],
+    changedTouches: [touch(fromX)],
+  });
+  await shell.dispatchEvent("touchend", {
+    touches: [],
+    changedTouches: [touch(toX)],
+  });
+}
+
 test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) => {
   await prepareDemo(page);
   const headerHeight = () => page.locator(".top-header").evaluate((node) => node.getBoundingClientRect().height);
@@ -52,7 +73,7 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
     menuLabels.findIndex((label) => label.includes("Mode d’emploi")),
   );
   await expect(menu).toHaveCSS("background-image", /menu-art\.jpg/);
-  await expect(guide).toHaveCSS("background-color", "rgba(255, 255, 255, 0.68)");
+  await expect(guide).toHaveCSS("background-color", "rgba(255, 255, 255, 0.86)");
 
   await guide.click();
   await expect(page.getByRole("heading", { name: "Bien démarrer avec Planning Solo" })).toBeVisible();
@@ -91,11 +112,16 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   const header = page.locator(".top-header");
   const switcher = page.getByLabel("Mode d’affichage");
   const update = page.getByRole("button", { name: "Vérifier les mises à jour" });
+  const account = page.getByRole("button", { name: "Compte" });
+  const menuButton = page.getByRole("button", { name: "Ouvrir le menu principal" });
 
   await expect(header).toBeVisible();
   await expect(header).toHaveCSS("background-image", /header-art\.jpg/);
   await expect(header).toHaveCSS("border-top-width", "2px");
   await expect(header).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.65)");
+  await expect(account).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
+  await expect(menuButton).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
+  await expect(update).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
   await expect(switcher).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.38)");
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
@@ -128,13 +154,27 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(page.getByRole("button", { name: "2025", exact: true })).toHaveCount(0);
 });
 
+test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "Le geste tactile est réservé au téléphone");
+  await prepareDemo(page);
+
+  await swipeMainSection(page, 340, 40);
+  await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
+  await swipeMainSection(page, 340, 40);
+  await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
+  await swipeMainSection(page, 340, 40);
+  await expect(page.locator(".top-header h1")).toHaveText("Plannings PDF");
+  await swipeMainSection(page, 40, 340);
+  await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
+});
+
 test("Divers est explicite et le résumé apparaît avant validation", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".today-overview .primary-action").click();
 
   const chooser = page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" });
   const other = chooser.getByRole("button", { name: /Divers/ });
-  await expect(other).toContainText("Grève, décharge syndicale, fermeture exceptionnelle");
+  await expect(other).not.toContainText("Grève, décharge syndicale, fermeture exceptionnelle");
   await expect(other.locator(".other-choice-dot")).toHaveCSS("background-color", "rgb(108, 189, 240)");
   await other.click();
 

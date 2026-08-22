@@ -197,7 +197,7 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".other-choice-dot");
     expect(styles).toContain("background: var(--leave)");
     expect(styles).toContain("--person-color: var(--leave)");
-    expect(app).toContain("Grève, décharge syndicale, fermeture exceptionnelle");
+    expect(app).not.toContain("(Grève, décharge syndicale, fermeture exceptionnelle)");
   });
 
   it("permet de revenir à l’application depuis le formulaire", () => {
@@ -357,7 +357,7 @@ describe("finitions d’interface", () => {
     expect(app.indexOf('className="guide-menu-entry"')).toBeLessThan(app.indexOf("Sauvegarde et restauration"));
     expect(styles).toContain(".main-menu-drawer nav > button.guide-menu-entry");
     expect(styles).toContain('url("/menu-art.jpg")');
-    expect(styles).toContain("background: rgba(255, 255, 255, 0.68)");
+    expect(styles).toContain("background: rgba(255, 255, 255, 0.86)");
     expect(app).toContain("header-command-area");
     expect(app).toContain("header-update-button");
     expect(styles).toContain(".header-update-button");
@@ -390,13 +390,27 @@ describe("finitions d’interface", () => {
   });
 
   it("ne conserve que les fonds illustrés de l’en-tête et du menu", () => {
-    expect(app).toContain('<main className="app-shell">');
+    expect(app).toContain('className="app-shell"');
     expect(styles).toContain('url("/header-art.jpg")');
     expect(styles).toContain('url("/menu-art.jpg")');
     expect(styles).not.toContain("/home-art.jpg");
     expect(styles).not.toContain("/leave-art.jpg");
     expect(styles).not.toContain("/pay-art.jpg");
     expect(styles).not.toContain("/pdf-art.jpg");
+  });
+
+  it("permet de balayer les quatre rubriques sur téléphone", () => {
+    expect(app).toContain('const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf"] as const');
+    expect(app).toContain("onTouchStart={startSectionSwipe}");
+    expect(app).toContain("onTouchEnd={finishSectionSwipe}");
+    expect(app).toContain("Math.abs(deltaX) < 70");
+  });
+
+  it("renforce la lisibilité du menu et les contours de l’en-tête", () => {
+    expect(styles).toContain(".main-menu-copy strong { color: #182b42; }");
+    expect(styles).toContain(".main-menu-copy small { color: #3f5167; font-weight: 750; }");
+    expect(styles).toContain(".top-header .account-button,");
+    expect(styles).toContain("border: 1.5px solid rgba(0, 0, 0, 0.62)");
   });
 
   it("centre l’image de chargement sur téléphone", () => {
