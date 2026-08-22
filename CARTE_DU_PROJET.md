@@ -17,6 +17,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   notes ».
 - `src/LeaveBalancesSection.tsx` : cartes des soldes, choix de l'année et accès
   aux reprises manuelles.
+- `src/CetSection.tsx` : configuration, simulation, opérations et historique du
+  compte épargne-temps.
+- `src/CetFormDialog.tsx` : saisie guidée des formulaires officiels d’ouverture,
+  d’alimentation et d’indemnisation du CET.
 - `src/PayEstimateDetails.tsx` : détail de la paie du mois, navigation,
   heures supplémentaires et mécénats.
 - `src/WorkTimeDialogs.tsx` : saisie des heures supplémentaires, récupérations,
@@ -43,6 +47,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/payEstimate.ts` : disponibilité de l'estimation de paie.
 - `src/payslip.ts` / `src/payslipReview.ts` : lecture et contrôle du bulletin.
 - `src/leaveRequest.ts` : préparation des demandes de congés.
+- `src/cet.ts` : barèmes Centre Pompidou, plafonds, éligibilité et calculs CET.
+- `src/cetFormsPdf.ts` : génération différée des demandes CET à vérifier, signer et envoyer à la RH.
+- `public/cet/` : fonds issus des formulaires CET officiels fournis, conservés
+  à l’identique pour les PDF remplis par l’application.
 
 ## Données et serveur
 
@@ -61,6 +69,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 ## Tests à choisir selon la demande
 
 - Planning et groupes : `src/planningLogic.test.ts`.
+- CET : `src/cet.test.ts` et `src/CetSection.test.tsx`.
+- Formulaires CET : `src/cetFormsPdf.test.ts`.
 - Paie : `src/payEstimate.test.ts`, `src/payslip.test.ts`,
   `src/payslipReview.test.ts`.
 - Heures : `src/overtime.test.ts`.

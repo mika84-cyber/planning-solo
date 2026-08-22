@@ -146,9 +146,9 @@ describe("finitions d’interface", () => {
     expect(app).toContain("avec leurs horaires de début et de fin");
   });
 
-  it("ajoute Divers sans impact et permet les suppressions multiples", () => {
-    expect(app).toContain("Visible dans le planning, sans effet sur la paie ni sur vos soldes");
-    expect(app).toContain('period.leaveType === "recovery" || period.leaveType === "other"');
+  it("compte Divers comme jour non travaillé et permet les suppressions multiples", () => {
+    expect(app).toContain("Visible dans le planning et compté dans les jours non travaillés");
+    expect(app).toContain('period.leaveType === "recovery"');
     expect(calendarCleanup).toContain("Effacer plusieurs dates ou notes");
     expect(app).toContain('className="holiday-pay-amount"');
   });
@@ -202,11 +202,10 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".app-update-button");
   });
 
-  it("affiche une pastille bleue pour Divers dans le choix des absences", () => {
-    expect(app).toContain('className="other-choice-dot"');
-    expect(styles).toContain(".other-choice-dot");
-    expect(styles).toContain("background: var(--leave)");
-    expect(styles).toContain("--person-color: var(--leave)");
+  it("affiche Divers en rose sans pastille dans le choix des absences", () => {
+    expect(app).not.toContain('className="other-choice-dot"');
+    expect(styles).toContain("background: #fff1f5 !important");
+    expect(styles).toContain("--person-color: #e58aa5");
     expect(app).not.toContain("(Grève, décharge syndicale, fermeture exceptionnelle)");
   });
 
@@ -243,11 +242,12 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("max-height: min(58dvh, 420px)");
   });
 
-  it("affiche Divers en bleu avec une punaise rouge", () => {
+  it("affiche Divers en rose avec une punaise rouge", () => {
     expect(app).toContain('personalDay ? " personal-day" : ""');
     expect(app).toContain('className={`other-pin${compact ? " compact" : ""}`}');
     expect(styles).toContain(".leave-day.leave-other,\n.day.personal-day,");
     expect(styles).toContain("color: #d51f3b");
+    expect(styles).toContain("background: #f4b8c8 !important");
   });
 
   it("compacte le montant des fériés choisis et espace la navigation de paie", () => {
@@ -265,13 +265,27 @@ describe("finitions d’interface", () => {
 
   it("propose formulaire ou saisie manuelle pour congé et récupération depuis le planning", () => {
     expect(app).toContain('openPlanningRequestMethod("leave", dayDate)');
-    expect(app).toContain('openRecoveryTypeChooser("planning", dayDate)');
+    expect(app).toContain('openPlanningRequestMethod("recovery", dayDate)');
     expect(app).toContain('"recovery_day",');
     expect(app).toContain('"recovery_half",');
     expect(app).toContain('"recovery_hours",');
     expect(app).toContain('"recovery_holiday",');
+    expect(app).toContain('"recovery_training",');
     expect(app).toContain('planningRequestMethod === "leave"');
-    expect(workTimeDialogs).toContain('["holiday", `Jour férié');
+    expect(workTimeDialogs).toContain('day: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [null, "Durée libre"]]');
+    expect(workTimeDialogs).toContain('half: [[240, "4 h"], [120, "2 h"], [null, "Durée libre"]]');
+    expect(workTimeDialogs).toContain('hours: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [120, "2 h"]]');
+    expect(workTimeDialogs).toContain('holiday: [[480, "8 h"], [240, "4 h"], [null, "Durée libre"]]');
+    expect(workTimeDialogs).toContain("getDayInfo(chosenDate, group)");
+    expect(workTimeDialogs).toContain("Sélectionner dans le calendrier");
+    expect(workTimeDialogs).toContain("Ajouter une récupération");
+    expect(workTimeDialogs).toContain("Récupérations courantes");
+    expect(app).toContain("recoveryDatePicking");
+    expect(app).toContain('? "CA"');
+    expect(app).toContain('? "RTT"');
+    expect(app).toContain('? "FRA"');
+    expect(app).toContain('className={`recovery-calendar-label');
+    expect(app).toContain(">\n            REC\n");
   });
 
   it("uniformise les libellés de compensation et les sélecteurs mobiles", () => {

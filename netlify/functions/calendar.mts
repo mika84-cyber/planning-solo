@@ -27,6 +27,7 @@ type LeaveType =
   | "half"
   | "recovery"
   | "sick"
+  | "cet"
   | "other"
   | "childcare"
   | "exceptional"
@@ -86,6 +87,34 @@ type ManualYearAdjustments = {
   sunday_leave_oct_nov: number;
   sunday_leave_dec: number;
 };
+type CetStoredAccount = {
+  enabled: boolean;
+  employer: "ministry" | "public-establishment";
+  employer_name: string;
+  category: "A" | "B" | "C";
+  work_rule: string;
+  has_one_year_service: boolean;
+  is_trainee: boolean;
+  opened_on: string;
+  initial_balance: number;
+  legacy_cap_70: boolean;
+  operations: Array<{
+    id: string;
+    date: string;
+    kind: "deposit" | "leave" | "indemnity" | "rafp" | "adjustment";
+    days: number;
+    source?: "annual" | "rtt" | "fraction";
+    note?: string;
+  }>;
+};
+
+const CET_WORK_RULES = new Set([
+  "administrative", "night_security", "day_security", "fire_12h", "fire_24h",
+  "visitor_service", "gtb_day", "gtb_night", "nurse", "audiovisual_operations",
+  "visitor_service_assistant", "cashier", "pass_office", "room_management",
+  "president_driver", "part_time_90", "part_time_80", "part_time_70",
+  "part_time_60", "part_time_50",
+]);
 type FormProfile = {
   full_name: string;
   group: string;
@@ -140,8 +169,92 @@ type FormProfile = {
    *  ci-dessus restent le repli des profils créés avant cette évolution. */
   pay_profiles?: Record<string, PayProfileValues>;
   manual_adjustments?: Record<string, ManualYearAdjustments>;
+  cet_account?: CetStoredAccount;
   updated_at: string;
 };
+
+function sanitizeCetAccount(value: unknown): CetStoredAccount | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (
+    raw.employer !== "ministry" &&
+    raw.employer !== "public-establishment"
+  )
+    return null;
+  if (raw.category !== "A" && raw.category !== "B" && raw.category !== "C")
+    return null;
+  if (!CET_WORK_RULES.has(String(raw.workRule))) return null;
+  const initialBalance = Number(raw.initialBalance);
+  if (
+    !Number.isInteger(initialBalance) ||
+    initialBalance < 0 ||
+    initialBalance > 200
+  )
+    return null;
+  const openedOn = typeof raw.openedOn === "string" ? raw.openedOn : "";
+  if (openedOn && !isValidDateKey(openedOn)) return null;
+  if (!Array.isArray(raw.operations) || raw.operations.length > 500) return null;
+  const ids = new Set<string>();
+  const operations: CetStoredAccount["operations"] = [];
+  for (const candidate of raw.operations) {
+    if (!candidate || typeof candidate !== "object") return null;
+    const operation = candidate as Record<string, unknown>;
+    const id = typeof operation.id === "string" ? operation.id.slice(0, 100) : "";
+    const date = typeof operation.date === "string" ? operation.date : "";
+    const kind = operation.kind;
+    const days = Number(operation.days);
+    if (
+      !id ||
+      ids.has(id) ||
+      !isValidDateKey(date) ||
+      (kind !== "deposit" &&
+        kind !== "leave" &&
+        kind !== "indemnity" &&
+        kind !== "rafp" &&
+        kind !== "adjustment") ||
+      !Number.isInteger(days) ||
+      days === 0 ||
+      Math.abs(days) > 200 ||
+      (kind !== "adjustment" && days < 0)
+    )
+      return null;
+    const source =
+      operation.source === "annual" ||
+      operation.source === "rtt" ||
+      operation.source === "fraction"
+        ? operation.source
+        : undefined;
+    if (kind === "deposit" && !source) return null;
+    ids.add(id);
+    operations.push({
+      id,
+      date,
+      kind,
+      days,
+      source: kind === "deposit" ? source : undefined,
+      note:
+        typeof operation.note === "string"
+          ? operation.note.trim().slice(0, 120) || undefined
+          : undefined,
+    });
+  }
+  return {
+    enabled: raw.enabled !== false,
+    employer: raw.employer,
+    employer_name:
+      typeof raw.employerName === "string"
+        ? raw.employerName.trim().slice(0, 120)
+        : "",
+    category: raw.category,
+    work_rule: String(raw.workRule),
+    has_one_year_service: raw.hasOneYearService === true,
+    is_trainee: raw.isTrainee === true,
+    opened_on: openedOn,
+    initial_balance: initialBalance,
+    legacy_cap_70: raw.legacyCap70 === true,
+    operations,
+  };
+}
 type OvertimeEntry = {
   id: string;
   date: string;
@@ -900,8 +1013,14 @@ async function calendarHandler(request: Request): Promise<Response> {
             : undefined,
       pay_profiles: previousProfile?.pay_profiles,
       manual_adjustments: previousProfile?.manual_adjustments,
+      cet_account: previousProfile?.cet_account,
       updated_at: new Date().toISOString(),
     };
+    if (body.cetAccount !== undefined) {
+      const cetAccount = sanitizeCetAccount(body.cetAccount);
+      if (!cetAccount) return json({ error: "Compte épargne-temps invalide" }, 400);
+      formProfile.cet_account = cetAccount;
+    }
     const manualYear = Number(body.manualYear);
     if (body.manualYear !== undefined) {
       if (!Number.isInteger(manualYear) || manualYear < 2000 || manualYear > 2100)
@@ -1224,6 +1343,7 @@ async function calendarHandler(request: Request): Promise<Response> {
       body.leaveType === "half" ||
       body.leaveType === "recovery" ||
       body.leaveType === "sick" ||
+      body.leaveType === "cet" ||
       body.leaveType === "other" ||
       body.leaveType === "childcare" ||
       body.leaveType === "exceptional"

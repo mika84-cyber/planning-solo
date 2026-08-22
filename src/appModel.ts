@@ -11,6 +11,7 @@ import {
   type SelectionType,
 } from "./planningLogic";
 import type { WorkQuota } from "./overtime";
+import type { CetAccount } from "./cet";
 
 export type ViewMode = "month" | "year";
 export type RequestKind = "leave" | "recovery" | "other";
@@ -91,6 +92,7 @@ export type FormProfile = {
   sundayCarryoverFromMonth?: number;
   /** Reprise sans dates des absences antérieures à l'utilisation de l'app. */
   manualAdjustments?: Record<string, ManualYearAdjustments>;
+  cetAccount?: CetAccount;
 };
 export type SelectedDay = {
   date: string;
@@ -198,7 +200,7 @@ export function workedDayCount(
       const period = periods.find(
         (item) => key >= item.from && key <= item.to,
       );
-      if (period && period.leaveType !== "other")
+      if (period)
         onLeave += period.leaveType === "half" ? 0.5 : 1;
       else if (entries[key]?.leave) onLeave += 1;
       else {

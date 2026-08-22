@@ -22,6 +22,7 @@ describe("formulaire de demande", () => {
     expect(html).toContain('id="sigModal"');
     expect(html).toContain('id="btnPdf"');
     expect(html).toContain("demandes:v4:");
+    expect(html).toContain("item.type==='recovery_training')?'rheur'");
   });
 
   it("confirme la demande dans le planning seulement après la finalisation", () => {

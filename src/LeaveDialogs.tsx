@@ -214,7 +214,7 @@ export function RangeLeaveDialog({
           <div className="request-option-groups manual-leave-options">
             {([
               ["Congés courants", ["annual", "half", "rtt"]],
-              ["Autres congés", ["fraction", "childcare", "exceptional"]],
+              ["Autres congés", ["fraction", "childcare", "exceptional", "cet"]],
             ] as Array<[string, LeaveType[]]>).map(([label, types]) => (
               <section className="request-option-group" key={label}>
                 <h3>{label}</h3>

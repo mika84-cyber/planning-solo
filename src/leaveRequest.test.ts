@@ -36,6 +36,16 @@ describe("validation atomique d'une demande de congé", () => {
     ]);
   });
 
+  it("conserve un congé CET pour le décompter du compte épargne-temps", () => {
+    const result = normalizeLeaveRequest({
+      requestId: "request-2026-cet1",
+      requestKind: "leave",
+      group: 1,
+      periods: [{ type: "cet", from: "2026-11-20", to: "2026-11-21" }],
+    });
+    expect(result.periods[0]).toMatchObject({ leaveType: "cet", from: "2026-11-20" });
+  });
+
   it("conserve toutes les variantes du formulaire complet de récupération", () => {
     const result = normalizeLeaveRequest({
       requestId: "request-2026-0004",

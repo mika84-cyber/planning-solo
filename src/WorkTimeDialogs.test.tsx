@@ -57,39 +57,76 @@ describe("fenêtres de temps de travail", () => {
     const recovery = renderToStaticMarkup(
       <RecoveryUseDialog
         open
-        draft={{ date: "2026-08-21", kind: "hours", hours: "2", minutes: "0", start: "", trainingMinutes: 360 }}
+        draft={{ date: "2026-08-21", kind: "hours", hours: "2", minutes: "0", start: "", durationMinutes: 480, trainingMinutes: 360 }}
         setDraft={vi.fn()}
-        workDayMinutes={480}
-        trainingMinutes={360}
+        group={2}
+        showCalendar
         remainingMinutes={600}
         saving={false}
         onClose={vi.fn()}
+        onSelectInCalendar={vi.fn()}
         onSave={vi.fn()}
       />,
     );
     const training = renderToStaticMarkup(
       <RecoveryUseDialog
         open
-        draft={{ date: "2026-08-21", kind: "training", hours: "2", minutes: "0", start: "", trainingMinutes: 180 }}
+        draft={{ date: "2026-08-21", kind: "training", hours: "2", minutes: "0", start: "", durationMinutes: 480, trainingMinutes: 180 }}
         setDraft={vi.fn()}
-        workDayMinutes={480}
-        trainingMinutes={360}
+        group={2}
+        showCalendar={false}
         remainingMinutes={600}
         saving={false}
         onClose={vi.fn()}
+        onSelectInCalendar={vi.fn()}
         onSave={vi.fn()}
       />,
     );
+    const recoveryFor = (kind: "day" | "half" | "holiday") => renderToStaticMarkup(
+      <RecoveryUseDialog
+        open
+        draft={{ date: "2026-08-21", kind, hours: "2", minutes: "0", start: "", durationMinutes: kind === "half" ? 240 : 480, trainingMinutes: 360 }}
+        setDraft={vi.fn()}
+        group={2}
+        showCalendar
+        remainingMinutes={600}
+        saving={false}
+        onClose={vi.fn()}
+        onSelectInCalendar={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+    const day = recoveryFor("day");
+    const half = recoveryFor("half");
+    const holiday = recoveryFor("holiday");
 
     expect(overtime).toContain("Déclarer des heures supplémentaires");
     expect(overtime).toContain("À récupérer");
     expect(mecenat).toContain("Déclarer un mécénat");
     expect(mecenat).toContain("Total brut");
     expect(solidarity).toContain("Ajouter des heures manuellement");
-    expect(recovery).toContain("Utiliser mes heures de récupération");
-    expect(recovery).toContain("Formation · 6 h");
+    expect(recovery).toContain("Ajouter une récupération");
+    expect(recovery).toContain("Récupérations courantes");
+    expect(recovery).not.toContain("Formation · 6 h");
+    expect(recovery).toContain(">8 h</button>");
+    expect(recovery).toContain(">6 h</button>");
+    expect(recovery).toContain(">4 h</button>");
+    expect(recovery).toContain(">2 h</button>");
+    expect(recovery).toContain("Sélectionner dans le calendrier");
+    expect(recovery).not.toContain("Planning du groupe 2");
     expect(training).toContain(">3 h</button>");
     expect(training).toContain(">6 h</button>");
     expect(training).not.toContain("Durée libre");
+    expect(training).not.toContain("Choisir la date sur le planning");
+    expect(training).toContain("Date déjà sélectionnée");
+    expect(day.match(/>(8 h|6 h|4 h|Durée libre)<\/button>/g)).toEqual([
+      ">8 h</button>", ">6 h</button>", ">4 h</button>", ">Durée libre</button>",
+    ]);
+    expect(half.match(/>(4 h|2 h|Durée libre)<\/button>/g)).toEqual([
+      ">4 h</button>", ">2 h</button>", ">Durée libre</button>",
+    ]);
+    expect(holiday.match(/>(8 h|4 h|Durée libre)<\/button>/g)).toEqual([
+      ">8 h</button>", ">4 h</button>", ">Durée libre</button>",
+    ]);
   });
 });

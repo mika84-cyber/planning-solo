@@ -8,8 +8,10 @@ export function createClientId(
       ? globalThis.crypto.randomUUID.bind(globalThis.crypto)
       : null,
 ) {
-  // Le préfixe fait partie du contrat de l’identifiant : le serveur s’en sert
-  // notamment pour reconnaître un solde d’heures ajouté manuellement.
+  // Le préfixe fait partie du contrat de l’identifiant : certaines entrées
+  // (notamment les soldes d’heures ajoutés manuellement) sont reconnues par
+  // le serveur grâce à lui. Il doit donc être conservé aussi en HTTPS, quand
+  // randomUUID est disponible.
   if (uuidFactory) return `${prefix}-${uuidFactory()}`;
   return `${prefix}-${Date.now().toString(36)}-${Math.random()
     .toString(36)

@@ -113,7 +113,13 @@ export function LeaveBalancesSection({
                 {countedOnly[type].used.toLocaleString("fr-FR")}
                 <i>pris</i>
               </strong>
-              <small>sans effet sur les congés</small>
+              <small>
+                {type === "cet"
+                  ? "déduit du solde CET"
+                  : type === "other"
+                    ? "compté dans les jours non travaillés"
+                    : "sans effet sur les congés"}
+              </small>
               <em>Voir le détail</em>
             </button>
           ))}

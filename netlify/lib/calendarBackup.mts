@@ -10,6 +10,7 @@ const LEAVE_TYPES = new Set([
   "half",
   "recovery",
   "sick",
+  "cet",
   "other",
   "childcare",
   "exceptional",
@@ -195,6 +196,7 @@ export function sanitizeCalendarBackup(value: unknown) {
       minutes,
       start: typeof item.start === "string" ? item.start : "",
       end: typeof item.end === "string" ? item.end : "",
+      kind: item.kind === "training" ? "training" : "",
       updated_at: typeof item.updated_at === "string" ? item.updated_at : new Date().toISOString(),
     });
   }
@@ -292,6 +294,12 @@ export function sanitizeCalendarBackup(value: unknown) {
           sunday_leave_dec: sundayCount(values.sunday_leave_dec),
         };
       }
+    const cetAccount =
+      raw.cet_account === undefined
+        ? undefined
+        : sanitizeCetStoredAccount(raw.cet_account);
+    if (raw.cet_account !== undefined && !cetAccount)
+      return { error: "Compte épargne-temps invalide dans la sauvegarde" as const };
     formProfile = {
       full_name: typeof raw.full_name === "string" ? raw.full_name.trim().slice(0, 120) : "",
       group: ["1", "2", "3"].includes(String(raw.group)) ? String(raw.group) : "",
@@ -304,6 +312,7 @@ export function sanitizeCalendarBackup(value: unknown) {
       ...sanitizePayValues(raw),
       pay_profiles: payProfiles,
       manual_adjustments: manualAdjustments,
+      cet_account: cetAccount,
       sunday_carryover: optionalNumber(raw.sunday_carryover, 100),
       sunday_carryover_year: optionalNumber(raw.sunday_carryover_year, 2100),
       sunday_carryover_month: optionalNumber(raw.sunday_carryover_month, 11),
@@ -327,5 +336,71 @@ export function sanitizeCalendarBackup(value: unknown) {
       mecenat_entries: mecenatEntries,
       form_profile: formProfile,
     },
+  };
+}
+
+function sanitizeCetStoredAccount(value: unknown) {
+  const raw = record(value);
+  if (!raw) return null;
+  const workRules = new Set([
+    "administrative", "night_security", "day_security", "fire_12h", "fire_24h",
+    "visitor_service", "gtb_day", "gtb_night", "nurse", "audiovisual_operations",
+    "visitor_service_assistant", "cashier", "pass_office", "room_management",
+    "president_driver", "part_time_90", "part_time_80", "part_time_70",
+    "part_time_60", "part_time_50",
+  ]);
+  if (
+    (raw.employer !== "ministry" && raw.employer !== "public-establishment") ||
+    (raw.category !== "A" && raw.category !== "B" && raw.category !== "C") ||
+    !Number.isInteger(raw.initial_balance) ||
+    Number(raw.initial_balance) < 0 ||
+    Number(raw.initial_balance) > 200 ||
+    !Array.isArray(raw.operations) ||
+    raw.operations.length > 500
+  )
+    return null;
+  const openedOn = typeof raw.opened_on === "string" ? raw.opened_on : "";
+  if (openedOn && !isValidDateKey(openedOn)) return null;
+  const ids = new Set<string>();
+  const operations = [];
+  for (const candidate of raw.operations) {
+    const operation = record(candidate);
+    if (!operation) return null;
+    const id = typeof operation.id === "string" ? operation.id.slice(0, 100) : "";
+    const kind = operation.kind;
+    const days = Number(operation.days);
+    const source =
+      operation.source === "annual" || operation.source === "rtt" || operation.source === "fraction"
+        ? operation.source
+        : undefined;
+    if (
+      !id || ids.has(id) || !isValidDateKey(operation.date) ||
+      (kind !== "deposit" && kind !== "leave" && kind !== "indemnity" && kind !== "rafp" && kind !== "adjustment") ||
+      !Number.isInteger(days) || days === 0 || Math.abs(days) > 200 ||
+      (kind !== "adjustment" && days < 0) || (kind === "deposit" && !source)
+    )
+      return null;
+    ids.add(id);
+    operations.push({
+      id,
+      date: operation.date,
+      kind,
+      days,
+      source: kind === "deposit" ? source : undefined,
+      note: typeof operation.note === "string" ? operation.note.trim().slice(0, 120) || undefined : undefined,
+    });
+  }
+  return {
+    enabled: raw.enabled !== false,
+    employer: raw.employer,
+    employer_name: typeof raw.employer_name === "string" ? raw.employer_name.trim().slice(0, 120) : "",
+    category: raw.category,
+    work_rule: workRules.has(String(raw.work_rule)) ? String(raw.work_rule) : "visitor_service",
+    has_one_year_service: raw.has_one_year_service === true,
+    is_trainee: raw.is_trainee === true,
+    opened_on: openedOn,
+    initial_balance: Number(raw.initial_balance),
+    legacy_cap_70: raw.legacy_cap_70 === true,
+    operations,
   };
 }

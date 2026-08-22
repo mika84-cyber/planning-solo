@@ -7,6 +7,7 @@ export type NormalizedRequestPeriod = {
     | "rtt"
     | "fraction"
     | "half"
+    | "cet"
     | "recovery"
     | "childcare"
     | "exceptional";
@@ -68,6 +69,7 @@ export function normalizeLeaveRequest(body: Record<string, unknown>) {
   const recoverySelections: Omit<NormalizedRecoverySelection, "id">[] = [];
   const typeMap: Record<string, NormalizedRequestPeriod["leaveType"]> = {
     annual: "annual",
+    cet: "cet",
     rtt: "rtt",
     fraction: "fraction",
     childcare: "childcare",

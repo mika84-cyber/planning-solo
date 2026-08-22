@@ -7,6 +7,7 @@ const BULK_LEAVE_TYPES = new Set([
   "half",
   "recovery",
   "sick",
+  "cet",
   "other",
   "childcare",
   "exceptional",
@@ -23,6 +24,7 @@ export type NormalizedBulkPeriod = {
     | "half"
     | "recovery"
     | "sick"
+    | "cet"
     | "other"
     | "childcare"
     | "exceptional";

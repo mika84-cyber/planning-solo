@@ -71,6 +71,28 @@ describe("restauration d'une sauvegarde", () => {
             sunday_leave_dec: 1,
           },
         },
+        cet_account: {
+          enabled: true,
+          employer: "public-establishment",
+          employer_name: "Centre Pompidou",
+          category: "B",
+          work_rule: "visitor_service",
+          has_one_year_service: true,
+          is_trainee: false,
+          opened_on: "2025-01-02",
+          initial_balance: 12,
+          legacy_cap_70: false,
+          operations: [
+            {
+              id: "cet-operation-1234",
+              date: "2026-12-01",
+              kind: "deposit",
+              days: 3,
+              source: "rtt",
+              note: " Relevé RH ",
+            },
+          ],
+        },
       },
     });
     expect(result).toHaveProperty("backup");
@@ -96,6 +118,15 @@ describe("restauration d'une sauvegarde", () => {
         annual_used: 4.5,
         sunday_leave_jan_jun: 2,
         sunday_leave_dec: 1,
+      });
+      expect(result.backup!.form_profile?.cet_account).toMatchObject({
+        employer_name: "Centre Pompidou",
+        category: "B",
+        work_rule: "visitor_service",
+        has_one_year_service: true,
+        is_trainee: false,
+        initial_balance: 12,
+        operations: [{ kind: "deposit", source: "rtt", note: "Relevé RH" }],
       });
     }
   });
@@ -153,6 +184,29 @@ describe("restauration d'une sauvegarde", () => {
           { date: "2026-02-30" },
         ],
         periods: [],
+      }),
+    ).toHaveProperty("error");
+  });
+
+  it("refuse un historique CET incohérent", () => {
+    expect(
+      sanitizeCalendarBackup({
+        version: 1,
+        entries: [],
+        periods: [],
+        form_profile: {
+          full_name: "",
+          group: "2",
+          signature: "",
+          cet_account: {
+            employer: "public-establishment",
+            category: "A",
+            initial_balance: 5,
+            operations: [
+              { id: "cet-operation-1234", date: "2026-13-01", kind: "leave", days: 1 },
+            ],
+          },
+        },
       }),
     ).toHaveProperty("error");
   });

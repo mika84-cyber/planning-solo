@@ -208,30 +208,34 @@ describe("solde de récupération", () => {
     expect(withHalfDay.worked).toBeCloseTo(baseline.worked - 0.5);
   });
 
-  it("garde Divers hors du décompte des jours travaillés", () => {
+  it.each(["other", "cet"] as const)(
+    "retire %s du décompte des jours travaillés",
+    (leaveType) => {
     const workDate = Array.from({ length: 31 }, (_, index) =>
       new Date(2026, 0, index + 1),
     ).find((date) => getDayInfo(date, 2).kind === "work")!;
     const baseline = workedDayCount(2026, 0, 0, 2, [], {});
-    const withOther = workedDayCount(
+    const withAbsence = workedDayCount(
       2026,
       0,
       0,
       2,
       [
         {
-          id: "period-other",
+          id: `period-${leaveType}`,
           from: dateKey(workDate),
           to: dateKey(workDate),
-          leaveType: "other",
+          leaveType,
           group: 2,
           updatedAt: "x",
         },
       ],
       {},
     );
-    expect(withOther).toEqual(baseline);
-  });
+    expect(withAbsence.onLeave).toBe(baseline.onLeave + 1);
+    expect(withAbsence.worked).toBe(baseline.worked - 1);
+    },
+  );
 
   it("affecte les utilisations aux gains les plus anciens", () => {
     const older = entry("older-gain", 120, "recovery");

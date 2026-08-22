@@ -168,10 +168,94 @@ test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, t
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
 });
 
+test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "Ce contrôle nécessite une interface tactile");
+  await page.setViewportSize({ width: 900, height: 1000 });
+  await prepareDemo(page);
+
+  const headerBox = await page.locator(".top-header").boundingBox();
+  expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
+  await swipeMainSection(page, 760, 120);
+  await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
+});
+
 test("un lien de démonstration ne propose jamais l’installation", async ({ page }) => {
   await prepareDemo(page);
   await expect(page.locator('link[rel="manifest"]')).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Installer l’application" })).toHaveCount(0);
+});
+
+test("le CET se configure et conserve un historique cohérent", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+
+  await page.getByRole("button", { name: /Mon CET/ }).click();
+  await expect(page.locator(".cet-heading strong")).toHaveCSS("font-size", "18.4px");
+  await page.getByRole("button", { name: "Remplir la demande d’ouverture" }).click();
+  const openingForm = page.getByRole("dialog", { name: "Ouvrir mon compte épargne-temps" });
+  await openingForm.getByLabel("Nom", { exact: true }).fill("Martin");
+  await openingForm.getByLabel("Prénom", { exact: true }).fill("Agnès");
+  await expect(openingForm.getByLabel(/Direction, service/)).toHaveValue(
+    "Direction des publics - Service de l'accueil des publics",
+  );
+  await openingForm.getByLabel("Groupe / catégorie").selectOption("Groupe 1");
+  const openingDownload = page.waitForEvent("download");
+  await openingForm.getByRole("button", { name: "Télécharger le formulaire rempli" }).click();
+  const openingPdf = await openingDownload;
+  expect(openingPdf.suggestedFilename()).toBe("demande-ouverture-cet-perenne.pdf");
+  await openingForm.getByRole("button", { name: "Fermer" }).click();
+  await expect(page.getByLabel("Établissement", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Catégorie")).toHaveCount(0);
+  await expect(page.getByLabel("Cycle ou rythme de travail")).toHaveCount(0);
+  await page.getByLabel("Solde officiel actuel").fill("18");
+  await page.getByRole("button", { name: "Enregistrer mon CET" }).click();
+
+  await expect(page.locator(".cet-balance-main")).toContainText("18");
+  await expect(page.locator(".cet-summary-grid")).toContainText("249 €");
+  await page.getByRole("button", { name: "Remplir alimentation / indemnisation" }).click();
+  const fundingForm = page.getByRole("dialog", { name: "Alimenter ou indemniser mon CET" });
+  await fundingForm.getByRole("button", { name: "Aide au remplissage" }).click();
+  await expect(fundingForm.getByRole("heading", { name: "Que faut-il inscrire ?" })).toBeVisible();
+  await expect(fundingForm.getByRole("button", { name: "Accepter l’aide" })).toHaveCount(0);
+  await expect(fundingForm.getByRole("button", { name: "Ignorer" })).toHaveCount(0);
+  await expect(fundingForm.locator("#cet-form-help")).not.toContainText("Groupe / catégorie");
+  await expect(fundingForm.locator("#cet-form-help")).not.toContainText("Date de la demande");
+  await expect(fundingForm.locator("#cet-form-help")).toContainText("du total après alimentation");
+  await expect(fundingForm.locator("#cet-form-help")).not.toContainText("Exemple");
+  await expect(fundingForm.locator("#cet-form-help")).toContainText("Jours à indemniser");
+  await expect(fundingForm.locator("#cet-form-help")).toContainText("jours conservés + jours indemnisés");
+  await fundingForm.getByRole("button", { name: "Annuler" }).click();
+  await page.getByRole("button", { name: "Ajouter une opération" }).click();
+  await page.getByLabel("Opération").selectOption("leave");
+  await page.getByLabel("Nombre de jours").fill("2");
+  await page.getByRole("button", { name: "Enregistrer l’opération" }).click();
+  await expect(page.locator(".cet-balance-main")).toContainText("16");
+  await expect(page.locator(".cet-history")).toContainText("Congé pris sur le CET");
+});
+
+test("un solde manuel supérieur à 24 heures est bien enregistré", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+
+  await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
+  const dialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
+  await dialog.getByLabel("Heures").fill("72");
+  await dialog.getByRole("button", { name: "Ajouter au solde" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("72 h disponibles")).toBeVisible();
+  await page.getByLabel("Mes heures supplémentaires")
+    .getByRole("button", { name: "Voir l’historique" })
+    .click();
+  await expect(page.locator(".overtime-history")).toContainText(
+    "Heures de solidarité · +72 h",
+  );
 });
 
 test("une formation utilise le bon nombre d’heures et apparaît en REC", async ({ page }) => {
@@ -194,18 +278,20 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /Une récupération/ })
     .click();
-  await page.getByRole("dialog", { name: /Quel type de récupération/ })
-    .getByRole("button", { name: /Formation/ })
-    .click();
   const methodDialog = page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ });
   await expect(methodDialog.getByRole("button", { name: /Remplir le formulaire/ })).toBeVisible();
   await expect(methodDialog.getByRole("button", { name: /Ajouter manuellement au planning/ })).toBeVisible();
   await methodDialog.getByRole("button", { name: /Ajouter manuellement au planning/ }).click();
 
-  const recoveryDialog = page.getByRole("dialog", { name: "Utiliser mes heures de récupération" });
-  await expect(recoveryDialog.getByRole("button", { name: "3 h", exact: true })).toBeVisible();
-  await recoveryDialog.getByRole("button", { name: "6 h", exact: true }).click();
-  await recoveryDialog.getByRole("button", { name: "Poser la récupération" }).click();
+  const recoveryDialog = page.getByRole("dialog", { name: "Ajouter une récupération" });
+  await recoveryDialog.getByRole("button", { name: /formation/i }).click();
+  await recoveryDialog.getByRole("button", { name: /Sélectionner dans le calendrier/ }).click();
+  const recoveryPanel = page.locator("#recovery-range-selection-panel");
+  await expect(recoveryPanel.getByRole("button", { name: "3 h", exact: true })).toBeVisible();
+  await recoveryPanel.getByRole("button", { name: "6 h", exact: true }).click();
+  await expect(recoveryPanel.getByRole("button", { name: "6 h", exact: true })).toHaveClass(/active/);
+  await page.locator(".month-card .day").first().click();
+  await recoveryPanel.getByRole("button", { name: "Enregistrer toutes les dates" }).click();
 
   const recoveryDay = page.getByRole("button", { name: /formation en récupération de 6 h/i });
   await expect(recoveryDay).toHaveCSS("background-color", "rgb(243, 179, 166)");
@@ -213,14 +299,17 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   const recoveryLabel = recoveryDay.getByText("REC", { exact: true });
   await expect(recoveryLabel).toBeVisible();
   await expect(recoveryLabel).toHaveCSS("border-top-width", "0px");
+  await expect(recoveryLabel).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(recoveryLabel).toHaveCSS("color", "rgb(17, 17, 17)");
   await recoveryDay.click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
   await expect(dayDialog.locator(".day-recovery-details")).toContainText("Formation");
   await expect(dayDialog.locator(".day-recovery-details")).toContainText("6 h prises sur votre solde");
   const deleteButton = dayDialog.getByRole("button", { name: "Effacer la récupération" });
+  await expect(deleteButton).toBeVisible();
   const deleteButtonBox = await deleteButton.boundingBox();
   expect(deleteButtonBox?.width ?? 0).toBeGreaterThan(180);
+
   page.once("dialog", (dialog) => void dialog.accept());
   await deleteButton.click();
   await expect(page.locator(".training-recovery-day")).toHaveCount(0);
@@ -233,7 +322,8 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   const chooser = page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" });
   const other = chooser.getByRole("button", { name: /Divers/ });
   await expect(other).not.toContainText("Grève, décharge syndicale, fermeture exceptionnelle");
-  await expect(other.locator(".other-choice-dot")).toHaveCSS("background-color", "rgb(108, 189, 240)");
+  await expect(other.locator(".other-choice-dot")).toHaveCount(0);
+  await expect(other).toHaveCSS("background-color", "rgb(250, 251, 253)");
   await other.click();
 
   await expect(page.getByRole("heading", { name: "Sélectionnez vos dates Divers" })).toBeVisible();
@@ -242,7 +332,144 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   await expect(summary).toBeVisible();
   await expect(summary).toContainText("1 date");
   await expect(summary).toContainText("sans effet sur la paie ni les soldes");
-  await expect(page.getByRole("button", { name: "Enregistrer Divers" })).toBeEnabled();
+  await page.getByRole("button", { name: "Enregistrer Divers" }).click();
+  await expect(page.locator(".month-card .day.leave-other")).toHaveCSS(
+    "background-color",
+    "rgb(244, 184, 200)",
+  );
+});
+
+test("le congé CET est proposé depuis les demandes et depuis une case", async ({ page }) => {
+  await prepareDemo(page);
+  await page.locator(".today-overview .primary-action").click();
+  await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
+    .getByRole("button", { name: /^CET Utilisez/ })
+    .click();
+  await page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ })
+    .getByRole("button", { name: /Remplir le formulaire/ })
+    .click();
+  await expect(page.getByRole("button", { name: /Congé CET/ })).toBeVisible();
+  await page.getByRole("button", { name: "Annuler la demande" }).click();
+
+  await page.locator(".month-card .day").first().click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /^CET/ })).toBeVisible();
+});
+
+test("les choix principaux et ceux d’une date suivent l’ordre demandé", async ({ page }) => {
+  await prepareDemo(page);
+  await page.locator(".today-overview .primary-action").click();
+  const chooser = page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" });
+  await expect(chooser.locator(".choice-grid > button > strong")).toHaveText([
+    "Un congé",
+    "Une récupération",
+    "Un arrêt maladie",
+    "Divers",
+    "CET",
+  ]);
+  await chooser.getByRole("button", { name: "Fermer" }).click();
+
+  await page.locator(".month-card .day").first().click();
+  const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await expect(dayDialog.locator(".leave-choices > button")).toHaveText([
+    /Congé/,
+    /Récupération/,
+    /Congé souhaitéHors période d’ouverture/,
+    /Maladie/,
+    /Divers/,
+    /CET/,
+  ]);
+  await expect(dayDialog.locator(".leave-choices .other-day")).toHaveCSS(
+    "background-color",
+    "rgb(250, 251, 253)",
+  );
+  await expect(dayDialog.locator(".leave-choices .cet-day")).toHaveCSS(
+    "background-color",
+    "rgb(250, 251, 253)",
+  );
+});
+
+test("une récupération ordinaire affiche le cycle sans reproposer Formation", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
+  const balanceDialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
+  await balanceDialog.getByLabel("Heures").fill("10");
+  await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Accueil/ })
+    .click();
+  await page.locator(".today-overview .primary-action").click();
+  await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
+    .getByRole("button", { name: /Une récupération/ })
+    .click();
+  await page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ })
+    .getByRole("button", { name: /Ajouter manuellement au planning/ })
+    .click();
+
+  const dialog = page.getByRole("dialog", { name: "Ajouter une récupération" });
+  await dialog.getByRole("button", { name: /Récupération en heures/ }).click();
+  await expect(dialog.getByRole("button", { name: /Sélectionner dans le calendrier/ })).toBeVisible();
+  await dialog.getByRole("button", { name: /Sélectionner dans le calendrier/ }).click();
+  const recoveryPanel = page.locator("#recovery-range-selection-panel");
+  await page.locator(".month-card .day").first().click();
+  await recoveryPanel.getByRole("button", { name: "Enregistrer toutes les dates" }).click();
+
+  const recoveryDay = page.locator(".month-card .day.hourly-recovery-day");
+  await expect(recoveryDay).toHaveCSS("background-color", "rgb(243, 179, 166)");
+  await expect(recoveryDay).toHaveCSS("border-color", "rgb(0, 0, 0)");
+  await expect(recoveryDay.getByText("REC", { exact: true })).toBeVisible();
+  await expect(recoveryDay).not.toContainText("Récup.");
+});
+
+test("une récupération lancée depuis une case suit aussi le calendrier", async ({ page }) => {
+  await prepareDemo(page);
+  await page.locator(".month-card .day").first().click();
+  await page.getByRole("dialog", { name: /2026/ })
+    .getByRole("button", { name: /^Récupération/ })
+    .click();
+  await page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ })
+    .getByRole("button", { name: /Ajouter manuellement au planning/ })
+    .click();
+
+  const dialog = page.getByRole("dialog", { name: "Ajouter une récupération" });
+  await dialog.getByRole("button", { name: /Récupération en journée/ }).click();
+  await expect(dialog.getByRole("button", { name: /Sélectionner dans le calendrier/ })).toBeVisible();
+  await dialog.getByRole("button", { name: /Sélectionner dans le calendrier/ }).click();
+  const recoveryPanel = page.locator("#recovery-range-selection-panel");
+  await expect(recoveryPanel.getByRole("heading", { name: "1 date sélectionnée" })).toBeVisible();
+  await expect(recoveryPanel.locator(".recovery-duration-choice > button")).toHaveText([
+    "8 h", "6 h", "4 h", "Durée libre",
+  ]);
+});
+
+test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page }) => {
+  await prepareDemo(page);
+  const cases = page.locator(".month-card .day.work");
+  const choices = [
+    { type: "Congés annuels", marker: "CA" },
+    { type: "RTT", marker: "RTT" },
+    { type: "Jour de fractionnement", marker: "FRA" },
+  ];
+
+  for (let index = 0; index < choices.length; index += 1) {
+    const day = cases.nth(index);
+    await day.click();
+    await page.getByRole("dialog", { name: /2026/ })
+      .locator(".leave-choices .leave")
+      .click();
+    await page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ })
+      .getByRole("button", { name: /Ajouter manuellement au planning/ })
+      .click();
+    const editor = page.getByRole("dialog", { name: "Ajouter une période de congés" });
+    await editor.getByRole("button", { name: choices[index].type, exact: true }).click();
+    await editor.getByRole("button", { name: "Sélectionner dans le calendrier" }).click();
+    await page.locator(".range-selection-panel").getByRole("button", { name: "Enregistrer toutes les dates" }).click();
+    await expect(day.getByText(choices[index].marker, { exact: true })).toBeVisible();
+  }
 });
 
 test("nettoyage et gestion d’un congé utilisent des actions directes", async ({ page }) => {
@@ -270,7 +497,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
 
   await page.locator(".today-overview .primary-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
-    .getByRole("button", { name: /Un congé/ })
+    .getByRole("button", { name: /^Un congé Choisissez/ })
     .click();
   const method = page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ });
   await expect(method.getByRole("button", { name: /Ajouter manuellement au planning/ })).toBeVisible();
@@ -282,7 +509,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
 
   await page.locator(".today-overview .primary-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
-    .getByRole("button", { name: /Un congé/ })
+    .getByRole("button", { name: /^Un congé Choisissez/ })
     .click();
   await page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ })
     .getByRole("button", { name: /Ajouter manuellement au planning/ })
@@ -297,9 +524,12 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /Une récupération/ })
     .click();
-  const recovery = page.getByRole("dialog", { name: /Quel type de récupération/ });
-  await expect(recovery.locator(".recovery-type-choice-grid > button")).toHaveCount(5);
-  await expect(recovery.getByRole("button", { name: /Formation/ })).toBeVisible();
+  await page.getByRole("dialog", { name: /Comment souhaitez-vous enregistrer/ })
+    .getByRole("button", { name: /Ajouter manuellement au planning/ })
+    .click();
+  const recovery = page.getByRole("dialog", { name: "Ajouter une récupération" });
+  await expect(recovery.locator(".type-tabs > button")).toHaveCount(5);
+  await expect(recovery.getByRole("button", { name: /formation/i })).toBeVisible();
   await recovery.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".today-overview .primary-action").click();
@@ -353,6 +583,8 @@ test("les deux rubriques de paie s’ouvrent et se referment", async ({ page }) 
     const next = card.getByRole("button", { name: "Mois suivant", exact: true });
     const month = card.locator("#variable-pay-title");
     const chevron = card.locator(".pay-period-chevron");
+    const closeDetails = card.locator(".variable-pay-total > small");
+    const variableTotal = card.locator(".variable-pay-total > strong");
     const [cardBox, previousBox, nextBox, monthBox, chevronBox] = await Promise.all([
       card.boundingBox(),
       previous.boundingBox(),
@@ -371,6 +603,8 @@ test("les deux rubriques de paie s’ouvrent et se referment", async ({ page }) 
     expect(Math.abs(
       chevronBox!.y + chevronBox!.height / 2 - (monthBox!.y + monthBox!.height / 2),
     )).toBeLessThan(3);
+    await expect(closeDetails).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, -4)");
+    await expect(variableTotal).toHaveCSS("font-size", "15px");
   }
   await page.getByRole("button", { name: "Revenir aux catégories de paie" }).click();
   await page.getByRole("button", { name: /Bulletins et estimations/ }).click();

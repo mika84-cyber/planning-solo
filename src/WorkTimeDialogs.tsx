@@ -1,7 +1,8 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
 import { minutesLabel, type OvertimeDisposition } from "./overtime";
+import { DAY_LABELS, getDayInfo } from "./planningLogic";
 
 type MecenatDraft = { date: string; start: string; end: string };
 type MecenatCalculation = {
@@ -352,37 +353,141 @@ export function SolidarityHoursDialog({
   );
 }
 
-type RecoveryDraft = {
+export type RecoveryDraft = {
   date: string;
   kind: "hours" | "half" | "day" | "holiday" | "training";
   hours: string;
   minutes: string;
   start: string;
+  durationMinutes: number | null;
   trainingMinutes: 180 | 360;
 };
+
+const RECOVERY_KIND_LABELS: Record<RecoveryDraft["kind"], string> = {
+  day: "Récupération en journée",
+  half: "Récupération en demi-journée",
+  hours: "Récupération en heures",
+  holiday: "Récupération de jour férié",
+  training: "Récupération de formation",
+};
+
+const RECOVERY_DURATION_OPTIONS: Record<
+  Exclude<RecoveryDraft["kind"], "training">,
+  ReadonlyArray<readonly [number | null, string]>
+> = {
+  day: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [null, "Durée libre"]],
+  half: [[240, "4 h"], [120, "2 h"], [null, "Durée libre"]],
+  hours: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [120, "2 h"]],
+  holiday: [[480, "8 h"], [240, "4 h"], [null, "Durée libre"]],
+};
+
+export function RecoveryRangeDialog({
+  open,
+  kind,
+  setKind,
+  onClose,
+  onStartSelection,
+}: {
+  open: boolean;
+  kind: RecoveryDraft["kind"];
+  setKind: (kind: RecoveryDraft["kind"]) => void;
+  onClose: () => void;
+  onStartSelection: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        className="modal-card range-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recovery-range-title"
+      >
+        <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">
+          ×
+        </button>
+        <span className="step-label">Mon planning</span>
+        <h2 id="recovery-range-title">Ajouter une récupération</h2>
+        <p>
+          Choisissez le type de récupération, puis sélectionnez une ou plusieurs dates
+          directement dans le calendrier.
+        </p>
+        <div className="request-option-groups manual-leave-options">
+          {([
+            ["Récupérations courantes", ["day", "half", "hours"]],
+            ["Autres récupérations", ["holiday", "training"]],
+          ] as Array<[string, RecoveryDraft["kind"][]]>).map(([label, kinds]) => (
+            <section className="request-option-group" key={label}>
+              <h3>{label}</h3>
+              <div className="type-tabs" aria-label={label}>
+                {kinds.map((candidate) => (
+                  <button
+                    type="button"
+                    className={kind === candidate ? "active" : ""}
+                    style={{ "--type-color": "#f0a574" } as CSSProperties}
+                    onClick={() => setKind(candidate)}
+                    key={candidate}
+                  >
+                    <i />
+                    {RECOVERY_KIND_LABELS[candidate]}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+        <div className="modal-actions range-create-actions">
+          <button className="secondary-button" type="button" onClick={onClose}>
+            Annuler
+          </button>
+          <button className="save-button" type="button" onClick={onStartSelection}>
+            Sélectionner dans le calendrier
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function recoveryCalendarDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return year && month && day ? new Date(year, month - 1, day) : new Date();
+}
 
 export function RecoveryUseDialog({
   open,
   draft,
   setDraft,
-  workDayMinutes,
-  trainingMinutes,
+  group,
+  showCalendar,
   remainingMinutes,
   saving,
   onClose,
+  onSelectInCalendar,
   onSave,
+  submitLabel = "Poser la récupération",
 }: {
   open: boolean;
   draft: RecoveryDraft;
   setDraft: Dispatch<SetStateAction<RecoveryDraft>>;
-  workDayMinutes: number;
-  trainingMinutes: number;
+  group: number;
+  showCalendar: boolean;
   remainingMinutes: number;
   saving: boolean;
   onClose: () => void;
+  onSelectInCalendar: () => void;
   onSave: () => void;
+  submitLabel?: string;
 }) {
   if (!open) return null;
+  const chosenDate = recoveryCalendarDate(draft.date);
+  const chosenDateInfo = getDayInfo(chosenDate, group);
+  const durationOptions =
+    draft.kind === "training" ? null : RECOVERY_DURATION_OPTIONS[draft.kind];
   return (
     <div
       className="modal-backdrop"
@@ -398,22 +503,57 @@ export function RecoveryUseDialog({
         <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">
           ×
         </button>
-        <span className="step-label">Congés et récupérations</span>
-        <h2 id="recovery-use-title">Utiliser mes heures de récupération</h2>
+        <span className="step-label">Mon planning</span>
+        <h2 id="recovery-use-title">Ajouter une récupération</h2>
+        <p>Choisissez le type et la durée, puis sélectionnez la date directement dans le calendrier.</p>
         <p className="recovery-available">
           Solde disponible <strong>{minutesLabel(remainingMinutes)}</strong>
         </p>
         <div className="overtime-form">
-          <label>
-            <span>Date</span>
-            <input
-              type="date"
-              value={draft.date}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, date: event.target.value }))
-              }
-            />
-          </label>
+          <div className="request-option-groups manual-leave-options recovery-category-options">
+            {([
+              ["Récupérations courantes", ["day", "half", "hours"]],
+              ["Autres récupérations", ["holiday", "training"]],
+            ] as Array<[string, RecoveryDraft["kind"][]]>).map(([label, kinds]) => (
+              <section className="request-option-group" key={label}>
+                <h3>{label}</h3>
+                <div className="type-tabs" aria-label={label}>
+                  {kinds.map((kind) => (
+                    <button
+                      type="button"
+                      key={kind}
+                      className={draft.kind === kind ? "active" : ""}
+                      style={{ "--type-color": "#f0b083" } as CSSProperties}
+                      onClick={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          kind,
+                          durationMinutes:
+                            kind === "half" ? 240 : kind === "hours" ? 480 : 480,
+                        }))
+                      }
+                    >
+                      <i />
+                      {RECOVERY_KIND_LABELS[kind]}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+          <p className="recovery-kind-heading">{RECOVERY_KIND_LABELS[draft.kind]}</p>
+          {!showCalendar ? (
+            <section className="recovery-fixed-date" aria-label="Date de récupération sélectionnée">
+              <span>Date déjà sélectionnée</span>
+              <strong>
+                {new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(chosenDate)}
+              </strong>
+              <small>
+                Groupe {group} · {DAY_LABELS[chosenDateInfo.kind]}
+                {chosenDateInfo.holiday ? ` · ${chosenDateInfo.holiday}` : ""}
+              </small>
+            </section>
+          ) : null}
           <fieldset className="overtime-choice-field">
             <legend>Durée</legend>
             <div className="recovery-duration-choice">
@@ -429,25 +569,19 @@ export function RecoveryUseDialog({
                 >
                   {label}
                 </button>
-              )) : ([
-                ["hours", "Durée libre"],
-                ["half", `Demi-journée · ${minutesLabel(workDayMinutes / 2)}`],
-                ["day", `Journée · ${minutesLabel(workDayMinutes)}`],
-                ["holiday", `Jour férié · ${minutesLabel(workDayMinutes)}`],
-                ["training", `Formation · ${minutesLabel(trainingMinutes)}`],
-              ] as const).map(([value, label]) => (
+              )) : durationOptions!.map(([value, label]) => (
                 <button
-                  key={value}
+                  key={value ?? "custom"}
                   type="button"
-                  className={draft.kind === value ? "active" : ""}
-                  onClick={() => setDraft((current) => ({ ...current, kind: value }))}
+                  className={draft.durationMinutes === value ? "active" : ""}
+                  onClick={() => setDraft((current) => ({ ...current, durationMinutes: value }))}
                 >
                   {label}
                 </button>
               ))}
             </div>
           </fieldset>
-          {draft.kind === "hours" ? (
+          {draft.kind !== "training" && draft.durationMinutes === null ? (
             <div className="overtime-duration-grid recovery-custom-duration">
               <label>
                 <span>Heures</span>
@@ -491,19 +625,31 @@ export function RecoveryUseDialog({
               }
             />
           </label> : null}
+          {showCalendar ? (
+            <button
+              className="recovery-calendar-trigger"
+              type="button"
+              onClick={onSelectInCalendar}
+            >
+              <strong>Sélectionner dans le calendrier</strong>
+              <span>Le cycle de votre groupe sera visible pour choisir la date.</span>
+            </button>
+          ) : null}
         </div>
         <div className="modal-actions">
           <button className="secondary-button" type="button" onClick={onClose}>
             Annuler
           </button>
-          <button
-            className="save-button"
-            type="button"
-            onClick={onSave}
-            disabled={saving || remainingMinutes <= 0}
-          >
-            {saving ? "Enregistrement…" : "Poser la récupération"}
-          </button>
+          {!showCalendar ? (
+            <button
+              className="save-button"
+              type="button"
+              onClick={onSave}
+              disabled={saving || remainingMinutes <= 0}
+            >
+              {saving ? "Enregistrement…" : submitLabel}
+            </button>
+          ) : null}
         </div>
       </section>
     </div>

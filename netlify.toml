@@ -25,7 +25,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; script-src 'self' 'sha256-S4NW9U3Dinc5/Urfu2tRAP5uXMbPpYhwtrTfEdjz+OI=' 'sha256-73zbLToNOEgFH6KKwPEbYEKd14T8dLgyiAbLXlLEtC8=' 'sha256-cc3lzeVJTkwk6qKvix7704znDmRNOrL6yNdKGQZ7imk='; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; script-src 'self' 'sha256-yxLqVYGYalQdquz20OkZyxTejMgCe2Oc86WkVPwCr60=' 'sha256-ypuW7+q5zS5ny2hd0Xpde0/BTacxR7juqkds3KOfAlY=' 'sha256-7sCkxbmzLPPzykM2yaah2ocjMp17n/5H791yN9Jw82k='; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
     Cross-Origin-Opener-Policy = "same-origin"
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()"
     Referrer-Policy = "no-referrer"

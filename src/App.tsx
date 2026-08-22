@@ -17,6 +17,7 @@ import {
   CalendarCleanupTrigger,
 } from "./CalendarCleanup";
 import { LeaveBalancesSection } from "./LeaveBalancesSection";
+import { CetSection } from "./CetSection";
 import { PayEstimateDetails } from "./PayEstimateDetails";
 import { ManualAdjustmentsDialog, RangeLeaveDialog } from "./LeaveDialogs";
 import { MonthCalendar, NotesPanelContent } from "./PlanningView";
@@ -31,6 +32,7 @@ import {
 import {
   MecenatDialog,
   OvertimeDialog,
+  RecoveryRangeDialog,
   RecoveryUseDialog,
   SolidarityHoursDialog,
 } from "./WorkTimeDialogs";
@@ -117,6 +119,7 @@ import {
 } from "./overtime";
 import { useToast } from "./useToast";
 import { createClientId } from "./clientId";
+import { cetAccountFromApi, cetBalance, type CetAccount } from "./cet";
 import {
   COUNTED_ONLY_TYPES,
   DAY_LABELS,
@@ -277,6 +280,8 @@ export default function Home() {
   const [overtimeDialogOpen, setOvertimeDialogOpen] = useState(false);
   const [solidarityDialogOpen, setSolidarityDialogOpen] = useState(false);
   const [recoveryDialogOpen, setRecoveryDialogOpen] = useState(false);
+  const [recoveryCalendarVisible, setRecoveryCalendarVisible] = useState(true);
+  const [recoveryDatePicking, setRecoveryDatePicking] = useState(false);
   const [trainingRecoveryMode, setTrainingRecoveryMode] = useState<"manual" | "form">("manual");
   const [overtimeHistoryOpen, setOvertimeHistoryOpen] = useState(false);
   const [mecenatDialogOpen, setMecenatDialogOpen] = useState(false);
@@ -299,6 +304,7 @@ export default function Home() {
     hours: "2",
     minutes: "0",
     start: "",
+    durationMinutes: 480 as number | null,
     trainingMinutes: 360 as 180 | 360,
   });
   const [mecenatDraft, setMecenatDraft] = useState({
@@ -326,10 +332,15 @@ export default function Home() {
   const [showLeaves, setShowLeaves] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
   const [rangeOpen, setRangeOpen] = useState(false);
+  const [rangePrefillDate, setRangePrefillDate] = useState<string | null>(null);
   const [rangeLeaveType, setRangeLeaveType] = useState<LeaveType>("annual");
   const [rangeHalfMoment, setRangeHalfMoment] = useState<HalfMoment>("morning");
   const [rangeSelecting, setRangeSelecting] = useState(false);
   const [separateDates, setSeparateDates] = useState<string[]>([]);
+  const [recoveryRangeOpen, setRecoveryRangeOpen] = useState(false);
+  const [recoveryRangeSelecting, setRecoveryRangeSelecting] = useState(false);
+  const [recoveryRangePrefillDate, setRecoveryRangePrefillDate] = useState<string | null>(null);
+  const [recoveryRangeDates, setRecoveryRangeDates] = useState<string[]>([]);
   const [separatePeople, setSeparatePeople] = useState<MultiDatePerson[]>([]);
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
   const [editingLegacyPeriod, setEditingLegacyPeriod] =
@@ -339,16 +350,11 @@ export default function Home() {
   );
   const [savingRange, setSavingRange] = useState(false);
   const [requestChooser, setRequestChooser] = useState(false);
-  const [requestOrigin, setRequestOrigin] = useState<"general" | "planning">("general");
   const [planningRequestMethod, setPlanningRequestMethod] =
     useState<RequestKind | null>(null);
   const [planningRequestDate, setPlanningRequestDate] = useState<string | null>(
     null,
   );
-  const [recoveryTypeChooser, setRecoveryTypeChooser] = useState<{
-    origin: "general" | "planning";
-    date: string | null;
-  } | null>(null);
   const [pendingRecoveryType, setPendingRecoveryType] =
     useState<SelectionType>("recovery_day");
   const [pendingLeaveType, setPendingLeaveType] =
@@ -392,6 +398,7 @@ export default function Home() {
   const [absenceYear, setAbsenceYear] = useState(() => now.getFullYear());
   const [manualAdjustmentsOpen, setManualAdjustmentsOpen] = useState(false);
   const [savingManualAdjustments, setSavingManualAdjustments] = useState(false);
+  const [savingCet, setSavingCet] = useState(false);
   const [manualAdjustmentDraft, setManualAdjustmentDraft] = useState<
     Record<keyof ManualYearAdjustments, string>
   >(() =>
@@ -874,6 +881,7 @@ export default function Home() {
           manualAdjustments: manualAdjustmentsFromApi(
             data.form_profile.manual_adjustments,
           ),
+          cetAccount: cetAccountFromApi(data.form_profile.cet_account),
         }
       : null;
     setFormProfile(syncedProfile);
@@ -1066,8 +1074,8 @@ export default function Home() {
           "1",
         );
       history.replaceState({}, "", location.pathname);
-      setLoginPassword("");
-      setPasswordConfirmation("");
+        setLoginPassword("");
+        setPasswordConfirmation("");
       await loadCalendar();
     } catch {
       setAuthError("Cette invitation est invalide ou a expiré.");
@@ -1214,6 +1222,7 @@ export default function Home() {
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
     };
     setFormProfile(nextProfile);
     if (demoMode)
@@ -1256,6 +1265,7 @@ export default function Home() {
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
     };
     setFormProfile(nextProfile);
     if (demoMode)
@@ -2019,6 +2029,8 @@ export default function Home() {
       sick: { used: 0, details: [] },
       childcare: { used: 0, details: [] },
       exceptional: { used: 0, details: [] },
+      other: { used: 0, details: [] },
+      cet: { used: 0, details: [] },
     };
     for (const period of periods) {
       if (
@@ -2029,7 +2041,7 @@ export default function Home() {
         continue;
       // Une récupération rend des heures déjà travaillées : rien n'est déduit,
       // et elle n'alimente aucun compteur non plus.
-      if (period.leaveType === "recovery" || period.leaveType === "other")
+      if (period.leaveType === "recovery")
         continue;
       const countedType = COUNTED_ONLY_TYPES.includes(
         period.leaveType as CountedOnlyType,
@@ -2092,6 +2104,27 @@ export default function Home() {
     (total, balance) => total + balance.used,
     0,
   );
+  const cetLeaveBalances = {
+    annual:
+      leaveStats.balances.find((balance) => balance.type === "annual")?.remaining || 0,
+    rtt:
+      leaveStats.balances.find((balance) => balance.type === "rtt")?.remaining || 0,
+    fraction:
+      leaveStats.balances.find((balance) => balance.type === "fraction")?.remaining || 0,
+  };
+  const cetAnnualDaysTaken =
+    leaveStats.balances.find((balance) => balance.type === "annual")?.used || 0;
+  const cetPlannedLeaveDays = useMemo(() => {
+    const dates = new Set<string>();
+    for (const period of periods) {
+      if (period.leaveType !== "cet") continue;
+      for (let date = fromKey(period.from); dateKey(date) <= period.to; date = addDays(date, 1)) {
+        const info = getDayInfo(date, period.group || group);
+        if (!info.holiday && info.kind !== "off") dates.add(dateKey(date));
+      }
+    }
+    return dates.size;
+  }, [periods, group]);
   const balanceDetail = useMemo(() => {
     if (!balanceDetailType) return null;
     if (balanceDetailType !== "annual" && balanceDetailType !== "rtt" &&
@@ -2292,6 +2325,7 @@ export default function Home() {
     homeSection === "home" ||
     Boolean(requestKind) ||
     rangeSelecting ||
+    recoveryRangeSelecting ||
     noteSelecting;
 
   function openDay(date: Date) {
@@ -2358,6 +2392,7 @@ export default function Home() {
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
     };
     setFormProfile(nextProfile);
     if (demoMode)
@@ -2480,7 +2515,7 @@ export default function Home() {
         Number(solidarityDraft.minutes),
     );
     if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 600_000) {
-      notify("Indiquez un nombre d’heures de solidarité valide.");
+      notify("Indiquez un nombre d’heures valide à ajouter au solde.");
       return;
     }
     overtimeSaveInFlightRef.current = true;
@@ -2513,9 +2548,9 @@ export default function Home() {
       setOvertimeEntries((current) => [...current, localEntry]);
       setSolidarityDialogOpen(false);
       setSolidarityDraft({ hours: "", minutes: "0" });
-      confirm(`${minutesLabel(minutes)} de solidarité ajoutées au solde de récupération.`);
+      confirm(`${minutesLabel(minutes)} ajoutées au solde de récupération.`);
     } catch (error) {
-      notify(calendarErrorMessage(error, "Les heures de solidarité n’ont pas pu être enregistrées."));
+      notify(calendarErrorMessage(error, "Les heures n’ont pas pu être ajoutées au solde."));
     } finally {
       overtimeSaveInFlightRef.current = false;
       setSavingOvertime(false);
@@ -2551,13 +2586,9 @@ export default function Home() {
         Number(recoveryDraft.minutes),
     );
     const minutes =
-      recoveryDraft.kind === "day" || recoveryDraft.kind === "holiday"
-        ? workDayMinutes
-        : recoveryDraft.kind === "half"
-          ? workDayMinutes / 2
-          : recoveryDraft.kind === "training"
-            ? recoveryDraft.trainingMinutes
-            : custom;
+      recoveryDraft.kind === "training"
+        ? recoveryDraft.trainingMinutes
+        : recoveryDraft.durationMinutes ?? custom;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(recoveryDraft.date) || minutes <= 0) {
       notify("Vérifiez la date et la durée de récupération.");
       return;
@@ -2635,6 +2666,95 @@ export default function Home() {
       notify(calendarErrorMessage(error, "La récupération n’a pas pu être enregistrée."));
     } finally {
       overtimeSaveInFlightRef.current = false;
+      setSavingOvertime(false);
+    }
+  }
+
+  function recoveryRangeMinutes() {
+    if (recoveryDraft.kind === "training") return recoveryDraft.trainingMinutes;
+    if (recoveryDraft.durationMinutes !== null) return recoveryDraft.durationMinutes;
+    return Math.round(
+      Number(recoveryDraft.hours.replace(",", ".")) * 60 +
+        Number(recoveryDraft.minutes),
+    );
+  }
+
+  function beginRecoveryRangeSelection() {
+    setRecoveryRangeDates(
+      recoveryRangePrefillDate ? [recoveryRangePrefillDate] : [],
+    );
+    setRecoveryRangePrefillDate(null);
+    setRecoveryRangeOpen(false);
+    setRecoveryRangeSelecting(true);
+    setHomeSection("home");
+    setMode("month");
+    window.setTimeout(
+      () =>
+        document
+          .getElementById("recovery-range-selection-panel")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      80,
+    );
+  }
+
+  function cancelRecoveryRangeSelection() {
+    setRecoveryRangeSelecting(false);
+    setRecoveryRangeDates([]);
+    setRecoveryRangePrefillDate(null);
+  }
+
+  async function saveRecoveryRangeDates() {
+    if (!recoveryRangeDates.length || savingOvertime) return;
+    const minutes = recoveryRangeMinutes();
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      notify("Vérifiez la durée de récupération.");
+      return;
+    }
+    const totalMinutes = minutes * recoveryRangeDates.length;
+    if (totalMinutes > recoveryBalance.remaining) {
+      notify(
+        `Ces dates utilisent ${minutesLabel(totalMinutes)}, mais votre solde disponible est de ${minutesLabel(recoveryBalance.remaining)}.`,
+      );
+      return;
+    }
+    setSavingOvertime(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const localUses: RecoveryUse[] = [...recoveryRangeDates]
+        .sort()
+        .map((date) => ({
+          id: createClientId("recovery"),
+          date,
+          minutes,
+          start: recoveryDraft.start || undefined,
+          kind: recoveryDraft.kind === "training" ? "training" : undefined,
+          updatedAt: nowIso,
+        }));
+      if (!demoMode) {
+        await postCalendarBatch(
+          localUses.map((item) => ({
+            action: "save-recovery-use",
+            id: item.id,
+            date: item.date,
+            minutes: item.minutes,
+            start: item.start,
+            kind: item.kind,
+          })),
+        );
+      }
+      setRecoveryUses((current) => [...current, ...localUses]);
+      cancelRecoveryRangeSelection();
+      confirm(
+        `${recoveryRangeDates.length} date${s(recoveryRangeDates.length)} de récupération enregistrée${s(recoveryRangeDates.length)} · ${minutesLabel(totalMinutes)} déduites du solde.`,
+      );
+    } catch (error) {
+      notify(
+        calendarErrorMessage(
+          error,
+          "Les récupérations n’ont pas pu être enregistrées.",
+        ),
+      );
+    } finally {
       setSavingOvertime(false);
     }
   }
@@ -2966,7 +3086,7 @@ export default function Home() {
       setSavingDay(false);
     }
   }
-  function openRange(initialType: LeaveType = "annual") {
+  function openRange(initialType: LeaveType = "annual", initialDate?: string) {
     if (requestKind) {
       notify(
         "Terminez ou annulez d’abord la demande professionnelle en cours.",
@@ -2974,6 +3094,7 @@ export default function Home() {
       return;
     }
     setRangeLeaveType(initialType);
+    setRangePrefillDate(initialDate || null);
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
     setSeparateDates([]);
@@ -2982,7 +3103,8 @@ export default function Home() {
   }
   function beginRangeSelection() {
     setSeparatePeople(["leave"]);
-    setSeparateDates([]);
+    setSeparateDates(rangePrefillDate ? [rangePrefillDate] : []);
+    setRangePrefillDate(null);
     setRangeOpen(false);
     setRangeSelecting(true);
     setTimeout(
@@ -2999,6 +3121,7 @@ export default function Home() {
     setSeparatePeople([]);
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
+    setRangePrefillDate(null);
   }
   function beginMultipleDateSelectionFromDay() {
     if (!dayDate) return;
@@ -3326,6 +3449,21 @@ export default function Home() {
       return;
     }
     const key = dateKey(date);
+    if (recoveryRangeSelecting) {
+      setRecoveryRangeDates((current) =>
+        current.includes(key)
+          ? current.filter((item) => item !== key)
+          : [...current, key].sort(),
+      );
+      return;
+    }
+    if (recoveryDatePicking) {
+      setRecoveryDraft((current) => ({ ...current, date: key }));
+      setRecoveryDatePicking(false);
+      setRecoveryCalendarVisible(false);
+      setRecoveryDialogOpen(true);
+      return;
+    }
     if (calendarDeleteMode) {
       setCalendarDeleteDates((current) =>
         current.includes(key)
@@ -3825,6 +3963,38 @@ export default function Home() {
       setSavingManualAdjustments(false);
     }
   }
+
+  async function saveCetAccount(nextAccount: CetAccount) {
+    if (savingCet) return false;
+    const previousProfile = formProfile;
+    const nextProfile: FormProfile = {
+      ...(formProfile || {
+        fullName: "",
+        group: String(group),
+        signature: "",
+      }),
+      cetAccount: nextAccount,
+    };
+    setSavingCet(true);
+    try {
+      if (!demoMode)
+        await postCalendar({
+          action: "save-form-profile",
+          fullName: nextProfile.fullName,
+          group: nextProfile.group,
+          signature: nextProfile.signature,
+          cetAccount: nextAccount,
+        });
+      setFormProfile(nextProfile);
+      return true;
+    } catch (error) {
+      setFormProfile(previousProfile);
+      notify(calendarErrorMessage(error, "Le CET n’a pas pu être enregistré."));
+      return false;
+    } finally {
+      setSavingCet(false);
+    }
+  }
   function slideAllowancesMonth(delta: 1 | -1) {
     if (
       payMonthSlide ||
@@ -3872,6 +4042,16 @@ export default function Home() {
         "Sélectionnez au moins une date avant d’intégrer la demande au formulaire.",
       );
       return;
+    }
+    const requestedCetDays = selectedList.filter((item) => item.type === "cet").length;
+    if (requestedCetDays) {
+      const availableCet = formProfile?.cetAccount?.enabled
+        ? Math.max(0, cetBalance(formProfile.cetAccount) - cetPlannedLeaveDays)
+        : 0;
+      if (requestedCetDays > availableCet) {
+        notify(`Cette demande utilise ${requestedCetDays} jour${requestedCetDays > 1 ? "s" : ""} CET, mais votre solde disponible est de ${availableCet} jour${availableCet > 1 ? "s" : ""}.`);
+        return;
+      }
     }
     // Maladie et Divers n'ont pas de rubrique adaptée dans le PDF officiel.
     // Leur « formulaire » reste donc dans l'application : choix des dates,
@@ -3988,6 +4168,11 @@ export default function Home() {
           .filter((item) => item.type === "exceptional")
           .map((item) => item.date),
       ),
+      cet: groupConsecutive(
+        selectedList
+          .filter((item) => item.type === "cet")
+          .map((item) => item.date),
+      ),
       recoveryDay: groupConsecutive(
         selectedList
           .filter((item) => item.type === "recovery_day")
@@ -4000,6 +4185,9 @@ export default function Home() {
         selectedList
           .filter((item) => item.type === "recovery_holiday")
           .map((item) => item.date),
+      ),
+      recoveryTraining: selectedList.filter(
+        (item) => item.type === "recovery_training",
       ),
     };
     // Le formulaire officiel n'offre que 2 lignes « garde d'enfant » et
@@ -4022,6 +4210,7 @@ export default function Home() {
       requestKind === "leave"
         ? [
             Math.ceil(groups.annual.length / 5),
+            Math.ceil(groups.cet.length / 4),
             Math.ceil(groups.rtt.length / 4),
             Math.ceil(groups.fraction.length / 2),
             Math.ceil(
@@ -4062,6 +4251,7 @@ export default function Home() {
       profile: formProfile,
       periods: [
         ...groups.annual.map((period) => ({ ...period, type: "annual" })),
+        ...groups.cet.map((period) => ({ ...period, type: "cet" })),
         ...groups.rtt.map((period) => ({ ...period, type: "rtt" })),
         ...groups.fraction.map((period) => ({ ...period, type: "fraction" })),
         ...groups.childcare.map((period) => ({
@@ -4147,6 +4337,7 @@ export default function Home() {
     const visibleNote = Boolean(showNotes && entry?.noteText);
     const inPendingRange = Boolean(
       (rangeSelecting && separateDates.includes(key)) ||
+        (recoveryRangeSelecting && recoveryRangeDates.includes(key)) ||
         (noteSelecting && noteDates.includes(key)),
     );
     const rangeEdge = inPendingRange;
@@ -4188,8 +4379,8 @@ export default function Home() {
               } as React.CSSProperties)
             : cleanupSelected
               ? ({ "--selection-color": "#c43d43" } as React.CSSProperties)
-            : rangeSelecting
-              ? ({ "--range-preview": "var(--leave)" } as React.CSSProperties)
+            : rangeSelecting || recoveryRangeSelecting
+              ? ({ "--range-preview": recoveryRangeSelecting ? "#f3b3a6" : "var(--leave)" } as React.CSSProperties)
               : noteSelecting
                 ? ({ "--range-preview": noteColor } as React.CSSProperties)
                 : undefined
@@ -4203,24 +4394,37 @@ export default function Home() {
           {date.getDate()}
         </span>
         {hasHourlyRecovery && !compact ? (
-          <span className={hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}>
-            {hasTrainingRecovery ? "REC" : `Récup. ${minutesLabel(hourlyRecoveryMinutes)}`}
+          <span className={`recovery-calendar-label ${hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}`}>
+            REC
           </span>
         ) : null}
         {visibleLeave &&
+        ((!compact &&
+          (myLeaveType === "annual" ||
+            myLeaveType === "rtt" ||
+            myLeaveType === "fraction")) ||
         (myLeaveType === "exceptional" ||
           myLeaveType === "childcare" ||
-          myLeaveType === "sick") ? (
+          myLeaveType === "sick" ||
+          myLeaveType === "cet")) ? (
           <span
             className={`leave-calendar-marker leave-calendar-marker-${myLeaveType}${compact ? " compact" : ""}`}
             aria-hidden="true"
           >
-            {myLeaveType === "exceptional"
+            {myLeaveType === "annual"
+              ? "CA"
+              : myLeaveType === "rtt"
+                ? "RTT"
+                : myLeaveType === "fraction"
+                  ? "FRA"
+                  : myLeaveType === "exceptional"
               ? "ASA"
               : myLeaveType === "childcare"
                 ? "👶"
                 : myLeaveType === "sick"
                   ? "🤒"
+                  : myLeaveType === "cet"
+                    ? "CET"
                 : ""}
           </span>
         ) : null}
@@ -4353,6 +4557,7 @@ export default function Home() {
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
       [field]: value,
     };
     // Le taux net/brut est un pourcentage, pas un montant : le même calcul
@@ -4424,6 +4629,7 @@ export default function Home() {
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
     };
     setFormProfile(nextProfile);
     if (demoMode)
@@ -4488,6 +4694,7 @@ export default function Home() {
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
       sundayCarryover: count,
       sundayCarryoverYear: target.year,
       sundayCarryoverMonth: target.month,
@@ -4543,6 +4750,7 @@ export default function Home() {
       mealVoucherDeduction: formProfile?.mealVoucherDeduction,
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
       sundayCarryover: 0,
       sundayCarryoverYear,
       sundayCarryoverMonth,
@@ -4840,6 +5048,7 @@ export default function Home() {
           automaticSundayReport?.fromMonth ??
           formProfile?.sundayCarryoverFromMonth,
         manualAdjustments: formProfile?.manualAdjustments,
+        cetAccount: formProfile?.cetAccount,
       };
       if (
       !demoMode
@@ -4966,8 +5175,7 @@ export default function Home() {
     }
   }
 
-  function openRequestChooser(origin: "general" | "planning" = "general") {
-    setRequestOrigin(origin);
+  function openRequestChooser(_origin: "general" | "planning" = "general") {
     setRequestChooser(true);
   }
 
@@ -4978,27 +5186,10 @@ export default function Home() {
   ) {
     setDayDate(null);
     setPlanningRequestDate(date || null);
+    if (kind === "recovery") setPendingRecoveryType("recovery_day");
     if (kind === "leave" || kind === "other")
       setPendingLeaveType(requestedType || (kind === "other" ? "other" : "annual"));
     setPlanningRequestMethod(kind);
-  }
-
-  function openRecoveryTypeChooser(
-    origin: "general" | "planning",
-    date?: string,
-  ) {
-    setRequestChooser(false);
-    setDayDate(null);
-    setRecoveryTypeChooser({ origin, date: date || null });
-  }
-
-  function chooseRecoveryType(type: SelectionType) {
-    const context = recoveryTypeChooser;
-    if (!context) return;
-    setPendingRecoveryType(type);
-    setRecoveryTypeChooser(null);
-    setPlanningRequestDate(context.date);
-    setPlanningRequestMethod("recovery");
   }
 
   function closePlanningRequestMethod() {
@@ -5025,13 +5216,16 @@ export default function Home() {
         ...current,
         date: date || current.date,
         kind: manualKind,
+        durationMinutes: manualKind === "half" ? 240 : 480,
         trainingMinutes:
           manualKind === "training"
             ? trainingRecoveryMinutes(workQuota)
             : current.trainingMinutes,
       }));
       setTrainingRecoveryMode("manual");
-      setRecoveryDialogOpen(true);
+      setRecoveryRangePrefillDate(date);
+      setRecoveryRangeDates([]);
+      setRecoveryRangeOpen(true);
       return;
     }
     if (kind === "other") {
@@ -5048,12 +5242,7 @@ export default function Home() {
       return;
     }
     if (date) {
-      openDay(fromKey(date));
-      setDayLeave(true);
-      setDayLeaveType(pendingLeaveType as LeaveType);
-      setLeaveRangeEnabled(true);
-      setLeaveRangeFrom(date);
-      setLeaveRangeTo(date);
+      openRange(pendingLeaveType as LeaveType, date);
       return;
     }
     openRange(pendingLeaveType as LeaveType);
@@ -6300,7 +6489,7 @@ export default function Home() {
   }
 
   function startSectionSwipe(event: TouchEvent<HTMLElement>) {
-    if (!narrowScreen || event.touches.length !== 1) return;
+    if (event.touches.length !== 1) return;
     const target = event.target;
     if (
       target instanceof Element &&
@@ -6318,7 +6507,7 @@ export default function Home() {
   function finishSectionSwipe(event: TouchEvent<HTMLElement>) {
     const start = sectionSwipeStartRef.current;
     sectionSwipeStartRef.current = null;
-    if (!narrowScreen || !start || event.changedTouches.length !== 1) return;
+    if (!start || event.changedTouches.length !== 1) return;
 
     const touch = event.changedTouches[0];
     const deltaX = touch.clientX - start.x;
@@ -6671,6 +6860,12 @@ export default function Home() {
                     vous pouvez saisir vos CA, RTT, fractionnements et dimanches déjà posés sans retrouver chaque date.
                   </p>
                   <p>
+                    La rubrique <strong>Mon CET</strong> permet de reprendre le solde de votre relevé RH,
+                    d’enregistrer les alimentations et utilisations, puis de simuler les choix de fin d’année.
+                    Elle applique les principales règles de la fonction publique de l’État et du ministère de la Culture,
+                    mais le relevé et les décisions de votre service RH restent toujours la référence.
+                  </p>
+                  <p>
                     Avant de valider, relisez le résumé des dates, des types de congés et de leur effet.
                     Pour modifier ou annuler un congé déjà posé, ouvrez sa date : les deux actions sont affichées directement dans la fiche.
                   </p>
@@ -6964,6 +7159,19 @@ export default function Home() {
               </div>
             ) : null}
           </section>
+          <CetSection
+            account={formProfile?.cetAccount}
+            status={formProfile?.status || "contractuel"}
+            fullName={formProfile?.fullName || ""}
+            signature={formProfile?.signature || ""}
+            annualDaysTaken={cetAnnualDaysTaken}
+            plannedLeaveDays={cetPlannedLeaveDays}
+            remaining={cetLeaveBalances}
+            saving={savingCet}
+            onSave={saveCetAccount}
+            onRequestLeave={() => beginRequest("leave", undefined, "cet")}
+          />
+          <div className="leave-section-divider" aria-hidden="true" />
           <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
             <div className="overtime-balance-heading">
               <div>
@@ -7538,6 +7746,98 @@ export default function Home() {
         </div>
       </section>
 
+      {recoveryRangeSelecting && (
+        <section
+          className="range-selection-panel recovery"
+          id="recovery-range-selection-panel"
+        >
+          <div>
+            <span className="step-label">
+              Choix des dates · {({
+                day: "Récupération en journée",
+                half: "Récupération en demi-journée",
+                hours: "Récupération en heures",
+                holiday: "Récupération de jour férié",
+                training: "Récupération de formation",
+              } as const)[recoveryDraft.kind]}
+            </span>
+            <h2>
+              {recoveryRangeDates.length} {recoveryRangeDates.length > 1 ? "dates sélectionnées" : "date sélectionnée"}
+            </h2>
+            <p>Changez de mois si nécessaire et touchez chaque date pour l’ajouter ou la retirer.</p>
+            <fieldset className="overtime-choice-field recovery-range-duration">
+              <legend>Durée pour chaque date</legend>
+              <div className="recovery-duration-choice">
+                {(recoveryDraft.kind === "training"
+                  ? ([[180, "3 h"], [360, "6 h"]] as const)
+                  : ({
+                      day: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [null, "Durée libre"]],
+                      half: [[240, "4 h"], [120, "2 h"], [null, "Durée libre"]],
+                      hours: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [120, "2 h"]],
+                      holiday: [[480, "8 h"], [240, "4 h"], [null, "Durée libre"]],
+                    } as const)[recoveryDraft.kind]
+                ).map(([value, label]) => (
+                  <button
+                    key={value ?? "custom"}
+                    type="button"
+                    className={(recoveryDraft.kind === "training"
+                      ? recoveryDraft.trainingMinutes === value
+                      : recoveryDraft.durationMinutes === value) ? "active" : ""}
+                    onClick={() =>
+                      recoveryDraft.kind === "training"
+                        ? setRecoveryDraft((current) => ({ ...current, trainingMinutes: value as 180 | 360 }))
+                        : setRecoveryDraft((current) => ({ ...current, durationMinutes: value }))
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            {recoveryDraft.kind !== "training" && recoveryDraft.durationMinutes === null ? (
+              <div className="overtime-duration-grid recovery-custom-duration">
+                <label>
+                  <span>Heures</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    inputMode="decimal"
+                    value={recoveryDraft.hours}
+                    onChange={(event) => setRecoveryDraft((current) => ({ ...current, hours: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  <span>Minutes</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    step="5"
+                    inputMode="numeric"
+                    value={recoveryDraft.minutes}
+                    onChange={(event) => setRecoveryDraft((current) => ({ ...current, minutes: event.target.value }))}
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+          <div className="range-selection-actions">
+            <button className="secondary-button" type="button" onClick={cancelRecoveryRangeSelection}>
+              Annuler
+            </button>
+            <button
+              className="save-button"
+              type="button"
+              onClick={() => void saveRecoveryRangeDates()}
+              disabled={!recoveryRangeDates.length || savingOvertime}
+            >
+              {savingOvertime ? "Synchronisation…" : "Enregistrer toutes les dates"}
+            </button>
+          </div>
+        </section>
+      )}
+
       {rangeSelecting && (
         <section
           className="range-selection-panel leave"
@@ -7870,13 +8170,12 @@ export default function Home() {
                     className="active"
                     style={{ "--type-color": TYPE_COLORS.other } as React.CSSProperties}
                   >
-                    <i />
                     {TYPE_LABELS.other}
                     {selectedCounts.other ? <b>{selectedCounts.other}</b> : null}
                   </button>
                 </div>
                 <p className="request-help">
-                  Ces dates seront seulement visibles dans le planning : aucun effet sur la paie ou les soldes.
+                  Ces dates seront visibles dans le planning et déduites des jours travaillés, sans effet sur la paie ni sur les soldes de congés.
                 </p>
               </section>
             </div>
@@ -7906,6 +8205,7 @@ export default function Home() {
               {([
                 ["Congés courants", ["annual", "half", "rtt"]],
                 ["Autres congés", ["fraction", "childcare", "exceptional"]],
+                ["Compte épargne-temps", ["cet"]],
               ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
                 <section className="request-option-group" key={label}>
                   <h3>{label}</h3>
@@ -8004,6 +8304,26 @@ export default function Home() {
         </section>
       )}
 
+      {recoveryDatePicking ? (
+        <section className="request-panel recovery-date-picking-panel" aria-label="Sélection de la date de récupération">
+          <div>
+            <span className="step-label">Récupération</span>
+            <h2>Sélectionnez une date dans le calendrier</h2>
+            <p>Le cycle de votre groupe est affiché normalement. Touchez la date souhaitée pour continuer.</p>
+          </div>
+          <button
+            className="text-button danger"
+            type="button"
+            onClick={() => {
+              setRecoveryDatePicking(false);
+              setRecoveryDialogOpen(true);
+            }}
+          >
+            Annuler la sélection
+          </button>
+        </section>
+      ) : null}
+
       {mode === "month" ? (
         <section
           className={`month-card${calendarSlide ? ` calendar-${calendarSlide}` : ""}`}
@@ -8088,7 +8408,8 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => {
-                  openRecoveryTypeChooser(requestOrigin);
+                  setRequestChooser(false);
+                  openPlanningRequestMethod("recovery");
                 }}
               >
                 <strong>Une récupération</strong>
@@ -8113,58 +8434,24 @@ export default function Home() {
                   beginRequest("other", undefined, "other");
                 }}
               >
-                <strong>
-                  <i className="other-choice-dot" aria-hidden="true" />
-                  Divers
-                </strong>
-                <span>Visible dans le planning, sans effet sur la paie ni sur vos soldes.</span>
+                <strong>Divers</strong>
+                <span>Visible dans le planning et compté dans les jours non travaillés.</span>
+              </button>
+              <button
+                type="button"
+                className="cet-leave-choice"
+                onClick={() => {
+                  setRequestChooser(false);
+                  openPlanningRequestMethod("leave", undefined, "cet");
+                }}
+              >
+                <strong>CET</strong>
+                <span>Utilisez votre solde CET avec le formulaire de congé classique.</span>
               </button>
             </div>
           </section>
         </div>
       )}
-
-      {recoveryTypeChooser ? (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setRecoveryTypeChooser(null)
-          }
-        >
-          <section
-            className="modal-card request-choice recovery-type-choice"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="recovery-type-choice-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setRecoveryTypeChooser(null)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Récupération</span>
-            <h2 id="recovery-type-choice-title">Quel type de récupération souhaitez-vous poser ?</h2>
-            <div className="choice-grid recovery-type-choice-grid">
-              {([
-                "recovery_day",
-                "recovery_half",
-                "recovery_hours",
-                "recovery_holiday",
-                "recovery_training",
-              ] as SelectionType[]).map((type) => (
-                <button type="button" key={type} onClick={() => chooseRecoveryType(type)}>
-                  <strong>{TYPE_LABELS[type]}</strong>
-                  <span>Utilise votre solde d’heures de récupération.</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
-      ) : null}
 
       {planningRequestMethod ? (
         <div
@@ -8190,7 +8477,7 @@ export default function Home() {
             </button>
             <span className="step-label">Depuis le planning</span>
             <h2 id="planning-leave-method-title">
-              Comment souhaitez-vous enregistrer {planningRequestMethod === "recovery" ? "cette récupération" : planningRequestMethod === "other" ? "ce Divers" : "cette demande"} ?
+              Comment souhaitez-vous enregistrer {planningRequestMethod === "other" ? "ce Divers" : "cette demande"} ?
             </h2>
             <div className="choice-grid">
               <button
@@ -8198,18 +8485,6 @@ export default function Home() {
                 onClick={() => {
                   const kind = planningRequestMethod;
                   const date = planningRequestDate || undefined;
-                  if (kind === "recovery" && pendingRecoveryType === "recovery_training") {
-                    closePlanningRequestMethod();
-                    setTrainingRecoveryMode("form");
-                    setRecoveryDraft((current) => ({
-                      ...current,
-                      date: date || current.date,
-                      kind: "training",
-                      trainingMinutes: trainingRecoveryMinutes(workQuota),
-                    }));
-                    setRecoveryDialogOpen(true);
-                    return;
-                  }
                   closePlanningRequestMethod();
                   beginRequest(
                     kind,
@@ -8340,19 +8615,37 @@ export default function Home() {
                         }
                       >
                         <i />
-                        Congé professionnel
+                        Congé
                         <span>{dayLeave ? "Modifier" : "Choisir"}</span>
                       </button>
                       <button
                         type="button"
                         className="recovery"
                         onClick={() =>
-                          openRecoveryTypeChooser("planning", dayDate)
+                          openPlanningRequestMethod("recovery", dayDate)
                         }
                       >
                         <i />
                         Récupération
                         <span>Choisir</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={dayWish ? "wish active" : "wish"}
+                        onClick={() => {
+                          setDayWish((value) => {
+                            if (!value) {
+                              setLeaveRangeEnabled(true);
+                              setLeaveRangeFrom(dayDate);
+                              setLeaveRangeTo(dayDate);
+                            }
+                            return !value;
+                          });
+                        }}
+                      >
+                        <i />
+                        Congé souhaité
+                        <span>{dayWish ? "Ajouté" : "Hors période d’ouverture"}</span>
                       </button>
                       <button
                         type="button"
@@ -8383,25 +8676,16 @@ export default function Home() {
                       >
                         <i />
                         Divers
-                        <span>Sans effet paie/solde</span>
+                        <span>Jour non travaillé</span>
                       </button>
                       <button
                         type="button"
-                        className={dayWish ? "wish active" : "wish"}
-                        onClick={() => {
-                          setDayWish((value) => {
-                            if (!value) {
-                              setLeaveRangeEnabled(true);
-                              setLeaveRangeFrom(dayDate);
-                              setLeaveRangeTo(dayDate);
-                            }
-                            return !value;
-                          });
-                        }}
+                        className={dayLeave && dayLeaveType === "cet" ? "cet-day active" : "cet-day"}
+                        onClick={() => openPlanningRequestMethod("leave", dayDate, "cet")}
                       >
                         <i />
-                        Congé souhaité
-                        <span>{dayWish ? "Ajouté" : "Ajouter"}</span>
+                        CET
+                        <span>{dayLeave && dayLeaveType === "cet" ? "Sélectionné" : "Choisir"}</span>
                       </button>
                 </div>
                 {entries[dayDate]?.wish &&
@@ -8436,13 +8720,13 @@ export default function Home() {
                     </div>
                   )}
                 {dayLeave &&
-                  (["annual", "half", "rtt", "fraction", "childcare", "exceptional"] as LeaveType[]).includes(dayLeaveType) && (
+                  (["annual", "half", "rtt", "fraction", "childcare", "exceptional", "cet"] as LeaveType[]).includes(dayLeaveType) && (
                   <div className="leave-type-field">
                     <span>Type de congé</span>
                     <ChoicePicker
                       value={dayLeaveType}
                       options={LEAVE_TYPE_OPTIONS.filter((option) =>
-                        ["annual", "half", "rtt", "fraction", "childcare", "exceptional"].includes(option.value),
+                        ["annual", "half", "rtt", "fraction", "childcare", "exceptional", "cet"].includes(option.value),
                       )}
                       onChange={setDayLeaveType}
                       ariaLabel="Sélectionner le type de congé"
@@ -8809,15 +9093,46 @@ export default function Home() {
         onSave={() => void saveSolidarityHours()}
       />
 
+      <RecoveryRangeDialog
+        open={recoveryRangeOpen}
+        kind={recoveryDraft.kind}
+        setKind={(kind) =>
+          setRecoveryDraft((current) => ({
+            ...current,
+            kind,
+            durationMinutes: kind === "half" ? 240 : 480,
+            trainingMinutes:
+              kind === "training"
+                ? trainingRecoveryMinutes(workQuota)
+                : current.trainingMinutes,
+          }))
+        }
+        onClose={() => {
+          setRecoveryRangeOpen(false);
+          setRecoveryRangePrefillDate(null);
+        }}
+        onStartSelection={beginRecoveryRangeSelection}
+      />
+
       <RecoveryUseDialog
         open={recoveryDialogOpen}
         draft={recoveryDraft}
         setDraft={setRecoveryDraft}
-        workDayMinutes={workDayMinutes}
-        trainingMinutes={trainingRecoveryMinutes(workQuota)}
+        group={group}
+        showCalendar={recoveryCalendarVisible}
         remainingMinutes={recoveryBalance.remaining}
         saving={savingOvertime}
         onClose={() => setRecoveryDialogOpen(false)}
+        onSelectInCalendar={() => {
+          setRecoveryDialogOpen(false);
+          setRecoveryDatePicking(true);
+          setHomeSection("home");
+          setMode("month");
+          window.setTimeout(
+            () => document.querySelector(".month-card")?.scrollIntoView({ behavior: "smooth", block: "center" }),
+            0,
+          );
+        }}
         onSave={() => void saveRecoveryUse()}
       />
 

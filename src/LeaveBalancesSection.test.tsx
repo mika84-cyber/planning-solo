@@ -38,6 +38,8 @@ describe("soldes de congés", () => {
           sick: { used: 2, details: [] },
           childcare: { used: 0, details: [] },
           exceptional: { used: 0, details: [] },
+          other: { used: 1, details: [] },
+          cet: { used: 2, details: [] },
         }}
         manualSundayLeaveTotal={2}
         onYearChange={vi.fn()}
@@ -51,5 +53,9 @@ describe("soldes de congés", () => {
     expect(html).toContain("dont 1 saisi sans date");
     expect(html).toContain("2 dimanches");
     expect(html).toContain("Maladie");
+    expect(html).toContain("Divers");
+    expect(html).toContain("Congé CET");
+    expect(html).toContain("compté dans les jours non travaillés");
+    expect(html).toContain("déduit du solde CET");
   });
 });

@@ -11,6 +11,7 @@ type PdfLeaveType =
   | "half"
   | "recovery"
   | "sick"
+  | "cet"
   | "childcare"
   | "exceptional";
 /** Moitié posée sur une demi-journée. Absent pour les demi-journées venues du
@@ -22,6 +23,7 @@ const LEAVE_CODES: Record<Exclude<PdfLeaveType, "half">, string> = {
   fraction: "Fraction.",
   recovery: "Récup",
   sick: "Maladie",
+  cet: "CET",
   childcare: "Garde enf.",
   exceptional: "ASA",
 };

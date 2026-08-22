@@ -2962,9 +2962,9 @@ async function applyPlanningImport(data){
   if(data.profile && data.profile.fullName) put('nom',data.profile.fullName);
   if(data.profile && data.profile.group) put('groupe',data.profile.group);
   if(data.profile && data.profile.signature) await drawPlanningSignature(data.profile.signature);
-  var buckets={ca:[],artt:[],frac:[],half:[],gard:[],exc:[],rjour:[],rdemi:[],rheur:[],rferi:[]};
+  var buckets={ca:[],artt:[],cet:[],frac:[],half:[],gard:[],exc:[],rjour:[],rdemi:[],rheur:[],rferi:[]};
   (data.periods||[]).forEach(function(period){
-    var prefix=period.type==='annual'?'ca':(period.type==='rtt'?'artt':(period.type==='fraction'?'frac':(period.type==='childcare'?'gard':(period.type==='exceptional'?'exc':(period.type==='recovery_day'?'rjour':'')))));
+    var prefix=period.type==='annual'?'ca':(period.type==='cet'?'cet':(period.type==='rtt'?'artt':(period.type==='fraction'?'frac':(period.type==='childcare'?'gard':(period.type==='exceptional'?'exc':(period.type==='recovery_day'?'rjour':''))))));
     if(!prefix) return;
     buckets[prefix].push(period);
   });
