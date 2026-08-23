@@ -430,7 +430,7 @@ describe("finitions d’interface", () => {
     expect(app.indexOf("Télécharger les plannings en PDF")).toBeLessThan(
       app.indexOf('"forms", "Formulaires utiles"'),
     );
-    expect(app.indexOf("ThemePreferenceControl")).toBeLessThan(app.indexOf('className="guide-menu-entry"'));
+    expect(app.indexOf('"forms", "Formulaires utiles"')).toBeLessThan(app.indexOf('className="guide-menu-entry"'));
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
     expect(styles).toContain('url("/menu-art.jpg")');
@@ -485,11 +485,12 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Math.abs(deltaX) < 70");
   });
 
-  it("propose une apparence automatique, claire ou sombre", () => {
-    expect(app).toContain("ThemePreferenceControl");
-    expect(styles).toContain('.theme-preference-options');
-    expect(styles).toContain('html[data-theme="dark"]');
-    expect(main).toContain("applyInitialTheme");
+  it("retire le mode sombre et réduit le téléchargement des formulaires à son icône", () => {
+    expect(app).not.toContain("ThemePreferenceControl");
+    expect(main).not.toContain("applyInitialTheme");
+    expect(styles).not.toContain('html[data-theme="dark"]');
+    expect(styles).toContain(".useful-form-download-label");
+    expect(styles).toContain("width: 42px;\n  height: 42px;");
   });
 
   it("renforce la lisibilité du menu et les contours de l’en-tête", () => {

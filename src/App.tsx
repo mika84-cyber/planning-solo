@@ -92,8 +92,6 @@ import { summarizePayslipReview } from "./payslipReview";
 import { strikePayEstimate } from "./strike";
 import { StrikeContinuityDetails } from "./StrikeContinuityDetails";
 import { UsefulFormsSection } from "./UsefulFormsSection";
-import { ThemePreferenceControl } from "./ThemePreferenceControl";
-import { useThemePreference } from "./theme";
 import {
   payEstimateReadiness,
   type PayEstimateField,
@@ -493,7 +491,6 @@ export default function Home() {
   const [homeSection, setHomeSection] = useState<MainSection>("home");
   const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const [mainMenuOpen, setMainMenuOpen] = useState(false);
-  const { preference: themePreference, resolvedTheme, setPreference: setThemePreference } = useThemePreference();
   const [guidePromptOpen, setGuidePromptOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const guidePromptCheckedRef = useRef(false);
@@ -7057,11 +7054,6 @@ export default function Home() {
               ))}
             </nav>
             <div className="main-menu-secondary">
-              <ThemePreferenceControl
-                preference={themePreference}
-                resolvedTheme={resolvedTheme}
-                onChange={setThemePreference}
-              />
               <button
                 type="button"
                 className="guide-menu-entry"

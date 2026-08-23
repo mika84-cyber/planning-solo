@@ -165,9 +165,7 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   const menuLabels = await menu.locator("nav > button").allTextContents();
   expect(menuLabels.at(-1)).toContain("Formulaires utiles");
   await expect(guide.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
-  const appearanceBox = await menu.getByRole("radiogroup", { name: "Choisir l’apparence" }).boundingBox();
-  const guideBox = await guide.boundingBox();
-  expect(guideBox!.y).toBeGreaterThan(appearanceBox!.y);
+  await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
   await expect(menu).toHaveCSS("background-image", /menu-art\.jpg/);
   await expect(guide).toHaveCSS("background-color", "rgba(255, 255, 255, 0.9)");
 
@@ -272,6 +270,10 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(sapLinks).toHaveCount(3);
   await expect(sapLinks.first()).toHaveAttribute("download", "");
   await expect(sapLinks).toHaveText(["Télécharger", "Télécharger", "Télécharger"]);
+  const downloadIconBox = (await sapLinks.first().boundingBox())!;
+  expect(Math.abs(downloadIconBox.width - 42)).toBeLessThan(0.5);
+  expect(Math.abs(downloadIconBox.height - 42)).toBeLessThan(0.5);
+  await expect(sapLinks.first().locator(".useful-form-download-label")).toHaveCSS("width", "1px");
   await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
     "Demande de congés",
     "Demande de récupérations",
@@ -294,33 +296,6 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     "CET - Demande d’ouverture",
     "CET - Alimentation et indemnisation",
   ]);
-});
-
-test("le mode sombre se choisit, suit l’appareil et reste mémorisé", async ({ page }) => {
-  await prepareDemo(page);
-  await openMainMenu(page);
-
-  const appearance = page.getByRole("radiogroup", { name: "Choisir l’apparence" });
-  await expect(appearance).toBeVisible();
-  await appearance.getByRole("radio", { name: "Sombre" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  expect(await page.evaluate(() => localStorage.getItem("planning:theme-preference-v1"))).toBe("dark");
-
-  await page.getByRole("button", { name: "Fermer le menu" }).click();
-  await expect(page.locator(".today-overview")).toHaveCSS("background-image", /linear-gradient/);
-  await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-
-  await page.emulateMedia({ colorScheme: "dark" });
-  await openMainMenu(page);
-  await page.getByRole("radiogroup", { name: "Choisir l’apparence" })
-    .getByRole("radio", { name: "Auto" })
-    .click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(page.getByText("Automatique · sombre")).toBeVisible();
-
-  await page.emulateMedia({ colorScheme: "light" });
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });
 
 test("l’en-tête, le sélecteur d’affichage et les années sont confortables", async ({ page }) => {

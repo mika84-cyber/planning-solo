@@ -149,9 +149,11 @@ export function UsefulFormsSection() {
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 3v12m-4-4 4 4 4-4M5 19h14" />
                   </svg>
-                  {downloadingFile === document.file
-                    ? "Préparation…"
-                    : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}
+                  <span className="useful-form-download-label">
+                    {downloadingFile === document.file
+                      ? "Préparation…"
+                      : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}
+                  </span>
                 </a>
               </article>
               );
