@@ -335,17 +335,6 @@ button {
   font-weight: 800;
   cursor: pointer;
 }
-.account-update-dot {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 13px;
-  height: 13px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: #d52d43;
-  box-shadow: 0 2px 6px rgba(141, 25, 45, 0.32);
-}
 .account-button.open {
   background: var(--accent);
   color: #fff;
@@ -1687,11 +1676,11 @@ h1 {
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.16);
 }
 .cet-heading > span:nth-child(2) { display: grid; gap: 3px; }
-.cet-heading strong { font-size: 1.15rem; }
-.cet-heading small { color: #647187; font-size: 0.82rem; font-weight: 650; }
+.cet-heading strong { font-size: 1.08rem; }
+.cet-heading small { color: #647187; font-size: 0.76rem; font-weight: 650; }
 .cet-caret { font-size: 1.25rem; transform: translateY(-2px); }
 .cet-heading[aria-expanded="true"] .cet-caret { transform: rotate(180deg) translateY(2px); }
-.cet-content { display: grid; gap: 14px; padding: 16px; border-top: 1px solid #bdc8d8; }
+.cet-content { display: grid; gap: 12px; padding: 15px; border-top: 1px solid #bdc8d8; font-size: 0.88rem; }
 .cet-callout,
 .cet-deposit-preview {
   padding: 12px 14px;
@@ -1710,6 +1699,7 @@ h1 {
   gap: 11px;
   margin-top: 13px;
 }
+.cet-form-grid label.wide { grid-column: 1 / -1; max-width: 340px; }
 .cet-form-grid label,
 .cet-operation-form label { display: grid; gap: 6px; color: #3f4d63; font-size: 0.78rem; font-weight: 800; }
 .cet-form-grid input,
@@ -1731,7 +1721,7 @@ h1 {
 .cet-checkbox { display: flex; align-items: flex-start; gap: 9px; margin-top: 12px; color: #4b596d; font-size: 0.82rem; line-height: 1.35; }
 .cet-checkbox input { width: 19px; height: 19px; margin: 0; accent-color: #315eaa; }
 .cet-actions,
-.cet-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-top: 13px; }
+.cet-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 13px; }
 .cet-actions button,
 .cet-toolbar button,
 .cet-operation-form > button {
@@ -1748,8 +1738,11 @@ h1 {
 .cet-actions .primary-action,
 .cet-toolbar .primary-action,
 .cet-operation-form > .primary-action { border-color: #315eaa; color: #fff; background: #315eaa; }
+.cet-toolbar button { width: 100%; }
+.cet-toolbar .cet-funding-action { grid-column: 1 / -1; }
 .cet-disable-trigger {
   justify-self: end;
+  margin-top: 6px;
   border: 0;
   padding: 3px 1px;
   color: #9f3040;
@@ -1788,7 +1781,7 @@ h1 {
 .cet-summary-grid > div { display: grid; gap: 4px; min-height: 98px; padding: 12px; border: 1px solid #bdc9d9; border-radius: 13px; background: #fff; }
 .cet-summary-grid > .cet-balance-main { border-color: #315eaa; color: #173f7f; background: #eff5ff; }
 .cet-summary-grid span { color: #637086; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
-.cet-summary-grid strong { align-self: end; font-size: 1.45rem; }
+.cet-summary-grid strong { align-self: end; font-size: 1.34rem; }
 .cet-summary-grid strong i { font-size: 0.76rem; font-style: normal; }
 .cet-summary-grid small { color: #6c7789; font-size: 0.78rem; }
 .cet-deposit-preview { display: grid; gap: 9px; }
@@ -1799,6 +1792,20 @@ h1 {
 .cet-source-pills strong { margin-left: 5px; color: #244d88; }
 .cet-deposit-preview .cet-warning { color: #9a5621; }
 .cet-operation-form { padding: 13px; border: 1px solid #b7c5d7; border-radius: 13px; background: #f7f9fc; }
+.cet-subsection,
+.cet-deposit-preview,
+.cet-history {
+  border: 1.5px solid #b9c7da;
+  border-radius: 14px;
+  padding: 13px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 254, 0.94));
+  box-shadow: 0 6px 16px rgba(36, 64, 101, 0.06);
+}
+.cet-overview-panel { display: grid; gap: 10px; border-color: #9eb9dc; background: linear-gradient(145deg, #f9fbff, #eef5ff); }
+.cet-management-panel { display: grid; gap: 10px; }
+.cet-subsection-heading { display: grid; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid #d5deea; }
+.cet-subsection-heading h4 { margin: 0; color: #223d62; font-size: 0.94rem; }
+.cet-subsection-heading .step-label { font-size: 0.62rem; }
 .cet-operation-note { grid-column: 1 / -1; }
 .cet-operation-help {
   grid-column: 1 / -1;
@@ -1830,20 +1837,21 @@ h1 {
 .cet-operation-sign.deposit,
 .cet-operation-sign.adjustment { background: #2d8469; }
 .cet-history article > button { width: 34px; height: 34px; border: 1px solid #e1b1b8; border-radius: 10px; color: #b2273d; font-size: 1.25rem; background: #fff8f8; }
-.cet-legal-note { padding-top: 13px; border-top: 1px solid #d2d9e3; font-size: 0.76rem; }
 
 @media (max-width: 720px) {
   .cet-section { border-radius: 16px; }
   .cet-heading { padding: 12px; }
   .cet-symbol { width: 42px; height: 42px; border-radius: 12px; }
   .cet-content { padding: 12px; }
+  .cet-subsection,
+  .cet-deposit-preview,
+  .cet-history { border-radius: 12px; padding: 10px; }
   .cet-form-grid,
   .cet-operation-form,
   .cet-summary-grid { grid-template-columns: 1fr; }
   .cet-operation-note { grid-column: auto; }
   .cet-summary-grid > div { min-height: 88px; }
-  .cet-actions,
-  .cet-toolbar { display: grid; grid-template-columns: 1fr 1fr; }
+  .cet-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .cet-toolbar .primary-action { white-space: normal; }
   .cet-disable-confirm { align-items: stretch; flex-direction: column; }
   .cet-disable-confirm > div:last-child { display: grid; grid-template-columns: 1fr; }
@@ -5335,10 +5343,10 @@ h1 {
   display: grid;
   gap: 13px;
   margin-bottom: 14px;
-  border: 1px solid #d7e1ee;
+  border: 1.5px solid #aabbd1;
   border-radius: 18px;
   padding: 16px;
-  background: #fff;
+  background: linear-gradient(145deg, #ffffff 0%, #f3f7fc 100%);
   box-shadow: var(--shadow);
 }
 .leave-balances-heading {
@@ -5346,10 +5354,14 @@ h1 {
   align-items: flex-end;
   justify-content: space-between;
   gap: 14px;
+  border: 1px solid #c8d5e5;
+  border-radius: 13px;
+  padding: 11px 12px;
+  background: rgba(247, 250, 255, 0.9);
 }
 .leave-balances-heading h3 {
   margin: 2px 0 0;
-  font-size: 18px;
+  font-size: 16px;
   letter-spacing: -0.02em;
 }
 .leave-balances-heading > strong {
@@ -5357,12 +5369,28 @@ h1 {
   font-size: 13px;
 }
 .direct-balances-content {
-  border-top: 0;
-  padding: 0;
+  border: 1px solid #c8d4e3;
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.82);
 }
 .leave-balances-direct .leave-balance-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.leave-balances-direct .leave-balance-grid button {
+  border: 1px solid color-mix(in srgb, var(--balance-color) 52%, #aeb9c7);
+  border-left-width: 5px;
+  padding: 11px 12px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.72);
+}
+.leave-balances-direct .leave-balance-grid strong {
+  margin-bottom: 5px;
+  border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
+  padding-bottom: 7px;
+  font-size: 23px;
+}
+.leave-balances-direct .leave-balance-grid span { font-size: 10px; }
+.leave-balances-direct .leave-balance-grid small { font-size: 9px; }
 
 /* Dans Ma paie, une teinte sauge très légère crée un second niveau de
    navigation sans concurrencer les rubriques principales. */
@@ -6074,7 +6102,7 @@ h1 {
     gap: 4px;
   }
   .leave-balances-heading h3 {
-    font-size: 17px;
+    font-size: 15px;
   }
   .leave-balances-direct .leave-balance-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6085,7 +6113,7 @@ h1 {
     padding: 10px;
   }
   .leave-balances-direct .leave-balance-grid strong {
-    font-size: 22px;
+    font-size: 20px;
   }
   .leave-balances-direct .leave-balance-grid small {
     line-height: 1.3;
@@ -6963,9 +6991,11 @@ h1 {
 }
 .leave-calendar-marker-childcare { font-size: 14px; }
 .leave-calendar-marker-sick { font-size: 14px; }
+.leave-calendar-marker-strike { color: #241b08; font-size: 15px; }
 .leave-calendar-marker.compact { right: 2px; bottom: 2px; font-size: 7px; }
 .leave-calendar-marker-childcare.compact { font-size: 9px; }
 .leave-calendar-marker-sick.compact { font-size: 9px; }
+.leave-calendar-marker-strike.compact { font-size: 10px; }
 
 /* Demi-journée : aplat sur la moitié posée et séparation noire centrale. */
 .day.half-morning::after,
@@ -8104,6 +8134,269 @@ h1 {
   .pdf-download-actions { grid-template-columns: 1fr; }
   .pdf-download-settings .school-vacation-choice { grid-column: 1; }
   .pdf-download-actions .pdf-action { min-height: 76px; }
+}
+
+/* La sculpture dorée reste centrée et entière dans le bandeau, quel que soit
+   le rapport largeur / hauteur de l’écran. */
+.top-header.top-header-forms {
+  min-height: 205px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05)),
+    linear-gradient(
+      180deg,
+      #9f947e 0%,
+      #9a927c 16%,
+      #8f8770 38%,
+      #867e66 60%,
+      #887c64 81%,
+      #938970 100%
+    );
+}
+.top-header.top-header-forms::before {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  height: 112%;
+  aspect-ratio: 680 / 531;
+  background: url("/forms-header-art.jpg") center / 100% 100% no-repeat;
+  content: "";
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+.top-header.top-header-forms > * {
+  position: relative;
+  z-index: 1;
+}
+
+.useful-forms-screen {
+  width: min(1120px, calc(100% - 32px));
+  margin: 18px auto 0;
+  border: 1.5px solid var(--app-frame-strong);
+  border-radius: 22px;
+  padding: 22px;
+  background: #fff;
+  box-shadow: var(--app-subtle-shadow);
+}
+.useful-form-folder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.useful-form-folder {
+  --folder-accent: #4e7dac;
+  min-height: 170px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--folder-accent) 62%, #fff);
+  border-radius: 18px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--folder-accent) 9%, #fff);
+  color: #17253a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 5px 0 var(--folder-accent), 0 8px 18px rgba(35, 54, 77, 0.07);
+}
+.useful-form-folder.tone-expo { --folder-accent: #4e8b80; }
+.useful-form-folder.tone-sap { --folder-accent: #5677b9; }
+.useful-form-folder.tone-brantome { --folder-accent: #c07737; }
+.useful-form-folder:hover { transform: translateY(-1px); }
+.useful-form-folder > span:nth-child(2) { display: grid; gap: 5px; }
+.useful-form-folder strong { font-size: 17px; }
+.useful-form-folder small { color: var(--folder-accent); font-size: 12px; font-weight: 900; }
+.useful-form-folder em { color: #5f6f83; font-size: 11px; font-style: normal; line-height: 1.4; }
+.useful-form-folder > i { color: var(--folder-accent); font-size: 28px; font-style: normal; }
+.useful-form-folder-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--folder-accent) 18%, #fff);
+  color: var(--folder-accent);
+}
+.useful-form-folder-icon svg { width: 29px; fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.8; }
+
+.useful-forms-folder-screen { padding-top: 0; overflow: hidden; }
+.useful-forms-folder-header {
+  --folder-accent: #5677b9;
+  min-height: 126px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 0 -22px 20px;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--folder-accent) 52%, #fff);
+  padding: 24px 22px;
+  background:
+    radial-gradient(circle at 88% 25%, rgba(255, 255, 255, 0.78) 0 32px, transparent 33px),
+    color-mix(in srgb, var(--folder-accent) 12%, #fff);
+}
+.useful-forms-folder-header.tone-expo { --folder-accent: #4e8b80; }
+.useful-forms-folder-header.tone-sap { --folder-accent: #5677b9; }
+.useful-forms-folder-header.tone-brantome { --folder-accent: #c07737; }
+.useful-forms-folder-header h2 { margin: 3px 0; color: #17283e; font-size: 24px; }
+.useful-forms-folder-header small { color: var(--folder-accent); font-weight: 850; }
+.useful-form-download-list { display: grid; gap: 11px; }
+.useful-form-download-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  border: 1.5px solid var(--app-frame-soft);
+  border-radius: 15px;
+  padding: 13px 14px;
+  background: #f9fbfe;
+}
+.useful-form-file-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #e9f0fa;
+  color: #315e98;
+}
+.useful-form-file-icon svg,
+.useful-form-download-card a svg {
+  width: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.useful-form-file-copy { display: grid; gap: 3px; }
+.useful-form-file-copy small { color: #60748c; font-size: 10px; font-weight: 900; letter-spacing: .06em; }
+.useful-form-file-copy strong { color: #17283e; font-size: 14px; line-height: 1.3; }
+.useful-form-download-card a {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #315eaa;
+  border-radius: 11px;
+  padding: 9px 13px;
+  background: #315eaa;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+}
+.useful-form-download-card a svg { width: 17px; }
+.useful-form-local-notice {
+  margin: 0;
+  border: 1px solid #d3a45d;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #fff8e8;
+  color: #704a12;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.useful-form-download-error {
+  margin: 2px 0 0;
+  border: 1px solid #d98a95;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #fff1f3;
+  color: #9b2538;
+  font-size: 12px;
+  font-weight: 750;
+}
+.useful-forms-empty {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  border: 1.5px dashed #82a9a1;
+  border-radius: 17px;
+  padding: 28px;
+  background: #f3f9f7;
+  color: #315e57;
+  text-align: center;
+}
+.useful-forms-empty > span { font-size: 34px; }
+.useful-forms-empty p { margin: 0; color: #657b77; font-size: 12px; }
+
+/* Le mode d’emploi est volontairement la dernière commande du menu. */
+.main-menu-drawer {
+  height: 100dvh;
+  min-height: 0;
+  overflow-y: auto;
+}
+.main-menu-secondary .guide-menu-entry {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 13px;
+  padding: 11px 13px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f3854;
+  text-shadow: none;
+}
+
+@media (max-width: 720px) {
+  .top-header.top-header-forms {
+    min-height: 215px;
+  }
+  .top-header.top-header-forms::before {
+    top: 58%;
+    left: 38%;
+    height: 86%;
+  }
+  .top-header.top-header-forms .top-header-title,
+  .top-header.top-header-forms .account-menu,
+  .top-header.top-header-forms .main-menu-button,
+  .top-header.top-header-forms .header-update-button {
+    position: relative;
+    z-index: 2;
+  }
+  .top-header.top-header-forms .header-update-button {
+    max-width: 154px;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.84);
+    font-size: 9px;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .top-header.top-header-forms .header-update-button svg {
+    width: 12px;
+    height: 12px;
+  }
+  .useful-forms-screen {
+    width: calc(100% - 20px);
+    margin-top: 12px;
+    border-radius: 18px;
+    padding: 14px;
+  }
+  .useful-form-folder-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .useful-form-folder { min-height: 112px; padding: 14px; }
+  .useful-forms-folder-screen { padding-top: 0; }
+  .useful-forms-folder-header {
+    min-height: 112px;
+    margin: 0 -14px 14px;
+    padding: 18px 14px;
+  }
+  .useful-forms-folder-header h2 { font-size: 20px; }
+  .useful-form-download-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 11px;
+  }
+  .useful-form-download-card a { grid-column: 1 / -1; width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pay-app-screen,
@@ -9552,6 +9845,50 @@ h1 {
   box-shadow: none;
 }
 .header-update-button svg { width: 14px; height: 14px; }
+.header-update-button.update-available {
+  border-color: #8f1728 !important;
+  background: #c52f42;
+  color: #fff;
+  box-shadow: 0 5px 12px rgba(142, 26, 43, 0.2);
+}
+.header-update-button.update-available:hover { background: #a92335; }
+
+.update-available-backdrop { z-index: 1600; }
+.update-available-modal {
+  width: min(430px, calc(100vw - 24px));
+  border: 1.5px solid #8eafd6;
+  text-align: center;
+  background: linear-gradient(150deg, #ffffff 0%, #edf5ff 100%);
+  box-shadow: 0 24px 60px rgba(26, 56, 94, 0.24);
+}
+.update-available-symbol {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 8px;
+  border-radius: 15px;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  background: linear-gradient(145deg, #3f78cb, #2859a6);
+  box-shadow: 0 9px 20px rgba(40, 89, 166, 0.25);
+}
+.update-available-modal h2 { margin: 5px 0 7px; font-size: 1.25rem; }
+.update-available-modal p { margin: 0; color: #53657c; font-size: 0.86rem; line-height: 1.45; }
+.update-available-modal .modal-actions { justify-content: center; }
+.update-available-modal .update-now-button {
+  border-color: #a91f35;
+  color: #fff;
+  background: #c52f42;
+  box-shadow: 0 5px 12px rgba(142, 26, 43, 0.2);
+}
+.update-available-modal .update-now-button:hover { background: #a92335; }
+.update-available-modal .update-now-button:disabled {
+  border-color: #a94f5d;
+  color: rgba(255, 255, 255, 0.82);
+  background: #b65b68;
+}
 
 /* La demande Maladie devient une carte cohérente et aérée : aucun texte ne
    chevauche plus le choix actif. */
@@ -9862,7 +10199,7 @@ h1 {
       rgba(240, 247, 255, 0.34) 42%,
       rgba(225, 239, 252, 0.18) 100%
     ),
-    url("/pdf-header-art.webp") center 44% / cover no-repeat;
+    url("/pdf-header-art.webp") center 70% / cover no-repeat;
 }
 
 @media (max-width: 720px) {
@@ -10019,6 +10356,249 @@ h1 {
   text-align: center;
   white-space: normal;
 }
+
+/* Toutes les rubriques reprennent exactement le gabarit de l'en-tête
+   Formulaires utiles, sans modifier l'illustration propre à chacune. */
+.top-header {
+  box-sizing: border-box;
+  height: 205px;
+  min-height: 205px;
+}
+
+@media (max-width: 720px) {
+  .top-header {
+    height: 215px;
+    min-height: 215px;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .top-header {
+    height: 205px;
+    min-height: 205px;
+  }
+}
+
+/* La continuité de grève reste un diagnostic de paie : elle explique les
+   intervalles sans recolorer ni requalifier les journées du planning. */
+.strike-continuity-details {
+  display: grid;
+  gap: 9px;
+  margin-top: 11px;
+  border-top: 1px solid #d7e0eb;
+  padding-top: 11px;
+}
+.strike-protected-break,
+.strike-confirmed-continuity,
+.strike-continuity-warning,
+.strike-continuity-details footer {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #b9cfad;
+  border-left: 5px solid #6f9b59;
+  border-radius: 11px;
+  padding: 10px 11px;
+  background: #f3f9ef;
+  color: #24401f;
+}
+.strike-confirmed-continuity {
+  border: 1px solid #be2f38;
+  border-left: 5px solid #8f111b;
+  border-radius: 11px;
+  padding: 10px 11px;
+  background: #fff0f0;
+  color: #65131a;
+}
+.strike-continuity-warning {
+  border-color: #e2b45f;
+  border-left-color: #c57a10;
+  background: #fff7e5;
+  color: #69400b;
+}
+.strike-continuity-details footer {
+  border-color: #becbdd;
+  border-left-color: #536f98;
+  background: #f5f8fc;
+  color: #263a55;
+}
+.strike-continuity-details strong { font-size: 11px; line-height: 1.35; }
+.strike-continuity-details span,
+.strike-continuity-details small { font-size: 9.5px; line-height: 1.4; }
+.strike-continuity-details small { color: #607086; }
+
+/* Cadre visuel commun : les grandes rubriques et leurs sous-parties utilisent
+   désormais la même hiérarchie bleu-gris dans toute l’application. */
+:root {
+  --app-frame-strong: rgba(55, 73, 98, 0.58);
+  --app-frame-soft: rgba(83, 105, 134, 0.38);
+  --app-subtle-shadow: 0 7px 18px rgba(33, 55, 83, 0.07);
+}
+
+.today-overview,
+.home-notes-section,
+.planning-workspace-shell.framed,
+.section-intro,
+.leave-balances-direct,
+.overtime-balance-card,
+.pay-app-screen,
+.pdf-download-screen,
+.request-panel,
+.cet-section,
+.allowance-card,
+.pay-profile-settings {
+  border-color: var(--app-frame-strong);
+  box-shadow: var(--app-subtle-shadow);
+}
+
+.today-overview-grid > article,
+.today-overview-grid > button,
+.leave-balance-grid button,
+.overtime-balance-summary article,
+.request-option-group,
+.cet-callout,
+.cet-subsection,
+.cet-deposit-preview,
+.cet-history,
+.cet-operation-form,
+.variable-pay-list article,
+.pay-category-grid > button,
+.pdf-download-settings > label,
+.sick-request-panel .request-bottom {
+  border-color: var(--app-frame-soft);
+  box-shadow: 0 3px 10px rgba(39, 61, 88, 0.045);
+}
+
+.cet-form-availability {
+  margin: 12px 0;
+  border: 1.5px solid #d59a32;
+  border-left-width: 5px;
+  border-radius: 11px;
+  padding: 10px 12px;
+  color: #6d4307;
+  font-size: 12px;
+  line-height: 1.45;
+  background: #fff5d9;
+}
+.cet-form-availability strong { color: #8a4d00; }
+
+/* Les deux actions courantes restent secondaires ; seul le formulaire CET
+   conserve l'accent bleu sur toute sa largeur. */
+.cet-toolbar .primary-action:not(.cet-funding-action) {
+  border-color: #4f5f73;
+  color: #111827;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(31, 45, 65, 0.08);
+}
+
+/* Au moment de poser une récupération, le nombre d'heures constitue le choix
+   principal : il est isolé dans un cadre et la valeur retenue ressort en bleu. */
+.recovery-duration-field {
+  border: 1.5px solid #7892b2;
+  border-radius: 13px;
+  padding: 11px;
+  background: #f5f9ff;
+  box-shadow: 0 4px 12px rgba(42, 73, 112, 0.08);
+}
+.recovery-duration-field legend {
+  margin: 0;
+  padding: 0 7px;
+  color: #183e70;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+.recovery-duration-field .recovery-duration-choice {
+  margin-top: 2px;
+  background: #e7eef8;
+}
+.recovery-duration-field .recovery-duration-choice button {
+  min-height: 46px;
+  border-color: #bdcad9;
+  color: #172033;
+  font-size: 0.9rem;
+  background: #fff;
+}
+.recovery-duration-field .recovery-duration-choice button.active {
+  border-color: #315eaa;
+  color: #fff;
+  background: #315eaa;
+  box-shadow: 0 4px 10px rgba(49, 94, 170, 0.24);
+}
+
+@media (max-width: 680px) {
+  .recovery-duration-field .recovery-duration-choice {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Le CET fermé reste une véritable carte d’entrée, assez généreuse et
+   chaleureuse pour être repérée parmi les autres rubriques. */
+.cet-section.closed {
+  position: relative;
+  min-height: 88px;
+  border-color: #778eb8;
+  background: linear-gradient(125deg, #e9f3ff 0%, #f2edff 58%, #fff2e7 100%);
+  box-shadow: 0 10px 24px rgba(51, 74, 116, 0.13);
+}
+.cet-section.closed::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, #315eaa, #8666b2);
+}
+.cet-section.closed .cet-heading {
+  min-height: 88px;
+  padding: 17px 18px 17px 21px;
+  background: transparent;
+}
+.cet-section.closed .cet-symbol {
+  width: 52px;
+  height: 52px;
+  border-color: #294f91;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #315eaa, #6655a0);
+  box-shadow: 0 6px 14px rgba(49, 70, 130, 0.2), inset 0 0 0 3px rgba(255, 255, 255, 0.16);
+}
+.cet-section.closed .cet-heading strong { color: #142b50; font-size: 1.16rem; }
+.cet-section.closed .cet-heading small { color: #52627a; font-size: 0.8rem; }
+.cet-closed-useful {
+  justify-self: start;
+  margin-top: 4px;
+  border: 0;
+  padding: 2px 0 0;
+  color: #4b4676;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2;
+  background: transparent;
+}
+.cet-section.closed .cet-caret {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(49, 94, 170, 0.3);
+  border-radius: 50%;
+  color: #315eaa;
+  text-align: center;
+  line-height: 31px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+/* "Autre" possède une couleur propre tout en conservant l'explication des
+   demandes archivées dans la carte. */
+.leave-request-archive {
+  border-color: #a982ad;
+  background: linear-gradient(135deg, #f4eaff 0%, #fff1e7 100%);
+  box-shadow: 0 8px 20px rgba(100, 68, 113, 0.1);
+}
+.leave-request-archive .request-archive-toggle:hover {
+  background: rgba(255, 255, 255, 0.48);
+}
+.leave-request-archive .request-archive-icon {
+  color: #704286;
+  background: #ead8f4;
+}
+.leave-request-archive .request-archive-copy strong { color: #4e2f60; }
+.leave-request-archive .request-archive-copy small { color: #735f79; }
 
 /* Toutes les récupérations prises sur le solde utilisent le même langage
    visuel : case corail, liseré noir et simple repère REC en bas à droite.
@@ -10202,6 +10782,129 @@ h1 {
 /* Les rubriques de suivi restent, elles, immédiatement identifiables. */
 .leave-balance-grid button.other { --balance-color: #e58aa5; }
 .leave-balance-grid button.cet { --balance-color: #4f9fe6; }
+
+/* La grève est rouge, avec un liseré réellement noir et le poing lisible.
+   Le même rendu est conservé pendant la sélection et après l'enregistrement. */
+.month-card .calendar-grid .day.leave-day.leave-strike,
+.year-grid .mini-grid .mini-day.leave-day.leave-strike {
+  border: 2px solid #000 !important;
+  background: #f28b82 !important;
+  color: #17213f !important;
+  box-shadow: none !important;
+}
+.month-card .calendar-grid .day.leave-day.leave-strike {
+  outline: 2px solid #000 !important;
+  outline-offset: -2px !important;
+}
+.year-grid .mini-grid .mini-day.leave-day.leave-strike {
+  outline: 1.5px solid #000 !important;
+  outline-offset: -1.5px !important;
+}
+.month-card .calendar-grid .day.request-selected-strike,
+.year-grid .mini-grid .mini-day.request-selected-strike {
+  border: 2px solid #000 !important;
+  background: #f28b82 !important;
+  color: #17213f !important;
+  box-shadow: none !important;
+}
+.month-card .calendar-grid .day.request-selected-strike {
+  outline: 2px solid #000 !important;
+  outline-offset: -2px !important;
+}
+.year-grid .mini-grid .mini-day.request-selected-strike {
+  outline: 1.5px solid #000 !important;
+  outline-offset: -1.5px !important;
+}
+.leave-calendar-marker-strike {
+  right: 3px;
+  bottom: 2px;
+  font-size: clamp(13px, 2.2vw, 19px);
+}
+.leave-calendar-marker-strike.compact {
+  right: 1px;
+  bottom: 1px;
+  font-size: clamp(7px, 0.9vw, 11px);
+}
+.strike-leave-choice,
+.leave-choices .strike-day,
+.strike-request-options .request-option-group,
+.strike-request-options .type-tabs button {
+  --choice-accent: #c8424c;
+  --person-color: #c8424c;
+}
+.leave-choices .strike-day {
+  border-color: var(--line) !important;
+  background: #fafbfd !important;
+  box-shadow: none !important;
+}
+.leave-balances-direct .leave-balance-grid button.strike {
+  --balance-color: #7d90da;
+  grid-column: auto;
+}
+/* Entre la tablette ouverte et le petit ordinateur, Divers occupe la rangée
+   précédente : CET et Grève restent ainsi réellement côte à côte. */
+@media (min-width: 721px) and (max-width: 1000px) {
+  .leave-balances-direct .leave-balance-grid button.other { grid-column: 1 / -1; }
+}
+.strike-request-options .request-option-group { gap: 12px; }
+.strike-request-options .request-help { margin-top: 5px; }
+
+/* Dans le premier écran de choix, Maladie et CET restent aussi neutres que
+   les autres entrées : leur couleur sert ensuite dans le planning. */
+.request-choice .choice-grid > button.sick-leave-choice,
+.request-choice .choice-grid > button.cet-leave-choice {
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+  background: #fafbfd !important;
+  box-shadow: none !important;
+}
+
+/* L'ouverture officielle du CET est l'action principale ; la confirmation
+   de droits déjà ouverts reste secondaire et sobre. */
+.cet-actions .cet-opening-request-action {
+  border-color: #315eaa;
+  color: #fff;
+  background: #315eaa;
+}
+.cet-actions .cet-rights-open-action {
+  border-color: #c75f08;
+  color: #fff;
+  background: #d86f12;
+}
+
+@media (max-width: 720px) {
+  .leave-calendar-marker-strike {
+    right: 1px;
+    bottom: 0;
+    font-size: clamp(12px, 3.5vw, 15px);
+  }
+  .leave-calendar-marker-strike.compact {
+    right: 0;
+    bottom: 0;
+    font-size: clamp(7px, 2.2vw, 9px);
+  }
+  .leave-balances-direct .leave-balance-grid button.strike {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    min-height: 78px;
+    padding: 9px 12px;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike > span,
+  .leave-balances-direct .leave-balance-grid button.strike > strong,
+  .leave-balances-direct .leave-balance-grid button.strike > small,
+  .leave-balances-direct .leave-balance-grid button.strike > em { margin: 0; }
+  .leave-balances-direct .leave-balance-grid button.strike > strong {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike > small { grid-column: 1; }
+  .leave-balances-direct .leave-balance-grid button.strike > em {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    justify-self: end;
+  }
+}
 
 /* Le grand écran tactile d'un téléphone pliable conserve le confort d'une
    tablette : davantage de hauteur et un titre plus présent. */

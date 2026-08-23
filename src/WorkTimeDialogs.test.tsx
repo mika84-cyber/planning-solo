@@ -106,6 +106,8 @@ describe("fenêtres de temps de travail", () => {
     expect(mecenat).toContain("Total brut");
     expect(solidarity).toContain("Ajouter des heures manuellement");
     expect(recovery).toContain("Ajouter une récupération");
+    expect(recovery).toContain("Heures à poser");
+    expect(recovery).toContain('class="overtime-choice-field recovery-duration-field"');
     expect(recovery).toContain("Récupération sur une formation");
     expect(recovery).not.toContain("Récupération de formation");
     expect(recovery).toContain("Récupérations courantes");

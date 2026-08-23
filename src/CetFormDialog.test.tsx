@@ -35,7 +35,8 @@ describe("formulaires CET", () => {
 
   it("laisse le formulaire d’alimentation accessible toute l’année", () => {
     const html = renderToStaticMarkup(<CetFormDialog {...common} kind="funding" />);
-    expect(html).toContain("Le formulaire reste accessible toute l’année");
+    expect(html).toContain("vous pouvez préparer ce formulaire maintenant");
+    expect(html).toContain('role="alert"');
     expect(html).toContain("15 novembre");
     expect(html).toContain("31 décembre");
     expect(html).toContain("Aide au remplissage");

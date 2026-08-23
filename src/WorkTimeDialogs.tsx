@@ -554,8 +554,8 @@ export function RecoveryUseDialog({
               </small>
             </section>
           ) : null}
-          <fieldset className="overtime-choice-field">
-            <legend>Durée</legend>
+          <fieldset className="overtime-choice-field recovery-duration-field">
+            <legend>Heures à poser</legend>
             <div className="recovery-duration-choice">
               {draft.kind === "training" ? ([
                 [180, "3 h"],

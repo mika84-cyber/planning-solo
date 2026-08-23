@@ -14,7 +14,7 @@ import type { WorkQuota } from "./overtime";
 import type { CetAccount } from "./cet";
 
 export type ViewMode = "month" | "year";
-export type RequestKind = "leave" | "recovery" | "other";
+export type RequestKind = "leave" | "recovery" | "other" | "strike";
 export type BalanceType = "annual" | "rtt" | "fraction";
 export type AuthStatus = "loading" | "guest" | "invite" | "recovery" | "ready";
 

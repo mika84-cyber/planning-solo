@@ -3037,8 +3037,8 @@ function syncPlanningRequest(){
   if(!planningImport || planningSyncDone) return Promise.resolve();
   if(planningSyncPromise) return planningSyncPromise;
   planningSyncPromise=(async function(){
-    var params=new URLSearchParams(location.search);
-    if(params.get('demo')==='1'){
+    var e2eDemo=(location.hostname==='127.0.0.1'||location.hostname==='localhost')&&localStorage.getItem('planning:e2e-demo-enabled')==='1';
+    if(e2eDemo){
       localStorage.setItem(PLANNING_DEMO_COMPLETED_KEY,JSON.stringify(planningImport));
       planningSyncDone=true;
       return;
@@ -3095,8 +3095,7 @@ function finishSavedRequestAfterDeliveryIssue(extra){
 function returnToPlanningAfterSuccess(){
   if(!planningImport) return;
   showToast(planningImport.requestKind==='recovery'?'Récupération enregistrée dans le planning':'Congé enregistré dans le planning');
-  var demo=new URLSearchParams(location.search).get('demo')==='1'?'?demo=1&request=saved':'?request=saved';
-  setTimeout(function(){ location.href='/'+demo; },900);
+  setTimeout(function(){ location.href='/?request=saved'; },900);
 }
 
 /* ================= choix du feuillet ================= */

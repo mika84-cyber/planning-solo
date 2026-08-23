@@ -52,4 +52,16 @@ describe("résumé avant validation", () => {
     expect(html).toContain("Repère visible uniquement dans le planning");
     expect(html).toContain("sans effet sur la paie ni les soldes");
   });
+
+  it("explique la retenue de grève sans déduction de congé", () => {
+    const html = renderToStaticMarkup(
+      <RequestValidationSummary
+        items={[{ date: "2026-08-13", type: "strike" }]}
+        requestKind="strike"
+        sickRequest={false}
+      />,
+    );
+    expect(html).toContain("retenue brute estimée au trentième");
+    expect(html).toContain("sans effet sur les soldes");
+  });
 });

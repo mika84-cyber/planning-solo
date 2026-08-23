@@ -100,7 +100,7 @@ export function LeaveBalancesSection({
               <em>Voir le détail</em>
             </button>
           ))}
-          {COUNTED_ONLY_TYPES.map((type) => (
+          {[...COUNTED_ONLY_TYPES.filter((type) => type !== "strike"), "strike" as const].map((type) => (
             <button
               type="button"
               key={type}
@@ -116,6 +116,8 @@ export function LeaveBalancesSection({
               <small>
                 {type === "cet"
                   ? "déduit du solde CET"
+                  : type === "strike"
+                    ? "retenue estimée dans Ma paie"
                   : type === "other"
                     ? "compté dans les jours non travaillés"
                     : "sans effet sur les congés"}
@@ -136,7 +138,7 @@ export function LeaveBalancesSection({
         <span>
           <strong>Reprendre mes absences précédentes</strong>
           <small>
-            Ajouter des jours et dimanches déjà posés, sans connaître leurs dates
+            Ajouter des jours et dimanches déjà posés, sans préciser les dates
           </small>
         </span>
         <span className="manual-adjustments-summary">

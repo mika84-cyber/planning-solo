@@ -3,25 +3,12 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles.css";
 import "./dataManagement.css";
-import { isDemoInstallationLink } from "./useInstallPrompt";
 
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
 
-const installationDemo = isDemoInstallationLink(
-  window.location.hostname,
-  window.location.search,
-);
-
-if ("serviceWorker" in navigator && !installationDemo) {
+if ("serviceWorker" in navigator) {
   if (import.meta.env.PROD) {
     window.addEventListener("load", () => {
-      let reloadingForUpdate = false;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (reloadingForUpdate) return;
-        reloadingForUpdate = true;
-        window.location.reload();
-      });
-
       void navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
         .then((registration) => {
@@ -43,7 +30,7 @@ if ("serviceWorker" in navigator && !installationDemo) {
           };
           checkForUpdate();
           document.addEventListener("visibilitychange", checkForUpdate);
-          window.setInterval(checkForUpdate, 15 * 60 * 1000);
+          window.setInterval(checkForUpdate, 2 * 60 * 1000);
         })
         .catch(() => {});
     });

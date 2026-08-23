@@ -60,6 +60,13 @@ describe("restauration d'une sauvegarde", () => {
         status: "contractuel",
         work_quota: "three_quarters",
         signature: "",
+        pay_profiles: {
+          "2026": { base_salary_cents: 180173 },
+          "2026-08": {
+            base_salary_cents: 180173,
+            residence_allowance_cents: 5405,
+          },
+        },
         manual_adjustments: {
           "2026": {
             annual_used: 4.5,
@@ -112,6 +119,10 @@ describe("restauration d'une sauvegarde", () => {
         gross_amount_cents: 13870,
       });
       expect(result.backup!.form_profile?.work_quota).toBe("three_quarters");
+      expect(result.backup!.form_profile?.pay_profiles?.["2026-08"]).toMatchObject({
+        base_salary_cents: 180173,
+        residence_allowance_cents: 5405,
+      });
       expect(
         result.backup!.form_profile?.manual_adjustments?.["2026"],
       ).toMatchObject({

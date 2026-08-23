@@ -36,6 +36,7 @@ describe("soldes de congés", () => {
         ]}
         countedOnly={{
           sick: { used: 2, details: [] },
+          strike: { used: 1, details: [] },
           childcare: { used: 0, details: [] },
           exceptional: { used: 0, details: [] },
           other: { used: 1, details: [] },
@@ -52,10 +53,14 @@ describe("soldes de congés", () => {
     expect(html).toContain("31 jours restants");
     expect(html).toContain("dont 1 saisi sans date");
     expect(html).toContain("2 dimanches");
+    expect(html).toContain("Ajouter des jours et dimanches déjà posés, sans préciser les dates");
     expect(html).toContain("Maladie");
+    expect(html).toContain("Grève");
+    expect(html).toContain("retenue estimée dans Ma paie");
     expect(html).toContain("Divers");
     expect(html).toContain("Congé CET");
     expect(html).toContain("compté dans les jours non travaillés");
     expect(html).toContain("déduit du solde CET");
+    expect(html.indexOf('class="strike"')).toBeGreaterThan(html.indexOf('class="cet"'));
   });
 });

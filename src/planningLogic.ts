@@ -6,6 +6,7 @@ export type LeaveType =
   | "half"
   | "recovery"
   | "sick"
+  | "strike"
   | "cet"
   | "other"
   | "childcare"
@@ -17,6 +18,7 @@ export type SelectionType =
   | "fraction"
   | "recovery"
   | "sick"
+  | "strike"
   | "cet"
   | "other"
   | "childcare"
@@ -99,6 +101,7 @@ export const TYPE_LABELS: Record<SelectionType, string> = {
   fraction: "Jour de fractionnement",
   recovery: "Récupération",
   sick: "Maladie",
+  strike: "Grève",
   cet: "Congé CET",
   other: "Divers",
   childcare: "Congé garde d’enfant",
@@ -116,6 +119,7 @@ export const TYPE_COLORS: Record<SelectionType, string> = {
   fraction: "#c9a6ea",
   recovery: "#e08a1e",
   sick: "#c2557a",
+  strike: "#f28b82",
   cet: "#4f9fe6",
   other: "#e58aa5",
   childcare: "#0891b2",
@@ -137,6 +141,7 @@ export const LEAVE_ALLOWANCES: Record<LeaveType, number> = {
   // aucun droit et n'entre dans aucune brique de solde.
   recovery: 0,
   sick: 0,
+  strike: 0,
   cet: 0,
   other: 0,
   childcare: 0,
@@ -145,6 +150,7 @@ export const LEAVE_ALLOWANCES: Record<LeaveType, number> = {
 /** Types suivis sans quota : comptés à part du solde de congés. */
 export const COUNTED_ONLY_TYPES = [
   "sick",
+  "strike",
   "childcare",
   "exceptional",
   "other",
@@ -158,6 +164,7 @@ export const LEAVE_TYPE_OPTIONS: Array<{ value: LeaveType; label: string }> = [
   { value: "half", label: "Demi-journée" },
   { value: "recovery", label: "Récupération" },
   { value: "sick", label: "Maladie" },
+  { value: "strike", label: "Grève" },
   { value: "cet", label: "Congé CET" },
   { value: "other", label: "Divers" },
   { value: "childcare", label: "Garde d’enfant" },

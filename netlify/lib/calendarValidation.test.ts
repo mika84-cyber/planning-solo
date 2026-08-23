@@ -19,6 +19,20 @@ describe("validation des dates de l'API", () => {
 });
 
 describe("lots de congés", () => {
+  it("accepte une journée de grève comme absence distincte", () => {
+    expect(
+      normalizeBulkPeriods([
+        {
+          id: "period-strike-1",
+          from: "2026-09-02",
+          to: "2026-09-02",
+          leaveType: "strike",
+          group: 2,
+        },
+      ]),
+    ).toMatchObject({ periods: [{ leave_type: "strike" }] });
+  });
+
   it("accepte Divers comme repère de planning", () => {
     const result = normalizeBulkPeriods([
       {

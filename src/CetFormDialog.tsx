@@ -249,8 +249,8 @@ export function CetFormDialog({
         <p>Remplissez les champs ci-dessous : l’application les reporte sur le formulaire officiel d’origine.</p>
         {kind === "funding" ? (
           <>
-            <p className="cet-form-availability">
-              Le formulaire reste accessible toute l’année. La demande doit toutefois être transmise entre le 15 novembre et le 31 décembre.
+            <p className="cet-form-availability" role="alert">
+              <strong>Attention :</strong> vous pouvez préparer ce formulaire maintenant, mais il ne peut être envoyé qu’entre le 15 novembre et le 31 décembre.
             </p>
             <button
               className="cet-form-help-button"

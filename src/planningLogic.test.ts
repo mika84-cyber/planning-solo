@@ -93,6 +93,12 @@ describe("palette du planning", () => {
     expect(TYPE_COLORS.annual).toBe("#6cbdf0");
     expect(TYPE_COLORS.rtt).toBe("#72b7ad");
     expect(TYPE_COLORS.fraction).toBe("#c9a6ea");
+    expect(TYPE_COLORS.strike).toBe("#f28b82");
+    expect(
+      Object.entries(TYPE_COLORS)
+        .filter(([type]) => type !== "strike")
+        .map(([, color]) => color),
+    ).not.toContain(TYPE_COLORS.strike);
   });
 });
 

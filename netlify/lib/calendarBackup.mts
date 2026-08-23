@@ -12,6 +12,7 @@ const LEAVE_TYPES = new Set([
   "sick",
   "cet",
   "other",
+  "strike",
   "childcare",
   "exceptional",
 ]);
@@ -266,7 +267,7 @@ export function sanitizeCalendarBackup(value: unknown) {
     if (rawProfiles)
       for (const [year, profile] of Object.entries(rawProfiles)) {
         const values = record(profile);
-        if (/^20\d{2}$/.test(year) && values)
+        if (/^20\d{2}(?:-(?:0[1-9]|1[0-2]))?$/.test(year) && values)
           payProfiles[year] = sanitizePayValues(values);
       }
     const manualAdjustments: Record<string, Record<string, number>> = {};

@@ -56,8 +56,10 @@ export function CetSection({
   onRequestLeave,
 }: CetSectionProps) {
   const [open, setOpen] = useState(false);
-  const [editingSettings, setEditingSettings] = useState(false);
   const [draft, setDraft] = useState<CetAccount>(() => account || emptyCetAccount());
+  const [initialBalanceInput, setInitialBalanceInput] = useState(() =>
+    (account?.initialBalance || "").toString(),
+  );
   const [operationOpen, setOperationOpen] = useState(false);
   const [operationKind, setOperationKind] = useState<CetOperationKind>("deposit");
   const [operationSource, setOperationSource] = useState<CetDepositSource>("annual");
@@ -119,14 +121,6 @@ export function CetSection({
     [active?.operations],
   );
 
-  function beginSettings() {
-    setDraft(account ? { ...account, operations: [...account.operations] } : emptyCetAccount());
-    setError("");
-    setDisableConfirmOpen(false);
-    setEditingSettings(true);
-    setOpen(true);
-  }
-
   async function saveSettings() {
     if (!Number.isInteger(draft.initialBalance) || draft.initialBalance < 0 || draft.initialBalance > 200) {
       setError("Indiquez un solde officiel en jours entiers, entre 0 et 200.");
@@ -140,15 +134,15 @@ export function CetSection({
       category: "C",
       workRule: "visitor_service",
     });
-    if (saved) setEditingSettings(false);
+    if (saved) setError("");
   }
 
   async function disableAccount() {
     const saved = await onSave({ ...emptyCetAccount(), enabled: false });
     if (!saved) return;
     setDraft(emptyCetAccount());
+    setInitialBalanceInput("");
     setDisableConfirmOpen(false);
-    setEditingSettings(false);
     setOperationOpen(false);
     setError("");
   }
@@ -242,7 +236,7 @@ export function CetSection({
   }
 
   return (
-    <section className="cet-section" aria-labelledby="cet-title">
+    <section className={`cet-section${open ? " open" : " closed"}`} aria-labelledby="cet-title">
       <button
         className="cet-heading"
         type="button"
@@ -254,26 +248,22 @@ export function CetSection({
           <span className="step-label">Compte épargne-temps</span>
           <strong id="cet-title">Mon CET</strong>
           <small>{active ? `${numberLabel(summary!.balance)} jour${summary!.balance > 1 ? "s" : ""} suivi${summary!.balance > 1 ? "s" : ""}` : "À configurer avec votre relevé RH"}</small>
+          {!open ? <span className="cet-closed-useful">Alimentation du 15 novembre au 31 décembre</span> : null}
         </span>
         <span className="cet-caret" aria-hidden="true">⌄</span>
       </button>
 
       {open ? (
         <div className="cet-content">
-          {!active || editingSettings ? (
+          {!active ? (
             <div className="cet-settings">
               <div className="cet-callout">
                 <strong>Votre relevé RH reste la référence</strong>
-                <p>Planning Solo vous aide à suivre et simuler votre CET, sans remplacer la validation de votre employeur.</p>
               </div>
               <div className="cet-form-grid">
-                <label>
+                <label className="wide">
                   <span>Solde officiel actuel</span>
-                  <span className="cet-number-field"><input type="number" min="0" max="200" step="1" value={draft.initialBalance} onChange={(event) => setDraft((current) => ({ ...current, initialBalance: Number(event.target.value) }))} /><i>jours</i></span>
-                </label>
-                <label>
-                  <span>Date d’ouverture (facultatif)</span>
-                  <input type="date" value={draft.openedOn} onChange={(event) => setDraft((current) => ({ ...current, openedOn: event.target.value }))} />
+                  <span className="cet-number-field"><input type="number" min="0" max="200" step="1" placeholder="0" value={initialBalanceInput} onChange={(event) => { const value = event.target.value; setInitialBalanceInput(value); setDraft((current) => ({ ...current, initialBalance: value === "" ? 0 : Number(value) })); }} /><i>jours</i></span>
                 </label>
               </div>
               <label className="cet-checkbox">
@@ -282,20 +272,22 @@ export function CetSection({
               </label>
               {error ? <p className="cet-error" role="alert">{error}</p> : null}
               <div className="cet-actions">
-                {active ? <button type="button" onClick={() => setEditingSettings(false)}>Annuler</button> : null}
-                {!active ? <button type="button" onClick={() => setFormKind("opening")}>Remplir la demande d’ouverture</button> : null}
-                <button className="primary-action" type="button" disabled={saving} onClick={() => void saveSettings()}>{saving ? "Enregistrement…" : "Enregistrer mon CET"}</button>
+                <button className="primary-action cet-opening-request-action" type="button" onClick={() => setFormKind("opening")}>Faire une demande d’ouverture</button>
+                <button className="cet-rights-open-action" type="button" disabled={saving} onClick={() => void saveSettings()}>{saving ? "Enregistrement…" : "Mes droits sont déjà ouverts"}</button>
               </div>
             </div>
           ) : (
             <>
-              <div className="cet-summary-grid">
-                <div className="cet-balance-main"><span>Solde suivi</span><strong>{numberLabel(summary!.balance)} <i>jours</i></strong><small>à rapprocher du relevé RH</small></div>
-                <div><span>Conservés en congés</span><strong>{numberLabel(summary!.protectedDays)}</strong><small>jusqu’au seuil de 15 jours</small></div>
-                <div><span>Soumis à votre choix</span><strong>{numberLabel(summary!.optionDays)}</strong><small>{status === "fonctionnaire" ? "congés, indemnité ou RAFP" : "congés ou indemnité"}</small></div>
-                <div><span>Indemnité brute indicative</span><strong>{summary!.estimatedIndemnity.toLocaleString("fr-FR")} € brut</strong><small>{summary!.indemnityRate} € bruts par jour · catégorie {active.category}</small></div>
-              </div>
-              {plannedLeaveDays > 0 ? <p className="cet-planning-use"><strong>{plannedLeaveDays} jour{plannedLeaveDays > 1 ? "s" : ""} CET</strong> posé{plannedLeaveDays > 1 ? "s" : ""} dans le planning et déjà retiré{plannedLeaveDays > 1 ? "s" : ""} du solde suivi.</p> : null}
+              <section className="cet-subsection cet-overview-panel">
+                <div className="cet-subsection-heading"><span className="step-label">Situation actuelle</span><h4>Vue d’ensemble</h4></div>
+                <div className="cet-summary-grid">
+                  <div className="cet-balance-main"><span>Solde suivi</span><strong>{numberLabel(summary!.balance)} <i>jours</i></strong><small>à rapprocher du relevé RH</small></div>
+                  <div><span>Conservés en congés</span><strong>{numberLabel(summary!.protectedDays)}</strong><small>jusqu’au seuil de 15 jours</small></div>
+                  <div><span>Soumis à votre choix</span><strong>{numberLabel(summary!.optionDays)}</strong><small>{status === "fonctionnaire" ? "congés, indemnité ou RAFP" : "congés ou indemnité"}</small></div>
+                  <div><span>Indemnité brute indicative</span><strong>{summary!.estimatedIndemnity.toLocaleString("fr-FR")} € brut</strong><small>{summary!.indemnityRate} € bruts par jour · catégorie {active.category}</small></div>
+                </div>
+                {plannedLeaveDays > 0 ? <p className="cet-planning-use"><strong>{plannedLeaveDays} jour{plannedLeaveDays > 1 ? "s" : ""} CET</strong> posé{plannedLeaveDays > 1 ? "s" : ""} dans le planning et déjà retiré{plannedLeaveDays > 1 ? "s" : ""} du solde suivi.</p> : null}
+              </section>
 
               <div className="cet-deposit-preview">
                 <div><span className="step-label">Simulation {simulationYear}</span><h4>Jours entiers encore disponibles</h4><small>{activeRule.label} · minimum {activeRule.minimumAnnualDaysTaken} CA pris</small></div>
@@ -307,28 +299,29 @@ export function CetSection({
                 )}
               </div>
 
-              <div className="cet-toolbar">
-                <button type="button" onClick={beginSettings}>Paramètres</button>
-                <button type="button" onClick={() => setFormKind("funding")}>Remplir alimentation / indemnisation</button>
-                <button type="button" onClick={onRequestLeave}>Poser un congé CET</button>
-                <button className="primary-action" type="button" onClick={() => { setError(""); setOperationOpen((current) => !current); }}>Ajouter une opération</button>
-              </div>
-              <button className="cet-disable-trigger" type="button" onClick={() => setDisableConfirmOpen(true)}>Je n’ai pas de CET</button>
-              {disableConfirmOpen ? (
-                <div className="cet-disable-confirm" role="alert">
-                  <div>
-                    <strong>Désactiver le suivi CET ?</strong>
-                    <p>Le solde et l’historique CET seront effacés de Planning Solo. Les congés CET déjà placés dans le calendrier resteront à corriger séparément.</p>
-                  </div>
-                  <div>
-                    <button type="button" onClick={() => setDisableConfirmOpen(false)}>Annuler</button>
-                    <button className="danger" type="button" disabled={saving} onClick={() => void disableAccount()}>{saving ? "Enregistrement…" : "Confirmer : je n’ai pas de CET"}</button>
-                  </div>
+              <section className="cet-subsection cet-management-panel">
+                <div className="cet-subsection-heading"><span className="step-label">Demandes et suivi</span><h4>Gérer mon CET</h4></div>
+                <div className="cet-toolbar">
+                  <button className="primary-action" type="button" onClick={onRequestLeave}>Poser un congé CET</button>
+                  <button className="primary-action" type="button" onClick={() => { setError(""); setOperationOpen((current) => !current); }}>Ajouter une opération</button>
+                  <button className="primary-action cet-funding-action" type="button" onClick={() => setFormKind("funding")}>Remplir alimentation / indemnisation</button>
                 </div>
-              ) : null}
-              <p className="cet-form-note">Les formulaires reprennent exactement les modèles fournis. Après téléchargement, envoyez-les à Clothilde Letourneur (clothilde.letourneur@centrepompidou.fr). Pour utiliser des jours CET, le bouton ci-dessus ouvre le formulaire de congé classique.</p>
-              {operationOpen ? (
-                <div className="cet-operation-form">
+                <button className="cet-disable-trigger" type="button" onClick={() => setDisableConfirmOpen(true)}>Je n’ai pas de CET</button>
+                {disableConfirmOpen ? (
+                  <div className="cet-disable-confirm" role="alert">
+                    <div>
+                      <strong>Désactiver le suivi CET ?</strong>
+                      <p>Le solde et l’historique CET seront effacés de Planning Solo. Les congés CET déjà placés dans le calendrier resteront à corriger séparément.</p>
+                    </div>
+                    <div>
+                      <button type="button" onClick={() => setDisableConfirmOpen(false)}>Annuler</button>
+                      <button className="danger" type="button" disabled={saving} onClick={() => void disableAccount()}>{saving ? "Enregistrement…" : "Confirmer : je n’ai pas de CET"}</button>
+                    </div>
+                  </div>
+                ) : null}
+                <p className="cet-form-note">Les formulaires reprennent exactement les modèles fournis. Après téléchargement, envoyez-les à Clothilde Letourneur (clothilde.letourneur@centrepompidou.fr). Pour utiliser des jours CET, le bouton ci-dessus ouvre le formulaire de congé classique.</p>
+                {operationOpen ? (
+                  <div className="cet-operation-form">
                   <label><span>Opération</span><select value={operationKind} onChange={(event) => setOperationKind(event.target.value as CetOperationKind)}>{Object.entries(CET_OPERATION_LABELS).filter(([kind]) => status === "fonctionnaire" || kind !== "rafp").map(([kind, label]) => <option key={kind} value={kind}>{label}</option>)}</select></label>
                   {operationKind === "deposit" ? <label><span>Origine</span><select value={operationSource} onChange={(event) => setOperationSource(event.target.value as CetDepositSource)}>{Object.entries(CET_SOURCE_LABELS).map(([source, label]) => <option key={source} value={source}>{label}</option>)}</select></label> : null}
                   <label><span>Date</span><input type="date" value={operationDate} onChange={(event) => setOperationDate(event.target.value)} /></label>
@@ -337,8 +330,9 @@ export function CetSection({
                   <label className="cet-operation-note"><span>Note (facultatif)</span><input value={operationNote} onChange={(event) => setOperationNote(event.target.value)} maxLength={120} /></label>
                   {error ? <p className="cet-error" role="alert">{error}</p> : null}
                   <button className="primary-action" type="button" disabled={saving} onClick={() => void addOperation()}>{saving ? "Enregistrement…" : "Enregistrer l’opération"}</button>
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
+              </section>
 
               <div className="cet-history">
                 <h4>Historique</h4>
@@ -351,7 +345,6 @@ export function CetSection({
                   </article>
                 )) : <p>Aucune opération enregistrée. Ajoutez les mouvements figurant sur votre relevé RH.</p>}
               </div>
-              <p className="cet-legal-note">Règles FPE, arrêté du ministère de la Culture et barème Centre Pompidou : alimentation unique en jours entiers du 15 novembre au 31 décembre, choix avant le 31 janvier. Les 15 premiers jours sont utilisables uniquement en congés. Les modalités de votre établissement et votre relevé RH prévalent.</p>
             </>
           )}
         </div>

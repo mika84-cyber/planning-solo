@@ -9,23 +9,15 @@ export function isNetlifyDeployPreview(hostname: string) {
   return /^deploy-preview-\d+--planning-solo\.netlify\.app$/i.test(hostname);
 }
 
-export function isDemoInstallationLink(hostname: string, search: string) {
-  return (
-    isNetlifyDeployPreview(hostname) ||
-    new URLSearchParams(search).has("demo")
-  );
-}
-
 export function canEnableInstallation(
   authStatus: string,
   demoMode: boolean,
   hostname: string,
-  search: string,
 ) {
   return (
     authStatus === "ready" &&
     !demoMode &&
-    !isDemoInstallationLink(hostname, search)
+    !isNetlifyDeployPreview(hostname)
   );
 }
 
@@ -58,7 +50,7 @@ export function useInstallPrompt(enabled = true) {
       event.preventDefault();
       // Netlify injecte sa barre d'outils dans les deploy previews. Une PWA
       // installée depuis cette adresse conserverait donc cette barre.
-      if (!enabled || isDemoInstallationLink(location.hostname, location.search))
+      if (!enabled || isNetlifyDeployPreview(location.hostname))
         return;
       setInstallPrompt(event as InstallPromptEvent);
     };

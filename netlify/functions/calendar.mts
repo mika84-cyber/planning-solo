@@ -27,6 +27,7 @@ type LeaveType =
   | "half"
   | "recovery"
   | "sick"
+  | "strike"
   | "cet"
   | "other"
   | "childcare"
@@ -1126,6 +1127,58 @@ async function calendarHandler(request: Request): Promise<Response> {
           pas_rate_bp: ratioBp(body.pasRateBp, previousYear.pas_rate_bp),
         },
       };
+      const payMonth = Number(body.payMonth);
+      if (
+        Number.isInteger(payMonth) &&
+        payMonth >= 0 &&
+        payMonth <= 11 &&
+        (body.baseSalaryCents !== undefined ||
+          body.residenceAllowanceCents !== undefined)
+      ) {
+        const monthKey = `${payYear}-${String(payMonth + 1).padStart(2, "0")}`;
+        const previousMonth = previousProfile?.pay_profiles?.[monthKey] || {};
+        formProfile.pay_profiles[monthKey] = {
+          ...previousMonth,
+          base_salary_cents: amountCents(
+            body.baseSalaryCents,
+            previousMonth.base_salary_cents,
+          ),
+          residence_allowance_cents: amountCents(
+            body.residenceAllowanceCents,
+            previousMonth.residence_allowance_cents,
+          ),
+        };
+      }
+      if (Array.isArray(body.monthlyPayProfiles)) {
+        for (const rawMonthly of body.monthlyPayProfiles.slice(0, 24)) {
+          if (!rawMonthly || typeof rawMonthly !== "object") continue;
+          const monthly = rawMonthly as Record<string, unknown>;
+          const monthlyYear = Number(monthly.year);
+          const monthlyMonth = Number(monthly.month);
+          if (
+            !Number.isInteger(monthlyYear) ||
+            monthlyYear < 2000 ||
+            monthlyYear > 2100 ||
+            !Number.isInteger(monthlyMonth) ||
+            monthlyMonth < 0 ||
+            monthlyMonth > 11
+          )
+            continue;
+          const monthKey = `${monthlyYear}-${String(monthlyMonth + 1).padStart(2, "0")}`;
+          const previousMonth = formProfile.pay_profiles[monthKey] || {};
+          formProfile.pay_profiles[monthKey] = {
+            ...previousMonth,
+            base_salary_cents: amountCents(
+              monthly.baseSalaryCents,
+              previousMonth.base_salary_cents,
+            ),
+            residence_allowance_cents: amountCents(
+              monthly.residenceAllowanceCents,
+              previousMonth.residence_allowance_cents,
+            ),
+          };
+        }
+      }
     }
     await store.setJSON(scopedKey("form-profile"), formProfile);
     return json({ ok: true, form_profile: formProfile });
@@ -1343,6 +1396,7 @@ async function calendarHandler(request: Request): Promise<Response> {
       body.leaveType === "half" ||
       body.leaveType === "recovery" ||
       body.leaveType === "sick" ||
+      body.leaveType === "strike" ||
       body.leaveType === "cet" ||
       body.leaveType === "other" ||
       body.leaveType === "childcare" ||

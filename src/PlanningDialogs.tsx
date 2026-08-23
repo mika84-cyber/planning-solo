@@ -135,6 +135,7 @@ export function DeletePeriodDialog({
   onConfirm: () => void;
 }) {
   if (!period) return null;
+  const strike = period.leaveType === "strike";
   return (
     <div className="modal-backdrop" role="presentation">
       <section
@@ -144,7 +145,9 @@ export function DeletePeriodDialog({
         aria-labelledby="delete-period-title"
       >
         <span className="warning-symbol">!</span>
-        <h2 id="delete-period-title">Annuler cette période ?</h2>
+        <h2 id="delete-period-title">
+          {strike ? "Supprimer cette journée de grève ?" : "Annuler cette période ?"}
+        </h2>
         <p>
           {periodLabel(period.from, period.to)} · {leaveTypeLabel(period.leaveType)}
         </p>
@@ -153,7 +156,13 @@ export function DeletePeriodDialog({
             Conserver
           </button>
           <button className="delete-confirm-button" type="button" onClick={onConfirm} disabled={saving}>
-            {saving ? "Annulation…" : "Annuler la période"}
+            {saving
+              ? strike
+                ? "Suppression…"
+                : "Annulation…"
+              : strike
+                ? "Supprimer la grève"
+                : "Annuler la période"}
           </button>
         </div>
       </section>
@@ -178,6 +187,41 @@ export function MessageDialog({ message, onClose }: { message: string | null; on
         <div className="modal-actions">
           <button className="save-button" type="button" onClick={onClose}>
             Compris
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function AppUpdateDialog({
+  open,
+  checking,
+  onLater,
+  onUpdate,
+}: {
+  open: boolean;
+  checking: boolean;
+  onLater: () => void;
+  onUpdate: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="modal-backdrop update-available-backdrop" role="presentation">
+      <section
+        className="modal-card update-available-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="app-update-title"
+      >
+        <span className="update-available-symbol" aria-hidden="true">↻</span>
+        <span className="step-label">Nouvelle version publiée</span>
+        <h2 id="app-update-title">Une mise à jour est disponible</h2>
+        <p>Vous choisissez quand charger la dernière version. La page ne sera actualisée qu’après votre confirmation.</p>
+        <div className="modal-actions">
+          <button className="secondary-button" type="button" onClick={onLater}>Plus tard</button>
+          <button className="save-button update-now-button" type="button" disabled={checking} onClick={onUpdate}>
+            {checking ? "Chargement…" : "Mettre à jour maintenant"}
           </button>
         </div>
       </section>

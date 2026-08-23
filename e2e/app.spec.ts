@@ -1,7 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { addDays, dateKey, getDayInfo, localDate } from "../src/planningLogic";
 
 async function prepareDemo(page: Page, withCurrentLeave = false) {
   await page.addInitScript((seedLeave) => {
+    localStorage.setItem("planning:e2e-demo-enabled", "1");
     localStorage.setItem("planning:guide-seen-v1:demo", "1");
     if (!seedLeave) return;
     const now = new Date();
@@ -21,8 +23,97 @@ async function prepareDemo(page: Page, withCurrentLeave = false) {
       }),
     );
   }, withCurrentLeave);
-  await page.goto("/?demo=1");
+  await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+}
+
+async function prepareStrikeDemo(page: Page) {
+  await page.addInitScript(() => {
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    localStorage.setItem("planning:e2e-demo-enabled", "1");
+    localStorage.setItem("planning:guide-seen-v1:demo", "1");
+    localStorage.setItem(
+      "planning:e2e-pay-profile",
+      JSON.stringify({
+        fullName: "",
+        group: "2",
+        signature: "",
+        status: "fonctionnaire",
+        workQuota: "full",
+        baseSalary: 1801.73,
+        residenceAllowance: 54.05,
+        ifse: 416.66,
+        carenceDay: 75,
+        otherFixed: 54.05,
+        pasRate: 1.7,
+      }),
+    );
+    localStorage.setItem(
+      "planning:e2e-pay-profiles",
+      JSON.stringify({
+        [monthKey]: { baseSalary: 1801.73, residenceAllowance: 54.05 },
+      }),
+    );
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+}
+
+function currentMonthStrikeScenario(kind: "annual" | "rest") {
+  const now = new Date();
+  const group = 2;
+  const dates = Array.from(
+    { length: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() },
+    (_, index) => localDate(now.getFullYear(), now.getMonth(), index + 1),
+  );
+  const match = dates.flatMap((date) =>
+    Array.from({ length: 6 }, (_, index) => index + 2).map((gap) => ({ date, gap })),
+  ).find(({ date, gap }) => {
+    const end = addDays(date, gap);
+    if (end.getMonth() !== now.getMonth()) return false;
+    if (getDayInfo(date, group).kind !== "work" || getDayInfo(end, group).kind !== "work")
+      return false;
+    const between = Array.from({ length: gap - 1 }, (_, index) => addDays(date, index + 1));
+    return kind === "rest"
+      ? between.every((day) => getDayInfo(day, group).kind === "off")
+      : gap >= 5;
+  })!;
+  const first = dateKey(match.date);
+  const last = dateKey(addDays(match.date, match.gap));
+  return {
+    first,
+    last,
+    periods: [
+      { from: first, to: first, type: "strike" },
+      ...(kind === "annual"
+        ? [{
+            from: dateKey(addDays(match.date, 1)),
+            to: dateKey(addDays(match.date, match.gap - 1)),
+            type: "annual",
+          }]
+        : []),
+      { from: last, to: last, type: "strike" },
+    ],
+  };
+}
+
+async function prepareStrikeContinuityDemo(page: Page, kind: "annual" | "rest") {
+  const scenario = currentMonthStrikeScenario(kind);
+  await page.addInitScript((periods) => {
+    localStorage.setItem(
+      "planning:demo-completed-request-v1",
+      JSON.stringify({
+        requestId: `e2e-strike-continuity-${Date.now()}`,
+        requestKind: "leave",
+        group: 2,
+        periods,
+        timed: [],
+      }),
+    );
+  }, scenario.periods);
+  await prepareStrikeDemo(page);
+  return scenario;
 }
 
 async function openMainMenu(page: Page) {
@@ -63,20 +154,34 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
 
   const menu = page.getByRole("complementary", { name: "Menu principal" });
   const pdf = menu.getByRole("button", { name: /Télécharger les plannings en PDF/ });
+  const forms = menu.getByRole("button", { name: /Formulaires utiles/ });
   const guide = menu.getByRole("button", { name: /Mode d’emploi/ });
 
   await expect(pdf).toBeVisible();
+  await expect(forms).toBeVisible();
   await expect(guide).toBeVisible();
   await expect(menu.getByRole("button", { name: "Vérifier les mises à jour" })).toHaveCount(0);
   const menuLabels = await menu.locator("nav > button").allTextContents();
-  expect(menuLabels.findIndex((label) => label.includes("Télécharger les plannings"))).toBeLessThan(
-    menuLabels.findIndex((label) => label.includes("Mode d’emploi")),
-  );
+  expect(menuLabels.at(-1)).toContain("Formulaires utiles");
+  await expect(guide.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
+  const [backupBox, guideBox] = await Promise.all([
+    menu.getByRole("button", { name: "Sauvegarde et restauration" }).boundingBox(),
+    guide.boundingBox(),
+  ]);
+  expect(guideBox!.y).toBeGreaterThan(backupBox!.y);
   await expect(menu).toHaveCSS("background-image", /menu-art\.jpg/);
-  await expect(guide).toHaveCSS("background-color", "rgba(255, 255, 255, 0.86)");
+  await expect(guide).toHaveCSS("background-color", "rgba(255, 255, 255, 0.9)");
 
   await guide.click();
   await expect(page.getByRole("heading", { name: "Bien démarrer avec Planning Solo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "4. Suivre et utiliser mon CET" })).toBeVisible();
+  await page.getByRole("button", { name: "4. Suivre et utiliser mon CET" }).click();
+  await expect(page.getByRole("heading", { name: "Suivre et utiliser mon CET" })).toBeVisible();
+  await expect(page.locator("#guide-cet")).toContainText("15 novembre et le 31 décembre");
+  await expect(page.locator("#guide-recovery")).toContainText("heures à poser");
+  await expect(page.locator("#guide-forms")).toContainText("Formulaire Expo");
+  await expect(page.locator("#guide-forms")).toContainText("Télécharger");
+  await expect(page.locator("#guide-data")).toContainText("Autre → Mes demandes archivées");
   await page.getByRole("button", { name: "J’ai compris" }).click();
 
   await openMainMenu(page);
@@ -98,13 +203,98 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   await menu.getByRole("button", { name: /Télécharger les plannings en PDF/ }).click();
   await expect(page.getByRole("heading", { name: "Télécharger les plannings en PDF" })).toBeVisible();
   await expect(page.locator(".top-header-pdf")).toHaveCSS("background-image", /pdf-header-art\.webp/);
+  await expect(page.locator(".top-header-pdf")).toHaveCSS(
+    "background-position",
+    (page.viewportSize()?.width ?? 1000) <= 720 ? "0% 0%, 50% 44%" : "0% 0%, 50% 70%",
+  );
   const pdfScreen = page.locator(".pdf-download-screen");
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
-  await expect(pdfScreen).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.62)");
+  await expect(pdfScreen).toHaveCSS("border-top-color", "rgba(55, 73, 98, 0.58)");
   await expect(pdfScreen.locator(".pdf-download-settings > label").first()).toHaveCSS("border-top-width", "1px");
   await expect(pdfScreen.locator(".pdf-download-actions .pdf-action")).toHaveCount(3);
   await expect(pdfScreen.locator(".pdf-download-actions .pdf-action").first()).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.62)");
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
+});
+
+test("les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement", async ({ page }) => {
+  await prepareDemo(page);
+  const homeHeaderBox = (await page.locator(".top-header").boundingBox())!;
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Formulaires utiles/ })
+    .click();
+
+  await expect(page.locator(".top-header h1")).toHaveText("Formulaires utiles");
+  const formsHeader = page.locator(".top-header-forms");
+  await expect(formsHeader).toBeVisible();
+  const artworkStyle = await formsHeader.evaluate((node) => {
+    const style = getComputedStyle(node, "::before");
+    return {
+      backgroundImage: style.backgroundImage,
+      backgroundSize: style.backgroundSize,
+      height: style.height,
+      transform: style.transform,
+    };
+  });
+  expect(artworkStyle.backgroundImage).toContain("forms-header-art.jpg");
+  expect(artworkStyle.backgroundSize).toBe("100% 100%");
+  expect(artworkStyle.transform).not.toBe("none");
+  const formsHeaderBox = (await formsHeader.boundingBox())!;
+  expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
+  expect(Math.abs(formsHeaderBox.width - homeHeaderBox.width)).toBeLessThan(0.5);
+  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 720 ? 215 : 205))).toBeLessThan(0.5);
+  const headerUpdate = page.getByRole("button", { name: "Vérifier les mises à jour" });
+  const headerUpdateBox = (await headerUpdate.boundingBox())!;
+  expect(headerUpdateBox.x).toBeGreaterThanOrEqual(formsHeaderBox.x);
+  expect(headerUpdateBox.x + headerUpdateBox.width).toBeLessThanOrEqual(
+    formsHeaderBox.x + formsHeaderBox.width,
+  );
+  if ((page.viewportSize()?.width ?? 1000) <= 720) {
+    expect(parseFloat(artworkStyle.height)).toBeLessThan(formsHeaderBox.height);
+    await expect(headerUpdate).toHaveCSS("font-size", "9px");
+  } else {
+    expect(parseFloat(artworkStyle.height)).toBeGreaterThan(formsHeaderBox.height);
+  }
+  const folders = page.locator(".useful-form-folder-grid > button");
+  await expect(folders).toHaveText([
+    /Formulaire Expo.*Vide pour le moment/,
+    /Formulaire SAP.*3 documents/,
+    /Formulaire Brantôme.*8 documents/,
+  ]);
+
+  await folders.nth(0).click();
+  await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
+  await expect(page.getByText("Aucun formulaire pour le moment")).toBeVisible();
+  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+
+  await page.getByRole("button", { name: /Formulaire SAP/ }).click();
+  const sapLinks = page.locator(".useful-form-download-list a");
+  await expect(sapLinks).toHaveCount(3);
+  await expect(sapLinks.first()).toHaveAttribute("download", "");
+  await expect(sapLinks).toHaveText(["Télécharger", "Télécharger", "Télécharger"]);
+  await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
+    "Demande de congés",
+    "Demande de récupérations",
+    "Demande d’annulation de congés",
+  ]);
+  const downloadPromise = page.waitForEvent("download");
+  await sapLinks.first().click();
+  expect((await downloadPromise).suggestedFilename()).toBe("demande-conges.pdf");
+  await expect(page.locator(".useful-form-download-error")).toHaveCount(0);
+  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+
+  await page.getByRole("button", { name: /Formulaire Brantôme/ }).click();
+  await expect(page.locator(".useful-form-download-list a")).toHaveCount(8);
+  await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
+    "Formulaire de changement de coordonnées",
+    "Changement de coordonnées bancaires",
+    "Demande de carte de restauration BIMPLI",
+    "Procuration pour le retrait des titres-restaurant",
+    "Demande de Carte Culture A",
+    "Calendrier de paie 2026",
+    "CET - Demande d’ouverture",
+    "CET - Alimentation et indemnisation",
+  ]);
 });
 
 test("l’en-tête, le sélecteur d’affichage et les années sont confortables", async ({ page }) => {
@@ -123,7 +313,7 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(menuButton).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
   await expect(update).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
   await expect(switcher).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
-  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgba(31, 35, 40, 0.38)");
+  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgba(55, 73, 98, 0.58)");
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
   const todayOverviewBox = await page.locator(".today-overview").boundingBox();
@@ -164,8 +354,10 @@ test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, t
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
   await swipeMainSection(page, 340, 40);
   await expect(page.locator(".top-header h1")).toHaveText("Plannings PDF");
+  await swipeMainSection(page, 340, 40);
+  await expect(page.locator(".top-header h1")).toHaveText("Formulaires utiles");
   await swipeMainSection(page, 40, 340);
-  await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
+  await expect(page.locator(".top-header h1")).toHaveText("Plannings PDF");
 });
 
 test("le balayage du calendrier mobile change seulement de mois", async ({ page }, testInfo) => {
@@ -207,20 +399,43 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
+  const [cetBox, strikeBox] = await Promise.all([
+    page.locator(".leave-balance-grid button.cet").boundingBox(),
+    page.locator(".leave-balance-grid button.strike").boundingBox(),
+  ]);
+  expect(Math.abs(cetBox!.y - strikeBox!.y)).toBeLessThanOrEqual(2);
 });
 
-test("un lien de démonstration ne propose jamais l’installation", async ({ page }) => {
-  await prepareDemo(page);
-  await expect(page.locator('link[rel="manifest"]')).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Installer l’application" })).toHaveCount(0);
+test("le paramètre de démonstration ne donne plus accès à l’application", async ({ page }) => {
+  await page.goto("/?demo=1");
+  await expect(page.getByRole("heading", { name: "Votre planning" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toHaveCount(0);
 });
 
 test("le compte avertit lorsqu’une nouvelle version est disponible", async ({ page }) => {
   await prepareDemo(page);
+  await page.evaluate(() => localStorage.setItem("planning:update-no-auto-reload", "conservé"));
   await page.evaluate(() => window.dispatchEvent(new Event("planning-app-update-available")));
 
+  const updateDialog = page.getByRole("alertdialog", { name: "Une mise à jour est disponible" });
+  await expect(updateDialog).toBeVisible();
+  await expect(updateDialog).toContainText("La page ne sera actualisée qu’après votre confirmation");
+  const updateNowButton = updateDialog.getByRole("button", { name: "Mettre à jour maintenant" });
+  await expect(updateNowButton).toBeVisible();
+  await expect(updateNowButton).toHaveCSS("background-color", "rgb(197, 47, 66)");
+  await expect(updateNowButton).toHaveCSS("color", "rgb(255, 255, 255)");
+  await page.waitForTimeout(500);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("planning:update-no-auto-reload"))).toBe("conservé");
+  await updateDialog.getByRole("button", { name: "Plus tard" }).click();
+
   const account = page.getByRole("button", { name: "Compte" });
-  await expect(account).toHaveClass(/update-available/);
+  await expect(account).not.toHaveClass(/update-available/);
+  await expect(account.locator(".account-update-dot")).toHaveCount(0);
+  const checkUpdateButton = page.getByRole("button", { name: "Vérifier les mises à jour" });
+  await expect(checkUpdateButton).toHaveClass(/update-available/);
+  await expect(checkUpdateButton).toHaveCSS("background-color", "rgb(197, 47, 66)");
+  await expect(checkUpdateButton).toHaveCSS("color", "rgb(255, 255, 255)");
   await account.click();
   await expect(page.getByRole("status")).toContainText("Une mise à jour est disponible");
   await expect(page.getByRole("status")).toContainText("Vérifier les mises à jour");
@@ -233,9 +448,23 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
 
+  const closedCet = page.locator(".cet-section.closed");
+  await expect(closedCet).toBeVisible();
+  await expect(closedCet).toHaveCSS("min-height", "88px");
+  await expect(closedCet).toHaveCSS("background-image", /linear-gradient/);
+  await expect(closedCet).toContainText("Alimentation du 15 novembre au 31 décembre");
+  await expect(closedCet.locator(".cet-closed-useful")).toHaveCSS("border-top-width", "0px");
+  await expect(closedCet.locator(".cet-closed-useful")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await page.getByRole("button", { name: /Mon CET/ }).click();
-  await expect(page.locator(".cet-heading strong")).toHaveCSS("font-size", "18.4px");
-  await page.getByRole("button", { name: "Remplir la demande d’ouverture" }).click();
+  await expect(page.locator(".cet-section")).not.toContainText(
+    "Planning Solo vous aide à suivre et simuler votre CET",
+  );
+  await expect(page.locator(".cet-heading strong")).toHaveCSS("font-size", "17.28px");
+  await expect(page.getByLabel("Date d’ouverture (facultatif)")).toHaveCount(0);
+  const openingRequest = page.getByRole("button", { name: "Faire une demande d’ouverture" });
+  await expect(openingRequest).toHaveCSS("background-color", "rgb(49, 94, 170)");
+  await expect(openingRequest).toHaveCSS("color", "rgb(255, 255, 255)");
+  await openingRequest.click();
   const openingForm = page.getByRole("dialog", { name: "Ouvrir mon compte épargne-temps" });
   await openingForm.getByLabel("Nom", { exact: true }).fill("Martin");
   await openingForm.getByLabel("Prénom", { exact: true }).fill("Agnès");
@@ -251,13 +480,43 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await expect(page.getByLabel("Établissement", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Catégorie")).toHaveCount(0);
   await expect(page.getByLabel("Cycle ou rythme de travail")).toHaveCount(0);
-  await page.getByLabel("Solde officiel actuel").fill("18");
-  await page.getByRole("button", { name: "Enregistrer mon CET" }).click();
+  const officialBalance = page.getByLabel("Solde officiel actuel");
+  await expect(officialBalance).toHaveValue("");
+  await expect(officialBalance).toHaveAttribute("placeholder", "0");
+  await officialBalance.fill("0");
+  await expect(officialBalance).toHaveValue("0");
+  await officialBalance.press("Control+A");
+  await officialBalance.press("Backspace");
+  await expect(officialBalance).toHaveValue("");
+  await officialBalance.fill("18");
+  const existingRights = page.getByRole("button", { name: "Mes droits sont déjà ouverts" });
+  await expect(existingRights).toHaveCSS("background-color", "rgb(216, 111, 18)");
+  await expect(existingRights).toHaveCSS("color", "rgb(255, 255, 255)");
+  await existingRights.click();
 
   await expect(page.locator(".cet-balance-main")).toContainText("18");
   await expect(page.locator(".cet-summary-grid")).toContainText("249 €");
-  await page.getByRole("button", { name: "Remplir alimentation / indemnisation" }).click();
+  const management = page.locator(".cet-management-panel");
+  const leaveAction = management.getByRole("button", { name: "Poser un congé CET" });
+  const operationAction = management.getByRole("button", { name: "Ajouter une opération" });
+  const fundingAction = management.getByRole("button", { name: "Remplir alimentation / indemnisation" });
+  await expect(management.getByRole("button", { name: "Paramètres" })).toHaveCount(0);
+  const [leaveBox, operationBox, fundingBox] = await Promise.all([
+    leaveAction.boundingBox(),
+    operationAction.boundingBox(),
+    fundingAction.boundingBox(),
+  ]);
+  expect(Math.abs(leaveBox!.width - operationBox!.width)).toBeLessThan(1);
+  expect(Math.abs(leaveBox!.y - operationBox!.y)).toBeLessThan(1);
+  expect(fundingBox!.width).toBeGreaterThan(leaveBox!.width * 1.8);
+  await expect(leaveAction).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(leaveAction).toHaveCSS("color", "rgb(17, 24, 39)");
+  await expect(operationAction).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(operationAction).toHaveCSS("color", "rgb(17, 24, 39)");
+  await expect(fundingAction).toHaveCSS("background-color", "rgb(49, 94, 170)");
+  await fundingAction.click();
   const fundingForm = page.getByRole("dialog", { name: "Alimenter ou indemniser mon CET" });
+  await expect(fundingForm.getByRole("alert")).toContainText("ne peut être envoyé qu’entre le 15 novembre et le 31 décembre");
   await fundingForm.getByRole("button", { name: "Aide au remplissage" }).click();
   await expect(fundingForm.getByRole("heading", { name: "Que faut-il inscrire ?" })).toBeVisible();
   await expect(fundingForm.getByRole("button", { name: "Accepter l’aide" })).toHaveCount(0);
@@ -275,6 +534,7 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await page.getByRole("button", { name: "Enregistrer l’opération" }).click();
   await expect(page.locator(".cet-balance-main")).toContainText("16");
   await expect(page.locator(".cet-history")).toContainText("Congé pris sur le CET");
+  await expect(page.locator(".cet-section")).not.toContainText("Règles FPE");
   await page.getByRole("button", { name: "Je n’ai pas de CET" }).click();
   const disableConfirmation = page.locator(".cet-disable-confirm");
   await expect(disableConfirmation).toContainText("Désactiver le suivi CET ?");
@@ -386,6 +646,215 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   );
 });
 
+test("une grève met à jour le planning, les jours travaillés et la paie", async ({ page }) => {
+  await prepareStrikeDemo(page);
+  const workedButton = page.getByRole("button", { name: "Détail des jours travaillés" });
+  const initialWorked = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
+
+  await page.locator(".today-overview .primary-action").click();
+  await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
+    .getByRole("button", { name: /^Grève/ })
+    .click();
+  await expect(page.getByRole("heading", { name: "Ajoutez une journée de grève" })).toBeVisible();
+  await expect(page.getByText("Ajout direct au planning", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Enregistrer la grève/ })).toHaveCount(0);
+  const strikeElementsOverlap = await page.locator(".strike-request-options").evaluate((panel) => {
+    const choice = panel.querySelector(".type-tabs button")!.getBoundingClientRect();
+    const help = panel.querySelector(".request-help")!.getBoundingClientRect();
+    return (
+      choice.x < help.x + help.width &&
+      choice.x + choice.width > help.x &&
+      choice.y < help.y + help.height &&
+      choice.y + choice.height > help.y
+    );
+  });
+  expect(strikeElementsOverlap).toBe(false);
+  const strikeDay = page.locator(".month-card .day.work").first();
+  const strikeDate = await strikeDay.getAttribute("aria-label");
+  await strikeDay.click();
+  await expect(page.getByRole("heading", { name: "Ajoutez une journée de grève" })).toHaveCount(0);
+
+  const markedStrike = page.locator(".month-card .day.leave-strike");
+  await expect(markedStrike).toHaveCount(1);
+  await expect(markedStrike).toHaveCSS("background-color", "rgb(242, 139, 130)");
+  await expect(markedStrike).toHaveCSS("border-top-color", "rgb(0, 0, 0)");
+  await expect(markedStrike).toHaveCSS("border-right-color", "rgb(0, 0, 0)");
+  await expect(markedStrike).toHaveCSS("border-bottom-color", "rgb(0, 0, 0)");
+  await expect(markedStrike).toHaveCSS("border-left-color", "rgb(0, 0, 0)");
+  await expect(markedStrike).toHaveCSS("outline-color", "rgb(0, 0, 0)");
+  await expect(markedStrike).toHaveCSS("outline-style", "solid");
+  await expect(markedStrike.locator(".leave-calendar-marker-strike")).toHaveText("✊");
+  const [strikeDayBox, strikeMarkerBox] = await Promise.all([
+    markedStrike.boundingBox(),
+    markedStrike.locator(".leave-calendar-marker-strike").boundingBox(),
+  ]);
+  expect(strikeMarkerBox!.height / strikeDayBox!.height).toBeGreaterThan(0.12);
+  expect(strikeMarkerBox!.height / strikeDayBox!.height).toBeLessThan(0.3);
+  if ((page.viewportSize()?.width ?? 1000) <= 720) {
+    expect(strikeDayBox!.x + strikeDayBox!.width - strikeMarkerBox!.x - strikeMarkerBox!.width).toBeLessThanOrEqual(4);
+    expect(strikeDayBox!.y + strikeDayBox!.height - strikeMarkerBox!.y - strikeMarkerBox!.height).toBeLessThanOrEqual(4);
+  }
+  await expect(markedStrike).toHaveAttribute("aria-label", /Grève/);
+  expect(await markedStrike.getAttribute("aria-label")).toContain(strikeDate!.split(", Travail")[0]);
+  const workedAfterStrike = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
+  expect(workedAfterStrike).toBe(initialWorked - 1);
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  const strikeCard = page.locator(".leave-balance-grid button.strike");
+  await expect(strikeCard).toContainText(/1\s*pris/);
+  await expect(strikeCard).toContainText("retenue estimée dans Ma paie");
+  await expect(page.locator(".leave-balance-grid button.annual")).toContainText("0 utilisé");
+  const [balanceGridBox, strikeCardBox, annualCardBox, cetCardBox] = await Promise.all([
+    page.locator(".leave-balance-grid").boundingBox(),
+    strikeCard.boundingBox(),
+    page.locator(".leave-balance-grid button.annual").boundingBox(),
+    page.locator(".leave-balance-grid button.cet").boundingBox(),
+  ]);
+  if ((page.viewportSize()?.width ?? 1000) <= 720) {
+    expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.9);
+    expect(strikeCardBox!.height).toBeLessThan(annualCardBox!.height);
+  } else {
+    expect(Math.abs(cetCardBox!.y - strikeCardBox!.y)).toBeLessThanOrEqual(2);
+  }
+  await strikeCard.click();
+  const strikeBalanceDialog = page.getByRole("dialog", { name: "Grève" });
+  await expect(strikeBalanceDialog).toContainText("aucun congé déduit");
+  const strikeMonth = strikeBalanceDialog.locator(".balance-detail-month").filter({ hasText: "1 jour" }).first();
+  await strikeMonth.locator("summary").click();
+  await expect(strikeMonth).toContainText("Retenue estimée : −61,86");
+  await strikeMonth.locator(".balance-detail-open").click();
+  const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await expect(dayDialog.locator(".day-stored-periods")).toContainText("Grève");
+  await dayDialog.getByRole("button", { name: "Fermer" }).click();
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+  await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
+  const strikePayRow = page.getByRole("row").filter({ hasText: "Grève (1 journée retenue)" });
+  await expect(strikePayRow).toContainText("-61,86");
+  await expect(strikePayRow).toContainText("retenue au 1/30");
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  await page.locator(".leave-balance-grid button.strike").click();
+  const deleteMonth = page.getByRole("dialog", { name: "Grève" })
+    .locator(".balance-detail-month").filter({ hasText: "1 jour" }).first();
+  await deleteMonth.locator("summary").click();
+  await deleteMonth.locator(".balance-detail-open").click();
+  await page.getByRole("dialog", { name: /2026/ })
+    .getByRole("button", { name: "Supprimer la grève" })
+    .click();
+  await page.getByRole("alertdialog", { name: "Supprimer cette journée de grève ?" })
+    .getByRole("button", { name: "Supprimer la grève" })
+    .click();
+  await expect(page.locator(".leave-balance-grid button.strike")).toContainText(/0\s*pris/);
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+  await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
+  await expect(page.getByRole("row").filter({ hasText: /^Grève/ })).toHaveCount(0);
+});
+
+test("une grève peut être posée directement depuis une case", async ({ page }) => {
+  await prepareStrikeDemo(page);
+  await page.locator(".month-card .day.work").first().click();
+  const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await dayDialog.getByRole("button", { name: /^Grève/ }).click();
+  await expect(dayDialog).toHaveCount(0);
+  const savedStrike = page.locator(".month-card .day.leave-strike");
+  await expect(savedStrike).toHaveCount(1);
+  await expect(savedStrike).toHaveCSS("background-color", "rgb(242, 139, 130)");
+  await expect(savedStrike).toHaveCSS("outline-color", "rgb(0, 0, 0)");
+});
+
+test("des CA validés entre deux grèves restent exclus de la retenue", async ({ page }) => {
+  await prepareStrikeContinuityDemo(page, "annual");
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  await page.locator(".leave-balance-grid button.strike").click();
+  const strikeDialog = page.getByRole("dialog", { name: "Grève" });
+  const month = strikeDialog.locator(".balance-detail-month").filter({ hasText: "2 jours" }).first();
+  await month.locator("summary").click();
+  await expect(month.locator(".strike-protected-break")).toContainText("CA validés → non concernés");
+  await expect(month.locator(".strike-continuity-warning")).toHaveCount(0);
+  await expect(month.locator(".strike-continuity-details footer")).toContainText("Total retenue estimée sur 2 journées");
+  await expect(month.locator(".strike-continuity-details footer")).toContainText("123,72 € brut");
+  await expect(page.locator(".leave-balance-grid button.annual")).toContainText(/[1-9]\d* utilisé/);
+});
+
+test("des repos noirs entre deux grèves sont inclus automatiquement dans la retenue", async ({ page }) => {
+  const scenario = await prepareStrikeContinuityDemo(page, "rest");
+  const intermediateCount = Math.round(
+    (new Date(`${scenario.last}T12:00:00`).getTime() - new Date(`${scenario.first}T12:00:00`).getTime()) /
+      86400000,
+  ) - 1;
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  await page.locator(".leave-balance-grid button.strike").click();
+  const strikeDialog = page.getByRole("dialog", { name: "Grève" });
+  const month = strikeDialog.locator(".balance-detail-month").filter({ hasText: "2 jours" }).first();
+  await month.locator("summary").click();
+  await expect(month.locator(".strike-confirmed-continuity")).toContainText(
+    "repos noirs inclus dans la retenue",
+  );
+  await expect(month.locator(".strike-confirmed-continuity")).toContainText(
+    "reste « repos du cycle » dans le planning",
+  );
+  await expect(month.locator(".strike-continuity-warning")).toHaveCount(0);
+  await expect(month.locator(".strike-continuity-details footer")).toContainText(
+    `${intermediateCount} repos noir${intermediateCount > 1 ? "s" : ""}`,
+  );
+  const retainedDays = intermediateCount + 2;
+  const expectedDeduction = (61.86 * retainedDays).toFixed(2).replace(".", ",");
+  await expect(month.locator(".strike-continuity-details footer")).toContainText(
+    `Total retenue estimée sur ${retainedDays} journée${retainedDays > 1 ? "s" : ""}`,
+  );
+  await expect(month.locator(".strike-continuity-details footer")).toContainText(
+    `${expectedDeduction} € brut`,
+  );
+
+  await strikeDialog.locator(".modal-actions").getByRole("button", { name: "Fermer" }).click();
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+  await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
+  const strikePayRow = page.getByRole("row").filter({
+    hasText: `Grève (${retainedDays} journées retenues)`,
+  });
+  await expect(strikePayRow).toContainText(`${intermediateCount} repos noir`);
+  await expect(strikePayRow).toContainText(`-${expectedDeduction}`);
+});
+
+test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ page }) => {
+  await prepareDemo(page);
+  const workDay = page.locator(".month-card .day.work").first();
+  await workDay.click();
+  const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await dayDialog.getByRole("button", { name: /^Congé souhaité/ }).click();
+  await expect(dayDialog).toHaveCount(0);
+  await expect(workDay).toHaveClass(/wish-day/);
+
+  await workDay.click();
+  const savedWishDialog = page.getByRole("dialog", { name: /2026/ });
+  await savedWishDialog.getByRole("button", { name: /^Congé souhaité/ }).click();
+  await expect(savedWishDialog).toHaveCount(0);
+  await expect(workDay).not.toHaveClass(/wish-day/);
+});
+
 test("le congé CET est proposé depuis les demandes et depuis une case", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".today-overview .primary-action").click();
@@ -411,8 +880,11 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
     "Une récupération",
     "Un arrêt maladie",
     "Divers",
+    "Grève",
     "CET",
   ]);
+  await expect(chooser.locator(".sick-leave-choice")).toHaveCSS("background-color", "rgb(250, 251, 253)");
+  await expect(chooser.locator(".cet-leave-choice")).toHaveCSS("background-color", "rgb(250, 251, 253)");
   await chooser.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".month-card .day").first().click();
@@ -423,6 +895,7 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
     /Congé souhaitéHors période d’ouverture/,
     /Maladie/,
     /Divers/,
+    /Grève/,
     /CET/,
   ]);
   await expect(dayDialog.locator(".leave-choices .other-day")).toHaveCSS(
@@ -488,6 +961,12 @@ test("une récupération lancée depuis une case suit aussi le calendrier", asyn
   await dialog.getByRole("button", { name: /Sélectionner dans le calendrier/ }).click();
   const recoveryPanel = page.locator("#recovery-range-selection-panel");
   await expect(recoveryPanel.getByRole("heading", { name: "1 date sélectionnée" })).toBeVisible();
+  const durationChoice = recoveryPanel.locator(".recovery-duration-field");
+  await expect(durationChoice.locator("legend")).toHaveText("Heures à poser pour chaque date");
+  await expect(durationChoice.getByRole("button", { name: "8 h" })).toHaveCSS(
+    "background-color",
+    "rgb(49, 94, 170)",
+  );
   await expect(recoveryPanel.locator(".recovery-duration-choice > button")).toHaveText([
     "8 h", "6 h", "4 h", "Durée libre",
   ]);
@@ -605,6 +1084,27 @@ test("les soldes présentent les douze mois fermés par défaut", async ({ page 
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
   await expect(page.getByRole("heading", { name: "Mes soldes de congés" })).toBeVisible();
+  await expect(page.locator(".manual-adjustments-trigger")).toContainText(
+    "Ajouter des jours et dimanches déjà posés, sans préciser les dates",
+  );
+  const [mecenatBox, archiveBox] = await Promise.all([
+    page.locator(".mecenat-balance-card").boundingBox(),
+    page.locator(".leave-request-archive").boundingBox(),
+  ]);
+  expect(mecenatBox).not.toBeNull();
+  expect(archiveBox).not.toBeNull();
+  expect(archiveBox!.y).toBeGreaterThan(mecenatBox!.y);
+  const archive = page.locator(".leave-request-archive");
+  await expect(archive.getByRole("button", { name: /Autre/ })).toContainText("Mes demandes archivées");
+  await expect(archive).toHaveCSS("background-image", /linear-gradient/);
+  await expect(archive.locator(".request-archive-icon")).toHaveCSS("color", "rgb(112, 66, 134)");
+  const [otherTitleBox, archivedLabelBox] = await Promise.all([
+    archive.locator(".request-archive-copy strong").boundingBox(),
+    archive.locator(".request-archive-copy .step-label").boundingBox(),
+  ]);
+  expect(otherTitleBox).not.toBeNull();
+  expect(archivedLabelBox).not.toBeNull();
+  expect(otherTitleBox!.y).toBeLessThan(archivedLabelBox!.y);
   await page.locator(".leave-balance-grid > button.annual").click();
 
   const months = page.locator(".balance-detail-months > details");
@@ -682,7 +1182,7 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
     .click();
   await expect(page.getByRole("dialog")).toContainText(/sauvegarde|données/i);
 
-  await page.goto("/formulaire/index.html?planning=1&demo=1");
+  await page.goto("/formulaire/index.html?planning=1");
   const back = page.getByRole("link", { name: "Revenir à l’application" });
   await expect(back).toBeVisible();
   await expect(back).toHaveAttribute("href", "/");

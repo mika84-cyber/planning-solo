@@ -23,6 +23,7 @@ import { ManualAdjustmentsDialog, RangeLeaveDialog } from "./LeaveDialogs";
 import { MonthCalendar, NotesPanelContent } from "./PlanningView";
 import { RequestValidationSummary } from "./RequestValidationSummary";
 import {
+  AppUpdateDialog,
   DeletePeriodDialog,
   MessageDialog,
   NonWorkingDayWarningDialog,
@@ -88,6 +89,9 @@ import {
   type PayslipReading,
 } from "./payslip";
 import { summarizePayslipReview } from "./payslipReview";
+import { strikePayEstimate } from "./strike";
+import { StrikeContinuityDetails } from "./StrikeContinuityDetails";
+import { UsefulFormsSection } from "./UsefulFormsSection";
 import {
   payEstimateReadiness,
   type PayEstimateField,
@@ -239,17 +243,26 @@ function manualAdjustmentsFromApi(value: unknown) {
   );
 }
 
-const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf"] as const;
+const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf", "forms"] as const;
 type MainSection = (typeof MAIN_SECTION_ORDER)[number];
 
 export default function Home() {
   useModalAccessibility();
   const connectionStatus = useConnectionStatus();
-  // Cette option n'est activée que dans une compilation de démonstration
-  // séparée. Elle reste donc désactivée dans la version de production.
+  // Le jeu de données sans compte est réservé aux tests E2E locaux. Aucun
+  // paramètre d'URL public ne peut désormais activer ce mode. L'accès depuis
+  // un téléphone reste possible en développement sur le Wi-Fi privé.
+  const localTestHost =
+    ["127.0.0.1", "localhost"].includes(location.hostname) ||
+    /^192\.168\./.test(location.hostname) ||
+    /^10\./.test(location.hostname) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(location.hostname);
   const demoMode =
-    new URLSearchParams(location.search).has("demo") &&
-    (import.meta.env.DEV || import.meta.env.VITE_PUBLIC_DEMO === "true");
+    import.meta.env.DEV &&
+    import.meta.env.VITE_E2E_DEMO === "true" &&
+    localTestHost &&
+    (localStorage.getItem("planning:e2e-demo-enabled") === "1" ||
+      new URLSearchParams(location.search).get("local-test") === "1");
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
@@ -267,7 +280,6 @@ export default function Home() {
     authStatus,
     demoMode,
     location.hostname,
-    location.search,
   );
   const { installPrompt, installApp } = useInstallPrompt(installationEnabled);
   const [entries, setEntries] = useState<Entries>({});
@@ -504,12 +516,16 @@ export default function Home() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [checkingAppUpdate, setCheckingAppUpdate] = useState(false);
   const [appUpdateAvailable, setAppUpdateAvailable] = useState(false);
+  const [appUpdatePromptOpen, setAppUpdatePromptOpen] = useState(false);
   const [dataManagementOpen, setDataManagementOpen] = useState(false);
   const [dataManagementBusy, setDataManagementBusy] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
-    const showUpdateAlert = () => setAppUpdateAvailable(true);
+    const showUpdateAlert = () => {
+      setAppUpdateAvailable(true);
+      setAppUpdatePromptOpen(true);
+    };
     window.addEventListener("planning-app-update-available", showUpdateAlert);
     return () => window.removeEventListener("planning-app-update-available", showUpdateAlert);
   }, []);
@@ -650,6 +666,14 @@ export default function Home() {
       setView(localDate(actualToday.getFullYear(), actualToday.getMonth(), 1));
       if (demoMode) {
         try {
+          const seededProfile = JSON.parse(
+            localStorage.getItem("planning:e2e-pay-profile") || "null",
+          ) as FormProfile | null;
+          const seededPayProfiles = JSON.parse(
+            localStorage.getItem("planning:e2e-pay-profiles") || "null",
+          ) as Record<string, PayProfile> | null;
+          if (seededProfile) setFormProfile(seededProfile);
+          if (seededPayProfiles) setPayProfiles(seededPayProfiles);
           const raw = localStorage.getItem("planning:demo-completed-request-v1");
           const completed = raw ? JSON.parse(raw) : null;
           if (completed?.requestId) {
@@ -1890,6 +1914,18 @@ export default function Home() {
     () => mecenatForPayMonth(mecenatEntries, view.getFullYear(), view.getMonth()),
     [mecenatEntries, view],
   );
+  const strikeForCurrentPayMonth = useMemo(
+    () =>
+      strikePayEstimate(
+        periods,
+        group,
+        payProfiles,
+        view.getFullYear(),
+        view.getMonth(),
+        { entries, recoveryUses },
+      ),
+    [periods, group, payProfiles, view, entries, recoveryUses],
+  );
 
   /* La paie du mois affiché : les primes de ce mois-là, retenues déduites.
      C'est la question qu'on se pose en ouvrant un mois. */
@@ -1905,6 +1941,10 @@ export default function Home() {
     const sick = isContractuel
       ? { days: sickForMonth.days, total: 0 }
       : sickForMonth;
+    const strikeDeduction =
+      !isContractuel && strikeForCurrentPayMonth.totalDeduction !== null
+        ? strikeForCurrentPayMonth.totalDeduction
+        : 0;
     const sunday = month?.sunday || 0;
     const holiday = month?.holiday || 0;
     const compensated = month?.compensated || 0;
@@ -1921,20 +1961,28 @@ export default function Home() {
       compensatedCount: month?.compensatedCount || 0,
       sick: sick.total,
       sickDays: sick.days,
+      strike: strikeDeduction,
+      strikeDays: strikeForCurrentPayMonth.days.length,
+      strikeDeductedDays:
+        strikeForCurrentPayMonth.days.length +
+        strikeForCurrentPayMonth.automaticAdditionalDays.length,
+      strikeAutomaticDays: strikeForCurrentPayMonth.automaticAdditionalDays.length,
+      strikePotentialDays: strikeForCurrentPayMonth.potentialAdditionalDays.length,
       cia: index === ciaMonth ? cia : 0,
       premiums:
         SUNDAY_ALLOWANCE.monthlyFlat +
         sunday +
         holiday +
         compensated -
-        sick.total +
+        sick.total -
+        strikeDeduction +
         mecenatForCurrentPayMonth.grossAmountCents / 100,
       // Le brut du bulletin est la somme de toutes ces lignes : c'est
       // reconstituable exactement, contrairement au net qui suppose de
       // modéliser une dizaine de cotisations. Scindé en deux pour
       // l'estimation du net : le traitement porte la pension civile, les
       // primes n'y sont pas soumises et en gardent bien plus.
-      grossFixed: baseSalary + ifse + otherFixed - sick.total,
+      grossFixed: baseSalary + ifse + otherFixed - sick.total - strikeDeduction,
       grossVariable:
         (index === ciaMonth ? cia : 0) +
         SUNDAY_ALLOWANCE.monthlyFlat +
@@ -1952,7 +2000,8 @@ export default function Home() {
         sunday +
         holiday +
         compensated -
-        sick.total +
+        sick.total -
+        strikeDeduction +
         overtimeForPayMonth.amount +
         mecenatForCurrentPayMonth.grossAmountCents / 100,
     };
@@ -1968,6 +2017,7 @@ export default function Home() {
     isContractuel,
     overtimeForPayMonth,
     mecenatForCurrentPayMonth,
+    strikeForCurrentPayMonth,
   ]);
 
   /* Le forfait dominical existe même lorsque le traitement n'a jamais été
@@ -1983,10 +2033,24 @@ export default function Home() {
     availableFields: availablePayEstimateFields,
     sickDays: monthPay?.sickDays || 0,
   });
-  const grossEstimateMissing = estimateReadiness.grossMissing;
-  const grossEstimateComplete = estimateReadiness.grossReady;
-  const netEstimateMissing = estimateReadiness.netMissing;
-  const netEstimateComplete = estimateReadiness.netReady;
+  const strikeEstimateReady =
+    !(strikeForCurrentPayMonth.days.length + strikeForCurrentPayMonth.automaticAdditionalDays.length) ||
+    (!isContractuel && strikeForCurrentPayMonth.totalDeduction !== null);
+  const strikeMissing =
+    strikeForCurrentPayMonth.days.length + strikeForCurrentPayMonth.automaticAdditionalDays.length && !strikeEstimateReady
+      ? [
+          isContractuel
+            ? "règle de retenue de grève pour une contractuelle"
+            : "traitement et indemnité de résidence connus avant la grève",
+        ]
+      : [];
+  const grossEstimateMissing = [
+    ...estimateReadiness.grossMissing,
+    ...strikeMissing,
+  ];
+  const grossEstimateComplete = estimateReadiness.grossReady && strikeEstimateReady;
+  const netEstimateMissing = [...estimateReadiness.netMissing, ...strikeMissing];
+  const netEstimateComplete = estimateReadiness.netReady && strikeEstimateReady;
 
   /** Le net estimé du mois affiché : cotisations d'abord, avec deux taux —
    *  le traitement porte la pension civile, les primes non —, puis l'impôt à
@@ -2033,6 +2097,7 @@ export default function Home() {
       { used: number; details: Array<{ date: string; units: number; period: LeavePeriod }> }
     > = {
       sick: { used: 0, details: [] },
+      strike: { used: 0, details: [] },
       childcare: { used: 0, details: [] },
       exceptional: { used: 0, details: [] },
       other: { used: 0, details: [] },
@@ -2281,6 +2346,8 @@ export default function Home() {
       status =
         period.leaveType === "other"
           ? "Divers"
+          : period.leaveType === "strike"
+            ? "Grève"
           : leaveTypeLabel(period.leaveType || "annual");
       tone = period.leaveType === "recovery" ? "recovery" : "leave";
     } else if (entry?.leave) {
@@ -2625,7 +2692,7 @@ export default function Home() {
       try {
         localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
         setRecoveryDialogOpen(false);
-        window.location.href = `/formulaire/index.html?planning=1${demoMode ? "&demo=1" : ""}`;
+        window.location.href = "/formulaire/index.html?planning=1";
       } catch {
         notify("Le formulaire n’a pas pu être préparé. Réessayez.");
       }
@@ -3386,6 +3453,8 @@ export default function Home() {
       requestedType ||
       (kind === "leave"
         ? "annual"
+        : kind === "strike"
+          ? "strike"
         : kind === "other"
           ? "other"
           : "recovery_day");
@@ -3424,6 +3493,13 @@ export default function Home() {
     setTimeDate(null);
   }
   function recordSelection(key: string) {
+    if (
+      activeType === "strike" &&
+      getDayInfo(fromKey(key), group).kind !== "work"
+    ) {
+      notify("Une grève ne peut être posée que sur une journée prévue travaillée.");
+      return;
+    }
     if (activeType === "recovery_training") {
       const times = trainingRecoveryTimes(workQuota);
       setSelections((current) => ({
@@ -3496,6 +3572,10 @@ export default function Home() {
     }
     if (!requestKind) {
       openDay(date);
+      return;
+    }
+    if (requestKind === "strike") {
+      void saveStrikeDateDirect(key);
       return;
     }
     if (selections[key]) {
@@ -3654,6 +3734,141 @@ export default function Home() {
     } catch (error) {
       notify(
         calendarErrorMessage(error, "L’arrêt maladie n’a pas pu être enregistré."),
+      );
+    } finally {
+      setSavingDay(false);
+    }
+  }
+
+  async function saveStrikeDateDirect(date: string) {
+    const alreadyRecorded = periods.some(
+      (period) =>
+        period.leaveType === "strike" && date >= period.from && date <= period.to,
+    );
+    if (alreadyRecorded) {
+      confirm("Cette journée de grève est déjà enregistrée dans le planning.");
+      setDayDate(null);
+      cancelRequest();
+      return;
+    }
+    const recordedAbsence = periods.find(
+      (period) =>
+        period.leaveType !== "strike" && date >= period.from && date <= period.to,
+    );
+    if (recordedAbsence) {
+      notify(
+        `${leaveTypeLabel(recordedAbsence.leaveType || "annual")} est déjà enregistré ce jour. Cette absence reste inchangée : retirez-la uniquement si elle doit réellement être remplacée par une grève.`,
+      );
+      return;
+    }
+    if (recoveryUses.some((item) => item.date === date)) {
+      notify(
+        "Une récupération est déjà enregistrée ce jour. Elle reste inchangée : retirez-la uniquement si elle doit réellement être remplacée par une grève.",
+      );
+      return;
+    }
+    if (entries[date]?.leave) {
+      notify(
+        "Une autre absence est déjà enregistrée ce jour. Elle reste inchangée : retirez-la uniquement si elle doit réellement être remplacée par une grève.",
+      );
+      return;
+    }
+    if (getDayInfo(fromKey(date), group).kind !== "work") {
+      notify("Une grève ne peut être posée que sur une journée prévue travaillée.");
+      return;
+    }
+    const input = {
+      id: createClientId("period"),
+      from: date,
+      to: date,
+      leaveType: "strike" as const,
+      group,
+    };
+    setSavingDay(true);
+    setDayDate(null);
+    cancelRequest();
+    try {
+      let saved: LeavePeriod;
+      if (demoMode) {
+        saved = {
+          ...input,
+          halfMoment: "",
+          updatedAt: new Date().toISOString(),
+        };
+      } else {
+        const result = await postCalendarPeriodsVerified<{
+          id: string;
+          from: string;
+          to: string;
+          leave_type?: LeaveType;
+          half_moment?: HalfMoment;
+          group?: number;
+          updated_at: string;
+        }>([input]);
+        const period = result.periods[0];
+        saved = {
+          id: period.id,
+          from: period.from,
+          to: period.to,
+          leaveType: period.leave_type || "strike",
+          halfMoment: period.half_moment || "",
+          group: period.group,
+          updatedAt: period.updated_at,
+        };
+      }
+      setPeriods((current) =>
+        [...current, saved].sort((a, b) => a.from.localeCompare(b.from)),
+      );
+      confirm("La grève est ajoutée au planning et l’estimation de paie est à jour.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La grève n’a pas pu être ajoutée."));
+    } finally {
+      setSavingDay(false);
+    }
+  }
+
+  async function saveWishDateDirect(date: string, desired?: boolean) {
+    const current = entries[date] || emptyEntry();
+    const wish = desired ?? !current.wish;
+    const nextEntry: SharedEntry = { ...current, wish };
+    setSavingDay(true);
+    setDayDate(null);
+    try {
+      if (!demoMode) {
+        await postCalendar({
+          action: "save-entry",
+          date,
+          ...nextEntry,
+          expectedUpdatedAt: current.updatedAt,
+        });
+        await loadCalendar();
+      } else {
+        setEntries((currentEntries) => {
+          const next = { ...currentEntries };
+          if (
+            !nextEntry.noteText &&
+            !nextEntry.leave &&
+            !nextEntry.wish &&
+            !nextEntry.holidayPay
+          )
+            delete next[date];
+          else next[date] = nextEntry;
+          return next;
+        });
+      }
+      confirm(
+        wish
+          ? "Le congé souhaité est ajouté au planning."
+          : "Le congé souhaité est retiré du planning.",
+      );
+    } catch (error) {
+      notify(
+        calendarErrorMessage(
+          error,
+          wish
+            ? "Le congé souhaité n’a pas pu être ajouté."
+            : "Le congé souhaité n’a pas pu être retiré.",
+        ),
       );
     } finally {
       setSavingDay(false);
@@ -4063,8 +4278,13 @@ export default function Home() {
     // Leur « formulaire » reste donc dans l'application : choix des dates,
     // validation explicite, puis enregistrement synchronisé. Divers est un
     // repère de planning uniquement et est exclu plus bas de tous les calculs.
-    if (requestKind === "other" || sickRequest) {
-      const leaveType: LeaveType = requestKind === "other" ? "other" : "sick";
+    if (requestKind === "other" || requestKind === "strike" || sickRequest) {
+      const leaveType: LeaveType =
+        requestKind === "other"
+          ? "other"
+          : requestKind === "strike"
+            ? "strike"
+            : "sick";
       const grouped = groupConsecutive(selectedList.map((item) => item.date));
       const inputs = grouped.map((period) => ({
         id: createClientId("period"),
@@ -4109,6 +4329,8 @@ export default function Home() {
         confirm(
           leaveType === "other"
             ? "Divers est ajouté au planning, sans modifier la paie ni les soldes."
+            : leaveType === "strike"
+              ? "La grève est enregistrée et l’estimation de paie est à jour."
             : "L’arrêt maladie est enregistré et l’estimation de paie est à jour.",
         );
       } catch (error) {
@@ -4117,6 +4339,8 @@ export default function Home() {
             error,
             leaveType === "other"
               ? "Divers n’a pas pu être enregistré."
+              : leaveType === "strike"
+                ? "La grève n’a pas pu être enregistrée."
               : "L’arrêt maladie n’a pas pu être enregistré.",
           ),
         );
@@ -4285,10 +4509,7 @@ export default function Home() {
     setSavingRequest(true);
     try {
       localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
-      const demo = demoMode
-        ? "&demo=1"
-        : "";
-      window.location.href = `/formulaire/index.html?planning=1${demo}`;
+      window.location.href = "/formulaire/index.html?planning=1";
     } catch (error) {
       setSavingRequest(false);
       notify(
@@ -4377,7 +4598,7 @@ export default function Home() {
       <button
         type="button"
         key={key}
-        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
+        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
         style={
           selected
             ? ({
@@ -4412,7 +4633,8 @@ export default function Home() {
         (myLeaveType === "exceptional" ||
           myLeaveType === "childcare" ||
           myLeaveType === "sick" ||
-          myLeaveType === "cet")) ? (
+          myLeaveType === "cet" ||
+          myLeaveType === "strike")) ? (
           <span
             className={`leave-calendar-marker leave-calendar-marker-${myLeaveType}${compact ? " compact" : ""}`}
             aria-hidden="true"
@@ -4429,8 +4651,10 @@ export default function Home() {
                 ? "👶"
                 : myLeaveType === "sick"
                   ? "🤒"
-                  : myLeaveType === "cet"
+                : myLeaveType === "cet"
                     ? "CET"
+                  : myLeaveType === "strike"
+                    ? "✊"
                 : ""}
           </span>
         ) : null}
@@ -4942,6 +5166,24 @@ export default function Home() {
           break;
         }
       }
+      const monthlyPayProfiles = items.flatMap((item) => {
+        const reading = item.reading;
+        if (
+          reading.year === undefined ||
+          reading.month === undefined ||
+          (reading.baseSalary === undefined &&
+            reading.residenceAllowance === undefined)
+        )
+          return [];
+        return [
+          {
+            year: reading.year,
+            month: reading.month,
+            baseSalary: reading.baseSalary,
+            residenceAllowance: reading.residenceAllowance,
+          },
+        ];
+      });
       // Un seul bulletin donne un net total pour deux taux inconnus. On
       // réunit donc les lectures successives de la session. Un même mois
       // réimporté remplace sa lecture précédente au lieu de compter deux fois.
@@ -5062,6 +5304,21 @@ export default function Home() {
         const body: Record<string, unknown> = {
           action: "save-form-profile",
           payYear: Number(targetPayYear),
+          payMonth: targetPayMonth,
+          monthlyPayProfiles: monthlyPayProfiles.map((profile) => ({
+            year: profile.year,
+            month: profile.month,
+            ...(profile.baseSalary !== undefined
+              ? { baseSalaryCents: Math.round(profile.baseSalary * 100) }
+              : {}),
+            ...(profile.residenceAllowance !== undefined
+              ? {
+                  residenceAllowanceCents: Math.round(
+                    profile.residenceAllowance * 100,
+                  ),
+                }
+              : {}),
+          })),
           fullName: nextProfile.fullName,
           group: nextProfile.group,
           signature: nextProfile.signature,
@@ -5108,9 +5365,10 @@ export default function Home() {
         await postCalendar(body);
       }
       setFormProfile(nextProfile);
-      setPayProfiles((current) => ({
-        ...current,
-        [targetPayYear]: {
+      setPayProfiles((current) => {
+        const next = {
+          ...current,
+          [targetPayYear]: {
           ...(current[targetPayYear] || {}),
           ...Object.fromEntries(
             PAYSLIP_IMPORT_FIELDS.filter(
@@ -5122,8 +5380,22 @@ export default function Home() {
           ...(calculatedRates
             ? { netRatioRegime: targetNetRatioRegime }
             : {}),
-        },
-      }));
+          },
+        };
+        for (const profile of monthlyPayProfiles) {
+          const key = `${profile.year}-${String(profile.month + 1).padStart(2, "0")}`;
+          next[key] = {
+            ...(next[key] || {}),
+            ...(profile.baseSalary !== undefined
+              ? { baseSalary: profile.baseSalary }
+              : {}),
+            ...(profile.residenceAllowance !== undefined
+              ? { residenceAllowance: profile.residenceAllowance }
+              : {}),
+          };
+        }
+        return next;
+      });
       setPayslipImportResult({
         applied: [
           ...applied.map((field) => ({
@@ -5193,8 +5465,11 @@ export default function Home() {
     setDayDate(null);
     setPlanningRequestDate(date || null);
     if (kind === "recovery") setPendingRecoveryType("recovery_day");
-    if (kind === "leave" || kind === "other")
-      setPendingLeaveType(requestedType || (kind === "other" ? "other" : "annual"));
+    if (kind === "leave" || kind === "other" || kind === "strike")
+      setPendingLeaveType(
+        requestedType ||
+          (kind === "other" ? "other" : kind === "strike" ? "strike" : "annual"),
+      );
     setPlanningRequestMethod(kind);
   }
 
@@ -5234,16 +5509,16 @@ export default function Home() {
       setRecoveryRangeOpen(true);
       return;
     }
-    if (kind === "other") {
+    if (kind === "other" || kind === "strike") {
       if (date) {
         openDay(fromKey(date));
         setDayLeave(true);
-        setDayLeaveType("other");
+        setDayLeaveType(kind === "strike" ? "strike" : "other");
         setLeaveRangeEnabled(true);
         setLeaveRangeFrom(date);
         setLeaveRangeTo(date);
       } else {
-        openRange("other");
+        openRange(kind === "strike" ? "strike" : "other");
       }
       return;
     }
@@ -5277,6 +5552,14 @@ export default function Home() {
     const month = allowances?.monthly.find((slot) => slot.index === index);
     const overtime = paidOvertimeForPayPeriod(view.getFullYear(), index);
     const mecenat = mecenatForPayMonth(mecenatEntries, view.getFullYear(), index);
+    const strike = strikePayEstimate(
+      periods,
+      group,
+      payProfiles,
+      view.getFullYear(),
+      index,
+      { entries, recoveryUses },
+    );
     // Même règle que dans `monthPay` : la retenue maladie de fonctionnaire ne
     // s'applique pas à une contractuelle.
     const sick = isContractuel ? 0 : sickLeaves?.byMonth[index]?.total || 0;
@@ -5288,7 +5571,10 @@ export default function Home() {
       SUNDAY_ALLOWANCE.monthlyFlat +
       (month?.sunday || 0) +
       (month?.holiday || 0) -
-      sick +
+      sick -
+      (!isContractuel && strike.totalDeduction !== null
+        ? strike.totalDeduction
+        : 0) +
       overtime.amount +
       mecenat.grossAmountCents / 100
     );
@@ -5377,6 +5663,24 @@ export default function Home() {
               ? "impact à vérifier selon le maintien de salaire, les IJSS et la subrogation"
               : "carence et retenue de 10 %",
             amount: isContractuel ? null : -monthPay.sick,
+          }
+        : null,
+      monthPay.strikeDeductedDays || monthPay.strikePotentialDays
+        ? {
+            key: "strike",
+            label: `Grève (${monthPay.strikeDeductedDays} journée${s(monthPay.strikeDeductedDays)} retenue${s(monthPay.strikeDeductedDays)})`,
+            detail:
+              isContractuel
+                ? "règle de retenue à confirmer pour une contractuelle"
+                : strikeForCurrentPayMonth.dailyDeduction === null
+                  ? "traitement et indemnité de résidence antérieurs à compléter"
+                  : strikeForCurrentPayMonth.potentialAdditionalDays.length
+                    ? `Attention : ${strikeForCurrentPayMonth.potentialAdditionalDays.length} jour${s(strikeForCurrentPayMonth.potentialAdditionalDays.length)} intermédiaire${s(strikeForCurrentPayMonth.potentialAdditionalDays.length)} à vérifier. Les repos noirs encadrés sont inclus automatiquement ; les autres absences restent hors retenue tant qu’elles ne sont pas confirmées. ${strikeForCurrentPayMonth.exactMonthValues ? "Valeurs exactes du mois." : strikeForCurrentPayMonth.sourcePeriod ? `Dernières valeurs connues : ${strikeForCurrentPayMonth.sourcePeriod}.` : ""}`
+                    : `retenue au 1/30 · ${euros(strikeForCurrentPayMonth.dailyDeduction)} brut par jour${strikeForCurrentPayMonth.automaticAdditionalDays.length ? ` · ${strikeForCurrentPayMonth.automaticAdditionalDays.length} repos noir${s(strikeForCurrentPayMonth.automaticAdditionalDays.length)} encadré${s(strikeForCurrentPayMonth.automaticAdditionalDays.length)} inclus` : ""} · ${strikeForCurrentPayMonth.exactMonthValues ? "valeurs exactes du mois" : "dernières valeurs antérieures connues"}`,
+            amount:
+              !isContractuel && strikeForCurrentPayMonth.totalDeduction !== null
+                ? -strikeForCurrentPayMonth.totalDeduction
+                : null,
           }
         : null,
       // Jamais prélevés en décembre (confirmé sur les bulletins de 2024 et
@@ -6210,6 +6514,17 @@ export default function Home() {
         quantity: minutesLabel(mecenatForCurrentPayMonth.totalMinutes),
         amount: mecenatForCurrentPayMonth.grossAmountCents / 100,
       },
+      {
+        label: "Grève",
+        quantity: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
+          ? `${monthPay?.strikeDeductedDays || 0} journée${s(monthPay?.strikeDeductedDays || 0)} retenue${s(monthPay?.strikeDeductedDays || 0)}${monthPay?.strikeAutomaticDays ? ` dont ${monthPay.strikeAutomaticDays} repos noir${s(monthPay.strikeAutomaticDays)}` : ""}${monthPay?.strikePotentialDays ? ` · ${monthPay.strikePotentialDays} jour${s(monthPay.strikePotentialDays)} à vérifier` : ""}`
+          : "Aucune journée de grève",
+        amount: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
+          ? monthPay?.strikeDeductedDays && !isContractuel && strikeForCurrentPayMonth.totalDeduction !== null
+            ? -strikeForCurrentPayMonth.totalDeduction
+            : null
+          : 0,
+      },
     ];
     const variableTotal = variableRows.reduce(
       (total, row) => total + (row.amount || 0),
@@ -6574,7 +6889,9 @@ export default function Home() {
               ? "top-header top-header-pay"
               : homeSection === "pdf"
                 ? "top-header top-header-pdf"
-                : "top-header"
+                : homeSection === "forms"
+                  ? "top-header top-header-forms"
+                  : "top-header"
         }
       >
         <div className="top-header-title">
@@ -6586,6 +6903,8 @@ export default function Home() {
                 ? "Congés et récupérations"
                 : homeSection === "pdf"
                   ? "Plannings PDF"
+                  : homeSection === "forms"
+                    ? "Formulaires utiles"
                   : payScreen === "allowances"
                     ? "Primes et jours fériés"
                     : payScreen === "payslip"
@@ -6618,7 +6937,7 @@ export default function Home() {
               ) : null}
               <div className="account-menu" ref={accountMenuRef}>
             <button
-              className={`account-button${accountMenuOpen ? " open" : ""}${appUpdateAvailable ? " update-available" : ""}`}
+              className={`account-button${accountMenuOpen ? " open" : ""}`}
               type="button"
               ref={accountButtonRef}
               onClick={() => setAccountMenuOpen((current) => !current)}
@@ -6627,7 +6946,6 @@ export default function Home() {
               aria-label="Compte"
             >
               {(userEmail[0] || "M").toUpperCase()}
-              {appUpdateAvailable ? <span className="account-update-dot" aria-hidden="true" /> : null}
             </button>
             {accountMenuOpen && (
               <div className="account-menu-panel" role="menu">
@@ -6681,7 +6999,7 @@ export default function Home() {
             </button>
           </div>
           <button
-            className={`app-update-button header-update-button${checkingAppUpdate ? " checking" : ""}`}
+            className={`app-update-button header-update-button${checkingAppUpdate ? " checking" : ""}${appUpdateAvailable ? " update-available" : ""}`}
             type="button"
             onClick={() => void checkForAppUpdate()}
             disabled={checkingAppUpdate}
@@ -6716,6 +7034,7 @@ export default function Home() {
                 ["leave", "Congés et récupérations", "Soldes, heures sup et mécénats"],
                 ["pay", "Ma paie", "Estimations, primes et bulletins"],
                 ["pdf", "Télécharger les plannings en PDF", "Choisir le planning puis générer le document"],
+                ["forms", "Formulaires utiles", "Expo, SAP et Brantôme"],
               ] as const).map(([key, title, detail]) => (
                 <button
                   key={key}
@@ -6733,6 +7052,11 @@ export default function Home() {
                   <span aria-hidden="true">›</span>
                 </button>
               ))}
+            </nav>
+            <div className="main-menu-secondary">
+              <button type="button" onClick={() => { setMainMenuOpen(false); setDataManagementOpen(true); }}>
+                Sauvegarde et restauration
+              </button>
               <button
                 type="button"
                 className="guide-menu-entry"
@@ -6741,16 +7065,8 @@ export default function Home() {
                   setGuideOpen(true);
                 }}
               >
-                <span className="main-menu-copy">
-                  <strong>Mode d’emploi</strong>
-                  <small>Comprendre le planning, les congés et la paie</small>
-                </span>
+                <span>Mode d’emploi</span>
                 <span aria-hidden="true">›</span>
-              </button>
-            </nav>
-            <div className="main-menu-secondary">
-              <button type="button" onClick={() => { setMainMenuOpen(false); setDataManagementOpen(true); }}>
-                Sauvegarde et restauration
               </button>
             </div>
           </aside>
@@ -6808,11 +7124,13 @@ export default function Home() {
                 ["guide-reliable-estimate", "1. Fiabiliser mes estimations"],
                 ["guide-payslips", "2. Choisir mes bulletins"],
                 ["guide-leave", "3. Poser un congé"],
-                ["guide-recovery", "4. Récupérations et heures"],
-                ["guide-navigation", "5. Accueil, menu et planning"],
-                ["guide-pay", "6. Comprendre Ma paie"],
-                ["guide-pdf", "7. Télécharger les plannings PDF"],
-                ["guide-data", "8. Données et sauvegarde"],
+                ["guide-cet", "4. Suivre et utiliser mon CET"],
+                ["guide-recovery", "5. Récupérations et heures"],
+                ["guide-navigation", "6. Accueil, menu et planning"],
+                ["guide-pay", "7. Comprendre Ma paie"],
+                ["guide-pdf", "8. Télécharger les plannings PDF"],
+                ["guide-forms", "9. Télécharger les formulaires utiles"],
+                ["guide-data", "10. Données, archives et sauvegarde"],
               ] as const).map(([id, label]) => (
                 <button type="button" key={id} onClick={() => scrollGuideTo(id)}>{label}</button>
               ))}
@@ -6858,11 +7176,12 @@ export default function Home() {
                   <p>
                     Touchez <strong>Poser un congé</strong>, puis choisissez Congé,
                     Récupération, Arrêt maladie ou Divers. Chaque point d’entrée
-                    ouvre ensuite le formulaire ou l’ajout manuel au planning. Divers,
-                    lui, s’ajoute directement au calendrier.
+                    ouvre ensuite le formulaire ou l’ajout manuel au planning. Divers et Grève
+                    s’ajoutent directement au calendrier.
                   </p>
                   <ul>
-                    <li>Divers peut servir notamment pour une grève, une décharge syndicale ou une fermeture exceptionnelle ; il ne modifie ni la paie ni les soldes ;</li>
+                    <li><strong>Grève</strong> est suivie séparément, sans déduction de congé, et crée une retenue brute estimée au trentième. Les repos noirs du cycle encadrés par deux grèves sont inclus dans la période de retenue sans être transformés en grève dans le planning. Les CA enregistrés restent protégés ; RTT, récupérations, jours fériés et autres absences intermédiaires restent à vérifier ;</li>
+                    <li>Divers reste réservé aux autres repères sans effet sur la paie ni les soldes, comme une décharge syndicale ou une fermeture exceptionnelle ;</li>
                     <li>depuis une case du calendrier : la date est déjà ciblée ;</li>
                     <li>un arrêt maladie est suivi séparément : il ne diminue pas vos droits à congés, mais intervient dans le suivi et l’estimation de paie ;</li>
                     <li>pour plusieurs jours : sélectionnez une période ou plusieurs dates distinctes.</li>
@@ -6873,10 +7192,8 @@ export default function Home() {
                     vous pouvez saisir vos CA, RTT, fractionnements et dimanches déjà posés sans retrouver chaque date.
                   </p>
                   <p>
-                    La rubrique <strong>Mon CET</strong> permet de reprendre le solde de votre relevé RH,
-                    d’enregistrer les alimentations et utilisations, puis de simuler les choix de fin d’année.
-                    Elle applique les principales règles de la fonction publique de l’État et du ministère de la Culture,
-                    mais le relevé et les décisions de votre service RH restent toujours la référence.
+                    Tout en bas de Congés et récupérations, la rubrique <strong>Autre</strong>
+                    rassemble vos demandes archivées sur cet appareil, après les mécénats.
                   </p>
                   <p>
                     Avant de valider, relisez le résumé des dates, des types de congés et de leur effet.
@@ -6885,14 +7202,38 @@ export default function Home() {
                 </div>
               </section>
 
-              <section id="guide-recovery" className="guide-section">
+              <section id="guide-cet" className="guide-section important">
                 <span className="guide-number">4</span>
+                <div>
+                  <h3>Suivre et utiliser mon CET</h3>
+                  <p>
+                    Ouvrez <strong>Mon CET</strong>, recopiez le solde officiel indiqué sur
+                    votre relevé RH, puis enregistrez-le. Si vous devez créer le compte,
+                    le bouton <strong>Faire une demande d’ouverture</strong> prépare le formulaire à vérifier et à transmettre.
+                  </p>
+                  <ul>
+                    <li><strong>Poser un congé CET</strong> ouvre le parcours habituel de demande de congé ;</li>
+                    <li><strong>Ajouter une opération</strong> sert à corriger ou compléter le suivi du solde ;</li>
+                    <li><strong>Remplir alimentation / indemnisation</strong> prépare le document annuel et son aide au remplissage.</li>
+                  </ul>
+                  <p>
+                    Le formulaire d’alimentation ou d’indemnisation peut être préparé à tout moment,
+                    mais il ne peut être envoyé qu’entre le <strong>15 novembre et le 31 décembre</strong>.
+                    Les jours à conserver correspondent au nombre de jours qui resteront sur le CET après les choix saisis.
+                    Votre relevé et la validation de votre service RH restent la référence.
+                  </p>
+                </div>
+              </section>
+
+              <section id="guide-recovery" className="guide-section">
+                <span className="guide-number">5</span>
                 <div>
                   <h3>Récupérations, heures supplémentaires et mécénats</h3>
                   <p>
                     Le parcours Récupération conserve les choix journée, demi-journée,
-                    heures et jour férié. Toutes les récupérations concernées utilisent
-                    le solde d’heures de récupération.
+                    heures, jour férié et formation. Choisissez ensuite clairement les
+                    <strong> heures à poser</strong>, puis sélectionnez une ou plusieurs dates dans le calendrier.
+                    Toutes les récupérations concernées utilisent le solde d’heures de récupération.
                   </p>
                   <p>
                     Dans Congés et récupérations, déclarez les heures supplémentaires
@@ -6905,23 +7246,25 @@ export default function Home() {
               </section>
 
               <section id="guide-navigation" className="guide-section">
-                <span className="guide-number">5</span>
+                <span className="guide-number">6</span>
                 <div>
                   <h3>Utiliser l’accueil, le menu et le planning</h3>
                   <p>
                     L’accueil réunit Aujourd’hui en un coup d’œil, les notes et le planning.
                     Le groupe de cycle se modifie en touchant sa carte. Le menu ☰ placé
                     dans l’en-tête ouvre Congés et récupérations,
-                    Ma paie, les PDF, puis ce mode d’emploi. La vérification des mises à jour
-                    se trouve sous les commandes Mois, Année et menu de l’en-tête ; les
-                    sauvegardes restent en bas du menu.
+                    Ma paie, les PDF et les Formulaires utiles. Le mode d’emploi est placé
+                    tout en bas de la fenêtre du menu. Lorsqu’une nouvelle version est
+                    publiée, une fenêtre vous invite à la charger. Si vous choisissez Plus tard,
+                    le compte conserve l’alerte et le bouton <strong>Vérifier les mises à jour</strong>
+                    permet de la reprendre ; les sauvegardes restent en bas du menu.
                   </p>
                   <p>Une note peut être associée à un ou plusieurs jours, même dans des mois différents.</p>
                 </div>
               </section>
 
               <section id="guide-pay" className="guide-section">
-                <span className="guide-number">6</span>
+                <span className="guide-number">7</span>
                 <div>
                   <h3>Comprendre la rubrique Ma paie</h3>
                   <p>
@@ -6934,7 +7277,7 @@ export default function Home() {
               </section>
 
               <section id="guide-pdf" className="guide-section">
-                <span className="guide-number">7</span>
+                <span className="guide-number">8</span>
                 <div>
                   <h3>Télécharger les plannings en PDF</h3>
                   <p>
@@ -6946,14 +7289,35 @@ export default function Home() {
                 </div>
               </section>
 
-              <section id="guide-data" className="guide-section">
-                <span className="guide-number">8</span>
+              <section id="guide-forms" className="guide-section important">
+                <span className="guide-number">9</span>
                 <div>
-                  <h3>Conserver et restaurer les données</h3>
+                  <h3>Télécharger les formulaires utiles</h3>
+                  <p>
+                    Ouvrez <strong>Formulaires utiles</strong> depuis le menu, puis choisissez
+                    Formulaire Expo, Formulaire SAP ou Formulaire Brantôme. Chaque dossier
+                    possède son propre écran et conserve l’ordre officiel des documents.
+                  </p>
+                  <p>
+                    Touchez <strong>Télécharger</strong> à droite du formulaire souhaité pour
+                    enregistrer le fichier original sur votre appareil. Le dossier Expo est
+                    prêt mais reste vide jusqu’à l’ajout de ses premiers documents.
+                  </p>
+                </div>
+              </section>
+
+              <section id="guide-data" className="guide-section">
+                <span className="guide-number">10</span>
+                <div>
+                  <h3>Conserver les archives et restaurer les données</h3>
                   <p>
                     La synchronisation du compte conserve les données distantes. Le menu
                     Sauvegarde et restauration permet aussi d’exporter une sauvegarde JSON
                     et de la restaurer. Attendez toujours la confirmation après une saisie.
+                  </p>
+                  <p>
+                    Les formulaires terminés se trouvent dans <strong>Congés et récupérations → Autre → Mes demandes archivées</strong>.
+                    Ces documents sont conservés sur l’appareil utilisé : exportez-les si vous souhaitez les garder ailleurs.
                   </p>
                 </div>
               </section>
@@ -7137,41 +7501,6 @@ export default function Home() {
             onSelectBalance={setBalanceDetailType}
             onOpenManualAdjustments={openManualAdjustments}
           />
-          <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
-            <button
-              className="request-archive-toggle"
-              type="button"
-              onClick={() => setArchiveOpen((current) => !current)}
-              aria-expanded={archiveOpen}
-            >
-              <span className="request-archive-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 7h5l2 2h7v10H5zM7 4h7l2 2" />
-                </svg>
-              </span>
-              <span className="request-archive-copy">
-                <span className="step-label">Documents conservés sur cet appareil</span>
-                <strong id="leave-request-archive-title">Mes demandes archivées</strong>
-              </span>
-              <span className="request-archive-summary">
-                <small>{archivedRequests.length} formulaire{s(archivedRequests.length)}</small>
-                <span className="request-archive-caret" aria-hidden="true">⌄</span>
-              </span>
-            </button>
-            {archiveOpen ? (
-              <div className="request-archive-list">
-                {archivedRequests.length ? archivedRequests.map((request) => (
-                  <article className="archived-request" key={request.id}>
-                    <button className="archived-request-open" type="button" onClick={() => openArchivedRequest(request)}>
-                      <span className="archived-request-pdf">PDF</span>
-                      <span><strong>{request.name}</strong><small>{archivedRequestDate(request.updatedAt)}</small></span>
-                    </button>
-                    <button className="archived-request-delete" type="button" onClick={() => void deleteArchivedRequest(request)} aria-label={`Supprimer ${request.name}`}>×</button>
-                  </article>
-                )) : <p className="request-archive-empty">Aucune demande archivée sur cet appareil.</p>}
-              </div>
-            ) : null}
-          </section>
           <CetSection
             account={formProfile?.cetAccount}
             status={formProfile?.status || "contractuel"}
@@ -7372,6 +7701,42 @@ export default function Home() {
                       </button>
                     </article>
                   ))}
+              </div>
+            ) : null}
+          </section>
+          <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
+            <button
+              className="request-archive-toggle"
+              type="button"
+              onClick={() => setArchiveOpen((current) => !current)}
+              aria-expanded={archiveOpen}
+            >
+              <span className="request-archive-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 7h5l2 2h7v10H5zM7 4h7l2 2" />
+                </svg>
+              </span>
+              <span className="request-archive-copy">
+                <strong id="leave-request-archive-title">Autre</strong>
+                <span className="step-label">Mes demandes archivées</span>
+                <small>Documents conservés sur cet appareil</small>
+              </span>
+              <span className="request-archive-summary">
+                <small>{archivedRequests.length} formulaire{s(archivedRequests.length)}</small>
+                <span className="request-archive-caret" aria-hidden="true">⌄</span>
+              </span>
+            </button>
+            {archiveOpen ? (
+              <div className="request-archive-list">
+                {archivedRequests.length ? archivedRequests.map((request) => (
+                  <article className="archived-request" key={request.id}>
+                    <button className="archived-request-open" type="button" onClick={() => openArchivedRequest(request)}>
+                      <span className="archived-request-pdf">PDF</span>
+                      <span><strong>{request.name}</strong><small>{archivedRequestDate(request.updatedAt)}</small></span>
+                    </button>
+                    <button className="archived-request-delete" type="button" onClick={() => void deleteArchivedRequest(request)} aria-label={`Supprimer ${request.name}`}>×</button>
+                  </article>
+                )) : <p className="request-archive-empty">Aucune demande archivée sur cet appareil.</p>}
               </div>
             ) : null}
           </section>
@@ -7582,6 +7947,8 @@ export default function Home() {
         </section>
       ) : null}
 
+      {homeSection === "forms" ? <UsefulFormsSection /> : null}
+
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
       {homeSection === "home" ? (
         <section className="home-planning-heading" aria-labelledby="home-planning-title">
@@ -7778,8 +8145,8 @@ export default function Home() {
               {recoveryRangeDates.length} {recoveryRangeDates.length > 1 ? "dates sélectionnées" : "date sélectionnée"}
             </h2>
             <p>Changez de mois si nécessaire et touchez chaque date pour l’ajouter ou la retirer.</p>
-            <fieldset className="overtime-choice-field recovery-range-duration">
-              <legend>Durée pour chaque date</legend>
+            <fieldset className="overtime-choice-field recovery-range-duration recovery-duration-field">
+              <legend>Heures à poser pour chaque date</legend>
               <div className="recovery-duration-choice">
                 {(recoveryDraft.kind === "training"
                   ? ([[180, "3 h"], [360, "6 h"]] as const)
@@ -8146,7 +8513,7 @@ export default function Home() {
 
       {requestKind && (
         <section
-          className={`request-panel calendar-request-panel${sickRequest ? " sick-request-panel" : requestKind === "other" ? " other-request-panel" : ""}`}
+          className={`request-panel calendar-request-panel${sickRequest ? " sick-request-panel" : requestKind === "other" ? " other-request-panel" : requestKind === "strike" ? " strike-request-panel" : ""}`}
           id="request-panel"
           style={
             { "--active-color": TYPE_COLORS[activeType] } as React.CSSProperties
@@ -8154,7 +8521,9 @@ export default function Home() {
         >
           <div className="request-heading">
             <div>
-              <span className="step-label">Demande en préparation</span>
+              <span className="step-label">
+                {requestKind === "strike" ? "Ajout direct au planning" : "Demande en préparation"}
+              </span>
               <h2>
                 {requestKind === "leave"
                   ? sickRequest
@@ -8162,6 +8531,8 @@ export default function Home() {
                     : "Sélectionnez vos congés"
                   : requestKind === "other"
                     ? "Sélectionnez vos dates Divers"
+                    : requestKind === "strike"
+                      ? "Ajoutez une journée de grève"
                     : "Sélectionnez vos récupérations"}
               </h2>
             </div>
@@ -8170,7 +8541,7 @@ export default function Home() {
               type="button"
               onClick={cancelRequest}
             >
-              Annuler la demande
+              {requestKind === "strike" ? "Fermer" : "Annuler la demande"}
             </button>
           </div>
           {requestKind === "other" ? (
@@ -8189,6 +8560,26 @@ export default function Home() {
                 </div>
                 <p className="request-help">
                   Ces dates seront visibles dans le planning et déduites des jours travaillés, sans effet sur la paie ni sur les soldes de congés.
+                </p>
+              </section>
+            </div>
+          ) : requestKind === "strike" ? (
+            <div className="request-option-groups strike-request-options">
+              <section className="request-option-group">
+                <h3>Grève</h3>
+                <div className="type-tabs" aria-label="Grève">
+                  <button
+                    type="button"
+                    className="active"
+                    style={{ "--type-color": TYPE_COLORS.strike } as React.CSSProperties}
+                  >
+                    <i />
+                    {TYPE_LABELS.strike}
+                    {selectedCounts.strike ? <b>{selectedCounts.strike}</b> : null}
+                  </button>
+                </div>
+                <p className="request-help">
+                  Touchez une journée travaillée : elle sera ajoutée immédiatement, sans déduction de congé, avec retenue brute estimée au trentième.
                 </p>
               </section>
             </div>
@@ -8272,6 +8663,8 @@ export default function Home() {
               </p>
             </div>
           )}
+          {requestKind !== "strike" ? (
+            <>
           <RequestValidationSummary
             items={selectedList}
             requestKind={requestKind}
@@ -8314,6 +8707,8 @@ export default function Home() {
               </button>
             </div>
           </div>
+            </>
+          ) : null}
         </section>
       )}
 
@@ -8452,6 +8847,17 @@ export default function Home() {
               </button>
               <button
                 type="button"
+                className="strike-leave-choice"
+                onClick={() => {
+                  setRequestChooser(false);
+                  beginRequest("strike", undefined, "strike");
+                }}
+              >
+                <strong>Grève</strong>
+                <span>Sans déduction de congé, avec retenue de paie estimée.</span>
+              </button>
+              <button
+                type="button"
                 className="cet-leave-choice"
                 onClick={() => {
                   setRequestChooser(false);
@@ -8490,7 +8896,7 @@ export default function Home() {
             </button>
             <span className="step-label">Depuis le planning</span>
             <h2 id="planning-leave-method-title">
-              Comment souhaitez-vous enregistrer {planningRequestMethod === "other" ? "ce Divers" : "cette demande"} ?
+              Comment souhaitez-vous enregistrer {planningRequestMethod === "other" ? "ce Divers" : planningRequestMethod === "strike" ? "cette grève" : "cette demande"} ?
             </h2>
             <div className="choice-grid">
               <button
@@ -8508,7 +8914,7 @@ export default function Home() {
               >
                 <strong>Remplir le formulaire</strong>
                 <span>
-                  {planningRequestMethod === "other"
+                  {planningRequestMethod === "other" || planningRequestMethod === "strike"
                     ? "Sélectionnez les dates puis enregistrez-les dans le planning."
                     : "Le parcours normal, avec demande préremplie et archive."}
                 </span>
@@ -8525,6 +8931,8 @@ export default function Home() {
                     ? "Ajoutez directement le congé au planning."
                     : planningRequestMethod === "other"
                       ? "Ajoutez directement une ou plusieurs dates Divers."
+                      : planningRequestMethod === "strike"
+                        ? "Ajoutez directement une ou plusieurs journées de grève."
                       : "Choisissez journée, demi-journée, heures, jour férié ou formation."}
                 </span>
               </button>
@@ -8645,16 +9053,8 @@ export default function Home() {
                       <button
                         type="button"
                         className={dayWish ? "wish active" : "wish"}
-                        onClick={() => {
-                          setDayWish((value) => {
-                            if (!value) {
-                              setLeaveRangeEnabled(true);
-                              setLeaveRangeFrom(dayDate);
-                              setLeaveRangeTo(dayDate);
-                            }
-                            return !value;
-                          });
-                        }}
+                        onClick={() => void saveWishDateDirect(dayDate)}
+                        disabled={savingDay}
                       >
                         <i />
                         Congé souhaité
@@ -8693,6 +9093,20 @@ export default function Home() {
                       </button>
                       <button
                         type="button"
+                        className={
+                          dayLeave && dayLeaveType === "strike"
+                            ? "strike-day active"
+                            : "strike-day"
+                        }
+                        onClick={() => void saveStrikeDateDirect(dayDate)}
+                        disabled={savingDay}
+                      >
+                        <i />
+                        Grève
+                        <span>Retenue estimée</span>
+                      </button>
+                      <button
+                        type="button"
                         className={dayLeave && dayLeaveType === "cet" ? "cet-day active" : "cet-day"}
                         onClick={() => openPlanningRequestMethod("leave", dayDate, "cet")}
                       >
@@ -8725,7 +9139,7 @@ export default function Home() {
                         <button
                           type="button"
                           className="warning-button"
-                          onClick={() => setDayWish(false)}
+                          onClick={() => void saveWishDateDirect(dayDate, false)}
                         >
                           Annuler le souhait
                         </button>
@@ -8733,13 +9147,13 @@ export default function Home() {
                     </div>
                   )}
                 {dayLeave &&
-                  (["annual", "half", "rtt", "fraction", "childcare", "exceptional", "cet"] as LeaveType[]).includes(dayLeaveType) && (
+                  (["annual", "half", "rtt", "fraction", "childcare", "exceptional", "cet", "strike"] as LeaveType[]).includes(dayLeaveType) && (
                   <div className="leave-type-field">
                     <span>Type de congé</span>
                     <ChoicePicker
                       value={dayLeaveType}
                       options={LEAVE_TYPE_OPTIONS.filter((option) =>
-                        ["annual", "half", "rtt", "fraction", "childcare", "exceptional", "cet"].includes(option.value),
+                        ["annual", "half", "rtt", "fraction", "childcare", "exceptional", "cet", "strike"].includes(option.value),
                       )}
                       onChange={setDayLeaveType}
                       ariaLabel="Sélectionner le type de congé"
@@ -8825,7 +9239,9 @@ export default function Home() {
                               setDeletingPeriod(period);
                             }}
                           >
-                            Annuler le congé
+                            {period.leaveType === "strike"
+                              ? "Supprimer la grève"
+                              : "Annuler le congé"}
                           </button>
                         </div>
                       </article>
@@ -8976,10 +9392,18 @@ export default function Home() {
               <span>
                 {balanceDetail.quota
                   ? `jours restants sur ${balanceDetail.allowance} · ${balanceDetail.used.toLocaleString("fr-FR")} déduit`
-                  : `${balanceDetail.used > 1 ? "jours" : "jour"} d’arrêt · aucun congé déduit`}
+                  : balanceDetailType === "strike"
+                    ? `${balanceDetail.used > 1 ? "journées" : "journée"} de grève · aucun congé déduit`
+                    : `${balanceDetail.used > 1 ? "jours" : "jour"} d’arrêt · aucun congé déduit`}
               </span>
             </div>
-            <h3>{balanceDetail.quota ? "Jours déduits" : "Jours d’arrêt"}</h3>
+            <h3>
+              {balanceDetail.quota
+                ? "Jours déduits"
+                : balanceDetailType === "strike"
+                  ? "Journées enregistrées"
+                  : "Jours d’arrêt"}
+            </h3>
             {balanceDetail.quota && balanceDetail.manualUsed > 0 ? (
               <div className="balance-manual-summary">
                 <span>
@@ -9024,7 +9448,26 @@ export default function Home() {
                       >
                         <span className="balance-detail-date-copy">
                           <strong>{longDate(fromKey(detail.date))}</strong>
-                          <small>Voir et gérer cette absence</small>
+                          <small>
+                            {balanceDetailType === "strike"
+                              ? (() => {
+                                  const date = fromKey(detail.date);
+                                  const deduction = isContractuel
+                                    ? null
+                                    : strikePayEstimate(
+                                        periods,
+                                        group,
+                                        payProfiles,
+                                        date.getFullYear(),
+                                        date.getMonth(),
+                                        { entries, recoveryUses },
+                                      ).dailyDeduction;
+                                  return deduction === null
+                                    ? "Retenue à calculer · voir et gérer"
+                                    : `Retenue estimée : −${euros(deduction)} brut · voir et gérer`;
+                                })()
+                              : "Voir et gérer cette absence"}
+                          </small>
                         </span>
                         <span className="balance-detail-value">
                           <strong>
@@ -9042,6 +9485,21 @@ export default function Home() {
                 ) : (
                   <p className="balance-detail-month-empty">Aucune date enregistrée ce mois-ci.</p>
                 )}
+                {balanceDetailType === "strike" ? (() => {
+                  const [strikeYear, strikeMonth] = month.key.split("-").map(Number);
+                  return (
+                    <StrikeContinuityDetails
+                      estimate={strikePayEstimate(
+                        periods,
+                        group,
+                        payProfiles,
+                        strikeYear,
+                        strikeMonth - 1,
+                        { entries, recoveryUses },
+                      )}
+                    />
+                  );
+                })() : null}
               </details>
             ))}
             </div>
@@ -9172,6 +9630,15 @@ export default function Home() {
         onConfirm={deleteLeavePeriod}
       />
       <MessageDialog message={message} onClose={dismiss} />
+      <AppUpdateDialog
+        open={appUpdatePromptOpen}
+        checking={checkingAppUpdate}
+        onLater={() => setAppUpdatePromptOpen(false)}
+        onUpdate={() => {
+          setAppUpdatePromptOpen(false);
+          void checkForAppUpdate();
+        }}
+      />
       <SuccessToast message={successMessage} onClose={dismissSuccess} />
       <DataManagementDialog
         open={dataManagementOpen}

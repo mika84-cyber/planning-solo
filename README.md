@@ -30,9 +30,9 @@ npm install
 npm run dev
 ```
 
-L'appli s'ouvre sur `http://localhost:5173`. Sans Netlify, la connexion ne
-fonctionne pas : ajouter `?demo=1` à l'URL pour entrer sans compte, avec des
-données en mémoire (mode disponible uniquement en développement).
+L'appli s'ouvre sur `http://localhost:5173`. L’accès à l’application nécessite
+une authentification Netlify Identity ; aucun lien de démonstration public ne
+permet d’entrer sans compte.
 
 Autres commandes :
 

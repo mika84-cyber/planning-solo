@@ -208,7 +208,7 @@ describe("solde de récupération", () => {
     expect(withHalfDay.worked).toBeCloseTo(baseline.worked - 0.5);
   });
 
-  it.each(["other", "cet"] as const)(
+  it.each(["other", "cet", "strike"] as const)(
     "retire %s du décompte des jours travaillés",
     (leaveType) => {
     const workDate = Array.from({ length: 31 }, (_, index) =>

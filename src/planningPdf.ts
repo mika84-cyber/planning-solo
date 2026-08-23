@@ -11,6 +11,7 @@ type PdfLeaveType =
   | "half"
   | "recovery"
   | "sick"
+  | "strike"
   | "cet"
   | "childcare"
   | "exceptional";
@@ -23,6 +24,7 @@ const LEAVE_CODES: Record<Exclude<PdfLeaveType, "half">, string> = {
   fraction: "Fraction.",
   recovery: "Récup",
   sick: "Maladie",
+  strike: "Grève",
   cet: "CET",
   childcare: "Garde enf.",
   exceptional: "ASA",
