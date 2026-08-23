@@ -368,7 +368,7 @@ const RECOVERY_KIND_LABELS: Record<RecoveryDraft["kind"], string> = {
   half: "Récupération en demi-journée",
   hours: "Récupération en heures",
   holiday: "Récupération de jour férié",
-  training: "Récupération de formation",
+  training: "Récupération sur une formation",
 };
 
 const RECOVERY_DURATION_OPTIONS: Record<

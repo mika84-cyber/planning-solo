@@ -322,6 +322,7 @@ button {
   position: relative;
 }
 .account-button {
+  position: relative;
   display: grid;
   place-items: center;
   width: 40px;
@@ -333,6 +334,17 @@ button {
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+}
+.account-update-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #d52d43;
+  box-shadow: 0 2px 6px rgba(141, 25, 45, 0.32);
 }
 .account-button.open {
   background: var(--accent);
@@ -366,6 +378,18 @@ button {
   font-size: 11px;
   text-overflow: ellipsis;
 }
+.account-update-alert {
+  display: grid;
+  gap: 3px;
+  margin: 6px;
+  border: 1px solid #e4a845;
+  border-radius: 10px;
+  padding: 9px 10px;
+  color: #68420b;
+  background: #fff6dd;
+}
+.account-update-alert strong { font-size: 12px; }
+.account-update-alert span { font-size: 10px; line-height: 1.35; }
 .account-menu-leave {
   width: 100%;
   margin-top: 5px;
@@ -1724,6 +1748,41 @@ h1 {
 .cet-actions .primary-action,
 .cet-toolbar .primary-action,
 .cet-operation-form > .primary-action { border-color: #315eaa; color: #fff; background: #315eaa; }
+.cet-disable-trigger {
+  justify-self: end;
+  border: 0;
+  padding: 3px 1px;
+  color: #9f3040;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: transparent;
+}
+.cet-disable-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid #dc9ba5;
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: #672532;
+  background: #fff4f5;
+}
+.cet-disable-confirm p { margin: 3px 0 0; font-size: 0.8rem; line-height: 1.35; }
+.cet-disable-confirm > div:last-child { display: flex; flex: 0 0 auto; gap: 7px; }
+.cet-disable-confirm button {
+  min-height: 38px;
+  border: 1px solid #c6a0a6;
+  border-radius: 9px;
+  padding: 0 11px;
+  color: #67323a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: #fff;
+}
+.cet-disable-confirm button.danger { border-color: #b63b4d; color: #fff; background: #b63b4d; }
 .cet-error { grid-column: 1 / -1; margin: 0; color: #b2273d; font-weight: 750; }
 .cet-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .cet-summary-grid > div { display: grid; gap: 4px; min-height: 98px; padding: 12px; border: 1px solid #bdc9d9; border-radius: 13px; background: #fff; }
@@ -1786,6 +1845,8 @@ h1 {
   .cet-actions,
   .cet-toolbar { display: grid; grid-template-columns: 1fr 1fr; }
   .cet-toolbar .primary-action { white-space: normal; }
+  .cet-disable-confirm { align-items: stretch; flex-direction: column; }
+  .cet-disable-confirm > div:last-child { display: grid; grid-template-columns: 1fr; }
   .cet-history article { grid-template-columns: auto minmax(0, 1fr) auto; }
   .cet-history article > b { grid-column: 2; }
   .cet-history article > button { grid-column: 3; grid-row: 1 / span 2; }

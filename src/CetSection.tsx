@@ -68,6 +68,7 @@ export function CetSection({
   const [operationNote, setOperationNote] = useState("");
   const [error, setError] = useState("");
   const [formKind, setFormKind] = useState<CetFormKind | null>(null);
+  const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
 
   const active = account?.enabled ? account : undefined;
   const trackedAccount = active && plannedLeaveDays > 0
@@ -121,6 +122,7 @@ export function CetSection({
   function beginSettings() {
     setDraft(account ? { ...account, operations: [...account.operations] } : emptyCetAccount());
     setError("");
+    setDisableConfirmOpen(false);
     setEditingSettings(true);
     setOpen(true);
   }
@@ -132,12 +134,23 @@ export function CetSection({
     }
     const saved = await onSave({
       ...draft,
+      enabled: true,
       employer: "public-establishment",
       employerName: "Centre Pompidou",
       category: "C",
       workRule: "visitor_service",
     });
     if (saved) setEditingSettings(false);
+  }
+
+  async function disableAccount() {
+    const saved = await onSave({ ...emptyCetAccount(), enabled: false });
+    if (!saved) return;
+    setDraft(emptyCetAccount());
+    setDisableConfirmOpen(false);
+    setEditingSettings(false);
+    setOperationOpen(false);
+    setError("");
   }
 
   async function addOperation() {
@@ -300,6 +313,19 @@ export function CetSection({
                 <button type="button" onClick={onRequestLeave}>Poser un congé CET</button>
                 <button className="primary-action" type="button" onClick={() => { setError(""); setOperationOpen((current) => !current); }}>Ajouter une opération</button>
               </div>
+              <button className="cet-disable-trigger" type="button" onClick={() => setDisableConfirmOpen(true)}>Je n’ai pas de CET</button>
+              {disableConfirmOpen ? (
+                <div className="cet-disable-confirm" role="alert">
+                  <div>
+                    <strong>Désactiver le suivi CET ?</strong>
+                    <p>Le solde et l’historique CET seront effacés de Planning Solo. Les congés CET déjà placés dans le calendrier resteront à corriger séparément.</p>
+                  </div>
+                  <div>
+                    <button type="button" onClick={() => setDisableConfirmOpen(false)}>Annuler</button>
+                    <button className="danger" type="button" disabled={saving} onClick={() => void disableAccount()}>{saving ? "Enregistrement…" : "Confirmer : je n’ai pas de CET"}</button>
+                  </div>
+                </div>
+              ) : null}
               <p className="cet-form-note">Les formulaires reprennent exactement les modèles fournis. Après téléchargement, envoyez-les à Clothilde Letourneur (clothilde.letourneur@centrepompidou.fr). Pour utiliser des jours CET, le bouton ci-dessus ouvre le formulaire de congé classique.</p>
               {operationOpen ? (
                 <div className="cet-operation-form">

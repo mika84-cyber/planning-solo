@@ -25,6 +25,18 @@ if ("serviceWorker" in navigator && !installationDemo) {
       void navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
         .then((registration) => {
+          const notifyUpdateAvailable = () =>
+            window.dispatchEvent(new Event("planning-app-update-available"));
+          const watchInstallingWorker = () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener("statechange", () => {
+              if (worker.state === "installed" && navigator.serviceWorker.controller)
+                notifyUpdateAvailable();
+            });
+          };
+          if (registration.waiting) notifyUpdateAvailable();
+          registration.addEventListener("updatefound", watchInstallingWorker);
           const checkForUpdate = () => {
             if (document.visibilityState === "visible")
               void registration.update().catch(() => {});

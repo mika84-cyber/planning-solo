@@ -199,6 +199,9 @@ describe("finitions d’interface", () => {
     expect(app).toContain("checkForAppUpdate");
     expect(app).toContain('className={`app-update-button');
     expect(app).toContain("Vérifier les mises à jour");
+    expect(app).toContain("Une mise à jour est disponible");
+    expect(app).toContain("planning-app-update-available");
+    expect(main).toContain('registration.addEventListener("updatefound"');
     expect(styles).toContain(".app-update-button");
   });
 

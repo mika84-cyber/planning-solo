@@ -503,10 +503,16 @@ export default function Home() {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [checkingAppUpdate, setCheckingAppUpdate] = useState(false);
+  const [appUpdateAvailable, setAppUpdateAvailable] = useState(false);
   const [dataManagementOpen, setDataManagementOpen] = useState(false);
   const [dataManagementBusy, setDataManagementBusy] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    const showUpdateAlert = () => setAppUpdateAvailable(true);
+    window.addEventListener("planning-app-update-available", showUpdateAlert);
+    return () => window.removeEventListener("planning-app-update-available", showUpdateAlert);
+  }, []);
   useEffect(() => {
     if (!mainMenuOpen) return;
     const close = (event: KeyboardEvent) => {
@@ -6494,7 +6500,7 @@ export default function Home() {
     if (
       target instanceof Element &&
       target.closest(
-        "input, textarea, select, [role='dialog'], .modal-backdrop, .main-menu-backdrop, .main-menu-drawer, .choice-picker-menu",
+        "input, textarea, select, [role='dialog'], .modal-backdrop, .main-menu-backdrop, .main-menu-drawer, .choice-picker-menu, .month-card",
       )
     ) {
       sectionSwipeStartRef.current = null;
@@ -6612,7 +6618,7 @@ export default function Home() {
               ) : null}
               <div className="account-menu" ref={accountMenuRef}>
             <button
-              className={`account-button ${accountMenuOpen ? "open" : ""}`}
+              className={`account-button${accountMenuOpen ? " open" : ""}${appUpdateAvailable ? " update-available" : ""}`}
               type="button"
               ref={accountButtonRef}
               onClick={() => setAccountMenuOpen((current) => !current)}
@@ -6621,6 +6627,7 @@ export default function Home() {
               aria-label="Compte"
             >
               {(userEmail[0] || "M").toUpperCase()}
+              {appUpdateAvailable ? <span className="account-update-dot" aria-hidden="true" /> : null}
             </button>
             {accountMenuOpen && (
               <div className="account-menu-panel" role="menu">
@@ -6628,6 +6635,12 @@ export default function Home() {
                   <strong>{formProfile?.fullName || "Mon compte"}</strong>
                   <small>{userEmail}</small>
                 </div>
+                {appUpdateAvailable ? (
+                  <div className="account-update-alert" role="status">
+                    <strong>Une mise à jour est disponible</strong>
+                    <span>Appuyez sur « Vérifier les mises à jour » en haut de l’écran.</span>
+                  </div>
+                ) : null}
                 <button
                   className="account-menu-data"
                   type="button"
@@ -7758,7 +7771,7 @@ export default function Home() {
                 half: "Récupération en demi-journée",
                 hours: "Récupération en heures",
                 holiday: "Récupération de jour férié",
-                training: "Récupération de formation",
+                training: "Récupération sur une formation",
               } as const)[recoveryDraft.kind]}
             </span>
             <h2>

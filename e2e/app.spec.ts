@@ -168,6 +168,36 @@ test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, t
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
 });
 
+test("le balayage du calendrier mobile change seulement de mois", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "Le geste tactile est réservé au téléphone");
+  await prepareDemo(page);
+
+  const monthPicker = page.getByRole("button", { name: "Sélectionner le mois" });
+  const initialMonth = (await monthPicker.textContent())?.trim() || "";
+  expect(initialMonth).not.toBe("");
+  const calendar = page.locator(".month-card");
+  const touch = (clientX: number) => ({
+    identifier: 1,
+    clientX,
+    clientY: 420,
+    pageX: clientX,
+    pageY: 420,
+    screenX: clientX,
+    screenY: 420,
+  });
+  await calendar.dispatchEvent("touchstart", {
+    touches: [touch(340)],
+    changedTouches: [touch(340)],
+  });
+  await calendar.dispatchEvent("touchend", {
+    touches: [],
+    changedTouches: [touch(40)],
+  });
+
+  await expect(monthPicker).not.toHaveText(initialMonth);
+  await expect(page.locator(".top-header h1")).toHaveText("Accueil");
+});
+
 test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "Ce contrôle nécessite une interface tactile");
   await page.setViewportSize({ width: 900, height: 1000 });
@@ -183,6 +213,17 @@ test("un lien de démonstration ne propose jamais l’installation", async ({ pa
   await prepareDemo(page);
   await expect(page.locator('link[rel="manifest"]')).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Installer l’application" })).toHaveCount(0);
+});
+
+test("le compte avertit lorsqu’une nouvelle version est disponible", async ({ page }) => {
+  await prepareDemo(page);
+  await page.evaluate(() => window.dispatchEvent(new Event("planning-app-update-available")));
+
+  const account = page.getByRole("button", { name: "Compte" });
+  await expect(account).toHaveClass(/update-available/);
+  await account.click();
+  await expect(page.getByRole("status")).toContainText("Une mise à jour est disponible");
+  await expect(page.getByRole("status")).toContainText("Vérifier les mises à jour");
 });
 
 test("le CET se configure et conserve un historique cohérent", async ({ page }) => {
@@ -234,6 +275,12 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await page.getByRole("button", { name: "Enregistrer l’opération" }).click();
   await expect(page.locator(".cet-balance-main")).toContainText("16");
   await expect(page.locator(".cet-history")).toContainText("Congé pris sur le CET");
+  await page.getByRole("button", { name: "Je n’ai pas de CET" }).click();
+  const disableConfirmation = page.locator(".cet-disable-confirm");
+  await expect(disableConfirmation).toContainText("Désactiver le suivi CET ?");
+  await disableConfirmation.getByRole("button", { name: "Confirmer : je n’ai pas de CET" }).click();
+  await expect(page.getByRole("button", { name: /Mon CET/ })).toContainText("À configurer avec votre relevé RH");
+  await expect(page.locator(".cet-summary-grid")).toHaveCount(0);
 });
 
 test("un solde manuel supérieur à 24 heures est bien enregistré", async ({ page }) => {
