@@ -160,15 +160,14 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   await expect(pdf).toBeVisible();
   await expect(forms).toBeVisible();
   await expect(guide).toBeVisible();
+  await expect(menu.getByRole("button", { name: "Sauvegarde et restauration" })).toHaveCount(0);
   await expect(menu.getByRole("button", { name: "Vérifier les mises à jour" })).toHaveCount(0);
   const menuLabels = await menu.locator("nav > button").allTextContents();
   expect(menuLabels.at(-1)).toContain("Formulaires utiles");
   await expect(guide.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
-  const [backupBox, guideBox] = await Promise.all([
-    menu.getByRole("button", { name: "Sauvegarde et restauration" }).boundingBox(),
-    guide.boundingBox(),
-  ]);
-  expect(guideBox!.y).toBeGreaterThan(backupBox!.y);
+  const appearanceBox = await menu.getByRole("radiogroup", { name: "Choisir l’apparence" }).boundingBox();
+  const guideBox = await guide.boundingBox();
+  expect(guideBox!.y).toBeGreaterThan(appearanceBox!.y);
   await expect(menu).toHaveCSS("background-image", /menu-art\.jpg/);
   await expect(guide).toHaveCSS("background-color", "rgba(255, 255, 255, 0.9)");
 
@@ -227,6 +226,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(page.locator(".top-header h1")).toHaveText("Formulaires utiles");
   const formsHeader = page.locator(".top-header-forms");
   await expect(formsHeader).toBeVisible();
+  await expect(formsHeader).toHaveCSS("position", "relative");
   const artworkStyle = await formsHeader.evaluate((node) => {
     const style = getComputedStyle(node, "::before");
     return {
@@ -259,7 +259,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(folders).toHaveText([
     /Formulaire Expo.*Vide pour le moment/,
     /Formulaire SAP.*3 documents/,
-    /Formulaire Brantôme.*8 documents/,
+    /Formulaire Brantôme.*7 documents/,
   ]);
 
   await folders.nth(0).click();
@@ -284,17 +284,43 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
 
   await page.getByRole("button", { name: /Formulaire Brantôme/ }).click();
-  await expect(page.locator(".useful-form-download-list a")).toHaveCount(8);
+  await expect(page.locator(".useful-form-download-list a")).toHaveCount(7);
   await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
     "Formulaire de changement de coordonnées",
     "Changement de coordonnées bancaires",
     "Demande de carte de restauration BIMPLI",
     "Procuration pour le retrait des titres-restaurant",
     "Demande de Carte Culture A",
-    "Calendrier de paie 2026",
     "CET - Demande d’ouverture",
     "CET - Alimentation et indemnisation",
   ]);
+});
+
+test("le mode sombre se choisit, suit l’appareil et reste mémorisé", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+
+  const appearance = page.getByRole("radiogroup", { name: "Choisir l’apparence" });
+  await expect(appearance).toBeVisible();
+  await appearance.getByRole("radio", { name: "Sombre" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  expect(await page.evaluate(() => localStorage.getItem("planning:theme-preference-v1"))).toBe("dark");
+
+  await page.getByRole("button", { name: "Fermer le menu" }).click();
+  await expect(page.locator(".today-overview")).toHaveCSS("background-image", /linear-gradient/);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+  await page.emulateMedia({ colorScheme: "dark" });
+  await openMainMenu(page);
+  await page.getByRole("radiogroup", { name: "Choisir l’apparence" })
+    .getByRole("radio", { name: "Auto" })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByText("Automatique · sombre")).toBeVisible();
+
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });
 
 test("l’en-tête, le sélecteur d’affichage et les années sont confortables", async ({ page }) => {
@@ -1176,10 +1202,8 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
   await expect(note.locator("textarea")).toHaveValue("Contrôle du parcours de note");
   await note.getByRole("button", { name: "Fermer" }).click();
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: "Sauvegarde et restauration" })
-    .click();
+  await page.getByRole("button", { name: "Compte" }).click();
+  await page.getByRole("menu").getByRole("menuitem", { name: "Gérer mes données" }).click();
   await expect(page.getByRole("dialog")).toContainText(/sauvegarde|données/i);
 
   await page.goto("/formulaire/index.html?planning=1");

@@ -8139,6 +8139,7 @@ h1 {
 /* La sculpture dorée reste centrée et entière dans le bandeau, quel que soit
    le rapport largeur / hauteur de l’écran. */
 .top-header.top-header-forms {
+  position: relative;
   min-height: 205px;
   overflow: hidden;
   background:
@@ -8157,7 +8158,7 @@ h1 {
   position: absolute;
   z-index: 0;
   top: 50%;
-  left: 50%;
+  left: 48%;
   height: 112%;
   aspect-ratio: 680 / 531;
   background: url("/forms-header-art.jpg") center / 100% 100% no-repeat;
@@ -8354,7 +8355,7 @@ h1 {
   }
   .top-header.top-header-forms::before {
     top: 58%;
-    left: 38%;
+    left: 35%;
     height: 86%;
   }
   .top-header.top-header-forms .top-header-title,
@@ -10355,6 +10356,271 @@ h1 {
   line-height: 1.2;
   text-align: center;
   white-space: normal;
+}
+
+/* Apparence : trois choix mémorisés (automatique, clair et sombre). Le thème
+   sombre reste bleu nuit afin de préserver les couleurs métier du planning. */
+.theme-preference-control {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(8, 18, 31, 0.62);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.theme-preference-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.theme-preference-heading strong { font-size: 13px; }
+.theme-preference-heading small { color: #cad8ea; font-size: 10px; font-weight: 700; }
+.theme-preference-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.theme-preference-options button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 11px;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #eef5ff;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.theme-preference-options button span { font-size: 16px; line-height: 1; }
+.theme-preference-options button.active {
+  border-color: #9ec3ff;
+  background: #dceaff;
+  color: #15345e;
+  box-shadow: 0 0 0 2px rgba(119, 167, 239, 0.22);
+}
+
+html[data-theme="dark"] {
+  --bg: #0b1422;
+  --card: #142238;
+  --text: #edf3fc;
+  --muted: #a8b6c9;
+  --line: #34465f;
+  --accent: #82adff;
+  --shadow: 0 14px 38px rgba(0, 0, 0, 0.34);
+  --app-frame-strong: rgba(159, 180, 210, 0.72);
+  --app-frame-soft: rgba(125, 151, 187, 0.5);
+  --section-outline: rgba(125, 151, 187, 0.5);
+  background: #0b1422;
+}
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(44, 83, 137, 0.26), transparent 34%),
+    linear-gradient(180deg, #0e192a 0, #0b1422 380px);
+  color: var(--text);
+}
+
+html[data-theme="dark"] .app-shell { color: var(--text); }
+
+html[data-theme="dark"] .top-header {
+  position: relative;
+  isolation: isolate;
+  border-color: rgba(177, 195, 220, 0.72);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+}
+html[data-theme="dark"] .top-header::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(8, 15, 26, 0.66), rgba(8, 15, 26, 0.28));
+  content: "";
+  pointer-events: none;
+}
+html[data-theme="dark"] .top-header.top-header-forms::after {
+  background: linear-gradient(
+    90deg,
+    rgba(8, 15, 26, 0.62) 0%,
+    rgba(8, 15, 26, 0.22) 34%,
+    rgba(8, 15, 26, 0.08) 66%,
+    rgba(8, 15, 26, 0.2) 100%
+  );
+}
+html[data-theme="dark"] .top-header > * { position: relative; z-index: 2; }
+html[data-theme="dark"] .top-header-title h1,
+html[data-theme="dark"] .top-header-title .eyebrow { color: #f7faff; text-shadow: 0 1px 5px rgba(0, 0, 0, 0.72); }
+html[data-theme="dark"] .top-header-title::before { background: linear-gradient(#8ebaff, #6fdfc1); }
+html[data-theme="dark"] .top-header .account-button,
+html[data-theme="dark"] .top-header .main-menu-button,
+html[data-theme="dark"] .top-header .header-update-button,
+html[data-theme="dark"] .top-header .view-switch {
+  border-color: rgba(225, 235, 248, 0.78);
+  background-color: rgba(15, 27, 44, 0.84);
+  color: #eef5ff;
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+html[data-theme="dark"] .top-header .view-switch button {
+  background: #182940 !important;
+  color: #dbe8f7;
+}
+html[data-theme="dark"] .top-header .view-switch button.active {
+  background: #e5efff !important;
+  color: #16365f;
+}
+
+html[data-theme="dark"] :is(
+  .today-overview,
+  .home-notes-section,
+  .home-planning-heading,
+  .section-intro,
+  .leave-balances-direct,
+  .cet-section,
+  .overtime-balance-card,
+  .leave-request-archive,
+  .pay-app-screen,
+  .pdf-download-screen,
+  .useful-forms-screen,
+  .month-card,
+  .year-grid,
+  .request-panel,
+  .allowance-card,
+  .modal-card
+) {
+  border-color: var(--app-frame-strong) !important;
+  background: linear-gradient(145deg, #15243a, #111d30) !important;
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="dark"] :is(
+  .today-overview-grid > article,
+  .today-overview-grid > button,
+  .leave-balances-heading,
+  .direct-balances-content,
+  .cet-subsection,
+  .cet-settings,
+  .cet-operation-form,
+  .overtime-balance-summary article,
+  .overtime-history article,
+  .mecenat-rate-summary article,
+  .request-archive-toggle,
+  .request-archive-list,
+  .pay-profile-settings,
+  .pay-category-grid > button,
+  .variable-pay-list article,
+  .pdf-download-settings > label,
+  .pdf-download-settings > .school-vacation-choice,
+  .pdf-download-actions .pdf-action,
+  .useful-form-download-card,
+  .manual-adjustment-section,
+  .guide-section
+) {
+  border-color: var(--app-frame-soft) !important;
+  background: #192940 !important;
+  color: var(--text) !important;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(
+  .native-screen-heading,
+  .section-intro,
+  .leave-balances-heading,
+  .cet-heading,
+  .cet-subsection-heading,
+  .overtime-balance-heading,
+  .pay-profile-summary,
+  .pay-detail-sticky-header,
+  .useful-forms-folder-header,
+  .modal-card
+) :is(h1, h2, h3, strong) { color: #f2f6fd; }
+
+html[data-theme="dark"] :is(
+  .native-screen-heading,
+  .section-intro,
+  .cet-heading,
+  .overtime-balance-heading,
+  .pay-category-grid,
+  .useful-form-file-copy,
+  .modal-card
+) :is(p, small, em) { color: var(--muted); }
+
+html[data-theme="dark"] :is(.home-content-heading h2, .home-planning-heading h2) {
+  color: #eef4fc;
+}
+
+/* Les cartes pastel conservent un texte sombre : leurs couleurs sont des
+   repères fonctionnels et ne doivent pas perdre leur contraste. */
+html[data-theme="dark"] .leave-balances-direct .leave-balance-grid button,
+html[data-theme="dark"] .useful-form-folder {
+  color: #17253a !important;
+}
+html[data-theme="dark"] .leave-balances-direct .leave-balance-grid button > span {
+  color: #17253a !important;
+}
+html[data-theme="dark"] .leave-balances-direct .leave-balance-grid button > small {
+  color: #687286 !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select, .choice-picker-trigger) {
+  border-color: #49617f !important;
+  background: #0f1b2d !important;
+  color: #f3f7fd !important;
+}
+html[data-theme="dark"] :is(input, textarea)::placeholder { color: #8292a8; }
+html[data-theme="dark"] .choice-picker-menu {
+  border-color: #526b89;
+  background: #111f33;
+  color: #edf3fc;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.48);
+}
+html[data-theme="dark"] .choice-picker-menu button { color: #e9f0fa; }
+html[data-theme="dark"] .choice-picker-menu button:hover { background: #203654; }
+html[data-theme="dark"] .choice-picker-menu button.active { background: #294a78; color: #fff; }
+
+html[data-theme="dark"] :is(.native-back-button, .soft-detail-button, .modal-close) {
+  border-color: #4d6685;
+  background: #20344f;
+  color: #e8f1fd;
+}
+html[data-theme="dark"] .account-menu-panel {
+  border-color: #536b88;
+  background: #122035;
+  color: var(--text);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.46);
+}
+html[data-theme="dark"] .account-menu-identity { border-bottom-color: #34465f; }
+html[data-theme="dark"] .account-menu-data { color: #dce8f8; }
+html[data-theme="dark"] .account-menu-leave { background: #271d2a; color: #ff9da9; }
+html[data-theme="dark"] .modal-backdrop { background: rgba(2, 7, 14, 0.76); }
+
+/* Les journées gardent volontairement leurs couleurs métier. Seuls les
+   jours de travail gagnent un blanc légèrement adouci dans l’écrin sombre. */
+html[data-theme="dark"] .month-card .calendar-grid .day:not(.off):not(.training-day):not(.leave-day):not(.hourly-recovery-day):not(.training-recovery-day),
+html[data-theme="dark"] .year-grid .mini-grid .mini-day:not(.off):not(.training-day):not(.leave-day):not(.hourly-recovery-day):not(.training-recovery-day) {
+  background-color: #f4f0e7;
+  color: #151c2b;
+}
+html[data-theme="dark"] .weekday { color: #b8c6d8; }
+html[data-theme="dark"] .calendar-grid { border-color: #52677f; }
+html[data-theme="dark"] .empty-state { color: var(--muted); }
+
+@media (max-width: 720px) {
+  .theme-preference-control { padding: 10px; }
+  .theme-preference-options button { min-height: 40px; padding: 6px 4px; }
+  html[data-theme="dark"] .top-header::after {
+    background: linear-gradient(180deg, rgba(8, 15, 26, 0.42), rgba(8, 15, 26, 0.22));
+  }
 }
 
 /* Toutes les rubriques reprennent exactement le gabarit de l'en-tête

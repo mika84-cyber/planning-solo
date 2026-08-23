@@ -92,6 +92,8 @@ import { summarizePayslipReview } from "./payslipReview";
 import { strikePayEstimate } from "./strike";
 import { StrikeContinuityDetails } from "./StrikeContinuityDetails";
 import { UsefulFormsSection } from "./UsefulFormsSection";
+import { ThemePreferenceControl } from "./ThemePreferenceControl";
+import { useThemePreference } from "./theme";
 import {
   payEstimateReadiness,
   type PayEstimateField,
@@ -491,6 +493,7 @@ export default function Home() {
   const [homeSection, setHomeSection] = useState<MainSection>("home");
   const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const [mainMenuOpen, setMainMenuOpen] = useState(false);
+  const { preference: themePreference, resolvedTheme, setPreference: setThemePreference } = useThemePreference();
   const [guidePromptOpen, setGuidePromptOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const guidePromptCheckedRef = useRef(false);
@@ -7054,9 +7057,11 @@ export default function Home() {
               ))}
             </nav>
             <div className="main-menu-secondary">
-              <button type="button" onClick={() => { setMainMenuOpen(false); setDataManagementOpen(true); }}>
-                Sauvegarde et restauration
-              </button>
+              <ThemePreferenceControl
+                preference={themePreference}
+                resolvedTheme={resolvedTheme}
+                onChange={setThemePreference}
+              />
               <button
                 type="button"
                 className="guide-menu-entry"
@@ -7311,9 +7316,9 @@ export default function Home() {
                 <div>
                   <h3>Conserver les archives et restaurer les données</h3>
                   <p>
-                    La synchronisation du compte conserve les données distantes. Le menu
-                    Sauvegarde et restauration permet aussi d’exporter une sauvegarde JSON
-                    et de la restaurer. Attendez toujours la confirmation après une saisie.
+                    La synchronisation du compte conserve les données distantes. Depuis le
+                    bouton du compte, ouvrez <strong>Gérer mes données</strong> pour exporter
+                    une sauvegarde JSON ou la restaurer. Attendez toujours la confirmation après une saisie.
                   </p>
                   <p>
                     Les formulaires terminés se trouvent dans <strong>Congés et récupérations → Autre → Mes demandes archivées</strong>.

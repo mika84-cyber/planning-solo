@@ -27,7 +27,6 @@ describe("formulaires utiles", () => {
       "demande-carte-restauration-bimpli.pdf",
       "procuration-retrait-titres-repas.pdf",
       "demande-carte-culture-a.pdf",
-      "calendrier-paie-2026.pdf",
       "cet-demande-ouverture.pdf",
       "cet-alimentation-indemnisation.pdf",
     ]);

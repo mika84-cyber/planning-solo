@@ -430,7 +430,8 @@ describe("finitions d’interface", () => {
     expect(app.indexOf("Télécharger les plannings en PDF")).toBeLessThan(
       app.indexOf('"forms", "Formulaires utiles"'),
     );
-    expect(app.indexOf("Sauvegarde et restauration")).toBeLessThan(app.indexOf('className="guide-menu-entry"'));
+    expect(app.indexOf("ThemePreferenceControl")).toBeLessThan(app.indexOf('className="guide-menu-entry"'));
+    expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
     expect(styles).toContain('url("/menu-art.jpg")');
     expect(styles).toContain("background: rgba(255, 255, 255, 0.86)");
@@ -462,7 +463,7 @@ describe("finitions d’interface", () => {
   it("uniformise exactement les en-têtes sur le gabarit Formulaires utiles", () => {
     expect(styles).toContain("height: 205px;\n  min-height: 205px;");
     expect(styles).toContain("height: 215px;\n    min-height: 215px;");
-    expect(styles).toContain("left: 38%;");
+    expect(styles).toContain("left: 35%;");
     expect(styles).toContain(".pdf-download-actions .pdf-action {\n  border: 1.5px solid rgba(31, 35, 40, 0.62)");
   });
 
@@ -482,6 +483,13 @@ describe("finitions d’interface", () => {
     expect(app).toContain("onTouchStart={startSectionSwipe}");
     expect(app).toContain("onTouchEnd={finishSectionSwipe}");
     expect(app).toContain("Math.abs(deltaX) < 70");
+  });
+
+  it("propose une apparence automatique, claire ou sombre", () => {
+    expect(app).toContain("ThemePreferenceControl");
+    expect(styles).toContain('.theme-preference-options');
+    expect(styles).toContain('html[data-theme="dark"]');
+    expect(main).toContain("applyInitialTheme");
   });
 
   it("renforce la lisibilité du menu et les contours de l’en-tête", () => {

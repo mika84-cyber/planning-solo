@@ -39,14 +39,13 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "brantome",
     title: "Formulaire Brantôme",
-    description: "Coordonnées, cartes, restauration, paie et CET.",
+    description: "Coordonnées, cartes, restauration et CET.",
     documents: [
       { title: "Formulaire de changement de coordonnées", file: "formulaire-changement-coordonnees.pdf", format: "PDF" },
       { title: "Changement de coordonnées bancaires", file: "changement-coordonnees-bancaires.docx", format: "DOCX" },
       { title: "Demande de carte de restauration BIMPLI", file: "demande-carte-restauration-bimpli.pdf", format: "PDF" },
       { title: "Procuration pour le retrait des titres-restaurant", file: "procuration-retrait-titres-repas.pdf", format: "PDF" },
       { title: "Demande de Carte Culture A", file: "demande-carte-culture-a.pdf", format: "PDF" },
-      { title: "Calendrier de paie 2026", file: "calendrier-paie-2026.pdf", format: "PDF" },
       { title: "CET - Demande d’ouverture", file: "cet-demande-ouverture.pdf", format: "PDF" },
       { title: "CET - Alimentation et indemnisation", file: "cet-alimentation-indemnisation.pdf", format: "PDF" },
     ],
