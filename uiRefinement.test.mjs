@@ -434,7 +434,9 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
     expect(styles).toContain('url("/menu-art.jpg")');
-    expect(styles).toContain("background: rgba(255, 255, 255, 0.86)");
+    expect(styles).toContain("background: linear-gradient(90deg, rgba(5, 11, 19, 0.88) 0%, rgba(5, 11, 19, 0.78) 58%, rgba(8, 16, 26, 0.34) 82%, rgba(18, 29, 41, 0.14) 100%)");
+    expect(app).toContain('className="main-menu-index"');
+    expect(app).toContain('className="main-menu-chevron"');
     expect(app).toContain("header-command-area");
     expect(app).toContain("header-update-button");
     expect(styles).toContain(".header-update-button");
@@ -494,8 +496,9 @@ describe("finitions d’interface", () => {
   });
 
   it("renforce la lisibilité du menu et les contours de l’en-tête", () => {
-    expect(styles).toContain(".main-menu-copy strong { color: #182b42; }");
-    expect(styles).toContain(".main-menu-copy small { color: #3f5167; font-weight: 750; }");
+    expect(styles).toContain(".main-menu-copy strong { color: #fff; }");
+    expect(styles).toContain(".main-menu-copy small {\n  color: rgba(239, 246, 255, 0.78);");
+    expect(styles).toContain("backdrop-filter: saturate(1.08) contrast(1.02)");
     expect(styles).toContain(".top-header .account-button,");
     expect(styles).toContain("border: 1.5px solid rgba(0, 0, 0, 0.62)");
   });

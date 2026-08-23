@@ -7030,12 +7030,12 @@ export default function Home() {
             </header>
             <nav>
               {([
-                ["home", "Accueil", "Aujourd’hui, notes et planning"],
-                ["leave", "Congés et récupérations", "Soldes, heures sup et mécénats"],
-                ["pay", "Ma paie", "Estimations, primes et bulletins"],
-                ["pdf", "Télécharger les plannings en PDF", "Choisir le planning puis générer le document"],
-                ["forms", "Formulaires utiles", "Expo, SAP et Brantôme"],
-              ] as const).map(([key, title, detail]) => (
+                ["home", "Accueil", "Aujourd’hui, notes et planning", "01"],
+                ["leave", "Congés et récupérations", "Soldes, heures sup et mécénats", "02"],
+                ["pay", "Ma paie", "Estimations, primes et bulletins", "03"],
+                ["pdf", "Télécharger les plannings en PDF", "Choisir le planning puis générer le document", "04"],
+                ["forms", "Formulaires utiles", "Expo, SAP et Brantôme", "05"],
+              ] as const).map(([key, title, detail, index]) => (
                 <button
                   key={key}
                   type="button"
@@ -7048,8 +7048,9 @@ export default function Home() {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
+                  <span className="main-menu-index" aria-hidden="true">{index}</span>
                   <span className="main-menu-copy"><strong>{title}</strong><small>{detail}</small></span>
-                  <span aria-hidden="true">›</span>
+                  <span className="main-menu-chevron" aria-hidden="true">›</span>
                 </button>
               ))}
             </nav>
@@ -7062,8 +7063,9 @@ export default function Home() {
                   setGuideOpen(true);
                 }}
               >
-                <span>Mode d’emploi</span>
-                <span aria-hidden="true">›</span>
+                <span className="main-menu-index" aria-hidden="true">?</span>
+                <span className="main-menu-copy"><strong>Mode d’emploi</strong><small>Retrouver toutes les fonctions</small></span>
+                <span className="main-menu-chevron" aria-hidden="true">›</span>
               </button>
             </div>
           </aside>

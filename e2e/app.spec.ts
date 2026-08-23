@@ -167,7 +167,10 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   await expect(guide.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
   await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
   await expect(menu).toHaveCSS("background-image", /menu-art\.jpg/);
-  await expect(guide).toHaveCSS("background-color", "rgba(255, 255, 255, 0.9)");
+  await expect(menu.locator(".main-menu-index")).toHaveCount(6);
+  await expect(menu.locator("nav > button").first().locator(".main-menu-index")).toHaveText("01");
+  await expect(menu.locator("nav > button").first().locator("strong")).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(guide).toHaveCSS("backdrop-filter", /saturate\(1\.08\).*contrast\(1\.02\)/);
 
   await guide.click();
   await expect(page.getByRole("heading", { name: "Bien démarrer avec Planning Solo" })).toBeVisible();
