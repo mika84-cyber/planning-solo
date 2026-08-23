@@ -23,8 +23,10 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "expo",
     title: "Formulaire Expo",
-    description: "Les formulaires Expo seront ajoutés ici.",
-    documents: [],
+    description: "Consignes et documents d’exposition.",
+    documents: [
+      { title: "Hilma Af Klint", file: "hilma-af-klint.pdf", format: "PDF" },
+    ],
   },
   {
     key: "sap",

@@ -255,14 +255,19 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   }
   const folders = page.locator(".useful-form-folder-grid > button");
   await expect(folders).toHaveText([
-    /Formulaire Expo.*Vide pour le moment/,
+    /Formulaire Expo.*1 document/,
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*7 documents/,
   ]);
 
   await folders.nth(0).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
-  await expect(page.getByText("Aucun formulaire pour le moment")).toBeVisible();
+  const expoLinks = page.locator(".useful-form-download-list a");
+  await expect(expoLinks).toHaveCount(1);
+  await expect(page.locator(".useful-form-file-copy strong")).toHaveText(["Hilma Af Klint"]);
+  const expoDownloadPromise = page.waitForEvent("download");
+  await expoLinks.first().click();
+  expect((await expoDownloadPromise).suggestedFilename()).toBe("hilma-af-klint.pdf");
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
 
   await page.getByRole("button", { name: /Formulaire SAP/ }).click();

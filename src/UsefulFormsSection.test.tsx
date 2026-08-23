@@ -12,10 +12,13 @@ describe("formulaires utiles", () => {
     ]);
     expect(html.indexOf("Formulaire Expo")).toBeLessThan(html.indexOf("Formulaire SAP"));
     expect(html.indexOf("Formulaire SAP")).toBeLessThan(html.indexOf("Formulaire Brantôme"));
-    expect(html).toContain("Vide pour le moment");
+    expect(html).toContain("1 document");
   });
 
-  it("conserve l’ordre exact des documents SAP et Brantôme", () => {
+  it("conserve l’ordre exact des documents Expo, SAP et Brantôme", () => {
+    expect(USEFUL_FORM_FOLDERS.find((folder) => folder.key === "expo")?.documents.map((item) => item.file)).toEqual([
+      "hilma-af-klint.pdf",
+    ]);
     expect(USEFUL_FORM_FOLDERS.find((folder) => folder.key === "sap")?.documents.map((item) => item.file)).toEqual([
       "demande-conges.pdf",
       "demande-recuperations.pdf",
