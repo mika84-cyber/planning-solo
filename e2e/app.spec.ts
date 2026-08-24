@@ -408,11 +408,26 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
-  const [cetBox, strikeBox] = await Promise.all([
-    page.locator(".leave-balance-grid button.cet").boundingBox(),
+  const [otherBox, strikeBox, cetBox] = await Promise.all([
+    page.locator(".leave-balance-grid button.other").boundingBox(),
     page.locator(".leave-balance-grid button.strike").boundingBox(),
+    page.locator(".leave-balance-grid button.cet").boundingBox(),
   ]);
-  expect(Math.abs(cetBox!.y - strikeBox!.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(otherBox!.y - strikeBox!.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(otherBox!.width - strikeBox!.width)).toBeLessThanOrEqual(2);
+  expect(Math.abs(otherBox!.height - strikeBox!.height)).toBeLessThanOrEqual(2);
+  expect(otherBox!.x).toBeLessThan(strikeBox!.x);
+  expect(strikeBox!.x).toBeLessThan(cetBox!.x);
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Formulaires utiles/ })
+    .click();
+  const formsHeader = page.locator(".top-header-forms");
+  const formsHeaderBox = (await formsHeader.boundingBox())!;
+  const artworkLeft = await formsHeader.evaluate((node) => parseFloat(getComputedStyle(node, "::before").left));
+  expect(artworkLeft / formsHeaderBox.width).toBeGreaterThan(0.53);
+  expect(artworkLeft / formsHeaderBox.width).toBeLessThan(0.55);
 });
 
 test("le paramètre de démonstration ne donne plus accès à l’application", async ({ page }) => {
@@ -716,17 +731,18 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await expect(strikeCard).toContainText(/1\s*pris/);
   await expect(strikeCard).toContainText("retenue estimée dans Ma paie");
   await expect(page.locator(".leave-balance-grid button.annual")).toContainText("0 utilisé");
-  const [balanceGridBox, strikeCardBox, annualCardBox, cetCardBox] = await Promise.all([
+  const [balanceGridBox, strikeCardBox, annualCardBox, otherCardBox] = await Promise.all([
     page.locator(".leave-balance-grid").boundingBox(),
     strikeCard.boundingBox(),
     page.locator(".leave-balance-grid button.annual").boundingBox(),
-    page.locator(".leave-balance-grid button.cet").boundingBox(),
+    page.locator(".leave-balance-grid button.other").boundingBox(),
   ]);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.9);
     expect(strikeCardBox!.height).toBeLessThan(annualCardBox!.height);
   } else {
-    expect(Math.abs(cetCardBox!.y - strikeCardBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(otherCardBox!.y - strikeCardBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(otherCardBox!.width - strikeCardBox!.width)).toBeLessThanOrEqual(2);
   }
   await strikeCard.click();
   const strikeBalanceDialog = page.getByRole("dialog", { name: "Grève" });

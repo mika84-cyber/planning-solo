@@ -5389,8 +5389,28 @@ h1 {
   padding-bottom: 7px;
   font-size: 23px;
 }
-.leave-balances-direct .leave-balance-grid span { font-size: 10px; }
-.leave-balances-direct .leave-balance-grid small { font-size: 9px; }
+.leave-balances-direct .leave-balance-grid span {
+  color: #17243a;
+  font-size: 10px;
+  font-weight: 900;
+}
+.leave-balances-direct .leave-balance-grid strong {
+  color: color-mix(in srgb, var(--balance-color) 58%, #17243a);
+  font-weight: 950;
+}
+.leave-balances-direct .leave-balance-grid strong i {
+  color: color-mix(in srgb, var(--balance-color) 48%, #233149);
+  font-weight: 900;
+}
+.leave-balances-direct .leave-balance-grid small {
+  color: #4b596d;
+  font-size: 9px;
+  font-weight: 700;
+}
+.leave-balances-direct .leave-balance-grid em {
+  color: color-mix(in srgb, var(--balance-color) 60%, #16263c);
+  font-weight: 950;
+}
 
 /* Dans Ma paie, une teinte sauge très légère crée un second niveau de
    navigation sans concurrencer les rubriques principales. */
@@ -11060,10 +11080,15 @@ h1 {
   --balance-color: #7d90da;
   grid-column: auto;
 }
-/* Entre la tablette ouverte et le petit ordinateur, Divers occupe la rangée
-   précédente : CET et Grève restent ainsi réellement côte à côte. */
-@media (min-width: 721px) and (max-width: 1000px) {
-  .leave-balances-direct .leave-balance-grid button.other { grid-column: 1 / -1; }
+/* Sur ordinateur et téléphone pliable ouvert, les trois dernières cartes
+   gardent le gabarit normal ; Divers est placé directement à côté de Grève. */
+@media (min-width: 721px) {
+  .leave-balances-direct .leave-balance-grid button.other {
+    grid-column: auto;
+    order: 1;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike { order: 2; }
+  .leave-balances-direct .leave-balance-grid button.cet { order: 3; }
 }
 .strike-request-options .request-option-group { gap: 12px; }
 .strike-request-options .request-help { margin-top: 5px; }
@@ -11132,6 +11157,7 @@ h1 {
     min-height: 190px;
     padding: 30px 32px;
   }
+  .top-header.top-header-forms::before { left: 54%; }
   .top-header-title h1 {
     font-size: clamp(34px, 5vw, 48px);
   }

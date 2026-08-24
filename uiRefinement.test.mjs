@@ -521,6 +521,20 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".request-option-group,");
   });
 
+  it("aligne Divers avec Grève sur les grands écrans et décale l’œuvre sur Z Fold ouvert", () => {
+    expect(styles).toContain("@media (min-width: 721px) {");
+    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.other {\n    grid-column: auto;\n    order: 1;");
+    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.strike { order: 2; }");
+    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.cet { order: 3; }");
+    expect(styles).toContain(".top-header.top-header-forms::before { left: 54%; }");
+  });
+
+  it("renforce la lisibilité des soldes sans retirer leurs couleurs", () => {
+    expect(styles).toContain("color-mix(in srgb, var(--balance-color) 58%, #17243a)");
+    expect(styles).toContain(".leave-balances-direct .leave-balance-grid small {\n  color: #4b596d;");
+    expect(styles).toContain("border: 1px solid color-mix(in srgb, var(--balance-color) 52%, #aeb9c7)");
+  });
+
   it("élargit uniquement l’en-tête sur les grands écrans", () => {
     expect(styles).toContain("@media (min-width: 1200px)");
     expect(styles).toContain("width: calc(100% + 64px)");
