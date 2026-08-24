@@ -6952,7 +6952,7 @@ export default function Home() {
                 ? "top-header top-header-pdf"
                 : homeSection === "forms"
                   ? "top-header top-header-forms"
-                  : "top-header"
+                  : "top-header top-header-home"
         }
       >
         <div className="top-header-title">
@@ -6976,26 +6976,6 @@ export default function Home() {
         <div className="header-command-area">
           <div className="header-control-cluster">
             <div className="header-actions">
-              {homeSection === "home" ? (
-              <div className="view-switch" aria-label="Mode d’affichage">
-                <button
-                  className={mode === "month" ? "active" : ""}
-                  aria-pressed={mode === "month"}
-                  onClick={() => setMode("month")}
-                  type="button"
-                >
-                  Mois
-                </button>
-                <button
-                  className={mode === "year" ? "active" : ""}
-                  aria-pressed={mode === "year"}
-                  onClick={() => setMode("year")}
-                  type="button"
-                >
-                  Année
-                </button>
-              </div>
-              ) : null}
               <div className="account-menu" ref={accountMenuRef}>
             <button
               className={`account-button${accountMenuOpen ? " open" : ""}`}
@@ -7077,6 +7057,28 @@ export default function Home() {
           </button>
         </div>
       </header>
+      {homeSection === "home" ? (
+        <div className="home-view-mode-bar">
+          <div className="view-switch" aria-label="Mode d’affichage">
+            <button
+              className={mode === "month" ? "active" : ""}
+              aria-pressed={mode === "month"}
+              onClick={() => setMode("month")}
+              type="button"
+            >
+              Mois
+            </button>
+            <button
+              className={mode === "year" ? "active" : ""}
+              aria-pressed={mode === "year"}
+              onClick={() => setMode("year")}
+              type="button"
+            >
+              Année
+            </button>
+          </div>
+        </div>
+      ) : null}
       {mainMenuOpen ? (
         <div
           className="main-menu-backdrop"

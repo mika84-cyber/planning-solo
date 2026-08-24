@@ -352,7 +352,9 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   const updateBox = await update.boundingBox();
   expect(switchBox).not.toBeNull();
   expect(updateBox).not.toBeNull();
-  expect(updateBox!.y).toBeGreaterThan(switchBox!.y);
+  expect(updateBox!.y).toBeLessThan(switchBox!.y);
+  expect(switchBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
+  expect(switchBox!.y + switchBox!.height).toBeLessThanOrEqual(todayOverviewBox!.y);
   expect(updateBox!.width).toBeLessThan(switchBox!.width);
 
   await page.locator('.calendar-toolbar button[aria-label="Sélectionner l’année"]').click();

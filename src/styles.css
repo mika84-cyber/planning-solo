@@ -11409,6 +11409,58 @@ h1 {
   .top-header-title .eyebrow { font-size: 12px; }
 }
 
+/* Le choix Mois / Année quitte l'œuvre d'Accueil et devient une commande
+   autonome, immédiatement repérable avant le résumé de la journée. */
+.home-view-mode-bar {
+  display: flex;
+  justify-content: center;
+  width: min(620px, 100%);
+  margin: -4px auto 18px;
+  border: 1.5px solid rgba(46, 74, 109, 0.42);
+  border-radius: 19px;
+  padding: 8px;
+  background: linear-gradient(145deg, #f7fbff, #eaf2fb);
+  box-shadow: 0 8px 20px rgba(38, 69, 105, 0.1);
+}
+
+.home-view-mode-bar .view-switch {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1.5px solid rgba(0, 0, 0, 0.62);
+}
+
+.home-view-mode-bar .view-switch button {
+  min-height: 44px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 721px) {
+  .top-header-home .header-command-area {
+    flex-basis: 270px;
+    width: min(270px, 38%);
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 720px) {
+  .home-view-mode-bar {
+    width: 100%;
+    margin-top: -2px;
+    margin-bottom: 14px;
+    border-radius: 17px;
+    padding: 7px;
+  }
+
+  .home-view-mode-bar .view-switch button {
+    min-height: 46px;
+  }
+
+  .top-header-home .header-update-button {
+    grid-row: 2;
+  }
+}
+
 /* Une formation prise sur le solde de récupération est immédiatement
    identifiable : case corail pastel, liseré noir et repère REC. */
 .month-card .calendar-grid .day.training-recovery-day,
