@@ -3,6 +3,7 @@ import {
   addDays,
   applyManualSundayLeave,
   coWorkingGroupsForDate,
+  compactWeekdayDate,
   dateKey,
   fromKey,
   getDayInfo,
@@ -17,6 +18,7 @@ import {
   multiDatePersonLabel,
   nextAttendanceDay,
   periodLabel,
+  selectionRemovesAttendance,
   sameDate,
   schoolVacationsForZone,
   sickLeaveDeduction,
@@ -134,6 +136,14 @@ describe("cycle (baseKind / getDayInfo)", () => {
     expect(next && dateKey(next)).not.toBe("2026-08-19");
   });
 
+  it("retire immédiatement un congé entier en cours de saisie des présences à venir", () => {
+    expect(selectionRemovesAttendance("annual")).toBe(true);
+    expect(selectionRemovesAttendance("rtt")).toBe(true);
+    expect(selectionRemovesAttendance("cet")).toBe(true);
+    expect(selectionRemovesAttendance("half")).toBe(false);
+    expect(selectionRemovesAttendance("recovery_hours")).toBe(false);
+  });
+
   it("n'annonce que le groupe réellement au travail le mercredi", () => {
     const wednesday = localDate(2026, 7, 19);
     expect(getDayInfo(wednesday, 1).kind).toBe("work");
@@ -223,6 +233,10 @@ describe("date helpers", () => {
     expect(sameDate(addDays(localDate(2026, 7, 31), 1), localDate(2026, 8, 1))).toBe(
       true,
     );
+  });
+
+  it("affiche le prochain jour travaillé au format court", () => {
+    expect(compactWeekdayDate(localDate(2026, 7, 26))).toBe("mercredi 26/08/26");
   });
 });
 

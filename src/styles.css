@@ -11479,6 +11479,126 @@ h1 {
   }
 }
 
+/* Le sélecteur de vue utilise toute la largeur sur ordinateur et Fold ouvert,
+   sans le second liseré qui doublait inutilement son propre encadré. */
+@media (min-width: 721px) {
+  .home-view-mode-bar {
+    width: 100%;
+    border: 0;
+  }
+}
+
+/* Le Fold ouvert reprend la même ligne équilibrée que l'ordinateur. */
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
+  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
+  .planning-workspace-shell.framed .month-toolbar .today-button,
+  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    height: 46px;
+  }
+}
+
+/* Formulaires utiles retrouve son fond uniforme d'origine : la teinte autour
+   de la sculpture rejoint de nouveau celle de la photo. */
+.top-header.top-header-forms {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05)),
+    linear-gradient(
+      180deg,
+      #9f947e 0%,
+      #9a927c 16%,
+      #8f8770 38%,
+      #867e66 60%,
+      #887c64 81%,
+      #938970 100%
+    );
+}
+
+.top-header.top-header-forms::before {
+  filter: none;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+}
+
+/* Les dessins Congés et Paie restent lisibles sous le titre mais retrouvent
+   leurs noirs, bleus et rouges sur l'essentiel du bandeau. */
+.top-header.top-header-leave {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 252, 255, 0.42) 0%,
+      rgba(235, 248, 253, 0.1) 38%,
+      rgba(255, 255, 255, 0) 76%
+    ),
+    url("/leave-header-art.jpg") center / cover no-repeat;
+}
+
+.top-header.top-header-pay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 252, 244, 0.42) 0%,
+      rgba(255, 244, 224, 0.09) 38%,
+      rgba(255, 255, 255, 0) 76%
+    ),
+    url("/pay-header-art.jpg") center / cover no-repeat;
+}
+
+/* L'image Accueil ne change pas : seul le détourage lumineux des lettres est
+   renforcé pour les isoler du dessin. */
+.top-header-home .top-header-title h1 {
+  color: #071a32;
+  text-shadow:
+    0 1px 0 #fff,
+    0 0 7px rgba(255, 255, 255, 0.98),
+    0 0 15px rgba(255, 255, 255, 0.9);
+}
+
+.top-header-home .top-header-title .eyebrow {
+  color: #064f9f;
+  text-shadow:
+    0 1px 0 #fff,
+    0 0 6px rgba(255, 255, 255, 0.98),
+    0 0 12px rgba(255, 255, 255, 0.88);
+}
+
+@media (max-width: 720px) {
+  .home-view-mode-bar {
+    border: 0;
+  }
+
+  .top-header.top-header-leave {
+    background:
+      linear-gradient(180deg, rgba(248, 252, 255, 0.4), rgba(255, 255, 255, 0.03)),
+      url("/leave-header-art.jpg") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pay {
+    background:
+      linear-gradient(180deg, rgba(255, 252, 244, 0.4), rgba(255, 255, 255, 0.03)),
+      url("/pay-header-art.jpg") center / cover no-repeat;
+  }
+}
+
 /* Une formation prise sur le solde de récupération est immédiatement
    identifiable : case corail pastel, liseré noir et repère REC. */
 .month-card .calendar-grid .day.training-recovery-day,

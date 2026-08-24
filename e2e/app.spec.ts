@@ -1,5 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
-import { addDays, dateKey, getDayInfo, localDate } from "../src/planningLogic";
+import {
+  addDays,
+  compactWeekdayDate,
+  dateKey,
+  getDayInfo,
+  localDate,
+  nextAttendanceDay,
+} from "../src/planningLogic";
 
 async function prepareDemo(page: Page, withCurrentLeave = false) {
   await page.addInitScript((seedLeave) => {
@@ -25,6 +32,35 @@ async function prepareDemo(page: Page, withCurrentLeave = false) {
   }, withCurrentLeave);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+}
+
+async function prepareFutureTrainingLeaveDemo(page: Page) {
+  const now = new Date();
+  const group = 2;
+  const training = Array.from({ length: 366 }, (_, index) => addDays(now, index + 1))
+    .find((date) => getDayInfo(date, group).kind === "training");
+  if (!training) throw new Error("Aucune formation future trouvée dans le cycle");
+  const trainingKey = dateKey(training);
+  const expectedNext = nextAttendanceDay(
+    now,
+    group,
+    (candidateKey) => candidateKey === trainingKey,
+  );
+  if (!expectedNext) throw new Error("Aucun jour travaillé après la formation");
+  await page.addInitScript(({ periodDate }) => {
+    localStorage.setItem(
+      "planning:demo-completed-request-v1",
+      JSON.stringify({
+        requestId: "e2e-training-covered-by-leave",
+        requestKind: "leave",
+        group: 2,
+        periods: [{ from: periodDate, to: periodDate, type: "annual" }],
+        timed: [],
+      }),
+    );
+  }, { periodDate: trainingKey });
+  await prepareDemo(page);
+  return expectedNext;
 }
 
 async function prepareStrikeDemo(page: Page) {
@@ -343,6 +379,9 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(remainingWorkCard).toBeVisible();
   await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
   await expect(remainingWorkCard).toContainText("D’ici au 31 décembre");
+  await expect(page.locator(".today-next-work strong")).toHaveText(
+    /^[a-zà-ÿ]+ \d{2}\/\d{2}\/\d{2}(?: — Formation)?$/i,
+  );
   if ((page.viewportSize()?.width || 0) >= 1200) {
     expect(headerBox!.width - todayOverviewBox!.width).toBeGreaterThan(50);
   }
@@ -356,6 +395,11 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   expect(switchBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
   expect(switchBox!.y + switchBox!.height).toBeLessThanOrEqual(todayOverviewBox!.y);
   expect(updateBox!.width).toBeLessThan(switchBox!.width);
+  const modeBar = page.locator(".home-view-mode-bar");
+  const modeBarBox = await modeBar.boundingBox();
+  expect(modeBarBox).not.toBeNull();
+  await expect(modeBar).toHaveCSS("border-top-width", "0px");
+  expect(Math.abs(modeBarBox!.width - todayOverviewBox!.width)).toBeLessThanOrEqual(1);
 
   await page.locator('.calendar-toolbar button[aria-label="Sélectionner l’année"]').click();
   const years = page.locator(".calendar-toolbar .choice-picker-menu button");
@@ -394,6 +438,13 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   expect(leavePanelBox!.y + leavePanelBox!.height).toBeLessThan(monthCardBox!.y);
   expect(leaveActionBox!.width).toBeGreaterThan(leavePanelBox!.width - 30);
   await expect(page.getByRole("region", { name: "Outils du planning" })).toHaveCount(0);
+});
+
+test("un congé posé sur une formation retire cette date du prochain jour travaillé", async ({ page }) => {
+  const expectedNext = await prepareFutureTrainingLeaveDemo(page);
+  const nextWork = page.locator(".today-next-work strong");
+
+  await expect(nextWork).toHaveText(compactWeekdayDate(expectedNext));
 });
 
 test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, testInfo) => {
@@ -449,6 +500,21 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
 
   const headerBox = await page.locator(".top-header").boundingBox();
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
+  const [foldToolbarBox, foldMonthBox, foldYearBox, foldTodayBox, foldModeBarBox, foldOverviewBox] =
+    await Promise.all([
+      page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
+      page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
+      page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
+      page.locator(".month-toolbar .today-button").boundingBox(),
+      page.locator(".home-view-mode-bar").boundingBox(),
+      page.locator(".today-overview").boundingBox(),
+    ]);
+  expect(Math.abs(foldMonthBox!.width - foldYearBox!.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(foldYearBox!.width - foldTodayBox!.width)).toBeLessThanOrEqual(1);
+  expect(foldTodayBox!.x + foldTodayBox!.width).toBeGreaterThan(
+    foldToolbarBox!.x + foldToolbarBox!.width - 32,
+  );
+  expect(Math.abs(foldModeBarBox!.width - foldOverviewBox!.width)).toBeLessThanOrEqual(1);
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   const [otherBox, strikeBox, cetBox] = await Promise.all([
@@ -469,8 +535,10 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   const formsHeader = page.locator(".top-header-forms");
   const formsHeaderBox = (await formsHeader.boundingBox())!;
   const artworkLeft = await formsHeader.evaluate((node) => parseFloat(getComputedStyle(node, "::before").left));
+  const artworkFilter = await formsHeader.evaluate((node) => getComputedStyle(node, "::before").filter);
   expect(artworkLeft / formsHeaderBox.width).toBeGreaterThan(0.53);
   expect(artworkLeft / formsHeaderBox.width).toBeLessThan(0.55);
+  expect(artworkFilter).toBe("none");
 });
 
 test("le paramètre de démonstration ne donne plus accès à l’application", async ({ page }) => {

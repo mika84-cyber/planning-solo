@@ -154,6 +154,7 @@ import {
   applyManualSundayLeave,
   addDays,
   coWorkingGroupsForDate,
+  compactWeekdayDate,
   dateKey,
   dateTimeLabel,
   dayNumber,
@@ -171,6 +172,7 @@ import {
   nextAttendanceDay,
   periodLabel,
   sameDate,
+  selectionRemovesAttendance,
   shortDate,
   type CountedOnlyType,
   type HalfMoment,
@@ -2386,6 +2388,10 @@ export default function Home() {
 
     const nextWork = nextAttendanceDay(now, group, (candidateKey) =>
       Boolean(entries[candidateKey]?.leave) ||
+      Boolean(
+        selections[candidateKey] &&
+        selectionRemovesAttendance(selections[candidateKey].type),
+      ) ||
       periods.some(
         (item) =>
           candidateKey >= item.from &&
@@ -2423,7 +2429,7 @@ export default function Home() {
       nextWorkKind,
       nextWorkGroupLabel,
     };
-  }, [now, group, periods, entries, recoveryUses, workDayMinutes]);
+  }, [now, group, periods, entries, recoveryUses, selections, workDayMinutes]);
 
   const importantAlert =
     view.getFullYear() === now.getFullYear() && sundayCarryover
@@ -7456,7 +7462,7 @@ export default function Home() {
               <span>Prochain jour travaillé</span>
               <strong>
                 {todayOverview.nextWork
-                  ? `${longDate(todayOverview.nextWork)}${
+                  ? `${compactWeekdayDate(todayOverview.nextWork)}${
                       todayOverview.nextWorkKind === "training"
                         ? " — Formation"
                         : ""

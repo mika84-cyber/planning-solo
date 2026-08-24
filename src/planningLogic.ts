@@ -28,6 +28,24 @@ export type SelectionType =
   | "recovery_hours"
   | "recovery_holiday"
   | "recovery_training";
+
+/** Une sélection à la journée entière retire immédiatement la date des
+ * prochains jours de présence, avant même le retour du formulaire officiel.
+ * Les absences horaires et demi-journées restent des jours de présence. */
+export function selectionRemovesAttendance(type: SelectionType) {
+  return [
+    "annual",
+    "rtt",
+    "fraction",
+    "sick",
+    "strike",
+    "cet",
+    "other",
+    "childcare",
+    "exceptional",
+    "recovery_day",
+  ].includes(type);
+}
 /** Moitié de journée posée. Une demi-journée sans moment reste possible : les
  *  demandes venues du formulaire n'en portent pas. */
 export type HalfMoment = "morning" | "afternoon";
@@ -269,6 +287,16 @@ export function longDate(date: Date) {
     month: "long",
     year: "numeric",
   }).format(date);
+}
+
+export function compactWeekdayDate(date: Date) {
+  const weekday = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+  }).format(date);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${weekday} ${day}/${month}/${year}`;
 }
 export function shortDate(key: string) {
   const date = fromKey(key);
