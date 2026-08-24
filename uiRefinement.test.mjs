@@ -541,9 +541,34 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("margin-left: -32px");
   });
 
-  it("place l’action Poser un congé en haut à droite de l’encadré Aujourd’hui", () => {
+  it("aligne l’action contextuelle en haut à droite de l’encadré Aujourd’hui", () => {
     expect(styles).toContain(".today-overview-heading {\n  align-items: flex-start;");
     expect(styles).toContain(".today-overview-heading .add-action {\n  align-self: flex-start;");
+  });
+
+  it("place le choix du groupe dans Aujourd’hui et la pose de congé avant le mois", () => {
+    expect(app).toContain('className="primary-action add-action group-heading-action"');
+    expect(app).toContain('`Je suis groupe ${group}`');
+    expect(app).not.toContain('className="today-group-card"');
+    expect(app).toContain("primary-action planning-leave-action");
+    expect(app).toContain('className="planning-leave-panel"');
+    expect(styles).toContain(".planning-leave-panel .planning-leave-action {");
+    expect(styles).toContain("width: 100% !important;");
+  });
+
+  it("retire les filtres Afficher et place la pose de congé contre le calendrier", () => {
+    expect(app).not.toContain('className="shared-tools"');
+    expect(app).not.toContain('className="filter-title">Afficher');
+    expect(app.indexOf('className="planning-leave-panel"')).toBeLessThan(
+      app.indexOf('className={`month-card'),
+    );
+  });
+
+  it("affiche le travail restant de l’année à côté des congés", () => {
+    expect(app).toContain("remainingWorkedDaysThisYear");
+    expect(app).toContain('className="today-remaining-work"');
+    expect(app).toContain("D’ici au 31 décembre");
+    expect(styles).toContain('grid-template-areas: "today next" "leave remaining";');
   });
 
   it("réserve l’œuvre bleue à l’en-tête Congés et récupérations", () => {

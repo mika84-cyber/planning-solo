@@ -54,6 +54,7 @@ import {
   notePeriodFor,
   rangeKeys,
   workedDayCount,
+  workedDayCountBetween,
   type AuthStatus,
   type BalanceType,
   type Entries,
@@ -341,8 +342,8 @@ export default function Home() {
   const [leaveRangeFrom, setLeaveRangeFrom] = useState("");
   const [leaveRangeTo, setLeaveRangeTo] = useState("");
   const [savingDay, setSavingDay] = useState(false);
-  const [showLeaves, setShowLeaves] = useState(true);
-  const [showNotes, setShowNotes] = useState(true);
+  const showLeaves = true;
+  const showNotes = true;
   const [rangeOpen, setRangeOpen] = useState(false);
   const [rangePrefillDate, setRangePrefillDate] = useState<string | null>(null);
   const [rangeLeaveType, setRangeLeaveType] = useState<LeaveType>("annual");
@@ -1387,6 +1388,20 @@ export default function Home() {
       })),
     };
   }, [view, group, periods, entries, recoveryUses, formProfile?.workQuota, now]);
+
+  const remainingWorkedDaysThisYear = useMemo(
+    () =>
+      workedDayCountBetween(
+        now,
+        localDate(now.getFullYear(), 11, 31),
+        group,
+        periods,
+        entries,
+        recoveryUses,
+        dailyMinutesForQuota(formProfile?.workQuota || "full"),
+      ).worked,
+    [now, group, periods, entries, recoveryUses, formProfile?.workQuota],
+  );
 
   // Au premier usage, le statut demandé est désormais « contractuel ». Dès
   // qu'un choix est enregistré, la valeur persistée reprend naturellement la
@@ -7250,7 +7265,8 @@ export default function Home() {
                   <h3>Utiliser l’accueil, le menu et le planning</h3>
                   <p>
                     L’accueil réunit Aujourd’hui en un coup d’œil, les notes et le planning.
-                    Le groupe de cycle se modifie en touchant sa carte. Le menu ☰ placé
+                    Le groupe de cycle se choisit avec le bouton placé en haut de la rubrique
+                    Aujourd’hui. Le menu ☰ placé
                     dans l’en-tête ouvre Congés et récupérations,
                     Ma paie, les PDF et les Formulaires utiles. Le mode d’emploi est placé
                     tout en bas de la fenêtre du menu. Lorsqu’une nouvelle version est
@@ -7338,11 +7354,12 @@ export default function Home() {
             <small>{longDate(now)}</small>
           </div>
           <button
-            className="primary-action add-action"
+            className="primary-action add-action group-heading-action"
             type="button"
-            onClick={() => openRequestChooser("general")}
+            onClick={() => setGroupChooserOpen(true)}
+            aria-label={formProfile?.group ? `Je suis groupe ${group}. Modifier mon groupe` : "Choisir mon groupe"}
           >
-            Poser un congé
+            {formProfile?.group ? `Je suis groupe ${group}` : "Choisir mon groupe"}
           </button>
         </div>
         <div className="today-overview-grid">
@@ -7413,26 +7430,19 @@ export default function Home() {
               <small>Voir le détail des soldes</small>
             </span>
           </button>
-          <button
-            className="today-group-card"
-            type="button"
-            onClick={() => setGroupChooserOpen(true)}
-            aria-label={`Modifier le groupe de cycle. Groupe actuel : ${group}`}
-          >
+          <article className="today-remaining-work">
             <span className="today-card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
-                <circle cx="7" cy="12" r="2.2" />
-                <circle cx="12" cy="12" r="2.2" />
-                <circle cx="17" cy="12" r="2.2" />
+                <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
+                <path d="m8 14 2.5 2.5L16 11" />
               </svg>
             </span>
             <span className="today-card-copy">
-              <span>Groupe de cycle</span>
-              <strong>Groupe {group}</strong>
-              <small>Modifier</small>
+              <span>Travail restant</span>
+              <strong>{dayCountLabel(remainingWorkedDaysThisYear)} jour{s(remainingWorkedDaysThisYear)}</strong>
+              <small>D’ici au 31 décembre</small>
             </span>
-            <span className="today-card-chevron" aria-hidden="true">›</span>
-          </button>
+          </article>
         </div>
         {importantAlert ? (
           <button
@@ -8070,13 +8080,6 @@ export default function Home() {
               </div>
             </div>
           )}
-          <button
-            className="primary-action planning-leave-mobile"
-            type="button"
-            onClick={() => openRequestChooser("planning")}
-          >
-            Poser un congé
-          </button>
         </section>
       )}
 
@@ -8096,34 +8099,6 @@ export default function Home() {
           </article>
         </section>
       )}
-
-      <section className="shared-tools" aria-label="Outils du planning">
-        <div className="filter-group">
-          <span className="filter-title">Afficher</span>
-          <button
-            type="button"
-            className={
-              showLeaves ? "filter-chip leave active" : "filter-chip leave"
-            }
-            aria-pressed={showLeaves}
-            onClick={() => setShowLeaves((value) => !value)}
-          >
-            <i />
-            Congés
-          </button>
-          <button
-            type="button"
-            className={
-              showNotes ? "filter-chip notes active" : "filter-chip notes"
-            }
-            aria-pressed={showNotes}
-            onClick={() => setShowNotes((value) => !value)}
-          >
-            <i />
-            Notes
-          </button>
-        </div>
-      </section>
 
       {recoveryRangeSelecting && (
         <section
@@ -8318,13 +8293,6 @@ export default function Home() {
             onStart={startCalendarCleanup}
           />
         ) : null}
-        <button
-          className={`primary-action ${mode === "month" ? "planning-leave-desktop" : "planning-leave-annual"}`}
-          type="button"
-          onClick={() => openRequestChooser("planning")}
-        >
-          Poser un congé
-        </button>
       </section>
 
       {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
@@ -8730,6 +8698,16 @@ export default function Home() {
           </button>
         </section>
       ) : null}
+
+      <div className="planning-leave-panel">
+        <button
+          className="primary-action planning-leave-action"
+          type="button"
+          onClick={() => openRequestChooser("planning")}
+        >
+          Poser un congé
+        </button>
+      </div>
 
       {mode === "month" ? (
         <section

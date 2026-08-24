@@ -326,12 +326,18 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
   const todayOverviewBox = await page.locator(".today-overview").boundingBox();
-  const leaveActionBox = await page.locator(".today-overview-heading .add-action").boundingBox();
+  const groupAction = page.locator(".today-overview-heading .group-heading-action");
+  const groupActionBox = await groupAction.boundingBox();
   expect(headerBox).not.toBeNull();
   expect(todayOverviewBox).not.toBeNull();
   expect(todayHeadingBox).not.toBeNull();
-  expect(leaveActionBox).not.toBeNull();
-  expect(Math.abs(leaveActionBox!.y - todayHeadingBox!.y)).toBeLessThan(1);
+  expect(groupActionBox).not.toBeNull();
+  expect(Math.abs(groupActionBox!.y - todayHeadingBox!.y)).toBeLessThan(1);
+  await expect(groupAction).toContainText(/Choisir mon groupe|Je suis groupe [123]/);
+  const remainingWorkCard = page.locator(".today-remaining-work");
+  await expect(remainingWorkCard).toBeVisible();
+  await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
+  await expect(remainingWorkCard).toContainText("D’ici au 31 décembre");
   if ((page.viewportSize()?.width || 0) >= 1200) {
     expect(headerBox!.width - todayOverviewBox!.width).toBeGreaterThan(50);
   }
@@ -351,6 +357,18 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(years.last()).toHaveText("2050");
   await expect(page.getByRole("button", { name: "2024", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "2025", exact: true })).toHaveCount(0);
+  const leaveActionBox = await page.locator(".planning-leave-panel .planning-leave-action").boundingBox();
+  const leavePanelBox = await page.locator(".planning-leave-panel").boundingBox();
+  const periodNavigationBox = await page.locator(".calendar-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox();
+  const monthCardBox = await page.locator(".month-card").boundingBox();
+  expect(leaveActionBox).not.toBeNull();
+  expect(leavePanelBox).not.toBeNull();
+  expect(periodNavigationBox).not.toBeNull();
+  expect(monthCardBox).not.toBeNull();
+  expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
+  expect(leavePanelBox!.y + leavePanelBox!.height).toBeLessThan(monthCardBox!.y);
+  expect(leaveActionBox!.width).toBeGreaterThan(leavePanelBox!.width - 30);
+  await expect(page.getByRole("region", { name: "Outils du planning" })).toHaveCount(0);
 });
 
 test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, testInfo) => {
@@ -605,7 +623,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Accueil/ })
     .click();
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /Une récupération/ })
     .click();
@@ -648,7 +666,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
 
 test("Divers est explicite et le résumé apparaît avant validation", async ({ page }) => {
   await prepareDemo(page);
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
 
   const chooser = page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" });
   const other = chooser.getByRole("button", { name: /Divers/ });
@@ -675,7 +693,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   const workedButton = page.getByRole("button", { name: "Détail des jours travaillés" });
   const initialWorked = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
 
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /^Grève/ })
     .click();
@@ -882,7 +900,7 @@ test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ pa
 
 test("le congé CET est proposé depuis les demandes et depuis une case", async ({ page }) => {
   await prepareDemo(page);
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /^CET Utilisez/ })
     .click();
@@ -898,7 +916,7 @@ test("le congé CET est proposé depuis les demandes et depuis une case", async 
 
 test("les choix principaux et ceux d’une date suivent l’ordre demandé", async ({ page }) => {
   await prepareDemo(page);
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" });
   await expect(chooser.locator(".choice-grid > button > strong")).toHaveText([
     "Un congé",
@@ -947,7 +965,7 @@ test("une récupération ordinaire affiche le cycle sans reproposer Formation", 
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Accueil/ })
     .click();
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /Une récupération/ })
     .click();
@@ -1046,7 +1064,7 @@ test("nettoyage et gestion d’un congé utilisent des actions directes", async 
 test("les parcours congé, récupération et maladie s’ouvrent correctement", async ({ page }) => {
   await prepareDemo(page);
 
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /^Un congé Choisissez/ })
     .click();
@@ -1058,7 +1076,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
   await expect(page.getByLabel("Résumé avant validation")).toBeVisible();
   await page.getByRole("button", { name: "Annuler la demande" }).click();
 
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /^Un congé Choisissez/ })
     .click();
@@ -1071,7 +1089,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
   await expect(page.locator(".range-selection-panel")).toBeVisible();
   await page.locator(".range-selection-panel").getByRole("button", { name: "Annuler" }).click();
 
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /Une récupération/ })
     .click();
@@ -1083,7 +1101,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
   await expect(recovery.getByRole("button", { name: /formation/i })).toBeVisible();
   await recovery.getByRole("button", { name: "Fermer" }).click();
 
-  await page.locator(".today-overview .primary-action").click();
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" })
     .getByRole("button", { name: /Un arrêt maladie/ })
     .click();
@@ -1189,11 +1207,12 @@ test("les deux rubriques de paie s’ouvrent et se referment", async ({ page }) 
 test("le groupe, les notes, les sauvegardes et le retour du formulaire restent accessibles", async ({ page }) => {
   await prepareDemo(page);
 
-  await page.getByRole("button", { name: /Modifier le groupe de cycle/ }).click();
+  await page.locator(".today-overview-heading .group-heading-action").click();
   const groups = page.getByRole("dialog", { name: "Choisir mon groupe" });
   await expect(groups.locator(".group-choice-grid > button")).toHaveCount(3);
   await groups.locator(".group-choice-grid > button").first().click();
   await expect(groups).toHaveCount(0);
+  await expect(page.locator(".today-overview-heading .group-heading-action")).toHaveText("Je suis groupe 1");
 
   await page.getByRole("button", { name: "Ajouter une note" }).click();
   const note = page.getByRole("dialog", { name: "Ajouter une note" });

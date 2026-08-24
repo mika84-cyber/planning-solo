@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { workedDayCount } from "./appModel";
-import { dateKey, getDayInfo } from "./planningLogic";
+import { workedDayCount, workedDayCountBetween } from "./appModel";
+import { dateKey, getDayInfo, localDate } from "./planningLogic";
 import {
   allocateRecoveryUses,
   calculatePaidOvertime,
@@ -236,6 +236,29 @@ describe("solde de récupération", () => {
     expect(withAbsence.worked).toBe(baseline.worked - 1);
     },
   );
+
+  it("retire toutes les absences du travail restant jusqu’à la fin de l’année", () => {
+    const workDates = Array.from({ length: 31 }, (_, index) => localDate(2026, 7, index + 1))
+      .filter((date) => getDayInfo(date, 2).kind === "work")
+      .slice(0, 5);
+    const baseline = workedDayCountBetween(workDates[0], localDate(2026, 11, 31), 2, [], {});
+    const leaveTypes = ["annual", "other", "sick", "strike", "cet"] as const;
+    const withAbsences = workedDayCountBetween(
+      workDates[0],
+      localDate(2026, 11, 31),
+      2,
+      workDates.map((date, index) => ({
+        id: `remaining-${leaveTypes[index]}`,
+        from: dateKey(date),
+        to: dateKey(date),
+        leaveType: leaveTypes[index],
+        group: 2,
+        updatedAt: "x",
+      })),
+      {},
+    );
+    expect(withAbsences.worked).toBe(baseline.worked - leaveTypes.length);
+  });
 
   it("affecte les utilisations aux gains les plus anciens", () => {
     const older = entry("older-gain", 120, "recovery");

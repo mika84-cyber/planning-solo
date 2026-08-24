@@ -212,3 +212,41 @@ export function workedDayCount(
     }
   return { scheduled, onLeave, worked: scheduled - onLeave };
 }
+
+/** Journées de travail encore prévues entre deux dates incluses. Toutes les
+ * absences enregistrées conservent leur nature, mais produisent ici le même
+ * effet : elles retirent la journée (ou la fraction de journée) du travail
+ * restant. */
+export function workedDayCountBetween(
+  firstDate: Date,
+  lastDate: Date,
+  group: number,
+  periods: LeavePeriod[],
+  entries: Entries,
+  recoveryUses: Array<{ date: string; minutes: number }> = [],
+  workDayMinutes = 8 * 60,
+) {
+  let scheduled = 0;
+  let onLeave = 0;
+  let date = localDate(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
+  const last = localDate(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+  for (let guard = 0; date <= last && guard < 400; guard++, date = addDays(date, 1)) {
+    if (getDayInfo(date, group).kind !== "work") continue;
+    scheduled++;
+    const key = dateKey(date);
+    const period = periods.find((item) => key >= item.from && key <= item.to);
+    if (period) {
+      onLeave += period.leaveType === "half" ? 0.5 : 1;
+      continue;
+    }
+    if (entries[key]?.leave) {
+      onLeave += 1;
+      continue;
+    }
+    const recoveredMinutes = recoveryUses
+      .filter((item) => item.date === key)
+      .reduce((total, item) => total + item.minutes, 0);
+    onLeave += Math.min(1, recoveredMinutes / workDayMinutes);
+  }
+  return { scheduled, onLeave, worked: scheduled - onLeave };
+}

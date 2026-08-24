@@ -6680,6 +6680,7 @@ h1 {
 .today-overview-grid > .today-status,
 .today-overview-grid > .today-next-work,
 .today-overview-grid > .today-leave-balance,
+.today-overview-grid > .today-remaining-work,
 .today-overview-grid > .today-group-card {
   position: relative;
   display: grid;
@@ -10392,6 +10393,89 @@ h1 {
   line-height: 1.2;
   text-align: center;
   white-space: normal;
+}
+
+/* Accueil et planning : le groupe devient l’action contextuelle d’Aujourd’hui,
+   tandis que la pose de congé précède clairement le mois et l’année. */
+.today-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.today-overview-grid .today-remaining-work {
+  border-color: rgba(72, 143, 119, 0.26);
+  background: linear-gradient(145deg, #eef8f4, #f7fbf9);
+}
+
+.today-overview-grid .today-remaining-work .today-card-icon {
+  color: #25745a;
+  background: rgba(72, 161, 130, 0.13);
+}
+
+.today-overview-heading .group-heading-action {
+  min-width: 178px;
+}
+
+.planning-leave-panel {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  border: 1.5px solid rgba(55, 73, 98, 0.58);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 7px 18px rgba(42, 62, 89, 0.07);
+}
+
+.planning-leave-panel .planning-leave-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  min-height: 46px !important;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .today-overview-heading .group-heading-action {
+    min-width: 0;
+    max-width: 52%;
+    padding-right: 11px;
+    padding-left: 11px;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  .today-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "today next" "leave remaining";
+  }
+  .today-overview-grid > .today-status {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .today-overview-grid > .today-next-work {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .today-overview-grid > .today-leave-balance {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .today-overview-grid > .today-remaining-work {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .calendar-toolbar.month-toolbar .period-navigation {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .calendar-toolbar.month-toolbar .today-button {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }
 
 /* Menu galerie : l’œuvre reste pleinement visible derrière une navigation
