@@ -10395,6 +10395,121 @@ h1 {
   white-space: normal;
 }
 
+/* En-têtes plus vivants : la zone du titre reste douce, tandis que l'œuvre
+   retrouve davantage de couleur et de contraste sur le reste du bandeau. */
+.top-header {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 249, 232, 0.62) 0%,
+      rgba(244, 250, 252, 0.3) 36%,
+      rgba(220, 246, 251, 0.08) 72%,
+      rgba(10, 91, 119, 0.05) 100%
+    ),
+    url("/header-art.jpg") center 44% / cover no-repeat;
+}
+
+.top-header.top-header-leave {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(242, 249, 255, 0.58) 0%,
+      rgba(218, 242, 252, 0.23) 40%,
+      rgba(42, 125, 151, 0.07) 100%
+    ),
+    url("/leave-header-art.jpg") center / cover no-repeat;
+}
+
+.top-header.top-header-pay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 250, 239, 0.6) 0%,
+      rgba(250, 238, 218, 0.2) 42%,
+      rgba(152, 91, 39, 0.06) 100%
+    ),
+    url("/pay-header-art.jpg") center / cover no-repeat;
+}
+
+.top-header.top-header-pdf {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 247, 255, 0.58) 0%,
+      rgba(235, 229, 255, 0.18) 40%,
+      rgba(80, 49, 144, 0.05) 100%
+    ),
+    url("/pdf-header-art.webp") center 70% / cover no-repeat;
+}
+
+.top-header.top-header-forms {
+  background:
+    linear-gradient(90deg, rgba(255, 244, 205, 0.08), rgba(67, 45, 15, 0.07)),
+    linear-gradient(
+      180deg,
+      #b2a37f 0%,
+      #a4946c 18%,
+      #917d54 43%,
+      #7d6946 68%,
+      #947d52 100%
+    );
+}
+
+.top-header.top-header-forms::before {
+  filter: saturate(1.22) contrast(1.06);
+}
+
+.top-header-title h1 {
+  color: #10233e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.top-header-title .eyebrow {
+  color: #124f9b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+/* Sur les grands écrans, le bandeau s'émancipe progressivement de la largeur
+   du contenu central, sans jamais dépasser une largeur confortable. */
+@media (min-width: 721px) {
+  .top-header {
+    width: min(calc(100vw - clamp(20px, 2vw, 48px)), 1720px);
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 720px) {
+  .top-header {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 249, 232, 0.62) 0%,
+        rgba(239, 249, 251, 0.22) 54%,
+        rgba(10, 91, 119, 0.05) 100%
+      ),
+      url("/header-art.jpg") center 42% / cover no-repeat;
+  }
+
+  .top-header.top-header-leave {
+    background:
+      linear-gradient(180deg, rgba(242, 249, 255, 0.58), rgba(42, 125, 151, 0.06)),
+      url("/leave-header-art.jpg") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pay {
+    background:
+      linear-gradient(180deg, rgba(255, 250, 239, 0.58), rgba(152, 91, 39, 0.05)),
+      url("/pay-header-art.jpg") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pdf {
+    background:
+      linear-gradient(180deg, rgba(248, 247, 255, 0.56), rgba(80, 49, 144, 0.04)),
+      url("/pdf-header-art.webp") center 44% / cover no-repeat;
+  }
+}
+
 /* Accueil et planning : le groupe devient l’action contextuelle d’Aujourd’hui,
    tandis que la pose de congé précède clairement le mois et l’année. */
 .today-overview-grid {
@@ -10413,6 +10528,52 @@ h1 {
 
 .today-overview-heading .group-heading-action {
   min-width: 178px;
+}
+
+/* Les précisions de groupe gardent la même hiérarchie discrète que les
+   repères de période des deux autres cartes. */
+.today-overview-grid .today-card-copy small {
+  color: #5b6c82;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.allowance-table tr.holiday-cancelled {
+  color: #7a5360;
+  background: #fff5f6;
+}
+
+.allowance-table tr.holiday-cancelled td strong {
+  color: #a32138;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.header-update-button.update-available {
+  border-color: #b91f36 !important;
+  background: #fff4f5;
+  color: #b5162f;
+  font-weight: 800;
+}
+
+.header-update-button.update-available:hover {
+  background: #ffe7ea;
+  color: #941126;
+}
+
+/* À quatre colonnes, les pictogrammes sont masqués dès qu'ils risquent de
+   recouvrir les libellés (tablettes, Fold ouvert et petites fenêtres). */
+@media (max-width: 1180px) {
+  .today-overview-grid .today-card-icon {
+    display: none !important;
+  }
+
+  .today-overview-grid > article,
+  .today-overview-grid > button {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .planning-leave-panel {

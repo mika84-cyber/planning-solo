@@ -1333,23 +1333,30 @@ export default function Home() {
 
   const totals = useMemo(() => {
     const result = { work: 0, training: 0, workedHoliday: 0 };
+    const fullDayMinutes = dailyMinutesForQuota(formProfile?.workQuota || "full");
     const months =
       mode === "year"
         ? Array.from({ length: 12 }, (_, index) => index)
         : [view.getMonth()];
     for (const month of months) {
       for (let day = 1; day <= monthDays(view.getFullYear(), month); day++) {
-        const info = getDayInfo(
-          localDate(view.getFullYear(), month, day),
-          group,
-        );
-        if (info.kind === "work") result.work++;
+        const date = localDate(view.getFullYear(), month, day);
+        const key = dateKey(date);
+        const info = getDayInfo(date, group);
+        const notWorked =
+          Boolean(entries[key]?.leave) ||
+          periods.some((period) => key >= period.from && key <= period.to) ||
+          recoveryUses
+            .filter((item) => item.date === key)
+            .reduce((total, item) => total + item.minutes, 0) >= fullDayMinutes;
+        if (info.kind === "work" && !notWorked) result.work++;
         if (info.kind === "training") result.training++;
-        if (info.holiday && info.kind === "work") result.workedHoliday++;
+        if (info.holiday && info.kind === "work" && !notWorked)
+          result.workedHoliday++;
       }
     }
     return result;
-  }, [view, group, mode]);
+  }, [view, group, mode, entries, periods, recoveryUses, formProfile?.workQuota]);
 
   /* Le mois affiché, puis les trois tiers de l'année affichée — tous calculés
      par la même fonction, donc jamais en contradiction entre eux. Le tiers
@@ -1580,7 +1587,6 @@ export default function Home() {
       Boolean(entries[key]?.leave) ||
       periods.some(
         (period) =>
-          period.leaveType !== "other" &&
           key >= period.from &&
           key <= period.to,
       );
@@ -1596,6 +1602,7 @@ export default function Home() {
       name: string;
       choice: HolidayPay | "";
     }> = [];
+    const cancelledHolidays: Array<{ key: string; name: string }> = [];
     // Dimanches que le cycle programme jusqu'à aujourd'hui, sans tenir compte
     // des congés ni des arrêts maladie : le repère pour « combien j'en aurais
     // fait sans rien avoir posé », à comparer à `sundayDone` plus bas, qui lui
@@ -1617,7 +1624,11 @@ export default function Home() {
         }
         if (!info.holiday && date.getDay() === 0 && key <= todayKey)
           sundaysScheduledPast++;
-        if (onLeave(key)) continue;
+        if (onLeave(key)) {
+          if (info.holiday)
+            cancelledHolidays.push({ key, name: info.holiday });
+          continue;
+        }
         if (info.holiday) {
           holidays.push({
             key,
@@ -1654,6 +1665,7 @@ export default function Home() {
       sundaysScheduledPast,
       holidays,
       holidayPending: holidays.length - decided.length,
+      cancelledHolidays,
       compensated,
       recoveryDaysEarned: holidays.filter(
         (item) => item.choice === "recovery",
@@ -2347,7 +2359,7 @@ export default function Home() {
       .reduce((total, item) => total + item.minutes, 0);
     const scheduledStatus =
       info.kind === "work"
-        ? `${DAY_LABELS[info.kind]} (${coWorkingLabel})`
+        ? DAY_LABELS[info.kind]
         : DAY_LABELS[info.kind];
     let status = scheduledStatus;
     let tone: string = info.kind;
@@ -2376,7 +2388,6 @@ export default function Home() {
       Boolean(entries[candidateKey]?.leave) ||
       periods.some(
         (item) =>
-          item.leaveType !== "other" &&
           candidateKey >= item.from &&
           candidateKey <= item.to,
       ) ||
@@ -2385,12 +2396,32 @@ export default function Home() {
         .reduce((total, item) => total + item.minutes, 0) >= workDayMinutes,
     );
     const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
+    const nextWorkGroups = nextWork
+      ? coWorkingGroupsForDate(nextWork, group)
+      : [];
+    const nextWorkGroupLabel = nextWorkGroups.length === 1
+      ? `Avec le groupe ${nextWorkGroups[0]}`
+      : nextWorkGroups.length > 1
+        ? `Avec les groupes ${nextWorkGroups.join(" et ")}`
+        : nextWorkKind === "work"
+          ? "Sans autre groupe programmé"
+          : "";
+    const isTodayOther =
+      period?.leaveType === "other" || Boolean(entry?.leave);
 
     return {
-      status,
+      status: isTodayOther ? "Je ne travaille pas" : status,
       tone,
+      todayGroupLabel:
+        info.kind === "work" &&
+        !period &&
+        !entry?.leave &&
+        todayRecoveryMinutes < workDayMinutes
+          ? coWorkingLabel.charAt(0).toUpperCase() + coWorkingLabel.slice(1)
+          : "",
       nextWork,
       nextWorkKind,
+      nextWorkGroupLabel,
     };
   }, [now, group, periods, entries, recoveryUses, workDayMinutes]);
 
@@ -6615,7 +6646,13 @@ export default function Home() {
             <article>
               <span>Jours fériés dans l’année</span>
               <strong>{allowances.holidays.length}</strong>
-              <small>{allowances.holidayPending ? `${allowances.holidayPending} à préciser` : "Tous renseignés"}</small>
+              <small>
+                {allowances.cancelledHolidays.length
+                  ? `${allowances.cancelledHolidays.length} annulé${s(allowances.cancelledHolidays.length)}`
+                  : allowances.holidayPending
+                    ? `${allowances.holidayPending} à préciser`
+                    : "Tous renseignés"}
+              </small>
             </article>
             <article>
               <span>Primes variables prévues</span>
@@ -6700,7 +6737,7 @@ export default function Home() {
               {allowances.holidays.length} <em>travaillés</em>
             </strong>
           </header>
-          {allowances.holidays.length ? (
+          {allowances.holidays.length || allowances.cancelledHolidays.length ? (
             <table className="allowance-table">
               <tbody>
                 {allowances.holidays.map((item) => (
@@ -6740,6 +6777,15 @@ export default function Home() {
                         )}
                       </div>
                     </td>
+                  </tr>
+                ))}
+                {allowances.cancelledHolidays.map((item) => (
+                  <tr key={`cancelled-${item.key}`} className="holiday-cancelled">
+                    <th scope="row">
+                      {item.name}
+                      <small>{shortDate(item.key)}</small>
+                    </th>
+                    <td><strong>Annulé</strong></td>
                   </tr>
                 ))}
               </tbody>
@@ -6971,7 +7017,7 @@ export default function Home() {
                 {appUpdateAvailable ? (
                   <div className="account-update-alert" role="status">
                     <strong>Une mise à jour est disponible</strong>
-                    <span>Appuyez sur « Vérifier les mises à jour » en haut de l’écran.</span>
+                    <span>Utilisez le bouton rouge en haut de l’écran pour l’installer.</span>
                   </div>
                 ) : null}
                 <button
@@ -7023,7 +7069,11 @@ export default function Home() {
               <path d="M20 11a8 8 0 1 0-2.3 5.7" />
               <path d="M20 4v7h-7" />
             </svg>
-            {checkingAppUpdate ? "Chargement de la mise à jour…" : "Vérifier les mises à jour"}
+            {checkingAppUpdate
+              ? "Chargement de la mise à jour…"
+              : appUpdateAvailable
+                ? "Vous avez une mise à jour"
+                : "Vérifier les mises à jour"}
           </button>
         </div>
       </header>
@@ -7373,6 +7423,9 @@ export default function Home() {
             <span className="today-card-copy">
               <span>Aujourd’hui</span>
               <strong>{todayOverview.status}</strong>
+              {todayOverview.todayGroupLabel ? (
+                <small>{todayOverview.todayGroupLabel}</small>
+              ) : null}
             </span>
           </article>
           <button
@@ -7408,6 +7461,9 @@ export default function Home() {
                     }`
                   : "Aucun à venir"}
               </strong>
+              {todayOverview.nextWorkGroupLabel ? (
+                <small>{todayOverview.nextWorkGroupLabel}</small>
+              ) : null}
             </span>
           </button>
           <button

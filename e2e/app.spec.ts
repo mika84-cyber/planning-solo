@@ -332,6 +332,11 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   expect(todayOverviewBox).not.toBeNull();
   expect(todayHeadingBox).not.toBeNull();
   expect(groupActionBox).not.toBeNull();
+  const viewportWidth = page.viewportSize()?.width || 0;
+  expect(headerBox!.width).toBeLessThanOrEqual(viewportWidth - 12);
+  expect(headerBox!.width / viewportWidth).toBeGreaterThan(
+    viewportWidth >= 1200 ? 0.93 : 0.85,
+  );
   expect(Math.abs(groupActionBox!.y - todayHeadingBox!.y)).toBeLessThan(1);
   await expect(groupAction).toContainText(/Choisir mon groupe|Je suis groupe [123]/);
   const remainingWorkCard = page.locator(".today-remaining-work");
@@ -474,13 +479,12 @@ test("le compte avertit lorsqu’une nouvelle version est disponible", async ({ 
   const account = page.getByRole("button", { name: "Compte" });
   await expect(account).not.toHaveClass(/update-available/);
   await expect(account.locator(".account-update-dot")).toHaveCount(0);
-  const checkUpdateButton = page.getByRole("button", { name: "Vérifier les mises à jour" });
+  const checkUpdateButton = page.getByRole("button", { name: "Vous avez une mise à jour" });
   await expect(checkUpdateButton).toHaveClass(/update-available/);
-  await expect(checkUpdateButton).toHaveCSS("background-color", "rgb(197, 47, 66)");
-  await expect(checkUpdateButton).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(checkUpdateButton).toHaveCSS("color", "rgb(181, 22, 47)");
   await account.click();
   await expect(page.getByRole("status")).toContainText("Une mise à jour est disponible");
-  await expect(page.getByRole("status")).toContainText("Vérifier les mises à jour");
+  await expect(page.getByRole("status")).toContainText("bouton rouge");
 });
 
 test("le CET se configure et conserve un historique cohérent", async ({ page }) => {
@@ -666,6 +670,8 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
 
 test("Divers est explicite et le résumé apparaît avant validation", async ({ page }) => {
   await prepareDemo(page);
+  const workedButton = page.getByRole("button", { name: "Détail des jours travaillés" });
+  const initialWorked = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
   await page.locator(".planning-leave-panel .planning-leave-action").click();
 
   const chooser = page.getByRole("dialog", { name: "Que souhaitez-vous poser ?" });
@@ -676,7 +682,7 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   await other.click();
 
   await expect(page.getByRole("heading", { name: "Sélectionnez vos dates Divers" })).toBeVisible();
-  await page.locator(".month-card .day").first().click();
+  await page.locator(".month-card .day.work").first().click();
   const summary = page.getByLabel("Résumé avant validation");
   await expect(summary).toBeVisible();
   await expect(summary).toContainText("1 date");
@@ -686,6 +692,66 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
     "background-color",
     "rgb(244, 184, 200)",
   );
+  const workedAfterOther = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
+  expect(workedAfterOther).toBe(initialWorked - 1);
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  await expect(page.locator(".leave-balance-grid button.other")).toContainText(/1\s*pris/);
+});
+
+test("Divers indique que je ne travaille pas aujourd’hui", async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = new Date();
+    const date = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+    localStorage.setItem(
+      "planning:demo-completed-request-v1",
+      JSON.stringify({
+        requestId: "e2e-current-other",
+        requestKind: "leave",
+        group: 2,
+        periods: [{ from: date, to: date, type: "other" }],
+        timed: [],
+      }),
+    );
+  });
+  await prepareDemo(page);
+
+  await expect(page.locator(".today-status")).toContainText("Je ne travaille pas");
+});
+
+test("un férié couvert par une absence est annulé et retiré de la paie", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "planning:demo-completed-request-v1",
+      JSON.stringify({
+        requestId: "e2e-cancelled-worked-holiday",
+        requestKind: "leave",
+        group: 2,
+        periods: [{ from: "2026-08-15", to: "2026-08-15", type: "sick" }],
+        timed: [],
+      }),
+    );
+  });
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
+
+  const cancelledHoliday = page.locator(".allowance-table tr.holiday-cancelled");
+  await expect(cancelledHoliday).toContainText("Assomption");
+  await expect(cancelledHoliday).toContainText("Annulé");
+  const holidayCard = page.locator(".allowance-card").filter({ hasText: "Jours fériés 2026" });
+  await expect(holidayCard.locator("tr:not(.holiday-cancelled)").filter({ hasText: "Assomption" }))
+    .toHaveCount(0);
 });
 
 test("une grève met à jour le planning, les jours travaillés et la paie", async ({ page }) => {
