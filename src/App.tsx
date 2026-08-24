@@ -2397,9 +2397,7 @@ export default function Home() {
           candidateKey >= item.from &&
           candidateKey <= item.to,
       ) ||
-      recoveryUses
-        .filter((item) => item.date === candidateKey)
-        .reduce((total, item) => total + item.minutes, 0) >= workDayMinutes,
+      recoveryUses.some((item) => item.date === candidateKey),
     );
     const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
     const nextWorkGroups = nextWork

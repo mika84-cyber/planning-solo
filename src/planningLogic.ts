@@ -29,14 +29,15 @@ export type SelectionType =
   | "recovery_holiday"
   | "recovery_training";
 
-/** Une sélection à la journée entière retire immédiatement la date des
- * prochains jours de présence, avant même le retour du formulaire officiel.
- * Les absences horaires et demi-journées restent des jours de présence. */
+/** Toute absence ou récupération posée retire immédiatement la date des
+ * prochains jours de présence, avant même le retour du formulaire officiel. */
 export function selectionRemovesAttendance(type: SelectionType) {
   return [
     "annual",
+    "half",
     "rtt",
     "fraction",
+    "recovery",
     "sick",
     "strike",
     "cet",
@@ -44,6 +45,10 @@ export function selectionRemovesAttendance(type: SelectionType) {
     "childcare",
     "exceptional",
     "recovery_day",
+    "recovery_half",
+    "recovery_hours",
+    "recovery_holiday",
+    "recovery_training",
   ].includes(type);
 }
 /** Moitié de journée posée. Une demi-journée sans moment reste possible : les

@@ -136,12 +136,13 @@ describe("cycle (baseKind / getDayInfo)", () => {
     expect(next && dateKey(next)).not.toBe("2026-08-19");
   });
 
-  it("retire immédiatement un congé entier en cours de saisie des présences à venir", () => {
+  it("retire immédiatement tout congé ou récupération des présences à venir", () => {
     expect(selectionRemovesAttendance("annual")).toBe(true);
     expect(selectionRemovesAttendance("rtt")).toBe(true);
     expect(selectionRemovesAttendance("cet")).toBe(true);
-    expect(selectionRemovesAttendance("half")).toBe(false);
-    expect(selectionRemovesAttendance("recovery_hours")).toBe(false);
+    expect(selectionRemovesAttendance("half")).toBe(true);
+    expect(selectionRemovesAttendance("recovery_hours")).toBe(true);
+    expect(selectionRemovesAttendance("recovery_training")).toBe(true);
   });
 
   it("n'annonce que le groupe réellement au travail le mercredi", () => {

@@ -34,7 +34,10 @@ async function prepareDemo(page: Page, withCurrentLeave = false) {
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
 }
 
-async function prepareFutureTrainingLeaveDemo(page: Page) {
+async function prepareFutureTrainingAbsenceDemo(
+  page: Page,
+  absence: "leave" | "recovery" = "leave",
+) {
   const now = new Date();
   const group = 2;
   const training = Array.from({ length: 366 }, (_, index) => addDays(now, index + 1))
@@ -47,18 +50,23 @@ async function prepareFutureTrainingLeaveDemo(page: Page) {
     (candidateKey) => candidateKey === trainingKey,
   );
   if (!expectedNext) throw new Error("Aucun jour travaillé après la formation");
-  await page.addInitScript(({ periodDate }) => {
+  await page.addInitScript(({ periodDate, absence }) => {
     localStorage.setItem(
       "planning:demo-completed-request-v1",
       JSON.stringify({
-        requestId: "e2e-training-covered-by-leave",
-        requestKind: "leave",
+        requestId: `e2e-training-covered-by-${absence}`,
+        requestKind: absence,
         group: 2,
-        periods: [{ from: periodDate, to: periodDate, type: "annual" }],
-        timed: [],
+        profile: { workQuota: "full" },
+        periods: absence === "leave"
+          ? [{ from: periodDate, to: periodDate, type: "annual" }]
+          : [],
+        timed: absence === "recovery"
+          ? [{ date: periodDate, type: "recovery_training", start: "09:00", end: "15:00" }]
+          : [],
       }),
     );
-  }, { periodDate: trainingKey });
+  }, { periodDate: trainingKey, absence });
   await prepareDemo(page);
   return expectedNext;
 }
@@ -441,10 +449,18 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
 });
 
 test("un congé posé sur une formation retire cette date du prochain jour travaillé", async ({ page }) => {
-  const expectedNext = await prepareFutureTrainingLeaveDemo(page);
+  const expectedNext = await prepareFutureTrainingAbsenceDemo(page);
   const nextWork = page.locator(".today-next-work strong");
 
   await expect(nextWork).toHaveText(compactWeekdayDate(expectedNext));
+});
+
+test("une formation posée en récupération est retirée du prochain jour travaillé", async ({ page }) => {
+  const expectedNext = await prepareFutureTrainingAbsenceDemo(page, "recovery");
+
+  await expect(page.locator(".today-next-work strong")).toHaveText(
+    compactWeekdayDate(expectedNext),
+  );
 });
 
 test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, testInfo) => {
