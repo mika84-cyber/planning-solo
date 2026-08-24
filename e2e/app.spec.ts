@@ -372,6 +372,24 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   expect(leavePanelBox).not.toBeNull();
   expect(periodNavigationBox).not.toBeNull();
   expect(monthCardBox).not.toBeNull();
+  if ((page.viewportSize()?.width || 0) >= 1101) {
+    const [toolbarBox, monthPickerBox, yearPickerBox, todayButtonBox] = await Promise.all([
+      page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
+      page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
+      page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
+      page.locator(".month-toolbar .today-button").boundingBox(),
+    ]);
+    expect(toolbarBox).not.toBeNull();
+    expect(monthPickerBox).not.toBeNull();
+    expect(yearPickerBox).not.toBeNull();
+    expect(todayButtonBox).not.toBeNull();
+    expect(Math.abs(monthPickerBox!.width - yearPickerBox!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(yearPickerBox!.width - todayButtonBox!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(monthPickerBox!.height - todayButtonBox!.height)).toBeLessThanOrEqual(1);
+    expect(todayButtonBox!.x + todayButtonBox!.width).toBeGreaterThan(
+      toolbarBox!.x + toolbarBox!.width - 32,
+    );
+  }
   expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
   expect(leavePanelBox!.y + leavePanelBox!.height).toBeLessThan(monthCardBox!.y);
   expect(leaveActionBox!.width).toBeGreaterThan(leavePanelBox!.width - 30);

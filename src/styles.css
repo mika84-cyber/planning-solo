@@ -11461,6 +11461,24 @@ h1 {
   }
 }
 
+/* Sur ordinateur, Mois, Année et Aujourd'hui partagent exactement la ligne
+   et occupent chacun un tiers de l'espace disponible. */
+@media (min-width: 1101px) {
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
+  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
+  .planning-workspace-shell.framed .month-toolbar .today-button,
+  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    height: 46px;
+  }
+}
+
 /* Une formation prise sur le solde de récupération est immédiatement
    identifiable : case corail pastel, liseré noir et repère REC. */
 .month-card .calendar-grid .day.training-recovery-day,
