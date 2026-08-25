@@ -93,6 +93,7 @@ import { summarizePayslipReview } from "./payslipReview";
 import { strikePayEstimate } from "./strike";
 import { StrikeContinuityDetails } from "./StrikeContinuityDetails";
 import { UsefulFormsSection } from "./UsefulFormsSection";
+import { UsefulContactsSection } from "./UsefulContactsSection";
 import {
   payEstimateReadiness,
   type PayEstimateField,
@@ -246,7 +247,7 @@ function manualAdjustmentsFromApi(value: unknown) {
   );
 }
 
-const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf", "forms"] as const;
+const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf", "forms", "contacts"] as const;
 type MainSection = (typeof MAIN_SECTION_ORDER)[number];
 
 export default function Home() {
@@ -6956,6 +6957,8 @@ export default function Home() {
                 ? "top-header top-header-pdf"
                 : homeSection === "forms"
                   ? "top-header top-header-forms"
+                  : homeSection === "contacts"
+                    ? "top-header top-header-contacts"
                   : "top-header top-header-home"
         }
       >
@@ -6969,7 +6972,9 @@ export default function Home() {
                 : homeSection === "pdf"
                   ? "Plannings PDF"
                   : homeSection === "forms"
-                    ? "Formulaires utiles"
+                    ? "Formulaires"
+                    : homeSection === "contacts"
+                      ? "Contacts"
                   : payScreen === "allowances"
                     ? "Primes et jours fériés"
                     : payScreen === "payslip"
@@ -7105,7 +7110,8 @@ export default function Home() {
                 ["leave", "Congés et récupérations", "Soldes, heures sup et mécénats", "02"],
                 ["pay", "Ma paie", "Estimations, primes et bulletins", "03"],
                 ["pdf", "Télécharger les plannings en PDF", "Choisir le planning puis générer le document", "04"],
-                ["forms", "Formulaires utiles", "Expo, SAP et Brantôme", "05"],
+                ["forms", "Formulaires utiles", "Expo, SAP, Brantôme et tickets repas", "05"],
+                ["contacts", "Contacts utiles", "Pompidou et GP‑RMN", "06"],
               ] as const).map(([key, title, detail, index]) => (
                 <button
                   key={key}
@@ -7366,7 +7372,7 @@ export default function Home() {
                   <h3>Télécharger les formulaires utiles</h3>
                   <p>
                     Ouvrez <strong>Formulaires utiles</strong> depuis le menu, puis choisissez
-                    Formulaire Expo, Formulaire SAP ou Formulaire Brantôme. Chaque dossier
+                    Formulaire Expo, Formulaire SAP, Formulaire Brantôme ou Horaires tickets repas. Chaque rubrique
                     possède son propre écran et conserve l’ordre officiel des documents.
                   </p>
                   <p>
@@ -8019,6 +8025,7 @@ export default function Home() {
       ) : null}
 
       {homeSection === "forms" ? <UsefulFormsSection /> : null}
+      {homeSection === "contacts" ? <UsefulContactsSection /> : null}
 
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
       {homeSection === "home" ? (

@@ -199,19 +199,21 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   const menu = page.getByRole("complementary", { name: "Menu principal" });
   const pdf = menu.getByRole("button", { name: /Télécharger les plannings en PDF/ });
   const forms = menu.getByRole("button", { name: /Formulaires utiles/ });
+  const contacts = menu.getByRole("button", { name: /Contacts utiles/ });
   const guide = menu.getByRole("button", { name: /Mode d’emploi/ });
 
   await expect(pdf).toBeVisible();
   await expect(forms).toBeVisible();
+  await expect(contacts).toBeVisible();
   await expect(guide).toBeVisible();
   await expect(menu.getByRole("button", { name: "Sauvegarde et restauration" })).toHaveCount(0);
   await expect(menu.getByRole("button", { name: "Vérifier les mises à jour" })).toHaveCount(0);
   const menuLabels = await menu.locator("nav > button").allTextContents();
-  expect(menuLabels.at(-1)).toContain("Formulaires utiles");
+  expect(menuLabels.at(-1)).toContain("Contacts utiles");
   await expect(guide.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
   await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
   await expect(menu).toHaveCSS("background-image", /menu-art\.jpg/);
-  await expect(menu.locator(".main-menu-index")).toHaveCount(6);
+  await expect(menu.locator(".main-menu-index")).toHaveCount(7);
   await expect(menu.locator("nav > button").first().locator(".main-menu-index")).toHaveText("01");
   await expect(menu.locator("nav > button").first().locator("strong")).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(guide).toHaveCSS("backdrop-filter", /saturate\(1\.08\).*contrast\(1\.02\)/);
@@ -268,7 +270,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     .getByRole("button", { name: /Formulaires utiles/ })
     .click();
 
-  await expect(page.locator(".top-header h1")).toHaveText("Formulaires utiles");
+  await expect(page.locator(".top-header h1")).toHaveText("Formulaires");
   const formsHeader = page.locator(".top-header-forms");
   await expect(formsHeader).toBeVisible();
   await expect(formsHeader).toHaveCSS("position", "relative");
@@ -287,7 +289,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const formsHeaderBox = (await formsHeader.boundingBox())!;
   expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
   expect(Math.abs(formsHeaderBox.width - homeHeaderBox.width)).toBeLessThan(0.5);
-  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 720 ? 215 : 205))).toBeLessThan(0.5);
+  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 720 ? 215 : 235))).toBeLessThan(0.5);
   const headerUpdate = page.getByRole("button", { name: "Vérifier les mises à jour" });
   const headerUpdateBox = (await headerUpdate.boundingBox())!;
   expect(headerUpdateBox.x).toBeGreaterThanOrEqual(formsHeaderBox.x);
@@ -305,6 +307,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     /Formulaire Expo.*1 document/,
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*7 documents/,
+    /Horaires tickets resto.*Information pratique/,
   ]);
 
   await folders.nth(0).click();
@@ -348,6 +351,98 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     "CET - Demande d’ouverture",
     "CET - Alimentation et indemnisation",
   ]);
+  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+  await page.getByRole("button", { name: /Horaires tickets resto/ }).click();
+  await expect(page.getByRole("heading", { name: "Horaires tickets resto" })).toBeVisible();
+  await expect(page.locator(".useful-form-information-image img")).toHaveAttribute(
+    "src",
+    "/useful-forms/horaires-tickets-repas-genere.png",
+  );
+  await expect(page.locator(".useful-form-download-list")).toHaveCount(0);
+});
+
+test("les contacts utiles sont classés et directement appelables", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Contacts utiles/ })
+    .click();
+
+  const contactHeader = page.locator(".top-header");
+  await expect(contactHeader.locator("h1")).toHaveText("Contacts");
+  await expect(contactHeader).toHaveCSS("background-color", "rgb(0, 0, 0)");
+  await expect(contactHeader).toHaveCSS("background-image", "none");
+  const contactHeaderArtwork = await contactHeader.evaluate((header) => {
+    const style = getComputedStyle(header, "::before");
+    return {
+      backgroundImage: style.backgroundImage,
+      backgroundSize: style.backgroundSize,
+      pointerEvents: style.pointerEvents,
+    };
+  });
+  expect(contactHeaderArtwork.backgroundImage).toContain("contacts-header-art-black.jpg");
+  expect(contactHeaderArtwork.backgroundSize).toBe("100% 100%");
+  expect(contactHeaderArtwork.pointerEvents).toBe("none");
+  await page.getByRole("button", { name: /Contacts Pompidou/ }).click();
+  await expect(page.getByRole("heading", { name: "Contacts Pompidou" })).toBeVisible();
+  await page.getByRole("button", { name: /^RAS/ }).click();
+  await expect(page.locator(".useful-contact-card")).toHaveCount(10);
+  await expect(page.getByText("Maarten Averink")).toBeVisible();
+  const rasGroupMail = page.getByRole("link", { name: "Envoyer un e-mail à toute l’équipe des RAS" });
+  await expect(rasGroupMail).toBeVisible();
+  const rasGroupMailHref = await rasGroupMail.getAttribute("href");
+  expect(rasGroupMailHref?.startsWith("mailto:")).toBe(true);
+  expect(rasGroupMailHref?.slice("mailto:".length).split(",")).toHaveLength(10);
+  expect(rasGroupMailHref).toContain("maarten.averink@centrepompidou.fr");
+  await expect(page.getByRole("link", { name: /^Appeler.*06 21 68 83 08/i })).toHaveAttribute(
+    "href",
+    "tel:+33621688308",
+  );
+  await expect(page.getByRole("link", { name: /SMS.*06 21 68 83 08/i })).toHaveAttribute(
+    "href",
+    "sms:+33621688308",
+  );
+  await expect(page.getByRole("link", { name: /Écrire à Maarten Averink avec l.application de messagerie/i })).toHaveAttribute(
+    "href",
+    "mailto:maarten.averink@centrepompidou.fr",
+  );
+  await expect(page.getByRole("link", { name: /^Appeler Alice Toumine/i })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Envoyer un SMS à Alice Toumine/i })).toHaveAttribute(
+    "href",
+    "sms:+33763731643",
+  );
+
+  await page.getByRole("button", { name: "Revenir aux contacts Pompidou" }).click();
+  await page.getByRole("button", { name: /Bureau administratif/ }).click();
+  await expect(page.getByRole("link", { name: /Écrire à Mail générique Aurélia, Esther et Agnès/i })).toHaveAttribute(
+    "href",
+    "mailto:absenceSAP@gmail.com",
+  );
+  await expect(page.locator(".useful-contact-list .useful-contact-card").last()).toContainText(
+    "Mail générique Aurélia, Esther et Agnès",
+  );
+  await expect(page.getByRole("link", { name: /^Appeler John Lorenc au 01 44 78 49 19/i })).toHaveAttribute(
+    "href",
+    "tel:+33144784919",
+  );
+  await expect(page.locator('a[href="sms:+33144784919"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Revenir aux contacts Pompidou" }).click();
+  await page.getByRole("button", { name: /Tickets restaurants/ }).click();
+  await expect(page.getByRole("link", { name: /^Appeler Tickets restaurants au 01 44 78 41 48/i })).toHaveAttribute(
+    "href",
+    "tel:+33144784148",
+  );
+  await page.getByRole("button", { name: "Revenir aux contacts Pompidou" }).click();
+  await page.getByRole("button", { name: /Ressources humaines/ }).click();
+  await expect(page.getByRole("link", { name: /Écrire à Adresse générique avec l.application de messagerie/i })).toHaveAttribute(
+    "href",
+    "mailto:administration.RH@centrepompidou.fr",
+  );
+  await page.getByRole("button", { name: "Revenir aux contacts Pompidou" }).click();
+  await page.getByRole("button", { name: "Revenir aux contacts utiles" }).click();
+  await page.getByRole("button", { name: /Contact GP‑RMN/ }).click();
+  await expect(page.getByText("Accident · secourisme")).toBeVisible();
+  await expect(page.getByText("Superviseur Expo")).toBeVisible();
 });
 
 test("l’en-tête, le sélecteur d’affichage et les années sont confortables", async ({ page }) => {
@@ -474,9 +569,11 @@ test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, t
   await swipeMainSection(page, 340, 40);
   await expect(page.locator(".top-header h1")).toHaveText("Plannings PDF");
   await swipeMainSection(page, 340, 40);
-  await expect(page.locator(".top-header h1")).toHaveText("Formulaires utiles");
+  await expect(page.locator(".top-header h1")).toHaveText("Formulaires");
+  await swipeMainSection(page, 340, 40);
+  await expect(page.locator(".top-header h1")).toHaveText("Contacts");
   await swipeMainSection(page, 40, 340);
-  await expect(page.locator(".top-header h1")).toHaveText("Plannings PDF");
+  await expect(page.locator(".top-header h1")).toHaveText("Formulaires");
 });
 
 test("le balayage du calendrier mobile change seulement de mois", async ({ page }, testInfo) => {
@@ -552,8 +649,8 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   const formsHeaderBox = (await formsHeader.boundingBox())!;
   const artworkLeft = await formsHeader.evaluate((node) => parseFloat(getComputedStyle(node, "::before").left));
   const artworkFilter = await formsHeader.evaluate((node) => getComputedStyle(node, "::before").filter);
-  expect(artworkLeft / formsHeaderBox.width).toBeGreaterThan(0.53);
-  expect(artworkLeft / formsHeaderBox.width).toBeLessThan(0.55);
+  expect(artworkLeft / formsHeaderBox.width).toBeGreaterThan(0.49);
+  expect(artworkLeft / formsHeaderBox.width).toBeLessThan(0.51);
   expect(artworkFilter).toBe("none");
 });
 

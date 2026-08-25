@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
 
-export type UsefulFormsFolderKey = "expo" | "sap" | "brantome";
+export type UsefulFormsFolderKey = "expo" | "sap" | "brantome" | "tickets";
 
 type UsefulFormDocument = {
   title: string;
@@ -13,6 +13,7 @@ type UsefulFormsFolder = {
   title: string;
   description: string;
   documents: UsefulFormDocument[];
+  image?: { src: string; alt: string };
 };
 
 export function getUsefulFormAction(format: UsefulFormDocument["format"], secureContext: boolean) {
@@ -51,6 +52,16 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
       { title: "CET - Demande d’ouverture", file: "cet-demande-ouverture.pdf", format: "PDF" },
       { title: "CET - Alimentation et indemnisation", file: "cet-alimentation-indemnisation.pdf", format: "PDF" },
     ],
+  },
+  {
+    key: "tickets",
+    title: "Horaires tickets resto",
+    description: "Horaires de retrait des titres au guichet.",
+    documents: [],
+    image: {
+      src: "/useful-forms/horaires-tickets-repas-genere.png",
+      alt: "Horaires de distribution des chèques repas au bureau 339",
+    },
   },
 ];
 
@@ -116,11 +127,15 @@ export function UsefulFormsSection() {
           <div>
             <span className="step-label">Formulaires utiles</span>
             <h2 id="useful-forms-folder-title">{folder.title}</h2>
-            <small>{documentCount(folder.documents.length)}</small>
+            <small>{folder.image ? "Information pratique" : documentCount(folder.documents.length)}</small>
           </div>
         </header>
 
-        {folder.documents.length ? (
+        {folder.image ? (
+          <figure className="useful-form-information-image">
+            <img src={folder.image.src} alt={folder.image.alt} />
+          </figure>
+        ) : folder.documents.length ? (
           <div className="useful-form-download-list">
             {!secureContext ? (
               <p className="useful-form-local-notice">
@@ -195,7 +210,7 @@ export function UsefulFormsSection() {
             </span>
             <span>
               <strong>{item.title}</strong>
-              <small>{documentCount(item.documents.length)}</small>
+              <small>{item.image ? "Information pratique" : documentCount(item.documents.length)}</small>
               <em>{item.description}</em>
             </span>
             <i aria-hidden="true">›</i>

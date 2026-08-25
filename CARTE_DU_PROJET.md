@@ -36,6 +36,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/DataManagementDialog.tsx` et `src/dataManagement.css` : sauvegarde,
   import et suppression des données.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.
+- `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
+- `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
 
 ## Logique métier
 

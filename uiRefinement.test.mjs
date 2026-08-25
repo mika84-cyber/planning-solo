@@ -426,11 +426,12 @@ describe("finitions d’interface", () => {
     expect(requestValidationSummary).toContain("Effet de la validation");
   });
 
-  it("place les formulaires après les PDF et le guide tout en bas du menu", () => {
+  it("place les formulaires puis les contacts après les PDF et le guide tout en bas du menu", () => {
     expect(app.indexOf("Télécharger les plannings en PDF")).toBeLessThan(
       app.indexOf('"forms", "Formulaires utiles"'),
     );
-    expect(app.indexOf('"forms", "Formulaires utiles"')).toBeLessThan(app.indexOf('className="guide-menu-entry"'));
+    expect(app.indexOf('"forms", "Formulaires utiles"')).toBeLessThan(app.indexOf('"contacts", "Contacts utiles"'));
+    expect(app.indexOf('"contacts", "Contacts utiles"')).toBeLessThan(app.indexOf('className="guide-menu-entry"'));
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
     expect(styles).toContain('url("/menu-art.jpg")');
@@ -480,8 +481,8 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain("/pdf-art.jpg");
   });
 
-  it("permet de balayer les cinq rubriques sur téléphone", () => {
-    expect(app).toContain('const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf", "forms"] as const');
+  it("permet de balayer les six rubriques sur téléphone", () => {
+    expect(app).toContain('const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf", "forms", "contacts"] as const');
     expect(app).toContain("onTouchStart={startSectionSwipe}");
     expect(app).toContain("onTouchEnd={finishSectionSwipe}");
     expect(app).toContain("Math.abs(deltaX) < 70");
