@@ -12,6 +12,7 @@ import {
   overtimeFromDuration,
   recoveryRequestMinutes,
   splitOvertimeRange,
+  splitOvertimeRangeByCalendar,
   type OvertimeEntry,
 } from "./overtime";
 
@@ -61,6 +62,22 @@ describe("saisie des heures supplémentaires", () => {
       minutes: 120,
       dayMinutes: 60,
       nightMinutes: 60,
+    });
+  });
+
+  it("reconnaît un dimanche après minuit sans confondre les heures de nuit", () => {
+    expect(
+      splitOvertimeRangeByCalendar(
+        "2026-09-12",
+        "21:00",
+        "08:00",
+        (date) => date === "2026-09-13",
+      ),
+    ).toEqual({
+      minutes: 660,
+      dayMinutes: 60,
+      sundayHolidayMinutes: 60,
+      nightMinutes: 540,
     });
   });
 
@@ -119,6 +136,26 @@ describe("calcul IHTS", () => {
       [entry("night", 60, "paid", 60)], 2026, 8, "full", 1855.88, 55.68,
     );
     expect(night.amount).toBeCloseTo(day.amount * 2, 8);
+  });
+
+  it("majore de deux tiers les heures effectuées un dimanche ou jour férié", () => {
+    const sundayEntry = {
+      ...entry("sunday", 150),
+      date: "2026-05-10",
+      start: "10:00",
+      end: "12:30",
+      inputMode: "range" as const,
+    };
+    const result = calculatePaidOvertime(
+      [sundayEntry],
+      2026,
+      4,
+      "full",
+      1895.27,
+      56.86,
+    );
+    expect(result.lines[0].sundayHolidayMinutes).toBe(150);
+    expect(result.amount).toBeCloseTo(67.0374, 4);
   });
 
   it("applique au temps partiel le taux de base sans majoration", () => {
@@ -236,6 +273,77 @@ describe("solde de récupération", () => {
     expect(withAbsence.worked).toBe(baseline.worked - 1);
     },
   );
+
+  it("retire une fermeture exceptionnelle d'une journée prévue au cycle", () => {
+    const workDate = Array.from({ length: 31 }, (_, index) =>
+      new Date(2026, 0, index + 1),
+    ).find((date) => getDayInfo(date, 2).kind === "work")!;
+    const workKey = dateKey(workDate);
+    const baseline = workedDayCount(2026, 0, 0, 2, [], {});
+    const withClosure = workedDayCount(
+      2026,
+      0,
+      0,
+      2,
+      [],
+      {},
+      [],
+      480,
+      (key) => key === workKey,
+    );
+
+    expect(withClosure.scheduled).toBe(baseline.scheduled);
+    expect(withClosure.onLeave).toBe(baseline.onLeave);
+    expect(withClosure.exceptionallyClosed).toBe(1);
+    expect(withClosure.worked).toBe(baseline.worked - 1);
+  });
+
+  it("compte aussi une fermeture tombant sur une formation du cycle", () => {
+    const trainingDate = Array.from({ length: 31 }, (_, index) =>
+      new Date(2026, 8, index + 1),
+    ).find((date) => getDayInfo(date, 2).kind === "training")!;
+    const trainingKey = dateKey(trainingDate);
+    const baseline = workedDayCount(2026, 8, 8, 2, [], {});
+    const withClosure = workedDayCount(
+      2026,
+      8,
+      8,
+      2,
+      [],
+      {},
+      [],
+      480,
+      (key) => key === trainingKey,
+    );
+
+    expect(withClosure.scheduled).toBe(baseline.scheduled);
+    expect(withClosure.exceptionallyClosed).toBe(1);
+    expect(withClosure.worked).toBe(baseline.worked - 1);
+  });
+
+  it("retire aussi la fermeture du travail restant entre deux dates", () => {
+    const workDate = Array.from({ length: 31 }, (_, index) =>
+      new Date(2026, 0, index + 1),
+    ).find((date) => getDayInfo(date, 2).kind === "work")!;
+    const workKey = dateKey(workDate);
+    const result = workedDayCountBetween(
+      workDate,
+      workDate,
+      2,
+      [],
+      {},
+      [],
+      480,
+      (key) => key === workKey,
+    );
+
+    expect(result).toEqual({
+      scheduled: 1,
+      onLeave: 0,
+      exceptionallyClosed: 1,
+      worked: 0,
+    });
+  });
 
   it("retire toutes les absences du travail restant jusqu’à la fin de l’année", () => {
     const workDates = Array.from({ length: 31 }, (_, index) => localDate(2026, 7, index + 1))

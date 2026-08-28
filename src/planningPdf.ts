@@ -13,6 +13,7 @@ type PdfLeaveType =
   | "sick"
   | "strike"
   | "cet"
+  | "other"
   | "childcare"
   | "exceptional";
 /** Moitié posée sur une demi-journée. Absent pour les demi-journées venues du
@@ -26,6 +27,7 @@ const LEAVE_CODES: Record<Exclude<PdfLeaveType, "half">, string> = {
   sick: "Maladie",
   strike: "Grève",
   cet: "CET",
+  other: "Divers",
   childcare: "Garde enf.",
   exceptional: "ASA",
 };
@@ -99,10 +101,146 @@ const COLORS = {
 };
 
 function leaveFill(leaveType: PdfLeaveType | undefined) {
-  // Dans le document imprimé, la couleur porte désormais le statut : tout
-  // congé validé est bleu, son type étant donné par le libellé dans la case.
-  void leaveType;
+  // Ces quatre catégories reprennent exactement les aplats du calendrier de
+  // l'application. Les autres congés validés conservent le bleu commun.
+  if (leaveType === "strike") return [242, 139, 130] as const;
+  if (leaveType === "other") return [244, 184, 200] as const;
   return COLORS.leave;
+}
+
+const EMOJI_LEAVE_TYPES = new Set<PdfLeaveType>([
+  "sick",
+  "strike",
+  "other",
+  "childcare",
+]);
+
+const LEAVE_EMOJIS: Partial<Record<PdfLeaveType, string>> = {
+  sick: "🤒",
+  strike: "✊",
+  other: "📌",
+  childcare: "👶",
+};
+const emojiImageCache = new Map<string, string>();
+
+/** Capture l'emoji avec la police couleur réellement utilisée par l'appareil.
+ *  Le rendu du PDF reprend ainsi le même dessin que le planning affiché. */
+function leaveEmojiImage(leaveType: PdfLeaveType) {
+  const emoji = LEAVE_EMOJIS[leaveType];
+  if (!emoji || typeof document === "undefined") return "";
+  const cached = emojiImageCache.get(emoji);
+  if (cached) return cached;
+  const canvas = document.createElement("canvas");
+  canvas.width = 96;
+  canvas.height = 96;
+  const context = canvas.getContext("2d");
+  if (!context) return "";
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.font =
+    '72px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(emoji, 48, 52);
+  const image = canvas.toDataURL("image/png");
+  emojiImageCache.set(emoji, image);
+  return image;
+}
+
+/** Utilise d'abord le véritable emoji de l'appareil. Le dessin vectoriel sert
+ *  seulement de secours dans les tests ou si le navigateur ne sait pas le
+ *  convertir en image. */
+function drawLeaveEmoji(
+  doc: jsPDF,
+  leaveType: PdfLeaveType,
+  centerX: number,
+  centerY: number,
+) {
+  const emojiImage = leaveEmojiImage(leaveType);
+  if (emojiImage) {
+    try {
+      doc.addImage(
+        emojiImage,
+        "PNG",
+        centerX - 1.9,
+        centerY - 1.9,
+        3.8,
+        3.8,
+        `leave-emoji-${leaveType}`,
+        "FAST",
+      );
+      return;
+    } catch {
+      // Le secours vectoriel ci-dessous garantit un PDF lisible même dans un
+      // ancien navigateur qui ne sait pas intégrer le PNG du canvas.
+    }
+  }
+  doc.setLineWidth(0.18);
+  doc.setDrawColor(35, 35, 35);
+
+  if (leaveType === "other") {
+    // 📌 Punaise rouge
+    doc.setFillColor(239, 83, 97);
+    doc.ellipse(centerX, centerY - 0.85, 1.15, 0.52, "FD");
+    doc.triangle(
+      centerX - 0.72,
+      centerY - 0.45,
+      centerX + 0.72,
+      centerY - 0.45,
+      centerX + 0.22,
+      centerY + 0.68,
+      "FD",
+    );
+    doc.setDrawColor(90, 98, 109);
+    doc.line(centerX + 0.18, centerY + 0.52, centerX - 0.25, centerY + 1.45);
+    return;
+  }
+
+  if (leaveType === "strike") {
+    // ✊ Poing levé doré, bordé de noir.
+    doc.setFillColor(245, 190, 67);
+    [-0.86, -0.3, 0.28, 0.82].forEach((offset, index) =>
+      doc.roundedRect(
+        centerX + offset - 0.28,
+        centerY - 1.25 + (index === 0 ? 0.18 : 0),
+        0.58,
+        1.35,
+        0.22,
+        0.22,
+        "FD",
+      ),
+    );
+    doc.roundedRect(centerX - 1.05, centerY - 0.12, 2.1, 1.28, 0.28, 0.28, "FD");
+    doc.ellipse(centerX - 0.82, centerY + 0.18, 0.42, 0.65, "FD");
+    return;
+  }
+
+  // Visages jaunes pour 🤒 et 👶.
+  doc.setFillColor(255, 211, 74);
+  doc.circle(centerX, centerY, 1.45, "FD");
+  doc.setFillColor(45, 45, 45);
+  doc.circle(centerX - 0.52, centerY - 0.38, 0.13, "F");
+  doc.circle(centerX + 0.52, centerY - 0.38, 0.13, "F");
+
+  if (leaveType === "sick") {
+    // 🤒 Masque bleu clair.
+    doc.setFillColor(187, 225, 239);
+    doc.setDrawColor(64, 116, 139);
+    doc.roundedRect(centerX - 0.95, centerY + 0.05, 1.9, 0.78, 0.18, 0.18, "FD");
+    doc.line(centerX - 0.95, centerY + 0.22, centerX - 1.35, centerY - 0.02);
+    doc.line(centerX + 0.95, centerY + 0.22, centerX + 1.35, centerY - 0.02);
+    return;
+  }
+
+  // 👶 Petite mèche et tétine.
+  doc.setDrawColor(133, 88, 29);
+  doc.setLineWidth(0.28);
+  doc.line(centerX - 0.42, centerY - 1.27, centerX - 0.05, centerY - 1.62);
+  doc.line(centerX - 0.05, centerY - 1.62, centerX + 0.25, centerY - 1.28);
+  doc.setFillColor(116, 188, 220);
+  doc.setDrawColor(44, 104, 132);
+  doc.circle(centerX, centerY + 0.52, 0.48, "FD");
+  doc.setFillColor(255, 255, 255);
+  doc.circle(centerX, centerY + 0.52, 0.18, "F");
 }
 
 function daysInMonth(year: number, month: number) {
@@ -192,21 +330,39 @@ function drawGroupPage(
       const info = getDayInfo(date, group);
       const isOff = info.kind === "off";
       const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const leaveType =
-        !info.holiday && !isOff ? leaveTypes?.get(key) : undefined;
+      // Une absence enregistrée reste visible même si elle tombe sur un repos
+      // du cycle ou un jour férié : le PDF « avec congés » doit refléter les
+      // données réellement posées, sans en masquer selon la nature du jour.
+      const leaveType = leaveTypes?.get(key);
+      const isRecovery = leaveType === "recovery";
+      const isFullLeave = Boolean(
+        leaveType && leaveType !== "half" && leaveType !== "recovery",
+      );
+      const isWish = Boolean(wishDates?.has(key));
+      // La clé représente la couleur réellement imprimée. Deux journées
+      // consécutives de même couleur forment un seul bloc ; un changement de
+      // couleur crée automatiquement une nouvelle bordure noire.
+      const colorBlockKey = isWish
+        ? "wish"
+        : isRecovery
+          ? "recovery"
+          : isFullLeave
+            ? leaveType === "strike"
+              ? "strike"
+              : leaveType === "other"
+                ? "other"
+                : "leave"
+            : "";
       return {
         date,
         info,
         isOff,
         leaveType,
         halfMoment: leaveType === "half" ? halfMoments?.get(key) : undefined,
-        // La récupération a son propre encadré : la laisser hors des congés
-        // pleins évite qu'elle se fonde dans la bordure d'une période voisine.
-        isRecovery: leaveType === "recovery",
-        isFullLeave: Boolean(
-          leaveType && leaveType !== "half" && leaveType !== "recovery",
-        ),
-        isWish: Boolean(wishDates?.has(key)),
+        isRecovery,
+        isFullLeave,
+        isWish,
+        colorBlockKey,
       };
     });
     for (let day = 1; day <= 31; day++) {
@@ -222,6 +378,7 @@ function drawGroupPage(
         isRecovery,
         isFullLeave,
         isWish,
+        colorBlockKey,
       } = monthDays[day - 1];
       const isWorkedHoliday = Boolean(info.holiday) && info.kind === "work";
       const isOfferedHoliday =
@@ -236,6 +393,8 @@ function drawGroupPage(
           ? COLORS.recovery
           : isFullLeave
             ? leaveFill(leaveType)
+            : leaveType === "half"
+              ? COLORS.white
             : isOff
               ? COLORS.black
               : isWorkedHoliday
@@ -243,7 +402,7 @@ function drawGroupPage(
                 : info.kind === "training"
                   ? COLORS.training
                   : COLORS.white;
-      const darkCell = isOff && !isWish;
+      const darkCell = isOff && !isWish && !leaveType;
       const textColor = darkCell ? COLORS.white : COLORS.black;
       if (isWorkedHoliday) workedHolidayCount++;
       if (isOfferedHoliday) offeredHolidayCount++;
@@ -251,16 +410,18 @@ function drawGroupPage(
       doc.setFillColor(fill[0], fill[1], fill[2]);
       doc.setDrawColor(...COLORS.black);
       doc.setLineWidth(0.18);
-      if (isFullLeave) {
+      if (colorBlockKey) {
+        // Un seul liseré noir entoure tout le bloc de couleur. Il n'y a donc
+        // aucune coupe entre deux journées consécutives de même couleur.
         doc.rect(x, y, monthWidth, dayHeight, "F");
+        doc.setLineWidth(0.28);
         doc.line(x, y, x, y + dayHeight);
         doc.line(x + monthWidth, y, x + monthWidth, y + dayHeight);
-        if (!monthDays[day - 2]?.isFullLeave) doc.line(x, y, x + monthWidth, y);
-        if (!monthDays[day]?.isFullLeave)
+        if (monthDays[day - 2]?.colorBlockKey !== colorBlockKey)
+          doc.line(x, y, x + monthWidth, y);
+        if (monthDays[day]?.colorBlockKey !== colorBlockKey)
           doc.line(x, y + dayHeight, x + monthWidth, y + dayHeight);
       } else {
-        // La récupération garde son encadré à elle, jour par jour : elle ne se
-        // fond pas dans la période voisine comme le font les congés pleins.
         doc.rect(x, y, monthWidth, dayHeight, "FD");
         if (leaveType === "half") {
           // Le bleu des congés ne couvre que la moitié posée : à gauche le
@@ -305,10 +466,14 @@ function drawGroupPage(
         });
       }
       if (leaveType) {
-        const code = leaveType === "half" ? "½ CA" : LEAVE_CODES[leaveType];
         // Les mentions sont décalées de 2 mm vers la gauche du trait
         // d'encadrement.
         const codeRight = x + monthWidth - 0.9 - 2;
+        if (EMOJI_LEAVE_TYPES.has(leaveType)) {
+          drawLeaveEmoji(doc, leaveType, codeRight - 1.25, y + dayHeight / 2);
+          continue;
+        }
+        const code = leaveType === "half" ? "½ CA" : LEAVE_CODES[leaveType];
         doc.setTextColor(...COLORS.black);
         doc.setFont("helvetica", "bold");
         // Les libellés longs (« Congé enf. ») sont réduits juste ce qu'il faut
@@ -443,13 +608,26 @@ function drawGroupPage(
   doc.roundedRect(sidebarX, tableY, sidebarWidth, sidebarHeight, 1.6, 1.6, "S");
   doc.line(sidebarX, tableY + 9, sidebarX + sidebarWidth, tableY + 9);
 
-  const colorLegendItems = [
+  const colorLegendItems: Array<{
+    label: string;
+    color: readonly [number, number, number];
+    moneyBadge?: boolean;
+    emojiType?: PdfLeaveType;
+  }> = [
     { label: "Travail", color: COLORS.white },
     { label: "Repos", color: COLORS.black },
     { label: "Formation", color: COLORS.training },
     { label: "Férié travaillé", color: COLORS.holiday },
     { label: "Férié compensé", color: COLORS.money, moneyBadge: true },
     { label: "Congé validé", color: COLORS.leave },
+    { label: "Maladie", color: COLORS.leave, emojiType: "sick" },
+    {
+      label: "Garde d'enfant",
+      color: COLORS.leave,
+      emojiType: "childcare",
+    },
+    { label: "Grève", color: leaveFill("strike"), emojiType: "strike" },
+    { label: "Divers", color: leaveFill("other"), emojiType: "other" },
     { label: "Récupération", color: COLORS.recovery },
     { label: "Congé souhaité", color: COLORS.wish },
   ];
@@ -459,14 +637,13 @@ function drawGroupPage(
     const legendX = sidebarX;
     const legendY = tableY + sidebarHeight + legendGap;
     const legendWidth = sidebarWidth;
-    const legendHeight = schoolVacationsByZone
-      ? tableY + tableHeight - legendY
-      : 9 + colorLegendItems.length * 10.5 + 3;
+    const legendBottom = schoolVacationsByZone
+      ? tableY + tableHeight
+      : doc.internal.pageSize.getHeight() - 7;
+    const legendHeight = legendBottom - legendY;
     const legendHeaderHeight = schoolVacationsByZone ? 8 : 9;
     const legendRowHeight =
-      schoolVacationsByZone
-        ? (legendHeight - legendHeaderHeight) / colorLegendItems.length
-        : 10.5;
+      (legendHeight - legendHeaderHeight) / colorLegendItems.length;
 
     doc.setFillColor(248, 250, 253);
     doc.setDrawColor(125, 139, 157);
@@ -528,10 +705,12 @@ function drawGroupPage(
         const symbolWidth = schoolVacationsByZone ? 4.1 : 9.5;
         const symbolHeight = schoolVacationsByZone ? 4.1 : 4.6;
         doc.rect(symbolX - symbolWidth / 2, centerY - symbolHeight / 2, symbolWidth, symbolHeight, "FD");
+        if (item.emojiType)
+          drawLeaveEmoji(doc, item.emojiType, symbolX, centerY);
       }
       doc.setTextColor(...COLORS.black);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(schoolVacationsByZone ? 4.8 : 5.3);
+      doc.setFontSize(schoolVacationsByZone ? 4.25 : 5.15);
       doc.text(item.label, legendX + (schoolVacationsByZone ? 7.4 : 13), centerY, {
         baseline: "middle",
       });
@@ -806,5 +985,174 @@ export function createAnnualPlanningPdf({
   return {
     blob: doc.output("blob"),
     filename: `planning-${year}-${groupLabel}.pdf`,
+  };
+}
+
+export type WorkedHolidaySchedule = Array<{
+  year: number;
+  entries: Array<{
+    key: string;
+    name: string;
+    groups: number[];
+  }>;
+}>;
+
+/** Construit le tableau d'échange sans reprendre les fériés compensés : une
+ * date n'est conservée que si `getDayInfo` la classe réellement en travail. */
+export function buildWorkedHolidaySchedule(
+  firstYear: number,
+  lastYear: number,
+  getInfo: PlanningPdfOptions["getDayInfo"],
+): WorkedHolidaySchedule {
+  return Array.from({ length: lastYear - firstYear + 1 }, (_, yearOffset) => {
+    const year = firstYear + yearOffset;
+    const entries: WorkedHolidaySchedule[number]["entries"] = [];
+    for (
+      let date = new Date(year, 0, 1);
+      date.getFullYear() === year;
+      date = new Date(year, date.getMonth(), date.getDate() + 1)
+    ) {
+      const infos = [1, 2, 3].map((group) => ({ group, info: getInfo(date, group) }));
+      const name = infos.find(({ info }) => info.holiday)?.info.holiday || "";
+      if (!name) continue;
+      const groups = infos
+        .filter(({ info }) => info.kind === "work")
+        .map(({ group }) => group);
+      if (!groups.length) continue;
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      entries.push({ key: `${year}-${month}-${day}`, name, groups });
+    }
+    return { year, entries };
+  });
+}
+
+/** Tableau paysage d'une page, conçu comme aide visuelle aux échanges de
+ * fériés entre les trois groupes. */
+export function createWorkedHolidaysPdf({
+  firstYear = 2026,
+  lastYear = 2031,
+  getDayInfo,
+}: {
+  firstYear?: number;
+  lastYear?: number;
+  getDayInfo: PlanningPdfOptions["getDayInfo"];
+}) {
+  const schedule = buildWorkedHolidaySchedule(firstYear, lastYear, getDayInfo);
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 10;
+  const gap = 5;
+  const top = 35;
+  const columns = 3;
+  const panelWidth = (pageWidth - margin * 2 - gap * (columns - 1)) / columns;
+  const panelHeight = (pageHeight - top - margin - gap) / 2;
+  const accents = [
+    [46, 105, 176],
+    [37, 137, 103],
+    [196, 116, 47],
+    [104, 79, 172],
+    [174, 71, 85],
+  ] as const;
+  const groupColors = {
+    1: [48, 105, 180] as const,
+    2: [41, 139, 105] as const,
+    3: [202, 119, 43] as const,
+  };
+
+  doc.setFillColor(240, 246, 252);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+  doc.setTextColor(24, 47, 76);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("Jours fériés travaillés", margin, 15);
+  doc.setFontSize(10);
+  doc.setTextColor(47, 94, 151);
+  doc.text("Tableau pour faciliter les échanges", margin, 22);
+  const weekdayFormatter = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  });
+
+  schedule.forEach(({ year, entries }, index) => {
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const x = margin + column * (panelWidth + gap);
+    const y = top + row * (panelHeight + gap);
+    const accent = accents[index % accents.length];
+    const headingHeight = 11;
+    const columnHeight = 6;
+    const rowHeight = Math.min(6.1, (panelHeight - headingHeight - columnHeight - 4) / Math.max(entries.length, 1));
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(150, 166, 187);
+    doc.setLineWidth(0.35);
+    doc.roundedRect(x, y, panelWidth, panelHeight, 2.2, 2.2, "FD");
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.roundedRect(x, y, panelWidth, headingHeight, 2.2, 2.2, "F");
+    doc.rect(x, y + headingHeight - 2.2, panelWidth, 2.2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(String(year), x + 5, y + 7.1);
+    doc.setFontSize(6.2);
+    doc.text(`${entries.length} férié${entries.length > 1 ? "s" : ""} travaillé${entries.length > 1 ? "s" : ""}`, x + panelWidth - 5, y + 7, { align: "right" });
+
+    const tableY = y + headingHeight;
+    doc.setFillColor(235, 241, 248);
+    doc.rect(x, tableY, panelWidth, columnHeight, "F");
+    doc.setTextColor(66, 83, 104);
+    doc.setFontSize(6);
+    doc.text("DATE", x + 3, tableY + 3.9);
+    doc.text("JOUR FÉRIÉ", x + 25, tableY + 3.9);
+    doc.text("PRÉSENTS", x + panelWidth - 22, tableY + 3.9);
+
+    entries.forEach((entry, entryIndex) => {
+      const entryY = tableY + columnHeight + entryIndex * rowHeight;
+      const middleY = entryY + rowHeight / 2;
+      if (entryIndex % 2 === 0) {
+        doc.setFillColor(248, 250, 253);
+        doc.rect(x + 0.4, entryY, panelWidth - 0.8, rowHeight, "F");
+      }
+      if (entryIndex > 0) {
+        doc.setDrawColor(222, 228, 236);
+        doc.setLineWidth(0.18);
+        doc.line(x + 2, entryY, x + panelWidth - 2, entryY);
+      }
+      const [yearPart, monthPart, dayPart] = entry.key.split("-").map(Number);
+      const date = new Date(yearPart, monthPart - 1, dayPart);
+      const dateLabel = weekdayFormatter.format(date).replace(",", "");
+      doc.setTextColor(35, 53, 75);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6);
+      doc.text(dateLabel, x + 3, middleY, { baseline: "middle" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(5.8);
+      const holidayLabel = entry.name.length > 24 ? `${entry.name.slice(0, 23)}…` : entry.name;
+      doc.text(holidayLabel, x + 25, middleY, { baseline: "middle" });
+
+      const badgeWidth = 7.2;
+      const badgeGap = 1.2;
+      const badgesWidth = entry.groups.length * badgeWidth + (entry.groups.length - 1) * badgeGap;
+      let badgeX = x + panelWidth - 3 - badgesWidth;
+      entry.groups.forEach((group) => {
+        const color = groupColors[group as keyof typeof groupColors];
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.roundedRect(badgeX, middleY - 2.05, badgeWidth, 4.1, 1.2, 1.2, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(5.4);
+        doc.text(`G${group}`, badgeX + badgeWidth / 2, middleY, { align: "center", baseline: "middle" });
+        badgeX += badgeWidth + badgeGap;
+      });
+    });
+  });
+
+  return {
+    blob: doc.output("blob"),
+    filename: `feries-travailles-${firstYear}-${lastYear}.pdf`,
+    schedule,
   };
 }

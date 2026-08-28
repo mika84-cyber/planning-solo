@@ -241,3 +241,26 @@ export function SuccessToast({ message, onClose }: { message: string | null; onC
     </div>
   );
 }
+
+export function UndoToast({
+  message,
+  onUndo,
+  onClose,
+}: {
+  message: string | null;
+  onUndo: () => void;
+  onClose: () => void;
+}) {
+  if (!message) return null;
+  return (
+    <div className="undo-toast" role="status" aria-live="polite">
+      <p>{message}</p>
+      <button className="undo-toast-action" type="button" onClick={onUndo}>
+        Annuler
+      </button>
+      <button type="button" onClick={onClose} aria-label="Fermer la proposition d’annulation">
+        ×
+      </button>
+    </div>
+  );
+}

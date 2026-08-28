@@ -25,6 +25,11 @@ describe("détail mensuel de la paie", () => {
         }}
         workQuota="full"
         mecenat={{ grossAmountCents: 0, lines: [] }}
+        reliability={{
+          tone: "exact",
+          label: "Valeurs vérifiées avec le bulletin",
+          detail: "Les montants du mois correspondent.",
+        }}
         onPreviousMonth={vi.fn()}
         onNextMonth={vi.fn()}
         onToday={vi.fn()}
@@ -37,5 +42,6 @@ describe("détail mensuel de la paie", () => {
     expect(html).toContain("1 980,00 €");
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-label="Mois suivant"');
+    expect(html).toContain("Valeurs vérifiées avec le bulletin");
   });
 });

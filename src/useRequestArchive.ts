@@ -7,6 +7,7 @@ export type ArchivedRequest = {
   createdAt: string;
   updatedAt: string;
   blob: Blob;
+  ownerKey?: string;
 };
 
 const REQUEST_ARCHIVE_DB = "planning-request-archive";
@@ -26,20 +27,53 @@ function openRequestArchiveDb() {
   });
 }
 
-async function readArchivedRequests() {
+export function archiveOwnerKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export function visibleArchivedRequests(
+  requests: ArchivedRequest[],
+  ownerKey: string,
+) {
+  return requests
+    .filter((request) => request.ownerKey === ownerKey)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+async function assignLegacyRequestsToOwner(
+  requests: ArchivedRequest[],
+  ownerKey: string,
+) {
+  const legacy = requests.filter((request) => !request.ownerKey);
+  if (!legacy.length) return requests;
+  const db = await openRequestArchiveDb();
+  return new Promise<ArchivedRequest[]>((resolve, reject) => {
+    const transaction = db.transaction(REQUEST_ARCHIVE_STORE, "readwrite");
+    const store = transaction.objectStore(REQUEST_ARCHIVE_STORE);
+    for (const request of legacy) store.put({ ...request, ownerKey });
+    transaction.oncomplete = () => {
+      db.close();
+      resolve(requests.map((request) => request.ownerKey ? request : { ...request, ownerKey }));
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
+  });
+}
+
+async function readArchivedRequests(ownerKey: string, mayClaimLegacy: boolean) {
   const db = await openRequestArchiveDb();
   return new Promise<ArchivedRequest[]>((resolve, reject) => {
     const transaction = db.transaction(REQUEST_ARCHIVE_STORE, "readonly");
     const request = transaction.objectStore(REQUEST_ARCHIVE_STORE).getAll();
-    request.onsuccess = () =>
-      resolve(
-        (request.result as ArchivedRequest[]).sort((a, b) =>
-          b.updatedAt.localeCompare(a.updatedAt),
-        ),
-      );
+    request.onsuccess = () => resolve(request.result as ArchivedRequest[]);
     request.onerror = () => reject(request.error);
     transaction.oncomplete = () => db.close();
-  });
+  }).then((requests) => mayClaimLegacy
+    ? assignLegacyRequestsToOwner(requests, ownerKey)
+    : requests
+  ).then((requests) => visibleArchivedRequests(requests, ownerKey));
 }
 
 async function removeArchivedRequest(id: string) {
@@ -64,7 +98,8 @@ export function archivedRequestDate(value: string) {
 
 export function useRequestArchive(
   authStatus: AuthStatus,
-  profile: "mika" | "agnes" | null | undefined,
+  enabled: boolean,
+  accountEmail: string,
   notify: (text: string) => void,
 ) {
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -73,15 +108,24 @@ export function useRequestArchive(
   );
 
   async function loadRequestArchive() {
+    const ownerKey = archiveOwnerKey(accountEmail);
+    if (!ownerKey || !enabled) {
+      setArchivedRequests([]);
+      return;
+    }
     try {
-      setArchivedRequests(await readArchivedRequests());
+      setArchivedRequests(await readArchivedRequests(ownerKey, enabled));
     } catch {
       setArchivedRequests([]);
     }
   }
 
   useEffect(() => {
-    if (authStatus !== "ready" || profile !== "mika") return;
+    if (authStatus !== "ready" || !enabled || !archiveOwnerKey(accountEmail)) {
+      setArchivedRequests([]);
+      setArchiveOpen(false);
+      return;
+    }
     const reloadArchive = () => void loadRequestArchive();
     reloadArchive();
     window.addEventListener("focus", reloadArchive);
@@ -90,7 +134,7 @@ export function useRequestArchive(
       window.removeEventListener("focus", reloadArchive);
       window.removeEventListener("pageshow", reloadArchive);
     };
-  }, [authStatus, profile]);
+  }, [authStatus, enabled, accountEmail]);
 
   function openArchivedRequest(request: ArchivedRequest) {
     const url = URL.createObjectURL(request.blob);

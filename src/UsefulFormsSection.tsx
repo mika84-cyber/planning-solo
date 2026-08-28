@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 
 export type UsefulFormsFolderKey = "expo" | "sap" | "brantome" | "tickets";
 
@@ -59,7 +59,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
     description: "Horaires de retrait des titres au guichet.",
     documents: [],
     image: {
-      src: "/useful-forms/horaires-tickets-repas-genere.png",
+      src: "/useful-forms/horaires-tickets-repas-fast.webp",
       alt: "Horaires de distribution des chèques repas au bureau 339",
     },
   },
@@ -74,8 +74,32 @@ export function UsefulFormsSection() {
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState("");
+  const [query, setQuery] = useState("");
   const folder = USEFUL_FORM_FOLDERS.find((item) => item.key === activeFolder);
   const secureContext = typeof window === "undefined" || window.isSecureContext;
+  const searchResults = useMemo(() => {
+    const needle = query
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+    if (!needle) return [];
+    return USEFUL_FORM_FOLDERS.flatMap((item) => {
+      const folderText = `${item.title} ${item.description}`
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+      const matchingDocuments = item.documents.filter((document) =>
+        `${document.title} ${document.format}`
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .includes(needle),
+      );
+      if (!folderText.includes(needle) && !matchingDocuments.length) return [];
+      return [{ folder: item, matchingDocuments }];
+    });
+  }, [query]);
 
   const downloadForm = async (
     event: MouseEvent<HTMLAnchorElement>,
@@ -112,6 +136,10 @@ export function UsefulFormsSection() {
     }
   };
 
+  const openFolder = (key: UsefulFormsFolderKey) => {
+    setActiveFolder(key);
+  };
+
   if (folder) {
     return (
       <section className="useful-forms-screen useful-forms-folder-screen" aria-labelledby="useful-forms-folder-title">
@@ -133,7 +161,14 @@ export function UsefulFormsSection() {
 
         {folder.image ? (
           <figure className="useful-form-information-image">
-            <img src={folder.image.src} alt={folder.image.alt} />
+            <img
+              src={folder.image.src}
+              alt={folder.image.alt}
+              width="971"
+              height="1620"
+              loading="lazy"
+              decoding="async"
+            />
           </figure>
         ) : folder.documents.length ? (
           <div className="useful-form-download-list">
@@ -195,13 +230,48 @@ export function UsefulFormsSection() {
         <h2 id="useful-forms-title">Formulaires utiles</h2>
         <p>Choisissez un dossier puis téléchargez directement le document dont vous avez besoin.</p>
       </div>
+      <label className="useful-resource-search">
+        <span>Rechercher dans les formulaires</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="CET, congés, restauration…"
+        />
+      </label>
+      {query.trim() ? (
+        <div className="useful-form-search-results" aria-live="polite">
+          <p>{searchResults.length} dossier{searchResults.length > 1 ? "s" : ""} trouvé{searchResults.length > 1 ? "s" : ""}</p>
+          {searchResults.length ? searchResults.map(({ folder: resultFolder, matchingDocuments }) => (
+            <button
+              key={resultFolder.key}
+              type="button"
+              className={`useful-form-search-result tone-${resultFolder.key}`}
+              onClick={() => openFolder(resultFolder.key)}
+            >
+              <span aria-hidden="true">⌕</span>
+              <span>
+                <strong>{resultFolder.title}</strong>
+                <small>
+                  {matchingDocuments.length
+                    ? matchingDocuments.map((document) => document.title).join(" · ")
+                    : resultFolder.description}
+                </small>
+              </span>
+              <i aria-hidden="true">›</i>
+            </button>
+          )) : (
+            <div className="useful-resource-empty-search">Aucun formulaire ne correspond à votre recherche.</div>
+          )}
+        </div>
+      ) : (
       <div className="useful-form-folder-grid">
         {USEFUL_FORM_FOLDERS.map((item) => (
           <button
             key={item.key}
             className={`useful-form-folder tone-${item.key}`}
             type="button"
-            onClick={() => setActiveFolder(item.key)}
+            onClick={() => openFolder(item.key)}
           >
             <span className="useful-form-folder-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -217,6 +287,7 @@ export function UsefulFormsSection() {
           </button>
         ))}
       </div>
+      )}
     </section>
   );
 }

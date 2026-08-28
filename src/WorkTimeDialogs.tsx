@@ -155,6 +155,7 @@ export function OvertimeDialog({
   draft,
   setDraft,
   saving,
+  group,
   onClose,
   onSave,
 }: {
@@ -162,10 +163,18 @@ export function OvertimeDialog({
   draft: OvertimeDraft;
   setDraft: Dispatch<SetStateAction<OvertimeDraft>>;
   saving: boolean;
+  group: number;
   onClose: () => void;
   onSave: () => void;
 }) {
   if (!open) return null;
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(draft.date)
+    ? new Date(`${draft.date}T12:00:00`)
+    : null;
+  const selectedDay = selectedDate ? getDayInfo(selectedDate, group) : null;
+  const sundayOrHoliday = Boolean(
+    selectedDate && (selectedDate.getDay() === 0 || selectedDay?.holiday),
+  );
   return (
     <div
       className="modal-backdrop"
@@ -194,7 +203,11 @@ export function OvertimeDialog({
                 setDraft((current) => ({ ...current, date: event.target.value }))
               }
             />
-            <small>Hors dimanche et jour férié</small>
+            <small className={sundayOrHoliday ? "overtime-special-day-note" : undefined}>
+              {sundayOrHoliday
+                ? `Tarif dimanche/jour férié reconnu automatiquement${selectedDay?.holiday ? ` : ${selectedDay.holiday}` : ""}.`
+                : "Le tarif dimanche/jour férié est appliqué automatiquement selon la date."}
+            </small>
           </label>
           <div className="overtime-time-grid">
             <strong className="overtime-time-title">Horaires</strong>
@@ -221,8 +234,9 @@ export function OvertimeDialog({
               />
             </label>
             <small>
-              La nuit est reconnue automatiquement de 22 h à 7 h. Les horaires
-              peuvent passer minuit.
+              La nuit est reconnue automatiquement de 22 h à 7 h. Le dimanche et
+              les jours fériés sont majorés de deux tiers. Les horaires peuvent
+              passer minuit.
             </small>
           </div>
           <fieldset className="overtime-choice-field disposition-choice">

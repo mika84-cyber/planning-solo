@@ -55,7 +55,6 @@ export function CetSection({
   onSave,
   onRequestLeave,
 }: CetSectionProps) {
-  const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<CetAccount>(() => account || emptyCetAccount());
   const [initialBalanceInput, setInitialBalanceInput] = useState(() =>
     (account?.initialBalance || "").toString(),
@@ -236,29 +235,21 @@ export function CetSection({
   }
 
   return (
-    <section className={`cet-section${open ? " open" : " closed"}`} aria-labelledby="cet-title">
-      <button
-        className="cet-heading"
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-      >
+    <section className="cet-section open cet-section-static" aria-labelledby="cet-title">
+      <div className="cet-heading cet-heading-static">
         <span className="cet-symbol" aria-hidden="true">CET</span>
         <span>
           <span className="step-label">Compte épargne-temps</span>
           <strong id="cet-title">Mon CET</strong>
-          <small>{active ? `${numberLabel(summary!.balance)} jour${summary!.balance > 1 ? "s" : ""} suivi${summary!.balance > 1 ? "s" : ""}` : "À configurer avec votre relevé RH"}</small>
-          {!open ? <span className="cet-closed-useful">Alimentation du 15 novembre au 31 décembre</span> : null}
+          <small>{active ? `Solde suivi : ${numberLabel(summary!.balance)} jour${summary!.balance > 1 ? "s" : ""} · alimentation du 15 novembre au 31 décembre` : "Configurez votre compte à partir de votre relevé RH"}</small>
         </span>
-        <span className="cet-caret" aria-hidden="true">⌄</span>
-      </button>
+      </div>
 
-      {open ? (
-        <div className="cet-content">
+      <div className="cet-content">
           {!active ? (
             <div className="cet-settings">
               <div className="cet-callout">
-                <strong>Votre relevé RH reste la référence</strong>
+                <p>Indiquez simplement le solde qui y figure. Vous pourrez ensuite suivre vos jours et préparer vos demandes depuis cette rubrique.</p>
               </div>
               <div className="cet-form-grid">
                 <label className="wide">
@@ -347,8 +338,7 @@ export function CetSection({
               </div>
             </>
           )}
-        </div>
-      ) : null}
+      </div>
       <CetFormDialog
         kind={formKind}
         fullName={fullName}

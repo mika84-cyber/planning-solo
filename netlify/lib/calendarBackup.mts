@@ -95,6 +95,10 @@ export function sanitizeCalendarBackup(value: unknown) {
         item.holiday_pay === "prime" || item.holiday_pay === "recovery"
           ? item.holiday_pay
           : "",
+      closure_override:
+        item.closure_override === "closed" || item.closure_override === "open"
+          ? item.closure_override
+          : "",
       updated_at:
         typeof item.updated_at === "string"
           ? item.updated_at

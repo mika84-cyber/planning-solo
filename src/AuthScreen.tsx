@@ -38,9 +38,11 @@ export function AuthScreen({
     return (
       <main className="auth-splash">
         <img
-          src="/grand-palais-verriere.jpg"
+          src="/grand-palais-verriere-fast.webp"
           alt=""
           className="auth-splash-image"
+          decoding="async"
+          fetchPriority="high"
         />
         <div className="auth-loader auth-splash-loader" aria-label="Chargement" />
       </main>
@@ -50,9 +52,11 @@ export function AuthScreen({
   return (
     <main className="auth-shell">
       <img
-        src="/grand-palais-verriere.jpg"
+        src="/grand-palais-verriere-fast.webp"
         alt=""
         className="auth-shell-image"
+        decoding="async"
+        fetchPriority="high"
       />
       <section className="auth-card">
         <div className="auth-mark" aria-hidden="true">

@@ -1,118 +1,10 @@
-import { useState } from "react";
-
-type Phone = { label?: string; number: string; allowCall?: boolean };
-type Contact = { name: string; email?: string; phones?: Phone[]; singleLineLabel?: boolean };
-type PompidouSectionKey = "ras" | "administration" | "rh" | "medical" | "it" | "tickets";
-
-type ContactSection = {
-  key: PompidouSectionKey;
-  title: string;
-  contacts: Contact[];
-};
-
-function pompidouEmail(name: string, localPart?: string) {
-  const generated = name
-    .replace(/\s*\([^)]*\)\s*/g, "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .split(/[\s'’-]+/)
-    .filter(Boolean)
-    .join(".");
-  return `${localPart || generated}@centrepompidou.fr`;
-}
-
-function person(name: string, phones: Phone[], emailLocalPart?: string): Contact {
-  return { name, email: pompidouEmail(name, emailLocalPart), phones };
-}
-
-export const POMPIDOU_CONTACT_SECTIONS: ContactSection[] = [
-  {
-    key: "ras",
-    title: "RAS",
-    contacts: [
-      person("Maarten Averink", [{ number: "0621688308" }]),
-      person("Hicham Azalmat", [{ number: "0651597253" }]),
-      person("Wilnise Cedelle", [{ number: "0764374984" }]),
-      person("Isabelle Mercier", [{ number: "0699733979" }]),
-      person("Spasa Lesage", [{ number: "0778647213" }]),
-      person("Mathieu Bohet", [{ number: "0778669235" }]),
-      person("Alice Toumine", [{ number: "0763731643", allowCall: false }]),
-      person("Francis Meunier", [{ number: "0646887765" }]),
-      person("Mohamed Lamri", [{ number: "0621688126" }]),
-      person("Guillaume Fayon", [{ number: "0621688365" }]),
-    ],
-  },
-  {
-    key: "administration",
-    title: "Bureau administratif",
-    contacts: [
-      person("Laurence Nida", [{ label: "Bureau", number: "0144784053" }, { label: "Portable", number: "0621688415" }]),
-      person("Mathilde Lucchini", [{ label: "Bureau", number: "0144784036" }, { label: "Portable", number: "0662906793" }]),
-      person("John Lorenc", [{ number: "0144784919" }]),
-      person("Magali Cheval", [{ number: "0144784139" }]),
-      person("Isabelle Honoré", [{ label: "Bureau", number: "0144781668" }, { label: "Portable", number: "0650621114" }]),
-      person("Sarah Rodrigues", [{ label: "Bureau", number: "0144784787" }, { label: "Portable", number: "0662477642" }]),
-      person("Aurélia De Bie", [{ number: "0144784488" }], "aurelia.debie"),
-      person("Esther Ladu", [{ number: "0144784968" }]),
-      person("Agnès Laurent", [{ number: "0144781461" }]),
-      { name: "Mail générique Aurélia, Esther et Agnès", email: "absenceSAP@gmail.com", singleLineLabel: true },
-    ],
-  },
-  {
-    key: "rh",
-    title: "Ressources humaines",
-    contacts: [
-      { name: "Adresse générique", email: "administration.RH@centrepompidou.fr" },
-      person("Alexandre Roma", [{ number: "0144784021" }]),
-      person("Saddi Haddar", [{ number: "0144781258" }]),
-      person("David Tahraoui", [{ number: "0144784073" }]),
-      person("Sarra Kardouci", [{ number: "0144781357" }]),
-      person("Ammara Laouedj", [{ number: "0144784793" }]),
-      person("Clothilde Letourneur", [{ number: "0144784914" }]),
-      person("Jeanne Seline", [{ number: "0144784975" }]),
-      person("Stéphanie Bodiou (comptable)", [{ number: "0144784035" }]),
-    ],
-  },
-  {
-    key: "medical",
-    title: "Service médical",
-    contacts: [
-      {
-        name: "Service médical",
-        email: "servicemedical@centrepompidou.fr",
-        phones: [{ number: "0144784986" }],
-      },
-    ],
-  },
-  {
-    key: "it",
-    title: "Service informatique",
-    contacts: [
-      {
-        name: "Assistance informatique",
-        email: "assistance@centrepompidou.fr",
-        phones: [{ number: "0144784754" }],
-      },
-    ],
-  },
-  {
-    key: "tickets",
-    title: "Tickets restaurants",
-    contacts: [
-      {
-        name: "Tickets restaurants",
-        phones: [{ number: "0144784148" }],
-      },
-    ],
-  },
-];
-
-export const GPRMN_CONTACTS: Contact[] = [
-  { name: "Accident · secourisme", phones: [{ number: "0144131750" }] },
-  { name: "Superviseur Expo", phones: [{ number: "0646406588" }] },
-];
+import { useEffect, useMemo, useState } from "react";
+import { getUsefulContacts } from "./contactsApi";
+import type {
+  PompidouContactSectionKey,
+  UsefulContact,
+  UsefulContactsPayload,
+} from "./usefulContactsTypes";
 
 function formatPhone(number: string) {
   return number.replace(/\D/g, "").replace(/(\d{2})(?=\d)/g, "$1 ").trim();
@@ -146,15 +38,26 @@ function contactInitials(name: string) {
     .join("");
 }
 
-function ContactCards({ contacts }: { contacts: Contact[] }) {
+function searchable(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function ContactCards({ contacts }: { contacts: UsefulContact[] }) {
   return (
     <div className="useful-contact-list">
       {contacts.map((contact) => (
-        <article className={`useful-contact-card${contact.singleLineLabel ? " useful-contact-card-single-line-label" : ""}`} key={contact.name}>
+        <article
+          className={`useful-contact-card${contact.singleLineLabel ? " useful-contact-card-single-line-label" : ""}`}
+          key={`${contact.context || "contact"}-${contact.name}`}
+        >
           <div className="useful-contact-identity">
             <span aria-hidden="true">{contactInitials(contact.name)}</span>
             <span>
               <strong>{contact.name}</strong>
+              {contact.context ? <small>{contact.context}</small> : null}
             </span>
           </div>
           <div className="useful-contact-actions">
@@ -171,7 +74,10 @@ function ContactCards({ contacts }: { contacts: Contact[] }) {
               const mobile = isMobilePhone(phone.number);
               const displayedNumber = formatPhone(phone.number);
               return (
-                <div className={`useful-contact-phone${mobile ? " mobile" : " fixed"}`} key={`${contact.name}-${phone.number}`}>
+                <div
+                  className={`useful-contact-phone${mobile ? " mobile" : " fixed"}`}
+                  key={`${contact.name}-${phone.number}`}
+                >
                   <span>
                     <small>{phone.label || (mobile ? "Portable" : "Téléphone fixe")}</small>
                     <b>{displayedNumber}</b>
@@ -198,22 +104,98 @@ function ContactCards({ contacts }: { contacts: Contact[] }) {
   );
 }
 
-export function UsefulContactsSection() {
+type UsefulContactsSectionProps = {
+  initialData?: UsefulContactsPayload;
+};
+
+export function UsefulContactsSection({ initialData }: UsefulContactsSectionProps) {
   const [directory, setDirectory] = useState<"pompidou" | "gprmn" | null>(null);
-  const [pompidouSection, setPompidouSection] = useState<PompidouSectionKey | null>(null);
-  const activePompidouSection = POMPIDOU_CONTACT_SECTIONS.find(
+  const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
+  const [contacts, setContacts] = useState<UsefulContactsPayload | null>(initialData || null);
+  const [loadError, setLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (initialData) return;
+    let active = true;
+    setLoadError("");
+    void getUsefulContacts()
+      .then((payload) => {
+        if (active) setContacts(payload);
+      })
+      .catch((error: unknown) => {
+        if (active)
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "L’annuaire n’a pas pu être chargé.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [initialData, loadAttempt]);
+
+  const activePompidouSection = contacts?.pompidou.find(
     (section) => section.key === pompidouSection,
   );
+  const searchResults = useMemo(() => {
+    if (!contacts || !query.trim()) return [];
+    const needle = searchable(query.trim());
+    return [
+      ...contacts.pompidou.flatMap((section) =>
+        section.contacts.map((contact) => ({
+          ...contact,
+          context: `Contacts Pompidou · ${section.title}`,
+        })),
+      ),
+      ...contacts.gprmn.map((contact) => ({
+        ...contact,
+        context: "Contact GP‑RMN",
+      })),
+    ].filter((contact) =>
+      searchable(
+        [
+          contact.name,
+          contact.context,
+          contact.email || "",
+          ...(contact.phones || []).map((phone) => phone.number),
+        ].join(" "),
+      ).includes(needle),
+    );
+  }, [contacts, query]);
+
+  if (!contacts) {
+    return (
+      <section className="useful-contacts-screen" aria-labelledby="useful-contacts-title">
+        <div className="native-screen-heading">
+          <span className="step-label">Annuaire sécurisé</span>
+          <h2 id="useful-contacts-title">Contacts utiles</h2>
+          <p>Les coordonnées sont chargées uniquement après votre connexion.</p>
+        </div>
+        {loadError ? (
+          <div className="useful-contact-load-state error" role="alert">
+            <strong>Impossible de charger les contacts</strong>
+            <p>{loadError}</p>
+            <button type="button" onClick={() => setLoadAttempt((current) => current + 1)}>Réessayer</button>
+          </div>
+        ) : (
+          <div className="useful-contact-load-state" role="status">
+            <span aria-hidden="true">•••</span>
+            <strong>Chargement de l’annuaire sécurisé…</strong>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   if (directory === "pompidou" && activePompidouSection) {
     return (
       <section className="useful-contacts-screen" aria-labelledby="contact-section-title">
         <header className="useful-contacts-subheader">
           <button type="button" onClick={() => setPompidouSection(null)} aria-label="Revenir aux contacts Pompidou">←</button>
-          <div>
-            <span className="step-label">Contacts Pompidou</span>
-            <h2 id="contact-section-title">{activePompidouSection.title}</h2>
-          </div>
+          <div><span className="step-label">Contacts Pompidou</span><h2 id="contact-section-title">{activePompidouSection.title}</h2></div>
         </header>
         {activePompidouSection.key === "ras" ? (
           <a
@@ -222,10 +204,7 @@ export function UsefulContactsSection() {
             aria-label="Envoyer un e-mail à toute l’équipe des RAS"
           >
             <span aria-hidden="true">✉</span>
-            <span>
-              <strong>Envoyer un e-mail à toute l’équipe des RAS</strong>
-              <small>10 destinataires déjà renseignés</small>
-            </span>
+            <span><strong>Envoyer un e-mail à toute l’équipe des RAS</strong><small>{activePompidouSection.contacts.length} destinataires déjà renseignés</small></span>
           </a>
         ) : null}
         <ContactCards contacts={activePompidouSection.contacts} />
@@ -238,16 +217,12 @@ export function UsefulContactsSection() {
       <section className="useful-contacts-screen" aria-labelledby="pompidou-contacts-title">
         <header className="useful-contacts-subheader">
           <button type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles">←</button>
-          <div>
-            <span className="step-label">Contacts utiles</span>
-            <h2 id="pompidou-contacts-title">Contacts Pompidou</h2>
-          </div>
+          <div><span className="step-label">Contacts utiles</span><h2 id="pompidou-contacts-title">Contacts Pompidou</h2></div>
         </header>
         <div className="useful-contact-category-grid">
-          {POMPIDOU_CONTACT_SECTIONS.map((section) => (
+          {contacts.pompidou.map((section) => (
             <button type="button" key={section.key} onClick={() => setPompidouSection(section.key)}>
-              <span><strong>{section.title}</strong><small>{section.contacts.length} contact{section.contacts.length > 1 ? "s" : ""}</small></span>
-              <i aria-hidden="true">›</i>
+              <span><strong>{section.title}</strong><small>{section.contacts.length} contact{section.contacts.length > 1 ? "s" : ""}</small></span><i aria-hidden="true">›</i>
             </button>
           ))}
         </div>
@@ -260,35 +235,39 @@ export function UsefulContactsSection() {
       <section className="useful-contacts-screen" aria-labelledby="gprmn-contacts-title">
         <header className="useful-contacts-subheader">
           <button type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles">←</button>
-          <div>
-            <span className="step-label">Contacts utiles</span>
-            <h2 id="gprmn-contacts-title">Contact GP‑RMN</h2>
-          </div>
+          <div><span className="step-label">Contacts utiles</span><h2 id="gprmn-contacts-title">Contact GP‑RMN</h2></div>
         </header>
-        <ContactCards contacts={GPRMN_CONTACTS} />
+        <ContactCards contacts={contacts.gprmn} />
       </section>
     );
   }
 
   return (
-    <section className="useful-contacts-screen" aria-labelledby="useful-contacts-title">
+    <section className="useful-contacts-screen useful-contacts-root" aria-labelledby="useful-contacts-title">
       <div className="native-screen-heading">
         <span className="step-label">Annuaire pratique</span>
         <h2 id="useful-contacts-title">Contacts utiles</h2>
-        <p>Choisissez un annuaire pour retrouver rapidement le bon service.</p>
+        <p>Choisissez un annuaire ou recherchez directement une personne, un service ou un numéro.</p>
       </div>
-      <div className="useful-contact-directory-grid">
-        <button type="button" onClick={() => setDirectory("pompidou")}>
-          <span aria-hidden="true">P</span>
-          <span><strong>Contacts Pompidou</strong><small>RAS, administration, RH, médical, informatique et tickets restaurants</small></span>
-          <i aria-hidden="true">›</i>
-        </button>
-        <button type="button" onClick={() => setDirectory("gprmn")}>
-          <span aria-hidden="true">G</span>
-          <span><strong>Contact GP‑RMN</strong><small>Accident, secourisme et supervision Expo</small></span>
-          <i aria-hidden="true">›</i>
-        </button>
-      </div>
+      <label className="useful-resource-search">
+        <span>Rechercher dans les contacts</span>
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom, service, e-mail ou téléphone…" />
+      </label>
+      {query.trim() ? (
+        <div className="useful-contact-search-results" aria-live="polite">
+          <p>{searchResults.length} résultat{searchResults.length > 1 ? "s" : ""}</p>
+          {searchResults.length ? <ContactCards contacts={searchResults} /> : <div className="useful-resource-empty-search">Aucun contact ne correspond à votre recherche.</div>}
+        </div>
+      ) : (
+        <div className="useful-contact-directory-grid">
+          <button type="button" onClick={() => setDirectory("pompidou")}>
+            <span aria-hidden="true">P</span><span><strong>Contacts Pompidou</strong><small>RAS, administration, RH, médical, informatique et tickets restaurants</small></span><i aria-hidden="true">›</i>
+          </button>
+          <button type="button" onClick={() => setDirectory("gprmn")}>
+            <span aria-hidden="true">G</span><span><strong>Contact GP‑RMN</strong><small>Accident, secourisme et supervision Expo</small></span><i aria-hidden="true">›</i>
+          </button>
+        </div>
+      )}
     </section>
   );
 }

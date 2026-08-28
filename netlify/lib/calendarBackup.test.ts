@@ -11,6 +11,7 @@ describe("restauration d'une sauvegarde", () => {
           note_text: "  Réunion  ",
           note_color: "#7358d8",
           leave: false,
+          closure_override: "closed",
         },
       ],
       periods: [
@@ -107,6 +108,7 @@ describe("restauration d'une sauvegarde", () => {
       expect(result.backup!.entries[0]).toMatchObject({
         date: "2026-08-17",
         note_text: "Réunion",
+        closure_override: "closed",
       });
       expect(result.backup!.overtime_entries[0]).toMatchObject({
         minutes: 90,

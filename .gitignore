@@ -9,4 +9,6 @@ dist
 .ai-context/
 playwright-report/
 test-results/
+output/
+.codex-remote-attachments/
 partage-ia-*.zip

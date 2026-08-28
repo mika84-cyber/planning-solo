@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { summarizePayslipReview } from "./payslipReview";
+import {
+  isUnplannedPayslipCarence,
+  shouldReportMissingPayslipField,
+  summarizePayslipReview,
+} from "./payslipReview";
 
 describe("résumé de vérification d'un bulletin", () => {
   it("annonce un résultat rassurant quand les lignes lisibles concordent", () => {
@@ -29,5 +33,18 @@ describe("résumé de vérification d'un bulletin", () => {
     expect(result.verdict).toBe("Comparaison impossible");
     expect(result.tone).toBe("unknown");
     expect(result.issues).toHaveLength(0);
+  });
+
+  it("ne réclame ni CIA ni carence absents pendant une simple vérification", () => {
+    expect(shouldReportMissingPayslipField("cia", "verify")).toBe(false);
+    expect(shouldReportMissingPayslipField("carenceDay", "verify")).toBe(false);
+    expect(shouldReportMissingPayslipField("baseSalary", "verify")).toBe(true);
+    expect(shouldReportMissingPayslipField("cia", "calibrate")).toBe(true);
+  });
+
+  it("signale une carence lue seulement quand aucun arrêt n’était prévu", () => {
+    expect(isUnplannedPayslipCarence(77.5, 0)).toBe(true);
+    expect(isUnplannedPayslipCarence(77.5, 1)).toBe(false);
+    expect(isUnplannedPayslipCarence(undefined, 0)).toBe(false);
   });
 });

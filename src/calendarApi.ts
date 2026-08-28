@@ -57,6 +57,17 @@ export async function postCalendar<T = { ok: true }>(
   }
 }
 
+/** Signale au serveur qu’un compte authentifié utilise réellement
+ * l’application. L’appel reste silencieux : une alerte indisponible ne doit
+ * jamais empêcher le chargement du planning. */
+export async function notifyGuestSession() {
+  await fetch("/api/guest-session", {
+    method: "POST",
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+}
+
 function retryableCalendarError(error: unknown) {
   return (
     !(error instanceof CalendarApiError) ||

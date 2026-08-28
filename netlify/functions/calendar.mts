@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import { getUser } from "@netlify/identity";
+import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import {
   LEGACY_OWNER_KEY,
   migrateLegacyData,
@@ -52,6 +53,7 @@ type CalendarEntry = {
    *  assortie d'un jour de récupération. Vide tant que le choix n'est pas
    *  fait — le férié est alors signalé comme en attente. */
   holiday_pay?: HolidayPay;
+  closure_override?: "closed" | "open";
   updated_at: string;
 };
 type LeavePeriod = {
@@ -354,10 +356,13 @@ async function clearNote(
     note_group_id: "",
     updated_at: new Date().toISOString(),
   };
-  if (!next.leave && !next.wish && !next.holiday_pay) await store.delete(key);
+  if (!next.leave && !next.wish && !next.holiday_pay && !next.closure_override)
+    await store.delete(key);
   else await store.setJSON(key, next);
 }
 async function calendarHandler(request: Request): Promise<Response> {
+  if (!isTrustedMutation(request))
+    return json({ error: "Origine de la requête non autorisée" }, 403);
   const user = await getUser();
   if (!user?.id || !user.email)
     return json({ error: "Connexion requise" }, 401);
@@ -1484,7 +1489,13 @@ async function calendarHandler(request: Request): Promise<Response> {
         leave: false,
         updated_at: new Date().toISOString(),
       };
-      if (!next.note_text && !next.leave && !next.wish && !next.holiday_pay)
+      if (
+        !next.note_text &&
+        !next.leave &&
+        !next.wish &&
+        !next.holiday_pay &&
+        !next.closure_override
+      )
         await store.delete(blob.key);
       else await store.setJSON(blob.key, next);
     }
@@ -1534,6 +1545,7 @@ async function calendarHandler(request: Request): Promise<Response> {
         leave: previous?.leave || false,
         wish: previous?.wish || false,
         holiday_pay: previous?.holiday_pay,
+        closure_override: previous?.closure_override,
         updated_at: updatedAt,
       } satisfies CalendarEntry);
     }
@@ -1588,9 +1600,16 @@ async function calendarHandler(request: Request): Promise<Response> {
       leave: body.leave === true,
       wish: body.wish === true,
       holiday_pay: holidayPayFrom(body, previous?.holiday_pay),
+      closure_override: previous?.closure_override,
       updated_at: new Date().toISOString(),
     };
-    if (!next.note_text && !next.leave && !next.wish && !next.holiday_pay)
+    if (
+      !next.note_text &&
+      !next.leave &&
+      !next.wish &&
+      !next.holiday_pay &&
+      !next.closure_override
+    )
       await store.delete(key);
     else await store.setJSON(key, next);
     return json({ ok: true });
@@ -1620,13 +1639,19 @@ async function calendarHandler(request: Request): Promise<Response> {
       409,
     );
   const holidayPay = holidayPayFrom(body, previous?.holiday_pay);
+  const closureOverride =
+    body.closureOverride === "closed" || body.closureOverride === "open"
+      ? body.closureOverride
+      : body.closureOverride === ""
+        ? ""
+        : previous?.closure_override || "";
   const noteChanged = (previous?.note_text || "") !== noteText;
   const noteUpdatedAt = noteText
     ? noteChanged
       ? new Date().toISOString()
       : previous?.note_updated_at || new Date().toISOString()
     : "";
-  if (!noteText && !leave && !wish && !holidayPay) {
+  if (!noteText && !leave && !wish && !holidayPay && !closureOverride) {
     await store.delete(key);
     return json({ ok: true, deleted: true });
   }
@@ -1640,6 +1665,7 @@ async function calendarHandler(request: Request): Promise<Response> {
     // Écrire une note ne doit pas effacer un congé souhaité posé sur le jour.
     wish,
     holiday_pay: holidayPay,
+    closure_override: closureOverride || undefined,
     updated_at: new Date().toISOString(),
   } satisfies CalendarEntry);
   return json({ ok: true, noteUpdatedAt });

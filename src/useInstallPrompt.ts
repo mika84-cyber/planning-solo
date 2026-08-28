@@ -46,6 +46,7 @@ export function useInstallPrompt(enabled = true) {
     useState<InstallPromptEvent | null>(null);
 
   useEffect(() => {
+    if (!enabled) setInstallPrompt(null);
     const onInstallPrompt = (event: Event) => {
       event.preventDefault();
       // Netlify injecte sa barre d'outils dans les deploy previews. Une PWA
@@ -61,7 +62,6 @@ export function useInstallPrompt(enabled = true) {
       window.removeEventListener("beforeinstallprompt", onInstallPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
-    if (!enabled) setInstallPrompt(null);
   }, [enabled]);
 
   async function installApp() {

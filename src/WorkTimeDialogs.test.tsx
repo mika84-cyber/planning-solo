@@ -15,6 +15,7 @@ describe("fenêtres de temps de travail", () => {
         draft={{ date: "2026-08-21", start: "18:00", end: "20:00", disposition: "paid" }}
         setDraft={vi.fn()}
         saving={false}
+        group={2}
         onClose={vi.fn()}
         onSave={vi.fn()}
       />,
@@ -29,6 +30,7 @@ describe("fenêtres de temps de travail", () => {
         draft={{ date: "2026-08-21", start: "18:00", end: "20:00", disposition: "recovery" }}
         setDraft={vi.fn()}
         saving={false}
+        group={2}
         onClose={vi.fn()}
         onSave={vi.fn()}
       />,
@@ -102,6 +104,7 @@ describe("fenêtres de temps de travail", () => {
 
     expect(overtime).toContain("Déclarer des heures supplémentaires");
     expect(overtime).toContain("À récupérer");
+    expect(overtime).toContain("Le tarif dimanche/jour férié est appliqué automatiquement");
     expect(mecenat).toContain("Déclarer un mécénat");
     expect(mecenat).toContain("Total brut");
     expect(solidarity).toContain("Ajouter des heures manuellement");

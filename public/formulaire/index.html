@@ -575,7 +575,7 @@
 <div id="sigSavePrompt" role="alertdialog" aria-modal="true" aria-labelledby="sigSavePromptTitle" aria-describedby="sigSavePromptText">
   <div id="sigSavePromptBox">
     <h2 id="sigSavePromptTitle">Conserver cette signature ?</h2>
-    <p id="sigSavePromptText">Elle sera réutilisée automatiquement pour vos prochaines demandes et restera uniquement sur cet appareil, dans ce navigateur. Vous pourrez la supprimer à tout moment avec la croix.</p>
+    <p id="sigSavePromptText">Elle sera réutilisée automatiquement pour vos prochaines demandes et synchronisée avec votre compte Planning Solo. Vous pourrez la supprimer à tout moment avec la croix.</p>
     <div id="sigSavePromptActions">
       <button type="button" class="btn neutral" id="sigSaveNo">Non, ne plus demander</button>
       <button type="button" class="btn" id="sigSaveYes">Oui, enregistrer</button>
@@ -726,15 +726,19 @@ var store = (function(){
   return { get:function(){ return Promise.resolve(null); }, set:function(){ return Promise.resolve(); } };
 })();
 function key(){ return 'demandes:v4:' + M.id; }
+function planningOwnerSuffix(){
+  var owner=(typeof planningImport!=='undefined' && planningImport && planningImport.ownerKey) || '';
+  return owner ? ':'+encodeURIComponent(String(owner).trim().toLowerCase()) : '';
+}
 function profileRead(){
-  try{ return JSON.parse(localStorage.getItem('demandes:v6:profil') || '{}'); }catch(e){ return {}; }
+  try{ return JSON.parse(localStorage.getItem('demandes:v6:profil'+planningOwnerSuffix()) || '{}'); }catch(e){ return {}; }
 }
 function profileWrite(){
   if(!M) return;
   var d = profileRead();
   if(byName.nom !== undefined) d.nom = inputs[byName.nom].value.trim();
   if(byName.groupe !== undefined) d.groupe = inputs[byName.groupe].value.trim();
-  try{ localStorage.setItem('demandes:v6:profil', JSON.stringify(d)); }catch(e){}
+  try{ localStorage.setItem('demandes:v6:profil'+planningOwnerSuffix(), JSON.stringify(d)); }catch(e){}
 }
 function applyProfile(){
   var d = profileRead();
@@ -751,26 +755,57 @@ function mobileSignaturePersistence(){
   return !!(window.matchMedia && (window.matchMedia('(max-width:760px)').matches || window.matchMedia('(pointer:coarse)').matches));
 }
 function signatureChoice(){
-  try{ return localStorage.getItem(SIG_CHOICE_KEY) || signatureChoiceMemory || ''; }
+  try{ return localStorage.getItem(SIG_CHOICE_KEY+planningOwnerSuffix()) || signatureChoiceMemory || ''; }
   catch(e){ return signatureChoiceMemory || ''; }
 }
 function signatureData(){
-  try{ return localStorage.getItem(SIG_DATA_KEY) || signatureDataMemory || ''; }
+  try{ return localStorage.getItem(SIG_DATA_KEY+planningOwnerSuffix()) || signatureDataMemory || ''; }
   catch(e){ return signatureDataMemory || ''; }
 }
 function setSignatureChoice(v){
   signatureChoiceMemory=v||'';
-  try{ if(v) localStorage.setItem(SIG_CHOICE_KEY,v); else localStorage.removeItem(SIG_CHOICE_KEY); }catch(e){}
+  try{ if(v) localStorage.setItem(SIG_CHOICE_KEY+planningOwnerSuffix(),v); else localStorage.removeItem(SIG_CHOICE_KEY+planningOwnerSuffix()); }catch(e){}
 }
 function setSignatureData(v){
   signatureDataMemory=v||'';
-  try{ if(v) localStorage.setItem(SIG_DATA_KEY,v); else localStorage.removeItem(SIG_DATA_KEY); }catch(e){}
+  try{ if(v) localStorage.setItem(SIG_DATA_KEY+planningOwnerSuffix(),v); else localStorage.removeItem(SIG_DATA_KEY+planningOwnerSuffix()); }catch(e){}
 }
 function updateSignaturePersistenceUI(){
   if(!sigSaveManual || !sigSavedDelete) return;
   var mobile=mobileSignaturePersistence(), choice=signatureChoice(), data=signatureData();
   sigSaveManual.style.display=mobile && hasInk && choice==='declined' ? 'block' : 'none';
   sigSavedDelete.style.display=mobile && choice==='saved' && !!data ? 'flex' : 'none';
+}
+function signatureCanSyncWithPlanning(){
+  try{
+    var publicDemoUntil=localStorage.getItem('planning:public-demo-until');
+    var publicDemo=publicDemoUntil && Number.isFinite(Date.parse(publicDemoUntil)) && Date.now()<=Date.parse(publicDemoUntil);
+    var e2eDemo=publicDemo || ((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&localStorage.getItem('planning:e2e-demo-enabled')==='1');
+    return !e2eDemo;
+  }catch(e){ return false; }
+}
+function syncSavedSignatureToPlanning(data,showConfirmation){
+  if(!signatureCanSyncWithPlanning()) return Promise.resolve(false);
+  var profile=(typeof planningImport!=='undefined' && planningImport && planningImport.profile) || {};
+  var fullName=profile.fullName || (byName.nom!==undefined ? inputs[byName.nom].value.trim() : '');
+  var group=profile.group || (byName.groupe!==undefined ? inputs[byName.groupe].value.trim() : '');
+  if(profile.signature===data) return Promise.resolve(true);
+  return fetch('/api/calendar',{
+    method:'POST',credentials:'same-origin',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'save-form-profile',fullName:fullName,group:group,signature:data})
+  }).then(function(response){
+    if(!response.ok) throw new Error('Synchronisation refusée');
+    if(typeof planningImport!=='undefined' && planningImport){
+      planningImport.profile=Object.assign({},profile,{fullName:fullName,group:group,signature:data});
+      try{ localStorage.setItem(PLANNING_HANDOFF_KEY,JSON.stringify(planningImport)); }catch(e){}
+    }
+    if(showConfirmation){ say('Signature enregistrée et synchronisée avec votre compte.'); showToast('Signature synchronisée'); }
+    return true;
+  }).catch(function(){
+    if(showConfirmation) say('Signature enregistrée sur ce téléphone, mais la synchronisation a échoué. Réessayez avec une connexion internet.');
+    return false;
+  });
 }
 function saveCurrentSignaturePermanently(showConfirmation){
   if(!mobileSignaturePersistence() || !hasInk) return false;
@@ -780,7 +815,8 @@ function saveCurrentSignaturePermanently(showConfirmation){
   setSignatureData(data);
   setSignatureChoice('saved');
   updateSignaturePersistenceUI();
-  if(showConfirmation){ say('Signature enregistrée sur cet appareil.'); showToast('Signature enregistrée'); }
+  if(showConfirmation){ say('Signature enregistrée. Synchronisation en cours…'); showToast('Signature enregistrée'); }
+  void syncSavedSignatureToPlanning(data,showConfirmation);
   return true;
 }
 function restoreSavedSignature(){
@@ -1599,6 +1635,7 @@ sigSavedDelete.addEventListener('click',function(e){
   e.preventDefault(); e.stopPropagation();
   if(!confirm('Supprimer la signature enregistrée sur cet appareil ?')) return;
   setSignatureData(''); setSignatureChoice('');
+  void syncSavedSignatureToPlanning('',false);
   clearSig(); scheduleSave();
   say('Signature enregistrée supprimée. Vous pouvez recommencer.'); showToast('Signature supprimée');
 });
@@ -2632,7 +2669,6 @@ async function buildPdfBytes(){
     /* L'observation reste sur le formulaire : elle est placée dans l'espace
        central libre entre les deux zones de signature, sans créer de page. */
     var obsPage = doc.getPages()[0];
-    var obsFont = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
     var obsBold = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
     var ps = obsPage.getSize();
     /* Sur la demande de congés, le cadre Observation reprend exactement
@@ -2657,13 +2693,13 @@ async function buildPdfBytes(){
     obsPage.drawText('OBSERVATION', {
       x:boxX+5, y:(M.id === 'conges') ? 104.1 : boxY+boxH-9,
       size:6.1, font:obsBold,
-      color:PDFLib.rgb(11/255,59/255,175/255)
+      color:PDFLib.rgb(.12,.12,.12)
     });
     var clean=obsText.replace(/\s+/g,' ').trim();
     var words=clean.split(' '), lines=[], line='', fontSize=5.9, usable=boxW-10;
     for(var wi=0;wi<words.length;wi++){
       var test=line ? line+' '+words[wi] : words[wi];
-      if(obsFont.widthOfTextAtSize(test,fontSize) > usable && line){ lines.push(line); line=words[wi]; }
+      if(obsBold.widthOfTextAtSize(test,fontSize) > usable && line){ lines.push(line); line=words[wi]; }
       else line=test;
     }
     if(line) lines.push(line);
@@ -2671,12 +2707,12 @@ async function buildPdfBytes(){
     if(lines.length>maxLines){
       lines=lines.slice(0,maxLines);
       var last=lines[maxLines-1];
-      while(last && obsFont.widthOfTextAtSize(last+'…',fontSize)>usable) last=last.slice(0,-1);
+      while(last && obsBold.widthOfTextAtSize(last+'…',fontSize)>usable) last=last.slice(0,-1);
       lines[maxLines-1]=last+'…';
     }
     var y=(M.id === 'conges') ? obsHeaderY-11 : boxY+boxH-18;
     lines.forEach(function(t){
-      obsPage.drawText(t,{x:boxX+7,y:y,size:fontSize,font:obsFont,color:PDFLib.rgb(.10,.13,.18)});
+      obsPage.drawText(t,{x:boxX+7,y:y,size:fontSize,font:obsBold,color:PDFLib.rgb(INK[0]/255,INK[1]/255,INK[2]/255)});
       y-=6.2;
     });
   }
@@ -2973,7 +3009,10 @@ async function applyPlanningImport(data){
     if(!prefix) return;
     buckets[prefix].push(item);
   });
-  var capacities={ca:5,artt:4,frac:2,half:4,gard:2,exc:1,rjour:5,rdemi:5,rheur:5,rferi:5};
+  /* Toutes les rubriques présentes dans buckets doivent avoir une capacité.
+     Sans celle du CET, 0 / undefined produisait NaN : la boucle de création
+     des feuilles ne s'exécutait plus et aucune date n'était préremplie. */
+  var capacities={ca:5,artt:4,cet:4,frac:2,half:4,gard:2,exc:1,rjour:5,rdemi:5,rheur:5,rferi:5};
   var needed=1;
   Object.keys(buckets).forEach(function(prefix){
     needed=Math.max(needed,Math.ceil(buckets[prefix].length/capacities[prefix]));
@@ -3022,6 +3061,7 @@ function archivePlanningRequest(pdf){
         var tx=db.transaction('requests','readwrite');
         tx.objectStore('requests').put({
           id:planningImport.requestId,
+          ownerKey:String(planningImport.ownerKey||'').trim().toLowerCase(),
           name:pdf.name,
           createdAt:planningImport.createdAt || now,
           updatedAt:now,
@@ -3037,7 +3077,9 @@ function syncPlanningRequest(){
   if(!planningImport || planningSyncDone) return Promise.resolve();
   if(planningSyncPromise) return planningSyncPromise;
   planningSyncPromise=(async function(){
-    var e2eDemo=(location.hostname==='127.0.0.1'||location.hostname==='localhost')&&localStorage.getItem('planning:e2e-demo-enabled')==='1';
+    var publicDemoUntil=localStorage.getItem('planning:public-demo-until');
+    var publicDemo=publicDemoUntil && Number.isFinite(Date.parse(publicDemoUntil)) && Date.now()<=Date.parse(publicDemoUntil);
+    var e2eDemo=publicDemo || ((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&localStorage.getItem('planning:e2e-demo-enabled')==='1');
     if(e2eDemo){
       localStorage.setItem(PLANNING_DEMO_COMPLETED_KEY,JSON.stringify(planningImport));
       planningSyncDone=true;

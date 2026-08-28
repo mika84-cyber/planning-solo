@@ -23,6 +23,10 @@ describe("formulaire de demande", () => {
     expect(html).toContain('id="btnPdf"');
     expect(html).toContain("demandes:v4:");
     expect(html).toContain("item.type==='recovery_training')?'rheur'");
+    expect(html).toContain("capacities={ca:5,artt:4,cet:4,frac:2");
+    expect(html).toContain("syncSavedSignatureToPlanning");
+    expect(html).toContain("action:'save-form-profile',fullName:fullName,group:group,signature:data");
+    expect(html).toContain("font:obsBold,color:PDFLib.rgb(INK[0]/255,INK[1]/255,INK[2]/255)");
   });
 
   it("confirme la demande dans le planning seulement après la finalisation", () => {

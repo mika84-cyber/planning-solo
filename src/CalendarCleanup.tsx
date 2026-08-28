@@ -26,8 +26,8 @@ export function CalendarCleanupPanel({
           {pluralSuffix(selectedCount)}
         </h2>
         <p>
-          Touchez plusieurs cases, puis choisissez uniquement ce que vous
-          souhaitez effacer.
+          Vous pouvez effacer plusieurs dates ou notes en même temps. Faites
+          votre choix directement dans le planning.
         </p>
       </div>
       <div className="calendar-delete-actions">
@@ -63,8 +63,25 @@ export function CalendarCleanupTrigger({
   onStart: () => void;
 }) {
   return (
-    <button className={className} type="button" onClick={onStart}>
-      Effacer plusieurs dates ou notes
+    <button
+      className={className}
+      type="button"
+      onClick={onStart}
+      aria-label="Effacer plusieurs dates ou notes"
+    >
+      <svg
+        className="calendar-cleanup-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+      </svg>
+      <span className="calendar-cleanup-label-full">
+        Effacer plusieurs dates ou notes
+      </span>
+      <span className="calendar-cleanup-label-short" aria-hidden="true">
+        Effacer
+      </span>
     </button>
   );
 }

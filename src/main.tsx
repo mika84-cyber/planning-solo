@@ -7,7 +7,8 @@ import "./dataManagement.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
 
 if ("serviceWorker" in navigator) {
-  if (import.meta.env.PROD) {
+  const publicDemoBuild = Boolean(import.meta.env.VITE_PUBLIC_DEMO_UNTIL);
+  if (import.meta.env.PROD && !publicDemoBuild) {
     window.addEventListener("load", () => {
       void navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
@@ -35,9 +36,9 @@ if ("serviceWorker" in navigator) {
         .catch(() => {});
     });
   } else {
-    // En développement, un ancien cache PWA peut masquer les changements et
-    // faire croire qu'une correction locale ne fonctionne pas. La production
-    // conserve naturellement son mode hors ligne.
+    // Les builds de démonstration restent de simples pages web : aucun service
+    // worker ni cache installable. En développement, cela évite aussi qu'un
+    // ancien cache PWA masque les changements locaux.
     void navigator.serviceWorker
       .getRegistrations()
       .then((registrations) =>

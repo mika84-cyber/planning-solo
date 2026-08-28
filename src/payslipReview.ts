@@ -14,6 +14,24 @@ export type PayslipReviewSummary = {
   unavailable: PayslipReviewCheck[];
 };
 
+/** CIA et carence sont des lignes ponctuelles : leur absence est normale sur
+ * un bulletin ordinaire et ne doit pas être présentée comme une anomalie. */
+export function shouldReportMissingPayslipField(
+  key: string,
+  mode: "verify" | "calibrate",
+) {
+  return mode !== "verify" || (key !== "cia" && key !== "carenceDay");
+}
+
+/** Une carence lue sur le bulletin devient un écart seulement lorsqu'aucun
+ * arrêt maladie n'avait été enregistré pour ce mois dans l'application. */
+export function isUnplannedPayslipCarence(
+  foundCarence: number | undefined,
+  plannedSickDays: number,
+) {
+  return foundCarence !== undefined && foundCarence > 0 && plannedSickDays <= 0;
+}
+
 /**
  * Résume uniquement les comparaisons que le bulletin permet réellement de
  * faire. Une ligne absente reste « non vérifiable » au lieu de devenir une

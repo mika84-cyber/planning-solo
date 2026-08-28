@@ -1,0 +1,407 @@
+/* Programmation du Grand Palais : écran autonome, séparé des formulaires. */
+.top-header.top-header-program {
+  position: relative;
+  overflow: hidden;
+  color: #17283e;
+  background: #f7f5ef;
+}
+
+.top-header.top-header-program::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: url("/grand-palais-verriere-fast.webp") center 46% / cover no-repeat;
+}
+
+.top-header.top-header-program::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background: none;
+}
+
+.top-header.top-header-program > * {
+  position: relative;
+  z-index: 2;
+}
+
+.top-header-program .top-header-title h1,
+.top-header-program .top-header-title .eyebrow {
+  color: #fff;
+  text-shadow: 0 2px 7px rgba(5, 19, 29, 0.92), 0 0 2px #071722;
+}
+
+.grand-palais-program-screen {
+  display: grid;
+  gap: clamp(16px, 2vw, 22px);
+  width: 100%;
+  margin: 18px 0 0;
+}
+
+.grand-palais-program-screen .native-screen-heading {
+  margin: 0;
+}
+
+.grand-palais-program-intro,
+.grand-palais-venue-navigation {
+  border: 1.5px solid rgba(74, 104, 145, 0.34);
+  border-left: 6px solid #6684c2;
+  border-radius: 22px;
+  padding: clamp(18px, 2.4vw, 26px);
+  background:
+    radial-gradient(circle at 100% 0, rgba(223, 239, 229, 0.48), transparent 34%),
+    linear-gradient(145deg, #f8fbff, #fff 58%, #fffaf3);
+  box-shadow: 0 12px 28px rgba(36, 61, 92, 0.08);
+}
+
+.grand-palais-venue-navigation {
+  display: grid;
+  gap: 18px;
+  border-left-color: #6c8baa;
+  background: linear-gradient(145deg, #f7faff, #fff 62%, #fafcff);
+}
+
+.grand-palais-venue-navigation-heading h3 {
+  margin: 4px 0 5px;
+  color: #17283e;
+  font-size: clamp(1.22rem, 2.4vw, 1.55rem);
+}
+
+.grand-palais-venue-navigation-heading p {
+  margin: 0;
+  color: #63748a;
+  line-height: 1.45;
+}
+
+.grand-palais-primary-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 18px);
+  margin: 0;
+}
+
+.grand-palais-primary-picker button,
+.grand-palais-other-picker button {
+  min-width: 0;
+  border: 1.5px solid #c8d3e6;
+  border-radius: 15px;
+  color: #273c5a;
+  background: #f4f7fc;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.grand-palais-primary-picker button {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  min-height: 104px;
+  padding: 16px;
+  text-align: left;
+}
+
+.grand-palais-primary-picker button small {
+  color: #66758b;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.grand-palais-primary-picker button.active,
+.grand-palais-other-picker button.active {
+  border-color: #111820;
+  color: #173d75;
+  outline: 2px solid #111820;
+  outline-offset: -2px;
+  box-shadow: 0 8px 20px rgba(22, 31, 42, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.grand-palais-primary-picker button.active small {
+  color: #516b91;
+}
+
+.grand-palais-primary-picker button:hover,
+.grand-palais-other-picker button:hover {
+  transform: translateY(-1px);
+}
+
+.grand-palais-primary-picker > button:nth-child(1) { background: #eaf2ff; }
+.grand-palais-primary-picker > button:nth-child(2) { background: #f1edff; }
+.grand-palais-primary-picker > button:nth-child(3) { background: #fff0f2; }
+.grand-palais-primary-picker > button:nth-child(4) { background: #fff7e7; }
+.grand-palais-primary-picker > button:nth-child(5) { background: #f1f4f8; }
+.grand-palais-primary-picker > button:nth-child(6) { background: #eef7f7; }
+
+.grand-palais-other-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: -2px 0 0;
+  border-radius: 16px;
+  padding: 7px;
+  background: #edf2fa;
+}
+
+.grand-palais-admin-alerts {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 18px;
+  border: 1.5px solid #dfa54c;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(145deg, #fff8e9, #fffdf8);
+  box-shadow: 0 10px 24px rgba(111, 76, 27, 0.1);
+}
+
+.grand-palais-admin-alerts h3,
+.grand-palais-admin-alerts p {
+  margin: 3px 0 0;
+}
+
+.grand-palais-admin-alert-list {
+  display: grid;
+  gap: 10px;
+}
+
+.grand-palais-admin-alert-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  align-items: center;
+  border: 1px solid #e5c995;
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.grand-palais-admin-alert-list article > small,
+.grand-palais-admin-alert-list article > strong,
+.grand-palais-admin-alert-list article > span {
+  grid-column: 1;
+}
+
+.grand-palais-admin-alert-list article > small {
+  color: #8c5a19;
+  font-weight: 850;
+}
+
+.grand-palais-admin-alert-list article > span {
+  color: #647286;
+  font-size: 0.78rem;
+}
+
+.grand-palais-admin-alert-list article > div {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  display: flex;
+  gap: 8px;
+}
+
+.grand-palais-admin-alert-list button {
+  border: 1.5px solid #244f89;
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: #fff;
+  background: #2f65b9;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.grand-palais-admin-alert-list button + button {
+  border-color: #bdc7d5;
+  color: #40516a;
+  background: #fff;
+}
+
+.grand-palais-review-error {
+  color: #a32635;
+  font-weight: 800;
+}
+
+.grand-palais-other-picker button {
+  min-height: 46px;
+  padding: 9px 12px;
+  border-color: #c5d2e5;
+  color: #324d73;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.grand-palais-program-panel {
+  border: 1.5px solid rgba(74, 104, 145, 0.3);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(229, 240, 255, 0.45), transparent 30%),
+    linear-gradient(145deg, #fbfcfe, #fff 64%, #fffaf4);
+  box-shadow: 0 12px 28px rgba(36, 61, 92, 0.07);
+}
+
+.grand-palais-program-panel .useful-expo-timeline {
+  gap: 12px;
+}
+
+.grand-palais-program-panel .useful-expo-timeline::before,
+.grand-palais-program-panel .useful-expo-timeline-mark {
+  display: none;
+}
+
+.grand-palais-program-panel .useful-expo-timeline article {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  min-height: 92px;
+  border: 2px solid rgba(64, 91, 126, 0.48);
+  padding: 16px 17px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 20px rgba(34, 57, 85, 0.09);
+}
+
+.grand-palais-program-panel .useful-expo-timeline article.is-uncertain {
+  border-color: rgba(190, 121, 37, 0.58);
+}
+
+.grand-palais-program-panel .useful-expo-timeline article > div {
+  grid-column: 1;
+}
+
+.grand-palais-program-panel .useful-expo-timeline article > em {
+  grid-column: 2;
+  align-self: start;
+}
+
+.useful-expo-timeline article.is-current {
+  border-color: rgba(42, 94, 166, 0.72);
+  background: linear-gradient(135deg, rgba(229, 240, 255, 0.98), rgba(247, 251, 255, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(74, 130, 199, 0.1);
+}
+
+.useful-expo-timeline article.is-current .useful-expo-timeline-mark {
+  background: #3474c4;
+  box-shadow: 0 0 0 2px #3474c4;
+}
+
+.useful-expo-timeline article.is-current > em {
+  color: #204f8d;
+  background: #dbeaff;
+}
+
+
+.useful-expo-timeline article a {
+  width: fit-content;
+  color: #246f66;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.grand-palais-interexpo-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.grand-palais-interexpo-list > article {
+  min-width: 0;
+  border: 1.5px solid #cad7e7;
+  border-radius: 16px;
+  padding: 15px;
+  background: linear-gradient(145deg, #f6f9fd, #fff);
+}
+
+.grand-palais-interexpo-list strong {
+  color: #172c46;
+  font-size: 0.84rem;
+}
+
+.grand-palais-interexpo-list p {
+  margin: 0;
+  color: #63748a;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .top-header.top-header-program {
+    background: #f7f5ef;
+  }
+
+  .top-header.top-header-program::before {
+    background-position: 56% 46%;
+    background-size: cover;
+  }
+
+  .top-header.top-header-program::after {
+    background: none;
+  }
+
+  .top-header.top-header-program .main-menu-button {
+    z-index: 8;
+    display: grid;
+    visibility: visible;
+    opacity: 1;
+    color: #173653;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .grand-palais-program-screen {
+    width: 100%;
+    margin-top: 10px;
+    gap: 12px;
+  }
+
+  .grand-palais-program-intro,
+  .grand-palais-venue-navigation {
+    border-radius: 18px;
+    padding: 15px;
+  }
+
+  .grand-palais-venue-navigation {
+    gap: 13px;
+  }
+
+  .grand-palais-primary-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .grand-palais-primary-picker button {
+    min-height: 94px;
+    padding: 12px;
+  }
+
+  .grand-palais-program-panel {
+    padding: 14px;
+  }
+
+  .grand-palais-program-panel .useful-expo-timeline article {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .grand-palais-program-panel .useful-expo-timeline article > em {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .grand-palais-admin-alert-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .grand-palais-admin-alert-list article > div {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 7px;
+  }
+
+  .grand-palais-interexpo-list {
+    grid-template-columns: 1fr;
+  }
+
+}

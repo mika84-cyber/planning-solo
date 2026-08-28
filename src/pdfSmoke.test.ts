@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createAnnualPlanningPdf } from "./planningPdf";
+import {
+  buildWorkedHolidaySchedule,
+  createAnnualPlanningPdf,
+  createWorkedHolidaysPdf,
+} from "./planningPdf";
 import { dateKey, getDayInfo, wasPompidouHolidayWorked } from "./planningLogic";
 
 /* Un mini-lecteur de PDF, pour vérifier ce que jsPDF a réellement écrit plutôt
@@ -90,6 +94,10 @@ describe("createAnnualPlanningPdf (fumée)", () => {
       ["2026-01-05", "childcare"],
       ["2026-01-06", "exceptional"],
       ["2026-01-07", "half"],
+      ["2026-01-08", "strike"],
+      ["2026-01-09", "cet"],
+      ["2026-01-10", "other"],
+      ["2026-01-11", "recovery"],
     ] as const);
     const result = createAnnualPlanningPdf({
       year: 2026,
@@ -105,9 +113,34 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(text).toContain("RTT");
     expect(text).toContain("Fraction.");
     expect(text).toContain("Maladie");
-    expect(text).toContain("Garde enf.");
+    expect(text).toContain("Garde d'enfant");
     expect(text).toContain("ASA");
     expect(text).toContain("½ CA");
+    expect(text).toContain("Grève");
+    expect(text).toContain("CET");
+    expect(text).toContain("Divers");
+    expect(text).toContain("Récup");
+  });
+
+  it("conserve une absence enregistrée sur un repos ou un jour férié", async () => {
+    const leaveTypes = new Map([
+      ["2026-01-01", "strike"],
+      ["2026-01-02", "other"],
+    ] as const);
+    const result = createAnnualPlanningPdf({
+      year: 2026,
+      groups: [1],
+      getDayInfo: (date) =>
+        date.getDate() === 1
+          ? { kind: "off", holiday: "Jour de l'an" }
+          : { kind: "off", holiday: "" },
+      wasPompidouHolidayWorked: () => false,
+      leaveTypes,
+      filenameLabel: "test-absence-sur-repos",
+    });
+    const text = await extractPdfText(await result.blob.arrayBuffer());
+    expect(text).toContain("Grève");
+    expect(text).toContain("Divers");
   });
 
   it("affiche la colonne Année / Groupe / Fériés et sa légende", async () => {
@@ -125,6 +158,10 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(text).toContain("Fériés compensés");
     expect(text).toContain("Férié compensé");
     expect(text).toContain("Congé validé");
+    expect(text).toContain("Maladie");
+    expect(text).toContain("Garde d'enfant");
+    expect(text).toContain("Grève");
+    expect(text).toContain("Divers");
   });
 
   it("conserve la légende lisible avec le tableau de vacances des trois zones", async () => {
@@ -156,5 +193,49 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(text).toContain("07 février 26");
     expect(text).not.toContain("14/02/2026");
     expect(text).not.toContain("/");
+  });
+});
+
+describe("tableau des fériés réellement travaillés", () => {
+  it("conserve seulement les groupes présents et exclut un férié compensé", () => {
+    const schedule = buildWorkedHolidaySchedule(2026, 2026, (date, group) => {
+      if (date.getMonth() !== 0 || ![1, 2].includes(date.getDate()))
+        return { kind: "off", holiday: "" };
+      if (date.getDate() === 2)
+        return { kind: "off", holiday: "Férié compensé" };
+      return {
+        kind: group === 2 ? "off" : "work",
+        holiday: "Jour réellement travaillé",
+      };
+    });
+    expect(schedule).toEqual([
+      {
+        year: 2026,
+        entries: [
+          {
+            key: "2026-01-01",
+            name: "Jour réellement travaillé",
+            groups: [1, 3],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("génère le récapitulatif 2026–2031 sur une page", async () => {
+    const result = createWorkedHolidaysPdf({ getDayInfo });
+    expect(result.filename).toBe("feries-travailles-2026-2031.pdf");
+    expect(result.schedule).toHaveLength(6);
+    expect(result.schedule.every(({ entries }) => entries.every(({ groups }) => groups.length > 0))).toBe(true);
+    expect(result.blob.size).toBeGreaterThan(1000);
+    const text = await extractPdfText(await result.blob.arrayBuffer());
+    expect(text).toContain("Jours fériés travaillés");
+    expect(text).not.toContain("réellement travaillés");
+    expect(text).toContain("Tableau pour faciliter les échanges");
+    expect(text).not.toContain("Pour faciliter les échanges sur jours fériés");
+    expect(text).toContain("2026");
+    expect(text).toContain("2031");
+    expect(text).not.toContain("Lecture du tableau");
+    expect(text).not.toContain("Les fériés compensés");
   });
 });

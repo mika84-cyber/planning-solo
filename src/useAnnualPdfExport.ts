@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   COUNTED_ONLY_TYPES,
   LEAVE_ALLOWANCES,
@@ -11,6 +11,7 @@ import {
   type HalfMoment,
   type LeaveType,
 } from "./planningLogic";
+import type { RecoveryUse } from "./overtime";
 
 type PdfExportPeriod = {
   from: string;
@@ -19,27 +20,103 @@ type PdfExportPeriod = {
   halfMoment?: HalfMoment | "";
 };
 
+type AnnualPdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
+
+function normalizePdfBlob(blob: Blob) {
+  return blob.type === "application/pdf"
+    ? blob
+    : new Blob([blob], { type: "application/pdf" });
+}
+
+export function buildAnnualPdfAbsences(
+  year: number,
+  periods: PdfExportPeriod[],
+  recoveryUses: ReadonlyArray<Pick<RecoveryUse, "date">>,
+  legacyOtherDates: ReadonlySet<string> = new Set(),
+) {
+  const leaveTypes = new Map<string, LeaveType>();
+  const halfMoments = new Map<string, HalfMoment>();
+  const first = `${year}-01-01`;
+  const last = `${year}-12-31`;
+
+  for (const period of periods) {
+    const leaveType = period.leaveType;
+    if (!leaveType || period.to < first || period.from > last) continue;
+    const from = period.from < first ? first : period.from;
+    const to = period.to > last ? last : period.to;
+    for (
+      let date = fromKey(from);
+      dateKey(date) <= to;
+      date = addDays(date, 1)
+    ) {
+      const key = dateKey(date);
+      if (leaveTypes.has(key)) continue;
+      leaveTypes.set(key, leaveType);
+      if (leaveType === "half" && period.halfMoment)
+        halfMoments.set(key, period.halfMoment);
+    }
+  }
+
+  // Les récupérations consommées sont stockées à part des périodes de congé.
+  // Elles complètent donc la carte du PDF sans écraser une absence existante.
+  for (const recoveryUse of recoveryUses) {
+    if (
+      recoveryUse.date >= first &&
+      recoveryUse.date <= last &&
+      !leaveTypes.has(recoveryUse.date)
+    )
+      leaveTypes.set(recoveryUse.date, "recovery");
+  }
+
+  // Les anciennes versions pouvaient enregistrer « Divers » directement sur
+  // la case du calendrier, sans créer de période. Ces données historiques
+  // doivent rester visibles dans le document généré.
+  for (const date of legacyOtherDates)
+    if (date >= first && date <= last && !leaveTypes.has(date))
+      leaveTypes.set(date, "other");
+
+  return { leaveTypes, halfMoments };
+}
+
 export function useAnnualPdfExport(
   view: Date,
   group: number,
   periods: PdfExportPeriod[],
+  recoveryUses: ReadonlyArray<Pick<RecoveryUse, "date">>,
+  legacyOtherDates: ReadonlySet<string>,
   wishDates: ReadonlySet<string>,
   notify: (text: string) => void,
 ) {
   const [pdfExporting, setPdfExporting] = useState<
-    "selected" | "all" | "my-leaves" | null
+    AnnualPdfScope | null
   >(null);
-
+  const deliverPdf = useCallback((blob: Blob, filename: string) => {
+    const pdfBlob = normalizePdfBlob(blob);
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.type = "application/pdf";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  }, []);
   async function exportAnnualPlanning(
-    scope: "selected" | "all" | "my-leaves",
+    scope: AnnualPdfScope,
     includeSchoolVacations = false,
   ) {
     if (pdfExporting) return;
     setPdfExporting(scope);
     try {
-      const { createAnnualPlanningPdf } = await import("./planningPdf");
-      const leaveTypes = new Map<string, Exclude<LeaveType, "other">>();
-      const halfMoments = new Map<string, HalfMoment>();
+      const { createAnnualPlanningPdf, createWorkedHolidaysPdf } = await import("./planningPdf");
+      if (scope === "worked-holidays") {
+        const result = createWorkedHolidaysPdf({ getDayInfo });
+        deliverPdf(result.blob, result.filename);
+        return;
+      }
+      let leaveTypes = new Map<string, LeaveType>();
+      let halfMoments = new Map<string, HalfMoment>();
       // Bornée à l'année affichée, comme le reste du PDF : une case déborde
       // volontairement de part et d'autre pour qu'une période à cheval sur
       // le 1er janvier affiche quand même son vrai repère de début ou de fin.
@@ -68,34 +145,12 @@ export function useAnnualPdfExport(
       }
       if (scope === "my-leaves") {
         const year = view.getFullYear();
-        const first = `${year}-01-01`;
-        const last = `${year}-12-31`;
-        for (const period of periods) {
-          const leaveType = period.leaveType;
-          if (
-            !leaveType ||
-            leaveType === "other" ||
-            period.to < first ||
-            period.from > last
-          )
-            continue;
-          const from = period.from < first ? first : period.from;
-          const to = period.to > last ? last : period.to;
-          for (
-            let date = fromKey(from);
-            dateKey(date) <= to;
-            date = addDays(date, 1)
-          ) {
-            const info = getDayInfo(date, group);
-            const key = dateKey(date);
-            if (!info.holiday && info.kind !== "off" && !leaveTypes.has(key)) {
-              leaveTypes.set(key, leaveType);
-              // La moitié suit le type : c'est elle qui décide du côté colorié.
-              if (leaveType === "half" && period.halfMoment)
-                halfMoments.set(key, period.halfMoment);
-            }
-          }
-        }
+        ({ leaveTypes, halfMoments } = buildAnnualPdfAbsences(
+          year,
+          periods,
+          recoveryUses,
+          legacyOtherDates,
+        ));
       }
       const quotaDaysUsed = Array.from(leaveTypes.values()).reduce(
         (total, type) =>
@@ -134,14 +189,7 @@ export function useAnnualPdfExport(
         filenameLabel:
           scope === "my-leaves" ? `groupe-${group}-avec-conges` : undefined,
       });
-      const url = URL.createObjectURL(result.blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = result.filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      deliverPdf(result.blob, result.filename);
     } catch {
       notify("Le PDF n’a pas pu être créé. Rechargez la page puis réessayez.");
     } finally {
@@ -149,5 +197,8 @@ export function useAnnualPdfExport(
     }
   }
 
-  return { pdfExporting, exportAnnualPlanning };
+  return {
+    pdfExporting,
+    exportAnnualPlanning,
+  };
 }

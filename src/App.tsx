@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import {
   acceptInvite,
   getUser,
@@ -10,15 +10,24 @@ import {
 } from "@netlify/identity";
 import { ChoicePicker } from "./ChoicePicker";
 import { AuthScreen } from "./AuthScreen";
+import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
+import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
+import type { SharedGrandPalaisEvent } from "./grandPalaisProgramTypes";
+import { getUsefulContacts } from "./contactsApi";
+import type { UsefulContactsPayload } from "./usefulContactsTypes";
+import { resolvePublicDemoAccess } from "./demoAccess";
 import { ConnectionStatus } from "./ConnectionStatus";
 import { DataManagementDialog } from "./DataManagementDialog";
+import {
+  AppHeader,
+  MainMenu,
+  MAIN_SECTION_ORDER,
+  type MainSection,
+} from "./AppNavigation";
 import {
   CalendarCleanupPanel,
   CalendarCleanupTrigger,
 } from "./CalendarCleanup";
-import { LeaveBalancesSection } from "./LeaveBalancesSection";
-import { CetSection } from "./CetSection";
-import { PayEstimateDetails } from "./PayEstimateDetails";
 import { ManualAdjustmentsDialog, RangeLeaveDialog } from "./LeaveDialogs";
 import { MonthCalendar, NotesPanelContent } from "./PlanningView";
 import { RequestValidationSummary } from "./RequestValidationSummary";
@@ -29,6 +38,7 @@ import {
   NonWorkingDayWarningDialog,
   SuccessToast,
   TimeSelectionDialog,
+  UndoToast,
 } from "./PlanningDialogs";
 import {
   MecenatDialog,
@@ -41,6 +51,7 @@ import {
   CalendarApiError,
   calendarErrorMessage,
   getCalendar,
+  notifyGuestSession,
   postCalendar,
   postCalendarBatch,
   postCalendarPeriodsVerified,
@@ -89,11 +100,15 @@ import {
   type PayCalibrationRegime,
   type PayslipReading,
 } from "./payslip";
-import { summarizePayslipReview } from "./payslipReview";
+import {
+  isUnplannedPayslipCarence,
+  shouldReportMissingPayslipField,
+  summarizePayslipReview,
+} from "./payslipReview";
+import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
+import { PayslipWarningEffect } from "./PayslipWarningEffect";
 import { strikePayEstimate } from "./strike";
 import { StrikeContinuityDetails } from "./StrikeContinuityDetails";
-import { UsefulFormsSection } from "./UsefulFormsSection";
-import { UsefulContactsSection } from "./UsefulContactsSection";
 import {
   payEstimateReadiness,
   type PayEstimateField,
@@ -183,6 +198,31 @@ import {
   type SelectionType,
 } from "./planningLogic";
 
+const LeaveBalancesSection = lazy(() =>
+  import("./LeaveBalancesSection").then((module) => ({ default: module.LeaveBalancesSection })),
+);
+const CetSection = lazy(() =>
+  import("./CetSection").then((module) => ({ default: module.CetSection })),
+);
+const PayEstimateDetails = lazy(() =>
+  import("./PayEstimateDetails").then((module) => ({ default: module.PayEstimateDetails })),
+);
+const UsefulFormsSection = lazy(() =>
+  import("./UsefulFormsSection").then((module) => ({ default: module.UsefulFormsSection })),
+);
+const UsefulContactsSection = lazy(() =>
+  import("./UsefulContactsSection").then((module) => ({ default: module.UsefulContactsSection })),
+);
+const GrandPalaisProgramSection = lazy(() =>
+  import("./GrandPalaisProgramSection").then((module) => ({ default: module.GrandPalaisProgramSection })),
+);
+const UserGuideDialogs = lazy(() =>
+  import("./UserGuideDialogs").then((module) => ({ default: module.UserGuideDialogs })),
+);
+function DeferredSection({ label }: { label: string }) {
+  return <div className="deferred-section-loading" role="status">Chargement de {label}…</div>;
+}
+
 const HANDOFF_KEY = "planning:form-handoff-v1";
 
 const EMPTY_MANUAL_ADJUSTMENTS: ManualYearAdjustments = {
@@ -247,12 +287,12 @@ function manualAdjustmentsFromApi(value: unknown) {
   );
 }
 
-const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf", "forms", "contacts"] as const;
-type MainSection = (typeof MAIN_SECTION_ORDER)[number];
-
 export default function Home() {
   useModalAccessibility();
   const connectionStatus = useConnectionStatus();
+  const publicDemoAccess = resolvePublicDemoAccess(
+    import.meta.env.VITE_PUBLIC_DEMO_UNTIL,
+  );
   // Le jeu de données sans compte est réservé aux tests E2E locaux. Aucun
   // paramètre d'URL public ne peut désormais activer ce mode. L'accès depuis
   // un téléphone reste possible en développement sur le Wi-Fi privé.
@@ -262,17 +302,23 @@ export default function Home() {
     /^10\./.test(location.hostname) ||
     /^172\.(1[6-9]|2\d|3[01])\./.test(location.hostname);
   const demoMode =
-    import.meta.env.DEV &&
-    import.meta.env.VITE_E2E_DEMO === "true" &&
-    localTestHost &&
-    (localStorage.getItem("planning:e2e-demo-enabled") === "1" ||
-      new URLSearchParams(location.search).get("local-test") === "1");
+    publicDemoAccess.active ||
+    (import.meta.env.DEV &&
+      import.meta.env.VITE_E2E_DEMO === "true" &&
+      localTestHost &&
+      (localStorage.getItem("planning:e2e-demo-enabled") === "1" ||
+        new URLSearchParams(location.search).get("local-test") === "1"));
+  const previewPayEffect =
+    import.meta.env.DEV && localTestHost
+      ? new URLSearchParams(location.search).get("preview-pay-effect")
+      : null;
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
   const [mode, setMode] = useState<ViewMode>("month");
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [userEmail, setUserEmail] = useState("");
+  const [isProgramAdmin, setIsProgramAdmin] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -391,6 +437,10 @@ export default function Home() {
     successMessage,
     confirm,
     dismissSuccess,
+    undoOffer,
+    offerUndo,
+    dismissUndo,
+    runUndo,
   } = useToast();
   const {
     archiveOpen,
@@ -398,7 +448,7 @@ export default function Home() {
     archivedRequests,
     openArchivedRequest,
     deleteArchivedRequest,
-  } = useRequestArchive(authStatus, "mika", notify);
+  } = useRequestArchive(authStatus, isProgramAdmin, userEmail, notify);
   const overtimeSaveInFlightRef = useRef(false);
   const mecenatSaveInFlightRef = useRef(false);
   const lastOvertimeSubmissionRef = useRef({ key: "", at: 0 });
@@ -493,6 +543,10 @@ export default function Home() {
   const [quickNoteMode, setQuickNoteMode] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [homeSection, setHomeSection] = useState<MainSection>("home");
+  const [prefetchedContacts, setPrefetchedContacts] =
+    useState<UsefulContactsPayload | null>(null);
+  const [approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates] =
+    useState<SharedGrandPalaisEvent[]>([]);
   const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const [mainMenuOpen, setMainMenuOpen] = useState(false);
   const [guidePromptOpen, setGuidePromptOpen] = useState(false);
@@ -511,11 +565,60 @@ export default function Home() {
   }, [installationEnabled]);
 
   useEffect(() => {
+    if (authStatus !== "ready") return;
+    let active = true;
+    void getSharedGrandPalaisProgram()
+      .then((payload) => {
+        if (!active) return;
+        setApprovedGrandPalaisUpdates(payload.approved ?? []);
+        setIsProgramAdmin(import.meta.env.DEV && demoMode ? true : payload.isAdmin);
+      })
+      .catch(() => {
+        if (active) setIsProgramAdmin(import.meta.env.DEV && demoMode);
+      });
+    return () => { active = false; };
+  }, [authStatus, homeSection]);
+
+  useEffect(() => {
+    const expiresAt = import.meta.env.VITE_PUBLIC_DEMO_UNTIL;
+    if (publicDemoAccess.active && expiresAt)
+      localStorage.setItem("planning:public-demo-until", expiresAt);
+  }, [publicDemoAccess.active]);
+
+  useEffect(() => {
     const query = window.matchMedia("(max-width: 720px)");
     const update = () => setNarrowScreen(query.matches);
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
+  useEffect(() => {
+    if (authStatus !== "ready") return;
+    let active = true;
+    const warmSecondarySections = () => {
+      [
+        "/forms-header-art-fast.webp",
+        "/grand-palais-verriere-fast.webp",
+        "/contacts-header-art-black-fast.webp",
+      ].forEach((source) => {
+        const image = new Image();
+        image.decoding = "async";
+        image.src = source;
+      });
+      void getUsefulContacts()
+        .then((payload) => {
+          if (active) setPrefetchedContacts(payload);
+        })
+        .catch(() => undefined);
+    };
+    const idleId = window.requestIdleCallback
+      ? window.requestIdleCallback(warmSecondarySections, { timeout: 1_500 })
+      : window.setTimeout(warmSecondarySections, 500);
+    return () => {
+      active = false;
+      if (window.cancelIdleCallback) window.cancelIdleCallback(idleId);
+      else window.clearTimeout(idleId);
+    };
+  }, [authStatus]);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [checkingAppUpdate, setCheckingAppUpdate] = useState(false);
@@ -612,12 +715,23 @@ export default function Home() {
       ),
     [entries],
   );
+  const legacyOtherDates = useMemo(
+    () =>
+      new Set(
+        Object.entries(entries)
+          .filter(([, entry]) => entry.leave)
+          .map(([key]) => key),
+      ),
+    [entries],
+  );
   const [showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf] =
     useState(false);
   const { pdfExporting, exportAnnualPlanning } = useAnnualPdfExport(
     view,
     group,
     periods,
+    recoveryUses,
+    legacyOtherDates,
     wishDates,
     notify,
   );
@@ -758,6 +872,7 @@ export default function Home() {
           }
         } catch {}
         setUserEmail("demo@demo.local");
+        setIsProgramAdmin(import.meta.env.DEV);
         setAuthStatus("ready");
         if (new URLSearchParams(location.search).get("request") === "saved")
           confirm("La demande est enregistrée : le planning et les soldes sont à jour.");
@@ -823,6 +938,7 @@ export default function Home() {
       }
       throw error;
     }
+    void notifyGuestSession().catch(() => undefined);
     setUserEmail(data.email || "Compte connecté");
     const syncedProfile: FormProfile | null = data.form_profile
       ? {
@@ -940,6 +1056,10 @@ export default function Home() {
         holidayPay:
           row.holiday_pay === "prime" || row.holiday_pay === "recovery"
             ? row.holiday_pay
+            : "",
+        closureOverride:
+          row.closure_override === "closed" || row.closure_override === "open"
+            ? row.closure_override
             : "",
         updatedAt: row.updated_at || "",
       };
@@ -1120,6 +1240,7 @@ export default function Home() {
 
   async function disconnect() {
     await logout();
+    localStorage.removeItem(HANDOFF_KEY);
     guidePromptCheckedRef.current = false;
     setEntries({});
     setPeriods([]);
@@ -1129,6 +1250,7 @@ export default function Home() {
     setFormProfile(null);
     setPayProfiles({});
     setUserEmail("");
+    setIsProgramAdmin(false);
     setAuthStatus("guest");
   }
 
@@ -1334,6 +1456,14 @@ export default function Home() {
     [selectedList],
   );
 
+  function exceptionalClosureFor(key: string) {
+    const override = entries[key]?.closureOverride;
+    if (override === "open") return undefined;
+    if (override === "closed")
+      return { date: key, label: "Fermeture exceptionnelle ajoutée manuellement" };
+    return grandPalaisExceptionalClosure(key, approvedGrandPalaisUpdates);
+  }
+
   const totals = useMemo(() => {
     const result = { work: 0, training: 0, workedHoliday: 0 };
     const fullDayMinutes = dailyMinutesForQuota(formProfile?.workQuota || "full");
@@ -1346,20 +1476,24 @@ export default function Home() {
         const date = localDate(view.getFullYear(), month, day);
         const key = dateKey(date);
         const info = getDayInfo(date, group);
+        const exceptionallyClosed = Boolean(
+          exceptionalClosureFor(key),
+        );
         const notWorked =
+          exceptionallyClosed ||
           Boolean(entries[key]?.leave) ||
           periods.some((period) => key >= period.from && key <= period.to) ||
           recoveryUses
             .filter((item) => item.date === key)
             .reduce((total, item) => total + item.minutes, 0) >= fullDayMinutes;
         if (info.kind === "work" && !notWorked) result.work++;
-        if (info.kind === "training") result.training++;
+        if (info.kind === "training" && !exceptionallyClosed) result.training++;
         if (info.holiday && info.kind === "work" && !notWorked)
           result.workedHoliday++;
       }
     }
     return result;
-  }, [view, group, mode, entries, periods, recoveryUses, formProfile?.workQuota]);
+  }, [view, group, mode, entries, periods, recoveryUses, formProfile?.workQuota, approvedGrandPalaisUpdates]);
 
   /* Le mois affiché, puis les trois tiers de l'année affichée — tous calculés
      par la même fonction, donc jamais en contradiction entre eux. Le tiers
@@ -1380,6 +1514,7 @@ export default function Home() {
         entries,
         recoveryUses,
         dailyMinutesForQuota(formProfile?.workQuota || "full"),
+        (key) => Boolean(exceptionalClosureFor(key)),
       ),
       thirds: YEAR_THIRDS.map((third) => ({
         label: third.label,
@@ -1394,10 +1529,11 @@ export default function Home() {
           entries,
           recoveryUses,
           dailyMinutesForQuota(formProfile?.workQuota || "full"),
+          (key) => Boolean(exceptionalClosureFor(key)),
         ),
       })),
     };
-  }, [view, group, periods, entries, recoveryUses, formProfile?.workQuota, now]);
+  }, [view, group, periods, entries, recoveryUses, formProfile?.workQuota, now, approvedGrandPalaisUpdates]);
 
   const remainingWorkedDaysThisYear = useMemo(
     () =>
@@ -1409,8 +1545,9 @@ export default function Home() {
         entries,
         recoveryUses,
         dailyMinutesForQuota(formProfile?.workQuota || "full"),
+        (key) => Boolean(exceptionalClosureFor(key)),
       ).worked,
-    [now, group, periods, entries, recoveryUses, formProfile?.workQuota],
+    [now, group, periods, entries, recoveryUses, formProfile?.workQuota, approvedGrandPalaisUpdates],
   );
 
   // Au premier usage, le statut demandé est désormais « contractuel ». Dès
@@ -1885,6 +2022,10 @@ export default function Home() {
         workQuota,
         performedBase,
         performedResidence,
+        (key) => {
+          const date = fromKey(key);
+          return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
+        },
       ),
     };
   }
@@ -1928,13 +2069,6 @@ export default function Home() {
   function skipGuidePrompt() {
     rememberGuideSeen();
     setGuidePromptOpen(false);
-  }
-
-  function scrollGuideTo(sectionId: string) {
-    document.getElementById(sectionId)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
   }
 
   const overtimeForPayMonth = useMemo(() => {
@@ -2360,13 +2494,17 @@ export default function Home() {
     const todayRecoveryMinutes = recoveryUses
       .filter((item) => item.date === key)
       .reduce((total, item) => total + item.minutes, 0);
+    const todayExceptionalClosure = exceptionalClosureFor(key);
     const scheduledStatus =
       info.kind === "work"
         ? DAY_LABELS[info.kind]
         : DAY_LABELS[info.kind];
     let status = scheduledStatus;
     let tone: string = info.kind;
-    if (todayRecoveryMinutes) {
+    if (todayExceptionalClosure && info.kind === "work") {
+      status = "Fermeture exceptionnelle";
+      tone = "off";
+    } else if (todayRecoveryMinutes) {
       status =
         todayRecoveryMinutes >= workDayMinutes
           ? `Récupération · ${minutesLabel(todayRecoveryMinutes)}`
@@ -2387,24 +2525,32 @@ export default function Home() {
       status = `${scheduledStatus} · ${info.holiday}`;
     }
 
-    const nextWork = nextAttendanceDay(now, group, (candidateKey) =>
-      Boolean(entries[candidateKey]?.leave) ||
-      Boolean(
-        selections[candidateKey] &&
-        selectionRemovesAttendance(selections[candidateKey].type),
-      ) ||
-      periods.some(
-        (item) =>
-          candidateKey >= item.from &&
-          candidateKey <= item.to,
-      ) ||
-      recoveryUses.some((item) => item.date === candidateKey),
-    );
+    const nextWork = nextAttendanceDay(now, group, (candidateKey) => {
+      if (exceptionalClosureFor(candidateKey)) {
+        return false;
+      }
+      return Boolean(entries[candidateKey]?.leave) ||
+        Boolean(
+          selections[candidateKey] &&
+          selectionRemovesAttendance(selections[candidateKey].type),
+        ) ||
+        periods.some(
+          (item) =>
+            candidateKey >= item.from &&
+            candidateKey <= item.to,
+        ) ||
+        recoveryUses.some((item) => item.date === candidateKey);
+    });
     const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
+    const nextWorkExceptionalClosure = nextWork
+      ? exceptionalClosureFor(dateKey(nextWork))
+      : undefined;
     const nextWorkGroups = nextWork
       ? coWorkingGroupsForDate(nextWork, group)
       : [];
-    const nextWorkGroupLabel = nextWorkGroups.length === 1
+    const nextWorkGroupLabel = nextWorkExceptionalClosure
+      ? "Journée normalement prévue au cycle"
+      : nextWorkGroups.length === 1
       ? `Avec le groupe ${nextWorkGroups[0]}`
       : nextWorkGroups.length > 1
         ? `Avec les groupes ${nextWorkGroups.join(" et ")}`
@@ -2419,6 +2565,7 @@ export default function Home() {
       tone,
       todayGroupLabel:
         info.kind === "work" &&
+        !todayExceptionalClosure &&
         !period &&
         !entry?.leave &&
         todayRecoveryMinutes < workDayMinutes
@@ -2426,9 +2573,10 @@ export default function Home() {
           : "",
       nextWork,
       nextWorkKind,
+      nextWorkExceptionalClosure: Boolean(nextWorkExceptionalClosure),
       nextWorkGroupLabel,
     };
-  }, [now, group, periods, entries, recoveryUses, selections, workDayMinutes]);
+  }, [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates]);
 
   const importantAlert =
     view.getFullYear() === now.getFullYear() && sundayCarryover
@@ -2550,26 +2698,6 @@ export default function Home() {
         "Indiquez des heures de début et de fin valides et différentes. Une plage peut passer minuit.",
       );
       return;
-    }
-    const overtimeDate = fromKey(overtimeDraft.date);
-    if (overtimeDate.getDay() === 0 || getDayInfo(overtimeDate, group).holiday) {
-      notify("Les heures supplémentaires ne sont pas déclarées un dimanche ou un jour férié.");
-      return;
-    }
-    const crossesIntoFollowingDate =
-      overtimeDraft.end < overtimeDraft.start &&
-      overtimeDraft.end !== "00:00";
-    if (crossesIntoFollowingDate) {
-      const followingDate = addDays(overtimeDate, 1);
-      if (
-        followingDate.getDay() === 0 ||
-        getDayInfo(followingDate, group).holiday
-      ) {
-        notify(
-          "Cette plage se prolonge sur un dimanche ou un jour férié. Modifiez l’heure de fin.",
-        );
-        return;
-      }
     }
     const submissionKey = [
       overtimeDraft.date,
@@ -2730,6 +2858,7 @@ export default function Home() {
         version: 1,
         requestId: createClientId("request"),
         requestKind: "recovery" as const,
+        ownerKey: userEmail.trim().toLowerCase(),
         group,
         createdAt: new Date().toISOString(),
         profile: formProfile,
@@ -3081,7 +3210,12 @@ export default function Home() {
                   noteUpdatedAt: "",
                   noteGroupId: "",
                 };
-                if (!cleared.leave && !cleared.wish && !cleared.holidayPay)
+                if (
+                  !cleared.leave &&
+                  !cleared.wish &&
+                  !cleared.holidayPay &&
+                  !cleared.closureOverride
+                )
                   delete next[key];
                 else next[key] = cleared;
               }
@@ -3092,7 +3226,8 @@ export default function Home() {
             !nextEntry.noteText &&
             !nextEntry.leave &&
             !nextEntry.wish &&
-            !nextEntry.holidayPay
+            !nextEntry.holidayPay &&
+            !nextEntry.closureOverride
           )
             delete next[dayDate];
           else next[dayDate] = nextEntry;
@@ -3300,8 +3435,65 @@ export default function Home() {
       return next;
     });
   }
+
+  async function restoreLeavePeriod(
+    period: LeavePeriod,
+    periodsToReplace: LeavePeriod[] = [],
+  ) {
+    const restoredId = createClientId("period");
+    try {
+      if (!demoMode) {
+        const operations: Array<Record<string, unknown>> = periodsToReplace.map(
+          (replacement) => ({
+            action: "delete-period",
+            id: replacement.id,
+            expectedUpdatedAt: replacement.updatedAt,
+          }),
+        );
+        operations.push({
+          action: "save-period",
+          id: restoredId,
+          from: period.from,
+          to: period.to,
+          leaveType: period.leaveType || "annual",
+          halfMoment:
+            period.leaveType === "half" ? period.halfMoment || "" : "",
+          group: period.group || group,
+        });
+        await postCalendarBatch(operations);
+        await loadCalendar();
+      } else {
+        setPeriods((current) => [
+          ...current.filter(
+            (candidate) =>
+              !periodsToReplace.some(
+                (replacement) => replacement.id === candidate.id,
+              ),
+          ),
+          {
+            ...period,
+            id: restoredId,
+            legacy: false,
+            updatedAt: new Date().toISOString(),
+          },
+        ].sort((a, b) => a.from.localeCompare(b.from)));
+      }
+      confirm("L’absence précédente a été rétablie.");
+    } catch (error) {
+      notify(
+        calendarErrorMessage(
+          error,
+          "L’absence n’a pas pu être rétablie. Rechargez le planning puis réessayez.",
+        ),
+      );
+    }
+  }
+
   async function saveSeparateLeaveDates() {
     if (!separateDates.length || !separatePeople.length) return;
+    const previousPeriod = editingPeriodId
+      ? periods.find((period) => period.id === editingPeriodId) || null
+      : editingLegacyPeriod;
     setSavingRange(true);
     try {
       const saved: LeavePeriod[] = [];
@@ -3456,11 +3648,18 @@ export default function Home() {
         }
       }
       cancelRangeSelection();
-      confirm(
-        refreshDelayed
-          ? "Les congés sont enregistrés. La vérification distante se terminera automatiquement à la prochaine ouverture."
-          : "Les congés sont enregistrés : le planning et les soldes sont à jour.",
-      );
+      if (previousPeriod && saved.length) {
+        const replacements = [...saved];
+        offerUndo("L’absence a été modifiée.", () =>
+          restoreLeavePeriod(previousPeriod, replacements),
+        );
+      } else {
+        confirm(
+          refreshDelayed
+            ? "Les congés sont enregistrés. La vérification distante se terminera automatiquement à la prochaine ouverture."
+            : "Les congés sont enregistrés : le planning et les soldes sont à jour.",
+        );
+      }
     } catch (error) {
       await loadCalendar().catch(() => undefined);
       notify(
@@ -3488,6 +3687,7 @@ export default function Home() {
           current.filter((period) => period.id !== target.id),
         );
       setDeletingPeriod(null);
+      offerUndo("L’absence a été supprimée.", () => restoreLeavePeriod(target));
     } catch {
       notify("La période n’a pas pu être annulée. Réessayez.");
     } finally {
@@ -4527,6 +4727,7 @@ export default function Home() {
       version: 1,
       requestId: createClientId("request"),
       requestKind,
+      ownerKey: userEmail.trim().toLowerCase(),
       group,
       createdAt: new Date().toISOString(),
       profile: formProfile,
@@ -4574,6 +4775,7 @@ export default function Home() {
   function renderDay(date: Date, compact = false) {
     const info = getDayInfo(date, group);
     const key = dateKey(date);
+    const exceptionalClosure = exceptionalClosureFor(key);
     const entry = entries[key];
     const selected = selections[key];
     const cleanupSelected =
@@ -4642,6 +4844,7 @@ export default function Home() {
           : `Récupération en heures (${minutesLabel(hourlyRecoveryMinutes)})`
         : "",
       visibleNote ? "Note enregistrée" : "",
+      exceptionalClosure?.label ?? "",
     ]
       .filter(Boolean)
       .join(" — ");
@@ -4666,9 +4869,11 @@ export default function Home() {
         onClick={() => handleDay(date)}
         title={title}
         aria-current={today ? "date" : undefined}
-        aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}`}
+        aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}`}
       >
-        <span className={info.holiday ? "holiday-date" : "date-number"}>
+        <span
+          className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}`}
+        >
           {date.getDate()}
         </span>
         {hasHourlyRecovery && !compact ? (
@@ -4737,6 +4942,15 @@ export default function Home() {
             </svg>
           </span>
         )}
+        {exceptionalClosure ? (
+          <img
+            className={`exceptional-closure-marker${compact ? " compact" : ""}`}
+            src="/exceptional-closure-icon.webp"
+            alt=""
+            aria-hidden="true"
+            title={exceptionalClosure.label}
+          />
+        ) : null}
       </button>
     );
   }
@@ -5471,7 +5685,9 @@ export default function Home() {
         ],
         missing: [
           ...PAYSLIP_IMPORT_FIELDS.filter(
-            (field) => found[field.key] === undefined,
+            (field) =>
+              found[field.key] === undefined &&
+              shouldReportMissingPayslipField(field.key, mode),
           ).map((field) => field.label),
         ],
         adjustment: [
@@ -5753,6 +5969,10 @@ export default function Home() {
     const payslipMonth = comparablePayslip
       ? (payslipCheck.reading.month as number)
       : view.getMonth();
+    const unplannedPayslipCarence = comparablePayslip && isUnplannedPayslipCarence(
+      payslipCheck.reading.carenceDay,
+      sickLeaves.byMonth[payslipMonth]?.days || 0,
+    );
     const payslipExpectedSundays = comparablePayslip
       ? allowances.monthly.find(
           (slot) => slot.index === payslipMonth,
@@ -5789,6 +6009,16 @@ export default function Home() {
             expected: payslipExpectedSundays,
             tolerance: 1,
           },
+          ...(unplannedPayslipCarence
+            ? [
+                {
+                  key: "carence",
+                  label: "Jour de carence non prévu",
+                  found: 1,
+                  expected: 0,
+                },
+              ]
+            : []),
           ...(overtimeForPayMonth.totalMinutes
             ? [
                 {
@@ -5812,8 +6042,32 @@ export default function Home() {
             : []),
         ])
       : null;
+    const payReliability = !grossEstimateComplete
+      ? {
+          tone: "incomplete" as const,
+          label: "Données à compléter",
+          detail: "Certaines valeurs nécessaires au calcul de la paie sont encore manquantes.",
+        }
+      : payslipReview?.tone === "ok"
+        ? {
+            tone: "exact" as const,
+            label: "Valeurs vérifiées avec le bulletin",
+            detail: `Les lignes lisibles du bulletin de ${MONTHS[monthPay.index]} ${allowances.year} correspondent à l’estimation.`,
+          }
+        : payProfiles[payYear]
+          ? {
+              tone: "estimated" as const,
+              label: "Valeurs enregistrées pour cette année",
+              detail: `Estimation calculée avec le profil de paie ${payYear}.`,
+            }
+          : {
+              tone: "estimated" as const,
+              label: "Estimation avec les dernières valeurs connues",
+              detail: "Le montant sera recalculé lorsqu’un bulletin plus récent sera renseigné.",
+            };
 
     const payEstimateDetails = (
+      <Suspense fallback={<DeferredSection label="la paie" />}>
       <PayEstimateDetails
         monthIndex={monthPay.index}
         year={allowances.year}
@@ -5824,10 +6078,12 @@ export default function Home() {
         overtime={overtimeForPayMonth}
         workQuota={workQuota}
         mecenat={mecenatForCurrentPayMonth}
+        reliability={payReliability}
         onPreviousMonth={() => changeAllowancesMonth(-1)}
         onNextMonth={() => changeAllowancesMonth(1)}
         onToday={goToday}
       />
+      </Suspense>
     );
     return (
       <div className="request-archive-content allowances pay-functions-layout">
@@ -6015,6 +6271,16 @@ export default function Home() {
               </p>
             ) : (
             <>
+              {payslipReview?.tone === "ok" ? (
+                <PayslipSuccessCelebration
+                  key={`${payslipCheck.name}-${payslipCheck.reading.year}-${payslipCheck.reading.month}`}
+                />
+              ) : null}
+              {payslipReview?.tone === "warning" ? (
+                <PayslipWarningEffect
+                  key={`${payslipCheck.name}-${payslipCheck.reading.year}-${payslipCheck.reading.month}`}
+                />
+              ) : null}
               {payslipReview ? (
                 <div className={`payslip-result-summary ${payslipReview.tone}`}>
                   <span className="payslip-result-icon" aria-hidden="true">
@@ -6043,6 +6309,11 @@ export default function Home() {
                     {payslipResultDetailsOpen ? "Masquer le détail" : "Voir le détail"}
                   </button>
                 </div>
+              ) : null}
+              {unplannedPayslipCarence ? (
+                <p className="allowance-note warn">
+                  Jour de carence de {euros(payslipCheck.reading.carenceDay as number)} présent sur le bulletin, mais aucun arrêt maladie n’était prévu dans l’application pour ce mois.
+                </p>
               ) : null}
               {payslipResultDetailsOpen ? (
                 <>
@@ -6919,6 +7190,31 @@ export default function Home() {
   const dayRecoveryUses = dayDate
     ? recoveryUses.filter((entry) => entry.date === dayDate)
     : [];
+  const dayExceptionalClosure = dayDate
+    ? exceptionalClosureFor(dayDate)
+    : undefined;
+
+  if (publicDemoAccess.expired) {
+    return (
+      <main className="auth-shell">
+        <img
+          src="/grand-palais-verriere-fast.webp"
+          alt=""
+          className="auth-shell-image"
+          decoding="async"
+          fetchPriority="high"
+        />
+        <section className="auth-card">
+          <div className="auth-mark" aria-hidden="true"><span>31</span></div>
+          <p className="eyebrow">Planning Solo</p>
+          <h1>Essai terminé</h1>
+          <p className="auth-intro">
+            Ce lien de démonstration a expiré le 15 septembre 2026.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   if (authStatus !== "ready") {
     return (
@@ -6947,125 +7243,35 @@ export default function Home() {
       onTouchStart={startSectionSwipe}
       onTouchEnd={finishSectionSwipe}
     >
-      <header
-        className={
-          homeSection === "leave"
-            ? "top-header top-header-leave"
-            : homeSection === "pay"
-              ? "top-header top-header-pay"
-              : homeSection === "pdf"
-                ? "top-header top-header-pdf"
-                : homeSection === "forms"
-                  ? "top-header top-header-forms"
-                  : homeSection === "contacts"
-                    ? "top-header top-header-contacts"
-                  : "top-header top-header-home"
-        }
-      >
-        <div className="top-header-title">
-          <p className="eyebrow">Planning Solo</p>
-          <h1>
-            {homeSection === "home"
-              ? "Accueil"
-              : homeSection === "leave"
-                ? "Congés et récupérations"
-                : homeSection === "pdf"
-                  ? "Plannings PDF"
-                  : homeSection === "forms"
-                    ? "Formulaires"
-                    : homeSection === "contacts"
-                      ? "Contacts"
-                  : payScreen === "allowances"
-                    ? "Primes et jours fériés"
-                    : payScreen === "payslip"
-                      ? "Bulletins et estimations"
-                      : "Ma paie"}
-          </h1>
-        </div>
-        <div className="header-command-area">
-          <div className="header-control-cluster">
-            <div className="header-actions">
-              <div className="account-menu" ref={accountMenuRef}>
-            <button
-              className={`account-button${accountMenuOpen ? " open" : ""}`}
-              type="button"
-              ref={accountButtonRef}
-              onClick={() => setAccountMenuOpen((current) => !current)}
-              aria-haspopup="menu"
-              aria-expanded={accountMenuOpen}
-              aria-label="Compte"
-            >
-              {(userEmail[0] || "M").toUpperCase()}
-            </button>
-            {accountMenuOpen && (
-              <div className="account-menu-panel" role="menu">
-                <div className="account-menu-identity">
-                  <strong>{formProfile?.fullName || "Mon compte"}</strong>
-                  <small>{userEmail}</small>
-                </div>
-                {appUpdateAvailable ? (
-                  <div className="account-update-alert" role="status">
-                    <strong>Une mise à jour est disponible</strong>
-                    <span>Utilisez le bouton rouge en haut de l’écran pour l’installer.</span>
-                  </div>
-                ) : null}
-                <button
-                  className="account-menu-data"
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setAccountMenuOpen(false);
-                    setDataManagementOpen(true);
-                  }}
-                >
-                  Gérer mes données
-                </button>
-                <button
-                  className="account-menu-leave"
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setAccountMenuOpen(false);
-                    disconnect();
-                  }}
-                >
-                  Se déconnecter
-                </button>
-              </div>
-            )}
-              </div>
-            </div>
-            <button
-              className="main-menu-button"
-              type="button"
-              onClick={() => setMainMenuOpen(true)}
-              aria-label="Ouvrir le menu principal"
-              aria-expanded={mainMenuOpen}
-              aria-controls="main-menu-drawer"
-            >
-              <span aria-hidden="true" />
-              <span aria-hidden="true" />
-              <span aria-hidden="true" />
-            </button>
-          </div>
-          <button
-            className={`app-update-button header-update-button${checkingAppUpdate ? " checking" : ""}${appUpdateAvailable ? " update-available" : ""}`}
-            type="button"
-            onClick={() => void checkForAppUpdate()}
-            disabled={checkingAppUpdate}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M20 11a8 8 0 1 0-2.3 5.7" />
-              <path d="M20 4v7h-7" />
-            </svg>
-            {checkingAppUpdate
-              ? "Chargement de la mise à jour…"
-              : appUpdateAvailable
-                ? "Vous avez une mise à jour"
-                : "Vérifier les mises à jour"}
-          </button>
-        </div>
-      </header>
+      {previewPayEffect === "money" ? (
+        <PayslipSuccessCelebration durationMs={15_000} />
+      ) : null}
+      {previewPayEffect === "lightning" ? (
+        <PayslipWarningEffect durationMs={15_000} />
+      ) : null}
+      <AppHeader
+        homeSection={homeSection}
+        payScreen={payScreen}
+        userEmail={userEmail}
+        fullName={formProfile?.fullName || ""}
+        accountMenuOpen={accountMenuOpen}
+        mainMenuOpen={mainMenuOpen}
+        checkingAppUpdate={checkingAppUpdate}
+        appUpdateAvailable={appUpdateAvailable}
+        accountMenuRef={accountMenuRef}
+        accountButtonRef={accountButtonRef}
+        onToggleAccount={() => setAccountMenuOpen((current) => !current)}
+        onOpenDataManagement={() => {
+          setAccountMenuOpen(false);
+          setDataManagementOpen(true);
+        }}
+        onDisconnect={() => {
+          setAccountMenuOpen(false);
+          void disconnect();
+        }}
+        onOpenMainMenu={() => setMainMenuOpen(true)}
+        onCheckForUpdate={() => void checkForAppUpdate()}
+      />
       {homeSection === "home" ? (
         <div className="home-view-mode-bar">
           <div className="view-switch" aria-label="Mode d’affichage">
@@ -7088,323 +7294,34 @@ export default function Home() {
           </div>
         </div>
       ) : null}
-      {mainMenuOpen ? (
-        <div
-          className="main-menu-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setMainMenuOpen(false)
-          }
-        >
-          <aside className="main-menu-drawer" id="main-menu-drawer" aria-label="Menu principal">
-            <header>
-              <div>
-                <span className="step-label">Planning Solo</span>
-                <h2>Menu principal</h2>
-              </div>
-              <button type="button" onClick={() => setMainMenuOpen(false)} aria-label="Fermer le menu">×</button>
-            </header>
-            <nav>
-              {([
-                ["home", "Accueil", "Aujourd’hui, notes et planning", "01"],
-                ["leave", "Congés et récupérations", "Soldes, heures sup et mécénats", "02"],
-                ["pay", "Ma paie", "Estimations, primes et bulletins", "03"],
-                ["pdf", "Télécharger les plannings en PDF", "Choisir le planning puis générer le document", "04"],
-                ["forms", "Formulaires utiles", "Expo, SAP, Brantôme et tickets repas", "05"],
-                ["contacts", "Contacts utiles", "Pompidou et GP‑RMN", "06"],
-              ] as const).map(([key, title, detail, index]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={homeSection === key ? "active" : ""}
-                  aria-current={homeSection === key ? "page" : undefined}
-                  onClick={() => {
-                    setHomeSection(key);
-                    if (key === "pay") setPayScreen("overview");
-                    setMainMenuOpen(false);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                >
-                  <span className="main-menu-index" aria-hidden="true">{index}</span>
-                  <span className="main-menu-copy"><strong>{title}</strong><small>{detail}</small></span>
-                  <span className="main-menu-chevron" aria-hidden="true">›</span>
-                </button>
-              ))}
-            </nav>
-            <div className="main-menu-secondary">
-              <button
-                type="button"
-                className="guide-menu-entry"
-                onClick={() => {
-                  setMainMenuOpen(false);
-                  setGuideOpen(true);
-                }}
-              >
-                <span className="main-menu-index" aria-hidden="true">?</span>
-                <span className="main-menu-copy"><strong>Mode d’emploi</strong><small>Retrouver toutes les fonctions</small></span>
-                <span className="main-menu-chevron" aria-hidden="true">›</span>
-              </button>
-            </div>
-          </aside>
-        </div>
-      ) : null}
+      <MainMenu
+        open={mainMenuOpen}
+        homeSection={homeSection}
+        onClose={() => setMainMenuOpen(false)}
+        onNavigate={(section) => {
+          setHomeSection(section);
+          if (section === "pay") setPayScreen("overview");
+          setMainMenuOpen(false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onOpenGuide={() => {
+          setMainMenuOpen(false);
+          setGuideOpen(true);
+        }}
+      />
 
       <ConnectionStatus {...connectionStatus} />
 
-      {guidePromptOpen ? (
-        <div className="modal-backdrop guide-prompt-backdrop" role="presentation">
-          <section
-            className="modal-card guide-prompt-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="guide-prompt-title"
-          >
-            <span className="guide-prompt-icon" aria-hidden="true">?</span>
-            <span className="step-label">Bienvenue dans Planning Solo</span>
-            <h2 id="guide-prompt-title">Souhaitez-vous consulter le mode d’emploi ?</h2>
-            <p>
-              Quelques minutes suffisent pour comprendre comment obtenir un
-              planning et une estimation de paie fiables.
-            </p>
-            <div className="guide-prompt-actions">
-              <button className="secondary-button" type="button" onClick={skipGuidePrompt}>
-                Passer
-              </button>
-              <button className="primary-action" type="button" onClick={openGuideFromPrompt}>
-                Consulter
-              </button>
-            </div>
-            <small>Le mode d’emploi restera accessible dans le menu ☰, juste sous les plannings PDF.</small>
-          </section>
-        </div>
-      ) : null}
-
-      {guideOpen ? (
-        <div className="modal-backdrop guide-backdrop" role="presentation">
-          <section
-            className="modal-card guide-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="guide-title"
-          >
-            <button className="modal-close" type="button" onClick={() => setGuideOpen(false)} aria-label="Fermer le mode d’emploi">×</button>
-            <header className="guide-heading">
-              <span className="step-label">Mode d’emploi</span>
-              <h2 id="guide-title">Bien démarrer avec Planning Solo</h2>
-              <p>Les étapes essentielles sont présentées en premier.</p>
-            </header>
-
-            <nav className="guide-toc" aria-label="Table des matières du mode d’emploi">
-              <strong>Accès rapide</strong>
-              {([
-                ["guide-reliable-estimate", "1. Fiabiliser mes estimations"],
-                ["guide-payslips", "2. Choisir mes bulletins"],
-                ["guide-leave", "3. Poser un congé"],
-                ["guide-cet", "4. Suivre et utiliser mon CET"],
-                ["guide-recovery", "5. Récupérations et heures"],
-                ["guide-navigation", "6. Accueil, menu et planning"],
-                ["guide-pay", "7. Comprendre Ma paie"],
-                ["guide-pdf", "8. Télécharger les plannings PDF"],
-                ["guide-forms", "9. Télécharger les formulaires utiles"],
-                ["guide-data", "10. Données, archives et sauvegarde"],
-              ] as const).map(([id, label]) => (
-                <button type="button" key={id} onClick={() => scrollGuideTo(id)}>{label}</button>
-              ))}
-            </nav>
-
-            <div className="guide-content">
-              <section id="guide-reliable-estimate" className="guide-section important">
-                <span className="guide-number">1</span>
-                <div>
-                  <h3>Commencer par fiabiliser les estimations</h3>
-                  <p>
-                    Enregistrez dans le planning tous vos <strong>congés validés</strong>.
-                    Ils permettent à l’application de connaître les jours réellement
-                    travaillés et d’estimer correctement les primes, les dimanches,
-                    les jours fériés et la paie du mois.
-                  </p>
-                  <p>Un congé seulement souhaité reste indicatif et ne doit pas être traité comme un congé validé.</p>
-                </div>
-              </section>
-
-              <section id="guide-payslips" className="guide-section important">
-                <span className="guide-number">2</span>
-                <div>
-                  <h3>Déposer un ou, idéalement, plusieurs bulletins</h3>
-                  <p>
-                    Dans <strong>Ma paie → Bulletins et estimations → Affiner mes estimations</strong>,
-                    un bulletin récent permet de préremplir les éléments de paie reconnus.
-                    Plusieurs bulletins de mois différents donnent une estimation plus précise.
-                  </p>
-                  <ul>
-                    <li>un mois ordinaire, pour identifier les éléments fixes ;</li>
-                    <li>un mois avec primes, dimanche, jour férié ou heures payées, pour distinguer les éléments variables ;</li>
-                    <li>si possible, un mois présentant une situation différente, par exemple une absence ou une régularisation.</li>
-                  </ul>
-                  <p>Les fichiers PDF analysés ne sont pas conservés par Planning Solo.</p>
-                </div>
-              </section>
-
-              <section id="guide-leave" className="guide-section">
-                <span className="guide-number">3</span>
-                <div>
-                  <h3>Poser un congé</h3>
-                  <p>
-                    Touchez <strong>Poser un congé</strong>, puis choisissez Congé,
-                    Récupération, Arrêt maladie ou Divers. Chaque point d’entrée
-                    ouvre ensuite le formulaire ou l’ajout manuel au planning. Divers et Grève
-                    s’ajoutent directement au calendrier.
-                  </p>
-                  <ul>
-                    <li><strong>Grève</strong> est suivie séparément, sans déduction de congé, et crée une retenue brute estimée au trentième. Les repos noirs du cycle encadrés par deux grèves sont inclus dans la période de retenue sans être transformés en grève dans le planning. Les CA enregistrés restent protégés ; RTT, récupérations, jours fériés et autres absences intermédiaires restent à vérifier ;</li>
-                    <li>Divers reste réservé aux autres repères sans effet sur la paie ni les soldes, comme une décharge syndicale ou une fermeture exceptionnelle ;</li>
-                    <li>depuis une case du calendrier : la date est déjà ciblée ;</li>
-                    <li>un arrêt maladie est suivi séparément : il ne diminue pas vos droits à congés, mais intervient dans le suivi et l’estimation de paie ;</li>
-                    <li>pour plusieurs jours : sélectionnez une période ou plusieurs dates distinctes.</li>
-                  </ul>
-                  <p>
-                    Si vous commencez à utiliser l’application en cours d’année,
-                    ouvrez <strong>Congés et récupérations → Reprendre mes absences précédentes</strong> :
-                    vous pouvez saisir vos CA, RTT, fractionnements et dimanches déjà posés sans retrouver chaque date.
-                  </p>
-                  <p>
-                    Tout en bas de Congés et récupérations, la rubrique <strong>Autre</strong>
-                    rassemble vos demandes archivées sur cet appareil, après les mécénats.
-                  </p>
-                  <p>
-                    Avant de valider, relisez le résumé des dates, des types de congés et de leur effet.
-                    Pour modifier ou annuler un congé déjà posé, ouvrez sa date : les deux actions sont affichées directement dans la fiche.
-                  </p>
-                </div>
-              </section>
-
-              <section id="guide-cet" className="guide-section important">
-                <span className="guide-number">4</span>
-                <div>
-                  <h3>Suivre et utiliser mon CET</h3>
-                  <p>
-                    Ouvrez <strong>Mon CET</strong>, recopiez le solde officiel indiqué sur
-                    votre relevé RH, puis enregistrez-le. Si vous devez créer le compte,
-                    le bouton <strong>Faire une demande d’ouverture</strong> prépare le formulaire à vérifier et à transmettre.
-                  </p>
-                  <ul>
-                    <li><strong>Poser un congé CET</strong> ouvre le parcours habituel de demande de congé ;</li>
-                    <li><strong>Ajouter une opération</strong> sert à corriger ou compléter le suivi du solde ;</li>
-                    <li><strong>Remplir alimentation / indemnisation</strong> prépare le document annuel et son aide au remplissage.</li>
-                  </ul>
-                  <p>
-                    Le formulaire d’alimentation ou d’indemnisation peut être préparé à tout moment,
-                    mais il ne peut être envoyé qu’entre le <strong>15 novembre et le 31 décembre</strong>.
-                    Les jours à conserver correspondent au nombre de jours qui resteront sur le CET après les choix saisis.
-                    Votre relevé et la validation de votre service RH restent la référence.
-                  </p>
-                </div>
-              </section>
-
-              <section id="guide-recovery" className="guide-section">
-                <span className="guide-number">5</span>
-                <div>
-                  <h3>Récupérations, heures supplémentaires et mécénats</h3>
-                  <p>
-                    Le parcours Récupération conserve les choix journée, demi-journée,
-                    heures, jour férié et formation. Choisissez ensuite clairement les
-                    <strong> heures à poser</strong>, puis sélectionnez une ou plusieurs dates dans le calendrier.
-                    Toutes les récupérations concernées utilisent le solde d’heures de récupération.
-                  </p>
-                  <p>
-                    Dans Congés et récupérations, déclarez les heures supplémentaires
-                    avec leurs horaires de début et de fin,
-                    ajoutez manuellement un ancien solde d’heures si nécessaire et
-                    consultez l’historique. Les mécénats restent séparés et sont rattachés
-                    automatiquement à la paie du mois suivant.
-                  </p>
-                </div>
-              </section>
-
-              <section id="guide-navigation" className="guide-section">
-                <span className="guide-number">6</span>
-                <div>
-                  <h3>Utiliser l’accueil, le menu et le planning</h3>
-                  <p>
-                    L’accueil réunit Aujourd’hui en un coup d’œil, les notes et le planning.
-                    Le groupe de cycle se choisit avec le bouton placé en haut de la rubrique
-                    Aujourd’hui. Le menu ☰ placé
-                    dans l’en-tête ouvre Congés et récupérations,
-                    Ma paie, les PDF et les Formulaires utiles. Le mode d’emploi est placé
-                    tout en bas de la fenêtre du menu. Lorsqu’une nouvelle version est
-                    publiée, une fenêtre vous invite à la charger. Si vous choisissez Plus tard,
-                    le compte conserve l’alerte et le bouton <strong>Vérifier les mises à jour</strong>
-                    permet de la reprendre ; les sauvegardes restent en bas du menu.
-                  </p>
-                  <p>Une note peut être associée à un ou plusieurs jours, même dans des mois différents.</p>
-                </div>
-              </section>
-
-              <section id="guide-pay" className="guide-section">
-                <span className="guide-number">7</span>
-                <div>
-                  <h3>Comprendre la rubrique Ma paie</h3>
-                  <p>
-                    Commencez par vérifier votre quotité et votre statut dans Mon profil paie.
-                    Primes et jours fériés détaille les éléments variables par mois.
-                    Bulletins et estimations permet de contrôler une fiche réelle, d’affiner
-                    les paramètres et de consulter le détail estimé du mois affiché.
-                  </p>
-                </div>
-              </section>
-
-              <section id="guide-pdf" className="guide-section">
-                <span className="guide-number">8</span>
-                <div>
-                  <h3>Télécharger les plannings en PDF</h3>
-                  <p>
-                    Ouvrez la rubrique dédiée depuis le menu, choisissez l’année et le groupe,
-                    puis générez un groupe, les trois groupes ou votre planning avec congés.
-                    L’option vacances scolaires ajoute le tableau annuel complet des zones A,
-                    B et C, y compris les périodes déjà passées de l’année choisie.
-                  </p>
-                </div>
-              </section>
-
-              <section id="guide-forms" className="guide-section important">
-                <span className="guide-number">9</span>
-                <div>
-                  <h3>Télécharger les formulaires utiles</h3>
-                  <p>
-                    Ouvrez <strong>Formulaires utiles</strong> depuis le menu, puis choisissez
-                    Formulaire Expo, Formulaire SAP, Formulaire Brantôme ou Horaires tickets repas. Chaque rubrique
-                    possède son propre écran et conserve l’ordre officiel des documents.
-                  </p>
-                  <p>
-                    Touchez <strong>Télécharger</strong> à droite du formulaire souhaité pour
-                    enregistrer le fichier original sur votre appareil. Le dossier Expo est
-                    prêt mais reste vide jusqu’à l’ajout de ses premiers documents.
-                  </p>
-                </div>
-              </section>
-
-              <section id="guide-data" className="guide-section">
-                <span className="guide-number">10</span>
-                <div>
-                  <h3>Conserver les archives et restaurer les données</h3>
-                  <p>
-                    La synchronisation du compte conserve les données distantes. Depuis le
-                    bouton du compte, ouvrez <strong>Gérer mes données</strong> pour exporter
-                    une sauvegarde JSON ou la restaurer. Attendez toujours la confirmation après une saisie.
-                  </p>
-                  <p>
-                    Les formulaires terminés se trouvent dans <strong>Congés et récupérations → Autre → Mes demandes archivées</strong>.
-                    Ces documents sont conservés sur l’appareil utilisé : exportez-les si vous souhaitez les garder ailleurs.
-                  </p>
-                </div>
-              </section>
-            </div>
-
-            <footer className="guide-footer">
-              <button className="primary-action" type="button" onClick={() => setGuideOpen(false)}>J’ai compris</button>
-            </footer>
-          </section>
-        </div>
+      {guidePromptOpen || guideOpen ? (
+        <Suspense fallback={null}>
+          <UserGuideDialogs
+            guidePromptOpen={guidePromptOpen}
+            guideOpen={guideOpen}
+            setGuideOpen={setGuideOpen}
+            skipGuidePrompt={skipGuidePrompt}
+            openGuideFromPrompt={openGuideFromPrompt}
+          />
+        </Suspense>
       ) : null}
 
       {homeSection === "home" ? (
@@ -7467,7 +7384,9 @@ export default function Home() {
               <strong>
                 {todayOverview.nextWork
                   ? `${compactWeekdayDate(todayOverview.nextWork)}${
-                      todayOverview.nextWorkKind === "training"
+                      todayOverview.nextWorkExceptionalClosure
+                        ? " — Fermeture exceptionnelle"
+                        : todayOverview.nextWorkKind === "training"
                         ? " — Formation"
                         : ""
                     }`
@@ -7565,6 +7484,7 @@ export default function Home() {
               Poser un congé
             </button>
           </section>
+          <Suspense fallback={<DeferredSection label="vos soldes" />}>
           <LeaveBalancesSection
             year={absenceYear}
             totalRemaining={totalLeaveRemaining}
@@ -7578,20 +7498,10 @@ export default function Home() {
             onSelectBalance={setBalanceDetailType}
             onOpenManualAdjustments={openManualAdjustments}
           />
-          <CetSection
-            account={formProfile?.cetAccount}
-            status={formProfile?.status || "contractuel"}
-            fullName={formProfile?.fullName || ""}
-            signature={formProfile?.signature || ""}
-            annualDaysTaken={cetAnnualDaysTaken}
-            plannedLeaveDays={cetPlannedLeaveDays}
-            remaining={cetLeaveBalances}
-            saving={savingCet}
-            onSave={saveCetAccount}
-            onRequestLeave={() => beginRequest("leave", undefined, "cet")}
-          />
-          <div className="leave-section-divider" aria-hidden="true" />
-          <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
+          </Suspense>
+          <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET">
+            <div className="leave-secondary-grid">
+              <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
             <div className="overtime-balance-heading">
               <div>
                 <span className="step-label">Récupérations en heures</span>
@@ -7715,8 +7625,8 @@ export default function Home() {
                   ))}
               </div>
             ) : null}
-          </section>
-          <section className="overtime-balance-card mecenat-balance-card" aria-labelledby="mecenat-history-title">
+              </section>
+              <section className="overtime-balance-card mecenat-balance-card" aria-labelledby="mecenat-history-title">
             <div className="overtime-balance-heading">
               <div>
                 <span className="step-label">Distinct des heures supplémentaires</span>
@@ -7780,8 +7690,23 @@ export default function Home() {
                   ))}
               </div>
             ) : null}
-          </section>
-          <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
+              </section>
+            </div>
+            <Suspense fallback={<DeferredSection label="votre CET" />}>
+            <CetSection
+            account={formProfile?.cetAccount}
+            status={formProfile?.status || "contractuel"}
+            fullName={formProfile?.fullName || ""}
+            signature={formProfile?.signature || ""}
+            annualDaysTaken={cetAnnualDaysTaken}
+            plannedLeaveDays={cetPlannedLeaveDays}
+            remaining={cetLeaveBalances}
+            saving={savingCet}
+            onSave={saveCetAccount}
+            onRequestLeave={() => beginRequest("leave", undefined, "cet")}
+            />
+            </Suspense>
+            {isProgramAdmin ? <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
             <button
               className="request-archive-toggle"
               type="button"
@@ -7816,6 +7741,7 @@ export default function Home() {
                 )) : <p className="request-archive-empty">Aucune demande archivée sur cet appareil.</p>}
               </div>
             ) : null}
+            </section> : null}
           </section>
         </>
       ) : null}
@@ -7824,87 +7750,108 @@ export default function Home() {
         <section className="pay-app-screen" aria-label="Ma paie">
           {payScreen === "overview" ? (
             <>
-              <div className="native-screen-heading">
+              <div className="native-screen-heading pay-overview-intro">
                 <span className="step-label">Ma paie</span>
-                <h2>Choisissez une rubrique</h2>
-                <p>Chaque rubrique s’ouvre dans son propre écran.</p>
+                <h2>Ma paie en un coup d’œil</h2>
+                <p>Réglez votre profil, puis retrouvez vos primes, vos estimations et vos bulletins.</p>
               </div>
-              <section className={`pay-profile-settings${payProfileOpen ? " open" : ""}`} aria-labelledby="pay-profile-settings-title">
-                <button
-                  type="button"
-                  className="pay-profile-summary"
-                  onClick={() => setPayProfileOpen((current) => !current)}
-                  aria-expanded={payProfileOpen}
-                >
-                  <span>
-                    <span className="step-label">Configuration générale</span>
-                    <strong id="pay-profile-settings-title">Mon profil de paie</strong>
-                    <small>
-                      {WORK_QUOTA_OPTIONS.find((option) => option.value === workQuota)?.label}
-                      {" · "}
-                      {PAY_STATUS_OPTIONS.find((option) => option.value === (formProfile?.status || "contractuel"))?.label}
-                    </small>
-                    {netEstimateComplete ? (
-                      <span
-                        className="pay-profile-completeness complete"
-                        title="Les informations nécessaires à l’estimation du mois sont renseignées."
-                      >
-                        Profil complet
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="pay-profile-scroll-hint">Faire défiler</span>
-                  <i aria-hidden="true">⌄</i>
-                </button>
-                {payProfileOpen ? <div className="pay-profile-settings-grid">
-                  <label>
-                    <span>Quotité de travail</span>
-                    <ChoicePicker
-                      value={workQuota}
-                      options={WORK_QUOTA_OPTIONS.map(({ value, label }) => ({ value, label }))}
-                      onChange={changeWorkQuota}
-                      ariaLabel="Choisir la quotité de travail"
-                      layout="list"
-                      className="pay-profile-picker"
-                    />
-                    <small>{minutesLabel(workDayMinutes)} par jour</small>
-                  </label>
-                  <label>
-                    <span>Statut</span>
-                    <ChoicePicker
-                      value={formProfile?.status || "contractuel"}
-                      options={PAY_STATUS_OPTIONS}
-                      onChange={changeStatus}
-                      ariaLabel="Choisir le statut"
-                      layout="list"
-                      className="pay-profile-picker"
-                    />
-                    <small>Calculs adaptés à votre statut</small>
-                  </label>
-                </div> : null}
+              <section className="pay-overview-profile-panel" aria-labelledby="pay-overview-profile-title">
+                <div className="pay-overview-section-heading">
+                  <span className="pay-overview-number profile" aria-hidden="true">1</span>
+                  <div>
+                    <h3 id="pay-overview-profile-title">Mes réglages</h3>
+                    <p>Les calculs s’adaptent automatiquement à votre situation.</p>
+                  </div>
+                </div>
+                <section className={`pay-profile-settings${payProfileOpen ? " open" : ""}`} aria-labelledby="pay-profile-settings-title">
+                  <button
+                    type="button"
+                    className="pay-profile-summary"
+                    onClick={() => setPayProfileOpen((current) => !current)}
+                    aria-expanded={payProfileOpen}
+                  >
+                    <span className="pay-profile-symbol" aria-hidden="true">P</span>
+                    <span className="pay-profile-summary-copy">
+                      <span className="step-label">Profil utilisé pour les calculs</span>
+                      <strong id="pay-profile-settings-title">Mon profil de paie</strong>
+                      <small>
+                        {WORK_QUOTA_OPTIONS.find((option) => option.value === workQuota)?.label}
+                        {" · "}
+                        {PAY_STATUS_OPTIONS.find((option) => option.value === (formProfile?.status || "contractuel"))?.label}
+                      </small>
+                      {netEstimateComplete ? (
+                        <span
+                          className="pay-profile-completeness complete"
+                          title="Les informations nécessaires à l’estimation du mois sont renseignées."
+                        >
+                          Profil complet
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="pay-profile-open-copy">{payProfileOpen ? "Replier" : "Modifier"}</span>
+                    <i aria-hidden="true">⌄</i>
+                  </button>
+                  {payProfileOpen ? <div className="pay-profile-settings-grid">
+                    <label>
+                      <span>Quotité de travail</span>
+                      <ChoicePicker
+                        value={workQuota}
+                        options={WORK_QUOTA_OPTIONS.map(({ value, label }) => ({ value, label }))}
+                        onChange={changeWorkQuota}
+                        ariaLabel="Choisir la quotité de travail"
+                        layout="list"
+                        className="pay-profile-picker"
+                      />
+                      <small>{minutesLabel(workDayMinutes)} par jour</small>
+                    </label>
+                    <label>
+                      <span>Statut</span>
+                      <ChoicePicker
+                        value={formProfile?.status || "contractuel"}
+                        options={PAY_STATUS_OPTIONS}
+                        onChange={changeStatus}
+                        ariaLabel="Choisir le statut"
+                        layout="list"
+                        className="pay-profile-picker"
+                      />
+                      <small>Calculs adaptés à votre statut</small>
+                    </label>
+                  </div> : null}
+                </section>
               </section>
-              <div className="pay-category-grid">
-                <button type="button" onClick={() => setPayScreen("allowances")}>
-                  <span className="pay-category-icon allowances" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M12 3v18M8 7h6a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7" /></svg>
-                  </span>
-                  <span>
-                    <strong>Primes et jours fériés</strong>
-                    <small>Dimanches, fériés, heures payées et mécénats</small>
-                  </span>
-                  <i aria-hidden="true">›</i>
-                </button>
-                <button type="button" onClick={() => setPayScreen("payslip")}>
-                  <span className="pay-category-icon payslip" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 12h6M9 16h4" /></svg>
-                  </span>
-                  <span>
-                    <strong>Bulletins et estimations</strong>
-                    <small>Vérifier un bulletin et consulter le détail de la paie</small>
-                  </span>
-                  <i aria-hidden="true">›</i>
-                </button>
-              </div>
+              <section className="pay-overview-category-panel" aria-labelledby="pay-overview-category-title">
+                <div className="pay-overview-section-heading">
+                  <span className="pay-overview-number categories" aria-hidden="true">2</span>
+                  <div>
+                    <h3 id="pay-overview-category-title">Consulter ma paie</h3>
+                    <p>Choisissez les informations que vous souhaitez retrouver.</p>
+                  </div>
+                </div>
+                <div className="pay-category-grid">
+                  <button type="button" onClick={() => setPayScreen("allowances")}>
+                    <span className="pay-category-icon allowances" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M12 3v18M8 7h6a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7" /></svg>
+                    </span>
+                    <span className="pay-category-copy">
+                      <span className="pay-category-kicker">Éléments variables</span>
+                      <strong>Primes et jours fériés</strong>
+                      <small>Dimanches, fériés, heures payées et mécénats</small>
+                      <span className="pay-category-cta">Voir le détail <i aria-hidden="true">→</i></span>
+                    </span>
+                  </button>
+                  <button type="button" onClick={() => setPayScreen("payslip")}>
+                    <span className="pay-category-icon payslip" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 12h6M9 16h4" /></svg>
+                    </span>
+                    <span className="pay-category-copy">
+                      <span className="pay-category-kicker">Estimation mensuelle</span>
+                      <strong>Bulletins et estimations</strong>
+                      <small>Vérifier un bulletin et consulter le détail de la paie</small>
+                      <span className="pay-category-cta">Ouvrir l’estimation <i aria-hidden="true">→</i></span>
+                    </span>
+                  </button>
+                </div>
+              </section>
             </>
           ) : (
             <div className="pay-detail-screen">
@@ -7957,77 +7904,130 @@ export default function Home() {
 
       {homeSection === "pdf" ? (
         <section className="pdf-download-screen" id="planning-pdf" aria-labelledby="pdf-download-title">
-          <div className="native-screen-heading">
+          <div className="native-screen-heading pdf-download-intro">
             <span className="step-label">Documents</span>
             <h2 id="pdf-download-title">Télécharger les plannings en PDF</h2>
-            <p>Choisissez l’année, le groupe et les informations à afficher, puis générez le document.</p>
+            <p>
+              {narrowScreen
+                ? "Préparez votre planning, puis choisissez comment ouvrir ou télécharger le PDF."
+                : "Préparez votre planning, puis choisissez la version à télécharger."}
+            </p>
           </div>
-          <div className="pdf-download-settings">
-            <label>
-              <span>Année du planning</span>
-              <ChoicePicker
-                value={view.getFullYear()}
-                options={YEAR_OPTIONS}
-                onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-                ariaLabel="Sélectionner l’année du PDF"
-                className="year-choice-picker"
-              />
-            </label>
-            <label>
-              <span>Groupe</span>
-              <ChoicePicker
-                value={group}
-                options={GROUP_OPTIONS}
-                onChange={changeGroup}
-                ariaLabel="Sélectionner le groupe du PDF"
-                className="year-choice-picker"
-              />
-            </label>
-            <div className="school-vacation-choice">
-              <button
-                type="button"
-                className={showSchoolVacationsOnPdf ? "school-vacation-toggle active" : "school-vacation-toggle"}
-                aria-pressed={showSchoolVacationsOnPdf}
-                onClick={() => setShowSchoolVacationsOnPdf((current) => !current)}
-              >
-                <i aria-hidden="true" />
-                Afficher les vacances scolaires
-              </button>
-              {showSchoolVacationsOnPdf ? (
-                <small>Les dates des zones A, B et C seront récapitulées sous le planning.</small>
-              ) : null}
+          <section className="pdf-preparation-panel" aria-labelledby="pdf-preparation-title">
+            <div className="pdf-panel-heading">
+              <span className="pdf-step-number" aria-hidden="true">1</span>
+              <div>
+                <h3 id="pdf-preparation-title">Préparer le planning</h3>
+                <p>Sélectionnez les informations qui figureront dans le document.</p>
+              </div>
             </div>
-          </div>
-          <div className="pdf-download-actions">
-            {([
-              ["selected", `Groupe ${group}`, "Planning annuel · 1 page"],
-              ["all", "Les 3 groupes", "Planning annuel · 3 pages"],
-              ["my-leaves", `Groupe ${group} + mes congés`, "Planning annuel personnel · 1 page"],
-            ] as const).map(([scope, title, detail]) => (
-              <button
-                key={scope}
-                type="button"
-                className={`pdf-action ${scope}`}
-                disabled={pdfExporting !== null}
-                onClick={() => void exportAnnualPlanning(scope, showSchoolVacationsOnPdf)}
-              >
-                <span className="pdf-action-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 15v4h14v-4" /></svg>
+            <div className="pdf-download-settings">
+              <label>
+                <span className="pdf-setting-title">
+                  <i aria-hidden="true">A</i>
+                  <span><b>Année du planning</b><small>Période du document</small></span>
                 </span>
-                <span className="pdf-action-copy">
-                  <strong>{pdfExporting === scope ? "Création…" : title}</strong>
-                  <small>{detail}</small>
+                <ChoicePicker
+                  value={view.getFullYear()}
+                  options={YEAR_OPTIONS}
+                  onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
+                  ariaLabel="Sélectionner l’année du PDF"
+                  className="year-choice-picker"
+                />
+              </label>
+              <label>
+                <span className="pdf-setting-title">
+                  <i aria-hidden="true">G</i>
+                  <span><b>Groupe</b><small>Cycle de travail</small></span>
                 </span>
-              </button>
-            ))}
-          </div>
+                <ChoicePicker
+                  value={group}
+                  options={GROUP_OPTIONS}
+                  onChange={changeGroup}
+                  ariaLabel="Sélectionner le groupe du PDF"
+                  className="year-choice-picker"
+                />
+              </label>
+              <div className="school-vacation-choice">
+                <button
+                  type="button"
+                  className={showSchoolVacationsOnPdf ? "school-vacation-toggle active" : "school-vacation-toggle"}
+                  aria-pressed={showSchoolVacationsOnPdf}
+                  onClick={() => setShowSchoolVacationsOnPdf((current) => !current)}
+                >
+                  <i aria-hidden="true" />
+                  <span>
+                    <strong>Vacances scolaires</strong>
+                    <small>Cocher la case pour intégrer les vacances scolaires au planning</small>
+                  </span>
+                </button>
+                {showSchoolVacationsOnPdf ? (
+                  <small className="pdf-option-confirmation">Les vacances scolaires seront ajoutées au document.</small>
+                ) : null}
+              </div>
+            </div>
+          </section>
+          <section className="pdf-format-panel" aria-labelledby="pdf-format-title">
+            <div className="pdf-panel-heading">
+              <span className="pdf-step-number" aria-hidden="true">2</span>
+              <div>
+                <h3 id="pdf-format-title">Choisir le document</h3>
+                <p>Le téléchargement démarre dès que le PDF est prêt.</p>
+              </div>
+            </div>
+            <div className="pdf-download-actions">
+              {([
+                ["selected", "Mon groupe", `Planning annuel du groupe ${group}`, "1 page"],
+                ["all", "Les 3 groupes", "Groupes 1, 2 et 3", "3 pages"],
+                ["my-leaves", "Mon planning avec congés", `Groupe ${group} · absences enregistrées`, "1 page"],
+                ["worked-holidays", "Fériés travaillés 2026–2031", "Pour faciliter les échanges entre groupe", "1 page"],
+              ] as const).map(([scope, title, detail, pageCount]) => (
+                <button
+                  key={scope}
+                  type="button"
+                  className={`pdf-action ${scope}`}
+                  disabled={pdfExporting !== null}
+                  onClick={() => void exportAnnualPlanning(
+                    scope,
+                    scope === "worked-holidays" ? false : showSchoolVacationsOnPdf,
+                  )}
+                >
+                  <span className="pdf-action-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 15v4h14v-4" /></svg>
+                  </span>
+                  <span className="pdf-action-copy">
+                    <span className="pdf-action-page-count">{pageCount}</span>
+                    <strong>{pdfExporting === scope ? "Création…" : title}</strong>
+                    {detail ? <small>{detail}</small> : null}
+                    <span className="pdf-action-cta">Créer le PDF <i aria-hidden="true">→</i></span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
         </section>
       ) : null}
 
-      {homeSection === "forms" ? <UsefulFormsSection /> : null}
-      {homeSection === "contacts" ? <UsefulContactsSection /> : null}
+      {homeSection === "forms" ? (
+        <Suspense fallback={<DeferredSection label="vos formulaires" />}>
+          <UsefulFormsSection />
+        </Suspense>
+      ) : null}
+      {homeSection === "program" ? (
+        <Suspense fallback={<DeferredSection label="la programmation GP" />}>
+          <GrandPalaisProgramSection />
+        </Suspense>
+      ) : null}
+      {homeSection === "contacts" ? (
+        <Suspense fallback={<DeferredSection label="vos contacts" />}>
+          <UsefulContactsSection initialData={prefetchedContacts || undefined} />
+        </Suspense>
+      ) : null}
 
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
+      {showCalendarWorkspace ? (
+        <>
+      <section className="planning-command-section" aria-label="Commandes du planning">
       {homeSection === "home" ? (
         <section className="home-planning-heading" aria-labelledby="home-planning-title">
           <div className="home-content-heading">
@@ -8038,9 +8038,6 @@ export default function Home() {
           </div>
         </section>
       ) : null}
-
-      {showCalendarWorkspace ? (
-        <>
       {mode !== "year" && (
         <section className="controls" aria-label="Choix du planning">
           <div className="year-choice planning-year-choice" aria-label="Choix de l’année affichée">
@@ -8120,6 +8117,9 @@ export default function Home() {
                         {workedDays.month.onLeave
                           ? `, ${dayCountLabel(workedDays.month.onLeave)} de congé`
                           : ", aucun congé"}
+                        {workedDays.month.exceptionallyClosed
+                          ? `, ${dayCountLabel(workedDays.month.exceptionallyClosed)} fermeture${s(workedDays.month.exceptionallyClosed)} exceptionnelle${s(workedDays.month.exceptionallyClosed)}`
+                          : ""}
                       </small>
                     </article>
                     {workedDays.thirds.map((third) => (
@@ -8141,6 +8141,9 @@ export default function Home() {
                           {third.onLeave
                             ? `, ${dayCountLabel(third.onLeave)} de congé`
                             : ", aucun congé"}
+                          {third.exceptionallyClosed
+                            ? `, ${dayCountLabel(third.exceptionallyClosed)} fermeture${s(third.exceptionallyClosed)} exceptionnelle${s(third.exceptionallyClosed)}`
+                            : ""}
                         </small>
                       </article>
                     ))}
@@ -8370,6 +8373,7 @@ export default function Home() {
           onStart={startCalendarCleanup}
         />
       ) : null}
+      </section>
 
       {mode === "year" && homeSection === "pdf" && (
           <section
@@ -8768,6 +8772,7 @@ export default function Home() {
         </section>
       ) : null}
 
+      <section className="planning-calendar-section" aria-label="Planning et congés">
       <div className="planning-leave-panel">
         <button
           className="primary-action planning-leave-action"
@@ -8821,6 +8826,7 @@ export default function Home() {
           ))}
         </section>
       )}
+      </section>
         </>
       ) : null}
       </div>
@@ -9159,6 +9165,35 @@ export default function Home() {
                         <i />
                         CET
                         <span>{dayLeave && dayLeaveType === "cet" ? "Sélectionné" : "Choisir"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          dayExceptionalClosure
+                            ? "closure-day active"
+                            : "closure-day"
+                        }
+                        onClick={() => {
+                          if (!dayDate) return;
+                          const automaticClosure = grandPalaisExceptionalClosure(
+                            dayDate,
+                            approvedGrandPalaisUpdates,
+                          );
+                          void saveDay({
+                            closureOverride: dayExceptionalClosure
+                              ? automaticClosure
+                                ? "open"
+                                : ""
+                              : "closed",
+                          });
+                        }}
+                        disabled={savingDay}
+                      >
+                        <i />
+                        Fermeture exceptionnelle
+                        <span>
+                          {dayExceptionalClosure ? "Retirer CLOSED" : "Ajouter CLOSED"}
+                        </span>
                       </button>
                 </div>
                 {entries[dayDate]?.wish &&
@@ -9597,6 +9632,7 @@ export default function Home() {
         draft={overtimeDraft}
         setDraft={setOvertimeDraft}
         saving={savingOvertime}
+        group={group}
         onClose={() => setOvertimeDialogOpen(false)}
         onSave={() => void saveOvertimeEntry()}
       />
@@ -9686,6 +9722,11 @@ export default function Home() {
         }}
       />
       <SuccessToast message={successMessage} onClose={dismissSuccess} />
+      <UndoToast
+        message={undoOffer?.message || null}
+        onUndo={runUndo}
+        onClose={dismissUndo}
+      />
       <DataManagementDialog
         open={dataManagementOpen}
         busy={dataManagementBusy}

@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const app = readFileSync(new URL("./src/App.tsx", import.meta.url), "utf8");
-const styles = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
+const appRoot = readFileSync(new URL("./src/App.tsx", import.meta.url), "utf8");
+const appNavigation = readFileSync(new URL("./src/AppNavigation.tsx", import.meta.url), "utf8");
+const userGuideDialogs = readFileSync(new URL("./src/UserGuideDialogs.tsx", import.meta.url), "utf8");
+const app = `${appRoot}\n${appNavigation}\n${userGuideDialogs}`;
+const styles = [
+  readFileSync(new URL("./src/styles.css", import.meta.url), "utf8"),
+  readFileSync(new URL("./src/grandPalaisProgram.css", import.meta.url), "utf8"),
+].join("\n");
 const model = readFileSync(new URL("./src/appModel.ts", import.meta.url), "utf8");
 const calendarApi = readFileSync(new URL("./src/calendarApi.ts", import.meta.url), "utf8");
 const planningPdf = readFileSync(new URL("./src/planningPdf.ts", import.meta.url), "utf8");
@@ -19,11 +25,15 @@ const requestValidationSummary = readFileSync(new URL("./src/RequestValidationSu
 const planningDialogs = readFileSync(new URL("./src/PlanningDialogs.tsx", import.meta.url), "utf8");
 
 describe("finitions d’interface", () => {
-  it("retire tout accès public par lien de démonstration", () => {
-    expect(app).not.toContain("VITE_PUBLIC_DEMO");
+  it("réserve la démonstration publique à un build temporaire avec échéance", () => {
+    expect(app).toContain("VITE_PUBLIC_DEMO_UNTIL");
+    expect(app).toContain("resolvePublicDemoAccess");
     expect(app).not.toContain('new URLSearchParams(location.search).has("demo")');
     expect(main).not.toContain("isDemoInstallationLink");
+    expect(main).toContain("VITE_PUBLIC_DEMO_UNTIL");
+    expect(main).toContain("!publicDemoBuild");
     expect(leaveForm).not.toContain("params.get('demo')");
+    expect(leaveForm).toContain("planning:public-demo-until");
   });
 
   it("hiérarchise les actions CET et met en valeur les heures de récupération", () => {
@@ -34,17 +44,17 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".recovery-duration-field .recovery-duration-choice button.active");
   });
 
-  it("embellit le CET fermé et distingue la rubrique Autre", () => {
-    expect(styles).toContain(".cet-section.closed");
-    expect(styles).toContain("linear-gradient(125deg, #e9f3ff");
+  it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
+    expect(styles).toContain(".cet-section-static");
+    expect(styles).toContain("border-left: 6px solid #6c61b8");
     expect(app).toContain('<strong id="leave-request-archive-title">Autre</strong>');
     expect(app).toContain('<span className="step-label">Mes demandes archivées</span>');
     expect(app.indexOf('<strong id="leave-request-archive-title">Autre</strong>')).toBeLessThan(
       app.indexOf('<span className="step-label">Mes demandes archivées</span>'),
     );
-    expect(styles).toContain(".cet-closed-useful");
-    expect(styles).toContain("background: transparent;");
-    expect(cetSection).toContain("Alimentation du 15 novembre au 31 décembre");
+    expect(cetSection).toContain('className="cet-section open cet-section-static"');
+    expect(cetSection).toContain("alimentation du 15 novembre au 31 décembre");
+    expect(cetSection).not.toContain("setOpen");
     expect(cetSection).not.toContain("Planning Solo vous aide à suivre et simuler votre CET");
     expect(cetSection).toContain('placeholder="0" value={initialBalanceInput}');
     expect(cetSection).toContain('setInitialBalanceInput(value)');
@@ -141,7 +151,8 @@ describe("finitions d’interface", () => {
   it("garde le titre des catégories de paie accessible et permet de revenir aujourd’hui", () => {
     expect(app).toContain('className="pay-detail-sticky-header"');
     expect(app).toContain('aria-label="Fermer cette catégorie"');
-    expect(app).toContain("Faire défiler");
+    expect(app).toContain('className="pay-profile-open-copy"');
+    expect(app).toContain('payProfileOpen ? "Replier" : "Modifier"');
     expect((app.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect((payEstimateDetails.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect(app).toContain("Aucun dimanche versé sur cette paie");
@@ -174,7 +185,7 @@ describe("finitions d’interface", () => {
     expect(calendarApi).toContain("postCalendarIdempotent");
   });
 
-  it("actualise le mode d’emploi avec la maladie et les horaires supplémentaires", () => {
+  it("explique chaque rubrique actuelle dans le mode d’emploi", () => {
     expect(app).toContain("Récupération, Arrêt maladie ou Divers");
     expect(app).toContain("il ne diminue pas vos droits à congés");
     expect(app).toContain("avec leurs horaires de début et de fin");
@@ -183,7 +194,14 @@ describe("finitions d’interface", () => {
     expect(app).toContain("il ne peut être envoyé qu’entre le");
     expect(app).toContain("heures à poser");
     expect(app).toContain("Autre → Mes demandes archivées");
-    expect(app).toContain("le compte conserve l’alerte");
+    expect(app).toContain("1. Accueil et planning");
+    expect(app).toContain("3. Congés et récupérations");
+    expect(app).toContain("8. Formulaires utiles");
+    expect(app).toContain("9. Programmation GP");
+    expect(app).toContain("10. Contacts utiles");
+    expect(app).toContain("Horaires tickets resto");
+    expect(app).toContain("Envoyer un e-mail à toute l’équipe des RAS");
+    expect(app).toContain("vous choisissez quand l’installer");
   });
 
   it("compte Divers comme jour non travaillé et permet les suppressions multiples", () => {
@@ -349,7 +367,7 @@ describe("finitions d’interface", () => {
   it("ne propose plus de zone scolaire unique", () => {
     expect(app).not.toContain("schoolVacationZone");
     expect(app).not.toContain("SCHOOL_ZONE_OPTIONS");
-    expect(app).toContain("Les dates des zones A, B et C");
+    expect(app).toContain("Cocher la case pour intégrer les vacances scolaires au planning");
   });
 
   it("équilibre les commandes du planning sur grand écran", () => {
@@ -427,14 +445,14 @@ describe("finitions d’interface", () => {
   });
 
   it("place les formulaires puis les contacts après les PDF et le guide tout en bas du menu", () => {
-    expect(app.indexOf("Télécharger les plannings en PDF")).toBeLessThan(
-      app.indexOf('"forms", "Formulaires utiles"'),
+    expect(appNavigation.indexOf("Télécharger les plannings en PDF")).toBeLessThan(
+      appNavigation.indexOf('["forms", "Formulaires utiles"'),
     );
-    expect(app.indexOf('"forms", "Formulaires utiles"')).toBeLessThan(app.indexOf('"contacts", "Contacts utiles"'));
-    expect(app.indexOf('"contacts", "Contacts utiles"')).toBeLessThan(app.indexOf('className="guide-menu-entry"'));
+    expect(appNavigation.indexOf('["forms", "Formulaires utiles"')).toBeLessThan(appNavigation.indexOf('["contacts", "Contacts utiles"'));
+    expect(appNavigation.indexOf('["contacts", "Contacts utiles"')).toBeLessThan(appNavigation.indexOf('className="guide-menu-entry"'));
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
-    expect(styles).toContain('url("/menu-art.jpg")');
+    expect(styles).toContain('url("/menu-art-fast.webp")');
     expect(styles).toContain("background: linear-gradient(90deg, rgba(5, 11, 19, 0.88) 0%, rgba(5, 11, 19, 0.78) 58%, rgba(8, 16, 26, 0.34) 82%, rgba(18, 29, 41, 0.14) 100%)");
     expect(app).toContain('className="main-menu-index"');
     expect(app).toContain('className="main-menu-chevron"');
@@ -457,7 +475,7 @@ describe("finitions d’interface", () => {
   });
 
   it("intègre l’œuvre en texture discrète dans l’en-tête", () => {
-    expect(styles).toContain('url("/header-art.jpg")');
+    expect(styles).toContain('url("/header-art-fast.webp")');
     expect(styles).toContain("rgba(248, 251, 255, 0.48)");
     expect(styles).toContain("rgba(230, 241, 253, 0.24)");
     expect(styles).toContain("border-color: rgba(31, 35, 40, 0.38)");
@@ -472,17 +490,19 @@ describe("finitions d’interface", () => {
 
   it("ne conserve que les fonds illustrés de l’en-tête et du menu", () => {
     expect(app).toContain('className="app-shell"');
-    expect(styles).toContain('url("/header-art.jpg")');
-    expect(styles).toContain('url("/menu-art.jpg")');
-    expect(styles).toContain('url("/forms-header-art.jpg")');
+    expect(styles).toContain('url("/header-art-fast.webp")');
+    expect(styles).toContain('url("/menu-art-fast.webp")');
+    expect(styles).toContain('url("/forms-header-art-fast.webp")');
     expect(styles).not.toContain("/home-art.jpg");
     expect(styles).not.toContain("/leave-art.jpg");
     expect(styles).not.toContain("/pay-art.jpg");
     expect(styles).not.toContain("/pdf-art.jpg");
   });
 
-  it("permet de balayer les six rubriques sur téléphone", () => {
-    expect(app).toContain('const MAIN_SECTION_ORDER = ["home", "leave", "pay", "pdf", "forms", "contacts"] as const');
+  it("permet de balayer les rubriques principales sur téléphone", () => {
+    expect(appNavigation).toContain("export const MAIN_SECTION_ORDER");
+    for (const section of ["home", "leave", "pay", "pdf", "program", "forms", "contacts"])
+      expect(appNavigation).toContain(`"${section}"`);
     expect(app).toContain("onTouchStart={startSectionSwipe}");
     expect(app).toContain("onTouchEnd={finishSectionSwipe}");
     expect(app).toContain("Math.abs(deltaX) < 70");
@@ -574,24 +594,51 @@ describe("finitions d’interface", () => {
 
   it("réserve l’œuvre bleue à l’en-tête Congés et récupérations", () => {
     expect(app).toContain('homeSection === "leave"');
-    expect(app).toContain('"top-header top-header-leave"');
+    expect(appNavigation).toContain('`top-header top-header-${section}`');
     expect(styles).toContain(".top-header.top-header-leave {");
-    expect(styles).toContain('url("/leave-header-art.jpg")');
+    expect(styles).toContain(".top-header.top-header-leave::before {");
+    expect(styles).toContain('url("/leave-header-art-fast.webp")');
+    expect(styles).toContain("background-position: 50% 50%;\n  filter: none;\n  transform: none;");
+  });
+
+  it("organise l’accueil de Ma paie en réglages et consultations", () => {
+    expect(app).toContain('className="pay-overview-profile-panel"');
+    expect(app).toContain('id="pay-overview-profile-title">Mes réglages');
+    expect(app).toContain('className="pay-overview-category-panel"');
+    expect(app).toContain('id="pay-overview-category-title">Consulter ma paie');
+    expect(app).toContain('className="pay-category-kicker"');
+    expect(app).toContain('className="pay-category-cta"');
+    expect(styles).toContain(".pay-overview-profile-panel,");
+    expect(styles).toContain(".pay-overview-category-panel .pay-category-grid > button");
+  });
+
+  it("présente les téléchargements PDF comme un parcours clair en deux étapes", () => {
+    expect(app).toContain('className="pdf-preparation-panel"');
+    expect(app).toContain('id="pdf-preparation-title">Préparer le planning');
+    expect(app).toContain('className="pdf-format-panel"');
+    expect(app).toContain('id="pdf-format-title">Choisir le document');
+    expect(app).toContain('className="pdf-action-page-count"');
+    expect(app).toContain('className="pdf-action-cta"');
+    expect(styles).toContain(".pdf-preparation-panel,");
+    expect(styles).toContain(".pdf-download-actions .pdf-action.all {");
+    expect(styles).toContain(".pdf-download-actions .pdf-action.my-leaves {");
+    expect(styles).toContain("@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse)");
+    expect(styles).toContain(".pdf-download-actions .pdf-action-page-count {\n    position: static;");
   });
 
   it("réserve le dessin aux lignes noires à l’en-tête Ma paie", () => {
     expect(app).toContain('homeSection === "pay"');
-    expect(app).toContain('"top-header top-header-pay"');
+    expect(appNavigation).toContain('`top-header top-header-${section}`');
     expect(styles).toContain(".top-header.top-header-pay {");
-    expect(styles).toContain('url("/pay-header-art.jpg")');
+    expect(styles).toContain('url("/pay-header-art-fast.webp")');
   });
 
   it("réserve la galerie multicolore à l’en-tête des PDF", () => {
     expect(app).toContain('homeSection === "pdf"');
-    expect(app).toContain('"top-header top-header-pdf"');
+    expect(appNavigation).toContain('`top-header top-header-${section}`');
     expect(styles).toContain(".top-header.top-header-pdf {");
-    expect(styles).toContain('url("/pdf-header-art.webp")');
-    expect(styles).toContain('url("/pdf-header-art.webp") center 70% / cover no-repeat');
+    expect(styles).toContain('url("/pdf-header-art-fast.webp")');
+    expect(styles).toContain('url("/pdf-header-art-fast.webp") center 70% / cover no-repeat');
   });
 
   it("garde toutes les fenêtres au-dessus de l’en-tête fixe", () => {

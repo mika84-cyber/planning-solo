@@ -1,6 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { getUsefulFormAction, USEFUL_FORM_FOLDERS, UsefulFormsSection } from "./UsefulFormsSection";
+import {
+  getUsefulFormAction,
+  USEFUL_FORM_FOLDERS,
+  UsefulFormsSection,
+} from "./UsefulFormsSection";
 
 describe("formulaires utiles", () => {
   it("présente les quatre rubriques dans l’ordre demandé", () => {
@@ -14,6 +18,7 @@ describe("formulaires utiles", () => {
     expect(html.indexOf("Formulaire Expo")).toBeLessThan(html.indexOf("Formulaire SAP"));
     expect(html.indexOf("Formulaire SAP")).toBeLessThan(html.indexOf("Formulaire Brantôme"));
     expect(html.indexOf("Formulaire Brantôme")).toBeLessThan(html.indexOf("Horaires tickets resto"));
+    expect(html).toContain("Rechercher dans les formulaires");
     expect(html).toContain("1 document");
     expect(html).toContain("Information pratique");
   });
@@ -21,7 +26,7 @@ describe("formulaires utiles", () => {
   it("réserve la rubrique tickets repas à l’image fournie", () => {
     const tickets = USEFUL_FORM_FOLDERS.find((folder) => folder.key === "tickets");
     expect(tickets?.documents).toEqual([]);
-    expect(tickets?.image?.src).toBe("/useful-forms/horaires-tickets-repas-genere.png");
+    expect(tickets?.image?.src).toBe("/useful-forms/horaires-tickets-repas-fast.webp");
   });
 
   it("conserve l’ordre exact des documents Expo, SAP et Brantôme", () => {

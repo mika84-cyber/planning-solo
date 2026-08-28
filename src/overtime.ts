@@ -211,11 +211,64 @@ export type PaidOvertimeLine = {
   date: string;
   minutes: number;
   dayMinutes: number;
+  sundayHolidayMinutes: number;
   nightMinutes: number;
   lowRateMinutes: number;
   highRateMinutes: number;
   amount: number;
 };
+
+export type OvertimeCalendarSplit = {
+  minutes: number;
+  dayMinutes: number;
+  sundayHolidayMinutes: number;
+  nightMinutes: number;
+};
+
+function shiftedDateKey(date: string, dayOffset: number) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return "";
+  const shifted = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + dayOffset),
+  );
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}-${String(shifted.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** Classe une plage selon la date réellement parcourue. La nuit conserve son
+ * tarif propre ; les minutes de jour effectuées un dimanche ou un jour férié
+ * reçoivent la majoration dédiée, y compris après un passage à minuit. */
+export function splitOvertimeRangeByCalendar(
+  date: string,
+  start: string,
+  end: string,
+  isSundayOrHoliday: (date: string) => boolean,
+): OvertimeCalendarSplit | null {
+  const from = clockMinutes(start);
+  const rawTo = clockMinutes(end);
+  if (from === null || rawTo === null || rawTo === from || !shiftedDateKey(date, 0))
+    return null;
+  const to = rawTo < from ? rawTo + 24 * 60 : rawTo;
+  if (to - from <= 0 || to - from > 24 * 60) return null;
+  let dayMinutes = 0;
+  let sundayHolidayMinutes = 0;
+  let nightMinutes = 0;
+  for (let minute = from; minute < to; minute++) {
+    const clock = minute % (24 * 60);
+    if (clock < 7 * 60 || clock >= 22 * 60) {
+      nightMinutes++;
+      continue;
+    }
+    const currentDate = shiftedDateKey(date, Math.floor(minute / (24 * 60)));
+    if (isSundayOrHoliday(currentDate)) sundayHolidayMinutes++;
+    else dayMinutes++;
+  }
+  return {
+    minutes: to - from,
+    dayMinutes,
+    sundayHolidayMinutes,
+    nightMinutes,
+  };
+}
 
 /** Calcule les IHTS des seules heures « À payer » du mois d'exécution.
  * Les minutes récupérées n'avancent jamais le seuil des quatorze heures. */
@@ -226,6 +279,15 @@ export function calculatePaidOvertime(
   quota: WorkQuota,
   monthlyBaseSalary: number,
   monthlyResidenceAllowance: number,
+  isSundayOrHoliday: (date: string) => boolean = (date) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    return Boolean(
+      match &&
+        new Date(
+          Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+        ).getUTCDay() === 0,
+    );
+  },
 ) {
   const paid = entries
     .filter(
@@ -257,9 +319,28 @@ export function calculatePaidOvertime(
     let lowRateMinutes = 0;
     let highRateMinutes = 0;
     let amount = 0;
+    const calendarSplit =
+      entry.inputMode === "range" && entry.start && entry.end
+        ? splitOvertimeRangeByCalendar(
+            entry.date,
+            entry.start,
+            entry.end,
+            isSundayOrHoliday,
+          )
+        : null;
+    const sundayHolidayMinutes = calendarSplit
+      ? calendarSplit.sundayHolidayMinutes
+      : isSundayOrHoliday(entry.date)
+        ? entry.dayMinutes
+        : 0;
+    const dayMinutes = calendarSplit
+      ? calendarSplit.dayMinutes
+      : entry.dayMinutes - sundayHolidayMinutes;
+    const nightMinutes = calendarSplit?.nightMinutes ?? entry.nightMinutes;
     const segments = [
-      { minutes: entry.dayMinutes, night: false },
-      { minutes: entry.nightMinutes, night: true },
+      { minutes: dayMinutes, factor: 1 },
+      { minutes: sundayHolidayMinutes, factor: 5 / 3 },
+      { minutes: nightMinutes, factor: 2 },
     ];
     for (const segment of segments) {
       if (!segment.minutes) continue;
@@ -273,10 +354,9 @@ export function calculatePaidOvertime(
         Math.min(segment.minutes, threshold - paidRankMinutes),
       );
       const secondBand = segment.minutes - firstBand;
-      const nightFactor = segment.night ? 2 : 1;
       amount +=
-        (firstBand / 60) * hourlyBase * 1.25 * nightFactor +
-        (secondBand / 60) * hourlyBase * 1.27 * nightFactor;
+        (firstBand / 60) * hourlyBase * 1.25 * segment.factor +
+        (secondBand / 60) * hourlyBase * 1.27 * segment.factor;
       lowRateMinutes += firstBand;
       highRateMinutes += secondBand;
       paidRankMinutes += segment.minutes;
@@ -285,8 +365,9 @@ export function calculatePaidOvertime(
       entryId: entry.id,
       date: entry.date,
       minutes: entry.minutes,
-      dayMinutes: entry.dayMinutes,
-      nightMinutes: entry.nightMinutes,
+      dayMinutes,
+      sundayHolidayMinutes,
+      nightMinutes,
       lowRateMinutes,
       highRateMinutes,
       amount,

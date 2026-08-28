@@ -6,6 +6,7 @@ import {
   NonWorkingDayWarningDialog,
   SuccessToast,
   TimeSelectionDialog,
+  UndoToast,
 } from "./PlanningDialogs";
 
 describe("fenêtres communes du planning", () => {
@@ -58,10 +59,15 @@ describe("fenêtres communes du planning", () => {
     const success = renderToStaticMarkup(
       <SuccessToast message="Enregistré" onClose={vi.fn()} />,
     );
+    const undo = renderToStaticMarkup(
+      <UndoToast message="Absence supprimée" onUndo={vi.fn()} onClose={vi.fn()} />,
+    );
 
     expect(error).toContain("Impossible de continuer");
     expect(error).toContain("Erreur de test");
     expect(success).toContain('role="status"');
     expect(success).toContain("Enregistré");
+    expect(undo).toContain("Absence supprimée");
+    expect(undo).toContain("Annuler");
   });
 });

@@ -21,6 +21,7 @@ type OvertimePayDetails = {
     entryId: string;
     date: string;
     dayMinutes: number;
+    sundayHolidayMinutes: number;
     nightMinutes: number;
     amount: number;
   }>;
@@ -49,6 +50,11 @@ type PayEstimateDetailsProps = {
   overtime: OvertimePayDetails;
   workQuota: WorkQuota;
   mecenat: MecenatPayDetails;
+  reliability: {
+    tone: "exact" | "estimated" | "incomplete";
+    label: string;
+    detail: string;
+  };
   onPreviousMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
@@ -64,6 +70,7 @@ export function PayEstimateDetails({
   overtime,
   workQuota,
   mecenat,
+  reliability,
   onPreviousMonth,
   onNextMonth,
   onToday,
@@ -103,6 +110,15 @@ export function PayEstimateDetails({
           </button>
         </div>
       </header>
+      <div className={`pay-reliability ${reliability.tone}`} role="status">
+        <span aria-hidden="true">
+          {reliability.tone === "exact" ? "✓" : reliability.tone === "incomplete" ? "!" : "≈"}
+        </span>
+        <p>
+          <strong>{reliability.label}</strong>
+          <small>{reliability.detail}</small>
+        </p>
+      </div>
       <div className="pay-headline">
         <p className="pay-amount">
           <span>Brut</span>
@@ -156,8 +172,8 @@ export function PayEstimateDetails({
               <p>
                 Base horaire : {euros(overtime.hourlyBase)}/h.{" "}
                 {workQuota === "full"
-                  ? `14 premières heures : ${euros(overtime.hourlyBase * 1.25)}/h de jour et ${euros(overtime.hourlyBase * 1.25 * 2)}/h de nuit. À partir de la 15e : ${euros(overtime.hourlyBase * 1.27)}/h de jour et ${euros(overtime.hourlyBase * 1.27 * 2)}/h de nuit.`
-                  : "À temps partiel, le taux de base s’applique sans coefficient 1,25/1,27 ni majoration de nuit."}
+                  ? `14 premières heures : ${euros(overtime.hourlyBase * 1.25)}/h de jour, ${euros(overtime.hourlyBase * 1.25 * (5 / 3))}/h le dimanche ou un jour férié et ${euros(overtime.hourlyBase * 1.25 * 2)}/h de nuit. À partir de la 15e : ${euros(overtime.hourlyBase * 1.27)}/h de jour, ${euros(overtime.hourlyBase * 1.27 * (5 / 3))}/h le dimanche ou un jour férié et ${euros(overtime.hourlyBase * 1.27 * 2)}/h de nuit.`
+                  : "À temps partiel, le taux de base s’applique sans coefficient 1,25/1,27 ni majoration de nuit ou de dimanche/jour férié."}
               </p>
               <div className="overtime-pay-lines">
                 {overtime.lines.map((line) => (
@@ -166,7 +182,11 @@ export function PayEstimateDetails({
                       <strong>{longDate(fromKey(line.date))}</strong>
                       <span>
                         {line.dayMinutes ? `${minutesLabel(line.dayMinutes)} de jour` : ""}
-                        {line.dayMinutes && line.nightMinutes ? " · " : ""}
+                        {line.dayMinutes && (line.sundayHolidayMinutes || line.nightMinutes) ? " · " : ""}
+                        {line.sundayHolidayMinutes
+                          ? `${minutesLabel(line.sundayHolidayMinutes)} dimanche/jour férié`
+                          : ""}
+                        {line.sundayHolidayMinutes && line.nightMinutes ? " · " : ""}
                         {line.nightMinutes
                           ? `${minutesLabel(line.nightMinutes)} de nuit`
                           : ""}

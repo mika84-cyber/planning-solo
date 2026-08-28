@@ -36,8 +36,15 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/DataManagementDialog.tsx` et `src/dataManagement.css` : sauvegarde,
   import et suppression des données.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.
+- `src/AppNavigation.tsx` : en-tête, compte et menu principal communs à tous
+  les écrans.
+- `src/UserGuideDialogs.tsx` : mode d’emploi chargé uniquement lorsqu’il est
+  ouvert.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
 - `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
+- `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
+  programmation GP chargée à la demande, navigation par espace et périodes
+  d’inter expos.
 
 ## Logique métier
 
@@ -58,6 +65,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 - `src/calendarApi.ts` : client HTTP du planning.
 - `netlify/functions/calendar.mts` : API principale.
+- `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,
+  d’isolation et d’écriture de l’API calendrier.
 - `netlify/lib/` : validation, stockage par utilisatrice et sauvegardes.
 - `public/formulaire/index.html` : formulaire autonome de demande.
 

@@ -15,6 +15,8 @@ describe("nettoyage du planning", () => {
     );
 
     expect(html).toContain("2 dates sélectionnées");
+    expect(html).toContain("plusieurs dates ou notes en même temps");
+    expect(html).toContain("choix directement dans le planning");
     expect(html.indexOf("Effacer les absences")).toBeLessThan(
       html.indexOf("Effacer les notes"),
     );

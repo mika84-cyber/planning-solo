@@ -26,6 +26,9 @@ export type SharedEntry = {
   leave: boolean;
   wish: boolean;
   holidayPay: HolidayPay | "";
+  /** Correction locale d'une fermeture : `closed` l'ajoute, `open` masque
+   *  une fermeture automatique du Grand Palais. */
+  closureOverride: "closed" | "open" | "";
   /** Version serveur utilisée pour détecter une modification concurrente. */
   updatedAt: string;
 };
@@ -164,6 +167,7 @@ export function emptyEntry(): SharedEntry {
     leave: false,
     wish: false,
     holidayPay: "",
+    closureOverride: "",
     updatedAt: "",
   };
 }
@@ -188,15 +192,26 @@ export function workedDayCount(
   entries: Entries,
   recoveryUses: Array<{ date: string; minutes: number }> = [],
   workDayMinutes = 8 * 60,
+  isExceptionallyClosed: (date: string) => boolean = () => false,
 ) {
   let scheduled = 0;
   let onLeave = 0;
+  let exceptionallyClosed = 0;
   for (let month = firstMonth; month <= lastMonth; month++)
     for (let day = 1; day <= monthDays(year, month); day++) {
       const date = localDate(year, month, day);
-      if (getDayInfo(date, group).kind !== "work") continue;
-      scheduled++;
       const key = dateKey(date);
+      const kind = getDayInfo(date, group).kind;
+      const closureScheduled = isExceptionallyClosed(key);
+      if (kind !== "work") {
+        if (kind === "training" && closureScheduled) exceptionallyClosed++;
+        continue;
+      }
+      scheduled++;
+      if (closureScheduled) {
+        exceptionallyClosed++;
+        continue;
+      }
       const period = periods.find(
         (item) => key >= item.from && key <= item.to,
       );
@@ -210,7 +225,12 @@ export function workedDayCount(
         onLeave += Math.min(1, recoveredMinutes / workDayMinutes);
       }
     }
-  return { scheduled, onLeave, worked: scheduled - onLeave };
+  return {
+    scheduled,
+    onLeave,
+    exceptionallyClosed,
+    worked: scheduled - onLeave - exceptionallyClosed,
+  };
 }
 
 /** Journées de travail encore prévues entre deux dates incluses. Toutes les
@@ -225,15 +245,26 @@ export function workedDayCountBetween(
   entries: Entries,
   recoveryUses: Array<{ date: string; minutes: number }> = [],
   workDayMinutes = 8 * 60,
+  isExceptionallyClosed: (date: string) => boolean = () => false,
 ) {
   let scheduled = 0;
   let onLeave = 0;
+  let exceptionallyClosed = 0;
   let date = localDate(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
   const last = localDate(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
   for (let guard = 0; date <= last && guard < 400; guard++, date = addDays(date, 1)) {
-    if (getDayInfo(date, group).kind !== "work") continue;
-    scheduled++;
     const key = dateKey(date);
+    const kind = getDayInfo(date, group).kind;
+    const closureScheduled = isExceptionallyClosed(key);
+    if (kind !== "work") {
+      if (kind === "training" && closureScheduled) exceptionallyClosed++;
+      continue;
+    }
+    scheduled++;
+    if (closureScheduled) {
+      exceptionallyClosed++;
+      continue;
+    }
     const period = periods.find((item) => key >= item.from && key <= item.to);
     if (period) {
       onLeave += period.leaveType === "half" ? 0.5 : 1;
@@ -248,5 +279,10 @@ export function workedDayCountBetween(
       .reduce((total, item) => total + item.minutes, 0);
     onLeave += Math.min(1, recoveredMinutes / workDayMinutes);
   }
-  return { scheduled, onLeave, worked: scheduled - onLeave };
+  return {
+    scheduled,
+    onLeave,
+    exceptionallyClosed,
+    worked: scheduled - onLeave - exceptionallyClosed,
+  };
 }
