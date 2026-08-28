@@ -6,8 +6,11 @@ const testBaseUrl = `http://127.0.0.1:${testPort}`;
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
-  retries: 0,
-  reporter: "list",
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 2 : undefined,
+  reporter: process.env.CI
+    ? [["github"], ["html", { open: "never" }]]
+    : "list",
   use: {
     baseURL: testBaseUrl,
     locale: "fr-FR",
@@ -23,6 +26,14 @@ export default defineConfig({
     {
       name: "mobile",
       use: { ...devices["Pixel 7"] },
+    },
+    {
+      name: "z-fold",
+      grep: /Z Fold ouvert/,
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 900, height: 1000 },
+      },
     },
   ],
   webServer: {

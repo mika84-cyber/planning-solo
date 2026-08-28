@@ -23,6 +23,7 @@ relevé avec celui de la veille.
   `Planning Solo <alertes@votre-domaine.fr>`.
 
 Ces variables restent côté serveur et ne sont jamais envoyées au navigateur.
-Sans configuration Resend, la vérification ne doit pas être activée en
-production : la fonction refusera de finaliser un changement qu’elle ne peut
-pas notifier.
+Si Resend est momentanément indisponible, les propositions détectées restent
+enregistrées pour ne perdre aucune mise à jour ; l’exécution signale simplement
+que l’alerte n’a pas pu être envoyée. Il faut donc configurer et surveiller les
+variables d’e-mail en production.

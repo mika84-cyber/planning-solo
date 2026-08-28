@@ -1,0 +1,1031 @@
+/* Trois noms de mois en liste n'ont pas besoin des 360px prévus pour les
+   types de congé (des libellés bien plus longs) : à cette largeur-là, sur un
+   déclencheur étroit (128px) et centré, le menu débordait de sa propre carte
+   de 70px. */
+.cia-month-picker .choice-picker-menu {
+  width: min(150px, calc(100vw - 40px));
+}
+.range-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.range-fields label {
+  display: grid;
+  gap: 6px;
+}
+.range-fields span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.range-fields input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 11px;
+  background: #fbfcfe;
+  color: var(--text);
+}
+.profile-backdrop {
+  z-index: 120;
+}
+.profile-card {
+  width: min(460px, 100%);
+}
+.profile-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+.profile-choices button {
+  display: grid;
+  gap: 6px;
+  min-height: 120px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  background: linear-gradient(145deg, #fff, #f5f8fd);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.profile-choices button:hover {
+  border-color: #8ba5d4;
+  transform: translateY(-1px);
+}
+.profile-choices strong {
+  font-size: 20px;
+}
+.profile-choices span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.note-meta {
+  margin: 8px 0 0 !important;
+  color: #59657a !important;
+  font-size: 11px !important;
+  font-weight: 750;
+}
+.note-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0 !important;
+  color: var(--muted);
+  font-size: 11px !important;
+}
+.note-hint-band {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: #f6c445;
+  color: #513900;
+}
+.note-hint-band svg {
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+.note-range-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 11px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.note-range-toggle input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+.note-range-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 10px;
+}
+.note-range-fields label {
+  display: grid;
+  gap: 5px;
+}
+.note-range-fields span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.note-range-fields input {
+  width: 100%;
+  height: 43px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 0 9px;
+  background: #fbfcfe;
+  color: var(--text);
+}
+.note-period-hint {
+  margin: 8px 0 0 !important;
+  color: var(--muted);
+  font-size: 10px !important;
+}
+.leave-range-box {
+  margin: -3px 0 17px;
+  border: 1px solid #dce5ea;
+  border-radius: 13px;
+  padding: 12px;
+  background: #f8fbfb;
+}
+.leave-range-box .note-range-toggle {
+  color: #285f63;
+}
+.separate-date-button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 66px;
+  margin: 0;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: color-mix(in srgb, var(--accent) 8%, white);
+  color: var(--accent);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(40, 89, 184, 0.12);
+}
+.separate-date-button strong {
+  font-size: 13px;
+}
+.separate-date-button span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.separate-date-button:hover {
+  background: color-mix(in srgb, var(--accent) 13%, white);
+}
+.continuous-range-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 13px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.continuous-range-choice::before,
+.continuous-range-choice::after {
+  height: 1px;
+  flex: 1;
+  background: #dce5ea;
+  content: "";
+}
+.leave-period-hint {
+  margin: 8px 0 0 !important;
+  color: var(--muted);
+  font-size: 10px !important;
+  font-weight: 750;
+}
+.day-stored-periods {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 17px;
+  border-top: 1px solid #e8ecf2;
+  padding-top: 13px;
+}
+.day-stored-periods > strong {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.day-stored-periods article {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  background: #fafbfd;
+}
+.day-stored-periods article > i {
+  width: 6px;
+  height: 36px;
+  border-radius: 5px;
+  background: var(--leave);
+}
+.day-stored-periods article > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 850;
+}
+.day-stored-periods article small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+}
+.day-stored-periods article button {
+  min-height: 32px;
+  border: 1px solid #d8dfeb;
+  border-radius: 9px;
+  padding: 0 9px;
+  background: #fff;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.day-stored-periods article button.period-delete {
+  border-color: #efd1d5;
+  color: #b43f4d;
+}
+.saved-periods {
+  margin-top: 22px;
+  border-top: 1px solid #e8ecf2;
+  padding-top: 17px;
+}
+.saved-periods-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 9px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+}
+.saved-periods-heading small {
+  display: grid;
+  place-items: center;
+  min-width: 23px;
+  height: 23px;
+  border-radius: 12px;
+  background: #edf1f7;
+  color: var(--muted);
+}
+.saved-periods-list {
+  display: grid;
+  gap: 7px;
+}
+.saved-period {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 9px;
+  background: #fafbfd;
+}
+.saved-period > i {
+  width: 6px;
+  height: 37px;
+  border-radius: 5px;
+  background: var(--leave);
+}
+.saved-period div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.saved-period strong {
+  font-size: 11px;
+}
+.saved-period span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.saved-period button {
+  min-height: 32px;
+  border: 1px solid #d8dfeb;
+  border-radius: 9px;
+  padding: 0 9px;
+  background: #fff;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.saved-period button.period-delete {
+  border-color: #efd1d5;
+  color: #b43f4d;
+}
+.delete-confirm-button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 11px;
+  padding: 0 15px;
+  background: #bb3f4c;
+  color: #fff;
+  font-weight: 850;
+  cursor: pointer;
+}
+.delete-confirm-button:disabled {
+  opacity: 0.5;
+}
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 21px;
+}
+.modal-actions button {
+  min-height: 42px;
+  border-radius: 11px;
+  padding: 0 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.secondary-button {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+}
+.delete-button {
+  margin-right: auto;
+  border: 0;
+  background: #fff0f1;
+  color: #b42c39;
+}
+.save-button {
+  min-height: 42px !important;
+  box-shadow: none;
+}
+.time-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.time-fields label {
+  display: grid;
+  gap: 6px;
+}
+.time-fields span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.time-fields input {
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 12px;
+  background: #fbfcfe;
+  color: var(--text);
+}
+.warning-modal {
+  text-align: center;
+}
+.warning-symbol {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: #fff1d8;
+  color: #9d6018;
+  font-size: 23px;
+  font-weight: 900;
+}
+.warning-modal h2 {
+  margin-right: 0;
+}
+.warning-modal .modal-actions {
+  justify-content: center;
+}
+.warning-button {
+  background: #b86918;
+  box-shadow: none;
+}
+.message-modal .modal-actions {
+  justify-content: flex-end;
+}
+@media (min-width: 1280px) {
+  .year-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1001px) {
+  .calendar-toolbar {
+    display: grid;
+  }
+  .calendar-toolbar.month-toolbar {
+    grid-template-columns: minmax(330px, 1fr) auto minmax(220px, 310px);
+  }
+  .calendar-toolbar.annual-toolbar {
+    grid-template-columns: minmax(220px, 1fr) minmax(155px, 190px) auto;
+  }
+  .calendar-toolbar .primary-action {
+    min-height: 42px;
+    height: 42px;
+  }
+  .toolbar-leave-action {
+    justify-self: end;
+    margin-left: 0;
+  }
+  .annual-toolbar .toolbar-leave-action {
+    grid-column: 1/-1;
+    justify-self: stretch;
+    width: 100%;
+    min-height: 46px;
+  }
+}
+@media (max-width: 1000px) {
+  .year-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .calendar-toolbar {
+    flex-wrap: wrap;
+  }
+  .annual-pdf-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .annual-pdf-actions > div {
+    width: 100%;
+  }
+  .legend {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+  .upcoming-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .leave-balance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .auth-shell {
+    padding: 10px;
+    align-items: center;
+  }
+  .auth-shell-image {
+    inset: 0 0 auto 0;
+    height: auto;
+    aspect-ratio: 905 / 577;
+  }
+  .auth-card {
+    border-radius: 22px;
+    padding: 25px 20px;
+  }
+  .install-app-button {
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .app-shell {
+    padding: 16px 8px max(30px, env(safe-area-inset-bottom));
+  }
+  /* Outils et avatar remontent sur la ligne du titre ; seul Mois/Année
+     descend, sur toute la largeur, pour rester facile à viser au doigt.
+     `display: contents` sort les trois groupes de leur conteneur pour
+     qu'ils se répartissent directement dans l'en-tête. */
+.top-header {
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px 8px;
+    margin-bottom: 14px;
+    border-radius: 17px;
+    padding: 16px 13px;
+  }
+  .top-header-title {
+    padding-left: 12px;
+  }
+  .top-header h1 {
+    font-size: 23px;
+  }
+  .header-actions {
+    display: contents;
+  }
+  /* Base 0 : le titre cède la largeur aux boutons et passe sur deux
+     lignes plutôt que de les repousser en dessous. */
+.top-header-title {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .account-menu {
+    order: 3;
+  }
+  .view-switch {
+    order: 4;
+    flex: 1 0 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .primary-action {
+    width: 100%;
+  }
+  .toolbar-leave-action {
+    margin-left: 0;
+  }
+  .leave-balance-grid {
+    grid-template-columns: 1fr;
+  }
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 15px;
+  }
+  .controls label {
+    min-width: 0;
+  }
+  .control-field {
+    min-width: 0;
+  }
+  .year-choice,
+  .worked-days {
+    min-width: 0;
+  }
+  /* Seule sur sa rangée — chez Agnès, qui n'a pas les jours travaillés —
+     l'année prend toute la largeur au lieu de laisser une moitié vide. Avec
+     les jours travaillés à côté, les deux se partagent la rangée : sur un
+     écran plié, c'est la seule façon de ne pas gaspiller une ligne. */
+.year-choice:only-child {
+    grid-column: 1/-1;
+  }
+  /* Année affichée et Jours travaillés partagent la rangée du haut ; le
+     Groupe descend seul sur toute la largeur, plutôt que de suivre l'ordre
+     du DOM (Année, Groupe, Jours travaillés) qui laisserait une case vide. */
+  .controls [aria-label="Choix de l’année affichée"] {
+    order: 1;
+  }
+  .controls .worked-days {
+    order: 2;
+  }
+  .controls [aria-label="Choix du groupe"] {
+    order: 3;
+    grid-column: 1 / -1;
+  }
+  .controls label:first-child {
+    grid-column: 1/-1;
+  }
+  .controls select {
+    width: 100%;
+    height: 42px;
+  }
+  .request-panel {
+    padding: 15px 13px;
+    border-radius: 15px;
+  }
+  .request-heading,
+  .request-bottom {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .request-heading h2 {
+    font-size: 19px;
+  }
+  .type-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .type-tabs button {
+    min-width: 0;
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+  .validate-button {
+    width: 100%;
+  }
+  .request-actions {
+    width: 100%;
+  }
+  .request-actions .validate-button {
+    flex: 1 1 100%;
+  }
+  .range-selection-panel {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px;
+  }
+  .range-selection-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .range-selection-actions button {
+    padding: 0 8px;
+  }
+  .summary {
+    gap: 6px;
+  }
+  .summary article {
+    padding: 11px 6px;
+    border-radius: 13px;
+    text-align: center;
+  }
+  .summary strong {
+    font-size: 21px;
+  }
+  .summary span {
+    display: block;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  .shared-tools {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 10px;
+  }
+  .filter-group {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .filter-title {
+    grid-column: 1/-1;
+  }
+  .filter-chip {
+    justify-content: center;
+    padding: 0 7px;
+  }
+  .range-button {
+    width: 100%;
+  }
+  .upcoming-panel {
+    padding: 13px 10px;
+    border-radius: 15px;
+  }
+  /* Brique export PDF repliée : l'en-tête cliquable occupe toute la boîte,
+     et les trois formats s'empilent une fois dépliés. */
+.annual-pdf-actions {
+    gap: 0;
+    padding: 0;
+  }
+  .annual-pdf-toggle {
+    padding: 11px;
+  }
+  .annual-pdf-buttons {
+    border-top: 1px solid #e1e8f1;
+    padding: 11px;
+  }
+  /* Grille sur deux colonnes comme en écran ouvert, au lieu du carrousel
+     horizontal : les notes se lisent d'un coup d'œil sans défilement. */
+.upcoming-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* Les colonnes sont étroites : le titre s'enroule sur deux lignes
+     plutôt que d'être coupé net. */
+.upcoming-item strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.25;
+    white-space: normal;
+  }
+  .request-archive-toggle {
+    grid-template-columns: 40px minmax(0, 1fr) 24px;
+    gap: 9px;
+    padding: 11px;
+  }
+  .request-archive-icon {
+    width: 40px;
+    height: 38px;
+  }
+  .request-archive-content {
+    padding: 9px 10px 11px;
+  }
+  .request-archive-list {
+    grid-template-columns: 1fr;
+  }
+  .calendar-toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 9px;
+    border-radius: 15px;
+  }
+  .annual-pdf-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+    margin-right: 0;
+    margin-left: 0;
+    padding: 9px;
+    border-radius: 13px;
+  }
+  /* Les trois formats s'empilent : dépliés dans un menu, ils se lisent
+     comme une liste de choix plutôt que comme une mosaïque. */
+.annual-pdf-buttons {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .pdf-action {
+    min-height: 44px;
+    padding: 5px 7px;
+  }
+  .period-navigation {
+    grid-column: 1/-1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .year-toolbar .period-navigation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .month-jump-menu,
+  .year-jump-menu {
+    width: min(286px, calc(100vw - 40px));
+  }
+  .year-jump-menu {
+    max-width: 238px;
+  }
+  .today-button {
+    width: 100%;
+    height: 44px;
+  }
+  /* Vue Année : l'année et le groupe partagent la 1re ligne. */
+.annual-toolbar .period-navigation {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .annual-toolbar .toolbar-group-picker {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .annual-toolbar .toolbar-group-picker .choice-picker-trigger {
+    min-height: 40px;
+  }
+  .annual-toolbar .today-button {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+  }
+  .annual-toolbar .toolbar-leave-action {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-height: 44px;
+    margin-left: 0;
+  }
+  /* « Poser un congé » à gauche, « Aujourd'hui » à droite. */
+.month-toolbar .toolbar-leave-action {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    height: 44px;
+    margin-left: 0;
+  }
+  .month-toolbar .today-button {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  /* Sans bouton « Poser un congé » (session Agnès, ou sélection de dates
+     en cours), « Aujourd'hui » reprend toute la largeur. */
+.calendar-toolbar .today-button:last-child {
+    grid-column: 1/-1;
+  }
+  .legend {
+    grid-column: 1/-1;
+    gap: 7px 10px;
+    font-size: 9px;
+  }
+  .month-card {
+    padding: 7px;
+    border-radius: 15px;
+  }
+  .weekdays,
+  .calendar-grid {
+    gap: 4px;
+  }
+  .weekdays {
+    margin-bottom: 3px;
+  }
+  .weekdays span {
+    padding: 4px 0;
+    font-size: 8px;
+  }
+  .day {
+    --corner-inset: 2px;
+    --corner-size: 12px;
+    min-height: 0;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .day-blank {
+    min-height: 0;
+    aspect-ratio: 1;
+  }
+  .date-number,
+  .holiday-date {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+  .selection-label {
+    display: none;
+  }
+  .day .note-band {
+    height: 6px;
+  }
+  .day .note-band svg {
+    width: 6px;
+    height: 6px;
+    stroke-width: 2.3;
+  }
+  .day .note-band.note-band-half-afternoon {
+    padding-left: 3px;
+  }
+  .day .note-band.note-band-half-morning {
+    padding-right: 3px;
+  }
+  .leave-band {
+    right: 3px;
+    bottom: 3px;
+    left: 3px;
+    height: 5px;
+  }
+  .leave-band.with-personal {
+    left: 18px;
+  }
+  .personal-marker {
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    border-width: 1px;
+  }
+  .personal-marker.with-companions {
+    left: 3px;
+  }
+  .personal-marker svg {
+    width: 8px;
+    height: 8px;
+  }
+  .selection-corner {
+    width: 22px;
+    height: 22px;
+  }
+  .year-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .mini-month {
+    padding: 10px;
+    border-radius: 14px;
+  }
+  .mini-day {
+    font-size: 9px;
+  }
+  .modal-backdrop {
+    align-items: end;
+    padding: 8px;
+  }
+  .modal-card {
+    width: 100%;
+    border-radius: 20px;
+    padding: 20px 17px calc(18px + env(safe-area-inset-bottom));
+  }
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .modal-actions button {
+    width: 100%;
+    padding: 0 8px;
+  }
+  .delete-button {
+    grid-column: 1/-1;
+    grid-row: 2;
+    margin: 0;
+  }
+  .choice-grid button {
+    padding: 15px;
+  }
+  .leave-choices {
+    grid-template-columns: 1fr;
+  }
+  .leave-choices {
+    grid-template-columns: 1fr;
+  }
+  .profile-choices {
+    grid-template-columns: 1fr 1fr;
+  }
+  .profile-card {
+    align-self: center;
+  }
+  .range-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .saved-period {
+    grid-template-columns: 5px minmax(0, 1fr) auto;
+  }
+  .saved-period > i {
+    grid-row: 1/3;
+  }
+  .saved-period button {
+    padding: 0 8px;
+  }
+  .saved-period .period-delete {
+    grid-column: 3;
+  }
+}
+@media (min-width: 640px) and (max-width: 1000px) {
+  .calendar-toolbar {
+    display: grid;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .period-navigation {
+    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    min-width: 0;
+  }
+  .year-toolbar .period-navigation {
+    grid-template-columns: minmax(130px, 1fr);
+  }
+  .calendar-toolbar .today-button {
+    width: auto;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+  .calendar-toolbar .toolbar-leave-action {
+    grid-column: auto;
+    justify-self: end;
+    width: auto;
+    min-width: 165px;
+    min-height: 42px;
+    height: 42px;
+    margin-left: 0;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+  /* Année, groupe et Aujourd'hui à parts égales : l'année occupait sinon
+     toute la place restante et écrasait les deux autres. */
+.calendar-toolbar.annual-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .annual-toolbar .today-button {
+    width: 100%;
+  }
+  .calendar-toolbar.month-toolbar {
+    grid-template-columns: minmax(280px, 1fr) auto minmax(165px, 220px);
+  }
+  .annual-toolbar .toolbar-group-picker {
+    grid-column: auto;
+  }
+  .annual-toolbar .toolbar-leave-action {
+    grid-column: 1/-1;
+    justify-self: stretch;
+    width: 100%;
+    max-width: none;
+  }
+}
+@media (max-width: 370px) {
+  .app-shell {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  .type-tabs {
+    grid-template-columns: 1fr;
+  }
+  .today-button {
+    width: 100%;
+  }
+  .legend {
+    grid-column: 1;
+  }
+  .date-number,
+  .holiday-date {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+  .filter-group {
+    grid-template-columns: 1fr 1fr;
+  }
+  .filter-title {
+    grid-column: 1/-1;
+  }
+  .range-fields,
+  .note-range-fields {
+    grid-template-columns: 1fr;
+  }
+}

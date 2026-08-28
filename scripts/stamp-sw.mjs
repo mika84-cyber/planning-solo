@@ -5,6 +5,7 @@ import { join, relative } from "node:path";
 
 const distDir = join(process.cwd(), "dist");
 const swPath = join(distDir, "sw.js");
+const formSwPath = join(distDir, "formulaire", "sw.js");
 
 function collectFiles(dir) {
   const files = [];
@@ -35,4 +36,18 @@ if (stamped === swContent) {
   );
 }
 writeFileSync(swPath, stamped);
-console.log(`stamp-sw: CACHE = planning-solo-${digest}`);
+
+const formSwContent = readFileSync(formSwPath, "utf8");
+const stampedFormSw = formSwContent.replace(
+  /var VERSION = '[^']*';/,
+  `var VERSION = '${digest}';`,
+);
+if (stampedFormSw === formSwContent) {
+  throw new Error(
+    "stamp-sw: VERSION constant not found in dist/formulaire/sw.js",
+  );
+}
+writeFileSync(formSwPath, stampedFormSw);
+console.log(
+  `stamp-sw: CACHE = planning-solo-${digest}; formulaire = demandes-${digest}`,
+);

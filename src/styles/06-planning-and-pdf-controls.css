@@ -1,0 +1,1217 @@
+.request-archive-empty {
+  margin: 0;
+  border-radius: 11px;
+  padding: 12px;
+  background: #f4f7fb;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.range-selection-panel {
+  --range-color: var(--leave);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+  border: 1px solid color-mix(in srgb, var(--range-color) 36%, var(--line));
+  border-left: 5px solid var(--range-color);
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--range-color) 8%, white),
+    #fff 60%
+  );
+  box-shadow: var(--shadow);
+  scroll-margin-top: 12px;
+}
+.range-selection-panel h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+.range-selection-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.range-selection-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+.range-selection-actions button {
+  min-height: 42px;
+  border-radius: 11px;
+  padding: 0 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.toolbar-leave-action {
+  margin-left: auto;
+  min-width: 190px;
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.period-navigation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(145px, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.year-toolbar .period-navigation {
+  grid-template-columns: minmax(145px, 1fr);
+}
+.period-navigation .choice-picker-trigger {
+  min-height: 42px;
+  justify-content: center;
+  border-color: transparent;
+  background: #f7f9fc;
+  font-size: 17px;
+  font-weight: 850;
+  text-transform: capitalize;
+}
+.toolbar-group-picker .choice-picker-trigger {
+  min-height: 42px;
+  justify-content: center;
+  border-color: transparent;
+  background: #f7f9fc;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 850;
+}
+.toolbar-group-picker .choice-picker-trigger:hover,
+.toolbar-group-picker .choice-picker-trigger[aria-expanded="true"] {
+  border-color: #cbd8e8;
+  background: #f1f5fb;
+  color: var(--accent);
+}
+.period-navigation .choice-picker-trigger:hover,
+.period-navigation .choice-picker-trigger[aria-expanded="true"] {
+  border-color: #cbd8e8;
+  background: #f1f5fb;
+  color: var(--accent);
+}
+.toolbar-month-picker .choice-picker-menu {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 286px;
+}
+.toolbar-year-picker .choice-picker-menu {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 238px;
+}
+.month-toolbar .toolbar-month-picker .choice-picker-menu {
+  left: 0;
+  transform: none;
+}
+.month-toolbar .toolbar-year-picker .choice-picker-menu {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+.toolbar-month-picker .choice-picker-menu button,
+.toolbar-year-picker .choice-picker-menu button {
+  min-width: 0;
+}
+.month-jump-menu,
+.year-jump-menu {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 8px);
+  left: 50%;
+  display: grid;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid #d5dfec;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgb(38 58 88 / 20%);
+  transform: translateX(-50%);
+}
+.month-jump-menu {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 286px;
+}
+.year-jump-menu {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 238px;
+}
+.month-jump-menu button,
+.year-jump-menu button {
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 0 8px;
+  background: #f5f8fc;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.month-jump-menu button:hover,
+.year-jump-menu button:hover {
+  border-color: #b9cae2;
+  background: #eaf1fb;
+}
+.month-jump-menu button.active,
+.year-jump-menu button.active {
+  border-color: #9bb8df;
+  background: var(--accent);
+  color: #fff;
+}
+.today-button {
+  height: 42px;
+  border: 1px solid #cbd6e6;
+  border-radius: 11px;
+  padding: 0 13px;
+  background: #f8faff;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.annual-pdf-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -2px 2px 12px;
+  padding: 9px 10px 9px 13px;
+  border: 1px solid #dce5f0;
+  border-radius: 14px;
+  background: rgba(248, 251, 255, 0.82);
+}
+.annual-pdf-heading {
+  display: grid;
+  gap: 1px;
+}
+.annual-pdf-heading .step-label {
+  color: #44648f;
+  font-size: 9px;
+}
+.annual-pdf-heading small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.annual-pdf-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(132px, 1fr));
+  gap: 7px;
+}
+/* `display: grid` l'emporterait sur le comportement par défaut de
+   l'attribut hidden, qui sert à replier la brique en écran fermé. */
+.annual-pdf-buttons[hidden] {
+  display: none;
+}
+/* Sur toute la largeur, au-dessus des trois boutons plutôt que dans l'une
+   de leurs colonnes : c'est un réglage commun aux trois exports, pas un
+   quatrième export. */
+.school-vacation-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+.school-vacation-toggle {
+  --chip-color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 11px;
+  background: #f6f8fb;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.school-vacation-toggle i {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--chip-color);
+  border-radius: 50%;
+  background: transparent;
+}
+.school-vacation-toggle.active {
+  border-color: color-mix(in srgb, var(--chip-color) 42%, white);
+  background: color-mix(in srgb, var(--chip-color) 9%, white);
+  color: var(--text);
+}
+.school-vacation-toggle.active i {
+  background: var(--chip-color);
+}
+.school-vacation-zone-picker {
+  max-width: 140px;
+}
+.pdf-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid #d1ddec;
+  border-radius: 10px;
+  padding: 5px 11px 5px 7px;
+  background: #fff;
+  color: #243b5e;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 2px 7px rgba(31, 69, 130, 0.07);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+.pdf-action:hover {
+  transform: translateY(-1px);
+  border-color: #aebfd5;
+  background: #fbfdff;
+}
+.pdf-action-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #edf4fc;
+  color: #35669f;
+}
+.pdf-action.all-groups .pdf-action-icon {
+  background: #eef1f7;
+  color: #4d607a;
+}
+.pdf-action.my-leaves {
+  border-color: #bcdced;
+}
+.pdf-action.my-leaves .pdf-action-icon {
+  background: #dff4ff;
+  color: #168fc8;
+}
+.pdf-action-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.pdf-action-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.pdf-action-copy strong {
+  font-size: 11px;
+  line-height: 1.15;
+}
+.pdf-action-copy small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.pdf-action:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 11px 14px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend i {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.legend-work {
+  background: var(--work);
+}
+.legend-off {
+  background: var(--off);
+  border-color: var(--off) !important;
+}
+.legend-training {
+  background: var(--training);
+}
+.legend .legend-holiday {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #e01832;
+  font-size: 9px;
+  font-weight: 900;
+}
+.legend-note {
+  width: 9px !important;
+  height: 9px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: var(--note);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--note) 18%, white);
+}
+.legend-leave,
+.legend-both {
+  border: 0 !important;
+  border-radius: 5px !important;
+  background-color: transparent !important;
+  background-position: bottom !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 5px !important;
+}
+.legend-leave {
+  background-image: linear-gradient(var(--leave), var(--leave));
+}
+.legend-both {
+  background-image: linear-gradient(90deg, var(--leave) 0 50%, var(--blue) 50%);
+}
+
+.month-card {
+  padding: 14px;
+  border: 1px solid #c9d6e4;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), transparent 64px),
+    linear-gradient(145deg, #dfe8f1 0%, #d5e0eb 100%);
+  box-shadow: 0 14px 34px rgba(39, 60, 85, 0.1);
+  touch-action: pan-y;
+}
+.calendar-out-left {
+  animation: calendarOutLeft 125ms ease-in both;
+}
+.calendar-out-right {
+  animation: calendarOutRight 125ms ease-in both;
+}
+.calendar-in-right {
+  animation: calendarInRight 230ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+.calendar-in-left {
+  animation: calendarInLeft 230ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+@keyframes calendarOutLeft {
+  to {
+    opacity: 0.15;
+    transform: translateX(-9%);
+  }
+}
+@keyframes calendarOutRight {
+  to {
+    opacity: 0.15;
+    transform: translateX(9%);
+  }
+}
+@keyframes calendarInRight {
+  from {
+    opacity: 0.15;
+    transform: translateX(9%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes calendarInLeft {
+  from {
+    opacity: 0.15;
+    transform: translateX(-9%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+}
+.weekdays {
+  margin-bottom: 7px;
+}
+.weekdays span {
+  padding: 8px 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.34);
+  color: #5d6c80;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.day {
+  --corner-inset: 7px;
+  --corner-size: 19px;
+  position: relative;
+  min-height: 88px;
+  overflow: hidden;
+  border: 1px solid rgba(198, 207, 219, 0.92);
+  border-radius: 12px;
+  padding: 8px;
+  background: linear-gradient(145deg, #ffffff 0%, var(--work) 100%);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 3px 8px rgba(31, 46, 78, 0.08);
+  transition:
+    transform 0.14s,
+    box-shadow 0.14s,
+    border-color 0.14s;
+}
+.day.weekend:not(.off):not(.training):not(.leave-day):not(.recovery-day):not(.wish-day) {
+  border-color: #c6d6e7;
+  background: linear-gradient(145deg, #f9fbfe 0%, #eef4fa 100%);
+}
+.day.off {
+  border-color: #172231;
+  background: linear-gradient(145deg, #1b2737 0%, #0c131e 100%);
+  color: #fff;
+}
+.day.training {
+  border-color: #9ba3ad;
+  background: linear-gradient(145deg, #c9cdd2 0%, #afb5bd 100%);
+  color: #171717;
+}
+/* Un congé professionnel encadre toute la case. Les trois droits principaux
+   reçoivent ensuite l'aplat de la palette fournie. */
+.day.leave-day {
+  outline: 2px solid var(--leave);
+  outline-offset: -2px;
+}
+.mini-day.leave-day {
+  outline: 1.5px solid var(--leave);
+  outline-offset: -1.5px;
+}
+.day.leave-day.leave-annual,
+.mini-grid .mini-day.leave-day.leave-annual {
+  background: var(--leave-annual);
+  color: #10283a;
+  outline-color: #000;
+}
+.day.leave-day.leave-rtt,
+.mini-grid .mini-day.leave-day.leave-rtt {
+  background: var(--leave-rtt);
+  color: #123c36;
+  outline-color: #000;
+}
+.day.leave-day.leave-fraction,
+.mini-grid .mini-day.leave-day.leave-fraction {
+  background: var(--leave-fraction);
+  color: #302040;
+  outline-color: #000;
+}
+/* Congé souhaité : la case entière prend un vert doux. Un aplat se repère en
+   balayant le mois, là où un liseré demandait de regarder chaque bordure. Le
+   texte repasse en foncé, la case pouvant être noire par ailleurs. */
+.day.wish-day,
+/* `.mini-day.off` est déclaré plus bas dans ce fichier : sans la classe du
+   conteneur, la case resterait noire en vue Année. */
+.mini-grid .mini-day.wish-day {
+  background: var(--wish);
+  color: #10402a;
+}
+/* Un liseré noir cerne l'aplat vert pour le détacher des cases voisines. La
+   règle de la vue Année reprend le sélecteur avec `.mini-grid` : sans lui, elle
+   serait moins spécifique que celle du fond et ne l'emporterait pas. */
+.day.wish-day {
+  outline: 2px solid #000;
+  outline-offset: -2px;
+}
+.mini-grid .mini-day.wish-day {
+  outline: 1.5px solid #000;
+  outline-offset: -1.5px;
+}
+.day.wish-day small {
+  color: #1d5c3c;
+}
+/* Récupération : aplat orange cerné de noir. Elle ne coûte aucun droit, mais
+   doit se distinguer d'un coup d'œil des congés qui, eux, se décomptent. */
+.day.recovery-day,
+.mini-grid .mini-day.recovery-day {
+  background: #f4bc7e;
+  color: #522f0c;
+}
+.day.recovery-day {
+  outline: 2px solid #000;
+  outline-offset: -2px;
+}
+.mini-grid .mini-day.recovery-day {
+  outline: 1.5px solid #000;
+  outline-offset: -1.5px;
+}
+.day.recovery-day small {
+  color: #7a4712;
+}
+/* Demi-journée : le liseré bleu CA ne suit que l'encadrement d'une moitié de
+   case — la gauche pour le matin, la droite pour l'après-midi. Le côté qui
+   donne sur l'autre moitié reste ouvert : aucun trait ne traverse la case.
+   Les bords se déclarent un par un, la forme abrégée `border-width` du bloc
+   des mini-cases rétablirait sinon le côté laissé ouvert. */
+.day.half-morning::after,
+.day.half-afternoon::after,
+.mini-day.half-morning::after,
+.mini-day.half-afternoon::after {
+  --half-frame-width: 2px;
+  /* Même rayon que `.day` (12px) : un rayon plus petit dessinait un liseré
+     resserré à l'intérieur du coin arrondi de la case au lieu de le suivre. */
+  --half-frame-radius: 12px;
+  content: "";
+  position: absolute;
+  /* Au-dessus du ruban de note (z-index: 5) : sinon le ruban, plaqué sur
+     toute la largeur du haut de la case, masque le bord supérieur du
+     liseré (et l'arrondi du coin qu'il traverse) sur cette portion. */
+  z-index: 6;
+  top: 0;
+  bottom: 0;
+  border-top: var(--half-frame-width) solid var(--leave);
+  border-bottom: var(--half-frame-width) solid var(--leave);
+  pointer-events: none;
+}
+.mini-day.half-morning::after,
+.mini-day.half-afternoon::after {
+  --half-frame-width: 1.5px;
+  /* Même rayon que `.mini-day` (7px). */
+  --half-frame-radius: 7px;
+}
+.day.half-morning::after,
+.mini-day.half-morning::after {
+  left: 0;
+  right: 50%;
+  border-left: var(--half-frame-width) solid var(--leave);
+  border-radius: var(--half-frame-radius) 0 0 var(--half-frame-radius);
+}
+.day.half-afternoon::after,
+.mini-day.half-afternoon::after {
+  right: 0;
+  left: 50%;
+  border-right: var(--half-frame-width) solid var(--leave);
+  border-radius: 0 var(--half-frame-radius) var(--half-frame-radius) 0;
+}
+.day:hover {
+  transform: translateY(-1px);
+  border-color: #aebbd0;
+  box-shadow: 0 7px 17px rgba(31, 46, 78, 0.11);
+}
+.day:active {
+  transform: translateY(0) scale(0.975);
+}
+.date-number,
+.holiday-date {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 850;
+  transform: translate(-50%, -50%);
+}
+.holiday-date {
+  border: 0;
+  background: transparent;
+  color: #e01832;
+  box-shadow: none;
+  font-weight: 900;
+}
+.off .holiday-date {
+  color: #ff6675;
+}
+.today .date-number:not(.holiday-date) {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(40, 89, 184, 0.15);
+}
+.day.today {
+  border-color: #6f91bd;
+  box-shadow:
+    inset 0 0 0 1px rgba(91, 126, 169, 0.2),
+    0 6px 15px rgba(40, 75, 117, 0.14);
+}
+.note-band {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 9px;
+  background: #f6c445;
+  color: #513900;
+  pointer-events: none;
+}
+.note-band svg {
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+/* Demi-journée posée sur un jour à note : le crayon, sinon centré pile là où
+   le liseré rejoint le ruban au milieu de la case, part du côté opposé à la
+   moitié marquée pour rester lisible plutôt que de longer le liseré. */
+.note-band.note-band-half-afternoon {
+  justify-content: flex-start;
+  padding-left: 4px;
+}
+.note-band.note-band-half-morning {
+  justify-content: flex-end;
+  padding-right: 4px;
+}
+.leave-band {
+  position: absolute;
+  z-index: 3;
+  right: 6px;
+  bottom: 5px;
+  left: 6px;
+  height: 7px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.leave-band.leave {
+  background: var(--leave);
+}
+.leave-band.with-personal {
+  left: 27px;
+}
+.personal-marker {
+  position: absolute;
+  z-index: 4;
+  bottom: 1px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  transform: translateX(-50%);
+  border: 1.5px solid #d72f49;
+  border-radius: 50%;
+  background: #fff2f4;
+  color: #b91f39;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(150, 29, 50, 0.22);
+}
+.personal-marker.with-companions {
+  left: 6px;
+  transform: none;
+}
+.personal-marker svg {
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
+}
+.selection-label {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 17px;
+  left: 8px;
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 7px;
+  padding: 5px 7px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #20283a;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.request-selected {
+  border-color: var(--selection-color) !important;
+  box-shadow: inset 0 0 0 2px var(--selection-color);
+}
+.selection-corner {
+  position: absolute;
+  inset: auto 0 0 auto;
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(
+    135deg,
+    transparent 49%,
+    var(--selection-color) 50%
+  );
+}
+.selection-label {
+  color: var(--selection-color);
+}
+.range-selected {
+  border-color: color-mix(in srgb, var(--range-preview) 75%, white) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--range-preview) 15%, transparent),
+    color-mix(in srgb, var(--range-preview) 15%, transparent)
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--range-preview) 35%, transparent);
+}
+.range-selected.range-edge {
+  box-shadow:
+    inset 0 0 0 3px var(--range-preview),
+    0 3px 10px color-mix(in srgb, var(--range-preview) 18%, transparent);
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+.mini-month {
+  scroll-margin-top: 15px;
+  padding: 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 18px;
+  background: #d9e3ed;
+  box-shadow: 0 9px 26px rgba(31, 46, 78, 0.065);
+}
+.mini-month h3 {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+.mini-month-open {
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  padding: 3px 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.mini-month-open:hover {
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--accent);
+}
+.mini-weekdays,
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.mini-weekdays span {
+  padding: 2px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 8px;
+  font-weight: 800;
+}
+.mini-day {
+  --corner-inset: 1px;
+  --corner-size: 9px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0;
+  background: var(--work);
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(31, 46, 78, 0.1);
+}
+.mini-day.off {
+  border-color: var(--off);
+  background: var(--off);
+  color: #fff;
+}
+.mini-day.training {
+  border-color: #8b8b8b;
+  background: var(--training);
+  color: #171717;
+}
+.mini-day .date-number,
+.mini-day .holiday-date {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+}
+.mini-day .holiday-date {
+  border-width: 1.5px;
+}
+.mini-day .note-band {
+  height: 5px;
+}
+.mini-day .note-band svg {
+  width: 5px;
+  height: 5px;
+  stroke-width: 2.4;
+}
+.mini-day .note-band.note-band-half-afternoon {
+  padding-left: 2px;
+}
+.mini-day .note-band.note-band-half-morning {
+  padding-right: 2px;
+}
+.mini-day .selection-corner {
+  width: 17px;
+  height: 17px;
+}
+.mini-day .leave-band {
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
+  height: 3px;
+}
+.mini-day .leave-band.with-personal {
+  left: 12px;
+}
+.mini-day .personal-marker {
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  border-width: 1px;
+}
+.mini-day .personal-marker.with-companions {
+  left: 2px;
+}
+.mini-day .personal-marker svg {
+  width: 6px;
+  height: 6px;
+}
+.mini-blank,
+.day-blank {
+  display: block;
+}
+.mini-blank {
+  aspect-ratio: 1;
+}
+.day-blank {
+  min-height: 88px;
+}
+.footnote {
+  margin: 14px 3px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  /* Toujours au-dessus de l’en-tête sticky (1000) et du menu (1200), sinon
+     le bouton de fermeture d’une fenêtre haute peut devenir incliquable. */
+  z-index: 1250;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(23, 32, 51, 0.52);
+  backdrop-filter: blur(3px);
+}
+.modal-card {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  border-radius: 21px;
+  padding: 24px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(19, 29, 51, 0.28);
+}
+.modal-card h2 {
+  margin: 0 35px 6px 0;
+  font-size: 23px;
+  letter-spacing: -0.02em;
+}
+.modal-card > p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.modal-close {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 11px;
+  background: #eff2f6;
+  color: #5f6877;
+  font-size: 23px;
+  cursor: pointer;
+}
+.choice-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 19px;
+}
+.choice-grid button {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 17px;
+  background: #fafbfd;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.choice-grid button:hover {
+  border-color: #93a8d1;
+  background: #f5f8ff;
+}
+.choice-grid strong {
+  font-size: 16px;
+}
+.choice-grid span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.field-label {
+  display: block;
+  margin: 14px 0 7px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.note-modal textarea {
+  width: 100%;
+  min-height: 125px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fbfcfe;
+  outline: none;
+}
+.note-modal textarea:focus {
+  border-color: #7895d7;
+  box-shadow: 0 0 0 3px rgba(49, 95, 196, 0.12);
+}
+.leave-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 18px 0;
+}
+.leave-choices {
+  grid-template-columns: 1fr 1fr;
+}
+.leave-choices button {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: center;
+  gap: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px;
+  background: #fafbfd;
+  color: var(--text);
+  text-align: left;
+  font-weight: 800;
+  cursor: pointer;
+}
+.leave-choices button i {
+  grid-row: 1/3;
+  width: 14px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--person-color);
+  opacity: 0.35;
+}
+.leave-choices button span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.leave-choices button.leave {
+  --person-color: var(--leave);
+}
+.leave-choices button.personal-day {
+  --person-color: #b91f39;
+}
+.leave-choices button.sick-day {
+  --person-color: var(--leave);
+}
+.leave-choices button.wish {
+  --person-color: #0d6b34;
+}
+.leave-choices button.active {
+  border-color: var(--person-color);
+  background: color-mix(in srgb, var(--person-color) 8%, white);
+  box-shadow: inset 0 0 0 1px var(--person-color);
+}
+.leave-choices button.active i {
+  opacity: 1;
+}
+.leave-choices button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+/* Le type de congé est la décision centrale du geste : il sort du lot des
+   champs discrets pour devenir un encadré à part entière. */
+.leave-type-field {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-left: 4px solid var(--accent);
+  border-radius: 0;
+  padding: 12px 13px;
+  background: color-mix(in srgb, var(--accent) 5%, white);
+}
+.leave-type-field span {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.leave-type-picker .choice-picker-trigger {
+  min-height: 50px;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+/* Le statut n'a que deux choix et se décide une fois pour toutes : un
+   commutateur discret, sans l'encadré ni le menu déroulant réservés aux
+   décisions plus lourdes comme le type de congé. */
+.status-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.status-field > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+/* Pastille qui glisse derrière l'option active plutôt qu'un simple fond
+   blanc posé au clic : `--status-index` (0 ou 1, posé en ligne depuis
+   App.tsx) déplace la pastille en pourcentage de sa propre largeur, donc
+   sans jamais recalculer de pixels si une troisième option s'ajoutait. */
+.status-switch {
+  position: relative;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2f8 0%, #e3e9f3 100%);
+  box-shadow: inset 0 1px 3px rgba(31, 46, 78, 0.1);
+}
+.status-switch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent) 0%, #3b79dc 100%);
+  box-shadow: 0 3px 10px rgba(40, 89, 184, 0.35);
+  transform: translateX(calc(var(--status-index, 0) * 100%));
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.status-switch button {
+  position: relative;
+  z-index: 1;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  outline-offset: 2px;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+.status-switch button.active {
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
+}
+/* Choix d'une compensation de férié directement dans la ligne du tableau :
+   un déclencheur qui n'occupe que la place de son texte, pas toute la
+   colonne, avec les options en liste plutôt qu'en grille (deux options
+   assez longues pour ne pas tenir côte à côte sans se serrer), et le
+   montant sous le choix plutôt qu'à côté — les deux tiennent mal sur une
+   même ligne à cette largeur. */
+.holiday-pay-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.holiday-pay-picker {
+  display: inline-block;
+  width: auto;
+}
+.holiday-pay-picker .choice-picker-trigger {
+  width: auto;
+  min-height: 32px;
+  padding: 0 8px 0 10px;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 750;
+}
+.holiday-pay-picker .choice-picker-trigger svg {
+  width: 13px;
+}
+.holiday-pay-picker .choice-picker-menu {
+  min-width: 180px;
+  width: max-content;
+}
+.leave-type-picker .choice-picker-menu {
+  width: min(360px, calc(100vw - 58px));
+}
+.leave-type-picker .choice-picker-menu button {
+  min-width: 0;
+}

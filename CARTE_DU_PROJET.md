@@ -8,8 +8,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   jour du service worker.
 - `src/App.tsx` : orchestration générale, état partagé et écrans qui n'ont pas
   encore été extraits. Rechercher la fonctionnalité avant d'ouvrir une plage.
-- `src/styles.css` : styles globaux historiques. Rechercher la classe exacte ;
-  les règles les plus tardives ont souvent priorité.
+- `src/styles.css` : point d’entrée de la cascade CSS. Ses imports numérotés
+  dans `src/styles/` conservent l’ordre historique ; rechercher la classe dans
+  ces fichiers sans réordonner les passes. `src/styles/README.md` documente le
+  découpage et les rares priorités `!important` encore nécessaires.
 
 ## Composants d'interface autonomes
 
@@ -38,6 +40,17 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.
 - `src/AppNavigation.tsx` : en-tête, compte et menu principal communs à tous
   les écrans.
+- `src/AppDialogLayer.tsx` : assemblage des dialogues, messages, confirmations
+  et panneaux de gestion qui restent pilotés par l’orchestrateur.
+- `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
+- `src/PlanningCommandCenter.tsx` et `src/PlanningDayCell.tsx` : commandes du
+  calendrier et rendu interactif d’une journée.
+- `src/LeaveManagementPage.tsx` : composition de la page congés et
+  récupérations.
+- `src/PayPage.tsx`, `src/PayAllowancesSection.tsx` et
+  `src/PayslipCheckSection.tsx` : navigation paie, primes et contrôle du
+  bulletin.
+- `src/PdfDownloadPage.tsx` : page de téléchargement des documents.
 - `src/UserGuideDialogs.tsx` : mode d’emploi chargé uniquement lorsqu’il est
   ouvert.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
@@ -45,6 +58,18 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande, navigation par espace et périodes
   d’inter expos.
+- `src/use*UiState.ts` et `src/useCalendarDataState.ts` : états spécialisés de
+  l’authentification, du planning, de la paie, des heures, de la coque et des
+  données synchronisées ; `App.tsx` conserve leur orchestration commune.
+- `src/useWorkTimeActions.ts` : validations, écritures et suppressions des
+  heures supplémentaires, récupérations et mécénats.
+- `src/useAuthenticationActions.ts` : connexion, invitation, réinitialisation
+  du mot de passe et déconnexion, sans état métier dans `App.tsx`.
+- `src/useAccountDataActions.ts` : export, restauration, archivage et
+  effacement sécurisé des données du compte.
+- `src/usePlanningEntryActions.ts` : mutations directes maladie, grève,
+  souhait et divers, ainsi que construction testable des lots de suppression
+  de notes, absences et récupérations.
 
 ## Logique métier
 
@@ -64,11 +89,19 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 ## Données et serveur
 
 - `src/calendarApi.ts` : client HTTP du planning.
-- `netlify/functions/calendar.mts` : API principale.
+- `netlify/functions/calendar.mts` : point d’entrée léger de l’API principale
+  (authentification, lecture ou dispatch d’une écriture).
+- `netlify/lib/calendarRead.mts` : chargement et tri des données du compte.
+- `netlify/lib/calendar-actions/` : un gestionnaire indépendant par action
+  d’écriture du calendrier ; `index.mts` contient le dispatch explicite.
+- `netlify/lib/calendarShared.mts` : types, validations et utilitaires partagés
+  par les gestionnaires du calendrier.
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,
   d’isolation et d’écriture de l’API calendrier.
 - `netlify/lib/` : validation, stockage par utilisatrice et sauvegardes.
-- `public/formulaire/index.html` : formulaire autonome de demande.
+- `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
+  `sheets.js` : structure, présentation, logique, adaptation mobile et modèles
+  du formulaire autonome de demande.
 
 ## PDF et PWA
 
@@ -98,9 +131,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 ```text
 npm test
+npm run test:coverage
 npm run test:e2e
 npm run check
 npm run build
+npm run check:bundle
+npm run check:css
 ```
 
 ## Préparer un contexte court pour une IA

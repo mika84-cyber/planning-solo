@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { extname, join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -9,17 +15,31 @@ const features = {
     description: "planning mensuel/annuel, groupes, cases et nettoyage",
     files: [
       "src/CalendarCleanup.tsx",
+      "src/HomeDashboard.tsx",
+      "src/PlanningCommandCenter.tsx",
+      "src/PlanningDayCell.tsx",
+      "src/PlanningView.tsx",
+      "src/useCalendarDataState.ts",
+      "src/usePlanningEntryActions.ts",
+      "src/usePlanningUiState.ts",
       "src/planningLogic.ts",
       "src/planningLogic.test.ts",
       "src/appModel.ts",
       "src/ChoicePicker.tsx",
     ],
-    appTerms: ["function renderDay", "function renderMonthCalendar", "calendar-toolbar"],
+    appTerms: [
+      "<PlanningCommandCenter",
+      "<PlanningDayCell",
+      "<MonthCalendar",
+      "calendarDeleteMode",
+      'homeSection === "home"',
+    ],
     styleTerms: [".calendar-toolbar", ".calendar-grid", ".day {", ".calendar-delete"],
   },
   leave: {
     description: "congés, soldes, récupérations et demandes",
     files: [
+      "src/LeaveManagementPage.tsx",
       "src/LeaveBalancesSection.tsx",
       "src/LeaveDialogs.tsx",
       "src/leaveRequest.ts",
@@ -28,14 +48,19 @@ const features = {
       "src/overtime.test.ts",
       "src/planningLogic.ts",
     ],
-    appTerms: ["const leaveStats", "const balanceDetailMonths", 'homeSection === "leave"'],
+    appTerms: ["const leaveStats", "const balanceDetailMonths", "<LeaveManagementPage"],
     styleTerms: [".leave-balance", ".balance-detail", ".manual-adjustment", ".recovery-"],
   },
   pay: {
     description: "paie, bulletins, heures supplémentaires, mécénats et primes",
     files: [
+      "src/PayPage.tsx",
+      "src/PayAllowancesSection.tsx",
+      "src/PayslipCheckSection.tsx",
       "src/PayEstimateDetails.tsx",
       "src/WorkTimeDialogs.tsx",
+      "src/usePayUiState.ts",
+      "src/useWorkTimeUiState.ts",
       "src/payEstimate.ts",
       "src/payEstimate.test.ts",
       "src/payslip.ts",
@@ -44,7 +69,7 @@ const features = {
       "src/mecenat.ts",
       "src/mecenatRegulation.ts",
     ],
-    appTerms: ["function renderPayslipCheck", "function renderAllowances", 'homeSection === "pay"'],
+    appTerms: ["<PayPage", "<PayAllowancesSection", "<PayslipCheckSection"],
     styleTerms: [".pay-", ".allowance-", ".overtime-", ".mecenat-"],
   },
   pwa: {
@@ -60,7 +85,14 @@ const features = {
   },
   form: {
     description: "formulaire autonome de demande",
-    files: ["public/formulaire/index.html", "formSecurity.test.mjs"],
+    files: [
+      "public/formulaire/index.html",
+      "public/formulaire/device.js",
+      "public/formulaire/sheets.js",
+      "public/formulaire/app.js",
+      "public/formulaire/form.css",
+      "formSecurity.test.mjs",
+    ],
     appTerms: ["function openBlankForm", "function validateAndOpenForm", "HANDOFF_KEY"],
     styleTerms: [],
   },
@@ -126,8 +158,19 @@ if (!feature || !features[feature]) {
   }
   const appExcerpt = extractWindows("src/App.tsx", config.appTerms, 70);
   if (appExcerpt) addFile("src/App.tsx — extraits ciblés", appExcerpt);
-  const styleExcerpt = extractWindows("src/styles.css", config.styleTerms, 12);
-  if (styleExcerpt) addFile("src/styles.css — extraits ciblés", styleExcerpt);
+  if (config.styleTerms.length > 0) {
+    const styleDirectory = join(root, "src/styles");
+    const styleFiles = existsSync(styleDirectory)
+      ? readdirSync(styleDirectory)
+          .filter((name) => name.endsWith(".css"))
+          .sort()
+          .map((name) => `src/styles/${name}`)
+      : ["src/styles.css"];
+    for (const styleFile of styleFiles) {
+      const styleExcerpt = extractWindows(styleFile, config.styleTerms, 12);
+      if (styleExcerpt) addFile(`${styleFile} — extraits ciblés`, styleExcerpt);
+    }
+  }
 
   const outputDirectory = join(root, ".ai-context");
   mkdirSync(outputDirectory, { recursive: true });

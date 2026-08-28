@@ -1,0 +1,1049 @@
+/* Poste de commande du planning : un titre ouvert, une seule carte pour les
+   réglages et une navigation légère, sans empilement de liserés colorés. */
+.planning-workspace-shell.framed .home-planning-heading {
+  margin: 0;
+  border: 0;
+  padding: 5px 6px 9px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.planning-workspace-shell.framed .home-planning-heading .home-content-heading {
+  min-height: 0;
+}
+
+.planning-workspace-shell.framed .home-planning-heading .step-label {
+  color: #2f67a9;
+  letter-spacing: 0.14em;
+}
+
+.planning-workspace-shell.framed .home-planning-heading h2 {
+  margin-top: 3px;
+  color: #182a40;
+}
+
+.planning-workspace-shell.framed .controls {
+  border: 1px solid rgba(81, 111, 146, 0.28);
+  border-radius: 19px;
+  padding: 13px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(79, 137, 199, 0.11), transparent 38%),
+    linear-gradient(145deg, #f4f8fd, #fbfdff 72%);
+  box-shadow: 0 9px 23px rgba(38, 65, 96, 0.075);
+}
+
+.planning-workspace-shell.framed .controls .year-choice,
+.planning-workspace-shell.framed .controls .worked-days {
+  gap: 6px;
+}
+
+.planning-workspace-shell.framed .controls .year-choice-label {
+  color: #4f6279;
+  font-size: 9.5px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+
+.planning-workspace-shell.framed .controls .choice-picker-trigger,
+.planning-workspace-shell.framed .controls .worked-days-trigger {
+  border: 1px solid rgba(91, 119, 151, 0.27);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 3px 10px rgba(42, 67, 96, 0.055);
+}
+
+.planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.planning-workspace-shell.framed .month-toolbar .choice-picker-trigger,
+.planning-workspace-shell.framed .month-toolbar .today-button,
+.planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
+  min-height: 46px;
+  border: 1px solid rgba(91, 119, 151, 0.3);
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(39, 62, 90, 0.055);
+}
+
+.planning-workspace-shell.framed .month-toolbar .toolbar-month-picker .choice-picker-trigger,
+.planning-workspace-shell.framed .month-toolbar .toolbar-year-picker .choice-picker-trigger {
+  color: #1d3551;
+}
+
+.planning-workspace-shell.framed .month-toolbar .today-button {
+  border-color: rgba(49, 101, 170, 0.34);
+  background: linear-gradient(145deg, #f2f7ff, #fff);
+  color: #2862aa;
+}
+
+.planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
+  border-color: rgba(180, 72, 84, 0.25);
+  background: linear-gradient(145deg, #fff8f8, #fff);
+  color: #ad2738;
+}
+
+@media (max-width: 720px) {
+  .planning-workspace-shell.framed .home-planning-heading {
+    padding: 3px 4px 7px;
+  }
+
+  .planning-workspace-shell.framed .home-planning-heading h2 {
+    font-size: 1.2rem;
+  }
+
+  .planning-workspace-shell.framed .controls {
+    gap: 10px;
+    border-left-width: 1px;
+    border-radius: 17px;
+    padding: 11px;
+  }
+
+  .planning-workspace-shell.framed .controls .choice-picker-trigger,
+  .planning-workspace-shell.framed .controls .worked-days-trigger {
+    min-height: 48px;
+  }
+
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    gap: 8px;
+  }
+}
+
+/* L'effacement multiple reste disponible sans prendre le poids visuel des
+   commandes de navigation utilisées au quotidien. */
+.calendar-cleanup-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.calendar-cleanup-label-short {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar .period-navigation {
+    grid-column: 1 / -1;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .today-button {
+    grid-column: 1;
+    width: 100%;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
+    grid-column: 2;
+    width: auto;
+    min-width: 136px;
+    padding-inline: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .calendar-cleanup-label-full {
+    display: none;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .calendar-cleanup-label-short {
+    display: inline;
+  }
+}
+
+@media (max-width: 380px) {
+  .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
+    min-width: 52px;
+    padding-inline: 15px;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .calendar-cleanup-label-short {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Composition finale du poste de commande : deux réglages métier, une ligne
+   de période, puis deux actions jumelles. Le violet distingue le planning du
+   liseré orangé des notes. */
+.planning-workspace-shell.framed {
+  box-sizing: border-box;
+  border-left: 6px solid #665bb9;
+  padding-left: clamp(9px, 1.25vw, 15px);
+  background-image: linear-gradient(90deg, rgba(102, 91, 185, 0.065), transparent 12%);
+}
+
+.planning-workspace-shell.framed .controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.planning-workspace-shell.framed .controls .planning-year-choice {
+  display: none;
+}
+
+.planning-workspace-shell.framed .controls .worked-days {
+  grid-column: 1;
+  grid-row: 1;
+  order: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.planning-workspace-shell.framed .controls .planning-group-choice {
+  grid-column: 2;
+  grid-row: 1;
+  order: 2;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 721px) {
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .period-navigation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-column: 1 / 3;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
+  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
+  .planning-workspace-shell.framed .month-toolbar .today-button,
+  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger {
+    width: 100%;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .today-button {
+    grid-column: 3;
+  }
+
+  .planning-workspace-shell.framed .calendar-bulk-delete-button {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    margin: 2px 0 0;
+  }
+}
+
+/* CET placé après les mécénats : rubrique ouverte, lisible immédiatement et
+   repérée par le même principe de liseré que les deux cartes précédentes. */
+.leave-tools-area > .cet-section.cet-section-static {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  border: 1.5px solid rgba(89, 80, 151, 0.46);
+  border-left: 6px solid #6c61b8;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(112, 96, 190, 0.12), transparent 34%),
+    linear-gradient(150deg, #f7f5ff, #fff 48%);
+  box-shadow: 0 9px 23px rgba(65, 55, 122, 0.09);
+}
+
+.cet-section-static .cet-heading-static {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 84px;
+  border-bottom: 1px solid rgba(99, 88, 164, 0.22);
+  padding: 15px 17px;
+  background: transparent;
+  cursor: default;
+}
+
+.cet-section-static .cet-heading-static .cet-symbol {
+  width: 50px;
+  height: 50px;
+  border-color: #55499e;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #7468c1, #51458f);
+  box-shadow: 0 6px 14px rgba(70, 58, 135, 0.2), inset 0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+.cet-section-static .cet-heading-static strong {
+  color: #282151;
+  font-size: 1.15rem;
+}
+
+.cet-section-static .cet-heading-static small {
+  max-width: 760px;
+  color: #5e5877;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.cet-section-static .cet-content {
+  border-top: 0;
+  padding: clamp(13px, 1.8vw, 18px);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.cet-section-static .cet-callout {
+  border-left-width: 1px;
+  background: linear-gradient(145deg, #f1efff, #fbfaff);
+}
+
+.cet-section-static .cet-callout p {
+  margin: 5px 0 0;
+  color: #5d5873;
+}
+
+@media (max-width: 720px) {
+  .leave-tools-area > .cet-section.cet-section-static {
+    border-radius: 17px;
+  }
+
+  .cet-section-static .cet-heading-static {
+    min-height: 76px;
+    padding: 12px;
+  }
+
+  .cet-section-static .cet-heading-static .cet-symbol {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+  }
+
+  .cet-section-static .cet-heading-static small {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .planning-workspace-shell.framed {
+    width: calc(100% - 16px);
+    border-left-width: 6px;
+    padding-left: 8px;
+  }
+
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid rgba(86, 101, 153, 0.24);
+    border-radius: 17px;
+    padding: 10px;
+    background:
+      radial-gradient(circle at 100% 0, rgba(102, 91, 185, 0.08), transparent 42%),
+      #fff;
+    box-shadow: 0 7px 18px rgba(39, 55, 89, 0.065);
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .period-navigation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-column: 1 / -1;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
+  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
+  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger,
+  .planning-workspace-shell.framed .month-toolbar .today-button,
+  .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .today-button {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .calendar-cleanup-label-short {
+    position: static;
+    display: inline;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+}
+
+/* Priorité finale — séparation nette des commandes et du calendrier. */
+.planning-workspace-shell.framed {
+  box-sizing: border-box;
+  border-left: 0;
+  padding-left: 0;
+  background-image: none;
+}
+
+.planning-workspace-shell.framed .planning-command-section,
+.planning-workspace-shell.framed .planning-calendar-section {
+  box-sizing: border-box;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  border: 1.5px solid rgba(64, 88, 119, 0.38);
+  border-radius: 21px;
+  padding: clamp(11px, 1.5vw, 16px);
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(34, 57, 84, 0.065);
+}
+
+.planning-workspace-shell.framed .planning-command-section {
+  border-left: 6px solid #34926c;
+  background:
+    linear-gradient(90deg, rgba(52, 146, 108, 0.07), transparent 14%),
+    #fff;
+}
+
+.planning-workspace-shell.framed .planning-calendar-section {
+  border-left: 6px solid #496fc0;
+  background:
+    linear-gradient(90deg, rgba(73, 111, 192, 0.065), transparent 12%),
+    #fff;
+}
+
+.planning-workspace-shell.framed .planning-command-section .home-planning-heading {
+  padding: 0 3px 5px;
+}
+
+.planning-workspace-shell.framed .controls .worked-days-stepper,
+.planning-workspace-shell.framed .controls .year-stepper,
+.planning-workspace-shell.framed .controls .year-select-display,
+.planning-workspace-shell.framed .controls .planning-group-action-row {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.planning-workspace-shell.framed .planning-calendar-section .planning-leave-panel,
+.planning-workspace-shell.framed .planning-calendar-section .month-card,
+.planning-workspace-shell.framed .planning-calendar-section .year-grid {
+  width: 100%;
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.today-overview,
+.home-notes-section {
+  box-sizing: border-box;
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.today-overview {
+  border-left: 6px solid #3475ba;
+  background-image:
+    linear-gradient(90deg, rgba(52, 117, 186, 0.075), transparent 15%),
+    linear-gradient(145deg, #fbfdff, #f4f8fd);
+}
+
+.today-overview .today-overview-heading {
+  border-left-width: 0;
+}
+
+@media (max-width: 720px) {
+  .planning-workspace-shell.framed {
+    width: calc(100% - 16px);
+    border-left-width: 0;
+    padding-left: 0;
+  }
+
+  .planning-workspace-shell.framed .planning-command-section,
+  .planning-workspace-shell.framed .planning-calendar-section {
+    border-radius: 18px;
+    padding: 10px;
+  }
+
+  .today-overview,
+  .home-notes-section {
+    width: 100%;
+  }
+}
+
+/* Tous les écrans principaux suivent désormais la largeur exacte de leur
+   en-tête. Les cartes internes conservent leurs propres grilles et dimensions. */
+.app-shell > .top-header,
+.app-shell > .home-view-mode-bar,
+.app-shell > .today-overview,
+.app-shell > .home-notes-section,
+.app-shell > .planning-workspace-shell,
+.app-shell > .section-intro,
+.app-shell > .leave-balances-direct,
+.app-shell > .leave-tools-area,
+.app-shell > .pay-app-screen,
+.app-shell > .pdf-download-screen,
+.app-shell > .useful-forms-screen,
+.app-shell > .useful-contacts-screen,
+.app-shell > .grand-palais-program-screen {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.app-shell > .top-header {
+  transform: none;
+}
+
+/* Le liseré identifie seulement l'entrée principale de l'annuaire. Les pages
+   Pompidou, GP-RMN et les fiches de service restent sans accent latéral. */
+.useful-contacts-screen.useful-contacts-root {
+  border-left: 6px solid #3978ba;
+  background:
+    linear-gradient(90deg, rgba(57, 120, 186, 0.07), transparent 15%),
+    linear-gradient(145deg, #f7fbff, #fff 56%, #fff8ef);
+}
+
+.cet-section-static .cet-callout p {
+  margin-top: 0;
+}
+
+/* Bulletin conforme : l’animation détourée couvre le viewport sans modifier
+   la page ni intercepter les gestes. `cover` remplit aussi les écrans très verticaux. */
+.payslip-success-celebration,
+.payslip-warning-effect {
+  position: fixed;
+  z-index: 12000;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+  animation: payslip-success-appear 180ms ease-out both;
+}
+
+.payslip-success-celebration img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.payslip-warning-effect {
+  background: transparent;
+  mix-blend-mode: screen;
+  opacity: 0.72;
+}
+
+.payslip-warning-effect video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter:
+    grayscale(1)
+    contrast(2.6)
+    brightness(1.55)
+    sepia(1)
+    saturate(16)
+    hue-rotate(4deg)
+    drop-shadow(0 0 4px #fffbd0)
+    drop-shadow(0 0 12px #fff200)
+    drop-shadow(0 0 26px rgba(255, 196, 0, 0.82));
+}
+
+.payslip-warning-caption {
+  position: fixed;
+  z-index: 12001;
+  left: 50%;
+  bottom: max(34px, calc(env(safe-area-inset-bottom) + 22px));
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: min(calc(100vw - 32px), 430px);
+  transform: translateX(-50%);
+  border: 1.5px solid #ffe600;
+  border-radius: 17px;
+  padding: 12px 16px;
+  pointer-events: none;
+  color: #fff;
+  background: rgba(13, 20, 34, 0.9);
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.18), 0 13px 34px rgba(0, 0, 0, 0.32);
+  animation: payslip-warning-caption-in 240ms ease-out both;
+}
+
+.payslip-warning-caption > span:first-child {
+  font-size: 28px;
+  filter: drop-shadow(0 0 7px #fff200);
+}
+
+.payslip-warning-caption > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.payslip-warning-caption strong {
+  color: #fff6a2;
+  font-size: 14px;
+}
+
+.payslip-warning-caption small {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 10px;
+}
+
+@keyframes payslip-success-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes payslip-warning-caption-in {
+  from { opacity: 0; transform: translate(-50%, 12px) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payslip-success-celebration,
+  .payslip-warning-effect,
+  .payslip-warning-caption {
+    display: none;
+  }
+}
+
+/* Corrections finales des trois compositions signalées : les dossiers
+   utilisent bien la grande colonne, les outils partagent un liseré latéral
+   et les deux sélecteurs du planning ont exactement la même géométrie. */
+@media (min-width: 721px) {
+  .useful-forms-screen:not(.useful-forms-folder-screen) {
+    grid-template-areas:
+      "intro search"
+      "intro folders";
+    grid-template-columns: minmax(215px, 0.72fr) minmax(0, 2fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading {
+    grid-area: intro;
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-resource-search {
+    grid-area: search;
+    width: 100%;
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-folder-grid,
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-search-results {
+    grid-area: folders;
+    width: 100%;
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) .useful-form-folder:hover {
+    transform: none;
+  }
+
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .useful-forms-screen:not(.useful-forms-folder-screen) {
+    grid-template-areas:
+      "intro"
+      "search"
+      "folders";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+}
+
+.leave-secondary-grid > .overtime-balance-card:first-child {
+  border: 1.5px solid rgba(63, 115, 181, 0.42);
+  border-left: 6px solid #3f73b5;
+}
+
+.leave-secondary-grid > .mecenat-balance-card {
+  border: 1.5px solid rgba(201, 130, 57, 0.42);
+  border-left: 6px solid #c98239;
+}
+
+.planning-workspace-shell.framed .controls .worked-days,
+.planning-workspace-shell.framed .controls .planning-group-choice {
+  grid-template-rows: auto 46px;
+  align-items: stretch;
+}
+
+.planning-workspace-shell.framed .controls .worked-days-stepper,
+.planning-workspace-shell.framed .controls .planning-group-action-row,
+.planning-workspace-shell.framed .controls .planning-group-choice .year-stepper,
+.planning-workspace-shell.framed .controls .planning-group-choice .year-select-display,
+.planning-workspace-shell.framed .controls .planning-group-choice .choice-picker,
+.planning-workspace-shell.framed .controls .worked-days-trigger,
+.planning-workspace-shell.framed .controls .planning-group-choice .choice-picker-trigger {
+  width: 100%;
+  height: 46px;
+  min-height: 46px;
+}
+
+/* Le détail des jours travaillés doit rester entièrement lisible sur les
+   écrans larges. Il se déploie vers la droite depuis la première colonne et
+   aucune des cartes parentes ne le rogne. */
+@media (min-width: 721px) {
+  .planning-workspace-shell.framed .planning-command-section,
+  .planning-workspace-shell.framed .controls,
+  .planning-workspace-shell.framed .controls .worked-days,
+  .planning-workspace-shell.framed .controls .worked-days-stepper {
+    overflow: visible;
+  }
+
+  .planning-workspace-shell.framed .worked-days-panel {
+    right: auto;
+    left: 0;
+    width: min(620px, calc(100vw - 64px));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    padding: 11px;
+  }
+
+  .planning-workspace-shell.framed .worked-days-panel article {
+    min-width: 0;
+    padding: 9px 11px;
+  }
+
+  .planning-workspace-shell.framed .worked-days-panel small {
+    line-height: 1.35;
+  }
+}
+
+@media (min-width: 1101px) {
+  .planning-workspace-shell.framed .worked-days-panel {
+    width: min(820px, calc(100vw - 96px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Programmation prévisionnelle des galeries 3 et 4 dans le dossier Expo. */
+.useful-expo-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(78, 139, 128, 0.28);
+  border-radius: 16px;
+  padding: 6px;
+  background: #eef7f5;
+}
+
+.useful-expo-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 13px;
+  color: #45635f;
+  background: transparent;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.useful-expo-tabs button.active {
+  border-color: rgba(78, 139, 128, 0.38);
+  color: #164f47;
+  background: #fff;
+  box-shadow: 0 7px 18px rgba(37, 88, 79, 0.1);
+}
+
+.useful-expo-tabs button > span {
+  color: #4e8b80;
+  font-size: 1.1rem;
+}
+
+.useful-expo-schedule {
+  display: grid;
+  gap: 16px;
+  border: 1.5px solid rgba(78, 139, 128, 0.38);
+  border-left: 6px solid #4e8b80;
+  border-radius: 18px;
+  padding: clamp(16px, 2.4vw, 24px);
+  background:
+    radial-gradient(circle at 100% 0, rgba(225, 240, 204, 0.58), transparent 31%),
+    linear-gradient(145deg, #f8fcfb, #fff 58%, #fffaf1);
+  box-shadow: 0 12px 30px rgba(35, 72, 67, 0.08);
+}
+
+.useful-expo-schedule-heading h3 {
+  margin: 4px 0 6px;
+  color: #17283e;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.useful-expo-schedule-heading p,
+.useful-expo-source-note {
+  margin: 0;
+  color: #5e7082;
+  line-height: 1.48;
+}
+
+.useful-expo-venue-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.useful-expo-venue-picker button {
+  min-height: 52px;
+  border: 1px solid rgba(78, 139, 128, 0.3);
+  border-radius: 13px;
+  padding: 9px 8px;
+  color: #385f59;
+  background: rgba(255, 255, 255, 0.78);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.useful-expo-venue-picker button.active {
+  border-color: #4e8b80;
+  color: #fff;
+  background: linear-gradient(135deg, #34766b, #5a9b90);
+  box-shadow: 0 7px 17px rgba(37, 88, 79, 0.18);
+}
+
+.useful-expo-year-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 7px;
+  border-radius: 14px;
+  padding: 5px;
+  background: rgba(224, 238, 235, 0.76);
+}
+
+.useful-expo-year-picker button {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #5b706d;
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.useful-expo-year-picker button.active {
+  border-color: rgba(78, 139, 128, 0.42);
+  color: #164f47;
+  background: #fff;
+  box-shadow: 0 5px 13px rgba(37, 88, 79, 0.1);
+}
+
+.useful-expo-timeline {
+  position: relative;
+  display: grid;
+  gap: 10px;
+}
+
+.useful-expo-timeline::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: #8ab9b0;
+}
+
+.useful-expo-timeline article {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 86px;
+  border: 1px solid rgba(79, 123, 117, 0.28);
+  border-radius: 15px;
+  padding: 13px 14px 13px 8px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.useful-expo-timeline article.is-uncertain {
+  border-color: rgba(203, 138, 54, 0.36);
+  background: rgba(255, 250, 241, 0.94);
+}
+
+.useful-expo-timeline-mark {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #4e8b80;
+  box-shadow: 0 0 0 2px #4e8b80;
+}
+
+.useful-expo-timeline article.is-uncertain .useful-expo-timeline-mark {
+  background: #cf8732;
+  box-shadow: 0 0 0 2px #cf8732;
+}
+
+.useful-expo-timeline article > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.useful-expo-timeline article small {
+  color: #397168;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+
+.useful-expo-timeline article strong {
+  color: #17283e;
+  font-size: 1.02rem;
+}
+
+.useful-expo-timeline article p {
+  margin: 0;
+  color: #667486;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.useful-expo-timeline article > em {
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: #276b60;
+  background: #e3f3ef;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.useful-expo-timeline article.is-uncertain > em {
+  color: #915613;
+  background: #fff0d9;
+}
+
+.useful-expo-source-note {
+  border-top: 1px solid rgba(78, 139, 128, 0.22);
+  padding-top: 12px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .useful-expo-tabs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .useful-expo-tabs button {
+    justify-content: flex-start;
+  }
+
+  .useful-expo-venue-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .useful-expo-timeline article {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .useful-expo-timeline article > em {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+/* Repère informatif uniquement : il n'intervient dans aucun calcul du jour. */
+.exceptional-closure-marker {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: contain;
+  background: #fff;
+  pointer-events: none;
+  filter: none;
+}
+
+.exceptional-closure-marker.compact {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* La date reste visible par-dessus le tampon CLOSED, en haut à gauche. */
+:root .exceptional-closure-date {
+  z-index: 8;
+  top: 6px;
+  left: 7px;
+  width: auto;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  transform: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #14233a;
+  box-shadow: none;
+  font-size: clamp(10px, 1.25vw, 13px);
+  font-weight: 950;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.98),
+    1px 0 0 rgba(255, 255, 255, 0.9),
+    -1px 0 0 rgba(255, 255, 255, 0.9),
+    0 -1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root .mini-day .exceptional-closure-date {
+  top: 2px;
+  left: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  font-size: 8px;
+}
+
+@media (max-width: 720px) {
+  :root .day .exceptional-closure-date {
+    top: 4px;
+    left: 4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 10px;
+  }
+}

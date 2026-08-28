@@ -1,8 +1,5 @@
 import type { WorkQuota } from "./overtime";
-import {
-  MECENAT_REGULATORY_RATES,
-  calculateRegulatoryMecenatVacation,
-} from "./mecenatRegulation";
+import { calculateRegulatoryMecenatVacation } from "./mecenatRegulation";
 export { MECENAT_REGULATORY_RATES } from "./mecenatRegulation";
 
 export type MecenatEntry = {

@@ -1,0 +1,41 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: "v8",
+      reportsDirectory: "coverage",
+      reporter: ["text", "json-summary", "html"],
+      reportOnFailure: true,
+      include: [
+        "src/appModel.ts",
+        "src/calendarApi.ts",
+        "src/cet.ts",
+        "src/demoAccess.ts",
+        "src/grandPalais*.ts",
+        "src/leaveRequest.ts",
+        "src/mecenat*.ts",
+        "src/overtime.ts",
+        "src/payEstimate.ts",
+        "src/payslip*.ts",
+        "src/planningLogic.ts",
+        "src/strike.ts",
+        "netlify/lib/**/*.mts",
+        "netlify/functions/**/*.mts",
+      ],
+      exclude: [
+        "**/*.test.{ts,tsx,mts,mjs}",
+        "netlify/lib/usefulContactsData.mts",
+      ],
+      thresholds: {
+        // Baseline mesurée sur l’ensemble du métier client et serveur.
+        // Ces seuils empêchent toute baisse ; ils pourront monter à mesure que
+        // les actions serveur extraites recevront leurs tests dédiés.
+        lines: 73,
+        functions: 68,
+        statements: 70,
+        branches: 60,
+      },
+    },
+  },
+});

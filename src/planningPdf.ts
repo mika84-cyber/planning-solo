@@ -255,13 +255,6 @@ function frenchDate(key: string) {
   return `${day} ${monthName} ${year.slice(2)}`;
 }
 
-/** La clé du jour décalé de `days`, pour tester les bornes d'une période. */
-function shiftKey(key: string, days: number) {
-  return new Date(Date.parse(`${key}T12:00:00Z`) + days * 86400000)
-    .toISOString()
-    .slice(0, 10);
-}
-
 function drawCenteredText(
   doc: jsPDF,
   text: string,
@@ -284,7 +277,6 @@ function drawGroupPage(
   wasPompidouHolidayWorked: PlanningPdfOptions["wasPompidouHolidayWorked"],
   leaveTypes?: ReadonlyMap<string, PdfLeaveType>,
   halfMoments?: ReadonlyMap<string, PdfHalfMoment>,
-  leaveSummary?: PlanningPdfOptions["leaveSummary"],
   schoolVacationDates?: ReadonlySet<string>,
   wishDates?: ReadonlySet<string>,
   schoolVacationsByZone?: PlanningPdfOptions["schoolVacationsByZone"],
@@ -949,7 +941,6 @@ export function createAnnualPlanningPdf({
   wasPompidouHolidayWorked,
   leaveTypes,
   halfMoments,
-  leaveSummary,
   schoolVacationDates,
   wishDates,
   schoolVacationsByZone,
@@ -972,7 +963,6 @@ export function createAnnualPlanningPdf({
       wasPompidouHolidayWorked,
       leaveTypes,
       halfMoments,
-      leaveSummary,
       schoolVacationDates,
       wishDates,
       schoolVacationsByZone,

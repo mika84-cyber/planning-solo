@@ -1,0 +1,22 @@
+/* Contraste renforcé sur le libellé de situation du jour. La teinte conserve
+   la hiérarchie discrète du libellé tout en dépassant 4,5:1 sur le fond vert
+   le plus clair de la carte. */
+.today-overview-grid .today-status > .today-card-copy > span {
+  color: #3f4f62;
+}
+
+.overtime-balance-summary article.remaining > span {
+  color: #475867;
+}
+
+/* Les petits libellés des soldes utilisent une couleur commune suffisamment
+   sombre : les teintes de catégorie restent portées par le liseré et le fond. */
+.leave-balances-direct .leave-balance-grid button > em {
+  color: #3f4f62;
+}
+
+.cet-actions .cet-rights-open-action {
+  border-color: #8c3600;
+  background: #a64000;
+  color: #fff;
+}

@@ -41,6 +41,26 @@ describe("alerte de connexion invitée", () => {
     ).rejects.toThrow("incomplètes");
   });
 
+  it("interrompt l’appel Resend après dix secondes", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi.fn<typeof fetch>((_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Délai dépassé", "AbortError")),
+          );
+        }),
+      );
+      const pending = sendGuestLoginAlert("invite@example.com", new Date(), env, fetcher);
+      const rejection = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+      await vi.advanceTimersByTimeAsync(10_000);
+      await rejection;
+      expect(fetcher.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("évite plusieurs alertes rapprochées pour le même compte", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 }));
     let record: { sentAt: string } | null = null;

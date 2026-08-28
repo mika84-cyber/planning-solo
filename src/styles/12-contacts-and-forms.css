@@ -1,0 +1,2228 @@
+/* Cascade finale de l’annuaire : elle doit rester après les anciens styles
+   de Formulaires utiles pour préserver les fiches et leurs actions. */
+.top-header.top-header-contacts {
+  background:
+    radial-gradient(circle at 78% 30%, rgba(112, 215, 238, 0.48), transparent 28%),
+    radial-gradient(circle at 63% 112%, rgba(255, 184, 92, 0.38), transparent 40%),
+    linear-gradient(125deg, #14365d 0%, #1b5e8b 48%, #2c8193 100%);
+}
+.top-header-contacts .top-header-title h1,
+.top-header-contacts .top-header-title .eyebrow { color: #fff; text-shadow: 0 2px 11px rgba(0, 17, 38, 0.58); }
+.useful-form-information-image img { width: min(100%, 900px); }
+.useful-contacts-screen {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 96% 4%, rgba(85, 174, 208, 0.14), transparent 29%),
+    radial-gradient(circle at 3% 96%, rgba(240, 170, 86, 0.12), transparent 30%),
+    linear-gradient(145deg, #f5faff, #fff 54%, #fff9f1);
+}
+.useful-contact-card {
+  grid-template-columns: minmax(210px, 0.55fr) minmax(0, 1.45fr);
+  border-color: rgba(82, 120, 153, 0.42);
+  border-left: 5px solid #4a91bd;
+  border-radius: 17px;
+  padding: 15px 16px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 9px 24px rgba(31, 67, 101, 0.09);
+}
+.useful-contact-card:nth-child(even) { border-left-color: #d7924e; }
+.useful-contact-identity > span:first-child {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border: 1px solid rgba(44, 104, 150, 0.2);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #dceeff, #eef7ff);
+  color: #1c5f95;
+}
+.useful-contact-identity > span:last-child { width: auto; height: auto; min-width: 0; display: grid; place-items: initial; gap: 3px; background: transparent; }
+.useful-contact-card:nth-child(even) .useful-contact-identity > span:first-child { background: linear-gradient(145deg, #ffead5, #fff7ed); color: #9a571e; }
+.useful-contact-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  align-items: stretch;
+}
+.useful-contact-actions a.useful-contact-email {
+  width: auto;
+  min-width: 0;
+  grid-column: auto;
+  border-color: #a8c9e3;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #edf7ff, #f8fbff);
+  color: #15598d;
+}
+.useful-contact-phone {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(112px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #c7d6e4;
+  border-radius: 12px;
+  padding: 8px 9px 8px 11px;
+  background: #fbfdff;
+}
+.useful-contact-phone > span:first-child { min-width: 0; display: grid; gap: 2px; }
+.useful-contact-phone-actions { display: flex; gap: 5px; }
+.useful-contact-phone-actions a {
+  width: auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: #2869a4;
+  color: #fff !important;
+  font-size: 10px;
+  font-weight: 850;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(40, 105, 164, 0.19);
+}
+.useful-contact-phone-actions a:last-child:not(:first-child) { background: #3d8a6f; }
+
+@media (max-width: 720px) {
+  .useful-contact-card { grid-template-columns: 1fr; padding: 13px; }
+  .useful-contact-actions { grid-template-columns: 1fr; }
+  .useful-contact-actions a.useful-contact-email { width: 100%; }
+}
+
+@media (max-width: 390px) {
+  .useful-contact-phone { grid-template-columns: 1fr; }
+  .useful-contact-phone-actions,
+  .useful-contact-phone-actions a { width: 100%; }
+}
+
+/* Finition de l’annuaire : cartes identifiables, coordonnées aérées et actions
+   téléphone adaptées au type de numéro. */
+.top-header.top-header-contacts {
+  background:
+    radial-gradient(circle at 78% 30%, rgba(112, 215, 238, 0.48), transparent 28%),
+    radial-gradient(circle at 63% 112%, rgba(255, 184, 92, 0.38), transparent 40%),
+    linear-gradient(125deg, #14365d 0%, #1b5e8b 48%, #2c8193 100%);
+}
+.top-header-contacts .top-header-title h1,
+.top-header-contacts .top-header-title .eyebrow {
+  color: #fff;
+  text-shadow: 0 2px 11px rgba(0, 17, 38, 0.58);
+}
+
+.useful-form-information-image img { width: min(100%, 900px); }
+
+.useful-contacts-screen {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 96% 4%, rgba(85, 174, 208, 0.14), transparent 29%),
+    radial-gradient(circle at 3% 96%, rgba(240, 170, 86, 0.12), transparent 30%),
+    linear-gradient(145deg, #f5faff, #fff 54%, #fff9f1);
+}
+.useful-contacts-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(40, 101, 145, 0.13) 0.7px, transparent 0.7px);
+  background-size: 17px 17px;
+  opacity: 0.25;
+}
+.useful-contacts-screen > * { position: relative; z-index: 1; }
+.useful-contact-directory-grid > button,
+.useful-contact-category-grid > button {
+  border-color: rgba(73, 113, 148, 0.48);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(242, 249, 255, 0.92));
+  box-shadow: 0 12px 28px rgba(32, 68, 103, 0.11), inset 0 1px #fff;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+.useful-contact-directory-grid > button:hover,
+.useful-contact-category-grid > button:hover {
+  border-color: #387bac;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 32px rgba(32, 68, 103, 0.16), inset 0 1px #fff;
+}
+.useful-contact-category-grid > button:nth-child(3n + 2) {
+  background: linear-gradient(135deg, #fff, #fff8ef);
+}
+.useful-contact-category-grid > button:nth-child(3n) {
+  background: linear-gradient(135deg, #fff, #f4fbf8);
+}
+.useful-contacts-subheader {
+  border: 1px solid rgba(89, 121, 151, 0.36);
+  border-radius: 17px;
+  padding: 13px 15px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 22px rgba(38, 71, 104, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.useful-contact-list { gap: 13px; }
+.useful-contact-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(82, 120, 153, 0.42);
+  border-left: 5px solid #4a91bd;
+  border-radius: 17px;
+  padding: 15px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 9px 24px rgba(31, 67, 101, 0.09);
+}
+.useful-contact-card:nth-child(even) { border-left-color: #d7924e; }
+.useful-contact-identity > span:first-child {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border: 1px solid rgba(44, 104, 150, 0.2);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #dceeff, #eef7ff);
+  color: #1c5f95;
+  box-shadow: inset 0 1px #fff;
+  font-size: 13px;
+}
+.useful-contact-card:nth-child(even) .useful-contact-identity > span:first-child {
+  border-color: rgba(175, 107, 45, 0.2);
+  background: linear-gradient(145deg, #ffead5, #fff7ed);
+  color: #9a571e;
+}
+.useful-contact-identity > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.useful-contact-identity strong { font-size: 14px; line-height: 1.25; }
+.useful-contact-identity small { color: #6a7e92; font-size: 10px; font-weight: 700; }
+.useful-contact-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.useful-contact-actions a.useful-contact-email {
+  min-width: 0;
+  grid-column: 1 / -1;
+  border-color: #a8c9e3;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #edf7ff, #f8fbff);
+  color: #15598d;
+}
+.useful-contact-actions a.useful-contact-email:hover { background: #e2f2ff; }
+.useful-contact-phone {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(112px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #c7d6e4;
+  border-radius: 12px;
+  padding: 8px 9px 8px 11px;
+  background: #fbfdff;
+}
+.useful-contact-phone > span:first-child { min-width: 0; display: grid; gap: 2px; }
+.useful-contact-phone small { color: #6c7d90; font-size: 9px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
+.useful-contact-phone b { color: #213850; font-size: 12px; white-space: nowrap; }
+.useful-contact-phone-actions { display: flex; gap: 5px; }
+.useful-contact-phone-actions a {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 9px;
+  background: #2869a4;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 850;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(40, 105, 164, 0.19);
+}
+.useful-contact-phone-actions a:last-child:not(:first-child) {
+  background: #3d8a6f;
+  box-shadow: 0 4px 10px rgba(61, 138, 111, 0.18);
+}
+
+@media (max-width: 720px) {
+  .useful-contact-card { padding: 13px; }
+  .useful-contact-actions { grid-template-columns: 1fr; }
+  .useful-contact-phone { grid-template-columns: minmax(0, 1fr) auto; }
+  .useful-contact-phone-actions a { width: auto; padding: 8px 10px; }
+}
+
+@media (max-width: 390px) {
+  .useful-contact-phone { grid-template-columns: 1fr; }
+  .useful-contact-phone-actions,
+  .useful-contact-phone-actions a { width: 100%; }
+}
+
+/* Rubriques pratiques : quatrième dossier équilibré, image lisible et
+   annuaire tactile sans surcharger les écrans étroits. */
+@media (min-width: 721px) {
+  .useful-form-folder-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.useful-form-folder.tone-tickets { --folder-accent: #a45f2d; }
+.useful-forms-folder-header.tone-tickets { --folder-accent: #a45f2d; }
+.useful-form-information-image {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border-radius: 16px;
+  padding: clamp(8px, 2vw, 20px);
+  background: #fff;
+}
+.useful-form-information-image img {
+  display: block;
+  width: min(100%, 520px);
+  height: auto;
+  object-fit: fill;
+}
+
+.top-header.top-header-contacts {
+  background:
+    radial-gradient(circle at 76% 35%, rgba(122, 198, 255, 0.42), transparent 29%),
+    radial-gradient(circle at 64% 105%, rgba(255, 181, 95, 0.34), transparent 38%),
+    linear-gradient(125deg, #14385f 0%, #1f5f8f 48%, #327d98 100%);
+}
+.top-header-contacts .top-header-title h1,
+.top-header-contacts .top-header-title .eyebrow {
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 18, 39, 0.48);
+}
+
+.useful-contacts-screen {
+  width: min(1120px, calc(100% - 32px));
+  margin: 18px auto 0;
+  border: 1.5px solid var(--app-frame-strong);
+  border-radius: 22px;
+  padding: 22px;
+  background: linear-gradient(145deg, #f7fbff, #fff 56%, #fff8ef);
+  box-shadow: var(--app-subtle-shadow);
+}
+.useful-contact-directory-grid,
+.useful-contact-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.useful-contact-directory-grid > button,
+.useful-contact-category-grid > button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1.5px solid #8eacc7;
+  border-radius: 17px;
+  padding: 17px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #172b43;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 9px 22px rgba(32, 68, 103, 0.08);
+}
+.useful-contact-directory-grid > button > span:first-child {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #dcecff;
+  color: #235e9c;
+  font-size: 18px;
+  font-weight: 950;
+}
+.useful-contact-directory-grid > button:nth-child(2) > span:first-child {
+  background: #fff0dc;
+  color: #9b591d;
+}
+.useful-contact-directory-grid button > span:nth-child(2),
+.useful-contact-category-grid button > span:first-child {
+  display: grid;
+  gap: 5px;
+}
+.useful-contact-directory-grid strong,
+.useful-contact-category-grid strong { font-size: 16px; }
+.useful-contact-directory-grid small,
+.useful-contact-category-grid small {
+  color: #5c7188;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.useful-contact-directory-grid i,
+.useful-contact-category-grid i {
+  color: #3d6f9f;
+  font-size: 26px;
+  font-style: normal;
+}
+.useful-contacts-subheader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: -4px 0 18px;
+  border-bottom: 1px solid #c7d7e6;
+  padding: 0 0 16px;
+}
+.useful-contacts-subheader > button {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border: 0;
+  border-radius: 14px;
+  background: #e6f1fb;
+  color: #235c91;
+  font-size: 22px;
+  cursor: pointer;
+}
+.useful-contacts-subheader h2 { margin: 3px 0 0; color: #172b43; }
+.useful-contact-list { display: grid; gap: 11px; }
+.useful-contact-card {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #bed0df;
+  border-radius: 15px;
+  padding: 13px 14px;
+  background: rgba(255, 255, 255, 0.94);
+}
+.useful-contact-identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #172b43;
+}
+.useful-contact-identity > span {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #e8f2fb;
+  color: #286394;
+  font-size: 12px;
+  font-weight: 950;
+}
+.useful-contact-actions {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.useful-contact-actions a {
+  min-width: 145px;
+  display: grid;
+  gap: 2px;
+  border: 1px solid #aac4dc;
+  border-radius: 11px;
+  padding: 8px 11px;
+  background: #f2f8fe;
+  color: #164f83;
+  text-decoration: none;
+}
+.useful-contact-actions a.useful-contact-email { min-width: min(100%, 270px); }
+.useful-contact-actions small { color: #657d93; font-size: 9px; font-weight: 850; text-transform: uppercase; }
+.useful-contact-actions b { overflow-wrap: anywhere; font-size: 12px; }
+
+@media (max-width: 720px) {
+  .useful-contacts-screen {
+    width: calc(100% - 20px);
+    margin-top: 12px;
+    border-radius: 18px;
+    padding: 14px;
+  }
+  .useful-contact-directory-grid,
+  .useful-contact-category-grid { grid-template-columns: 1fr; gap: 10px; }
+  .useful-contact-card { grid-template-columns: 1fr; gap: 10px; }
+  .useful-contact-actions { justify-content: stretch; }
+  .useful-contact-actions a,
+  .useful-contact-actions a.useful-contact-email { width: 100%; min-width: 0; }
+}
+
+/* En-têtes plus vivants : la zone du titre reste douce, tandis que l'œuvre
+   retrouve davantage de couleur et de contraste sur le reste du bandeau. */
+.top-header {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 249, 232, 0.62) 0%,
+      rgba(244, 250, 252, 0.3) 36%,
+      rgba(220, 246, 251, 0.08) 72%,
+      rgba(10, 91, 119, 0.05) 100%
+    ),
+    url("/header-art-fast.webp") center 44% / cover no-repeat;
+}
+
+.top-header.top-header-leave {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(242, 249, 255, 0.58) 0%,
+      rgba(218, 242, 252, 0.23) 40%,
+      rgba(42, 125, 151, 0.07) 100%
+    ),
+    url("/leave-header-art-fast.webp") center / cover no-repeat;
+}
+
+.top-header.top-header-pay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 250, 239, 0.6) 0%,
+      rgba(250, 238, 218, 0.2) 42%,
+      rgba(152, 91, 39, 0.06) 100%
+    ),
+    url("/pay-header-art-fast.webp") center / cover no-repeat;
+}
+
+.top-header.top-header-pdf {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 247, 255, 0.58) 0%,
+      rgba(235, 229, 255, 0.18) 40%,
+      rgba(80, 49, 144, 0.05) 100%
+    ),
+    url("/pdf-header-art-fast.webp") center 70% / cover no-repeat;
+}
+
+.top-header.top-header-forms {
+  background:
+    linear-gradient(90deg, rgba(255, 244, 205, 0.08), rgba(67, 45, 15, 0.07)),
+    linear-gradient(
+      180deg,
+      #b2a37f 0%,
+      #a4946c 18%,
+      #917d54 43%,
+      #7d6946 68%,
+      #947d52 100%
+    );
+}
+
+.top-header.top-header-forms::before {
+  filter: saturate(1.22) contrast(1.06);
+}
+
+.top-header-title h1 {
+  color: #10233e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.top-header-title .eyebrow {
+  color: #124f9b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+@media (max-width: 720px) {
+  .top-header {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 249, 232, 0.62) 0%,
+        rgba(239, 249, 251, 0.22) 54%,
+        rgba(10, 91, 119, 0.05) 100%
+      ),
+      url("/header-art-fast.webp") center 42% / cover no-repeat;
+  }
+
+  .top-header.top-header-leave {
+    background:
+      linear-gradient(180deg, rgba(242, 249, 255, 0.58), rgba(42, 125, 151, 0.06)),
+      url("/leave-header-art-fast.webp") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pay {
+    background:
+      linear-gradient(180deg, rgba(255, 250, 239, 0.58), rgba(152, 91, 39, 0.05)),
+      url("/pay-header-art-fast.webp") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pdf {
+    background:
+      linear-gradient(180deg, rgba(248, 247, 255, 0.56), rgba(80, 49, 144, 0.04)),
+      url("/pdf-header-art-fast.webp") center 44% / cover no-repeat;
+  }
+}
+
+/* Accueil et planning : le groupe devient l’action contextuelle d’Aujourd’hui,
+   tandis que la pose de congé précède clairement le mois et l’année. */
+.today-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.today-overview-grid .today-remaining-work {
+  border-color: rgba(72, 143, 119, 0.26);
+  background: linear-gradient(145deg, #eef8f4, #f7fbf9);
+}
+
+.today-overview-grid .today-remaining-work .today-card-icon {
+  color: #25745a;
+  background: rgba(72, 161, 130, 0.13);
+}
+
+.today-overview-heading .group-heading-action {
+  min-width: 178px;
+}
+
+/* Les précisions de groupe gardent la même hiérarchie discrète que les
+   repères de période des deux autres cartes. */
+.today-overview-grid .today-card-copy small {
+  color: #5b6c82;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.allowance-table tr.holiday-cancelled {
+  color: #7a5360;
+  background: #fff5f6;
+}
+
+.allowance-table tr.holiday-cancelled td strong {
+  color: #a32138;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.header-update-button.update-available {
+  border-color: #b91f36 !important;
+  background: #fff4f5;
+  color: #b5162f;
+  font-weight: 800;
+}
+
+.header-update-button.update-available:hover {
+  background: #ffe7ea;
+  color: #941126;
+}
+
+/* À quatre colonnes, les pictogrammes sont masqués dès qu'ils risquent de
+   recouvrir les libellés (tablettes, Fold ouvert et petites fenêtres). */
+@media (max-width: 1180px) {
+  .today-overview-grid .today-card-icon {
+    display: none !important;
+  }
+
+  .today-overview-grid > article,
+  .today-overview-grid > button {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.planning-leave-panel {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  border: 1.5px solid rgba(55, 73, 98, 0.58);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 7px 18px rgba(42, 62, 89, 0.07);
+}
+
+.planning-leave-panel .planning-leave-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  min-height: 46px !important;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .today-overview-heading .group-heading-action {
+    min-width: 0;
+    max-width: 52%;
+    padding-right: 11px;
+    padding-left: 11px;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  .today-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "today next" "leave remaining";
+  }
+  .today-overview-grid > .today-status {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .today-overview-grid > .today-next-work {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .today-overview-grid > .today-leave-balance {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .today-overview-grid > .today-remaining-work {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .calendar-toolbar.month-toolbar .period-navigation {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .calendar-toolbar.month-toolbar .today-button {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+/* Menu galerie : l’œuvre reste pleinement visible derrière une navigation
+   en verre fumé, avec une hiérarchie contrastée et de grands repères tactiles. */
+.main-menu-backdrop {
+  background: rgba(5, 10, 17, 0.48);
+  backdrop-filter: blur(6px) saturate(0.85);
+  -webkit-backdrop-filter: blur(6px) saturate(0.85);
+}
+
+.main-menu-drawer {
+  position: relative;
+  isolation: isolate;
+  width: min(440px, 94vw);
+  padding: max(20px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(90deg, rgba(5, 9, 15, 0.46) 0%, rgba(5, 9, 15, 0.16) 62%, rgba(5, 9, 15, 0.05) 100%),
+    linear-gradient(180deg, rgba(5, 9, 15, 0.08) 0%, rgba(5, 9, 15, 0.03) 58%, rgba(5, 9, 15, 0.45) 100%),
+    url("/menu-art-fast.webp") 60% center / cover no-repeat;
+  box-shadow: -24px 0 64px rgba(3, 8, 14, 0.42);
+}
+
+.main-menu-drawer::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  pointer-events: none;
+}
+
+.main-menu-drawer > * {
+  position: relative;
+  z-index: 1;
+}
+
+.main-menu-drawer header {
+  align-items: center;
+  margin-bottom: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 20px;
+  padding: 13px 13px 13px 15px;
+  background: linear-gradient(100deg, rgba(7, 14, 23, 0.46), rgba(24, 33, 44, 0.18));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18), inset 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px) saturate(1.08);
+  -webkit-backdrop-filter: blur(6px) saturate(1.08);
+}
+
+.main-menu-drawer header .step-label {
+  color: #efc89e;
+  letter-spacing: 0.16em;
+}
+
+.main-menu-drawer header h2 {
+  margin-top: 4px;
+  color: #fff;
+  font-size: 1.65rem;
+  letter-spacing: -0.025em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+}
+
+.main-menu-drawer header > button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 50%;
+  background: rgba(7, 14, 23, 0.46);
+  color: #fff;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.main-menu-drawer nav {
+  gap: 9px;
+}
+
+.main-menu-drawer nav > button,
+.main-menu-secondary .guide-menu-entry {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.27);
+  border-radius: 18px;
+  padding: 12px 13px;
+  background: linear-gradient(90deg, rgba(5, 11, 19, 0.88) 0%, rgba(5, 11, 19, 0.78) 58%, rgba(8, 16, 26, 0.34) 82%, rgba(18, 29, 41, 0.14) 100%);
+  color: #fff;
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.14), inset 0 1px rgba(255, 255, 255, 0.08);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  backdrop-filter: saturate(1.08) contrast(1.02);
+  -webkit-backdrop-filter: saturate(1.08) contrast(1.02);
+}
+
+.main-menu-drawer nav > button:hover,
+.main-menu-secondary .guide-menu-entry:hover {
+  border-color: rgba(255, 255, 255, 0.48);
+  background: linear-gradient(90deg, rgba(8, 18, 29, 0.92), rgba(12, 23, 36, 0.8) 58%, rgba(27, 42, 57, 0.25));
+  transform: translateX(-2px);
+}
+
+.main-menu-drawer nav > button.active {
+  border-color: rgba(244, 198, 151, 0.78);
+  background: linear-gradient(90deg, rgba(18, 47, 71, 0.92), rgba(19, 42, 61, 0.8) 58%, rgba(19, 33, 47, 0.22));
+  color: #fff;
+  box-shadow: inset 3px 0 #f0c18e, 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+.main-menu-index {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4d7b8;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-shadow: none;
+}
+
+.main-menu-drawer nav > button.active .main-menu-index {
+  border-color: #f0c18e;
+  background: #f0c18e;
+  color: #15283a;
+}
+
+.main-menu-copy {
+  min-width: 0;
+  gap: 3px;
+}
+
+.main-menu-copy strong { color: #fff; }
+.main-menu-copy small {
+  color: rgba(239, 246, 255, 0.78);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.main-menu-chevron {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(4, 9, 15, 0.34);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.55rem;
+  font-weight: 300;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.main-menu-secondary {
+  margin-top: auto;
+  border-top: 0;
+  padding-top: 15px;
+}
+
+.main-menu-secondary .guide-menu-entry {
+  width: 100%;
+  color: #fff;
+  text-align: left;
+}
+
+.main-menu-secondary .guide-menu-entry .main-menu-index {
+  border-color: rgba(240, 193, 142, 0.66);
+  color: #f4d7b8;
+}
+
+@media (max-width: 720px) {
+  .main-menu-drawer {
+    width: 94vw;
+    padding: max(14px, env(safe-area-inset-top)) 13px max(14px, env(safe-area-inset-bottom));
+    background-position: 63% center;
+  }
+
+  .main-menu-drawer header {
+    margin-bottom: 11px;
+    border-radius: 18px;
+    padding: 11px 11px 11px 13px;
+  }
+
+  .main-menu-drawer header h2 { font-size: 1.45rem; }
+  .main-menu-drawer nav { gap: 7px; }
+  .main-menu-drawer nav > button,
+  .main-menu-secondary .guide-menu-entry {
+    min-height: 66px;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 10px;
+    border-radius: 16px;
+    padding: 10px 11px;
+  }
+  .main-menu-copy strong { font-size: 0.94rem; }
+  .main-menu-copy small { font-size: 10.5px; }
+  .main-menu-secondary { padding-top: 10px; }
+}
+
+/* Toutes les rubriques reprennent exactement le gabarit de l'en-tête
+   Formulaires utiles, sans modifier l'illustration propre à chacune. */
+.top-header {
+  box-sizing: border-box;
+  height: 205px;
+  min-height: 205px;
+}
+
+@media (max-width: 720px) {
+  .top-header {
+    height: 215px;
+    min-height: 215px;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .top-header {
+    height: 205px;
+    min-height: 205px;
+  }
+}
+
+/* Finition des grands écrans : la commande de mise à jour occupe désormais
+   toujours le coin inférieur droit du bandeau, y compris sur Fold ouvert. */
+@media (min-width: 721px) {
+  .top-header .header-update-button {
+    position: absolute !important;
+    z-index: 4;
+    right: clamp(22px, 3vw, 38px);
+    bottom: 18px;
+    margin: 0;
+  }
+}
+
+/* Congés et récupérations : les soldes restent intacts. Les outils placés
+   après eux forment maintenant un espace cohérent, clairement hiérarchisé. */
+.leave-tools-area {
+  width: min(1120px, calc(100% - 32px));
+  display: grid;
+  gap: 16px;
+  margin: 18px auto 0;
+  border: 1.5px solid var(--app-frame-strong);
+  border-radius: 25px;
+  padding: clamp(15px, 2.3vw, 24px);
+  background:
+    radial-gradient(circle at 0 0, rgba(61, 112, 178, 0.1), transparent 31%),
+    radial-gradient(circle at 100% 100%, rgba(218, 133, 54, 0.09), transparent 34%),
+    linear-gradient(145deg, #f8fbff, #fffdf9);
+  box-shadow: 0 10px 26px rgba(35, 61, 91, 0.08);
+}
+
+.leave-tools-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid rgba(72, 96, 126, 0.22);
+  padding: 1px 2px 15px;
+}
+
+.leave-tools-heading h2 {
+  margin: 4px 0 5px;
+  color: #172d49;
+  font-size: clamp(1.25rem, 2.4vw, 1.65rem);
+}
+
+.leave-tools-heading p {
+  max-width: 720px;
+  margin: 0;
+  color: #617288;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.leave-tools-area > .cet-section,
+.leave-tools-area > .leave-request-archive,
+.leave-secondary-grid > .overtime-balance-card {
+  width: 100%;
+  margin: 0;
+}
+
+.leave-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+
+.leave-secondary-grid > .overtime-balance-card {
+  align-content: start;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.leave-secondary-grid > .overtime-balance-card:first-child {
+  border-top: 5px solid #3f73b5;
+  background: linear-gradient(150deg, rgba(239, 247, 255, 0.96), #fff 48%);
+}
+
+.leave-secondary-grid > .mecenat-balance-card {
+  border-top: 5px solid #c98239;
+  background: linear-gradient(150deg, rgba(255, 247, 237, 0.96), #fff 48%);
+}
+
+.leave-tools-area > .leave-request-archive {
+  border-radius: 18px;
+}
+
+@media (max-width: 900px) {
+  .leave-secondary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .leave-tools-area {
+    width: calc(100% - 20px);
+    gap: 13px;
+    margin-top: 13px;
+    border-radius: 20px;
+    padding: 12px;
+  }
+
+  .leave-tools-heading {
+    padding: 2px 3px 12px;
+  }
+
+  .leave-tools-heading h2 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Formulaires utiles : uniquement sur les grands écrans, l'introduction
+   devient une colonne-guide et les quatre dossiers respirent dans une grille 2 × 2. */
+@media (min-width: 721px) {
+  .useful-forms-screen:not(.useful-forms-folder-screen) {
+    display: grid;
+    grid-template-columns: minmax(215px, 0.72fr) minmax(0, 2fr);
+    align-items: stretch;
+    gap: clamp(20px, 3vw, 34px);
+    border-radius: 27px;
+    padding: clamp(22px, 3vw, 34px);
+    background:
+      radial-gradient(circle at 0 0, rgba(76, 139, 128, 0.13), transparent 33%),
+      radial-gradient(circle at 100% 100%, rgba(192, 119, 55, 0.1), transparent 35%),
+      #fff;
+    box-shadow: 0 14px 34px rgba(34, 57, 82, 0.09);
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 0;
+    border-right: 1px solid rgba(62, 88, 118, 0.2);
+    padding: 12px clamp(18px, 2.5vw, 30px) 12px 2px;
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading h2 {
+    font-size: clamp(1.65rem, 3vw, 2.25rem);
+    line-height: 1.08;
+  }
+
+  .useful-form-folder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: stretch;
+    gap: 14px;
+    margin: 0;
+  }
+
+  .useful-form-folder {
+    min-height: 150px;
+    border-radius: 20px;
+    padding: 18px;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+
+  .useful-form-folder:hover {
+    transform: translateY(-3px);
+    box-shadow: inset 5px 0 var(--folder-accent), 0 13px 25px rgba(35, 54, 77, 0.11);
+  }
+
+  .useful-forms-folder-screen .useful-form-download-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .useful-forms-folder-screen .useful-form-local-notice,
+  .useful-forms-folder-screen .useful-form-download-error {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .useful-forms-screen:not(.useful-forms-folder-screen) {
+    grid-template-columns: 1fr;
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading {
+    border-right: 0;
+    border-bottom: 1px solid rgba(62, 88, 118, 0.2);
+    padding: 2px 2px 18px;
+  }
+}
+
+/* La continuité de grève reste un diagnostic de paie : elle explique les
+   intervalles sans recolorer ni requalifier les journées du planning. */
+.strike-continuity-details {
+  display: grid;
+  gap: 9px;
+  margin-top: 11px;
+  border-top: 1px solid #d7e0eb;
+  padding-top: 11px;
+}
+.strike-protected-break,
+.strike-confirmed-continuity,
+.strike-continuity-warning,
+.strike-continuity-details footer {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #b9cfad;
+  border-left: 5px solid #6f9b59;
+  border-radius: 11px;
+  padding: 10px 11px;
+  background: #f3f9ef;
+  color: #24401f;
+}
+.strike-confirmed-continuity {
+  border: 1px solid #be2f38;
+  border-left: 5px solid #8f111b;
+  border-radius: 11px;
+  padding: 10px 11px;
+  background: #fff0f0;
+  color: #65131a;
+}
+.strike-continuity-warning {
+  border-color: #e2b45f;
+  border-left-color: #c57a10;
+  background: #fff7e5;
+  color: #69400b;
+}
+.strike-continuity-details footer {
+  border-color: #becbdd;
+  border-left-color: #536f98;
+  background: #f5f8fc;
+  color: #263a55;
+}
+.strike-continuity-details strong { font-size: 11px; line-height: 1.35; }
+.strike-continuity-details span,
+.strike-continuity-details small { font-size: 9.5px; line-height: 1.4; }
+.strike-continuity-details small { color: #607086; }
+
+/* Cadre visuel commun : les grandes rubriques et leurs sous-parties utilisent
+   désormais la même hiérarchie bleu-gris dans toute l’application. */
+:root {
+  --app-frame-strong: rgba(55, 73, 98, 0.58);
+  --app-frame-soft: rgba(83, 105, 134, 0.38);
+  --app-subtle-shadow: 0 7px 18px rgba(33, 55, 83, 0.07);
+}
+
+.today-overview,
+.home-notes-section,
+.planning-workspace-shell.framed,
+.section-intro,
+.leave-balances-direct,
+.overtime-balance-card,
+.pay-app-screen,
+.pdf-download-screen,
+.request-panel,
+.cet-section,
+.allowance-card,
+.pay-profile-settings {
+  border-color: var(--app-frame-strong);
+  box-shadow: var(--app-subtle-shadow);
+}
+
+.today-overview-grid > article,
+.today-overview-grid > button,
+.leave-balance-grid button,
+.overtime-balance-summary article,
+.request-option-group,
+.cet-callout,
+.cet-subsection,
+.cet-deposit-preview,
+.cet-history,
+.cet-operation-form,
+.variable-pay-list article,
+.pay-category-grid > button,
+.pdf-download-settings > label,
+.sick-request-panel .request-bottom {
+  border-color: var(--app-frame-soft);
+  box-shadow: 0 3px 10px rgba(39, 61, 88, 0.045);
+}
+
+.cet-form-availability {
+  margin: 12px 0;
+  border: 1.5px solid #d59a32;
+  border-left-width: 5px;
+  border-radius: 11px;
+  padding: 10px 12px;
+  color: #6d4307;
+  font-size: 12px;
+  line-height: 1.45;
+  background: #fff5d9;
+}
+.cet-form-availability strong { color: #8a4d00; }
+
+/* Les deux actions courantes restent secondaires ; seul le formulaire CET
+   conserve l'accent bleu sur toute sa largeur. */
+.cet-toolbar .primary-action:not(.cet-funding-action) {
+  border-color: #4f5f73;
+  color: #111827;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(31, 45, 65, 0.08);
+}
+
+/* Au moment de poser une récupération, le nombre d'heures constitue le choix
+   principal : il est isolé dans un cadre et la valeur retenue ressort en bleu. */
+.recovery-duration-field {
+  border: 1.5px solid #7892b2;
+  border-radius: 13px;
+  padding: 11px;
+  background: #f5f9ff;
+  box-shadow: 0 4px 12px rgba(42, 73, 112, 0.08);
+}
+.recovery-duration-field legend {
+  margin: 0;
+  padding: 0 7px;
+  color: #183e70;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+.recovery-duration-field .recovery-duration-choice {
+  margin-top: 2px;
+  background: #e7eef8;
+}
+.recovery-duration-field .recovery-duration-choice button {
+  min-height: 46px;
+  border-color: #bdcad9;
+  color: #172033;
+  font-size: 0.9rem;
+  background: #fff;
+}
+.recovery-duration-field .recovery-duration-choice button.active {
+  border-color: #315eaa;
+  color: #fff;
+  background: #315eaa;
+  box-shadow: 0 4px 10px rgba(49, 94, 170, 0.24);
+}
+
+@media (max-width: 680px) {
+  .recovery-duration-field .recovery-duration-choice {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Le CET fermé reste une véritable carte d’entrée, assez généreuse et
+   chaleureuse pour être repérée parmi les autres rubriques. */
+.cet-section.closed {
+  position: relative;
+  min-height: 88px;
+  border-color: #778eb8;
+  background: linear-gradient(125deg, #e9f3ff 0%, #f2edff 58%, #fff2e7 100%);
+  box-shadow: 0 10px 24px rgba(51, 74, 116, 0.13);
+}
+.cet-section.closed::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, #315eaa, #8666b2);
+}
+.cet-section.closed .cet-heading {
+  min-height: 88px;
+  padding: 17px 18px 17px 21px;
+  background: transparent;
+}
+.cet-section.closed .cet-symbol {
+  width: 52px;
+  height: 52px;
+  border-color: #294f91;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #315eaa, #6655a0);
+  box-shadow: 0 6px 14px rgba(49, 70, 130, 0.2), inset 0 0 0 3px rgba(255, 255, 255, 0.16);
+}
+.cet-section.closed .cet-heading strong { color: #142b50; font-size: 1.16rem; }
+.cet-section.closed .cet-heading small { color: #52627a; font-size: 0.8rem; }
+.cet-closed-useful {
+  justify-self: start;
+  margin-top: 4px;
+  border: 0;
+  padding: 2px 0 0;
+  color: #4b4676;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2;
+  background: transparent;
+}
+.cet-section.closed .cet-caret {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(49, 94, 170, 0.3);
+  border-radius: 50%;
+  color: #315eaa;
+  text-align: center;
+  line-height: 31px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+/* "Autre" possède une couleur propre tout en conservant l'explication des
+   demandes archivées dans la carte. */
+.leave-request-archive {
+  border-color: #a982ad;
+  background: linear-gradient(135deg, #f4eaff 0%, #fff1e7 100%);
+  box-shadow: 0 8px 20px rgba(100, 68, 113, 0.1);
+}
+.leave-request-archive .request-archive-toggle:hover {
+  background: rgba(255, 255, 255, 0.48);
+}
+.leave-request-archive .request-archive-icon {
+  color: #704286;
+  background: #ead8f4;
+}
+.leave-request-archive .request-archive-copy strong { color: #4e2f60; }
+.leave-request-archive .request-archive-copy small { color: #735f79; }
+
+/* Toutes les récupérations prises sur le solde utilisent le même langage
+   visuel : case corail, liseré noir et simple repère REC en bas à droite.
+   Le détail des heures reste disponible en ouvrant la journée. */
+.month-card .calendar-grid .day.hourly-recovery-day,
+.year-grid .mini-grid .mini-day.hourly-recovery-day {
+  border-color: #000 !important;
+  background-color: #f3b3a6 !important;
+  background-image: none !important;
+  color: #3d1712 !important;
+  box-shadow: none !important;
+}
+
+.month-card .calendar-grid .day.hourly-recovery-day {
+  outline: 2px solid #000;
+  outline-offset: -2px;
+}
+
+.year-grid .mini-grid .mini-day.hourly-recovery-day {
+  outline: 1.5px solid #000;
+  outline-offset: -1.5px;
+}
+
+.month-card .calendar-grid .day .recovery-calendar-label {
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  left: auto;
+  border: 0 !important;
+  border-radius: 0;
+  padding: 0;
+  background: transparent !important;
+  color: #111 !important;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-align: right;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.recovery-kind-heading {
+  width: fit-content;
+  margin: 8px 0 12px;
+  border-left: 4px solid #e08a1e;
+  padding: 5px 10px;
+  background: #fff7ec;
+  color: #75420c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.recovery-fixed-date {
+  display: grid;
+  gap: 4px;
+  border: 1.5px solid rgba(26, 43, 65, 0.62);
+  border-left: 5px solid #e08a1e;
+  border-radius: 14px;
+  padding: 13px 15px;
+  background: linear-gradient(145deg, #fffaf3, #f7faff);
+}
+
+.recovery-fixed-date span {
+  color: #68778b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recovery-fixed-date strong {
+  color: #202f44;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.recovery-fixed-date small {
+  color: #57677d;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.recovery-calendar-trigger {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid #2455ad;
+  border-radius: 13px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #356dcc, #2859b3);
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 7px 15px rgba(40, 89, 179, 0.2);
+}
+
+.recovery-calendar-trigger strong { font-size: 15px; font-weight: 900; }
+.recovery-calendar-trigger span {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.recovery-date-picking-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-left: 5px solid #e08a1e;
+  background: linear-gradient(145deg, #fff8ef, #f7faff);
+}
+
+.recovery-date-picking-panel h2 { margin: 3px 0 4px; }
+.recovery-date-picking-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 620px) {
+  .recovery-date-picking-panel { display: grid; }
+  .recovery-date-picking-panel .text-button { justify-self: stretch; }
+}
+
+/* Dans le premier choix « Poser un congé », Divers reprend exactement le
+   traitement neutre des autres options. Sa couleur rose reste réservée au
+   planning et aux rubriques de suivi. */
+.request-choice .choice-grid > button.other-leave-choice {
+  border-color: var(--line) !important;
+  background: #fafbfd !important;
+  color: var(--text) !important;
+}
+
+.request-choice .choice-grid > button.other-leave-choice:hover {
+  border-color: #93a8d1 !important;
+  background: #f5f8ff !important;
+}
+
+/* Divers devient un vrai jour non travaillé : rose, lisible et cohérent dans
+   le planning comme dans les deux parcours de sélection. */
+.month-card .calendar-grid .day.leave-day.leave-other,
+.year-grid .mini-grid .mini-day.leave-day.leave-other,
+.month-card .calendar-grid .day.personal-day,
+.year-grid .mini-grid .mini-day.personal-day {
+  border-color: #000 !important;
+  background: #f4b8c8 !important;
+  color: #3d1723 !important;
+  box-shadow: none !important;
+}
+
+.other-leave-choice,
+.leave-choices .other-day,
+.other-request-options .request-option-group,
+.other-request-options .type-tabs button {
+  --choice-accent: #e58aa5;
+  --person-color: #e58aa5;
+  border-color: #d98ca3 !important;
+  background: #fff1f5 !important;
+}
+
+.other-request-options .type-tabs button {
+  color: #6f2940;
+}
+
+/* Dans la fiche d'une date, Divers et CET gardent des encadrés neutres : la
+   couleur sert uniquement de repère sur leur liseré vertical. */
+.leave-choices .other-day,
+.leave-choices .cet-day {
+  border-color: var(--line) !important;
+  background: #fafbfd !important;
+  box-shadow: none !important;
+}
+
+.leave-choices .other-day { --person-color: #e58aa5; }
+.leave-choices .cet-day { --person-color: #4f9fe6; }
+.leave-choices .closure-day {
+  --person-color: #d32f36;
+  grid-column: 1 / -1;
+}
+.leave-choices .other-day i,
+.leave-choices .cet-day i,
+.leave-choices .closure-day i { opacity: 0.8; }
+
+/* Les rubriques de suivi restent, elles, immédiatement identifiables. */
+.leave-balance-grid button.other { --balance-color: #e58aa5; }
+.leave-balance-grid button.cet { --balance-color: #4f9fe6; }
+
+/* La grève est rouge, avec un liseré réellement noir et le poing lisible.
+   Le même rendu est conservé pendant la sélection et après l'enregistrement. */
+.month-card .calendar-grid .day.leave-day.leave-strike,
+.year-grid .mini-grid .mini-day.leave-day.leave-strike {
+  border: 2px solid #000 !important;
+  background: #f28b82 !important;
+  color: #17213f !important;
+  box-shadow: none !important;
+}
+.month-card .calendar-grid .day.leave-day.leave-strike {
+  outline: 2px solid #000 !important;
+  outline-offset: -2px !important;
+}
+.year-grid .mini-grid .mini-day.leave-day.leave-strike {
+  outline: 1.5px solid #000 !important;
+  outline-offset: -1.5px !important;
+}
+.month-card .calendar-grid .day.request-selected-strike,
+.year-grid .mini-grid .mini-day.request-selected-strike {
+  border: 2px solid #000 !important;
+  background: #f28b82 !important;
+  color: #17213f !important;
+  box-shadow: none !important;
+}
+.month-card .calendar-grid .day.request-selected-strike {
+  outline: 2px solid #000 !important;
+  outline-offset: -2px !important;
+}
+.year-grid .mini-grid .mini-day.request-selected-strike {
+  outline: 1.5px solid #000 !important;
+  outline-offset: -1.5px !important;
+}
+.leave-calendar-marker-strike {
+  right: 3px;
+  bottom: 2px;
+  font-size: clamp(13px, 2.2vw, 19px);
+}
+.leave-calendar-marker-strike.compact {
+  right: 1px;
+  bottom: 1px;
+  font-size: clamp(7px, 0.9vw, 11px);
+}
+.strike-leave-choice,
+.leave-choices .strike-day,
+.strike-request-options .request-option-group,
+.strike-request-options .type-tabs button {
+  --choice-accent: #c8424c;
+  --person-color: #c8424c;
+}
+.leave-choices .strike-day {
+  border-color: var(--line) !important;
+  background: #fafbfd !important;
+  box-shadow: none !important;
+}
+.leave-balances-direct .leave-balance-grid button.strike {
+  --balance-color: #7d90da;
+  grid-column: auto;
+}
+/* Sur ordinateur et téléphone pliable ouvert, les trois dernières cartes
+   gardent le gabarit normal ; Divers est placé directement à côté de Grève. */
+@media (min-width: 721px) {
+  .leave-balances-direct .leave-balance-grid button.other {
+    grid-column: auto;
+    order: 1;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike { order: 2; }
+  .leave-balances-direct .leave-balance-grid button.cet { order: 3; }
+}
+.strike-request-options .request-option-group { gap: 12px; }
+.strike-request-options .request-help { margin-top: 5px; }
+
+/* Dans le premier écran de choix, Maladie et CET restent aussi neutres que
+   les autres entrées : leur couleur sert ensuite dans le planning. */
+.request-choice .choice-grid > button.sick-leave-choice,
+.request-choice .choice-grid > button.cet-leave-choice {
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+  background: #fafbfd !important;
+  box-shadow: none !important;
+}
+
+/* L'ouverture officielle du CET est l'action principale ; la confirmation
+   de droits déjà ouverts reste secondaire et sobre. */
+.cet-actions .cet-opening-request-action {
+  border-color: #315eaa;
+  color: #fff;
+  background: #315eaa;
+}
+.cet-actions .cet-rights-open-action {
+  border-color: #c75f08;
+  color: #fff;
+  background: #d86f12;
+}
+
+@media (max-width: 720px) {
+  .leave-calendar-marker-strike {
+    right: 1px;
+    bottom: 0;
+    font-size: clamp(12px, 3.5vw, 15px);
+  }
+  .leave-calendar-marker-strike.compact {
+    right: 0;
+    bottom: 0;
+    font-size: clamp(7px, 2.2vw, 9px);
+  }
+  .leave-balances-direct .leave-balance-grid button.strike {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    min-height: 78px;
+    padding: 9px 12px;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike > span,
+  .leave-balances-direct .leave-balance-grid button.strike > strong,
+  .leave-balances-direct .leave-balance-grid button.strike > small,
+  .leave-balances-direct .leave-balance-grid button.strike > em { margin: 0; }
+  .leave-balances-direct .leave-balance-grid button.strike > strong {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike > small { grid-column: 1; }
+  .leave-balances-direct .leave-balance-grid button.strike > em {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    justify-self: end;
+  }
+}
+
+/* Le grand écran tactile d'un téléphone pliable conserve le confort d'une
+   tablette : davantage de hauteur et un titre plus présent. */
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .top-header {
+    min-height: 190px;
+    padding: 30px 32px;
+  }
+  .top-header.top-header-forms::before { left: 54%; }
+  .top-header-title h1 {
+    font-size: clamp(34px, 5vw, 48px);
+  }
+  .top-header-title .eyebrow { font-size: 12px; }
+}
+
+/* Le choix Mois / Année quitte l'œuvre d'Accueil et devient une commande
+   autonome, immédiatement repérable avant le résumé de la journée. */
+.home-view-mode-bar {
+  display: flex;
+  justify-content: center;
+  width: min(620px, 100%);
+  margin: -4px auto 18px;
+  border: 1.5px solid rgba(46, 74, 109, 0.42);
+  border-radius: 19px;
+  padding: 8px;
+  background: linear-gradient(145deg, #f7fbff, #eaf2fb);
+  box-shadow: 0 8px 20px rgba(38, 69, 105, 0.1);
+}
+
+.home-view-mode-bar .view-switch {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1.5px solid rgba(0, 0, 0, 0.62);
+}
+
+.home-view-mode-bar .view-switch button {
+  min-height: 44px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 721px) {
+  .top-header-home .header-command-area {
+    flex-basis: 270px;
+    width: min(270px, 38%);
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 720px) {
+  .home-view-mode-bar {
+    width: 100%;
+    margin-top: -2px;
+    margin-bottom: 14px;
+    border-radius: 17px;
+    padding: 7px;
+  }
+
+  .home-view-mode-bar .view-switch button {
+    min-height: 46px;
+  }
+
+  .top-header-home .header-update-button {
+    grid-row: 2;
+  }
+}
+
+/* Sur ordinateur, Mois, Année et Aujourd'hui partagent exactement la ligne
+   et occupent chacun un tiers de l'espace disponible. */
+@media (min-width: 1101px) {
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
+  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
+  .planning-workspace-shell.framed .month-toolbar .today-button,
+  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    height: 46px;
+  }
+}
+
+/* Le sélecteur de vue utilise toute la largeur sur ordinateur et Fold ouvert,
+   sans le second liseré qui doublait inutilement son propre encadré. */
+@media (min-width: 721px) {
+  .home-view-mode-bar {
+    width: 100%;
+    border: 0;
+  }
+}
+
+/* Le Fold ouvert reprend la même ligne équilibrée que l'ordinateur. */
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
+  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
+  .planning-workspace-shell.framed .month-toolbar .today-button,
+  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    height: 46px;
+  }
+}
+
+/* Formulaires utiles retrouve son fond uniforme d'origine : la teinte autour
+   de la sculpture rejoint de nouveau celle de la photo. */
+.top-header.top-header-forms {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05)),
+    linear-gradient(
+      180deg,
+      #9f947e 0%,
+      #9a927c 16%,
+      #8f8770 38%,
+      #867e66 60%,
+      #887c64 81%,
+      #938970 100%
+    );
+}
+
+.top-header.top-header-forms::before {
+  filter: none;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+}
+
+/* Les dessins Congés et Paie restent lisibles sous le titre mais retrouvent
+   leurs noirs, bleus et rouges sur l'essentiel du bandeau. */
+.top-header.top-header-leave {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 252, 255, 0.42) 0%,
+      rgba(235, 248, 253, 0.1) 38%,
+      rgba(255, 255, 255, 0) 76%
+    ),
+    url("/leave-header-art-fast.webp") center / cover no-repeat;
+}
+
+.top-header.top-header-pay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 252, 244, 0.42) 0%,
+      rgba(255, 244, 224, 0.09) 38%,
+      rgba(255, 255, 255, 0) 76%
+    ),
+    url("/pay-header-art-fast.webp") center / cover no-repeat;
+}
+
+/* L'image Accueil ne change pas : seul le détourage lumineux des lettres est
+   renforcé pour les isoler du dessin. */
+.top-header-home .top-header-title h1 {
+  color: #071a32;
+  text-shadow:
+    0 1px 0 #fff,
+    0 0 7px rgba(255, 255, 255, 0.98),
+    0 0 15px rgba(255, 255, 255, 0.9);
+}
+
+.top-header-home .top-header-title .eyebrow {
+  color: #064f9f;
+  text-shadow:
+    0 1px 0 #fff,
+    0 0 6px rgba(255, 255, 255, 0.98),
+    0 0 12px rgba(255, 255, 255, 0.88);
+}
+
+@media (max-width: 720px) {
+  .home-view-mode-bar {
+    border: 0;
+  }
+
+  .top-header.top-header-leave {
+    background:
+      linear-gradient(180deg, rgba(248, 252, 255, 0.4), rgba(255, 255, 255, 0.03)),
+      url("/leave-header-art-fast.webp") center / cover no-repeat;
+  }
+
+  .top-header.top-header-pay {
+    background:
+      linear-gradient(180deg, rgba(255, 252, 244, 0.4), rgba(255, 255, 255, 0.03)),
+      url("/pay-header-art-fast.webp") center / cover no-repeat;
+  }
+}
+
+/* Annuaire final : placé après les anciens thèmes d’en-tête et de formulaires. */
+.top-header.top-header-contacts {
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, #111d2a 0%, #060b11 24%, #000 40%, #000 100%);
+}
+.top-header.top-header-contacts::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 58%;
+  height: 100%;
+  aspect-ratio: 1131 / 729;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: url("/contacts-header-art-black-fast.webp") center / 100% 100% no-repeat;
+}
+.top-header.top-header-contacts > * {
+  position: relative;
+  z-index: 1;
+}
+.top-header.top-header-contacts .account-menu,
+.top-header.top-header-contacts .main-menu-button,
+.top-header.top-header-contacts .header-update-button {
+  position: relative;
+  z-index: 2;
+}
+.top-header.top-header-contacts .header-update-button:not(.update-available) {
+  background: #f1f1f1;
+}
+.useful-contact-group-email {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: -7px 0 14px;
+  border: 1.5px solid #6da0c7;
+  border-radius: 15px;
+  padding: 12px 15px;
+  color: #174d7c;
+  text-decoration: none;
+  background: linear-gradient(135deg, #eaf5ff, #f8fbff);
+  box-shadow: 0 7px 18px rgba(34, 86, 128, 0.09);
+}
+.useful-contact-group-email > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 18px;
+  background: #2869a4;
+}
+.useful-contact-group-email > span:last-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.useful-contact-group-email strong { font-size: 13px; }
+.useful-contact-group-email small { color: #607a92; font-size: 10px; }
+.useful-contact-group-email:hover { background: #e2f2ff; }
+.top-header-contacts .top-header-title h1,
+.top-header-contacts .top-header-title .eyebrow { color: #fff; text-shadow: 0 2px 11px rgba(0, 17, 38, 0.58); }
+.useful-form-information-image img { width: min(100%, 900px); }
+.useful-contacts-subheader {
+  margin: 2px 0 20px;
+  padding: 17px 19px;
+}
+.useful-contact-card {
+  grid-template-columns: minmax(210px, 0.55fr) minmax(0, 1.45fr);
+  border-left: 5px solid #4a91bd;
+  border-radius: 17px;
+  padding: 15px 16px;
+  box-shadow: 0 9px 24px rgba(31, 67, 101, 0.09);
+}
+.useful-contact-card:nth-child(even) { border-left-color: #d7924e; }
+.useful-contact-identity > span:first-child { width: 44px; height: 44px; flex-basis: 44px; border-radius: 14px; }
+.useful-contact-identity > span:last-child { width: auto; height: auto; min-width: 0; display: grid; place-items: initial; gap: 3px; background: transparent; }
+.useful-contact-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.useful-contact-actions a.useful-contact-email { width: auto; min-width: 0; grid-column: auto; padding: 10px 12px; }
+.useful-contact-actions a.useful-contact-email { align-content: center; }
+.useful-contact-phone {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(112px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #c7d6e4;
+  border-radius: 12px;
+  padding: 8px 9px 8px 11px;
+  background: #fbfdff;
+}
+.useful-contact-phone > span:first-child { min-width: 0; display: grid; gap: 2px; }
+.useful-contact-phone-actions { display: flex; gap: 5px; }
+.useful-contact-phone-actions a {
+  width: auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: #2869a4;
+  color: #fff !important;
+  font-size: 10px;
+  font-weight: 850;
+  text-decoration: none;
+}
+.useful-contact-phone-actions a:last-child:not(:first-child) { background: #3d8a6f; }
+
+@media (max-width: 720px) {
+  .top-header.top-header-contacts {
+    background: linear-gradient(90deg, #111d2a 0%, #060b11 24%, #000 40%, #000 100%);
+  }
+  .top-header.top-header-contacts::before {
+    top: 50%;
+    left: 53%;
+    height: 48%;
+    aspect-ratio: 1131 / 729;
+    background-size: 100% 100%;
+  }
+  .useful-contacts-subheader { margin-top: 1px; padding: 15px 16px; }
+  .useful-contact-card { grid-template-columns: 1fr; padding: 13px; }
+  .useful-contact-actions { grid-template-columns: 1fr; }
+  .useful-contact-actions a.useful-contact-email { width: 100%; }
+}
+
+/* Sur un téléphone large ou en paysage, le titre raccourci libère une vraie
+   scène centrale : l’œuvre l’occupe presque entièrement sans toucher les
+   commandes placées à droite. */
+@media (min-width: 500px) and (max-width: 720px) {
+  .top-header.top-header-contacts::before {
+    top: 50%;
+    left: 47%;
+    height: 74%;
+  }
+}
+
+@media (max-width: 390px) {
+  .useful-contact-phone { grid-template-columns: 1fr; }
+  .useful-contact-phone-actions,
+  .useful-contact-phone-actions a { width: 100%; }
+}
+
+/* Fold fermé : l’œuvre quitte la ligne du titre, se place dessous et utilise
+   toute la scène libre avant le bouton de mise à jour. */
+@media (max-width: 499px) {
+  .top-header.top-header-contacts::before {
+    top: 64%;
+    left: 40%;
+    height: 62%;
+  }
+}
+
+/* Fold ouvert : le titre Contacts retrouve le coin supérieur gauche et les
+   dossiers restent de vraies cartes lisibles en grille 2 × 2. */
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .top-header.top-header-contacts .top-header-title {
+    transform: translate(-18px, -26px);
+  }
+  .top-header.top-header-forms .top-header-title h1 {
+    font-size: 36px;
+    white-space: nowrap;
+  }
+  .useful-form-folder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .useful-form-folder {
+    min-height: 145px;
+  }
+}
+
+/* Tous les grands bandeaux gagnent en hauteur et ancrent leur titre dans le
+   coin supérieur gauche. Les œuvres Contacts et Formulaires sont recentrées
+   dans l'espace ainsi libéré sans concurrencer les commandes. */
+@media (min-width: 721px) {
+  .top-header {
+    align-items: flex-start;
+    height: 235px;
+    min-height: 235px;
+    padding-top: 24px;
+  }
+  .top-header > .top-header-title,
+  .top-header .header-command-area {
+    align-self: flex-start;
+  }
+  .top-header > .top-header-title {
+    margin-top: 0;
+    transform: none;
+  }
+  .top-header.top-header-contacts::before {
+    left: 54%;
+    height: 82%;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .top-header {
+    height: 235px;
+    min-height: 235px;
+    padding: 24px 28px;
+  }
+  .top-header.top-header-forms::before {
+    left: 50%;
+  }
+}
+
+@media (max-width: 499px) {
+  .top-header.top-header-contacts::before {
+    left: 35%;
+    height: 56%;
+  }
+}
+
+/* Ajustement final de Contacts : noir uniforme, composition plus équilibrée
+   sur grand écran et œuvre plus discrète sur les téléphones en portrait. */
+.top-header.top-header-contacts {
+  background: #000;
+}
+
+@media (min-width: 721px) {
+  .top-header.top-header-contacts .top-header-title {
+    margin-top: 14px;
+  }
+  .top-header.top-header-contacts::before {
+    left: 49%;
+  }
+}
+
+@media (max-width: 499px) {
+  .top-header.top-header-contacts::before {
+    left: 31%;
+    height: 50%;
+  }
+}
+
+/* Une formation prise sur le solde de récupération est immédiatement
+   identifiable : case corail pastel, liseré noir et repère REC. */
+.month-card .calendar-grid .day.training-recovery-day,
+.year-grid .mini-grid .mini-day.training-recovery-day {
+  border-color: #000 !important;
+  background-color: #f3b3a6 !important;
+  background-image: none !important;
+  color: #3d1712 !important;
+  box-shadow: none !important;
+}
+
+.month-card .calendar-grid .day.training-recovery-day {
+  outline: 2px solid #000;
+  outline-offset: -2px;
+}
+
+.year-grid .mini-grid .mini-day.training-recovery-day {
+  outline: 1.5px solid #000;
+  outline-offset: -1.5px;
+}
+
+.training-recovery-label {
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  border: 0 !important;
+  border-radius: 0;
+  padding: 0;
+  background: transparent !important;
+  color: #111 !important;
+  box-shadow: none;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-shadow: none;
+}
+
+.day-recovery-details i.recovery {
+  background: #f3b3a6;
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+.day-recovery-details .recovery-direct-actions {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.day-recovery-details .recovery-direct-actions .period-delete-button {
+  width: 100%;
+  min-height: 44px;
+  border: 1.5px solid #dc8995;
+  border-radius: 11px;
+  padding: 10px 14px;
+  background: #fff1f2;
+  color: #a52235;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
+/* Le mail commun du bureau reste une brique compacte ; seul son intitulé
+   bénéficie d'une ligne continue, y compris sur les petits écrans. */
+.useful-contact-card-single-line-label {
+  width: min(100%, 760px);
+  max-width: 100%;
+  grid-template-columns: minmax(370px, 1fr) minmax(240px, 320px);
+}
+
+.useful-contact-card-single-line-label .useful-contact-identity strong {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .useful-contact-card-single-line-label {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .useful-contact-card-single-line-label .useful-contact-identity {
+    gap: 7px;
+  }
+
+  .useful-contact-card-single-line-label .useful-contact-identity > span:first-child {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    border-radius: 11px;
+  }
+
+  .useful-contact-card-single-line-label .useful-contact-identity strong {
+    font-size: clamp(9px, 3vw, 12px);
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Contacts Pompidou : chaque service conserve la même structure, avec un
+   pastel et un accent propres pour faciliter le repérage visuel. */
+.useful-contact-category-grid > button {
+  border-left: 6px solid var(--contact-category-accent, #4f8fc4);
+  background: var(--contact-category-background, linear-gradient(135deg, #eef7ff, #fff));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--contact-category-accent, #4f8fc4) 14%, transparent);
+}
+
+.useful-contact-category-grid > button strong,
+.useful-contact-category-grid > button i {
+  color: var(--contact-category-text, #245c8a);
+}
+
+.useful-contact-category-grid > button small {
+  color: color-mix(in srgb, var(--contact-category-text, #245c8a) 72%, #526478);
+}
+
+.useful-contact-category-grid > button:nth-child(1) {
+  --contact-category-accent: #3f87bd;
+  --contact-category-text: #175784;
+  --contact-category-background: linear-gradient(135deg, #e5f4ff, #f8fcff);
+}
+.useful-contact-category-grid > button:nth-child(2) {
+  --contact-category-accent: #d48b3c;
+  --contact-category-text: #8a4b12;
+  --contact-category-background: linear-gradient(135deg, #fff0dd, #fffaf3);
+}
+.useful-contact-category-grid > button:nth-child(3) {
+  --contact-category-accent: #c45f87;
+  --contact-category-text: #843657;
+  --contact-category-background: linear-gradient(135deg, #ffe8f1, #fff8fb);
+}
+.useful-contact-category-grid > button:nth-child(4) {
+  --contact-category-accent: #4c9b79;
+  --contact-category-text: #21694d;
+  --contact-category-background: linear-gradient(135deg, #e4f7ee, #f8fdfa);
+}
+.useful-contact-category-grid > button:nth-child(5) {
+  --contact-category-accent: #7b70c7;
+  --contact-category-text: #51479a;
+  --contact-category-background: linear-gradient(135deg, #eceaff, #faf9ff);
+}
+.useful-contact-category-grid > button:nth-child(6) {
+  --contact-category-accent: #d56f52;
+  --contact-category-text: #91412b;
+  --contact-category-background: linear-gradient(135deg, #ffebe4, #fff9f6);
+}
+
+/* Téléphones standards et Fold fermé : l’œuvre descend dans la zone libre,
+   gagne en présence et reste entièrement cadrée à gauche des commandes. */
+@media (max-width: 499px) {
+  .top-header.top-header-contacts::before {
+    top: 68%;
+    left: 29%;
+    height: 58%;
+  }
+}

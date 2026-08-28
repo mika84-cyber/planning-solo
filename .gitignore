@@ -10,5 +10,14 @@ dist
 playwright-report/
 test-results/
 output/
+coverage/
 .codex-remote-attachments/
+.codex-backups/
+demo-dist-*/
+demo-release-*/
+qa-pdf-dist/
+tmp/
+video-frames/
+qa-*.png
+qa-*.pdf
 partage-ia-*.zip

@@ -1,49 +1,73 @@
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("formulaire de demande", () => {
   const html = readFileSync("public/formulaire/index.html", "utf8");
+  const deviceScript = readFileSync("public/formulaire/device.js", "utf8");
+  const sheetsScript = readFileSync("public/formulaire/sheets.js", "utf8");
+  const formScript = readFileSync("public/formulaire/app.js", "utf8");
+  const formStyles = readFileSync("public/formulaire/form.css", "utf8");
+  const serviceWorker = readFileSync("public/formulaire/sw.js", "utf8");
+  const formSources = `${html}\n${deviceScript}\n${sheetsScript}\n${formScript}`;
   const netlifyConfig = readFileSync("netlify.toml", "utf8");
-  const app = readFileSync("src/App.tsx", "utf8");
+  const app = [
+    "src/App.tsx",
+    "src/AppNavigation.tsx",
+    "src/HomeDashboard.tsx",
+    "src/PayPage.tsx",
+    "src/PdfDownloadPage.tsx",
+    "src/UsefulFormsSection.tsx",
+  ].map((file) => readFileSync(file, "utf8")).join("\n");
 
-  it("autorise précisément chacun de ses scripts intégrés", () => {
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-    expect(scripts).toHaveLength(3);
+  it("charge ses ressources locales sans script ni style intégrés", () => {
+    expect(html).not.toMatch(/<script(?![^>]+src=)[^>]*>/);
+    expect(html).not.toContain("<style>");
+    expect(html).toContain('<script src="device.js"></script>');
+    expect(html).toContain('<link rel="stylesheet" href="form.css">');
+    expect(html).toContain('<script src="sheets.js"></script>');
+    expect(html).toContain('<script src="app.js"></script>');
+    expect(netlifyConfig).toContain("script-src 'self'");
+    expect(netlifyConfig).toContain("style-src 'self'");
+    expect(formStyles).toContain("@media print");
+    expect(sheetsScript).toMatch(/^var SHEETS = \[/);
+    for (const asset of ["device.js", "form.css", "sheets.js", "app.js"])
+      expect(serviceWorker).toContain(`'./${asset}'`);
+  });
 
-    for (const script of scripts) {
-      const hash = createHash("sha256").update(script[1]).digest("base64");
-      expect(netlifyConfig).toContain(`'sha256-${hash}'`);
-    }
+  it("garde une seule source de version pour le cache hors ligne", () => {
+    expect(serviceWorker).toMatch(/var VERSION = '\d+';/);
+    expect(serviceWorker).toContain("var CACHE = 'demandes-' + VERSION;");
+    expect(formScript).toContain("register('sw.js', {updateViaCache:'none'})");
+    expect(formScript).not.toMatch(/sw\.js\?v=/);
   });
 
   it("conserve les briques de préremplissage, signature et PDF", () => {
-    expect(html).toContain("planning:form-handoff-v1");
+    expect(formSources).toContain("planning:form-handoff-v1");
     expect(html).toContain('id="sigModal"');
     expect(html).toContain('id="btnPdf"');
-    expect(html).toContain("demandes:v4:");
-    expect(html).toContain("item.type==='recovery_training')?'rheur'");
-    expect(html).toContain("capacities={ca:5,artt:4,cet:4,frac:2");
-    expect(html).toContain("syncSavedSignatureToPlanning");
-    expect(html).toContain("action:'save-form-profile',fullName:fullName,group:group,signature:data");
-    expect(html).toContain("font:obsBold,color:PDFLib.rgb(INK[0]/255,INK[1]/255,INK[2]/255)");
+    expect(formSources).toContain("demandes:v4:");
+    expect(formSources).toContain("item.type==='recovery_training')?'rheur'");
+    expect(formSources).toContain("capacities={ca:5,artt:4,cet:4,frac:2");
+    expect(formSources).toContain("syncSavedSignatureToPlanning");
+    expect(formSources).toContain("action:'save-form-profile',fullName:fullName,group:group,signature:data");
+    expect(formSources).toContain("font:obsBold,color:PDFLib.rgb(INK[0]/255,INK[1]/255,INK[2]/255)");
   });
 
   it("confirme la demande dans le planning seulement après la finalisation", () => {
-    expect(html).toContain("action:'save-request'");
-    expect(html).toContain("await completePlanningRequest(pdf)");
-    expect(html).toContain("planning-request-archive");
-    expect(html).toContain("data.requestKind==='leave' && c.n==='opt_conges'");
-    expect(html.indexOf("syncPlanningRequest()"))
-      .toBeLessThan(html.indexOf("localStorage.removeItem(PLANNING_HANDOFF_KEY)"));
+    expect(formScript).toContain("action:'save-request'");
+    expect(formScript).toContain("await completePlanningRequest(pdf)");
+    expect(formScript).toContain("planning-request-archive");
+    expect(formScript).toContain("data.requestKind==='leave' && c.n==='opt_conges'");
+    expect(formScript.indexOf("syncPlanningRequest()"))
+      .toBeLessThan(formScript.indexOf("localStorage.removeItem(PLANNING_HANDOFF_KEY)"));
   });
 
   it("distingue un succès de synchronisation d'une erreur ou d'un avertissement PDF", () => {
     expect(app).toContain('confirm("La demande est enregistrée : le planning et les soldes sont à jour.")');
     expect(app).not.toContain('notify("La demande est enregistrée : le planning et les soldes sont à jour.")');
-    expect(html).toContain("finishSavedRequestAfterDeliveryIssue");
-    expect(html).toContain("if(!planningImport || !planningSyncDone) return false");
-    expect(html).toContain("planningArchiveDone=await archivePlanningRequest(pdf)");
+    expect(formScript).toContain("finishSavedRequestAfterDeliveryIssue");
+    expect(formScript).toContain("if(!planningImport || !planningSyncDone) return false");
+    expect(formScript).toContain("planningArchiveDone=await archivePlanningRequest(pdf)");
   });
 
   it("conserve les points d'entrée de la nouvelle navigation", () => {
@@ -57,6 +81,6 @@ describe("formulaire de demande", () => {
       "Afficher les vacances scolaires",
     ]) expect(app).toContain(label);
     expect(app).toContain('className="native-back-button"');
-    expect(app).toContain('onClick={() => setGroupChooserOpen(true)}');
+    expect(app).toContain('onChooseGroup={() => setGroupChooserOpen(true)}');
   });
 });

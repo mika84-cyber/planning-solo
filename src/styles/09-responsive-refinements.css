@@ -1,0 +1,2878 @@
+/* Écran presque carré (ex: Samsung Z Fold 7 déplié, ~984x1092 CSS px) :
+   au lieu du mode "tablette étroite" hérité des breakpoints ci-dessus,
+   on profite de la largeur réelle disponible. */
+@media (min-width: 900px) and (max-width: 1180px) and (min-aspect-ratio: 4/5) and (max-aspect-ratio: 6/5) {
+  .year-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .leave-balance-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .calendar-toolbar {
+    display: grid;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .period-navigation {
+    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    min-width: 0;
+  }
+  .year-toolbar .period-navigation {
+    grid-template-columns: minmax(130px, 1fr);
+  }
+  .calendar-toolbar .today-button {
+    width: auto;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+  .calendar-toolbar .toolbar-leave-action {
+    grid-column: auto;
+    justify-self: end;
+    width: auto;
+    min-width: 165px;
+    min-height: 42px;
+    height: 42px;
+    margin-left: 0;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+  /* Année, groupe et Aujourd'hui à parts égales : l'année occupait sinon
+     toute la place restante et écrasait les deux autres. */
+.calendar-toolbar.annual-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .annual-toolbar .today-button {
+    width: 100%;
+  }
+  .calendar-toolbar.month-toolbar {
+    grid-template-columns: minmax(280px, 1fr) auto minmax(165px, 220px);
+  }
+  .annual-toolbar .toolbar-group-picker {
+    grid-column: auto;
+  }
+  .annual-toolbar .toolbar-leave-action {
+    grid-column: 1/-1;
+    justify-self: stretch;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Décision sur un congé souhaité : le choix précède le formulaire habituel,
+   donc il s'affiche avant les champs de type et de période. */
+.wish-decision {
+  margin: 12px 0;
+  border: 1px solid color-mix(in srgb, var(--green) 35%, var(--line));
+  border-left: 4px solid var(--green);
+  border-radius: 0;
+  padding: 12px 13px;
+  background: color-mix(in srgb, var(--green) 7%, white);
+}
+.wish-decision p {
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.wish-decision div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wish-decision button {
+  min-height: 40px;
+  font-size: 13px;
+}
+
+/* Notes multiples sur une même journée : une puce par ligne, pour que deux
+   ajouts ne se lisent pas comme une seule phrase. */
+.note-bullets {
+  margin: 0;
+  padding-left: 13px;
+  list-style: disc;
+}
+.note-bullets li {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+}
+
+.note-field-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.add-note-line {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(40, 89, 184, 0.22);
+}
+.add-note-line:hover {
+  background: #1f4a9c;
+}
+
+/* « restant » / « pris » accolés au chiffre, dans sa couleur : la mention
+   qualifie le nombre, elle n'est pas une ligne d'explication séparée. */
+.leave-balance-grid strong i {
+  margin-left: 5px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* État réseau et sauvegarde : une information courte, lisible sans masquer le
+   planning. `aria-live` dans le composant fournit le même retour au lecteur
+   d'écran. */
+.connection-status {
+  position: sticky;
+  z-index: 45;
+  top: 8px;
+  width: fit-content;
+  max-width: calc(100% - 16px);
+  margin: -6px auto 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 13px;
+  background: #eef4ff;
+  color: #234f9b;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(31, 46, 78, 0.12);
+}
+.connection-status.offline,
+.connection-status.error {
+  border-color: #edc4c8;
+  background: #fff0f1;
+  color: #9f2f3b;
+}
+.connection-status.saved {
+  border-color: #b9dfd1;
+  background: #edf9f4;
+  color: #176a50;
+}
+.pay-year-notice {
+  margin: 4px 0 12px;
+  border-left: 3px solid var(--accent);
+  padding: 8px 10px;
+  background: #f4f7fd;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.pay-year-notice strong {
+  color: var(--text);
+}
+
+/* Accueil recentré sur ce qui est utile maintenant. Les rubriques suivantes
+   n'affichent qu'un niveau de détail à la fois. */
+.today-overview {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  border: 1px solid #c5d7eb;
+  border-radius: 20px;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(125, 165, 207, 0.13), transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #edf4fb 100%);
+  box-shadow: 0 14px 34px rgba(49, 77, 111, 0.09);
+}
+.today-overview-heading,
+.section-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.today-overview-heading h2,
+.section-intro h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+.today-overview-heading small,
+.section-intro p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.add-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.add-action > span {
+  font-size: 20px;
+  font-weight: 500;
+}
+.today-overview .add-action {
+  border: 1px solid #aec2da;
+  background: linear-gradient(145deg, #e7f0fa 0%, #d7e6f5 100%);
+  box-shadow: 0 5px 13px rgba(63, 86, 116, 0.13);
+  color: #294d78;
+}
+.today-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.today-overview-grid > article,
+.today-overview-grid > button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  min-height: 94px;
+  border: 1px solid #d4e0ed;
+  border-radius: 15px;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 5px 14px rgba(60, 82, 108, 0.06);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.today-overview-grid > button {
+  cursor: pointer;
+}
+.today-overview-grid > button:hover {
+  border-color: #9fb9dc;
+  background: #fff;
+  box-shadow: 0 9px 20px rgba(60, 82, 108, 0.1);
+  transform: translateY(-1px);
+}
+.today-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.today-overview-grid .today-card-copy > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+.today-card-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(67, 112, 154, 0.11);
+  color: #426b95;
+}
+.today-card-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.today-overview-grid strong {
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+}
+.today-overview-grid small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.today-overview-grid .today-status {
+  border-color: #b9d7ca;
+  background: linear-gradient(145deg, #f4fbf7 0%, #e9f6f0 100%);
+}
+.today-overview-grid .today-status .today-card-icon {
+  background: #d9eee4;
+  color: #32725b;
+}
+.today-overview-grid .today-status.tone-off {
+  border-color: #d7dce5;
+  background: #f4f6f9;
+}
+.today-overview-grid .today-status.tone-off .today-card-icon {
+  background: #e4e8ee;
+  color: #5c687a;
+}
+.today-overview-grid .today-status.tone-training {
+  border-color: #c9c7e8;
+  background: #f3f1ff;
+}
+.today-overview-grid .today-status.tone-training .today-card-icon {
+  background: #e2def5;
+  color: #665c9a;
+}
+.today-overview-grid .today-status.tone-leave,
+.today-overview-grid .today-status.tone-recovery {
+  border-color: #b8d9e9;
+  background: #edf8fd;
+}
+.today-overview-grid .today-status.tone-leave .today-card-icon,
+.today-overview-grid .today-status.tone-recovery .today-card-icon {
+  background: #d8edf6;
+  color: #397997;
+}
+.today-next-work {
+  background: linear-gradient(145deg, #f8fbff 0%, #eef4fb 100%) !important;
+}
+.today-leave-balance {
+  border-color: #d8d5ea !important;
+  background: linear-gradient(145deg, #fdfcff 0%, #f3f1fa 100%) !important;
+}
+.today-leave-balance .today-card-icon {
+  background: #e8e3f4;
+  color: #6e6091;
+}
+.important-alert {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid #efcf9e;
+  border-radius: 13px;
+  padding: 10px 12px;
+  background: #fff8ea;
+  color: #6d4812;
+  text-align: left;
+  cursor: pointer;
+}
+.important-alert > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f3b955;
+  color: #fff;
+  font-weight: 900;
+}
+.important-alert strong {
+  font-size: 12px;
+}
+.important-alert small {
+  color: #8a682f;
+  font-size: 10px;
+  font-weight: 800;
+}
+.home-section-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 19px;
+  padding: 7px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 28px rgba(47, 68, 94, 0.07);
+}
+.workspace-navigation {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.workspace-navigation-heading {
+  padding: 0 4px;
+}
+.workspace-navigation-heading h2 {
+  margin: 1px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.workspace-navigation .home-section-nav {
+  margin-bottom: 0;
+}
+.home-section-nav button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 60px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 9px 11px;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+}
+.home-section-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: #edf1f5;
+  color: #78869a;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+.home-section-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.home-section-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.home-section-nav button.active .home-section-icon {
+  background: #cfdeef;
+  color: #315d88;
+  transform: scale(1.03);
+}
+.home-section-nav button.active {
+  border-color: #aec4dd;
+  background: linear-gradient(145deg, #eef5fb 0%, #dfeaf5 100%);
+  color: #294f78;
+}
+.home-section-nav strong {
+  font-size: 13px;
+}
+.home-section-nav small {
+  color: inherit;
+  font-size: 10px;
+  opacity: 0.8;
+}
+.section-intro {
+  margin-bottom: 10px;
+  border: 1px solid #d9e2ef;
+  border-radius: 17px;
+  padding: 15px 17px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.home-panels.single-panel .home-panel-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.advanced-options-toggle {
+  min-height: 40px;
+  margin: 9px 0 0;
+  border: 1px dashed #aec0d8;
+  border-radius: 11px;
+  padding: 0 13px;
+  background: #f7f9fc;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Les grandes rubriques se lisent comme une vraie navigation : l'onglet
+   courant est le seul élément plein, les deux autres restent volontairement
+   en retrait. */
+.home-section-nav button {
+  position: relative;
+  overflow: hidden;
+  background: #f5f7fa;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.home-section-nav button:not(.active):hover {
+  border-color: #d0dbea;
+  background: #fff;
+  color: #33445d;
+}
+.home-section-nav button.active {
+  border-color: rgba(31, 35, 40, 0.42);
+  background: linear-gradient(145deg, #edf3fa 0%, #dfeaf6 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(113, 142, 177, 0.12),
+    0 5px 13px rgba(63, 86, 116, 0.12);
+  color: #294d78;
+  transform: translateY(-1px);
+}
+.home-section-nav button.active small {
+  color: #5e7795;
+}
+
+/* Les soldes sont une information de premier niveau dans la rubrique Congés :
+   ils restent visibles sans accordéon, tout en gardant une carte compacte. */
+.leave-balances-direct {
+  display: grid;
+  gap: 13px;
+  margin-bottom: 14px;
+  border: 1.5px solid #aabbd1;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #f3f7fc 100%);
+  box-shadow: var(--shadow);
+}
+.leave-balances-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid #c8d5e5;
+  border-radius: 13px;
+  padding: 11px 12px;
+  background: rgba(247, 250, 255, 0.9);
+}
+.leave-balances-heading h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.leave-balances-heading > strong {
+  color: var(--accent);
+  font-size: 13px;
+}
+.direct-balances-content {
+  border: 1px solid #c8d4e3;
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.82);
+}
+.leave-balances-direct .leave-balance-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.leave-balances-direct .leave-balance-grid button {
+  border: 1px solid color-mix(in srgb, var(--balance-color) 52%, #aeb9c7);
+  border-left-width: 5px;
+  padding: 11px 12px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.72);
+}
+.leave-balances-direct .leave-balance-grid strong {
+  margin-bottom: 5px;
+  border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
+  padding-bottom: 7px;
+  font-size: 23px;
+}
+.leave-balances-direct .leave-balance-grid span {
+  color: #17243a;
+  font-size: 10px;
+  font-weight: 900;
+}
+.leave-balances-direct .leave-balance-grid strong {
+  color: color-mix(in srgb, var(--balance-color) 58%, #17243a);
+  font-weight: 950;
+}
+.leave-balances-direct .leave-balance-grid strong i {
+  color: color-mix(in srgb, var(--balance-color) 48%, #233149);
+  font-weight: 900;
+}
+.leave-balances-direct .leave-balance-grid small {
+  color: #4b596d;
+  font-size: 9px;
+  font-weight: 700;
+}
+.leave-balances-direct .leave-balance-grid em {
+  color: color-mix(in srgb, var(--balance-color) 60%, #16263c);
+  font-weight: 950;
+}
+
+/* Dans Ma paie, une teinte sauge très légère crée un second niveau de
+   navigation sans concurrencer les rubriques principales. */
+.pay-panels .home-panel-toggle {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  min-height: 74px;
+  background: #f5f7fa;
+  box-shadow: none;
+}
+.pay-panels .home-panel-toggle:not(.open) {
+  color: #536174;
+}
+.pay-panels .home-panel-toggle.open {
+  border-color: #9fbdb6;
+  background: linear-gradient(145deg, #edf6f3 0%, #deede9 100%);
+  box-shadow: 0 7px 17px rgba(60, 103, 94, 0.14);
+  color: #285f55;
+}
+.pay-panels .home-panel-toggle.open .home-panel-icon,
+.pay-panels .home-panel-toggle.open small {
+  color: #527a72;
+}
+.pay-panels .home-panel-caret {
+  display: none;
+}
+.pay-panels .home-panel-body {
+  border-color: #b9cec9;
+  border-top: 3px solid #8eb2aa;
+}
+.payslip-leave-notice {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin: 14px 15px 0;
+  border: 1px solid #d3dee6;
+  border-radius: 13px;
+  padding: 11px 13px;
+  background: #f4f7f8;
+  color: #33445d;
+}
+.payslip-leave-notice > span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #668397;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+.payslip-leave-notice p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.payslip-leave-notice strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #36546d;
+}
+
+/* Toutes les possibilités de congé et de récupération sont visibles. Les
+   groupes gardent la liste lisible, sans ajouter un bouton "plus d'options". */
+.request-option-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.request-option-group {
+  border: 1px solid #dde5ef;
+  border-radius: 14px;
+  padding: 12px;
+  background: #f8fafc;
+}
+.request-option-group h3 {
+  margin: 0 0 8px;
+  color: #536174;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+.request-option-group .type-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+.request-option-group .type-tabs button {
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 44px;
+  height: auto;
+  padding: 7px 10px;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.pay-intro {
+  border-color: #d7e2e0;
+  background: linear-gradient(145deg, #ffffff 0%, #f4f8f7 100%);
+}
+.pay-panels .home-panel-body {
+  background: #f7f9fa;
+}
+.pay-panels .status-switch::before {
+  background: linear-gradient(145deg, #dbece7 0%, #c8e0da 100%);
+  box-shadow: 0 3px 9px rgba(59, 101, 92, 0.15);
+}
+.pay-panels .status-switch button.active {
+  color: #285f55;
+}
+.allowance-overview {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d6e2df;
+  border-radius: 16px;
+  padding: 15px;
+  background: #fff;
+}
+.allowance-overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.allowance-overview-heading h3 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+.soft-detail-button {
+  min-height: 38px;
+  border: 1px solid #b8cdc8;
+  border-radius: 11px;
+  padding: 0 13px;
+  background: #eef5f3;
+  color: #35675e;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.allowance-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.allowance-overview-grid article {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-height: 92px;
+  border: 1px solid #e0e7e7;
+  border-radius: 13px;
+  padding: 12px;
+  background: #f8faf9;
+}
+.allowance-overview-grid span {
+  color: #65766f;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+.allowance-overview-grid strong {
+  color: #244f48;
+  font-size: 24px;
+  line-height: 1.05;
+}
+.allowance-overview-grid small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.allowance-summary-alert {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #e7d8bd;
+  border-radius: 12px;
+  padding: 9px 11px;
+  background: #fbf8f1;
+  color: #6c5835;
+  text-align: left;
+  cursor: pointer;
+}
+.allowance-summary-alert > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #b99a63;
+  color: #fff;
+  font-weight: 900;
+}
+.allowance-summary-alert strong {
+  font-size: 12px;
+}
+.allowance-summary-alert small {
+  color: #857252;
+  font-size: 10px;
+  font-weight: 800;
+}
+.allowance-detail-stack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.allowance-detail-stack > .allowance-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.payslip-detected-period {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+  border: 1px solid #c8ddd7;
+  border-radius: 11px;
+  padding: 9px 12px;
+  background: #f1f7f5;
+  color: #35675e;
+  font-size: 11px;
+}
+.pay-estimate-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 11px 14px;
+  border: 1px solid #c8d8e6;
+  border-radius: 15px;
+  padding: 14px;
+  background: linear-gradient(145deg, #ffffff 0%, #f1f6fa 100%);
+}
+.pay-functions-layout {
+  gap: 16px !important;
+  background: linear-gradient(180deg, #fbfcfe 0%, #f7f9fc 100%);
+}
+.pay-functions-layout > .pay-estimate-overview,
+.pay-functions-layout > .pay-function-card {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(43, 63, 88, 0.055);
+}
+.pay-functions-layout > .pay-estimate-overview::before,
+.pay-functions-layout > .pay-function-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: #9eb8d4;
+  content: "";
+}
+.pay-function-card > header > div {
+  display: grid;
+  gap: 2px;
+}
+.pay-function-card > header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.pay-function-card > header .step-label {
+  color: #718096;
+  font-size: 9px;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+.payslip-verify-card {
+  border-color: #c8ded7;
+  background: #fbfefd;
+}
+.payslip-verify-card::before {
+  background: #82afa2 !important;
+}
+.payslip-calibration-card {
+  border-style: solid !important;
+  border-color: #ddd5e8;
+  background: #fdfbff;
+}
+.payslip-calibration-card::before {
+  background: #a899be !important;
+}
+.pay-elements-card {
+  border-color: #d9e0e9;
+  background: #fcfdfe;
+}
+.pay-elements-card::before {
+  background: #8b9caf !important;
+}
+.pay-estimate-overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+.pay-estimate-overview-heading h3 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+.pay-month-nav.compact {
+  gap: 4px;
+}
+.pay-estimate-amounts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 8px;
+}
+.pay-estimate-amounts article {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #dce6ee;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+.pay-estimate-amounts .gross-estimate-card {
+  border-color: #b9cde2;
+  background: linear-gradient(145deg, #f7fbff 0%, #e9f2fa 100%);
+}
+.pay-estimate-amounts .gross-estimate-card strong {
+  color: #244f7a;
+  font-size: 22px;
+}
+.pay-estimate-amounts .net-estimate-card {
+  border-color: #cbded8;
+  background: linear-gradient(145deg, #fbfefd 0%, #edf7f3 100%);
+}
+.pay-estimate-amounts .net-estimate-card strong {
+  color: #2f6659;
+}
+.pay-estimate-amounts span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+.pay-estimate-amounts strong {
+  color: #294d78;
+  font-size: 20px;
+}
+.pay-estimate-amounts small {
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.pay-estimate-overview > .soft-detail-button {
+  align-self: stretch;
+}
+.payslip-detected-period strong {
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.payslip-actual-values {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  border: 1px solid #c9dce7;
+  border-radius: 11px;
+  padding: 8px 10px;
+  background: #f5f9fc;
+}
+.payslip-actual-values > span {
+  margin-right: auto;
+  color: #4e667c;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.payslip-actual-values > div {
+  display: grid;
+  gap: 1px;
+  border-left: 1px solid #d8e4ec;
+  padding-left: 10px;
+}
+.payslip-actual-values small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.payslip-actual-values strong {
+  color: #294d78;
+  font-size: 12px;
+}
+.payslip-period-fallback {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(130px, auto) minmax(110px, auto) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  border: 1px solid #e2c99f;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff9ef;
+}
+.payslip-period-fallback strong,
+.payslip-period-fallback small {
+  display: block;
+}
+.payslip-period-fallback small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.payslip-calibration-card {
+  border-style: dashed;
+  background: #fbfcfd;
+}
+.payslip-calibration-card header small {
+  color: #68817b;
+  font-size: 10px;
+  font-weight: 800;
+}
+.payslip-calibration-drop {
+  display: flex;
+  width: min(320px, 100%);
+  min-height: 44px;
+  margin-top: 9px;
+}
+.payslip-calibration-status {
+  display: grid;
+  gap: 2px;
+  margin-top: 9px;
+  border: 1px solid #dbe3e5;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #f5f7f8;
+}
+.payslip-calibration-status.ready {
+  border-color: #bdd7d0;
+  background: #eef7f4;
+  color: #2e685c;
+}
+.payslip-calibration-status strong {
+  font-size: 12px;
+}
+.payslip-calibration-status small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.payslip-guide-step {
+  display: grid;
+  grid-template-columns: 32px minmax(150px, 1fr) minmax(150px, auto);
+  align-items: center;
+  gap: 11px;
+  margin-top: 9px;
+  border: 1px solid #e0e6ef;
+  border-radius: 13px;
+  padding: 11px;
+  background: #f7f9fc;
+  opacity: 0.68;
+}
+.payslip-guide-step.active {
+  border-color: #c9d9ed;
+  background: #f4f8ff;
+  opacity: 1;
+}
+.payslip-guide-number {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #dce9fa;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+.payslip-guide-step > div:not(.choice-picker) {
+  display: grid;
+  gap: 3px;
+}
+.payslip-guide-step strong {
+  font-size: 12px;
+}
+.payslip-guide-step small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.payslip-month-picker {
+  width: 180px;
+}
+.payslip-guide-step .payslip-drop {
+  min-width: 180px;
+  margin: 0;
+}
+.payslip-rate-calibration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 9px;
+  border: 1px solid #c9d9ed;
+  border-radius: 13px;
+  padding: 11px 13px;
+  background: #f4f8ff;
+}
+.payslip-rate-calibration > div {
+  display: grid;
+  gap: 3px;
+}
+.payslip-rate-calibration strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+.payslip-rate-calibration small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.payslip-rate-calibration .text-button {
+  flex: 0 0 auto;
+}
+.payslip-result-summary {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  border: 1px solid #c9d9ed;
+  border-radius: 15px;
+  padding: 13px;
+  background: #f3f7fd;
+}
+.payslip-result-summary.ok {
+  border-color: #abd8c6;
+  background: #edf9f4;
+}
+.payslip-result-summary.warning {
+  border-color: #efca8f;
+  background: #fff8e9;
+}
+.payslip-result-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 900;
+}
+.payslip-result-summary.ok .payslip-result-icon {
+  background: #26815d;
+}
+.payslip-result-summary.warning .payslip-result-icon {
+  background: #d18a22;
+}
+.payslip-result-summary > div {
+  display: grid;
+  gap: 4px;
+}
+.payslip-result-summary > div strong {
+  font-size: 16px;
+}
+.payslip-result-summary > div small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.pay-settings-summary {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px dashed #c5d2e3;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f7f9fc;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.pay-settings-summary strong {
+  font-size: 12px;
+}
+.pay-settings-summary span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* Repère clavier commun à tous les composants, y compris ceux ajoutés plus
+   tard : le focus ne dépend plus de quelques sélecteurs isolés. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #f1a93b;
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .today-overview {
+    gap: 9px;
+    border-radius: 17px;
+    padding: 12px;
+  }
+  .today-overview-heading {
+    align-items: flex-end;
+  }
+  .today-overview-heading h2 {
+    font-size: 20px;
+  }
+  .today-overview-heading .add-action {
+    width: auto;
+    min-height: 44px;
+    padding: 0 14px;
+  }
+  .today-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .today-overview-grid > article,
+  .today-overview-grid > button {
+    grid-template-columns: 31px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 90px;
+    border-radius: 13px;
+    padding: 10px;
+  }
+  .today-card-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+  .today-card-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+  .today-overview-grid strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+  }
+  .important-alert {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+  .important-alert small {
+    display: none;
+  }
+  .home-section-nav {
+    gap: 4px;
+    border-radius: 15px;
+    padding: 5px;
+  }
+  .home-section-nav button {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 4px;
+    min-height: 68px;
+    padding: 7px 4px;
+    text-align: center;
+  }
+  .home-section-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+  .home-section-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+  .home-section-nav strong {
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  .home-section-nav small {
+    display: none;
+  }
+  .today-overview-grid > button:last-child {
+    grid-column: 1 / -1;
+    min-height: 70px;
+  }
+  .today-overview-grid .today-leave-balance {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+  .today-leave-balance .today-card-icon {
+    display: none;
+  }
+  .today-leave-balance .today-card-copy {
+    align-items: center;
+  }
+  .controls [aria-label="Choix du groupe"] {
+    text-align: center;
+  }
+  .controls [aria-label="Choix du groupe"] .year-calendar-mark {
+    display: none;
+  }
+  .controls [aria-label="Choix du groupe"] .choice-picker-trigger {
+    justify-content: center;
+    padding-right: 34px;
+    padding-left: 34px;
+    text-align: center;
+  }
+  .leave-balances-direct {
+    gap: 10px;
+    border-radius: 15px;
+    padding: 12px;
+  }
+  .leave-balances-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .leave-balances-heading h3 {
+    font-size: 15px;
+  }
+  .leave-balances-direct .leave-balance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .leave-balances-direct .leave-balance-grid button {
+    min-width: 0;
+    padding: 10px;
+  }
+  .leave-balances-direct .leave-balance-grid strong {
+    font-size: 20px;
+  }
+  .leave-balances-direct .leave-balance-grid small {
+    line-height: 1.3;
+  }
+  .pay-panels .home-panel-toggle {
+    min-height: 68px;
+  }
+  .pay-panels .home-panel-toggle small {
+    display: none;
+  }
+  .pay-functions-layout {
+    gap: 11px !important;
+    padding: 10px !important;
+  }
+  .pay-function-card,
+  .pay-estimate-overview {
+    border-radius: 13px;
+  }
+  .pay-function-card > header {
+    align-items: flex-start;
+  }
+  .mecenat-rate-summary {
+    grid-template-columns: 1fr;
+  }
+  .payslip-leave-notice {
+    margin: 10px 10px 0;
+    padding: 10px;
+  }
+  .request-option-groups {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin: 13px 0;
+  }
+  .request-option-group {
+    padding: 10px;
+  }
+  .request-option-group .type-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .request-option-group .type-tabs button {
+    font-size: 11px;
+  }
+  .pay-intro {
+    display: block;
+  }
+  .pay-intro p {
+    line-height: 1.4;
+  }
+  .allowance-overview {
+    padding: 11px;
+  }
+  .allowance-overview-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .soft-detail-button {
+    width: 100%;
+  }
+  .allowance-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .allowance-overview-grid article:last-child {
+    grid-column: 1 / -1;
+    min-height: 72px;
+  }
+  .allowance-summary-alert {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .allowance-summary-alert small {
+    display: none;
+  }
+  .allowance-detail-stack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .allowance-detail-stack > .allowance-card:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+  .payslip-period-fallback {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .payslip-period-fallback > div,
+  .payslip-period-fallback > button {
+    grid-column: 1 / -1;
+  }
+  .payslip-period-fallback > button {
+    width: 100%;
+  }
+  .pay-estimate-overview {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 11px;
+  }
+  .pay-estimate-amounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pay-estimate-amounts article {
+    padding: 9px;
+  }
+  .pay-estimate-amounts strong {
+    font-size: 17px;
+  }
+  .pay-estimate-overview > .soft-detail-button {
+    width: 100%;
+  }
+  .section-intro {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 13px;
+  }
+  .section-intro h2 {
+    font-size: 18px;
+  }
+  .section-intro .primary-action {
+    width: 100%;
+  }
+  .payslip-guide-step {
+    grid-template-columns: 32px minmax(0, 1fr);
+    padding: 10px;
+  }
+  .payslip-guide-step > .choice-picker,
+  .payslip-guide-step > .payslip-drop {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+  }
+  .payslip-rate-calibration {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .payslip-rate-calibration .text-button {
+    align-self: flex-start;
+  }
+  .payslip-result-summary {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 9px;
+  }
+  .payslip-result-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .payslip-result-summary .secondary-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .filter-chip,
+  .type-tabs button,
+  .modal-actions button,
+  .advanced-options-toggle {
+    min-height: 44px;
+  }
+  .legend,
+  .summary span,
+  .weekdays span {
+    font-size: max(10px, 0.68rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Finitions des actions de nettoyage et des formulaires mobiles. */
+.calendar-bulk-delete-mobile {
+  display: none;
+}
+
+.calendar-delete-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-width: min(32rem, 100%);
+}
+
+.calendar-delete-actions .secondary-button {
+  grid-column: 1 / -1;
+}
+
+.calendar-delete-actions .delete-notes-button,
+.calendar-delete-actions .delete-absences-button {
+  flex: 1 1 calc(50% - 0.35rem);
+  min-width: 10.5rem;
+  min-height: 2.8rem;
+  border: 0;
+  border-radius: 0.8rem;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+}
+
+.calendar-delete-actions .delete-notes-button {
+  background: #dc7a24;
+}
+
+.calendar-delete-actions .delete-absences-button {
+  background: #2f63bf;
+}
+
+.note-modal .modal-actions,
+.range-modal .modal-actions,
+.recovery-use-modal .modal-actions,
+.manual-adjustments-modal .modal-actions,
+.balance-detail-modal .modal-actions,
+.request-choice .modal-actions {
+  position: sticky;
+  z-index: 4;
+  bottom: calc(-24px + env(safe-area-inset-bottom));
+  margin-inline: -24px;
+  padding: 0.85rem 24px calc(0.85rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(31, 46, 78, 0.1);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+}
+
+.range-selection-panel .range-selection-actions {
+  position: sticky;
+  z-index: 5;
+  right: 0;
+  bottom: env(safe-area-inset-bottom);
+  padding: 0.4rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(26, 37, 57, 0.1);
+  backdrop-filter: blur(9px);
+}
+
+.request-panel .request-bottom {
+  position: sticky;
+  z-index: 5;
+  bottom: env(safe-area-inset-bottom);
+  margin: 0 -0.45rem -0.45rem;
+  padding: 0.85rem 0.45rem 0.45rem;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(9px);
+}
+
+.balance-detail-list article.bulk-selected {
+  background: #fff4f2;
+  box-shadow: inset 0 0 0 1px rgba(196, 61, 67, 0.35);
+}
+
+.balance-detail-modal .balance-multi-delete-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-color: rgba(47, 99, 191, 0.28);
+  background: #f2f6ff;
+  color: #2455a6;
+}
+
+.balance-detail-modal .balance-detail-checkbox input {
+  accent-color: #2f63bf;
+}
+
+.balance-multi-delete-actions {
+  position: sticky;
+  z-index: 4;
+  bottom: 0;
+  border: 1px solid rgba(196, 61, 67, 0.2);
+  box-shadow: 0 -8px 22px rgba(35, 42, 55, 0.08);
+}
+
+.balance-multi-delete-actions > div {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.balance-multi-delete-actions > div button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #a92f38;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .calendar-bulk-delete-button {
+    display: none;
+  }
+
+  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid rgba(23, 36, 56, 0.22);
+    border-radius: 12px;
+    padding: 0.45rem 0.65rem;
+    background: #fff;
+    color: #344054;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 800;
+  }
+
+  .calendar-toolbar.month-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .calendar-toolbar.month-toolbar .period-navigation {
+    grid-column: 1 / -1;
+  }
+
+  .calendar-toolbar.month-toolbar .today-button,
+  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
+    grid-column: auto;
+  }
+
+  .calendar-delete-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-width: 0;
+  }
+
+  .calendar-delete-actions .secondary-button {
+    grid-column: 1 / -1;
+  }
+
+  .calendar-delete-actions .delete-notes-button,
+  .calendar-delete-actions .delete-absences-button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .note-modal .modal-actions,
+  .range-modal .modal-actions,
+  .request-choice .modal-actions {
+    bottom: calc(-20px + env(safe-area-inset-bottom));
+    margin-inline: -17px;
+    padding-inline: 17px;
+  }
+
+  .balance-detail-checkbox {
+    flex-basis: 2.3rem;
+  }
+
+  .balance-multi-delete-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* Reprise annuelle des absences lors d'une arrivée en cours d'année. */
+.leave-year-tools {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 14px;
+}
+.leave-year-tools > label {
+  display: grid;
+  gap: 4px;
+  min-width: 116px;
+}
+.leave-year-tools > label > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.leave-year-tools > strong {
+  padding-bottom: 10px;
+  color: var(--accent);
+  font-size: 13px;
+}
+.leave-year-picker .choice-picker-trigger { min-height: 40px; }
+.manual-balance-note {
+  color: #7a5b16 !important;
+  font-weight: 750;
+}
+.manual-adjustments-trigger {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid #d7c99d;
+  border-radius: 14px;
+  padding: 11px 13px;
+  background: linear-gradient(135deg, #fffaf0, #fff 70%);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.manual-adjustments-trigger:hover { border-color: #b79c52; }
+.manual-adjustments-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f6e9bd;
+  color: #6e5414;
+  font-size: 22px;
+}
+.manual-adjustments-trigger > span:nth-child(2) { display: grid; gap: 3px; }
+.manual-adjustments-trigger strong { font-size: 13px; }
+.manual-adjustments-trigger small { color: var(--muted); font-size: 10px; line-height: 1.35; }
+.manual-adjustments-summary {
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: #f3ead1;
+  color: #70581d;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.manual-adjustments-modal { width: min(700px, calc(100vw - 28px)); }
+.manual-adjustments-backdrop { z-index: 1300; }
+.manual-adjustments-intro {
+  margin: 5px 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.manual-adjustment-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  border-radius: 16px;
+  padding: 14px;
+  background: #f6f9fd;
+}
+.sunday-adjustment-section { background: #fff8ec; }
+.manual-adjustment-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.manual-adjustment-heading > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+.sunday-adjustment-section .manual-adjustment-heading > span { background: #b7791f; }
+.manual-adjustment-heading h3 { margin: 0 0 3px; font-size: 14px; }
+.manual-adjustment-heading p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.manual-leave-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.manual-leave-inputs > label,
+.manual-sunday-inputs > label {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #dde5ef;
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,.88);
+}
+.manual-leave-inputs > label > span:first-child { color: #475a72; font-size: 10px; font-weight: 850; }
+.manual-number-field { display: flex; align-items: center; gap: 6px; }
+.manual-number-field input {
+  width: 74px;
+  min-height: 40px;
+  border: 1px solid #cbd7e6;
+  border-radius: 9px;
+  padding: 7px 9px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-weight: 850;
+}
+.manual-number-field small { color: var(--muted); font-size: 9px; }
+.manual-sunday-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.manual-sunday-inputs > label { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.manual-sunday-period { display: grid; gap: 2px; }
+.manual-sunday-period strong { font-size: 11px; }
+.manual-sunday-period small { color: #9a6817; font-size: 9px; font-weight: 750; }
+.manual-sunday-help { margin: 0; color: #7d6741; font-size: 10px; line-height: 1.4; }
+.balance-manual-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 9px;
+  border-radius: 11px;
+  padding: 9px 11px;
+  background: #fff6da;
+  color: #73591a;
+  font-size: 10px;
+}
+.balance-manual-summary span { display: flex; flex-wrap: wrap; gap: 4px; }
+.balance-manual-summary button {
+  border: 0;
+  background: transparent;
+  color: #8b6610;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+.balance-detail-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+.balance-detail-list .balance-detail-open { min-width: 0; }
+.balance-detail-list .balance-detail-cancel {
+  justify-content: center;
+  border-color: #efc5ca;
+  background: #fff6f7;
+  color: #ad3043;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+@media (max-width: 720px) {
+  .leave-balances-heading { align-items: stretch; flex-direction: column; }
+  .leave-year-tools { justify-content: space-between; align-items: flex-end; }
+  .leave-year-tools > label { min-width: 132px; }
+  .manual-adjustments-trigger { grid-template-columns: 40px minmax(0, 1fr); }
+  .manual-adjustments-summary { grid-column: 2; justify-self: start; }
+  .manual-adjustments-modal { max-height: calc(100dvh - 24px); overflow-y: auto; }
+  .manual-leave-inputs,
+  .manual-sunday-inputs { grid-template-columns: 1fr; }
+  .manual-sunday-inputs > label { grid-template-columns: minmax(0, 1fr) auto; }
+  .balance-detail-list article { grid-template-columns: minmax(0, 1fr) 74px; }
+}
+
+/* Centrage uniforme des quatre informations quotidiennes : le pictogramme
+   reste un repère discret dans le coin, sans décaler le texte central. */
+.today-overview-grid > .today-status,
+.today-overview-grid > .today-next-work,
+.today-overview-grid > .today-leave-balance,
+.today-overview-grid > .today-remaining-work {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr !important;
+  place-items: center;
+  text-align: center;
+}
+.today-overview-grid .today-card-icon {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  display: grid !important;
+  margin: 0;
+}
+.today-overview-grid .today-card-copy {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+.today-overview-grid .today-card-copy > span,
+.today-overview-grid .today-card-copy > strong,
+.today-overview-grid .today-card-copy > small { text-align: center; }
+
+/* Les deux commandes ont exactement la même métrique typographique. La
+   spécificité volontaire neutralise l'ancien style plus grand du sélecteur. */
+.controls .planning-group-choice .year-select-display .choice-picker-trigger,
+.controls .worked-days .worked-days-trigger {
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+}
+.controls .planning-group-choice .year-select-display .choice-picker-trigger > span,
+.controls .worked-days .worked-days-trigger > span {
+  font: inherit !important;
+  white-space: nowrap;
+}
+
+.recovery-type-choice { max-width: 620px; }
+.recovery-type-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 720px) {
+  .today-overview-grid .today-card-icon {
+    top: 6px;
+    left: 8px;
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .recovery-type-choice-grid { grid-template-columns: 1fr; }
+}
+
+/* Sur grand écran, les actions Mécénat reprennent strictement l'encombrement
+   et l'alignement des actions Heures supplémentaires. Les couleurs propres à
+   la rubrique restent inchangées. */
+@media (min-width: 721px) {
+  .mecenat-balance-card .overtime-actions {
+    width: auto;
+    justify-self: start;
+  }
+  .mecenat-balance-card .overtime-actions .mecenat-action,
+  .mecenat-balance-card .overtime-history-toggle {
+    width: auto;
+    justify-self: start;
+  }
+}
+
+/* Derniers ajustements de composition du planning et des écrans spécialisés. */
+.planning-workspace-shell.framed {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  border: 1px solid var(--section-outline);
+  border-radius: 24px;
+  padding: 20px;
+  background: linear-gradient(150deg, #f3f8ff 0%, #fff 48%, #fbf8ff 100%);
+  box-shadow: 0 12px 32px rgba(44, 70, 100, 0.07);
+}
+.planning-workspace-shell.framed .home-planning-heading {
+  margin: 0;
+  border: 0;
+  padding: 0 2px 4px;
+  background: transparent;
+  box-shadow: none;
+}
+.planning-workspace-shell.framed .controls,
+.planning-workspace-shell.framed .calendar-toolbar,
+.planning-workspace-shell.framed .month-card,
+.planning-workspace-shell.framed .year-grid { margin-bottom: 0; }
+
+.leave-request-archive + .overtime-balance-card { margin-top: 22px; }
+.overtime-balance-card {
+  gap: 18px;
+  padding: 20px;
+}
+.overtime-balance-card + .overtime-balance-card { margin-top: 18px; }
+.overtime-balance-summary { gap: 11px; }
+.overtime-balance-summary article { padding: 14px; }
+
+.variable-pay-card > header[role="button"] {
+  border-radius: 14px;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+.variable-pay-card > header[role="button"]:hover { background: rgba(237, 244, 252, 0.72); }
+.variable-pay-card > header[role="button"]:focus-visible {
+  outline: 3px solid rgba(47, 97, 184, 0.2);
+  outline-offset: 3px;
+}
+.variable-pay-card > header[role="button"][aria-expanded="true"] .pay-period-chevron {
+  transform: rotate(180deg);
+}
+.variable-pay-total { display: grid; justify-items: end; gap: 3px; }
+.variable-pay-total > small {
+  color: #60748b;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.day.half-morning,
+.day.half-afternoon,
+.mini-day.half-morning,
+.mini-day.half-afternoon { overflow: hidden; }
+.day.half-morning::after,
+.mini-day.half-morning::after {
+  border-right: 2px solid #000;
+  border-radius: var(--half-frame-radius) 0 0 var(--half-frame-radius);
+}
+.day.half-afternoon::after,
+.mini-day.half-afternoon::after {
+  border-left: 2px solid #000;
+  border-radius: 0 var(--half-frame-radius) var(--half-frame-radius) 0;
+}
+
+@media (max-width: 720px) {
+  .today-overview-grid .today-status,
+  .today-overview-grid .today-next-work {
+    min-height: 92px;
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .planning-workspace-shell.framed {
+    gap: 12px;
+    margin-top: 14px;
+    border-radius: 20px;
+    padding: 14px 10px;
+  }
+  .planning-workspace-shell.framed .controls { padding: 10px; }
+  .controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+  .controls .worked-days {
+    grid-column: 1;
+    grid-row: 1;
+    order: initial;
+  }
+  .controls .planning-group-choice {
+    grid-column: 2;
+    grid-row: 1;
+    order: initial;
+  }
+  .controls > .planning-leave-mobile {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 48px;
+  }
+  .planning-group-action-row { grid-template-columns: minmax(0, 1fr); }
+  .controls .year-choice,
+  .controls .worked-days { min-width: 0; }
+  .controls .year-stepper,
+  .controls .worked-days-stepper { min-width: 0; }
+  .controls .worked-days-trigger { padding: 0 7px; font-size: 11px; }
+
+  .pdf-download-settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pdf-download-settings .school-vacation-choice { grid-column: 1 / -1; }
+
+  .leave-request-archive + .overtime-balance-card { margin-top: 18px; }
+  .overtime-balance-card { gap: 16px; padding: 17px 14px; }
+  .overtime-balance-card + .overtime-balance-card { margin-top: 16px; }
+  .variable-pay-total > small { max-width: 120px; text-align: right; }
+}
+
+/* Ajustements de finition : liserés structurants, commandes compactes et
+   calendrier mobile organisé comme un écran d'application. */
+:root { --section-outline: rgba(17, 21, 26, 0.78); }
+
+.today-overview,
+.home-notes-section,
+.home-planning-heading,
+.leave-balances-direct,
+.leave-request-archive,
+.overtime-balance-card,
+.pay-app-screen,
+.pdf-download-screen,
+.pay-profile-settings,
+.allowance-card {
+  border: 1px solid var(--section-outline);
+}
+
+.leave-request-archive {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.pay-profile-settings {
+  display: block;
+  margin-top: 20px;
+  padding: 0;
+  overflow: visible;
+}
+.pay-profile-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  min-height: 74px;
+  border: 0;
+  border-radius: 21px;
+  padding: 13px 18px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pay-profile-summary > span { display: grid; gap: 3px; }
+.pay-profile-summary strong { color: #213a58; font-size: 17px; }
+.pay-profile-summary small { color: #5e7187; font-weight: 750; }
+.pay-profile-summary > i {
+  color: #496985;
+  font-size: 22px;
+  font-style: normal;
+  transition: transform 170ms ease;
+}
+.pay-profile-settings.open .pay-profile-summary > i { transform: rotate(180deg); }
+.pay-profile-settings-grid { padding: 2px 18px 18px; }
+
+.pay-period-toggle {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pay-period-toggle > span { display: grid; }
+.pay-period-month {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pay-period-chevron {
+  display: grid;
+  place-items: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  color: #496985;
+  transition: transform 170ms ease;
+}
+.pay-period-chevron svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+.variable-pay-card header h3 {
+  color: #173f70;
+  font-size: clamp(1.7rem, 4vw, 2.25rem);
+  letter-spacing: -0.045em;
+}
+.variable-pay-card .variable-pay-list { animation: app-screen-in 150ms ease-out; }
+
+.pay-dedicated-content.pay-month-out-left { animation: pay-month-out-left 150ms ease-in forwards; }
+.pay-dedicated-content.pay-month-out-right { animation: pay-month-out-right 150ms ease-in forwards; }
+.pay-dedicated-content.pay-month-in-left { animation: pay-month-in-left 190ms ease-out; }
+.pay-dedicated-content.pay-month-in-right { animation: pay-month-in-right 190ms ease-out; }
+@keyframes pay-month-out-left { to { opacity: .35; transform: translateX(-18%); } }
+@keyframes pay-month-out-right { to { opacity: .35; transform: translateX(18%); } }
+@keyframes pay-month-in-left { from { opacity: .35; transform: translateX(-18%); } }
+@keyframes pay-month-in-right { from { opacity: .35; transform: translateX(18%); } }
+
+/* ASA et garde d'enfant reprennent le bleu des congés annuels. */
+.day.leave-day.leave-exceptional,
+.day.leave-day.leave-childcare,
+.day.leave-day.leave-sick,
+.mini-grid .mini-day.leave-day.leave-exceptional,
+.mini-grid .mini-day.leave-day.leave-childcare,
+.mini-grid .mini-day.leave-day.leave-sick {
+  background: var(--leave);
+  color: #123b55;
+  outline-color: #000;
+}
+.leave-calendar-marker {
+  position: absolute;
+  z-index: 4;
+  right: 5px;
+  bottom: 4px;
+  max-width: calc(100% - 10px);
+  color: #123b55;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  pointer-events: none;
+}
+.leave-calendar-marker-childcare { font-size: 14px; }
+.leave-calendar-marker-sick { font-size: 14px; }
+.leave-calendar-marker-strike { color: #241b08; font-size: 15px; }
+.leave-calendar-marker.compact { right: 2px; bottom: 2px; font-size: 7px; }
+.leave-calendar-marker-childcare.compact { font-size: 9px; }
+.leave-calendar-marker-sick.compact { font-size: 9px; }
+.leave-calendar-marker-strike.compact { font-size: 10px; }
+
+/* Demi-journée : aplat sur la moitié posée et séparation noire centrale. */
+.day.half-morning::after,
+.day.half-afternoon::after,
+.mini-day.half-morning::after,
+.mini-day.half-afternoon::after {
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  border: 0;
+  background: var(--leave);
+}
+.day.half-morning::after,
+.mini-day.half-morning::after {
+  left: 0;
+  right: 50%;
+  border-right: 1px solid #000;
+  border-radius: var(--half-frame-radius) 0 0 var(--half-frame-radius);
+}
+.day.half-afternoon::after,
+.mini-day.half-afternoon::after {
+  right: 0;
+  left: 50%;
+  border-left: 1px solid #000;
+  border-radius: 0 var(--half-frame-radius) var(--half-frame-radius) 0;
+}
+.day.half-morning .date-number,
+.day.half-morning .holiday-date,
+.mini-day.half-morning .date-number,
+.mini-day.half-morning .holiday-date { left: 74%; }
+.day.half-afternoon .date-number,
+.day.half-afternoon .holiday-date,
+.mini-day.half-afternoon .date-number,
+.mini-day.half-afternoon .holiday-date { left: 26%; }
+
+@media (max-width: 720px) {
+  .today-overview-grid > article,
+  .today-overview-grid > button { min-height: 72px; padding: 10px; }
+  .today-overview-grid .today-leave-balance {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 5px;
+    min-height: 112px;
+  }
+  .today-overview-grid .today-leave-balance .today-card-icon { width: 30px; height: 30px; }
+  .today-overview-grid .today-leave-balance strong { font-size: 12px; white-space: normal; }
+  .today-overview-grid .today-leave-balance small { white-space: normal; text-align: center; }
+
+  .controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .controls .worked-days { order: 1; width: 100%; min-width: 0; }
+  .controls .planning-group-choice { order: 2; width: 100%; min-width: 0; }
+  .controls .planning-year-choice { display: none; }
+  .planning-group-action-row {
+    grid-template-columns: minmax(0, 1fr) minmax(138px, auto);
+    align-items: stretch;
+  }
+  .planning-group-leave-action,
+  .planning-leave-mobile { width: 100%; min-height: 46px; }
+
+  .calendar-toolbar.month-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .calendar-toolbar.month-toolbar .period-navigation,
+  .calendar-toolbar.month-toolbar .today-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .calendar-toolbar.month-toolbar .today-button { min-height: 46px; }
+
+  .leave-request-archive { width: 100%; }
+  .pay-profile-summary { min-height: 68px; padding: 12px 14px; }
+  .pay-profile-settings-grid { padding: 2px 14px 16px; }
+  .variable-pay-card > header { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .variable-pay-heading-actions { width: 100%; flex-direction: row; align-items: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pay-dedicated-content.pay-month-out-left,
+  .pay-dedicated-content.pay-month-out-right,
+  .pay-dedicated-content.pay-month-in-left,
+  .pay-dedicated-content.pay-month-in-right { animation: none; }
+}
+
+/* Quotité et heures supplémentaires */
+.account-menu-panel {
+  width: min(286px, calc(100vw - 24px));
+}
+.account-quota-setting {
+  display: grid;
+  gap: 6px;
+  border-bottom: 1px solid #eef2f7;
+  padding: 10px;
+}
+.account-quota-setting > span {
+  color: #46566d;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.account-quota-setting > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.account-quota-picker .choice-picker-trigger {
+  min-height: 40px;
+  background: #f7f9fc;
+  font-size: 12px;
+  font-weight: 800;
+}
+.account-menu-data {
+  width: 100%;
+  margin-top: 5px;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px;
+  background: transparent;
+  color: #35465f;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+.account-menu-data:hover {
+  background: #f4f7fb;
+}
+.overtime-balance-card {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+  border: 1px solid #d3e2df;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(145deg, #fff 0%, #f5faf8 100%);
+  box-shadow: var(--shadow);
+}
+.overtime-balance-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.overtime-balance-heading h3 {
+  margin: 2px 0 4px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.overtime-balance-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.overtime-balance-heading > strong {
+  flex: 0 0 auto;
+  color: #2c6a5e;
+  font-size: 14px;
+}
+.overtime-balance-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.overtime-balance-summary article {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid #e0e9e7;
+  border-radius: 13px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.84);
+}
+.overtime-balance-summary article.remaining {
+  border-color: #bbd7d0;
+  background: #eaf5f1;
+}
+.overtime-balance-summary span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.overtime-balance-summary strong {
+  color: #213d3a;
+  font-size: 20px;
+}
+.overtime-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.overtime-actions .secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.overtime-history-toggle {
+  justify-self: start;
+}
+.overtime-history {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid #dce7e4;
+  padding-top: 12px;
+}
+.overtime-history article {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e1e8ea;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+.overtime-history article > div {
+  display: grid;
+  gap: 2px;
+}
+.overtime-history article strong {
+  font-size: 12px;
+}
+.overtime-history article span:not(.overtime-kind),
+.overtime-history article small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.overtime-history article > button {
+  border: 0;
+  padding: 7px 8px;
+  background: transparent;
+  color: #8d4550;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.overtime-kind {
+  width: 9px;
+  height: 32px;
+  border-radius: 999px;
+  background: #7899c8;
+}
+.overtime-kind.recovery {
+  background: #65a694;
+}
+.overtime-kind.used {
+  background: #d39b5a;
+}
+.overtime-kind.mecenat {
+  background: #8d7bb8;
+}
+.day.hourly-recovery-day,
+.mini-day.hourly-recovery-day {
+  border-color: #82b5a7;
+  box-shadow: inset 0 -5px 0 #8fc6b7;
+}
+.day.hourly-recovery-day:not(.off):not(.leave-day):not(.recovery-day) {
+  background: linear-gradient(145deg, #f8fcfa 0%, #e9f5f1 100%);
+}
+.hourly-recovery-label {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  left: 5px;
+  overflow: hidden;
+  color: #326d61;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Une formation prise sur le solde de récupération est immédiatement
+   identifiable : case corail pastel, liseré noir et repère REC. */
+.day.training-recovery-day,
+.mini-day.training-recovery-day {
+  border-color: #000;
+  background: #f3b3a6;
+  color: #4e211b;
+  box-shadow: none;
+}
+.day.training-recovery-day {
+  outline: 2px solid #000;
+  outline-offset: -2px;
+}
+.mini-day.training-recovery-day {
+  outline: 1.5px solid #000;
+  outline-offset: -1.5px;
+}
+.training-recovery-label {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: #111;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0.06em;
+}
+.day-recovery-details i.recovery {
+  background: #f3b3a6;
+  box-shadow: inset 0 0 0 1px #000;
+}
+.recovery-direct-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+.overtime-inline-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #bfd5cf;
+  border-radius: 12px;
+  background: #edf6f3;
+  color: #285f55;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.overtime-inline-action span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #d8ebe5;
+  font-size: 17px;
+}
+.pay-declaration-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+}
+.mecenat-inline-action {
+  border-color: #d4cce4;
+  background: #f5f1fa;
+  color: #62517f;
+}
+.mecenat-inline-action span {
+  background: #e6def1;
+}
+.mecenat-pay-detail {
+  border-color: #d9d0e7;
+  background: #faf7fc;
+}
+.mecenat-pay-detail .overtime-pay-lines article {
+  border-color: #e6dfee;
+}
+.mecenat-history-card > header > div {
+  display: grid;
+  gap: 2px;
+}
+.mecenat-history-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.mecenat-balance-card {
+  border-color: #d9d0e7;
+  background: linear-gradient(145deg, #fdfbff 0%, #f7f3fb 100%);
+}
+.mecenat-rate-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.mecenat-rate-summary article {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #e2dbea;
+  border-radius: 11px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.8);
+}
+.mecenat-rate-summary span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.mecenat-rate-summary strong {
+  color: #574970;
+  font-size: 13px;
+}
+.mecenat-action {
+  border-color: #9c8ab8;
+  background: #75618f;
+}
+.mecenat-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  border: 1px solid #d9d0e7;
+  border-radius: 13px;
+  padding: 10px;
+  background: #faf7fc;
+}
+.mecenat-preview > div {
+  display: grid;
+  gap: 3px;
+  border-radius: 9px;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.8);
+}
+.mecenat-preview span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.mecenat-preview > div strong {
+  color: #54456f;
+  font-size: 13px;
+}
+.mecenat-preview > p {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  border-top: 1px solid #e5deed;
+  padding: 9px 5px 0;
+}
+.mecenat-preview > p strong {
+  color: #54456f;
+  font-size: 18px;
+}
+.overtime-pay-detail {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+  border: 1px solid #cddfd9;
+  border-radius: 13px;
+  padding: 12px;
+  background: #f4faf8;
+}
+.overtime-pay-detail-heading,
+.overtime-pay-lines article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.overtime-pay-detail-heading > div,
+.overtime-pay-lines article > div {
+  display: grid;
+  gap: 2px;
+}
+.overtime-pay-detail-heading span,
+.overtime-pay-lines span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.overtime-pay-detail > p {
+  margin: 0;
+  color: #52645f;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.overtime-pay-lines {
+  display: grid;
+  gap: 5px;
+}
+.overtime-pay-lines article {
+  border-top: 1px solid #dbe8e4;
+  padding-top: 7px;
+  font-size: 11px;
+}
+.overtime-modal {
+  width: min(620px, calc(100vw - 24px));
+  max-height: min(820px, calc(100dvh - 24px));
+  overflow-y: auto;
+}
+.overtime-modal > p {
+  margin: 4px 0 15px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.overtime-form {
+  display: grid;
+  gap: 14px;
+}
+.overtime-form > label,
+.overtime-time-grid label,
+.overtime-duration-grid > label {
+  display: grid;
+  gap: 6px;
+}
+.overtime-form label > span,
+.overtime-choice-field legend {
+  color: #3e4c61;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+}
+.overtime-form label > small,
+.overtime-time-grid > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.overtime-form input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d7e0eb;
+  border-radius: 11px;
+  padding: 0 12px;
+  background: #fbfcfe;
+  color: var(--text);
+  font: inherit;
+}
+.overtime-choice-field {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.overtime-choice-field legend {
+  margin-bottom: 7px;
+}
+.overtime-segmented,
+.recovery-duration-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  border-radius: 12px;
+  padding: 4px;
+  background: #f0f3f7;
+}
+.overtime-segmented button,
+.recovery-duration-choice button {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 8px;
+  background: transparent;
+  color: #5c687a;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.overtime-segmented button.active,
+.recovery-duration-choice button.active {
+  border-color: #c9d8e8;
+  background: #fff;
+  box-shadow: 0 3px 9px rgba(44, 66, 93, 0.09);
+  color: #294d78;
+}
+.overtime-time-grid,
+.overtime-duration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.overtime-time-grid > small,
+.overtime-duration-grid .period-choice {
+  grid-column: 1 / -1;
+}
+.overtime-destination-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.overtime-destination-grid button {
+  display: grid;
+  gap: 4px;
+  min-height: 76px;
+  border: 1px solid #d9e1eb;
+  border-radius: 13px;
+  padding: 12px;
+  background: #fff;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.overtime-destination-grid button strong {
+  font-size: 13px;
+}
+.overtime-destination-grid button span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.overtime-destination-grid button.paid.active {
+  border-color: #aebfd7;
+  background: #edf3fa;
+  box-shadow: inset 0 0 0 1px rgba(77, 109, 151, 0.08);
+}
+.overtime-destination-grid button.recovery.active {
+  border-color: #a8c9c0;
+  background: #edf7f3;
+  box-shadow: inset 0 0 0 1px rgba(60, 113, 99, 0.08);
+}
+.recovery-available {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #c7ddd7;
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: #edf7f3;
+  color: #41675f !important;
+}
+.recovery-available strong {
+  color: #285f55;
+  font-size: 17px;
+}
+.recovery-duration-choice {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 680px) {
+  .payslip-actual-values {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .payslip-actual-values > span {
+    grid-column: 1 / -1;
+  }
+  .payslip-actual-values > div {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .overtime-balance-card {
+    gap: 11px;
+    border-radius: 15px;
+    padding: 12px;
+  }
+  .overtime-balance-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .overtime-balance-summary {
+    gap: 5px;
+  }
+  .overtime-balance-summary article {
+    padding: 9px 7px;
+  }
+  .overtime-balance-summary strong {
+    font-size: 15px;
+  }
+  .overtime-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .overtime-actions button,
+  .overtime-inline-action {
+    min-height: 46px;
+  }
+  .pay-declaration-actions,
+  .mecenat-preview {
+    grid-template-columns: 1fr;
+  }
+  .mecenat-preview > p {
+    grid-column: 1;
+  }
+  .overtime-history article {
+    grid-template-columns: 8px minmax(0, 1fr);
+  }
+  .overtime-history article > button {
+    grid-column: 2;
+    justify-self: start;
+    padding-left: 0;
+  }
+  .overtime-modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 17px;
+    padding: 18px 14px 14px;
+  }
+  .overtime-destination-grid,
+  .recovery-duration-choice {
+    grid-template-columns: 1fr;
+  }
+  .overtime-destination-grid button {
+    min-height: 64px;
+  }
+  .overtime-modal .modal-actions {
+    position: sticky;
+    bottom: -14px;
+    margin: 17px -14px -14px;
+    border-top: 1px solid #e1e7ee;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+  }
+}

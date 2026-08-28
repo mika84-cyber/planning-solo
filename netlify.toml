@@ -23,6 +23,32 @@
     Content-Type = "application/manifest+json"
 
 [[headers]]
+  for = "/formulaire/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/formulaire/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/formulaire/"
+
+[[headers]]
+  for = "/formulaire/app.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/formulaire/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/formulaire/pdf-engine.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
@@ -45,9 +71,10 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; script-src 'self' 'sha256-yxLqVYGYalQdquz20OkZyxTejMgCe2Oc86WkVPwCr60=' 'sha256-ypuW7+q5zS5ny2hd0Xpde0/BTacxR7juqkds3KOfAlY=' 'sha256-MJ0oqZv8OgA1t9EG/55tU5wkun0Dh+CcZgQJx60K1Tg='; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
     Cross-Origin-Opener-Policy = "same-origin"
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()"
     Referrer-Policy = "no-referrer"
+    Strict-Transport-Security = "max-age=31536000"
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"

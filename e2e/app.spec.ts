@@ -1168,7 +1168,10 @@ test("le balayage du calendrier mobile change seulement de mois", async ({ page 
 });
 
 test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile", "Ce contrôle nécessite une interface tactile");
+  test.skip(
+    !["mobile", "z-fold"].includes(testInfo.project.name),
+    "Ce contrôle nécessite une interface tactile",
+  );
   await page.setViewportSize({ width: 900, height: 1000 });
   await prepareDemo(page);
 
@@ -1296,7 +1299,7 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await expect(officialBalance).toHaveValue("");
   await officialBalance.fill("18");
   const existingRights = page.getByRole("button", { name: "Mes droits sont déjà ouverts" });
-  await expect(existingRights).toHaveCSS("background-color", "rgb(216, 111, 18)");
+  await expect(existingRights).toHaveCSS("background-color", "rgb(166, 64, 0)");
   await expect(existingRights).toHaveCSS("color", "rgb(255, 255, 255)");
   await existingRights.click();
 
@@ -2104,6 +2107,12 @@ test("les deux rubriques de paie s’ouvrent et se referment", async ({ page }) 
     const chevron = card.locator(".pay-period-chevron");
     const closeDetails = card.locator(".variable-pay-total > small");
     const variableTotal = card.locator(".variable-pay-total > strong");
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    });
     const [cardBox, previousBox, nextBox, monthBox, chevronBox] = await Promise.all([
       card.boundingBox(),
       previous.boundingBox(),

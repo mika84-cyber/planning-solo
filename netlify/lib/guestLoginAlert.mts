@@ -12,6 +12,7 @@ type LoginAlertStore = {
 export type GuestLoginAlertStatus = "sent" | "administrator" | "throttled";
 
 const ALERT_THROTTLE_MS = 30 * 60 * 1000;
+const RESEND_TIMEOUT_MS = 10_000;
 
 function normalizedEmail(value: string | undefined) {
   return (value || "").trim().toLowerCase();
@@ -68,6 +69,8 @@ export async function sendGuestLoginAlert(
 
   const guestEmail = normalizedEmail(connectedEmail);
   const displayedDate = formatLoginDate(connectedAt);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), RESEND_TIMEOUT_MS);
   const response = await fetcher("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -85,7 +88,8 @@ export async function sendGuestLoginAlert(
         "<p>Cette alerte est réservée au compte administrateur.</p>",
       ].join(""),
     }),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
   if (!response.ok) throw new Error(`Envoi de l’alerte de connexion impossible (${response.status})`);
   return true;
 }

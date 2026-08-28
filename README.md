@@ -2,11 +2,13 @@
 
 Planning de travail personnel : cycle de 21 jours à 3 groupes, congés et
 récupérations, jours fériés travaillés, indemnités, export PDF annuel et
-formulaire de demande. Un seul compte, aucune donnée partagée.
+formulaire de demande. L’accès est privé et les données de planning sont
+isolées par compte Netlify Identity.
 
 Cette application est une reprise du planning partagé Mika/Agnès, ramenée à un
-seul utilisateur : ni second profil, ni calque « vacances scolaires », ni
-notifications (elles n'existaient que pour prévenir l'autre personne).
+profil de planning par compte : ni second profil superposé, ni calque
+« vacances scolaires ». Des comptes invités peuvent être autorisés ; leur
+connexion peut déclencher une alerte privée vers le compte administrateur.
 
 ## Mettre en ligne
 
@@ -16,7 +18,8 @@ notifications (elles n'existaient que pour prévenir l'autre personne).
    build`), le dossier publié (`dist`) et les fonctions (`netlify/functions`).
 3. Activer **Netlify Identity** sur le site, puis, dans ses réglages :
    - « Registration » sur **Invite only** ;
-   - inviter l'adresse e-mail de l'utilisatrice.
+   - inviter l’adresse e-mail de l’administratrice et, si nécessaire, celles
+     des comptes invités autorisés.
 4. Le stockage (Netlify Blobs, magasin `planning-solo`) se crée tout seul au
    premier enregistrement. Aucune variable d'environnement à renseigner.
 
@@ -38,7 +41,19 @@ Autres commandes :
 
 - `npm run check` — contrôle de types ;
 - `npm test` — tests unitaires (cycle, congés, indemnités, PDF) ;
-- `npm run build` — build de production, comme sur Netlify.
+- `npm run test:coverage` — tests avec seuils minimaux de couverture ;
+- `npm run test:e2e` — parcours Chromium sur ordinateur, mobile et Z Fold,
+  avec un audit d’accessibilité ciblé ;
+- `npm run build` — build de production, comme sur Netlify ;
+- `npm run check:bundle` — contrôle des budgets JavaScript et CSS du build ;
+- `npm run check:css` — empêche une hausse de la complexité de la cascade ;
+- `npm run check:ci` — contrôle complet hors parcours navigateur.
+
+Le workflow GitHub Actions `.github/workflows/quality.yml` exécute ces
+vérifications à chaque demande de fusion et à chaque envoi sur la branche
+principale. Dependabot propose chaque semaine les mises à jour npm et chaque
+mois celles des actions GitHub. Une publication Netlify reste une action
+séparée : la CI ne publie pas automatiquement l’application.
 
 ## Données, confidentialité et sauvegardes
 

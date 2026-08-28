@@ -4,15 +4,42 @@ import { describe, expect, it } from "vitest";
 const appRoot = readFileSync(new URL("./src/App.tsx", import.meta.url), "utf8");
 const appNavigation = readFileSync(new URL("./src/AppNavigation.tsx", import.meta.url), "utf8");
 const userGuideDialogs = readFileSync(new URL("./src/UserGuideDialogs.tsx", import.meta.url), "utf8");
-const app = `${appRoot}\n${appNavigation}\n${userGuideDialogs}`;
+const homeDashboard = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
+const payPage = readFileSync(new URL("./src/PayPage.tsx", import.meta.url), "utf8");
+const payAllowancesSection = readFileSync(new URL("./src/PayAllowancesSection.tsx", import.meta.url), "utf8");
+const pdfDownloadPage = readFileSync(new URL("./src/PdfDownloadPage.tsx", import.meta.url), "utf8");
+const leaveManagementPage = readFileSync(new URL("./src/LeaveManagementPage.tsx", import.meta.url), "utf8");
+const planningCommandCenter = readFileSync(new URL("./src/PlanningCommandCenter.tsx", import.meta.url), "utf8");
+const planningDayCell = readFileSync(new URL("./src/PlanningDayCell.tsx", import.meta.url), "utf8");
+const payslipCheckSection = readFileSync(new URL("./src/PayslipCheckSection.tsx", import.meta.url), "utf8");
+const appDialogLayer = readFileSync(new URL("./src/AppDialogLayer.tsx", import.meta.url), "utf8");
+const workTimeActions = readFileSync(new URL("./src/useWorkTimeActions.ts", import.meta.url), "utf8");
+const authenticationActions = readFileSync(new URL("./src/useAuthenticationActions.ts", import.meta.url), "utf8");
+const accountDataActions = readFileSync(new URL("./src/useAccountDataActions.ts", import.meta.url), "utf8");
+const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions.ts", import.meta.url), "utf8");
+const app = [appRoot, appNavigation, userGuideDialogs, homeDashboard, payPage, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, planningDayCell, payslipCheckSection, appDialogLayer, workTimeActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
+const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
+  .map(([, relativePath]) =>
+    readFileSync(
+      new URL(`./src/${relativePath.replace(/^\.\//, "")}`, import.meta.url),
+      "utf8",
+    ),
+  );
 const styles = [
-  readFileSync(new URL("./src/styles.css", import.meta.url), "utf8"),
+  stylesheetEntry,
+  ...importedStyles,
   readFileSync(new URL("./src/grandPalaisProgram.css", import.meta.url), "utf8"),
 ].join("\n");
 const model = readFileSync(new URL("./src/appModel.ts", import.meta.url), "utf8");
 const calendarApi = readFileSync(new URL("./src/calendarApi.ts", import.meta.url), "utf8");
 const planningPdf = readFileSync(new URL("./src/planningPdf.ts", import.meta.url), "utf8");
-const leaveForm = readFileSync(new URL("./public/formulaire/index.html", import.meta.url), "utf8");
+const leaveForm = [
+  "index.html",
+  "device.js",
+  "sheets.js",
+  "app.js",
+].map((file) => readFileSync(new URL(`./public/formulaire/${file}`, import.meta.url), "utf8")).join("\n");
 const main = readFileSync(new URL("./src/main.tsx", import.meta.url), "utf8");
 const serviceWorker = readFileSync(new URL("./public/sw.js", import.meta.url), "utf8");
 const calendarCleanup = readFileSync(new URL("./src/CalendarCleanup.tsx", import.meta.url), "utf8");
@@ -25,6 +52,14 @@ const requestValidationSummary = readFileSync(new URL("./src/RequestValidationSu
 const planningDialogs = readFileSync(new URL("./src/PlanningDialogs.tsx", import.meta.url), "utf8");
 
 describe("finitions d’interface", () => {
+  it("isole les mutations directes et les lots de suppression du planning", () => {
+    expect(appRoot).toContain("usePlanningEntryActions");
+    expect(appRoot).not.toContain("async function saveSickDateDirect");
+    expect(appRoot).not.toContain("async function deleteMultiplePlanningDates");
+    expect(planningEntryActions).toContain("buildBulkDeleteOperations");
+    expect(planningEntryActions).toContain("expectedUpdatedAt");
+  });
+
   it("réserve la démonstration publique à un build temporaire avec échéance", () => {
     expect(app).toContain("VITE_PUBLIC_DEMO_UNTIL");
     expect(app).toContain("resolvePublicDemoAccess");
@@ -63,7 +98,7 @@ describe("finitions d’interface", () => {
 
   it("conserve le profil et la période de paie repliables", () => {
     expect(app).toContain('className="pay-profile-summary"');
-    expect(app).toContain("aria-expanded={payProfileOpen}");
+    expect(app).toContain("aria-expanded={profileOpen}");
     expect(app).toContain('className="pay-period-toggle"');
     expect(app).toContain("aria-expanded={payPeriodOpen}");
   });
@@ -77,7 +112,8 @@ describe("finitions d’interface", () => {
 
   it("organise les cartes et commandes du planning pour le téléphone", () => {
     expect(styles).toContain('"today next"');
-    expect(styles).toContain('"leave group"');
+    expect(styles).toContain('"leave remaining"');
+    expect(styles).not.toContain("today-group-card");
     expect(styles).toContain(".controls .worked-days { grid-column: 1");
     expect(styles).toContain(".controls .planning-group-choice { grid-column: 2");
     expect(styles).toContain(".controls > .planning-leave-mobile { grid-column: 1 / -1");
@@ -89,7 +125,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain('myLeaveType === "exceptional"');
     expect(app).toContain('myLeaveType === "childcare"');
     expect(app).toContain('myLeaveType === "sick"');
-    expect(app).toContain('myLeaveType === "sick"\n                  ? "🤒"');
+    expect(app).toContain('myLeaveType === "sick" ? "🤒"');
     expect(styles).toContain(".day.leave-day.leave-exceptional");
     expect(styles).toContain(".day.leave-day.leave-childcare");
     expect(styles).toContain(".day.leave-day.leave-sick");
@@ -130,7 +166,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain('beginRequest("leave", undefined, "sick")');
     expect(app).toContain('dayLeaveType === "sick"');
     expect(app).toContain("saveSickDateDirect(date)");
-    expect(app).toContain('leaveType: "sick" as const');
+    expect(app).toContain('persistSingleDayPeriod(date, "sick")');
     expect(app).toContain("sans diminuer vos droits à congés");
     expect(app).toContain("impact à vérifier selon le maintien de salaire");
   });
@@ -152,7 +188,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain('className="pay-detail-sticky-header"');
     expect(app).toContain('aria-label="Fermer cette catégorie"');
     expect(app).toContain('className="pay-profile-open-copy"');
-    expect(app).toContain('payProfileOpen ? "Replier" : "Modifier"');
+    expect(app).toContain('profileOpen ? "Replier" : "Modifier"');
     expect((app.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect((payEstimateDetails.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect(app).toContain("Aucun dimanche versé sur cette paie");
@@ -214,7 +250,7 @@ describe("finitions d’interface", () => {
   it("ajoute Divers directement au planning avec une punaise inclinée", () => {
     expect(app).toContain('beginRequest("other", undefined, "other")');
     expect(app).toContain("saveOtherDateDirect(dayDate)");
-    expect(app).toContain('leaveType: "other" as const');
+    expect(app).toContain('persistSingleDayPeriod(date, "other")');
     expect(app).not.toContain('openPlanningRequestMethod("other"');
     expect(styles).toContain("transform: rotate(24deg)");
     expect(styles).toContain(".other-pin-head");
@@ -320,7 +356,8 @@ describe("finitions d’interface", () => {
   });
 
   it("compacte le montant des fériés choisis et espace la navigation de paie", () => {
-    expect((app.match(/className="holiday-pay-amount"/g) || []).length).toBe(2);
+    expect(payAllowancesSection).toContain('className="holiday-pay-amount"');
+    expect((payAllowancesSection.match(/holidayChoice\(item\)/g) || []).length).toBe(2);
     expect(payEstimateDetails).toContain('className="pay-month-nav compact pay-detail-month-nav"');
     expect(styles).toContain(".holiday-pay-amount {\n  width: fit-content;");
     expect(styles).toContain("grid-template-columns: 36px 36px");
@@ -354,7 +391,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain('? "RTT"');
     expect(app).toContain('? "FRA"');
     expect(app).toContain('className={`recovery-calendar-label');
-    expect(app).toContain(">\n            REC\n");
+    expect(app).toContain(">REC</span>");
   });
 
   it("uniformise les libellés de compensation et les sélecteurs mobiles", () => {

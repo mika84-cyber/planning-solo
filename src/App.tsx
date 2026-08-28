@@ -1,52 +1,41 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import {
-  acceptInvite,
   getUser,
   handleAuthCallback,
-  login,
-  logout,
-  requestPasswordRecovery,
-  updateUser,
 } from "@netlify/identity";
 import { ChoicePicker } from "./ChoicePicker";
 import { AuthScreen } from "./AuthScreen";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
-import type { SharedGrandPalaisEvent } from "./grandPalaisProgramTypes";
 import { getUsefulContacts } from "./contactsApi";
-import type { UsefulContactsPayload } from "./usefulContactsTypes";
 import { resolvePublicDemoAccess } from "./demoAccess";
 import { ConnectionStatus } from "./ConnectionStatus";
-import { DataManagementDialog } from "./DataManagementDialog";
+import { HomeDashboard } from "./HomeDashboard";
+import { PayPage } from "./PayPage";
+import { PayAllowancesSection } from "./PayAllowancesSection";
+import { PayslipCheckSection } from "./PayslipCheckSection";
+import { PdfDownloadPage } from "./PdfDownloadPage";
+import { LeaveManagementPage } from "./LeaveManagementPage";
+import { useAuthUiState } from "./useAuthUiState";
+import { usePayUiState } from "./usePayUiState";
+import { useWorkTimeUiState } from "./useWorkTimeUiState";
+import { useWorkTimeActions } from "./useWorkTimeActions";
+import { useAuthenticationActions } from "./useAuthenticationActions";
+import { useAccountDataActions } from "./useAccountDataActions";
+import { usePlanningUiState } from "./usePlanningUiState";
+import { useCalendarDataState } from "./useCalendarDataState";
+import { usePlanningEntryActions } from "./usePlanningEntryActions";
+import { useAppShellUiState } from "./useAppShellUiState";
+import { AppDialogLayer } from "./AppDialogLayer";
 import {
   AppHeader,
   MainMenu,
   MAIN_SECTION_ORDER,
-  type MainSection,
 } from "./AppNavigation";
-import {
-  CalendarCleanupPanel,
-  CalendarCleanupTrigger,
-} from "./CalendarCleanup";
-import { ManualAdjustmentsDialog, RangeLeaveDialog } from "./LeaveDialogs";
-import { MonthCalendar, NotesPanelContent } from "./PlanningView";
+import { PlanningCommandCenter } from "./PlanningCommandCenter";
+import { PlanningDayCell } from "./PlanningDayCell";
+import { MonthCalendar } from "./PlanningView";
 import { RequestValidationSummary } from "./RequestValidationSummary";
-import {
-  AppUpdateDialog,
-  DeletePeriodDialog,
-  MessageDialog,
-  NonWorkingDayWarningDialog,
-  SuccessToast,
-  TimeSelectionDialog,
-  UndoToast,
-} from "./PlanningDialogs";
-import {
-  MecenatDialog,
-  OvertimeDialog,
-  RecoveryRangeDialog,
-  RecoveryUseDialog,
-  SolidarityHoursDialog,
-} from "./WorkTimeDialogs";
 import {
   CalendarApiError,
   calendarErrorMessage,
@@ -58,15 +47,12 @@ import {
 } from "./calendarApi";
 import {
   HOLIDAY_PAY_OPTIONS,
-  PAY_STATUS_OPTIONS,
-  dayCountLabel,
   emptyEntry,
   euros,
   notePeriodFor,
   rangeKeys,
   workedDayCount,
   workedDayCountBetween,
-  type AuthStatus,
   type BalanceType,
   type Entries,
   type FormProfile,
@@ -76,7 +62,6 @@ import {
   type PayProfile,
   type PayStatus,
   type RequestKind,
-  type SelectedDay,
   type SharedEntry,
   type ViewMode,
 } from "./appModel";
@@ -88,7 +73,7 @@ import {
 } from "./useInstallPrompt";
 import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
-import { archivedRequestDate, useRequestArchive } from "./useRequestArchive";
+import { useRequestArchive } from "./useRequestArchive";
 import {
   calculateNetRatios,
   defaultNetRatiosForPeriod,
@@ -114,26 +99,19 @@ import {
   type PayEstimateField,
 } from "./payEstimate";
 import {
-  MECENAT_REGULATORY_RATES,
   calculateMecenatVacation,
   mecenatForPayMonth,
-  type MecenatEntry,
 } from "./mecenat";
 import {
-  WORK_QUOTA_OPTIONS,
   allocateRecoveryUses,
   calculatePaidOvertime,
   dailyMinutesForQuota,
   holidayRecoveryEntries,
   minutesLabel,
   monthlyRecoveryBalance,
-  nextPayPeriod,
   recoveryRequestMinutes,
   trainingRecoveryMinutes,
   trainingRecoveryTimes,
-  splitOvertimeRange,
-  type OvertimeDisposition,
-  type OvertimeEntry,
   type RecoveryUse,
   type RecoveryRequestType,
   type WorkQuota,
@@ -149,10 +127,8 @@ import {
   LEAVE_ALLOWANCES,
   LEAVE_TYPE_OPTIONS,
   MONTHS,
-  MONTH_OPTIONS,
   RESIDENCE_ALLOWANCE_RATE,
   SUNDAY_ALLOWANCE,
-  SUNDAY_TIERS,
   sickLeaveDeduction,
   sundayTierFor,
   holidayAllowance,
@@ -166,11 +142,9 @@ import {
   YEAR_THIRDS,
   TYPE_COLORS,
   TYPE_LABELS,
-  YEAR_OPTIONS,
   applyManualSundayLeave,
   addDays,
   coWorkingGroupsForDate,
-  compactWeekdayDate,
   dateKey,
   dateTimeLabel,
   dayNumber,
@@ -180,16 +154,13 @@ import {
   halfMomentFromStart,
   leaveTypeLabel,
   s,
-  typeLabelFor,
   localDate,
   longDate,
   monthDays,
-  multiDatePersonLabel,
   nextAttendanceDay,
   periodLabel,
   sameDate,
   selectionRemovesAttendance,
-  shortDate,
   type CountedOnlyType,
   type HalfMoment,
   type HolidayPay,
@@ -316,132 +287,66 @@ export default function Home() {
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
   const [mode, setMode] = useState<ViewMode>("month");
-  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
-  const [userEmail, setUserEmail] = useState("");
-  const [isProgramAdmin, setIsProgramAdmin] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [passwordConfirmation, setPasswordConfirmation] = useState("");
-  const [inviteToken, setInviteToken] = useState("");
-  const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [authNotice, setAuthNotice] = useState("");
+  const {
+    authStatus, setAuthStatus, userEmail, setUserEmail,
+    isProgramAdmin, setIsProgramAdmin, loginEmail, setLoginEmail,
+    loginPassword, setLoginPassword, passwordConfirmation, setPasswordConfirmation,
+    inviteToken, setInviteToken, authBusy, setAuthBusy,
+    authError, setAuthError, authNotice, setAuthNotice,
+  } = useAuthUiState();
   const installationEnabled = canEnableInstallation(
     authStatus,
     demoMode,
     location.hostname,
   );
   const { installPrompt, installApp } = useInstallPrompt(installationEnabled);
-  const [entries, setEntries] = useState<Entries>({});
-  const [periods, setPeriods] = useState<LeavePeriod[]>([]);
-  const [formProfile, setFormProfile] = useState<FormProfile | null>(null);
-  const [payProfiles, setPayProfiles] = useState<Record<string, PayProfile>>({});
-  const [overtimeEntries, setOvertimeEntries] = useState<OvertimeEntry[]>([]);
-  const [recoveryUses, setRecoveryUses] = useState<RecoveryUse[]>([]);
-  const [mecenatEntries, setMecenatEntries] = useState<MecenatEntry[]>([]);
-  const [overtimeDialogOpen, setOvertimeDialogOpen] = useState(false);
-  const [solidarityDialogOpen, setSolidarityDialogOpen] = useState(false);
-  const [recoveryDialogOpen, setRecoveryDialogOpen] = useState(false);
-  const [recoveryCalendarVisible, setRecoveryCalendarVisible] = useState(true);
-  const [recoveryDatePicking, setRecoveryDatePicking] = useState(false);
-  const [trainingRecoveryMode, setTrainingRecoveryMode] = useState<"manual" | "form">("manual");
-  const [overtimeHistoryOpen, setOvertimeHistoryOpen] = useState(false);
-  const [mecenatDialogOpen, setMecenatDialogOpen] = useState(false);
-  const [mecenatHistoryOpen, setMecenatHistoryOpen] = useState(false);
-  const [savingMecenat, setSavingMecenat] = useState(false);
-  const [savingOvertime, setSavingOvertime] = useState(false);
-  const [overtimeDraft, setOvertimeDraft] = useState({
-    date: dateKey(new Date()),
-    start: "18:00",
-    end: "20:00",
-    disposition: "paid" as OvertimeDisposition,
-  });
-  const [solidarityDraft, setSolidarityDraft] = useState({
-    hours: "",
-    minutes: "0",
-  });
-  const [recoveryDraft, setRecoveryDraft] = useState({
-    date: dateKey(new Date()),
-    kind: "hours" as "hours" | "half" | "day" | "holiday" | "training",
-    hours: "2",
-    minutes: "0",
-    start: "",
-    durationMinutes: 480 as number | null,
-    trainingMinutes: 360 as 180 | 360,
-  });
-  const [mecenatDraft, setMecenatDraft] = useState({
-    date: dateKey(new Date()),
-    start: "19:00",
-    end: "00:00",
-  });
-  const [dayDate, setDayDate] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState("");
-  const [noteColor, setNoteColor] = useState("#D3943D");
-  const [noteGroupId, setNoteGroupId] = useState("");
-  const [noteSelecting, setNoteSelecting] = useState(false);
-  const [noteDates, setNoteDates] = useState<string[]>([]);
-  const [dayLeave, setDayLeave] = useState(false);
-  const [dayPersonalLeave, setDayPersonalLeave] = useState(false);
-  const [dayWish, setDayWish] = useState(false);
-  const [dayLeaveType, setDayLeaveType] = useState<LeaveType>("annual");
-  const [dayHalfMoment, setDayHalfMoment] =
-    useState<HalfMoment>("morning");
-  const [dayHolidayPay, setDayHolidayPay] = useState<HolidayPay | "">("");
-  const [leaveRangeEnabled, setLeaveRangeEnabled] = useState(false);
-  const [leaveRangeFrom, setLeaveRangeFrom] = useState("");
-  const [leaveRangeTo, setLeaveRangeTo] = useState("");
-  const [savingDay, setSavingDay] = useState(false);
+  const {
+    entries, setEntries, periods, setPeriods, formProfile, setFormProfile,
+    payProfiles, setPayProfiles, overtimeEntries, setOvertimeEntries,
+    recoveryUses, setRecoveryUses, mecenatEntries, setMecenatEntries,
+  } = useCalendarDataState();
+  const workTimeUi = useWorkTimeUiState();
+  const {
+    setOvertimeDialogOpen, setSolidarityDialogOpen,
+    setRecoveryDialogOpen, setRecoveryCalendarVisible,
+    recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode, setTrainingRecoveryMode,
+    overtimeHistoryOpen, setOvertimeHistoryOpen, setMecenatDialogOpen,
+    mecenatHistoryOpen, setMecenatHistoryOpen, setSavingMecenat,
+    savingOvertime, setSavingOvertime, overtimeDraft,
+    solidarityDraft, setSolidarityDraft, recoveryDraft, setRecoveryDraft,
+    mecenatDraft, setMecenatDraft, overtimeSaveInFlightRef, mecenatSaveInFlightRef,
+    lastOvertimeSubmissionRef, lastRecoverySubmissionRef, lastMecenatSubmissionRef,
+  } = workTimeUi;
+  const planningUi = usePlanningUiState();
+  const {
+    dayDate, setDayDate, noteText, setNoteText, noteColor, setNoteColor,
+    noteGroupId, setNoteGroupId, noteSelecting, setNoteSelecting, noteDates, setNoteDates,
+    dayLeave, setDayLeave, dayPersonalLeave, setDayPersonalLeave, dayWish, setDayWish,
+    dayLeaveType, setDayLeaveType, dayHalfMoment, setDayHalfMoment,
+    dayHolidayPay, setDayHolidayPay, leaveRangeEnabled, setLeaveRangeEnabled,
+    leaveRangeFrom, setLeaveRangeFrom, leaveRangeTo, setLeaveRangeTo, savingDay, setSavingDay,
+    setRangeOpen, rangePrefillDate, setRangePrefillDate,
+    rangeLeaveType, setRangeLeaveType, rangeHalfMoment, setRangeHalfMoment,
+    rangeSelecting, setRangeSelecting, separateDates, setSeparateDates,
+    setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
+    recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
+    separatePeople, setSeparatePeople, editingPeriodId, setEditingPeriodId,
+    editingLegacyPeriod, setEditingLegacyPeriod, deletingPeriod, setDeletingPeriod,
+    savingRange, setSavingRange, requestChooser, setRequestChooser,
+    planningRequestMethod, setPlanningRequestMethod, planningRequestDate, setPlanningRequestDate,
+    pendingRecoveryType, setPendingRecoveryType, pendingLeaveType, setPendingLeaveType,
+    requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
+    activeType, setActiveType, selections, setSelections, timeDate, setTimeDate,
+    timeStart, setTimeStart, timeEnd, setTimeEnd, warningDate, setWarningDate,
+  } = planningUi;
   const showLeaves = true;
   const showNotes = true;
-  const [rangeOpen, setRangeOpen] = useState(false);
-  const [rangePrefillDate, setRangePrefillDate] = useState<string | null>(null);
-  const [rangeLeaveType, setRangeLeaveType] = useState<LeaveType>("annual");
-  const [rangeHalfMoment, setRangeHalfMoment] = useState<HalfMoment>("morning");
-  const [rangeSelecting, setRangeSelecting] = useState(false);
-  const [separateDates, setSeparateDates] = useState<string[]>([]);
-  const [recoveryRangeOpen, setRecoveryRangeOpen] = useState(false);
-  const [recoveryRangeSelecting, setRecoveryRangeSelecting] = useState(false);
-  const [recoveryRangePrefillDate, setRecoveryRangePrefillDate] = useState<string | null>(null);
-  const [recoveryRangeDates, setRecoveryRangeDates] = useState<string[]>([]);
-  const [separatePeople, setSeparatePeople] = useState<MultiDatePerson[]>([]);
-  const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
-  const [editingLegacyPeriod, setEditingLegacyPeriod] =
-    useState<LeavePeriod | null>(null);
-  const [deletingPeriod, setDeletingPeriod] = useState<LeavePeriod | null>(
-    null,
-  );
-  const [savingRange, setSavingRange] = useState(false);
-  const [requestChooser, setRequestChooser] = useState(false);
-  const [planningRequestMethod, setPlanningRequestMethod] =
-    useState<RequestKind | null>(null);
-  const [planningRequestDate, setPlanningRequestDate] = useState<string | null>(
-    null,
-  );
-  const [pendingRecoveryType, setPendingRecoveryType] =
-    useState<SelectionType>("recovery_day");
-  const [pendingLeaveType, setPendingLeaveType] =
-    useState<SelectionType>("annual");
-  const [requestKind, setRequestKind] = useState<RequestKind | null>(null);
-  const [sickRequest, setSickRequest] = useState(false);
-  const [savingRequest, setSavingRequest] = useState(false);
-  const [activeType, setActiveType] = useState<SelectionType>("annual");
-  const [selections, setSelections] = useState<Record<string, SelectedDay>>({});
-  const [timeDate, setTimeDate] = useState<string | null>(null);
-  const [timeStart, setTimeStart] = useState("09:15");
-  const [timeEnd, setTimeEnd] = useState("13:00");
-  const [warningDate, setWarningDate] = useState<string | null>(null);
+  const toastUi = useToast();
   const {
-    message,
     notify,
-    dismiss,
-    successMessage,
     confirm,
-    dismissSuccess,
-    undoOffer,
     offerUndo,
-    dismissUndo,
-    runUndo,
-  } = useToast();
+  } = toastUi;
   const {
     archiveOpen,
     setArchiveOpen,
@@ -449,11 +354,6 @@ export default function Home() {
     openArchivedRequest,
     deleteArchivedRequest,
   } = useRequestArchive(authStatus, isProgramAdmin, userEmail, notify);
-  const overtimeSaveInFlightRef = useRef(false);
-  const mecenatSaveInFlightRef = useRef(false);
-  const lastOvertimeSubmissionRef = useRef({ key: "", at: 0 });
-  const lastRecoverySubmissionRef = useRef({ key: "", at: 0 });
-  const lastMecenatSubmissionRef = useRef({ key: "", at: 0 });
   const [balanceDetailType, setBalanceDetailType] = useState<
     BalanceType | CountedOnlyType | null
   >(null);
@@ -472,93 +372,61 @@ export default function Home() {
       Object.keys(EMPTY_MANUAL_ADJUSTMENTS).map((key) => [key, "0"]),
     ) as Record<keyof ManualYearAdjustments, string>,
   );
-  const [payScreen, setPayScreen] = useState<
-    "overview" | "allowances" | "payslip"
-  >("overview");
-  const [payProfileOpen, setPayProfileOpen] = useState(false);
-  const [payPeriodOpen, setPayPeriodOpen] = useState(false);
-  const [payMonthSlide, setPayMonthSlide] = useState<
-    "" | "out-left" | "out-right" | "in-left" | "in-right"
-  >("");
-  const payMonthSlideTimer = useRef<number | null>(null);
-  const [payslipCheck, setPayslipCheck] = useState<{
-    name: string;
-    reading: PayslipReading;
-  } | null>(null);
-  const [payslipError, setPayslipError] = useState("");
-  const [payslipImportBusy, setPayslipImportBusy] = useState(false);
-  const [payslipImportError, setPayslipImportError] = useState("");
-  const [payslipImportResult, setPayslipImportResult] = useState<{
-    applied: Array<{ label: string; value: string }>;
-    missing: string[];
-    adjustment?: string;
-  } | null>(null);
-  const [payslipImportMode, setPayslipImportMode] = useState<
-    "verify" | "calibrate" | null
-  >(null);
-  const [payslipNeedsPeriod, setPayslipNeedsPeriod] = useState(false);
-  const [payslipFallbackMonth, setPayslipFallbackMonth] = useState(0);
-  const [payslipFallbackYear, setPayslipFallbackYear] = useState(2026);
-  // Les PDF ne sont jamais conservés. On garde uniquement leurs montants
-  // extraits en mémoire, le temps de réunir assez de mois pour séparer le
-  // taux du traitement de celui des primes. Un rechargement efface tout.
-  const [payslipRateSamples, setPayslipRateSamples] = useState<
-    Array<{ name: string; reading: PayslipReading }>
-  >([]);
-  // Repliés dès que les champs essentiels sont déjà remplis : utile une fois
-  // pour comprendre et importer, plus après. `true` force l'affichage même
-  // dans ce cas — posé manuellement, ou automatiquement après un import.
-  const [payslipHelpOpen, setPayslipHelpOpen] = useState(false);
-  const [payslipResultDetailsOpen, setPayslipResultDetailsOpen] =
-    useState(false);
-  const [paySettingsOpen, setPaySettingsOpen] = useState(false);
-  const [payEstimateDetailsOpen, setPayEstimateDetailsOpen] = useState(false);
-  const [payDrafts, setPayDrafts] = useState({
-    baseSalary: "",
-    ifse: "",
-    carenceDay: "",
-    otherFixed: "",
-    cia: "",
-    netRatioFixed: "",
-    netRatioVariable: "",
-    navigo: "",
-    mealVoucherDeduction: "",
-    pasRate: "",
+  const {
+    payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
+    payPeriodOpen, setPayPeriodOpen, payMonthSlide, setPayMonthSlide,
+    payMonthSlideTimer, payslipCheck, setPayslipCheck, payslipError, setPayslipError,
+    payslipImportBusy, setPayslipImportBusy, payslipImportError, setPayslipImportError,
+    payslipImportResult, setPayslipImportResult, payslipImportMode, setPayslipImportMode,
+    payslipNeedsPeriod, setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
+    payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
+    payslipHelpOpen, setPayslipHelpOpen, payslipResultDetailsOpen, setPayslipResultDetailsOpen,
+    paySettingsOpen, setPaySettingsOpen,
+    payDrafts, setPayDrafts, savingPay, setSavingPay,
+  } = usePayUiState();
+  const appShellUi = useAppShellUiState();
+  const {
+    quickNoteMode, setQuickNoteMode,
+    homeSection, setHomeSection, prefetchedContacts, setPrefetchedContacts,
+    approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
+    mainMenuOpen, setMainMenuOpen, guidePromptOpen, setGuidePromptOpen,
+    guideOpen, setGuideOpen, guidePromptCheckedRef, groupChooserOpen, setGroupChooserOpen,
+    noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
+    accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,
+    appUpdateAvailable, setAppUpdateAvailable, setAppUpdatePromptOpen,
+    setDataManagementOpen, setDataManagementBusy,
+    accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize, setViewportSize,
+    showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf, calendarSlide, setCalendarSlide,
+    monthRefs, monthSwipeStart, allowancesSwipeStart,
+  } = appShellUi;
+  const {
+    deleteMultiplePlanningDates,
+    saveOtherDateDirect,
+    saveSickDateDirect,
+    saveStrikeDateDirect,
+    saveWishDateDirect,
+  } = usePlanningEntryActions({
+    entries,
+    periods,
+    recoveryUses,
+    group,
+    demoMode,
+    setEntries,
+    setPeriods,
+    setRecoveryUses,
+    setSavingDay,
+    closeDay: () => setDayDate(null),
+    reloadCalendar: loadCalendar,
+    cancelRequest,
+    notify,
+    showSuccess: confirm,
+    setDeletingMultipleDates,
+    closeCalendarCleanup: () => {
+      setCalendarDeleteMode(false);
+      setCalendarDeleteDates([]);
+    },
+    clearBalanceDetail: () => setBalanceDetailType(null),
   });
-  const [savingPay, setSavingPay] = useState<
-    | "baseSalary"
-    | "ifse"
-    | "carenceDay"
-    | "otherFixed"
-    | "cia"
-    | "netRatioFixed"
-    | "netRatioVariable"
-    | "navigo"
-    | "mealVoucherDeduction"
-    | "pasRate"
-    | null
-  >(null);
-  const [workedDaysOpen, setWorkedDaysOpen] = useState(false);
-  const workedDaysRef = useRef<HTMLDivElement | null>(null);
-  const [quickNoteMode, setQuickNoteMode] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [homeSection, setHomeSection] = useState<MainSection>("home");
-  const [prefetchedContacts, setPrefetchedContacts] =
-    useState<UsefulContactsPayload | null>(null);
-  const [approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates] =
-    useState<SharedGrandPalaisEvent[]>([]);
-  const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const [mainMenuOpen, setMainMenuOpen] = useState(false);
-  const [guidePromptOpen, setGuidePromptOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
-  const guidePromptCheckedRef = useRef(false);
-  const [groupChooserOpen, setGroupChooserOpen] = useState(false);
-  const [noteQuery, setNoteQuery] = useState("");
-  // « Écran fermé » : certaines briques se replient pour ne pas occuper tout
-  // l'écran. Au-dessus de ce seuil elles restent dépliées en permanence.
-  const [narrowScreen, setNarrowScreen] = useState(
-    () => window.matchMedia("(max-width: 720px)").matches,
-  );
   useEffect(() => {
     setInstallMetadataEnabled(installationEnabled);
     return () => setInstallMetadataEnabled(false);
@@ -619,15 +487,6 @@ export default function Home() {
       else window.clearTimeout(idleId);
     };
   }, [authStatus]);
-  const [pdfOpen, setPdfOpen] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [checkingAppUpdate, setCheckingAppUpdate] = useState(false);
-  const [appUpdateAvailable, setAppUpdateAvailable] = useState(false);
-  const [appUpdatePromptOpen, setAppUpdatePromptOpen] = useState(false);
-  const [dataManagementOpen, setDataManagementOpen] = useState(false);
-  const [dataManagementBusy, setDataManagementBusy] = useState(false);
-  const accountMenuRef = useRef<HTMLDivElement | null>(null);
-  const accountButtonRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     const showUpdateAlert = () => {
       setAppUpdateAvailable(true);
@@ -676,30 +535,6 @@ export default function Home() {
     };
   }, [accountMenuOpen]);
   useEffect(() => {
-    if (!workedDaysOpen) return;
-    const close = (event: MouseEvent) => {
-      if (!workedDaysRef.current?.contains(event.target as Node))
-        setWorkedDaysOpen(false);
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setWorkedDaysOpen(false);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [workedDaysOpen]);
-  // Repère temporaire pour calibrer les breakpoints sur les vrais appareils (?debug=1).
-  const [viewportDebugEnabled] = useState(
-    () => new URLSearchParams(location.search).has("debug"),
-  );
-  const [viewportSize, setViewportSize] = useState(() => ({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  }));
-  useEffect(() => {
     if (!viewportDebugEnabled) return;
     const update = () =>
       setViewportSize({ width: window.innerWidth, height: window.innerHeight });
@@ -724,8 +559,6 @@ export default function Home() {
       ),
     [entries],
   );
-  const [showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf] =
-    useState(false);
   const { pdfExporting, exportAnnualPlanning } = useAnnualPdfExport(
     view,
     group,
@@ -735,12 +568,6 @@ export default function Home() {
     wishDates,
     notify,
   );
-  const [calendarSlide, setCalendarSlide] = useState<
-    "" | "out-left" | "out-right" | "in-left" | "in-right"
-  >("");
-  const monthRefs = useRef<Record<number, HTMLElement | null>>({});
-  const monthSwipeStart = useRef<{ x: number; y: number } | null>(null);
-  const allowancesSwipeStart = useRef<{ x: number; y: number } | null>(null);
   useEffect(
     () => () => {
       if (payMonthSlideTimer.current)
@@ -1126,235 +953,54 @@ export default function Home() {
       ),
     );
   }
-  async function submitLogin(event: React.FormEvent) {
-    event.preventDefault();
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthNotice("");
-    try {
-      await login(loginEmail.trim().toLowerCase(), loginPassword);
-    } catch {
-      setAuthError(
-        "Connexion impossible. Vérifiez l’adresse et le mot de passe. Pour une première connexion, activez d’abord le compte depuis l’e-mail d’invitation.",
-      );
-      setAuthBusy(false);
-      return;
-    }
-    setLoginPassword("");
-    try {
-      await loadCalendar();
-    } catch (error) {
-      setAuthError(
-        calendarErrorMessage(
-          error,
-          "La connexion a réussi, mais le planning n’a pas pu être chargé. Réessayez dans un instant.",
-        ),
-      );
-    } finally {
-      setAuthBusy(false);
-    }
-  }
+  const {
+    submitLogin,
+    requestPasswordReset,
+    submitPasswordReset,
+    submitInvite,
+    disconnect,
+  } = useAuthenticationActions({
+    demoMode,
+    loginEmail,
+    loginPassword,
+    passwordConfirmation,
+    inviteToken,
+    setLoginPassword,
+    setPasswordConfirmation,
+    setAuthBusy,
+    setAuthError,
+    setAuthNotice,
+    setUserEmail,
+    setIsProgramAdmin,
+    setAuthStatus,
+    guidePromptCheckedRef,
+    handoffKey: HANDOFF_KEY,
+    loadCalendar,
+    clearCalendarData: () => {
+      setEntries({});
+      setPeriods([]);
+      setOvertimeEntries([]);
+      setRecoveryUses([]);
+      setMecenatEntries([]);
+      setFormProfile(null);
+      setPayProfiles({});
+    },
+    confirmMessage: confirm,
+  });
 
-  async function requestPasswordReset() {
-    const email = loginEmail.trim().toLowerCase();
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setAuthError("Indiquez d’abord l’adresse e-mail de votre compte.");
-      setAuthNotice("");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthNotice("");
-    try {
-      if (!demoMode) await requestPasswordRecovery(email);
-      setAuthNotice(
-        "Si ce compte est activé, un e-mail vient d’être envoyé. Ouvrez son lien pour choisir un nouveau mot de passe. Vérifiez aussi les courriers indésirables.",
-      );
-    } catch {
-      setAuthError(
-        "L’e-mail de réinitialisation n’a pas pu être envoyé. Vérifiez votre connexion puis réessayez.",
-      );
-    } finally {
-      setAuthBusy(false);
-    }
-  }
-
-  async function submitPasswordReset(event: React.FormEvent) {
-    event.preventDefault();
-    if (loginPassword.length < 8) {
-      setAuthError("Choisissez un mot de passe d’au moins 8 caractères.");
-      return;
-    }
-    if (loginPassword !== passwordConfirmation) {
-      setAuthError("Les deux mots de passe ne sont pas identiques.");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthNotice("");
-    try {
-      await updateUser({ password: loginPassword });
-      setLoginPassword("");
-      setPasswordConfirmation("");
-      await loadCalendar();
-      confirm("Votre nouveau mot de passe est enregistré.");
-    } catch (error) {
-      setAuthError(
-        calendarErrorMessage(
-          error,
-          "Le mot de passe n’a pas pu être modifié. Le lien a peut-être expiré : demandez-en un nouveau.",
-        ),
-      );
-    } finally {
-      setAuthBusy(false);
-    }
-  }
-
-  async function submitInvite(event: React.FormEvent) {
-    event.preventDefault();
-    if (loginPassword.length < 8) {
-      setAuthError("Choisissez un mot de passe d’au moins 8 caractères.");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthNotice("");
-    try {
-      const user = await acceptInvite(inviteToken, loginPassword);
-      setUserEmail(user.email || "Compte connecté");
-      if (user.email)
-        localStorage.setItem(
-          `planning:guide-pending-v1:${user.email.trim().toLowerCase()}`,
-          "1",
-        );
-      history.replaceState({}, "", location.pathname);
-        setLoginPassword("");
-        setPasswordConfirmation("");
-      await loadCalendar();
-    } catch {
-      setAuthError("Cette invitation est invalide ou a expiré.");
-    } finally {
-      setAuthBusy(false);
-    }
-  }
-
-  async function disconnect() {
-    await logout();
-    localStorage.removeItem(HANDOFF_KEY);
-    guidePromptCheckedRef.current = false;
-    setEntries({});
-    setPeriods([]);
-    setOvertimeEntries([]);
-    setRecoveryUses([]);
-    setMecenatEntries([]);
-    setFormProfile(null);
-    setPayProfiles({});
-    setUserEmail("");
-    setIsProgramAdmin(false);
-    setAuthStatus("guest");
-  }
-
-  async function exportDataBackup() {
-    setDataManagementBusy(true);
-    try {
-      const data = await getCalendar<any>();
-      const backup = {
-        version: 1,
-        exported_at: new Date().toISOString(),
-        entries: data.entries || [],
-        periods: data.periods || [],
-        overtime_entries: data.overtime_entries || [],
-        recovery_uses: data.recovery_uses || [],
-        mecenat_entries: data.mecenat_entries || [],
-        form_profile: data.form_profile || null,
-      };
-      const url = URL.createObjectURL(
-        new Blob([JSON.stringify(backup, null, 2)], {
-          type: "application/json",
-        }),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `planning-solo-sauvegarde-${dateKey(new Date())}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      notify("La sauvegarde JSON a été téléchargée.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "La sauvegarde n’a pas pu être créée."));
-    } finally {
-      setDataManagementBusy(false);
-    }
-  }
-
-  async function importDataBackup(file: File) {
-    if (file.size > 5_000_000) {
-      notify("Cette sauvegarde dépasse la taille maximale de 5 Mo.");
-      return;
-    }
-    if (
-      !window.confirm(
-        "Restaurer cette sauvegarde remplacera le planning et le profil actuels. Continuer ?",
-      )
-    )
-      return;
-    setDataManagementBusy(true);
-    try {
-      const backup = JSON.parse(await file.text()) as unknown;
-      await postCalendar({ action: "restore-backup", backup });
-      await loadCalendar();
-      setDataManagementOpen(false);
-      notify("La sauvegarde a été restaurée.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "La sauvegarde est invalide ou illisible."));
-    } finally {
-      setDataManagementBusy(false);
-    }
-  }
-
-  async function archiveLegacyData() {
-    if (
-      !window.confirm(
-        "Archiver les anciennes clés globales dans votre espace privé ? Une copie récupérable sera conservée.",
-      )
-    )
-      return;
-    setDataManagementBusy(true);
-    try {
-      const result = await postCalendar<{ ok: true; archived: number }>({
-        action: "archive-legacy-data",
-        confirmation: "ARCHIVER",
-      });
-      notify(
-        result.archived
-          ? `${result.archived} élément${result.archived > 1 ? "s" : ""} historique${result.archived > 1 ? "s" : ""} archivé${result.archived > 1 ? "s" : ""}.`
-          : "Aucune ancienne donnée ne restait à archiver.",
-      );
-    } catch (error) {
-      notify(calendarErrorMessage(error, "L’archivage n’a pas pu être effectué."));
-    } finally {
-      setDataManagementBusy(false);
-    }
-  }
-
-  async function deleteAllUserData() {
-    const confirmation = window.prompt(
-      "Cette action efface le planning, le profil et les paramètres de paie. Tapez SUPPRIMER pour confirmer.",
-    );
-    if (confirmation !== "SUPPRIMER") return;
-    setDataManagementBusy(true);
-    try {
-      await postCalendar({ action: "delete-user-data", confirmation });
-      await loadCalendar();
-      setDataManagementOpen(false);
-      notify("Toutes les données du compte ont été effacées.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Les données n’ont pas pu être effacées."));
-    } finally {
-      setDataManagementBusy(false);
-    }
-  }
+  const {
+    exportDataBackup,
+    importDataBackup,
+    archiveLegacyData,
+    deleteAllUserData,
+  } = useAccountDataActions({
+    setBusy: setDataManagementBusy,
+    setOpen: setDataManagementOpen,
+    loadCalendar,
+    notify,
+    get: getCalendar,
+    post: postCalendar,
+  });
   function changeGroup(nextGroup: number) {
     const previousGroup = group;
     const previousProfile = formProfile;
@@ -1570,10 +1216,6 @@ export default function Home() {
   const hasPayValue = (field: keyof PayProfile) =>
     activePayProfile?.[field] !== undefined || formProfile?.[field] !== undefined;
   const baseSalary = activePayProfile?.baseSalary ?? formProfile?.baseSalary ?? 0;
-  const residenceAllowance =
-    activePayProfile?.residenceAllowance ??
-    formProfile?.residenceAllowance ??
-    baseSalary * RESIDENCE_ALLOWANCE_RATE;
   const ifse = activePayProfile?.ifse ?? formProfile?.ifse ?? 0;
   const carenceDay = activePayProfile?.carenceDay ?? formProfile?.carenceDay ?? 0;
   // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
@@ -2208,10 +1850,6 @@ export default function Home() {
             : "traitement et indemnité de résidence connus avant la grève",
         ]
       : [];
-  const grossEstimateMissing = [
-    ...estimateReadiness.grossMissing,
-    ...strikeMissing,
-  ];
   const grossEstimateComplete = estimateReadiness.grossReady && strikeEstimateReady;
   const netEstimateMissing = [...estimateReadiness.netMissing, ...strikeMissing];
   const netEstimateComplete = estimateReadiness.netReady && strikeEstimateReady;
@@ -2333,10 +1971,6 @@ export default function Home() {
   // Totaux des seuls congés à quota : la maladie n'y entre pas.
   const totalLeaveRemaining = leaveStats.balances.reduce(
     (total, balance) => total + balance.remaining,
-    0,
-  );
-  const totalLeaveUsed = leaveStats.balances.reduce(
-    (total, balance) => total + balance.used,
     0,
   );
   const cetLeaveBalances = {
@@ -2683,428 +2317,59 @@ export default function Home() {
     });
   }
 
-  async function saveOvertimeEntry() {
-    if (overtimeSaveInFlightRef.current) return;
-    const overtimeDateIsValid =
-      /^\d{4}-\d{2}-\d{2}$/.test(overtimeDraft.date) &&
-      dateKey(fromKey(overtimeDraft.date)) === overtimeDraft.date;
-    if (!overtimeDateIsValid) {
-      notify("Choisissez une date valide pour les heures supplémentaires.");
-      return;
-    }
-    const duration = splitOvertimeRange(overtimeDraft.start, overtimeDraft.end);
-    if (!duration) {
-      notify(
-        "Indiquez des heures de début et de fin valides et différentes. Une plage peut passer minuit.",
-      );
-      return;
-    }
-    const submissionKey = [
-      overtimeDraft.date,
-      duration.minutes,
-      duration.dayMinutes,
-      duration.nightMinutes,
-      overtimeDraft.disposition,
-    ].join("|");
-    if (
-      lastOvertimeSubmissionRef.current.key === submissionKey &&
-      Date.now() - lastOvertimeSubmissionRef.current.at < 1500
-    )
-      return;
-    lastOvertimeSubmissionRef.current = { key: submissionKey, at: Date.now() };
-    overtimeSaveInFlightRef.current = true;
-    setSavingOvertime(true);
-    try {
-      const id = createClientId("overtime");
-      const localEntry: OvertimeEntry = {
-        id,
-        date: overtimeDraft.date,
-        ...duration,
-        disposition: overtimeDraft.disposition,
-        inputMode: "range",
-        start: overtimeDraft.start,
-        end: overtimeDraft.end,
-        updatedAt: new Date().toISOString(),
-      };
-      if (!demoMode) {
-        const result = await postCalendar<any>({
-          action: "save-overtime",
-          id,
-          date: localEntry.date,
-          minutes: localEntry.minutes,
-          dayMinutes: localEntry.dayMinutes,
-          nightMinutes: localEntry.nightMinutes,
-          disposition: localEntry.disposition,
-          inputMode: localEntry.inputMode,
-          start: localEntry.start,
-          end: localEntry.end,
-        });
-        localEntry.updatedAt = result.overtime_entry?.updated_at || localEntry.updatedAt;
-      }
-      setOvertimeEntries((current) =>
-        current.some((item) => item.id === localEntry.id)
-          ? current
-          : [...current, localEntry],
-      );
-      setOvertimeDialogOpen(false);
-      confirm(
-        localEntry.disposition === "paid"
-          ? `Heures enregistrées pour la paie du mois suivant.`
-          : `${minutesLabel(localEntry.minutes)} ajoutées au solde de récupération.`,
-      );
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Les heures n’ont pas pu être enregistrées."));
-    } finally {
-      overtimeSaveInFlightRef.current = false;
-      setSavingOvertime(false);
-    }
-  }
-
-  async function saveSolidarityHours() {
-    if (overtimeSaveInFlightRef.current) return;
-    const minutes = Math.round(
-      Number(solidarityDraft.hours.replace(",", ".")) * 60 +
-        Number(solidarityDraft.minutes),
-    );
-    if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 600_000) {
-      notify("Indiquez un nombre d’heures valide à ajouter au solde.");
-      return;
-    }
-    overtimeSaveInFlightRef.current = true;
-    setSavingOvertime(true);
-    try {
-      const id = createClientId("solidarity");
-      const localEntry: OvertimeEntry = {
-        id,
-        date: dateKey(new Date()),
-        minutes,
-        dayMinutes: minutes,
-        nightMinutes: 0,
-        disposition: "recovery",
-        inputMode: "duration",
-        updatedAt: new Date().toISOString(),
-      };
-      if (!demoMode) {
-        const result = await postCalendar<any>({
-          action: "save-overtime",
-          id,
-          date: localEntry.date,
-          minutes,
-          dayMinutes: minutes,
-          nightMinutes: 0,
-          disposition: "recovery",
-          inputMode: "duration",
-        });
-        localEntry.updatedAt = result.overtime_entry?.updated_at || localEntry.updatedAt;
-      }
-      setOvertimeEntries((current) => [...current, localEntry]);
-      setSolidarityDialogOpen(false);
-      setSolidarityDraft({ hours: "", minutes: "0" });
-      confirm(`${minutesLabel(minutes)} ajoutées au solde de récupération.`);
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Les heures n’ont pas pu être ajoutées au solde."));
-    } finally {
-      overtimeSaveInFlightRef.current = false;
-      setSavingOvertime(false);
-    }
-  }
-
-  async function deleteOvertimeEntry(entry: OvertimeEntry) {
-    if (
-      entry.disposition === "recovery" &&
-      recoveryBalance.remaining < entry.minutes
-    ) {
-      notify(
-        "Cette récupération a déjà été utilisée. Annulez d’abord les récupérations posées correspondantes.",
-      );
-      return;
-    }
-    if (!window.confirm("Supprimer cette déclaration d’heures supplémentaires ?"))
-      return;
-    try {
-      if (!demoMode)
-        await postCalendar({ action: "delete-overtime", id: entry.id });
-      setOvertimeEntries((current) => current.filter((item) => item.id !== entry.id));
-      confirm("La déclaration a été supprimée.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "La déclaration n’a pas pu être supprimée."));
-    }
-  }
-
-  async function saveRecoveryUse() {
-    if (overtimeSaveInFlightRef.current) return;
-    const custom = Math.round(
-      Number(recoveryDraft.hours.replace(",", ".")) * 60 +
-        Number(recoveryDraft.minutes),
-    );
-    const minutes =
-      recoveryDraft.kind === "training"
-        ? recoveryDraft.trainingMinutes
-        : recoveryDraft.durationMinutes ?? custom;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(recoveryDraft.date) || minutes <= 0) {
-      notify("Vérifiez la date et la durée de récupération.");
-      return;
-    }
-    if (minutes > recoveryBalance.remaining) {
-      notify(`Votre solde disponible est de ${minutesLabel(recoveryBalance.remaining)}.`);
-      return;
-    }
-    if (recoveryDraft.kind === "training" && trainingRecoveryMode === "form") {
-      const times = {
-        start: "09:00",
-        end: minutes === 180 ? "12:00" : "15:00",
-      };
-      const payload = {
-        version: 1,
-        requestId: createClientId("request"),
-        requestKind: "recovery" as const,
-        ownerKey: userEmail.trim().toLowerCase(),
-        group,
-        createdAt: new Date().toISOString(),
-        profile: formProfile,
-        periods: [],
-        timed: [{
-          date: recoveryDraft.date,
-          type: "recovery_training",
-          ...times,
-        }],
-      };
-      try {
-        localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
-        setRecoveryDialogOpen(false);
-        window.location.href = "/formulaire/index.html?planning=1";
-      } catch {
-        notify("Le formulaire n’a pas pu être préparé. Réessayez.");
-      }
-      return;
-    }
-    const submissionKey = `${recoveryDraft.date}|${minutes}`;
-    if (
-      lastRecoverySubmissionRef.current.key === submissionKey &&
-      Date.now() - lastRecoverySubmissionRef.current.at < 1500
-    )
-      return;
-    lastRecoverySubmissionRef.current = { key: submissionKey, at: Date.now() };
-    overtimeSaveInFlightRef.current = true;
-    setSavingOvertime(true);
-    try {
-      const id = createClientId("recovery");
-      const localUse: RecoveryUse = {
-        id,
-        date: recoveryDraft.date,
-        minutes,
-        start: recoveryDraft.start || undefined,
-        kind: recoveryDraft.kind === "training" ? "training" : undefined,
-        updatedAt: new Date().toISOString(),
-      };
-      if (!demoMode) {
-        const result = await postCalendar<any>({
-          action: "save-recovery-use",
-          id,
-          date: localUse.date,
-          minutes,
-          start: localUse.start,
-          kind: localUse.kind,
-        });
-        localUse.updatedAt = result.recovery_use?.updated_at || localUse.updatedAt;
-      }
-      setRecoveryUses((current) =>
-        current.some((item) => item.id === localUse.id)
-          ? current
-          : [...current, localUse],
-      );
-      setRecoveryDialogOpen(false);
-      confirm(`${minutesLabel(minutes)} de récupération posées.`);
-    } catch (error) {
-      notify(calendarErrorMessage(error, "La récupération n’a pas pu être enregistrée."));
-    } finally {
-      overtimeSaveInFlightRef.current = false;
-      setSavingOvertime(false);
-    }
-  }
-
-  function recoveryRangeMinutes() {
-    if (recoveryDraft.kind === "training") return recoveryDraft.trainingMinutes;
-    if (recoveryDraft.durationMinutes !== null) return recoveryDraft.durationMinutes;
-    return Math.round(
-      Number(recoveryDraft.hours.replace(",", ".")) * 60 +
-        Number(recoveryDraft.minutes),
-    );
-  }
-
-  function beginRecoveryRangeSelection() {
-    setRecoveryRangeDates(
-      recoveryRangePrefillDate ? [recoveryRangePrefillDate] : [],
-    );
-    setRecoveryRangePrefillDate(null);
-    setRecoveryRangeOpen(false);
-    setRecoveryRangeSelecting(true);
-    setHomeSection("home");
-    setMode("month");
-    window.setTimeout(
-      () =>
-        document
-          .getElementById("recovery-range-selection-panel")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      80,
-    );
-  }
-
-  function cancelRecoveryRangeSelection() {
-    setRecoveryRangeSelecting(false);
-    setRecoveryRangeDates([]);
-    setRecoveryRangePrefillDate(null);
-  }
-
-  async function saveRecoveryRangeDates() {
-    if (!recoveryRangeDates.length || savingOvertime) return;
-    const minutes = recoveryRangeMinutes();
-    if (!Number.isFinite(minutes) || minutes <= 0) {
-      notify("Vérifiez la durée de récupération.");
-      return;
-    }
-    const totalMinutes = minutes * recoveryRangeDates.length;
-    if (totalMinutes > recoveryBalance.remaining) {
-      notify(
-        `Ces dates utilisent ${minutesLabel(totalMinutes)}, mais votre solde disponible est de ${minutesLabel(recoveryBalance.remaining)}.`,
-      );
-      return;
-    }
-    setSavingOvertime(true);
-    try {
-      const nowIso = new Date().toISOString();
-      const localUses: RecoveryUse[] = [...recoveryRangeDates]
-        .sort()
-        .map((date) => ({
-          id: createClientId("recovery"),
-          date,
-          minutes,
-          start: recoveryDraft.start || undefined,
-          kind: recoveryDraft.kind === "training" ? "training" : undefined,
-          updatedAt: nowIso,
-        }));
-      if (!demoMode) {
-        await postCalendarBatch(
-          localUses.map((item) => ({
-            action: "save-recovery-use",
-            id: item.id,
-            date: item.date,
-            minutes: item.minutes,
-            start: item.start,
-            kind: item.kind,
-          })),
-        );
-      }
-      setRecoveryUses((current) => [...current, ...localUses]);
-      cancelRecoveryRangeSelection();
-      confirm(
-        `${recoveryRangeDates.length} date${s(recoveryRangeDates.length)} de récupération enregistrée${s(recoveryRangeDates.length)} · ${minutesLabel(totalMinutes)} déduites du solde.`,
-      );
-    } catch (error) {
-      notify(
-        calendarErrorMessage(
-          error,
-          "Les récupérations n’ont pas pu être enregistrées.",
-        ),
-      );
-    } finally {
-      setSavingOvertime(false);
-    }
-  }
-
-  async function deleteRecoveryUse(entry: RecoveryUse) {
-    if (!window.confirm("Annuler cette utilisation de récupération ?")) return;
-    try {
-      if (!demoMode)
-        await postCalendar({ action: "delete-recovery-use", id: entry.id });
-      setRecoveryUses((current) => current.filter((item) => item.id !== entry.id));
-      confirm("La récupération a été remise dans votre solde.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "La récupération n’a pas pu être annulée."));
-    }
-  }
-
-  async function saveMecenatEntry() {
-    if (mecenatSaveInFlightRef.current) return;
-    const calculation = calculateMecenatVacation(
-      mecenatDraft.start,
-      mecenatDraft.end,
-      workQuota,
-    );
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(mecenatDraft.date) || !calculation) {
-      notify("Vérifiez la date et les horaires du mécénat.");
-      return;
-    }
-    const { year: payYear, month: payMonth } = nextPayPeriod(mecenatDraft.date);
-    const submissionKey = [
-      mecenatDraft.date,
-      mecenatDraft.start,
-      mecenatDraft.end,
-      payYear,
-      payMonth,
-    ].join("|");
-    if (
-      lastMecenatSubmissionRef.current.key === submissionKey &&
-      Date.now() - lastMecenatSubmissionRef.current.at < 1500
-    )
-      return;
-    lastMecenatSubmissionRef.current = { key: submissionKey, at: Date.now() };
-    mecenatSaveInFlightRef.current = true;
-    setSavingMecenat(true);
-    try {
-      const id = createClientId("mecenat");
-      const localEntry: MecenatEntry = {
-        id,
-        date: mecenatDraft.date,
-        start: mecenatDraft.start,
-        end: mecenatDraft.end,
-        dayMinutes: calculation.dayMinutes,
-        nightMinutes: calculation.nightMinutes,
-        grossAmountCents: calculation.grossAmountCents,
-        payYear,
-        payMonth,
-        updatedAt: new Date().toISOString(),
-      };
-      if (!demoMode) {
-        const result = await postCalendar<any>({
-          action: "save-mecenat",
-          id,
-          date: localEntry.date,
-          start: localEntry.start,
-          end: localEntry.end,
-          payYear,
-          payMonth,
-        });
-        localEntry.updatedAt = result.mecenat_entry?.updated_at || localEntry.updatedAt;
-      }
-      setMecenatEntries((current) =>
-        current.some((item) => item.id === localEntry.id)
-          ? current
-          : [...current, localEntry],
-      );
-      setMecenatDialogOpen(false);
-      confirm(`Mécénat enregistré : ${euros(localEntry.grossAmountCents / 100)} brut, intégré automatiquement à la paie du mois suivant.`);
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être enregistré."));
-    } finally {
-      mecenatSaveInFlightRef.current = false;
-      setSavingMecenat(false);
-    }
-  }
-
-  async function deleteMecenatEntry(entry: MecenatEntry) {
-    if (!window.confirm("Supprimer ce mécénat ?")) return;
-    try {
-      if (!demoMode)
-        await postCalendar({ action: "delete-mecenat", id: entry.id });
-      setMecenatEntries((current) =>
-        current.filter((item) => item.id !== entry.id),
-      );
-      confirm("Le mécénat a été supprimé.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être supprimé."));
-    }
-  }
+  const {
+    saveOvertimeEntry,
+    saveSolidarityHours,
+    deleteOvertimeEntry,
+    saveRecoveryUse,
+    beginRecoveryRangeSelection,
+    cancelRecoveryRangeSelection,
+    saveRecoveryRangeDates,
+    deleteRecoveryUse,
+    saveMecenatEntry,
+    deleteMecenatEntry,
+  } = useWorkTimeActions({
+    demoMode,
+    userEmail,
+    group,
+    formProfile,
+    workQuota,
+    recoveryBalanceRemaining: recoveryBalance.remaining,
+    setOvertimeEntries,
+    setRecoveryUses,
+    setMecenatEntries,
+    overtimeDraft,
+    solidarityDraft,
+    setSolidarityDraft,
+    recoveryDraft,
+    mecenatDraft,
+    trainingRecoveryMode,
+    recoveryRangeDates,
+    setRecoveryRangeDates,
+    recoveryRangePrefillDate,
+    setRecoveryRangePrefillDate,
+    setRecoveryRangeOpen,
+    setRecoveryRangeSelecting,
+    savingOvertime,
+    setSavingOvertime,
+    setSavingMecenat,
+    setOvertimeDialogOpen,
+    setSolidarityDialogOpen,
+    setRecoveryDialogOpen,
+    setMecenatDialogOpen,
+    setHomeSection,
+    setMode,
+    overtimeSaveInFlightRef,
+    mecenatSaveInFlightRef,
+    lastOvertimeSubmissionRef,
+    lastRecoverySubmissionRef,
+    lastMecenatSubmissionRef,
+    handoffKey: HANDOFF_KEY,
+    notify,
+    confirmMessage: confirm,
+    post: postCalendar,
+    postBatch: postCalendarBatch,
+  });
   function editDayLeavePeriod(period: LeavePeriod) {
     setEditingPeriodId(period.id);
     setDayLeave(true);
@@ -3930,414 +3195,6 @@ export default function Home() {
     );
   }
 
-  async function saveSickDateDirect(date: string) {
-    const alreadyRecorded = periods.some(
-      (period) =>
-        period.leaveType === "sick" && date >= period.from && date <= period.to,
-    );
-    if (alreadyRecorded) {
-      confirm("Cet arrêt maladie est déjà enregistré dans le planning.");
-      setDayDate(null);
-      return;
-    }
-    const input = {
-      id: createClientId("period"),
-      from: date,
-      to: date,
-      leaveType: "sick" as const,
-      group,
-    };
-    setSavingDay(true);
-    setDayDate(null);
-    try {
-      let saved: LeavePeriod;
-      if (demoMode) {
-        saved = {
-          ...input,
-          halfMoment: "",
-          updatedAt: new Date().toISOString(),
-        };
-      } else {
-        const result = await postCalendarPeriodsVerified<{
-          id: string;
-          from: string;
-          to: string;
-          leave_type?: LeaveType;
-          half_moment?: HalfMoment;
-          group?: number;
-          updated_at: string;
-        }>([input]);
-        const period = result.periods[0];
-        saved = {
-          id: period.id,
-          from: period.from,
-          to: period.to,
-          leaveType: period.leave_type || "sick",
-          halfMoment: period.half_moment || "",
-          group: period.group,
-          updatedAt: period.updated_at,
-        };
-      }
-      setPeriods((current) =>
-        [...current, saved].sort((a, b) => a.from.localeCompare(b.from)),
-      );
-      confirm("L’arrêt maladie est enregistré et l’estimation de paie est à jour.");
-    } catch (error) {
-      notify(
-        calendarErrorMessage(error, "L’arrêt maladie n’a pas pu être enregistré."),
-      );
-    } finally {
-      setSavingDay(false);
-    }
-  }
-
-  async function saveStrikeDateDirect(date: string) {
-    const alreadyRecorded = periods.some(
-      (period) =>
-        period.leaveType === "strike" && date >= period.from && date <= period.to,
-    );
-    if (alreadyRecorded) {
-      confirm("Cette journée de grève est déjà enregistrée dans le planning.");
-      setDayDate(null);
-      cancelRequest();
-      return;
-    }
-    const recordedAbsence = periods.find(
-      (period) =>
-        period.leaveType !== "strike" && date >= period.from && date <= period.to,
-    );
-    if (recordedAbsence) {
-      notify(
-        `${leaveTypeLabel(recordedAbsence.leaveType || "annual")} est déjà enregistré ce jour. Cette absence reste inchangée : retirez-la uniquement si elle doit réellement être remplacée par une grève.`,
-      );
-      return;
-    }
-    if (recoveryUses.some((item) => item.date === date)) {
-      notify(
-        "Une récupération est déjà enregistrée ce jour. Elle reste inchangée : retirez-la uniquement si elle doit réellement être remplacée par une grève.",
-      );
-      return;
-    }
-    if (entries[date]?.leave) {
-      notify(
-        "Une autre absence est déjà enregistrée ce jour. Elle reste inchangée : retirez-la uniquement si elle doit réellement être remplacée par une grève.",
-      );
-      return;
-    }
-    if (getDayInfo(fromKey(date), group).kind !== "work") {
-      notify("Une grève ne peut être posée que sur une journée prévue travaillée.");
-      return;
-    }
-    const input = {
-      id: createClientId("period"),
-      from: date,
-      to: date,
-      leaveType: "strike" as const,
-      group,
-    };
-    setSavingDay(true);
-    setDayDate(null);
-    cancelRequest();
-    try {
-      let saved: LeavePeriod;
-      if (demoMode) {
-        saved = {
-          ...input,
-          halfMoment: "",
-          updatedAt: new Date().toISOString(),
-        };
-      } else {
-        const result = await postCalendarPeriodsVerified<{
-          id: string;
-          from: string;
-          to: string;
-          leave_type?: LeaveType;
-          half_moment?: HalfMoment;
-          group?: number;
-          updated_at: string;
-        }>([input]);
-        const period = result.periods[0];
-        saved = {
-          id: period.id,
-          from: period.from,
-          to: period.to,
-          leaveType: period.leave_type || "strike",
-          halfMoment: period.half_moment || "",
-          group: period.group,
-          updatedAt: period.updated_at,
-        };
-      }
-      setPeriods((current) =>
-        [...current, saved].sort((a, b) => a.from.localeCompare(b.from)),
-      );
-      confirm("La grève est ajoutée au planning et l’estimation de paie est à jour.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "La grève n’a pas pu être ajoutée."));
-    } finally {
-      setSavingDay(false);
-    }
-  }
-
-  async function saveWishDateDirect(date: string, desired?: boolean) {
-    const current = entries[date] || emptyEntry();
-    const wish = desired ?? !current.wish;
-    const nextEntry: SharedEntry = { ...current, wish };
-    setSavingDay(true);
-    setDayDate(null);
-    try {
-      if (!demoMode) {
-        await postCalendar({
-          action: "save-entry",
-          date,
-          ...nextEntry,
-          expectedUpdatedAt: current.updatedAt,
-        });
-        await loadCalendar();
-      } else {
-        setEntries((currentEntries) => {
-          const next = { ...currentEntries };
-          if (
-            !nextEntry.noteText &&
-            !nextEntry.leave &&
-            !nextEntry.wish &&
-            !nextEntry.holidayPay
-          )
-            delete next[date];
-          else next[date] = nextEntry;
-          return next;
-        });
-      }
-      confirm(
-        wish
-          ? "Le congé souhaité est ajouté au planning."
-          : "Le congé souhaité est retiré du planning.",
-      );
-    } catch (error) {
-      notify(
-        calendarErrorMessage(
-          error,
-          wish
-            ? "Le congé souhaité n’a pas pu être ajouté."
-            : "Le congé souhaité n’a pas pu être retiré.",
-        ),
-      );
-    } finally {
-      setSavingDay(false);
-    }
-  }
-
-  async function saveOtherDateDirect(date: string) {
-    const alreadyRecorded = periods.some(
-      (period) =>
-        period.leaveType === "other" && date >= period.from && date <= period.to,
-    );
-    if (alreadyRecorded) {
-      confirm("Ce repère Divers est déjà enregistré dans le planning.");
-      setDayDate(null);
-      return;
-    }
-    const input = {
-      id: createClientId("period"),
-      from: date,
-      to: date,
-      leaveType: "other" as const,
-      group,
-    };
-    setSavingDay(true);
-    setDayDate(null);
-    try {
-      let saved: LeavePeriod;
-      if (demoMode) {
-        saved = {
-          ...input,
-          halfMoment: "",
-          updatedAt: new Date().toISOString(),
-        };
-      } else {
-        const result = await postCalendarPeriodsVerified<{
-          id: string;
-          from: string;
-          to: string;
-          leave_type?: LeaveType;
-          half_moment?: HalfMoment;
-          group?: number;
-          updated_at: string;
-        }>([input]);
-        const period = result.periods[0];
-        saved = {
-          id: period.id,
-          from: period.from,
-          to: period.to,
-          leaveType: period.leave_type || "other",
-          halfMoment: period.half_moment || "",
-          group: period.group,
-          updatedAt: period.updated_at,
-        };
-      }
-      setPeriods((current) =>
-        [...current, saved].sort((a, b) => a.from.localeCompare(b.from)),
-      );
-      confirm("Divers est ajouté directement au planning.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Divers n’a pas pu être enregistré."));
-    } finally {
-      setSavingDay(false);
-    }
-  }
-
-  async function deleteMultiplePlanningDates(
-    dates: string[],
-    target: "absences" | "notes",
-  ) {
-    const selected = new Set(dates);
-    if (!selected.size) return;
-    const label = target === "notes" ? "les notes" : "les absences et récupérations";
-    if (
-      !window.confirm(
-        `Effacer ${label} sur ${selected.size} date${s(selected.size)} sélectionnée${s(selected.size)} ?`,
-      )
-    )
-      return;
-
-    setDeletingMultipleDates(true);
-    try {
-      const operations: Array<Record<string, unknown>> = [];
-      if (target === "notes") {
-        for (const key of selected) {
-          const current = entries[key];
-          if (!current?.noteText) continue;
-          operations.push({
-            action: "save-entry",
-            date: key,
-            ...current,
-            noteText: "",
-            noteGroupId: "",
-            noteUpdatedAt: new Date().toISOString(),
-            expectedUpdatedAt: current.updatedAt || "",
-          });
-        }
-      } else {
-        const legacyCleared = new Set<string>();
-        for (const period of periods) {
-          const removed = rangeKeys(period.from, period.to).filter((key) =>
-            selected.has(key),
-          );
-          if (!removed.length) continue;
-          if (period.legacy) {
-            for (const key of removed) {
-              legacyCleared.add(key);
-              const current = entries[key];
-              operations.push({
-                action: "save-leaves",
-                date: key,
-                leave: false,
-                wish: Boolean(current?.wish),
-                expectedUpdatedAt: current?.updatedAt || "",
-              });
-            }
-            continue;
-          }
-          operations.push({
-            action: "delete-period",
-            id: period.id,
-            expectedUpdatedAt: period.updatedAt,
-          });
-          const remaining = rangeKeys(period.from, period.to).filter(
-            (key) => !selected.has(key),
-          );
-          for (const segment of groupConsecutive(remaining))
-            operations.push({
-              action: "save-period",
-              id: createClientId("period"),
-              from: segment.from,
-              to: segment.to,
-              leaveType: period.leaveType || "annual",
-              halfMoment:
-                period.leaveType === "half" ? period.halfMoment || "" : "",
-              group: period.group || group,
-            });
-        }
-        for (const key of selected) {
-          const current = entries[key];
-          if (current?.leave && !legacyCleared.has(key))
-            operations.push({
-              action: "save-leaves",
-              date: key,
-              leave: false,
-              wish: Boolean(current.wish),
-              expectedUpdatedAt: current.updatedAt || "",
-            });
-        }
-        for (const recovery of recoveryUses)
-          if (selected.has(recovery.date))
-            operations.push({ action: "delete-recovery-use", id: recovery.id });
-      }
-
-      if (!operations.length) {
-        notify(`Aucune donnée à effacer sur les dates sélectionnées.`);
-        return;
-      }
-      if (!demoMode) {
-        await postCalendarBatch(operations);
-        await loadCalendar();
-      } else if (target === "notes") {
-        setEntries((current) => {
-          const next = { ...current };
-          for (const key of selected) {
-            const entry = next[key];
-            if (!entry?.noteText) continue;
-            next[key] = {
-              ...entry,
-              noteText: "",
-              noteGroupId: "",
-              noteUpdatedAt: new Date().toISOString(),
-            };
-          }
-          return next;
-        });
-      } else {
-        setPeriods((current) =>
-          current.flatMap((period) => {
-            const remaining = rangeKeys(period.from, period.to).filter(
-              (key) => !selected.has(key),
-            );
-            if (remaining.length === rangeKeys(period.from, period.to).length)
-              return [period];
-            return groupConsecutive(remaining).map((segment) => ({
-              ...period,
-              id: createClientId("period"),
-              from: segment.from,
-              to: segment.to,
-              updatedAt: new Date().toISOString(),
-            }));
-          }),
-        );
-        setEntries((current) => {
-          const next = { ...current };
-          for (const key of selected)
-            if (next[key]?.leave) next[key] = { ...next[key], leave: false };
-          return next;
-        });
-        setRecoveryUses((current) =>
-          current.filter((item) => !selected.has(item.date)),
-        );
-      }
-      setCalendarDeleteMode(false);
-      setCalendarDeleteDates([]);
-      setBalanceDetailType(null);
-      confirm(`${selected.size} date${s(selected.size)} mise${s(selected.size)} à jour.`);
-    } catch (error) {
-      notify(
-        calendarErrorMessage(
-          error,
-          "La suppression multiple n’a pas pu être synchronisée.",
-        ),
-      );
-    } finally {
-      setDeletingMultipleDates(false);
-    }
-  }
-
   function startCalendarCleanup() {
     cancelRequest();
     cancelRangeSelection();
@@ -4773,188 +3630,36 @@ export default function Home() {
   }
 
   function renderDay(date: Date, compact = false) {
-    const info = getDayInfo(date, group);
     const key = dateKey(date);
-    const exceptionalClosure = exceptionalClosureFor(key);
-    const entry = entries[key];
-    const selected = selections[key];
-    const cleanupSelected =
-      calendarDeleteMode && calendarDeleteDates.includes(key);
-    const today = sameDate(date, now);
-    const dayRecoveryEntries = recoveryUses.filter((item) => item.date === key);
-    const hourlyRecoveryMinutes = dayRecoveryEntries
-      .reduce((total, item) => total + item.minutes, 0);
-    const hasHourlyRecovery = hourlyRecoveryMinutes > 0;
-    const trainingMinutesOnDay = dayRecoveryEntries
-      .filter((item) => item.kind === "training")
-      .reduce((total, item) => total + item.minutes, 0);
-    const hasTrainingRecovery = trainingMinutesOnDay > 0;
-    // La période elle-même, et pas seulement son existence : son type décide
-    // de l'habillage de la case (récupération, demi-journée).
-    const myPeriod = periods.find(
-      (period) => key >= period.from && key <= period.to,
-    );
-    const hasLeavePeriod = Boolean(myPeriod);
-    // Un jour marqué « Divers » : posé sur la seule journée, hors période.
-    const personalDay = Boolean(showLeaves && entry?.leave);
-    // Un congé souhaité n'est pas encore accordé : il se signale d'un liseré
-    // vert, sans entrer dans les soldes.
-    const wishDay = Boolean(showLeaves && entry?.wish);
-    // Un congé posé sur un jour de repos n'a rien à marquer : la case est
-    // déjà noire.
-    const visibleLeave = Boolean(
-      showLeaves && hasLeavePeriod && info.kind !== "off",
-    );
-    const wishOutline = wishDay && info.kind !== "off" && !hasLeavePeriod;
-    // La récupération prend un aplat orange et la demi-journée un liseré sur
-    // sa seule moitié. Une
-    // demi-journée sans moment (celles venues du formulaire) garde le liseré
-    // entier : rien n'indique quelle moitié marquer.
-    const myLeaveType = visibleLeave ? myPeriod?.leaveType || "" : "";
-    const myRecovery = myLeaveType === "recovery";
-    const myHalfMoment =
-      myLeaveType === "half" ? myPeriod?.halfMoment || "" : "";
-    const visibleNote = Boolean(showNotes && entry?.noteText);
     const inPendingRange = Boolean(
       (rangeSelecting && separateDates.includes(key)) ||
         (recoveryRangeSelecting && recoveryRangeDates.includes(key)) ||
         (noteSelecting && noteDates.includes(key)),
     );
-    const rangeEdge = inPendingRange;
-    const leaveLabel = [
-      visibleLeave
-        ? myRecovery
-          ? "Récupération"
-          : myHalfMoment
-            ? `Demi-journée ${myHalfMoment === "morning" ? "matin" : "après-midi"}`
-            : leaveTypeLabel(myLeaveType as LeaveType)
-        : "",
-      personalDay ? "Divers" : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
-    const title = [
-      info.holiday,
-      DAY_LABELS[info.kind],
-      selected ? TYPE_LABELS[selected.type] : "",
-      leaveLabel,
-      hasHourlyRecovery
-        ? hasTrainingRecovery
-          ? `Formation en récupération (${minutesLabel(trainingMinutesOnDay)})`
-          : `Récupération en heures (${minutesLabel(hourlyRecoveryMinutes)})`
-        : "",
-      visibleNote ? "Note enregistrée" : "",
-      exceptionalClosure?.label ?? "",
-    ]
-      .filter(Boolean)
-      .join(" — ");
     return (
-      <button
-        type="button"
+      <PlanningDayCell
         key={key}
-        className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected" : ""}${rangeEdge ? " range-edge" : ""}`}
-        style={
-          selected
-            ? ({
-                "--selection-color": TYPE_COLORS[selected.type],
-              } as React.CSSProperties)
-            : cleanupSelected
-              ? ({ "--selection-color": "#c43d43" } as React.CSSProperties)
-            : rangeSelecting || recoveryRangeSelecting
-              ? ({ "--range-preview": recoveryRangeSelecting ? "#f3b3a6" : "var(--leave)" } as React.CSSProperties)
-              : noteSelecting
-                ? ({ "--range-preview": noteColor } as React.CSSProperties)
-                : undefined
-        }
+        date={date}
+        group={group}
+        compact={compact}
+        entry={entries[key]}
+        selected={selections[key]}
+        cleanupSelected={calendarDeleteMode && calendarDeleteDates.includes(key)}
+        today={sameDate(date, now)}
+        recoveryEntries={recoveryUses.filter((item) => item.date === key)}
+        leavePeriod={periods.find((period) => key >= period.from && key <= period.to)}
+        showLeaves={showLeaves}
+        showNotes={showNotes}
+        inPendingRange={inPendingRange}
+        rangeSelecting={rangeSelecting}
+        recoveryRangeSelecting={recoveryRangeSelecting}
+        noteSelecting={noteSelecting}
+        noteColor={noteColor}
+        exceptionalClosure={exceptionalClosureFor(key)}
         onClick={() => handleDay(date)}
-        title={title}
-        aria-current={today ? "date" : undefined}
-        aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}`}
-      >
-        <span
-          className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}`}
-        >
-          {date.getDate()}
-        </span>
-        {hasHourlyRecovery && !compact ? (
-          <span className={`recovery-calendar-label ${hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}`}>
-            REC
-          </span>
-        ) : null}
-        {visibleLeave &&
-        ((!compact &&
-          (myLeaveType === "annual" ||
-            myLeaveType === "rtt" ||
-            myLeaveType === "fraction")) ||
-        (myLeaveType === "exceptional" ||
-          myLeaveType === "childcare" ||
-          myLeaveType === "sick" ||
-          myLeaveType === "cet" ||
-          myLeaveType === "strike")) ? (
-          <span
-            className={`leave-calendar-marker leave-calendar-marker-${myLeaveType}${compact ? " compact" : ""}`}
-            aria-hidden="true"
-          >
-            {myLeaveType === "annual"
-              ? "CA"
-              : myLeaveType === "rtt"
-                ? "RTT"
-                : myLeaveType === "fraction"
-                  ? "FRA"
-                  : myLeaveType === "exceptional"
-              ? "ASA"
-              : myLeaveType === "childcare"
-                ? "👶"
-                : myLeaveType === "sick"
-                  ? "🤒"
-                : myLeaveType === "cet"
-                    ? "CET"
-                  : myLeaveType === "strike"
-                    ? "✊"
-                : ""}
-          </span>
-        ) : null}
-        {(myLeaveType === "other" || personalDay) && (
-          <span className={`other-pin${compact ? " compact" : ""}`} aria-hidden="true">
-            <svg viewBox="0 0 30 30">
-              <path className="other-pin-needle" d="m13.5 18.2-2.2 10.3 5.3-10.9Z" />
-              <path className="other-pin-body" d="M10 7.2h8l-1.1 7.1 3.5 2.6c1 .7.6 2.2-.6 2.4L9.2 20.8c-1.2.2-2-.9-1.4-2l2.9-3.4L10 7.2Z" />
-              <ellipse className="other-pin-head" cx="14" cy="7" rx="6.4" ry="3.8" />
-              <path className="other-pin-highlight" d="M10.7 5.9c1.6-1.3 4.5-1.7 6.5-.5" />
-            </svg>
-          </span>
-        )}
-        {(selected || cleanupSelected) && <span className="selection-corner" aria-hidden="true" />}
-        {selected && !compact && (
-          <span className="selection-label">
-            {TYPE_LABELS[selected.type]}
-            {selected.start ? ` · ${selected.start}–${selected.end}` : ""}
-          </span>
-        )}
-        {visibleNote && (
-          <span
-            className={`note-band${myHalfMoment ? ` note-band-half-${myHalfMoment}` : ""}`}
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 24 24">
-              <path d="m6 18 1.2-4.3L16.4 4.5l3.1 3.1-9.2 9.2L6 18Z" />
-              <path d="m14.8 6.1 3.1 3.1" />
-            </svg>
-          </span>
-        )}
-        {exceptionalClosure ? (
-          <img
-            className={`exceptional-closure-marker${compact ? " compact" : ""}`}
-            src="/exceptional-closure-icon.webp"
-            alt=""
-            aria-hidden="true"
-            title={exceptionalClosure.label}
-          />
-        ) : null}
-      </button>
+      />
     );
   }
-
   function renderNoteItems(items: NoteListItem[]) {
     return (
       <div className="upcoming-list">
@@ -6086,1057 +4791,89 @@ export default function Home() {
       </Suspense>
     );
     return (
-      <div className="request-archive-content allowances pay-functions-layout">
-        <p className="pay-year-notice">
-          Paramètres de paie pour <strong>{payYear}</strong>
-          {payProfiles[payYear]
-            ? " — valeurs enregistrées pour cette année."
-            : " — valeurs actuelles utilisées comme point de départ ; la première modification créera l’historique de cette année."}
-        </p>
-
-        {showPayslipHelp ? (
-          <section className="allowance-card">
-            <header>
-              <span>Comment ça marche</span>
-              {!missing ? (
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => setPayslipHelpOpen(false)}
-                >
-                  Masquer
-                </button>
-              ) : null}
-            </header>
-            <p className="allowance-note">
-              Estimer votre salaire en brut et en net demande des informations
-              qui n’existent que sur un vrai bulletin de paie : le traitement
-              de base (votre rémunération hors primes), le montant exact d’un
-              jour de carence lors d’un arrêt maladie, et quelques lignes
-              fixes plus rares (indemnité de résidence…). Un bulletin peut
-              remplir ces valeurs automatiquement. Deux bulletins de mois
-              différents permettent aussi d’affiner séparément le taux du
-              traitement et celui des primes.
-            </p>
-            {!isContractuel ? (
-              <p className="allowance-note">
-                Pour un fonctionnaire, s’y ajoutent l’IFSE et le CIA.
-              </p>
-            ) : null}
-            <p className="allowance-note">
-              Le PDF est lu uniquement sur cet appareil et n’est jamais
-              conservé. Seules les valeurs utiles à vos estimations sont
-              enregistrées dans votre espace Planning Solo.
-            </p>
-          </section>
-        ) : (
-          <p className="allowance-note">
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => setPayslipHelpOpen(true)}
-            >
-              Comment ça marche ?
-            </button>
-          </p>
-        )}
-
-        {payEstimateDetails}
-
-          <section className="allowance-card pay-function-card payslip-verify-card">
-            <header>
-              <div>
-                <span className="step-label">Contrôler une fiche réelle</span>
-                <h3>Vérifier un bulletin</h3>
-                <small>Pour voir si rien ne manque</small>
-              </div>
-              <small>Un seul PDF suffit</small>
-            </header>
-            <div className="payslip-guide-step active">
-              <span className="payslip-guide-number">1</span>
-              <div>
-                <strong>Choisir le bulletin à vérifier</strong>
-                <small>Son mois et son année seront reconnus automatiquement.</small>
-              </div>
-              <label className="payslip-drop">
-                <input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  disabled={payslipImportBusy}
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files || []);
-                    event.target.value = "";
-                    if (files.length) void importPayslips(files, "verify");
-                  }}
-                />
-                <span>
-                  {payslipImportBusy && payslipImportMode === "verify"
-                    ? "Lecture en cours…"
-                    : "Choisir le PDF"}
-                </span>
-              </label>
-            </div>
-            {payslipCheck && !payslipNeedsPeriod && payslipCheck.reading.month !== undefined && payslipCheck.reading.year !== undefined ? (
-              <>
-                <div className="payslip-detected-period" role="status">
-                  <span>Période reconnue</span>
-                  <strong>{MONTHS[payslipCheck.reading.month]} {payslipCheck.reading.year}</strong>
-                </div>
-                {payslipCheck.reading.gross !== undefined ||
-                payslipCheck.reading.netBeforeTax !== undefined ? (
-                  <div className="payslip-actual-values" aria-label="Valeurs réellement lues sur le bulletin">
-                    <span>Valeurs du bulletin</span>
-                    {payslipCheck.reading.gross !== undefined ? (
-                      <div>
-                        <small>Brut réel</small>
-                        <strong>{euros(payslipCheck.reading.gross)}</strong>
-                      </div>
-                    ) : null}
-                    {payslipCheck.reading.netBeforeTax !== undefined ? (
-                      <div>
-                        <small>Net avant impôt réel</small>
-                        <strong>{euros(payslipCheck.reading.netBeforeTax)}</strong>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-            {payslipCheck && payslipNeedsPeriod ? (
-              <div className="payslip-period-fallback">
-                <div>
-                  <strong>Période non reconnue</strong>
-                  <small>Indiquez exceptionnellement le mois et l’année de ce bulletin.</small>
-                </div>
-                <ChoicePicker
-                  value={payslipFallbackMonth}
-                  options={MONTH_OPTIONS}
-                  onChange={setPayslipFallbackMonth}
-                  ariaLabel="Mois du bulletin"
-                  className="payslip-month-picker"
-                />
-                <ChoicePicker
-                  value={payslipFallbackYear}
-                  options={YEAR_OPTIONS}
-                  onChange={setPayslipFallbackYear}
-                  ariaLabel="Année du bulletin"
-                  className="payslip-year-picker"
-                />
-                <button type="button" className="secondary-button" onClick={applyPayslipFallbackPeriod}>
-                  Utiliser cette période
-                </button>
-              </div>
-            ) : null}
-            {payslipImportMode === "verify" && payslipImportError ? (
-              <p className="allowance-note warn">{payslipImportError}</p>
-            ) : null}
-            {payslipImportMode === "verify" && payslipImportResult ? (
-              <>
-                <p className="allowance-note">
-                  {payslipImportResult.applied.length} champ
-                  {s(payslipImportResult.applied.length)} rempli
-                  {s(payslipImportResult.applied.length)} :{" "}
-                  {payslipImportResult.applied
-                    .map((item) => `${item.label} (${item.value})`)
-                    .join(", ")}
-                  .
-                </p>
-                {payslipImportResult.missing.length ? (
-                  <p className="allowance-note warn">
-                    Pas trouvé sur ces bulletins :{" "}
-                    {payslipImportResult.missing.join(", ")}.
-                  </p>
-                ) : null}
-                {payslipImportResult.adjustment ? (
-                  <p className="allowance-note positive">
-                    {payslipImportResult.adjustment}
-                  </p>
-                ) : null}
-              </>
-            ) : null}
-            {payslipError ? (
-              <p className="allowance-note warn">{payslipError}</p>
-            ) : null}
-            {payslipCheck ? (
-            payslipCheck.reading.month === undefined ||
-            payslipCheck.reading.year !== allowances.year ||
-            payslipCheck.reading.month !== view.getMonth() ? (
-              <p className="allowance-note warn">
-                Ce bulletin
-                {payslipCheck.reading.month !== undefined
-                  ? ` porte ${MONTHS[payslipCheck.reading.month]} ${payslipCheck.reading.year}`
-                  : " n’indique pas sa période"}{" "}
-                mais sa période ne correspond pas encore au mois affiché.
-                Réessayez ou indiquez sa période manuellement.
-              </p>
-            ) : (
-            <>
-              {payslipReview?.tone === "ok" ? (
-                <PayslipSuccessCelebration
-                  key={`${payslipCheck.name}-${payslipCheck.reading.year}-${payslipCheck.reading.month}`}
-                />
-              ) : null}
-              {payslipReview?.tone === "warning" ? (
-                <PayslipWarningEffect
-                  key={`${payslipCheck.name}-${payslipCheck.reading.year}-${payslipCheck.reading.month}`}
-                />
-              ) : null}
-              {payslipReview ? (
-                <div className={`payslip-result-summary ${payslipReview.tone}`}>
-                  <span className="payslip-result-icon" aria-hidden="true">
-                    {payslipReview.tone === "ok" ? "✓" : payslipReview.tone === "warning" ? "!" : "?"}
-                  </span>
-                  <div>
-                    <strong>{payslipReview.verdict}</strong>
-                    <small>
-                      {payslipReview.verified.length} contrôle
-                      {s(payslipReview.verified.length)} fiable
-                      {s(payslipReview.verified.length)} effectué
-                      {s(payslipReview.verified.length)}
-                      {payslipReview.unavailable.length
-                        ? ` · ${payslipReview.unavailable.length} non vérifiable${s(payslipReview.unavailable.length)}`
-                        : ""}
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                      setPayslipResultDetailsOpen((current) => !current)
-                    }
-                    aria-expanded={payslipResultDetailsOpen}
-                  >
-                    {payslipResultDetailsOpen ? "Masquer le détail" : "Voir le détail"}
-                  </button>
-                </div>
-              ) : null}
-              {unplannedPayslipCarence ? (
-                <p className="allowance-note warn">
-                  Jour de carence de {euros(payslipCheck.reading.carenceDay as number)} présent sur le bulletin, mais aucun arrêt maladie n’était prévu dans l’application pour ce mois.
-                </p>
-              ) : null}
-              {payslipResultDetailsOpen ? (
-                <>
-              <table className="allowance-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Ligne</th>
-                    <th scope="col">Bulletin</th>
-                    <th scope="col">Appli</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(
-                    [
-                      {
-                        key: "gross",
-                        label: "Cumul brut",
-                        found: payslipCheck.reading.gross,
-                        computed: grossForMonth(payslipCheck.reading.month),
-                      },
-                      {
-                        key: "base",
-                        label: "Traitement de base",
-                        found: payslipCheck.reading.baseSalary,
-                        computed: baseSalary,
-                      },
-                      {
-                        key: "ifse",
-                        label: "IFSE",
-                        found: payslipCheck.reading.ifse,
-                        computed: ifse,
-                      },
-                      ...(overtimeForPayMonth.totalMinutes
-                        ? [
-                            {
-                              key: "overtime",
-                              label: `Heures supplémentaires (${minutesLabel(
-                                overtimeForPayMonth.totalMinutes,
-                              )})`,
-                              found: undefined,
-                              computed: overtimeForPayMonth.amount,
-                            },
-                          ]
-                        : []),
-                      ...(mecenatForCurrentPayMonth.totalMinutes
-                        ? [
-                            {
-                              key: "mecenat",
-                              label: `Mécénats (${minutesLabel(
-                                mecenatForCurrentPayMonth.totalMinutes,
-                              )})`,
-                              found: undefined,
-                              computed:
-                                mecenatForCurrentPayMonth.grossAmountCents / 100,
-                            },
-                          ]
-                        : []),
-                    ] as const
-                  ).map((row) => {
-                    const gap =
-                      row.found === undefined
-                        ? null
-                        : Math.abs(row.found - row.computed);
-                    return (
-                      <tr key={row.key}>
-                        <th scope="row">
-                          {row.label}
-                          {gap === null ? (
-                            <small>absent du bulletin</small>
-                          ) : gap < 0.05 ? (
-                            <small>concorde</small>
-                          ) : (
-                            <small className="gap">
-                              écart de {euros(gap)}
-                            </small>
-                          )}
-                        </th>
-                        <td>
-                          {row.found === undefined ? "—" : euros(row.found)}
-                        </td>
-                        <td className={gap !== null && gap >= 0.05 ? "pending" : ""}>
-                          {euros(row.computed)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {(() => {
-                    const found = payslipCheck.reading.sundaysBeyondTen;
-                    const expected =
-                      allowances.monthly.find(
-                        (slot) => slot.index === payslipCheck.reading.month,
-                      )?.sundayCount || 0;
-                    const missing = expected - found;
-                    return (
-                      <tr>
-                        <th scope="row">
-                          Dimanches comptés
-                          {missing === 0 ? (
-                            <small>concorde</small>
-                          ) : missing > 0 ? (
-                            <small className="gap">
-                              {missing} manquant{s(missing)}
-                            </small>
-                          ) : (
-                            <small className="gap">
-                              {-missing} de plus qu’attendu
-                            </small>
-                          )}
-                        </th>
-                        <td>{found}</td>
-                        <td className={missing !== 0 ? "pending" : ""}>
-                          {expected}
-                        </td>
-                      </tr>
-                    );
-                  })()}
-                </tbody>
-              </table>
-              {overtimeForPayMonth.totalMinutes ? (
-                <p className="allowance-note">
-                  {minutesLabel(overtimeForPayMonth.totalMinutes)} sont attendues
-                  sur ce bulletin pour un montant brut estimé de {euros(
-                    overtimeForPayMonth.amount,
-                  )}. La ligne du PDF n’est pas encore reconnue de façon assez
-                  fiable : vérifiez-la visuellement sur le bulletin.
-                </p>
-              ) : null}
-              {mecenatForCurrentPayMonth.totalMinutes ? (
-                <p className="allowance-note">
-                  {minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} de mécénat
-                  sont attendues sur ce bulletin pour {euros(
-                    mecenatForCurrentPayMonth.grossAmountCents / 100,
-                  )} brut. La ligne du PDF n’est pas reconnue de façon assez
-                  fiable : vérifiez-la visuellement sur le bulletin.
-                </p>
-              ) : null}
-              <p className="allowance-note">
-                {payslipCheck.name} · comparé à{" "}
-                {MONTHS[payslipCheck.reading.month]} {payslipCheck.reading.year}
-                . Un écart de quelques centimes vient des arrondis ; au-delà, il
-                y a une vraie différence à comprendre.
-              </p>
-              {(() => {
-                const found = payslipCheck.reading.sundaysBeyondTen;
-                const expected =
-                  allowances.monthly.find(
-                    (slot) => slot.index === payslipCheck.reading.month,
-                  )?.sundayCount || 0;
-                const missing = expected - found;
-                if (missing <= 0) return null;
-                const target = nextSundayPayoutSlot(
-                  payslipCheck.reading.year,
-                  payslipCheck.reading.month,
-                );
-                if (!target) return null;
-                return (
-                  <p className="allowance-note">
-                    {missing} dimanche{s(missing)} pas encore payé
-                    {s(missing)}, sans doute pour un délai de traitement.{" "}
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() =>
-                        void reportMissingSundays(
-                          payslipCheck.reading.year as number,
-                          payslipCheck.reading.month as number,
-                          missing,
-                        )
-                      }
-                    >
-                      Reporter sur {MONTHS[target.month]} {target.year}
-                    </button>
-                  </p>
-                );
-              })()}
-                </>
-              ) : null}
-            </>
-            )
-          ) : null}
-          {sundayCarryover > 0 &&
-          sundayCarryoverMonth !== undefined &&
-          sundayCarryoverYear !== undefined ? (
-            <p className="allowance-note">
-              {sundayCarryover} dimanche{s(sundayCarryover)} en attente sur{" "}
-              {MONTHS[sundayCarryoverMonth]} {sundayCarryoverYear}.{" "}
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => void clearSundayCarryover()}
-              >
-                Retirer le report
-              </button>
-            </p>
-          ) : null}
-          </section>
-
-        <section className="allowance-card pay-function-card payslip-calibration-card">
-          <header>
-            <div>
-              <span className="step-label">Améliorer la précision</span>
-              <h3>Affiner mes estimations</h3>
-              <small>Pour remplir automatiquement les éléments de paie</small>
-            </div>
-            <small>Facultatif</small>
-          </header>
-          <p className="allowance-note">
-            Sélectionnez ensemble au moins deux bulletins de mois différents.
-            Ils servent uniquement à distinguer plus précisément le taux du
-            traitement de celui des primes ; les PDF ne sont pas conservés.
-          </p>
-          <label className="payslip-drop payslip-calibration-drop">
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              multiple
-              disabled={payslipImportBusy}
-              onChange={(event) => {
-                const files = Array.from(event.target.files || []);
-                event.target.value = "";
-                if (files.length) void importPayslips(files, "calibrate");
-              }}
-            />
-            <span>
-              {payslipImportBusy && payslipImportMode === "calibrate"
-                ? "Analyse en cours…"
-                : "Choisir plusieurs bulletins"}
-            </span>
-          </label>
-          {payslipImportMode === "calibrate" && payslipImportError ? (
-            <p className="allowance-note warn">{payslipImportError}</p>
-          ) : null}
-          {payslipRateSamples.length ? (
-            <div className={`payslip-calibration-status ${payslipRateCalibration.reason}`} role="status">
-              <strong>
-                {payslipRateCalibration.reason === "ready"
-                  ? "Taux affinés automatiquement"
-                  : payslipRateCalibration.reason === "not-enough-variation"
-                    ? "Bulletins trop similaires"
-                    : payslipRateCalibration.reason === "inconsistent"
-                      ? "Calcul encore trop incertain"
-                      : `${payslipRateCalibration.usableCount} bulletin${s(payslipRateCalibration.usableCount)} utilisable${s(payslipRateCalibration.usableCount)}`}
-              </strong>
-              <small>
-                {payslipRateCalibration.reason === "ready"
-                  ? "Les taux du traitement et des primes ont été mis à jour."
-                  : "Il faut au moins deux mois lisibles avec des montants de primes différents."}
-              </small>
-            </div>
-          ) : null}
-        </section>
-
-        {/* La retenue (un jour de carence puis 10 %/jour) est une règle de
-            fonctionnaire ; le régime d'une contractuelle (IJSS, subrogation)
-            est différent et n'est pas vérifié ici. */}
-        {!isContractuel && sickLeaves.arrets.length > 0 && (
-          <section className="allowance-card">
-            <header>
-              <span>Arrêts maladie {allowances.year}</span>
-              <strong className="negative">−{euros(sickLeaves.total)}</strong>
-            </header>
-            <table className="allowance-table">
-              <tbody>
-                {sickLeaves.arrets.map((arret) => (
-                  <tr key={arret.id}>
-                    <th scope="row">
-                      {periodLabel(arret.from, arret.to)}
-                      <small>
-                        {arret.days} jour{s(arret.days)} · carence +{" "}
-                        {arret.reducedDays} à 10 %
-                      </small>
-                    </th>
-                    <td className="negative">−{euros(arret.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-
-        <section className="allowance-card pay-function-card pay-elements-card">
-          <header>
-            <div>
-              <span className="step-label">Références utilisées par les calculs</span>
-              <h3>Éléments de paie</h3>
-            </div>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => setPaySettingsOpen((current) => !current)}
-              aria-expanded={paySettingsOpen}
-            >
-              {paySettingsOpen ? "Replier" : missing ? "À compléter" : "Voir"}
-            </button>
-          </header>
-          {paySettingsOpen ? (
-            <>
-          {missing ? (
-            <p className="allowance-note warn">
-              Information{netEstimateMissing.length > 1 ? "s" : ""} encore
-              manquante{netEstimateMissing.length > 1 ? "s" : ""} : {netEstimateMissing.join(", ")}.
-              Un bulletin lisible peut les remplir automatiquement.
-            </p>
-          ) : null}
-          <div className="pay-field-grid">
-          {(
-            [
-              {
-                field: "baseSalary" as const,
-                label: "Traitement de base",
-                value: baseSalary,
-                hint: "Ex. 1855,88",
-                use: "primes de férié et retenue maladie",
-              },
-              {
-                field: "ifse" as const,
-                label: "IFSE",
-                value: ifse,
-                hint: "Ex. 416,66",
-                use: "retenue maladie",
-              },
-              {
-                field: "carenceDay" as const,
-                label: "Jour de carence",
-                value: carenceDay,
-                hint: "Ex. 78,17",
-                use: "à recopier du bulletin",
-              },
-              {
-                field: "otherFixed" as const,
-                label: isContractuel
-                  ? "Indemnité de résidence"
-                  : "Autres éléments fixes",
-                value: otherFixed,
-                hint: isContractuel ? "3 % du traitement, déjà calculée" : "Ex. 75,84",
-                use: isContractuel
-                  ? "3 % du traitement de base ; ne modifiez que si votre bulletin montre un autre montant"
-                  : "résidence + SMIC comp. + ICHCSG + MGEN − transfert",
-              },
-              {
-                field: "cia" as const,
-                label: "CIA",
-                value: cia,
-                hint: "Ex. 476,00",
-                use: "complément indemnitaire annuel",
-              },
-              {
-                field: "netRatioFixed" as const,
-                label: "Taux net avant impôt — traitement",
-                value: netRatioFixed,
-                hint: "",
-                use: "estimation automatique, affinée lorsque les bulletins permettent un calcul fiable",
-                percent: true,
-                automatic: true,
-              },
-              {
-                field: "netRatioVariable" as const,
-                label: "Taux net avant impôt — primes",
-                value: netRatioVariable,
-                hint: "",
-                use: "estimation automatique pour les dimanches, fériés et le CIA",
-                percent: true,
-                automatic: true,
-              },
-              {
-                field: "navigo" as const,
-                label: "Navigo remboursé",
-                value: navigo,
-                hint: "Ex. 68,10",
-                use: "hors cumul brut, ajouté tel quel au net",
-              },
-              {
-                field: "mealVoucherDeduction" as const,
-                label: "Titres repas (retenue)",
-                value: mealVoucherDeduction,
-                hint: "Ex. 82,40",
-                use: "hors cumul brut, retiré tel quel du net — jamais en décembre",
-              },
-              {
-                field: "pasRate" as const,
-                label: "Taux d’imposition (PAS)",
-                value: pasRate,
-                hint: "Ex. 1,70",
-                use: "recopié de la ligne « PAS - Taux » du bulletin — mettez-le à jour si les impôts le changent",
-                percent: true,
-              },
-            ]
-          )
-            .filter(
-              (item) =>
-                !isContractuel || (item.field !== "ifse" && item.field !== "cia"),
-            )
-            .map((item) => (
-            <div className="pay-field" key={item.field}>
-              <span className="pay-field-head">
-                {item.label}
-                <b className={item.value ? "" : "pending"}>
-                  {item.value
-                    ? item.percent
-                      ? `${item.value.toLocaleString("fr-FR")} %`
-                      : euros(item.value)
-                    : "à renseigner"}
-                </b>
-              </span>
-              {/* L'explication ne sert qu'à trouver la ligne sur le bulletin :
-                  une fois le montant saisi, elle n'est plus que du bruit. */}
-              {item.automatic || !item.value ? <small>{item.use}</small> : null}
-              {item.automatic ? (
-                <span className="pay-field-automatic">Automatique</span>
-              ) : (
-              <div className="salary-field">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  className="note-search-input"
-                  placeholder={item.hint}
-                  value={payDrafts[item.field]}
-                  onChange={(event) =>
-                    setPayDrafts((current) => ({
-                      ...current,
-                      [item.field]: event.target.value,
-                    }))
-                  }
-                  aria-label={item.label}
-                  title={item.use}
-                />
-                <button
-                  type="button"
-                  className="save-button"
-                  onClick={() => void savePayAmount(item.field)}
-                  disabled={
-                    !payDrafts[item.field].trim() || savingPay === item.field
-                  }
-                  aria-label={`Enregistrer ${item.label}`}
-                  title="Enregistrer"
-                >
-                  {savingPay === item.field ? (
-                    "…"
-                  ) : (
-                    <svg viewBox="0 0 20 20" aria-hidden="true">
-                      <path d="m4 10.5 4 4 8-9" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              )}
-            </div>
-          ))}
-          {!isContractuel && (
-          <div className="pay-field">
-            <span className="pay-field-head">
-              Mois du CIA
-              <b className={ciaMonth === undefined ? "pending" : ""}>
-                {ciaMonth === undefined ? "à renseigner" : MONTHS[ciaMonth]}
-              </b>
-            </span>
-            {ciaMonth === undefined ? (
-              <small>versé une seule fois dans l’année</small>
-            ) : null}
-            <div className="salary-field">
-              <ChoicePicker
-                value={ciaMonth ?? -1}
-                options={[
-                  { value: 6, label: "Juillet" },
-                  { value: 7, label: "Août" },
-                  { value: 8, label: "Septembre" },
-                ]}
-                onChange={(month) => void saveCiaMonth(month)}
-                ariaLabel="Choisir le mois de versement du CIA"
-                layout="list"
-                className="leave-type-picker cia-month-picker"
-                placeholder="À renseigner"
-              />
-            </div>
-          </div>
-          )}
-          </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="pay-settings-summary"
-              onClick={() => setPaySettingsOpen(true)}
-            >
-              <strong>{missing ? "Des informations restent à renseigner" : "Paramètres enregistrés"}</strong>
-              <span>
-                {missing
-                  ? "Le bulletin PDF peut remplir automatiquement les principaux champs."
-                  : "Ouvrir seulement si un montant de votre bulletin change."}
-              </span>
-            </button>
-          )}
-        </section>
-      </div>
+      <PayslipCheckSection
+        payYear={payYear}
+        hasPayProfile={Boolean(payProfiles[payYear])}
+        helpOpen={showPayslipHelp}
+        setHelpOpen={setPayslipHelpOpen}
+        missing={missing}
+        estimateDetails={payEstimateDetails}
+        isContractuel={isContractuel}
+        importBusy={payslipImportBusy}
+        importMode={payslipImportMode}
+        importError={payslipImportError}
+        importResult={payslipImportResult}
+        onImport={(files, importMode) => void importPayslips(files, importMode)}
+        check={payslipCheck}
+        checkError={payslipError}
+        needsPeriod={payslipNeedsPeriod}
+        fallbackMonth={payslipFallbackMonth}
+        setFallbackMonth={setPayslipFallbackMonth}
+        fallbackYear={payslipFallbackYear}
+        setFallbackYear={setPayslipFallbackYear}
+        onApplyFallbackPeriod={applyPayslipFallbackPeriod}
+        allowances={allowances}
+        displayedMonth={view.getMonth()}
+        review={payslipReview}
+        unplannedCarence={unplannedPayslipCarence}
+        resultDetailsOpen={payslipResultDetailsOpen}
+        setResultDetailsOpen={setPayslipResultDetailsOpen}
+        grossForMonth={grossForMonth}
+        baseSalary={baseSalary}
+        ifse={ifse}
+        overtime={overtimeForPayMonth}
+        mecenat={mecenatForCurrentPayMonth}
+        onReportMissingSundays={(year, month, missingSundays) =>
+          void reportMissingSundays(year, month, missingSundays)
+        }
+        nextSundayPayout={nextSundayPayoutSlot}
+        sundayCarryover={sundayCarryover}
+        sundayCarryoverMonth={sundayCarryoverMonth}
+        sundayCarryoverYear={sundayCarryoverYear}
+        onClearSundayCarryover={() => void clearSundayCarryover()}
+        rateSamples={payslipRateSamples}
+        rateCalibration={payslipRateCalibration}
+        sickLeaves={sickLeaves}
+        paySettingsOpen={paySettingsOpen}
+        setPaySettingsOpen={setPaySettingsOpen}
+        missingFields={netEstimateMissing}
+        carenceDay={carenceDay}
+        otherFixed={otherFixed}
+        cia={cia}
+        netRatioFixed={netRatioFixed}
+        netRatioVariable={netRatioVariable}
+        navigo={navigo}
+        mealVoucherDeduction={mealVoucherDeduction}
+        pasRate={pasRate}
+        payDrafts={payDrafts}
+        setPayDrafts={setPayDrafts}
+        savingPay={savingPay}
+        onSavePayAmount={(field) => void savePayAmount(field)}
+        ciaMonth={ciaMonth}
+        onSaveCiaMonth={(month) => void saveCiaMonth(month)}
+      />
     );
   }
-  function renderAllowances() {
-    if (!allowances) return null;
-    const { sundayTotal } = allowances;
-    const variableRows = [
-      {
-        label: "Dimanches",
-        quantity: monthPay?.sundayCount
-          ? `${monthPay.sundayCount} dimanche${s(monthPay.sundayCount)} versé${s(monthPay.sundayCount)} sur cette paie`
-          : "Aucun dimanche versé sur cette paie",
-        amount: monthPay?.sunday || 0,
-      },
-      {
-        label: "Jours fériés",
-        quantity: `${monthPay?.holidayCount || 0} concerné${s(monthPay?.holidayCount || 0)}`,
-        amount: monthPay?.holiday || 0,
-      },
-      {
-        label: "Heures supplémentaires payées",
-        quantity: minutesLabel(overtimeForPayMonth.totalMinutes),
-        amount: overtimeForPayMonth.ready ? overtimeForPayMonth.amount : null,
-      },
-      {
-        label: "Mécénats",
-        quantity: minutesLabel(mecenatForCurrentPayMonth.totalMinutes),
-        amount: mecenatForCurrentPayMonth.grossAmountCents / 100,
-      },
-      {
-        label: "Grève",
-        quantity: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
-          ? `${monthPay?.strikeDeductedDays || 0} journée${s(monthPay?.strikeDeductedDays || 0)} retenue${s(monthPay?.strikeDeductedDays || 0)}${monthPay?.strikeAutomaticDays ? ` dont ${monthPay.strikeAutomaticDays} repos noir${s(monthPay.strikeAutomaticDays)}` : ""}${monthPay?.strikePotentialDays ? ` · ${monthPay.strikePotentialDays} jour${s(monthPay.strikePotentialDays)} à vérifier` : ""}`
-          : "Aucune journée de grève",
-        amount: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
-          ? monthPay?.strikeDeductedDays && !isContractuel && strikeForCurrentPayMonth.totalDeduction !== null
-            ? -strikeForCurrentPayMonth.totalDeduction
-            : null
-          : 0,
-      },
-    ];
-    const variableTotal = variableRows.reduce(
-      (total, row) => total + (row.amount || 0),
-      0,
-    );
-    return (
-      <>
-        <section className="allowance-card variable-pay-card" aria-labelledby="variable-pay-title">
-          <header
-            role="button"
-            tabIndex={0}
-            aria-expanded={payPeriodOpen}
-            onClick={() => setPayPeriodOpen((current) => !current)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" && event.key !== " ") return;
-              event.preventDefault();
-              setPayPeriodOpen((current) => !current);
-            }}
-          >
-            <div className="pay-period-toggle">
-              <span>
-                <span className="step-label">Primes pour le mois</span>
-                <span className="pay-period-month">
-                  <h3 id="variable-pay-title">{MONTHS[view.getMonth()]} {view.getFullYear()}</h3>
-                  <span className="pay-period-chevron" aria-hidden="true">
-                    <svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg>
-                  </span>
-                </span>
-              </span>
-            </div>
-            <div className="variable-pay-heading-actions">
-              <div className="pay-month-nav compact">
-                <button type="button" className="pay-nav-arrow" onClick={(event) => { event.stopPropagation(); changeAllowancesMonth(-1); }} aria-label="Mois précédent">
-                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-                </button>
-                <button type="button" className="pay-nav-arrow" onClick={(event) => { event.stopPropagation(); changeAllowancesMonth(1); }} aria-label="Mois suivant">
-                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
-                </button>
-                <button type="button" className="pay-today-button" onClick={(event) => { event.stopPropagation(); goToday(); }}>
-                  Aujourd’hui
-                </button>
-              </div>
-              <span className="variable-pay-total">
-                <small>{payPeriodOpen ? "Fermer les détails" : "Ouvrir pour les détails"}</small>
-                <strong>{euros(variableTotal)} <em>brut variable</em></strong>
-              </span>
-            </div>
-          </header>
-          {payPeriodOpen ? <div className="variable-pay-list">
-            {variableRows.map((row) => (
-              <article key={row.label}>
-                <span><strong>{row.label}</strong><small>{row.quantity}</small></span>
-                <b className={row.amount === null ? "pending" : ""}>
-                  {row.amount === null ? "À calculer" : euros(row.amount)}
-                </b>
-              </article>
-            ))}
-          </div> : null}
-        </section>
-        <section className="allowance-overview" aria-labelledby="allowance-overview-title">
-          <div className="allowance-overview-heading">
-            <div>
-              <span className="step-label">Résumé {allowances.year}</span>
-              <h3 id="allowance-overview-title">Mes primes en un coup d’œil</h3>
-            </div>
-          </div>
-          <div className="allowance-overview-grid">
-            <article>
-              <span>Dimanches travaillés</span>
-              <strong>{allowances.sundayDone}</strong>
-              <small>{allowances.sundayLeft} encore à venir</small>
-            </article>
-            <article>
-              <span>Jours fériés dans l’année</span>
-              <strong>{allowances.holidays.length}</strong>
-              <small>
-                {allowances.cancelledHolidays.length
-                  ? `${allowances.cancelledHolidays.length} annulé${s(allowances.cancelledHolidays.length)}`
-                  : allowances.holidayPending
-                    ? `${allowances.holidayPending} à préciser`
-                    : "Tous renseignés"}
-              </small>
-            </article>
-            <article>
-              <span>Primes variables prévues</span>
-              <strong>{euros(allowances.monthlyTotal)}</strong>
-              <small>hors forfait mensuel</small>
-            </article>
-          </div>
-          {allowances.holidayPending ? (
-            <div className="allowance-summary-alert">
-              <span aria-hidden="true">!</span>
-              <strong>
-                {allowances.holidayPending} jour{s(allowances.holidayPending)} férié{s(allowances.holidayPending)} à préciser
-              </strong>
-              <small>Choisissez la compensation dans le détail ci-dessous.</small>
-            </div>
-          ) : null}
-        </section>
-
-        <div className="allowance-detail-stack">
-        <section className="allowance-card">
-          <header>
-            <span>Dimanches {allowances.year}</span>
-            <strong>
-              {allowances.sundayDone} <em>faits</em> · {allowances.sundayLeft}{" "}
-              <em>à venir</em>
-            </strong>
-          </header>
-          <p className="allowance-note">
-            {allowances.sundayDone} fait sur {allowances.sundaysScheduledPast}{" "}
-            à ce jour
-          </p>
-          <table className="allowance-table">
-            <tbody>
-              {SUNDAY_TIERS.map((tier) => {
-                const size = Number.isFinite(tier.to)
-                  ? tier.to - tier.from + 1
-                  : 0;
-                const reached = Math.max(
-                  0,
-                  Math.min(
-                    allowances.sundayDone,
-                    size ? tier.to : allowances.sundayDone,
-                  ) -
-                    (tier.from - 1),
-                );
-                const current = tier.label === allowances.tier.label;
-                return (
-                  <tr key={tier.label} className={current ? "current" : ""}>
-                    <th scope="row">
-                      Socle {tier.label}
-                      {current ? <small>vous y êtes</small> : null}
-                    </th>
-                    <td>
-                      {size ? (
-                        <>
-                          <span className="allowance-progress">
-                            <i style={{ width: `${(reached / size) * 100}%` }} />
-                          </span>
-                          {reached} / {size}
-                        </>
-                      ) : (
-                        reached
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <p className="allowance-note">
-            {allowances.sundayCount} dimanches sur l’année.{" "}
-            {sundayTotal.unpaid
-              ? `${sundayTotal.unpaid} au-delà du ${SUNDAY_ALLOWANCE.paidUntil}e : travaillés pour rien.`
-              : `Plafond à ${SUNDAY_ALLOWANCE.paidUntil}, vous restez en dessous.`}
-          </p>
-        </section>
-
-        <section className="allowance-card">
-          <header>
-            <span>Jours fériés {allowances.year}</span>
-            <strong>
-              {allowances.holidays.length} <em>travaillés</em>
-            </strong>
-          </header>
-          {allowances.holidays.length || allowances.cancelledHolidays.length ? (
-            <table className="allowance-table">
-              <tbody>
-                {allowances.holidays.map((item) => (
-                  <tr key={item.key}>
-                    <th scope="row">
-                      {item.name}
-                      <small>
-                        {shortDate(item.key)} · {holidayPayslip(item.key).label}
-                      </small>
-                    </th>
-                    <td className={item.choice ? "" : "pending"}>
-                      <div className="holiday-pay-cell">
-                        {item.choice && holidayChoiceEditing !== item.key ? (
-                          <button
-                            type="button"
-                            className="holiday-pay-amount"
-                            onClick={() => setHolidayChoiceEditing(item.key)}
-                            aria-label={`${euros(holidayAllowance(baseSalary, item.choice))}. Modifier le choix de compensation du ${shortDate(item.key)}`}
-                            title="Cliquer pour modifier le choix"
-                          >
-                            {euros(holidayAllowance(baseSalary, item.choice))}
-                          </button>
-                        ) : (
-                          <ChoicePicker
-                            value={item.choice || ""}
-                            options={HOLIDAY_PAY_OPTIONS}
-                            onChange={(choice) => {
-                              if (!choice) return;
-                              setHolidayChoiceEditing(null);
-                              void chooseHolidayPay(item.key, choice);
-                            }}
-                            ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                            className="holiday-pay-picker"
-                            layout="list"
-                            placeholder="À décider"
-                          />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {allowances.cancelledHolidays.map((item) => (
-                  <tr key={`cancelled-${item.key}`} className="holiday-cancelled">
-                    <th scope="row">
-                      {item.name}
-                      <small>{shortDate(item.key)}</small>
-                    </th>
-                    <td><strong>Annulé</strong></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="allowance-note">Aucun férié travaillé cette année.</p>
-          )}
-          {allowances.holidayPending ? (
-            <p className="allowance-note warn">
-              {allowances.holidayPending} férié
-              {s(allowances.holidayPending)} sans compensation choisie :
-              cliquez sur « À décider » pour trancher.
-            </p>
-          ) : null}
-        </section>
-
-        {allowances.compensated.length > 0 && (
-          <section className="allowance-card">
-            <header>
-              <span>Fériés compensés {allowances.year}</span>
-              <strong>
-                {allowances.compensated.length} <em>non travaillés</em>
-              </strong>
-            </header>
-            <table className="allowance-table">
-              <tbody>
-                {allowances.compensated.map((item) => (
-                  <tr key={item.key}>
-                    <th scope="row">
-                      {item.name}
-                      <small>
-                        {shortDate(item.key)} · paie de février{" "}
-                        {allowances.year + 1}
-                      </small>
-                    </th>
-                    <td className={item.choice ? "" : "pending"}>
-                      <div className="holiday-pay-cell">
-                        {item.choice && holidayChoiceEditing !== item.key ? (
-                          <button
-                            type="button"
-                            className="holiday-pay-amount"
-                            onClick={() => setHolidayChoiceEditing(item.key)}
-                            aria-label={`${euros(holidayAllowance(baseSalary, item.choice))}. Modifier le choix de compensation du ${shortDate(item.key)}`}
-                            title="Cliquer pour modifier le choix"
-                          >
-                            {euros(holidayAllowance(baseSalary, item.choice))}
-                          </button>
-                        ) : (
-                          <ChoicePicker
-                            value={item.choice || ""}
-                            options={HOLIDAY_PAY_OPTIONS}
-                            onChange={(choice) => {
-                              if (!choice) return;
-                              setHolidayChoiceEditing(null);
-                              void chooseHolidayPay(item.key, choice);
-                            }}
-                            ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-                            className="holiday-pay-picker"
-                            layout="list"
-                            placeholder="À décider"
-                          />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-        </div>
-      </>
-    );
-  }
-
+  const allowancesContent = allowances ? (
+    <PayAllowancesSection
+      allowances={allowances}
+      monthPay={monthPay}
+      overtimeForPayMonth={overtimeForPayMonth}
+      mecenatForPayMonth={mecenatForCurrentPayMonth}
+      strikeForPayMonth={strikeForCurrentPayMonth}
+      isContractuel={isContractuel}
+      baseSalary={baseSalary}
+      month={view.getMonth()}
+      year={view.getFullYear()}
+      payPeriodOpen={payPeriodOpen}
+      holidayChoiceEditing={holidayChoiceEditing}
+      onTogglePayPeriod={() => setPayPeriodOpen((current) => !current)}
+      onChangeMonth={changeAllowancesMonth}
+      onGoToday={goToday}
+      onEditHolidayChoice={setHolidayChoiceEditing}
+      onChooseHolidayPay={chooseHolidayPay}
+    />
+  ) : null;
   // Le titre d'un mois de la vue Année l'ouvre en grand. On bascule sur la
   // vue Mois plutôt que d'agrandir sur place : c'est elle qui porte la barre
   // d'outils, donc « Poser un congé » et le reste restent accessibles.
@@ -7325,687 +5062,135 @@ export default function Home() {
       ) : null}
 
       {homeSection === "home" ? (
-      <section className="today-overview" aria-labelledby="today-title">
-        <div className="today-overview-heading">
-          <div>
-            <span className="step-label">En un coup d’œil</span>
-            <h2 id="today-title">Aujourd’hui</h2>
-            <small>{longDate(now)}</small>
-          </div>
-          <button
-            className="primary-action add-action group-heading-action"
-            type="button"
-            onClick={() => setGroupChooserOpen(true)}
-            aria-label={formProfile?.group ? `Je suis groupe ${group}. Modifier mon groupe` : "Choisir mon groupe"}
-          >
-            {formProfile?.group ? `Je suis groupe ${group}` : "Choisir mon groupe"}
-          </button>
-        </div>
-        <div className="today-overview-grid">
-          <article className={`today-status tone-${todayOverview.tone}`}>
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="8" />
-                <path d="M12 7v5l3 2" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Aujourd’hui</span>
-              <strong>{todayOverview.status}</strong>
-              {todayOverview.todayGroupLabel ? (
-                <small>{todayOverview.todayGroupLabel}</small>
-              ) : null}
-            </span>
-          </article>
-          <button
-            className="today-next-work"
-            type="button"
-            onClick={() => {
-              if (!todayOverview.nextWork) return;
-              setHomeSection("home");
-              setMode("month");
-              setView(
-                localDate(
-                  todayOverview.nextWork.getFullYear(),
-                  todayOverview.nextWork.getMonth(),
-                  1,
-                ),
-              );
-            }}
-          >
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                <path d="m9 14 2 2 4-4" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Prochain jour travaillé</span>
-              <strong>
-                {todayOverview.nextWork
-                  ? `${compactWeekdayDate(todayOverview.nextWork)}${
-                      todayOverview.nextWorkExceptionalClosure
-                        ? " — Fermeture exceptionnelle"
-                        : todayOverview.nextWorkKind === "training"
-                        ? " — Formation"
-                        : ""
-                    }`
-                  : "Aucun à venir"}
-              </strong>
-              {todayOverview.nextWorkGroupLabel ? (
-                <small>{todayOverview.nextWorkGroupLabel}</small>
-              ) : null}
-            </span>
-          </button>
-          <button
-            className="today-leave-balance"
-            type="button"
-            onClick={() => {
-              setHomeSection("leave");
-            }}
-            aria-label={`Congés restant : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
-          >
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                <path d="M8 13h8M8 17h5" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Congés restant :</span>
-              <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jours à poser</strong>
-              <small>Voir le détail des soldes</small>
-            </span>
-          </button>
-          <article className="today-remaining-work">
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                <path d="m8 14 2.5 2.5L16 11" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Travail restant</span>
-              <strong>{dayCountLabel(remainingWorkedDaysThisYear)} jour{s(remainingWorkedDaysThisYear)}</strong>
-              <small>D’ici au 31 décembre</small>
-            </span>
-          </article>
-        </div>
-        {importantAlert ? (
-          <button
-            className="important-alert"
-            type="button"
-            onClick={() => {
-              setHomeSection("pay");
-              setPayScreen(sundayCarryover ? "payslip" : "allowances");
-            }}
-          >
-            <span aria-hidden="true">!</span>
-            <strong>{importantAlert}</strong>
-            <small>Voir dans Ma paie</small>
-          </button>
-        ) : null}
-      </section>
-      ) : null}
-
-      {homeSection === "home" ? (
-        <section className="home-notes-section" aria-labelledby="home-notes-title">
-          <div className="home-content-heading">
-            <div>
-              <span className="step-label">À ne pas oublier</span>
-              <h2 id="home-notes-title">Mes notes</h2>
-            </div>
-            <button type="button" onClick={beginQuickNote}>Ajouter une note</button>
-          </div>
-          <NotesPanelContent
-            hasAnyNote={hasAnyNote}
-            query={noteQuery}
-            onQueryChange={setNoteQuery}
-            searchResults={noteSearchResults}
-            upcoming={upcoming}
-            renderItems={renderNoteItems}
-          />
-        </section>
+        <HomeDashboard
+          now={now}
+          group={group}
+          hasConfiguredGroup={Boolean(formProfile?.group)}
+          today={todayOverview}
+          totalLeaveRemaining={totalLeaveRemaining}
+          remainingWorkedDaysThisYear={remainingWorkedDaysThisYear}
+          importantAlert={importantAlert}
+          hasAnyNote={hasAnyNote}
+          noteQuery={noteQuery}
+          onNoteQueryChange={setNoteQuery}
+          noteSearchResults={noteSearchResults}
+          upcoming={upcoming}
+          renderNoteItems={renderNoteItems}
+          onChooseGroup={() => setGroupChooserOpen(true)}
+          onOpenNextWork={(date) => {
+            setHomeSection("home");
+            setMode("month");
+            setView(localDate(date.getFullYear(), date.getMonth(), 1));
+          }}
+          onOpenLeave={() => setHomeSection("leave")}
+          onOpenPayAlert={() => {
+            setHomeSection("pay");
+            setPayScreen(sundayCarryover ? "payslip" : "allowances");
+          }}
+          onAddNote={beginQuickNote}
+        />
       ) : null}
 
       {homeSection === "leave" ? (
-        <>
-          <section className="section-intro leave-intro">
-            <div>
-              <span className="step-label">Congés et récupérations</span>
-              <h2>Mes absences et mes demandes</h2>
-              <p>Vos soldes sont visibles immédiatement. Touchez une carte, puis une date pour ouvrir la fiche du jour.</p>
-            </div>
-            <button
-              className="primary-action"
-              type="button"
-              onClick={() => openRequestChooser("general")}
-            >
-              Poser un congé
-            </button>
-          </section>
-          <Suspense fallback={<DeferredSection label="vos soldes" />}>
-          <LeaveBalancesSection
-            year={absenceYear}
-            totalRemaining={totalLeaveRemaining}
-            balances={leaveStats.balances}
-            countedOnly={leaveStats.countedOnly}
-            manualSundayLeaveTotal={manualSundayLeaveTotal}
-            onYearChange={(year) => {
-              setAbsenceYear(year);
-              setBalanceDetailType(null);
-            }}
-            onSelectBalance={setBalanceDetailType}
-            onOpenManualAdjustments={openManualAdjustments}
-          />
-          </Suspense>
-          <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET">
-            <div className="leave-secondary-grid">
-              <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
-            <div className="overtime-balance-heading">
-              <div>
-                <span className="step-label">Récupérations en heures</span>
-                <h3 id="overtime-balance-title">Mes heures supplémentaires</h3>
-                <p>Les heures à récupérer restent séparées de vos congés en jours.</p>
-              </div>
-              <strong>{minutesLabel(recoveryBalance.remaining)} disponibles</strong>
-            </div>
-            <div className="overtime-balance-summary">
-              <article>
-                <span>Gagnées</span>
-                <strong>{minutesLabel(recoveryBalance.earned)}</strong>
-              </article>
-              <article>
-                <span>Utilisées</span>
-                <strong>{minutesLabel(recoveryBalance.used)}</strong>
-              </article>
-              <article className="remaining">
-                <span>Restantes</span>
-                <strong>{minutesLabel(recoveryBalance.remaining)}</strong>
-              </article>
-            </div>
-            <div className="overtime-actions">
-              <button
-                type="button"
-                className="primary-action"
-                onClick={() => setOvertimeDialogOpen(true)}
-              >
-                Déclarer des heures sup
-              </button>
-              <button
-                type="button"
-                className="secondary-button solidarity-hours-action"
-                onClick={() => setSolidarityDialogOpen(true)}
-              >
-                Ajouter des heures manuellement
-              </button>
-            </div>
-            <button
-              type="button"
-              className="soft-detail-button overtime-history-toggle"
-              onClick={() => setOvertimeHistoryOpen((current) => !current)}
-              aria-expanded={overtimeHistoryOpen}
-            >
-              {overtimeHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
-            </button>
-            {overtimeHistoryOpen ? (
-              <div className="overtime-history">
-                {!recoveryEarnings.length && !recoveryUses.length ? (
-                  <p className="empty-state">Aucune heure supplémentaire enregistrée.</p>
-                ) : null}
-                {[...overtimeEntries]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((entry) => {
-                    const payPeriod = nextPayPeriod(entry.date);
-                    const state = recoveryEarningStates.get(entry.id);
-                    return (
-                      <article key={entry.id}>
-                        <span className={`overtime-kind ${entry.disposition}`} aria-hidden="true" />
-                        <div>
-                          <strong>
-                            {entry.id.startsWith("solidarity-")
-                              ? `Heures de solidarité · +${minutesLabel(entry.minutes)}`
-                              : `${minutesLabel(entry.minutes)} · ${entry.disposition === "paid" ? "À payer" : "À récupérer"}`}
-                          </strong>
-                          <span>{longDate(fromKey(entry.date))}</span>
-                          <small>
-                            {entry.id.startsWith("solidarity-")
-                              ? state?.remainingMinutes
-                                ? `${minutesLabel(state.remainingMinutes)} encore disponibles sur cet ajout manuel`
-                                : "Ajout manuel entièrement utilisé"
-                              : entry.disposition === "paid"
-                              ? `Paiement prévu en ${MONTHS[payPeriod.month]} ${payPeriod.year}`
-                              : state?.remainingMinutes
-                                ? `${minutesLabel(state.remainingMinutes)} encore disponibles sur ce gain`
-                                : "Gain entièrement utilisé"}
-                          </small>
-                        </div>
-                        <button type="button" onClick={() => void deleteOvertimeEntry(entry)}>
-                          Supprimer
-                        </button>
-                      </article>
-                    );
-                  })}
-                {[...holidayRecoveryEarnings]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((entry) => {
-                    const state = recoveryEarningStates.get(entry.id);
-                    return (
-                      <article key={entry.id} className="holiday-recovery-history">
-                        <span className="overtime-kind recovery" aria-hidden="true" />
-                        <div>
-                          <strong>Prime + récupération · +{minutesLabel(entry.minutes)}</strong>
-                          <span>{longDate(fromKey(entry.date))}</span>
-                          <small>
-                            Crédit automatique selon votre quotité
-                            {state?.remainingMinutes
-                              ? ` · ${minutesLabel(state.remainingMinutes)} disponibles`
-                              : " · gain utilisé"}
-                          </small>
-                        </div>
-                      </article>
-                    );
-                  })}
-                {[...recoveryUses]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((entry) => (
-                    <article key={entry.id} className="recovery-use-history">
-                      <span className="overtime-kind used" aria-hidden="true" />
-                      <div>
-                        <strong>
-                          − {minutesLabel(entry.minutes)} · {entry.kind === "training" ? "Formation" : "Récupération posée"}
-                        </strong>
-                        <span>{longDate(fromKey(entry.date))}</span>
-                        <small>{entry.kind === "training" ? "Formation déduite comme récupération en heures" : "Déduite du solde en heures"}</small>
-                      </div>
-                      <button type="button" onClick={() => void deleteRecoveryUse(entry)}>
-                        Annuler
-                      </button>
-                    </article>
-                  ))}
-              </div>
-            ) : null}
-              </section>
-              <section className="overtime-balance-card mecenat-balance-card" aria-labelledby="mecenat-history-title">
-            <div className="overtime-balance-heading">
-              <div>
-                <span className="step-label">Distinct des heures supplémentaires</span>
-                <h3 id="mecenat-history-title">Mécénats</h3>
-                <p>Les montants bruts sont ajoutés automatiquement à l’estimation du mois suivant.</p>
-              </div>
-              <strong>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</strong>
-            </div>
-            <div className="mecenat-rate-summary" aria-label="Tarifs réglementaires des mécénats">
-              <article>
-                <span>De 7 h à 22 h</span>
-                <strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong>
-              </article>
-              <article>
-                <span>De 22 h à 7 h</span>
-                <strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong>
-              </article>
-            </div>
-            <div className="overtime-actions">
-              <button
-                type="button"
-                className="primary-action mecenat-action"
-                onClick={() => {
-                  setMecenatDraft((current) => ({
-                    ...current,
-                    date: dateKey(now),
-                  }));
-                  setMecenatDialogOpen(true);
+        <LeaveManagementPage
+          balancesContent={
+            <Suspense fallback={<DeferredSection label="vos soldes" />}>
+              <LeaveBalancesSection
+                year={absenceYear}
+                totalRemaining={totalLeaveRemaining}
+                balances={leaveStats.balances}
+                countedOnly={leaveStats.countedOnly}
+                manualSundayLeaveTotal={manualSundayLeaveTotal}
+                onYearChange={(year) => {
+                  setAbsenceYear(year);
+                  setBalanceDetailType(null);
                 }}
-              >
-                Déclarer un mécénat
-              </button>
-            </div>
-            <button
-              type="button"
-              className="soft-detail-button overtime-history-toggle"
-              onClick={() => setMecenatHistoryOpen((current) => !current)}
-              aria-expanded={mecenatHistoryOpen}
-            >
-              {mecenatHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
-            </button>
-            {mecenatHistoryOpen ? (
-              <div className="overtime-history mecenat-history">
-                {!mecenatEntries.length ? (
-                  <p className="empty-state">Aucun mécénat enregistré.</p>
-                ) : null}
-                {[...mecenatEntries]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((entry) => (
-                    <article key={entry.id}>
-                      <span className="overtime-kind mecenat" aria-hidden="true" />
-                      <div>
-                        <strong>{entry.start} → {entry.end} · {euros(entry.grossAmountCents / 100)} brut</strong>
-                        <span>{longDate(fromKey(entry.date))} · {minutesLabel(entry.dayMinutes + entry.nightMinutes)}</span>
-                        <small>Intégré automatiquement à la paie du mois suivant</small>
-                      </div>
-                      <button type="button" onClick={() => void deleteMecenatEntry(entry)}>
-                        Supprimer
-                      </button>
-                    </article>
-                  ))}
-              </div>
-            ) : null}
-              </section>
-            </div>
-            <Suspense fallback={<DeferredSection label="votre CET" />}>
-            <CetSection
-            account={formProfile?.cetAccount}
-            status={formProfile?.status || "contractuel"}
-            fullName={formProfile?.fullName || ""}
-            signature={formProfile?.signature || ""}
-            annualDaysTaken={cetAnnualDaysTaken}
-            plannedLeaveDays={cetPlannedLeaveDays}
-            remaining={cetLeaveBalances}
-            saving={savingCet}
-            onSave={saveCetAccount}
-            onRequestLeave={() => beginRequest("leave", undefined, "cet")}
-            />
+                onSelectBalance={setBalanceDetailType}
+                onOpenManualAdjustments={openManualAdjustments}
+              />
             </Suspense>
-            {isProgramAdmin ? <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
-            <button
-              className="request-archive-toggle"
-              type="button"
-              onClick={() => setArchiveOpen((current) => !current)}
-              aria-expanded={archiveOpen}
-            >
-              <span className="request-archive-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 7h5l2 2h7v10H5zM7 4h7l2 2" />
-                </svg>
-              </span>
-              <span className="request-archive-copy">
-                <strong id="leave-request-archive-title">Autre</strong>
-                <span className="step-label">Mes demandes archivées</span>
-                <small>Documents conservés sur cet appareil</small>
-              </span>
-              <span className="request-archive-summary">
-                <small>{archivedRequests.length} formulaire{s(archivedRequests.length)}</small>
-                <span className="request-archive-caret" aria-hidden="true">⌄</span>
-              </span>
-            </button>
-            {archiveOpen ? (
-              <div className="request-archive-list">
-                {archivedRequests.length ? archivedRequests.map((request) => (
-                  <article className="archived-request" key={request.id}>
-                    <button className="archived-request-open" type="button" onClick={() => openArchivedRequest(request)}>
-                      <span className="archived-request-pdf">PDF</span>
-                      <span><strong>{request.name}</strong><small>{archivedRequestDate(request.updatedAt)}</small></span>
-                    </button>
-                    <button className="archived-request-delete" type="button" onClick={() => void deleteArchivedRequest(request)} aria-label={`Supprimer ${request.name}`}>×</button>
-                  </article>
-                )) : <p className="request-archive-empty">Aucune demande archivée sur cet appareil.</p>}
-              </div>
-            ) : null}
-            </section> : null}
-          </section>
-        </>
+          }
+          cetContent={
+            <Suspense fallback={<DeferredSection label="votre CET" />}>
+              <CetSection
+                account={formProfile?.cetAccount}
+                status={formProfile?.status || "contractuel"}
+                fullName={formProfile?.fullName || ""}
+                signature={formProfile?.signature || ""}
+                annualDaysTaken={cetAnnualDaysTaken}
+                plannedLeaveDays={cetPlannedLeaveDays}
+                remaining={cetLeaveBalances}
+                saving={savingCet}
+                onSave={saveCetAccount}
+                onRequestLeave={() => beginRequest("leave", undefined, "cet")}
+              />
+            </Suspense>
+          }
+          recoveryBalance={recoveryBalance}
+          recoveryEarningsCount={recoveryEarnings.length}
+          overtimeEntries={overtimeEntries}
+          holidayRecoveryEarnings={holidayRecoveryEarnings}
+          recoveryUses={recoveryUses}
+          recoveryEarningStates={recoveryEarningStates}
+          overtimeHistoryOpen={overtimeHistoryOpen}
+          mecenatEntries={mecenatEntries}
+          mecenatHistoryOpen={mecenatHistoryOpen}
+          isProgramAdmin={isProgramAdmin}
+          archiveOpen={archiveOpen}
+          archivedRequests={archivedRequests}
+          onRequestLeave={() => openRequestChooser("general")}
+          onOpenOvertime={() => setOvertimeDialogOpen(true)}
+          onOpenSolidarity={() => setSolidarityDialogOpen(true)}
+          onToggleOvertimeHistory={() => setOvertimeHistoryOpen((current) => !current)}
+          onDeleteOvertime={(entry) => void deleteOvertimeEntry(entry)}
+          onDeleteRecoveryUse={(entry) => void deleteRecoveryUse(entry)}
+          onOpenMecenat={() => {
+            setMecenatDraft((current) => ({ ...current, date: dateKey(now) }));
+            setMecenatDialogOpen(true);
+          }}
+          onToggleMecenatHistory={() => setMecenatHistoryOpen((current) => !current)}
+          onDeleteMecenat={(entry) => void deleteMecenatEntry(entry)}
+          onToggleArchive={() => setArchiveOpen((current) => !current)}
+          onOpenArchivedRequest={openArchivedRequest}
+          onDeleteArchivedRequest={(request) => void deleteArchivedRequest(request)}
+        />
       ) : null}
-
       {homeSection === "pay" && allowances ? (
-        <section className="pay-app-screen" aria-label="Ma paie">
-          {payScreen === "overview" ? (
-            <>
-              <div className="native-screen-heading pay-overview-intro">
-                <span className="step-label">Ma paie</span>
-                <h2>Ma paie en un coup d’œil</h2>
-                <p>Réglez votre profil, puis retrouvez vos primes, vos estimations et vos bulletins.</p>
-              </div>
-              <section className="pay-overview-profile-panel" aria-labelledby="pay-overview-profile-title">
-                <div className="pay-overview-section-heading">
-                  <span className="pay-overview-number profile" aria-hidden="true">1</span>
-                  <div>
-                    <h3 id="pay-overview-profile-title">Mes réglages</h3>
-                    <p>Les calculs s’adaptent automatiquement à votre situation.</p>
-                  </div>
-                </div>
-                <section className={`pay-profile-settings${payProfileOpen ? " open" : ""}`} aria-labelledby="pay-profile-settings-title">
-                  <button
-                    type="button"
-                    className="pay-profile-summary"
-                    onClick={() => setPayProfileOpen((current) => !current)}
-                    aria-expanded={payProfileOpen}
-                  >
-                    <span className="pay-profile-symbol" aria-hidden="true">P</span>
-                    <span className="pay-profile-summary-copy">
-                      <span className="step-label">Profil utilisé pour les calculs</span>
-                      <strong id="pay-profile-settings-title">Mon profil de paie</strong>
-                      <small>
-                        {WORK_QUOTA_OPTIONS.find((option) => option.value === workQuota)?.label}
-                        {" · "}
-                        {PAY_STATUS_OPTIONS.find((option) => option.value === (formProfile?.status || "contractuel"))?.label}
-                      </small>
-                      {netEstimateComplete ? (
-                        <span
-                          className="pay-profile-completeness complete"
-                          title="Les informations nécessaires à l’estimation du mois sont renseignées."
-                        >
-                          Profil complet
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="pay-profile-open-copy">{payProfileOpen ? "Replier" : "Modifier"}</span>
-                    <i aria-hidden="true">⌄</i>
-                  </button>
-                  {payProfileOpen ? <div className="pay-profile-settings-grid">
-                    <label>
-                      <span>Quotité de travail</span>
-                      <ChoicePicker
-                        value={workQuota}
-                        options={WORK_QUOTA_OPTIONS.map(({ value, label }) => ({ value, label }))}
-                        onChange={changeWorkQuota}
-                        ariaLabel="Choisir la quotité de travail"
-                        layout="list"
-                        className="pay-profile-picker"
-                      />
-                      <small>{minutesLabel(workDayMinutes)} par jour</small>
-                    </label>
-                    <label>
-                      <span>Statut</span>
-                      <ChoicePicker
-                        value={formProfile?.status || "contractuel"}
-                        options={PAY_STATUS_OPTIONS}
-                        onChange={changeStatus}
-                        ariaLabel="Choisir le statut"
-                        layout="list"
-                        className="pay-profile-picker"
-                      />
-                      <small>Calculs adaptés à votre statut</small>
-                    </label>
-                  </div> : null}
-                </section>
-              </section>
-              <section className="pay-overview-category-panel" aria-labelledby="pay-overview-category-title">
-                <div className="pay-overview-section-heading">
-                  <span className="pay-overview-number categories" aria-hidden="true">2</span>
-                  <div>
-                    <h3 id="pay-overview-category-title">Consulter ma paie</h3>
-                    <p>Choisissez les informations que vous souhaitez retrouver.</p>
-                  </div>
-                </div>
-                <div className="pay-category-grid">
-                  <button type="button" onClick={() => setPayScreen("allowances")}>
-                    <span className="pay-category-icon allowances" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><path d="M12 3v18M8 7h6a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7" /></svg>
-                    </span>
-                    <span className="pay-category-copy">
-                      <span className="pay-category-kicker">Éléments variables</span>
-                      <strong>Primes et jours fériés</strong>
-                      <small>Dimanches, fériés, heures payées et mécénats</small>
-                      <span className="pay-category-cta">Voir le détail <i aria-hidden="true">→</i></span>
-                    </span>
-                  </button>
-                  <button type="button" onClick={() => setPayScreen("payslip")}>
-                    <span className="pay-category-icon payslip" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 12h6M9 16h4" /></svg>
-                    </span>
-                    <span className="pay-category-copy">
-                      <span className="pay-category-kicker">Estimation mensuelle</span>
-                      <strong>Bulletins et estimations</strong>
-                      <small>Vérifier un bulletin et consulter le détail de la paie</small>
-                      <span className="pay-category-cta">Ouvrir l’estimation <i aria-hidden="true">→</i></span>
-                    </span>
-                  </button>
-                </div>
-              </section>
-            </>
-          ) : (
-            <div className="pay-detail-screen">
-              <header className="pay-detail-sticky-header">
-                <button className="native-back-button" type="button" onClick={() => setPayScreen("overview")} aria-label="Revenir aux catégories de paie">
-                  <span aria-hidden="true">←</span>
-                </button>
-                <button
-                  type="button"
-                  className="pay-detail-title-button"
-                  onClick={() => setPayScreen("overview")}
-                  aria-label="Fermer cette catégorie et revenir à Ma paie"
-                >
-                  <span className="step-label">Ma paie</span>
-                  <h2>{payScreen === "allowances" ? "Primes et jours fériés" : "Bulletins et estimations"}</h2>
-                  <small>{MONTHS[view.getMonth()]} {view.getFullYear()}</small>
-                </button>
-                <button className="pay-detail-close" type="button" onClick={() => setPayScreen("overview")} aria-label="Fermer cette catégorie">
-                  ×
-                </button>
-              </header>
-              {payScreen === "allowances" ? (
-                <div
-                  className={`request-archive-content allowances pay-dedicated-content${payMonthSlide ? ` pay-month-${payMonthSlide}` : ""}`}
-                  onTouchStart={startAllowancesSwipe}
-                  onTouchEnd={endAllowancesSwipe}
-                >
-                  {renderAllowances()}
-                </div>
-              ) : (
-                <div
-                  className={`pay-dedicated-content${payMonthSlide ? ` pay-month-${payMonthSlide}` : ""}`}
-                  onTouchStart={startAllowancesSwipe}
-                  onTouchEnd={endAllowancesSwipe}
-                >
-                  <aside className="payslip-leave-notice" aria-label="Conseil pour une estimation correcte">
-                    <span aria-hidden="true">i</span>
-                    <p>
-                      <strong>Avant de vérifier votre bulletin</strong>
-                      Pour que l’estimation soit correcte, renseignez dans le planning tous vos congés validés.
-                    </p>
-                  </aside>
-                  {renderPayslipCheck()}
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+        <PayPage
+          screen={payScreen}
+          month={view.getMonth()}
+          year={view.getFullYear()}
+          profileOpen={payProfileOpen}
+          workQuota={workQuota}
+          status={formProfile?.status || "contractuel"}
+          workDayMinutes={workDayMinutes}
+          netEstimateComplete={netEstimateComplete}
+          monthSlide={payMonthSlide}
+          allowancesContent={allowancesContent}
+          payslipContent={renderPayslipCheck()}
+          onScreenChange={setPayScreen}
+          onToggleProfile={() => setPayProfileOpen((current) => !current)}
+          onWorkQuotaChange={changeWorkQuota}
+          onStatusChange={changeStatus}
+          onTouchStart={startAllowancesSwipe}
+          onTouchEnd={endAllowancesSwipe}
+        />
       ) : null}
 
       {homeSection === "pdf" ? (
-        <section className="pdf-download-screen" id="planning-pdf" aria-labelledby="pdf-download-title">
-          <div className="native-screen-heading pdf-download-intro">
-            <span className="step-label">Documents</span>
-            <h2 id="pdf-download-title">Télécharger les plannings en PDF</h2>
-            <p>
-              {narrowScreen
-                ? "Préparez votre planning, puis choisissez comment ouvrir ou télécharger le PDF."
-                : "Préparez votre planning, puis choisissez la version à télécharger."}
-            </p>
-          </div>
-          <section className="pdf-preparation-panel" aria-labelledby="pdf-preparation-title">
-            <div className="pdf-panel-heading">
-              <span className="pdf-step-number" aria-hidden="true">1</span>
-              <div>
-                <h3 id="pdf-preparation-title">Préparer le planning</h3>
-                <p>Sélectionnez les informations qui figureront dans le document.</p>
-              </div>
-            </div>
-            <div className="pdf-download-settings">
-              <label>
-                <span className="pdf-setting-title">
-                  <i aria-hidden="true">A</i>
-                  <span><b>Année du planning</b><small>Période du document</small></span>
-                </span>
-                <ChoicePicker
-                  value={view.getFullYear()}
-                  options={YEAR_OPTIONS}
-                  onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-                  ariaLabel="Sélectionner l’année du PDF"
-                  className="year-choice-picker"
-                />
-              </label>
-              <label>
-                <span className="pdf-setting-title">
-                  <i aria-hidden="true">G</i>
-                  <span><b>Groupe</b><small>Cycle de travail</small></span>
-                </span>
-                <ChoicePicker
-                  value={group}
-                  options={GROUP_OPTIONS}
-                  onChange={changeGroup}
-                  ariaLabel="Sélectionner le groupe du PDF"
-                  className="year-choice-picker"
-                />
-              </label>
-              <div className="school-vacation-choice">
-                <button
-                  type="button"
-                  className={showSchoolVacationsOnPdf ? "school-vacation-toggle active" : "school-vacation-toggle"}
-                  aria-pressed={showSchoolVacationsOnPdf}
-                  onClick={() => setShowSchoolVacationsOnPdf((current) => !current)}
-                >
-                  <i aria-hidden="true" />
-                  <span>
-                    <strong>Vacances scolaires</strong>
-                    <small>Cocher la case pour intégrer les vacances scolaires au planning</small>
-                  </span>
-                </button>
-                {showSchoolVacationsOnPdf ? (
-                  <small className="pdf-option-confirmation">Les vacances scolaires seront ajoutées au document.</small>
-                ) : null}
-              </div>
-            </div>
-          </section>
-          <section className="pdf-format-panel" aria-labelledby="pdf-format-title">
-            <div className="pdf-panel-heading">
-              <span className="pdf-step-number" aria-hidden="true">2</span>
-              <div>
-                <h3 id="pdf-format-title">Choisir le document</h3>
-                <p>Le téléchargement démarre dès que le PDF est prêt.</p>
-              </div>
-            </div>
-            <div className="pdf-download-actions">
-              {([
-                ["selected", "Mon groupe", `Planning annuel du groupe ${group}`, "1 page"],
-                ["all", "Les 3 groupes", "Groupes 1, 2 et 3", "3 pages"],
-                ["my-leaves", "Mon planning avec congés", `Groupe ${group} · absences enregistrées`, "1 page"],
-                ["worked-holidays", "Fériés travaillés 2026–2031", "Pour faciliter les échanges entre groupe", "1 page"],
-              ] as const).map(([scope, title, detail, pageCount]) => (
-                <button
-                  key={scope}
-                  type="button"
-                  className={`pdf-action ${scope}`}
-                  disabled={pdfExporting !== null}
-                  onClick={() => void exportAnnualPlanning(
-                    scope,
-                    scope === "worked-holidays" ? false : showSchoolVacationsOnPdf,
-                  )}
-                >
-                  <span className="pdf-action-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 15v4h14v-4" /></svg>
-                  </span>
-                  <span className="pdf-action-copy">
-                    <span className="pdf-action-page-count">{pageCount}</span>
-                    <strong>{pdfExporting === scope ? "Création…" : title}</strong>
-                    {detail ? <small>{detail}</small> : null}
-                    <span className="pdf-action-cta">Créer le PDF <i aria-hidden="true">→</i></span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        </section>
+        <PdfDownloadPage
+          narrowScreen={narrowScreen}
+          year={view.getFullYear()}
+          group={group}
+          showSchoolVacations={showSchoolVacationsOnPdf}
+          exporting={pdfExporting}
+          onYearChange={(year) => setView(localDate(year, view.getMonth(), 1))}
+          onGroupChange={changeGroup}
+          onShowSchoolVacationsChange={setShowSchoolVacationsOnPdf}
+          onExport={(scope, includeSchoolVacations) =>
+            void exportAnnualPlanning(scope, includeSchoolVacations)
+          }
+        />
       ) : null}
 
       {homeSection === "forms" ? (
@@ -8027,353 +5212,42 @@ export default function Home() {
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
       {showCalendarWorkspace ? (
         <>
-      <section className="planning-command-section" aria-label="Commandes du planning">
-      {homeSection === "home" ? (
-        <section className="home-planning-heading" aria-labelledby="home-planning-title">
-          <div className="home-content-heading">
-            <div>
-              <span className="step-label">Calendrier</span>
-              <h2 id="home-planning-title">Mon planning</h2>
-            </div>
-          </div>
-        </section>
-      ) : null}
-      {mode !== "year" && (
-        <section className="controls" aria-label="Choix du planning">
-          <div className="year-choice planning-year-choice" aria-label="Choix de l’année affichée">
-            <span className="year-choice-label">Année affichée</span>
-            <div className="year-stepper">
-              <div className="year-select-display">
-                <span className="year-calendar-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                  </svg>
-                </span>
-                <ChoicePicker
-                  value={view.getFullYear()}
-                  options={YEAR_OPTIONS}
-                  onChange={(year) =>
-                    setView(localDate(year, view.getMonth(), 1))
-                  }
-                  ariaLabel="Sélectionner l’année"
-                  className="year-choice-picker"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="year-choice planning-group-choice" aria-label="Choix du groupe">
-            <span className="year-choice-label">Groupe</span>
-            <div className="planning-group-action-row">
-            <div className="year-stepper">
-              <div className="year-select-display">
-                <span className="year-calendar-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <circle cx="7" cy="12" r="2.4" />
-                    <circle cx="12" cy="12" r="2.4" />
-                    <circle cx="17" cy="12" r="2.4" />
-                  </svg>
-                </span>
-                <ChoicePicker
-                  value={group}
-                  options={GROUP_OPTIONS}
-                  onChange={changeGroup}
-                  ariaLabel="Sélectionner le groupe"
-                  className="year-choice-picker"
-                />
-              </div>
-            </div>
-            </div>
-          </div>
-          {(
-            <div className="worked-days" ref={workedDaysRef}>
-              <span className="year-choice-label">Jours travaillés</span>
-              <div className="worked-days-stepper">
-                <button
-                  type="button"
-                  className="worked-days-trigger"
-                  onClick={() => setWorkedDaysOpen((current) => !current)}
-                  aria-expanded={workedDaysOpen}
-                  aria-label="Détail des jours travaillés"
-                >
-                  <span>
-                    {dayCountLabel(workedDays.month.worked)} ce mois-ci
-                  </span>
-                  <svg viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="m5 7.5 5 5 5-5" />
-                  </svg>
-                </button>
-                {workedDaysOpen && (
-                  <div className="worked-days-panel">
-                    <article>
-                      <span className="worked-days-scope">
-                        {MONTHS[view.getMonth()]} {view.getFullYear()}
-                      </span>
-                      <strong>
-                        {dayCountLabel(workedDays.month.worked)} jour
-                        {s(workedDays.month.worked)}
-                      </strong>
-                      <small>
-                        {dayCountLabel(workedDays.month.scheduled)} au cycle
-                        {workedDays.month.onLeave
-                          ? `, ${dayCountLabel(workedDays.month.onLeave)} de congé`
-                          : ", aucun congé"}
-                        {workedDays.month.exceptionallyClosed
-                          ? `, ${dayCountLabel(workedDays.month.exceptionallyClosed)} fermeture${s(workedDays.month.exceptionallyClosed)} exceptionnelle${s(workedDays.month.exceptionallyClosed)}`
-                          : ""}
-                      </small>
-                    </article>
-                    {workedDays.thirds.map((third) => (
-                      <article
-                        key={third.label}
-                        className={third.current ? "current" : ""}
-                      >
-                        <span className="worked-days-scope">
-                          {third.label}
-                          {third.current ? <em>en cours</em> : null}
-                        </span>
-                        <strong>
-                          {dayCountLabel(third.worked)} jour
-                          {s(third.worked)}
-                        </strong>
-                        <small>
-                          {third.range} · {dayCountLabel(third.scheduled)} au
-                          cycle
-                          {third.onLeave
-                            ? `, ${dayCountLabel(third.onLeave)} de congé`
-                            : ", aucun congé"}
-                          {third.exceptionallyClosed
-                            ? `, ${dayCountLabel(third.exceptionallyClosed)} fermeture${s(third.exceptionallyClosed)} exceptionnelle${s(third.exceptionallyClosed)}`
-                            : ""}
-                        </small>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {mode === "year" && (
-        <section className="summary" aria-label="Récapitulatif">
-          <article>
-            <strong>{totals.work}</strong>
-            <span>jours travaillés</span>
-          </article>
-          <article>
-            <strong>{totals.training}</strong>
-            <span>jours de formation</span>
-          </article>
-          <article>
-            <strong>{totals.workedHoliday}</strong>
-            <span>jours fériés travaillés</span>
-          </article>
-        </section>
-      )}
-
-      {recoveryRangeSelecting && (
-        <section
-          className="range-selection-panel recovery"
-          id="recovery-range-selection-panel"
-        >
-          <div>
-            <span className="step-label">
-              Choix des dates · {({
-                day: "Récupération en journée",
-                half: "Récupération en demi-journée",
-                hours: "Récupération en heures",
-                holiday: "Récupération de jour férié",
-                training: "Récupération sur une formation",
-              } as const)[recoveryDraft.kind]}
-            </span>
-            <h2>
-              {recoveryRangeDates.length} {recoveryRangeDates.length > 1 ? "dates sélectionnées" : "date sélectionnée"}
-            </h2>
-            <p>Changez de mois si nécessaire et touchez chaque date pour l’ajouter ou la retirer.</p>
-            <fieldset className="overtime-choice-field recovery-range-duration recovery-duration-field">
-              <legend>Heures à poser pour chaque date</legend>
-              <div className="recovery-duration-choice">
-                {(recoveryDraft.kind === "training"
-                  ? ([[180, "3 h"], [360, "6 h"]] as const)
-                  : ({
-                      day: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [null, "Durée libre"]],
-                      half: [[240, "4 h"], [120, "2 h"], [null, "Durée libre"]],
-                      hours: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [120, "2 h"]],
-                      holiday: [[480, "8 h"], [240, "4 h"], [null, "Durée libre"]],
-                    } as const)[recoveryDraft.kind]
-                ).map(([value, label]) => (
-                  <button
-                    key={value ?? "custom"}
-                    type="button"
-                    className={(recoveryDraft.kind === "training"
-                      ? recoveryDraft.trainingMinutes === value
-                      : recoveryDraft.durationMinutes === value) ? "active" : ""}
-                    onClick={() =>
-                      recoveryDraft.kind === "training"
-                        ? setRecoveryDraft((current) => ({ ...current, trainingMinutes: value as 180 | 360 }))
-                        : setRecoveryDraft((current) => ({ ...current, durationMinutes: value }))
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            {recoveryDraft.kind !== "training" && recoveryDraft.durationMinutes === null ? (
-              <div className="overtime-duration-grid recovery-custom-duration">
-                <label>
-                  <span>Heures</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.25"
-                    inputMode="decimal"
-                    value={recoveryDraft.hours}
-                    onChange={(event) => setRecoveryDraft((current) => ({ ...current, hours: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  <span>Minutes</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="59"
-                    step="5"
-                    inputMode="numeric"
-                    value={recoveryDraft.minutes}
-                    onChange={(event) => setRecoveryDraft((current) => ({ ...current, minutes: event.target.value }))}
-                  />
-                </label>
-              </div>
-            ) : null}
-          </div>
-          <div className="range-selection-actions">
-            <button className="secondary-button" type="button" onClick={cancelRecoveryRangeSelection}>
-              Annuler
-            </button>
-            <button
-              className="save-button"
-              type="button"
-              onClick={() => void saveRecoveryRangeDates()}
-              disabled={!recoveryRangeDates.length || savingOvertime}
-            >
-              {savingOvertime ? "Synchronisation…" : "Enregistrer toutes les dates"}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {rangeSelecting && (
-        <section
-          className="range-selection-panel leave"
-          id="range-selection-panel"
-        >
-          <div>
-            <span className="step-label">
-              Choix des dates ·{" "}
-              {separatePeople.map(multiDatePersonLabel).join(" et ")}
-              {separatePeople.includes("leave") &&
-                ` · ${leaveTypeLabel(rangeLeaveType)}`}
-            </span>
-            <h2>
-              {separateDates.length}{" "}
-              {separateDates.length > 1
-                ? "dates sélectionnées"
-                : "date sélectionnée"}
-            </h2>
-            <p>
-              Changez de mois si nécessaire et touchez chaque date pour
-              l’ajouter ou la retirer.
-            </p>
-          </div>
-          <div className="range-selection-actions">
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={cancelRangeSelection}
-            >
-              Annuler
-            </button>
-            <button
-              className="save-button"
-              type="button"
-              onClick={saveSeparateLeaveDates}
-              disabled={!separateDates.length || savingRange}
-            >
-              {savingRange
-                ? "Synchronisation…"
-                : "Enregistrer toutes les dates"}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {calendarDeleteMode ? (
-        <CalendarCleanupPanel
-          selectedCount={calendarDeleteDates.length}
-          busy={deletingMultipleDates}
-          onCancel={cancelCalendarCleanup}
-          onDeleteAbsences={() =>
-            void deleteMultiplePlanningDates(calendarDeleteDates, "absences")
-          }
-          onDeleteNotes={() =>
-            void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
-          }
-        />
-      ) : null}
-
-      <section
-        className={`calendar-toolbar ${mode === "month" ? "month-toolbar" : "year-toolbar"}${mode === "year" ? " annual-toolbar" : ""}`}
-      >
-        <div className="period-navigation">
-          {mode === "month" && (
-            <ChoicePicker
-              value={view.getMonth()}
-              options={MONTH_OPTIONS}
-              onChange={(month) =>
-                setView(localDate(view.getFullYear(), month, 1))
-              }
-              ariaLabel="Sélectionner le mois"
-              className="toolbar-month-picker"
-            />
-          )}
-          <ChoicePicker
-            value={view.getFullYear()}
-            options={YEAR_OPTIONS}
-            onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-            ariaLabel="Sélectionner l’année"
-            className="toolbar-year-picker"
-          />
-        </div>
-        {mode === "year" && (
-          <ChoicePicker
-            value={group}
-            options={GROUP_OPTIONS}
-            onChange={changeGroup}
-            ariaLabel="Sélectionner le groupe du planning annuel"
-            layout="list"
-            className="toolbar-group-picker"
-          />
-        )}
-        <button className="today-button" type="button" onClick={goToday}>
-          Aujourd’hui
-        </button>
-        {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
-          <CalendarCleanupTrigger
-            className="calendar-bulk-delete-mobile"
-            onStart={startCalendarCleanup}
-          />
-        ) : null}
-      </section>
-
-      {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
-        <CalendarCleanupTrigger
-          className="calendar-bulk-delete-button"
-          onStart={startCalendarCleanup}
-        />
-      ) : null}
-      </section>
+      <PlanningCommandCenter
+        isHome={homeSection === "home"}
+        mode={mode}
+        view={view}
+        setView={setView}
+        group={group}
+        onGroupChange={changeGroup}
+        workedDays={workedDays}
+        totals={totals}
+        recoveryRangeSelecting={recoveryRangeSelecting}
+        recoveryDraft={recoveryDraft}
+        setRecoveryDraft={setRecoveryDraft}
+        recoveryRangeDates={recoveryRangeDates}
+        savingOvertime={savingOvertime}
+        onCancelRecoveryRange={cancelRecoveryRangeSelection}
+        onSaveRecoveryRange={() => void saveRecoveryRangeDates()}
+        rangeSelecting={rangeSelecting}
+        separatePeople={separatePeople}
+        rangeLeaveType={rangeLeaveType}
+        separateDates={separateDates}
+        savingRange={savingRange}
+        onCancelRange={cancelRangeSelection}
+        onSaveRange={() => void saveSeparateLeaveDates()}
+        calendarDeleteMode={calendarDeleteMode}
+        calendarDeleteDates={calendarDeleteDates}
+        deletingMultipleDates={deletingMultipleDates}
+        onCancelCleanup={cancelCalendarCleanup}
+        onDeleteAbsences={() =>
+          void deleteMultiplePlanningDates(calendarDeleteDates, "absences")
+        }
+        onDeleteNotes={() =>
+          void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
+        }
+        onToday={goToday}
+        onStartCleanup={startCalendarCleanup}
+      />
 
       {mode === "year" && homeSection === "pdf" && (
           <section
@@ -9597,59 +6471,28 @@ export default function Home() {
         </div>
       )}
 
-      <ManualAdjustmentsDialog
-        open={manualAdjustmentsOpen}
-        year={absenceYear}
-        draft={manualAdjustmentDraft}
-        setDraft={setManualAdjustmentDraft}
-        saving={savingManualAdjustments}
-        onClose={() => setManualAdjustmentsOpen(false)}
-        onSave={() => void saveManualAdjustments()}
-      />
-
-      <RangeLeaveDialog
-        open={rangeOpen}
-        leaveType={rangeLeaveType}
-        setLeaveType={setRangeLeaveType}
-        halfMoment={rangeHalfMoment}
-        setHalfMoment={setRangeHalfMoment}
-        onClose={() => setRangeOpen(false)}
-        onStartSelection={beginRangeSelection}
-      />
-
-      <MecenatDialog
-        open={mecenatDialogOpen}
-        draft={mecenatDraft}
-        setDraft={setMecenatDraft}
-        calculation={mecenatDraftCalculation}
-        saving={savingMecenat}
-        onClose={() => setMecenatDialogOpen(false)}
-        onSave={() => void saveMecenatEntry()}
-      />
-
-      <OvertimeDialog
-        open={overtimeDialogOpen}
-        draft={overtimeDraft}
-        setDraft={setOvertimeDraft}
-        saving={savingOvertime}
+      <AppDialogLayer
+        manualAdjustments={{
+          open: manualAdjustmentsOpen,
+          year: absenceYear,
+          draft: manualAdjustmentDraft,
+          setDraft: setManualAdjustmentDraft,
+          saving: savingManualAdjustments,
+          onClose: () => setManualAdjustmentsOpen(false),
+          onSave: () => void saveManualAdjustments(),
+        }}
+        planning={planningUi}
+        workTime={workTimeUi}
+        shell={appShellUi}
+        toast={toastUi}
         group={group}
-        onClose={() => setOvertimeDialogOpen(false)}
-        onSave={() => void saveOvertimeEntry()}
-      />
-
-      <SolidarityHoursDialog
-        open={solidarityDialogOpen}
-        draft={solidarityDraft}
-        setDraft={setSolidarityDraft}
-        saving={savingOvertime}
-        onClose={() => setSolidarityDialogOpen(false)}
-        onSave={() => void saveSolidarityHours()}
-      />
-
-      <RecoveryRangeDialog
-        open={recoveryRangeOpen}
-        kind={recoveryDraft.kind}
-        setKind={(kind) =>
+        mecenatCalculation={mecenatDraftCalculation}
+        recoveryRemainingMinutes={recoveryBalance.remaining}
+        onStartRangeSelection={beginRangeSelection}
+        onSaveMecenat={() => void saveMecenatEntry()}
+        onSaveOvertime={() => void saveOvertimeEntry()}
+        onSaveSolidarityHours={() => void saveSolidarityHours()}
+        onChangeRecoveryRangeKind={(kind) =>
           setRecoveryDraft((current) => ({
             ...current,
             kind,
@@ -9660,23 +6503,12 @@ export default function Home() {
                 : current.trainingMinutes,
           }))
         }
-        onClose={() => {
+        onCloseRecoveryRange={() => {
           setRecoveryRangeOpen(false);
           setRecoveryRangePrefillDate(null);
         }}
-        onStartSelection={beginRecoveryRangeSelection}
-      />
-
-      <RecoveryUseDialog
-        open={recoveryDialogOpen}
-        draft={recoveryDraft}
-        setDraft={setRecoveryDraft}
-        group={group}
-        showCalendar={recoveryCalendarVisible}
-        remainingMinutes={recoveryBalance.remaining}
-        saving={savingOvertime}
-        onClose={() => setRecoveryDialogOpen(false)}
-        onSelectInCalendar={() => {
+        onStartRecoveryRangeSelection={beginRecoveryRangeSelection}
+        onSelectRecoveryInCalendar={() => {
           setRecoveryDialogOpen(false);
           setRecoveryDatePicking(true);
           setHomeSection("home");
@@ -9686,55 +6518,18 @@ export default function Home() {
             0,
           );
         }}
-        onSave={() => void saveRecoveryUse()}
-      />
-
-      <TimeSelectionDialog
-        date={timeDate}
-        activeType={activeType}
-        start={timeStart}
-        end={timeEnd}
-        onStartChange={setTimeStart}
-        onEndChange={setTimeEnd}
-        onClose={() => setTimeDate(null)}
-        onConfirm={commitTime}
-      />
-      <NonWorkingDayWarningDialog
-        date={warningDate}
-        group={group}
-        onCancel={() => setWarningDate(null)}
-        onConfirm={confirmWarning}
-      />
-      <DeletePeriodDialog
-        period={deletingPeriod}
-        saving={savingRange}
-        onCancel={() => setDeletingPeriod(null)}
-        onConfirm={deleteLeavePeriod}
-      />
-      <MessageDialog message={message} onClose={dismiss} />
-      <AppUpdateDialog
-        open={appUpdatePromptOpen}
-        checking={checkingAppUpdate}
-        onLater={() => setAppUpdatePromptOpen(false)}
-        onUpdate={() => {
+        onSaveRecoveryUse={() => void saveRecoveryUse()}
+        onConfirmTime={commitTime}
+        onConfirmNonWorkingDay={confirmWarning}
+        onDeletePeriod={deleteLeavePeriod}
+        onCheckForUpdate={() => {
           setAppUpdatePromptOpen(false);
           void checkForAppUpdate();
         }}
-      />
-      <SuccessToast message={successMessage} onClose={dismissSuccess} />
-      <UndoToast
-        message={undoOffer?.message || null}
-        onUndo={runUndo}
-        onClose={dismissUndo}
-      />
-      <DataManagementDialog
-        open={dataManagementOpen}
-        busy={dataManagementBusy}
-        onClose={() => setDataManagementOpen(false)}
-        onExport={() => void exportDataBackup()}
-        onImport={(file) => void importDataBackup(file)}
-        onArchiveLegacy={() => void archiveLegacyData()}
-        onDeleteAll={() => void deleteAllUserData()}
+        onExportData={() => void exportDataBackup()}
+        onImportData={(file) => void importDataBackup(file)}
+        onArchiveLegacyData={() => void archiveLegacyData()}
+        onDeleteAllData={() => void deleteAllUserData()}
       />
       {installationEnabled && installPrompt && (
         <button
