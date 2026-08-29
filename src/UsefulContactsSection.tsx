@@ -116,6 +116,7 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [query, setQuery] = useState("");
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadAttempt est le déclencheur explicite du bouton Réessayer.
   useEffect(() => {
     if (initialData) return;
     let active = true;

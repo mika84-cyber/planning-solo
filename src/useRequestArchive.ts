@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AuthStatus } from "./appModel";
 
 export type ArchivedRequest = {
@@ -107,7 +107,7 @@ export function useRequestArchive(
     [],
   );
 
-  async function loadRequestArchive() {
+  const loadRequestArchive = useCallback(async () => {
     const ownerKey = archiveOwnerKey(accountEmail);
     if (!ownerKey || !enabled) {
       setArchivedRequests([]);
@@ -118,7 +118,7 @@ export function useRequestArchive(
     } catch {
       setArchivedRequests([]);
     }
-  }
+  }, [accountEmail, enabled]);
 
   useEffect(() => {
     if (authStatus !== "ready" || !enabled || !archiveOwnerKey(accountEmail)) {
@@ -134,7 +134,7 @@ export function useRequestArchive(
       window.removeEventListener("focus", reloadArchive);
       window.removeEventListener("pageshow", reloadArchive);
     };
-  }, [authStatus, enabled, accountEmail]);
+  }, [authStatus, enabled, accountEmail, loadRequestArchive]);
 
   function openArchivedRequest(request: ArchivedRequest) {
     const url = URL.createObjectURL(request.blob);

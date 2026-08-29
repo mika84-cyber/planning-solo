@@ -437,7 +437,7 @@ export function RecoveryRangeDialog({
           ] as Array<[string, RecoveryDraft["kind"][]]>).map(([label, kinds]) => (
             <section className="request-option-group" key={label}>
               <h3>{label}</h3>
-              <div className="type-tabs" aria-label={label}>
+              <div className="type-tabs" role="group" aria-label={label}>
                 {kinds.map((candidate) => (
                   <button
                     type="button"
@@ -531,7 +531,7 @@ export function RecoveryUseDialog({
             ] as Array<[string, RecoveryDraft["kind"][]]>).map(([label, kinds]) => (
               <section className="request-option-group" key={label}>
                 <h3>{label}</h3>
-                <div className="type-tabs" aria-label={label}>
+                <div className="type-tabs" role="group" aria-label={label}>
                   {kinds.map((kind) => (
                     <button
                       type="button"

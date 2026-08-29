@@ -112,14 +112,14 @@ export function PlanningCommandCenter({
       if (!workedDaysRef.current?.contains(event.target as Node))
         setWorkedDaysOpen(false);
     };
-    const escape = (event: KeyboardEvent) => {
+    const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setWorkedDaysOpen(false);
     };
     document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", escape);
+    document.addEventListener("keydown", closeOnEscape);
     return () => {
       document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", escape);
+      document.removeEventListener("keydown", closeOnEscape);
     };
   }, [workedDaysOpen]);
 
@@ -138,7 +138,7 @@ export function PlanningCommandCenter({
 
       {mode !== "year" ? (
         <section className="controls" aria-label="Choix du planning">
-          <div className="year-choice planning-year-choice" aria-label="Choix de l’année affichée">
+          <div className="year-choice planning-year-choice" role="group" aria-label="Choix de l’année affichée">
             <span className="year-choice-label">Année affichée</span>
             <div className="year-stepper">
               <div className="year-select-display">
@@ -157,7 +157,7 @@ export function PlanningCommandCenter({
               </div>
             </div>
           </div>
-          <div className="year-choice planning-group-choice" aria-label="Choix du groupe">
+          <div className="year-choice planning-group-choice" role="group" aria-label="Choix du groupe">
             <span className="year-choice-label">Groupe</span>
             <div className="planning-group-action-row">
               <div className="year-stepper">

@@ -17,6 +17,8 @@ const budgets = {
   mainCss: { raw: 300 * KIB, gzip: 55 * KIB },
   // Inclut le CSS autonome de /formulaire en plus du CSS React principal.
   totalCss: { raw: 340 * KIB, gzip: 65 * KIB },
+  payslipSuccessEffect: 3_500 * KIB,
+  payslipWarningEffect: 2_500 * KIB,
 };
 
 async function filesUnder(directory) {
@@ -73,6 +75,10 @@ const lazyJs = jsMeasures.filter(({ path }) => path !== entryPath);
 const largestLazy = lazyJs.sort((left, right) => right.raw - left.raw)[0] ?? { raw: 0, gzip: 0, path: "" };
 const totalJs = jsMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
 const totalCss = cssMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
+const [payslipSuccessEffect, payslipWarningEffect] = await Promise.all([
+  stat(join(DIST_PATH, "payslip-success-money-fast.webp")),
+  stat(join(DIST_PATH, "payslip-warning-lightning.mp4")),
+]);
 const failures = [];
 
 console.log(`Entrée JS : ${relative(DIST_PATH, entryPath)}`);
@@ -87,10 +93,24 @@ check("CSS principal brut", mainCss.raw, budgets.mainCss.raw, failures);
 check("CSS principal gzip", mainCss.gzip, budgets.mainCss.gzip, failures);
 check("Total CSS brut", totalCss.raw, budgets.totalCss.raw, failures);
 check("Total CSS gzip", totalCss.gzip, budgets.totalCss.gzip, failures);
+check(
+  "Animation paie conforme",
+  payslipSuccessEffect.size,
+  budgets.payslipSuccessEffect,
+  failures,
+);
+check(
+  "Animation paie à vérifier",
+  payslipWarningEffect.size,
+  budgets.payslipWarningEffect,
+  failures,
+);
 
 if (failures.length > 0) {
   console.error("\nBudget de production dépassé :");
-  failures.forEach((failure) => console.error(`- ${failure}`));
+  failures.forEach((failure) => {
+    console.error(`- ${failure}`);
+  });
   process.exitCode = 1;
 } else {
   console.log("\nTous les budgets de production sont respectés.");

@@ -31,10 +31,10 @@ export default defineConfig({
         // Baseline mesurée sur l’ensemble du métier client et serveur.
         // Ces seuils empêchent toute baisse ; ils pourront monter à mesure que
         // les actions serveur extraites recevront leurs tests dédiés.
-        lines: 73,
-        functions: 68,
-        statements: 70,
-        branches: 60,
+        lines: 80,
+        functions: 76,
+        statements: 77,
+        branches: 68,
       },
     },
   },

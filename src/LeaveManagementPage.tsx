@@ -156,7 +156,7 @@ export function LeaveManagementPage({
               </div>
               <strong>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</strong>
             </div>
-            <div className="mecenat-rate-summary" aria-label="Tarifs réglementaires des mécénats">
+            <div className="mecenat-rate-summary" role="group" aria-label="Tarifs réglementaires des mécénats">
               <article><span>De 7 h à 22 h</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
               <article><span>De 22 h à 7 h</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
             </div>

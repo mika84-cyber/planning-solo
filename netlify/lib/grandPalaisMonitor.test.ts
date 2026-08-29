@@ -98,7 +98,9 @@ describe("surveillance de la programmation du Grand Palais", () => {
   });
 
   it("crée des propositions seulement après le premier relevé", () => {
-    const first = extractGrandPalaisEvent(eventPage(), "https://www.grandpalais.fr/fr/programme/exposition-test")!;
+    const first = extractGrandPalaisEvent(eventPage(), "https://www.grandpalais.fr/fr/programme/exposition-test");
+    expect(first).not.toBeNull();
+    if (!first) return;
     const baseline = detectGrandPalaisChanges(null, [first], "2026-08-28T06:00:00.000Z");
     expect(baseline.proposals).toEqual([]);
     const changed = { ...first, endDate: "2027-08-15" };
@@ -108,7 +110,9 @@ describe("surveillance de la programmation du Grand Palais", () => {
   });
 
   it("attend deux relevés absents avant de proposer un retrait", () => {
-    const event = extractGrandPalaisEvent(eventPage(), "https://www.grandpalais.fr/fr/programme/exposition-test")!;
+    const event = extractGrandPalaisEvent(eventPage(), "https://www.grandpalais.fr/fr/programme/exposition-test");
+    expect(event).not.toBeNull();
+    if (!event) return;
     const baseline = detectGrandPalaisChanges(null, [event], "2026-08-28T06:00:00.000Z");
     const firstMiss = detectGrandPalaisChanges(baseline.state, [], "2026-08-29T06:00:00.000Z");
     expect(firstMiss.proposals).toEqual([]);

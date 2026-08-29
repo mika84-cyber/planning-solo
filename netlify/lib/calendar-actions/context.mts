@@ -1,4 +1,4 @@
-import { getStore } from "@netlify/blobs";
+import type { getStore } from "@netlify/blobs";
 
 export type CalendarActionContext = {
   body: Record<string, unknown>;

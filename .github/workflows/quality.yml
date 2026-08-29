@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   unit-build-security:
-    name: Types, tests, couverture, build et budgets
+    name: Lint, types, tests, couverture, build et budgets
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -6,7 +6,7 @@ export default defineConfig({
     outDir: "qa-pdf-dist",
     emptyOutDir: true,
     lib: {
-      entry: resolve(__dirname, "src/planningPdf.ts"),
+      entry: resolve(import.meta.dirname, "src/planningPdf.ts"),
       formats: ["es"],
       fileName: "planning-pdf-qa",
     },

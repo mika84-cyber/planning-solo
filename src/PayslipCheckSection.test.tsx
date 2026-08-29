@@ -105,4 +105,61 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Année du bulletin");
     expect(html).toContain("Utiliser cette période");
   });
+
+  it("conserve le verdict et le tableau détaillé d'un bulletin reconnu", () => {
+    const html = renderToStaticMarkup(
+      <PayslipCheckSection
+        {...baseProps}
+        check={{
+          name: "bulletin-aout.pdf",
+          reading: {
+            month: 7,
+            year: 2026,
+            sundaysBeyondTen: 2,
+            gross: 2500,
+            baseSalary: 1900,
+          },
+        }}
+        review={{
+          verdict: "Comparaison disponible",
+          tone: "unknown",
+          issues: [],
+          verified: [{ key: "gross", label: "Cumul brut", found: 2500, expected: 2500 }],
+          unavailable: [],
+        }}
+        resultDetailsOpen
+      />,
+    );
+
+    expect(html).toContain("Période reconnue");
+    expect(html).toContain("Comparaison disponible");
+    expect(html).toContain("Cumul brut");
+    expect(html).toContain("bulletin-aout.pdf");
+  });
+
+  it("conserve les arrêts maladie et l'édition des paramètres", () => {
+    const html = renderToStaticMarkup(
+      <PayslipCheckSection
+        {...baseProps}
+        isContractuel={false}
+        sickLeaves={{
+          total: 120,
+          arrets: [{
+            id: "sick-1",
+            from: "2026-08-03",
+            to: "2026-08-05",
+            days: 3,
+            reducedDays: 2,
+            total: 120,
+          }],
+        }}
+        paySettingsOpen
+      />,
+    );
+
+    expect(html).toContain("Arrêts maladie 2026");
+    expect(html).toContain("3 jours · carence + 2 à 10 %");
+    expect(html).toContain("Traitement de base");
+    expect(html).toContain("Mois du CIA");
+  });
 });

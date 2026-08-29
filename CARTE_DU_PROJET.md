@@ -48,8 +48,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/LeaveManagementPage.tsx` : composition de la page congés et
   récupérations.
 - `src/PayPage.tsx`, `src/PayAllowancesSection.tsx` et
-  `src/PayslipCheckSection.tsx` : navigation paie, primes et contrôle du
-  bulletin.
+  `src/PayslipCheckSection.tsx` : navigation paie, primes et composition du
+  contrôle du bulletin. Ce dernier délègue les blocs autonomes à
+  `src/PayslipVerificationCard.tsx`, `src/PayslipCalibrationCard.tsx` et
+  `src/PayslipSettingsSections.tsx` (résultat, calibration, arrêts et
+  paramètres), sans changer la structure DOM attendue par les styles.
 - `src/PdfDownloadPage.tsx` : page de téléchargement des documents.
 - `src/UserGuideDialogs.tsx` : mode d’emploi chargé uniquement lorsqu’il est
   ouvert.
@@ -63,6 +66,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   données synchronisées ; `App.tsx` conserve leur orchestration commune.
 - `src/useWorkTimeActions.ts` : validations, écritures et suppressions des
   heures supplémentaires, récupérations et mécénats.
+- `src/usePayActions.ts` : saisie du profil de paie, import et vérification des
+  bulletins, reports de dimanches et calcul du brut mensuel.
 - `src/useAuthenticationActions.ts` : connexion, invitation, réinitialisation
   du mot de passe et déconnexion, sans état métier dans `App.tsx`.
 - `src/useAccountDataActions.ts` : export, restauration, archivage et
@@ -70,6 +75,15 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/usePlanningEntryActions.ts` : mutations directes maladie, grève,
   souhait et divers, ainsi que construction testable des lots de suppression
   de notes, absences et récupérations.
+- `src/usePlanningEditorActions.ts` : enregistrement d’une fiche jour, notes
+  multi-dates et création, modification, restauration ou suppression des
+  périodes ; les lots réseau principaux sont construits par des helpers purs.
+- `src/usePlanningInteractionActions.ts` : ouverture des fiches, sélections
+  jour/plage, préparation des demandes et navigation tactile du calendrier,
+  sans rendu JSX dans l’orchestrateur.
+- `src/usePlanningRequestActions.ts` : validation des demandes préparées,
+  contrôle des soldes/capacités du formulaire, enregistrement direct des
+  absences sans PDF et transfert typé vers le formulaire autonome.
 
 ## Logique métier
 
@@ -109,6 +123,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/planningPdf.ts` : génération des documents.
 - `public/sw.js` : cache hors ligne et activation des mises à jour.
 - `public/manifest.webmanifest` : installation de la PWA.
+- `scripts/check-bundle-budget.mjs` : plafonds CI du JavaScript, du CSS et des
+  deux animations de contrôle de paie afin d’éviter de réintroduire des médias
+  trop lourds.
 
 ## Tests à choisir selon la demande
 
@@ -133,11 +150,17 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 npm test
 npm run test:coverage
 npm run test:e2e
+npm run test:pdf:visual
+npm run lint
 npm run check
 npm run build
 npm run check:bundle
 npm run check:css
 ```
+
+`test:pdf:visual` produit deux PDF locaux ignorés par Git, avec et sans
+vacances scolaires, afin de contrôler visuellement les exports annuels après
+une modification de leur mise en page.
 
 ## Préparer un contexte court pour une IA
 

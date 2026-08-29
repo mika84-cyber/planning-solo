@@ -69,4 +69,23 @@ describe("API partagée de la programmation GP", () => {
     expect(payload.approved[0].title).toBe("Exposition test");
     expect(payload.pending).toEqual([]);
   });
+
+  it("refuse une proposition incomplète au lieu de valider des données corrompues", async () => {
+    data.set("pending", [{
+      id: "proposal-corrupted",
+      kind: "removed",
+      detectedAt: "2026-08-28T06:00:00.000Z",
+    }]);
+    mockedGetUser.mockResolvedValue({ id: "owner", email: "admin@example.test" } as never);
+    const response = await grandPalaisProgramHandler(new Request("https://example.test/api/gp-program", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ proposalId: "proposal-corrupted", decision: "accept" }),
+    }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Cette proposition est incomplète",
+    });
+    expect(store.setJSON).not.toHaveBeenCalled();
+  });
 });

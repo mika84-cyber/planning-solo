@@ -44,7 +44,7 @@ export function AuthScreen({
           decoding="async"
           fetchPriority="high"
         />
-        <div className="auth-loader auth-splash-loader" aria-label="Chargement" />
+        <div className="auth-loader auth-splash-loader" role="status" aria-label="Chargement" />
       </main>
     );
   }

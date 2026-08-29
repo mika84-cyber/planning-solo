@@ -52,7 +52,7 @@ function sanitizePayValues(raw: Record<string, unknown>) {
 
 export function sanitizeCalendarBackup(value: unknown) {
   const backup = record(value);
-  if (!backup || backup.version !== 1)
+  if (backup?.version !== 1)
     return { error: "Format de sauvegarde non reconnu" as const };
   if (!Array.isArray(backup.entries) || backup.entries.length > 5_000)
     return { error: "Liste de journées invalide" as const };

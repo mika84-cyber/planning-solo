@@ -1,0 +1,62 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "files": {
+    "includes": [
+      "src/**/*.{ts,tsx}",
+      "netlify/**/*.{ts,mts}",
+      "scripts/**/*.{js,mjs}",
+      "*.test.mjs",
+      "!public/**",
+      "!dist/**"
+    ]
+  },
+  "formatter": {
+    "enabled": false
+  },
+  "assist": {
+    "enabled": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "none",
+      "a11y": {
+        "useAltText": "error",
+        "useAriaPropsSupportedByRole": "error",
+        "useButtonType": "error",
+        "useValidAnchor": "error"
+      },
+      "correctness": {
+        "noConstantCondition": "error",
+        "useExhaustiveDependencies": "error"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "error",
+        "noShadowRestrictedNames": "error",
+        "useIterableCallbackReturn": "error"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/App.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**/*.test.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          }
+        }
+      }
+    }
+  ]
+}

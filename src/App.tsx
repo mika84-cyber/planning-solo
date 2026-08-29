@@ -1,4 +1,13 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+  type TouchEvent,
+} from "react";
 import {
   getUser,
   handleAuthCallback,
@@ -9,15 +18,12 @@ import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
 import { getUsefulContacts } from "./contactsApi";
 import { resolvePublicDemoAccess } from "./demoAccess";
+import { parseDemoCompletedRequestJson } from "./demoCompletedRequest";
 import { ConnectionStatus } from "./ConnectionStatus";
 import { HomeDashboard } from "./HomeDashboard";
-import { PayPage } from "./PayPage";
-import { PayAllowancesSection } from "./PayAllowancesSection";
-import { PayslipCheckSection } from "./PayslipCheckSection";
-import { PdfDownloadPage } from "./PdfDownloadPage";
-import { LeaveManagementPage } from "./LeaveManagementPage";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
+import { usePayActions } from "./usePayActions";
 import { useWorkTimeUiState } from "./useWorkTimeUiState";
 import { useWorkTimeActions } from "./useWorkTimeActions";
 import { useAuthenticationActions } from "./useAuthenticationActions";
@@ -25,6 +31,9 @@ import { useAccountDataActions } from "./useAccountDataActions";
 import { usePlanningUiState } from "./usePlanningUiState";
 import { useCalendarDataState } from "./useCalendarDataState";
 import { usePlanningEntryActions } from "./usePlanningEntryActions";
+import { usePlanningEditorActions } from "./usePlanningEditorActions";
+import { usePlanningInteractionActions } from "./usePlanningInteractionActions";
+import { usePlanningRequestActions } from "./usePlanningRequestActions";
 import { useAppShellUiState } from "./useAppShellUiState";
 import { AppDialogLayer } from "./AppDialogLayer";
 import {
@@ -43,18 +52,16 @@ import {
   notifyGuestSession,
   postCalendar,
   postCalendarBatch,
-  postCalendarPeriodsVerified,
 } from "./calendarApi";
+import { parseCalendarSnapshot } from "./calendarPayload";
 import {
   HOLIDAY_PAY_OPTIONS,
-  emptyEntry,
   euros,
   notePeriodFor,
   rangeKeys,
   workedDayCount,
   workedDayCountBetween,
   type BalanceType,
-  type Entries,
   type FormProfile,
   type LeavePeriod,
   type ManualYearAdjustments,
@@ -62,7 +69,6 @@ import {
   type PayProfile,
   type PayStatus,
   type RequestKind,
-  type SharedEntry,
   type ViewMode,
 } from "./appModel";
 import { useAnnualPdfExport } from "./useAnnualPdfExport";
@@ -75,19 +81,13 @@ import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
 import { useRequestArchive } from "./useRequestArchive";
 import {
-  calculateNetRatios,
   defaultNetRatiosForPeriod,
-  extractPayslipTokens,
   inspectNetRatioCalibration,
   payCalibrationRegime,
-  readPayslip,
   readingsForCalibrationRegime,
-  type PayCalibrationRegime,
-  type PayslipReading,
 } from "./payslip";
 import {
   isUnplannedPayslipCarence,
-  shouldReportMissingPayslipField,
   summarizePayslipReview,
 } from "./payslipReview";
 import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
@@ -111,14 +111,12 @@ import {
   monthlyRecoveryBalance,
   recoveryRequestMinutes,
   trainingRecoveryMinutes,
-  trainingRecoveryTimes,
   type RecoveryUse,
   type RecoveryRequestType,
   type WorkQuota,
 } from "./overtime";
 import { useToast } from "./useToast";
-import { createClientId } from "./clientId";
-import { cetAccountFromApi, cetBalance, type CetAccount } from "./cet";
+import { type CetAccount } from "./cet";
 import {
   COUNTED_ONLY_TYPES,
   DAY_LABELS,
@@ -135,7 +133,6 @@ import {
   holidayPayslip,
   sundayAllowance,
   sundayPayslip,
-  unpaidSundays,
   wasPompidouHolidayWorked,
   yearThirdFor,
   yearThirdRange,
@@ -147,7 +144,6 @@ import {
   coWorkingGroupsForDate,
   dateKey,
   dateTimeLabel,
-  dayNumber,
   fromKey,
   getDayInfo,
   groupConsecutive,
@@ -162,12 +158,23 @@ import {
   sameDate,
   selectionRemovesAttendance,
   type CountedOnlyType,
-  type HalfMoment,
   type HolidayPay,
   type LeaveType,
-  type MultiDatePerson,
   type SelectionType,
 } from "./planningLogic";
+
+function keyedNoteLines(value: string) {
+  const occurrences = new Map<string, number>();
+  return value
+    .split("\n")
+    .map((line) => line.replace(/^[–—\-•>]\s*/, "").trim())
+    .filter(Boolean)
+    .map((label) => {
+      const occurrence = (occurrences.get(label) ?? 0) + 1;
+      occurrences.set(label, occurrence);
+      return { key: `${label}-${occurrence}`, label };
+    });
+}
 
 const LeaveBalancesSection = lazy(() =>
   import("./LeaveBalancesSection").then((module) => ({ default: module.LeaveBalancesSection })),
@@ -190,6 +197,21 @@ const GrandPalaisProgramSection = lazy(() =>
 const UserGuideDialogs = lazy(() =>
   import("./UserGuideDialogs").then((module) => ({ default: module.UserGuideDialogs })),
 );
+const LeaveManagementPage = lazy(() =>
+  import("./LeaveManagementPage").then((module) => ({ default: module.LeaveManagementPage })),
+);
+const PayPage = lazy(() =>
+  import("./PayPage").then((module) => ({ default: module.PayPage })),
+);
+const PayAllowancesSection = lazy(() =>
+  import("./PayAllowancesSection").then((module) => ({ default: module.PayAllowancesSection })),
+);
+const PayslipCheckSection = lazy(() =>
+  import("./PayslipCheckSection").then((module) => ({ default: module.PayslipCheckSection })),
+);
+const PdfDownloadPage = lazy(() =>
+  import("./PdfDownloadPage").then((module) => ({ default: module.PdfDownloadPage })),
+);
 function DeferredSection({ label }: { label: string }) {
   return <div className="deferred-section-loading" role="status">Chargement de {label}…</div>;
 }
@@ -205,58 +227,6 @@ const EMPTY_MANUAL_ADJUSTMENTS: ManualYearAdjustments = {
   sundayLeaveOctNov: 0,
   sundayLeaveDec: 0,
 };
-
-function payProfileFromApi(value: any): PayProfile {
-  const eurosFromCents = (field: unknown) =>
-    typeof field === "number" ? field / 100 : undefined;
-  return {
-    baseSalary: eurosFromCents(value?.base_salary_cents),
-    residenceAllowance: eurosFromCents(value?.residence_allowance_cents),
-    ifse: eurosFromCents(value?.ifse_cents),
-    carenceDay: eurosFromCents(value?.carence_cents),
-    otherFixed: eurosFromCents(value?.other_fixed_cents),
-    cia: eurosFromCents(value?.cia_cents),
-    ciaMonth: typeof value?.cia_month === "number" ? value.cia_month : undefined,
-    netRatioFixed: eurosFromCents(value?.net_ratio_fixed_bp),
-    netRatioVariable: eurosFromCents(value?.net_ratio_variable_bp),
-    netRatioRegime:
-      value?.net_ratio_regime === "pre-culture-psc" ||
-      value?.net_ratio_regime === "culture-psc"
-        ? value.net_ratio_regime
-        : undefined,
-    navigo: eurosFromCents(value?.navigo_cents),
-    mealVoucherDeduction: eurosFromCents(
-      value?.meal_voucher_deduction_cents,
-    ),
-    pasRate: eurosFromCents(value?.pas_rate_bp),
-  };
-}
-
-function manualAdjustmentsFromApi(value: unknown) {
-  if (!value || typeof value !== "object")
-    return {} as Record<string, ManualYearAdjustments>;
-  const numberOrZero = (candidate: unknown) =>
-    typeof candidate === "number" && Number.isFinite(candidate)
-      ? Math.max(0, candidate)
-      : 0;
-  return Object.fromEntries(
-    Object.entries(value).map(([year, raw]) => {
-      const item = (raw || {}) as Record<string, unknown>;
-      return [
-        year,
-        {
-          annualUsed: numberOrZero(item.annual_used),
-          rttUsed: numberOrZero(item.rtt_used),
-          fractionUsed: numberOrZero(item.fraction_used),
-          sundayLeaveJanJun: numberOrZero(item.sunday_leave_jan_jun),
-          sundayLeaveJulSep: numberOrZero(item.sunday_leave_jul_sep),
-          sundayLeaveOctNov: numberOrZero(item.sunday_leave_oct_nov),
-          sundayLeaveDec: numberOrZero(item.sunday_leave_dec),
-        },
-      ];
-    }),
-  );
-}
 
 export default function Home() {
   useModalAccessibility();
@@ -308,7 +278,7 @@ export default function Home() {
   const workTimeUi = useWorkTimeUiState();
   const {
     setOvertimeDialogOpen, setSolidarityDialogOpen,
-    setRecoveryDialogOpen, setRecoveryCalendarVisible,
+    setRecoveryDialogOpen,
     recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode, setTrainingRecoveryMode,
     overtimeHistoryOpen, setOvertimeHistoryOpen, setMecenatDialogOpen,
     mecenatHistoryOpen, setMecenatHistoryOpen, setSavingMecenat,
@@ -319,25 +289,23 @@ export default function Home() {
   } = workTimeUi;
   const planningUi = usePlanningUiState();
   const {
-    dayDate, setDayDate, noteText, setNoteText, noteColor, setNoteColor,
-    noteGroupId, setNoteGroupId, noteSelecting, setNoteSelecting, noteDates, setNoteDates,
-    dayLeave, setDayLeave, dayPersonalLeave, setDayPersonalLeave, dayWish, setDayWish,
+    dayDate, setDayDate, noteText, setNoteText, noteColor,
+    noteGroupId, noteSelecting, noteDates,
+    dayLeave, setDayLeave, dayPersonalLeave, dayWish, setDayWish,
     dayLeaveType, setDayLeaveType, dayHalfMoment, setDayHalfMoment,
-    dayHolidayPay, setDayHolidayPay, leaveRangeEnabled, setLeaveRangeEnabled,
-    leaveRangeFrom, setLeaveRangeFrom, leaveRangeTo, setLeaveRangeTo, savingDay, setSavingDay,
-    setRangeOpen, rangePrefillDate, setRangePrefillDate,
-    rangeLeaveType, setRangeLeaveType, rangeHalfMoment, setRangeHalfMoment,
-    rangeSelecting, setRangeSelecting, separateDates, setSeparateDates,
+    dayHolidayPay, setDayHolidayPay, setLeaveRangeEnabled,
+    setLeaveRangeFrom, setLeaveRangeTo, savingDay, setSavingDay,
+    rangeLeaveType,
+    rangeSelecting, separateDates,
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
-    separatePeople, setSeparatePeople, editingPeriodId, setEditingPeriodId,
-    editingLegacyPeriod, setEditingLegacyPeriod, deletingPeriod, setDeletingPeriod,
-    savingRange, setSavingRange, requestChooser, setRequestChooser,
+    separatePeople, setDeletingPeriod,
+    savingRange, requestChooser, setRequestChooser,
     planningRequestMethod, setPlanningRequestMethod, planningRequestDate, setPlanningRequestDate,
     pendingRecoveryType, setPendingRecoveryType, pendingLeaveType, setPendingLeaveType,
-    requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
-    activeType, setActiveType, selections, setSelections, timeDate, setTimeDate,
-    timeStart, setTimeStart, timeEnd, setTimeEnd, warningDate, setWarningDate,
+    requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
+    activeType, setActiveType, selections, setSelections, setTimeDate,
+    setWarningDate,
   } = planningUi;
   const showLeaves = true;
   const showNotes = true;
@@ -386,7 +354,7 @@ export default function Home() {
   } = usePayUiState();
   const appShellUi = useAppShellUiState();
   const {
-    quickNoteMode, setQuickNoteMode,
+    quickNoteMode,
     homeSection, setHomeSection, prefetchedContacts, setPrefetchedContacts,
     approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
     mainMenuOpen, setMainMenuOpen, guidePromptOpen, setGuidePromptOpen,
@@ -396,8 +364,8 @@ export default function Home() {
     appUpdateAvailable, setAppUpdateAvailable, setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
     accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize, setViewportSize,
-    showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf, calendarSlide, setCalendarSlide,
-    monthRefs, monthSwipeStart, allowancesSwipeStart,
+    showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf, calendarSlide,
+    monthRefs, allowancesSwipeStart,
   } = appShellUi;
   const {
     deleteMultiplePlanningDates,
@@ -445,7 +413,7 @@ export default function Home() {
         if (active) setIsProgramAdmin(import.meta.env.DEV && demoMode);
       });
     return () => { active = false; };
-  }, [authStatus, homeSection]);
+  }, [authStatus, demoMode]);
 
   useEffect(() => {
     const expiresAt = import.meta.env.VITE_PUBLIC_DEMO_UNTIL;
@@ -515,23 +483,23 @@ export default function Home() {
       return;
     if (!localStorage.getItem(`planning:guide-seen-v1:${identity}`))
       setGuidePromptOpen(true);
-  }, [authStatus, userEmail]);
+  }, [authStatus, userEmail, demoMode]);
   useEffect(() => {
     if (!accountMenuOpen) return;
     const close = (event: MouseEvent) => {
       if (!accountMenuRef.current?.contains(event.target as Node))
         setAccountMenuOpen(false);
     };
-    const escape = (event: KeyboardEvent) => {
+    const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setAccountMenuOpen(false);
       accountButtonRef.current?.focus();
     };
     document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", escape);
+    document.addEventListener("keydown", closeOnEscape);
     return () => {
       document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", escape);
+      document.removeEventListener("keydown", closeOnEscape);
     };
   }, [accountMenuOpen]);
   useEffect(() => {
@@ -604,8 +572,7 @@ export default function Home() {
     });
   }
 
-  useEffect(() => {
-    const frame = requestAnimationFrame(async () => {
+  const initializeApplication = useEffectEvent(async () => {
       const actualToday = new Date();
       setNow(actualToday);
       setView(localDate(actualToday.getFullYear(), actualToday.getMonth(), 1));
@@ -619,29 +586,31 @@ export default function Home() {
           ) as Record<string, PayProfile> | null;
           if (seededProfile) setFormProfile(seededProfile);
           if (seededPayProfiles) setPayProfiles(seededPayProfiles);
-          const raw = localStorage.getItem("planning:demo-completed-request-v1");
-          const completed = raw ? JSON.parse(raw) : null;
+          const completed = parseDemoCompletedRequestJson(
+            localStorage.getItem("planning:demo-completed-request-v1"),
+          );
           if (completed?.requestId) {
             if (completed.requestKind === "recovery") {
-              const quota: WorkQuota = completed.profile?.workQuota || "full";
-              const recoverySelections = [
-                ...(completed.periods || []).flatMap((item: any) =>
+              const quota: WorkQuota = completed.profile.workQuota;
+              const recoverySelections: Array<{
+                date: string;
+                type: RecoveryRequestType;
+                start: string;
+                end: string;
+              }> = [
+                ...completed.periods.flatMap((item) =>
                   item.type === "recovery_day"
                     ? rangeKeys(item.from, item.to || item.from).map((date) => ({
                         date,
-                        type: "recovery_day" as RecoveryRequestType,
+                        type: "recovery_day" as const,
                         start: "",
                         end: "",
                       }))
                     : [],
                 ),
-                ...(completed.timed || [])
-                  .filter((item: any) =>
-                    ["recovery_half", "recovery_hours", "recovery_holiday", "recovery_training"].includes(item.type),
-                  )
-                  .map((item: any) => ({
+                ...completed.timed.map((item) => ({
                     date: item.date,
-                    type: item.type as RecoveryRequestType,
+                    type: item.type,
                     start: item.start || "",
                     end: item.end || "",
                   })),
@@ -670,23 +639,21 @@ export default function Home() {
               ]);
             } else {
               const mapped: LeavePeriod[] = [
-                ...(completed.periods || []).map((item: any, index: number) => ({
+                ...completed.periods.map((item, index) => ({
                   id: `${completed.requestId}-${index + 1}`,
                   from: item.from,
                   to: item.to || item.from,
                   leaveType: item.type,
-                  group: Number(completed.group),
+                  group: completed.group,
                   updatedAt: new Date().toISOString(),
                 })),
-                ...(completed.timed || [])
-                  .filter((item: any) => item.type === "half")
-                  .map((item: any, index: number) => ({
+                ...completed.timed.map((item, index) => ({
                     id: `${completed.requestId}-timed-${index + 1}`,
                     from: item.date,
                     to: item.date,
-                    leaveType: "half",
+                    leaveType: "half" as const,
                     halfMoment: halfMomentFromStart(item.start || "13:30"),
-                    group: Number(completed.group),
+                    group: completed.group,
                     updatedAt: new Date().toISOString(),
                   })),
               ];
@@ -735,6 +702,11 @@ export default function Home() {
         setAuthStatus("guest");
         setAuthError("La connexion n’a pas pu être vérifiée. Réessayez.");
       }
+  });
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      void initializeApplication();
     });
     return () => {
       cancelAnimationFrame(frame);
@@ -755,9 +727,9 @@ export default function Home() {
   }, [authStatus, entries]);
 
   async function loadCalendar() {
-    let data: any;
+    let data;
     try {
-      data = await getCalendar<any>();
+      data = parseCalendarSnapshot(await getCalendar<unknown>());
     } catch (error) {
       if (error instanceof CalendarApiError && error.status === 401) {
         setAuthStatus("guest");
@@ -766,192 +738,18 @@ export default function Home() {
       throw error;
     }
     void notifyGuestSession().catch(() => undefined);
-    setUserEmail(data.email || "Compte connecté");
-    const syncedProfile: FormProfile | null = data.form_profile
-      ? {
-          fullName: data.form_profile.full_name || "",
-          group: data.form_profile.group || "",
-          signature: data.form_profile.signature || "",
-          status:
-            data.form_profile.status === "contractuel"
-              ? "contractuel"
-              : "fonctionnaire",
-          workQuota:
-            data.form_profile.work_quota === "half" ||
-            data.form_profile.work_quota === "three_quarters"
-              ? data.form_profile.work_quota
-              : "full",
-          // Stockés en centimes côté serveur pour éviter les arrondis.
-          baseSalary:
-            typeof data.form_profile.base_salary_cents === "number"
-              ? data.form_profile.base_salary_cents / 100
-              : undefined,
-          residenceAllowance:
-            typeof data.form_profile.residence_allowance_cents === "number"
-              ? data.form_profile.residence_allowance_cents / 100
-              : undefined,
-          ifse:
-            typeof data.form_profile.ifse_cents === "number"
-              ? data.form_profile.ifse_cents / 100
-              : undefined,
-          carenceDay:
-            typeof data.form_profile.carence_cents === "number"
-              ? data.form_profile.carence_cents / 100
-              : undefined,
-          otherFixed:
-            typeof data.form_profile.other_fixed_cents === "number"
-              ? data.form_profile.other_fixed_cents / 100
-              : undefined,
-          cia:
-            typeof data.form_profile.cia_cents === "number"
-              ? data.form_profile.cia_cents / 100
-              : undefined,
-          ciaMonth:
-            typeof data.form_profile.cia_month === "number"
-              ? data.form_profile.cia_month
-              : undefined,
-          netRatioFixed:
-            typeof data.form_profile.net_ratio_fixed_bp === "number"
-              ? data.form_profile.net_ratio_fixed_bp / 100
-              : undefined,
-          netRatioVariable:
-            typeof data.form_profile.net_ratio_variable_bp === "number"
-              ? data.form_profile.net_ratio_variable_bp / 100
-              : undefined,
-          netRatioRegime:
-            data.form_profile.net_ratio_regime === "pre-culture-psc" ||
-            data.form_profile.net_ratio_regime === "culture-psc"
-              ? data.form_profile.net_ratio_regime
-              : undefined,
-          navigo:
-            typeof data.form_profile.navigo_cents === "number"
-              ? data.form_profile.navigo_cents / 100
-              : undefined,
-          mealVoucherDeduction:
-            typeof data.form_profile.meal_voucher_deduction_cents === "number"
-              ? data.form_profile.meal_voucher_deduction_cents / 100
-              : undefined,
-          pasRate:
-            typeof data.form_profile.pas_rate_bp === "number"
-              ? data.form_profile.pas_rate_bp / 100
-              : undefined,
-          sundayCarryover:
-            typeof data.form_profile.sunday_carryover === "number"
-              ? data.form_profile.sunday_carryover
-              : undefined,
-          sundayCarryoverYear:
-            typeof data.form_profile.sunday_carryover_year === "number"
-              ? data.form_profile.sunday_carryover_year
-              : undefined,
-          sundayCarryoverMonth:
-            typeof data.form_profile.sunday_carryover_month === "number"
-              ? data.form_profile.sunday_carryover_month
-              : undefined,
-          sundayCarryoverFromYear:
-            typeof data.form_profile.sunday_carryover_from_year === "number"
-              ? data.form_profile.sunday_carryover_from_year
-              : undefined,
-          sundayCarryoverFromMonth:
-            typeof data.form_profile.sunday_carryover_from_month === "number"
-              ? data.form_profile.sunday_carryover_from_month
-              : undefined,
-          manualAdjustments: manualAdjustmentsFromApi(
-            data.form_profile.manual_adjustments,
-          ),
-          cetAccount: cetAccountFromApi(data.form_profile.cet_account),
-        }
-      : null;
+    setUserEmail(data.email);
+    const syncedProfile = data.formProfile;
     setFormProfile(syncedProfile);
-    setPayProfiles(
-      Object.fromEntries(
-        Object.entries(data.form_profile?.pay_profiles || {}).map(
-          ([year, profile]) => [year, payProfileFromApi(profile)],
-        ),
-      ),
-    );
+    setPayProfiles(data.payProfiles);
     if ([1, 2, 3].includes(Number(syncedProfile?.group)))
       setGroup(Number(syncedProfile?.group));
-    const next: Entries = {};
-    for (const row of data.entries || [])
-      next[row.date] = {
-        noteText: row.note_text || "",
-        noteColor: row.note_color || "#D3943D",
-        noteUpdatedAt: row.note_updated_at || "",
-        noteGroupId: row.note_group_id || "",
-        leave: Boolean(row.leave),
-        wish: Boolean(row.wish),
-        holidayPay:
-          row.holiday_pay === "prime" || row.holiday_pay === "recovery"
-            ? row.holiday_pay
-            : "",
-        closureOverride:
-          row.closure_override === "closed" || row.closure_override === "open"
-            ? row.closure_override
-            : "",
-        updatedAt: row.updated_at || "",
-      };
-    setEntries(next);
-    setOvertimeEntries(
-      (data.overtime_entries || []).map((item: any) => ({
-        id: item.id,
-        date: item.date,
-        minutes: item.minutes,
-        dayMinutes: item.day_minutes,
-        nightMinutes: item.night_minutes,
-        disposition: item.disposition,
-        inputMode: item.input_mode,
-        start: item.start || undefined,
-        end: item.end || undefined,
-        kind: item.kind === "training" ? "training" : undefined,
-        updatedAt: item.updated_at || "",
-      })),
-    );
-    setRecoveryUses(
-      (data.recovery_uses || []).map((item: any) => ({
-        id: item.id,
-        date: item.date,
-        minutes: item.minutes,
-        start: item.start || undefined,
-        end: item.end || undefined,
-        updatedAt: item.updated_at || "",
-      })),
-    );
-    setMecenatEntries(
-      (data.mecenat_entries || []).map((item: any) => ({
-        id: item.id,
-        date: item.date,
-        start: item.start,
-        end: item.end,
-        dayMinutes: item.day_minutes,
-        nightMinutes: item.night_minutes,
-        grossAmountCents: item.gross_amount_cents,
-        payYear: item.pay_year,
-        payMonth: item.pay_month,
-        updatedAt: item.updated_at || "",
-      })),
-    );
+    setEntries(data.entries);
+    setOvertimeEntries(data.overtimeEntries);
+    setRecoveryUses(data.recoveryUses);
+    setMecenatEntries(data.mecenatEntries);
     setAuthStatus("ready");
-    setPeriods(
-      (data.periods || []).map(
-        (period: {
-          id: string;
-          from: string;
-          to: string;
-          leave_type?: LeaveType | "";
-          half_moment?: HalfMoment | "";
-          group?: number;
-          updated_at: string;
-        }) => ({
-          id: period.id,
-          from: period.from,
-          to: period.to,
-          leaveType: period.leave_type || "",
-          halfMoment: period.half_moment || "",
-          group: period.group,
-          updatedAt: period.updated_at,
-        }),
-      ),
-    );
+    setPeriods(data.periods);
   }
   const {
     submitLogin,
@@ -2077,7 +1875,7 @@ export default function Home() {
         (a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind),
       )
       .slice(0, 8);
-  }, [entries, now, showNotes]);
+  }, [entries, now]);
 
   const hasAnyNote = useMemo(
     () => Object.values(entries).some((entry) => entry.noteText),
@@ -2094,7 +1892,7 @@ export default function Home() {
     for (const [key, entry] of Object.entries(entries).sort(([a], [b]) =>
       a.localeCompare(b),
     )) {
-      if (!entry.noteText || !entry.noteText.toLowerCase().includes(query))
+      if (!entry.noteText?.toLowerCase().includes(query))
         continue;
       if (entry.noteGroupId) {
         if (seenGroups.has(entry.noteGroupId)) continue;
@@ -2234,49 +2032,43 @@ export default function Home() {
     recoveryRangeSelecting ||
     noteSelecting;
 
-  function openDay(date: Date) {
-    const key = dateKey(date);
-    const entry = entries[key];
-    setDayDate(key);
-    setQuickNoteMode(false);
-    // Le champ s'ouvre sur le texte existant tel quel : c'est le bouton
-    // « Ajouter une note » qui ouvre une ligne en dessous, à la demande.
-    setNoteText(entry?.noteText || "");
-    setNoteColor(entry?.noteColor || "#D3943D");
-    setNoteGroupId(entry?.noteGroupId || "");
-    setDayLeave(false);
-    setDayPersonalLeave(Boolean(entry?.leave));
-    setDayWish(Boolean(entry?.wish));
-    setDayHolidayPay(entry?.holidayPay || "");
-    setDayLeaveType("annual");
-    setLeaveRangeEnabled(false);
-    setLeaveRangeFrom(key);
-    setLeaveRangeTo(key);
-    setEditingPeriodId(null);
-  }
-  function beginQuickNote() {
-    const today = new Date();
-    const date =
-      today.getFullYear() === view.getFullYear() &&
-      today.getMonth() === view.getMonth()
-        ? localDate(today.getFullYear(), today.getMonth(), today.getDate())
-        : localDate(view.getFullYear(), view.getMonth(), 1);
-    const key = dateKey(date);
-    setQuickNoteMode(true);
-    setDayDate(key);
-    setNoteText("");
-    setNoteColor("#D3943D");
-    setNoteGroupId("");
-    setDayLeave(false);
-    setDayPersonalLeave(false);
-    setDayWish(false);
-    setLeaveRangeEnabled(false);
-    setLeaveRangeFrom(key);
-    setLeaveRangeTo(key);
-    setEditingPeriodId(null);
-    setHomeSection("home");
-    setRequestChooser(false);
-  }
+  const {
+    openDay,
+    beginQuickNote,
+    beginNoteDateSelection,
+    cancelNoteSelection,
+    openRange,
+    beginRangeSelection,
+    cancelRangeSelection,
+    beginMultipleDateSelectionFromDay,
+    beginRequest,
+    handleDay,
+    confirmWarning,
+    commitTime,
+    goToday,
+    startMonthSwipe,
+    endMonthSwipe,
+    changeAllowancesMonth,
+    startCalendarCleanup,
+    cancelCalendarCleanup,
+  } = usePlanningInteractionActions({
+    planningUi,
+    appShellUi,
+    workTimeUi,
+    entries,
+    group,
+    view,
+    setView,
+    mode,
+    workQuota,
+    calendarDeleteMode,
+    setCalendarDeleteMode,
+    setCalendarDeleteDates,
+    ignoreNextDayClick,
+    cancelRequest,
+    saveStrikeDateDirect,
+    notify,
+  });
   function changeWorkQuota(nextQuota: WorkQuota) {
     const previousProfile = formProfile;
     const nextProfile: FormProfile = {
@@ -2370,842 +2162,32 @@ export default function Home() {
     post: postCalendar,
     postBatch: postCalendarBatch,
   });
-  function editDayLeavePeriod(period: LeavePeriod) {
-    setEditingPeriodId(period.id);
-    setDayLeave(true);
-    setDayLeaveType(period.leaveType || "annual");
-    setDayHalfMoment(period.halfMoment || "morning");
-    setLeaveRangeEnabled(true);
-    setLeaveRangeFrom(period.from);
-    setLeaveRangeTo(period.to);
-  }
-  async function saveDay(overrides?: Partial<SharedEntry>) {
-    if (!dayDate) return;
-    const trimmedNote = noteText.trim();
-    const useLeaveRange = (leaveRangeEnabled || dayLeave) && dayLeave;
-    if (
-      useLeaveRange &&
-      (!leaveRangeFrom || !leaveRangeTo || leaveRangeTo < leaveRangeFrom)
-    ) {
-      notify(
-        "La date de fin des congés doit être identique ou postérieure à la date de début.",
-      );
-      return;
-    }
-    if (
-      useLeaveRange &&
-      dayNumber(fromKey(leaveRangeTo)) -
-        dayNumber(fromKey(leaveRangeFrom)) +
-        1 >
-        366
-    ) {
-      notify("Une période de congés ne peut pas dépasser 366 jours.");
-      return;
-    }
-    const current = entries[dayDate] || emptyEntry();
-    const nextEntry: SharedEntry = {
-      ...current,
-      noteText: trimmedNote,
-      noteColor,
-      noteGroupId: "",
-      leave: dayPersonalLeave,
-      wish: dayWish,
-      holidayPay: dayHolidayPay,
-      ...overrides,
-    };
-    const noteChanged = nextEntry.noteText !== current.noteText;
-    if (noteChanged)
-      nextEntry.noteUpdatedAt = nextEntry.noteText
-        ? new Date().toISOString()
-        : "";
-    setSavingDay(true);
-    try {
-      const demo = demoMode;
-      if (!demo) {
-        const operations: Array<Record<string, unknown>> = [];
-        if (noteGroupId)
-          operations.push({
-            action: "delete-note-period",
-            groupId: noteGroupId,
-          });
-        operations.push({
-          action: "save-entry",
-          date: dayDate,
-          ...nextEntry,
-          expectedUpdatedAt: current.updatedAt,
-        });
-        if (useLeaveRange)
-          operations.push({
-            action: "save-period",
-            id: editingPeriodId || undefined,
-            expectedUpdatedAt: editingPeriodId
-              ? periods.find((period) => period.id === editingPeriodId)
-                  ?.updatedAt || ""
-              : "",
-            from: leaveRangeFrom,
-            to: leaveRangeTo,
-            leaveType: dayLeaveType,
-            halfMoment: dayLeaveType === "half" ? dayHalfMoment : undefined,
-            group,
-          });
-        // Un congé souhaité n'est pas une période enregistrée : il se pose jour
-        // par jour. Il vit donc hors du bloc ci-dessus, qui ne s'exécute que
-        // lorsqu'un vrai congé est en jeu.
-        if (dayWish && leaveRangeEnabled && leaveRangeFrom && leaveRangeTo)
-          for (const key of rangeKeys(leaveRangeFrom, leaveRangeTo))
-            if (key !== dayDate)
-              operations.push({
-                action: "save-entry",
-                date: key,
-                ...(entries[key] || emptyEntry()),
-                expectedUpdatedAt: entries[key]?.updatedAt || "",
-                wish: true,
-              });
-        await postCalendarBatch(operations);
-        await loadCalendar();
-      } else
-        setEntries((currentEntries) => {
-          const next = { ...currentEntries };
-          if (noteGroupId) {
-            for (const [key, entry] of Object.entries(next))
-              if (entry.noteGroupId === noteGroupId) {
-                const cleared = {
-                  ...entry,
-                  noteText: "",
-                  noteUpdatedAt: "",
-                  noteGroupId: "",
-                };
-                if (
-                  !cleared.leave &&
-                  !cleared.wish &&
-                  !cleared.holidayPay &&
-                  !cleared.closureOverride
-                )
-                  delete next[key];
-                else next[key] = cleared;
-              }
-          }
-          // Même condition que le serveur : un congé souhaité ou un choix de
-          // compensation suffit à garder la journée, même sans note ni congé.
-          if (
-            !nextEntry.noteText &&
-            !nextEntry.leave &&
-            !nextEntry.wish &&
-            !nextEntry.holidayPay &&
-            !nextEntry.closureOverride
-          )
-            delete next[dayDate];
-          else next[dayDate] = nextEntry;
-          return next;
-        });
-      if (demo && useLeaveRange) {
-        const updatedAt = new Date().toISOString();
-        setPeriods((currentPeriods) => [
-          ...currentPeriods.filter(
-            (period) => !editingPeriodId || period.id !== editingPeriodId,
-          ),
-          {
-            id: editingPeriodId || createClientId("period"),
-            from: leaveRangeFrom,
-            to: leaveRangeTo,
-            leaveType: dayLeaveType,
-            halfMoment: dayLeaveType === "half" ? dayHalfMoment : "",
-            group,
-            updatedAt,
-          } satisfies LeavePeriod,
-        ]);
-      }
-      setEditingPeriodId(null);
-      setDayDate(null);
-    } catch (error) {
-      notify(
-        calendarErrorMessage(
-          error,
-          "La modification n’a pas pu être synchronisée. Réessayez.",
-        ),
-      );
-    } finally {
-      setSavingDay(false);
-    }
-  }
-  function beginNoteDateSelection() {
-    if (!dayDate) return;
-    setNoteDates((current) => (current.includes(dayDate) ? current : [dayDate]));
-    setDayDate(null);
-    setNoteSelecting(true);
-    setTimeout(
-      () =>
-        document
-          .getElementById("note-selection-panel")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      80,
-    );
-  }
-  function cancelNoteSelection() {
-    setNoteSelecting(false);
-    setNoteDates([]);
-  }
-  async function saveNoteAcrossDates() {
-    const trimmedNote = noteText.trim();
-    if (!trimmedNote || !noteDates.length) return;
-    setSavingDay(true);
-    try {
-      const demo = demoMode;
-      const groupId = noteGroupId || createClientId("note");
-      const updatedAt = new Date().toISOString();
-      if (!demo) {
-        await postCalendarBatch(
-          groupConsecutive(noteDates).map((range) => ({
-            action: "save-note-period",
-            groupId,
-            from: range.from,
-            to: range.to,
-            noteText: trimmedNote,
-            noteColor,
-          })),
-        );
-        await loadCalendar();
-      } else {
-        setEntries((currentEntries) => {
-          const next = { ...currentEntries };
-          if (noteGroupId)
-            for (const [key, entry] of Object.entries(next))
-              if (entry.noteGroupId === noteGroupId) {
-                const cleared = {
-                  ...entry,
-                  noteText: "",
-                  noteUpdatedAt: "",
-                  noteGroupId: "",
-                };
-                if (!cleared.leave && !cleared.wish && !cleared.holidayPay)
-                  delete next[key];
-                else next[key] = cleared;
-              }
-          for (const date of noteDates) {
-            const previous = next[date] || emptyEntry();
-            next[date] = {
-              ...previous,
-              noteText: trimmedNote,
-              noteColor,
-              noteUpdatedAt: updatedAt,
-              noteGroupId: groupId,
-            };
-          }
-          return next;
-        });
-      }
-      setNoteSelecting(false);
-      setNoteDates([]);
-      setNoteText("");
-      setNoteGroupId("");
-      setNoteColor("#D3943D");
-    } catch (error) {
-      notify(
-        calendarErrorMessage(
-          error,
-          "La note n’a pas pu être enregistrée. Réessayez.",
-        ),
-      );
-    } finally {
-      setSavingDay(false);
-    }
-  }
-  function openRange(initialType: LeaveType = "annual", initialDate?: string) {
-    if (requestKind) {
-      notify(
-        "Terminez ou annulez d’abord la demande professionnelle en cours.",
-      );
-      return;
-    }
-    setRangeLeaveType(initialType);
-    setRangePrefillDate(initialDate || null);
-    setEditingPeriodId(null);
-    setEditingLegacyPeriod(null);
-    setSeparateDates([]);
-    setSeparatePeople([]);
-    setRangeOpen(true);
-  }
-  function beginRangeSelection() {
-    setSeparatePeople(["leave"]);
-    setSeparateDates(rangePrefillDate ? [rangePrefillDate] : []);
-    setRangePrefillDate(null);
-    setRangeOpen(false);
-    setRangeSelecting(true);
-    setTimeout(
-      () =>
-        document
-          .getElementById("range-selection-panel")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      80,
-    );
-  }
-  function cancelRangeSelection() {
-    setRangeSelecting(false);
-    setSeparateDates([]);
-    setSeparatePeople([]);
-    setEditingPeriodId(null);
-    setEditingLegacyPeriod(null);
-    setRangePrefillDate(null);
-  }
-  function beginMultipleDateSelectionFromDay() {
-    if (!dayDate) return;
-    const people: MultiDatePerson[] = dayLeave ? ["leave"] : [];
-    if (dayPersonalLeave) people.push("personal");
-    if (dayWish) people.push("wish");
-    if (!people.length) return;
-    setRangeLeaveType(dayLeaveType);
-    setRangeHalfMoment(dayHalfMoment);
-    setSeparatePeople(people);
-    setSeparateDates([dayDate]);
-    setDayDate(null);
-    setRangeSelecting(true);
-    setTimeout(
-      () =>
-        document
-          .getElementById("range-selection-panel")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      80,
-    );
-  }
-  async function clearLegacyPeriod(period: LeavePeriod) {
-    if (
-      !demoMode
-    ) {
-      await postCalendar({
-          action: "clear-legacy-period",
-          from: period.from,
-          to: period.to,
-      });
-    }
-    setEntries((current) => {
-      const next = { ...current };
-      for (
-        let date = fromKey(period.from);
-        dateKey(date) <= period.to;
-        date = addDays(date, 1)
-      ) {
-        const key = dateKey(date);
-        const entry = next[key];
-        if (!entry) continue;
-        const nextEntry: SharedEntry = { ...entry, leave: false };
-        if (
-          !nextEntry.noteText &&
-          !nextEntry.leave &&
-          !nextEntry.wish &&
-          !nextEntry.holidayPay
-        )
-          delete next[key];
-        else next[key] = nextEntry;
-      }
-      return next;
-    });
-  }
-
-  async function restoreLeavePeriod(
-    period: LeavePeriod,
-    periodsToReplace: LeavePeriod[] = [],
-  ) {
-    const restoredId = createClientId("period");
-    try {
-      if (!demoMode) {
-        const operations: Array<Record<string, unknown>> = periodsToReplace.map(
-          (replacement) => ({
-            action: "delete-period",
-            id: replacement.id,
-            expectedUpdatedAt: replacement.updatedAt,
-          }),
-        );
-        operations.push({
-          action: "save-period",
-          id: restoredId,
-          from: period.from,
-          to: period.to,
-          leaveType: period.leaveType || "annual",
-          halfMoment:
-            period.leaveType === "half" ? period.halfMoment || "" : "",
-          group: period.group || group,
-        });
-        await postCalendarBatch(operations);
-        await loadCalendar();
-      } else {
-        setPeriods((current) => [
-          ...current.filter(
-            (candidate) =>
-              !periodsToReplace.some(
-                (replacement) => replacement.id === candidate.id,
-              ),
-          ),
-          {
-            ...period,
-            id: restoredId,
-            legacy: false,
-            updatedAt: new Date().toISOString(),
-          },
-        ].sort((a, b) => a.from.localeCompare(b.from)));
-      }
-      confirm("L’absence précédente a été rétablie.");
-    } catch (error) {
-      notify(
-        calendarErrorMessage(
-          error,
-          "L’absence n’a pas pu être rétablie. Rechargez le planning puis réessayez.",
-        ),
-      );
-    }
-  }
-
-  async function saveSeparateLeaveDates() {
-    if (!separateDates.length || !separatePeople.length) return;
-    const previousPeriod = editingPeriodId
-      ? periods.find((period) => period.id === editingPeriodId) || null
-      : editingLegacyPeriod;
-    setSavingRange(true);
-    try {
-      const saved: LeavePeriod[] = [];
-      const demo = demoMode;
-      const operations: Array<Record<string, unknown>> = [];
-      const periodResultIndexes: number[] = [];
-      const useFastPeriodBatch =
-        !editingLegacyPeriod &&
-        !editingPeriodId &&
-        separatePeople.length === 1 &&
-        separatePeople[0] === "leave";
-      const bulkPeriods: Array<Record<string, unknown>> = [];
-      for (const date of [...separateDates].sort()) {
-        for (const person of separatePeople) {
-          // « Divers » et « souhaité » sont des marques posées sur la journée,
-          // pas des périodes enregistrées : elles s'écrivent jour par jour et
-          // doivent préserver ce que porte déjà la case.
-          if (person === "personal" || person === "wish") {
-            if (!demo) {
-              const current = entries[date];
-              operations.push({
-                action: "save-leaves",
-                date,
-                leave:
-                  person === "personal" ? true : Boolean(current?.leave),
-                wish: person === "wish" ? true : Boolean(current?.wish),
-                expectedUpdatedAt: current?.updatedAt || "",
-              });
-            }
-            continue;
-          }
-          if (!demo) {
-            const periodInput = {
-              action: "save-period",
-              id: createClientId("period"),
-              from: date,
-              to: date,
-              leaveType: rangeLeaveType,
-              halfMoment:
-                rangeLeaveType === "half" ? rangeHalfMoment : undefined,
-              group,
-            };
-            if (useFastPeriodBatch) {
-              const { action: _action, ...bulkPeriod } = periodInput;
-              bulkPeriods.push(bulkPeriod);
-            } else {
-              periodResultIndexes.push(operations.length);
-              operations.push(periodInput);
-            }
-          } else {
-            saved.push({
-              id: createClientId("period"),
-              from: date,
-              to: date,
-              leaveType: rangeLeaveType,
-              halfMoment: rangeLeaveType === "half" ? rangeHalfMoment : "",
-              group,
-              updatedAt: new Date().toISOString(),
-            });
-          }
-        }
-      }
-      if (!demo) {
-        if (editingLegacyPeriod)
-          operations.push({
-            action: "clear-legacy-period",
-            from: editingLegacyPeriod.from,
-            to: editingLegacyPeriod.to,
-          });
-        else if (editingPeriodId)
-          operations.push({
-            action: "delete-period",
-            id: editingPeriodId,
-            expectedUpdatedAt:
-              periods.find((period) => period.id === editingPeriodId)
-                ?.updatedAt || "",
-          });
-        type SavedPeriodResponse = {
-          period?: {
-            id: string;
-            from: string;
-            to: string;
-            leave_type?: LeaveType;
-            half_moment?: HalfMoment;
-            group?: number;
-            updated_at: string;
-          };
-        };
-        const periodResults: SavedPeriodResponse[] = [];
-        if (useFastPeriodBatch) {
-          const bulk = await postCalendarPeriodsVerified<
-            NonNullable<SavedPeriodResponse["period"]>
-          >(
-            bulkPeriods as Array<
-              Record<string, unknown> & { id: string; from: string; to: string }
-            >,
-          );
-          periodResults.push(
-            ...bulk.periods.map((period) => ({ period })),
-          );
-        } else {
-          const batch = await postCalendarBatch<SavedPeriodResponse>(operations);
-          periodResults.push(
-            ...periodResultIndexes.map((index) => batch.results[index]),
-          );
-        }
-        for (const result of periodResults) {
-          const period = result?.period;
-          if (!period) continue;
-          saved.push({
-            id: period.id,
-            from: period.from,
-            to: period.to,
-            leaveType: period.leave_type || "",
-            halfMoment: period.half_moment || "",
-            group: period.group,
-            updatedAt: period.updated_at,
-          });
-        }
-      } else if (editingLegacyPeriod) {
-        await clearLegacyPeriod(editingLegacyPeriod);
-      }
-      setPeriods((current) =>
-        [
-          ...current.filter(
-            (period) =>
-              period.id !== editingPeriodId &&
-              (!editingLegacyPeriod || period.id !== editingLegacyPeriod.id),
-          ),
-          ...saved,
-        ].sort((a, b) => a.from.localeCompare(b.from)),
-      );
-      if (demo && separatePeople.includes("personal")) {
-        setEntries((current) => {
-          const next = { ...current };
-          for (const date of separateDates) {
-            const previous = next[date] || emptyEntry();
-            next[date] = { ...previous, leave: true };
-          }
-          return next;
-        });
-      }
-      let refreshDelayed = false;
-      if (!demo) {
-        try {
-          await loadCalendar();
-        } catch {
-          // Les périodes renvoyées par l'écriture sont déjà appliquées juste
-          // au-dessus. Une relecture momentanément indisponible ne transforme
-          // donc plus un enregistrement réussi en faux échec.
-          refreshDelayed = true;
-        }
-      }
-      cancelRangeSelection();
-      if (previousPeriod && saved.length) {
-        const replacements = [...saved];
-        offerUndo("L’absence a été modifiée.", () =>
-          restoreLeavePeriod(previousPeriod, replacements),
-        );
-      } else {
-        confirm(
-          refreshDelayed
-            ? "Les congés sont enregistrés. La vérification distante se terminera automatiquement à la prochaine ouverture."
-            : "Les congés sont enregistrés : le planning et les soldes sont à jour.",
-        );
-      }
-    } catch (error) {
-      await loadCalendar().catch(() => undefined);
-      notify(
-        calendarErrorMessage(
-          error,
-          "Les dates n’ont pas pu être synchronisées. Réessayez.",
-        ),
-      );
-    } finally {
-      setSavingRange(false);
-    }
-  }
-  async function deleteLeavePeriod() {
-    if (!deletingPeriod) return;
-    const target = deletingPeriod;
-    setSavingRange(true);
-    try {
-      if (target.legacy) {
-        await clearLegacyPeriod(target);
-      } else if (!demoMode) {
-        await postCalendar({ action: "delete-period", id: target.id });
-      }
-      if (!target.legacy)
-        setPeriods((current) =>
-          current.filter((period) => period.id !== target.id),
-        );
-      setDeletingPeriod(null);
-      offerUndo("L’absence a été supprimée.", () => restoreLeavePeriod(target));
-    } catch {
-      notify("La période n’a pas pu être annulée. Réessayez.");
-    } finally {
-      setSavingRange(false);
-    }
-  }
-  function beginRequest(
-    kind: RequestKind,
-    initialDate?: string,
-    requestedType?: SelectionType,
-  ) {
-    setRequestKind(kind);
-    const initialType: SelectionType =
-      requestedType ||
-      (kind === "leave"
-        ? "annual"
-        : kind === "strike"
-          ? "strike"
-        : kind === "other"
-          ? "other"
-          : "recovery_day");
-    const initialDateIsSelectable = Boolean(
-      initialDate && getDayInfo(fromKey(initialDate), group).selectable,
-    );
-    setActiveType(initialType);
-    setSickRequest(kind === "leave" && initialType === "sick");
-    const initialTimes =
-      initialType === "recovery_training"
-        ? trainingRecoveryTimes(workQuota)
-        : {};
-    setSelections(
-      initialDate && initialDateIsSelectable
-        ? { [initialDate]: { date: initialDate, type: initialType, ...initialTimes } }
-        : {},
-    );
-    setWarningDate(
-      initialDate && !initialDateIsSelectable ? initialDate : null,
-    );
-    setHomeSection("home");
-    setRequestChooser(false);
-    window.setTimeout(
-      () =>
-        document
-          .getElementById("request-panel")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      0,
-    );
-  }
+  const {
+    editDayLeavePeriod,
+    saveDay,
+    saveNoteAcrossDates,
+    saveSeparateLeaveDates,
+    deleteLeavePeriod,
+  } = usePlanningEditorActions({
+    planningUi,
+    entries,
+    periods,
+    group,
+    demoMode,
+    setEntries,
+    setPeriods,
+    reloadCalendar: loadCalendar,
+    cancelRangeSelection,
+    notify,
+    showSuccess: confirm,
+    offerUndo,
+  });
   function cancelRequest() {
     setRequestKind(null);
     setSickRequest(false);
     setSelections({});
     setWarningDate(null);
     setTimeDate(null);
-  }
-  function recordSelection(key: string) {
-    if (
-      activeType === "strike" &&
-      getDayInfo(fromKey(key), group).kind !== "work"
-    ) {
-      notify("Une grève ne peut être posée que sur une journée prévue travaillée.");
-      return;
-    }
-    if (activeType === "recovery_training") {
-      const times = trainingRecoveryTimes(workQuota);
-      setSelections((current) => ({
-        ...current,
-        [key]: { date: key, type: activeType, ...times },
-      }));
-      return;
-    }
-    if (
-      activeType === "half" ||
-      activeType === "recovery_half" ||
-      activeType === "recovery_hours" ||
-      activeType === "recovery_holiday"
-    ) {
-      const existing = selections[key];
-      setTimeStart(existing?.start || "09:15");
-      setTimeEnd(existing?.end || "13:00");
-      setTimeDate(key);
-      return;
-    }
-    setSelections((current) => ({
-      ...current,
-      [key]: { date: key, type: activeType },
-    }));
-  }
-  function handleDay(date: Date) {
-    if (ignoreNextDayClick.current) {
-      ignoreNextDayClick.current = false;
-      return;
-    }
-    const key = dateKey(date);
-    if (recoveryRangeSelecting) {
-      setRecoveryRangeDates((current) =>
-        current.includes(key)
-          ? current.filter((item) => item !== key)
-          : [...current, key].sort(),
-      );
-      return;
-    }
-    if (recoveryDatePicking) {
-      setRecoveryDraft((current) => ({ ...current, date: key }));
-      setRecoveryDatePicking(false);
-      setRecoveryCalendarVisible(false);
-      setRecoveryDialogOpen(true);
-      return;
-    }
-    if (calendarDeleteMode) {
-      setCalendarDeleteDates((current) =>
-        current.includes(key)
-          ? current.filter((date) => date !== key)
-          : [...current, key].sort(),
-      );
-      return;
-    }
-    if (rangeSelecting) {
-      setSeparateDates((current) =>
-        current.includes(key)
-          ? current.filter((date) => date !== key)
-          : [...current, key].sort(),
-      );
-      return;
-    }
-    if (noteSelecting) {
-      setNoteDates((current) =>
-        current.includes(key)
-          ? current.filter((date) => date !== key)
-          : [...current, key].sort(),
-      );
-      return;
-    }
-    if (!requestKind) {
-      openDay(date);
-      return;
-    }
-    if (requestKind === "strike") {
-      void saveStrikeDateDirect(key);
-      return;
-    }
-    if (selections[key]) {
-      setSelections((current) => {
-        const next = { ...current };
-        delete next[key];
-        return next;
-      });
-      return;
-    }
-    const info = getDayInfo(date, group);
-    if (!info.selectable) {
-      setWarningDate(key);
-      return;
-    }
-    recordSelection(key);
-  }
-  function confirmWarning() {
-    if (!warningDate) return;
-    const key = warningDate;
-    setWarningDate(null);
-    recordSelection(key);
-  }
-  function commitTime() {
-    if (!timeDate) return;
-    const start =
-      (document.getElementById("request-time-start") as HTMLInputElement | null)
-        ?.value || timeStart;
-    const end =
-      (document.getElementById("request-time-end") as HTMLInputElement | null)
-        ?.value || timeEnd;
-    if (!start || !end || end <= start) {
-      notify("L’heure de fin doit être postérieure à l’heure de début.");
-      return;
-    }
-    setSelections((current) => ({
-      ...current,
-      [timeDate]: { date: timeDate, type: activeType, start, end },
-    }));
-    setTimeDate(null);
-  }
-  function goToday() {
-    const today = new Date();
-    setView(localDate(today.getFullYear(), today.getMonth(), 1));
-    if (mode === "year")
-      setTimeout(
-        () =>
-          monthRefs.current[today.getMonth()]?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          }),
-        80,
-      );
-  }
-  function changePeriod(delta: number) {
-    if (mode === "month") {
-      if (calendarSlide) return;
-      const outgoing = delta > 0 ? "out-left" : "out-right";
-      const incoming = delta > 0 ? "in-right" : "in-left";
-      setCalendarSlide(outgoing);
-      window.setTimeout(() => {
-        setView((current) =>
-          localDate(current.getFullYear(), current.getMonth() + delta, 1),
-        );
-        setCalendarSlide(incoming);
-        window.setTimeout(() => setCalendarSlide(""), 230);
-      }, 125);
-      return;
-    }
-    setView((current) =>
-      mode === "year"
-        ? localDate(current.getFullYear() + delta, current.getMonth(), 1)
-        : localDate(current.getFullYear(), current.getMonth() + delta, 1),
-    );
-  }
-  function startMonthSwipe(event: React.TouchEvent<HTMLElement>) {
-    if (mode !== "month") return;
-    const touch = event.changedTouches[0];
-    monthSwipeStart.current = { x: touch.clientX, y: touch.clientY };
-  }
-  function endMonthSwipe(event: React.TouchEvent<HTMLElement>) {
-    if (!monthSwipeStart.current || mode !== "month") return;
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - monthSwipeStart.current.x;
-    const deltaY = touch.clientY - monthSwipeStart.current.y;
-    monthSwipeStart.current = null;
-    if (Math.abs(deltaX) < 55 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25)
-      return;
-    ignoreNextDayClick.current = true;
-    window.setTimeout(() => {
-      ignoreNextDayClick.current = false;
-    }, 450);
-    changePeriod(deltaX < 0 ? 1 : -1);
-  }
-  /** Change le mois affiché dans « Infos primes », par glissement ou par
-   *  flèche — indépendant du mode (mois ou année), puisque ce panneau reste
-   *  consultable dans les deux. */
-  function changeAllowancesMonth(delta: 1 | -1) {
-    setView((current) =>
-      localDate(current.getFullYear(), current.getMonth() + delta, 1),
-    );
-  }
-
-  function startCalendarCleanup() {
-    cancelRequest();
-    cancelRangeSelection();
-    cancelNoteSelection();
-    setCalendarDeleteDates([]);
-    setCalendarDeleteMode(true);
-  }
-
-  function cancelCalendarCleanup() {
-    setCalendarDeleteMode(false);
-    setCalendarDeleteDates([]);
   }
 
   function openManualAdjustments() {
@@ -3358,276 +2340,25 @@ export default function Home() {
       return;
     slideAllowancesMonth(deltaX < 0 ? 1 : -1);
   }
-  /** Ouvre le formulaire vierge, sans rien pré-remplir depuis le planning. */
-  function openBlankForm() {
-    try {
-      localStorage.removeItem(HANDOFF_KEY);
-    } catch {}
-    window.location.href = "/formulaire/index.html";
-  }
-  async function validateAndOpenForm() {
-    if (!selectedList.length) {
-      notify(
-        "Sélectionnez au moins une date avant d’intégrer la demande au formulaire.",
-      );
-      return;
-    }
-    const requestedCetDays = selectedList.filter((item) => item.type === "cet").length;
-    if (requestedCetDays) {
-      const availableCet = formProfile?.cetAccount?.enabled
-        ? Math.max(0, cetBalance(formProfile.cetAccount) - cetPlannedLeaveDays)
-        : 0;
-      if (requestedCetDays > availableCet) {
-        notify(`Cette demande utilise ${requestedCetDays} jour${requestedCetDays > 1 ? "s" : ""} CET, mais votre solde disponible est de ${availableCet} jour${availableCet > 1 ? "s" : ""}.`);
-        return;
-      }
-    }
-    // Maladie et Divers n'ont pas de rubrique adaptée dans le PDF officiel.
-    // Leur « formulaire » reste donc dans l'application : choix des dates,
-    // validation explicite, puis enregistrement synchronisé. Divers est un
-    // repère de planning uniquement et est exclu plus bas de tous les calculs.
-    if (requestKind === "other" || requestKind === "strike" || sickRequest) {
-      const leaveType: LeaveType =
-        requestKind === "other"
-          ? "other"
-          : requestKind === "strike"
-            ? "strike"
-            : "sick";
-      const grouped = groupConsecutive(selectedList.map((item) => item.date));
-      const inputs = grouped.map((period) => ({
-        id: createClientId("period"),
-        from: period.from,
-        to: period.to,
-        leaveType,
-        group,
-      }));
-      setSavingRequest(true);
-      try {
-        let saved: LeavePeriod[];
-        if (demoMode) {
-          saved = inputs.map((period) => ({
-            ...period,
-            halfMoment: "",
-            updatedAt: new Date().toISOString(),
-          }));
-        } else {
-          const result = await postCalendarPeriodsVerified<{
-            id: string;
-            from: string;
-            to: string;
-            leave_type?: LeaveType;
-            half_moment?: HalfMoment;
-            group?: number;
-            updated_at: string;
-          }>(inputs);
-          saved = result.periods.map((period) => ({
-            id: period.id,
-            from: period.from,
-            to: period.to,
-            leaveType: period.leave_type || leaveType,
-            halfMoment: period.half_moment || "",
-            group: period.group,
-            updatedAt: period.updated_at,
-          }));
-        }
-        setPeriods((current) =>
-          [...current, ...saved].sort((a, b) => a.from.localeCompare(b.from)),
-        );
-        cancelRequest();
-        confirm(
-          leaveType === "other"
-            ? "Divers est ajouté au planning, sans modifier la paie ni les soldes."
-            : leaveType === "strike"
-              ? "La grève est enregistrée et l’estimation de paie est à jour."
-            : "L’arrêt maladie est enregistré et l’estimation de paie est à jour.",
-        );
-      } catch (error) {
-        notify(
-          calendarErrorMessage(
-            error,
-            leaveType === "other"
-              ? "Divers n’a pas pu être enregistré."
-              : leaveType === "strike"
-                ? "La grève n’a pas pu être enregistrée."
-              : "L’arrêt maladie n’a pas pu être enregistré.",
-          ),
-        );
-      } finally {
-        setSavingRequest(false);
-      }
-      return;
-    }
-    if (requestKind === "recovery") {
-      const requestedMinutes = selectedList.reduce(
-        (total, item) =>
-          total +
-          recoveryRequestMinutes(
-            item.type as RecoveryRequestType,
-            workQuota,
-            item.start,
-            item.end,
-          ),
-        0,
-      );
-      if (requestedMinutes <= 0) {
-        notify("Vérifiez les horaires de la récupération.");
-        return;
-      }
-      if (requestedMinutes > recoveryBalance.remaining) {
-        notify(
-          `Cette demande utilise ${minutesLabel(requestedMinutes)}, mais votre solde disponible est de ${minutesLabel(recoveryBalance.remaining)}.`,
-        );
-        return;
-      }
-    }
-    const groups = {
-      annual: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "annual")
-          .map((item) => item.date),
-      ),
-      rtt: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "rtt")
-          .map((item) => item.date),
-      ),
-      fraction: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "fraction")
-          .map((item) => item.date),
-      ),
-      childcare: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "childcare")
-          .map((item) => item.date),
-      ),
-      exceptional: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "exceptional")
-          .map((item) => item.date),
-      ),
-      cet: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "cet")
-          .map((item) => item.date),
-      ),
-      recoveryDay: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "recovery_day")
-          .map((item) => item.date),
-      ),
-      // La récupération d'un jour férié conserve sa rubrique du formulaire ;
-      // elle sera débitée comme une journée entière du solde d'heures lors de
-      // l'enregistrement final.
-      recoveryHoliday: groupConsecutive(
-        selectedList
-          .filter((item) => item.type === "recovery_holiday")
-          .map((item) => item.date),
-      ),
-      recoveryTraining: selectedList.filter(
-        (item) => item.type === "recovery_training",
-      ),
-    };
-    // Le formulaire officiel n'offre que 2 lignes « garde d'enfant » et
-    // 1 seule ligne « jour exceptionnel », sans pagination possible.
-    if (requestKind === "leave") {
-      const overflow = [
-        groups.childcare.length > 2
-          ? "Le formulaire ne prévoit que deux périodes de congé garde d’enfant."
-          : "",
-        groups.exceptional.length > 1
-          ? "Le formulaire ne prévoit qu’une seule période de jour exceptionnel."
-          : "",
-      ].filter(Boolean);
-      if (overflow.length) {
-        notify(`${overflow.join(" ")} Réduisez votre sélection.`);
-        return;
-      }
-    }
-    const pageNeeds =
-      requestKind === "leave"
-        ? [
-            Math.ceil(groups.annual.length / 5),
-            Math.ceil(groups.cet.length / 4),
-            Math.ceil(groups.rtt.length / 4),
-            Math.ceil(groups.fraction.length / 2),
-            Math.ceil(
-              selectedList.filter((item) => item.type === "half").length / 4,
-            ),
-          ]
-        : [
-            Math.ceil(groups.recoveryDay.length / 5),
-            Math.ceil(
-              selectedList.filter((item) => item.type === "recovery_half")
-                .length / 5,
-            ),
-            Math.ceil(
-              selectedList.filter(
-                (item) =>
-                  item.type === "recovery_hours" ||
-                  item.type === "recovery_training",
-              )
-                .length / 5,
-            ),
-            Math.ceil(
-              selectedList.filter((item) => item.type === "recovery_holiday")
-                .length / 5,
-            ),
-          ];
-    if (Math.max(...pageNeeds) > 5) {
-      notify(
-        "La sélection dépasse la capacité maximale de cinq feuilles. Réduisez le nombre de périodes avant de continuer.",
-      );
-      return;
-    }
-    const payload = {
-      version: 1,
-      requestId: createClientId("request"),
-      requestKind,
-      ownerKey: userEmail.trim().toLowerCase(),
-      group,
-      createdAt: new Date().toISOString(),
-      profile: formProfile,
-      periods: [
-        ...groups.annual.map((period) => ({ ...period, type: "annual" })),
-        ...groups.cet.map((period) => ({ ...period, type: "cet" })),
-        ...groups.rtt.map((period) => ({ ...period, type: "rtt" })),
-        ...groups.fraction.map((period) => ({ ...period, type: "fraction" })),
-        ...groups.childcare.map((period) => ({
-          ...period,
-          type: "childcare",
-        })),
-        ...groups.exceptional.map((period) => ({
-          ...period,
-          type: "exceptional",
-        })),
-        ...groups.recoveryDay.map((period) => ({
-          ...period,
-          type: "recovery_day",
-        })),
-      ],
-      timed: selectedList.filter(
-        (item) =>
-          item.type === "half" ||
-          item.type === "recovery_half" ||
-          item.type === "recovery_hours" ||
-          item.type === "recovery_holiday" ||
-          item.type === "recovery_training",
-      ),
-    };
-    setSavingRequest(true);
-    try {
-      localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
-      window.location.href = "/formulaire/index.html?planning=1";
-    } catch (error) {
-      setSavingRequest(false);
-      notify(
-        error instanceof DOMException
-          ? "Le navigateur n’a pas pu préparer le formulaire. Vérifiez que le stockage du site est autorisé."
-          : "Le formulaire n’a pas pu être préparé. Réessayez.",
-      );
-    }
-  }
+  const {
+    openBlankForm,
+    validateAndOpenForm,
+  } = usePlanningRequestActions({
+    planningUi,
+    selectedList,
+    formProfile,
+    cetPlannedLeaveDays,
+    group,
+    demoMode,
+    userEmail,
+    workQuota,
+    recoveryBalanceRemaining: recoveryBalance.remaining,
+    setPeriods,
+    cancelRequest,
+    notify,
+    showSuccess: confirm,
+    handoffKey: HANDOFF_KEY,
+  });
 
   function renderDay(date: Date, compact = false) {
     const key = dateKey(date);
@@ -3687,15 +2418,9 @@ export default function Home() {
                   une seule phrase. */}
               {item.label.includes("\n") ? (
                 <ul className="note-bullets">
-                  {item.label
-                    .split("\n")
-                    // Le tiret posé par « Ajouter une note » ferait doublon
-                    // avec la puce : on ne garde que le texte.
-                    .map((line) => line.replace(/^[–—\-•>]\s*/, "").trim())
-                    .filter(Boolean)
-                    .map((line, index) => (
-                      <li key={index}>{line}</li>
-                    ))}
+                  {keyedNoteLines(item.label).map(({ key, label }) => (
+                    <li key={`${item.key}-${key}`}>{label}</li>
+                  ))}
                 </ul>
               ) : (
                 <strong>{item.label}</strong>
@@ -3708,722 +2433,64 @@ export default function Home() {
     );
   }
 
-  /** Enregistre l'un des trois montants du profil de paie. Le serveur ne
-   *  touche que le champ transmis : les deux autres restent intacts. */
-  async function savePayAmount(
-    field:
-      | "baseSalary"
-      | "ifse"
-      | "carenceDay"
-      | "otherFixed"
-      | "cia"
-      | "netRatioFixed"
-      | "netRatioVariable"
-      | "navigo"
-      | "mealVoucherDeduction"
-      | "pasRate",
-  ) {
-    const draft = payDrafts[field];
-    const value = Number(draft.replace(",", ".").replace(/\s/g, ""));
-    if (!Number.isFinite(value) || value < 0) {
-      notify("Montant invalide.");
-      return;
-    }
-    if (
-      (field === "netRatioFixed" ||
-        field === "netRatioVariable" ||
-        field === "pasRate") &&
-      value > 100
-    ) {
-      notify("Le taux ne peut pas dépasser 100 %.");
-      return;
-    }
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: formProfile?.workQuota,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      [field]: value,
-    };
-    // Le taux net/brut est un pourcentage, pas un montant : le même calcul
-    // ×100 en fait des points de base (79,65 % → 7965) plutôt que des
-    // centimes, sans avoir besoin d'un second chemin de conversion.
-    const cents = Math.round(value * 100);
-    setSavingPay(field);
-    try {
-      if (
-      !demoMode
-      ) {
-        await postCalendar({
-            action: "save-form-profile",
-            payYear: Number(payYear),
-            fullName: nextProfile.fullName,
-            group: nextProfile.group,
-            signature: nextProfile.signature,
-            ...(field === "baseSalary" ? { baseSalaryCents: cents } : {}),
-            ...(field === "ifse" ? { ifseCents: cents } : {}),
-            ...(field === "carenceDay" ? { carenceCents: cents } : {}),
-            ...(field === "otherFixed" ? { otherFixedCents: cents } : {}),
-            ...(field === "cia" ? { ciaCents: cents } : {}),
-            ...(field === "netRatioFixed" ? { netRatioFixedBp: cents } : {}),
-            ...(field === "netRatioVariable"
-              ? { netRatioVariableBp: cents }
-              : {}),
-            ...(field === "navigo" ? { navigoCents: cents } : {}),
-            ...(field === "mealVoucherDeduction"
-              ? { mealVoucherDeductionCents: cents }
-              : {}),
-            ...(field === "pasRate" ? { pasRateBp: cents } : {}),
-        });
-      }
-      setFormProfile(nextProfile);
-      setPayProfiles((current) => ({
-        ...current,
-        [payYear]: { ...(current[payYear] || {}), [field]: value },
-      }));
-      // Pas de message de succès : `notify` est la fenêtre d'erreur. Le montant
-      // affiché juste au-dessus se met à jour, et le champ se vide — la
-      // confirmation est dans l'écran lui-même.
-      setPayDrafts((current) => ({ ...current, [field]: "" }));
-    } catch {
-      notify("Le montant n’a pas pu être enregistré. Réessayez.");
-    } finally {
-      setSavingPay(null);
-    }
-  }
-
-  /** Le mois de versement du CIA, saisi à part : c'est un choix, pas un
-   *  montant, et il ne change pas chaque année. */
-  async function saveCiaMonth(month: number) {
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: formProfile?.workQuota,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: month,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-    };
-    setFormProfile(nextProfile);
-    if (demoMode)
-      return;
-    try {
-      await postCalendar({
-          action: "save-form-profile",
-          payYear: Number(payYear),
-          fullName: nextProfile.fullName,
-          group: nextProfile.group,
-          signature: nextProfile.signature,
-          ciaMonth: month,
-      });
-      setPayProfiles((current) => ({
-        ...current,
-        [payYear]: { ...(current[payYear] || {}), ciaMonth: month },
-      }));
-    } catch {
-      notify("Le mois du CIA n’a pas pu être enregistré. Réessayez.");
-    }
-  }
-
-  /** Le bulletin qui suit chronologiquement celui qui porte (year, month),
-   *  dans le cycle des quatre paies de dimanches. Décembre bascule sur
-   *  janvier de l'année suivante ; janvier revient à juillet de la même
-   *  année, puisque son bulletin porte le rappel de décembre précédent. */
-  function nextSundayPayoutSlot(year: number, month: number) {
-    if (month === 6) return { year, month: 9 };
-    if (month === 9) return { year, month: 11 };
-    if (month === 11) return { year: year + 1, month: 0 };
-    if (month === 0) return { year, month: 6 };
-    return null;
-  }
-
-  /** Reporte des dimanches manqués sur le bulletin suivant : la paie a un
-   *  délai de traitement, un dimanche tardif peut n'apparaître qu'au rappel
-   *  d'après plutôt que d'être perdu. */
-  async function reportMissingSundays(
-    fromYear: number,
-    fromMonth: number,
-    count: number,
-  ) {
-    const target = nextSundayPayoutSlot(fromYear, fromMonth);
-    if (!target) return;
-    const previous = formProfile;
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: formProfile?.workQuota,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      sundayCarryover: count,
-      sundayCarryoverYear: target.year,
-      sundayCarryoverMonth: target.month,
-      sundayCarryoverFromYear: fromYear,
-      sundayCarryoverFromMonth: fromMonth,
-    };
-    // Affiché tout de suite, mais annulé si l'enregistrement échoue : un
-    // report qui semble pris alors qu'il ne l'est pas serait pire qu'une
-    // erreur visible.
-    setFormProfile(nextProfile);
-    if (demoMode)
-      return;
-    try {
-      await postCalendar({
-          action: "save-form-profile",
-          fullName: nextProfile.fullName,
-          group: nextProfile.group,
-          signature: nextProfile.signature,
-          sundayCarryover: count,
-          sundayCarryoverYear: target.year,
-          sundayCarryoverMonth: target.month,
-          sundayCarryoverFromYear: fromYear,
-          sundayCarryoverFromMonth: fromMonth,
-      });
-      // Pas de message de succès : la note « en attente » qui apparaît juste
-      // en dessous, et la case d'origine qui se met à jour, sont déjà la
-      // confirmation.
-    } catch {
-      setFormProfile(previous);
-      notify("Le report n’a pas pu être enregistré. Réessayez.");
-    }
-  }
-
-  /** Efface un report, une fois confirmé sur le bulletin suivant. */
-  async function clearSundayCarryover() {
-    const previous = formProfile;
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: formProfile?.workQuota,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      sundayCarryover: 0,
-      sundayCarryoverYear,
-      sundayCarryoverMonth,
-      sundayCarryoverFromYear,
-      sundayCarryoverFromMonth,
-    };
-    setFormProfile(nextProfile);
-    if (demoMode)
-      return;
-    try {
-      await postCalendar({
-          action: "save-form-profile",
-          fullName: nextProfile.fullName,
-          group: nextProfile.group,
-          signature: nextProfile.signature,
-          sundayCarryover: 0,
-      });
-    } catch {
-      setFormProfile(previous);
-      notify("Le report n’a pas pu être retiré. Réessayez.");
-    }
-  }
-
-  /** Choisit la compensation d'un jour férié (prime seule ou prime + récup),
-   *  travaillé ou compensé : utilisé directement depuis les tableaux
-   *  d'Infos primes, sans passer par la fiche du jour. Pour un férié
-   *  compensé (jour de repos, pas travaillé), c'est même le seul endroit où
-   *  trancher. */
-  async function chooseHolidayPay(key: string, choice: HolidayPay) {
-    const current = entries[key];
-    if (
-      !demoMode
-    ) {
-      try {
-        await postCalendar({
-            action: "save-leaves",
-            date: key,
-            leave: Boolean(current?.leave),
-            wish: Boolean(current?.wish),
-            holidayPay: choice,
-        });
-      } catch {
-        notify("Le choix n’a pas pu être enregistré. Réessayez.");
-        return;
-      }
-    }
-    setEntries((currentEntries) => ({
-      ...currentEntries,
-      [key]: { ...(currentEntries[key] || emptyEntry()), holidayPay: choice },
-    }));
-  }
-
-  /** Les champs directement lisibles sur un bulletin. Les deux taux net/brut
-   *  sont calculés séparément à partir d'au moins deux bulletins dont les
-   *  primes diffèrent. */
-  // IFSE et CIA écartés d'entrée pour une contractuelle : pas la peine de
-  // les chercher sur un bulletin qui ne les porte pas.
-  const PAYSLIP_IMPORT_FIELDS = [
-    { key: "baseSalary" as const, label: "Traitement de base" },
-    {
-      key: "residenceAllowance" as const,
-      label: "Indemnité de résidence",
-    },
-    ...(isContractuel ? [] : [{ key: "ifse" as const, label: "IFSE" }]),
-    { key: "carenceDay" as const, label: "Jour de carence" },
-    { key: "otherFixed" as const, label: "Autres éléments fixes" },
-    ...(isContractuel ? [] : [{ key: "cia" as const, label: "CIA" }]),
-    { key: "navigo" as const, label: "Navigo remboursé" },
-    { key: "mealVoucherDeduction" as const, label: "Titres repas (retenue)" },
-    { key: "pasRate" as const, label: "Taux d’imposition (PAS)" },
-  ];
-
-  /** Lit plusieurs bulletins sur l'appareil et remplit tout seul ce qui s'y
-   *  trouve. Les fichiers ne sont ni envoyés, ni conservés : seuls les
-   *  montants reconnus quittent l'appareil, dans le même appel que la
-   *  saisie manuelle utilise déjà.
-   *
-   *  Certains éléments (Navigo, autres éléments fixes) évoluent d'une année
-   *  à l'autre : entre plusieurs bulletins qui les portent, c'est celui du
-   *  mois le plus récent qui l'emporte plutôt que le premier trouvé. */
-  async function importPayslips(
-    files: File[],
-    mode: "verify" | "calibrate" = "verify",
-  ) {
-    setPayslipImportMode(mode);
-    setPayslipImportError("");
-    setPayslipImportResult(null);
-    setPayslipError("");
-    setPayslipNeedsPeriod(false);
-    if (mode === "verify") {
-      setPayslipCheck(null);
-      setPayslipResultDetailsOpen(false);
-    }
-    if (!files.length) return;
-    if (mode === "calibrate" && files.length < 2) {
-      setPayslipImportError(
-        "Choisissez au moins deux bulletins de mois différents pour affiner les taux.",
-      );
-      return;
-    }
-    setPayslipImportBusy(true);
-    try {
-      const items: Array<{ name: string; reading: PayslipReading }> = [];
-      for (const file of files) {
-        try {
-          items.push({
-            name: file.name,
-            reading: readPayslip(
-              await extractPayslipTokens(await file.arrayBuffer()),
-            ),
-          });
-        } catch {
-          // Un fichier illisible ne doit pas empêcher de lire les autres.
-        }
-      }
-      if (!items.length) {
-        setPayslipImportError("Aucun de ces fichiers n’a pu être ouvert.");
-        return;
-      }
-      items.sort((a, b) => {
-        const rank = (r: PayslipReading) =>
-          r.year !== undefined && r.month !== undefined
-            ? r.year * 12 + r.month
-            : -1;
-        return rank(b.reading) - rank(a.reading);
-      });
-      // Comparaison au calcul de l'appli : le bulletin le plus récent
-      // (une fois triés ci-dessus) qui porte au moins un montant lisible.
-      const readableItems = items.filter(
-        (item) => item.reading.gross || item.reading.baseSalary,
-      );
-      const bestForCheck =
-        readableItems.find(
-          (item) =>
-            item.reading.year === view.getFullYear() &&
-            item.reading.month === view.getMonth(),
-        ) || readableItems[0];
-      if (bestForCheck && mode === "verify") {
-        setPayslipCheck(bestForCheck);
-        if (
-          bestForCheck.reading.year !== undefined &&
-          bestForCheck.reading.month !== undefined
-        ) {
-          setView(
-            localDate(
-              bestForCheck.reading.year,
-              bestForCheck.reading.month,
-              1,
-            ),
-          );
-        } else {
-          setPayslipFallbackMonth(view.getMonth());
-          setPayslipFallbackYear(view.getFullYear());
-          setPayslipNeedsPeriod(true);
-        }
-      } else {
-        if (mode === "verify")
-          setPayslipError(
-            "Aucun bulletin n’a pu être lu pour la comparaison. Sa mise en page a peut-être changé.",
-          );
-      }
-      const profileSource =
-        mode === "verify" ? bestForCheck || items[0] : readableItems[0] || items[0];
-      const targetPayYear = String(
-        profileSource?.reading.year ?? view.getFullYear(),
-      );
-      const targetPayMonth =
-        profileSource?.reading.month ?? view.getMonth();
-      const targetNetRatioRegime: PayCalibrationRegime = payCalibrationRegime(
-        Number(targetPayYear),
-        targetPayMonth,
-      );
-      const targetPayProfile = payProfiles[targetPayYear];
-      const found: Partial<Record<(typeof PAYSLIP_IMPORT_FIELDS)[number]["key"], number>> =
-        {};
-      let ciaMonth: number | undefined;
-      for (const field of PAYSLIP_IMPORT_FIELDS) {
-        for (const item of items) {
-          const value = item.reading[field.key];
-          if (value === undefined) continue;
-          found[field.key] = value;
-          if (field.key === "cia") ciaMonth = item.reading.month;
-          break;
-        }
-      }
-      const monthlyPayProfiles = items.flatMap((item) => {
-        const reading = item.reading;
-        if (
-          reading.year === undefined ||
-          reading.month === undefined ||
-          (reading.baseSalary === undefined &&
-            reading.residenceAllowance === undefined)
-        )
-          return [];
-        return [
-          {
-            year: reading.year,
-            month: reading.month,
-            baseSalary: reading.baseSalary,
-            residenceAllowance: reading.residenceAllowance,
-          },
-        ];
-      });
-      // Un seul bulletin donne un net total pour deux taux inconnus. On
-      // réunit donc les lectures successives de la session. Un même mois
-      // réimporté remplace sa lecture précédente au lieu de compter deux fois.
-      const rateSamplesByPeriod = new Map<
-        string,
-        { name: string; reading: PayslipReading }
-      >();
-      for (const item of [...payslipRateSamples, ...items]) {
-        const period =
-          item.reading.year !== undefined && item.reading.month !== undefined
-            ? `${item.reading.year}-${item.reading.month}`
-            : `file-${item.name}`;
-        rateSamplesByPeriod.set(period, item);
-      }
-      const nextRateSamples = Array.from(rateSamplesByPeriod.values());
-      setPayslipRateSamples(nextRateSamples);
-      const compatibleRateReadings = readingsForCalibrationRegime(
-        nextRateSamples.map((item) => item.reading),
-        targetNetRatioRegime,
-      );
-      const calculatedRates = calculateNetRatios(compatibleRateReadings);
-      const ignoredRateSampleCount =
-        nextRateSamples.length - compatibleRateReadings.length;
-      const automaticSundayReport = (() => {
-        if (
-          !bestForCheck ||
-          bestForCheck.reading.year === undefined ||
-          bestForCheck.reading.month === undefined ||
-          bestForCheck.reading.year !== allowances?.year
-        )
-          return null;
-        const expected =
-          allowances.monthly.find(
-            (slot) => slot.index === bestForCheck.reading.month,
-          )?.sundayCount || 0;
-        const count = unpaidSundays(
-          expected,
-          bestForCheck.reading.sundaysBeyondTen,
-        );
-        const target = nextSundayPayoutSlot(
-          bestForCheck.reading.year,
-          bestForCheck.reading.month,
-        );
-        return count > 0 && target
-          ? {
-              count,
-              fromYear: bestForCheck.reading.year,
-              fromMonth: bestForCheck.reading.month,
-              target,
-            }
-          : null;
-      })();
-      const applied = PAYSLIP_IMPORT_FIELDS.filter(
-        (field) => found[field.key] !== undefined,
-      );
-      if (!applied.length && !calculatedRates) {
-        setPayslipImportError(
-          "Aucun des montants attendus n’a été reconnu sur ces bulletins.",
-        );
-        return;
-      }
-      const nextProfile: FormProfile = {
-        fullName: formProfile?.fullName || "",
-        group: formProfile?.group || String(group),
-        signature: formProfile?.signature || "",
-        status: formProfile?.status,
-        workQuota: formProfile?.workQuota,
-        baseSalary:
-          found.baseSalary ?? targetPayProfile?.baseSalary ?? formProfile?.baseSalary,
-        residenceAllowance:
-          found.residenceAllowance ??
-          targetPayProfile?.residenceAllowance ??
-          formProfile?.residenceAllowance,
-        ifse: found.ifse ?? targetPayProfile?.ifse ?? formProfile?.ifse,
-        carenceDay:
-          found.carenceDay ?? targetPayProfile?.carenceDay ?? formProfile?.carenceDay,
-        otherFixed:
-          found.otherFixed ?? targetPayProfile?.otherFixed ?? formProfile?.otherFixed,
-        cia: found.cia ?? targetPayProfile?.cia ?? formProfile?.cia,
-        ciaMonth: ciaMonth ?? targetPayProfile?.ciaMonth ?? formProfile?.ciaMonth,
-        netRatioFixed:
-          calculatedRates?.netRatioFixed ??
-          targetPayProfile?.netRatioFixed ??
-          formProfile?.netRatioFixed,
-        netRatioVariable:
-          calculatedRates?.netRatioVariable ??
-          targetPayProfile?.netRatioVariable ??
-          formProfile?.netRatioVariable,
-        netRatioRegime: calculatedRates
-          ? targetNetRatioRegime
-          : targetPayProfile?.netRatioRegime ?? formProfile?.netRatioRegime,
-        navigo: found.navigo ?? targetPayProfile?.navigo ?? formProfile?.navigo,
-        mealVoucherDeduction:
-          found.mealVoucherDeduction ??
-          targetPayProfile?.mealVoucherDeduction ??
-          formProfile?.mealVoucherDeduction,
-        pasRate: found.pasRate ?? targetPayProfile?.pasRate ?? formProfile?.pasRate,
-        sundayCarryover:
-          automaticSundayReport?.count ?? formProfile?.sundayCarryover,
-        sundayCarryoverYear:
-          automaticSundayReport?.target.year ??
-          formProfile?.sundayCarryoverYear,
-        sundayCarryoverMonth:
-          automaticSundayReport?.target.month ??
-          formProfile?.sundayCarryoverMonth,
-        sundayCarryoverFromYear:
-          automaticSundayReport?.fromYear ??
-          formProfile?.sundayCarryoverFromYear,
-        sundayCarryoverFromMonth:
-          automaticSundayReport?.fromMonth ??
-          formProfile?.sundayCarryoverFromMonth,
-        manualAdjustments: formProfile?.manualAdjustments,
-        cetAccount: formProfile?.cetAccount,
-      };
-      if (
-      !demoMode
-      ) {
-        const body: Record<string, unknown> = {
-          action: "save-form-profile",
-          payYear: Number(targetPayYear),
-          payMonth: targetPayMonth,
-          monthlyPayProfiles: monthlyPayProfiles.map((profile) => ({
-            year: profile.year,
-            month: profile.month,
-            ...(profile.baseSalary !== undefined
-              ? { baseSalaryCents: Math.round(profile.baseSalary * 100) }
-              : {}),
-            ...(profile.residenceAllowance !== undefined
-              ? {
-                  residenceAllowanceCents: Math.round(
-                    profile.residenceAllowance * 100,
-                  ),
-                }
-              : {}),
-          })),
-          fullName: nextProfile.fullName,
-          group: nextProfile.group,
-          signature: nextProfile.signature,
-        };
-        if (found.baseSalary !== undefined)
-          body.baseSalaryCents = Math.round(found.baseSalary * 100);
-        if (found.residenceAllowance !== undefined)
-          body.residenceAllowanceCents = Math.round(
-            found.residenceAllowance * 100,
-          );
-        if (found.ifse !== undefined)
-          body.ifseCents = Math.round(found.ifse * 100);
-        if (found.carenceDay !== undefined)
-          body.carenceCents = Math.round(found.carenceDay * 100);
-        if (found.otherFixed !== undefined)
-          body.otherFixedCents = Math.round(found.otherFixed * 100);
-        if (found.cia !== undefined)
-          body.ciaCents = Math.round(found.cia * 100);
-        if (ciaMonth !== undefined) body.ciaMonth = ciaMonth;
-        if (found.navigo !== undefined)
-          body.navigoCents = Math.round(found.navigo * 100);
-        if (found.mealVoucherDeduction !== undefined)
-          body.mealVoucherDeductionCents = Math.round(
-            found.mealVoucherDeduction * 100,
-          );
-        if (found.pasRate !== undefined)
-          body.pasRateBp = Math.round(found.pasRate * 100);
-        if (calculatedRates) {
-          body.netRatioFixedBp = Math.round(
-            calculatedRates.netRatioFixed * 100,
-          );
-          body.netRatioVariableBp = Math.round(
-            calculatedRates.netRatioVariable * 100,
-          );
-          body.netRatioRegime = targetNetRatioRegime;
-        }
-        if (automaticSundayReport) {
-          body.sundayCarryover = automaticSundayReport.count;
-          body.sundayCarryoverYear = automaticSundayReport.target.year;
-          body.sundayCarryoverMonth = automaticSundayReport.target.month;
-          body.sundayCarryoverFromYear = automaticSundayReport.fromYear;
-          body.sundayCarryoverFromMonth = automaticSundayReport.fromMonth;
-        }
-        await postCalendar(body);
-      }
-      setFormProfile(nextProfile);
-      setPayProfiles((current) => {
-        const next = {
-          ...current,
-          [targetPayYear]: {
-          ...(current[targetPayYear] || {}),
-          ...Object.fromEntries(
-            PAYSLIP_IMPORT_FIELDS.filter(
-              (field) => found[field.key] !== undefined,
-            ).map((field) => [field.key, found[field.key]]),
-          ),
-          ...(ciaMonth !== undefined ? { ciaMonth } : {}),
-          ...(calculatedRates || {}),
-          ...(calculatedRates
-            ? { netRatioRegime: targetNetRatioRegime }
-            : {}),
-          },
-        };
-        for (const profile of monthlyPayProfiles) {
-          const key = `${profile.year}-${String(profile.month + 1).padStart(2, "0")}`;
-          next[key] = {
-            ...(next[key] || {}),
-            ...(profile.baseSalary !== undefined
-              ? { baseSalary: profile.baseSalary }
-              : {}),
-            ...(profile.residenceAllowance !== undefined
-              ? { residenceAllowance: profile.residenceAllowance }
-              : {}),
-          };
-        }
-        return next;
-      });
-      setPayslipImportResult({
-        applied: [
-          ...applied.map((field) => ({
-            label: field.label,
-            value:
-              field.key === "pasRate"
-                ? `${found[field.key]!.toLocaleString("fr-FR")} %`
-                : euros(found[field.key]!),
-          })),
-          ...(calculatedRates
-            ? [
-                {
-                  label: "Taux net avant impôt — traitement",
-                  value: `${calculatedRates.netRatioFixed.toLocaleString("fr-FR")} %`,
-                },
-                {
-                  label: "Taux net avant impôt — primes",
-                  value: `${calculatedRates.netRatioVariable.toLocaleString("fr-FR")} %`,
-                },
-              ]
-            : []),
-        ],
-        missing: [
-          ...PAYSLIP_IMPORT_FIELDS.filter(
-            (field) =>
-              found[field.key] === undefined &&
-              shouldReportMissingPayslipField(field.key, mode),
-          ).map((field) => field.label),
-        ],
-        adjustment: [
-          automaticSundayReport
-            ? `${automaticSundayReport.count} dimanche${s(
-              automaticSundayReport.count,
-            )} non payé${s(
-              automaticSundayReport.count,
-            )} retiré${s(
-              automaticSundayReport.count,
-            )} automatiquement du net de ${MONTHS[automaticSundayReport.fromMonth]} et reporté${s(
-              automaticSundayReport.count,
-            )} sur ${MONTHS[automaticSundayReport.target.month]}.`
-            : undefined,
-          ignoredRateSampleCount > 0
-            ? `${ignoredRateSampleCount} bulletin${s(ignoredRateSampleCount)} d’un ancien régime de cotisations n’${
-                ignoredRateSampleCount > 1 ? "ont" : "a"
-              } pas été mélangé${s(ignoredRateSampleCount)} à la calibration.`
-            : undefined,
-        ]
-          .filter(Boolean)
-          .join(" ") || undefined,
-      });
-    } catch {
-      setPayslipImportError(
-        "La mise à jour n’a pas pu être enregistrée. Réessayez.",
-      );
-    } finally {
-      setPayslipImportBusy(false);
-    }
-  }
+  const {
+    savePayAmount,
+    saveCiaMonth,
+    nextSundayPayoutSlot,
+    reportMissingSundays,
+    clearSundayCarryover,
+    chooseHolidayPay,
+    importPayslips,
+    applyPayslipFallbackPeriod,
+    grossForMonth,
+  } = usePayActions({
+    demoMode,
+    group,
+    view,
+    setView,
+    formProfile,
+    setFormProfile,
+    payProfiles,
+    setPayProfiles,
+    payDrafts,
+    setPayDrafts,
+    setSavingPay,
+    sundayCarryoverYear,
+    sundayCarryoverMonth,
+    sundayCarryoverFromYear,
+    sundayCarryoverFromMonth,
+    entries,
+    setEntries,
+    isContractuel,
+    allowances,
+    payslipCheck,
+    setPayslipCheck,
+    payslipFallbackMonth,
+    payslipFallbackYear,
+    setPayslipFallbackMonth,
+    setPayslipFallbackYear,
+    payslipRateSamples,
+    setPayslipRateSamples,
+    setPayslipImportMode,
+    setPayslipImportError,
+    setPayslipImportResult,
+    setPayslipError,
+    setPayslipNeedsPeriod,
+    setPayslipImportBusy,
+    setPayslipResultDetailsOpen,
+    baseSalary,
+    ifse,
+    otherFixed,
+    cia,
+    ciaMonth,
+    sickLeaves,
+    paidOvertimeForPayPeriod,
+    mecenatEntries,
+    periods,
+    recoveryUses,
+    notify,
+    post: postCalendar,
+  });
 
   function openRequestChooser(_origin: "general" | "planning" = "general") {
     setRequestChooser(true);
@@ -4500,58 +2567,6 @@ export default function Home() {
     }
     openRange(pendingLeaveType as LeaveType);
   }
-
-  /** Utilisé uniquement lorsque l'en-tête du PDF ne permet pas de reconnaître
-   * sa période. Dans le cas normal, le mois et l'année sont automatiques. */
-  function applyPayslipFallbackPeriod() {
-    if (!payslipCheck) return;
-    setPayslipCheck({
-      ...payslipCheck,
-      reading: {
-        ...payslipCheck.reading,
-        month: payslipFallbackMonth,
-        year: payslipFallbackYear,
-      },
-    });
-    setView(localDate(payslipFallbackYear, payslipFallbackMonth, 1));
-    setPayslipNeedsPeriod(false);
-    setPayslipResultDetailsOpen(false);
-  }
-
-  /** Le brut d'un mois quelconque de l'année affichée, pour comparer un
-   *  bulletin au mois qu'il porte et non à celui qui est ouvert. */
-  function grossForMonth(index: number) {
-    const month = allowances?.monthly.find((slot) => slot.index === index);
-    const overtime = paidOvertimeForPayPeriod(view.getFullYear(), index);
-    const mecenat = mecenatForPayMonth(mecenatEntries, view.getFullYear(), index);
-    const strike = strikePayEstimate(
-      periods,
-      group,
-      payProfiles,
-      view.getFullYear(),
-      index,
-      { entries, recoveryUses },
-    );
-    // Même règle que dans `monthPay` : la retenue maladie de fonctionnaire ne
-    // s'applique pas à une contractuelle.
-    const sick = isContractuel ? 0 : sickLeaves?.byMonth[index]?.total || 0;
-    return (
-      baseSalary +
-      ifse +
-      otherFixed +
-      (index === ciaMonth ? cia : 0) +
-      SUNDAY_ALLOWANCE.monthlyFlat +
-      (month?.sunday || 0) +
-      (month?.holiday || 0) -
-      sick -
-      (!isContractuel && strike.totalDeduction !== null
-        ? strike.totalDeduction
-        : 0) +
-      overtime.amount +
-      mecenat.grossAmountCents / 100
-    );
-  }
-
 
   /** Le volet de vérification d'un bulletin, séparé des primes : on y va pour
    *  contrôler, pas pour consulter. */
@@ -5011,7 +3026,7 @@ export default function Home() {
       />
       {homeSection === "home" ? (
         <div className="home-view-mode-bar">
-          <div className="view-switch" aria-label="Mode d’affichage">
+          <div className="view-switch" role="group" aria-label="Mode d’affichage">
             <button
               className={mode === "month" ? "active" : ""}
               aria-pressed={mode === "month"}
@@ -5092,6 +3107,7 @@ export default function Home() {
       ) : null}
 
       {homeSection === "leave" ? (
+        <Suspense fallback={<DeferredSection label="vos congés et récupérations" />}>
         <LeaveManagementPage
           balancesContent={
             <Suspense fallback={<DeferredSection label="vos soldes" />}>
@@ -5154,8 +3170,10 @@ export default function Home() {
           onOpenArchivedRequest={openArchivedRequest}
           onDeleteArchivedRequest={(request) => void deleteArchivedRequest(request)}
         />
+        </Suspense>
       ) : null}
       {homeSection === "pay" && allowances ? (
+        <Suspense fallback={<DeferredSection label="votre paie" />}>
         <PayPage
           screen={payScreen}
           month={view.getMonth()}
@@ -5175,9 +3193,11 @@ export default function Home() {
           onTouchStart={startAllowancesSwipe}
           onTouchEnd={endAllowancesSwipe}
         />
+        </Suspense>
       ) : null}
 
       {homeSection === "pdf" ? (
+        <Suspense fallback={<DeferredSection label="vos documents" />}>
         <PdfDownloadPage
           narrowScreen={narrowScreen}
           year={view.getFullYear()}
@@ -5191,6 +3211,7 @@ export default function Home() {
             void exportAnnualPlanning(scope, includeSchoolVacations)
           }
         />
+        </Suspense>
       ) : null}
 
       {homeSection === "forms" ? (
@@ -5462,7 +3483,7 @@ export default function Home() {
             <div className="request-option-groups other-request-options">
               <section className="request-option-group">
                 <h3>Divers</h3>
-                <div className="type-tabs" aria-label="Divers">
+                <div className="type-tabs" role="group" aria-label="Divers">
                   <button
                     type="button"
                     className="active"
@@ -5481,7 +3502,7 @@ export default function Home() {
             <div className="request-option-groups strike-request-options">
               <section className="request-option-group">
                 <h3>Grève</h3>
-                <div className="type-tabs" aria-label="Grève">
+                <div className="type-tabs" role="group" aria-label="Grève">
                   <button
                     type="button"
                     className="active"
@@ -5502,7 +3523,7 @@ export default function Home() {
               <div className="request-option-groups sick-request-options">
                 <section className="request-option-group">
                   <h3>Arrêt maladie</h3>
-                  <div className="type-tabs" aria-label="Arrêt maladie">
+                  <div className="type-tabs" role="group" aria-label="Arrêt maladie">
                     <button
                       type="button"
                       className="active"
@@ -5527,7 +3548,7 @@ export default function Home() {
               ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
                 <section className="request-option-group" key={label}>
                   <h3>{label}</h3>
-                  <div className="type-tabs" aria-label={label}>
+                  <div className="type-tabs" role="group" aria-label={label}>
                     {types.map((type) => (
                       <button
                         type="button"
@@ -5554,7 +3575,7 @@ export default function Home() {
               ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
                 <section className="request-option-group" key={label}>
                   <h3>{label}</h3>
-                  <div className="type-tabs" aria-label={label}>
+                  <div className="type-tabs" role="group" aria-label={label}>
                     {types.map((type) => (
                       <button
                         type="button"
@@ -6178,7 +4199,7 @@ export default function Home() {
                           {periodLabel(period.from, period.to)}
                           <small>{leaveTypeLabel(period.leaveType)}</small>
                         </span>
-                        <div className="period-direct-actions" aria-label={`Gérer ${periodLabel(period.from, period.to)}`}>
+                        <div className="period-direct-actions" role="group" aria-label={`Gérer ${periodLabel(period.from, period.to)}`}>
                           <button
                             className="period-edit-button"
                             type="button"
@@ -6384,9 +4405,9 @@ export default function Home() {
                 </summary>
                 {month.details.length ? (
                   <div className="balance-detail-list">
-                  {month.details.map((detail, index) => (
+                  {month.details.map((detail) => (
                     <article
-                      key={`${detail.date}-${detail.units}-${index}`}
+                      key={`${detail.period.id}-${detail.date}`}
                       className={recentBalanceDetailDates.has(detail.date) ? "recent-leave-date" : ""}
                     >
                       <button

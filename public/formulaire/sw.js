@@ -1,7 +1,9 @@
 /* service worker : rend l'application installable et utilisable hors connexion */
 var VERSION = '79';
 var CACHE = 'demandes-' + VERSION;
-var SHELL = ['./', './index.html', './device.js', './form.css', './sheets.js', './app.js', './app.webmanifest',
+var SHELL = ['./', './index.html', './device.js', './form.css', './sheets.js', './app.js',
+             './form-value-utils.js', './form-calendar.js', './form-file-utils.js', './form-signature-controller.js',
+             './app.webmanifest',
              './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png',
              './form-bg-1.jpg', './form-bg-2.png', './form-bg-3.png'];
 

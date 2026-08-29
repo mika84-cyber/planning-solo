@@ -27,7 +27,9 @@ export function canEnableInstallation(
 export function setInstallMetadataEnabled(enabled: boolean) {
   document
     .querySelectorAll<HTMLLinkElement>('link[data-planning-install="true"]')
-    .forEach((link) => link.remove());
+    .forEach((link) => {
+      link.remove();
+    });
   if (!enabled) return;
   const manifest = document.createElement("link");
   manifest.rel = "manifest";

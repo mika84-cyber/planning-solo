@@ -4,7 +4,7 @@ import { MonthCalendar, NotesPanelContent } from "./PlanningView";
 
 describe("vues du planning", () => {
   it("conserve une grille mensuelle complète", () => {
-    const renderDay = vi.fn((date: Date) => <button key={date.toISOString()}>{date.getDate()}</button>);
+    const renderDay = vi.fn((date: Date) => <button type="button" key={date.toISOString()}>{date.getDate()}</button>);
     const html = renderToStaticMarkup(
       <MonthCalendar year={2026} month={7} renderDay={renderDay} />,
     );

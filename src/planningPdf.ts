@@ -198,7 +198,7 @@ function drawLeaveEmoji(
   if (leaveType === "strike") {
     // ✊ Poing levé doré, bordé de noir.
     doc.setFillColor(245, 190, 67);
-    [-0.86, -0.3, 0.28, 0.82].forEach((offset, index) =>
+    [-0.86, -0.3, 0.28, 0.82].forEach((offset, index) => {
       doc.roundedRect(
         centerX + offset - 0.28,
         centerY - 1.25 + (index === 0 ? 0.18 : 0),
@@ -207,8 +207,8 @@ function drawLeaveEmoji(
         0.22,
         0.22,
         "FD",
-      ),
-    );
+      );
+    });
     doc.roundedRect(centerX - 1.05, centerY - 0.12, 2.1, 1.28, 0.28, 0.28, "FD");
     doc.ellipse(centerX - 0.82, centerY + 0.18, 0.42, 0.65, "FD");
     return;
@@ -804,132 +804,6 @@ function drawGroupPage(
     doc.setDrawColor(...COLORS.black);
     doc.setLineWidth(0.45);
     doc.roundedRect(tableX, tableTop, tableW, tableHeightSchool, radius, radius, "S");
-  } else if (false) {
-    // Bandeau Année / Groupe / Jours fériés : trois cases posées côte à côte,
-    // chacune avec sa propre couleur d'en-tête et de valeur.
-    const footerHeaderHeight = 6.8;
-    const footerValueHeight = 7.2;
-    const footerWidths = [60, 60, 60];
-    const footerWidth = footerWidths.reduce((sum, width) => sum + width, 0);
-    const footerStartX = (pageWidth - footerWidth) / 2;
-    let footerX = footerStartX;
-    const footerCells = [
-      {
-        label: "Année",
-        valueLines: [String(year)],
-        valueFontSize: 7.8,
-        inlineEuroBadge: false,
-        headerColor: COLORS.yearHeader,
-        valueColor: COLORS.yearValue,
-      },
-      {
-        label: "Groupe",
-        valueLines: [String(group)],
-        valueFontSize: 7.8,
-        inlineEuroBadge: false,
-        headerColor: COLORS.groupHeader,
-        valueColor: COLORS.groupValue,
-      },
-      {
-        label: "Jours fériés",
-        valueLines:
-          offeredHolidayCount > 0
-            ? [
-                `${workedHolidayCount} ${workedHolidayCount === 1 ? "férié" : "fériés"} + ${offeredHolidayCount} ${offeredHolidayCount === 1 ? "offert" : "offerts"} en ${year + 1}`,
-              ]
-            : [
-                `${workedHolidayCount} ${workedHolidayCount === 1 ? "férié" : "fériés"}`,
-              ],
-        valueFontSize: offeredHolidayCount > 0 ? 5.9 : 7.8,
-        inlineEuroBadge: offeredHolidayCount > 0,
-        headerColor: COLORS.holidaysHeader,
-        valueColor: COLORS.holidaysValue,
-      },
-    ];
-
-    for (let index = 0; index < footerCells.length; index++) {
-      const cell = footerCells[index];
-      const width = footerWidths[index];
-      doc.setFillColor(
-        cell.headerColor[0],
-        cell.headerColor[1],
-        cell.headerColor[2],
-      );
-      doc.setDrawColor(...COLORS.black);
-      doc.setLineWidth(0.45);
-      doc.rect(footerX, extraLegendY, width, footerHeaderHeight, "FD");
-      doc.setFillColor(
-        cell.valueColor[0],
-        cell.valueColor[1],
-        cell.valueColor[2],
-      );
-      doc.rect(
-        footerX,
-        extraLegendY + footerHeaderHeight,
-        width,
-        footerValueHeight,
-        "FD",
-      );
-      doc.setTextColor(...COLORS.black);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      drawCenteredText(
-        doc,
-        cell.label,
-        footerX,
-        extraLegendY,
-        width,
-        footerHeaderHeight,
-      );
-      const valueCenterY =
-        extraLegendY + footerHeaderHeight + footerValueHeight / 2;
-      if (cell.inlineEuroBadge) {
-        const prefix = `${cell.valueLines[0]} (`;
-        const suffix = " sur planning)";
-        const badgeRadius = 1.15;
-        const badgeGap = 0.35;
-        let fontSize = 5.2;
-        let prefixWidth = 0;
-        let suffixWidth = 0;
-        let totalWidth = 0;
-        do {
-          doc.setFontSize(fontSize);
-          prefixWidth = doc.getTextWidth(prefix);
-          suffixWidth = doc.getTextWidth(suffix);
-          totalWidth =
-            prefixWidth + suffixWidth + badgeRadius * 2 + badgeGap * 2;
-          fontSize -= 0.1;
-        } while (totalWidth > width - 3 && fontSize >= 4.2);
-        const startX = footerX + (width - totalWidth) / 2;
-        doc.text(prefix, startX, valueCenterY, { baseline: "middle" });
-        const badgeCenterX = startX + prefixWidth + badgeGap + badgeRadius;
-        doc.setFillColor(...COLORS.money);
-        doc.circle(badgeCenterX, valueCenterY, badgeRadius, "F");
-        doc.setTextColor(...COLORS.black);
-        doc.setFontSize(4.8);
-        doc.text("€", badgeCenterX, valueCenterY, {
-          align: "center",
-          baseline: "middle",
-        });
-        doc.setFontSize(fontSize + 0.1);
-        doc.text(suffix, badgeCenterX + badgeRadius + badgeGap, valueCenterY, {
-          baseline: "middle",
-        });
-      } else {
-        const valueLineGap = 2.45;
-        doc.setFontSize(cell.valueFontSize);
-        cell.valueLines.forEach((line, lineIndex) => {
-          doc.text(
-            line,
-            footerX + width / 2,
-            valueCenterY +
-              (lineIndex - (cell.valueLines.length - 1) / 2) * valueLineGap,
-            { align: "center", baseline: "middle" },
-          );
-        });
-      }
-      footerX += width;
-    }
   }
 
 }

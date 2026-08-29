@@ -39,13 +39,17 @@ export function shouldSendGuestLoginAlert(
 }
 
 function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => ({
+  const htmlEntities: Record<string, string> = {
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
     "'": "&#39;",
-  })[character]!);
+  };
+  return value.replace(
+    /[&<>"']/g,
+    (character) => htmlEntities[character] ?? character,
+  );
 }
 
 function formatLoginDate(date: Date) {

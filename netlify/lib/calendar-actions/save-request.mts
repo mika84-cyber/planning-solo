@@ -13,7 +13,7 @@ export async function handleSaveRequest(
     overtimePrefix,
     recoveryUsePrefix,
   } = context;
-  let normalized;
+  let normalized: ReturnType<typeof normalizeLeaveRequest>;
   try {
     normalized = normalizeLeaveRequest(body);
   } catch (error) {

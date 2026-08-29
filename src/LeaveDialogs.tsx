@@ -218,7 +218,7 @@ export function RangeLeaveDialog({
             ] as Array<[string, LeaveType[]]>).map(([label, types]) => (
               <section className="request-option-group" key={label}>
                 <h3>{label}</h3>
-                <div className="type-tabs" aria-label={label}>
+                <div className="type-tabs" role="group" aria-label={label}>
                   {types.map((type) => (
                     <button
                       type="button"

@@ -69,9 +69,14 @@ export default async function grandPalaisProgramHandler(request: Request) {
 
   let nextApproved = approved;
   if (body.decision === "accept") {
-    const accepted = proposal.kind === "removed"
-      ? { ...proposal.previous!, deleted: true, approvedAt: new Date().toISOString() }
-      : { ...proposal.next!, deleted: false, approvedAt: new Date().toISOString() };
+    const source = proposal.kind === "removed" ? proposal.previous : proposal.next;
+    if (!source)
+      return json({ error: "Cette proposition est incomplète" }, 400);
+    const accepted = {
+      ...source,
+      deleted: proposal.kind === "removed",
+      approvedAt: new Date().toISOString(),
+    };
     nextApproved = [...approved.filter((event) => event.id !== accepted.id), accepted];
   }
   const nextPending = pending.filter((item) => item.id !== proposal.id);

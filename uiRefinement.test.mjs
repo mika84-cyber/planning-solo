@@ -12,12 +12,15 @@ const leaveManagementPage = readFileSync(new URL("./src/LeaveManagementPage.tsx"
 const planningCommandCenter = readFileSync(new URL("./src/PlanningCommandCenter.tsx", import.meta.url), "utf8");
 const planningDayCell = readFileSync(new URL("./src/PlanningDayCell.tsx", import.meta.url), "utf8");
 const payslipCheckSection = readFileSync(new URL("./src/PayslipCheckSection.tsx", import.meta.url), "utf8");
+const payslipCalibrationCard = readFileSync(new URL("./src/PayslipCalibrationCard.tsx", import.meta.url), "utf8");
 const appDialogLayer = readFileSync(new URL("./src/AppDialogLayer.tsx", import.meta.url), "utf8");
 const workTimeActions = readFileSync(new URL("./src/useWorkTimeActions.ts", import.meta.url), "utf8");
+const payActions = readFileSync(new URL("./src/usePayActions.ts", import.meta.url), "utf8");
 const authenticationActions = readFileSync(new URL("./src/useAuthenticationActions.ts", import.meta.url), "utf8");
 const accountDataActions = readFileSync(new URL("./src/useAccountDataActions.ts", import.meta.url), "utf8");
 const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions.ts", import.meta.url), "utf8");
-const app = [appRoot, appNavigation, userGuideDialogs, homeDashboard, payPage, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, planningDayCell, payslipCheckSection, appDialogLayer, workTimeActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
+const app = [appRoot, appNavigation, userGuideDialogs, homeDashboard, payPage, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, planningDayCell, payslipCheckSection, payslipCalibrationCard, appDialogLayer, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
   .map(([, relativePath]) =>
@@ -372,11 +375,11 @@ describe("finitions d’interface", () => {
   it("propose formulaire ou saisie manuelle pour congé et récupération depuis le planning", () => {
     expect(app).toContain('openPlanningRequestMethod("leave", dayDate)');
     expect(app).toContain('openPlanningRequestMethod("recovery", dayDate)');
-    expect(app).toContain('"recovery_day",');
-    expect(app).toContain('"recovery_half",');
-    expect(app).toContain('"recovery_hours",');
-    expect(app).toContain('"recovery_holiday",');
-    expect(app).toContain('"recovery_training",');
+    expect(planningLogic).toContain('"recovery_day",');
+    expect(planningLogic).toContain('"recovery_half",');
+    expect(planningLogic).toContain('"recovery_hours",');
+    expect(planningLogic).toContain('"recovery_holiday",');
+    expect(planningLogic).toContain('"recovery_training",');
     expect(app).toContain('planningRequestMethod === "leave"');
     expect(workTimeDialogs).toContain('day: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [null, "Durée libre"]]');
     expect(workTimeDialogs).toContain('half: [[240, "4 h"], [120, "2 h"], [null, "Durée libre"]]');
@@ -462,7 +465,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Table des matières du mode d’emploi");
     expect(app).toContain("Mode d’emploi");
     expect(app).toContain("congés validés");
-    expect(app).toContain("plusieurs bulletins");
+    expect(app.toLocaleLowerCase("fr-FR")).toContain("plusieurs bulletins");
   });
 
   it("rend les actions d’un congé visibles sans menu intermédiaire", () => {

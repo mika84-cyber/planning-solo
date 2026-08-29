@@ -1,3 +1,22 @@
+import {
+  cleanFieldValue as clean,
+  expandFormYear as expandYear,
+  normalizeTime,
+  parseFormDate as parseD,
+  timeMinutes as minutes,
+  timePart as part,
+  timeText,
+  clampTimeMinutes as clampTimeToRange,
+} from './form-value-utils.js';
+import { countWorkedHolidays, cycleInfoFor } from './form-calendar.js';
+import {
+  findPdfHeader,
+  humanFileSize as human,
+  readFileArrayBuffer as readArrayBuffer,
+  readImageAttachment as readImage,
+} from './form-file-utils.js';
+import { createSignatureController } from './form-signature-controller.js';
+
 (function(){
 "use strict";
 var INK = [11,59,175], SS = 3;
@@ -71,179 +90,6 @@ function applyProfile(){
   ['nom','groupe'].forEach(function(n){
     var i=byName[n]; if(i !== undefined && d[n] && !inputs[i].value) setVal(i,d[n],true);
   });
-}
-
-/* ================= conservation volontaire de la signature sur mobile ================= */
-var SIG_CHOICE_KEY='demandes:v70:signature-choice';
-var SIG_DATA_KEY='demandes:v70:signature-data';
-var signatureChoiceMemory='', signatureDataMemory='';
-function mobileSignaturePersistence(){
-  return !!(window.matchMedia && (window.matchMedia('(max-width:760px)').matches || window.matchMedia('(pointer:coarse)').matches));
-}
-function signatureChoice(){
-  try{ return localStorage.getItem(SIG_CHOICE_KEY+planningOwnerSuffix()) || signatureChoiceMemory || ''; }
-  catch(e){ return signatureChoiceMemory || ''; }
-}
-function signatureData(){
-  try{ return localStorage.getItem(SIG_DATA_KEY+planningOwnerSuffix()) || signatureDataMemory || ''; }
-  catch(e){ return signatureDataMemory || ''; }
-}
-function setSignatureChoice(v){
-  signatureChoiceMemory=v||'';
-  try{ if(v) localStorage.setItem(SIG_CHOICE_KEY+planningOwnerSuffix(),v); else localStorage.removeItem(SIG_CHOICE_KEY+planningOwnerSuffix()); }catch(e){}
-}
-function setSignatureData(v){
-  signatureDataMemory=v||'';
-  try{ if(v) localStorage.setItem(SIG_DATA_KEY+planningOwnerSuffix(),v); else localStorage.removeItem(SIG_DATA_KEY+planningOwnerSuffix()); }catch(e){}
-}
-function updateSignaturePersistenceUI(){
-  if(!sigSaveManual || !sigSavedDelete) return;
-  var mobile=mobileSignaturePersistence(), choice=signatureChoice(), data=signatureData();
-  sigSaveManual.style.display=mobile && hasInk && choice==='declined' ? 'block' : 'none';
-  sigSavedDelete.style.display=mobile && choice==='saved' && !!data ? 'flex' : 'none';
-}
-function signatureCanSyncWithPlanning(){
-  try{
-    var publicDemoUntil=localStorage.getItem('planning:public-demo-until');
-    var publicDemo=publicDemoUntil && Number.isFinite(Date.parse(publicDemoUntil)) && Date.now()<=Date.parse(publicDemoUntil);
-    var e2eDemo=publicDemo || ((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&localStorage.getItem('planning:e2e-demo-enabled')==='1');
-    return !e2eDemo;
-  }catch(e){ return false; }
-}
-function syncSavedSignatureToPlanning(data,showConfirmation){
-  if(!signatureCanSyncWithPlanning()) return Promise.resolve(false);
-  var profile=(typeof planningImport!=='undefined' && planningImport && planningImport.profile) || {};
-  var fullName=profile.fullName || (byName.nom!==undefined ? inputs[byName.nom].value.trim() : '');
-  var group=profile.group || (byName.groupe!==undefined ? inputs[byName.groupe].value.trim() : '');
-  if(profile.signature===data) return Promise.resolve(true);
-  return fetch('/api/calendar',{
-    method:'POST',credentials:'same-origin',
-    headers:{'content-type':'application/json'},
-    body:JSON.stringify({action:'save-form-profile',fullName:fullName,group:group,signature:data})
-  }).then(function(response){
-    if(!response.ok) throw new Error('Synchronisation refusée');
-    if(typeof planningImport!=='undefined' && planningImport){
-      planningImport.profile=Object.assign({},profile,{fullName:fullName,group:group,signature:data});
-      try{ localStorage.setItem(PLANNING_HANDOFF_KEY,JSON.stringify(planningImport)); }catch(e){}
-    }
-    if(showConfirmation){ say('Signature enregistrée et synchronisée avec votre compte.'); showToast('Signature synchronisée'); }
-    return true;
-  }).catch(function(){
-    if(showConfirmation) say('Signature enregistrée sur ce téléphone, mais la synchronisation a échoué. Réessayez avec une connexion internet.');
-    return false;
-  });
-}
-function saveCurrentSignaturePermanently(showConfirmation){
-  if(!mobileSignaturePersistence() || !hasInk) return false;
-  var data='';
-  try{ data=sig.toDataURL('image/png'); }catch(e){}
-  if(!data) return false;
-  setSignatureData(data);
-  setSignatureChoice('saved');
-  updateSignaturePersistenceUI();
-  if(showConfirmation){ say('Signature enregistrée. Synchronisation en cours…'); showToast('Signature enregistrée'); }
-  void syncSavedSignatureToPlanning(data,showConfirmation);
-  return true;
-}
-function restoreSavedSignature(){
-  if(!mobileSignaturePersistence() || signatureChoice()!=='saved'){
-    updateSignaturePersistenceUI();
-    return Promise.resolve(false);
-  }
-  var data=signatureData();
-  if(!data){ setSignatureChoice(''); updateSignaturePersistenceUI(); return Promise.resolve(false); }
-  return new Promise(function(resolve){
-    var im=new Image();
-    im.onload=function(){
-      sctx.clearRect(0,0,sig.width,sig.height);
-      sctx.drawImage(im,0,0,sig.width,sig.height);
-      hasInk=true; sig.classList.add('has'); hint.style.display='none'; pdfDone=false;
-      updateClr(); resolve(true);
-    };
-    im.onerror=function(){ resolve(false); };
-    im.src=data;
-  });
-}
-function fitSigSavePromptToVisualViewport(){
-  var prompt=document.getElementById('sigSavePrompt'), box=document.getElementById('sigSavePromptBox');
-  if(!prompt || !box) return;
-  var vv=window.visualViewport, browserScale=vv && vv.scale ? vv.scale : 1;
-  if(vv){
-    prompt.style.left=vv.offsetLeft+'px'; prompt.style.top=vv.offsetTop+'px';
-    prompt.style.width=vv.width+'px'; prompt.style.height=vv.height+'px';
-    prompt.style.right='auto'; prompt.style.bottom='auto';
-  }
-  var layoutWidth=Math.max(document.documentElement.clientWidth||0,window.innerWidth||0);
-  box.style.width=Math.min(340,Math.max(250,layoutWidth-32))+'px';
-  box.style.transform=browserScale>1.01 ? 'scale('+(1/browserScale)+')' : '';
-}
-function closeSigSavePrompt(){
-  var prompt=document.getElementById('sigSavePrompt');
-  prompt.classList.remove('on');
-  document.body.style.overflow='';
-}
-function showSigSavePrompt(){
-  if(!mobileSignaturePersistence() || signatureChoice() || !hasInk) return;
-  var prompt=document.getElementById('sigSavePrompt');
-  fitSigSavePromptToVisualViewport();
-  prompt.classList.add('on');
-  document.body.style.overflow='hidden';
-  requestAnimationFrame(function(){ document.getElementById('sigSaveYes').focus(); });
-}
-function handleValidatedMobileSignature(){
-  if(!mobileSignaturePersistence() || !hasInk) return;
-  var choice=signatureChoice();
-  if(choice==='saved') saveCurrentSignaturePermanently(false);
-  else if(choice==='declined') updateSignaturePersistenceUI();
-  else showSigSavePrompt();
-}
-
-/* ================= masques ================= */
-function fmtDate(v){
-  var d = String(v).replace(/\D/g,'').slice(0,8), o = d.slice(0,2);
-  if(d.length > 2) o += '/' + d.slice(2,4);
-  if(d.length > 4) o += '/' + d.slice(4,8);
-  return o;
-}
-function fmtTime(v){
-  var d = String(v).replace(/\D/g,'').slice(0,4);
-  return d.length === 4 ? d.slice(0,2)+'h'+d.slice(2) : d;   // le « h » n'apparait qu'une fois l'heure certaine
-}
-function normalizeTime(v){
-  var d = String(v).replace(/\D/g,'');
-  if(d.length === 3) return d.slice(0,1) + 'h' + d.slice(1);  // 9h15
-  if(d.length === 4) return d.slice(0,2) + 'h' + d.slice(2);  // 09h15
-  return v;
-}
-function clean(f, v){
-  if(f.k === 'date') return fmtDate(v);
-  if(f.k === 'time') return fmtTime(v);
-  if(f.k === 'soit') return String(v).replace(/[^0-9.,hH]/g,'').replace('.',',').slice(0,6);
-  return v;
-}
-function pad3(d){ return d.length === 3 ? '0'+d : d; }
-function part(v, n){
-  var d = pad3(String(v).replace(/\D/g,''));
-  return n === 0 ? d.slice(0,2) : d.slice(2,4);
-}
-function minutes(v){
-  var d = pad3(String(v).replace(/\D/g,''));
-  if(d.length !== 4) return null;
-  var h = +d.slice(0,2), m = +d.slice(2,4);
-  if(h > 23 || m > 59) return null;
-  return h*60 + m;
-}
-
-function parseD(v){
-  var m = /^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/.exec((v||'').trim());
-  if(!m) return null;
-  var yy = m[3].length === 2 ? (2000 + +m[3]) : +m[3];
-  var d = new Date(yy, +m[2]-1, +m[1]);
-  return (d.getDate() === +m[1] && d.getMonth() === +m[2]-1 && d.getFullYear() === yy) ? d : null;
-}
-function expandYear(v){
-  var m = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec((v||'').trim());
-  return m ? (m[1] + '/' + m[2] + '/20' + m[3]) : v;
 }
 
 function recalcRow(r){
@@ -349,56 +195,6 @@ function refreshAtt(){
   attNote.textContent = any
     ? "Le justificatif est ajouté en page suivante du PDF. Il reste sur cet appareil et n'est pas conservé si tu recharges la page."
     : '';
-}
-function human(n){
-  return n > 1048576 ? (n/1048576).toFixed(1).replace('.',',') + ' Mo'
-                     : Math.max(1, Math.round(n/1024)) + ' Ko';
-}
-function readImage(file){
-  return new Promise(function(res, rej){
-    var fr = new FileReader();
-    fr.onerror = function(){ rej(new Error('lecture impossible')); };
-    fr.onload = function(){
-      var im = new Image();
-      im.onerror = function(){ rej(new Error('format d\u2019image non reconnu')); };
-      im.onload = function(){
-        var MAX = 1800, sc = Math.min(1, MAX/Math.max(im.width, im.height));
-        var cv = document.createElement('canvas');
-        cv.width = Math.max(1, Math.round(im.width*sc));
-        cv.height = Math.max(1, Math.round(im.height*sc));
-        var cx = cv.getContext('2d');
-        cx.fillStyle = '#fff'; cx.fillRect(0,0,cv.width,cv.height);
-        cx.drawImage(im, 0, 0, cv.width, cv.height);
-        cv.toBlob(function(b){
-          if(!b) return rej(new Error('conversion impossible'));
-          b.arrayBuffer().then(function(buf){
-            res({ kind:'img', bytes:buf, w:cv.width, h:cv.height });
-          });
-        }, 'image/jpeg', 0.85);
-      };
-      im.src = fr.result;
-    };
-    fr.readAsDataURL(file);
-  });
-}
-function readArrayBuffer(file){
-  /* FileReader est plus fiable que file.arrayBuffer() sur certains navigateurs PC
-     et avec certains fichiers provenant d'Outlook ou d'un lecteur réseau. */
-  return new Promise(function(resolve, reject){
-    var fr = new FileReader();
-    fr.onerror = function(){ reject(new Error('lecture du fichier impossible')); };
-    fr.onload = function(){ resolve(fr.result); };
-    fr.readAsArrayBuffer(file);
-  });
-}
-function findPdfHeader(bytes){
-  /* Recherche binaire de %PDF : évite TextDecoder, parfois absent ou capricieux
-     dans certaines WebView mobiles. */
-  var max = Math.min(bytes.length - 3, 4096);
-  for(var i = 0; i < max; i++){
-    if(bytes[i] === 0x25 && bytes[i+1] === 0x50 && bytes[i+2] === 0x44 && bytes[i+3] === 0x46) return i;
-  }
-  return -1;
 }
 async function takeFile(a, file){
   if(!file) return;
@@ -763,14 +559,8 @@ document.addEventListener('pointerdown', function(e){
 
 
 /* ================= choix des horaires ================= */
-function timeText(total){
-  var h = Math.floor(total/60), m = total%60;
-  return ('0'+h).slice(-2) + 'h' + ('0'+m).slice(-2);
-}
 function clampTimeMinutes(value, fallback){
-  var m = minutes(value);
-  if(m === null) m = fallback;
-  return Math.max(9*60, Math.min(19*60+30, Math.round(m/15)*15));
+  return clampTimeToRange(minutes(value), fallback, 9*60, 19*60+30, 15);
 }
 var DEBUT_MIN = 9*60, FIN_MAX = 19*60+30, PAS = 15;
 function buildTimeOptions(){
@@ -908,277 +698,71 @@ document.querySelectorAll('.modalZoom').forEach(function(bar){
 });
 
 /* ================= signature ================= */
-function updateClr(){
-  clr.style.display = !mobileSignaturePersistence() && hasInk && !pdfDone ? 'block' : 'none';
-  updateSignaturePersistenceUI();
-}
-function sizeSig(s){
-  if(!M) return;
-  var SB = M.sig, C = M.clr;
-  var L = SB[0]*s, T = SB[1]*s, Wd = (SB[2]-SB[0])*s, Ht = (SB[3]-SB[1])*s;
-  [sig, hint].forEach(function(e){
-    e.style.left = L+'px'; e.style.top = T+'px';
-    e.style.width = Wd+'px'; e.style.height = Ht+'px';
-  });
-  hint.style.lineHeight = Ht+'px';
-  var bw = (C[2]-C[0])*s, bh = (C[3]-C[1])*s;
-  var w = Math.max(46, bw - 10);
-  clr.style.width = w+'px';
-  clr.style.fontSize = Math.max(7, Math.min(13, 19*s))+'px';
-  clr.style.left = (C[0]*s + (bw-w)/2)+'px';
-  clr.style.top  = (C[1]*s + bh/2 - Math.min(bh/2, 18))+'px';
-  sigSaveManual.style.width=w+'px';
-  sigSaveManual.style.fontSize=Math.max(7,Math.min(12,18*s))+'px';
-  sigSaveManual.style.left=(C[0]*s+(bw-w)/2)+'px';
-  sigSaveManual.style.top=(C[1]*s+bh/2-Math.min(bh/2,18))+'px';
-  var crossSize=Math.max(22,Math.min(30,Ht*.30));
-  sigSavedDelete.style.width=crossSize+'px'; sigSavedDelete.style.height=crossSize+'px';
-  sigSavedDelete.style.left=(L+Wd-crossSize-2)+'px'; sigSavedDelete.style.top=(T+2)+'px';
-  var cw = (SB[2]-SB[0])*SS, ch = (SB[3]-SB[1])*SS;
-  if(sig.width === cw && sig.height === ch) return;
-  sig.width = cw; sig.height = ch;
-  sctx.lineCap = 'round'; sctx.lineJoin = 'round';
-  sctx.strokeStyle = '#0b3baf'; sctx.lineWidth = 8;
-}
-sig.addEventListener('pointerdown', function(e){
-  e.preventDefault();
-  closeEditor();
-  openSigModal();
-});
-function clearSig(){
-  sctx.clearRect(0,0,sig.width,sig.height);
-  hasInk = false; sig.classList.remove('has'); hint.style.display = '';
-  updateClr();
-}
-clr.addEventListener('click', function(e){
-  e.preventDefault(); clearSig(); scheduleSave(); say('Signature effacée, tu peux recommencer.');
-});
-sigSaveManual.addEventListener('click',function(e){
-  e.preventDefault();
-  if(!saveCurrentSignaturePermanently(true)) say('La signature n’a pas pu être enregistrée.');
-});
-sigSavedDelete.addEventListener('click',function(e){
-  e.preventDefault(); e.stopPropagation();
-  if(!confirm('Supprimer la signature enregistrée sur cet appareil ?')) return;
-  setSignatureData(''); setSignatureChoice('');
-  void syncSavedSignatureToPlanning('',false);
-  clearSig(); scheduleSave();
-  say('Signature enregistrée supprimée. Vous pouvez recommencer.'); showToast('Signature supprimée');
-});
-
-/* ---------- fenetre de signature ---------- */
 var sigModal = document.getElementById('sigModal');
-var sigBig = document.getElementById('sigBig'), bctx = sigBig.getContext('2d');
-var bigDrawing = false, bigLast = null, bigHasInk = false;
-var BSS = Math.min(3, window.devicePixelRatio || 2);
-var sigFinePointer = window.matchMedia ? window.matchMedia('(pointer:fine)').matches : true;
-var sigMode = sigFinePointer ? 'type' : 'draw';
-var sigModeBar = document.getElementById('sigModeBar');
-var sigTypeBox = document.getElementById('sigTypeBox');
-var sigDrawHint = document.getElementById('sigDrawHint');
-var sigTypedName = document.getElementById('sigTypedName');
-var sigTypedFont = document.getElementById('sigTypedFont');
-var strokeControl = document.getElementById('strokeControl');
-var signatureStroke = localStorage.getItem('signatureStroke') || 'normal';
-var signatureStrokeFactors = {fine:.68, normal:1, thick:1.38};
-function updateStrokeControl(){
-  strokeControl.querySelectorAll('button[data-stroke]').forEach(function(b){
-    b.classList.toggle('on', b.getAttribute('data-stroke')===signatureStroke);
-  });
-}
-strokeControl.addEventListener('click',function(e){
-  var b=e.target.closest('button[data-stroke]'); if(!b) return;
-  signatureStroke=b.getAttribute('data-stroke');
-  localStorage.setItem('signatureStroke',signatureStroke);
-  updateStrokeControl();
+var signatureController = createSignatureController({
+  win:window,
+  doc:document,
+  elements:{
+    canvas:sig,
+    hint:hint,
+    clearButton:clr,
+    saveButton:sigSaveManual,
+    deleteButton:sigSavedDelete,
+    modal:sigModal,
+    bigCanvas:document.getElementById('sigBig'),
+    modeBar:document.getElementById('sigModeBar'),
+    typeBox:document.getElementById('sigTypeBox'),
+    drawHint:document.getElementById('sigDrawHint'),
+    typedName:document.getElementById('sigTypedName'),
+    typedFont:document.getElementById('sigTypedFont'),
+    strokeControl:document.getElementById('strokeControl'),
+    canvasWrap:document.getElementById('sigCanvasWrap'),
+    modeTypeButton:document.getElementById('sigModeType'),
+    modeDrawButton:document.getElementById('sigModeDraw'),
+    modalClearButton:document.getElementById('sigModalClear'),
+    modalCancelButton:document.getElementById('sigModalCancel'),
+    modalOkButton:document.getElementById('sigModalOk'),
+    savePrompt:document.getElementById('sigSavePrompt'),
+    savePromptBox:document.getElementById('sigSavePromptBox'),
+    saveYesButton:document.getElementById('sigSaveYes'),
+    saveNoButton:document.getElementById('sigSaveNo')
+  },
+  canvasScale:SS,
+  getModel:function(){ return M; },
+  getHasInk:function(){ return hasInk; },
+  setHasInk:function(value){ hasInk=value; },
+  getPdfDone:function(){ return pdfDone; },
+  setPdfDone:function(value){ pdfDone=value; },
+  getOwnerSuffix:planningOwnerSuffix,
+  getPlanningProfile:function(){
+    return (typeof planningImport!=='undefined' && planningImport && planningImport.profile) || {};
+  },
+  getFieldValue:function(name){
+    var index=byName[name];
+    return index!==undefined && inputs[index] ? inputs[index].value.trim() : '';
+  },
+  onPlanningProfileSynced:function(profile){
+    if(typeof planningImport==='undefined' || !planningImport) return;
+    planningImport.profile=profile;
+    try{ localStorage.setItem(PLANNING_HANDOFF_KEY,JSON.stringify(planningImport)); }catch(e){}
+  },
+  closeEditor:closeEditor,
+  scheduleSave:scheduleSave,
+  say:say,
+  showToast:showToast,
+  getModalZoom:function(){ return modalZoomLevels.sigPanel || 1; },
+  applyModalZoom:applyModalZoom
 });
-updateStrokeControl();
-
-function signatureProfileName(){
-  var parts=[];
-  ['prenom','nom'].forEach(function(n){
-    var i=byName[n]; if(i!==undefined && inputs[i] && inputs[i].value.trim()) parts.push(inputs[i].value.trim());
-  });
-  return parts.join(' ');
-}
-function signatureStyleValue(){
-  return window.matchMedia('(min-width:761px)').matches ? 'simple' : sigTypedFont.value;
-}
-function signatureFont(){
-  var v=signatureStyleValue();
-  if(v==='elegant') return '"Lucida Handwriting", "Segoe Script", "Snell Roundhand", cursive';
-  if(v==='simple') return '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
-  return '"Segoe Script", "Snell Roundhand", "Lucida Handwriting", "Brush Script MT", cursive';
-}
-function signatureFontPrefix(){
-  /* Les polices manuscrites sont déjà inclinées : éviter un faux italique qui les déforme. */
-  return signatureStyleValue()==='simple' ? '500 ' : '400 ';
-}
-function renderTypedSignature(){
-  if(sigMode!=='type') return;
-  bctx.clearRect(0,0,sigBig.width,sigBig.height);
-  var text=sigTypedName.value.trim();
-  bigHasInk=!!text;
-  if(!text) return;
-  var maxW=sigBig.width*0.88, maxH=sigBig.height*0.68;
-  var size=Math.max(24, Math.round(sigBig.height*0.58));
-  bctx.textAlign='center'; bctx.textBaseline='middle'; bctx.fillStyle='#0b3baf';
-  while(size>18){
-    bctx.font=signatureFontPrefix()+size+'px '+signatureFont();
-    if(bctx.measureText(text).width<=maxW && size<=maxH) break;
-    size-=2;
-  }
-  bctx.font=signatureFontPrefix()+size+'px '+signatureFont();
-  bctx.fillText(text, sigBig.width/2, sigBig.height/2);
-}
-function setSigMode(mode){
-  sigMode=mode;
-  var typed=mode==='type';
-  sigModeBar.classList.toggle('on',sigFinePointer);
-  sigTypeBox.classList.toggle('on',typed && sigFinePointer);
-  sigDrawHint.classList.toggle('on',!typed || !sigFinePointer);
-  strokeControl.classList.toggle('hidden',typed && sigFinePointer);
-  document.getElementById('sigModeType').className='btn '+(typed?'':'ghost');
-  document.getElementById('sigModeDraw').className='btn '+(typed?'ghost':'');
-  sigBig.style.cursor=typed?'default':'crosshair';
-  sigBig.style.pointerEvents=typed?'none':'auto';
-  if(typed){
-    if(!sigTypedName.value) sigTypedName.value=signatureProfileName();
-    renderTypedSignature();
-  } else {
-    bctx.clearRect(0,0,sigBig.width,sigBig.height);
-    bigHasInk=false;
-  }
-}
-document.getElementById('sigModeType').addEventListener('click',function(){setSigMode('type');});
-document.getElementById('sigModeDraw').addEventListener('click',function(){setSigMode('draw');});
-sigTypedName.addEventListener('input',renderTypedSignature);
-sigTypedFont.addEventListener('change',renderTypedSignature);
-
-function signatureStrokeWidth(){
-  /* Le trait est calculé selon l'agrandissement réellement visible.
-     Plus la page ou la fenêtre de signature est zoomée, plus le trait est fin,
-     afin qu'il conserve une épaisseur naturelle sous le doigt ou la souris. */
-  var panelZoom = modalZoomLevels.sigPanel || 1;
-  var vv = window.visualViewport;
-  var browserZoom = (sigModal.classList.contains('on') && vv && vv.scale) ? vv.scale : 1;
-  var visibleZoom = Math.max(0.35, panelZoom * browserZoom);
-  var baseCssPx = sigFinePointer ? 2.8 : 3.8;
-  var strokeFactor = signatureStrokeFactors[signatureStroke] || 1;
-  var cssPx = (baseCssPx * strokeFactor) / visibleZoom;
-  var minPx = sigFinePointer ? 1.0 : 1.25;
-  var maxPx = sigFinePointer ? 4.5 : 5.5;
-  return Math.max(minPx, Math.min(maxPx, cssPx));
-}
-function sizeBig(){
-  var wrap = document.getElementById('sigCanvasWrap');
-  var r = wrap.getBoundingClientRect();
-  var data = bigHasInk ? sigBig.toDataURL() : null;
-  sigBig.width = Math.max(1, Math.round(r.width * BSS));
-  sigBig.height = Math.max(1, Math.round(r.height * BSS));
-  bctx.lineCap = 'round'; bctx.lineJoin = 'round';
-  bctx.strokeStyle = '#0b3baf'; bctx.lineWidth = signatureStrokeWidth() * BSS;
-  if(sigMode==='type'){
-    renderTypedSignature();
-  } else if(data){
-    var im = new Image();
-    im.onload = function(){ bctx.drawImage(im, 0, 0, sigBig.width, sigBig.height); };
-    im.src = data;
-  }
-}
-function bigPoint(e){
-  var r = sigBig.getBoundingClientRect();
-  return { x:(e.clientX-r.left)/r.width*sigBig.width, y:(e.clientY-r.top)/r.height*sigBig.height };
-}
-sigBig.addEventListener('pointerdown', function(e){
-  if(sigMode!=='draw') return;
-  e.preventDefault(); sigBig.setPointerCapture(e.pointerId);
-  bigDrawing = true; bigLast = bigPoint(e);
-  bctx.lineWidth = signatureStrokeWidth() * BSS;
-  bctx.beginPath(); bctx.moveTo(bigLast.x,bigLast.y); bctx.lineTo(bigLast.x+.1,bigLast.y+.1); bctx.stroke();
-  bigHasInk = true;
-});
-sigBig.addEventListener('pointermove', function(e){
-  if(!bigDrawing) return;
-  e.preventDefault();
-  var p = bigPoint(e);
-  bctx.lineWidth = signatureStrokeWidth() * BSS;
-  bctx.beginPath(); bctx.moveTo(bigLast.x,bigLast.y); bctx.lineTo(p.x,p.y); bctx.stroke();
-  bigLast = p;
-});
-['pointerup','pointercancel'].forEach(function(ev){
-  sigBig.addEventListener(ev, function(){ bigDrawing = false; });
-});
-
-function fitSigToVisualViewport(){
-  var vv=window.visualViewport;
-  if(vv){
-    sigModal.style.left=vv.offsetLeft+'px'; sigModal.style.top=vv.offsetTop+'px';
-    sigModal.style.width=vv.width+'px'; sigModal.style.height=vv.height+'px';
-    sigModal.style.right='auto'; sigModal.style.bottom='auto';
-  }
-  applyModalZoom('sigPanel');
-}
-function openSigModal(){
-  if(window.matchMedia('(min-width:761px)').matches) sigTypedFont.value='simple';
-  sigModal.classList.add('on');
-  document.body.style.overflow = 'hidden';
-  fitSigToVisualViewport();
-  bigHasInk = hasInk;
-  if(sigFinePointer){
-    if(!sigTypedName.value) sigTypedName.value=signatureProfileName();
-    setSigMode(hasInk ? 'draw' : 'type');
-  } else setSigMode('draw');
-  requestAnimationFrame(function(){
-    sizeBig();
-    if(!hasInk && sigMode==='draw') bctx.clearRect(0,0,sigBig.width,sigBig.height);
-  });
-}
-function closeSigModal(){
-  sigModal.classList.remove('on');
-  document.body.style.overflow = '';
-  sigModal.style.left=''; sigModal.style.top=''; sigModal.style.width=''; sigModal.style.height='';
-  sigModal.style.right=''; sigModal.style.bottom='';
-}
-function sigVVUpdate(){
-  if(sigModal.classList.contains('on')) fitSigToVisualViewport();
-  if(document.getElementById('sigSavePrompt').classList.contains('on')) fitSigSavePromptToVisualViewport();
-}
-if(window.visualViewport){ visualViewport.addEventListener('resize',sigVVUpdate); visualViewport.addEventListener('scroll',sigVVUpdate); }
-document.getElementById('sigModalClear').addEventListener('click', function(){
-  bctx.clearRect(0,0,sigBig.width,sigBig.height);
-  if(sigMode==='type') sigTypedName.value='';
-  bigHasInk = false;
-});
-document.getElementById('sigModalCancel').addEventListener('click', closeSigModal);
-document.getElementById('sigModalOk').addEventListener('click', function(){
-  sctx.clearRect(0,0,sig.width,sig.height);
-  if(bigHasInk){
-    var scale = Math.min(sig.width/sigBig.width, sig.height/sigBig.height);
-    var w = sigBig.width*scale, h = sigBig.height*scale;
-    sctx.drawImage(sigBig, (sig.width-w)/2, (sig.height-h)/2, w, h);
-    hasInk = true; sig.classList.add('has'); hint.style.display = 'none';
-  } else {
-    hasInk = false; sig.classList.remove('has'); hint.style.display = '';
-  }
-  sig.classList.remove('err');
-  pdfDone = false; updateClr(); scheduleSave();
-  closeSigModal();
-  handleValidatedMobileSignature();
-});
-document.getElementById('sigSaveYes').addEventListener('click',function(){
-  if(saveCurrentSignaturePermanently(true)) closeSigSavePrompt();
-  else say('La signature n’a pas pu être enregistrée.');
-});
-document.getElementById('sigSaveNo').addEventListener('click',function(){
-  setSignatureChoice('declined');
-  closeSigSavePrompt(); updateSignaturePersistenceUI();
-  say('La proposition ne sera plus affichée automatiquement.');
-});
-sigModal.addEventListener('pointerdown', function(e){ if(e.target === sigModal) closeSigModal(); });
-window.addEventListener('resize', function(){
-  if(sigModal.classList.contains('on')){ clearTimeout(window.__rzb); window.__rzb = setTimeout(function(){ fitSigToVisualViewport(); sizeBig(); }, 150); }
-});
+function mobileSignaturePersistence(){ return signatureController.mobilePersistence(); }
+function updateSignaturePersistenceUI(){ signatureController.updatePersistenceUI(); }
+function restoreSavedSignature(){ return signatureController.restoreSaved(); }
+function updateClr(){ signatureController.updateClearButton(); }
+function sizeSig(scale){ signatureController.size(scale); }
+function clearSig(){ signatureController.clear(); }
+function sizeBig(){ signatureController.sizeBig(); }
+function openSigModal(){ signatureController.openModal(); }
+function closeSigModal(){ signatureController.closeModal(); }
+function closeSigSavePrompt(){ signatureController.closeSavePrompt(); }
 
 /* ================= calendrier ================= */
 var MOIS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -1206,92 +790,14 @@ JOURS_FR.forEach(function(j){
   }
 })();
 
-/* Cycle de 21 jours. Repère fourni : vendredi 31/07/2026.
-   Groupe 1 = jour 4, groupe 2 = jour 11, groupe 3 = jour 18. */
-var CYCLE_ANCHOR_UTC = Date.UTC(2026, 6, 31);
-var CYCLE_ANCHOR_INDEX = {1:3, 2:10, 3:17};
-var CYCLE_TYPES = [
-  'work','work','work','work','work','work',
-  'off','off','training',
-  'work','work','work','work',
-  'off','work','work',
-  'off','off','off','off','off'
-];
 function activeGroup(){
   var i=byName.groupe;
   if(i === undefined || !inputs[i]) return 0;
   var m=String(inputs[i].value||'').match(/(?:^|\D)([123])(?:\D|$)/);
   return m ? +m[1] : 0;
 }
-function utcDayNumber(d){ return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000); }
-function dateKey(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
-/* Calcul grégorien de Pâques (algorithme de Meeus/Jones/Butcher). */
-function easterSunday(year){
-  var a=year%19, b=Math.floor(year/100), c=year%100, d=Math.floor(b/4), e=b%4;
-  var f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
-  var i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, m=Math.floor((a+11*h+22*l)/451);
-  var month=Math.floor((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
-  return new Date(year,month-1,day);
-}
-function addDays(d,n){ var r=new Date(d.getFullYear(),d.getMonth(),d.getDate()); r.setDate(r.getDate()+n); return r; }
-function holidaysForYear(year){
-  var easter=easterSunday(year), list=[
-    [new Date(year,0,1),'Jour de l’an'],
-    [easter,'Dimanche de Pâques'],
-    [addDays(easter,1),'Lundi de Pâques'],
-    [new Date(year,4,1),'Fête du Travail'],
-    [new Date(year,4,8),'Victoire 1945'],
-    [addDays(easter,39),'Ascension'],
-    [addDays(easter,49),'Dimanche de Pentecôte'],
-    [addDays(easter,50),'Lundi de Pentecôte'],
-    [new Date(year,6,14),'Fête nationale'],
-    [new Date(year,7,15),'Assomption'],
-    [new Date(year,10,1),'Toussaint'],
-    [new Date(year,10,11),'Armistice 1918'],
-    [new Date(year,11,25),'Noël']
-  ], out={};
-  list.forEach(function(x){ out[dateKey(x[0])]=x[1]; });
-  return out;
-}
-var HOLIDAY_CACHE={};
-function holidayName(d){
-  var y=d.getFullYear();
-  if(!HOLIDAY_CACHE[y]) HOLIDAY_CACHE[y]=holidaysForYear(y);
-  return HOLIDAY_CACHE[y][dateKey(d)] || '';
-}
-function isAlwaysOffHoliday(d){
-  var m=d.getMonth()+1, day=d.getDate();
-  return (m===5 && day===1) || (m===7 && day===14) || (m===12 && day===25);
-}
-function baseCycleKind(d,g){
-  var delta=utcDayNumber(d)-Math.floor(CYCLE_ANCHOR_UTC/86400000);
-  var idx=((CYCLE_ANCHOR_INDEX[g]+delta)%21+21)%21;
-  return CYCLE_TYPES[idx];
-}
 function cycleInfo(d){
-  var g=activeGroup(), holiday=holidayName(d);
-  if(!g) return {kind:'unknown', selectable:true, holiday:holiday, label:'Renseignez le groupe 1, 2 ou 3 pour afficher le roulement.'};
-  var baseKind=baseCycleKind(d,g);
-  /* Priorité absolue : les trois fermetures annuelles et tout férié tombant
-     sur une journée de formation deviennent non travaillés. */
-  if(holiday && (isAlwaysOffHoliday(d) || baseKind==='training')){
-    return {kind:'off', selectable:false, special:true, holiday:holiday,
-            label:holiday+' — jour férié non travaillé'};
-  }
-  var kind=baseKind;
-  var label=kind==='training'?'Formation':(kind==='work'?'Travail':'Repos');
-  if(holiday) label=holiday+' — '+(kind==='work'?'férié travaillé':'férié non travaillé');
-  return {kind:kind, selectable:kind!=='off', special:false, holiday:holiday, label:label};
-}
-function countWorkedHolidays(year,g){
-  if(!g) return 0;
-  var holidays=holidaysForYear(year), count=0;
-  Object.keys(holidays).forEach(function(key){
-    var parts=key.split('-'), d=new Date(+parts[0],+parts[1]-1,+parts[2]);
-    var baseKind=baseCycleKind(d,g);
-    if(baseKind==='work' && !isAlwaysOffHoliday(d)) count++;
-  });
-  return count;
+  return cycleInfoFor(d, activeGroup());
 }
 function updateCycleInfo(){
   var g=activeGroup(), el=document.getElementById('calCycleInfo');

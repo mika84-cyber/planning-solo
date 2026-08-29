@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function useToast() {
   const [message, setMessage] = useState<string | null>(null);
@@ -8,36 +8,36 @@ export function useToast() {
     action: () => void | Promise<void>;
   } | null>(null);
 
-  function notify(text: string) {
+  const notify = useCallback((text: string) => {
     setMessage(text);
-  }
+  }, []);
 
-  function dismiss() {
+  const dismiss = useCallback(() => {
     setMessage(null);
-  }
+  }, []);
 
-  function confirm(text: string) {
+  const confirm = useCallback((text: string) => {
     setSuccessMessage(text);
-  }
+  }, []);
 
-  function dismissSuccess() {
+  const dismissSuccess = useCallback(() => {
     setSuccessMessage(null);
-  }
+  }, []);
 
-  function offerUndo(message: string, action: () => void | Promise<void>) {
+  const offerUndo = useCallback((message: string, action: () => void | Promise<void>) => {
     setSuccessMessage(null);
     setUndoOffer({ message, action });
-  }
+  }, []);
 
-  function dismissUndo() {
+  const dismissUndo = useCallback(() => {
     setUndoOffer(null);
-  }
+  }, []);
 
-  function runUndo() {
+  const runUndo = useCallback(() => {
     const action = undoOffer?.action;
     setUndoOffer(null);
     if (action) void action();
-  }
+  }, [undoOffer]);
 
   useEffect(() => {
     if (!successMessage) return;

@@ -67,7 +67,9 @@ console.log(`OK Plus grand fichier: ${Math.max(...measurements.map((file) => fil
 
 if (failures.length > 0) {
   console.error("\nComplexité CSS en hausse :");
-  failures.forEach((failure) => console.error(`- ${failure}`));
+  failures.forEach((failure) => {
+    console.error(`- ${failure}`);
+  });
   console.error("Réutilisez ou simplifiez une règle existante avant d’ajouter une nouvelle surcharge.");
   process.exitCode = 1;
 } else {

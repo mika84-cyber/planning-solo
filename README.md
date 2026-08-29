@@ -33,6 +33,9 @@ npm install
 npm run dev
 ```
 
+Le projet requiert Node.js 22.12 ou une version plus récente, comme les
+versions actuelles des bibliothèques Netlify utilisées en production.
+
 L'appli s'ouvre sur `http://localhost:5173`. L’accès à l’application nécessite
 une authentification Netlify Identity ; aucun lien de démonstration public ne
 permet d’entrer sans compte.
@@ -40,6 +43,7 @@ permet d’entrer sans compte.
 Autres commandes :
 
 - `npm run check` — contrôle de types ;
+- `npm run lint` — erreurs sémantiques, hooks React et accessibilité statique ;
 - `npm test` — tests unitaires (cycle, congés, indemnités, PDF) ;
 - `npm run test:coverage` — tests avec seuils minimaux de couverture ;
 - `npm run test:e2e` — parcours Chromium sur ordinateur, mobile et Z Fold,
@@ -47,6 +51,8 @@ Autres commandes :
 - `npm run build` — build de production, comme sur Netlify ;
 - `npm run check:bundle` — contrôle des budgets JavaScript et CSS du build ;
 - `npm run check:css` — empêche une hausse de la complexité de la cascade ;
+- `npm run test:pdf:visual` — génère deux PDF de contrôle locaux, avec et sans
+  vacances scolaires ;
 - `npm run check:ci` — contrôle complet hors parcours navigateur.
 
 Le workflow GitHub Actions `.github/workflows/quality.yml` exécute ces

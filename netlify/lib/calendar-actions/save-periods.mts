@@ -1,4 +1,7 @@
-import { normalizeBulkPeriods } from "../calendarValidation.mts";
+import {
+  normalizeBulkPeriods,
+  type NormalizedBulkPeriod,
+} from "../calendarValidation.mts";
 import { json } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
 export async function handleSavePeriods(
@@ -20,16 +23,21 @@ export async function handleSavePeriods(
     key: scopedKey(`period/${period.id}`),
     period,
   }));
-  const previous: any[] = [];
+  const previous: unknown[] = [];
   for (const { key } of targets)
     previous.push(await store.get(key, { type: "json" }));
-  const samePeriod = (left: any, right: typeof normalized.periods[number]) =>
-    left?.id === right.id &&
-    left?.from === right.from &&
-    left?.to === right.to &&
-    left?.leave_type === right.leave_type &&
-    (left?.half_moment || "") === right.half_moment &&
-    Number(left?.group) === Number(right.group);
+  const samePeriod = (left: unknown, right: NormalizedBulkPeriod) => {
+    if (!left || typeof left !== "object" || Array.isArray(left)) return false;
+    const candidate = left as Partial<NormalizedBulkPeriod>;
+    return (
+      candidate.id === right.id &&
+      candidate.from === right.from &&
+      candidate.to === right.to &&
+      candidate.leave_type === right.leave_type &&
+      (candidate.half_moment || "") === right.half_moment &&
+      Number(candidate.group) === Number(right.group)
+    );
+  };
   try {
     // Les écritures séquentielles évitent les rafales de requêtes fortes
     // vers Blobs. Lors d'une seconde tentative, une période déjà identique
@@ -42,7 +50,7 @@ export async function handleSavePeriods(
   } catch (writeError) {
     // Une réponse Blobs peut être perdue après acceptation de l'écriture.
     // Avant d'annoncer un échec, on relit donc chaque identifiant.
-    const confirmed: any[] = [];
+    const confirmed: unknown[] = [];
     for (const { key } of targets) {
       try {
         confirmed.push(await store.get(key, { type: "json" }));

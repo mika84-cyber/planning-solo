@@ -265,7 +265,8 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
 
 export async function collectGrandPalaisEvents(fetcher: typeof fetch = fetch) {
   const listing = await fetchGrandPalaisHtml(`${OFFICIAL_ORIGIN}/fr/programme`, fetcher, true);
-  const links = extractGrandPalaisProgramLinks(listing!);
+  if (!listing) throw new Error("Programme Grand Palais indisponible");
+  const links = extractGrandPalaisProgramLinks(listing);
   const events: SharedGrandPalaisEvent[] = [];
   for (let index = 0; index < links.length; index += 4) {
     const batch = links.slice(index, index + 4);
@@ -348,13 +349,16 @@ export async function sendGrandPalaisAlertEmail(
   if (!apiKey || !recipient || !from)
     throw new Error("Les variables d’alerte e-mail de la programmation GP sont incomplètes");
   const labels = { new: "Nouvelle programmation", changed: "Modification détectée", removed: "Retrait détecté" };
-  const escape = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+  const htmlEntities: Record<string, string> = {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character]!);
+  };
+  const escapeHtml = (value: string) =>
+    value.replace(/[&<>"']/g, (character) => htmlEntities[character] ?? character);
   const items = proposals.map((proposal) => {
-    const event = proposal.next ?? proposal.previous!;
+    const event = proposal.next ?? proposal.previous;
+    if (!event) throw new Error("Proposition Grand Palais incomplète");
     const label = event.venueKey === "exceptional-closure" ? "Fermeture complète détectée" : labels[proposal.kind];
-    return `<li><strong>${label} :</strong> ${escape(event.title)} — ${escape(event.venueLabel)} (${escape(event.startDate)} au ${escape(event.endDate)})</li>`;
+    return `<li><strong>${label} :</strong> ${escapeHtml(event.title)} — ${escapeHtml(event.venueLabel)} (${escapeHtml(event.startDate)} au ${escapeHtml(event.endDate)})</li>`;
   }).join("");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GRAND_PALAIS_FETCH_TIMEOUT_MS);

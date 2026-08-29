@@ -1,4 +1,4 @@
-import { getStore } from "@netlify/blobs";
+import type { getStore } from "@netlify/blobs";
 import { isValidDateKey } from "./calendarValidation.mts";
 
 export const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);

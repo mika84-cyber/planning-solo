@@ -6,9 +6,10 @@ describe("formulaire de demande", () => {
   const deviceScript = readFileSync("public/formulaire/device.js", "utf8");
   const sheetsScript = readFileSync("public/formulaire/sheets.js", "utf8");
   const formScript = readFileSync("public/formulaire/app.js", "utf8");
+  const signatureController = readFileSync("public/formulaire/form-signature-controller.js", "utf8");
   const formStyles = readFileSync("public/formulaire/form.css", "utf8");
   const serviceWorker = readFileSync("public/formulaire/sw.js", "utf8");
-  const formSources = `${html}\n${deviceScript}\n${sheetsScript}\n${formScript}`;
+  const formSources = `${html}\n${deviceScript}\n${sheetsScript}\n${formScript}\n${signatureController}`;
   const netlifyConfig = readFileSync("netlify.toml", "utf8");
   const app = [
     "src/App.tsx",
@@ -25,13 +26,29 @@ describe("formulaire de demande", () => {
     expect(html).toContain('<script src="device.js"></script>');
     expect(html).toContain('<link rel="stylesheet" href="form.css">');
     expect(html).toContain('<script src="sheets.js"></script>');
-    expect(html).toContain('<script src="app.js"></script>');
+    expect(html).toContain('<script type="module" src="app.js"></script>');
     expect(netlifyConfig).toContain("script-src 'self'");
     expect(netlifyConfig).toContain("style-src 'self'");
     expect(formStyles).toContain("@media print");
     expect(sheetsScript).toMatch(/^var SHEETS = \[/);
-    for (const asset of ["device.js", "form.css", "sheets.js", "app.js"])
+    for (const asset of [
+      "device.js",
+      "form.css",
+      "sheets.js",
+      "app.js",
+      "form-value-utils.js",
+      "form-calendar.js",
+      "form-file-utils.js",
+      "form-signature-controller.js",
+    ])
       expect(serviceWorker).toContain(`'./${asset}'`);
+    expect(formScript).toContain("from './form-value-utils.js'");
+    expect(formScript).toContain("from './form-calendar.js'");
+    expect(formScript).toContain("from './form-file-utils.js'");
+    expect(formScript).toContain("from './form-signature-controller.js'");
+    expect(formScript).toContain("createSignatureController({");
+    expect(formScript).toContain("function closeSigSavePrompt(){ signatureController.closeSavePrompt(); }");
+    expect(signatureController).toMatch(/return \{[\s\S]*closeSavePrompt,/);
   });
 
   it("garde une seule source de version pour le cache hors ligne", () => {
@@ -49,7 +66,8 @@ describe("formulaire de demande", () => {
     expect(formSources).toContain("item.type==='recovery_training')?'rheur'");
     expect(formSources).toContain("capacities={ca:5,artt:4,cet:4,frac:2");
     expect(formSources).toContain("syncSavedSignatureToPlanning");
-    expect(formSources).toContain("action:'save-form-profile',fullName:fullName,group:group,signature:data");
+    expect(signatureController).toContain("action: 'save-form-profile'");
+    expect(signatureController).toContain("signature: data");
     expect(formSources).toContain("font:obsBold,color:PDFLib.rgb(INK[0]/255,INK[1]/255,INK[2]/255)");
   });
 
