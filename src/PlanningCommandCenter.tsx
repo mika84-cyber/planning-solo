@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
+import { CalendarCleanupPanel } from "./CalendarCleanup";
 import { ChoicePicker } from "./ChoicePicker";
 import { dayCountLabel, type ViewMode } from "./appModel";
 import {
@@ -62,7 +62,6 @@ type PlanningCommandCenterProps = {
   onDeleteAbsences: () => void;
   onDeleteNotes: () => void;
   onToday: () => void;
-  onStartCleanup: () => void;
 };
 
 function closureDetail(count: number) {
@@ -101,7 +100,6 @@ export function PlanningCommandCenter({
   onDeleteAbsences,
   onDeleteNotes,
   onToday,
-  onStartCleanup,
 }: PlanningCommandCenterProps) {
   const [workedDaysOpen, setWorkedDaysOpen] = useState(false);
   const workedDaysRef = useRef<HTMLDivElement | null>(null);
@@ -157,28 +155,11 @@ export function PlanningCommandCenter({
               </div>
             </div>
           </div>
-          <div className="year-choice planning-group-choice" role="group" aria-label="Choix du groupe">
-            <span className="year-choice-label">Groupe</span>
-            <div className="planning-group-action-row">
-              <div className="year-stepper">
-                <div className="year-select-display">
-                  <span className="year-calendar-mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <circle cx="7" cy="12" r="2.4" />
-                      <circle cx="12" cy="12" r="2.4" />
-                      <circle cx="17" cy="12" r="2.4" />
-                    </svg>
-                  </span>
-                  <ChoicePicker
-                    value={group}
-                    options={GROUP_OPTIONS}
-                    onChange={onGroupChange}
-                    ariaLabel="Sélectionner le groupe"
-                    className="year-choice-picker"
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="year-choice planning-today-choice" role="group" aria-label="Accès rapide au mois actuel">
+            <span className="year-choice-label">Navigation</span>
+            <button className="planning-today-button" type="button" onClick={onToday}>
+              Aujourd’hui
+            </button>
           </div>
           <div className="worked-days" ref={workedDaysRef}>
             <span className="year-choice-label">Jours travaillés</span>
@@ -387,15 +368,10 @@ export function PlanningCommandCenter({
             className="toolbar-group-picker"
           />
         ) : null}
-        <button className="today-button" type="button" onClick={onToday}>Aujourd’hui</button>
-        {isHome && mode === "month" && !calendarDeleteMode ? (
-          <CalendarCleanupTrigger className="calendar-bulk-delete-mobile" onStart={onStartCleanup} />
+        {mode === "year" ? (
+          <button className="today-button" type="button" onClick={onToday}>Aujourd’hui</button>
         ) : null}
       </section>
-
-      {isHome && mode === "month" && !calendarDeleteMode ? (
-        <CalendarCleanupTrigger className="calendar-bulk-delete-button" onStart={onStartCleanup} />
-      ) : null}
     </section>
   );
 }

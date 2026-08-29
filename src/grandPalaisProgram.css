@@ -279,6 +279,13 @@
   box-shadow: inset 0 0 0 1px rgba(74, 130, 199, 0.1);
 }
 
+.grand-palais-program-panel .useful-expo-timeline article.is-current {
+  background: linear-gradient(135deg, #d7e9ff, #edf5ff);
+  box-shadow:
+    inset 0 0 0 1px rgba(48, 105, 177, 0.18),
+    0 8px 20px rgba(42, 94, 166, 0.11);
+}
+
 .useful-expo-timeline article.is-current .useful-expo-timeline-mark {
   background: #3474c4;
   box-shadow: 0 0 0 2px #3474c4;

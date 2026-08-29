@@ -61,6 +61,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande, navigation par espace et périodes
   d’inter expos.
+- `src/appSections.ts` : point d’entrée statique des grandes pages afin que
+  chaque rubrique soit prête dès l’affichage de l’application.
 - `src/use*UiState.ts` et `src/useCalendarDataState.ts` : états spécialisés de
   l’authentification, du planning, de la paie, des heures, de la coque et des
   données synchronisées ; `App.tsx` conserve leur orchestration commune.

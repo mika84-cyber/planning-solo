@@ -51,7 +51,6 @@ const baseProps = {
   onDeleteAbsences: vi.fn(),
   onDeleteNotes: vi.fn(),
   onToday: vi.fn(),
-  onStartCleanup: vi.fn(),
 };
 
 describe("PlanningCommandCenter", () => {
@@ -62,7 +61,9 @@ describe("PlanningCommandCenter", () => {
     expect(html).toContain("Jours travaillés");
     expect(html).toContain("16 ce mois-ci");
     expect(html).toContain("Aujourd’hui");
-    expect(html).toContain("Effacer plusieurs dates ou notes");
+    expect(html).toContain("Accès rapide au mois actuel");
+    expect(html).not.toContain("Choix du groupe");
+    expect(html).not.toContain("Effacer plusieurs dates ou notes");
   });
 
   it("affiche le récapitulatif et le groupe dans la vue annuelle", () => {

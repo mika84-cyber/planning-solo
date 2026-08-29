@@ -1,5 +1,4 @@
 import {
-  lazy,
   Suspense,
   useEffect,
   useEffectEvent,
@@ -42,9 +41,24 @@ import {
   MAIN_SECTION_ORDER,
 } from "./AppNavigation";
 import { PlanningCommandCenter } from "./PlanningCommandCenter";
+import { CalendarCleanupTrigger } from "./CalendarCleanup";
 import { PlanningDayCell } from "./PlanningDayCell";
 import { MonthCalendar } from "./PlanningView";
 import { RequestValidationSummary } from "./RequestValidationSummary";
+import {
+  CetSection,
+  GrandPalaisProgramSection,
+  LeaveBalancesSection,
+  LeaveManagementPage,
+  PayAllowancesSection,
+  PayEstimateDetails,
+  PayPage,
+  PayslipCheckSection,
+  PdfDownloadPage,
+  UsefulContactsSection,
+  UsefulFormsSection,
+  UserGuideDialogs,
+} from "./appSections";
 import {
   CalendarApiError,
   calendarErrorMessage,
@@ -176,42 +190,6 @@ function keyedNoteLines(value: string) {
     });
 }
 
-const LeaveBalancesSection = lazy(() =>
-  import("./LeaveBalancesSection").then((module) => ({ default: module.LeaveBalancesSection })),
-);
-const CetSection = lazy(() =>
-  import("./CetSection").then((module) => ({ default: module.CetSection })),
-);
-const PayEstimateDetails = lazy(() =>
-  import("./PayEstimateDetails").then((module) => ({ default: module.PayEstimateDetails })),
-);
-const UsefulFormsSection = lazy(() =>
-  import("./UsefulFormsSection").then((module) => ({ default: module.UsefulFormsSection })),
-);
-const UsefulContactsSection = lazy(() =>
-  import("./UsefulContactsSection").then((module) => ({ default: module.UsefulContactsSection })),
-);
-const GrandPalaisProgramSection = lazy(() =>
-  import("./GrandPalaisProgramSection").then((module) => ({ default: module.GrandPalaisProgramSection })),
-);
-const UserGuideDialogs = lazy(() =>
-  import("./UserGuideDialogs").then((module) => ({ default: module.UserGuideDialogs })),
-);
-const LeaveManagementPage = lazy(() =>
-  import("./LeaveManagementPage").then((module) => ({ default: module.LeaveManagementPage })),
-);
-const PayPage = lazy(() =>
-  import("./PayPage").then((module) => ({ default: module.PayPage })),
-);
-const PayAllowancesSection = lazy(() =>
-  import("./PayAllowancesSection").then((module) => ({ default: module.PayAllowancesSection })),
-);
-const PayslipCheckSection = lazy(() =>
-  import("./PayslipCheckSection").then((module) => ({ default: module.PayslipCheckSection })),
-);
-const PdfDownloadPage = lazy(() =>
-  import("./PdfDownloadPage").then((module) => ({ default: module.PdfDownloadPage })),
-);
 function DeferredSection({ label }: { label: string }) {
   return <div className="deferred-section-loading" role="status">Chargement de {label}…</div>;
 }
@@ -430,29 +408,13 @@ export default function Home() {
   useEffect(() => {
     if (authStatus !== "ready") return;
     let active = true;
-    const warmSecondarySections = () => {
-      [
-        "/forms-header-art-fast.webp",
-        "/grand-palais-verriere-fast.webp",
-        "/contacts-header-art-black-fast.webp",
-      ].forEach((source) => {
-        const image = new Image();
-        image.decoding = "async";
-        image.src = source;
-      });
-      void getUsefulContacts()
-        .then((payload) => {
-          if (active) setPrefetchedContacts(payload);
-        })
-        .catch(() => undefined);
-    };
-    const idleId = window.requestIdleCallback
-      ? window.requestIdleCallback(warmSecondarySections, { timeout: 1_500 })
-      : window.setTimeout(warmSecondarySections, 500);
+    void getUsefulContacts()
+      .then((payload) => {
+        if (active) setPrefetchedContacts(payload);
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
-      if (window.cancelIdleCallback) window.cancelIdleCallback(idleId);
-      else window.clearTimeout(idleId);
     };
   }, [authStatus]);
   useEffect(() => {
@@ -3267,7 +3229,6 @@ export default function Home() {
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
         onToday={goToday}
-        onStartCleanup={startCalendarCleanup}
       />
 
       {mode === "year" && homeSection === "pdf" && (
@@ -3721,6 +3682,14 @@ export default function Home() {
           ))}
         </section>
       )}
+      {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
+        <div className="planning-calendar-cleanup-row">
+          <CalendarCleanupTrigger
+            className="calendar-bulk-delete-button calendar-bulk-delete-below"
+            onStart={startCalendarCleanup}
+          />
+        </div>
+      ) : null}
       </section>
         </>
       ) : null}

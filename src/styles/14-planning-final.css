@@ -461,6 +461,10 @@
   margin-left: auto;
 }
 
+.home-notes-section {
+  border-left: 6px solid #d99a3c;
+}
+
 .today-overview {
   border-left: 6px solid #3475ba;
   background-image:
@@ -795,6 +799,12 @@
   box-shadow: 0 12px 30px rgba(35, 72, 67, 0.08);
 }
 
+/* Les détails de programmation gardent un cadre uniforme : le liseré reste
+   réservé à la rubrique principale et aux boutons des galeries. */
+.useful-expo-schedule.grand-palais-program-panel {
+  border-left-width: 1.5px;
+}
+
 .useful-expo-schedule-heading h3 {
   margin: 4px 0 6px;
   color: #17283e;
@@ -1046,4 +1056,56 @@
     padding: 0;
     font-size: 10px;
   }
+}
+
+/* Planning : l’accès à aujourd’hui remplace le groupe dans les deux commandes
+   principales. Le nettoyage est une action distincte, placée après la grille. */
+.planning-workspace-shell.framed .controls .planning-today-choice {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-rows: auto 46px;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.planning-workspace-shell.framed .controls .planning-today-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(49, 101, 170, 0.34);
+  border-radius: 13px;
+  color: #2862aa;
+  background: linear-gradient(145deg, #f2f7ff, #fff);
+  box-shadow: 0 3px 10px rgba(42, 67, 96, 0.055);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.planning-workspace-shell.framed .month-toolbar .period-navigation {
+  grid-column: 1 / -1;
+}
+
+.planning-workspace-shell.framed .planning-calendar-cleanup-row {
+  display: flex;
+  width: 100%;
+}
+
+.planning-workspace-shell.framed .calendar-bulk-delete-below {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 46px;
+  margin: 2px 0 0;
+  border: 2px solid #111820;
 }

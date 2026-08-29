@@ -70,6 +70,7 @@ async function prepareFutureTrainingAbsenceDemo(
     );
   }, { periodDate: trainingKey, absence });
   await prepareDemo(page);
+  await expect(page.locator(".deferred-section-loading")).toHaveCount(0);
   return expectedNext;
 }
 
@@ -190,6 +191,7 @@ async function swipeMainSection(page: Page, fromX: number, toX: number) {
 
 test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) => {
   await prepareDemo(page);
+  await expect(page.locator(".deferred-section-loading")).toHaveCount(0);
   const headerHeight = () => page.locator(".top-header").evaluate((node) => node.getBoundingClientRect().height);
   const expectHeaderWidth = async (locator: ReturnType<typeof page.locator>) => {
     const [headerBox, categoryBox] = await Promise.all([
@@ -613,9 +615,16 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
       right: style.borderRightWidth,
       bottom: style.borderBottomWidth,
       left: style.borderLeftWidth,
+      background: style.backgroundImage,
     };
   });
-  expect(new Set(Object.values(exhibitionBorder))).toEqual(new Set(["2px"]));
+  expect(new Set([
+    exhibitionBorder.top,
+    exhibitionBorder.right,
+    exhibitionBorder.bottom,
+    exhibitionBorder.left,
+  ])).toEqual(new Set(["2px"]));
+  expect(exhibitionBorder.background).toContain("rgb(215, 233, 255)");
   await expect(page.locator(".useful-expo-timeline article.is-current")).toContainText("Hilma af Klint");
   await expect(page.locator(".useful-expo-timeline article.is-current")).toContainText("En cours");
   await expect(page.locator(".useful-expo-timeline")).toContainText("Girls - Adolescence, mode et rébellion");
@@ -890,18 +899,22 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   expect(groupActionBox).not.toBeNull();
   const viewportWidth = page.viewportSize()?.width || 0;
   if (testInfo.project.name === "ordinateur") {
-    const deleteButtonBox = await page.locator(".calendar-bulk-delete-button").boundingBox();
-    const commandSectionBox = await page.locator(".planning-command-section").boundingBox();
+    const deleteButtonBox = await page.locator(".calendar-bulk-delete-below").boundingBox();
+    const calendarSectionBox = await page.locator(".planning-calendar-section").boundingBox();
+    const monthCardBox = await page.locator(".month-card").boundingBox();
     expect(deleteButtonBox).not.toBeNull();
-    expect(commandSectionBox).not.toBeNull();
-    expect(deleteButtonBox!.width).toBeGreaterThan(commandSectionBox!.width * 0.95);
+    expect(calendarSectionBox).not.toBeNull();
+    expect(monthCardBox).not.toBeNull();
+    expect(deleteButtonBox!.width).toBeGreaterThan(calendarSectionBox!.width * 0.95);
+    expect(deleteButtonBox!.y).toBeGreaterThanOrEqual(monthCardBox!.y + monthCardBox!.height);
   }
   const workedDaysTriggerBox = await page.locator(".worked-days-trigger").boundingBox();
-  const groupTriggerBox = await page.locator(".planning-group-choice .choice-picker-trigger").boundingBox();
+  const planningTodayBox = await page.locator(".planning-today-button").boundingBox();
   expect(workedDaysTriggerBox).not.toBeNull();
-  expect(groupTriggerBox).not.toBeNull();
-  expect(Math.abs(workedDaysTriggerBox!.width - groupTriggerBox!.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(workedDaysTriggerBox!.height - groupTriggerBox!.height)).toBeLessThanOrEqual(1);
+  expect(planningTodayBox).not.toBeNull();
+  expect(Math.abs(workedDaysTriggerBox!.width - planningTodayBox!.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(workedDaysTriggerBox!.height - planningTodayBox!.height)).toBeLessThanOrEqual(1);
+  await expect(page.locator(".planning-group-choice")).toHaveCount(0);
   expect(headerBox!.width).toBeLessThanOrEqual(viewportWidth - 12);
   expect(headerBox!.width / viewportWidth).toBeGreaterThan(
     viewportWidth >= 1200 ? 0.93 : 0.85,
@@ -914,6 +927,9 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(remainingWorkCard).toBeVisible();
   await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
   await expect(remainingWorkCard).toContainText("D’ici au 31 décembre");
+  if (viewportWidth > 720) {
+    await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", "6px");
+  }
   if (viewportWidth > 720) {
     const [statusBox, nextWorkBox, leaveBox, remainingBox] = await Promise.all([
       page.locator(".today-status").boundingBox(),
@@ -940,12 +956,12 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
     await expect(page.locator(".home-planning-heading")).toHaveCSS("border-left-width", "0px");
     await expect(page.locator(".planning-workspace-shell.framed .controls")).toHaveCSS("border-left-width", "1px");
     await expect(page.locator(".calendar-toolbar.month-toolbar")).toHaveCSS("border-top-width", "1px");
-    const todayButtonBox = await page.locator(".month-toolbar .today-button").boundingBox();
-    const cleanupButtonBox = await page.locator(".month-toolbar .calendar-bulk-delete-mobile").boundingBox();
-    expect(todayButtonBox).not.toBeNull();
+    const cleanupButtonBox = await page.locator(".calendar-bulk-delete-below").boundingBox();
     expect(cleanupButtonBox).not.toBeNull();
-    expect(Math.abs(cleanupButtonBox!.width - todayButtonBox!.width)).toBeLessThanOrEqual(1);
+    expect(cleanupButtonBox!.width).toBeGreaterThan(page.viewportSize()!.width * 0.8);
   }
+  await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-color", "rgb(17, 24, 32)");
+  await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-width", "2px");
   await expect(page.locator(".today-next-work strong")).toHaveText(
     /^[a-zà-ÿ]+ \d{2}\/\d{2}\/\d{2}(?: — Formation)?$/i,
   );
@@ -993,22 +1009,19 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   expect(periodNavigationBox).not.toBeNull();
   expect(monthCardBox).not.toBeNull();
   if ((page.viewportSize()?.width || 0) >= 1101) {
-    const [toolbarBox, monthPickerBox, yearPickerBox, todayButtonBox] = await Promise.all([
+    const [toolbarBox, monthPickerBox, yearPickerBox] = await Promise.all([
       page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
       page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
       page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
-      page.locator(".month-toolbar .today-button").boundingBox(),
     ]);
     expect(toolbarBox).not.toBeNull();
     expect(monthPickerBox).not.toBeNull();
     expect(yearPickerBox).not.toBeNull();
-    expect(todayButtonBox).not.toBeNull();
     expect(Math.abs(monthPickerBox!.width - yearPickerBox!.width)).toBeLessThanOrEqual(1);
-    expect(Math.abs(yearPickerBox!.width - todayButtonBox!.width)).toBeLessThanOrEqual(1);
-    expect(Math.abs(monthPickerBox!.height - todayButtonBox!.height)).toBeLessThanOrEqual(1);
-    expect(todayButtonBox!.x + todayButtonBox!.width).toBeGreaterThan(
+    expect(yearPickerBox!.x + yearPickerBox!.width).toBeGreaterThan(
       toolbarBox!.x + toolbarBox!.width - 32,
     );
+    await expect(page.locator(".month-toolbar .today-button")).toHaveCount(0);
   }
   expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
   expect(leavePanelBox!.y + leavePanelBox!.height).toBeLessThan(monthCardBox!.y);
@@ -1195,10 +1208,10 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   const headerBox = await page.locator(".top-header").boundingBox();
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
   const [
-    foldToolbarBox,
     foldMonthBox,
     foldYearBox,
     foldTodayBox,
+    foldWorkedDaysBox,
     foldModeBarBox,
     foldOverviewBox,
     foldStatusBox,
@@ -1207,10 +1220,10 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
     foldRemainingBox,
   ] =
     await Promise.all([
-      page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
       page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
       page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
-      page.locator(".month-toolbar .today-button").boundingBox(),
+      page.locator(".planning-today-button").boundingBox(),
+      page.locator(".worked-days-trigger").boundingBox(),
       page.locator(".home-view-mode-bar").boundingBox(),
       page.locator(".today-overview").boundingBox(),
       page.locator(".today-status").boundingBox(),
@@ -1219,10 +1232,7 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
       page.locator(".today-remaining-work").boundingBox(),
     ]);
   expect(Math.abs(foldMonthBox!.width - foldYearBox!.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(foldYearBox!.width - foldTodayBox!.width)).toBeLessThanOrEqual(1);
-  expect(foldTodayBox!.x + foldTodayBox!.width).toBeGreaterThan(
-    foldToolbarBox!.x + foldToolbarBox!.width - 32,
-  );
+  expect(Math.abs(foldTodayBox!.width - foldWorkedDaysBox!.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(foldModeBarBox!.width - foldOverviewBox!.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(foldStatusBox!.y - foldNextWorkBox!.y)).toBeLessThanOrEqual(2);
   expect(Math.abs(foldLeaveBox!.y - foldRemainingBox!.y)).toBeLessThanOrEqual(2);

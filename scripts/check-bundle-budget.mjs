@@ -10,7 +10,10 @@ const KIB = 1024;
 // Ces budgets laissent une petite marge au-dessus de la version validée.
 // Toute hausse plus importante doit être justifiée et revue explicitement.
 const budgets = {
-  entryJavaScript: { raw: 500 * KIB, gzip: 150 * KIB },
+  // Les rubriques principales sont incluses dès l’ouverture pour éviter tout
+  // écran de chargement pendant la navigation. Ce plafond garde environ 4 %
+  // de marge au-dessus de la version statique validée.
+  entryJavaScript: { raw: 590 * KIB, gzip: 170 * KIB },
   // Inclut aussi le moteur PDF autonome du formulaire, volontairement différé.
   largestSecondaryJavaScript: { raw: 900 * KIB, gzip: 330 * KIB },
   totalJavaScript: { raw: 2_500 * KIB, gzip: 790 * KIB },
