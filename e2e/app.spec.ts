@@ -914,6 +914,23 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(remainingWorkCard).toBeVisible();
   await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
   await expect(remainingWorkCard).toContainText("D’ici au 31 décembre");
+  if (viewportWidth > 720) {
+    const [statusBox, nextWorkBox, leaveBox, remainingBox] = await Promise.all([
+      page.locator(".today-status").boundingBox(),
+      page.locator(".today-next-work").boundingBox(),
+      page.locator(".today-leave-balance").boundingBox(),
+      remainingWorkCard.boundingBox(),
+    ]);
+    expect(statusBox).not.toBeNull();
+    expect(nextWorkBox).not.toBeNull();
+    expect(leaveBox).not.toBeNull();
+    expect(remainingBox).not.toBeNull();
+    expect(Math.abs(statusBox!.y - nextWorkBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(leaveBox!.y - remainingBox!.y)).toBeLessThanOrEqual(2);
+    expect(leaveBox!.y).toBeGreaterThan(statusBox!.y + statusBox!.height);
+    expect(Math.abs(statusBox!.width - nextWorkBox!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
+  }
   if (viewportWidth <= 720) {
     await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", "6px");
     await expect(page.locator(".planning-workspace-shell.framed")).toHaveCSS("border-top-width", "0px");
@@ -1177,7 +1194,18 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
 
   const headerBox = await page.locator(".top-header").boundingBox();
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
-  const [foldToolbarBox, foldMonthBox, foldYearBox, foldTodayBox, foldModeBarBox, foldOverviewBox] =
+  const [
+    foldToolbarBox,
+    foldMonthBox,
+    foldYearBox,
+    foldTodayBox,
+    foldModeBarBox,
+    foldOverviewBox,
+    foldStatusBox,
+    foldNextWorkBox,
+    foldLeaveBox,
+    foldRemainingBox,
+  ] =
     await Promise.all([
       page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
       page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
@@ -1185,6 +1213,10 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
       page.locator(".month-toolbar .today-button").boundingBox(),
       page.locator(".home-view-mode-bar").boundingBox(),
       page.locator(".today-overview").boundingBox(),
+      page.locator(".today-status").boundingBox(),
+      page.locator(".today-next-work").boundingBox(),
+      page.locator(".today-leave-balance").boundingBox(),
+      page.locator(".today-remaining-work").boundingBox(),
     ]);
   expect(Math.abs(foldMonthBox!.width - foldYearBox!.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(foldYearBox!.width - foldTodayBox!.width)).toBeLessThanOrEqual(1);
@@ -1192,6 +1224,10 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
     foldToolbarBox!.x + foldToolbarBox!.width - 32,
   );
   expect(Math.abs(foldModeBarBox!.width - foldOverviewBox!.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(foldStatusBox!.y - foldNextWorkBox!.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(foldLeaveBox!.y - foldRemainingBox!.y)).toBeLessThanOrEqual(2);
+  expect(foldLeaveBox!.y).toBeGreaterThan(foldStatusBox!.y + foldStatusBox!.height);
+  expect(Math.abs(foldStatusBox!.width - foldNextWorkBox!.width)).toBeLessThanOrEqual(2);
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   const [otherBox, strikeBox, cetBox] = await Promise.all([
