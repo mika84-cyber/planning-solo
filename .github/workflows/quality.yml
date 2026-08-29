@@ -29,7 +29,7 @@ jobs:
       - run: npm run check:ci
       - name: Conserver le rapport de couverture
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: couverture
           path: coverage/
@@ -52,7 +52,7 @@ jobs:
       - run: npm run test:e2e
       - name: Conserver le rapport Playwright
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright
           path: playwright-report/
