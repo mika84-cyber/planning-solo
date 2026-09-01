@@ -45,6 +45,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
 - `src/PlanningCommandCenter.tsx` et `src/PlanningDayCell.tsx` : commandes du
   calendrier et rendu interactif d’une journée.
+- `src/WorkExchangeDialog.tsx`, `src/WorkExchangePanel.tsx`,
+  `src/workExchange.ts` et `src/useWorkExchangeActions.ts` : échanges complets
+  entre collègues, toujours constitués d’une date cédée et d’une date rendue,
+  sans ordre chronologique imposé et sans effet sur la paie ni les congés.
 - `src/LeaveManagementPage.tsx` : composition de la page congés et
   récupérations.
 - `src/PayPage.tsx`, `src/PayAllowancesSection.tsx` et
@@ -57,6 +61,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/UserGuideDialogs.tsx` : mode d’emploi chargé uniquement lorsqu’il est
   ouvert.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
+- `src/WorkAccidentSection.tsx` et `src/useWorkAccidentActions.ts` : procédure
+  fonctionnaire/contractuel, contacts, documents et périodes d’accident de
+  travail marquées dans le planning sans carence ; seuls les CA superposés sont
+  retirés et recrédités automatiquement, les autres congés restant modifiables.
 - `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande, navigation par espace et périodes
@@ -110,6 +118,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `netlify/lib/calendarRead.mts` : chargement et tri des données du compte.
 - `netlify/lib/calendar-actions/` : un gestionnaire indépendant par action
   d’écriture du calendrier ; `index.mts` contient le dispatch explicite.
+  `work-exchange.mts` enregistre ou supprime atomiquement les deux cases d’un
+  échange et restaure leur état précédent en cas d’échec.
 - `netlify/lib/calendarShared.mts` : types, validations et utilitaires partagés
   par les gestionnaires du calendrier.
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,

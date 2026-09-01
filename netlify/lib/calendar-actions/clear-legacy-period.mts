@@ -31,7 +31,8 @@ export async function handleClearLegacyPeriod(
       !next.leave &&
       !next.wish &&
       !next.holiday_pay &&
-      !next.closure_override
+      !next.closure_override &&
+      !next.exchange_id
     )
       await store.delete(blob.key);
     else await store.setJSON(blob.key, next);

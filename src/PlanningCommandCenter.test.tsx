@@ -10,7 +10,10 @@ const baseProps = {
   group: 2,
   onGroupChange: vi.fn(),
   workedDays: {
-    month: { worked: 16, scheduled: 18, onLeave: 1, exceptionallyClosed: 1 },
+    month: {
+      worked: 16, scheduled: 18, onLeave: 1, exceptionallyClosed: 1,
+      exchangedGiven: 1, exchangedReturned: 1,
+    },
     thirds: [{
       label: "3e tiers",
       range: "septembre à décembre",
@@ -19,6 +22,8 @@ const baseProps = {
       scheduled: 45,
       onLeave: 2,
       exceptionallyClosed: 1,
+      exchangedGiven: 1,
+      exchangedReturned: 1,
     }],
   },
   totals: { work: 16, training: 2, workedHoliday: 1 },

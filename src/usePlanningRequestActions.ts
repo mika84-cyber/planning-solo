@@ -1,8 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import {
   calendarErrorMessage,
+  postCalendarBatch,
   postCalendarPeriodsVerified,
 } from "./calendarApi";
+import { prepareAbsenceReplacement } from "./absenceReplacement";
 import { createClientId } from "./clientId";
 import { type FormProfile, type LeavePeriod, type SelectedDay } from "./appModel";
 import { cetBalance } from "./cet";
@@ -14,6 +16,7 @@ import {
 } from "./overtime";
 import {
   groupConsecutive,
+  leaveTypeLabel,
   type HalfMoment,
   type LeaveType,
 } from "./planningLogic";
@@ -84,7 +87,9 @@ type PlanningRequestActionsOptions = {
   userEmail: string;
   workQuota: WorkQuota;
   recoveryBalanceRemaining: number;
+  periods: LeavePeriod[];
   setPeriods: Dispatch<SetStateAction<LeavePeriod[]>>;
+  reloadCalendar: () => Promise<void>;
   cancelRequest: () => void;
   notify: (message: string) => void;
   showSuccess: (message: string) => void;
@@ -101,7 +106,9 @@ export function usePlanningRequestActions({
   userEmail,
   workQuota,
   recoveryBalanceRemaining,
+  periods,
   setPeriods,
+  reloadCalendar,
   cancelRequest,
   notify,
   showSuccess: confirm,
@@ -152,10 +159,30 @@ export function usePlanningRequestActions({
         leaveType,
         group,
       }));
+      const sickReplacement = leaveType === "sick"
+        ? prepareAbsenceReplacement({
+            periods,
+            replacements: inputs.map((period) => ({
+              ...period,
+              leaveType: "sick" as const,
+            })),
+          })
+        : null;
+      if (sickReplacement?.conflict) {
+        notify(`${leaveTypeLabel(sickReplacement.conflict.leaveType || "annual")} est déjà enregistré sur une date sélectionnée. Retirez cette absence avant d’ajouter l’arrêt maladie.`);
+        return;
+      }
       setSavingRequest(true);
       try {
         let saved: LeavePeriod[];
-        if (demoMode) {
+        if (sickReplacement && demoMode) {
+          saved = [];
+          setPeriods(sickReplacement.nextPeriods);
+        } else if (sickReplacement) {
+          saved = [];
+          await postCalendarBatch(sickReplacement.operations);
+          await reloadCalendar();
+        } else if (demoMode) {
           saved = inputs.map((period) => ({
             ...period,
             halfMoment: "",
@@ -181,16 +208,19 @@ export function usePlanningRequestActions({
             updatedAt: period.updated_at,
           }));
         }
-        setPeriods((current) =>
-          [...current, ...saved].sort((a, b) => a.from.localeCompare(b.from)),
-        );
+        if (!sickReplacement)
+          setPeriods((current) =>
+            [...current, ...saved].sort((a, b) => a.from.localeCompare(b.from)),
+          );
         cancelRequest();
         confirm(
           leaveType === "other"
             ? "Divers est ajouté au planning, sans modifier la paie ni les soldes."
             : leaveType === "strike"
               ? "La grève est enregistrée et l’estimation de paie est à jour."
-            : "L’arrêt maladie est enregistré et l’estimation de paie est à jour.",
+            : sickReplacement?.refunded
+              ? "L’arrêt maladie est enregistré. Les congés annuels remplacés ont été recrédités dans votre solde de CA."
+              : "L’arrêt maladie est enregistré et l’estimation de paie est à jour.",
         );
       } catch (error) {
         notify(

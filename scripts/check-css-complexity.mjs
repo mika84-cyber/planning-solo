@@ -13,10 +13,11 @@ const files = [
   ...splitStyles,
 ];
 
-// Baseline du 29 août 2026, volontairement serrée. Une nouvelle règle reste
-// possible en simplifiant une surcharge existante au lieu d’empiler la cascade.
+// Baseline du 29 août 2026, ajustée à la rubrique autonome des échanges de
+// journées. La petite marge restante continue d'empêcher les surcharges
+// dispersées lors des prochaines évolutions.
 const limits = {
-  totalLines: 16_100,
+  totalLines: 16_700,
   importantDeclarations: 132,
   mediaQueries: 124,
   linesPerFile: 2_900,

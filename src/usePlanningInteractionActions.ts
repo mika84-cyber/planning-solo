@@ -95,6 +95,7 @@ type PlanningInteractionActionsOptions = {
   cancelRequest: () => void;
   saveStrikeDateDirect: (date: string) => Promise<void>;
   notify: (message: string) => void;
+  isExchangeDate?: (date: string) => boolean;
 };
 
 export function usePlanningInteractionActions({
@@ -114,6 +115,7 @@ export function usePlanningInteractionActions({
   cancelRequest,
   saveStrikeDateDirect,
   notify,
+  isExchangeDate = () => false,
 }: PlanningInteractionActionsOptions) {
   const {
     dayDate,
@@ -368,6 +370,13 @@ export function usePlanningInteractionActions({
       return;
     }
     const key = dateKey(date);
+    if (
+      isExchangeDate(key) &&
+      (recoveryRangeSelecting || recoveryDatePicking || rangeSelecting || requestKind)
+    ) {
+      notify("Cette journée appartient à un échange. Modifiez ou supprimez d’abord l’échange complet.");
+      return;
+    }
     if (recoveryRangeSelecting) {
       setRecoveryRangeDates((current) => toggleSortedDate(current, key));
       return;
@@ -491,21 +500,17 @@ export function usePlanningInteractionActions({
     }, 450);
     changePeriod(deltaX < 0 ? 1 : -1);
   }
-  /** Change le mois affiché dans « Infos primes », par glissement ou par
-   *  flèche — indépendant du mode (mois ou année), puisque ce panneau reste
-   *  consultable dans les deux. */
-  function changeAllowancesMonth(delta: 1 | -1) {
-    setView((current) =>
-      localDate(current.getFullYear(), current.getMonth() + delta, 1),
-    );
-  }
-
   function startCalendarCleanup() {
     cancelRequest();
     cancelRangeSelection();
     cancelNoteSelection();
     setCalendarDeleteDates([]);
     setCalendarDeleteMode(true);
+    if (window.matchMedia("(min-width: 721px)").matches)
+      window.setTimeout(() => {
+        const panel = document.getElementById("calendar-delete-panel");
+        panel?.focus({ preventScroll: true });
+      }, 80);
   }
 
   function cancelCalendarCleanup() {
@@ -530,7 +535,6 @@ export function usePlanningInteractionActions({
     changePeriod,
     startMonthSwipe,
     endMonthSwipe,
-    changeAllowancesMonth,
     startCalendarCleanup,
     cancelCalendarCleanup,
   };

@@ -44,7 +44,7 @@ export async function handleSaveEntry(
       ? new Date().toISOString()
       : previous?.note_updated_at || new Date().toISOString()
     : "";
-  if (!noteText && !leave && !wish && !holidayPay && !closureOverride) {
+  if (!noteText && !leave && !wish && !holidayPay && !closureOverride && !previous?.exchange_id) {
     await store.delete(key);
     return json({ ok: true, deleted: true });
   }
@@ -59,6 +59,11 @@ export async function handleSaveEntry(
     wish,
     holiday_pay: holidayPay,
     closure_override: closureOverride || undefined,
+    exchange_id: previous?.exchange_id,
+    exchange_role: previous?.exchange_role,
+    exchange_partner: previous?.exchange_partner,
+    exchange_partner_group: previous?.exchange_partner_group,
+    exchange_other_date: previous?.exchange_other_date,
     updated_at: new Date().toISOString(),
   } satisfies CalendarEntry);
   return json({ ok: true, noteUpdatedAt });

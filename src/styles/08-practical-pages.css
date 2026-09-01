@@ -2,15 +2,13 @@
    mêmes profondeurs, tout en conservant la couleur propre à chaque rubrique. */
 .pdf-download-screen,
 .useful-forms-screen,
-.useful-contacts-screen,
-.pay-functions-layout {
+.useful-contacts-screen {
   --secondary-copy: #43566d;
   --secondary-muted: #5e6f83;
 }
 .pdf-download-screen .native-screen-heading p,
 .useful-forms-screen .native-screen-heading p,
 .useful-contacts-screen .native-screen-heading p,
-.pay-functions-layout small,
 .pdf-download-screen small,
 .useful-forms-screen small,
 .useful-contacts-screen small,
@@ -23,15 +21,13 @@
 .pdf-format-panel,
 .useful-resource-search,
 .useful-form-folder,
-.useful-contact-directory-grid > button,
-.pay-functions-layout .allowance-card {
+.useful-contact-directory-grid > button {
   box-shadow: 0 8px 22px rgba(36, 59, 87, 0.075);
 }
 
 .useful-form-folder,
 .useful-contact-directory-grid > button,
-.pdf-action,
-.pay-functions-layout button {
+.pdf-action {
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
@@ -114,8 +110,7 @@
 @media (min-width: 721px) {
   .pdf-download-screen,
   .useful-forms-screen,
-  .useful-contacts-screen,
-  .pay-functions-layout {
+  .useful-contacts-screen {
     gap: 18px;
   }
 
@@ -129,8 +124,7 @@
 @media (max-width: 720px) {
   .pdf-download-screen,
   .useful-forms-screen,
-  .useful-contacts-screen,
-  .pay-functions-layout {
+  .useful-contacts-screen {
     gap: 10px;
   }
 
@@ -143,6 +137,7 @@
 
 /* Recherche commune aux deux bibliothèques pratiques. */
 .useful-resource-search {
+  position: relative;
   display: grid;
   gap: 7px;
   margin: 0 0 18px;
@@ -152,6 +147,18 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.useful-resource-search-icon {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 48px;
+  color: #315c91;
+  pointer-events: none;
+}
+.useful-resource-search-icon svg { width: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 2; }
 .useful-resource-search input {
   width: 100%;
   min-height: 48px;

@@ -23,6 +23,9 @@ import { HomeDashboard } from "./HomeDashboard";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
 import { usePayActions } from "./usePayActions";
+import type { PayDashboardAlert, PayDashboardVariable } from "./PayDashboard";
+import type { PayCalculationBreakdown } from "./PayEstimateDetails";
+import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 import { useWorkTimeUiState } from "./useWorkTimeUiState";
 import { useWorkTimeActions } from "./useWorkTimeActions";
 import { useAuthenticationActions } from "./useAuthenticationActions";
@@ -33,6 +36,8 @@ import { usePlanningEntryActions } from "./usePlanningEntryActions";
 import { usePlanningEditorActions } from "./usePlanningEditorActions";
 import { usePlanningInteractionActions } from "./usePlanningInteractionActions";
 import { usePlanningRequestActions } from "./usePlanningRequestActions";
+import { useWorkExchangeActions } from "./useWorkExchangeActions";
+import { useWorkAccidentActions } from "./useWorkAccidentActions";
 import { useAppShellUiState } from "./useAppShellUiState";
 import { AppDialogLayer } from "./AppDialogLayer";
 import {
@@ -41,10 +46,15 @@ import {
   MAIN_SECTION_ORDER,
 } from "./AppNavigation";
 import { PlanningCommandCenter } from "./PlanningCommandCenter";
-import { CalendarCleanupTrigger } from "./CalendarCleanup";
+import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
 import { PlanningDayCell } from "./PlanningDayCell";
 import { MonthCalendar } from "./PlanningView";
+import { WorkExchangeDialog } from "./WorkExchangeDialog";
+import { WorkExchangePanel } from "./WorkExchangePanel";
+import { colleagueObjectPronoun } from "./colleaguePronoun";
+import { workExchangeForDate } from "./workExchange";
 import { RequestValidationSummary } from "./RequestValidationSummary";
+import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
   GrandPalaisProgramSection,
@@ -319,7 +329,7 @@ export default function Home() {
     ) as Record<keyof ManualYearAdjustments, string>,
   );
   const {
-    payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
+    payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
     payPeriodOpen, setPayPeriodOpen, payMonthSlide, setPayMonthSlide,
     payMonthSlideTimer, payslipCheck, setPayslipCheck, payslipError, setPayslipError,
     payslipImportBusy, setPayslipImportBusy, payslipImportError, setPayslipImportError,
@@ -327,7 +337,7 @@ export default function Home() {
     payslipNeedsPeriod, setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
     payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
     payslipHelpOpen, setPayslipHelpOpen, payslipResultDetailsOpen, setPayslipResultDetailsOpen,
-    paySettingsOpen, setPaySettingsOpen,
+    paySettingsOpen, setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,
     payDrafts, setPayDrafts, savingPay, setSavingPay,
   } = usePayUiState();
   const appShellUi = useAppShellUiState();
@@ -379,7 +389,7 @@ export default function Home() {
   }, [installationEnabled]);
 
   useEffect(() => {
-    if (authStatus !== "ready") return;
+    if (authStatus !== "ready" || publicDemoAccess.active) return;
     let active = true;
     void getSharedGrandPalaisProgram()
       .then((payload) => {
@@ -391,7 +401,7 @@ export default function Home() {
         if (active) setIsProgramAdmin(import.meta.env.DEV && demoMode);
       });
     return () => { active = false; };
-  }, [authStatus, demoMode]);
+  }, [authStatus, demoMode, publicDemoAccess.active]);
 
   useEffect(() => {
     const expiresAt = import.meta.env.VITE_PUBLIC_DEMO_UNTIL;
@@ -406,7 +416,7 @@ export default function Home() {
     return () => query.removeEventListener("change", update);
   }, []);
   useEffect(() => {
-    if (authStatus !== "ready") return;
+    if (authStatus !== "ready" || publicDemoAccess.active) return;
     let active = true;
     void getUsefulContacts()
       .then((payload) => {
@@ -416,7 +426,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [authStatus]);
+  }, [authStatus, publicDemoAccess.active]);
   useEffect(() => {
     const showUpdateAlert = () => {
       setAppUpdateAvailable(true);
@@ -496,6 +506,8 @@ export default function Home() {
     recoveryUses,
     legacyOtherDates,
     wishDates,
+    entries,
+    (key) => Boolean(exceptionalClosureFor(key)),
     notify,
   );
   useEffect(
@@ -870,6 +882,22 @@ export default function Home() {
     return grandPalaisExceptionalClosure(key, approvedGrandPalaisUpdates);
   }
 
+  const workExchangeUi = useWorkExchangeActions({
+    group,
+    entries,
+    setEntries,
+    periods,
+    recoveryUses,
+    demoMode,
+    isExceptionallyClosed: (key) => Boolean(exceptionalClosureFor(key)),
+    showSuccess: confirm,
+  });
+  const {
+    exchanges: workExchanges,
+    openNew: openWorkExchange,
+    openEdit: editWorkExchange,
+  } = workExchangeUi;
+
   const totals = useMemo(() => {
     const result = { work: 0, training: 0, workedHoliday: 0 };
     const fullDayMinutes = dailyMinutesForQuota(formProfile?.workQuota || "full");
@@ -885,16 +913,21 @@ export default function Home() {
         const exceptionallyClosed = Boolean(
           exceptionalClosureFor(key),
         );
-        const notWorked =
+        const exchangeRole = entries[key]?.exchangeRole || "";
+        const unavailableWithoutExchange =
           exceptionallyClosed ||
           Boolean(entries[key]?.leave) ||
           periods.some((period) => key >= period.from && key <= period.to) ||
           recoveryUses
             .filter((item) => item.date === key)
             .reduce((total, item) => total + item.minutes, 0) >= fullDayMinutes;
-        if (info.kind === "work" && !notWorked) result.work++;
+        const notWorked = unavailableWithoutExchange || exchangeRole === "given";
+        if ((info.kind === "work" && !notWorked) || (info.kind === "off" && exchangeRole === "return"))
+          result.work++;
         if (info.kind === "training" && !exceptionallyClosed) result.training++;
-        if (info.holiday && info.kind === "work" && !notWorked)
+        // La paie et les droits liés au cycle restent théoriques : l'échange
+        // modifie la présence affichée, jamais le férié de référence.
+        if (info.holiday && info.kind === "work" && !unavailableWithoutExchange)
           result.workedHoliday++;
       }
     }
@@ -921,6 +954,7 @@ export default function Home() {
         recoveryUses,
         dailyMinutesForQuota(formProfile?.workQuota || "full"),
         (key) => Boolean(exceptionalClosureFor(key)),
+        (key) => entries[key]?.exchangeRole || "",
       ),
       thirds: YEAR_THIRDS.map((third) => ({
         label: third.label,
@@ -936,6 +970,7 @@ export default function Home() {
           recoveryUses,
           dailyMinutesForQuota(formProfile?.workQuota || "full"),
           (key) => Boolean(exceptionalClosureFor(key)),
+          (key) => entries[key]?.exchangeRole || "",
         ),
       })),
     };
@@ -952,6 +987,7 @@ export default function Home() {
         recoveryUses,
         dailyMinutesForQuota(formProfile?.workQuota || "full"),
         (key) => Boolean(exceptionalClosureFor(key)),
+        (key) => entries[key]?.exchangeRole || "",
       ).worked,
     [now, group, periods, entries, recoveryUses, formProfile?.workQuota, approvedGrandPalaisUpdates],
   );
@@ -971,7 +1007,7 @@ export default function Home() {
       ),
     [mecenatDraft.start, mecenatDraft.end, workQuota],
   );
-  const payYear = String(view.getFullYear());
+  const payYear = String(payView.getFullYear());
   const activePayProfile = payProfiles[payYear];
   const hasPayValue = (field: keyof PayProfile) =>
     activePayProfile?.[field] !== undefined || formProfile?.[field] !== undefined;
@@ -990,13 +1026,17 @@ export default function Home() {
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
   const cia = activePayProfile?.cia ?? formProfile?.cia ?? 0;
   const ciaMonth = activePayProfile?.ciaMonth ?? formProfile?.ciaMonth;
+  const residenceAllowance =
+    activePayProfile?.residenceAllowance ??
+    formProfile?.residenceAllowance ??
+    (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : undefined);
   const viewedPayRegime = payCalibrationRegime(
-    view.getFullYear(),
-    view.getMonth(),
+    payView.getFullYear(),
+    payView.getMonth(),
   );
   const defaultNetRatios = defaultNetRatiosForPeriod(
-    view.getFullYear(),
-    view.getMonth(),
+    payView.getFullYear(),
+    payView.getMonth(),
   );
   // Les profils antérieurs à ce champ ont tous été calibrés sous le régime
   // collectif actuel : on les traite comme tels pour ne pas changer les
@@ -1059,7 +1099,7 @@ export default function Home() {
    *  carences.
    */
   const sickLeaves = useMemo(() => {
-    const year = String(view.getFullYear());
+    const year = String(payView.getFullYear());
     const sickDays = new Set<string>();
     for (const period of periods) {
       if (period.leaveType !== "sick") continue;
@@ -1092,7 +1132,7 @@ export default function Home() {
       days: arrets.reduce((total, arret) => total + arret.days, 0),
       total: arrets.reduce((total, arret) => total + arret.total, 0),
     };
-  }, [view, periods, baseSalary, ifse, carenceDay]);
+  }, [payView, periods, baseSalary, ifse, carenceDay]);
 
   /* Le choix ne s'affiche que sur un férié effectivement travaillé : ni posé
      en congé, ni tombé sur un repos ou une formation — `getDayInfo` a déjà
@@ -1223,7 +1263,7 @@ export default function Home() {
    *  aller chercher.
    */
   const allowances = useMemo(() => {
-    const year = view.getFullYear();
+    const year = payView.getFullYear();
     const current = collectWorkedDays(year);
     const previous = collectWorkedDays(year - 1);
     // Le versement mensuel du forfait n'entre pas ici : il tombe tous les mois
@@ -1361,7 +1401,7 @@ export default function Home() {
       sundayMonthsTotal: months.reduce((total, slot) => total + slot.sunday, 0),
     };
   }, [
-    view,
+    payView,
     group,
     entries,
     periods,
@@ -1474,11 +1514,11 @@ export default function Home() {
   }
 
   const overtimeForPayMonth = useMemo(() => {
-    return paidOvertimeForPayPeriod(view.getFullYear(), view.getMonth());
-  }, [view, payProfiles, formProfile, overtimeEntries, workQuota]);
+    return paidOvertimeForPayPeriod(payView.getFullYear(), payView.getMonth());
+  }, [payView, payProfiles, formProfile, overtimeEntries, workQuota]);
   const mecenatForCurrentPayMonth = useMemo(
-    () => mecenatForPayMonth(mecenatEntries, view.getFullYear(), view.getMonth()),
-    [mecenatEntries, view],
+    () => mecenatForPayMonth(mecenatEntries, payView.getFullYear(), payView.getMonth()),
+    [mecenatEntries, payView],
   );
   const strikeForCurrentPayMonth = useMemo(
     () =>
@@ -1486,18 +1526,18 @@ export default function Home() {
         periods,
         group,
         payProfiles,
-        view.getFullYear(),
-        view.getMonth(),
+        payView.getFullYear(),
+        payView.getMonth(),
         { entries, recoveryUses },
       ),
-    [periods, group, payProfiles, view, entries, recoveryUses],
+    [periods, group, payProfiles, payView, entries, recoveryUses],
   );
 
   /* La paie du mois affiché : les primes de ce mois-là, retenues déduites.
      C'est la question qu'on se pose en ouvrant un mois. */
   const monthPay = useMemo(() => {
     if (!allowances || !sickLeaves) return null;
-    const index = view.getMonth();
+    const index = payView.getMonth();
     const month = allowances.monthly.find((slot) => slot.index === index);
     // La retenue maladie d'un fonctionnaire (carence + 10 %/jour) ne
     // s'applique pas telle quelle à une contractuelle (IJSS, subrogation) :
@@ -1574,7 +1614,7 @@ export default function Home() {
   }, [
     allowances,
     sickLeaves,
-    view,
+    payView,
     baseSalary,
     ifse,
     otherFixed,
@@ -1618,19 +1658,31 @@ export default function Home() {
    *  le traitement porte la pension civile, les primes non —, puis l'impôt à
    *  part, pour qu'un changement de taux se corrige sans tout recalibrer.
    *  `null` tant que les taux ne sont pas renseignés. */
-  const monthNet =
+  const netCalculation =
     netEstimateComplete &&
     monthPay &&
     netRatioFixed > 0 &&
     netRatioVariable > 0
-      ? (monthPay.grossFixed * (netRatioFixed / 100) +
-          monthPay.grossVariable * (netRatioVariable / 100) +
-          navigo -
+      ? (() => {
+          const netFromGross =
+            monthPay.grossFixed * (netRatioFixed / 100) +
+            monthPay.grossVariable * (netRatioVariable / 100);
           // Jamais prélevés en décembre, confirmé sur les bulletins de 2024
           // et 2025 : la ligne « Titres repas carte » y est absente.
-          (monthPay.index === 11 ? 0 : mealVoucherDeduction)) *
-        (1 - (pasRate / 100) * PAS_BASE_ADJUSTMENT)
+          const mealVouchers = monthPay.index === 11 ? 0 : mealVoucherDeduction;
+          const netBeforeTax = netFromGross + navigo - mealVouchers;
+          const incomeTax = netBeforeTax * (pasRate / 100) * PAS_BASE_ADJUSTMENT;
+          return {
+            netFromGross,
+            estimatedContributions: monthPay.gross - netFromGross,
+            mealVouchers,
+            netBeforeTax,
+            incomeTax,
+            net: netBeforeTax - incomeTax,
+          };
+        })()
       : null;
+  const monthNet = netCalculation?.net ?? null;
 
   const leaveStats = useMemo(() => {
     const year = absenceYear;
@@ -1664,6 +1716,7 @@ export default function Home() {
       exceptional: { used: 0, details: [] },
       other: { used: 0, details: [] },
       cet: { used: 0, details: [] },
+      work_accident: { used: 0, details: [] },
     };
     for (const period of periods) {
       if (
@@ -1799,10 +1852,12 @@ export default function Home() {
       month.units += detail.units;
       month.details.push(detail);
     }
-    return months.map((month) => ({
-      ...month,
-      details: month.details.sort((a, b) => b.date.localeCompare(a.date)),
-    }));
+    return months
+      .map((month) => ({
+        ...month,
+        details: month.details.sort((a, b) => b.date.localeCompare(a.date)),
+      }))
+      .filter((month) => month.details.length > 0);
   }, [absenceYear, balanceDetail]);
 
   const upcoming = useMemo(() => {
@@ -1883,8 +1938,9 @@ export default function Home() {
         : coWorkingGroups.length > 1
           ? `avec les groupes ${coWorkingGroups.join(" et ")}`
           : "sans autre groupe programmé";
-    const period = periods.find((item) => key >= item.from && key <= item.to);
+    const period = visibleAbsencePeriod(periods, key);
     const entry = entries[key];
+    const todayExchange = workExchangeForDate(entries, key);
     const todayRecoveryMinutes = recoveryUses
       .filter((item) => item.date === key)
       .reduce((total, item) => total + item.minutes, 0);
@@ -1898,6 +1954,11 @@ export default function Home() {
     if (todayExceptionalClosure && info.kind === "work") {
       status = "Fermeture exceptionnelle";
       tone = "off";
+    } else if (todayExchange) {
+      status = entry?.exchangeRole === "given"
+        ? `Repos · remplacé par ${todayExchange.partnerName}`
+        : `Travail · remplacement de ${todayExchange.partnerName}`;
+      tone = "exchange";
     } else if (todayRecoveryMinutes) {
       status =
         todayRecoveryMinutes >= workDayMinutes
@@ -1923,7 +1984,8 @@ export default function Home() {
       if (exceptionalClosureFor(candidateKey)) {
         return false;
       }
-      return Boolean(entries[candidateKey]?.leave) ||
+      return entries[candidateKey]?.exchangeRole === "given" ||
+        Boolean(entries[candidateKey]?.leave) ||
         Boolean(
           selections[candidateKey] &&
           selectionRemovesAttendance(selections[candidateKey].type),
@@ -1934,15 +1996,22 @@ export default function Home() {
             candidateKey <= item.to,
         ) ||
         recoveryUses.some((item) => item.date === candidateKey);
-    });
+    }, 366, (candidateKey) => entries[candidateKey]?.exchangeRole === "return");
     const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
     const nextWorkExceptionalClosure = nextWork
       ? exceptionalClosureFor(dateKey(nextWork))
       : undefined;
+    const nextWorkExchange = nextWork
+      ? workExchangeForDate(entries, dateKey(nextWork))
+      : null;
     const nextWorkGroups = nextWork
       ? coWorkingGroupsForDate(nextWork, group)
       : [];
-    const nextWorkGroupLabel = nextWorkExceptionalClosure
+    const nextWorkGroupLabel = nextWorkExchange
+      ? entries[dateKey(nextWork!)]?.exchangeRole === "return"
+        ? `Remplacement de ${nextWorkExchange.partnerName}`
+        : `Remplacé par ${nextWorkExchange.partnerName}`
+      : nextWorkExceptionalClosure
       ? "Journée normalement prévue au cycle"
       : nextWorkGroups.length === 1
       ? `Avec le groupe ${nextWorkGroups[0]}`
@@ -1960,6 +2029,7 @@ export default function Home() {
       todayGroupLabel:
         info.kind === "work" &&
         !todayExceptionalClosure &&
+        !todayExchange &&
         !period &&
         !entry?.leave &&
         todayRecoveryMinutes < workDayMinutes
@@ -1973,17 +2043,13 @@ export default function Home() {
   }, [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates]);
 
   const importantAlert =
-    view.getFullYear() === now.getFullYear() && sundayCarryover
-      ? `${sundayCarryover} dimanche${s(sundayCarryover)} en attente sur la paye${
+    payView.getFullYear() === now.getFullYear() && sundayCarryover
+      ? `${sundayCarryover} dimanche${s(sundayCarryover)} en attente${
           sundayCarryoverMonth !== undefined && sundayCarryoverYear !== undefined
-            ? ` de ${MONTHS[sundayCarryoverMonth]}${
-                sundayCarryoverYear !== now.getFullYear()
-                  ? ` ${sundayCarryoverYear}`
-                  : ""
-              }`
-            : " d’un prochain mois"
+            ? ` pour ${MONTHS[sundayCarryoverMonth]} ${sundayCarryoverYear}`
+            : " pour un prochain bulletin"
         }`
-      : view.getFullYear() === now.getFullYear() && allowances?.holidayPending
+      : payView.getFullYear() === now.getFullYear() && allowances?.holidayPending
         ? `${allowances.holidayPending} jour${s(allowances.holidayPending)} férié${s(allowances.holidayPending)} à préciser pour la paie`
         : "";
 
@@ -2010,7 +2076,6 @@ export default function Home() {
     goToday,
     startMonthSwipe,
     endMonthSwipe,
-    changeAllowancesMonth,
     startCalendarCleanup,
     cancelCalendarCleanup,
   } = usePlanningInteractionActions({
@@ -2030,7 +2095,17 @@ export default function Home() {
     cancelRequest,
     saveStrikeDateDirect,
     notify,
+    isExchangeDate: (key) => Boolean(entries[key]?.exchangeId),
   });
+  function changePayMonth(delta: 1 | -1) {
+    setPayView((current) =>
+      localDate(current.getFullYear(), current.getMonth() + delta, 1),
+    );
+  }
+  function goPayToday() {
+    const today = new Date();
+    setPayView(localDate(today.getFullYear(), today.getMonth(), 1));
+  }
   function changeWorkQuota(nextQuota: WorkQuota) {
     const previousProfile = formProfile;
     const nextProfile: FormProfile = {
@@ -2143,6 +2218,15 @@ export default function Home() {
     notify,
     showSuccess: confirm,
     offerUndo,
+  });
+  const { saveWorkAccident, deleteWorkAccident } = useWorkAccidentActions({
+    demoMode,
+    group,
+    periods,
+    setPeriods,
+    reloadCalendar: loadCalendar,
+    notify,
+    showSuccess: confirm,
   });
   function cancelRequest() {
     setRequestKind(null);
@@ -2273,14 +2357,14 @@ export default function Home() {
       payMonthSlide ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      changeAllowancesMonth(delta);
+      changePayMonth(delta);
       return;
     }
     if (payMonthSlideTimer.current)
       window.clearTimeout(payMonthSlideTimer.current);
     setPayMonthSlide(delta > 0 ? "out-left" : "out-right");
     payMonthSlideTimer.current = window.setTimeout(() => {
-      changeAllowancesMonth(delta);
+      changePayMonth(delta);
       setPayMonthSlide(delta > 0 ? "in-right" : "in-left");
       payMonthSlideTimer.current = window.setTimeout(() => {
         setPayMonthSlide("");
@@ -2315,7 +2399,9 @@ export default function Home() {
     userEmail,
     workQuota,
     recoveryBalanceRemaining: recoveryBalance.remaining,
+    periods,
     setPeriods,
+    reloadCalendar: loadCalendar,
     cancelRequest,
     notify,
     showSuccess: confirm,
@@ -2340,7 +2426,7 @@ export default function Home() {
         cleanupSelected={calendarDeleteMode && calendarDeleteDates.includes(key)}
         today={sameDate(date, now)}
         recoveryEntries={recoveryUses.filter((item) => item.date === key)}
-        leavePeriod={periods.find((period) => key >= period.from && key <= period.to)}
+        leavePeriod={visibleAbsencePeriod(periods, key)}
         showLeaves={showLeaves}
         showNotes={showNotes}
         inPendingRange={inPendingRange}
@@ -2349,6 +2435,8 @@ export default function Home() {
         noteSelecting={noteSelecting}
         noteColor={noteColor}
         exceptionalClosure={exceptionalClosureFor(key)}
+        exchange={workExchangeForDate(entries, key)}
+        workAccident={periods.some((period) => period.leaveType === "work_accident" && key >= period.from && key <= period.to)}
         onClick={() => handleDay(date)}
       />
     );
@@ -2397,6 +2485,7 @@ export default function Home() {
 
   const {
     savePayAmount,
+    saveAnnualPayProfile,
     saveCiaMonth,
     nextSundayPayoutSlot,
     reportMissingSundays,
@@ -2408,8 +2497,8 @@ export default function Home() {
   } = usePayActions({
     demoMode,
     group,
-    view,
-    setView,
+    payView,
+    setPayView,
     formProfile,
     setFormProfile,
     payProfiles,
@@ -2532,7 +2621,7 @@ export default function Home() {
 
   /** Le volet de vérification d'un bulletin, séparé des primes : on y va pour
    *  contrôler, pas pour consulter. */
-  function renderPayslipCheck() {
+  function renderPayContent() {
     if (!allowances || !monthPay || !sickLeaves) return null;
     const missing = netEstimateMissing.length > 0;
     const showPayslipHelp = payslipHelpOpen;
@@ -2647,10 +2736,10 @@ export default function Home() {
     const comparablePayslip =
       payslipCheck?.reading.month !== undefined &&
       payslipCheck.reading.year === allowances.year &&
-      payslipCheck.reading.month === view.getMonth();
+      payslipCheck.reading.month === payView.getMonth();
     const payslipMonth = comparablePayslip
       ? (payslipCheck.reading.month as number)
-      : view.getMonth();
+      : payView.getMonth();
     const unplannedPayslipCarence = comparablePayslip && isUnplannedPayslipCarence(
       payslipCheck.reading.carenceDay,
       sickLeaves.byMonth[payslipMonth]?.days || 0,
@@ -2748,6 +2837,84 @@ export default function Home() {
               detail: "Le montant sera recalculé lorsqu’un bulletin plus récent sera renseigné.",
             };
 
+    const otherFixedWithoutResidence =
+      residenceAllowance === undefined ? otherFixed : otherFixed - residenceAllowance;
+    const grossDeductionRows = monthPayRows
+      .filter((row) => row.key === "sick" || row.key === "strike")
+      .map((row) => ({
+        ...row,
+        amount: row.amount === null ? null : Math.abs(row.amount),
+      }));
+    const payCalculation: PayCalculationBreakdown = {
+      grossComposition: [
+        {
+          key: "base",
+          label: isContractuel ? "Traitement de base" : "Traitement indiciaire",
+          detail: "montant mensuel enregistré",
+          amount: hasPayValue("baseSalary") ? baseSalary : null,
+        },
+        residenceAllowance !== undefined
+          ? {
+              key: "residence",
+              label: "Indemnité de résidence",
+              detail: isContractuel && !hasPayValue("residenceAllowance")
+                ? "3 % du traitement de base"
+                : "valeur enregistrée",
+              amount: residenceAllowance,
+            }
+          : null,
+        !isContractuel && (ifse || hasPayValue("ifse"))
+          ? { key: "ifse", label: "IFSE", detail: "indemnité mensuelle", amount: ifse }
+          : null,
+        otherFixedWithoutResidence
+          ? {
+              key: "other-fixed",
+              label: "Autres éléments fixes",
+              detail: residenceAllowance === undefined ? "total enregistré" : "hors indemnité de résidence",
+              amount: otherFixedWithoutResidence,
+            }
+          : null,
+        {
+          key: "sunday-flat",
+          label: "Forfait mensuel de dimanches",
+          detail: "montant fixe déjà inclus dans l’estimation",
+          amount: SUNDAY_ALLOWANCE.monthlyFlat,
+        },
+        monthPay.cia
+          ? { key: "cia", label: "CIA", detail: "complément indemnitaire annuel", amount: monthPay.cia }
+          : null,
+        monthPay.sundayCount
+          ? { key: "sundays", label: `Dimanches (${monthPay.sundayCount})`, detail: monthPay.carryover ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)}` : "prime calculée", amount: monthPay.sunday }
+          : null,
+        monthPay.holidayCount
+          ? { key: "holidays", label: `Jours fériés (${monthPay.holidayCount})`, detail: monthPay.holiday ? "compensation choisie" : "compensation à décider", amount: monthPay.holiday || null }
+          : null,
+        monthPay.compensatedCount
+          ? { key: "compensated", label: `Fériés compensés (${monthPay.compensatedCount})`, detail: monthPay.compensated ? "compensation choisie" : "compensation à décider", amount: monthPay.compensated || null }
+          : null,
+        overtimeForPayMonth.totalMinutes
+          ? { key: "overtime", label: "Heures supplémentaires payées", detail: minutesLabel(overtimeForPayMonth.totalMinutes), amount: overtimeForPayMonth.ready ? overtimeForPayMonth.amount : null }
+          : null,
+        mecenatForCurrentPayMonth.lines.length
+          ? { key: "mecenat", label: "Mécénats", detail: minutesLabel(mecenatForCurrentPayMonth.totalMinutes), amount: mecenatForCurrentPayMonth.grossAmountCents / 100 }
+          : null,
+      ].filter((row): row is NonNullable<typeof row> => Boolean(row)),
+      grossDeductions: grossDeductionRows,
+      grossBeforeDeductions: monthPay.gross + monthPay.sick + monthPay.strike,
+      variableAdditions: monthPay.grossVariable,
+      netRatioFixed,
+      netRatioVariable,
+      estimatedContributions: netCalculation?.estimatedContributions ?? null,
+      navigo,
+      mealVoucherDeduction: netCalculation?.mealVouchers ?? 0,
+      netBeforeTax: netCalculation?.netBeforeTax ?? null,
+      pasRate,
+      incomeTax: netCalculation?.incomeTax ?? null,
+      totalDeductions: netCalculation
+        ? monthPay.sick + monthPay.strike + netCalculation.estimatedContributions + netCalculation.mealVouchers + netCalculation.incomeTax
+        : null,
+    };
+
     const payEstimateDetails = (
       <Suspense fallback={<DeferredSection label="la paie" />}>
       <PayEstimateDetails
@@ -2756,80 +2923,191 @@ export default function Home() {
         gross={monthPay.gross}
         grossEstimateComplete={grossEstimateComplete}
         net={monthNet}
-        rows={monthPayRows}
+        calculation={payCalculation}
         overtime={overtimeForPayMonth}
         workQuota={workQuota}
         mecenat={mecenatForCurrentPayMonth}
         reliability={payReliability}
-        onPreviousMonth={() => changeAllowancesMonth(-1)}
-        onNextMonth={() => changeAllowancesMonth(1)}
-        onToday={goToday}
+        onPreviousMonth={() => changePayMonth(-1)}
+        onNextMonth={() => changePayMonth(1)}
+        onToday={goPayToday}
       />
       </Suspense>
     );
-    return (
-      <PayslipCheckSection
-        payYear={payYear}
-        hasPayProfile={Boolean(payProfiles[payYear])}
-        helpOpen={showPayslipHelp}
-        setHelpOpen={setPayslipHelpOpen}
-        missing={missing}
-        estimateDetails={payEstimateDetails}
-        isContractuel={isContractuel}
-        importBusy={payslipImportBusy}
-        importMode={payslipImportMode}
-        importError={payslipImportError}
-        importResult={payslipImportResult}
-        onImport={(files, importMode) => void importPayslips(files, importMode)}
-        check={payslipCheck}
-        checkError={payslipError}
-        needsPeriod={payslipNeedsPeriod}
-        fallbackMonth={payslipFallbackMonth}
-        setFallbackMonth={setPayslipFallbackMonth}
-        fallbackYear={payslipFallbackYear}
-        setFallbackYear={setPayslipFallbackYear}
-        onApplyFallbackPeriod={applyPayslipFallbackPeriod}
-        allowances={allowances}
-        displayedMonth={view.getMonth()}
-        review={payslipReview}
-        unplannedCarence={unplannedPayslipCarence}
-        resultDetailsOpen={payslipResultDetailsOpen}
-        setResultDetailsOpen={setPayslipResultDetailsOpen}
-        grossForMonth={grossForMonth}
-        baseSalary={baseSalary}
-        ifse={ifse}
-        overtime={overtimeForPayMonth}
-        mecenat={mecenatForCurrentPayMonth}
-        onReportMissingSundays={(year, month, missingSundays) =>
-          void reportMissingSundays(year, month, missingSundays)
-        }
-        nextSundayPayout={nextSundayPayoutSlot}
-        sundayCarryover={sundayCarryover}
-        sundayCarryoverMonth={sundayCarryoverMonth}
-        sundayCarryoverYear={sundayCarryoverYear}
-        onClearSundayCarryover={() => void clearSundayCarryover()}
-        rateSamples={payslipRateSamples}
-        rateCalibration={payslipRateCalibration}
-        sickLeaves={sickLeaves}
-        paySettingsOpen={paySettingsOpen}
-        setPaySettingsOpen={setPaySettingsOpen}
-        missingFields={netEstimateMissing}
-        carenceDay={carenceDay}
-        otherFixed={otherFixed}
-        cia={cia}
-        netRatioFixed={netRatioFixed}
-        netRatioVariable={netRatioVariable}
-        navigo={navigo}
-        mealVoucherDeduction={mealVoucherDeduction}
-        pasRate={pasRate}
-        payDrafts={payDrafts}
-        setPayDrafts={setPayDrafts}
-        savingPay={savingPay}
-        onSavePayAmount={(field) => void savePayAmount(field)}
-        ciaMonth={ciaMonth}
-        onSaveCiaMonth={(month) => void saveCiaMonth(month)}
-      />
+    const payslipSectionProps: Omit<PayslipCheckSectionProps, "part"> = {
+      payYear,
+      hasPayProfile: Boolean(payProfiles[payYear]),
+      helpOpen: showPayslipHelp,
+      setHelpOpen: setPayslipHelpOpen,
+      missing,
+      isContractuel,
+      importBusy: payslipImportBusy,
+      importMode: payslipImportMode,
+      importError: payslipImportError,
+      importResult: payslipImportResult,
+      onImport: (files, importMode) => void importPayslips(files, importMode),
+      check: payslipCheck,
+      checkError: payslipError,
+      needsPeriod: payslipNeedsPeriod,
+      fallbackMonth: payslipFallbackMonth,
+      setFallbackMonth: setPayslipFallbackMonth,
+      fallbackYear: payslipFallbackYear,
+      setFallbackYear: setPayslipFallbackYear,
+      onApplyFallbackPeriod: applyPayslipFallbackPeriod,
+      allowances,
+      displayedMonth: payView.getMonth(),
+      review: payslipReview,
+      unplannedCarence: unplannedPayslipCarence,
+      resultDetailsOpen: payslipResultDetailsOpen,
+      setResultDetailsOpen: setPayslipResultDetailsOpen,
+      grossForMonth,
+      baseSalary,
+      ifse,
+      overtime: overtimeForPayMonth,
+      mecenat: mecenatForCurrentPayMonth,
+      onReportMissingSundays: (year, month, missingSundays) =>
+        void reportMissingSundays(year, month, missingSundays),
+      nextSundayPayout: nextSundayPayoutSlot,
+      sundayCarryover,
+      sundayCarryoverMonth,
+      sundayCarryoverYear,
+      onClearSundayCarryover: () => void clearSundayCarryover(),
+      rateSamples: payslipRateSamples,
+      rateCalibration: payslipRateCalibration,
+      sickLeaves,
+      paySettingsOpen,
+      setPaySettingsOpen,
+      missingFields: netEstimateMissing,
+      carenceDay,
+      otherFixed,
+      cia,
+      netRatioFixed,
+      netRatioVariable,
+      navigo,
+      mealVoucherDeduction,
+      pasRate,
+      payDrafts,
+      setPayDrafts,
+      savingPay,
+      onSavePayAmount: (field) => void savePayAmount(field),
+      onCreatePayProfile: () => saveAnnualPayProfile({
+        baseSalary,
+        residenceAllowance,
+        ifse,
+        carenceDay,
+        otherFixed,
+        cia,
+        ciaMonth,
+        netRatioFixed,
+        netRatioVariable,
+        netRatioRegime: viewedPayRegime,
+        navigo,
+        mealVoucherDeduction,
+        pasRate,
+      }),
+      ciaMonth,
+      onSaveCiaMonth: (month) => void saveCiaMonth(month),
+    };
+
+    const scrollToPaySection = (id: string) => {
+      window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    };
+    const openPaySettings = () => {
+      setPayAdvancedOpen(true);
+      setPaySettingsOpen(true);
+      scrollToPaySection("pay-dashboard-settings");
+    };
+    const openPayslipVerification = () => scrollToPaySection("pay-dashboard-verification");
+    const alerts: PayDashboardAlert[] = [];
+    if (!netEstimateComplete) {
+      alerts.push({
+        id: "profile-incomplete",
+        title: "Compléter le profil de paie",
+        detail: netEstimateMissing.join(", "),
+        actionLabel: "Compléter",
+        onAction: openPaySettings,
+      });
+    }
+    if (monthPay.reported) {
+      alerts.push({
+        id: "sunday-pending",
+        title: `${monthPay.reported} dimanche${s(monthPay.reported)} en attente`,
+        detail: `À contrôler pour ${MONTHS[monthPay.index]} ${allowances.year}.`,
+        actionLabel: "Vérifier",
+        onAction: openPayslipVerification,
+      });
+    }
+    const holidayChoicePending = baseSalary > 0 && (
+      (monthPay.holidayCount > 0 && monthPay.holiday === 0) ||
+      (monthPay.compensatedCount > 0 && monthPay.compensated === 0)
     );
+    if (holidayChoicePending) {
+      alerts.push({
+        id: "holiday-choice",
+        title: "Choisir une compensation de jour férié",
+        detail: "Le montant ne peut pas encore être estimé.",
+        actionLabel: "Choisir",
+        onAction: () => setPayScreen("allowances"),
+      });
+    }
+    if (monthPay.strikePotentialDays) {
+      alerts.push({
+        id: "strike-days",
+        title: "Confirmer les jours liés à la grève",
+        detail: `${monthPay.strikePotentialDays} jour${s(monthPay.strikePotentialDays)} reste${s(monthPay.strikePotentialDays)} à contrôler.`,
+        actionLabel: "Voir le calcul",
+        onAction: () => setPayScreen("payslip"),
+      });
+    }
+    if (isContractuel && monthPay.sickDays) {
+      alerts.push({
+        id: "contract-sick-leave",
+        title: "Vérifier l’impact de l’arrêt maladie",
+        detail: "Le maintien de salaire et les IJSS dépendent du bulletin.",
+        actionLabel: "Vérifier",
+        onAction: openPayslipVerification,
+      });
+    }
+    if (payslipReview?.tone === "warning") {
+      alerts.push({
+        id: "payslip-discrepancy",
+        title: "Écart détecté sur le bulletin",
+        detail: payslipReview.verdict,
+        actionLabel: "Voir les écarts",
+        onAction: openPayslipVerification,
+      });
+    }
+    if (netEstimateComplete && !payProfiles[payYear]) {
+      alerts.push({
+        id: "annual-profile",
+        title: `Actualiser le profil ${payYear}`,
+        detail: "Les dernières valeurs connues sont encore utilisées.",
+        actionLabel: "Actualiser",
+        onAction: openPaySettings,
+      });
+    }
+
+    const variables: PayDashboardVariable[] = monthPayRows.map((row) => ({
+      key: row.key,
+      label: row.label,
+      quantity: row.detail,
+      amount: row.amount,
+    }));
+
+    return {
+      gross: monthPay.gross,
+      grossComplete: grossEstimateComplete,
+      net: monthNet,
+      profileLabel: payProfiles[payYear]
+        ? `Estimation réalisée avec votre profil de paie ${payYear}.`
+        : "Estimation réalisée avec les dernières valeurs connues.",
+      reliability: payReliability,
+      alerts,
+      variables,
+      estimateContent: payEstimateDetails,
+      verificationContent: <PayslipCheckSection {...payslipSectionProps} part="verification" />,
+      settingsContent: <PayslipCheckSection {...payslipSectionProps} part="settings" />,
+    };
   }
   const allowancesContent = allowances ? (
     <PayAllowancesSection
@@ -2840,17 +3118,18 @@ export default function Home() {
       strikeForPayMonth={strikeForCurrentPayMonth}
       isContractuel={isContractuel}
       baseSalary={baseSalary}
-      month={view.getMonth()}
-      year={view.getFullYear()}
+      month={payView.getMonth()}
+      year={payView.getFullYear()}
       payPeriodOpen={payPeriodOpen}
       holidayChoiceEditing={holidayChoiceEditing}
       onTogglePayPeriod={() => setPayPeriodOpen((current) => !current)}
-      onChangeMonth={changeAllowancesMonth}
-      onGoToday={goToday}
+      onChangeMonth={changePayMonth}
+      onGoToday={goPayToday}
       onEditHolidayChoice={setHolidayChoiceEditing}
       onChooseHolidayPay={chooseHolidayPay}
     />
   ) : null;
+  const payContent = homeSection === "pay" ? renderPayContent() : null;
   // Le titre d'un mois de la vue Année l'ouvre en grand. On bascule sur la
   // vue Mois plutôt que d'agrandir sur place : c'est elle qui porte la barre
   // d'outils, donc « Poser un congé » et le reste restent accessibles.
@@ -2907,6 +3186,7 @@ export default function Home() {
   const dayExceptionalClosure = dayDate
     ? exceptionalClosureFor(dayDate)
     : undefined;
+  const dayExchange = dayDate ? workExchangeForDate(entries, dayDate) : null;
 
   if (publicDemoAccess.expired) {
     return (
@@ -3061,8 +3341,10 @@ export default function Home() {
           }}
           onOpenLeave={() => setHomeSection("leave")}
           onOpenPayAlert={() => {
+            if (sundayCarryoverMonth !== undefined && sundayCarryoverYear !== undefined)
+              setPayView(localDate(sundayCarryoverYear, sundayCarryoverMonth, 1));
             setHomeSection("pay");
-            setPayScreen(sundayCarryover ? "payslip" : "allowances");
+            setPayScreen("overview");
           }}
           onAddNote={beginQuickNote}
         />
@@ -3134,24 +3416,38 @@ export default function Home() {
         />
         </Suspense>
       ) : null}
-      {homeSection === "pay" && allowances ? (
+      {homeSection === "pay" && allowances && payContent ? (
         <Suspense fallback={<DeferredSection label="votre paie" />}>
         <PayPage
           screen={payScreen}
-          month={view.getMonth()}
-          year={view.getFullYear()}
+          month={payView.getMonth()}
+          year={payView.getFullYear()}
           profileOpen={payProfileOpen}
+          settingsOpen={payAdvancedOpen}
           workQuota={workQuota}
           status={formProfile?.status || "contractuel"}
           workDayMinutes={workDayMinutes}
           netEstimateComplete={netEstimateComplete}
+          gross={payContent.gross}
+          grossComplete={payContent.grossComplete}
+          net={payContent.net}
+          profileLabel={payContent.profileLabel}
+          reliability={payContent.reliability}
+          alerts={payContent.alerts}
+          variables={payContent.variables}
           monthSlide={payMonthSlide}
           allowancesContent={allowancesContent}
-          payslipContent={renderPayslipCheck()}
+          estimateContent={payContent.estimateContent}
+          verificationContent={payContent.verificationContent}
+          settingsContent={payContent.settingsContent}
           onScreenChange={setPayScreen}
           onToggleProfile={() => setPayProfileOpen((current) => !current)}
+          onToggleSettings={() => setPayAdvancedOpen((current) => !current)}
           onWorkQuotaChange={changeWorkQuota}
           onStatusChange={changeStatus}
+          onPreviousMonth={() => slideAllowancesMonth(-1)}
+          onNextMonth={() => slideAllowancesMonth(1)}
+          onToday={goPayToday}
           onTouchStart={startAllowancesSwipe}
           onTouchEnd={endAllowancesSwipe}
         />
@@ -3178,7 +3474,12 @@ export default function Home() {
 
       {homeSection === "forms" ? (
         <Suspense fallback={<DeferredSection label="vos formulaires" />}>
-          <UsefulFormsSection />
+          <UsefulFormsSection
+            status={formProfile?.status || "contractuel"}
+            periods={periods}
+            onSaveWorkAccident={saveWorkAccident}
+            onDeleteWorkAccident={deleteWorkAccident}
+          />
         </Suspense>
       ) : null}
       {homeSection === "program" ? (
@@ -3218,7 +3519,7 @@ export default function Home() {
         savingRange={savingRange}
         onCancelRange={cancelRangeSelection}
         onSaveRange={() => void saveSeparateLeaveDates()}
-        calendarDeleteMode={calendarDeleteMode}
+        calendarDeleteMode={calendarDeleteMode && narrowScreen}
         calendarDeleteDates={calendarDeleteDates}
         deletingMultipleDates={deletingMultipleDates}
         onCancelCleanup={cancelCalendarCleanup}
@@ -3496,7 +3797,7 @@ export default function Home() {
                     </button>
                   </div>
                   <p className="request-help">
-                    L’arrêt sera compté dans votre suivi sans diminuer vos droits à congés.
+                    L’arrêt sera compté dans votre suivi. Un CA déjà posé sera retiré et recrédité automatiquement. Les autres congés ne bloquent pas l’arrêt et resteront annulables manuellement.
                   </p>
                 </section>
               </div>
@@ -3637,6 +3938,13 @@ export default function Home() {
         >
           Poser un congé
         </button>
+        <button
+          className="planning-exchange-action"
+          type="button"
+          onClick={() => openWorkExchange()}
+        >
+          Faire un échange
+        </button>
       </div>
 
       {mode === "month" ? (
@@ -3682,18 +3990,42 @@ export default function Home() {
           ))}
         </section>
       )}
-      {homeSection === "home" && mode === "month" && !calendarDeleteMode ? (
+      {homeSection === "home" && mode === "month" ? (
+        <WorkExchangePanel exchanges={workExchanges} onEdit={editWorkExchange} />
+      ) : null}
+      {homeSection === "home" && mode === "month" ? (
         <div className="planning-calendar-cleanup-row">
-          <CalendarCleanupTrigger
-            className="calendar-bulk-delete-button calendar-bulk-delete-below"
-            onStart={startCalendarCleanup}
-          />
+          {calendarDeleteMode && !narrowScreen ? (
+            <CalendarCleanupPanel
+              selectedCount={calendarDeleteDates.length}
+              busy={deletingMultipleDates}
+              onCancel={cancelCalendarCleanup}
+              onDeleteAbsences={() => void deleteMultiplePlanningDates(calendarDeleteDates, "absences")}
+              onDeleteNotes={() => void deleteMultiplePlanningDates(calendarDeleteDates, "notes")}
+            />
+          ) : !calendarDeleteMode ? (
+            <CalendarCleanupTrigger
+              className="calendar-bulk-delete-button calendar-bulk-delete-below"
+              onStart={startCalendarCleanup}
+            />
+          ) : null}
         </div>
       ) : null}
       </section>
         </>
       ) : null}
       </div>
+      <WorkExchangeDialog
+        open={workExchangeUi.open}
+        group={group}
+        draft={workExchangeUi.draft}
+        setDraft={workExchangeUi.setDraft}
+        error={workExchangeUi.error}
+        saving={workExchangeUi.saving}
+        onClose={workExchangeUi.close}
+        onSave={() => void workExchangeUi.save()}
+        onDelete={() => void workExchangeUi.remove()}
+      />
       {requestChooser && (
         <div
           className="modal-backdrop"
@@ -3943,7 +4275,27 @@ export default function Home() {
             )}
             {!quickNoteMode && (
               <>
-                <div className="leave-choices">
+                {dayExchange ? (
+                  <div className="day-exchange-summary">
+                    <strong>Échange avec {dayExchange.partnerName} - Groupe {dayExchange.partnerGroup}</strong>
+                    <span>
+                      {dayDate === dayExchange.agreementDate
+                        ? `${dayExchange.partnerName} vous remplace ce jour, vous ${colleagueObjectPronoun(dayExchange.partnerName)} remplacez le ${longDate(fromKey(dayExchange.returnDate))}.`
+                        : `Vous ${colleagueObjectPronoun(dayExchange.partnerName)} remplacez ce jour, ${dayExchange.partnerName} vous remplace le ${longDate(fromKey(dayExchange.agreementDate))}.`}
+                    </span>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => {
+                        setDayDate(null);
+                        editWorkExchange(dayExchange);
+                      }}
+                    >
+                      Modifier ou supprimer l’échange
+                    </button>
+                  </div>
+                ) : null}
+                <fieldset className="leave-choices" disabled={Boolean(dayExchange)} aria-label="Actions de la journée">
                   <button
                         type="button"
                         className={dayLeave ? "leave active" : "leave"}
@@ -4032,6 +4384,19 @@ export default function Home() {
                       </button>
                       <button
                         type="button"
+                        className="exchange-day-choice"
+                        onClick={() => {
+                          const date = dayDate;
+                          setDayDate(null);
+                          openWorkExchange(date);
+                        }}
+                      >
+                        <i />
+                        Échange
+                        <span>Deux dates obligatoires</span>
+                      </button>
+                      <button
+                        type="button"
                         className={
                           dayExceptionalClosure
                             ? "closure-day active"
@@ -4059,7 +4424,7 @@ export default function Home() {
                           {dayExceptionalClosure ? "Retirer CLOSED" : "Ajouter CLOSED"}
                         </span>
                       </button>
-                </div>
+                </fieldset>
                 {entries[dayDate]?.wish &&
                   !dayLeave && (
                     <div className="wish-decision">
@@ -4236,6 +4601,23 @@ export default function Home() {
                 </button>
               )}
             </div>
+            {quickNoteMode ? (
+              <label className="leave-type-field note-date-direct-choice">
+                <span>Date de la note</span>
+                <input
+                  type="date"
+                  aria-label="Date de la note"
+                  value={dayDate}
+                  onChange={(event) => {
+                    const date = event.target.value;
+                    if (!date) return;
+                    setDayDate(date);
+                    setLeaveRangeFrom(date);
+                    setLeaveRangeTo(date);
+                  }}
+                />
+              </label>
+            ) : null}
             <textarea
               id="note-text"
               ref={noteFieldRef}
@@ -4339,6 +4721,8 @@ export default function Home() {
                   ? `jours restants sur ${balanceDetail.allowance} · ${balanceDetail.used.toLocaleString("fr-FR")} déduit`
                   : balanceDetailType === "strike"
                     ? `${balanceDetail.used > 1 ? "journées" : "journée"} de grève · aucun congé déduit`
+                    : balanceDetailType === "work_accident"
+                      ? `${balanceDetail.used > 1 ? "journées" : "journée"} d’accident de travail · aucun congé déduit`
                     : `${balanceDetail.used > 1 ? "jours" : "jour"} d’arrêt · aucun congé déduit`}
               </span>
             </div>
@@ -4347,6 +4731,8 @@ export default function Home() {
                 ? "Jours déduits"
                 : balanceDetailType === "strike"
                   ? "Journées enregistrées"
+                  : balanceDetailType === "work_accident"
+                    ? "Journées concernées"
                   : "Jours d’arrêt"}
             </h3>
             {balanceDetail.quota && balanceDetail.manualUsed > 0 ? (
@@ -4363,7 +4749,7 @@ export default function Home() {
               pour la gérer depuis sa fiche.
             </p>
             <div className="balance-detail-months">
-            {balanceDetailMonths.map((month) => (
+            {balanceDetailMonths.length ? balanceDetailMonths.map((month) => (
               <details className="balance-detail-month" key={month.key}>
                 <summary>
                   <span className="balance-detail-month-label">
@@ -4372,8 +4758,7 @@ export default function Home() {
                   </span>
                   <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5" /></svg>
                 </summary>
-                {month.details.length ? (
-                  <div className="balance-detail-list">
+                <div className="balance-detail-list">
                   {month.details.map((detail) => (
                     <article
                       key={`${detail.period.id}-${detail.date}`}
@@ -4426,10 +4811,7 @@ export default function Home() {
                       </button>
                     </article>
                   ))}
-                  </div>
-                ) : (
-                  <p className="balance-detail-month-empty">Aucune date enregistrée ce mois-ci.</p>
-                )}
+                </div>
                 {balanceDetailType === "strike" ? (() => {
                   const [strikeYear, strikeMonth] = month.key.split("-").map(Number);
                   return (
@@ -4446,7 +4828,11 @@ export default function Home() {
                   );
                 })() : null}
               </details>
-            ))}
+            )) : (
+              <p className="balance-detail-month-empty">
+                Aucune absence datée pour cette catégorie en {absenceYear}.
+              </p>
+            )}
             </div>
             <div className="modal-actions">
               <button

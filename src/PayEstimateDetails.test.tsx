@@ -11,9 +11,24 @@ describe("détail mensuel de la paie", () => {
         gross={2500}
         grossEstimateComplete
         net={1980}
-        rows={[
-          { key: "base", label: "Traitement de base", detail: "mensuel", amount: 2000 },
-        ]}
+        calculation={{
+          grossComposition: [
+            { key: "base", label: "Traitement indiciaire", detail: "mensuel", amount: 2000 },
+            { key: "ifse", label: "IFSE", detail: "mensuelle", amount: 500 },
+          ],
+          grossDeductions: [],
+          grossBeforeDeductions: 2500,
+          variableAdditions: 500,
+          netRatioFixed: 79,
+          netRatioVariable: 86,
+          estimatedContributions: 470,
+          navigo: 42,
+          mealVoucherDeduction: 72,
+          netBeforeTax: 2000,
+          pasRate: 1,
+          incomeTax: 20,
+          totalDeductions: 562,
+        }}
         overtime={{
           totalMinutes: 0,
           performedMonth: 6,
@@ -43,5 +58,14 @@ describe("détail mensuel de la paie", () => {
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-label="Mois suivant"');
     expect(html).toContain("Valeurs vérifiées avec le bulletin");
+    expect(html).toContain("Composition du brut");
+    expect(html).toContain("Traitement indiciaire");
+    expect(html).toContain("Retenues et passage au net");
+    expect(html).toContain("Cotisations estimées");
+    expect(html).toContain("Net avant prélèvement à la source");
+    expect(html).toContain("Prélèvement à la source");
+    expect(html).toContain("Total des ajouts variables");
+    expect(html).toContain("Total des retenues");
+    expect(html).toContain("Net estimé final");
   });
 });

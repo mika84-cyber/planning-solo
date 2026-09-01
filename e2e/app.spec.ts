@@ -5,6 +5,8 @@ import {
   dateKey,
   getDayInfo,
   localDate,
+  longDate,
+  monthDays,
   nextAttendanceDay,
 } from "../src/planningLogic";
 import { workedDayCount } from "../src/appModel";
@@ -105,6 +107,50 @@ async function prepareStrikeDemo(page: Page) {
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+}
+
+async function prepareCompletePayDemo(page: Page, withSundayCarryover = true) {
+  await page.addInitScript((seedCarryover) => {
+    const profile = {
+      fullName: "",
+      group: "2",
+      signature: "",
+      status: "fonctionnaire",
+      workQuota: "full",
+      baseSalary: 1801.73,
+      residenceAllowance: 54.05,
+      ifse: 416.66,
+      carenceDay: 75,
+      otherFixed: 54.05,
+      pasRate: 1.7,
+      netRatioFixed: 78.4,
+      netRatioVariable: 86.2,
+      netRatioRegime: "culture-psc",
+      manualAdjustments: {
+        "2026": {
+          annualUsed: 0,
+          rttUsed: 0,
+          fractionUsed: 0,
+          sundayLeaveJanJun: 0,
+          sundayLeaveJulSep: 2,
+          sundayLeaveOctNov: 0,
+          sundayLeaveDec: 0,
+        },
+      },
+      ...(seedCarryover
+        ? {
+            sundayCarryover: 1,
+            sundayCarryoverYear: 2026,
+            sundayCarryoverMonth: 9,
+            sundayCarryoverFromYear: 2026,
+            sundayCarryoverFromMonth: 6,
+          }
+        : {}),
+    };
+    localStorage.setItem("planning:e2e-pay-profile", JSON.stringify(profile));
+    localStorage.setItem("planning:e2e-pay-profiles", JSON.stringify({ "2026": profile }));
+  }, withSundayCarryover);
+  await prepareDemo(page);
 }
 
 function currentMonthStrikeScenario(kind: "annual" | "rest") {
@@ -317,16 +363,42 @@ test("menu, mode d’emploi, paie et PDF restent accessibles", async ({ page }) 
   expect(payArtwork.filter).toContain("contrast");
   expect(payArtwork.pointerEvents).toBe("none");
   expect(await payScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pay-art.jpg");
-  await expect(page.getByRole("heading", { name: "Ma paie en un coup d’œil" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Mes réglages" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Consulter ma paie" })).toBeVisible();
-  await expect(payScreen.locator(".pay-category-grid > button")).toHaveCount(2);
+  await expect(payScreen.locator(".pay-dashboard-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
+  await expect(page.getByText("Net estimé", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "À vérifier" })).toBeVisible();
+  await expect(payScreen.locator(".pay-dashboard-checks")).toContainText("Compléter le profil de paie");
+  await expect(payScreen.locator(".pay-dashboard-checks")).not.toContainText("Bulletin du mois non vérifié");
+  await expect(payScreen.locator(".pay-dashboard-checks").getByRole("button", { name: "Choisir le PDF" })).toHaveCount(0);
+  expect(await payScreen.locator(".pay-dashboard-alert").count()).toBeLessThanOrEqual(3);
+  await expect(page.getByRole("button", { name: "Voir les primes et jours fériés" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeVisible();
+  const paySettings = page.getByRole("button", { name: /Réglages et explications/ });
+  await expect(paySettings).toHaveAttribute("aria-expanded", "false");
+  await expect(payScreen.getByRole("button", { name: /déclarer.*heures supplémentaires/i })).toHaveCount(0);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
-    await expect(payScreen).toHaveCSS("min-height", "0px");
-    const payCategoryHeights = await payScreen.locator(".pay-category-grid > button").evaluateAll((buttons) =>
-      buttons.map((button) => button.getBoundingClientRect().height),
-    );
-    expect(Math.max(...payCategoryHeights)).toBeLessThan(135);
+    const dashboardWidth = await payScreen.locator(".pay-dashboard").evaluate((node) => node.getBoundingClientRect().width);
+    expect(dashboardWidth).toBeLessThanOrEqual(page.viewportSize()!.width);
+    const [monthCopyBox, monthActionsBox, monthCardBox] = await Promise.all([
+      payScreen.locator(".pay-dashboard-month > div").first().boundingBox(),
+      payScreen.locator(".pay-dashboard-month-actions").boundingBox(),
+      payScreen.locator(".pay-dashboard-month").boundingBox(),
+    ]);
+    expect(monthCopyBox).not.toBeNull();
+    expect(monthActionsBox).not.toBeNull();
+    expect(monthCardBox).not.toBeNull();
+    expect(monthActionsBox!.x).toBeGreaterThan(monthCopyBox!.x);
+    expect(monthCardBox!.height).toBeLessThanOrEqual(120);
+
+    await paySettings.click();
+    const profileSummary = payScreen.locator(".pay-profile-summary");
+    await expect(profileSummary.locator(".pay-profile-symbol")).toBeHidden();
+    const [profileBox, profileCopyBox] = await Promise.all([
+      profileSummary.boundingBox(),
+      profileSummary.locator(".pay-profile-summary-copy").boundingBox(),
+    ]);
+    expect(profileBox).not.toBeNull();
+    expect(profileCopyBox).not.toBeNull();
+    expect(Math.abs((profileBox!.x + profileBox!.width / 2) - (profileCopyBox!.x + profileCopyBox!.width / 2))).toBeLessThanOrEqual(2);
   }
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 
@@ -445,6 +517,14 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   expect(artworkStyle.transform).not.toBe("none");
   const formsHeaderBox = (await formsHeader.boundingBox())!;
   const formsScreenBox = (await page.locator(".useful-forms-screen").boundingBox())!;
+  const formsSearch = page.locator(".useful-resource-search");
+  const [formsSearchInputBox, formsSearchIconBox] = await Promise.all([
+    formsSearch.locator("input").boundingBox(),
+    formsSearch.locator(".useful-resource-search-icon").boundingBox(),
+  ]);
+  expect(formsSearchInputBox).not.toBeNull();
+  expect(formsSearchIconBox).not.toBeNull();
+  expect(Math.abs(formsSearchInputBox!.x + formsSearchInputBox!.width - (formsSearchIconBox!.x + formsSearchIconBox!.width))).toBeLessThanOrEqual(1);
   expect(Math.abs(formsScreenBox.x - formsHeaderBox.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(formsScreenBox.width - formsHeaderBox.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
@@ -513,7 +593,22 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const expoDownloadPromise = page.waitForEvent("download");
   await expoLinks.first().click();
   expect((await expoDownloadPromise).suggestedFilename()).toBe("hilma-af-klint.pdf");
-  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+  const formsBackArea = page.getByRole("button", { name: "Revenir aux dossiers de formulaires" });
+  const [formsBackBox, folderHeaderBox] = await Promise.all([
+    formsBackArea.boundingBox(),
+    page.locator(".useful-forms-folder-header").boundingBox(),
+  ]);
+  expect(formsBackBox).not.toBeNull();
+  expect(folderHeaderBox).not.toBeNull();
+  expect(Math.abs(formsBackBox!.width - folderHeaderBox!.width)).toBeLessThanOrEqual(1);
+  const [formsArrowBox, formsTitleBox] = await Promise.all([
+    formsBackArea.locator(".section-back-arrow").boundingBox(),
+    page.getByRole("heading", { name: "Formulaire Expo" }).boundingBox(),
+  ]);
+  expect(formsArrowBox).not.toBeNull();
+  expect(formsTitleBox).not.toBeNull();
+  expect(formsArrowBox!.x + formsArrowBox!.width).toBeLessThanOrEqual(formsTitleBox!.x);
+  await formsBackArea.click({ position: { x: formsBackBox!.width - 16, y: formsBackBox!.height / 2 } });
 
   await page.getByRole("button", { name: /Formulaire SAP/ }).click();
   const sapLinks = page.locator(".useful-form-download-list a");
@@ -556,7 +651,181 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(page.locator(".useful-form-download-list")).toHaveCount(0);
 });
 
+test("la déclaration d’accident réunit les démarches et marque le planning sans carence", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    const from = new Date();
+    const to = new Date(from);
+    to.setDate(to.getDate() + 6);
+    const annualTo = new Date(from);
+    annualTo.setDate(annualTo.getDate() + 2);
+    const rttDate = new Date(from);
+    rttDate.setDate(rttDate.getDate() + 3);
+    const key = (date: Date) => [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+    localStorage.setItem(
+      "planning:demo-completed-request-v1",
+      JSON.stringify({
+        requestId: "e2e-leave-replaced-by-work-accident",
+        requestKind: "leave",
+        group: 2,
+        periods: [
+          { from: key(from), to: key(annualTo), type: "annual" },
+          { from: key(rttDate), to: key(rttDate), type: "rtt" },
+        ],
+        timed: [],
+      }),
+    );
+  });
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Formulaires utiles/ })
+    .click();
+
+  const accidentButton = page.getByRole("button", { name: /Déclarer un accident de travail/ });
+  await expect(accidentButton).toBeVisible();
+  const [buttonBox, gridBox] = await Promise.all([
+    accidentButton.boundingBox(),
+    page.locator(".useful-form-folder-grid").boundingBox(),
+  ]);
+  expect(buttonBox).not.toBeNull();
+  expect(gridBox).not.toBeNull();
+  expect(Math.abs(buttonBox!.x - gridBox!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(buttonBox!.width - gridBox!.width)).toBeLessThanOrEqual(1);
+  await accidentButton.click();
+
+  await expect(page.getByRole("heading", { name: "Déclarer un accident de travail" })).toBeVisible();
+  const accidentBackArea = page.getByRole("button", { name: "Revenir aux formulaires utiles" });
+  const [accidentBackBox, accidentHeaderBox] = await Promise.all([
+    accidentBackArea.boundingBox(),
+    page.locator(".work-accident-header").boundingBox(),
+  ]);
+  expect(accidentBackBox).not.toBeNull();
+  expect(accidentHeaderBox).not.toBeNull();
+  expect(Math.abs(accidentBackBox!.width - accidentHeaderBox!.width)).toBeLessThanOrEqual(1);
+  await accidentBackArea.click({ position: { x: accidentBackBox!.width - 16, y: accidentBackBox!.height / 2 } });
+  await page.getByRole("button", { name: /Déclarer un accident de travail/ }).click();
+  await expect(page.getByText("Aucun jour de carence")).toBeVisible();
+  await expect(page.locator(".work-accident-status button")).toHaveText(["Contractuel", "Fonctionnaire"]);
+  await expect(page.getByRole("link", { name: /Prévenir les secouristes sur site ou à défaut les urgences/ })).toBeVisible();
+  await page.getByRole("button", { name: "Fonctionnaire", exact: true }).click();
+  await expect(page.getByText(/CITIS.*congé pour invalidité temporaire imputable au service/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /PC Sécurité · bâtiment central/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /réserves Paris-Nord/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Service médical de prévention/ })).toHaveAttribute(
+    "href",
+    "mailto:servicemedical@centrepompidou.fr",
+  );
+  await page.getByRole("button", { name: "Contractuel", exact: true }).click();
+  await expect(page.getByText(/feuille de prise en charge disponible dans l’application/)).toBeVisible();
+  await expect(page.getByRole("link", { name: /Déclaration d’accident de travail ou de trajet/ })).toHaveAttribute(
+    "href",
+    "/useful-forms/declaration-accident-contractuel.pdf",
+  );
+
+  const today = new Date();
+  const todayKey = dateKey(today);
+  const periodEnd = new Date(today);
+  periodEnd.setDate(periodEnd.getDate() + 6);
+  if (testInfo.project.name === "mobile") {
+    await expect(page.locator(".work-accident-date-input > span")).toHaveText(["jj/mm/aaaa", "jj/mm/aaaa"]);
+    await expect(page.locator(".work-accident-date-input > span").first()).toBeVisible();
+  }
+  await page.getByLabel("Date de l’accident ou premier jour").fill(todayKey);
+  await page.getByLabel("Dernier jour concerné").fill(dateKey(periodEnd));
+  await page.getByRole("button", { name: "Marquer ces dates dans le planning" }).click();
+  await expect(page.getByText(/congés annuels remplacés ont été recrédités/i)).toBeVisible();
+  await expect(page.getByText(/Périodes enregistrées/)).toBeVisible();
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Accueil/ })
+    .click();
+  await page.getByRole("button", { name: "Aujourd’hui" }).click();
+  const todayCell = page.getByRole("button", { name: new RegExp(longDate(today), "i") });
+  const workAccidentMarker = todayCell.locator(".work-accident-calendar-marker");
+  await expect(workAccidentMarker).toBeVisible();
+  await expect(todayCell).toHaveAttribute("aria-label", /accident de travail/);
+  await expect(todayCell).toHaveCSS("border-top-color", "rgb(0, 0, 0)");
+  if (testInfo.project.name === "mobile") {
+    await expect(workAccidentMarker).toHaveCSS("right", "-8px");
+    await expect(workAccidentMarker).toHaveCSS("bottom", "-2px");
+    const [todayCellBox, workAccidentMarkerBox] = await Promise.all([
+      todayCell.boundingBox(),
+      workAccidentMarker.boundingBox(),
+    ]);
+    expect(todayCellBox).not.toBeNull();
+    expect(workAccidentMarkerBox).not.toBeNull();
+    expect(todayCellBox!.x + todayCellBox!.width - (workAccidentMarkerBox!.x + workAccidentMarkerBox!.width)).toBeLessThanOrEqual(3);
+    expect(todayCellBox!.y + todayCellBox!.height - (workAccidentMarkerBox!.y + workAccidentMarkerBox!.height)).toBeLessThanOrEqual(3);
+  } else {
+    await expect(workAccidentMarker).toHaveCSS("right", "-12px");
+    await expect(workAccidentMarker).toHaveCSS("bottom", "-3px");
+  }
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  const workAccidentBalance = page.getByRole("button", { name: /Afficher le détail de Accident de travail/ });
+  await expect(workAccidentBalance).toBeVisible();
+  await expect(workAccidentBalance).toContainText(/sans carence · CA superposés recrédités/);
+  await expect(page.getByRole("button", { name: /Afficher le détail de Congés annuels/ })).toContainText(/0 utilisé/);
+  await expect(page.getByRole("button", { name: /Afficher le détail de RTT/ })).toContainText(/1 utilisé/);
+  const strikeBalance = page.getByRole("button", { name: /Afficher le détail de Grève/ });
+  const balancesGrid = page.locator(".leave-balances-direct .leave-balance-grid");
+  const [workAccidentBox, strikeBox, balancesGridBox] = await Promise.all([
+    workAccidentBalance.boundingBox(),
+    strikeBalance.boundingBox(),
+    balancesGrid.boundingBox(),
+  ]);
+  expect(workAccidentBox).not.toBeNull();
+  expect(strikeBox).not.toBeNull();
+  expect(balancesGridBox).not.toBeNull();
+  if (testInfo.project.name === "mobile") {
+    expect(Math.abs(workAccidentBox!.y - strikeBox!.y)).toBeLessThanOrEqual(1);
+    expect(workAccidentBox!.x).toBeGreaterThan(strikeBox!.x);
+  } else {
+    expect(Math.abs(workAccidentBox!.x - balancesGridBox!.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(workAccidentBox!.width - balancesGridBox!.width)).toBeLessThanOrEqual(1);
+  }
+});
+
+test("Z Fold ouvert : la déclaration d’accident reste lisible sans débordement", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "z-fold", "Scénario réservé au viewport Z Fold ouvert");
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Formulaires utiles/ })
+    .click();
+  await page.getByRole("button", { name: /Déclarer un accident de travail/ }).click();
+  await expect(page.locator(".work-accident-screen")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(900);
+  const statusButtons = page.locator(".work-accident-status button");
+  await expect(statusButtons).toHaveCount(2);
+  const boxes = await statusButtons.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThanOrEqual(1);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  const balanceGrid = page.locator(".leave-balances-direct .leave-balance-grid");
+  const workAccidentBalance = page.getByRole("button", { name: /Afficher le détail de Accident de travail/ });
+  const [balanceGridBox, workAccidentBox] = await Promise.all([
+    balanceGrid.boundingBox(),
+    workAccidentBalance.boundingBox(),
+  ]);
+  expect(balanceGridBox).not.toBeNull();
+  expect(workAccidentBox).not.toBeNull();
+  expect(Math.abs(workAccidentBox!.x - balanceGridBox!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(workAccidentBox!.width - balanceGridBox!.width)).toBeLessThanOrEqual(1);
+});
+
 test("la programmation GP suit l’ordre demandé et sépare les autres espaces", async ({ page }, testInfo) => {
+  await page.clock.setFixedTime(new Date("2026-08-28T12:00:00"));
   await prepareDemo(page);
   await openMainMenu(page);
   await page.getByRole("complementary", { name: "Menu principal" })
@@ -637,8 +906,8 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await page.getByRole("tab", { name: /Autres/ }).click();
   await expect(page.getByRole("tab", { name: "Nef", exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Galeries 9 et 10", exact: true })).toBeVisible();
-  await expect(page.locator(".useful-expo-timeline article")).toHaveCount(9);
-  await expect(page.locator(".useful-expo-timeline article").filter({ hasText: "Grand Palais d’été" })).toContainText("En cours");
+  await expect(page.locator(".useful-expo-timeline article")).toHaveCount(8);
+  await expect(page.locator(".useful-expo-timeline")).not.toContainText("Grand Palais d’été");
   await page.getByRole("tab", { name: "2028", exact: true }).click();
   await expect(page.locator(".useful-expo-timeline")).toContainText("Art Basel Paris");
   await expect(page.locator(".useful-expo-timeline")).not.toContainText(/montage/i);
@@ -759,6 +1028,7 @@ test("les contacts utiles sont classés et directement appelables", async ({ pag
   const contactHeader = page.locator(".top-header");
   const contactsRoot = page.locator(".useful-contacts-screen.useful-contacts-root");
   await expect(contactsRoot).toBeVisible();
+  await expect(contactsRoot.locator(".useful-resource-search-icon")).toBeVisible();
   await expect(contactsRoot).toHaveCSS("border-left-width", "6px");
   const [contactHeaderBox, contactsRootBox] = await Promise.all([
     contactHeader.boundingBox(),
@@ -838,7 +1108,15 @@ test("les contacts utiles sont classés et directement appelables", async ({ pag
     "sms:+33763731643",
   );
 
-  await page.getByRole("button", { name: "Revenir aux contacts Pompidou" }).click();
+  const contactsBackArea = page.getByRole("button", { name: "Revenir aux contacts Pompidou" });
+  const [contactsBackBox, contactsHeaderBox] = await Promise.all([
+    contactsBackArea.boundingBox(),
+    page.locator(".useful-contacts-subheader").boundingBox(),
+  ]);
+  expect(contactsBackBox).not.toBeNull();
+  expect(contactsHeaderBox).not.toBeNull();
+  expect(Math.abs(contactsBackBox!.width - contactsHeaderBox!.width)).toBeLessThanOrEqual(2);
+  await contactsBackArea.click({ position: { x: contactsBackBox!.width - 16, y: contactsBackBox!.height / 2 } });
   await page.getByRole("button", { name: /Bureau administratif/ }).click();
   await expect(page.getByRole("link", { name: /Écrire à Mail générique Aurélia, Esther et Agnès/i })).toHaveAttribute(
     "href",
@@ -869,6 +1147,89 @@ test("les contacts utiles sont classés et directement appelables", async ({ pag
   await page.getByRole("button", { name: /Contact GP‑RMN/ }).click();
   await expect(page.getByText("Accident · secourisme")).toBeVisible();
   await expect(page.getByText("Superviseur Expo")).toBeVisible();
+});
+
+test("un échange exige et modifie toujours ses deux journées ensemble", async ({ page }) => {
+  const now = new Date();
+  const dates = Array.from(
+    { length: monthDays(now.getFullYear(), now.getMonth()) },
+    (_, index) => localDate(now.getFullYear(), now.getMonth(), index + 1),
+  );
+  const returned = dates.find((date) =>
+    getDayInfo(date, 2).kind === "off" && getDayInfo(date, 1).kind === "work");
+  const agreement = dates.find((date) => returned && date > returned &&
+    getDayInfo(date, 2).kind === "work" && getDayInfo(date, 1).kind === "off");
+  if (!agreement || !returned) throw new Error("Aucun échange complet trouvé dans le mois de test");
+
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Faire un échange" }).click();
+  await page.getByPlaceholder("Prénom et/ou nom").fill("Camille");
+  await page.getByRole("button", { name: "Valider les deux dates" }).click();
+  await expect(page.getByRole("alert")).toContainText("deux dates");
+  await page.getByRole("button", { name: "Choisir la journée de votre cycle" }).click();
+  const myCycle = page.getByRole("region", { name: "Cycle de travail du groupe 2" });
+  await expect(myCycle.getByLabel("Légende du groupe 2")).toContainText("TravailReposFormation");
+  expect(await myCycle.locator(".exchange-cycle-day.selectable").count()).toBeGreaterThan(0);
+  await expect(myCycle.locator(".exchange-cycle-day.off").first()).toHaveCSS("background-color", "rgb(23, 34, 49)");
+  const trainingDays = myCycle.locator(".exchange-cycle-day.training");
+  if (await trainingDays.count())
+    await expect(trainingDays.first()).toHaveCSS("background-color", "rgb(184, 189, 196)");
+  expect(await myCycle.locator(".exchange-cycle-unavailable").count()).toBeGreaterThan(0);
+  await expect(myCycle.locator(".exchange-cycle-day.off .exchange-cycle-unavailable")).toHaveCount(0);
+  await expect(myCycle.locator(".exchange-cycle-day.training .exchange-cycle-unavailable")).toHaveCount(0);
+  await expect(myCycle.locator(".exchange-cycle-day.incompatible .exchange-cycle-unavailable").first()).toHaveCSS("inset", "0px");
+  await myCycle.locator(`[data-date="${dateKey(agreement)}"]`).click();
+  await page.getByRole("button", { name: "Choisir la journée du cycle du collègue" }).click();
+  const partnerCycle = page.getByRole("region", { name: "Cycle de travail du groupe 1" });
+  await expect(partnerCycle.getByLabel("Légende du groupe 1")).toContainText("TravailReposFormation");
+  await partnerCycle.locator(`[data-date="${dateKey(returned)}"]`).click();
+  await page.getByRole("button", { name: "Valider les deux dates" }).click();
+
+  await expect(page.locator(".day.exchange-given")).toHaveCount(1);
+  await expect(page.locator(".day.exchange-return")).toHaveCount(1);
+  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", "rgb(17, 24, 32)");
+  await expect(page.locator(".day.exchange-given .exchange-calendar-marker")).toHaveAttribute("src", "/exchange-arrows.png");
+  await expect(page.locator(".day.exchange-given .exchange-calendar-label")).toHaveText("OFF");
+  await expect(page.locator(".day.exchange-return .exchange-calendar-label")).toHaveText("TRAVAIL");
+  await page.setViewportSize({ width: 344, height: 900 });
+  const narrowExchangeCell = page.locator(".day.exchange-return");
+  const [narrowCellBox, narrowDateBox, narrowLabelBox, narrowMarkerBox] = await Promise.all([
+    narrowExchangeCell.boundingBox(),
+    narrowExchangeCell.locator(".date-number, .holiday-date").boundingBox(),
+    narrowExchangeCell.locator(".exchange-calendar-label").boundingBox(),
+    narrowExchangeCell.locator(".exchange-calendar-marker").boundingBox(),
+  ]);
+  expect(narrowCellBox).not.toBeNull();
+  expect(narrowDateBox).not.toBeNull();
+  expect(narrowLabelBox).not.toBeNull();
+  expect(narrowMarkerBox).not.toBeNull();
+  expect(narrowMarkerBox!.width).toBeGreaterThanOrEqual(20);
+  await expect(narrowExchangeCell.locator(".exchange-calendar-marker")).toHaveCSS("border-top-width", "0px");
+  await expect(narrowExchangeCell.locator(".exchange-calendar-marker")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(narrowCellBox!.x + narrowCellBox!.width - (narrowMarkerBox!.x + narrowMarkerBox!.width)).toBeLessThanOrEqual(3);
+  expect(narrowMarkerBox!.y - narrowCellBox!.y).toBeLessThanOrEqual(3);
+  expect(narrowCellBox!.y + narrowCellBox!.height - (narrowLabelBox!.y + narrowLabelBox!.height)).toBeLessThanOrEqual(4);
+  expect(Math.abs((narrowDateBox!.y + narrowDateBox!.height / 2) - (narrowCellBox!.y + narrowCellBox!.height / 2))).toBeLessThanOrEqual(1);
+  expect(Math.abs((narrowDateBox!.x + narrowDateBox!.width / 2) - (narrowCellBox!.x + narrowCellBox!.width / 2))).toBeLessThanOrEqual(1);
+  expect(narrowLabelBox!.x + narrowLabelBox!.width).toBeLessThanOrEqual(narrowCellBox!.x + narrowCellBox!.width - 2);
+  await expect(page.getByRole("heading", { name: "Mes échanges" })).toBeVisible();
+  await expect(page.getByText(/Camille - Groupe 1/).first()).toBeVisible();
+  await expect(page.locator(".work-exchange-list article span")).toHaveText([
+    `Vous la remplacez le ${longDate(returned)}`,
+    `Camille vous remplace le ${longDate(agreement)}`,
+  ]);
+
+  await page.locator(".day.exchange-given").click();
+  await expect(page.getByText("Échange avec Camille - Groupe 1")).toBeVisible();
+  await expect(page.getByText(new RegExp(`Camille vous remplace ce jour, vous la remplacez le ${longDate(returned)}`))).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Fermer" }).click();
+  await page.locator(".day.exchange-return").click();
+  await expect(page.getByText(new RegExp(`Vous la remplacez ce jour, Camille vous remplace le ${longDate(agreement)}`))).toBeVisible();
+  await page.getByRole("button", { name: "Modifier ou supprimer l’échange" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Supprimer l’échange" }).click();
+  await expect(page.locator(".day.exchange-day")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Mes échanges" })).toHaveCount(0);
 });
 
 test("l’en-tête, le sélecteur d’affichage et les années sont confortables", async ({ page }, testInfo) => {
@@ -1001,10 +1362,12 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(page.getByRole("button", { name: "2024", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "2025", exact: true })).toHaveCount(0);
   const leaveActionBox = await page.locator(".planning-leave-panel .planning-leave-action").boundingBox();
+  const exchangeActionBox = await page.locator(".planning-leave-panel .planning-exchange-action").boundingBox();
   const leavePanelBox = await page.locator(".planning-leave-panel").boundingBox();
   const periodNavigationBox = await page.locator(".calendar-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox();
   const monthCardBox = await page.locator(".month-card").boundingBox();
   expect(leaveActionBox).not.toBeNull();
+  expect(exchangeActionBox).not.toBeNull();
   expect(leavePanelBox).not.toBeNull();
   expect(periodNavigationBox).not.toBeNull();
   expect(monthCardBox).not.toBeNull();
@@ -1025,7 +1388,10 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   }
   expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
   expect(leavePanelBox!.y + leavePanelBox!.height).toBeLessThan(monthCardBox!.y);
-  expect(leaveActionBox!.width).toBeGreaterThan(leavePanelBox!.width - 30);
+  expect(Math.abs(leaveActionBox!.width - exchangeActionBox!.width)).toBeLessThanOrEqual(2);
+  expect(exchangeActionBox!.x + exchangeActionBox!.width).toBeLessThanOrEqual(
+    leavePanelBox!.x + leavePanelBox!.width,
+  );
   await expect(page.getByRole("region", { name: "Outils du planning" })).toHaveCount(0);
 });
 
@@ -1575,7 +1941,7 @@ test("un férié couvert par une absence est annulé et retiré de la paie", asy
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Ma paie/ })
     .click();
-  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
+  await page.getByRole("button", { name: /Voir les primes et jours fériés/ }).click();
 
   const cancelledHoliday = page.locator(".allowance-table tr.holiday-cancelled");
   await expect(cancelledHoliday).toContainText("Assomption");
@@ -1646,15 +2012,17 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await expect(strikeCard).toContainText(/1\s*pris/);
   await expect(strikeCard).toContainText("retenue estimée dans Ma paie");
   await expect(page.locator(".leave-balance-grid button.annual")).toContainText("0 utilisé");
-  const [balanceGridBox, strikeCardBox, annualCardBox, otherCardBox] = await Promise.all([
+  const [balanceGridBox, strikeCardBox, otherCardBox, accidentCardBox] = await Promise.all([
     page.locator(".leave-balance-grid").boundingBox(),
     strikeCard.boundingBox(),
-    page.locator(".leave-balance-grid button.annual").boundingBox(),
     page.locator(".leave-balance-grid button.other").boundingBox(),
+    page.locator(".leave-balance-grid button.work_accident").boundingBox(),
   ]);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
-    expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.9);
-    expect(strikeCardBox!.height).toBeLessThan(annualCardBox!.height);
+    expect(Math.abs(strikeCardBox!.y - accidentCardBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(strikeCardBox!.width - accidentCardBox!.width)).toBeLessThanOrEqual(2);
+    expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
+    expect(Math.abs(strikeCardBox!.height - accidentCardBox!.height)).toBeLessThanOrEqual(2);
   } else {
     expect(Math.abs(otherCardBox!.y - strikeCardBox!.y)).toBeLessThanOrEqual(2);
     expect(Math.abs(otherCardBox!.width - strikeCardBox!.width)).toBeLessThanOrEqual(2);
@@ -1674,7 +2042,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Ma paie/ })
     .click();
-  await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
+  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({ hasText: "Grève (1 journée retenue)" });
   await expect(strikePayRow).toContainText("-61,86");
   await expect(strikePayRow).toContainText("retenue au 1/30");
@@ -1700,7 +2068,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Ma paie/ })
     .click();
-  await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
+  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   await expect(page.getByRole("row").filter({ hasText: /^Grève/ })).toHaveCount(0);
 });
 
@@ -1771,7 +2139,7 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Ma paie/ })
     .click();
-  await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
+  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({
     hasText: `Grève (${retainedDays} journées retenues)`,
   });
@@ -1837,6 +2205,7 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
     /Divers/,
     /Grève/,
     /CET/,
+    /ÉchangeDeux dates obligatoires/,
     /Fermeture exceptionnelleAjouter CLOSED/,
   ]);
   await expect(dayDialog.locator(".leave-choices .other-day")).toHaveCSS(
@@ -1945,6 +2314,13 @@ test("nettoyage et gestion d’un congé utilisent des actions directes", async 
   await page.locator(".calendar-bulk-delete-button:visible, .calendar-bulk-delete-mobile:visible").click();
   const cleanup = page.locator(".calendar-delete-panel");
   await expect(cleanup).toBeVisible();
+  if ((page.viewportSize()?.width ?? 0) > 720) {
+    await expect(cleanup).toBeFocused();
+    const cleanupBox = await cleanup.boundingBox();
+    expect(cleanupBox).not.toBeNull();
+    expect(cleanupBox!.y).toBeGreaterThanOrEqual(0);
+    expect(cleanupBox!.y).toBeLessThan(page.viewportSize()!.height);
+  }
   const deleteAbsences = cleanup.getByRole("button", { name: "Effacer les absences" });
   const deleteNotes = cleanup.getByRole("button", { name: "Effacer les notes" });
   await expect(deleteAbsences).toBeVisible();
@@ -2098,7 +2474,19 @@ test("la signature enregistrée sur téléphone est synchronisée avec le profil
   await expect(page.locator("#msg")).toContainText("synchronisée avec votre compte");
 });
 
-test("les soldes présentent les douze mois fermés par défaut", async ({ page }) => {
+test("les détails des soldes présentent seulement les mois concernés", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "planning:demo-completed-request-v1",
+      JSON.stringify({
+        requestId: "e2e-one-balance-month",
+        requestKind: "leave",
+        group: 2,
+        periods: [{ from: "2026-09-01", to: "2026-09-01", type: "annual" }],
+        timed: [],
+      }),
+    );
+  });
   await prepareDemo(page);
   await openMainMenu(page);
   await page.getByRole("complementary", { name: "Menu principal" })
@@ -2129,21 +2517,170 @@ test("les soldes présentent les douze mois fermés par défaut", async ({ page 
   await page.locator(".leave-balance-grid > button.annual").click();
 
   const months = page.locator(".balance-detail-months > details");
-  await expect(months).toHaveCount(12);
+  await expect(months).toHaveCount(1);
+  await expect(months.first()).toContainText("septembre 2026");
   await expect(months.locator("[open]")).toHaveCount(0);
   await months.first().locator("summary").click();
   await expect(months.first()).toHaveAttribute("open", "");
-  await expect(months.first()).toContainText(/Aucune date enregistrée|Voir et gérer cette absence/);
+  await expect(months.first()).toContainText("Voir et gérer cette absence");
 });
 
-test("les deux rubriques de paie s’ouvrent et se referment", async ({ page }) => {
+test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", async ({ page }, testInfo) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await prepareCompletePayDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+
+  const payDashboard = page.locator(".pay-dashboard");
+  const monthHeading = payDashboard.locator(".pay-dashboard-month h2");
+  const nextMonth = payDashboard.locator(".pay-dashboard-month").getByRole("button", { name: "Mois suivant" });
+  await expect(monthHeading).toHaveText("août 2026");
+  await expect(payDashboard.getByText("Aucun élément variable prévu pour ce mois.")).toBeVisible();
+  await expect(payDashboard.locator(".pay-dashboard-all-clear")).toHaveText(/Tout est à jour/);
+  await expect(payDashboard.locator(".pay-dashboard-alert")).toHaveCount(0);
+
+  const settingsToggle = payDashboard.getByRole("button", { name: /Réglages et explications/ });
+  await settingsToggle.click();
+  await expect(settingsToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(payDashboard.getByText("Mon profil de paie", { exact: true })).toBeVisible();
+  await settingsToggle.click();
+  await expect(settingsToggle).toHaveAttribute("aria-expanded", "false");
+
+  await nextMonth.click();
+  await expect(monthHeading).toHaveText("septembre 2026");
+  await expect(payDashboard.getByText(/Jours fériés \(1\)/)).toBeVisible();
+  await expect(payDashboard.locator(".pay-dashboard-alert")).toHaveCount(1);
+
+  await nextMonth.click();
+  await expect(monthHeading).toHaveText("octobre 2026");
+  await expect(payDashboard.getByText("Dimanches (8)", { exact: true })).toBeVisible();
+  await expect(payDashboard.getByText(/dont 1 reporté/)).toBeVisible();
+
+  await payDashboard.getByRole("button", { name: "Voir le détail du calcul" }).click();
+  await expect(page.getByRole("heading", { name: "Composition du brut" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Retenues et passage au net" })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: /^Traitement indiciaire/ })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: /^Indemnité de résidence/ })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: /^IFSE/ })).toBeVisible();
+  await expect(page.getByText("Net avant prélèvement à la source", { exact: true })).toBeVisible();
+  await expect(page.getByText("Net estimé final", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
+  await expect(monthHeading).toHaveText("octobre 2026");
+
+  await payDashboard.getByRole("button", { name: "Voir les primes et jours fériés" }).click();
+  await expect(page.locator(".allowance-note").filter({ hasText: /dimanches? effectués? sur/ })).toBeVisible();
+  await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
+  await expect(monthHeading).toHaveText("octobre 2026");
+
+  if (testInfo.project.name === "mobile") {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await expect(payDashboard).toBeVisible();
+    const [narrowMonthCopy, narrowMonthActions, narrowMonthCard] = await Promise.all([
+      payDashboard.locator(".pay-dashboard-month > div").first().boundingBox(),
+      payDashboard.locator(".pay-dashboard-month-actions").boundingBox(),
+      payDashboard.locator(".pay-dashboard-month").boundingBox(),
+    ]);
+    expect(narrowMonthCopy).not.toBeNull();
+    expect(narrowMonthActions).not.toBeNull();
+    expect(narrowMonthCard).not.toBeNull();
+    expect(narrowMonthActions!.x).toBeGreaterThan(narrowMonthCopy!.x);
+    expect(narrowMonthCard!.height).toBeLessThanOrEqual(120);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    const overflowingElements = await page.locator("body *").evaluateAll((elements) =>
+      elements
+        .map((element) => ({
+          tag: element.tagName,
+          className: element.getAttribute("class") || "",
+          right: Math.round(element.getBoundingClientRect().right),
+        }))
+        .filter((element) => element.right > document.documentElement.clientWidth + 1)
+        .slice(0, 8),
+    );
+    expect(overflow, JSON.stringify(overflowingElements)).toBeLessThanOrEqual(1);
+  }
+  expect(consoleErrors).toEqual([]);
+});
+
+test("le mois de paie reste indépendant du planning et suit une alerte datée", async ({ page }) => {
+  await prepareCompletePayDemo(page);
+  const planningMonth = page.getByRole("button", { name: "Sélectionner le mois" });
+  const initialPlanningMonth = (await planningMonth.textContent())?.trim();
+  await page.locator(".important-alert").click();
+  await expect(page.locator(".pay-dashboard-month h2")).toHaveText("octobre 2026");
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /^Accueil/ })
+    .click();
+  await expect(planningMonth).toHaveText(initialPlanningMonth || "");
+
+  const calendar = page.locator(".month-card");
+  const touch = (clientX: number) => ({ identifier: 1, clientX, clientY: 420, pageX: clientX, pageY: 420, screenX: clientX, screenY: 420 });
+  await calendar.dispatchEvent("touchstart", { touches: [touch(340)], changedTouches: [touch(340)] });
+  await calendar.dispatchEvent("touchend", { touches: [], changedTouches: [touch(40)] });
+  await expect(planningMonth).not.toHaveText(initialPlanningMonth || "");
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+  await expect(page.locator(".pay-dashboard-month h2")).toHaveText("octobre 2026");
+});
+
+test("le profil de paie d’une nouvelle année peut être confirmé sans modifier un montant", async ({ page }) => {
+  await prepareCompletePayDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+
+  const dashboard = page.locator(".pay-dashboard");
+  const nextMonth = dashboard.getByRole("button", { name: "Mois suivant" });
+  for (let month = 0; month < 5; month += 1) await nextMonth.click();
+  await expect(dashboard.locator(".pay-dashboard-month h2")).toHaveText("janvier 2027");
+  const annualAlert = dashboard.locator(".pay-dashboard-alert").filter({ hasText: "Actualiser le profil 2027" });
+  await expect(annualAlert).toBeVisible();
+  await annualAlert.getByRole("button", { name: "Actualiser" }).click();
+  const confirm = dashboard.getByRole("button", { name: "Utiliser ces valeurs pour 2027" });
+  await expect(confirm).toBeVisible();
+  await confirm.click();
+  await expect(dashboard.locator(".pay-dashboard-alert").filter({ hasText: "Actualiser le profil 2027" })).toHaveCount(0);
+  await expect(dashboard.locator(".pay-year-notice")).toContainText("valeurs enregistrées pour cette année");
+});
+
+test("Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordement", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "z-fold", "Ce contrôle cible le Fold déplié");
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await prepareCompletePayDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Ma paie/ })
+    .click();
+  const dashboard = page.locator(".pay-dashboard");
+  await expect(dashboard).toBeVisible();
+  const columns = await dashboard.locator(".pay-dashboard-priority-grid").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length);
+  expect(columns).toBe(2);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  expect(consoleErrors).toEqual([]);
+});
+
+test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ page }) => {
   await prepareDemo(page);
   await openMainMenu(page);
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Ma paie/ })
     .click();
 
-  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
+  await page.getByRole("button", { name: /Voir les primes et jours fériés/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");
   if ((page.viewportSize()?.width || 0) <= 720) {
     const card = page.locator(".variable-pay-card");
@@ -2180,13 +2717,13 @@ test("les deux rubriques de paie s’ouvrent et se referment", async ({ page }) 
     await expect(closeDetails).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, -4)");
     await expect(variableTotal).toHaveCSS("font-size", "15px");
   }
-  await page.getByRole("button", { name: "Revenir aux catégories de paie" }).click();
-  await page.getByRole("button", { name: /Bulletins et estimations/ }).click();
-  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Bulletins et estimations");
-  await expect(page.getByLabel("Conseil pour une estimation correcte")).toBeVisible();
+  await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
+  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
+  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Détail du calcul");
+  await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toBeVisible();
   await expect(page.locator(".pay-reliability")).toContainText(/Données à compléter|Valeurs enregistrées|dernières valeurs|Valeurs vérifiées/);
-  await page.getByRole("button", { name: "Revenir aux catégories de paie" }).click();
-  await expect(page.getByRole("heading", { name: "Ma paie en un coup d’œil" })).toBeVisible();
+  await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
+  await expect(page.locator(".pay-dashboard-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
 });
 
 test("le groupe, les notes, les sauvegardes et le retour du formulaire restent accessibles", async ({ page }) => {
@@ -2201,6 +2738,8 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
 
   await page.getByRole("button", { name: "Ajouter une note" }).click();
   const note = page.getByRole("dialog", { name: "Ajouter une note" });
+  await note.getByLabel("Date de la note").fill("2026-09-15");
+  await expect(note.getByLabel("Date de la note")).toHaveValue("2026-09-15");
   await note.locator("textarea").fill("Contrôle du parcours de note");
   await expect(note.locator("textarea")).toHaveValue("Contrôle du parcours de note");
   await note.getByRole("button", { name: "Fermer" }).click();

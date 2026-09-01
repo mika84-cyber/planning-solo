@@ -1109,3 +1109,392 @@
   margin: 2px 0 0;
   border: 2px solid #111820;
 }
+
+/* Échanges : teinte turquoise inédite dans l'application, avec le contour
+   noir commun aux sélections fortes du planning. */
+.planning-leave-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.planning-leave-panel > .planning-leave-action,
+.planning-leave-panel > .planning-exchange-action {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-width: 0;
+}
+
+.planning-leave-panel .planning-exchange-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  border: 2px solid #111820;
+  border-radius: 14px;
+  color: #10262a;
+  background: linear-gradient(145deg, #dff6f8, #a9dfe6);
+  box-shadow: 0 5px 14px rgba(36, 125, 139, 0.16);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+:root .day.exchange-day,
+:root .mini-day.exchange-day {
+  border: 2px solid #111820;
+  color: #10262a;
+  background: linear-gradient(145deg, #e3f7f9 0%, #9ddae3 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+    0 4px 11px rgba(30, 99, 110, 0.16);
+}
+
+:root .day.exchange-return,
+:root .mini-day.exchange-return {
+  background: linear-gradient(145deg, #d8f3f5 0%, #5eb6c4 100%);
+}
+
+.today-status.tone-exchange {
+  border-color: #5eb6c4;
+  background: linear-gradient(145deg, #effbfc, #c4e9ed);
+}
+
+.exchange-calendar-marker {
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  bottom: auto;
+  z-index: 5;
+  width: 34%;
+  height: 34%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.exchange-calendar-marker.compact {
+  right: -2px;
+  top: -2px;
+  bottom: auto;
+  width: 42%;
+  height: 42%;
+}
+
+.exchange-calendar-label {
+  position: absolute;
+  left: 5px;
+  bottom: 4px;
+  z-index: 4;
+  max-width: 60%;
+  color: #10262a;
+  font-size: clamp(8px, 1.05vw, 11px);
+  font-weight: 950;
+  letter-spacing: 0.045em;
+}
+
+.work-exchange-dialog {
+  width: min(720px, calc(100vw - 28px));
+}
+
+.work-exchange-person-grid,
+.work-exchange-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.work-exchange-person-grid label,
+.work-exchange-group-field,
+.work-exchange-date-card {
+  display: grid;
+  gap: 7px;
+}
+
+.work-exchange-person-grid label > span,
+.work-exchange-group-field > span,
+.work-exchange-date-card > span {
+  color: #516178;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.work-exchange-person-grid input {
+  width: 100%;
+  min-height: 46px;
+  box-sizing: border-box;
+  border: 1.5px solid #aebdce;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #17283e;
+  background: #fff;
+  font: inherit;
+  font-weight: 750;
+}
+
+.work-exchange-cycle-picker {
+  min-width: 0;
+}
+
+.work-exchange-date-trigger {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  min-height: 52px;
+  border: 1.5px solid #78959b;
+  border-radius: 12px;
+  padding: 8px 12px;
+  color: #17283e;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-exchange-date-trigger span { color: #607287; font-size: 0.7rem; font-weight: 750; }
+.work-exchange-date-trigger strong { font-size: 0.83rem; }
+
+.work-exchange-cycle-calendar {
+  margin-top: 8px;
+  border: 1.5px solid #111820;
+  border-radius: 13px;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.work-exchange-cycle-calendar > header {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  text-align: center;
+}
+
+.work-exchange-cycle-calendar > header button {
+  min-height: 32px;
+  border: 1px solid #78959b;
+  border-radius: 9px;
+  color: #17283e;
+  background: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.work-exchange-cycle-legend { display: flex; gap: 5px; margin-bottom: 7px; }
+.work-exchange-cycle-legend span { flex: 1; border-radius: 7px; padding: 4px; text-align: center; font-size: 0.61rem; font-weight: 850; }
+.work-exchange-cycle-legend .work { background: #eaf1fa; }
+.work-exchange-cycle-legend .off { color: #fff; background: #172231; }
+.work-exchange-cycle-legend .training { background: #b8bdc4; }
+.work-exchange-cycle-calendar .mini-weekdays { margin-bottom: 3px; }
+
+.exchange-cycle-day {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid #9cabbc;
+  border-radius: 7px;
+  padding: 0;
+  color: #17283e;
+  background: #eaf1fa;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.exchange-cycle-day.off { color: #fff; background: #172231; }
+.exchange-cycle-day.training { color: #171717; background: #b8bdc4; }
+.exchange-cycle-day.selectable { border: 2px solid #111820; background: #9ddae3; box-shadow: 0 0 0 2px rgba(94, 182, 196, 0.28); }
+.exchange-cycle-day:disabled { cursor: not-allowed; opacity: 1; }
+.exchange-cycle-unavailable { position: absolute; inset: 0; background: linear-gradient(45deg, transparent 45%, #e32636 46% 54%, transparent 55%), linear-gradient(-45deg, transparent 45%, #e32636 46% 54%, transparent 55%); filter: drop-shadow(0 0 1px #fff); }
+.exchange-cycle-day.selected { outline: 3px solid #111820; outline-offset: -2px; opacity: 1; }
+.work-exchange-cycle-calendar > small { display: block; min-height: 0; margin-top: 7px; font-size: 0.64rem; }
+
+.work-exchange-date-card {
+  border: 2px solid #111820;
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(145deg, #f5fcfd, #d9f2f5);
+}
+
+.work-exchange-date-card.return {
+  background: linear-gradient(145deg, #eefafb, #bce6eb);
+}
+
+.work-exchange-error {
+  margin: 14px 0 0;
+  border-left: 4px solid #b42331;
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: #8e1e2a;
+  background: #fff1f2;
+  font-weight: 800;
+}
+
+.work-exchange-actions .delete-button {
+  margin-right: auto;
+}
+
+.work-exchange-panel {
+  margin-top: 14px;
+  border: 2px solid #111820;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(145deg, #f9fefe, #e2f5f7);
+}
+
+.work-exchange-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.work-exchange-panel-heading h2 {
+  margin: 2px 0 0;
+}
+
+.work-exchange-panel-heading > strong {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #10262a;
+  background: #8fd2dc;
+}
+
+.work-exchange-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.work-exchange-list article {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid #7f9aa0;
+  border-radius: 14px;
+  padding: 11px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.work-exchange-list img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.work-exchange-list article > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.work-exchange-list article span {
+  color: #5b6b80;
+  font-size: 0.72rem;
+}
+
+.work-exchange-list article button {
+  border: 1px solid #111820;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #17283e;
+  background: #fff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.leave-choices .exchange-day-choice {
+  --person-color: #5eb6c4;
+  border-color: #111820;
+}
+
+fieldset.leave-choices {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+
+.day-exchange-summary {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  border: 2px solid #111820;
+  border-radius: 15px;
+  padding: 13px;
+  background: linear-gradient(145deg, #eefafb, #bce6eb);
+}
+
+.day-exchange-summary button {
+  justify-self: start;
+}
+
+@media (max-width: 720px) {
+  .day .exchange-calendar-marker:not(.compact) {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: auto;
+    box-sizing: border-box;
+    width: 21px;
+    height: 21px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .day .exchange-calendar-label {
+    top: auto;
+    right: auto;
+    bottom: 2px;
+    left: 3px;
+    max-width: none;
+    overflow: visible;
+    font-size: clamp(6.5px, 1.8vw, 7.5px);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-align: left;
+    white-space: nowrap;
+    transform: none;
+  }
+
+  .day.exchange-day .date-number,
+  .day.exchange-day .holiday-date {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 11px;
+    transform: translate(-50%, -50%);
+  }
+
+  .work-exchange-person-grid,
+  .work-exchange-date-grid,
+  .work-exchange-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-exchange-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .work-exchange-actions > button {
+    width: 100%;
+    margin: 0;
+  }
+
+  .work-exchange-list article {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .work-exchange-list article button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

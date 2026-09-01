@@ -64,4 +64,16 @@ describe("résumé avant validation", () => {
     expect(html).toContain("retenue brute estimée au trentième");
     expect(html).toContain("sans effet sur les soldes");
   });
+
+  it("prévient que la maladie recrédite les congés déjà posés", () => {
+    const html = renderToStaticMarkup(
+      <RequestValidationSummary
+        items={[{ date: "2026-08-13", type: "sick" }]}
+        requestKind="leave"
+        sickRequest
+      />,
+    );
+    expect(html).toContain("Seuls les congés annuels");
+    expect(html).toContain("autres congés resteront annulables manuellement");
+  });
 });

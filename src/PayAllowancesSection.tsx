@@ -276,7 +276,7 @@ export function PayAllowancesSection({
             </strong>
           </header>
           <p className="allowance-note">
-            {allowances.sundayDone} fait sur {allowances.sundaysScheduledPast}{" "}
+            {allowances.sundayDone} dimanche{s(allowances.sundayDone)} effectué{s(allowances.sundayDone)} sur {allowances.sundaysScheduledPast}{" "}
             à ce jour
           </p>
           <table className="allowance-table">

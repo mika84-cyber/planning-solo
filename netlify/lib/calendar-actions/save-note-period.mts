@@ -54,6 +54,11 @@ export async function handleSaveNotePeriod(
       wish: previous?.wish || false,
       holiday_pay: previous?.holiday_pay,
       closure_override: previous?.closure_override,
+      exchange_id: previous?.exchange_id,
+      exchange_role: previous?.exchange_role,
+      exchange_partner: previous?.exchange_partner,
+      exchange_partner_group: previous?.exchange_partner_group,
+      exchange_other_date: previous?.exchange_other_date,
       updated_at: updatedAt,
     } satisfies CalendarEntry);
   }

@@ -14,6 +14,7 @@ export type LeaveType =
   | "other"
   | "childcare"
   | "exceptional"
+  | "work_accident"
   | "";
 /** Moitié de journée posée, pour les seules demi-journées. */
 export type HalfMoment = "morning" | "afternoon" | "";
@@ -35,6 +36,11 @@ export type CalendarEntry = {
    *  fait — le férié est alors signalé comme en attente. */
   holiday_pay?: HolidayPay;
   closure_override?: "closed" | "open";
+  exchange_id?: string;
+  exchange_role?: "given" | "return";
+  exchange_partner?: string;
+  exchange_partner_group?: number;
+  exchange_other_date?: string;
   updated_at: string;
 };
 export type LeavePeriod = {
@@ -337,7 +343,7 @@ export async function clearNote(
     note_group_id: "",
     updated_at: new Date().toISOString(),
   };
-  if (!next.leave && !next.wish && !next.holiday_pay && !next.closure_override)
+  if (!next.leave && !next.wish && !next.holiday_pay && !next.closure_override && !next.exchange_id)
     await store.delete(key);
   else await store.setJSON(key, next);
 }

@@ -341,6 +341,8 @@ describe("solde de récupération", () => {
       scheduled: 1,
       onLeave: 0,
       exceptionallyClosed: 1,
+      exchangedGiven: 0,
+      exchangedReturned: 0,
       worked: 0,
     });
   });
@@ -348,9 +350,9 @@ describe("solde de récupération", () => {
   it("retire toutes les absences du travail restant jusqu’à la fin de l’année", () => {
     const workDates = Array.from({ length: 31 }, (_, index) => localDate(2026, 7, index + 1))
       .filter((date) => getDayInfo(date, 2).kind === "work")
-      .slice(0, 5);
+      .slice(0, 6);
     const baseline = workedDayCountBetween(workDates[0], localDate(2026, 11, 31), 2, [], {});
-    const leaveTypes = ["annual", "other", "sick", "strike", "cet"] as const;
+    const leaveTypes = ["annual", "other", "sick", "strike", "cet", "work_accident"] as const;
     const withAbsences = workedDayCountBetween(
       workDates[0],
       localDate(2026, 11, 31),

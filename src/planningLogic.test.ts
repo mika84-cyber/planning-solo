@@ -257,6 +257,7 @@ describe("labels", () => {
     expect(multiDatePersonLabel("leave")).toBe("Congé");
     expect(multiDatePersonLabel("personal")).toBe("Divers");
     expect(leaveTypeLabel("rtt")).toBe("RTT");
+    expect(leaveTypeLabel("work_accident")).toBe("Accident de travail");
     expect(leaveTypeLabel("")).toBe("Type non renseigné");
     expect(periodLabel("2026-08-01", "2026-08-01")).toBe("01/08/2026");
     expect(periodLabel("2026-08-01", "2026-08-03")).toBe(

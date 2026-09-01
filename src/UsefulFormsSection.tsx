@@ -1,6 +1,9 @@
-import { useMemo, useState, type MouseEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
+import type { LeavePeriod, PayStatus } from "./appModel";
 
-export type UsefulFormsFolderKey = "expo" | "sap" | "brantome" | "tickets";
+const WorkAccidentSection = lazy(() => import("./WorkAccidentSection").then((module) => ({ default: module.WorkAccidentSection })));
+
+export type UsefulFormsFolderKey = "expo" | "sap" | "brantome" | "tickets" | "work-accident";
 
 type UsefulFormDocument = {
   title: string;
@@ -70,11 +73,26 @@ function documentCount(count: number) {
   return `${count} document${count > 1 ? "s" : ""}`;
 }
 
-export function UsefulFormsSection() {
+type UsefulFormsSectionProps = {
+  status?: PayStatus;
+  periods?: LeavePeriod[];
+  onSaveWorkAccident?: (period: { from: string; to: string }) => Promise<boolean>;
+  onDeleteWorkAccident?: (period: LeavePeriod) => Promise<boolean>;
+};
+
+export function UsefulFormsSection({
+  status = "contractuel",
+  periods = [],
+  onSaveWorkAccident = async () => false,
+  onDeleteWorkAccident = async () => false,
+}: UsefulFormsSectionProps = {}) {
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState("");
   const [query, setQuery] = useState("");
+  useEffect(() => {
+    void import("./WorkAccidentSection");
+  }, []);
   const folder = USEFUL_FORM_FOLDERS.find((item) => item.key === activeFolder);
   const secureContext = typeof window === "undefined" || window.isSecureContext;
   const searchResults = useMemo(() => {
@@ -99,6 +117,10 @@ export function UsefulFormsSection() {
       if (!folderText.includes(needle) && !matchingDocuments.length) return [];
       return [{ folder: item, matchingDocuments }];
     });
+  }, [query]);
+  const workAccidentMatches = useMemo(() => {
+    const needle = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+    return Boolean(needle && "accident travail trajet declaration urgence".includes(needle));
   }, [query]);
 
   const downloadForm = async (
@@ -140,17 +162,31 @@ export function UsefulFormsSection() {
     setActiveFolder(key);
   };
 
+  if (activeFolder === "work-accident") {
+    return (
+      <Suspense fallback={<div className="deferred-section-loading" role="status">Ouverture de la déclaration…</div>}>
+      <WorkAccidentSection
+        initialStatus={status}
+        periods={periods}
+        onSave={onSaveWorkAccident}
+        onDelete={onDeleteWorkAccident}
+        onBack={() => setActiveFolder(null)}
+      />
+      </Suspense>
+    );
+  }
+
   if (folder) {
     return (
       <section className="useful-forms-screen useful-forms-folder-screen" aria-labelledby="useful-forms-folder-title">
         <header className={`useful-forms-folder-header tone-${folder.key}`}>
           <button
-            className="native-back-button"
+            className="native-back-button section-back-hit-area"
             type="button"
             onClick={() => setActiveFolder(null)}
             aria-label="Revenir aux dossiers de formulaires"
           >
-            <span aria-hidden="true">←</span>
+            <span className="section-back-arrow" aria-hidden="true">←</span>
           </button>
           <div>
             <span className="step-label">Formulaires utiles</span>
@@ -238,10 +274,16 @@ export function UsefulFormsSection() {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="CET, congés, restauration…"
         />
+        <span className="useful-resource-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg></span>
       </label>
       {query.trim() ? (
         <div className="useful-form-search-results" aria-live="polite">
-          <p>{searchResults.length} dossier{searchResults.length > 1 ? "s" : ""} trouvé{searchResults.length > 1 ? "s" : ""}</p>
+          <p>{searchResults.length + Number(workAccidentMatches)} dossier{searchResults.length + Number(workAccidentMatches) > 1 ? "s" : ""} trouvé{searchResults.length + Number(workAccidentMatches) > 1 ? "s" : ""}</p>
+          {workAccidentMatches ? (
+            <button type="button" className="useful-form-search-result tone-sap" onClick={() => openFolder("work-accident")}>
+              <span aria-hidden="true">＋</span><span><strong>Déclarer un accident de travail</strong><small>Procédure, contacts et documents</small></span><i aria-hidden="true">›</i>
+            </button>
+          ) : null}
           {searchResults.length ? searchResults.map(({ folder: resultFolder, matchingDocuments }) => (
             <button
               key={resultFolder.key}
@@ -260,11 +302,12 @@ export function UsefulFormsSection() {
               </span>
               <i aria-hidden="true">›</i>
             </button>
-          )) : (
+          )) : !workAccidentMatches ? (
             <div className="useful-resource-empty-search">Aucun formulaire ne correspond à votre recherche.</div>
-          )}
+          ) : null}
         </div>
       ) : (
+      <div className="useful-form-content-stack">
       <div className="useful-form-folder-grid">
         {USEFUL_FORM_FOLDERS.map((item) => (
           <button
@@ -286,6 +329,12 @@ export function UsefulFormsSection() {
             <i aria-hidden="true">›</i>
           </button>
         ))}
+      </div>
+      <button className="useful-form-work-accident" type="button" onClick={() => openFolder("work-accident")}>
+        <img src="/work-accident-icon.png" alt="" width="256" height="205" />
+        <span><strong>Déclarer un accident de travail</strong><small>Procédure, contacts, documents et ajout au planning</small></span>
+        <i aria-hidden="true">›</i>
+      </button>
       </div>
       )}
     </section>

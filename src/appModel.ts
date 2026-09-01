@@ -29,10 +29,25 @@ export type SharedEntry = {
   /** Correction locale d'une fermeture : `closed` l'ajoute, `open` masque
    *  une fermeture automatique du Grand Palais. */
   closureOverride: "closed" | "open" | "";
+  /** Un échange validé porte toujours ses deux journées. `given` correspond
+   *  au jour de cycle cédé au collègue, `return` au jour rendu. */
+  exchangeId?: string;
+  exchangeRole?: "given" | "return";
+  exchangePartner?: string;
+  exchangePartnerGroup?: number;
+  exchangeOtherDate?: string;
   /** Version serveur utilisée pour détecter une modification concurrente. */
   updatedAt: string;
 };
 export type Entries = Record<string, SharedEntry>;
+export type WorkExchange = {
+  id: string;
+  partnerName: string;
+  partnerGroup: number;
+  agreementDate: string;
+  returnDate: string;
+  updatedAt: string;
+};
 export type LeavePeriod = {
   id: string;
   from: string;
@@ -193,10 +208,13 @@ export function workedDayCount(
   recoveryUses: Array<{ date: string; minutes: number }> = [],
   workDayMinutes = 8 * 60,
   isExceptionallyClosed: (date: string) => boolean = () => false,
+  exchangeRoleFor: (date: string) => "given" | "return" | "" = () => "",
 ) {
   let scheduled = 0;
   let onLeave = 0;
   let exceptionallyClosed = 0;
+  let exchangedGiven = 0;
+  let exchangedReturned = 0;
   for (let month = firstMonth; month <= lastMonth; month++)
     for (let day = 1; day <= monthDays(year, month); day++) {
       const date = localDate(year, month, day);
@@ -205,11 +223,16 @@ export function workedDayCount(
       const closureScheduled = isExceptionallyClosed(key);
       if (kind !== "work") {
         if (kind === "training" && closureScheduled) exceptionallyClosed++;
+        else if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
         continue;
       }
       scheduled++;
       if (closureScheduled) {
         exceptionallyClosed++;
+        continue;
+      }
+      if (exchangeRoleFor(key) === "given") {
+        exchangedGiven++;
         continue;
       }
       const period = periods.find(
@@ -229,7 +252,9 @@ export function workedDayCount(
     scheduled,
     onLeave,
     exceptionallyClosed,
-    worked: scheduled - onLeave - exceptionallyClosed,
+    exchangedGiven,
+    exchangedReturned,
+    worked: scheduled - onLeave - exceptionallyClosed - exchangedGiven + exchangedReturned,
   };
 }
 
@@ -246,10 +271,13 @@ export function workedDayCountBetween(
   recoveryUses: Array<{ date: string; minutes: number }> = [],
   workDayMinutes = 8 * 60,
   isExceptionallyClosed: (date: string) => boolean = () => false,
+  exchangeRoleFor: (date: string) => "given" | "return" | "" = () => "",
 ) {
   let scheduled = 0;
   let onLeave = 0;
   let exceptionallyClosed = 0;
+  let exchangedGiven = 0;
+  let exchangedReturned = 0;
   let date = localDate(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
   const last = localDate(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
   for (let guard = 0; date <= last && guard < 400; guard++, date = addDays(date, 1)) {
@@ -258,11 +286,16 @@ export function workedDayCountBetween(
     const closureScheduled = isExceptionallyClosed(key);
     if (kind !== "work") {
       if (kind === "training" && closureScheduled) exceptionallyClosed++;
+      else if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
       continue;
     }
     scheduled++;
     if (closureScheduled) {
       exceptionallyClosed++;
+      continue;
+    }
+    if (exchangeRoleFor(key) === "given") {
+      exchangedGiven++;
       continue;
     }
     const period = periods.find((item) => key >= item.from && key <= item.to);
@@ -283,6 +316,8 @@ export function workedDayCountBetween(
     scheduled,
     onLeave,
     exceptionallyClosed,
-    worked: scheduled - onLeave - exceptionallyClosed,
+    exchangedGiven,
+    exchangedReturned,
+    worked: scheduled - onLeave - exceptionallyClosed - exchangedGiven + exchangedReturned,
   };
 }

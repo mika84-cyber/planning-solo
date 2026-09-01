@@ -14,7 +14,7 @@ type JsonRecord = Record<string, unknown>;
 
 const leaveTypes = new Set<LeaveType | "">([
   "annual", "rtt", "fraction", "half", "recovery", "sick", "strike",
-  "cet", "other", "childcare", "exceptional", "",
+  "cet", "other", "childcare", "exceptional", "work_accident", "",
 ]);
 const halfMoments = new Set<HalfMoment | "">(["morning", "afternoon", ""]);
 const holidayPays = new Set<HolidayPay | "">(["prime", "recovery", ""]);
@@ -145,6 +145,18 @@ function entriesFromApi(value: unknown): Entries {
         raw.closure_override === "closed" || raw.closure_override === "open"
           ? raw.closure_override
           : "",
+      exchangeId: text(raw.exchange_id) || undefined,
+      exchangeRole:
+        raw.exchange_role === "given" || raw.exchange_role === "return"
+          ? raw.exchange_role
+          : undefined,
+      exchangePartner: text(raw.exchange_partner) || undefined,
+      exchangePartnerGroup: [1, 2, 3].includes(Number(raw.exchange_partner_group))
+        ? Number(raw.exchange_partner_group)
+        : undefined,
+      exchangeOtherDate: /^\d{4}-\d{2}-\d{2}$/.test(text(raw.exchange_other_date))
+        ? text(raw.exchange_other_date)
+        : undefined,
       updatedAt: text(raw.updated_at),
     };
   }

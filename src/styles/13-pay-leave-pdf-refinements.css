@@ -451,317 +451,243 @@
   }
 }
 
-/* Accueil de Ma paie : deux blocs cohérents séparent les paramètres des
-   consultations, tandis que chaque porte d’entrée annonce clairement son rôle. */
-.pay-app-screen:has(.pay-overview-intro) {
-  display: grid;
-  align-content: start;
-  gap: clamp(18px, 2.6vw, 26px);
-  background:
-    radial-gradient(circle at 100% 0%, rgba(87, 104, 203, 0.1), transparent 34%),
-    radial-gradient(circle at 0% 100%, rgba(49, 154, 119, 0.09), transparent 38%),
-    rgba(255, 255, 255, 0.95);
-}
-
-.pay-overview-intro {
-  max-width: 850px;
-}
-
-.pay-overview-intro h2 {
-  margin-bottom: 7px;
-}
-
-.pay-overview-profile-panel,
-.pay-overview-category-panel {
-  border: 1.5px solid rgba(54, 78, 106, 0.5);
-  border-radius: 24px;
-  padding: clamp(16px, 2.6vw, 24px);
-  box-shadow: 0 10px 26px rgba(36, 62, 91, 0.07);
-}
-
-.pay-overview-profile-panel {
-  background: linear-gradient(145deg, rgba(239, 245, 255, 0.94), rgba(250, 248, 255, 0.96));
-}
-
-.pay-overview-category-panel {
-  background: linear-gradient(145deg, rgba(238, 250, 246, 0.8), rgba(255, 250, 245, 0.9));
-}
-
-.pay-overview-section-heading {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  margin-bottom: 17px;
-}
-
-.pay-overview-number {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  color: #fff;
-  font-size: 17px;
-  font-weight: 900;
-}
-
-.pay-overview-number.profile {
-  background: linear-gradient(145deg, #5658b7, #7a72d1);
-  box-shadow: 0 6px 14px rgba(77, 72, 172, 0.22);
-}
-
-.pay-overview-number.categories {
-  background: linear-gradient(145deg, #258566, #4fa884);
-  box-shadow: 0 6px 14px rgba(32, 126, 94, 0.2);
-}
-
-.pay-overview-section-heading h3 {
-  margin: 0;
-  color: #172e49;
-  font-size: clamp(1.05rem, 2vw, 1.3rem);
-}
-
-.pay-overview-section-heading p {
-  margin: 3px 0 0;
-  color: #68798d;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.pay-overview-profile-panel .pay-profile-settings {
+/* Tableau de bord mensuel de Ma paie. Les informations prioritaires restent
+   visibles sans ouvrir les réglages ni les pages de détail. */
+.pay-app-screen:has(.pay-dashboard) {
   display: block;
-  overflow: hidden;
-  margin: 0;
-  border: 1.5px solid rgba(68, 73, 153, 0.38);
-  border-radius: 19px;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 7px 18px rgba(55, 57, 131, 0.08);
+  background: linear-gradient(155deg, #f7f9ff, #f5fbf8);
 }
 
-.pay-overview-profile-panel .pay-profile-summary {
+.pay-dashboard,
+.pay-dashboard-motion {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto 24px;
-  gap: 13px;
-  min-height: 96px;
-  border-radius: 18px;
-  padding: 15px 17px;
-}
-
-.pay-overview-profile-panel .pay-profile-symbol {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  color: #5552ad;
-  background: #eceaff;
-  font-size: 15px;
-  font-weight: 950;
-}
-
-.pay-overview-profile-panel .pay-profile-summary-copy {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-.pay-profile-summary-copy .step-label {
-  font-size: 9px;
-}
-
-.pay-profile-summary-copy strong {
-  color: #263f5b;
-  font-size: 16px;
-}
-
-.pay-profile-summary-copy small {
-  color: #687b91;
-  font-size: 11px;
-}
-
-.pay-profile-open-copy {
-  border-radius: 999px;
-  padding: 6px 10px;
-  color: #504e9c;
-  background: #efedff;
-  font-size: 10px;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
-.pay-overview-profile-panel .pay-profile-settings-grid {
-  gap: 13px;
-  border-top: 1px solid rgba(78, 83, 153, 0.17);
-  padding: 16px;
-  background: rgba(247, 247, 255, 0.72);
-}
-
-.pay-overview-profile-panel .pay-profile-settings-grid > label {
-  border: 1px solid rgba(74, 83, 151, 0.25);
-  border-radius: 14px;
-  padding: 12px;
-  background: #fff;
-}
-
-.pay-overview-category-panel .pay-category-grid {
-  gap: 15px;
-  margin-top: 0;
-}
-
-.pay-overview-category-panel .pay-category-grid > button {
-  grid-template-columns: 58px minmax(0, 1fr);
-  align-items: start;
   gap: 16px;
-  min-height: 185px;
-  border: 1.5px solid rgba(35, 128, 97, 0.42);
-  border-radius: 21px;
-  padding: 20px;
-  background: linear-gradient(145deg, #eefaf5, #fff);
-  box-shadow: 0 8px 21px rgba(35, 104, 80, 0.08);
 }
 
-.pay-overview-category-panel .pay-category-grid > button:last-child {
-  border-color: rgba(101, 79, 176, 0.4);
-  background: linear-gradient(145deg, #f2efff, #fffaf5);
-  box-shadow: 0 8px 21px rgba(82, 64, 155, 0.08);
+.pay-dashboard-month,
+.pay-dashboard-estimate,
+.pay-dashboard-checks,
+.pay-dashboard-variables,
+.pay-dashboard-verification,
+.pay-dashboard-settings {
+  border: 1.5px solid rgba(50, 73, 101, 0.33);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 22px rgba(36, 58, 88, 0.07);
 }
 
-.pay-overview-category-panel .pay-category-grid > button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 28px rgba(36, 66, 96, 0.13);
-}
-
-.pay-overview-category-panel .pay-category-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  color: #1e7b5f;
-  background: #daf2e9;
-}
-
-.pay-overview-category-panel .pay-category-icon.payslip {
-  color: #6650ad;
-  background: #ebe5ff;
-}
-
-.pay-overview-category-panel .pay-category-copy {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  height: 100%;
-}
-
-.pay-category-kicker {
-  color: #237a60;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.pay-category-grid > button:last-child .pay-category-kicker {
-  color: #6651a4;
-}
-
-.pay-overview-category-panel .pay-category-grid strong {
-  color: #213b57;
-  font-size: 17px;
-  line-height: 1.25;
-}
-
-.pay-overview-category-panel .pay-category-grid small {
-  color: #6b7d91;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.pay-category-cta {
+.pay-dashboard-month {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  align-self: end;
-  margin-top: auto;
-  border-top: 1px solid rgba(47, 102, 83, 0.17);
-  padding-top: 11px;
-  color: #1d7259;
-  font-size: 11px;
+  gap: 16px;
+  padding: 16px 18px;
+  border-left: 6px solid #5d59bd;
+}
+
+.pay-dashboard-month h2,
+.pay-dashboard-card-heading h3,
+.pay-dashboard-estimate h3 {
+  margin: 3px 0 0;
+  color: #18324e;
+}
+
+.pay-dashboard-month-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pay-dashboard-month-actions .pay-nav-arrow,
+.pay-dashboard-month-actions .pay-today-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.pay-dashboard-priority-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 16px;
+}
+
+.pay-dashboard-estimate,
+.pay-dashboard-checks,
+.pay-dashboard-variables,
+.pay-dashboard-verification {
+  padding: 18px;
+}
+
+.pay-dashboard-estimate {
+  border-color: rgba(83, 78, 179, 0.38);
+  background: linear-gradient(145deg, #f1efff, #fff);
+}
+
+.pay-dashboard-estimate-heading,
+.pay-dashboard-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pay-dashboard-reliability,
+.pay-dashboard-count {
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 10px;
   font-weight: 850;
 }
 
-.pay-category-grid > button:last-child .pay-category-cta {
-  border-top-color: rgba(93, 72, 158, 0.17);
-  color: #604d9d;
+.pay-dashboard-reliability.exact { color: #176044; background: #dff5ea; }
+.pay-dashboard-reliability.estimated { color: #594c94; background: #ebe7ff; }
+.pay-dashboard-reliability.incomplete { color: #8b4d13; background: #fff0d9; }
+
+.pay-dashboard-amounts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.6fr);
+  align-items: end;
+  gap: 12px;
+  margin: 18px 0 10px;
 }
 
-.pay-category-cta i {
-  font-size: 16px;
-  font-style: normal;
+.pay-dashboard-amounts p { display: grid; gap: 4px; margin: 0; }
+.pay-dashboard-amounts span { color: #64758a; font-size: 11px; font-weight: 800; }
+.pay-dashboard-net strong { color: #3f3b9e; font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1; }
+.pay-dashboard-gross strong { color: #263e59; font-size: clamp(1.05rem, 2vw, 1.35rem); }
+.pay-dashboard-profile-note { margin: 10px 0 14px; color: #5f7084; font-size: 11px; }
+.pay-dashboard-detail-button { width: 100%; min-height: 42px; }
+
+.pay-dashboard-checks {
+  border-color: rgba(203, 136, 45, 0.42);
+  background: #fffaf0;
 }
+.pay-dashboard-checks.all-clear { border-color: rgba(39, 139, 102, 0.35); background: #f2fbf7; }
+.pay-dashboard-count { color: #7c4a11; text-align: center; background: #ffe8c5; }
+.pay-dashboard-alert-list { display: grid; gap: 8px; margin-top: 13px; }
+.pay-dashboard-alert {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(193, 122, 34, 0.28);
+  border-radius: 14px;
+  padding: 11px;
+}
+.pay-dashboard-alert-symbol { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; color: #7c490d; background: #ffe7bd; font-weight: 950; }
+.pay-dashboard-alert > div { display: grid; gap: 2px; }
+.pay-dashboard-alert strong { font-size: 12px; }
+.pay-dashboard-alert small { font-size: 10px; }
+.pay-dashboard-all-checks { margin-top: 10px; }
+.pay-dashboard-all-clear { display: flex; align-items: center; gap: 11px; margin: 16px 0 0; color: #246148; font-weight: 850; }
+.pay-dashboard-all-clear > span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: #dff5ea; }
+
+.pay-dashboard-variables { border-color: rgba(39, 139, 102, 0.38); }
+.pay-dashboard-card-heading p { margin: 4px 0 0; color: #66788c; font-size: 11px; line-height: 1.4; }
+.pay-dashboard-variable-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+.pay-dashboard-variable-list article { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #dfe7ef; border-radius: 13px; padding: 11px; background: #fbfdff; }
+.pay-dashboard-variable-list article > span { display: grid; gap: 2px; min-width: 0; }
+.pay-dashboard-variable-list strong { color: #263f5a; font-size: 12px; }
+.pay-dashboard-variable-list small { color: #697b8e; font-size: 10px; line-height: 1.35; }
+.pay-dashboard-variable-list b { flex: 0 0 auto; color: #207258; font-size: 12px; }
+.pay-dashboard-variable-list b.negative { color: #a33b42; }
+.pay-dashboard-variable-list b.pending { color: #8b571e; }
+
+.pay-dashboard-verification { scroll-margin-top: 80px; border-color: rgba(53, 115, 172, 0.38); }
+.pay-dashboard-verification > .payslip-verify-card { margin: 14px 0 0; border: 0; padding: 0; box-shadow: none; }
+.pay-dashboard-verification > .payslip-verify-card::before { display: none; }
+.payslip-actual-values { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.pay-dashboard-settings { overflow: hidden; scroll-margin-top: 80px; }
+.pay-dashboard-settings-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 24px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 70px;
+  border: 0;
+  padding: 14px 17px;
+  color: #2a405b;
+  text-align: left;
+  background: linear-gradient(145deg, #f3f5fb, #fff);
+}
+.pay-dashboard-settings-toggle > span:first-child { display: grid; gap: 3px; }
+.pay-dashboard-settings-toggle > span:nth-child(2) { color: #5b589d; font-size: 11px; font-weight: 850; }
+.pay-dashboard-settings-toggle i { font-size: 19px; font-style: normal; transition: transform 160ms ease; }
+.pay-dashboard-settings.open .pay-dashboard-settings-toggle i { transform: rotate(180deg); }
+.pay-dashboard-settings-content { display: grid; gap: 13px; border-top: 1px solid #dfe5ee; padding: 15px; }
+.pay-dashboard-settings-content .pay-profile-settings { margin: 0; }
+.pay-dashboard-settings-stack { display: grid; gap: 13px; }
+.pay-dashboard-settings-stack > .allowance-card { margin: 0; }
+
+.pay-calculation-section { margin-top: 16px; border: 1px solid #dce5ef; border-radius: 14px; padding: 13px; background: rgba(255, 255, 255, 0.72); }
+.pay-calculation-section h3 { margin: 0 0 8px; color: #203c59; font-size: 1rem; }
+.pay-calculation-section h4 { margin: 14px 0 5px; color: #7b3f35; font-size: .78rem; }
+.pay-calculation-gross-before { display: flex; justify-content: space-between; gap: 12px; margin: 9px 0 0; border-top: 1px solid #dfe7ef; padding-top: 9px; color: #52677e; font-size: 11px; }
+.pay-calculation-gross-before strong { color: #203b58; white-space: nowrap; }
+.pay-calculation-subtotal th, .pay-calculation-subtotal td { border-top: 2px solid #b9cbe0 !important; color: #243f5c; }
+.pay-calculation-totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+.pay-calculation-totals article { display: grid; gap: 3px; border: 1px solid #dbe5ef; border-radius: 13px; padding: 11px; background: #f9fbfe; }
+.pay-calculation-totals span, .pay-calculation-totals small { color: #64778b; font-size: 10px; }
+.pay-calculation-totals strong { color: #243f5c; font-size: 1rem; }
+.pay-calculation-totals article.net { border-color: #bdb8f0; background: #f3f1ff; }
+.pay-calculation-totals article.net strong { color: #423ba6; }
 
 @media (max-width: 720px) {
-  .pay-app-screen:has(.pay-overview-intro) {
-    gap: 16px;
+  .pay-app-screen:has(.pay-dashboard) { width: calc(100% - 16px); margin-top: 10px; border-radius: 20px; padding: 9px 9px calc(16px + env(safe-area-inset-bottom)); }
+  .pay-dashboard,
+  .pay-dashboard-motion,
+  .pay-dashboard-month,
+  .pay-dashboard-priority-grid,
+  .pay-dashboard-priority-grid > *,
+  .pay-dashboard-variables,
+  .pay-dashboard-verification,
+  .pay-dashboard-settings {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
   }
-
-  .pay-overview-profile-panel,
-  .pay-overview-category-panel {
-    border-radius: 19px;
-    padding: 14px;
+  .pay-dashboard, .pay-dashboard-motion { width: 100%; gap: 10px; }
+  .pay-dashboard-month { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 10px 11px; border-radius: 16px; }
+  .pay-dashboard-month h2 { font-size: 1.25rem; }
+  .pay-dashboard-month-actions { display: grid; grid-template-columns: 44px 44px; justify-self: end; gap: 7px; }
+  .pay-dashboard-month-actions .pay-today-button { grid-column: 1 / -1; min-height: 36px; }
+  .pay-dashboard-priority-grid { grid-template-columns: 1fr; gap: 10px; }
+  .pay-dashboard-estimate, .pay-dashboard-checks, .pay-dashboard-variables, .pay-dashboard-verification { border-radius: 16px; padding: 13px; }
+  .pay-dashboard-estimate-heading, .pay-dashboard-card-heading { gap: 9px; }
+  .pay-dashboard-estimate-heading { display: grid; }
+  .pay-dashboard-reliability { justify-self: start; }
+  .pay-dashboard-amounts { grid-template-columns: 1fr auto; margin-top: 14px; }
+  .pay-dashboard-net strong { font-size: 2.15rem; }
+  .pay-dashboard-alert { grid-template-columns: 28px minmax(0, 1fr); }
+  .pay-dashboard-alert .pay-dashboard-alert-action { grid-column: 2; justify-self: start; }
+  .pay-dashboard-variable-list { grid-template-columns: 1fr; gap: 7px; }
+  .pay-dashboard-card-heading { display: grid; }
+  .pay-dashboard-checks .pay-dashboard-card-heading { display: flex; align-items: center; }
+  .pay-dashboard-count { justify-self: start; }
+  .pay-dashboard-card-heading > .text-button { justify-self: start; min-height: 38px; padding-left: 0; }
+  .pay-dashboard-verification .payslip-verify-card > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
   }
-
-  .pay-overview-section-heading {
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-
-  .pay-overview-number {
-    width: 36px;
-    height: 36px;
-    border-radius: 11px;
-    font-size: 15px;
-  }
-
-  .pay-overview-profile-panel .pay-profile-summary {
-    grid-template-columns: 42px minmax(0, 1fr) 22px;
-    gap: 10px;
-    min-height: 91px;
-    padding: 13px;
-  }
-
-  .pay-profile-symbol {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-  }
-
-  .pay-overview-profile-panel .pay-profile-summary > .pay-profile-open-copy {
-    display: none;
-  }
-
-  .pay-overview-profile-panel .pay-profile-settings-grid {
-    grid-template-columns: 1fr;
-    padding: 13px;
-  }
-
-  .pay-overview-category-panel .pay-category-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pay-overview-category-panel .pay-category-grid > button {
-    grid-template-columns: 50px minmax(0, 1fr);
-    gap: 13px;
-    min-height: 165px;
-    padding: 17px;
-  }
-
-  .pay-overview-category-panel .pay-category-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-  }
+  .pay-dashboard-verification .payslip-verify-card > header > div,
+  .pay-dashboard-verification .payslip-verify-card > header > small { min-width: 0; }
+  .pay-dashboard-verification .payslip-verify-card > header strong { white-space: normal; }
+  .payslip-actual-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pay-dashboard-settings { border-radius: 16px; }
+  .pay-dashboard-settings-toggle { grid-template-columns: minmax(0, 1fr) 20px; min-height: 64px; padding: 12px; }
+  .pay-dashboard-settings-toggle > span:nth-child(2) { display: none; }
+  .pay-dashboard-settings-content { padding: 10px; }
+  .pay-dashboard-settings-content .pay-profile-summary { display: grid; grid-template-columns: 20px minmax(0, 1fr) 20px; gap: 8px; padding: 10px; }
+  .pay-dashboard-settings-content .pay-profile-summary::before { content: ""; grid-column: 1; }
+  .pay-dashboard-settings-content .pay-profile-symbol { display: none; }
+  .pay-dashboard-settings-content .pay-profile-summary-copy { grid-column: 2; justify-items: center; text-align: center; }
+  .pay-dashboard-settings-content .pay-profile-open-copy { display: none; }
+  .pay-dashboard-settings-content .pay-profile-summary > i { grid-column: 3; }
+  .pay-dashboard-settings-content .pay-profile-settings-grid { grid-template-columns: 1fr; padding: 11px; }
+  .pay-calculation-section { padding: 11px; }
+  .pay-calculation-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Fold ouvert et tablettes : les trois cartes tiennent encore sur une ligne,
@@ -1290,73 +1216,6 @@
     box-shadow: 0 5px 14px rgba(37, 65, 96, 0.055);
   }
 
-  /* Ma paie */
-  .pay-app-screen:has(.pay-overview-intro) {
-    width: calc(100% - 16px);
-    min-height: 0;
-    gap: 10px;
-    margin-top: 10px;
-    border-radius: 21px;
-    padding: 10px 10px calc(16px + env(safe-area-inset-bottom));
-    background:
-      radial-gradient(circle at 100% 0, rgba(92, 83, 190, 0.12), transparent 35%),
-      linear-gradient(155deg, #fafaff, #f7fbfa);
-    box-shadow: 0 9px 23px rgba(38, 54, 90, 0.09);
-  }
-
-  .pay-overview-intro {
-    margin: 0;
-    border: 1px solid rgba(83, 76, 166, 0.22);
-    border-left: 5px solid #625bc1;
-    border-radius: 15px;
-    padding: 12px 13px;
-    background: rgba(255, 255, 255, 0.86);
-  }
-
-  .pay-overview-intro h2 {
-    margin: 3px 0 4px;
-    font-size: 1.28rem;
-    line-height: 1.16;
-  }
-
-  .pay-overview-intro p { font-size: 11px; line-height: 1.42; }
-
-  .pay-overview-profile-panel,
-  .pay-overview-category-panel {
-    border-radius: 17px;
-    padding: 12px;
-    box-shadow: 0 5px 14px rgba(42, 60, 92, 0.055);
-  }
-
-  .pay-overview-profile-panel { border-left: 5px solid #625bc1; }
-  .pay-overview-category-panel { border-left: 5px solid #27906c; }
-
-  .pay-overview-section-heading {
-    align-items: center;
-    gap: 9px;
-    margin-bottom: 10px;
-  }
-
-  .pay-overview-number {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    font-size: 13px;
-  }
-
-  .pay-overview-section-heading h3 { font-size: 1rem; }
-  .pay-overview-section-heading p { margin-top: 1px; font-size: 9.5px; }
-
-  .pay-overview-profile-panel .pay-profile-settings { border-radius: 15px; }
-
-  .pay-overview-profile-panel .pay-profile-summary {
-    grid-template-columns: 38px minmax(0, 1fr) 18px;
-    gap: 9px;
-    min-height: 74px;
-    border-radius: 14px;
-    padding: 10px;
-  }
-
   .pay-profile-symbol {
     width: 38px;
     height: 38px;
@@ -1366,28 +1225,6 @@
 
   .pay-profile-summary-copy strong { font-size: 13px; }
   .pay-profile-summary-copy small { font-size: 9.5px; }
-
-  .pay-overview-category-panel .pay-category-grid { gap: 9px; }
-
-  .pay-overview-category-panel .pay-category-grid > button {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 11px;
-    min-height: 116px;
-    border-radius: 15px;
-    padding: 12px;
-    box-shadow: 0 4px 12px rgba(35, 104, 80, 0.055);
-  }
-
-  .pay-overview-category-panel .pay-category-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-  }
-
-  .pay-overview-category-panel .pay-category-grid strong { font-size: 13px; }
-  .pay-overview-category-panel .pay-category-grid small { font-size: 9.5px; line-height: 1.35; }
-  .pay-overview-category-panel .pay-category-copy { gap: 3px; }
-  .pay-category-cta { margin-top: 4px; padding-top: 6px; font-size: 10px; }
 
   /* PDF : les quatre documents suivent exactement le même modèle. */
   .pdf-download-actions {

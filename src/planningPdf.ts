@@ -4,6 +4,7 @@ type PdfDayInfo = {
   kind: "work" | "off" | "training";
   holiday: string;
 };
+type PdfColor = readonly [number, number, number];
 type PdfLeaveType =
   | "annual"
   | "rtt"
@@ -15,10 +16,19 @@ type PdfLeaveType =
   | "cet"
   | "other"
   | "childcare"
-  | "exceptional";
+  | "exceptional"
+  | "work_accident";
 /** Moitié posée sur une demi-journée. Absent pour les demi-journées venues du
  *  formulaire, qui n'en portent pas : la case est alors coloriée à gauche. */
 type PdfHalfMoment = "morning" | "afternoon";
+export type PdfExchangeMarker = {
+  number: number;
+  role: "given" | "return";
+};
+type PlanningPdfAssets = {
+  exchange?: string;
+  workAccident?: string;
+};
 const LEAVE_CODES: Record<Exclude<PdfLeaveType, "half">, string> = {
   annual: "CA",
   rtt: "RTT",
@@ -30,6 +40,7 @@ const LEAVE_CODES: Record<Exclude<PdfLeaveType, "half">, string> = {
   other: "Divers",
   childcare: "Garde enf.",
   exceptional: "ASA",
+  work_accident: "AT",
 };
 
 type PlanningPdfOptions = {
@@ -44,6 +55,12 @@ type PlanningPdfOptions = {
   schoolVacationDates?: ReadonlySet<string>;
   /** Congés souhaités, pas encore validés : leur case est verte. */
   wishDates?: ReadonlySet<string>;
+  /** Fermetures visibles dans l'application, y compris les corrections locales. */
+  closedDates?: ReadonlySet<string>;
+  /** Même numéro sur les deux journées qui composent un échange. */
+  exchangeMarkers?: ReadonlyMap<string, PdfExchangeMarker>;
+  /** Images déjà converties en PNG par le navigateur. */
+  assets?: PlanningPdfAssets;
   /** Vacances scolaires de l'année, regroupées dans les trois zones. */
   schoolVacationsByZone?: Record<
     "A" | "B" | "C",
@@ -93,6 +110,7 @@ const COLORS = {
   /** Fond des congés souhaités : vert clair, pour rester lisible sous le
    *  texte noir des dates. */
   wish: [122, 211, 156] as const,
+  workAccident: [255, 216, 48] as const,
   money: [242, 174, 39] as const,
   /** Bleu ardoise du tableau des vacances : sobre, il ferme la page sans
    *  reprendre une couleur déjà porteuse de sens dans la grille. */
@@ -122,6 +140,139 @@ const LEAVE_EMOJIS: Partial<Record<PdfLeaveType, string>> = {
   childcare: "👶",
 };
 const emojiImageCache = new Map<string, string>();
+
+async function loadPdfAsset(path: string) {
+  if (typeof document === "undefined" || typeof Image === "undefined") return undefined;
+  return new Promise<string | undefined>((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const maximumSize = 256;
+      const scale = Math.min(1, maximumSize / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) return resolve(undefined);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    image.onerror = () => resolve(undefined);
+    image.src = path;
+  });
+}
+
+/** Charge une seule fois les pictogrammes réellement employés dans le planning. */
+export async function loadPlanningPdfAssets(): Promise<PlanningPdfAssets> {
+  const [exchange, workAccident] = await Promise.all([
+    loadPdfAsset("/exchange-arrows.png"),
+    loadPdfAsset("/work-accident-icon.png"),
+  ]);
+  return { exchange, workAccident };
+}
+
+function drawAsset(
+  doc: jsPDF,
+  image: string | undefined,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  alias: string,
+) {
+  if (!image) return false;
+  try {
+    doc.addImage(image, "PNG", x, y, width, height, alias, "FAST");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function drawWorkAccidentMarker(
+  doc: jsPDF,
+  image: string | undefined,
+  centerX: number,
+  centerY: number,
+) {
+  if (drawAsset(doc, image, centerX - 2.1, centerY - 2.1, 4.2, 4.2, "work-accident-marker")) return;
+  doc.setFillColor(12, 132, 232);
+  doc.setDrawColor(9, 33, 62);
+  doc.circle(centerX, centerY, 1.75, "FD");
+  doc.setTextColor(...COLORS.white);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(4.2);
+  doc.text("AT", centerX, centerY, { align: "center", baseline: "middle" });
+}
+
+function drawExchangeMarker(
+  doc: jsPDF,
+  image: string | undefined,
+  centerX: number,
+  centerY: number,
+  number: number,
+) {
+  doc.setFillColor(...COLORS.white);
+  doc.setDrawColor(38, 53, 70);
+  doc.setLineWidth(0.18);
+  doc.roundedRect(centerX - 4.1, centerY - 2.05, 8.2, 4.1, 1.25, 1.25, "FD");
+  if (!drawAsset(doc, image, centerX - 3.55, centerY - 1.55, 3.1, 3.1, "exchange-marker")) {
+    doc.setTextColor(...COLORS.black);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(5.2);
+    doc.text("⇄", centerX - 2, centerY, { align: "center", baseline: "middle" });
+  }
+  doc.setFillColor(94, 182, 196);
+  doc.circle(centerX + 2.15, centerY, 1.45, "F");
+  doc.setTextColor(...COLORS.black);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(number > 9 ? 3.3 : 4.2);
+  doc.text(String(number), centerX + 2.15, centerY, { align: "center", baseline: "middle" });
+}
+
+function drawClosedFrame(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  fill = true,
+) {
+  if (fill) doc.setFillColor(...COLORS.white);
+  doc.setDrawColor(...COLORS.black);
+  doc.setLineWidth(0.28);
+  doc.rect(x, y, width, height, fill ? "FD" : "S");
+}
+
+function paintColorRuns(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  width: number,
+  rowHeight: number,
+  colors: PdfColor[],
+) {
+  let runStart = 0;
+  const transitions: number[] = [];
+  for (let index = 1; index <= colors.length; index++) {
+    const previous = colors[index - 1];
+    const current = colors[index];
+    if (current && current.every((value, channel) => value === previous[channel])) continue;
+    doc.setFillColor(...previous);
+    doc.rect(x, y + runStart * rowHeight, width, (index - runStart) * rowHeight, "F");
+    if (current) transitions.push(index);
+    runStart = index;
+  }
+  doc.setDrawColor(...COLORS.black);
+  doc.setLineWidth(0.28);
+  transitions.forEach((index) => {
+    const separatorY = y + index * rowHeight;
+    doc.line(x, separatorY, x + width, separatorY);
+  });
+}
+
+function isBlackColor(color: PdfColor) {
+  return color.every((value, channel) => value === COLORS.black[channel]);
+}
 
 /** Capture l'emoji avec la police couleur réellement utilisée par l'appareil.
  *  Le rendu du PDF reprend ainsi le même dessin que le planning affiché. */
@@ -280,6 +431,9 @@ function drawGroupPage(
   schoolVacationDates?: ReadonlySet<string>,
   wishDates?: ReadonlySet<string>,
   schoolVacationsByZone?: PlanningPdfOptions["schoolVacationsByZone"],
+  closedDates?: ReadonlySet<string>,
+  exchangeMarkers?: ReadonlyMap<string, PdfExchangeMarker>,
+  assets?: PlanningPdfAssets,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const sidebarX = 7;
@@ -320,8 +474,22 @@ function drawGroupPage(
       const day = index + 1;
       const date = new Date(year, month, day, 12, 0, 0, 0);
       const info = getDayInfo(date, group);
-      const isOff = info.kind === "off";
       const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const exchange = exchangeMarkers?.get(key);
+      const isOff = exchange ? exchange.role === "given" : info.kind === "off";
+      const isWorkedHoliday = Boolean(info.holiday) && info.kind === "work";
+      const baseFill = isOff
+        ? COLORS.black
+        : isWorkedHoliday
+          ? COLORS.holiday
+          : info.kind === "training"
+            ? COLORS.training
+            : COLORS.white;
+      const workAccidentFill = isOff
+        ? COLORS.black
+        : isWorkedHoliday
+          ? COLORS.holiday
+          : COLORS.workAccident;
       // Une absence enregistrée reste visible même si elle tombe sur un repos
       // du cycle ou un jour férié : le PDF « avec congés » doit refléter les
       // données réellement posées, sans en masquer selon la nature du jour.
@@ -343,12 +511,19 @@ function drawGroupPage(
               ? "strike"
               : leaveType === "other"
                 ? "other"
-                : "leave"
+                : leaveType === "work_accident"
+                  ? "work_accident"
+                  : "leave"
             : "";
       return {
         date,
+        key,
         info,
         isOff,
+        isWorkedHoliday,
+        baseFill,
+        workAccidentFill,
+        exchange,
         leaveType,
         halfMoment: leaveType === "half" ? halfMoments?.get(key) : undefined,
         isRecovery,
@@ -363,8 +538,13 @@ function drawGroupPage(
 
       const {
         date,
+        key,
         info,
         isOff,
+        isWorkedHoliday,
+        baseFill,
+        workAccidentFill,
+        exchange,
         leaveType,
         halfMoment,
         isRecovery,
@@ -372,7 +552,7 @@ function drawGroupPage(
         isWish,
         colorBlockKey,
       } = monthDays[day - 1];
-      const isWorkedHoliday = Boolean(info.holiday) && info.kind === "work";
+      const isClosed = Boolean(closedDates?.has(key));
       const isOfferedHoliday =
         Boolean(info.holiday) &&
         info.kind !== "work" &&
@@ -384,7 +564,9 @@ function drawGroupPage(
         : isRecovery
           ? COLORS.recovery
           : isFullLeave
-            ? leaveFill(leaveType)
+            ? leaveType === "work_accident"
+              ? workAccidentFill
+              : leaveFill(leaveType)
             : leaveType === "half"
               ? COLORS.white
             : isOff
@@ -394,15 +576,62 @@ function drawGroupPage(
                 : info.kind === "training"
                   ? COLORS.training
                   : COLORS.white;
-      const darkCell = isOff && !isWish && !leaveType;
+      const darkCell = isBlackColor(fill);
       const textColor = darkCell ? COLORS.white : COLORS.black;
+      const dayLabel = `${WEEKDAYS[date.getDay()]} ${day}${info.holiday ? "  Férié" : ""}`;
       if (isWorkedHoliday) workedHolidayCount++;
       if (isOfferedHoliday) offeredHolidayCount++;
+
+      if (isClosed) {
+        const previousClosed = Boolean(monthDays[day - 2] && closedDates?.has(monthDays[day - 2].key));
+        if (!previousClosed) {
+          let blockLength = 1;
+          while (monthDays[day - 1 + blockLength] && closedDates?.has(monthDays[day - 1 + blockLength].key))
+            blockLength++;
+          const blockDays = monthDays.slice(day - 1, day - 1 + blockLength);
+          paintColorRuns(doc, x, y, monthWidth, dayHeight, blockDays.map((item) => item.baseFill));
+          drawClosedFrame(doc, x, y, monthWidth, blockLength * dayHeight, false);
+        }
+        const closedDayColor = isBlackColor(baseFill) ? COLORS.white : COLORS.black;
+        doc.setTextColor(closedDayColor[0], closedDayColor[1], closedDayColor[2]);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(5.9);
+        doc.text(dayLabel, x + 1.6, y + dayHeight / 2, { baseline: "middle" });
+        const closedTextColor: PdfColor = isBlackColor(baseFill) ? COLORS.white : [225, 28, 35];
+        doc.setTextColor(closedTextColor[0], closedTextColor[1], closedTextColor[2]);
+        doc.setFont("helvetica", "bold");
+        let closedFontSize = 5.4;
+        doc.setFontSize(closedFontSize);
+        const closedRight = x + monthWidth - 1.2;
+        const dayLabelRight = x + 1.6 + doc.getTextWidth(dayLabel) + 0.6;
+        while (closedFontSize > 3.8 && closedRight - doc.getTextWidth("CLOSED") < dayLabelRight) {
+          closedFontSize -= 0.1;
+          doc.setFontSize(closedFontSize);
+        }
+        doc.setFont("helvetica", "bold");
+        doc.setCharSpace(0.08);
+        doc.text("CLOSED", closedRight, y + dayHeight / 2, { align: "right", baseline: "middle" });
+        doc.setCharSpace(0);
+        continue;
+      }
 
       doc.setFillColor(fill[0], fill[1], fill[2]);
       doc.setDrawColor(...COLORS.black);
       doc.setLineWidth(0.18);
-      if (colorBlockKey) {
+      if (colorBlockKey === "work_accident") {
+        // L'accident est peint en un seul rectangle continu. Cela évite les
+        // coutures d'anticrénelage que produisaient plusieurs aplats accolés.
+        if (monthDays[day - 2]?.colorBlockKey !== colorBlockKey) {
+          let blockLength = 1;
+          while (monthDays[day - 1 + blockLength]?.colorBlockKey === colorBlockKey)
+            blockLength++;
+          const blockDays = monthDays.slice(day - 1, day - 1 + blockLength);
+          paintColorRuns(doc, x, y, monthWidth, dayHeight, blockDays.map((item) => item.workAccidentFill));
+          doc.setDrawColor(...COLORS.black);
+          doc.setLineWidth(0.35);
+          doc.rect(x, y, monthWidth, blockLength * dayHeight, "S");
+        }
+      } else if (colorBlockKey) {
         // Un seul liseré noir entoure tout le bloc de couleur. Il n'y a donc
         // aucune coupe entre deux journées consécutives de même couleur.
         doc.rect(x, y, monthWidth, dayHeight, "F");
@@ -439,7 +668,6 @@ function drawGroupPage(
           );
         }
       }
-      const dayLabel = `${WEEKDAYS[date.getDay()]} ${day}${info.holiday ? "  Férié" : ""}`;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(5.9);
       doc.setTextColor(textColor[0], textColor[1], textColor[2]);
@@ -461,6 +689,10 @@ function drawGroupPage(
         // Les mentions sont décalées de 2 mm vers la gauche du trait
         // d'encadrement.
         const codeRight = x + monthWidth - 0.9 - 2;
+        if (leaveType === "work_accident") {
+          drawWorkAccidentMarker(doc, assets?.workAccident, codeRight - 1.6, y + dayHeight / 2);
+          continue;
+        }
         if (EMOJI_LEAVE_TYPES.has(leaveType)) {
           drawLeaveEmoji(doc, leaveType, codeRight - 1.25, y + dayHeight / 2);
           continue;
@@ -485,6 +717,15 @@ function drawGroupPage(
           align: "right",
           baseline: "middle",
         });
+      }
+      if (exchange) {
+        drawExchangeMarker(
+          doc,
+          assets?.exchange,
+          x + monthWidth - 5.7,
+          y + dayHeight / 2,
+          exchange.number,
+        );
       }
     }
 
@@ -605,13 +846,17 @@ function drawGroupPage(
     color: readonly [number, number, number];
     moneyBadge?: boolean;
     emojiType?: PdfLeaveType;
+    assetType?: keyof PlanningPdfAssets;
+    closedBadge?: boolean;
   }> = [
     { label: "Travail", color: COLORS.white },
     { label: "Repos", color: COLORS.black },
     { label: "Formation", color: COLORS.training },
     { label: "Férié travaillé", color: COLORS.holiday },
-    { label: "Férié compensé", color: COLORS.money, moneyBadge: true },
     { label: "Congé validé", color: COLORS.leave },
+    { label: "Congé souhaité", color: COLORS.wish },
+    { label: "Récupération", color: COLORS.recovery },
+    { label: "Échange n°", color: COLORS.white, assetType: "exchange" },
     { label: "Maladie", color: COLORS.leave, emojiType: "sick" },
     {
       label: "Garde d'enfant",
@@ -620,8 +865,9 @@ function drawGroupPage(
     },
     { label: "Grève", color: leaveFill("strike"), emojiType: "strike" },
     { label: "Divers", color: leaveFill("other"), emojiType: "other" },
-    { label: "Récupération", color: COLORS.recovery },
-    { label: "Congé souhaité", color: COLORS.wish },
+    { label: "Accident de travail", color: COLORS.workAccident, assetType: "workAccident" },
+    { label: "Fermeture exceptionnelle", color: COLORS.white, closedBadge: true },
+    { label: "Férié compensé", color: COLORS.money, moneyBadge: true },
   ];
 
   {
@@ -694,11 +940,29 @@ function drawGroupPage(
         doc.setFillColor(item.color[0], item.color[1], item.color[2]);
         doc.setDrawColor(...COLORS.black);
         doc.setLineWidth(0.2);
-        const symbolWidth = schoolVacationsByZone ? 4.1 : 9.5;
-        const symbolHeight = schoolVacationsByZone ? 4.1 : 4.6;
+        const symbolWidth = item.closedBadge && schoolVacationsByZone
+          ? 6.2
+          : schoolVacationsByZone
+            ? 4.1
+            : 9.5;
+        const symbolHeight = item.closedBadge && schoolVacationsByZone
+          ? 3.5
+          : schoolVacationsByZone
+            ? 4.1
+            : 4.6;
         doc.rect(symbolX - symbolWidth / 2, centerY - symbolHeight / 2, symbolWidth, symbolHeight, "FD");
         if (item.emojiType)
           drawLeaveEmoji(doc, item.emojiType, symbolX, centerY);
+        else if (item.assetType === "workAccident")
+          drawWorkAccidentMarker(doc, assets?.workAccident, symbolX, centerY);
+        else if (item.assetType === "exchange")
+          drawExchangeMarker(doc, assets?.exchange, symbolX, centerY, 1);
+        else if (item.closedBadge) {
+          doc.setTextColor(225, 28, 35);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(schoolVacationsByZone ? 2.4 : 4.1);
+          doc.text("CLOSED", symbolX, centerY, { align: "center", baseline: "middle" });
+        }
       }
       doc.setTextColor(...COLORS.black);
       doc.setFont("helvetica", "normal");
@@ -818,6 +1082,9 @@ export function createAnnualPlanningPdf({
   schoolVacationDates,
   wishDates,
   schoolVacationsByZone,
+  closedDates,
+  exchangeMarkers,
+  assets,
   filenameLabel,
 }: PlanningPdfOptions) {
   const doc = new jsPDF({
@@ -840,6 +1107,9 @@ export function createAnnualPlanningPdf({
       schoolVacationDates,
       wishDates,
       schoolVacationsByZone,
+      closedDates,
+      exchangeMarkers,
+      assets,
     );
   });
 

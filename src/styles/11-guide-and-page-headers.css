@@ -258,14 +258,6 @@
   border-color: rgba(71, 146, 190, .28);
   background: linear-gradient(145deg, #eef8fd, #fff);
 }
-.pay-profile-scroll-hint {
-  display: inline-flex !important;
-  flex: 0 0 auto;
-  margin-left: auto;
-  color: #59738f;
-  font-size: 11px;
-  font-weight: 800;
-}
 .pay-detail-sticky-header {
   position: sticky;
   z-index: 80;
@@ -378,7 +370,6 @@
 .leave-calendar-marker-sick.compact { font-size: 13px; }
 
 @media (max-width: 720px) {
-  .pay-profile-scroll-hint { font-size: 10px; }
   .pay-detail-sticky-header {
     top: 84px;
     grid-template-columns: 42px minmax(0, 1fr) 40px;
@@ -1193,8 +1184,7 @@
 .request-option-group,
 .today-overview-grid > article,
 .today-overview-grid > button,
-.leave-balance-grid button,
-.pay-category-grid > button {
+.leave-balance-grid button {
   border-width: 1.5px;
   border-color: rgba(31, 35, 40, 0.38);
 }

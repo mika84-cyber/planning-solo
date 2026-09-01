@@ -39,5 +39,6 @@ describe("navigation principale", () => {
     labels.slice(1).forEach((label, index) => {
       expect(html.indexOf(labels[index])).toBeLessThan(html.indexOf(label));
     });
+    expect(html).toContain("déclaration d’accident de travail");
   });
 });

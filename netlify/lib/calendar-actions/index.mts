@@ -18,6 +18,7 @@ import { handleSaveNotePeriod } from "./save-note-period.mts";
 import { handleDeleteNotePeriod } from "./delete-note-period.mts";
 import { handleSaveLeaves } from "./save-leaves.mts";
 import { handleSaveEntry } from "./save-entry.mts";
+import { handleDeleteExchange, handleSaveExchange } from "./work-exchange.mts";
 import { json } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
 
@@ -44,6 +45,8 @@ const actionHandlers: Record<string, CalendarActionHandler> = {
   "delete-note-period": handleDeleteNotePeriod,
   "save-leaves": handleSaveLeaves,
   "save-entry": handleSaveEntry,
+  "save-exchange": handleSaveExchange,
+  "delete-exchange": handleDeleteExchange,
 };
 
 export const CALENDAR_ACTIONS = Object.freeze(Object.keys(actionHandlers));

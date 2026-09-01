@@ -1109,6 +1109,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+.note-date-direct-choice input { min-height: 50px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius: 10px; padding: 10px 12px; color: var(--ink); background: #fff; font: inherit; font-weight: 750; }
 .leave-type-picker .choice-picker-trigger {
   min-height: 50px;
   border-color: color-mix(in srgb, var(--accent) 35%, var(--line));

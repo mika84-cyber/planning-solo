@@ -195,7 +195,7 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
     return (
       <section className="useful-contacts-screen" aria-labelledby="contact-section-title">
         <header className="useful-contacts-subheader">
-          <button type="button" onClick={() => setPompidouSection(null)} aria-label="Revenir aux contacts Pompidou">←</button>
+          <button className="section-back-hit-area" type="button" onClick={() => setPompidouSection(null)} aria-label="Revenir aux contacts Pompidou"><span className="section-back-arrow" aria-hidden="true">←</span></button>
           <div><span className="step-label">Contacts Pompidou</span><h2 id="contact-section-title">{activePompidouSection.title}</h2></div>
         </header>
         {activePompidouSection.key === "ras" ? (
@@ -217,7 +217,7 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
     return (
       <section className="useful-contacts-screen" aria-labelledby="pompidou-contacts-title">
         <header className="useful-contacts-subheader">
-          <button type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles">←</button>
+          <button className="section-back-hit-area" type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
           <div><span className="step-label">Contacts utiles</span><h2 id="pompidou-contacts-title">Contacts Pompidou</h2></div>
         </header>
         <div className="useful-contact-category-grid">
@@ -235,7 +235,7 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
     return (
       <section className="useful-contacts-screen" aria-labelledby="gprmn-contacts-title">
         <header className="useful-contacts-subheader">
-          <button type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles">←</button>
+          <button className="section-back-hit-area" type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
           <div><span className="step-label">Contacts utiles</span><h2 id="gprmn-contacts-title">Contact GP‑RMN</h2></div>
         </header>
         <ContactCards contacts={contacts.gprmn} />
@@ -253,6 +253,7 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
       <label className="useful-resource-search">
         <span>Rechercher dans les contacts</span>
         <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom, service, e-mail ou téléphone…" />
+        <span className="useful-resource-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg></span>
       </label>
       {query.trim() ? (
         <div className="useful-contact-search-results" aria-live="polite">

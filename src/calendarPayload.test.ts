@@ -5,7 +5,12 @@ describe("parseCalendarSnapshot", () => {
   it("convertit les unités serveur et conserve les données valides", () => {
     const snapshot = parseCalendarSnapshot({
       email: "agent@example.com",
-      entries: [{ date: "2026-09-03", note_text: "Note", leave: true }],
+      entries: [{
+        date: "2026-09-03", note_text: "Note", leave: true,
+        exchange_id: "exchange-2026-a", exchange_role: "given",
+        exchange_partner: "Camille", exchange_partner_group: 1,
+        exchange_other_date: "2026-09-08",
+      }],
       periods: [{ id: "p1", from: "2026-09-03", to: "2026-09-04", leave_type: "annual", updated_at: "u" }],
       overtime_entries: [{ id: "h1", date: "2026-09-01", minutes: 60, day_minutes: 60, night_minutes: 0, disposition: "paid", input_mode: "duration" }],
       recovery_uses: [{ id: "r1", date: "2026-09-02", minutes: 180, kind: "training" }],
@@ -21,6 +26,13 @@ describe("parseCalendarSnapshot", () => {
 
     expect(snapshot.email).toBe("agent@example.com");
     expect(snapshot.entries["2026-09-03"].leave).toBe(true);
+    expect(snapshot.entries["2026-09-03"]).toMatchObject({
+      exchangeId: "exchange-2026-a",
+      exchangeRole: "given",
+      exchangePartner: "Camille",
+      exchangePartnerGroup: 1,
+      exchangeOtherDate: "2026-09-08",
+    });
     expect(snapshot.periods[0]).toMatchObject({ leaveType: "annual", updatedAt: "u" });
     expect(snapshot.formProfile?.baseSalary).toBe(2500);
     expect(snapshot.payProfiles["2026"]).toMatchObject({ cia: 120, ciaMonth: 7 });

@@ -3,11 +3,27 @@ import { MECENAT_REGULATORY_RATES } from "./mecenat";
 import { minutesLabel, type WorkQuota } from "./overtime";
 import { MONTHS, fromKey, longDate } from "./planningLogic";
 
-type PayRow = {
+export type PayCalculationRow = {
   key: string;
   label: string;
   detail: string;
   amount: number | null;
+};
+
+export type PayCalculationBreakdown = {
+  grossComposition: PayCalculationRow[];
+  grossDeductions: PayCalculationRow[];
+  grossBeforeDeductions: number;
+  variableAdditions: number;
+  netRatioFixed: number;
+  netRatioVariable: number;
+  estimatedContributions: number | null;
+  navigo: number;
+  mealVoucherDeduction: number;
+  netBeforeTax: number | null;
+  pasRate: number;
+  incomeTax: number | null;
+  totalDeductions: number | null;
 };
 
 type OvertimePayDetails = {
@@ -46,7 +62,7 @@ type PayEstimateDetailsProps = {
   gross: number;
   grossEstimateComplete: boolean;
   net: number | null;
-  rows: PayRow[];
+  calculation: PayCalculationBreakdown;
   overtime: OvertimePayDetails;
   workQuota: WorkQuota;
   mecenat: MecenatPayDetails;
@@ -66,7 +82,7 @@ export function PayEstimateDetails({
   gross,
   grossEstimateComplete,
   net,
-  rows,
+  calculation,
   overtime,
   workQuota,
   mecenat,
@@ -131,10 +147,11 @@ export function PayEstimateDetails({
           </p>
         )}
       </div>
-      {rows.length ? (
-        <table className="allowance-table">
+      <section className="pay-calculation-section" aria-labelledby="gross-composition-title">
+        <h3 id="gross-composition-title">Composition du brut</h3>
+        <table className="allowance-table pay-calculation-table">
           <tbody>
-            {rows.map((row) => (
+            {calculation.grossComposition.map((row) => (
               <tr key={row.key}>
                 <th scope="row">
                   {row.label}
@@ -155,7 +172,51 @@ export function PayEstimateDetails({
             ))}
           </tbody>
         </table>
-      ) : null}
+        <p className="pay-calculation-gross-before">
+          Brut avant retenues liées au calendrier : <strong>{euros(calculation.grossBeforeDeductions)}</strong>
+        </p>
+        {calculation.grossDeductions.length ? (
+          <>
+            <h4>Retenues appliquées au brut</h4>
+            <table className="allowance-table pay-calculation-table">
+              <tbody>
+                {calculation.grossDeductions.map((row) => (
+                  <tr key={row.key}>
+                    <th scope="row">{row.label}<small>{row.detail}</small></th>
+                    <td className="negative">{row.amount === null ? "À vérifier" : `-${euros(row.amount)}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : null}
+      </section>
+
+      <section className="pay-calculation-section" aria-labelledby="net-breakdown-title">
+        <h3 id="net-breakdown-title">Retenues et passage au net</h3>
+        <table className="allowance-table pay-calculation-table">
+          <tbody>
+            <tr>
+              <th scope="row">Cotisations estimées<small>Part fixe conservée à {calculation.netRatioFixed.toLocaleString("fr-FR")} % · part variable à {calculation.netRatioVariable.toLocaleString("fr-FR")} %</small></th>
+              <td className="negative">{calculation.estimatedContributions === null ? "À compléter" : `−${euros(calculation.estimatedContributions)}`}</td>
+            </tr>
+            {calculation.navigo ? <tr><th scope="row">Remboursement Navigo<small>ajouté après cotisations</small></th><td className="positive">+{euros(calculation.navigo)}</td></tr> : null}
+            {calculation.mealVoucherDeduction ? <tr><th scope="row">Titres repas<small>retenue du mois</small></th><td className="negative">−{euros(calculation.mealVoucherDeduction)}</td></tr> : null}
+            <tr className="pay-calculation-subtotal"><th scope="row">Net avant prélèvement à la source</th><td>{calculation.netBeforeTax === null ? "À compléter" : euros(calculation.netBeforeTax)}</td></tr>
+            <tr>
+              <th scope="row">Prélèvement à la source<small>Taux enregistré : {calculation.pasRate.toLocaleString("fr-FR")} %</small></th>
+              <td className="negative">{calculation.incomeTax === null ? "À compléter" : `−${euros(calculation.incomeTax)}`}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="pay-calculation-totals" aria-label="Totaux du calcul">
+        <article><span>Total brut</span><strong>{grossEstimateComplete ? euros(gross) : "À compléter"}</strong><small>après les retenues appliquées au brut</small></article>
+        <article><span>Total des ajouts variables</span><strong>{euros(calculation.variableAdditions)}</strong><small>inclus dans le brut</small></article>
+        <article><span>Total des retenues</span><strong>{calculation.totalDeductions === null ? "À compléter" : `−${euros(calculation.totalDeductions)}`}</strong><small>retenues brutes, cotisations et impôt</small></article>
+        <article className="net"><span>Net estimé final</span><strong>{net === null ? "À compléter" : euros(net)}</strong><small>montant estimé après impôt</small></article>
+      </section>
       {overtime.totalMinutes ? (
         <div className="overtime-pay-detail">
           <div className="overtime-pay-detail-heading">

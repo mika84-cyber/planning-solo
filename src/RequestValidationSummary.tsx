@@ -4,7 +4,7 @@ import { TYPE_LABELS, fromKey, longDate, s } from "./planningLogic";
 function impactLabel(kind: RequestKind, sickRequest: boolean) {
   if (kind === "other") return "Repère visible uniquement dans le planning, sans effet sur la paie ni les soldes.";
   if (kind === "strike") return "Jour non travaillé, sans effet sur les soldes, avec retenue brute estimée au trentième.";
-  if (sickRequest) return "Ajouté au suivi des arrêts maladie, sans diminuer les droits à congés.";
+  if (sickRequest) return "Ajouté au suivi des arrêts maladie. Seuls les congés annuels déjà posés sur ces dates seront retirés et recrédités automatiquement ; les autres congés resteront annulables manuellement.";
   if (kind === "recovery") return "Déduit du solde d’heures de récupération selon la durée choisie.";
   return "Déduit du solde correspondant après enregistrement de la demande.";
 }

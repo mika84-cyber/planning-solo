@@ -19,7 +19,7 @@ const MENU_ITEMS: ReadonlyArray<readonly [MainSection, string, string, string]> 
   ["pay", "Ma paie", "Estimations, primes et bulletins", "03"],
   ["pdf", "Télécharger les plannings en PDF", "Choisir le planning puis générer le document", "04"],
   ["program", "Programmation GP", "Expositions et événements par espace", "05"],
-  ["forms", "Formulaires utiles", "Expo, SAP, Brantôme et tickets repas", "06"],
+  ["forms", "Formulaires utiles", "Expo, SAP, Brantôme, tickets repas et déclaration d’accident de travail", "06"],
   ["contacts", "Contacts utiles", "Pompidou et GP‑RMN", "07"],
 ];
 

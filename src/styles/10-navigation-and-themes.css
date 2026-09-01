@@ -258,56 +258,6 @@
   color: #66768a;
   line-height: 1.55;
 }
-.pay-category-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(14px, 2.5vw, 24px);
-  margin-top: 30px;
-}
-.pay-category-grid > button {
-  min-height: 180px;
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  border: 1px solid rgba(65, 94, 128, 0.13);
-  border-radius: 24px;
-  padding: 25px;
-  background: linear-gradient(145deg, #fff, #f6f9fd);
-  color: #263d59;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 12px 30px rgba(40, 66, 96, 0.07);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-.pay-category-grid > button:hover {
-  transform: translateY(-3px);
-  border-color: rgba(57, 104, 163, 0.25);
-  box-shadow: 0 18px 38px rgba(40, 66, 96, 0.11);
-}
-.pay-category-grid > button:active { transform: scale(0.985); }
-.pay-category-grid > button > span:nth-child(2) { display: grid; gap: 8px; }
-.pay-category-grid strong { font-size: 1.2rem; }
-.pay-category-grid small { color: #69798c; line-height: 1.45; }
-.pay-category-grid > button > i { color: #71849a; font-size: 2rem; font-style: normal; }
-.pay-category-icon {
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
-  background: #e8f1fb;
-  color: #3975ad;
-}
-.pay-category-icon.payslip { background: #efeafb; color: #7059a5; }
-.pay-category-icon svg {
-  width: 28px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
 .native-back-button {
   min-height: 46px;
   display: inline-flex;
@@ -322,6 +272,25 @@
   cursor: pointer;
 }
 .native-back-button span { font-size: 1.45rem; }
+.section-back-hit-area {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.section-back-hit-area:focus-visible { outline: 3px solid currentColor; }
+.section-back-arrow {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  transform: translateY(-50%);
+}
 .pay-dedicated-content { animation: app-screen-in 180ms ease-out; }
 .pay-dedicated-content.request-archive-content { padding: 0; }
 .variable-pay-card { margin-bottom: 16px; }
@@ -388,8 +357,6 @@
     border-radius: 22px;
     padding: 18px 14px calc(22px + env(safe-area-inset-bottom));
   }
-  .pay-category-grid { grid-template-columns: 1fr; margin-top: 20px; }
-  .pay-category-grid > button { min-height: 128px; padding: 18px; }
   .planning-group-action-row { grid-template-columns: 1fr; }
   .planning-group-leave-action { width: 100%; }
   .group-choice-grid { gap: 7px; }
@@ -492,17 +459,24 @@
 .useful-forms-folder-screen { padding-top: 0; overflow: hidden; }
 .useful-forms-folder-header {
   --folder-accent: #5677b9;
+  position: relative;
   min-height: 126px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 46px minmax(0, 1fr);
+  column-gap: 16px;
   align-items: center;
-  gap: 16px;
   margin: 0 -22px 20px;
   border-bottom: 1.5px solid color-mix(in srgb, var(--folder-accent) 52%, #fff);
   padding: 24px 22px;
   background:
     radial-gradient(circle at 88% 25%, rgba(255, 255, 255, 0.78) 0 32px, transparent 33px),
     color-mix(in srgb, var(--folder-accent) 12%, #fff);
+}
+.useful-forms-folder-header > div { grid-column: 2; min-width: 0; }
+.useful-forms-folder-header .section-back-arrow,
+.work-accident-header .section-back-arrow {
+  left: 22px;
+  background: #edf3f9;
 }
 .useful-forms-folder-header.tone-expo { --folder-accent: #4e8b80; }
 .useful-forms-folder-header.tone-sap { --folder-accent: #5677b9; }
@@ -666,8 +640,10 @@
   .useful-forms-folder-header {
     min-height: 112px;
     margin: 0 -14px 14px;
+    column-gap: 12px;
     padding: 18px 14px;
   }
+  .useful-forms-folder-header .section-back-arrow { left: 12px; }
   .useful-forms-folder-header h2 { font-size: 20px; }
   .useful-form-download-card {
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -795,17 +771,8 @@
   border-color: transparent;
   box-shadow: 0 12px 32px rgba(54, 91, 83, .07);
 }
-.pay-category-grid > button { border-color: transparent; }
-.pay-category-grid > button:first-child { background: linear-gradient(145deg, #eef8f4, #fff 72%); }
-.pay-category-grid > button:last-child { background: linear-gradient(145deg, #f1f5ff, #fff8f2 90%); }
 .allowance-card { border-color: transparent; box-shadow: 0 10px 28px rgba(47, 67, 92, .055); }
 .variable-pay-list article { border-radius: 10px; background: rgba(244, 247, 251, .78); }
-
-/* Les deux portes d’entrée de Ma paie restent colorées, mais leur contour
-   commun les identifie clairement comme de vraies catégories tactiles. */
-.pay-category-grid > button {
-  border: 1px solid rgba(20, 24, 29, .88);
-}
 
 @media (max-width: 720px) {
   .planning-leave-desktop { display: none; }
@@ -826,7 +793,6 @@
   .calendar-toolbar.month-toolbar .today-button { width: 100%; }
   .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; padding: 18px 14px; }
   .pay-profile-settings-grid { grid-template-columns: 1fr; }
-  .pay-category-grid { margin-top: 16px; }
   .leave-request-archive .request-archive-toggle {
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 11px;

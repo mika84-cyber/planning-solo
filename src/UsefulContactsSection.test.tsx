@@ -22,6 +22,7 @@ describe("contacts utiles", () => {
     expect(html).toContain("useful-contacts-root");
     expect(html.indexOf("Contacts Pompidou")).toBeLessThan(html.indexOf("Contact GP‑RMN"));
     expect(html).toContain("Rechercher dans les contacts");
+    expect(html).toContain("useful-resource-search-icon");
     expect(html).not.toContain("0100000000");
   });
 

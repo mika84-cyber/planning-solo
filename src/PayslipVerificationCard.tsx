@@ -49,13 +49,22 @@ export function PayslipVerificationCard({
   sundayCarryoverYear,
   onClearSundayCarryover: clearSundayCarryover,
 }: Props) {
+  const comparableGross =
+    payslipCheck?.reading.month === displayedMonth &&
+    payslipCheck.reading.year === allowances.year &&
+    payslipCheck.reading.gross !== undefined
+      ? {
+          expected: grossForMonth(displayedMonth),
+          found: payslipCheck.reading.gross,
+          gap: Math.abs(payslipCheck.reading.gross - grossForMonth(displayedMonth)),
+        }
+      : null;
   return (
-          <section className="allowance-card pay-function-card payslip-verify-card">
+          <section className="allowance-card pay-function-card payslip-verify-card" aria-label="Sélection et résultat du bulletin">
             <header>
               <div>
-                <span className="step-label">Contrôler une fiche réelle</span>
-                <h3>Vérifier un bulletin</h3>
-                <small>Pour voir si rien ne manque</small>
+                <strong>Comparer avec le bulletin réel</strong>
+                <small>Le PDF est lu sur cet appareil et n’est pas conservé.</small>
               </div>
               <small>Un seul PDF suffit</small>
             </header>
@@ -89,11 +98,25 @@ export function PayslipVerificationCard({
                   <span>Période reconnue</span>
                   <strong>{MONTHS[payslipCheck.reading.month]} {payslipCheck.reading.year}</strong>
                 </div>
-                {payslipCheck.reading.gross !== undefined ||
-                payslipCheck.reading.netBeforeTax !== undefined ? (
+                {comparableGross || payslipCheck.reading.netBeforeTax !== undefined ? (
                   <div className="payslip-actual-values" role="group" aria-label="Valeurs réellement lues sur le bulletin">
-                    <span>Valeurs du bulletin</span>
-                    {payslipCheck.reading.gross !== undefined ? (
+                    <span>{comparableGross ? "Comparaison du montant brut" : "Valeurs du bulletin"}</span>
+                    {comparableGross ? (
+                      <>
+                        <div>
+                          <small>Attendu</small>
+                          <strong>{euros(comparableGross.expected)}</strong>
+                        </div>
+                        <div>
+                          <small>Trouvé</small>
+                          <strong>{euros(comparableGross.found)}</strong>
+                        </div>
+                        <div>
+                          <small>Écart</small>
+                          <strong className={comparableGross.gap >= 0.05 ? "negative" : ""}>{euros(comparableGross.gap)}</strong>
+                        </div>
+                      </>
+                    ) : payslipCheck.reading.gross !== undefined ? (
                       <div>
                         <small>Brut réel</small>
                         <strong>{euros(payslipCheck.reading.gross)}</strong>
@@ -405,7 +428,7 @@ export function PayslipVerificationCard({
           sundayCarryoverMonth !== undefined &&
           sundayCarryoverYear !== undefined ? (
             <p className="allowance-note">
-              {sundayCarryover} dimanche{s(sundayCarryover)} en attente sur{" "}
+              {sundayCarryover} dimanche{s(sundayCarryover)} en attente pour{" "}
               {MONTHS[sundayCarryoverMonth]} {sundayCarryoverYear}.{" "}
               <button
                 type="button"

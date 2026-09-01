@@ -18,7 +18,7 @@ export function CalendarCleanupPanel({
   onDeleteNotes,
 }: CalendarCleanupPanelProps) {
   return (
-    <section className="calendar-delete-panel" aria-label="Suppression multiple">
+    <section id="calendar-delete-panel" className="calendar-delete-panel" aria-label="Suppression multiple" tabIndex={-1}>
       <div>
         <span className="step-label">Nettoyer le planning</span>
         <h2>

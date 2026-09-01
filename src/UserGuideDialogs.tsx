@@ -117,7 +117,7 @@ export function UserGuideDialogs({
                   <ul>
                     <li>un congé validé diminue le solde correspondant et disparaît des prochains jours travaillés ;</li>
                     <li>un congé souhaité reste un repère modifiable et peut être retiré directement ;</li>
-                    <li>un arrêt maladie est suivi séparément : il ne diminue pas vos droits à congés, mais peut modifier l’estimation de paie ;</li>
+                    <li>un arrêt maladie est suivi séparément : il remplace et recrédite automatiquement les CA déjà posés sur les mêmes dates ; les autres congés restent enregistrés et annulables manuellement ;</li>
                     <li>Divers indique une journée non travaillée sans déduire de CA ou de RTT ;</li>
                     <li>Grève ne touche aucun solde et crée une retenue brute estimée au trentième.</li>
                   </ul>
@@ -236,6 +236,12 @@ export function UserGuideDialogs({
                     <strong> Formulaire Brantôme</strong> regroupent les documents dans l’ordre prévu.
                     Touchez l’icône de téléchargement à droite d’un fichier pour l’enregistrer.
                     <strong> Horaires tickets resto</strong> affiche directement l’adresse et les horaires de retrait.
+                  </p>
+                  <p>
+                    Le bouton pleine largeur <strong>Déclarer un accident de travail</strong> réunit les démarches,
+                    contacts et documents selon votre statut. Vous pouvez y marquer les journées concernées :
+                    le pictogramme médical apparaît alors dans le planning, sans les traiter comme une maladie
+                    ordinaire ni appliquer de jour de carence.
                   </p>
                 </div>
               </section>

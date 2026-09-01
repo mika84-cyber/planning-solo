@@ -77,8 +77,8 @@ export type PayslipImportField = {
 type PayActionsOptions = {
   demoMode: boolean;
   group: number;
-  view: Date;
-  setView: SetState<Date>;
+  payView: Date;
+  setPayView: SetState<Date>;
   formProfile: FormProfile | null;
   setFormProfile: SetState<FormProfile | null>;
   payProfiles: Record<string, PayProfile>;
@@ -185,6 +185,35 @@ export function payAmountPayload(
   };
 }
 
+export function annualPayProfilePayload(
+  payYear: number,
+  profile: FormProfile,
+  values: PayProfile,
+) {
+  const cents = (value: number | undefined) =>
+    value === undefined ? undefined : Math.round(value * 100);
+  return {
+    action: "save-form-profile",
+    payYear,
+    fullName: profile.fullName,
+    group: profile.group,
+    signature: profile.signature,
+    baseSalaryCents: cents(values.baseSalary),
+    residenceAllowanceCents: cents(values.residenceAllowance),
+    ifseCents: cents(values.ifse),
+    carenceCents: cents(values.carenceDay),
+    otherFixedCents: cents(values.otherFixed),
+    ciaCents: cents(values.cia),
+    ciaMonth: values.ciaMonth,
+    netRatioFixedBp: cents(values.netRatioFixed),
+    netRatioVariableBp: cents(values.netRatioVariable),
+    netRatioRegime: values.netRatioRegime,
+    navigoCents: cents(values.navigo),
+    mealVoucherDeductionCents: cents(values.mealVoucherDeduction),
+    pasRateBp: cents(values.pasRate),
+  };
+}
+
 export function nextSundayPayoutSlot(year: number, month: number) {
   if (month === 6) return { year, month: 9 };
   if (month === 9) return { year, month: 11 };
@@ -211,8 +240,8 @@ export function usePayActions(options: PayActionsOptions) {
   const {
     demoMode,
     group,
-    view,
-    setView,
+    payView,
+    setPayView,
     formProfile,
     setFormProfile,
     payProfiles,
@@ -256,7 +285,7 @@ export function usePayActions(options: PayActionsOptions) {
     notify,
     post,
   } = options;
-  const payYear = String(view.getFullYear());
+  const payYear = String(payView.getFullYear());
   const importFields = payslipImportFields(isContractuel);
 
   async function savePayAmount(field: PayDraftKey) {
@@ -294,6 +323,19 @@ export function usePayActions(options: PayActionsOptions) {
       notify("Le montant n’a pas pu être enregistré. Réessayez.");
     } finally {
       setSavingPay(null);
+    }
+  }
+
+  async function saveAnnualPayProfile(values: PayProfile) {
+    const nextProfile = payProfileBase(formProfile, group);
+    try {
+      if (!demoMode) {
+        await post(annualPayProfilePayload(Number(payYear), nextProfile, values));
+      }
+      setPayProfiles((current) => ({ ...current, [payYear]: values }));
+      notify(`Profil de paie ${payYear} actualisé.`);
+    } catch {
+      notify("Le profil annuel n’a pas pu être enregistré. Réessayez.");
     }
   }
 
@@ -416,24 +458,24 @@ export function usePayActions(options: PayActionsOptions) {
         year: payslipFallbackYear,
       },
     });
-    setView(localDate(payslipFallbackYear, payslipFallbackMonth, 1));
+    setPayView(localDate(payslipFallbackYear, payslipFallbackMonth, 1));
     setPayslipNeedsPeriod(false);
     setPayslipResultDetailsOpen(false);
   }
 
   function grossForMonth(index: number) {
     const month = allowances?.monthly.find((slot) => slot.index === index);
-    const overtime = paidOvertimeForPayPeriod(view.getFullYear(), index);
+    const overtime = paidOvertimeForPayPeriod(payView.getFullYear(), index);
     const mecenat = mecenatForPayMonth(
       mecenatEntries,
-      view.getFullYear(),
+      payView.getFullYear(),
       index,
     );
     const strike = strikePayEstimate(
       periods,
       group,
       payProfiles,
-      view.getFullYear(),
+      payView.getFullYear(),
       index,
       { entries, recoveryUses },
     );
@@ -507,8 +549,8 @@ export function usePayActions(options: PayActionsOptions) {
       const bestForCheck =
         readableItems.find(
           (item) =>
-            item.reading.year === view.getFullYear() &&
-            item.reading.month === view.getMonth(),
+            item.reading.year === payView.getFullYear() &&
+            item.reading.month === payView.getMonth(),
         ) || readableItems[0];
       if (bestForCheck && mode === "verify") {
         setPayslipCheck(bestForCheck);
@@ -516,7 +558,7 @@ export function usePayActions(options: PayActionsOptions) {
           bestForCheck.reading.year !== undefined &&
           bestForCheck.reading.month !== undefined
         ) {
-          setView(
+          setPayView(
             localDate(
               bestForCheck.reading.year,
               bestForCheck.reading.month,
@@ -524,8 +566,8 @@ export function usePayActions(options: PayActionsOptions) {
             ),
           );
         } else {
-          setPayslipFallbackMonth(view.getMonth());
-          setPayslipFallbackYear(view.getFullYear());
+          setPayslipFallbackMonth(payView.getMonth());
+          setPayslipFallbackYear(payView.getFullYear());
           setPayslipNeedsPeriod(true);
         }
       } else if (mode === "verify") {
@@ -538,9 +580,9 @@ export function usePayActions(options: PayActionsOptions) {
           ? bestForCheck || items[0]
           : readableItems[0] || items[0];
       const targetPayYear = String(
-        profileSource?.reading.year ?? view.getFullYear(),
+        profileSource?.reading.year ?? payView.getFullYear(),
       );
-      const targetPayMonth = profileSource?.reading.month ?? view.getMonth();
+      const targetPayMonth = profileSource?.reading.month ?? payView.getMonth();
       const targetNetRatioRegime: PayCalibrationRegime = payCalibrationRegime(
         Number(targetPayYear),
         targetPayMonth,
@@ -849,6 +891,7 @@ export function usePayActions(options: PayActionsOptions) {
 
   return {
     savePayAmount,
+    saveAnnualPayProfile,
     saveCiaMonth,
     nextSundayPayoutSlot,
     reportMissingSundays,

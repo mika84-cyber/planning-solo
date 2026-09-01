@@ -19,8 +19,11 @@ describe("formulaires utiles", () => {
     expect(html.indexOf("Formulaire SAP")).toBeLessThan(html.indexOf("Formulaire Brantôme"));
     expect(html.indexOf("Formulaire Brantôme")).toBeLessThan(html.indexOf("Horaires tickets resto"));
     expect(html).toContain("Rechercher dans les formulaires");
+    expect(html).toContain("useful-resource-search-icon");
     expect(html).toContain("1 document");
     expect(html).toContain("Information pratique");
+    expect(html).toContain("Déclarer un accident de travail");
+    expect(html).toContain("useful-form-work-accident");
   });
 
   it("réserve la rubrique tickets repas à l’image fournie", () => {

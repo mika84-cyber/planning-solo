@@ -361,23 +361,18 @@
   font-style: normal;
 }
 .useful-contacts-subheader {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
   margin: -4px 0 18px;
   border-bottom: 1px solid #c7d7e6;
-  padding: 0 0 16px;
+  padding: 0 0 16px 60px;
 }
-.useful-contacts-subheader > button {
-  width: 46px;
-  height: 46px;
-  flex: 0 0 46px;
-  border: 0;
-  border-radius: 14px;
+.useful-contacts-subheader .section-back-arrow {
+  left: 0;
   background: #e6f1fb;
   color: #235c91;
   font-size: 22px;
-  cursor: pointer;
 }
 .useful-contacts-subheader h2 { margin: 3px 0 0; color: #172b43; }
 .useful-contact-list { display: grid; gap: 11px; }
@@ -1164,7 +1159,6 @@
 .cet-history,
 .cet-operation-form,
 .variable-pay-list article,
-.pay-category-grid > button,
 .pdf-download-settings > label,
 .sick-request-panel .request-bottom {
   border-color: var(--app-frame-soft);
@@ -1893,7 +1887,7 @@
 .useful-form-information-image img { width: min(100%, 900px); }
 .useful-contacts-subheader {
   margin: 2px 0 20px;
-  padding: 17px 19px;
+  padding: 17px 19px 17px 78px;
 }
 .useful-contact-card {
   grid-template-columns: minmax(210px, 0.55fr) minmax(0, 1.45fr);
@@ -1950,7 +1944,8 @@
     aspect-ratio: 1131 / 729;
     background-size: 100% 100%;
   }
-  .useful-contacts-subheader { margin-top: 1px; padding: 15px 16px; }
+  .useful-contacts-subheader { margin-top: 1px; padding: 15px 16px 15px 72px; }
+  .useful-contacts-subheader .section-back-arrow { left: 12px; }
   .useful-contact-card { grid-template-columns: 1fr; padding: 13px; }
   .useful-contact-actions { grid-template-columns: 1fr; }
   .useful-contact-actions a.useful-contact-email { width: 100%; }

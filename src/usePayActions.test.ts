@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FormProfile } from "./appModel";
 import {
+  annualPayProfilePayload,
   nextSundayPayoutSlot,
   parsedPayDraft,
   payAmountPayload,
@@ -35,6 +36,21 @@ describe("usePayActions — conversions et payloads sûrs", () => {
       group: "2",
       signature: "signature",
       baseSalaryCents: 234567,
+    });
+  });
+
+  it("crée un profil annuel avec les valeurs actuellement utilisées", () => {
+    const profile: FormProfile = { fullName: "Agent Test", group: "2", signature: "signature" };
+    expect(annualPayProfilePayload(2027, profile, {
+      baseSalary: 2345.67,
+      netRatioFixed: 79.65,
+      pasRate: 4.2,
+    })).toMatchObject({
+      action: "save-form-profile",
+      payYear: 2027,
+      baseSalaryCents: 234567,
+      netRatioFixedBp: 7965,
+      pasRateBp: 420,
     });
   });
 

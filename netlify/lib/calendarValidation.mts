@@ -12,6 +12,7 @@ const BULK_LEAVE_TYPES = new Set([
   "other",
   "childcare",
   "exceptional",
+  "work_accident",
 ]);
 
 export type NormalizedBulkPeriod = {
@@ -29,7 +30,8 @@ export type NormalizedBulkPeriod = {
     | "cet"
     | "other"
     | "childcare"
-    | "exceptional";
+    | "exceptional"
+    | "work_accident";
   half_moment: "morning" | "afternoon" | "";
   group?: number;
   updated_at: string;

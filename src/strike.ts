@@ -131,6 +131,7 @@ function periodLabel(type: LeavePeriod["leaveType"]) {
   if (type === "cet") return "Congé CET";
   if (type === "other") return "Divers";
   if (type === "half") return "Demi-journée de congé";
+  if (type === "work_accident") return "Accident de travail";
   return "Autre absence";
 }
 

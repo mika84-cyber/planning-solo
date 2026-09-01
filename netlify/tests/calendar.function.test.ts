@@ -157,7 +157,65 @@ describe("API principale du calendrier", () => {
       "delete-note-period",
       "save-leaves",
       "save-entry",
+      "save-exchange",
+      "delete-exchange",
     ]);
+  });
+
+  it("enregistre, préserve puis supprime toujours les deux dates d’un échange", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const save = await calendarHandler(request({
+      action: "save-exchange",
+      id: "exchange-2026-a",
+      partnerName: "Camille",
+      partnerGroup: 1,
+      agreementDate: "2026-09-08",
+      returnDate: "2026-09-01",
+      expectedUpdatedAts: { "2026-09-01": "", "2026-09-08": "" },
+    }));
+    expect(save.status).toBe(200);
+    expect(data.get("user/user-a/entry/2026-09-08")).toMatchObject({
+      exchange_id: "exchange-2026-a",
+      exchange_role: "given",
+      exchange_other_date: "2026-09-01",
+    });
+    expect(data.get("user/user-a/entry/2026-09-01")).toMatchObject({
+      exchange_id: "exchange-2026-a",
+      exchange_role: "return",
+      exchange_other_date: "2026-09-08",
+    });
+
+    const first = data.get("user/user-a/entry/2026-09-01") as { updated_at: string };
+    const second = data.get("user/user-a/entry/2026-09-08") as { updated_at: string };
+    const note = await calendarHandler(request({
+      action: "save-entry",
+      date: "2026-09-01",
+      noteText: "À confirmer avec Camille",
+      noteColor: "#D3943D",
+      expectedUpdatedAt: first.updated_at,
+    }));
+    expect(note.status).toBe(200);
+    expect(data.get("user/user-a/entry/2026-09-01")).toMatchObject({
+      note_text: "À confirmer avec Camille",
+      exchange_id: "exchange-2026-a",
+    });
+
+    const firstWithNote = data.get("user/user-a/entry/2026-09-01") as { updated_at: string };
+    const remove = await calendarHandler(request({
+      action: "delete-exchange",
+      id: "exchange-2026-a",
+      agreementDate: "2026-09-08",
+      returnDate: "2026-09-01",
+      expectedUpdatedAts: {
+        "2026-09-01": firstWithNote.updated_at,
+        "2026-09-08": second.updated_at,
+      },
+    }));
+    expect(remove.status).toBe(200);
+    expect(data.get("user/user-a/entry/2026-09-01")).toMatchObject({
+      note_text: "À confirmer avec Camille",
+    });
+    expect(data.has("user/user-a/entry/2026-09-08")).toBe(false);
   });
 
   it("refuse une action inconnue sans toucher au stockage", async () => {
@@ -187,6 +245,24 @@ describe("API principale du calendrier", () => {
       to: "2026-08-29",
       leave_type: "annual",
       group: 2,
+    });
+  });
+
+  it("conserve un accident de travail comme catégorie distincte de la maladie", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const response = await calendarHandler(request({
+      action: "save-period",
+      id: "work-accident-2026-09-09",
+      from: "2026-09-09",
+      to: "2026-09-11",
+      leaveType: "work_accident",
+      group: 2,
+    }));
+    expect(response.status).toBe(200);
+    expect(data.get("user/user-a/period/work-accident-2026-09-09")).toMatchObject({
+      leave_type: "work_accident",
+      from: "2026-09-09",
+      to: "2026-09-11",
     });
   });
 

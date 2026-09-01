@@ -165,6 +165,23 @@ describe("restauration d'une sauvegarde", () => {
     }
   });
 
+  it("refuse une sauvegarde qui ne contient qu’une moitié d’échange", () => {
+    const result = sanitizeCalendarBackup({
+      version: 1,
+      entries: [{
+        date: "2026-09-01",
+        exchange_id: "exchange-2026-a",
+        exchange_role: "given",
+        exchange_partner: "Camille",
+        exchange_partner_group: 1,
+        exchange_other_date: "2026-09-08",
+      }],
+      periods: [],
+      form_profile: null,
+    });
+    expect(result).toEqual({ error: "Échange incomplet dans la sauvegarde" });
+  });
+
   it("utilise Contractuel au premier usage sans écraser un choix enregistré", () => {
     const firstUse = sanitizeCalendarBackup({
       version: 1,

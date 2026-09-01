@@ -5,6 +5,7 @@ import {
   postCalendarBatch,
   postCalendarPeriodsVerified,
 } from "./calendarApi";
+import { prepareAbsenceReplacement } from "./absenceReplacement";
 import { createClientId } from "./clientId";
 import {
   emptyEntry,
@@ -225,8 +226,30 @@ export function usePlanningEntryActions({
     setSavingDay(true);
     closeDay();
     try {
-      appendPeriod(await persistSingleDayPeriod(date, "sick"));
-      showSuccess("L’arrêt maladie est enregistré et l’estimation de paie est à jour.");
+      const replacement = prepareAbsenceReplacement({
+        periods,
+        replacements: [{
+          id: createClientId("period"),
+          from: date,
+          to: date,
+          leaveType: "sick",
+          group,
+        }],
+      });
+      if (replacement.conflict) {
+        notify(`${leaveTypeLabel(replacement.conflict.leaveType || "annual")} est déjà enregistré ce jour. Retirez cette absence avant d’ajouter l’arrêt maladie.`);
+        return;
+      }
+      if (demoMode) setPeriods(replacement.nextPeriods);
+      else {
+        await postCalendarBatch(replacement.operations);
+        await reloadCalendar();
+      }
+      showSuccess(
+        replacement.refunded
+          ? "L’arrêt maladie est enregistré. Les congés annuels remplacés ont été recrédités dans votre solde de CA."
+          : "L’arrêt maladie est enregistré et l’estimation de paie est à jour.",
+      );
     } catch (error) {
       notify(calendarErrorMessage(error, "L’arrêt maladie n’a pas pu être enregistré."));
     } finally {

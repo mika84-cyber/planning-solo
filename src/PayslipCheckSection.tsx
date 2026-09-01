@@ -1,4 +1,4 @@
-import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import type { NetRatioCalibration } from "./payslip";
 import type { PayslipReviewSummary } from "./payslipReview";
 import type {
@@ -30,12 +30,12 @@ type SickLeavesSummary = {
 };
 
 export type PayslipCheckSectionProps = {
+  part: "verification" | "settings";
   payYear: string;
   hasPayProfile: boolean;
   helpOpen: boolean;
   setHelpOpen: (open: boolean) => void;
   missing: boolean;
-  estimateDetails: ReactNode;
   isContractuel: boolean;
   importBusy: boolean;
   importMode: "verify" | "calibrate" | null;
@@ -85,17 +85,18 @@ export type PayslipCheckSectionProps = {
   setPayDrafts: Dispatch<SetStateAction<Record<PayDraftKey, string>>>;
   savingPay: PayDraftKey | null;
   onSavePayAmount: (field: PayDraftKey) => void;
+  onCreatePayProfile: () => Promise<void>;
   ciaMonth?: number;
   onSaveCiaMonth: (month: number) => void;
 };
 
 export function PayslipCheckSection({
+  part,
   payYear,
   hasPayProfile,
   helpOpen: showPayslipHelp,
   setHelpOpen: setPayslipHelpOpen,
   missing,
-  estimateDetails: payEstimateDetails,
   isContractuel,
   importBusy: payslipImportBusy,
   importMode: payslipImportMode,
@@ -145,17 +146,71 @@ export function PayslipCheckSection({
   setPayDrafts,
   savingPay,
   onSavePayAmount: savePayAmount,
+  onCreatePayProfile,
   ciaMonth,
   onSaveCiaMonth: saveCiaMonth,
 }: PayslipCheckSectionProps) {
+  const [creatingPayProfile, setCreatingPayProfile] = useState(false);
+  const createPayProfile = async () => {
+    setCreatingPayProfile(true);
+    try {
+      await onCreatePayProfile();
+    } finally {
+      setCreatingPayProfile(false);
+    }
+  };
+  const verificationCard = (
+    <PayslipVerificationCard
+      importBusy={payslipImportBusy}
+      importMode={payslipImportMode}
+      importError={payslipImportError}
+      importResult={payslipImportResult}
+      onImport={importPayslips}
+      check={payslipCheck}
+      checkError={payslipError}
+      needsPeriod={payslipNeedsPeriod}
+      fallbackMonth={payslipFallbackMonth}
+      setFallbackMonth={setPayslipFallbackMonth}
+      fallbackYear={payslipFallbackYear}
+      setFallbackYear={setPayslipFallbackYear}
+      onApplyFallbackPeriod={applyPayslipFallbackPeriod}
+      allowances={allowances}
+      displayedMonth={displayedMonth}
+      review={payslipReview}
+      unplannedCarence={unplannedPayslipCarence}
+      resultDetailsOpen={payslipResultDetailsOpen}
+      setResultDetailsOpen={setPayslipResultDetailsOpen}
+      grossForMonth={grossForMonth}
+      baseSalary={baseSalary}
+      ifse={ifse}
+      overtime={overtimeForPayMonth}
+      mecenat={mecenatForCurrentPayMonth}
+      onReportMissingSundays={reportMissingSundays}
+      nextSundayPayout={nextSundayPayoutSlot}
+      sundayCarryover={sundayCarryover}
+      sundayCarryoverMonth={sundayCarryoverMonth}
+      sundayCarryoverYear={sundayCarryoverYear}
+      onClearSundayCarryover={clearSundayCarryover}
+    />
+  );
+
+  if (part === "verification") return verificationCard;
+
   return (
-      <div className="request-archive-content allowances pay-functions-layout">
-        <p className="pay-year-notice">
-          Paramètres de paie pour <strong>{payYear}</strong>
-          {hasPayProfile
-            ? " — valeurs enregistrées pour cette année."
-            : " — valeurs actuelles utilisées comme point de départ ; la première modification créera l’historique de cette année."}
-        </p>
+      <div className="pay-dashboard-settings-stack">
+        <div className="pay-year-notice">
+          <p>
+            Paramètres de paie pour <strong>{payYear}</strong>
+            {hasPayProfile
+              ? " — valeurs enregistrées pour cette année."
+              : " — les dernières valeurs connues sont utilisées comme point de départ."}
+          </p>
+          {!hasPayProfile ? (
+            <button type="button" className="secondary-button" disabled={creatingPayProfile} onClick={() => void createPayProfile()}>
+              {creatingPayProfile ? "Actualisation…" : `Utiliser ces valeurs pour ${payYear}`}
+            </button>
+          ) : null}
+        </div>
 
         {showPayslipHelp ? (
           <section className="allowance-card">
@@ -203,41 +258,6 @@ export function PayslipCheckSection({
             </button>
           </p>
         )}
-
-        {payEstimateDetails}
-
-        <PayslipVerificationCard
-          importBusy={payslipImportBusy}
-          importMode={payslipImportMode}
-          importError={payslipImportError}
-          importResult={payslipImportResult}
-          onImport={importPayslips}
-          check={payslipCheck}
-          checkError={payslipError}
-          needsPeriod={payslipNeedsPeriod}
-          fallbackMonth={payslipFallbackMonth}
-          setFallbackMonth={setPayslipFallbackMonth}
-          fallbackYear={payslipFallbackYear}
-          setFallbackYear={setPayslipFallbackYear}
-          onApplyFallbackPeriod={applyPayslipFallbackPeriod}
-          allowances={allowances}
-          displayedMonth={displayedMonth}
-          review={payslipReview}
-          unplannedCarence={unplannedPayslipCarence}
-          resultDetailsOpen={payslipResultDetailsOpen}
-          setResultDetailsOpen={setPayslipResultDetailsOpen}
-          grossForMonth={grossForMonth}
-          baseSalary={baseSalary}
-          ifse={ifse}
-          overtime={overtimeForPayMonth}
-          mecenat={mecenatForCurrentPayMonth}
-          onReportMissingSundays={reportMissingSundays}
-          nextSundayPayout={nextSundayPayoutSlot}
-          sundayCarryover={sundayCarryover}
-          sundayCarryoverMonth={sundayCarryoverMonth}
-          sundayCarryoverYear={sundayCarryoverYear}
-          onClearSundayCarryover={clearSundayCarryover}
-        />
 
         <PayslipCalibrationCard
           importBusy={payslipImportBusy}

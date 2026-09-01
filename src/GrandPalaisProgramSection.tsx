@@ -172,14 +172,6 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
     heading: "Nef du Grand Palais",
     schedule: {
       2026: [
-        {
-          title: "Grand Palais d’été - Édition 2026",
-          period: "À partir du 2 juin 2026",
-          details: "Programmation pluridisciplinaire dans la Nef",
-          officialUrl: "https://www.grandpalais.fr/fr/programme/grand-palais-dete-2026",
-          startsOn: "2026-06-02",
-          currentlyOpen: true,
-        },
         { title: "SIBCA - Salon de l’Immobilier Bas Carbone", period: "Du 1er au 3 septembre 2026", startsOn: "2026-09-01", endsOn: "2026-09-03" },
         { title: "Sommet international sur l’espace", period: "Les 9 et 10 septembre 2026", startsOn: "2026-09-09", endsOn: "2026-09-10" },
         { title: "Fine Arts Paris", period: "Du 19 au 23 septembre 2026", startsOn: "2026-09-19", endsOn: "2026-09-23" },

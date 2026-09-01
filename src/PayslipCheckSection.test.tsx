@@ -16,12 +16,12 @@ const payDrafts = {
 };
 
 const baseProps = {
+  part: "verification" as const,
   payYear: "2026",
   hasPayProfile: true,
   helpOpen: true,
   setHelpOpen: vi.fn(),
   missing: false,
-  estimateDetails: <section data-testid="estimate">Estimation mensuelle</section>,
   isContractuel: true,
   importBusy: false,
   importMode: null,
@@ -76,20 +76,25 @@ const baseProps = {
   setPayDrafts: vi.fn(),
   savingPay: null,
   onSavePayAmount: vi.fn(),
+  onCreatePayProfile: vi.fn(async () => undefined),
   ciaMonth: undefined,
   onSaveCiaMonth: vi.fn(),
 };
 
 describe("PayslipCheckSection", () => {
   it("conserve les parcours de vérification et de calibration", () => {
-    const html = renderToStaticMarkup(<PayslipCheckSection {...baseProps} />);
+    const html = renderToStaticMarkup(<><PayslipCheckSection {...baseProps} /><PayslipCheckSection {...baseProps} part="settings" /></>);
     expect(html).toContain("Comment ça marche");
-    expect(html).toContain("Vérifier un bulletin");
+    expect(html).toContain("Comparer avec le bulletin réel");
     expect(html).toContain("Choisir le bulletin à vérifier");
     expect(html).toContain("Affiner mes estimations");
     expect(html).toContain("Choisir plusieurs bulletins");
     expect(html).toContain("Éléments de paie");
-    expect(html).toContain("Estimation mensuelle");
+  });
+
+  it("propose de créer explicitement le profil de l’année affichée", () => {
+    const html = renderToStaticMarkup(<PayslipCheckSection {...baseProps} part="settings" payYear="2027" hasPayProfile={false} />);
+    expect(html).toContain("Utiliser ces valeurs pour 2027");
   });
 
   it("demande la période lorsque le bulletin ne permet pas de la reconnaître", () => {
@@ -141,6 +146,7 @@ describe("PayslipCheckSection", () => {
     const html = renderToStaticMarkup(
       <PayslipCheckSection
         {...baseProps}
+        part="settings"
         isContractuel={false}
         sickLeaves={{
           total: 120,

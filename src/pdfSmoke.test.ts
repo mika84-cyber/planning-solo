@@ -143,6 +143,28 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(text).toContain("Divers");
   });
 
+  it("affiche CLOSED, l’accident de travail et les échanges associés par numéro", async () => {
+    const result = createAnnualPlanningPdf({
+      year: 2026,
+      groups: [2],
+      getDayInfo,
+      wasPompidouHolidayWorked,
+      leaveTypes: new Map([["2026-01-08", "work_accident"]]),
+      closedDates: new Set(["2026-01-09"]),
+      exchangeMarkers: new Map([
+        ["2026-01-10", { number: 1, role: "given" }],
+        ["2026-01-17", { number: 1, role: "return" }],
+      ]),
+      filenameLabel: "test-nouveautes",
+    });
+    const text = await extractPdfText(await result.blob.arrayBuffer());
+    expect(text).toContain("CLOSED");
+    expect(text).toContain("AT");
+    expect(text).toContain("Accident de travail");
+    expect(text).toContain("Échange n°");
+    expect(text.match(/1/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+
   it("affiche la colonne Année / Groupe / Fériés et sa légende", async () => {
     const result = createAnnualPlanningPdf({
       year: 2026,

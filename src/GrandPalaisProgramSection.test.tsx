@@ -24,6 +24,7 @@ describe("programmation du Grand Palais", () => {
 
   it("range la Nef et les galeries 9 et 10 dans les autres espaces", () => {
     expect(GRAND_PALAIS_PROGRAM.nef.label).toBe("Nef");
+    expect(JSON.stringify(GRAND_PALAIS_PROGRAM.nef.schedule)).not.toContain("Grand Palais d’été");
     expect(GRAND_PALAIS_PROGRAM.gallery910.label).toBe("Galeries 9 et 10");
     expect(GRAND_PALAIS_PROGRAM.childrenPalace.label).toBe("Palais des enfants");
     expect(GRAND_PALAIS_PROGRAM.gallery910.schedule[2026]?.map((entry) => entry.title)).toEqual([
@@ -53,7 +54,7 @@ describe("programmation du Grand Palais", () => {
     expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.gallery8.schedule[2026]![1], "2026-08-28")).toBe(false);
     expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.gallery910.schedule[2026]![0], "2026-08-28")).toBe(true);
     expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.childrenPalace.schedule[2026]![0], "2026-08-28")).toBe(true);
-    expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.nef.schedule[2026]![0], "2026-08-28")).toBe(true);
+    expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.nef.schedule[2026]![0], "2026-08-28")).toBe(false);
   });
 
   it("retire automatiquement une exposition dont la date de fin est dépassée", () => {

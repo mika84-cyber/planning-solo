@@ -10,7 +10,8 @@ export type LeaveType =
   | "cet"
   | "other"
   | "childcare"
-  | "exceptional";
+  | "exceptional"
+  | "work_accident";
 export type SelectionType =
   | "annual"
   | "half"
@@ -23,6 +24,7 @@ export type SelectionType =
   | "other"
   | "childcare"
   | "exceptional"
+  | "work_accident"
   | "recovery_day"
   | "recovery_half"
   | "recovery_hours"
@@ -44,6 +46,7 @@ export function selectionRemovesAttendance(type: SelectionType) {
     "other",
     "childcare",
     "exceptional",
+    "work_accident",
     "recovery_day",
     "recovery_half",
     "recovery_hours",
@@ -129,6 +132,7 @@ export const TYPE_LABELS: Record<SelectionType, string> = {
   other: "Divers",
   childcare: "Congé garde d’enfant",
   exceptional: "Jour exceptionnel",
+  work_accident: "Accident de travail",
   recovery_day: "Récupération en journée",
   recovery_half: "Récupération en demi-journée",
   recovery_hours: "Récupération en heures",
@@ -147,6 +151,7 @@ export const TYPE_COLORS: Record<SelectionType, string> = {
   other: "#e58aa5",
   childcare: "#0891b2",
   exceptional: "#854d0e",
+  work_accident: "#087eb8",
   recovery_day: "#2f68d1",
   recovery_half: "#7957c7",
   recovery_hours: "#c64f62",
@@ -169,6 +174,7 @@ export const LEAVE_ALLOWANCES: Record<LeaveType, number> = {
   other: 0,
   childcare: 0,
   exceptional: 0,
+  work_accident: 0,
 };
 /** Types suivis sans quota : comptés à part du solde de congés. */
 export const COUNTED_ONLY_TYPES = [
@@ -178,6 +184,7 @@ export const COUNTED_ONLY_TYPES = [
   "exceptional",
   "other",
   "cet",
+  "work_accident",
 ] as const satisfies readonly LeaveType[];
 export type CountedOnlyType = (typeof COUNTED_ONLY_TYPES)[number];
 export const LEAVE_TYPE_OPTIONS: Array<{ value: LeaveType; label: string }> = [
@@ -402,11 +409,16 @@ export function nextAttendanceDay(
   group: number,
   isUnavailable: (key: string) => boolean = () => false,
   maxDays = 366,
+  isExtraAttendance: (key: string) => boolean = () => false,
 ) {
   for (let offset = 1; offset <= maxDays; offset++) {
     const candidate = addDays(from, offset);
+    const key = dateKey(candidate);
     const kind = getDayInfo(candidate, group).kind;
-    if ((kind === "work" || kind === "training") && !isUnavailable(dateKey(candidate)))
+    if (
+      (isExtraAttendance(key) || kind === "work" || kind === "training") &&
+      !isUnavailable(key)
+    )
       return candidate;
   }
   return null;

@@ -12,6 +12,8 @@ import {
   type LeaveType,
 } from "./planningLogic";
 import type { RecoveryUse } from "./overtime";
+import type { Entries } from "./appModel";
+import type { PdfExchangeMarker } from "./planningPdf";
 
 type PdfExportPeriod = {
   from: string;
@@ -78,6 +80,43 @@ export function buildAnnualPdfAbsences(
   return { leaveTypes, halfMoments };
 }
 
+export function buildAnnualPdfOverlays(
+  year: number,
+  entries: Entries,
+  isExceptionallyClosed: (date: string) => boolean,
+) {
+  const first = `${year}-01-01`;
+  const last = `${year}-12-31`;
+  const closedDates = new Set<string>();
+  for (let date = fromKey(first); dateKey(date) <= last; date = addDays(date, 1)) {
+    const key = dateKey(date);
+    if (isExceptionallyClosed(key)) closedDates.add(key);
+  }
+
+  const exchangeDatesById = new Map<string, Set<string>>();
+  for (const [date, entry] of Object.entries(entries)) {
+    if (!entry.exchangeId) continue;
+    const dates = exchangeDatesById.get(entry.exchangeId) || new Set<string>();
+    dates.add(date);
+    if (entry.exchangeOtherDate) dates.add(entry.exchangeOtherDate);
+    exchangeDatesById.set(entry.exchangeId, dates);
+  }
+  const exchangeNumbers = new Map(
+    [...exchangeDatesById.entries()]
+      .filter(([, dates]) => [...dates].some((date) => date >= first && date <= last))
+      .sort(([, left], [, right]) =>
+        [...left].sort()[0].localeCompare([...right].sort()[0]))
+      .map(([id], index) => [id, index + 1]),
+  );
+  const exchangeMarkers = new Map<string, PdfExchangeMarker>();
+  for (const [date, entry] of Object.entries(entries)) {
+    const number = entry.exchangeId ? exchangeNumbers.get(entry.exchangeId) : undefined;
+    if (date < first || date > last || !number || !entry.exchangeRole) continue;
+    exchangeMarkers.set(date, { number, role: entry.exchangeRole });
+  }
+  return { closedDates, exchangeMarkers };
+}
+
 export function useAnnualPdfExport(
   view: Date,
   group: number,
@@ -85,6 +124,8 @@ export function useAnnualPdfExport(
   recoveryUses: ReadonlyArray<Pick<RecoveryUse, "date">>,
   legacyOtherDates: ReadonlySet<string>,
   wishDates: ReadonlySet<string>,
+  entries: Entries,
+  isExceptionallyClosed: (date: string) => boolean,
   notify: (text: string) => void,
 ) {
   const [pdfExporting, setPdfExporting] = useState<
@@ -109,7 +150,7 @@ export function useAnnualPdfExport(
     if (pdfExporting) return;
     setPdfExporting(scope);
     try {
-      const { createAnnualPlanningPdf, createWorkedHolidaysPdf } = await import("./planningPdf");
+      const { createAnnualPlanningPdf, createWorkedHolidaysPdf, loadPlanningPdfAssets } = await import("./planningPdf");
       if (scope === "worked-holidays") {
         const result = createWorkedHolidaysPdf({ getDayInfo });
         deliverPdf(result.blob, result.filename);
@@ -152,11 +193,15 @@ export function useAnnualPdfExport(
           legacyOtherDates,
         ));
       }
+      const overlays = scope === "my-leaves"
+        ? buildAnnualPdfOverlays(view.getFullYear(), entries, isExceptionallyClosed)
+        : undefined;
+      const assets = scope === "my-leaves" ? await loadPlanningPdfAssets() : undefined;
       const quotaDaysUsed = Array.from(leaveTypes.values()).reduce(
         (total, type) =>
           // Une récupération ne consomme aucun droit, comme les types
           // seulement comptés : elle reste hors du total.
-          type === "recovery" ||
+          type === "recovery" || type === "work_accident" ||
           COUNTED_ONLY_TYPES.includes(type as (typeof COUNTED_ONLY_TYPES)[number])
             ? total
             : total + (type === "half" ? 0.5 : 1),
@@ -184,6 +229,9 @@ export function useAnnualPdfExport(
               }
             : undefined,
         wishDates: scope === "my-leaves" ? wishDates : undefined,
+        closedDates: overlays?.closedDates,
+        exchangeMarkers: overlays?.exchangeMarkers,
+        assets,
         schoolVacationDates,
         schoolVacationsByZone,
         filenameLabel:

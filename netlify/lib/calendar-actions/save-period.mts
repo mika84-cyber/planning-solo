@@ -22,7 +22,8 @@ export async function handleSavePeriod(
     body.leaveType === "cet" ||
     body.leaveType === "other" ||
     body.leaveType === "childcare" ||
-    body.leaveType === "exceptional"
+    body.leaveType === "exceptional" ||
+    body.leaveType === "work_accident"
       ? body.leaveType
       : "";
   const halfMoment: HalfMoment =

@@ -48,6 +48,16 @@ describe("lots de congés", () => {
     });
   });
 
+  it("accepte un accident de travail sans le transformer en maladie", () => {
+    expect(normalizeBulkPeriods([{
+      id: "period-at-1",
+      from: "2026-09-09",
+      to: "2026-09-11",
+      leaveType: "work_accident",
+      group: 2,
+    }])).toMatchObject({ periods: [{ leave_type: "work_accident" }] });
+  });
+
   it("normalise plusieurs dates avec des identifiants stables", () => {
     expect(
       normalizeBulkPeriods(

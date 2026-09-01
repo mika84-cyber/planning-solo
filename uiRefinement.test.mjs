@@ -6,6 +6,7 @@ const appNavigation = readFileSync(new URL("./src/AppNavigation.tsx", import.met
 const userGuideDialogs = readFileSync(new URL("./src/UserGuideDialogs.tsx", import.meta.url), "utf8");
 const homeDashboard = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
 const payPage = readFileSync(new URL("./src/PayPage.tsx", import.meta.url), "utf8");
+const payDashboard = readFileSync(new URL("./src/PayDashboard.tsx", import.meta.url), "utf8");
 const payAllowancesSection = readFileSync(new URL("./src/PayAllowancesSection.tsx", import.meta.url), "utf8");
 const pdfDownloadPage = readFileSync(new URL("./src/PdfDownloadPage.tsx", import.meta.url), "utf8");
 const leaveManagementPage = readFileSync(new URL("./src/LeaveManagementPage.tsx", import.meta.url), "utf8");
@@ -19,8 +20,10 @@ const payActions = readFileSync(new URL("./src/usePayActions.ts", import.meta.ur
 const authenticationActions = readFileSync(new URL("./src/useAuthenticationActions.ts", import.meta.url), "utf8");
 const accountDataActions = readFileSync(new URL("./src/useAccountDataActions.ts", import.meta.url), "utf8");
 const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions.ts", import.meta.url), "utf8");
+const planningRequestActions = readFileSync(new URL("./src/usePlanningRequestActions.ts", import.meta.url), "utf8");
+const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", import.meta.url), "utf8");
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
-const app = [appRoot, appNavigation, userGuideDialogs, homeDashboard, payPage, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, planningDayCell, payslipCheckSection, payslipCalibrationCard, appDialogLayer, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const app = [appRoot, appNavigation, userGuideDialogs, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, planningDayCell, payslipCheckSection, payslipCalibrationCard, appDialogLayer, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
   .map(([, relativePath]) =>
@@ -143,7 +146,9 @@ describe("finitions d’interface", () => {
   it("compacte les quatre cartes mobiles sans icônes et précise le mois des dimanches", () => {
     expect(styles).toContain("grid-auto-rows: 84px");
     expect(styles).toContain(".today-overview-grid .today-card-icon { display: none !important; }");
-    expect(app).toContain("en attente sur la paye");
+    expect(app).toContain("dimanche${s(sundayCarryover)} en attente${");
+    expect(app).toContain("` pour ${MONTHS[sundayCarryoverMonth]}");
+    expect(app).toContain("Congés restants");
     expect(app).toContain("MONTHS[sundayCarryoverMonth]");
   });
 
@@ -169,8 +174,11 @@ describe("finitions d’interface", () => {
     expect(app).toContain('beginRequest("leave", undefined, "sick")');
     expect(app).toContain('dayLeaveType === "sick"');
     expect(app).toContain("saveSickDateDirect(date)");
-    expect(app).toContain('persistSingleDayPeriod(date, "sick")');
-    expect(app).toContain("sans diminuer vos droits à congés");
+    expect(app).toContain("prepareAbsenceReplacement");
+    expect(planningRequestActions).toContain("prepareAbsenceReplacement");
+    expect(absenceReplacement).toMatch(
+      /AUTOMATICALLY_REFUNDED_TYPES\s*=\s*new Set<LeaveType>\(\[\s*"annual",?\s*\]\)/,
+    );
     expect(app).toContain("impact à vérifier selon le maintien de salaire");
   });
 
@@ -189,10 +197,10 @@ describe("finitions d’interface", () => {
 
   it("garde le titre des catégories de paie accessible et permet de revenir aujourd’hui", () => {
     expect(app).toContain('className="pay-detail-sticky-header"');
-    expect(app).toContain('aria-label="Fermer cette catégorie"');
+    expect(app).toContain('aria-label="Fermer cette page"');
     expect(app).toContain('className="pay-profile-open-copy"');
     expect(app).toContain('profileOpen ? "Replier" : "Modifier"');
-    expect((app.match(/className="pay-today-button"/g) || []).length).toBe(1);
+    expect((payDashboard.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect((payEstimateDetails.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect(app).toContain("Aucun dimanche versé sur cette paie");
     expect(styles).toContain(".pay-detail-sticky-header");
@@ -201,13 +209,13 @@ describe("finitions d’interface", () => {
 
   it("rend toute la zone de titre refermable et garde le mois dans la barre sticky", () => {
     expect(app).toContain('className="pay-detail-title-button"');
-    expect(app).toContain('aria-label="Fermer cette catégorie et revenir à Ma paie"');
+    expect(app).toContain('aria-label="Fermer cette page et revenir à Ma paie"');
     expect(app).toContain("MONTHS[view.getMonth()]");
     expect(styles).toContain(".pay-detail-title-button");
   });
 
   it("affiche uniquement un profil complet et agrandit le calendrier mobile", () => {
-    expect(app).toContain("{netEstimateComplete ? (");
+    expect(app).toContain('className="pay-profile-completeness complete"');
     expect(app).not.toContain('"Informations manquantes"');
     expect(styles).toContain(".pay-profile-completeness.complete");
     expect(styles).toContain(".controls .worked-days > .year-choice-label");
@@ -226,7 +234,7 @@ describe("finitions d’interface", () => {
 
   it("explique chaque rubrique actuelle dans le mode d’emploi", () => {
     expect(app).toContain("Récupération, Arrêt maladie ou Divers");
-    expect(app).toContain("il ne diminue pas vos droits à congés");
+    expect(app).toContain("il remplace et recrédite automatiquement les CA");
     expect(app).toContain("avec leurs horaires de début et de fin");
     expect(app).toContain("4. Suivre et utiliser mon CET");
     expect(app).toContain("Remplir alimentation / indemnisation");
@@ -274,7 +282,8 @@ describe("finitions d’interface", () => {
     expect(app).toContain('className="balance-detail-months"');
     expect(app).toContain('className="balance-detail-month"');
     expect(app).toContain("month.units.toLocaleString");
-    expect(app).toContain("Aucune date enregistrée ce mois-ci.");
+    expect(app).toContain("Aucune absence datée pour cette catégorie");
+    expect(app).toContain(".filter((month) => month.details.length > 0)");
     expect(styles).toContain(".balance-detail-month > summary");
     expect(styles).toContain(".balance-detail-month[open]");
   });
@@ -417,15 +426,16 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("grid-column: 1 / -1");
   });
 
-  it("rend les catégories de paie et les dernières absences immédiatement repérables", () => {
-    expect(styles).toContain(".pay-category-grid > button");
-    expect(styles).toContain("border: 1px solid rgba(20, 24, 29, .88)");
+  it("rend les cartes du tableau de bord de paie et les dernières absences immédiatement repérables", () => {
+    expect(styles).toContain(".pay-dashboard-priority-grid");
+    expect(styles).toContain("border: 1.5px solid rgba(50, 73, 101, 0.33)");
     expect(app).toContain("recentBalanceDetailDates.has(detail.date)");
     expect(styles).toContain(".recent-leave-date");
   });
 
   it("permet une note multi-jours et un crédit manuel de solidarité", () => {
     expect(app).toContain("Choisir le ou les jours");
+    expect(app).toContain('aria-label="Date de la note"');
     expect(workTimeDialogs).toContain("Ajouter des heures manuellement");
     expect(app).toContain('createClientId("solidarity")');
     expect(workTimeDialogs).toContain('disposition: "recovery"');
@@ -464,7 +474,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Passer");
     expect(app).toContain("Table des matières du mode d’emploi");
     expect(app).toContain("Mode d’emploi");
-    expect(app).toContain("congés validés");
+    expect(app).toContain("congé validé");
     expect(app.toLocaleLowerCase("fr-FR")).toContain("plusieurs bulletins");
   });
 
@@ -641,15 +651,20 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("background-position: 50% 50%;\n  filter: none;\n  transform: none;");
   });
 
-  it("organise l’accueil de Ma paie en réglages et consultations", () => {
-    expect(app).toContain('className="pay-overview-profile-panel"');
-    expect(app).toContain('id="pay-overview-profile-title">Mes réglages');
-    expect(app).toContain('className="pay-overview-category-panel"');
-    expect(app).toContain('id="pay-overview-category-title">Consulter ma paie');
-    expect(app).toContain('className="pay-category-kicker"');
-    expect(app).toContain('className="pay-category-cta"');
-    expect(styles).toContain(".pay-overview-profile-panel,");
-    expect(styles).toContain(".pay-overview-category-panel .pay-category-grid > button");
+  it("organise l’accueil de Ma paie autour du mois et des actions utiles", () => {
+    expect(payDashboard).toContain('className="pay-dashboard-month"');
+    expect(payDashboard).toContain("Net estimé");
+    expect(payDashboard).toContain('id="pay-dashboard-checks-title">À vérifier');
+    expect(payDashboard).toContain("alerts.slice(0, 3)");
+    expect(payDashboard).toContain("Voir toutes les vérifications");
+    expect(payDashboard).toContain("Tout est à jour");
+    expect(appRoot).not.toContain("Bulletin du mois non vérifié");
+    expect(appRoot).not.toContain('actionLabel: "Choisir le PDF"');
+    expect(payDashboard).toContain("Voir les primes et jours fériés");
+    expect(payDashboard).toContain("Vérifier mon bulletin");
+    expect(payDashboard).toContain("Réglages et explications");
+    expect(styles).toContain(".pay-dashboard-priority-grid");
+    expect(styles).toContain(".pay-dashboard-settings");
   });
 
   it("présente les téléchargements PDF comme un parcours clair en deux étapes", () => {

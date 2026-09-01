@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { PayslipReading } from "./payslip";
 import type { PayScreen } from "./PayPage";
+import { localDate } from "./planningLogic";
 
 export type PayDraftKey =
   | "baseSalary"
@@ -24,6 +25,10 @@ export type PayslipImportResult = {
 
 /** État d’interface de Ma paie ; les calculs restent dans les modules métier. */
 export function usePayUiState() {
+  const [payView, setPayView] = useState(() => {
+    const today = new Date();
+    return localDate(today.getFullYear(), today.getMonth(), 1);
+  });
   const [payScreen, setPayScreen] = useState<PayScreen>("overview");
   const [payProfileOpen, setPayProfileOpen] = useState(false);
   const [payPeriodOpen, setPayPeriodOpen] = useState(false);
@@ -42,7 +47,7 @@ export function usePayUiState() {
   const [payslipHelpOpen, setPayslipHelpOpen] = useState(false);
   const [payslipResultDetailsOpen, setPayslipResultDetailsOpen] = useState(false);
   const [paySettingsOpen, setPaySettingsOpen] = useState(false);
-  const [payEstimateDetailsOpen, setPayEstimateDetailsOpen] = useState(false);
+  const [payAdvancedOpen, setPayAdvancedOpen] = useState(false);
   const [payDrafts, setPayDrafts] = useState<Record<PayDraftKey, string>>({
     baseSalary: "",
     ifse: "",
@@ -58,7 +63,7 @@ export function usePayUiState() {
   const [savingPay, setSavingPay] = useState<PayDraftKey | null>(null);
 
   return {
-    payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
+    payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
     payPeriodOpen, setPayPeriodOpen, payMonthSlide, setPayMonthSlide,
     payMonthSlideTimer, payslipCheck, setPayslipCheck, payslipError, setPayslipError,
     payslipImportBusy, setPayslipImportBusy, payslipImportError, setPayslipImportError,
@@ -66,7 +71,7 @@ export function usePayUiState() {
     payslipNeedsPeriod, setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
     payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
     payslipHelpOpen, setPayslipHelpOpen, payslipResultDetailsOpen, setPayslipResultDetailsOpen,
-    paySettingsOpen, setPaySettingsOpen, payEstimateDetailsOpen, setPayEstimateDetailsOpen,
+    paySettingsOpen, setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,
     payDrafts, setPayDrafts, savingPay, setSavingPay,
   };
 }

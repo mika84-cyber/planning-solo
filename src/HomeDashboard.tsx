@@ -128,7 +128,7 @@ export function HomeDashboard({
             className="today-leave-balance"
             type="button"
             onClick={onOpenLeave}
-            aria-label={`Congés restant : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
+            aria-label={`Congés restants : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
           >
             <span className="today-card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -137,7 +137,7 @@ export function HomeDashboard({
               </svg>
             </span>
             <span className="today-card-copy">
-              <span>Congés restant :</span>
+              <span>Congés restants :</span>
               <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jours à poser</strong>
               <small>Voir le détail des soldes</small>
             </span>

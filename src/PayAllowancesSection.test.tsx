@@ -53,10 +53,21 @@ describe("PayAllowancesSection", () => {
     expect(html).toContain("Mécénats");
     expect(html).toContain("dont 1 repos noir");
     expect(html).toContain("Mes primes en un coup d’œil");
+    expect(html).toContain("12 dimanches effectués sur 13 à ce jour");
     expect(html).toContain("Fête nationale");
     expect(html).toContain("Fête du Travail");
     expect(html).toContain("Fériés compensés 2026");
     expect(html).toContain("paie de février 2027");
+  });
+
+  it("accorde correctement le libellé d’un seul dimanche", () => {
+    const html = renderToStaticMarkup(
+      <PayAllowancesSection
+        {...props}
+        allowances={{ ...props.allowances, sundayDone: 1, sundaysScheduledPast: 1 }}
+      />,
+    );
+    expect(html).toContain("1 dimanche effectué sur 1 à ce jour");
   });
 
   it("masque le détail mensuel tout en conservant les commandes de navigation", () => {

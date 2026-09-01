@@ -21,6 +21,8 @@ type WorkedDaySummary = {
   scheduled: number;
   onLeave: number;
   exceptionallyClosed: number;
+  exchangedGiven: number;
+  exchangedReturned: number;
 };
 
 type WorkedDaysData = {
@@ -68,6 +70,14 @@ function closureDetail(count: number) {
   return count
     ? `, ${dayCountLabel(count)} fermeture${s(count)} exceptionnelle${s(count)}`
     : "";
+}
+
+function exchangeDetail(given: number, returned: number) {
+  const details = [
+    given ? `${dayCountLabel(given)} cédé${given > 1 ? "s" : ""}` : "",
+    returned ? `${dayCountLabel(returned)} rendu${returned > 1 ? "s" : ""}` : "",
+  ].filter(Boolean);
+  return details.length ? `, échanges : ${details.join(" et ")}` : "";
 }
 
 export function PlanningCommandCenter({
@@ -189,6 +199,7 @@ export function PlanningCommandCenter({
                         ? `, ${dayCountLabel(workedDays.month.onLeave)} de congé`
                         : ", aucun congé"}
                       {closureDetail(workedDays.month.exceptionallyClosed)}
+                      {exchangeDetail(workedDays.month.exchangedGiven, workedDays.month.exchangedReturned)}
                     </small>
                   </article>
                   {workedDays.thirds.map((third) => (
@@ -204,6 +215,7 @@ export function PlanningCommandCenter({
                           ? `, ${dayCountLabel(third.onLeave)} de congé`
                           : ", aucun congé"}
                         {closureDetail(third.exceptionallyClosed)}
+                        {exchangeDetail(third.exchangedGiven, third.exchangedReturned)}
                       </small>
                     </article>
                   ))}

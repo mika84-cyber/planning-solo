@@ -120,6 +120,8 @@ export function LeaveBalancesSection({
                     ? "retenue estimée dans Ma paie"
                   : type === "other"
                     ? "compté dans les jours non travaillés"
+                  : type === "work_accident"
+                    ? "sans carence · CA superposés recrédités"
                     : "sans effet sur les congés"}
               </small>
               <em>Voir le détail</em>

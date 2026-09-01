@@ -33,6 +33,11 @@ export async function handleSaveLeaves(
     wish: body.wish === true,
     holiday_pay: holidayPayFrom(body, previous?.holiday_pay),
     closure_override: previous?.closure_override,
+    exchange_id: previous?.exchange_id,
+    exchange_role: previous?.exchange_role,
+    exchange_partner: previous?.exchange_partner,
+    exchange_partner_group: previous?.exchange_partner_group,
+    exchange_other_date: previous?.exchange_other_date,
     updated_at: new Date().toISOString(),
   };
   if (
@@ -40,7 +45,8 @@ export async function handleSaveLeaves(
     !next.leave &&
     !next.wish &&
     !next.holiday_pay &&
-    !next.closure_override
+    !next.closure_override &&
+    !next.exchange_id
   )
     await store.delete(key);
   else await store.setJSON(key, next);

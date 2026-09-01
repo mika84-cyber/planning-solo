@@ -1,11 +1,12 @@
 import type { CSSProperties } from "react";
-import type { LeavePeriod, SelectedDay, SharedEntry } from "./appModel";
+import type { LeavePeriod, SelectedDay, SharedEntry, WorkExchange } from "./appModel";
 import type { RecoveryUse } from "./overtime";
 import { minutesLabel } from "./overtime";
 import {
   DAY_LABELS,
   TYPE_COLORS,
   TYPE_LABELS,
+  dateKey,
   getDayInfo,
   leaveTypeLabel,
   longDate,
@@ -30,6 +31,8 @@ type PlanningDayCellProps = {
   noteSelecting: boolean;
   noteColor: string;
   exceptionalClosure?: { label: string };
+  exchange?: WorkExchange | null;
+  workAccident?: boolean;
   onClick: () => void;
 };
 
@@ -51,9 +54,19 @@ export function PlanningDayCell({
   noteSelecting,
   noteColor,
   exceptionalClosure,
+  exchange,
+  workAccident = false,
   onClick,
 }: PlanningDayCellProps) {
   const info = getDayInfo(date, group);
+  const exchangeRole = exchange
+    ? entry?.exchangeRole || (exchange.agreementDate === dateKey(date) ? "given" : "return")
+    : "";
+  const exchangeLabel = exchange
+    ? exchangeRole === "given"
+      ? `Repos · votre cycle groupe ${group} · remplacé par ${exchange.partnerName}`
+      : `Travail · cycle groupe ${exchange.partnerGroup} · remplacement de ${exchange.partnerName}`
+    : "";
   const hourlyRecoveryMinutes = recoveryEntries.reduce((total, item) => total + item.minutes, 0);
   const hasHourlyRecovery = hourlyRecoveryMinutes > 0;
   const trainingMinutesOnDay = recoveryEntries
@@ -91,6 +104,8 @@ export function PlanningDayCell({
       : "",
     visibleNote ? "Note enregistrée" : "",
     exceptionalClosure?.label ?? "",
+    exchangeLabel,
+    workAccident ? "Accident de travail" : "",
   ].filter(Boolean).join(" — ");
   const selectionStyle = selected
     ? ({ "--selection-color": TYPE_COLORS[selected.type] } as CSSProperties)
@@ -105,12 +120,12 @@ export function PlanningDayCell({
   return (
     <button
       type="button"
-      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected range-edge" : ""}`}
+      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected range-edge" : ""}`}
       style={selectionStyle}
       onClick={onClick}
       title={title}
       aria-current={today ? "date" : undefined}
-      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}`}
+      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${exchangeLabel || DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}${workAccident ? ", accident de travail" : ""}`}
     >
       <span className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}`}>{date.getDate()}</span>
       {hasHourlyRecovery && !compact ? <span className={`recovery-calendar-label ${hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}`}>REC</span> : null}
@@ -137,6 +152,17 @@ export function PlanningDayCell({
         </span>
       ) : null}
       {exceptionalClosure ? <img className={`exceptional-closure-marker${compact ? " compact" : ""}`} src="/exceptional-closure-icon.webp" alt="" aria-hidden="true" title={exceptionalClosure.label} /> : null}
+      {exchange ? (
+        <>
+          {!compact ? (
+            <span className="exchange-calendar-label">
+              {exchangeRole === "given" ? "OFF" : "TRAVAIL"}
+            </span>
+          ) : null}
+          <img className={`exchange-calendar-marker${compact ? " compact" : ""}`} src="/exchange-arrows.png" alt="" aria-hidden="true" />
+        </>
+      ) : null}
+      {workAccident ? <img className={`work-accident-calendar-marker${compact ? " compact" : ""}`} src="/work-accident-icon.png" alt="" aria-hidden="true" /> : null}
     </button>
   );
 }

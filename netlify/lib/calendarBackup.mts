@@ -15,6 +15,7 @@ const LEAVE_TYPES = new Set([
   "strike",
   "childcare",
   "exceptional",
+  "work_accident",
 ]);
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -99,11 +100,43 @@ export function sanitizeCalendarBackup(value: unknown) {
         item.closure_override === "closed" || item.closure_override === "open"
           ? item.closure_override
           : "",
+      exchange_id:
+        typeof item.exchange_id === "string" && ID_RE.test(item.exchange_id)
+          ? item.exchange_id
+          : undefined,
+      exchange_role:
+        item.exchange_role === "given" || item.exchange_role === "return"
+          ? item.exchange_role
+          : undefined,
+      exchange_partner:
+        typeof item.exchange_partner === "string"
+          ? item.exchange_partner.trim().slice(0, 80) || undefined
+          : undefined,
+      exchange_partner_group: [1, 2, 3].includes(Number(item.exchange_partner_group))
+        ? Number(item.exchange_partner_group)
+        : undefined,
+      exchange_other_date: isValidDateKey(item.exchange_other_date)
+        ? item.exchange_other_date
+        : undefined,
       updated_at:
         typeof item.updated_at === "string"
           ? item.updated_at
           : new Date().toISOString(),
     });
+  }
+  const entriesByDate = new Map(entries.map((entry) => [entry.date, entry]));
+  for (const entry of entries) {
+    if (!entry.exchange_id) continue;
+    const counterpart = entry.exchange_other_date
+      ? entriesByDate.get(String(entry.exchange_other_date))
+      : undefined;
+    if (
+      !entry.exchange_role || !entry.exchange_partner ||
+      !entry.exchange_partner_group || !counterpart ||
+      counterpart.exchange_id !== entry.exchange_id ||
+      counterpart.exchange_role === entry.exchange_role ||
+      counterpart.exchange_other_date !== entry.date
+    ) return { error: "Échange incomplet dans la sauvegarde" as const };
   }
 
   const periods = [];

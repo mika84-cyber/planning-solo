@@ -41,6 +41,7 @@ describe("soldes de congés", () => {
           exceptional: { used: 0, details: [] },
           other: { used: 1, details: [] },
           cet: { used: 2, details: [] },
+          work_accident: { used: 3, details: [] },
         }}
         manualSundayLeaveTotal={2}
         onYearChange={vi.fn()}
@@ -59,6 +60,8 @@ describe("soldes de congés", () => {
     expect(html).toContain("retenue estimée dans Ma paie");
     expect(html).toContain("Divers");
     expect(html).toContain("Congé CET");
+    expect(html).toContain("Accident de travail");
+    expect(html).toContain("sans carence · CA superposés recrédités");
     expect(html).toContain("compté dans les jours non travaillés");
     expect(html).toContain("déduit du solde CET");
     expect(html.indexOf('class="strike"')).toBeGreaterThan(html.indexOf('class="cet"'));
