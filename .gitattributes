@@ -1,0 +1,18 @@
+# Fins de ligne normalisées en LF pour tout le texte, quelle que soit la
+# plateforme. Évite que Git marque des fichiers entiers comme modifiés à
+# cause d'un simple changement CRLF/LF.
+* text=auto eol=lf
+
+# Fichiers binaires : jamais de conversion de fins de ligne.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.mp4   binary
+*.woff  binary
+*.woff2 binary
+*.zip   binary
+*.docx  binary
