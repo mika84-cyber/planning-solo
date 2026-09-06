@@ -56,6 +56,10 @@ const baseProps = {
   onDeleteAbsences: vi.fn(),
   onDeleteNotes: vi.fn(),
   onToday: vi.fn(),
+  showSchoolVacations: true,
+  schoolZone: "C" as const,
+  onShowSchoolVacationsChange: vi.fn(),
+  onSchoolZoneChange: vi.fn(),
 };
 
 describe("PlanningCommandCenter", () => {

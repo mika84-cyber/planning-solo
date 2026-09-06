@@ -28,9 +28,13 @@ describe("écran de connexion", () => {
 
   it("affiche la confirmation d'envoi sans révéler si le compte existe", () => {
     const html = renderToStaticMarkup(
-      <AuthScreen {...baseProps} status="guest" notice="Si ce compte est activé, un e-mail vient d’être envoyé." />,
+      <AuthScreen
+        {...baseProps}
+        status="guest"
+        notice="Si cette adresse correspond à un compte ou à une invitation, un e-mail vient d’être envoyé."
+      />,
     );
-    expect(html).toContain("Si ce compte est activé");
+    expect(html).toContain("Si cette adresse correspond à un compte ou à une invitation");
     expect(html).toContain('role="status"');
   });
 

@@ -172,7 +172,7 @@ export function useWorkExchangeActions({
 
   async function remove() {
     const previous = exchanges.find((item) => item.id === draft.id);
-    if (!previous || !confirmAction("Supprimer les deux journées de cet échange ?")) return;
+    if (!previous || (!demoMode && !confirmAction("Supprimer les deux journées de cet échange ?"))) return;
     const affected = [previous.agreementDate, previous.returnDate];
     setSaving(true);
     setError("");

@@ -28,11 +28,15 @@ async function expectNoSeriousAccessibilityViolation(page: Page, context: string
   ).toEqual([]);
 }
 
+async function openMainMenu(page: Page) {
+  await page.locator(".mobile-bottom-navigation:visible, .desktop-side-navigation:visible").getByRole("button", { name: "Plus" }).first().click();
+}
+
 test("les parcours essentiels ne présentent pas de violation d’accessibilité grave", async ({ page }) => {
   await prepareDemo(page);
   await expectNoSeriousAccessibilityViolation(page, "sur l’accueil");
 
-  await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
+  await openMainMenu(page);
   await expect(page.getByRole("complementary", { name: "Menu principal" })).toBeVisible();
   await expectNoSeriousAccessibilityViolation(page, "dans le menu principal");
 

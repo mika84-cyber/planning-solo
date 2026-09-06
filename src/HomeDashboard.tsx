@@ -1,6 +1,7 @@
-import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { dayCountLabel, type NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
+import "./sharedNotes.css";
 import {
   compactWeekdayDate,
   longDate,
@@ -15,6 +16,17 @@ export type TodayDashboardData = {
   nextWorkExceptionalClosure?: boolean;
   nextWorkKind?: string | null;
   nextWorkGroupLabel?: string;
+  nextWorkHalfLeaveLabel?: string;
+};
+
+export type HomeSetupItem = {
+  id: string;
+  title: string;
+  intro: string;
+  detail: string;
+  actionLabel: string;
+  onAction: () => void;
+  dismissible?: boolean;
 };
 
 type HomeDashboardProps = {
@@ -25,6 +37,8 @@ type HomeDashboardProps = {
   totalLeaveRemaining: number;
   remainingWorkedDaysThisYear: number;
   importantAlert: string;
+  setupItems: HomeSetupItem[];
+  setupDismissKey: string;
   hasAnyNote: boolean;
   noteQuery: string;
   onNoteQueryChange: Dispatch<SetStateAction<string>>;
@@ -46,6 +60,8 @@ export function HomeDashboard({
   totalLeaveRemaining,
   remainingWorkedDaysThisYear,
   importantAlert,
+  setupItems,
+  setupDismissKey,
   hasAnyNote,
   noteQuery,
   onNoteQueryChange,
@@ -58,6 +74,28 @@ export function HomeDashboard({
   onOpenPayAlert,
   onAddNote,
 }: HomeDashboardProps) {
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [dismissedSetupItems, setDismissedSetupItems] = useState<string[]>(() => {
+    try {
+      if (typeof localStorage === "undefined") return [];
+      const saved = JSON.parse(localStorage.getItem(setupDismissKey) || "[]");
+      return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
+    } catch {
+      return [];
+    }
+  });
+  const visibleSetupItems = setupItems.filter((item) => !dismissedSetupItems.includes(item.id));
+  const setupIntro = visibleSetupItems.length === 1
+    ? visibleSetupItems[0].intro
+    : "Plusieurs informations sont encore nécessaires pour adapter votre planning et vos calculs. Complétez les rubriques ci-dessous selon votre situation.";
+  const dismissSetupItem = (id: string) => {
+    setDismissedSetupItems((current) => {
+      const next = [...new Set([...current, id])];
+      if (typeof localStorage !== "undefined")
+        localStorage.setItem(setupDismissKey, JSON.stringify(next));
+      return next;
+    });
+  };
   const groupActionLabel = hasConfiguredGroup
     ? `Je suis groupe ${group}`
     : "Choisir mon groupe";
@@ -68,7 +106,7 @@ export function HomeDashboard({
           : today.nextWorkKind === "training"
             ? " — Formation"
             : ""
-      }`
+      }${today.nextWorkHalfLeaveLabel ? ` — ${today.nextWorkHalfLeaveLabel}` : ""}`
     : "Aucun à venir";
 
   return (
@@ -168,22 +206,54 @@ export function HomeDashboard({
         ) : null}
       </section>
 
+      {visibleSetupItems.length ? (
+        <section className="home-setup-alert" aria-labelledby="home-setup-title" aria-live="polite">
+          <header>
+            <span aria-hidden="true">!</span>
+            <div><span className="step-label">Pour bien démarrer</span><h2 id="home-setup-title">Informations à compléter</h2></div>
+          </header>
+          <p>{setupIntro}</p>
+          <div className="home-setup-list">
+            {visibleSetupItems.map((item) => (
+              <article key={item.id}>
+                <span><strong>{item.title}</strong><small>{item.detail}</small></span>
+                <span className="home-setup-actions">
+                  <button type="button" onClick={item.onAction}>{item.actionLabel}<b aria-hidden="true">→</b></button>
+                  {item.dismissible !== false ? <button className="home-setup-dismiss" type="button" onClick={() => dismissSetupItem(item.id)}>Ne pas renseigner</button> : null}
+                </span>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="home-notes-section" aria-labelledby="home-notes-title">
-        <div className="home-content-heading">
-          <div>
+        <button
+          className="home-notes-toggle"
+          type="button"
+          aria-expanded={notesOpen}
+          aria-controls="home-notes-content"
+          onClick={() => setNotesOpen((open) => !open)}
+        >
+          <span>
             <span className="step-label">À ne pas oublier</span>
             <h2 id="home-notes-title">Mes notes</h2>
+          </span>
+          <b aria-hidden="true">⌄</b>
+        </button>
+        {notesOpen ? (
+          <div id="home-notes-content" className="home-notes-content">
+            <button className="home-add-note" type="button" onClick={onAddNote}>Ajouter une note</button>
+            <NotesPanelContent
+              hasAnyNote={hasAnyNote}
+              query={noteQuery}
+              onQueryChange={onNoteQueryChange}
+              searchResults={noteSearchResults}
+              upcoming={upcoming}
+              renderItems={renderNoteItems}
+            />
           </div>
-          <button type="button" onClick={onAddNote}>Ajouter une note</button>
-        </div>
-        <NotesPanelContent
-          hasAnyNote={hasAnyNote}
-          query={noteQuery}
-          onQueryChange={onNoteQueryChange}
-          searchResults={noteSearchResults}
-          upcoming={upcoming}
-          renderItems={renderNoteItems}
-        />
+        ) : null}
       </section>
     </>
   );

@@ -1,0 +1,11 @@
+Tesseract.js 7.0.0
+Copyright (c) Tesseract.js contributors
+Apache License 2.0. See worker.min.js.LICENSE.txt.
+
+Tesseract.js Core 7.0.0
+Copyright (c) Tesseract.js contributors
+Apache License 2.0. See core/LICENSE.txt.
+
+French trained data from @tesseract.js-data/fra 1.0.0
+Copyright (c) Balearica and contributors
+MIT License.

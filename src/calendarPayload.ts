@@ -3,6 +3,9 @@ import type {
   FormProfile,
   LeavePeriod,
   ManualYearAdjustments,
+  PartnerCalendarEntries,
+  PartnerLeavePeriod,
+  PartnerSharingStatus,
   PayProfile,
 } from "./appModel";
 import { cetAccountFromApi } from "./cet";
@@ -99,6 +102,16 @@ function formProfileFromApi(value: unknown): FormProfile | null {
       raw.work_quota === "half" || raw.work_quota === "three_quarters"
         ? raw.work_quota
         : "full",
+    workSchedule: (() => {
+      if (!raw.work_schedule || typeof raw.work_schedule !== "object" || Array.isArray(raw.work_schedule)) return undefined;
+      const schedule = record(raw.work_schedule);
+      const values = [schedule.start, schedule.end];
+      if (!values.every((value) => typeof value === "string" && /^\d{2}:\d{2}$/.test(value))) return undefined;
+      return {
+        start: String(schedule.start),
+        end: String(schedule.end),
+      };
+    })(),
     baseSalary: cents(raw.base_salary_cents),
     residenceAllowance: cents(raw.residence_allowance_cents),
     ifse: cents(raw.ifse_cents),
@@ -141,6 +154,7 @@ function entriesFromApi(value: unknown): Entries {
       leave: raw.leave === true,
       wish: raw.wish === true,
       holidayPay,
+      holidayRecoveryMinutes: optionalFiniteNumber(raw.holiday_recovery_minutes),
       closureOverride:
         raw.closure_override === "closed" || raw.closure_override === "open"
           ? raw.closure_override
@@ -185,6 +199,38 @@ function periodsFromApi(value: unknown): LeavePeriod[] {
       group: optionalFiniteNumber(raw.group),
       updatedAt: text(raw.updated_at),
     }];
+  });
+}
+
+function partnerEntriesFromApi(value: unknown): PartnerCalendarEntries {
+  const result: PartnerCalendarEntries = {};
+  for (const raw of records(value)) {
+    const date = text(raw.date);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    result[date] = {
+      noteText: text(raw.note_text),
+      noteColor: text(raw.note_color, "#7358d8"),
+      noteAuthor:
+        raw.note_author === "mika" || raw.note_author === "agnes"
+          ? raw.note_author
+          : "",
+      noteUpdatedAt: text(raw.note_updated_at),
+      noteGroupId: text(raw.note_group_id),
+      agnesLeave: raw.agnes_leave === true,
+    };
+  }
+  return result;
+}
+
+function partnerPeriodsFromApi(value: unknown): PartnerLeavePeriod[] {
+  return records(value).flatMap((raw) => {
+    const id = text(raw.id);
+    const from = text(raw.from);
+    const to = text(raw.to);
+    const person = raw.person === "agnes" || raw.person === "both" ? raw.person : "";
+    return id && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to) && person
+      ? [{ id, from, to, person }]
+      : [];
   });
 }
 
@@ -254,6 +300,9 @@ export type CalendarSnapshot = {
   overtimeEntries: OvertimeEntry[];
   recoveryUses: RecoveryUse[];
   mecenatEntries: MecenatEntry[];
+  partnerEntries: PartnerCalendarEntries;
+  partnerPeriods: PartnerLeavePeriod[];
+  partnerSharingStatus: PartnerSharingStatus;
 };
 
 /** Transforme la réponse réseau non fiable en données métier strictes. Les
@@ -261,6 +310,7 @@ export type CalendarSnapshot = {
 export function parseCalendarSnapshot(value: unknown): CalendarSnapshot {
   const raw = record(value);
   const rawProfile = record(raw.form_profile);
+  const sharedCalendar = record(raw.shared_calendar);
   const payProfiles = Object.fromEntries(
     Object.entries(record(rawProfile.pay_profiles)).map(([year, profile]) => [
       year,
@@ -276,5 +326,12 @@ export function parseCalendarSnapshot(value: unknown): CalendarSnapshot {
     overtimeEntries: overtimeFromApi(raw.overtime_entries),
     recoveryUses: recoveryUsesFromApi(raw.recovery_uses),
     mecenatEntries: mecenatFromApi(raw.mecenat_entries),
+    partnerEntries: partnerEntriesFromApi(sharedCalendar.entries),
+    partnerPeriods: partnerPeriodsFromApi(sharedCalendar.periods),
+    partnerSharingStatus:
+      sharedCalendar.status === "connected" ||
+      sharedCalendar.status === "unavailable"
+        ? sharedCalendar.status
+        : "disabled",
   };
 }

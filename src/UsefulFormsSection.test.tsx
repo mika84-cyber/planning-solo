@@ -4,11 +4,12 @@ import {
   getUsefulFormAction,
   USEFUL_FORM_FOLDERS,
   UsefulFormsSection,
+  usefulFormFoldersForDate,
 } from "./UsefulFormsSection";
 
 describe("formulaires utiles", () => {
   it("présente les quatre rubriques dans l’ordre demandé", () => {
-    const html = renderToStaticMarkup(<UsefulFormsSection />);
+    const html = renderToStaticMarkup(<UsefulFormsSection today="2026-09-01" />);
     expect(USEFUL_FORM_FOLDERS.map((folder) => folder.title)).toEqual([
       "Formulaire Expo",
       "Formulaire SAP",
@@ -18,12 +19,16 @@ describe("formulaires utiles", () => {
     expect(html.indexOf("Formulaire Expo")).toBeLessThan(html.indexOf("Formulaire SAP"));
     expect(html.indexOf("Formulaire SAP")).toBeLessThan(html.indexOf("Formulaire Brantôme"));
     expect(html.indexOf("Formulaire Brantôme")).toBeLessThan(html.indexOf("Horaires tickets resto"));
-    expect(html).toContain("Rechercher dans les formulaires");
-    expect(html).toContain("useful-resource-search-icon");
-    expect(html).toContain("1 document");
+    expect(html.indexOf("Horaires tickets resto")).toBeLessThan(html.indexOf("Déclarer un accident de travail"));
+    expect(html).toContain("useful-forms-root");
+    expect(html).toContain("Rechercher un document");
+    expect(html).toContain("Vide pour le moment");
+    expect(html).not.toContain("Hilma Af Klint");
     expect(html).toContain("Information pratique");
     expect(html).toContain("Déclarer un accident de travail");
-    expect(html).toContain("useful-form-work-accident");
+    expect(html).toContain("useful-form-work-accident-entry");
+    expect(html).toContain("/work-accident-icon.png");
+    expect(html).not.toContain("›");
   });
 
   it("réserve la rubrique tickets repas à l’image fournie", () => {
@@ -50,6 +55,13 @@ describe("formulaires utiles", () => {
       "cet-demande-ouverture.pdf",
       "cet-alimentation-indemnisation.pdf",
     ]);
+  });
+
+  it("retire automatiquement une fiche Expo lorsque l’exposition se termine", () => {
+    expect(usefulFormFoldersForDate("2026-08-30").find((folder) => folder.key === "expo")?.documents)
+      .toEqual([expect.objectContaining({ file: "hilma-af-klint.pdf" })]);
+    expect(usefulFormFoldersForDate("2026-08-31").find((folder) => folder.key === "expo")?.documents)
+      .toEqual([]);
   });
 
   it("ouvre les PDF dans le lecteur sur une adresse locale non sécurisée", () => {

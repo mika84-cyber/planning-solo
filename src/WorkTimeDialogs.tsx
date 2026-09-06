@@ -1,7 +1,7 @@
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
-import { minutesLabel, type OvertimeDisposition } from "./overtime";
+import { defaultRecoveryMinutes, minutesLabel, type OvertimeDisposition, type WorkQuota } from "./overtime";
 import { DAY_LABELS, getDayInfo } from "./planningLogic";
 
 type MecenatDraft = { date: string; start: string; end: string };
@@ -215,6 +215,8 @@ export function OvertimeDialog({
               <span>De</span>
               <input
                 type="time"
+                min="09:00"
+                max="19:00"
                 step="900"
                 value={draft.start}
                 onChange={(event) =>
@@ -226,6 +228,8 @@ export function OvertimeDialog({
               <span>À</span>
               <input
                 type="time"
+                min="09:00"
+                max="19:00"
                 step="900"
                 value={draft.end}
                 onChange={(event) =>
@@ -375,6 +379,7 @@ export type RecoveryDraft = {
   start: string;
   durationMinutes: number | null;
   trainingMinutes: 180 | 360;
+  trainingMoment?: "morning" | "afternoon";
 };
 
 const RECOVERY_KIND_LABELS: Record<RecoveryDraft["kind"], string> = {
@@ -385,15 +390,9 @@ const RECOVERY_KIND_LABELS: Record<RecoveryDraft["kind"], string> = {
   training: "Récupération sur une formation",
 };
 
-const RECOVERY_DURATION_OPTIONS: Record<
-  Exclude<RecoveryDraft["kind"], "training">,
-  ReadonlyArray<readonly [number | null, string]>
-> = {
-  day: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [null, "Durée libre"]],
-  half: [[240, "4 h"], [120, "2 h"], [null, "Durée libre"]],
-  hours: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [120, "2 h"]],
-  holiday: [[480, "8 h"], [240, "4 h"], [null, "Durée libre"]],
-};
+const RECOVERY_HOUR_OPTIONS: ReadonlyArray<readonly [number, string]> = [
+  [480, "8 h"], [360, "6 h"], [240, "4 h"], [225, "3 h 45"], [120, "2 h"],
+];
 
 export function RecoveryRangeDialog({
   open,
@@ -477,6 +476,7 @@ export function RecoveryUseDialog({
   draft,
   setDraft,
   group,
+  workQuota,
   showCalendar,
   remainingMinutes,
   saving,
@@ -489,6 +489,7 @@ export function RecoveryUseDialog({
   draft: RecoveryDraft;
   setDraft: Dispatch<SetStateAction<RecoveryDraft>>;
   group: number;
+  workQuota?: WorkQuota;
   showCalendar: boolean;
   remainingMinutes: number;
   saving: boolean;
@@ -498,10 +499,13 @@ export function RecoveryUseDialog({
   submitLabel?: string;
 }) {
   if (!open) return null;
+  const effectiveQuota = workQuota || "full";
   const chosenDate = recoveryCalendarDate(draft.date);
   const chosenDateInfo = getDayInfo(chosenDate, group);
-  const durationOptions =
-    draft.kind === "training" ? null : RECOVERY_DURATION_OPTIONS[draft.kind];
+  const quotaDuration = defaultRecoveryMinutes(draft.kind, effectiveQuota);
+  const durationOptions: ReadonlyArray<readonly [number | null, string]> | null = draft.kind === "training" ? null
+    : draft.kind === "hours" ? RECOVERY_HOUR_OPTIONS
+      : [[quotaDuration, minutesLabel(quotaDuration)], ...(draft.kind === "holiday" ? [] : [[null, "Durée libre"]] as const)];
   return (
     <div
       className="modal-backdrop"
@@ -543,7 +547,7 @@ export function RecoveryUseDialog({
                           ...current,
                           kind,
                           durationMinutes:
-                            kind === "half" ? 240 : kind === "hours" ? 480 : 480,
+                            defaultRecoveryMinutes(kind, effectiveQuota),
                         }))
                       }
                     >
@@ -572,14 +576,15 @@ export function RecoveryUseDialog({
             <legend>Heures à poser</legend>
             <div className="recovery-duration-choice">
               {draft.kind === "training" ? ([
-                [180, "3 h"],
-                [360, "6 h"],
-              ] as const).map(([value, label]) => (
+                ...(effectiveQuota === "half" ? [] : [["morning", 360, "Journée · 6 h · 10 h–16 h"]] as const),
+                ["morning", 180, "Matin · 3 h · 10 h–13 h"],
+                ["afternoon", 180, "Après-midi · 3 h · 13 h–16 h"],
+              ] as const).map(([value, minutes, label]) => (
                 <button
-                  key={value}
+                  key={`${value}-${minutes}`}
                   type="button"
-                  className={draft.trainingMinutes === value ? "active" : ""}
-                  onClick={() => setDraft((current) => ({ ...current, trainingMinutes: value }))}
+                  className={(draft.trainingMoment || "morning") === value && draft.trainingMinutes === minutes ? "active" : ""}
+                  onClick={() => setDraft((current) => ({ ...current, trainingMoment: value, trainingMinutes: minutes }))}
                 >
                   {label}
                 </button>
@@ -632,6 +637,8 @@ export function RecoveryUseDialog({
             </span>
             <input
               type="time"
+              min="09:00"
+              max="19:00"
               step="900"
               value={draft.start}
               onChange={(event) =>

@@ -11,11 +11,11 @@ describe("mode d’emploi", () => {
       skipGuidePrompt={vi.fn()}
       openGuideFromPrompt={vi.fn()}
     />);
-    expect(html).toContain("Souhaitez-vous consulter le mode d’emploi");
-    expect(html).not.toContain("Compte, données et mises à jour");
+    expect(html).toContain("Besoin d’un mode d’emploi rapide");
+    expect(html).not.toContain("Messages, compte et mises à jour");
   });
 
-  it("conserve les onze rubriques du guide", () => {
+  it("présente les huit étapes essentielles du guide simplifié", () => {
     const html = renderToStaticMarkup(<UserGuideDialogs
       guidePromptOpen={false}
       guideOpen
@@ -23,8 +23,9 @@ describe("mode d’emploi", () => {
       skipGuidePrompt={vi.fn()}
       openGuideFromPrompt={vi.fn()}
     />);
-    expect(html).toContain("Bien démarrer avec Planning Solo");
-    expect(html).toContain("11. Compte, données et mises à jour");
-    expect((html.match(/class="guide-section/g) || [])).toHaveLength(11);
+    expect(html).toContain("Planning Solo, simplement");
+    expect(html).toContain("8. Messages, compte et mises à jour");
+    expect(html).toContain("Les rappels sont activés automatiquement");
+    expect((html.match(/class="guide-section/g) || [])).toHaveLength(8);
   });
 });

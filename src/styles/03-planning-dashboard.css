@@ -22,10 +22,10 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  border: 1px solid #d9e2ef;
+  border: 1px solid #d8cfc3;
   border-radius: 18px;
   padding: 16px 17px;
-  background: linear-gradient(145deg, #ffffff 0, #f7f9fd 100%);
+  background: linear-gradient(145deg, #fffdfc 0, #f3eee7 100%);
   box-shadow: var(--shadow);
   color: var(--text);
   text-align: left;
@@ -40,15 +40,15 @@
 .home-panel-toggle.tone-balances,
 .home-panel-toggle.tone-allowances,
 .home-panel-toggle.tone-payslip {
-  background: linear-gradient(145deg, #f3f8ff 0%, #e6effd 100%);
+  background: linear-gradient(145deg, #fffdf9 0%, #edf2f7 100%);
   box-shadow:
-    0 10px 24px rgba(40, 89, 184, 0.14),
-    0 2px 7px rgba(40, 89, 184, 0.08);
+    0 10px 24px rgba(78, 61, 43, 0.09),
+    0 2px 7px rgba(78, 61, 43, 0.05);
 }
 .home-panel-body {
   border: 1px solid rgba(40, 89, 184, 0.28);
   border-radius: 18px;
-  background: #fff;
+  background: #fffdfc;
   box-shadow: var(--shadow);
   /* Pas d'overflow: hidden : ce panneau contient des menus déroulants
      (ChoicePicker) positionnés en absolute, dont le déclencheur — « Mois du
@@ -233,8 +233,8 @@
 .today-overview {
   border-left-color: #3475ba;
   background-image:
-    linear-gradient(90deg, rgba(52, 117, 186, 0.075), transparent 15%),
-    linear-gradient(145deg, #fbfdff, #f4f8fd);
+    linear-gradient(90deg, rgba(200, 120, 92, 0.07), transparent 17%),
+    linear-gradient(145deg, #fffdf9, #f5f1eb);
 }
 
 @media (max-width: 720px) {

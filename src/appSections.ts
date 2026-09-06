@@ -1,7 +1,19 @@
 import { lazy } from "react";
 
 export { CetSection } from "./CetSection";
+export const ColleaguePlanningPage = lazy(() =>
+  import("./ColleaguePlanningPage").then(({ ColleaguePlanningPage: Component }) => ({ default: Component })),
+);
+export const ColleagueRequestNotice = lazy(() =>
+  import("./ColleagueRequestNotice").then(({ ColleagueRequestNotice: Component }) => ({ default: Component })),
+);
 export { GrandPalaisProgramSection } from "./GrandPalaisProgramSection";
+export const FeedbackMessenger = lazy(() =>
+  import("./FeedbackMessenger").then(({ FeedbackMessenger: Component }) => ({ default: Component })),
+);
+export const FeedbackResolutionAlert = lazy(() =>
+  import("./FeedbackMessenger").then(({ FeedbackResolutionAlert: Component }) => ({ default: Component })),
+);
 export { LeaveBalancesSection } from "./LeaveBalancesSection";
 export { LeaveManagementPage } from "./LeaveManagementPage";
 export { PayAllowancesSection } from "./PayAllowancesSection";

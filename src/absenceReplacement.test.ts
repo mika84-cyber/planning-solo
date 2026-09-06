@@ -41,7 +41,7 @@ describe("remplacement des congés par une absence prioritaire", () => {
     ]);
   });
 
-  it.each(["rtt", "fraction", "half", "cet", "childcare", "exceptional"] as const)(
+  it.each(["rtt", "fraction", "cet", "childcare", "exceptional"] as const)(
     "conserve le congé %s et ajoute quand même l’accident du travail",
     (leaveType) => {
       const result = prepareAbsenceReplacement({
@@ -50,7 +50,7 @@ describe("remplacement des congés par une absence prioritaire", () => {
           from: "2026-09-09",
           to: "2026-09-09",
           leaveType,
-          halfMoment: leaveType === "half" ? "morning" : "",
+          halfMoment: "",
           group: 2,
           updatedAt: "version-1",
         }],
@@ -70,6 +70,44 @@ describe("remplacement des congés par une absence prioritaire", () => {
       ]);
     },
   );
+
+  it("recrédite une seule demi-journée de CA couverte sans toucher aux autres dates", () => {
+    const half: LeavePeriod = {
+      id: "half-annual-1",
+      from: "2026-09-09",
+      to: "2026-09-09",
+      leaveType: "half",
+      halfMoment: "afternoon",
+      group: 2,
+      updatedAt: "half-version-1",
+    };
+    const untouched: LeavePeriod = {
+      id: "annual-untouched",
+      from: "2026-09-10",
+      to: "2026-09-10",
+      leaveType: "annual",
+      group: 2,
+      updatedAt: "annual-version-1",
+    };
+    const result = prepareAbsenceReplacement({
+      periods: [half, untouched],
+      replacements: [{
+        id: "sick-half-day",
+        from: "2026-09-09",
+        to: "2026-09-09",
+        leaveType: "sick",
+        group: 2,
+      }],
+    });
+
+    expect(result.refunded).toBe(true);
+    expect(result.operations.filter((operation) => operation.action === "delete-period")).toEqual([
+      { action: "delete-period", id: "half-annual-1", expectedUpdatedAt: "half-version-1" },
+    ]);
+    expect(result.nextPeriods).toContainEqual(untouched);
+    expect(result.nextPeriods.filter((period) => period.leaveType === "half")).toHaveLength(0);
+    expect(result.nextPeriods.filter((period) => period.leaveType === "sick")).toHaveLength(1);
+  });
 
   it("refuse d’écraser une autre absence sans solde", () => {
     const strike: LeavePeriod = {

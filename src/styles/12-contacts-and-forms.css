@@ -1,6 +1,7 @@
 /* Cascade finale de l’annuaire : elle doit rester après les anciens styles
    de Formulaires utiles pour préserver les fiches et leurs actions. */
 .top-header.top-header-contacts {
+  --section-accent: #367c7d;
   background:
     radial-gradient(circle at 78% 30%, rgba(112, 215, 238, 0.48), transparent 28%),
     radial-gradient(circle at 63% 112%, rgba(255, 184, 92, 0.38), transparent 40%),
@@ -76,7 +77,7 @@
   border-radius: 9px;
   padding: 8px 10px;
   background: #2869a4;
-  color: #fff !important;
+  color: #fff;
   font-size: 10px;
   font-weight: 850;
   text-decoration: none;
@@ -88,12 +89,6 @@
   .useful-contact-card { grid-template-columns: 1fr; padding: 13px; }
   .useful-contact-actions { grid-template-columns: 1fr; }
   .useful-contact-actions a.useful-contact-email { width: 100%; }
-}
-
-@media (max-width: 390px) {
-  .useful-contact-phone { grid-template-columns: 1fr; }
-  .useful-contact-phone-actions,
-  .useful-contact-phone-actions a { width: 100%; }
 }
 
 /* Finition de l’annuaire : cartes identifiables, coordonnées aérées et actions
@@ -250,20 +245,8 @@
   .useful-contact-phone-actions a { width: auto; padding: 8px 10px; }
 }
 
-@media (max-width: 390px) {
-  .useful-contact-phone { grid-template-columns: 1fr; }
-  .useful-contact-phone-actions,
-  .useful-contact-phone-actions a { width: 100%; }
-}
-
 /* Rubriques pratiques : quatrième dossier équilibré, image lisible et
    annuaire tactile sans surcharger les écrans étroits. */
-@media (min-width: 721px) {
-  .useful-form-folder-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 .useful-form-folder.tone-tickets { --folder-accent: #a45f2d; }
 .useful-forms-folder-header.tone-tickets { --folder-accent: #a45f2d; }
 .useful-form-information-image {
@@ -296,11 +279,11 @@
 .useful-contacts-screen {
   width: min(1120px, calc(100% - 32px));
   margin: 18px auto 0;
-  border: 1.5px solid var(--app-frame-strong);
-  border-radius: 22px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-panel);
   padding: 22px;
-  background: linear-gradient(145deg, #f7fbff, #fff 56%, #fff8ef);
-  box-shadow: var(--app-subtle-shadow);
+  background: linear-gradient(145deg, #edf8f6, var(--surface-card) 56%, #faf2e9);
+  box-shadow: inset 0 5px #4b8b86, var(--shadow-card);
 }
 .useful-contact-directory-grid,
 .useful-contact-category-grid {
@@ -316,15 +299,15 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  border: 1.5px solid #8eacc7;
-  border-radius: 17px;
+  border: 1px solid #8eacc7;
+  border-radius: var(--radius-card);
   padding: 17px;
   background: rgba(255, 255, 255, 0.9);
   color: #172b43;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 9px 22px rgba(32, 68, 103, 0.08);
+  box-shadow: var(--shadow-card);
 }
 .useful-contact-directory-grid > button > span:first-child {
   width: 48px;
@@ -381,8 +364,8 @@
   grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.2fr);
   align-items: center;
   gap: 14px;
-  border: 1px solid #bed0df;
-  border-radius: 15px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-card);
   padding: 13px 14px;
   background: rgba(255, 255, 255, 0.94);
 }
@@ -399,7 +382,7 @@
   flex: 0 0 35px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: var(--radius-control);
   background: #e8f2fb;
   color: #286394;
   font-size: 12px;
@@ -596,8 +579,8 @@
   letter-spacing: 0.04em;
 }
 
-.header-update-button.update-available {
-  border-color: #b91f36 !important;
+:root .header-update-button.update-available {
+  border-color: #b91f36;
   background: #fff4f5;
   color: #b5162f;
   font-weight: 800;
@@ -749,6 +732,7 @@
 
 .main-menu-drawer nav > button,
 .main-menu-secondary .guide-menu-entry {
+  --menu-accent: #d79a73;
   min-height: 72px;
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto;
@@ -757,13 +741,20 @@
   border: 1px solid rgba(255, 255, 255, 0.27);
   border-radius: 18px;
   padding: 12px 13px;
-  background: linear-gradient(90deg, rgba(5, 11, 19, 0.88) 0%, rgba(5, 11, 19, 0.78) 58%, rgba(8, 16, 26, 0.34) 82%, rgba(18, 29, 41, 0.14) 100%);
+  background: linear-gradient(90deg, #101c27, rgba(5, 11, 19, 0.82) 65%, transparent);
   color: #fff;
-  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.14), inset 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 4px 0 var(--menu-accent), 0 11px 25px rgba(0, 0, 0, 0.2);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
   backdrop-filter: saturate(1.08) contrast(1.02);
   -webkit-backdrop-filter: saturate(1.08) contrast(1.02);
 }
+
+.main-menu-drawer nav > button:nth-child(2) { --menu-accent: #77aa97; }
+.main-menu-drawer nav > button:nth-child(3) { --menu-accent: #9185cd; }
+.main-menu-drawer nav > button:nth-child(4) { --menu-accent: #d0a05c; }
+.main-menu-drawer nav > button:nth-child(5) { --menu-accent: #b96d7f; }
+.main-menu-drawer nav > button:nth-child(6) { --menu-accent: #d09457; }
+.main-menu-drawer nav > button:nth-child(7) { --menu-accent: #65a5a4; }
 
 .main-menu-drawer nav > button:hover,
 .main-menu-secondary .guide-menu-entry:hover {
@@ -773,10 +764,10 @@
 }
 
 .main-menu-drawer nav > button.active {
-  border-color: rgba(244, 198, 151, 0.78);
-  background: linear-gradient(90deg, rgba(18, 47, 71, 0.92), rgba(19, 42, 61, 0.8) 58%, rgba(19, 33, 47, 0.22));
+  border-color: color-mix(in srgb, var(--menu-accent) 78%, #fff);
+  background: linear-gradient(90deg, #182e3d, rgba(13, 29, 42, 0.86) 65%, transparent);
   color: #fff;
-  box-shadow: inset 3px 0 #f0c18e, 0 12px 28px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 4px 0 var(--menu-accent), 0 12px 28px rgba(0, 0, 0, 0.25);
 }
 
 .main-menu-index {
@@ -786,8 +777,8 @@
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f4d7b8;
+  background: color-mix(in srgb, var(--menu-accent) 38%, transparent);
+  color: #fff;
   font-size: 10px;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -795,8 +786,8 @@
 }
 
 .main-menu-drawer nav > button.active .main-menu-index {
-  border-color: #f0c18e;
-  background: #f0c18e;
+  border-color: var(--menu-accent);
+  background: var(--menu-accent);
   color: #15283a;
 }
 
@@ -835,9 +826,9 @@
 }
 
 .main-menu-secondary .guide-menu-entry {
-  width: 100%;
-  color: #fff;
-  text-align: left;
+  --menu-accent:#e0a65a;width:100%;min-height:80px;border-color:rgba(255,209,143,.72);
+  background:linear-gradient(105deg,rgba(19,69,88,.97),rgba(33,105,105,.92));color:#fff;
+  box-shadow:inset 4px 0 #e0a65a,0 13px 28px rgba(0,0,0,.25);text-align:left;
 }
 
 .main-menu-secondary .guide-menu-entry .main-menu-index {
@@ -915,13 +906,13 @@
   gap: 16px;
   margin: 18px auto 0;
   border: 1.5px solid var(--app-frame-strong);
-  border-radius: 25px;
+  border-radius: 29px;
   padding: clamp(15px, 2.3vw, 24px);
   background:
-    radial-gradient(circle at 0 0, rgba(61, 112, 178, 0.1), transparent 31%),
-    radial-gradient(circle at 100% 100%, rgba(218, 133, 54, 0.09), transparent 34%),
-    linear-gradient(145deg, #f8fbff, #fffdf9);
-  box-shadow: 0 10px 26px rgba(35, 61, 91, 0.08);
+    radial-gradient(circle at 0 0, rgba(79, 128, 111, 0.2), transparent 34%),
+    radial-gradient(circle at 100% 100%, rgba(196, 132, 76, 0.13), transparent 38%),
+    linear-gradient(145deg, #eff8f3, #fff7ef);
+  box-shadow: inset 0 6px #4f806f, 0 18px 38px rgba(63, 74, 61, 0.12);
 }
 
 .leave-tools-heading {
@@ -1126,12 +1117,6 @@
 
 /* Cadre visuel commun : les grandes rubriques et leurs sous-parties utilisent
    désormais la même hiérarchie bleu-gris dans toute l’application. */
-:root {
-  --app-frame-strong: rgba(55, 73, 98, 0.58);
-  --app-frame-soft: rgba(83, 105, 134, 0.38);
-  --app-subtle-shadow: 0 7px 18px rgba(33, 55, 83, 0.07);
-}
-
 .today-overview,
 .home-notes-section,
 .planning-workspace-shell.framed,
@@ -1634,11 +1619,7 @@
   justify-content: center;
   width: min(620px, 100%);
   margin: -4px auto 18px;
-  border: 1.5px solid rgba(46, 74, 109, 0.42);
-  border-radius: 19px;
-  padding: 8px;
-  background: linear-gradient(145deg, #f7fbff, #eaf2fb);
-  box-shadow: 0 8px 20px rgba(38, 69, 105, 0.1);
+  padding: 0;
 }
 
 .home-view-mode-bar .view-switch {
@@ -1666,8 +1647,7 @@
     width: 100%;
     margin-top: -2px;
     margin-bottom: 14px;
-    border-radius: 17px;
-    padding: 7px;
+    padding: 0;
   }
 
   .home-view-mode-bar .view-switch button {
@@ -1675,7 +1655,7 @@
   }
 
   .top-header-home .header-update-button {
-    grid-row: 2;
+    grid-row: 3;
   }
 }
 
@@ -2001,6 +1981,7 @@
    coin supérieur gauche. Les œuvres Contacts et Formulaires sont recentrées
    dans l'espace ainsi libéré sans concurrencer les commandes. */
 @media (min-width: 721px) {
+  [data-section="pdf"] .header-section-title h1 { font-size: clamp(1.35rem, 2.7vw, 2rem); line-height: 1.04; }
   .top-header {
     align-items: flex-start;
     height: 235px;
@@ -2028,7 +2009,7 @@
     padding: 24px 28px;
   }
   .top-header.top-header-forms::before {
-    left: 50%;
+    left: 53%;
   }
 }
 

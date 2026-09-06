@@ -34,7 +34,8 @@ export type CalendarEntry = {
   /** Sur un jour férié travaillé : la prime seule, ou la prime minorée
    *  assortie d'un jour de récupération. Vide tant que le choix n'est pas
    *  fait — le férié est alors signalé comme en attente. */
-  holiday_pay?: HolidayPay;
+    holiday_pay?: HolidayPay;
+    holiday_recovery_minutes?: number;
   closure_override?: "closed" | "open";
   exchange_id?: string;
   exchange_role?: "given" | "return";
@@ -113,6 +114,10 @@ export type FormProfile = {
    *  « fonctionnaire », le statut jusque-là implicite de l'appli. */
   status?: "fonctionnaire" | "contractuel";
   work_quota?: "full" | "three_quarters" | "half";
+  work_schedule?: {
+    start: string;
+    end: string;
+  };
   /** Traitement de base mensuel, hors primes : il sert à calculer les
    *  indemnités de jour férié, qui en sont un multiple. Stocké en centimes
    *  pour éviter les arrondis flottants. */

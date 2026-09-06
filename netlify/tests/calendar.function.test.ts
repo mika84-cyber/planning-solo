@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const data = new Map<string, unknown>();
+const etagFor = (key: string) => data.has(key) ? `etag:${JSON.stringify(data.get(key))}` : "";
 const setStoredJson = async (
   key: string,
   value: unknown,
-  options?: { onlyIfNew?: boolean },
+  options?: { onlyIfNew?: boolean; onlyIfMatch?: string },
 ) => {
   if (options?.onlyIfNew && data.has(key)) return { modified: false };
+  if (options?.onlyIfMatch && options.onlyIfMatch !== etagFor(key)) return { modified: false };
   data.set(key, value);
-  return { modified: true };
+  return { modified: true, etag: etagFor(key) };
 };
+const getStoredWithMetadata = async (key: string) => data.has(key) ? { data: data.get(key), etag: etagFor(key), metadata: {} } : null;
 const store = {
   get: vi.fn(async (key: string) => data.get(key) ?? null),
+  getWithMetadata: vi.fn(getStoredWithMetadata),
   setJSON: vi.fn(setStoredJson),
   delete: vi.fn(async (key: string) => { data.delete(key); }),
   list: vi.fn(({ prefix }: { prefix: string }) => ({
@@ -46,6 +50,8 @@ describe("API principale du calendrier", () => {
   beforeEach(() => {
     data.clear();
     store.get.mockClear();
+    store.getWithMetadata.mockReset();
+    store.getWithMetadata.mockImplementation(getStoredWithMetadata);
     store.setJSON.mockReset();
     store.setJSON.mockImplementation(setStoredJson);
     store.delete.mockClear();
@@ -106,6 +112,21 @@ describe("API principale du calendrier", () => {
     expect([...data.keys()].some((key) => key === "entry/2026-08-28")).toBe(false);
   });
 
+  it("enregistre le crédit férié de 3 h 45 d’un mi-temps", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const response = await calendarHandler(request({
+      action: "save-entry",
+      date: "2026-09-10",
+      holidayPay: "recovery",
+      holidayRecoveryMinutes: 225,
+    }));
+    expect(response.status).toBe(200);
+    expect(data.get("user/user-a/entry/2026-09-10")).toMatchObject({
+      holiday_pay: "recovery",
+      holiday_recovery_minutes: 225,
+    });
+  });
+
   it("détecte une modification concurrente", async () => {
     data.set("user/user-a/entry/2026-08-28", {
       date: "2026-08-28",
@@ -155,11 +176,22 @@ describe("API principale du calendrier", () => {
       "clear-legacy-period",
       "save-note-period",
       "delete-note-period",
+      "delete-shared-partner-note",
       "save-leaves",
       "save-entry",
       "save-exchange",
       "delete-exchange",
     ]);
+  });
+
+  it("réserve la suppression d’une note partenaire au partage privé", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const response = await calendarHandler(request({
+      action: "delete-shared-partner-note",
+      date: "2026-09-04",
+    }));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "Partage privé indisponible" });
   });
 
   it("enregistre, préserve puis supprime toujours les deux dates d’un échange", async () => {
@@ -373,6 +405,47 @@ describe("API principale du calendrier", () => {
     }
   });
 
+  it("préserve une note enregistrée sur un autre appareil pendant l’échec d’un lot", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    data.set("user/user-a/entry/2026-09-04", { date: "2026-09-04", updated_at: "newer" });
+    let firstWrite = true;
+    store.setJSON.mockImplementation(async (key, value, options) => {
+      const result = await setStoredJson(key, value, options);
+      if (firstWrite && key.endsWith("2026-09-03") && result.modified) {
+        firstWrite = false;
+        data.set("user/user-a/entry/2026-09-20", { date: "2026-09-20", note_text: "Note autre appareil", updated_at: "concurrent" });
+      }
+      return result;
+    });
+    const response = await calendarHandler(request({ action: "batch", operations: [
+      { action: "save-entry", date: "2026-09-03", noteText: "Lot" },
+      { action: "save-entry", date: "2026-09-04", expectedUpdatedAt: "ancienne-version", noteText: "Échec" },
+    ] }));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ rolled_back: true });
+    expect(data.get("user/user-a/entry/2026-09-20")).toMatchObject({ note_text: "Note autre appareil" });
+  });
+
+  it("n’annonce pas une restauration complète si la donnée du lot a changé entre-temps", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    data.set("user/user-a/entry/2026-09-04", { date: "2026-09-04", updated_at: "newer" });
+    let injected = false;
+    store.getWithMetadata.mockImplementation(async (key) => {
+      if (!injected && key.endsWith("2026-09-04") && (data.get("user/user-a/entry/2026-09-03") as { note_text?: string } | undefined)?.note_text === "Lot") {
+        injected = true;
+        data.set("user/user-a/entry/2026-09-03", { date: "2026-09-03", note_text: "Version plus récente", updated_at: "concurrent" });
+      }
+      return getStoredWithMetadata(key);
+    });
+    const response = await calendarHandler(request({ action: "batch", operations: [
+      { action: "save-entry", date: "2026-09-03", noteText: "Lot" },
+      { action: "save-entry", date: "2026-09-04", expectedUpdatedAt: "ancienne-version", noteText: "Échec" },
+    ] }));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ rolled_back: false, rollback_error: expect.any(String) });
+    expect(data.get("user/user-a/entry/2026-09-03")).toMatchObject({ note_text: "Version plus récente" });
+  });
+
   it("restaure une sauvegarde vide puis efface uniquement le compte courant", async () => {
     data.set("user/user-b/entry/2026-08-30", { date: "2026-08-30" });
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
@@ -482,6 +555,37 @@ describe("API principale du calendrier", () => {
     expect(
       data.has("user/user-a/recovery-use/request-recovery-too-long-recovery-1"),
     ).toBe(false);
+  });
+
+  it("n’accepte pas deux consommations simultanées du même solde", async () => {
+    data.set("user/user-a/overtime/overtime-credit-concurrent", {
+      id: "overtime-credit-concurrent",
+      date: "2026-09-01",
+      minutes: 480,
+      day_minutes: 480,
+      night_minutes: 0,
+      disposition: "recovery",
+      input_mode: "duration",
+      updated_at: "2026-09-01T10:00:00.000Z",
+    });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const recoveryRequest = (id: string, date: string) => calendarHandler(request({
+      action: "save-request",
+      requestId: id,
+      requestKind: "recovery",
+      group: 2,
+      periods: [{ from: date, to: date, type: "recovery_day" }],
+      timed: [],
+    }));
+
+    const responses = await Promise.all([
+      recoveryRequest("request-concurrent-a", "2026-09-23"),
+      recoveryRequest("request-concurrent-b", "2026-09-24"),
+    ]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    const savedUses = [...data.keys()].filter((key) => key.includes("request-concurrent-") && key.includes("recovery-use/"));
+    expect(savedUses).toHaveLength(1);
   });
 
   it("refuse une durée de formation non réglementaire avant toute écriture", async () => {
@@ -657,6 +761,7 @@ describe("API principale du calendrier", () => {
       signature: "",
       status: "fonctionnaire",
       workQuota: "three_quarters",
+      workSchedule: { start: "09:15", end: "19:45" },
       baseSalaryCents: 180173,
       residenceAllowanceCents: 5405,
       ifseCents: 32500,
@@ -726,8 +831,45 @@ describe("API principale du calendrier", () => {
       group: "2",
       status: "fonctionnaire",
       work_quota: "three_quarters",
+      work_schedule: { start: "09:15", end: "19:45" },
       cet_account: { employer_name: "Centre Pompidou" },
     });
+  });
+
+  it("conserve les montants des mois précédents lors d’un changement de paie daté", async () => {
+    data.set("user/user-a/form-profile", {
+      full_name: "Agent",
+      group: "2",
+      signature: "",
+      status: "fonctionnaire",
+      work_quota: "full",
+      base_salary_cents: 200000,
+      ifse_cents: 30000,
+      pas_rate_bp: 500,
+      pay_profiles: {
+        "2026": { base_salary_cents: 200000, ifse_cents: 30000, pas_rate_bp: 500 },
+      },
+      updated_at: "2026-08-01T00:00:00.000Z",
+    });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+
+    const response = await calendarHandler(request({
+      action: "save-form-profile",
+      fullName: "Agent",
+      group: "2",
+      signature: "",
+      payYear: 2026,
+      payMonth: 8,
+      ifseCents: 32500,
+      pasRateBp: 600,
+    }));
+
+    expect(response.status).toBe(200);
+    const stored = data.get("user/user-a/form-profile") as {
+      pay_profiles: Record<string, { ifse_cents?: number; pas_rate_bp?: number }>;
+    };
+    expect(stored.pay_profiles["2026"]).toMatchObject({ ifse_cents: 30000, pas_rate_bp: 500 });
+    expect(stored.pay_profiles["2026-09"]).toMatchObject({ ifse_cents: 32500, pas_rate_bp: 600 });
   });
 
   it("refuse les signatures, CET et rattrapages invalides sans modifier le profil", async () => {

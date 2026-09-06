@@ -181,8 +181,6 @@ export function PayslipCheckSection({
       resultDetailsOpen={payslipResultDetailsOpen}
       setResultDetailsOpen={setPayslipResultDetailsOpen}
       grossForMonth={grossForMonth}
-      baseSalary={baseSalary}
-      ifse={ifse}
       overtime={overtimeForPayMonth}
       mecenat={mecenatForCurrentPayMonth}
       onReportMissingSundays={reportMissingSundays}
@@ -198,19 +196,13 @@ export function PayslipCheckSection({
 
   return (
       <div className="pay-dashboard-settings-stack">
-        <div className="pay-year-notice">
-          <p>
-            Paramètres de paie pour <strong>{payYear}</strong>
-            {hasPayProfile
-              ? " — valeurs enregistrées pour cette année."
-              : " — les dernières valeurs connues sont utilisées comme point de départ."}
-          </p>
-          {!hasPayProfile ? (
+        {!hasPayProfile ? (
+          <div className="pay-year-notice">
             <button type="button" className="secondary-button" disabled={creatingPayProfile} onClick={() => void createPayProfile()}>
               {creatingPayProfile ? "Actualisation…" : `Utiliser ces valeurs pour ${payYear}`}
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {showPayslipHelp ? (
           <section className="allowance-card">

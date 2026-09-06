@@ -21,6 +21,7 @@ import type { useAppShellUiState } from "./useAppShellUiState";
 import type { usePlanningUiState } from "./usePlanningUiState";
 import type { useToast } from "./useToast";
 import type { RecoveryDraft, useWorkTimeUiState } from "./useWorkTimeUiState";
+import { DEFAULT_WORK_SCHEDULE, type WorkQuota, type WorkSchedule } from "./overtime";
 
 type PlanningDialogsState = Pick<
   ReturnType<typeof usePlanningUiState>,
@@ -96,6 +97,8 @@ type Props = {
   shell: ShellDialogsState;
   toast: ToastDialogsState;
   group: number;
+  workQuota?: WorkQuota;
+  workSchedule?: WorkSchedule;
   mecenatCalculation: ComponentProps<typeof MecenatDialog>["calculation"];
   recoveryRemainingMinutes: number;
   onStartRangeSelection: () => void;
@@ -130,6 +133,8 @@ export function AppDialogLayer({
   shell,
   toast,
   group,
+  workQuota = "full",
+  workSchedule = DEFAULT_WORK_SCHEDULE,
   mecenatCalculation,
   recoveryRemainingMinutes,
   onStartRangeSelection,
@@ -206,6 +211,7 @@ export function AppDialogLayer({
         draft={workTime.recoveryDraft}
         setDraft={workTime.setRecoveryDraft}
         group={group}
+        workQuota={workQuota}
         showCalendar={workTime.recoveryCalendarVisible}
         remainingMinutes={recoveryRemainingMinutes}
         saving={workTime.savingOvertime}
@@ -219,6 +225,8 @@ export function AppDialogLayer({
         activeType={planning.activeType}
         start={planning.timeStart}
         end={planning.timeEnd}
+        workQuota={workQuota}
+        workSchedule={workSchedule}
         onStartChange={planning.setTimeStart}
         onEndChange={planning.setTimeEnd}
         onClose={() => planning.setTimeDate(null)}

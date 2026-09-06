@@ -1,4 +1,5 @@
 import {
+  lazy,
   Suspense,
   useEffect,
   useEffectEvent,
@@ -19,13 +20,20 @@ import { getUsefulContacts } from "./contactsApi";
 import { resolvePublicDemoAccess } from "./demoAccess";
 import { parseDemoCompletedRequestJson } from "./demoCompletedRequest";
 import { ConnectionStatus } from "./ConnectionStatus";
-import { HomeDashboard } from "./HomeDashboard";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
-import { usePayActions } from "./usePayActions";
-import type { PayDashboardAlert, PayDashboardVariable } from "./PayDashboard";
+import { effectivePayProfile, hasPayProfileHistory, usePayActions } from "./usePayActions";
+import type { PayDashboardVariable } from "./PayDashboard";
 import type { PayCalculationBreakdown } from "./PayEstimateDetails";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
+
+const homeDashboardModule = import("./HomeDashboard");
+const HomeDashboard = lazy(() =>
+  homeDashboardModule.then(({ HomeDashboard: Component }) => ({ default: Component })),
+);
+const SchoolVacationMonthSummary = lazy(() =>
+  import("./SchoolVacationUi").then(({ SchoolVacationMonthSummary: Component }) => ({ default: Component })),
+);
 import { useWorkTimeUiState } from "./useWorkTimeUiState";
 import { useWorkTimeActions } from "./useWorkTimeActions";
 import { useAuthenticationActions } from "./useAuthenticationActions";
@@ -39,11 +47,14 @@ import { usePlanningRequestActions } from "./usePlanningRequestActions";
 import { useWorkExchangeActions } from "./useWorkExchangeActions";
 import { useWorkAccidentActions } from "./useWorkAccidentActions";
 import { useAppShellUiState } from "./useAppShellUiState";
+import { useFeedbackMessaging } from "./useFeedbackMessaging";
 import { AppDialogLayer } from "./AppDialogLayer";
 import {
   AppHeader,
+  AdaptiveNavigation,
   MainMenu,
   MAIN_SECTION_ORDER,
+  type MainSection,
 } from "./AppNavigation";
 import { PlanningCommandCenter } from "./PlanningCommandCenter";
 import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
@@ -51,12 +62,17 @@ import { PlanningDayCell } from "./PlanningDayCell";
 import { MonthCalendar } from "./PlanningView";
 import { WorkExchangeDialog } from "./WorkExchangeDialog";
 import { WorkExchangePanel } from "./WorkExchangePanel";
+import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
 import { workExchangeForDate } from "./workExchange";
 import { RequestValidationSummary } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
+  ColleaguePlanningPage,
+  ColleagueRequestNotice,
+  FeedbackMessenger,
+  FeedbackResolutionAlert,
   GrandPalaisProgramSection,
   LeaveBalancesSection,
   LeaveManagementPage,
@@ -78,11 +94,18 @@ import {
   postCalendarBatch,
 } from "./calendarApi";
 import { parseCalendarSnapshot } from "./calendarPayload";
+import { splitNoteItemsIntoColumns } from "./noteColumns";
+import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import {
   HOLIDAY_PAY_OPTIONS,
+  emptyEntry,
   euros,
+  groupNoteItemsByDate,
+  noteDateLabel,
   notePeriodFor,
+  personalPresenceForDate,
   rangeKeys,
+  roundCurrency,
   workedDayCount,
   workedDayCountBetween,
   type BalanceType,
@@ -115,7 +138,6 @@ import {
   summarizePayslipReview,
 } from "./payslipReview";
 import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
-import { PayslipWarningEffect } from "./PayslipWarningEffect";
 import { strikePayEstimate } from "./strike";
 import { StrikeContinuityDetails } from "./StrikeContinuityDetails";
 import {
@@ -129,6 +151,8 @@ import {
 import {
   allocateRecoveryUses,
   calculatePaidOvertime,
+  DEFAULT_WORK_SCHEDULE,
+  defaultRecoveryMinutes,
   dailyMinutesForQuota,
   holidayRecoveryEntries,
   minutesLabel,
@@ -138,6 +162,7 @@ import {
   type RecoveryUse,
   type RecoveryRequestType,
   type WorkQuota,
+  type WorkSchedule,
 } from "./overtime";
 import { useToast } from "./useToast";
 import { type CetAccount } from "./cet";
@@ -151,7 +176,6 @@ import {
   MONTHS,
   RESIDENCE_ALLOWANCE_RATE,
   SUNDAY_ALLOWANCE,
-  sickLeaveDeduction,
   sundayTierFor,
   holidayAllowance,
   holidayPayslip,
@@ -170,7 +194,6 @@ import {
   dateTimeLabel,
   fromKey,
   getDayInfo,
-  groupConsecutive,
   halfMomentFromStart,
   leaveTypeLabel,
   s,
@@ -180,11 +203,13 @@ import {
   nextAttendanceDay,
   periodLabel,
   sameDate,
+  schoolVacationsForZone,
   selectionRemovesAttendance,
   type CountedOnlyType,
   type HolidayPay,
   type LeaveType,
   type SelectionType,
+  type SchoolVacation,
 } from "./planningLogic";
 
 function keyedNoteLines(value: string) {
@@ -199,6 +224,9 @@ function keyedNoteLines(value: string) {
       return { key: `${label}-${occurrence}`, label };
     });
 }
+
+// Conservé prêt à être réactivé lorsque le parcours d’accompagnement sera finalisé.
+const HOME_SETUP_GUIDANCE_ENABLED = false;
 
 function DeferredSection({ label }: { label: string }) {
   return <div className="deferred-section-loading" role="status">Chargement de {label}…</div>;
@@ -233,10 +261,14 @@ export default function Home() {
   const demoMode =
     publicDemoAccess.active ||
     (import.meta.env.DEV &&
-      import.meta.env.VITE_E2E_DEMO === "true" &&
       localTestHost &&
-      (localStorage.getItem("planning:e2e-demo-enabled") === "1" ||
-        new URLSearchParams(location.search).get("local-test") === "1"));
+      (new URLSearchParams(location.search).get("local-test") === "1" ||
+        (import.meta.env.VITE_E2E_DEMO === "true" &&
+          localStorage.getItem("planning:e2e-demo-enabled") === "1")));
+  const feedbackPreviewRole = import.meta.env.DEV && localTestHost
+    ? new URLSearchParams(location.search).get("preview-feedback-role")
+    : null;
+  const localDemoAdmin = feedbackPreviewRole !== "user";
   const previewPayEffect =
     import.meta.env.DEV && localTestHost
       ? new URLSearchParams(location.search).get("preview-pay-effect")
@@ -262,12 +294,14 @@ export default function Home() {
     entries, setEntries, periods, setPeriods, formProfile, setFormProfile,
     payProfiles, setPayProfiles, overtimeEntries, setOvertimeEntries,
     recoveryUses, setRecoveryUses, mecenatEntries, setMecenatEntries,
+    partnerEntries, setPartnerEntries, partnerPeriods, setPartnerPeriods,
+    partnerSharingStatus, setPartnerSharingStatus,
   } = useCalendarDataState();
   const workTimeUi = useWorkTimeUiState();
   const {
     setOvertimeDialogOpen, setSolidarityDialogOpen,
     setRecoveryDialogOpen,
-    recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode, setTrainingRecoveryMode,
+    recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode,
     overtimeHistoryOpen, setOvertimeHistoryOpen, setMecenatDialogOpen,
     mecenatHistoryOpen, setMecenatHistoryOpen, setSavingMecenat,
     savingOvertime, setSavingOvertime, overtimeDraft,
@@ -289,8 +323,6 @@ export default function Home() {
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople, setDeletingPeriod,
     savingRange, requestChooser, setRequestChooser,
-    planningRequestMethod, setPlanningRequestMethod, planningRequestDate, setPlanningRequestDate,
-    pendingRecoveryType, setPendingRecoveryType, pendingLeaveType, setPendingLeaveType,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
     activeType, setActiveType, selections, setSelections, setTimeDate,
     setWarningDate,
@@ -330,6 +362,7 @@ export default function Home() {
   );
   const {
     payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
+    payProfileFocusRequested, setPayProfileFocusRequested,
     payPeriodOpen, setPayPeriodOpen, payMonthSlide, setPayMonthSlide,
     payMonthSlideTimer, payslipCheck, setPayslipCheck, payslipError, setPayslipError,
     payslipImportBusy, setPayslipImportBusy, payslipImportError, setPayslipImportError,
@@ -347,14 +380,36 @@ export default function Home() {
     approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
     mainMenuOpen, setMainMenuOpen, guidePromptOpen, setGuidePromptOpen,
     guideOpen, setGuideOpen, guidePromptCheckedRef, groupChooserOpen, setGroupChooserOpen,
+    feedbackOpen, setFeedbackOpen,
     noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,
     appUpdateAvailable, setAppUpdateAvailable, setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
     accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize, setViewportSize,
-    showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf, calendarSlide,
+    showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf,
+    showSchoolVacations, setShowSchoolVacations, schoolZone, setSchoolZone, calendarSlide,
     monthRefs, allowancesSwipeStart,
   } = appShellUi;
+  const feedbackMessaging = useFeedbackMessaging(isProgramAdmin, demoMode, authStatus === "ready");
+
+  useEffect(() => {
+    const requestedView = new URLSearchParams(location.search).get("feedback");
+    if (authStatus !== "ready" || (requestedView !== "compose" && requestedView !== "inbox")) return;
+    if (requestedView === "inbox" && !isProgramAdmin) return;
+    setFeedbackOpen(true);
+    const url = new URL(location.href);
+    url.searchParams.delete("feedback");
+    history.replaceState(history.state, "", url);
+  }, [authStatus, isProgramAdmin, setFeedbackOpen]);
+  const visibleSchoolVacations = useMemo<SchoolVacation[]>(
+    () => showSchoolVacations ? schoolVacationsForZone(schoolZone) : [],
+    [schoolZone, showSchoolVacations],
+  );
+  const monthFirstKey = dateKey(localDate(view.getFullYear(), view.getMonth(), 1));
+  const monthLastKey = dateKey(localDate(view.getFullYear(), view.getMonth() + 1, 0));
+  const monthSchoolVacations = visibleSchoolVacations.filter(
+    ({ from, to }) => from <= monthLastKey && to >= monthFirstKey,
+  );
   const {
     deleteMultiplePlanningDates,
     saveOtherDateDirect,
@@ -395,13 +450,13 @@ export default function Home() {
       .then((payload) => {
         if (!active) return;
         setApprovedGrandPalaisUpdates(payload.approved ?? []);
-        setIsProgramAdmin(import.meta.env.DEV && demoMode ? true : payload.isAdmin);
+        setIsProgramAdmin(import.meta.env.DEV && demoMode ? localDemoAdmin : payload.isAdmin);
       })
       .catch(() => {
-        if (active) setIsProgramAdmin(import.meta.env.DEV && demoMode);
+        if (active) setIsProgramAdmin(import.meta.env.DEV && demoMode && localDemoAdmin);
       });
     return () => { active = false; };
-  }, [authStatus, demoMode, publicDemoAccess.active]);
+  }, [authStatus, demoMode, localDemoAdmin, publicDemoAccess.active]);
 
   useEffect(() => {
     const expiresAt = import.meta.env.VITE_PUBLIC_DEMO_UNTIL;
@@ -520,9 +575,15 @@ export default function Home() {
   const ignoreNextDayClick = useRef(false);
   const openedNotificationDate = useRef("");
   const noteFieldRef = useRef<HTMLTextAreaElement | null>(null);
+  const [noteEditorOpen, setNoteEditorOpen] = useState(false);
+  useEffect(() => {
+    if (!dayDate) return;
+    setNoteEditorOpen(!entries[dayDate]?.noteText);
+  }, [dayDate]);
   /** Ouvre une entrée sous la note existante : une ligne vide pour aérer, puis
    *  un tiret qui marque le début de l'ajout. */
   function appendNoteLine() {
+    setNoteEditorOpen(true);
     setNoteText((current) => {
       // La note déjà présente reçoit son tiret elle aussi : sans quoi la
       // première ligne se distinguerait des suivantes sans raison.
@@ -551,6 +612,19 @@ export default function Home() {
       setNow(actualToday);
       setView(localDate(actualToday.getFullYear(), actualToday.getMonth(), 1));
       if (demoMode) {
+        if (import.meta.env.DEV) {
+          const dates = [1, 2, 3].map((days) => dateKey(addDays(actualToday, days)));
+          setEntries((current) => ({
+            ...current,
+            [dates[0]]: { ...emptyEntry(), noteText: "Préparer les documents pour notre rendez-vous", noteColor: "#d65e68", noteUpdatedAt: new Date().toISOString() },
+            [dates[1]]: { ...emptyEntry(), noteText: "Penser à appeler le médecin", noteColor: "#d65e68", noteUpdatedAt: new Date().toISOString() },
+          }));
+          setPartnerEntries((current) => ({
+            ...current,
+            [dates[0]]: { noteText: "Je réserve la table pour 19 h 30", noteColor: "#f2c84b", noteAuthor: "agnes", noteUpdatedAt: new Date().toISOString(), noteGroupId: "", agnesLeave: false },
+            [dates[2]]: { noteText: "Récupérer le colis après le travail", noteColor: "#f2c84b", noteAuthor: "agnes", noteUpdatedAt: new Date().toISOString(), noteGroupId: "", agnesLeave: false },
+          }));
+        }
         try {
           const seededProfile = JSON.parse(
             localStorage.getItem("planning:e2e-pay-profile") || "null",
@@ -640,7 +714,7 @@ export default function Home() {
           }
         } catch {}
         setUserEmail("demo@demo.local");
-        setIsProgramAdmin(import.meta.env.DEV);
+        setIsProgramAdmin(import.meta.env.DEV && localDemoAdmin);
         setAuthStatus("ready");
         if (new URLSearchParams(location.search).get("request") === "saved")
           confirm("La demande est enregistrée : le planning et les soldes sont à jour.");
@@ -722,9 +796,27 @@ export default function Home() {
     setOvertimeEntries(data.overtimeEntries);
     setRecoveryUses(data.recoveryUses);
     setMecenatEntries(data.mecenatEntries);
+    setPartnerEntries(data.partnerEntries);
+    setPartnerPeriods(data.partnerPeriods);
+    setPartnerSharingStatus(data.partnerSharingStatus);
     setAuthStatus("ready");
     setPeriods(data.periods);
   }
+  useEffect(() => {
+    if (authStatus !== "ready" || demoMode) return;
+    let lastRefresh = 0;
+    const refreshSharedData = () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastRefresh < 5_000) return;
+      lastRefresh = Date.now();
+      void loadCalendar().catch(() => undefined);
+    };
+    window.addEventListener("focus", refreshSharedData);
+    document.addEventListener("visibilitychange", refreshSharedData);
+    return () => {
+      window.removeEventListener("focus", refreshSharedData);
+      document.removeEventListener("visibilitychange", refreshSharedData);
+    };
+  }, [authStatus, demoMode]);
   const {
     submitLogin,
     requestPasswordReset,
@@ -756,6 +848,9 @@ export default function Home() {
       setMecenatEntries([]);
       setFormProfile(null);
       setPayProfiles({});
+      setPartnerEntries({});
+      setPartnerPeriods([]);
+      setPartnerSharingStatus("disabled");
     },
     confirmMessage: confirm,
   });
@@ -783,6 +878,7 @@ export default function Home() {
       signature: formProfile?.signature || "",
       status: formProfile?.status,
       workQuota: formProfile?.workQuota,
+      workSchedule: formProfile?.workSchedule,
       baseSalary: formProfile?.baseSalary,
       residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
@@ -826,6 +922,7 @@ export default function Home() {
       signature: formProfile?.signature || "",
       status: nextStatus,
       workQuota: formProfile?.workQuota,
+      workSchedule: formProfile?.workSchedule,
       baseSalary: formProfile?.baseSalary,
       residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
@@ -1008,12 +1105,16 @@ export default function Home() {
     [mecenatDraft.start, mecenatDraft.end, workQuota],
   );
   const payYear = String(payView.getFullYear());
-  const activePayProfile = payProfiles[payYear];
+  const activePayProfile = effectivePayProfile(payProfiles, payYear, payView.getMonth());
+  // Dès qu'un historique annuel ou mensuel existe, un champ absent signifie
+  // « inconnu pour cette période ». Reprendre la valeur générale actuelle
+  // ferait par exemple remonter le PAS de septembre sur le mois d'août.
+  const legacyPayProfile = hasPayProfileHistory(payProfiles, payYear) ? null : formProfile;
   const hasPayValue = (field: keyof PayProfile) =>
-    activePayProfile?.[field] !== undefined || formProfile?.[field] !== undefined;
-  const baseSalary = activePayProfile?.baseSalary ?? formProfile?.baseSalary ?? 0;
-  const ifse = activePayProfile?.ifse ?? formProfile?.ifse ?? 0;
-  const carenceDay = activePayProfile?.carenceDay ?? formProfile?.carenceDay ?? 0;
+    activePayProfile?.[field] !== undefined || legacyPayProfile?.[field] !== undefined;
+  const baseSalary = activePayProfile?.baseSalary ?? legacyPayProfile?.baseSalary ?? 0;
+  const ifse = activePayProfile?.ifse ?? legacyPayProfile?.ifse ?? 0;
+  const carenceDay = activePayProfile?.carenceDay ?? legacyPayProfile?.carenceDay ?? 0;
   // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
   // résidence (3 % du traitement) : calculée toute seule plutôt que saisie,
   // et pas la somme à cinq lignes propre à un fonctionnaire (résidence +
@@ -1022,13 +1123,13 @@ export default function Home() {
   // au cas où son bulletin réel montrerait autre chose.
   const otherFixed =
     activePayProfile?.otherFixed ??
-    formProfile?.otherFixed ??
+    legacyPayProfile?.otherFixed ??
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
-  const cia = activePayProfile?.cia ?? formProfile?.cia ?? 0;
-  const ciaMonth = activePayProfile?.ciaMonth ?? formProfile?.ciaMonth;
+  const cia = activePayProfile?.cia ?? legacyPayProfile?.cia ?? 0;
+  const ciaMonth = activePayProfile?.ciaMonth ?? legacyPayProfile?.ciaMonth;
   const residenceAllowance =
     activePayProfile?.residenceAllowance ??
-    formProfile?.residenceAllowance ??
+    legacyPayProfile?.residenceAllowance ??
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : undefined);
   const viewedPayRegime = payCalibrationRegime(
     payView.getFullYear(),
@@ -1043,12 +1144,12 @@ export default function Home() {
   // estimations récentes déjà validées.
   const storedNetRatioRegime =
     activePayProfile?.netRatioRegime ??
-    formProfile?.netRatioRegime ??
+    legacyPayProfile?.netRatioRegime ??
     "culture-psc";
   const storedNetRatioFixed =
-    activePayProfile?.netRatioFixed ?? formProfile?.netRatioFixed;
+    activePayProfile?.netRatioFixed ?? legacyPayProfile?.netRatioFixed;
   const storedNetRatioVariable =
-    activePayProfile?.netRatioVariable ?? formProfile?.netRatioVariable;
+    activePayProfile?.netRatioVariable ?? legacyPayProfile?.netRatioVariable;
   const netRatioFixed =
     storedNetRatioRegime === viewedPayRegime &&
     storedNetRatioFixed &&
@@ -1067,12 +1168,12 @@ export default function Home() {
       viewedPayRegime,
     ),
   );
-  const navigo = activePayProfile?.navigo ?? formProfile?.navigo ?? 0;
+  const navigo = activePayProfile?.navigo ?? legacyPayProfile?.navigo ?? 0;
   const mealVoucherDeduction =
     activePayProfile?.mealVoucherDeduction ??
-    formProfile?.mealVoucherDeduction ??
+    legacyPayProfile?.mealVoucherDeduction ??
     0;
-  const pasRate = activePayProfile?.pasRate ?? formProfile?.pasRate ?? 0;
+  const pasRate = activePayProfile?.pasRate ?? legacyPayProfile?.pasRate ?? 0;
   /** Première année de mise à disposition au Grand Palais, où le jour de
    *  fermeture est le lundi et non le mardi comme à Pompidou — tout est
    *  décalé d'un jour, et les fériés compensés (voir plus bas) s'appliquent.
@@ -1099,39 +1200,7 @@ export default function Home() {
    *  carences.
    */
   const sickLeaves = useMemo(() => {
-    const year = String(payView.getFullYear());
-    const sickDays = new Set<string>();
-    for (const period of periods) {
-      if (period.leaveType !== "sick") continue;
-      for (const key of rangeKeys(period.from, period.to)) sickDays.add(key);
-    }
-    const arrets = groupConsecutive([...sickDays])
-      .filter((arret) => arret.from.slice(0, 4) === year)
-      .map((arret) => {
-        const days = rangeKeys(arret.from, arret.to).length;
-        return {
-          id: arret.from,
-          from: arret.from,
-          to: arret.to,
-          days,
-          ...sickLeaveDeduction(days, baseSalary, ifse, carenceDay),
-        };
-      })
-      .sort((a, b) => a.from.localeCompare(b.from));
-    // La retenue est rattachée au mois où l'arrêt commence. L'administration
-    // la passe parfois le mois suivant, en rappel — impossible à prévoir.
-    const byMonth = Array.from({ length: 12 }, () => ({ days: 0, total: 0 }));
-    for (const arret of arrets) {
-      const slot = byMonth[Number(arret.from.slice(5, 7)) - 1];
-      slot.days += arret.days;
-      slot.total += arret.total;
-    }
-    return {
-      arrets,
-      byMonth,
-      days: arrets.reduce((total, arret) => total + arret.days, 0),
-      total: arrets.reduce((total, arret) => total + arret.total, 0),
-    };
+    return sickLeaveSummaryForYear(periods, payView.getFullYear(), baseSalary, ifse, carenceDay);
   }, [payView, periods, baseSalary, ifse, carenceDay]);
 
   /* Le choix ne s'affiche que sur un férié effectivement travaillé : ni posé
@@ -1420,10 +1489,15 @@ export default function Home() {
       holidayRecoveryEntries(
         Object.entries(entries)
           .filter(([, entry]) => entry.holidayPay === "recovery")
-          .map(([date]) => date),
-        workQuota,
+          .map(([date, entry]) => ({ date, minutes: entry.holidayRecoveryMinutes })),
       ),
-    [entries, workQuota],
+    [entries],
+  );
+  const unresolvedHolidayRecoveryCount = useMemo(
+    () => Object.values(entries).filter((entry) =>
+      entry.holidayPay === "recovery" && !entry.holidayRecoveryMinutes
+    ).length,
+    [entries],
   );
   const recoveryEarnings = useMemo(
     () => [...overtimeEntries, ...holidayRecoveryEarnings],
@@ -1664,21 +1738,22 @@ export default function Home() {
     netRatioFixed > 0 &&
     netRatioVariable > 0
       ? (() => {
-          const netFromGross =
+          const netFromGross = roundCurrency(
             monthPay.grossFixed * (netRatioFixed / 100) +
-            monthPay.grossVariable * (netRatioVariable / 100);
+            monthPay.grossVariable * (netRatioVariable / 100),
+          );
           // Jamais prélevés en décembre, confirmé sur les bulletins de 2024
           // et 2025 : la ligne « Titres repas carte » y est absente.
           const mealVouchers = monthPay.index === 11 ? 0 : mealVoucherDeduction;
-          const netBeforeTax = netFromGross + navigo - mealVouchers;
-          const incomeTax = netBeforeTax * (pasRate / 100) * PAS_BASE_ADJUSTMENT;
+          const netBeforeTax = roundCurrency(netFromGross + navigo - mealVouchers);
+          const incomeTax = roundCurrency(netBeforeTax * (pasRate / 100) * PAS_BASE_ADJUSTMENT);
           return {
             netFromGross,
-            estimatedContributions: monthPay.gross - netFromGross,
+            estimatedContributions: roundCurrency(monthPay.gross - netFromGross),
             mealVouchers,
             netBeforeTax,
             incomeTax,
-            net: netBeforeTax - incomeTax,
+            net: roundCurrency(netBeforeTax - incomeTax),
           };
         })()
       : null;
@@ -1686,6 +1761,7 @@ export default function Home() {
 
   const leaveStats = useMemo(() => {
     const year = absenceYear;
+    const todayKey = dateKey(now);
     const first = `${year}-01-01`;
     const last = `${year}-12-31`;
     const counted = new Set<string>();
@@ -1760,17 +1836,23 @@ export default function Home() {
       }
     }
     return {
-      balances: (["annual", "rtt", "fraction"] as const).map((type) => ({
-        type,
-        allowance: LEAVE_ALLOWANCES[type],
-        manualUsed: manual[`${type}Used` as "annualUsed" | "rttUsed" | "fractionUsed"],
-        used: used[type],
-        remaining: LEAVE_ALLOWANCES[type] - used[type],
-        details: details[type].sort((a, b) => a.date.localeCompare(b.date)),
-      })),
+      balances: (["annual", "rtt", "fraction"] as const).map((type) => {
+        const manualUsed = manual[`${type}Used` as "annualUsed" | "rttUsed" | "fractionUsed"];
+        const sortedDetails = details[type].sort((a, b) => a.date.localeCompare(b.date));
+        return {
+          type,
+          allowance: LEAVE_ALLOWANCES[type],
+          manualUsed,
+          used: used[type],
+          taken: manualUsed + sortedDetails.filter((detail) => detail.date <= todayKey).reduce((sum, detail) => sum + detail.units, 0),
+          upcoming: sortedDetails.filter((detail) => detail.date > todayKey).reduce((sum, detail) => sum + detail.units, 0),
+          remaining: LEAVE_ALLOWANCES[type] - used[type],
+          details: sortedDetails,
+        };
+      }),
       countedOnly,
     };
-  }, [periods, absenceYear, group, formProfile?.manualAdjustments]);
+  }, [periods, absenceYear, group, formProfile?.manualAdjustments, now]);
 
   const activeManualAdjustments =
     formProfile?.manualAdjustments?.[String(absenceYear)] ??
@@ -1860,6 +1942,20 @@ export default function Home() {
       .filter((month) => month.details.length > 0);
   }, [absenceYear, balanceDetail]);
 
+  const agnesLeaveDates = useMemo(() => {
+    const dates = new Set(
+      Object.entries(partnerEntries)
+        .filter(([, entry]) => entry.agnesLeave)
+        .map(([date]) => date),
+    );
+    for (const period of partnerPeriods)
+      for (const date of rangeKeys(period.from, period.to)) dates.add(date);
+    return dates;
+  }, [partnerEntries, partnerPeriods]);
+  const ownNoteAuthorLabel = partnerSharingStatus !== "disabled" || demoMode
+    ? "Mika"
+    : formProfile?.fullName.trim().split(/\s+/)[0] || "Moi";
+
   const upcoming = useMemo(() => {
     const todayKey = dateKey(now);
     const lastKey = dateKey(addDays(now, 365));
@@ -1883,20 +1979,45 @@ export default function Home() {
           label: entry.noteText,
           detail: periodLabel(notePeriod.from, notePeriod.to),
           kind: "note",
-          color: "#D3943D",
+          color: "#d65e68",
+          author: "mika",
+        });
+      }
+      const seenPartnerGroups = new Set<string>();
+      for (const [key, entry] of Object.entries(partnerEntries)) {
+        if (
+          key < todayKey ||
+          key > lastKey ||
+          entry.noteAuthor !== "agnes" ||
+          !entry.noteText ||
+          (entry.noteGroupId && seenPartnerGroups.has(entry.noteGroupId))
+        ) continue;
+        if (entry.noteGroupId) seenPartnerGroups.add(entry.noteGroupId);
+        items.push({
+          key: `agnes-note-${entry.noteGroupId || key}`,
+          date: key,
+          label: entry.noteText,
+          detail: periodLabel(key, key),
+          kind: "note",
+          color: "#f2c84b",
+          author: "agnes",
         });
       }
     }
-    return items
+    return groupNoteItemsByDate(items
       .sort(
         (a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind),
       )
-      .slice(0, 8);
-  }, [entries, now]);
+    );
+  }, [entries, now, partnerEntries]);
 
   const hasAnyNote = useMemo(
-    () => Object.values(entries).some((entry) => entry.noteText),
-    [entries],
+    () =>
+      Object.values(entries).some((entry) => entry.noteText) ||
+      Object.values(partnerEntries).some(
+        (entry) => entry.noteAuthor === "agnes" && entry.noteText,
+      ),
+    [entries, partnerEntries],
   );
 
   /** Recherche sur toutes les notes enregistrées, passées comme à venir
@@ -1922,11 +2043,32 @@ export default function Home() {
         label: entry.noteText,
         detail: periodLabel(notePeriod.from, notePeriod.to),
         kind: "note",
-        color: "#D3943D",
+        color: "#d65e68",
+        author: "mika",
       });
     }
-    return items.slice(0, 50);
-  }, [entries, noteQuery]);
+    const seenPartnerGroups = new Set<string>();
+    for (const [key, entry] of Object.entries(partnerEntries).sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      if (
+        entry.noteAuthor !== "agnes" ||
+        !entry.noteText.toLowerCase().includes(query) ||
+        (entry.noteGroupId && seenPartnerGroups.has(entry.noteGroupId))
+      ) continue;
+      if (entry.noteGroupId) seenPartnerGroups.add(entry.noteGroupId);
+      items.push({
+        key: `search-agnes-${entry.noteGroupId || key}`,
+        date: key,
+        label: entry.noteText,
+        detail: periodLabel(key, key),
+        kind: "note",
+        color: "#f2c84b",
+        author: "agnes",
+      });
+    }
+    return groupNoteItemsByDate(items);
+  }, [entries, noteQuery, partnerEntries]);
 
   const todayOverview = useMemo(() => {
     const key = dateKey(now);
@@ -1967,7 +2109,9 @@ export default function Home() {
       tone = "recovery";
     } else if (period && info.kind !== "off") {
       status =
-        period.leaveType === "other"
+        period.leaveType === "half"
+          ? `1/2 journée posée ${period.halfMoment === "afternoon" ? "l’après-midi" : "le matin"}`
+        : period.leaveType === "other"
           ? "Divers"
           : period.leaveType === "strike"
             ? "Grève"
@@ -1988,10 +2132,12 @@ export default function Home() {
         Boolean(entries[candidateKey]?.leave) ||
         Boolean(
           selections[candidateKey] &&
+          selections[candidateKey].type !== "half" &&
           selectionRemovesAttendance(selections[candidateKey].type),
         ) ||
         periods.some(
           (item) =>
+            item.leaveType !== "half" &&
             candidateKey >= item.from &&
             candidateKey <= item.to,
         ) ||
@@ -2004,6 +2150,16 @@ export default function Home() {
     const nextWorkExchange = nextWork
       ? workExchangeForDate(entries, dateKey(nextWork))
       : null;
+    const nextWorkHalfLeave = nextWork
+      ? periods.find((item) =>
+          item.leaveType === "half" &&
+          dateKey(nextWork) >= item.from &&
+          dateKey(nextWork) <= item.to,
+        )
+      : null;
+    const nextWorkHalfLeaveLabel = nextWorkHalfLeave
+      ? `1/2 journée posée ${nextWorkHalfLeave.halfMoment === "afternoon" ? "l’après-midi" : "le matin"}`
+      : "";
     const nextWorkGroups = nextWork
       ? coWorkingGroupsForDate(nextWork, group)
       : [];
@@ -2030,7 +2186,7 @@ export default function Home() {
         info.kind === "work" &&
         !todayExceptionalClosure &&
         !todayExchange &&
-        !period &&
+        (!period || period.leaveType === "half") &&
         !entry?.leave &&
         todayRecoveryMinutes < workDayMinutes
           ? coWorkingLabel.charAt(0).toUpperCase() + coWorkingLabel.slice(1)
@@ -2039,6 +2195,7 @@ export default function Home() {
       nextWorkKind,
       nextWorkExceptionalClosure: Boolean(nextWorkExceptionalClosure),
       nextWorkGroupLabel,
+      nextWorkHalfLeaveLabel,
     };
   }, [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates]);
 
@@ -2065,7 +2222,6 @@ export default function Home() {
     beginQuickNote,
     beginNoteDateSelection,
     cancelNoteSelection,
-    openRange,
     beginRangeSelection,
     cancelRangeSelection,
     beginMultipleDateSelectionFromDay,
@@ -2088,6 +2244,7 @@ export default function Home() {
     setView,
     mode,
     workQuota,
+    workSchedule: formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE,
     calendarDeleteMode,
     setCalendarDeleteMode,
     setCalendarDeleteDates,
@@ -2114,6 +2271,7 @@ export default function Home() {
       signature: formProfile?.signature || "",
       status: formProfile?.status,
       workQuota: nextQuota,
+      workSchedule: formProfile?.workSchedule,
       baseSalary: formProfile?.baseSalary,
       residenceAllowance: formProfile?.residenceAllowance,
       ifse: formProfile?.ifse,
@@ -2143,6 +2301,26 @@ export default function Home() {
       notify(
         calendarErrorMessage(error, "La quotité n’a pas pu être enregistrée."),
       );
+    });
+  }
+
+  function changeWorkSchedule(nextSchedule: WorkSchedule) {
+    const previousProfile = formProfile;
+    const nextProfile: FormProfile = {
+      ...(formProfile || { fullName: "", group: String(group), signature: "" }),
+      workSchedule: nextSchedule,
+    };
+    setFormProfile(nextProfile);
+    if (demoMode) return;
+    void postCalendar({
+      action: "save-form-profile",
+      fullName: nextProfile.fullName,
+      group: nextProfile.group,
+      signature: nextProfile.signature,
+      workSchedule: nextSchedule,
+    }).catch((error) => {
+      setFormProfile(previousProfile);
+      notify(calendarErrorMessage(error, "Les horaires habituels n’ont pas pu être enregistrés."));
     });
   }
 
@@ -2387,8 +2565,8 @@ export default function Home() {
     slideAllowancesMonth(deltaX < 0 ? 1 : -1);
   }
   const {
-    openBlankForm,
     validateAndOpenForm,
+    saveRequestToPlanning,
   } = usePlanningRequestActions({
     planningUi,
     selectedList,
@@ -2400,7 +2578,9 @@ export default function Home() {
     workQuota,
     recoveryBalanceRemaining: recoveryBalance.remaining,
     periods,
+    recoveryUses,
     setPeriods,
+    setRecoveryUses,
     reloadCalendar: loadCalendar,
     cancelRequest,
     notify,
@@ -2410,6 +2590,10 @@ export default function Home() {
 
   function renderDay(date: Date, compact = false) {
     const key = dateKey(date);
+    const partnerEntry = partnerEntries[key];
+    const schoolVacation = mode === "month"
+      ? visibleSchoolVacations.find(({ from, to }) => key >= from && key <= to)
+      : undefined;
     const inPendingRange = Boolean(
       (rangeSelecting && separateDates.includes(key)) ||
         (recoveryRangeSelecting && recoveryRangeDates.includes(key)) ||
@@ -2437,48 +2621,132 @@ export default function Home() {
         exceptionalClosure={exceptionalClosureFor(key)}
         exchange={workExchangeForDate(entries, key)}
         workAccident={periods.some((period) => period.leaveType === "work_accident" && key >= period.from && key <= period.to)}
+        agnesLeave={agnesLeaveDates.has(key)}
+        sharedNoteText={partnerEntry?.noteAuthor === "agnes" ? partnerEntry.noteText : ""}
+        schoolVacation={schoolVacation}
         onClick={() => handleDay(date)}
       />
     );
   }
-  function renderNoteItems(items: NoteListItem[]) {
-    return (
-      <div className="upcoming-list">
-        {items.map((item) => (
-          <button
-            type="button"
-            className={`upcoming-item ${item.kind}`}
-            key={item.key}
-            style={
-              item.color
-                ? ({ "--item-color": item.color } as React.CSSProperties)
-                : undefined
+  async function deleteAgnesNote(date: string) {
+      const partnerEntry = partnerEntries[date];
+      if (!partnerEntry?.noteText) return;
+      const groupedDates = partnerEntry.noteGroupId
+        ? Object.entries(partnerEntries)
+            .filter(([, entry]) => entry.noteGroupId === partnerEntry.noteGroupId && Boolean(entry.noteText))
+            .map(([key]) => key)
+        : [date];
+      const periodLabel = groupedDates.length > 1 ? " sur toute sa période" : "";
+      if (!window.confirm(
+        `Supprimer la note d’Agnès du ${noteDateLabel(date)}${periodLabel} ?`,
+      )) return;
+      try {
+        if (!demoMode) {
+          await postCalendar({
+            action: "delete-shared-partner-note",
+            date,
+            groupId: partnerEntry.noteGroupId || undefined,
+          });
+          await loadCalendar();
+        } else {
+          setPartnerEntries((current) => {
+            const next = { ...current };
+            for (const key of groupedDates) {
+              const entry = next[key];
+              if (!entry) continue;
+              next[key] = { ...entry, noteText: "", noteGroupId: "" };
             }
-            onClick={() => {
-              const date = fromKey(item.date);
-              setView(localDate(date.getFullYear(), date.getMonth(), 1));
-              setMode("month");
-              openDay(date);
-            }}
-          >
-            <i />
-            <span>
-              {/* Deux personnes peuvent écrire sur la même journée : chaque
-                  ligne devient une puce pour qu'elles ne se lisent pas comme
-                  une seule phrase. */}
-              {item.label.includes("\n") ? (
-                <ul className="note-bullets">
-                  {keyedNoteLines(item.label).map(({ key, label }) => (
-                    <li key={`${item.key}-${key}`}>{label}</li>
-                  ))}
-                </ul>
-              ) : (
-                <strong>{item.label}</strong>
-              )}
-              <small>{item.detail}</small>
+            return next;
+          });
+        }
+      } catch (error) {
+        notify(calendarErrorMessage(error, "La note d’Agnès n’a pas pu être supprimée."));
+      }
+  }
+  function renderNoteItems(items: NoteListItem[]) {
+    const [leftItems, rightItems] = splitNoteItemsIntoColumns(items);
+    const renderItem = (item: NoteListItem) => {
+      const hasOwnNote = item.author === "mika" || item.notes?.some((note) => note.author === "mika");
+      const ownEntry = hasOwnNote ? entries[item.date] : undefined;
+      const noteDates = ownEntry?.noteGroupId
+        ? Object.entries(entries)
+            .filter(([, entry]) => entry.noteGroupId === ownEntry.noteGroupId && Boolean(entry.noteText))
+            .map(([date]) => date)
+        : hasOwnNote ? [item.date] : [];
+      return (
+      <article
+        className={`upcoming-item ${item.kind}`}
+        key={item.key}
+        style={
+          item.color
+            ? ({ "--item-color": item.color } as React.CSSProperties)
+            : undefined
+        }
+      >
+        <button
+          type="button"
+          className="upcoming-item-open"
+          onClick={() => {
+            const date = fromKey(item.date);
+            setView(localDate(date.getFullYear(), date.getMonth(), 1));
+            setMode("month");
+            openDay(date);
+          }}
+        >
+          {!item.notes ? <i /> : null}
+          <span>
+          {item.kind === "note" ? (
+            <small className="note-date-badge">{noteDateLabel(item.date)}</small>
+          ) : null}
+          {item.notes ? (
+            <span className="shared-note-stack">
+              {item.notes.map((note) => (
+                <span
+                  className={`shared-note-part note-author-${note.author}`}
+                  key={`${item.key}-${note.author}`}
+                >
+                  <b>{note.author === "mika" ? ownNoteAuthorLabel : "Agnès"}</b>
+                  <strong>{note.label}</strong>
+                </span>
+              ))}
             </span>
-          </button>
-        ))}
+          ) : item.label.includes("\n") ? (
+            <ul className="note-bullets">
+              {keyedNoteLines(item.label).map(({ key, label }) => (
+                <li key={`${item.key}-${key}`}>{label}</li>
+              ))}
+            </ul>
+          ) : (
+            <strong>{item.label}</strong>
+          )}
+          {item.kind !== "note" ? <small>{item.detail}</small> : null}
+          </span>
+        </button>
+        {item.notes?.map((note, index) => {
+          if (note.author === "mika" && !noteDates.length) return null;
+          return (
+            <button
+              key={`${item.key}-delete-${note.author}`}
+              className="note-delete-button"
+              type="button"
+              aria-label={`Supprimer ${note.author === "mika" ? `la note de ${ownNoteAuthorLabel}` : "la note d’Agnès"} du ${noteDateLabel(item.date)}`}
+              title={`Supprimer ${note.author === "mika" ? `la note de ${ownNoteAuthorLabel}` : "la note d’Agnès"}`}
+              style={item.notes!.length > 1 ? { top: index === 0 ? "33%" : "67%" } : undefined}
+              onClick={() => note.author === "mika"
+                ? void deleteMultiplePlanningDates(noteDates, "notes")
+                : void deleteAgnesNote(item.date)}
+            >
+              ×
+            </button>
+          );
+        })}
+      </article>
+      );
+    };
+    return (
+      <div className={`upcoming-list note-column-layout${rightItems.length ? "" : " single"}`}>
+        <div className="upcoming-note-column">{leftItems.map(renderItem)}</div>
+        {rightItems.length ? <div className="upcoming-note-column">{rightItems.map(renderItem)}</div> : null}
       </div>
     );
   }
@@ -2553,70 +2821,18 @@ export default function Home() {
     requestedType?: SelectionType,
   ) {
     setDayDate(null);
-    setPlanningRequestDate(date || null);
-    if (kind === "recovery") setPendingRecoveryType("recovery_day");
-    if (kind === "leave" || kind === "other" || kind === "strike")
-      setPendingLeaveType(
-        requestedType ||
-          (kind === "other" ? "other" : kind === "strike" ? "strike" : "annual"),
-      );
-    setPlanningRequestMethod(kind);
-  }
-
-  function closePlanningRequestMethod() {
-    setPlanningRequestMethod(null);
-    setPlanningRequestDate(null);
-  }
-
-  function startManualPlanningRequest() {
-    const kind = planningRequestMethod;
-    const date = planningRequestDate;
-    closePlanningRequestMethod();
-    if (kind === "recovery") {
-      const manualKind =
-        pendingRecoveryType === "recovery_day"
-          ? "day"
-          : pendingRecoveryType === "recovery_half"
-            ? "half"
-            : pendingRecoveryType === "recovery_holiday"
-              ? "holiday"
-              : pendingRecoveryType === "recovery_training"
-                ? "training"
-              : "hours";
-      setRecoveryDraft((current) => ({
-        ...current,
-        date: date || current.date,
-        kind: manualKind,
-        durationMinutes: manualKind === "half" ? 240 : 480,
-        trainingMinutes:
-          manualKind === "training"
-            ? trainingRecoveryMinutes(workQuota)
-            : current.trainingMinutes,
-      }));
-      setTrainingRecoveryMode("manual");
-      setRecoveryRangePrefillDate(date);
-      setRecoveryRangeDates([]);
-      setRecoveryRangeOpen(true);
-      return;
-    }
-    if (kind === "other" || kind === "strike") {
-      if (date) {
-        openDay(fromKey(date));
-        setDayLeave(true);
-        setDayLeaveType(kind === "strike" ? "strike" : "other");
-        setLeaveRangeEnabled(true);
-        setLeaveRangeFrom(date);
-        setLeaveRangeTo(date);
-      } else {
-        openRange(kind === "strike" ? "strike" : "other");
-      }
-      return;
-    }
-    if (date) {
-      openRange(pendingLeaveType as LeaveType, date);
-      return;
-    }
-    openRange(pendingLeaveType as LeaveType);
+    beginRequest(
+      kind,
+      date,
+      requestedType ||
+        (kind === "recovery"
+          ? "recovery_day"
+          : kind === "other"
+            ? "other"
+            : kind === "strike"
+              ? "strike"
+              : "annual"),
+    );
   }
 
   /** Le volet de vérification d'un bulletin, séparé des primes : on y va pour
@@ -2757,12 +2973,29 @@ export default function Home() {
             found: payslipCheck.reading.gross,
             expected: grossForMonth(payslipMonth),
           },
+          ...(netCalculation?.netBeforeTax !== undefined
+            ? [{
+                key: "net-before-tax",
+                label: "Net avant impôt",
+                found: payslipCheck.reading.netBeforeTax,
+                expected: netCalculation.netBeforeTax,
+                tolerance: 0.5,
+              }]
+            : []),
           {
             key: "base",
             label: "Traitement de base",
             found: payslipCheck.reading.baseSalary,
             expected: baseSalary,
           },
+          ...(residenceAllowance !== undefined
+            ? [{
+                key: "residence",
+                label: "Indemnité de résidence",
+                found: payslipCheck.reading.residenceAllowance,
+                expected: residenceAllowance,
+              }]
+            : []),
           ...(!isContractuel
             ? [
                 {
@@ -2772,6 +3005,47 @@ export default function Home() {
                   expected: ifse,
                 },
               ]
+            : []),
+          ...(otherFixed || payslipCheck.reading.otherFixed !== undefined
+            ? [{
+                key: "other-fixed",
+                label: "Autres éléments fixes",
+                found: payslipCheck.reading.otherFixed,
+                expected: otherFixed,
+              }]
+            : []),
+          ...(monthPay.cia || payslipCheck.reading.cia !== undefined
+            ? [{
+                key: "cia",
+                label: "CIA",
+                found: payslipCheck.reading.cia,
+                expected: monthPay.cia,
+              }]
+            : []),
+          ...(navigo || payslipCheck.reading.navigo !== undefined
+            ? [{
+                key: "navigo",
+                label: "Remboursement Navigo",
+                found: payslipCheck.reading.navigo,
+                expected: navigo,
+              }]
+            : []),
+          ...((netCalculation?.mealVouchers || 0) || payslipCheck.reading.mealVoucherDeduction !== undefined
+            ? [{
+                key: "meal-vouchers",
+                label: "Titres repas",
+                found: payslipCheck.reading.mealVoucherDeduction,
+                expected: netCalculation?.mealVouchers || 0,
+              }]
+            : []),
+          ...(pasRate || payslipCheck.reading.pasRate !== undefined
+            ? [{
+                key: "pas-rate",
+                label: "Taux d’imposition (PAS)",
+                found: payslipCheck.reading.pasRate,
+                expected: pasRate,
+                tolerance: 0.01,
+              }]
             : []),
           {
             key: "sundays",
@@ -2785,7 +3059,7 @@ export default function Home() {
                 {
                   key: "carence",
                   label: "Jour de carence non prévu",
-                  found: 1,
+                  found: payslipCheck.reading.carenceDay,
                   expected: 0,
                 },
               ]
@@ -2825,6 +3099,12 @@ export default function Home() {
             label: "Valeurs vérifiées avec le bulletin",
             detail: `Les lignes lisibles du bulletin de ${MONTHS[monthPay.index]} ${allowances.year} correspondent à l’estimation.`,
           }
+        : payslipReview?.tone === "partial"
+          ? {
+              tone: "estimated" as const,
+              label: "Vérification partielle",
+              detail: `${payslipReview.verified.length} ligne${s(payslipReview.verified.length)} vérifiée${s(payslipReview.verified.length)} ; des lignes restent non comparables et le net estimé n’est donc pas présenté comme confirmé.`,
+            }
         : payProfiles[payYear]
           ? {
               tone: "estimated" as const,
@@ -3009,84 +3289,6 @@ export default function Home() {
       onSaveCiaMonth: (month) => void saveCiaMonth(month),
     };
 
-    const scrollToPaySection = (id: string) => {
-      window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-    };
-    const openPaySettings = () => {
-      setPayAdvancedOpen(true);
-      setPaySettingsOpen(true);
-      scrollToPaySection("pay-dashboard-settings");
-    };
-    const openPayslipVerification = () => scrollToPaySection("pay-dashboard-verification");
-    const alerts: PayDashboardAlert[] = [];
-    if (!netEstimateComplete) {
-      alerts.push({
-        id: "profile-incomplete",
-        title: "Compléter le profil de paie",
-        detail: netEstimateMissing.join(", "),
-        actionLabel: "Compléter",
-        onAction: openPaySettings,
-      });
-    }
-    if (monthPay.reported) {
-      alerts.push({
-        id: "sunday-pending",
-        title: `${monthPay.reported} dimanche${s(monthPay.reported)} en attente`,
-        detail: `À contrôler pour ${MONTHS[monthPay.index]} ${allowances.year}.`,
-        actionLabel: "Vérifier",
-        onAction: openPayslipVerification,
-      });
-    }
-    const holidayChoicePending = baseSalary > 0 && (
-      (monthPay.holidayCount > 0 && monthPay.holiday === 0) ||
-      (monthPay.compensatedCount > 0 && monthPay.compensated === 0)
-    );
-    if (holidayChoicePending) {
-      alerts.push({
-        id: "holiday-choice",
-        title: "Choisir une compensation de jour férié",
-        detail: "Le montant ne peut pas encore être estimé.",
-        actionLabel: "Choisir",
-        onAction: () => setPayScreen("allowances"),
-      });
-    }
-    if (monthPay.strikePotentialDays) {
-      alerts.push({
-        id: "strike-days",
-        title: "Confirmer les jours liés à la grève",
-        detail: `${monthPay.strikePotentialDays} jour${s(monthPay.strikePotentialDays)} reste${s(monthPay.strikePotentialDays)} à contrôler.`,
-        actionLabel: "Voir le calcul",
-        onAction: () => setPayScreen("payslip"),
-      });
-    }
-    if (isContractuel && monthPay.sickDays) {
-      alerts.push({
-        id: "contract-sick-leave",
-        title: "Vérifier l’impact de l’arrêt maladie",
-        detail: "Le maintien de salaire et les IJSS dépendent du bulletin.",
-        actionLabel: "Vérifier",
-        onAction: openPayslipVerification,
-      });
-    }
-    if (payslipReview?.tone === "warning") {
-      alerts.push({
-        id: "payslip-discrepancy",
-        title: "Écart détecté sur le bulletin",
-        detail: payslipReview.verdict,
-        actionLabel: "Voir les écarts",
-        onAction: openPayslipVerification,
-      });
-    }
-    if (netEstimateComplete && !payProfiles[payYear]) {
-      alerts.push({
-        id: "annual-profile",
-        title: `Actualiser le profil ${payYear}`,
-        detail: "Les dernières valeurs connues sont encore utilisées.",
-        actionLabel: "Actualiser",
-        onAction: openPaySettings,
-      });
-    }
-
     const variables: PayDashboardVariable[] = monthPayRows.map((row) => ({
       key: row.key,
       label: row.label,
@@ -3102,7 +3304,6 @@ export default function Home() {
         ? `Estimation réalisée avec votre profil de paie ${payYear}.`
         : "Estimation réalisée avec les dernières valeurs connues.",
       reliability: payReliability,
-      alerts,
       variables,
       estimateContent: payEstimateDetails,
       verificationContent: <PayslipCheckSection {...payslipSectionProps} part="verification" />,
@@ -3145,7 +3346,7 @@ export default function Home() {
     if (
       target instanceof Element &&
       target.closest(
-        "input, textarea, select, [role='dialog'], .modal-backdrop, .main-menu-backdrop, .main-menu-drawer, .choice-picker-menu, .month-card",
+        "input, textarea, select, [role='dialog'], .modal-backdrop, .main-menu-backdrop, .main-menu-drawer, .choice-picker-menu, .month-card, .pay-dashboard-motion, .pay-dedicated-content, .pay-detail-sticky-header, .variable-pay-heading-actions",
       )
     ) {
       sectionSwipeStartRef.current = null;
@@ -3155,6 +3356,30 @@ export default function Home() {
     sectionSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
   }
 
+  function navigateFromShell(section: MainSection, record = true) {
+    if (section === homeSection) return;
+    if (record) history.pushState({ ...(history.state || {}), planningSection: section }, "", location.href);
+    setHomeSection(section);
+    if (section === "pay") setPayScreen("overview");
+    setMainMenuOpen(false);
+    setAccountMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  useEffect(() => {
+    if (!MAIN_SECTION_ORDER.includes(history.state?.planningSection))
+      history.replaceState({ ...(history.state || {}), planningSection: homeSection }, "", location.href);
+    const onPopState = (event: PopStateEvent) => {
+      if (mainMenuOpen) { setMainMenuOpen(false); return; }
+      if (accountMenuOpen) { setAccountMenuOpen(false); return; }
+      if (feedbackOpen) { setFeedbackOpen(false); return; }
+      const section = event.state?.planningSection;
+      if (MAIN_SECTION_ORDER.includes(section)) navigateFromShell(section, false);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [accountMenuOpen, feedbackOpen, homeSection, mainMenuOpen]);
+
   function finishSectionSwipe(event: TouchEvent<HTMLElement>) {
     const start = sectionSwipeStartRef.current;
     sectionSwipeStartRef.current = null;
@@ -3163,18 +3388,14 @@ export default function Home() {
     const touch = event.changedTouches[0];
     const deltaX = touch.clientX - start.x;
     const deltaY = touch.clientY - start.y;
-    if (Math.abs(deltaX) < 70 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.15) return;
 
-    const currentIndex = MAIN_SECTION_ORDER.indexOf(homeSection);
+    const currentIndex = MAIN_SECTION_ORDER.indexOf(homeSection === "forms" ? "pdf" : homeSection);
     const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
     const nextSection = MAIN_SECTION_ORDER[nextIndex];
     if (!nextSection) return;
 
-    setHomeSection(nextSection);
-    if (nextSection === "pay") setPayScreen("overview");
-    setMainMenuOpen(false);
-    setAccountMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    navigateFromShell(nextSection);
   }
 
   const dayStoredPeriods = dayDate
@@ -3240,9 +3461,6 @@ export default function Home() {
       {previewPayEffect === "money" ? (
         <PayslipSuccessCelebration durationMs={15_000} />
       ) : null}
-      {previewPayEffect === "lightning" ? (
-        <PayslipWarningEffect durationMs={15_000} />
-      ) : null}
       <AppHeader
         homeSection={homeSection}
         payScreen={payScreen}
@@ -3252,6 +3470,9 @@ export default function Home() {
         mainMenuOpen={mainMenuOpen}
         checkingAppUpdate={checkingAppUpdate}
         appUpdateAvailable={appUpdateAvailable}
+        demoMode={demoMode}
+        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
+        notify={notify}
         accountMenuRef={accountMenuRef}
         accountButtonRef={accountButtonRef}
         onToggleAccount={() => setAccountMenuOpen((current) => !current)}
@@ -3263,8 +3484,20 @@ export default function Home() {
           setAccountMenuOpen(false);
           void disconnect();
         }}
-        onOpenMainMenu={() => setMainMenuOpen(true)}
+        onOpenMainMenu={() => {
+          history.pushState({ ...(history.state || {}), planningSection: homeSection, planningOverlay: "menu" }, "", location.href);
+          setMainMenuOpen(true);
+        }}
         onCheckForUpdate={() => void checkForAppUpdate()}
+      />
+      <AdaptiveNavigation
+        homeSection={homeSection}
+        onNavigate={(section) => navigateFromShell(section)}
+        onMore={() => {
+          history.pushState({ ...(history.state || {}), planningSection: homeSection, planningOverlay: "menu" }, "", location.href);
+          setMainMenuOpen(true);
+        }}
+        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
       {homeSection === "home" ? (
         <div className="home-view-mode-bar">
@@ -3293,18 +3526,43 @@ export default function Home() {
         homeSection={homeSection}
         onClose={() => setMainMenuOpen(false)}
         onNavigate={(section) => {
-          setHomeSection(section);
-          if (section === "pay") setPayScreen("overview");
-          setMainMenuOpen(false);
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          navigateFromShell(section);
         }}
-        onOpenGuide={() => {
+        onOpenFeedback={() => {
           setMainMenuOpen(false);
-          setGuideOpen(true);
+          setFeedbackOpen(true);
         }}
+        isAdmin={isProgramAdmin}
+        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
 
+      {feedbackMessaging.resolutionNotice ? (
+        <Suspense fallback={null}>
+          <FeedbackResolutionAlert notice={feedbackMessaging.resolutionNotice} onDismiss={() => void feedbackMessaging.dismissResolution(feedbackMessaging.resolutionNotice!.id)} />
+        </Suspense>
+      ) : null}
+      {feedbackOpen ? (
+        <Suspense fallback={null}>
+          <FeedbackMessenger
+            open
+            isAdmin={isProgramAdmin}
+            demoMode={demoMode}
+            onClose={() => setFeedbackOpen(false)}
+            onUnreadCountChange={feedbackMessaging.setUnreadCount}
+          />
+        </Suspense>
+      ) : null}
+
       <ConnectionStatus {...connectionStatus} />
+      <Suspense fallback={null}>
+        <ColleagueRequestNotice
+          demoMode={demoMode}
+          onOpen={() => {
+            setHomeSection("colleagues");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      </Suspense>
 
       {guidePromptOpen || guideOpen ? (
         <Suspense fallback={null}>
@@ -3319,6 +3577,7 @@ export default function Home() {
       ) : null}
 
       {homeSection === "home" ? (
+        <Suspense fallback={<DeferredSection label="votre accueil" />}>
         <HomeDashboard
           now={now}
           group={group}
@@ -3327,6 +3586,72 @@ export default function Home() {
           totalLeaveRemaining={totalLeaveRemaining}
           remainingWorkedDaysThisYear={remainingWorkedDaysThisYear}
           importantAlert={importantAlert}
+          setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
+          setupItems={[
+            ...(!formProfile?.workSchedule ? [{
+              id: "work-schedule",
+              title: "Renseigner vos horaires de travail",
+              intro: "Renseignez votre plage de travail habituelle pour que l’application propose des horaires adaptés lorsque vous posez un congé ou une récupération.",
+              detail: "Ils permettent de proposer automatiquement les bons horaires pour vos congés et récupérations.",
+              actionLabel: "Renseigner",
+              dismissible: false,
+              onAction: () => {
+                setHomeSection("pay");
+                setPayScreen("overview");
+                setPayProfileOpen(true);
+                setPayAdvancedOpen(false);
+                setPayProfileFocusRequested(true);
+              },
+            }] : []),
+            ...(HOME_SETUP_GUIDANCE_ENABLED ? [
+            ...(!formProfile?.group ? [{
+              id: "planning-group",
+              title: "Choisir votre groupe de planning",
+              intro: "Choisissez votre groupe de planning pour afficher correctement vos jours de travail, de repos et votre calendrier.",
+              detail: "Indispensable pour afficher vos jours de travail et de repos.",
+              actionLabel: "Choisir",
+              onAction: () => setGroupChooserOpen(true),
+            }] : []),
+            ...(!formProfile?.status || !formProfile?.workQuota ? [{
+              id: "pay-profile",
+              title: "Compléter votre profil de paie",
+              intro: "Complétez votre statut et votre quotité afin d’adapter les calculs de paie et de temps de travail à votre situation.",
+              detail: "Indiquez simplement votre statut et votre quotité de travail.",
+              actionLabel: "Compléter",
+              onAction: () => {
+                setHomeSection("pay");
+                setPayScreen("overview");
+                setPayProfileOpen(true);
+                setPayAdvancedOpen(true);
+              },
+            }] : []),
+            ...(allowances.holidayPending > 0 || allowances.compensated.some((item) => !item.choice) ? [{
+              id: "holiday-pay",
+              title: "Renseigner les jours fériés",
+              intro: "Indiquez le traitement de vos jours fériés pour répartir correctement les primes et les récupérations.",
+              detail: "Précisez pour chacun le choix entre prime et récupération.",
+              actionLabel: "Renseigner",
+              onAction: () => {
+                setHomeSection("pay");
+                setPayScreen("allowances");
+              },
+            }] : []),
+            ...(payslipRateCalibration.reason !== "ready" ? [{
+              id: "payslip-calibration",
+              title: "Ajouter quelques bulletins de paie",
+              intro: "Ajoutez quelques bulletins PDF pour permettre à l’application d’affiner automatiquement vos estimations de paie.",
+              detail: "Les éléments de paie seront remplis automatiquement, sans saisie manuelle. Choisissez idéalement des mois avec des primes différentes pour affiner les estimations.",
+              actionLabel: "Ajouter des PDF",
+              onAction: () => {
+                setHomeSection("pay");
+                setPayScreen("overview");
+                setPayAdvancedOpen(true);
+                setPaySettingsOpen(true);
+                window.setTimeout(() => document.getElementById("payslip-calibration")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+              },
+            }] : []),
+            ] : []),
+          ]}
           hasAnyNote={hasAnyNote}
           noteQuery={noteQuery}
           onNoteQueryChange={setNoteQuery}
@@ -3348,6 +3673,7 @@ export default function Home() {
           }}
           onAddNote={beginQuickNote}
         />
+        </Suspense>
       ) : null}
 
       {homeSection === "leave" ? (
@@ -3388,6 +3714,7 @@ export default function Home() {
           }
           recoveryBalance={recoveryBalance}
           recoveryEarningsCount={recoveryEarnings.length}
+          unresolvedHolidayRecoveryCount={unresolvedHolidayRecoveryCount}
           overtimeEntries={overtimeEntries}
           holidayRecoveryEarnings={holidayRecoveryEarnings}
           recoveryUses={recoveryUses}
@@ -3423,17 +3750,17 @@ export default function Home() {
           month={payView.getMonth()}
           year={payView.getFullYear()}
           profileOpen={payProfileOpen}
+          profileFocusRequested={payProfileFocusRequested}
           settingsOpen={payAdvancedOpen}
           workQuota={workQuota}
+          workSchedule={formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE}
           status={formProfile?.status || "contractuel"}
-          workDayMinutes={workDayMinutes}
           netEstimateComplete={netEstimateComplete}
           gross={payContent.gross}
           grossComplete={payContent.grossComplete}
           net={payContent.net}
           profileLabel={payContent.profileLabel}
           reliability={payContent.reliability}
-          alerts={payContent.alerts}
           variables={payContent.variables}
           monthSlide={payMonthSlide}
           allowancesContent={allowancesContent}
@@ -3442,8 +3769,10 @@ export default function Home() {
           settingsContent={payContent.settingsContent}
           onScreenChange={setPayScreen}
           onToggleProfile={() => setPayProfileOpen((current) => !current)}
+          onProfileFocused={() => setPayProfileFocusRequested(false)}
           onToggleSettings={() => setPayAdvancedOpen((current) => !current)}
           onWorkQuotaChange={changeWorkQuota}
+          onWorkScheduleChange={changeWorkSchedule}
           onStatusChange={changeStatus}
           onPreviousMonth={() => slideAllowancesMonth(-1)}
           onNextMonth={() => slideAllowancesMonth(1)}
@@ -3454,32 +3783,35 @@ export default function Home() {
         </Suspense>
       ) : null}
 
-      {homeSection === "pdf" ? (
-        <Suspense fallback={<DeferredSection label="vos documents" />}>
-        <PdfDownloadPage
-          narrowScreen={narrowScreen}
-          year={view.getFullYear()}
-          group={group}
-          showSchoolVacations={showSchoolVacationsOnPdf}
-          exporting={pdfExporting}
-          onYearChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-          onGroupChange={changeGroup}
-          onShowSchoolVacationsChange={setShowSchoolVacationsOnPdf}
-          onExport={(scope, includeSchoolVacations) =>
-            void exportAnnualPlanning(scope, includeSchoolVacations)
-          }
+      {homeSection === "pdf" || homeSection === "forms" ? (
+        <Suspense fallback={<DeferredSection label="vos contacts et formulaires" />}>
+        <UsefulResourcesHub
+          initialTab={homeSection === "pdf" ? undefined : "forms"}
+          pdf={(
+            <PdfDownloadPage
+              narrowScreen={narrowScreen}
+              year={view.getFullYear()}
+              group={group}
+              showSchoolVacations={showSchoolVacationsOnPdf}
+              exporting={pdfExporting}
+              onYearChange={(year) => setView(localDate(year, view.getMonth(), 1))}
+              onGroupChange={changeGroup}
+              onShowSchoolVacationsChange={setShowSchoolVacationsOnPdf}
+              onExport={(scope, includeSchoolVacations) => void exportAnnualPlanning(scope, includeSchoolVacations)}
+            />
+          )}
+          forms={(
+            <UsefulFormsSection
+              accountId={userEmail}
+              today={dateKey(now)}
+              status={formProfile?.status || "contractuel"}
+              periods={periods}
+              onSaveWorkAccident={saveWorkAccident}
+              onDeleteWorkAccident={deleteWorkAccident}
+            />
+          )}
+          contacts={<UsefulContactsSection accountId={userEmail} initialData={prefetchedContacts || undefined} />}
         />
-        </Suspense>
-      ) : null}
-
-      {homeSection === "forms" ? (
-        <Suspense fallback={<DeferredSection label="vos formulaires" />}>
-          <UsefulFormsSection
-            status={formProfile?.status || "contractuel"}
-            periods={periods}
-            onSaveWorkAccident={saveWorkAccident}
-            onDeleteWorkAccident={deleteWorkAccident}
-          />
         </Suspense>
       ) : null}
       {homeSection === "program" ? (
@@ -3487,9 +3819,13 @@ export default function Home() {
           <GrandPalaisProgramSection />
         </Suspense>
       ) : null}
-      {homeSection === "contacts" ? (
-        <Suspense fallback={<DeferredSection label="vos contacts" />}>
-          <UsefulContactsSection initialData={prefetchedContacts || undefined} />
+      {homeSection === "colleagues" ? (
+        <Suspense fallback={<DeferredSection label="les plannings de vos collègues" />}>
+          <ColleaguePlanningPage
+            demoMode={demoMode}
+            initialName={formProfile?.fullName || ""}
+            getOwnPresence={(date) => personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)))}
+          />
         </Suspense>
       ) : null}
 
@@ -3502,6 +3838,7 @@ export default function Home() {
         view={view}
         setView={setView}
         group={group}
+        workQuota={workQuota}
         onGroupChange={changeGroup}
         workedDays={workedDays}
         totals={totals}
@@ -3530,6 +3867,11 @@ export default function Home() {
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
         onToday={goToday}
+        onExportPdf={() => navigateFromShell("pdf")}
+        showSchoolVacations={showSchoolVacations}
+        schoolZone={schoolZone}
+        onShowSchoolVacationsChange={setShowSchoolVacations}
+        onSchoolZoneChange={setSchoolZone}
       />
 
       {mode === "year" && homeSection === "pdf" && (
@@ -3866,6 +4208,10 @@ export default function Home() {
             items={selectedList}
             requestKind={requestKind}
             sickRequest={sickRequest}
+            group={group}
+            workQuota={workQuota}
+            recoveryBalanceRemaining={recoveryBalance.remaining}
+            leaveRemaining={Object.fromEntries(leaveStats.balances.map((balance) => [balance.type, balance.remaining]))}
           />
           <div className="request-bottom">
             <p>
@@ -3876,20 +4222,10 @@ export default function Home() {
               . Cliquez sur une date colorée pour la retirer.
             </p>
             <div className="request-actions">
-              {requestKind !== "other" && !sickRequest ? (
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={openBlankForm}
-                  disabled={savingRequest}
-                >
-                  Ouvrir le formulaire vierge
-                </button>
-              ) : null}
               <button
                 className="validate-button"
                 type="button"
-                onClick={validateAndOpenForm}
+                onClick={() => void validateAndOpenForm()}
                 disabled={!selectedList.length || savingRequest}
               >
                 {savingRequest
@@ -3900,9 +4236,24 @@ export default function Home() {
                     ? "Enregistrer Divers"
                     : sickRequest
                       ? "Enregistrer l’arrêt maladie"
-                      : "Valider et remplir le formulaire"}
+                      : "Continuer vers le formulaire"}
               </button>
+              {requestKind !== "other" && !sickRequest ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void saveRequestToPlanning()}
+                  disabled={!selectedList.length || savingRequest}
+                >
+                  Enregistrer au planning sans formulaire
+                </button>
+              ) : null}
             </div>
+            {requestKind !== "other" && !sickRequest ? (
+              <small className="request-action-clarification">
+                Le formulaire est seulement préparé : il n’est ni envoyé ni accepté automatiquement.
+              </small>
+            ) : null}
           </div>
             </>
           ) : null}
@@ -3946,6 +4297,12 @@ export default function Home() {
           Faire un échange
         </button>
       </div>
+
+      {showSchoolVacations && mode === "month" ? (
+        <Suspense fallback={null}>
+          <SchoolVacationMonthSummary zone={schoolZone} vacations={monthSchoolVacations} />
+        </Suspense>
+      ) : null}
 
       {mode === "month" ? (
         <section
@@ -4048,146 +4405,53 @@ export default function Home() {
             >
               ×
             </button>
-            <span className="step-label">Poser un congé</span>
-            <h2 id="request-choice-title">Que souhaitez-vous poser ?</h2>
-            <div className="choice-grid">
+            <span className="step-label">Préparer une demande</span>
+            <h2 id="request-choice-title">Poser un congé</h2>
+            <p>Choisissez d’abord le type. Les dates, horaires et conséquences seront réunis dans la préparation.</p>
+            <div className="choice-grid request-primary-choice-grid">
               <button
                 type="button"
-                onClick={() => {
-                  setRequestChooser(false);
-                  openPlanningRequestMethod("leave");
-                }}
+                onClick={() => beginRequest("leave", undefined, "annual")}
               >
-                <strong>Un congé</strong>
-                <span>Choisissez les dates puis ouvrez le formulaire de demande prérempli.</span>
+                <strong>CA</strong>
+                <span>Congés annuels</span>
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setRequestChooser(false);
-                  openPlanningRequestMethod("recovery");
-                }}
+                onClick={() => beginRequest("leave", undefined, "rtt")}
               >
-                <strong>Une récupération</strong>
-                <span>Retrouvez le formulaire complet : journée, demi-journée, heures, jour férié ou formation.</span>
+                <strong>RTT</strong>
+                <span>Journée ou période</span>
               </button>
               <button
                 type="button"
-                className="sick-leave-choice"
-                onClick={() => {
-                  setRequestChooser(false);
-                  beginRequest("leave", undefined, "sick");
-                }}
+                onClick={() => beginRequest("leave", undefined, "fraction")}
               >
-                <strong>Un arrêt maladie</strong>
-                <span>Comptabilisé dans votre suivi et pris en compte dans l’estimation de paie.</span>
+                <strong>Fractionnement</strong>
+                <span>Jour de fractionnement</span>
               </button>
               <button
                 type="button"
-                className="other-leave-choice"
-                onClick={() => {
-                  setRequestChooser(false);
-                  beginRequest("other", undefined, "other");
-                }}
+                onClick={() => beginRequest("recovery", undefined, "recovery_day")}
               >
-                <strong>Divers</strong>
-                <span>Visible dans le planning et compté dans les jours non travaillés.</span>
-              </button>
-              <button
-                type="button"
-                className="strike-leave-choice"
-                onClick={() => {
-                  setRequestChooser(false);
-                  beginRequest("strike", undefined, "strike");
-                }}
-              >
-                <strong>Grève</strong>
-                <span>Sans déduction de congé, avec retenue de paie estimée.</span>
-              </button>
-              <button
-                type="button"
-                className="cet-leave-choice"
-                onClick={() => {
-                  setRequestChooser(false);
-                  openPlanningRequestMethod("leave", undefined, "cet");
-                }}
-              >
-                <strong>CET</strong>
-                <span>Utilisez votre solde CET avec le formulaire de congé classique.</span>
+                <strong>Récupération</strong>
+                <span>Journée, heures, férié ou formation</span>
               </button>
             </div>
+            <details className="request-other-choices">
+              <summary>Autres absences</summary>
+              <div className="choice-grid">
+                <button type="button" className="cet-leave-choice" onClick={() => beginRequest("leave", undefined, "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
+                <button type="button" className="sick-leave-choice" onClick={() => beginRequest("leave", undefined, "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
+                <button type="button" onClick={() => beginRequest("leave", undefined, "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
+                <button type="button" onClick={() => beginRequest("leave", undefined, "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
+                <button type="button" className="other-leave-choice" onClick={() => beginRequest("other", undefined, "other")}><strong>Divers</strong><span>Jour non travaillé dans le planning</span></button>
+                <button type="button" className="strike-leave-choice" onClick={() => beginRequest("strike", undefined, "strike")}><strong>Grève</strong><span>Avec retenue de paie estimée</span></button>
+              </div>
+            </details>
           </section>
         </div>
       )}
-
-      {planningRequestMethod ? (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && closePlanningRequestMethod()
-          }
-        >
-          <section
-            className="modal-card request-choice"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="planning-leave-method-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={closePlanningRequestMethod}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Depuis le planning</span>
-            <h2 id="planning-leave-method-title">
-              Comment souhaitez-vous enregistrer {planningRequestMethod === "other" ? "ce Divers" : planningRequestMethod === "strike" ? "cette grève" : "cette demande"} ?
-            </h2>
-            <div className="choice-grid">
-              <button
-                type="button"
-                onClick={() => {
-                  const kind = planningRequestMethod;
-                  const date = planningRequestDate || undefined;
-                  closePlanningRequestMethod();
-                  beginRequest(
-                    kind,
-                    date,
-                    kind === "recovery" ? pendingRecoveryType : pendingLeaveType,
-                  );
-                }}
-              >
-                <strong>Remplir le formulaire</strong>
-                <span>
-                  {planningRequestMethod === "other" || planningRequestMethod === "strike"
-                    ? "Sélectionnez les dates puis enregistrez-les dans le planning."
-                    : "Le parcours normal, avec demande préremplie et archive."}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  startManualPlanningRequest();
-                }}
-              >
-                <strong>Ajouter manuellement au planning</strong>
-                <span>
-                  {planningRequestMethod === "leave"
-                    ? "Ajoutez directement le congé au planning."
-                    : planningRequestMethod === "other"
-                      ? "Ajoutez directement une ou plusieurs dates Divers."
-                      : planningRequestMethod === "strike"
-                        ? "Ajoutez directement une ou plusieurs journées de grève."
-                      : "Choisissez journée, demi-journée, heures, jour férié ou formation."}
-                </span>
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
 
       {groupChooserOpen ? (
         <div
@@ -4583,12 +4847,42 @@ export default function Home() {
                 )}
               </>
             )}
-            <div className="note-field-heading">
-              <label className="field-label" htmlFor="note-text">
-                {quickNoteMode
-                  ? "Contenu de la note"
-                  : "Rendez-vous ou note"}
-              </label>
+            <div className="day-notes-editor" role="group" aria-label="Notes de la journée">
+              {partnerEntries[dayDate]?.noteAuthor === "agnes" && partnerEntries[dayDate].noteText ? (
+                <section
+                  className="day-author-note day-author-note-agnes"
+                  style={{ position: "relative", paddingRight: 52 }}
+                >
+                  <strong>Agnès</strong>
+                  <p>{partnerEntries[dayDate].noteText}</p>
+                  <button
+                    className="note-delete-button"
+                    type="button"
+                    aria-label={`Supprimer la note d’Agnès du ${noteDateLabel(dayDate)}`}
+                    title="Supprimer la note d’Agnès"
+                    onClick={() => void deleteAgnesNote(dayDate)}
+                  >
+                    ×
+                  </button>
+                </section>
+              ) : null}
+              {entries[dayDate]?.noteText && !noteEditorOpen ? (
+                <button
+                  className="day-author-note day-author-note-mika saved-note-card"
+                  type="button"
+                  onClick={() => setNoteEditorOpen(true)}
+                  aria-label={`Modifier la note de ${ownNoteAuthorLabel}`}
+                >
+                  <strong>{ownNoteAuthorLabel}</strong>
+                  <p>{entries[dayDate].noteText}</p>
+                </button>
+              ) : (
+              <section className="day-author-note day-author-note-mika">
+                <div className="note-field-heading">
+                  <label className="field-label" htmlFor="note-text">
+                    <strong>{ownNoteAuthorLabel}</strong>
+                    <span>{quickNoteMode ? "Contenu de la note" : "Rendez-vous ou note"}</span>
+                  </label>
               {/* Sans note existante, il n'y a rien à compléter : le bouton ne
                   sert qu'à ouvrir une ligne sous ce qui est déjà écrit. */}
               {entries[dayDate]?.noteText && (
@@ -4600,7 +4894,7 @@ export default function Home() {
                   Ajouter une note
                 </button>
               )}
-            </div>
+                </div>
             {quickNoteMode ? (
               <label className="leave-type-field note-date-direct-choice">
                 <span>Date de la note</span>
@@ -4618,14 +4912,26 @@ export default function Home() {
                 />
               </label>
             ) : null}
-            <textarea
-              id="note-text"
-              ref={noteFieldRef}
-              value={noteText}
-              onChange={(event) => setNoteText(event.target.value)}
-              maxLength={300}
-              placeholder="Ex. Dentiste à 15 h…"
-            />
+                <textarea
+                  id="note-text"
+                  ref={noteFieldRef}
+                  value={noteText}
+                  onChange={(event) => setNoteText(event.target.value)}
+                  maxLength={300}
+                  placeholder="Ex. Dentiste à 15 h…"
+                />
+              </section>
+              )}
+              {entries[dayDate]?.noteText && !noteEditorOpen ? (
+                <button
+                  className="add-note-line saved-note-add-button"
+                  type="button"
+                  onClick={appendNoteLine}
+                >
+                  Ajouter une note
+                </button>
+              ) : null}
+            </div>
             <div className="leave-range-box note-date-choice">
               <button
                 className="separate-date-button"
@@ -4651,14 +4957,20 @@ export default function Home() {
                   <path d="m14.8 6.1 3.1 3.1" />
                 </svg>
               </span>
-              Une bande jaune signale la présence d’une note.
+              Rouge clair pour votre note, jaune pour une note d’Agnès.
             </p>
             <div className="modal-actions">
               {entries[dayDate]?.noteText && (
                 <button
                   className="delete-button"
                   type="button"
-                  onClick={() => setNoteText("")}
+                  onClick={() => {
+                    if (!window.confirm(
+                      `Supprimer votre note du ${noteDateLabel(dayDate)}${noteGroupId ? " sur toute sa période" : ""} ?`,
+                    )) return;
+                    setNoteText("");
+                    setNoteEditorOpen(true);
+                  }}
                 >
                   {noteGroupId ? "Effacer toute la période" : "Effacer la note"}
                 </button>
@@ -4862,6 +5174,8 @@ export default function Home() {
         shell={appShellUi}
         toast={toastUi}
         group={group}
+        workQuota={workQuota}
+        workSchedule={formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE}
         mecenatCalculation={mecenatDraftCalculation}
         recoveryRemainingMinutes={recoveryBalance.remaining}
         onStartRangeSelection={beginRangeSelection}
@@ -4872,7 +5186,7 @@ export default function Home() {
           setRecoveryDraft((current) => ({
             ...current,
             kind,
-            durationMinutes: kind === "half" ? 240 : 480,
+            durationMinutes: defaultRecoveryMinutes(kind, workQuota),
             trainingMinutes:
               kind === "training"
                 ? trainingRecoveryMinutes(workQuota)

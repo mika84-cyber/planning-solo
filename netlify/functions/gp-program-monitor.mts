@@ -2,6 +2,7 @@ import { getStore } from "@netlify/blobs";
 import {
   collectGrandPalaisEvents,
   detectGrandPalaisChanges,
+  isGrandPalaisProposalRelevant,
   sendGrandPalaisAlertEmail,
   type GrandPalaisMonitorState,
 } from "../lib/grandPalaisMonitor.mts";
@@ -16,7 +17,10 @@ export default async function monitorGrandPalaisProgram() {
   const events = await collectGrandPalaisEvents();
   const detected = detectGrandPalaisChanges(state, events);
   const existingIds = new Set((pending ?? []).map((proposal) => proposal.id));
-  const fresh = detected.proposals.filter((proposal) => !existingIds.has(proposal.id));
+  const fresh = detected.proposals.filter((proposal) => {
+    const event = proposal.next ?? proposal.previous;
+    return event && isGrandPalaisProposalRelevant(event) && !existingIds.has(proposal.id);
+  });
 
   await Promise.all([
     store.setJSON("monitor-state", detected.state),

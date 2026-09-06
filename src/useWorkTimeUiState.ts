@@ -21,6 +21,7 @@ export type RecoveryDraft = {
   start: string;
   durationMinutes: number | null;
   trainingMinutes: 180 | 360;
+  trainingMoment?: "morning" | "afternoon";
 };
 
 /** État des dialogues heures supplémentaires, récupérations et mécénats. */
@@ -37,7 +38,7 @@ export function useWorkTimeUiState() {
   const [savingMecenat, setSavingMecenat] = useState(false);
   const [savingOvertime, setSavingOvertime] = useState(false);
   const [overtimeDraft, setOvertimeDraft] = useState<OvertimeDraft>({
-    date: dateKey(new Date()), start: "18:00", end: "20:00",
+    date: dateKey(new Date()), start: "18:00", end: "19:00",
     disposition: "paid" as OvertimeDisposition,
   });
   const [solidarityDraft, setSolidarityDraft] = useState<SolidarityDraft>({ hours: "", minutes: "0" });
@@ -46,6 +47,7 @@ export function useWorkTimeUiState() {
     kind: "hours" as "hours" | "half" | "day" | "holiday" | "training",
     hours: "2", minutes: "0", start: "", durationMinutes: 480 as number | null,
     trainingMinutes: 360 as 180 | 360,
+    trainingMoment: "morning" as "morning" | "afternoon",
   });
   const [mecenatDraft, setMecenatDraft] = useState<MecenatDraft>({
     date: dateKey(new Date()), start: "19:00", end: "00:00",

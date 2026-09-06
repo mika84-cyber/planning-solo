@@ -96,6 +96,10 @@ export function sanitizeCalendarBackup(value: unknown) {
         item.holiday_pay === "prime" || item.holiday_pay === "recovery"
           ? item.holiday_pay
           : "",
+      holiday_recovery_minutes:
+        [495, 375, 390, 240, 225].includes(Number(item.holiday_recovery_minutes))
+          ? Number(item.holiday_recovery_minutes)
+          : undefined,
       closure_override:
         item.closure_override === "closed" || item.closure_override === "open"
           ? item.closure_override

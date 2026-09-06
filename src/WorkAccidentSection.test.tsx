@@ -23,8 +23,13 @@ describe("parcours accident de travail", () => {
     expect(html.indexOf(">Contractuel<")).toBeLessThan(html.indexOf(">Fonctionnaire<"));
     expect(html).toContain("declaration-accident-fonctionnaire.pdf");
     expect(html).toContain("procedure-accident-fonctionnaire.pdf");
+    expect(html.indexOf("Documents à utiliser")).toBeLessThan(html.indexOf("À faire immédiatement"));
+    expect(html.indexOf("Documents à utiliser")).toBeLessThan(html.indexOf("Parcours fonctionnaire"));
     expect(html).not.toContain("Indiquez uniquement les journées concernées");
     expect(html).toContain("section-back-hit-area");
+    expect(html).not.toContain("work-accident-header-symbol");
+    expect(html).toContain("work-accident-contact-action phone");
+    expect(html).toContain("work-accident-contact-action email");
     expect(html).toContain("Revenir aux formulaires utiles");
     expect(html).not.toContain("page accueil");
   });
@@ -51,6 +56,8 @@ describe("parcours accident de travail", () => {
     expect(html).toContain("CPAM");
     expect(html.match(/placeholder="jj\/mm\/aaaa"/g)).toHaveLength(2);
     expect(html).toContain("declaration-accident-contractuel.pdf");
+    expect(html.indexOf("Documents à utiliser")).toBeLessThan(html.indexOf("À faire immédiatement"));
+    expect(html.indexOf("Documents à utiliser")).toBeLessThan(html.indexOf("Parcours contractuel"));
     expect(html).toContain("mercredi 9 septembre 2026 au vendredi 11 septembre 2026");
   });
 });

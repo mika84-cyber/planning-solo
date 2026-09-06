@@ -1,4 +1,5 @@
 import type { LeavePeriod } from "./appModel";
+import { DEFAULT_WORK_SCHEDULE, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
 import {
   TYPE_LABELS,
   fromKey,
@@ -9,11 +10,18 @@ import {
   type SelectionType,
 } from "./planningLogic";
 
+function compactTime(value: string) {
+  const [hours, minutes] = value.split(":");
+  return `${Number(hours)} h${minutes === "00" ? "" : ` ${minutes}`}`;
+}
+
 export function TimeSelectionDialog({
   date,
   activeType,
   start,
   end,
+  workQuota = "full",
+  workSchedule = DEFAULT_WORK_SCHEDULE,
   onStartChange,
   onEndChange,
   onClose,
@@ -23,12 +31,18 @@ export function TimeSelectionDialog({
   activeType: SelectionType;
   start: string;
   end: string;
+  workQuota?: WorkQuota;
+  workSchedule?: WorkSchedule;
   onStartChange: (value: string) => void;
   onEndChange: (value: string) => void;
   onClose: () => void;
   onConfirm: () => void;
 }) {
   if (!date) return null;
+  const recoveryWithHours = activeType === "half" || activeType.startsWith("recovery_");
+  const training = activeType === "recovery_training";
+  const usualMorning = workScheduleHalfTimes(workSchedule, "morning");
+  const usualAfternoon = workScheduleHalfTimes(workSchedule, "afternoon");
   return (
     <div className="modal-backdrop" role="presentation">
       <section
@@ -51,7 +65,7 @@ export function TimeSelectionDialog({
               aria-label="De"
               type="time"
               min="09:00"
-              max="19:30"
+              max="19:00"
               step="900"
               value={start}
               onChange={(event) => onStartChange(event.target.value)}
@@ -64,13 +78,37 @@ export function TimeSelectionDialog({
               aria-label="À"
               type="time"
               min="09:00"
-              max="19:30"
+              max="19:00"
               step="900"
               value={end}
               onChange={(event) => onEndChange(event.target.value)}
             />
           </label>
         </div>
+        {training ? (
+          <div className="usual-time-shortcuts" role="group" aria-label="Demi-journée de formation">
+            <span>{workQuota === "half" ? "Quelle demi-journée souhaitez-vous poser ?" : "Combien d’heures souhaitez-vous poser ?"}</span>
+            {workQuota !== "half" ? <button type="button" onClick={() => { onStartChange("10:00"); onEndChange("16:00"); }}>
+              Journée · 6 h · 10 h–16 h
+            </button> : null}
+            <button type="button" onClick={() => { onStartChange("10:00"); onEndChange("13:00"); }}>
+              Matin · 3 h · 10 h–13 h
+            </button>
+            <button type="button" onClick={() => { onStartChange("13:00"); onEndChange("16:00"); }}>
+              Après-midi · 3 h · 13 h–16 h
+            </button>
+          </div>
+        ) : recoveryWithHours ? (
+          <div className="usual-time-shortcuts" role="group" aria-label="Horaires habituels">
+            <span>Horaires habituels</span>
+            <button type="button" onClick={() => { onStartChange(usualMorning.start); onEndChange(usualMorning.end); }}>
+              Matin · {compactTime(usualMorning.start)}–{compactTime(usualMorning.end)}
+            </button>
+            <button type="button" onClick={() => { onStartChange(usualAfternoon.start); onEndChange(usualAfternoon.end); }}>
+              Après-midi · {compactTime(usualAfternoon.start)}–{compactTime(usualAfternoon.end)}
+            </button>
+          </div>
+        ) : null}
         <div className="modal-actions">
           <button className="secondary-button" type="button" onClick={onClose}>
             Annuler

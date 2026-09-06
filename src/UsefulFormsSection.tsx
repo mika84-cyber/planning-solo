@@ -1,5 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { LeavePeriod, PayStatus } from "./appModel";
+import { WorkAccidentIcon } from "./WorkAccidentIcon";
+import {
+  GRAND_PALAIS_PROGRAM,
+  isGrandPalaisEntryVisible,
+  type GrandPalaisProgramData,
+} from "./GrandPalaisProgramSection";
+import { readResourceFavorites, writeResourceFavorites } from "./resourceFavorites";
 
 const WorkAccidentSection = lazy(() => import("./WorkAccidentSection").then((module) => ({ default: module.WorkAccidentSection })));
 
@@ -9,6 +16,7 @@ type UsefulFormDocument = {
   title: string;
   file: string;
   format: "PDF" | "DOCX";
+  programEntryTitle?: string;
 };
 
 type UsefulFormsFolder = {
@@ -29,7 +37,12 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
     title: "Formulaire Expo",
     description: "Consignes et documents d’exposition.",
     documents: [
-      { title: "Hilma Af Klint", file: "hilma-af-klint.pdf", format: "PDF" },
+      {
+        title: "Hilma Af Klint",
+        file: "hilma-af-klint.pdf",
+        format: "PDF",
+        programEntryTitle: "Hilma af Klint - Les peintures du Temple (1906-1915)",
+      },
     ],
   },
   {
@@ -68,61 +81,68 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   },
 ];
 
+export function usefulFormFoldersForDate(
+  today: string,
+  program: GrandPalaisProgramData = GRAND_PALAIS_PROGRAM,
+) {
+  const programEntries = Object.values(program)
+    .flatMap((venue) => Object.values(venue.schedule))
+    .flatMap((entries) => entries ?? []);
+  return USEFUL_FORM_FOLDERS.map((folder) => ({
+    ...folder,
+    documents: folder.key !== "expo"
+      ? folder.documents
+      : folder.documents.filter((document) => {
+          if (!document.programEntryTitle) return true;
+          const matchingEntries = programEntries.filter((entry) => entry.title === document.programEntryTitle);
+          return !matchingEntries.length || matchingEntries.some((entry) => isGrandPalaisEntryVisible(entry, today));
+        }),
+  }));
+}
+
 function documentCount(count: number) {
   if (!count) return "Vide pour le moment";
   return `${count} document${count > 1 ? "s" : ""}`;
 }
 
 type UsefulFormsSectionProps = {
+  today?: string;
   status?: PayStatus;
   periods?: LeavePeriod[];
   onSaveWorkAccident?: (period: { from: string; to: string }) => Promise<boolean>;
   onDeleteWorkAccident?: (period: LeavePeriod) => Promise<boolean>;
+  accountId?: string;
 };
 
 export function UsefulFormsSection({
+  today = new Date().toISOString().slice(0, 10),
   status = "contractuel",
   periods = [],
   onSaveWorkAccident = async () => false,
   onDeleteWorkAccident = async () => false,
+  accountId = "",
 }: UsefulFormsSectionProps = {}) {
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState("");
-  const [query, setQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favorites, setFavorites] = useState(() => readResourceFavorites(accountId, "documents"));
+  const allFolders = useMemo(() => usefulFormFoldersForDate(today), [today]);
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase("fr");
+  const visibleFolders = useMemo(() => allFolders.filter((item) => !normalizedSearch
+    || item.title.toLocaleLowerCase("fr").includes(normalizedSearch)
+    || item.documents.some((document) => document.title.toLocaleLowerCase("fr").includes(normalizedSearch))), [allFolders, normalizedSearch]);
+  const favoriteDocuments = allFolders.flatMap((item) => item.documents.map((document) => ({ ...document, folderKey: item.key }))).filter((document) => favorites.includes(document.file));
+  const toggleFavorite = (file: string) => setFavorites((current) => {
+    const next = current.includes(file) ? current.filter((item) => item !== file) : [...current, file];
+    writeResourceFavorites(accountId, "documents", next);
+    return next;
+  });
   useEffect(() => {
     void import("./WorkAccidentSection");
   }, []);
-  const folder = USEFUL_FORM_FOLDERS.find((item) => item.key === activeFolder);
+  const folder = visibleFolders.find((item) => item.key === activeFolder);
   const secureContext = typeof window === "undefined" || window.isSecureContext;
-  const searchResults = useMemo(() => {
-    const needle = query
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim()
-      .toLowerCase();
-    if (!needle) return [];
-    return USEFUL_FORM_FOLDERS.flatMap((item) => {
-      const folderText = `${item.title} ${item.description}`
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-      const matchingDocuments = item.documents.filter((document) =>
-        `${document.title} ${document.format}`
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toLowerCase()
-          .includes(needle),
-      );
-      if (!folderText.includes(needle) && !matchingDocuments.length) return [];
-      return [{ folder: item, matchingDocuments }];
-    });
-  }, [query]);
-  const workAccidentMatches = useMemo(() => {
-    const needle = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-    return Boolean(needle && "accident travail trajet declaration urgence".includes(needle));
-  }, [query]);
-
   const downloadForm = async (
     event: MouseEvent<HTMLAnchorElement>,
     file: string,
@@ -243,6 +263,7 @@ export function UsefulFormsSection({
                       : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}
                   </span>
                 </a>
+                <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(document.file)} aria-label={`${favorites.includes(document.file) ? "Retirer" : "Ajouter"} ${document.title} ${favorites.includes(document.file) ? "des" : "aux"} favoris`} onClick={() => toggleFavorite(document.file)}>★</button>
               </article>
               );
             })}
@@ -260,56 +281,18 @@ export function UsefulFormsSection({
   }
 
   return (
-    <section className="useful-forms-screen" aria-labelledby="useful-forms-title">
+    <>
+    <section className="useful-forms-screen useful-forms-root" aria-labelledby="useful-forms-title">
       <div className="native-screen-heading">
         <span className="step-label">Documents pratiques</span>
         <h2 id="useful-forms-title">Formulaires utiles</h2>
         <p>Choisissez un dossier puis téléchargez directement le document dont vous avez besoin.</p>
       </div>
-      <label className="useful-resource-search">
-        <span>Rechercher dans les formulaires</span>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="CET, congés, restauration…"
-        />
-        <span className="useful-resource-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg></span>
-      </label>
-      {query.trim() ? (
-        <div className="useful-form-search-results" aria-live="polite">
-          <p>{searchResults.length + Number(workAccidentMatches)} dossier{searchResults.length + Number(workAccidentMatches) > 1 ? "s" : ""} trouvé{searchResults.length + Number(workAccidentMatches) > 1 ? "s" : ""}</p>
-          {workAccidentMatches ? (
-            <button type="button" className="useful-form-search-result tone-sap" onClick={() => openFolder("work-accident")}>
-              <span aria-hidden="true">＋</span><span><strong>Déclarer un accident de travail</strong><small>Procédure, contacts et documents</small></span><i aria-hidden="true">›</i>
-            </button>
-          ) : null}
-          {searchResults.length ? searchResults.map(({ folder: resultFolder, matchingDocuments }) => (
-            <button
-              key={resultFolder.key}
-              type="button"
-              className={`useful-form-search-result tone-${resultFolder.key}`}
-              onClick={() => openFolder(resultFolder.key)}
-            >
-              <span aria-hidden="true">⌕</span>
-              <span>
-                <strong>{resultFolder.title}</strong>
-                <small>
-                  {matchingDocuments.length
-                    ? matchingDocuments.map((document) => document.title).join(" · ")
-                    : resultFolder.description}
-                </small>
-              </span>
-              <i aria-hidden="true">›</i>
-            </button>
-          )) : !workAccidentMatches ? (
-            <div className="useful-resource-empty-search">Aucun formulaire ne correspond à votre recherche.</div>
-          ) : null}
-        </div>
-      ) : (
+      <label className="resource-search-field"><span>Rechercher un document</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom du document" /></label>
       <div className="useful-form-content-stack">
+      {favoriteDocuments.length && !normalizedSearch ? <section className="resource-favorites-strip" aria-label="Documents favoris"><strong>Favoris</strong><div>{favoriteDocuments.map((document) => <button key={document.file} type="button" onClick={() => openFolder(document.folderKey)}>★ {document.title}</button>)}</div></section> : null}
       <div className="useful-form-folder-grid">
-        {USEFUL_FORM_FOLDERS.map((item) => (
+        {visibleFolders.map((item) => (
           <button
             key={item.key}
             className={`useful-form-folder tone-${item.key}`}
@@ -326,17 +309,19 @@ export function UsefulFormsSection({
               <small>{item.image ? "Information pratique" : documentCount(item.documents.length)}</small>
               <em>{item.description}</em>
             </span>
-            <i aria-hidden="true">›</i>
           </button>
         ))}
+        <button className="useful-form-folder useful-form-work-accident-entry tone-accident" type="button" onClick={() => openFolder("work-accident")}>
+          <WorkAccidentIcon className="useful-form-folder-icon" />
+          <span>
+            <strong>Déclarer un accident de travail</strong>
+            <small>Accident de travail</small>
+            <em>Procédure, contacts, documents et ajout au planning.</em>
+          </span>
+        </button>
       </div>
-      <button className="useful-form-work-accident" type="button" onClick={() => openFolder("work-accident")}>
-        <img src="/work-accident-icon.png" alt="" width="256" height="205" />
-        <span><strong>Déclarer un accident de travail</strong><small>Procédure, contacts, documents et ajout au planning</small></span>
-        <i aria-hidden="true">›</i>
-      </button>
       </div>
-      )}
     </section>
+    </>
   );
 }

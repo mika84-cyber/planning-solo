@@ -31,6 +31,7 @@ export function usePayUiState() {
   });
   const [payScreen, setPayScreen] = useState<PayScreen>("overview");
   const [payProfileOpen, setPayProfileOpen] = useState(false);
+  const [payProfileFocusRequested, setPayProfileFocusRequested] = useState(false);
   const [payPeriodOpen, setPayPeriodOpen] = useState(false);
   const [payMonthSlide, setPayMonthSlide] = useState<"" | "out-left" | "out-right" | "in-left" | "in-right">("");
   const payMonthSlideTimer = useRef<number | null>(null);
@@ -64,6 +65,7 @@ export function usePayUiState() {
 
   return {
     payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
+    payProfileFocusRequested, setPayProfileFocusRequested,
     payPeriodOpen, setPayPeriodOpen, payMonthSlide, setPayMonthSlide,
     payMonthSlideTimer, payslipCheck, setPayslipCheck, payslipError, setPayslipError,
     payslipImportBusy, setPayslipImportBusy, payslipImportError, setPayslipImportError,

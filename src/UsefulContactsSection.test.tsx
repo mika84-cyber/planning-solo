@@ -15,15 +15,15 @@ const CONTACTS_FIXTURE: UsefulContactsPayload = {
 };
 
 describe("contacts utiles", () => {
-  it("présente les annuaires et la recherche lorsque les données sont chargées", () => {
+  it("présente les annuaires et une recherche ciblée", () => {
     const html = renderToStaticMarkup(
       <UsefulContactsSection initialData={CONTACTS_FIXTURE} />,
     );
     expect(html).toContain("useful-contacts-root");
     expect(html.indexOf("Contacts Pompidou")).toBeLessThan(html.indexOf("Contact GP‑RMN"));
-    expect(html).toContain("Rechercher dans les contacts");
-    expect(html).toContain("useful-resource-search-icon");
+    expect(html).toContain("Rechercher une personne ou un service");
     expect(html).not.toContain("0100000000");
+    expect(html).not.toContain("›");
   });
 
   it("n’affiche aucune coordonnée avant le chargement authentifié", () => {

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getUsefulContacts } from "./contactsApi";
 import type {
   PompidouContactSectionKey,
   UsefulContact,
   UsefulContactsPayload,
 } from "./usefulContactsTypes";
+import { readResourceFavorites, writeResourceFavorites } from "./resourceFavorites";
 
 function formatPhone(number: string) {
   return number.replace(/\D/g, "").replace(/(\d{2})(?=\d)/g, "$1 ").trim();
@@ -38,14 +39,11 @@ function contactInitials(name: string) {
     .join("");
 }
 
-function searchable(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+export function usefulContactId(contact: UsefulContact) {
+  return [contact.context || "contact", contact.name, contact.email || "", ...(contact.phones?.map((phone) => phone.number) ?? [])].join("|").toLocaleLowerCase("fr");
 }
 
-function ContactCards({ contacts }: { contacts: UsefulContact[] }) {
+function ContactCards({ contacts, favorites, onToggleFavorite }: { contacts: UsefulContact[]; favorites: string[]; onToggleFavorite: (id: string) => void }) {
   return (
     <div className="useful-contact-list">
       {contacts.map((contact) => (
@@ -60,6 +58,7 @@ function ContactCards({ contacts }: { contacts: UsefulContact[] }) {
               {contact.context ? <small>{contact.context}</small> : null}
             </span>
           </div>
+          <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(usefulContactId(contact))} aria-label={`${favorites.includes(usefulContactId(contact)) ? "Retirer" : "Ajouter"} ${contact.name} ${favorites.includes(usefulContactId(contact)) ? "des" : "aux"} favoris`} onClick={() => onToggleFavorite(usefulContactId(contact))}>★</button>
           <div className="useful-contact-actions">
             {contact.email ? (
               <a
@@ -106,15 +105,22 @@ function ContactCards({ contacts }: { contacts: UsefulContact[] }) {
 
 type UsefulContactsSectionProps = {
   initialData?: UsefulContactsPayload;
+  accountId?: string;
 };
 
-export function UsefulContactsSection({ initialData }: UsefulContactsSectionProps) {
+export function UsefulContactsSection({ initialData, accountId = "" }: UsefulContactsSectionProps) {
   const [directory, setDirectory] = useState<"pompidou" | "gprmn" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
   const [contacts, setContacts] = useState<UsefulContactsPayload | null>(initialData || null);
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [query, setQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favorites, setFavorites] = useState(() => readResourceFavorites(accountId, "contacts"));
+  const toggleFavorite = (id: string) => setFavorites((current) => {
+    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+    writeResourceFavorites(accountId, "contacts", next);
+    return next;
+  });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: loadAttempt est le déclencheur explicite du bouton Réessayer.
   useEffect(() => {
@@ -141,32 +147,6 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
   const activePompidouSection = contacts?.pompidou.find(
     (section) => section.key === pompidouSection,
   );
-  const searchResults = useMemo(() => {
-    if (!contacts || !query.trim()) return [];
-    const needle = searchable(query.trim());
-    return [
-      ...contacts.pompidou.flatMap((section) =>
-        section.contacts.map((contact) => ({
-          ...contact,
-          context: `Contacts Pompidou · ${section.title}`,
-        })),
-      ),
-      ...contacts.gprmn.map((contact) => ({
-        ...contact,
-        context: "Contact GP‑RMN",
-      })),
-    ].filter((contact) =>
-      searchable(
-        [
-          contact.name,
-          contact.context,
-          contact.email || "",
-          ...(contact.phones || []).map((phone) => phone.number),
-        ].join(" "),
-      ).includes(needle),
-    );
-  }, [contacts, query]);
-
   if (!contacts) {
     return (
       <section className="useful-contacts-screen" aria-labelledby="useful-contacts-title">
@@ -208,7 +188,7 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
             <span><strong>Envoyer un e-mail à toute l’équipe des RAS</strong><small>{activePompidouSection.contacts.length} destinataires déjà renseignés</small></span>
           </a>
         ) : null}
-        <ContactCards contacts={activePompidouSection.contacts} />
+        <ContactCards contacts={activePompidouSection.contacts} favorites={favorites} onToggleFavorite={toggleFavorite} />
       </section>
     );
   }
@@ -238,7 +218,7 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
           <button className="section-back-hit-area" type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
           <div><span className="step-label">Contacts utiles</span><h2 id="gprmn-contacts-title">Contact GP‑RMN</h2></div>
         </header>
-        <ContactCards contacts={contacts.gprmn} />
+        <ContactCards contacts={contacts.gprmn} favorites={favorites} onToggleFavorite={toggleFavorite} />
       </section>
     );
   }
@@ -248,28 +228,23 @@ export function UsefulContactsSection({ initialData }: UsefulContactsSectionProp
       <div className="native-screen-heading">
         <span className="step-label">Annuaire pratique</span>
         <h2 id="useful-contacts-title">Contacts utiles</h2>
-        <p>Choisissez un annuaire ou recherchez directement une personne, un service ou un numéro.</p>
+        <p>Choisissez un annuaire pour retrouver les personnes, services et numéros utiles.</p>
       </div>
-      <label className="useful-resource-search">
-        <span>Rechercher dans les contacts</span>
-        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom, service, e-mail ou téléphone…" />
-        <span className="useful-resource-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg></span>
-      </label>
-      {query.trim() ? (
-        <div className="useful-contact-search-results" aria-live="polite">
-          <p>{searchResults.length} résultat{searchResults.length > 1 ? "s" : ""}</p>
-          {searchResults.length ? <ContactCards contacts={searchResults} /> : <div className="useful-resource-empty-search">Aucun contact ne correspond à votre recherche.</div>}
-        </div>
-      ) : (
-        <div className="useful-contact-directory-grid">
+      <label className="resource-search-field"><span>Rechercher une personne ou un service</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom ou service" /></label>
+      {(() => {
+        const query = searchQuery.trim().toLocaleLowerCase("fr");
+        const allContacts = [...contacts.pompidou.flatMap((section) => section.contacts), ...contacts.gprmn];
+        const matches = allContacts.filter((contact) => !query || `${contact.name} ${contact.context || ""}`.toLocaleLowerCase("fr").includes(query)).sort((left, right) => Number(favorites.includes(usefulContactId(right))) - Number(favorites.includes(usefulContactId(left))));
+        return query || favorites.length ? <ContactCards contacts={matches.filter((contact) => query || favorites.includes(usefulContactId(contact)))} favorites={favorites} onToggleFavorite={toggleFavorite} /> : null;
+      })()}
+      <div className="useful-contact-directory-grid">
           <button type="button" onClick={() => setDirectory("pompidou")}>
-            <span aria-hidden="true">P</span><span><strong>Contacts Pompidou</strong><small>RAS, administration, RH, médical, informatique et tickets restaurants</small></span><i aria-hidden="true">›</i>
+            <span aria-hidden="true">P</span><span><strong>Contacts Pompidou</strong><small>RAS, administration, RH, médical, informatique et tickets restaurants</small></span>
           </button>
           <button type="button" onClick={() => setDirectory("gprmn")}>
-            <span aria-hidden="true">G</span><span><strong>Contact GP‑RMN</strong><small>Accident, secourisme et supervision Expo</small></span><i aria-hidden="true">›</i>
+            <span aria-hidden="true">G</span><span><strong>Contact GP‑RMN</strong><small>Accident, secourisme et supervision Expo</small></span>
           </button>
-        </div>
-      )}
+      </div>
     </section>
   );
 }

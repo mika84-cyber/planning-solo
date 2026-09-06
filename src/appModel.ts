@@ -10,7 +10,7 @@ import {
   type LeaveType,
   type SelectionType,
 } from "./planningLogic";
-import type { WorkQuota } from "./overtime";
+import type { WorkQuota, WorkSchedule } from "./overtime";
 import type { CetAccount } from "./cet";
 
 export type ViewMode = "month" | "year";
@@ -26,6 +26,9 @@ export type SharedEntry = {
   leave: boolean;
   wish: boolean;
   holidayPay: HolidayPay | "";
+  /** Durée acquise au moment du choix, figée pour éviter tout recalcul
+   * rétroactif lors d'un changement de quotité. */
+  holidayRecoveryMinutes?: number;
   /** Correction locale d'une fermeture : `closed` l'ajoute, `open` masque
    *  une fermeture automatique du Grand Palais. */
   closureOverride: "closed" | "open" | "";
@@ -40,6 +43,22 @@ export type SharedEntry = {
   updatedAt: string;
 };
 export type Entries = Record<string, SharedEntry>;
+export type PartnerCalendarEntry = {
+  noteText: string;
+  noteColor: string;
+  noteAuthor: "mika" | "agnes" | "";
+  noteUpdatedAt: string;
+  noteGroupId: string;
+  agnesLeave: boolean;
+};
+export type PartnerCalendarEntries = Record<string, PartnerCalendarEntry>;
+export type PartnerLeavePeriod = {
+  id: string;
+  from: string;
+  to: string;
+  person: "agnes" | "both";
+};
+export type PartnerSharingStatus = "connected" | "disabled" | "unavailable";
 export type WorkExchange = {
   id: string;
   partnerName: string;
@@ -90,6 +109,7 @@ export type FormProfile = {
   signature: string;
   status?: PayStatus;
   workQuota?: WorkQuota;
+  workSchedule?: WorkSchedule;
   baseSalary?: number;
   residenceAllowance?: number;
   ifse?: number;
@@ -125,7 +145,45 @@ export type NoteListItem = {
   detail: string;
   kind: "leave" | "note";
   color?: string;
+  author?: "mika" | "agnes";
+  notes?: Array<{
+    author: "mika" | "agnes";
+    label: string;
+  }>;
 };
+
+/** Réunit les notes de Mika et d’Agnès dans une seule carte lorsqu’elles
+ * concernent le même jour. Chaque contenu reste identifié par son auteur. */
+export function groupNoteItemsByDate(items: NoteListItem[]) {
+  const grouped: NoteListItem[] = [];
+  const byDate = new Map<string, NoteListItem>();
+  for (const item of items) {
+    if (item.kind !== "note" || !item.author) {
+      grouped.push(item);
+      continue;
+    }
+    const note = {
+      author: item.author,
+      label: item.label,
+    };
+    const current = byDate.get(item.date);
+    if (current) {
+      current.notes!.push(note);
+      current.key = `notes-${item.date}`;
+      continue;
+    }
+    const next = { ...item, notes: [note] };
+    byDate.set(item.date, next);
+    grouped.push(next);
+  }
+  return grouped;
+}
+
+const NOTE_MONTHS = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
+export function noteDateLabel(key: string) {
+  const date = fromKey(key);
+  return `${date.getDate()} ${NOTE_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
 
 export const HOLIDAY_PAY_OPTIONS: Array<{
   value: HolidayPay | "";
@@ -150,6 +208,10 @@ const EUROS = new Intl.NumberFormat("fr-FR", {
 
 export function euros(value: number) {
   return EUROS.format(value);
+}
+
+export function roundCurrency(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 export function dayCountLabel(value: number) {
@@ -198,6 +260,68 @@ export function rangeKeys(from: string, to: string) {
   return keys;
 }
 
+export type PersonalPresence = {
+  status: "work" | "training" | "rest" | "absence" | "partial";
+  halfMoment?: HalfMoment;
+  absentMinutes?: number;
+};
+
+/** Règle commune de présence utilisée par le planning personnel, ses
+ * compteurs et le partage anonymisé. Aucun motif d'absence n'en sort. */
+export function personalPresenceForDate(
+  date: Date,
+  group: number,
+  periods: LeavePeriod[],
+  entries: Entries,
+  recoveryUses: Array<{ date: string; minutes: number; start?: string; end?: string }> = [],
+  workDayMinutes = 8 * 60,
+  isExceptionallyClosed: (date: string) => boolean = () => false,
+): PersonalPresence {
+  const key = dateKey(date);
+  const scheduled = getDayInfo(date, group).kind;
+  const entry = entries[key];
+  if (isExceptionallyClosed(key)) return { status: "absence" };
+  if (entry?.exchangeRole === "return") return { status: "work" };
+  if (entry?.exchangeRole === "given") return { status: "absence" };
+  if (scheduled === "off") return { status: "rest" };
+  const dayPeriods = periods.filter((item) => key >= item.from && key <= item.to);
+  if (dayPeriods.some((item) => item.leaveType !== "half") || entry?.leave) return { status: "absence" };
+  const dayRecovery = recoveryUses.filter((item) => item.date === key);
+  const recoveredMinutes = dayRecovery.reduce((total, item) => total + item.minutes, 0);
+  const halfPeriods = dayPeriods.filter((item) => item.leaveType === "half");
+  const halfMoments = new Set<HalfMoment>(halfPeriods
+    .map((item) => item.halfMoment)
+    .filter((moment): moment is HalfMoment => moment === "morning" || moment === "afternoon"));
+  const halfLeaveMinutes = halfMoments.size >= 2
+    ? workDayMinutes
+    : halfPeriods.length > 0
+      ? workDayMinutes / 2
+      : 0;
+  const absentMinutes = Math.min(workDayMinutes, halfLeaveMinutes + recoveredMinutes);
+  if (absentMinutes >= workDayMinutes) return { status: "absence" };
+  if (absentMinutes > 0) {
+    const recoveryMoments = new Set<HalfMoment>();
+    let allRecoveryTimesAreLocated = dayRecovery.length > 0;
+    for (const recovery of dayRecovery) {
+      if (recovery.end && recovery.end <= "13:30") recoveryMoments.add("morning");
+      else if (recovery.start && recovery.start >= "13:00") recoveryMoments.add("afternoon");
+      else allRecoveryTimesAreLocated = false;
+    }
+    const recoveryMoment = recoveredMinutes >= workDayMinutes / 2
+      && allRecoveryTimesAreLocated
+      && recoveryMoments.size === 1
+      ? [...recoveryMoments][0]
+      : undefined;
+    const halfMoment = recoveredMinutes === 0 && halfMoments.size === 1
+      ? [...halfMoments][0]
+      : halfLeaveMinutes === 0
+        ? recoveryMoment
+        : undefined;
+    return { status: "partial", halfMoment, absentMinutes };
+  }
+  return { status: scheduled === "training" ? "training" : "work" };
+}
+
 export function workedDayCount(
   year: number,
   firstMonth: number,
@@ -221,9 +345,12 @@ export function workedDayCount(
       const key = dateKey(date);
       const kind = getDayInfo(date, group).kind;
       const closureScheduled = isExceptionallyClosed(key);
+      const presence = personalPresenceForDate(
+        date, group, periods, entries, recoveryUses, workDayMinutes,
+        isExceptionallyClosed,
+      );
       if (kind !== "work") {
-        if (kind === "training" && closureScheduled) exceptionallyClosed++;
-        else if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
+        if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
         continue;
       }
       scheduled++;
@@ -235,18 +362,9 @@ export function workedDayCount(
         exchangedGiven++;
         continue;
       }
-      const period = periods.find(
-        (item) => key >= item.from && key <= item.to,
-      );
-      if (period)
-        onLeave += period.leaveType === "half" ? 0.5 : 1;
-      else if (entries[key]?.leave) onLeave += 1;
-      else {
-        const recoveredMinutes = recoveryUses
-          .filter((item) => item.date === key)
-          .reduce((total, item) => total + item.minutes, 0);
-        onLeave += Math.min(1, recoveredMinutes / workDayMinutes);
-      }
+      if (presence.status === "absence") onLeave += 1;
+      else if (presence.status === "partial")
+        onLeave += Math.min(1, (presence.absentMinutes || workDayMinutes / 2) / workDayMinutes);
     }
   return {
     scheduled,
@@ -284,9 +402,12 @@ export function workedDayCountBetween(
     const key = dateKey(date);
     const kind = getDayInfo(date, group).kind;
     const closureScheduled = isExceptionallyClosed(key);
+    const presence = personalPresenceForDate(
+      date, group, periods, entries, recoveryUses, workDayMinutes,
+      isExceptionallyClosed,
+    );
     if (kind !== "work") {
-      if (kind === "training" && closureScheduled) exceptionallyClosed++;
-      else if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
+      if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
       continue;
     }
     scheduled++;
@@ -298,19 +419,9 @@ export function workedDayCountBetween(
       exchangedGiven++;
       continue;
     }
-    const period = periods.find((item) => key >= item.from && key <= item.to);
-    if (period) {
-      onLeave += period.leaveType === "half" ? 0.5 : 1;
-      continue;
-    }
-    if (entries[key]?.leave) {
-      onLeave += 1;
-      continue;
-    }
-    const recoveredMinutes = recoveryUses
-      .filter((item) => item.date === key)
-      .reduce((total, item) => total + item.minutes, 0);
-    onLeave += Math.min(1, recoveredMinutes / workDayMinutes);
+    if (presence.status === "absence") onLeave += 1;
+    else if (presence.status === "partial")
+      onLeave += Math.min(1, (presence.absentMinutes || workDayMinutes / 2) / workDayMinutes);
   }
   return {
     scheduled,

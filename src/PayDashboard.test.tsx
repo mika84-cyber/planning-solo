@@ -1,14 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { PayDashboard, type PayDashboardAlert } from "./PayDashboard";
-
-const alerts: PayDashboardAlert[] = Array.from({ length: 5 }, (_, index) => ({
-  id: `alert-${index + 1}`,
-  title: `Action ${index + 1}`,
-  detail: `Détail ${index + 1}`,
-  actionLabel: "Corriger",
-  onAction: vi.fn(),
-}));
+import { PayDashboard } from "./PayDashboard";
 
 const baseProps = {
   month: 9,
@@ -18,10 +10,10 @@ const baseProps = {
   net: 2_080,
   profileLabel: "Estimation réalisée avec votre profil de paie 2026.",
   reliability: { tone: "estimated" as const, label: "Estimation", detail: "Profil annuel" },
-  alerts,
   variables: [{ key: "sundays", label: "Dimanches (2)", quantity: "2 × 60 €", amount: 120 }],
+  profileContent: <div>Mon profil de paie · toujours visible</div>,
   verificationContent: <div>Choisir le PDF</div>,
-  settingsContent: <div>Mon profil de paie</div>,
+  settingsContent: <div>Réglages détaillés</div>,
   settingsOpen: false,
   onPreviousMonth: vi.fn(),
   onNextMonth: vi.fn(),
@@ -34,29 +26,24 @@ const baseProps = {
 describe("PayDashboard", () => {
   it("place le mois et l'estimation avant les éléments secondaires", () => {
     const html = renderToStaticMarkup(<PayDashboard {...baseProps} />);
-    expect(html).toContain("octobre 2026");
+    expect(html).toContain("Octobre 2026");
     expect(html).toContain("Net estimé");
     expect(html).toContain("2 080,00 €");
     expect(html).toContain("Voir le détail du calcul");
+    expect(html).toContain("Mon profil de paie · toujours visible");
+    expect(html).toContain("Primes et jours fériés");
+    expect(html.indexOf("Net estimé")).toBeLessThan(html.indexOf("Mon profil de paie · toujours visible"));
     expect(html.indexOf("Net estimé")).toBeLessThan(html.indexOf("Prévus sur cette paie"));
+    expect(html.indexOf("Prévus sur cette paie")).toBeLessThan(html.indexOf("Vérifier mon bulletin"));
+    expect(html.indexOf("Vérifier mon bulletin")).toBeLessThan(html.indexOf("Mon profil de paie · toujours visible"));
+    expect(html.match(/Primes et jours fériés/g)).toHaveLength(1);
   });
 
-  it("montre trois alertes actionnables au maximum et replie les suivantes", () => {
+  it("ne montre plus le bloc d'actions utiles", () => {
     const html = renderToStaticMarkup(<PayDashboard {...baseProps} />);
-    expect(html).toContain("Action 1");
-    expect(html).toContain("Action 3");
-    expect(html).not.toContain("Action 4");
-    expect(html).toContain("Voir toutes les vérifications (5)");
-    expect(html).toContain("5 actions");
-    expect((html.match(/>Corriger</g) || []).length).toBe(3);
-  });
-
-  it("affiche un état rassurant seulement lorsqu'aucune action n'est nécessaire", () => {
-    const html = renderToStaticMarkup(<PayDashboard {...baseProps} alerts={[]} />);
-    expect(html).toContain("Tout est à jour");
-    expect(html).toContain("pay-dashboard-checks all-clear");
-    expect(html).not.toContain("pay-dashboard-alert-symbol");
-    expect(html).not.toContain("Voir toutes les vérifications");
+    expect(html).not.toContain("Actions utiles");
+    expect(html).not.toContain("À vérifier");
+    expect(html).not.toContain("pay-dashboard-checks");
   });
 
   it("conserve les intitulés et états accessibles", () => {

@@ -11,6 +11,7 @@ import {
   leaveTypeLabel,
   longDate,
   type LeaveType,
+  type SchoolVacation,
 } from "./planningLogic";
 
 type PlanningDayCellProps = {
@@ -33,6 +34,9 @@ type PlanningDayCellProps = {
   exceptionalClosure?: { label: string };
   exchange?: WorkExchange | null;
   workAccident?: boolean;
+  agnesLeave?: boolean;
+  sharedNoteText?: string;
+  schoolVacation?: SchoolVacation;
   onClick: () => void;
 };
 
@@ -56,6 +60,9 @@ export function PlanningDayCell({
   exceptionalClosure,
   exchange,
   workAccident = false,
+  agnesLeave = false,
+  sharedNoteText = "",
+  schoolVacation,
   onClick,
 }: PlanningDayCellProps) {
   const info = getDayInfo(date, group);
@@ -81,7 +88,9 @@ export function PlanningDayCell({
   const myLeaveType = visibleLeave ? leavePeriod?.leaveType || "" : "";
   const myRecovery = myLeaveType === "recovery";
   const myHalfMoment = myLeaveType === "half" ? leavePeriod?.halfMoment || "" : "";
-  const visibleNote = Boolean(showNotes && entry?.noteText);
+  const hasMikaNote = Boolean(showNotes && entry?.noteText);
+  const hasAgnesNote = Boolean(showNotes && sharedNoteText);
+  const visibleNote = hasMikaNote || hasAgnesNote;
   const leaveLabel = [
     visibleLeave
       ? myRecovery
@@ -106,6 +115,9 @@ export function PlanningDayCell({
     exceptionalClosure?.label ?? "",
     exchangeLabel,
     workAccident ? "Accident de travail" : "",
+    agnesLeave ? "Congé d’Agnès" : "",
+    sharedNoteText ? "Note d’Agnès" : "",
+    schoolVacation ? `${schoolVacation.name} · vacances scolaires` : "",
   ].filter(Boolean).join(" — ");
   const selectionStyle = selected
     ? ({ "--selection-color": TYPE_COLORS[selected.type] } as CSSProperties)
@@ -120,14 +132,16 @@ export function PlanningDayCell({
   return (
     <button
       type="button"
-      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected range-edge" : ""}`}
+      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected range-edge" : ""}`}
       style={selectionStyle}
       onClick={onClick}
       title={title}
       aria-current={today ? "date" : undefined}
-      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${exchangeLabel || DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}${workAccident ? ", accident de travail" : ""}`}
+      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${exchangeLabel || DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}${workAccident ? ", accident de travail" : ""}${agnesLeave ? ", congé d’Agnès" : ""}${sharedNoteText ? ", note d’Agnès" : ""}${schoolVacation ? `, ${schoolVacation.name}, vacances scolaires` : ""}`}
     >
-      <span className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}`}>{date.getDate()}</span>
+      <span className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}${agnesLeave ? " agnes-leave-date" : ""}`}>
+        {date.getDate()}
+      </span>
       {hasHourlyRecovery && !compact ? <span className={`recovery-calendar-label ${hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}`}>REC</span> : null}
       {visibleLeave && ((!compact && ["annual", "rtt", "fraction"].includes(myLeaveType)) || ["exceptional", "childcare", "sick", "cet", "strike"].includes(myLeaveType)) ? (
         <span className={`leave-calendar-marker leave-calendar-marker-${myLeaveType}${compact ? " compact" : ""}`} aria-hidden="true">
@@ -147,7 +161,7 @@ export function PlanningDayCell({
       {(selected || cleanupSelected) ? <span className="selection-corner" aria-hidden="true" /> : null}
       {selected && !compact ? <span className="selection-label">{TYPE_LABELS[selected.type]}{selected.start ? ` · ${selected.start}–${selected.end}` : ""}</span> : null}
       {visibleNote ? (
-        <span className={`note-band${myHalfMoment ? ` note-band-half-${myHalfMoment}` : ""}`} aria-hidden="true">
+        <span className={`note-band${hasMikaNote && hasAgnesNote ? " dual-note-band" : hasAgnesNote ? " agnes-note-band" : " mika-note-band"}${myHalfMoment ? ` note-band-half-${myHalfMoment}` : ""}`} aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="m6 18 1.2-4.3L16.4 4.5l3.1 3.1-9.2 9.2L6 18Z" /><path d="m14.8 6.1 3.1 3.1" /></svg>
         </span>
       ) : null}

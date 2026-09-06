@@ -90,11 +90,11 @@ describe("formulaire de demande", () => {
 
   it("conserve les points d'entrée de la nouvelle navigation", () => {
     for (const label of [
-      "Que souhaitez-vous poser ?",
-      "Un congé",
-      "Une récupération",
+      "Poser un congé",
+      "Congés annuels",
+      "Récupération",
       "Primes et jours fériés",
-      "Bulletins et estimations",
+      "Détail du calcul",
       "Télécharger les plannings en PDF",
       "Afficher les vacances scolaires",
     ]) expect(app).toContain(label);

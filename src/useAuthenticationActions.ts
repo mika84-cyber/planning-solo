@@ -3,11 +3,11 @@ import {
   acceptInvite,
   login,
   logout,
-  requestPasswordRecovery,
   updateUser,
 } from "@netlify/identity";
 import { calendarErrorMessage } from "./calendarApi";
 import type { AuthStatus } from "./appModel";
+import { requestPasswordRecovery } from "./passwordRecoveryApi";
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -134,7 +134,7 @@ export function useAuthenticationActions({
     try {
       if (!demoMode) await services.requestPasswordRecovery(email);
       setAuthNotice(
-        "Si ce compte est activé, un e-mail vient d’être envoyé. Ouvrez son lien pour choisir un nouveau mot de passe. Vérifiez aussi les courriers indésirables.",
+        "Si cette adresse correspond à un compte ou à une invitation, un e-mail vient d’être envoyé. Ouvrez son lien pour choisir un mot de passe. Vérifiez aussi les courriers indésirables.",
       );
     } catch {
       setAuthError(

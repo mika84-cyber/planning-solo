@@ -21,6 +21,8 @@ type LeaveBalance = {
   allowance: number;
   manualUsed: number;
   used: number;
+  taken: number;
+  upcoming: number;
   remaining: number;
   details: BalanceDetail[];
 };
@@ -88,8 +90,7 @@ export function LeaveBalancesSection({
                 <i>restant{s(balance.remaining)}</i>
               </strong>
               <small>
-                {balance.used.toLocaleString("fr-FR")} utilisé{s(balance.used)} sur{" "}
-                {balance.allowance}
+                {balance.taken.toLocaleString("fr-FR")} déjà pris · {balance.upcoming.toLocaleString("fr-FR")} posé{s(balance.upcoming)} à venir
               </small>
               {balance.manualUsed > 0 ? (
                 <small className="manual-balance-note">

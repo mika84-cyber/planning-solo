@@ -25,6 +25,25 @@ describe("useWorkTimeActions — validations et payloads", () => {
     })).toBe(105);
   });
 
+  it.each([
+    ["full", 495], ["three_quarters", 375], ["half", 225],
+  ] as const)("enregistre réellement la durée du férié pour la quotité %s", (quota, expected) => {
+    expect(recoveryDraftMinutes({
+      date: "2026-09-09", kind: "holiday", hours: "8", minutes: "0",
+      start: "", durationMinutes: 480, trainingMinutes: 360,
+    }, quota)).toBe(expected);
+  });
+
+  it("conserve le choix de 6 h ou 3 h pour une formation", () => {
+    const draft = {
+      date: "2026-09-09", kind: "training" as const, hours: "", minutes: "0",
+      start: "", durationMinutes: 360, trainingMinutes: 180 as const,
+    };
+    expect(recoveryDraftMinutes(draft, "full")).toBe(180);
+    expect(recoveryDraftMinutes({ ...draft, trainingMinutes: 360 }, "three_quarters")).toBe(360);
+    expect(recoveryDraftMinutes({ ...draft, trainingMinutes: 360 }, "half")).toBe(180);
+  });
+
   it("envoie uniquement les champs serveur attendus pour les heures supplémentaires", () => {
     const entry: OvertimeEntry = {
       id: "overtime-1", date: "2026-09-09", minutes: 180,

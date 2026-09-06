@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  explainPayslipGap,
   isUnplannedPayslipCarence,
   shouldReportMissingPayslipField,
   summarizePayslipReview,
@@ -11,8 +12,20 @@ describe("résumé de vérification d'un bulletin", () => {
       { key: "gross", label: "Cumul brut", found: 2600, expected: 2600 },
       { key: "sundays", label: "Dimanches", found: 3, expected: 3, tolerance: 1 },
     ]);
-    expect(result.verdict).toBe("Tout semble correct");
+    expect(result.verdict).toBe("Comparaison complète — aucun écart");
     expect(result.tone).toBe("ok");
+  });
+
+  it("reste explicite avec une seule ligne correcte et le brut/net non vérifiables", () => {
+    const result = summarizePayslipReview([
+      { key: "base", label: "Traitement de base", found: 1800, expected: 1800 },
+      { key: "gross", label: "Brut", found: undefined, expected: 2500 },
+      { key: "net-before-tax", label: "Net avant impôt", found: undefined, expected: 2050 },
+    ]);
+    expect(result.verdict).toBe("Vérification partielle — aucun écart sur les lignes vérifiées");
+    expect(result.tone).toBe("partial");
+    expect(result.verified).toHaveLength(1);
+    expect(result.unavailable).toHaveLength(2);
   });
 
   it("compte seulement les écarts réellement vérifiables", () => {
@@ -46,5 +59,12 @@ describe("résumé de vérification d'un bulletin", () => {
     expect(isUnplannedPayslipCarence(77.5, 0)).toBe(true);
     expect(isUnplannedPayslipCarence(77.5, 1)).toBe(false);
     expect(isUnplannedPayslipCarence(undefined, 0)).toBe(false);
+  });
+
+  it("explique concrètement la cause probable de chaque écart", () => {
+    expect(explainPayslipGap({ key: "ifse", label: "IFSE", found: 300, expected: 350 }))
+      .toContain("profil de paie");
+    expect(explainPayslipGap({ key: "inconnu", label: "Autre", found: 1, expected: 2 }))
+      .toContain("Vérifiez");
   });
 });

@@ -1,0 +1,131 @@
+.day.school-vacation-day::before,
+.mini-day.school-vacation-day::before {
+  position: absolute;
+  z-index: 8;
+  top: 3px;
+  bottom: 3px;
+  left: 2px;
+  width: 4px;
+  border-radius: 999px;
+  background: #8c70c4;
+  box-shadow: 1px 0 #fff;
+  content: "";
+  pointer-events: none;
+}
+
+.day.school-vacation-day.has-note::before,
+.mini-day.school-vacation-day.has-note::before { top: 11px; }
+.mini-day.school-vacation-day::before { top: 2px; bottom: 2px; width: 3px; }
+.day.school-vacation-day .exceptional-closure-marker,
+.mini-day.school-vacation-day .exceptional-closure-marker {
+  inset: 2px 2px 2px 9px;
+  width: calc(100% - 11px);
+  height: calc(100% - 4px);
+}
+.day.school-vacation-day .exchange-calendar-label { left: 11px; }
+
+.school-vacation-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  border: 1px solid #d8d0e8;
+  border-radius: 16px;
+  padding: 10px;
+  background: #fbf9ff;
+}
+.school-vacation-switch {
+  display: grid;
+  grid-template-columns: 46px auto;
+  column-gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  border: 0;
+  padding: 0 5px;
+  background: transparent;
+  color: #24364d;
+  text-align: left;
+}
+.school-vacation-switch > span {
+  position: relative;
+  grid-row: 1 / span 2;
+  width: 44px;
+  height: 26px;
+  border: 2px solid #9d91b5;
+  border-radius: 999px;
+  background: #e5e0ed;
+}
+.school-vacation-switch > span i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+}
+.school-vacation-switch.active > span { border-color: #7255ad; background: #8c70c4; }
+.school-vacation-switch.active > span i { transform: translateX(18px); }
+.school-vacation-switch strong,
+.school-vacation-switch small { grid-column: 2; }
+.school-vacation-switch small { color: #53657a; font-size: .69rem; }
+
+.school-zone-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(68px, 1fr));
+  flex: 1 1 230px;
+  gap: 4px;
+  max-width: 330px;
+  border: 1px solid #cfc4e1;
+  border-radius: 999px;
+  padding: 4px;
+  background: #f0ecf7;
+}
+.school-zone-picker button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #514766;
+  font-size: .76rem;
+  font-weight: 850;
+}
+.school-zone-picker button.active { background: #7255ad; color: #fff; }
+
+.school-vacation-month-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+  border: 1px solid #d8d0e8;
+  border-radius: 14px;
+  padding: 9px 12px;
+  background: #fbf9ff;
+  color: #35445a;
+}
+.school-vacation-month-summary > div { display: grid; gap: 2px; min-width: 0; }
+.school-vacation-month-summary strong { font-size: .78rem; }
+.school-vacation-month-summary small { color: #66758a; font-size: .69rem; }
+.school-vacation-swatch {
+  flex: 0 0 5px;
+  align-self: stretch;
+  min-height: 34px;
+  border-radius: 999px;
+  background: #8c70c4;
+}
+
+@media (max-width: 720px) {
+  .day.school-vacation-day .exceptional-closure-marker {
+    inset: 2px 1px 2px 7px;
+    width: calc(100% - 8px);
+    height: calc(100% - 4px);
+  }
+  .day.school-vacation-day .exchange-calendar-label { left: 8px; }
+  .mini-day.school-vacation-day .exceptional-closure-marker {
+    inset: 1px 1px 1px 6px;
+    width: calc(100% - 7px);
+    height: calc(100% - 2px);
+  }
+}

@@ -9,16 +9,21 @@ import { emptyEntry, euros } from "./appModel";
 import type { MecenatEntry } from "./mecenat";
 import { mecenatForPayMonth } from "./mecenat";
 import type { RecoveryUse } from "./overtime";
+import { holidayRecoveryMinutesForQuota } from "./overtime";
 import {
   calculateNetRatios,
-  extractPayslipTokens,
   payCalibrationRegime,
-  readPayslip,
   readingsForCalibrationRegime,
   type PayCalibrationRegime,
   type PayslipReading,
 } from "./payslip";
+import {
+  isPayslipImage,
+  mergePayslipPageReadings,
+  readPayslipFiles,
+} from "./payslipOcr";
 import { shouldReportMissingPayslipField } from "./payslipReview";
+import { inspectPayslipPhotos } from "./payslipImageQuality";
 import {
   MONTHS,
   SUNDAY_ALLOWANCE,
@@ -136,6 +141,7 @@ export function payProfileBase(
     signature: formProfile?.signature || "",
     status: formProfile?.status,
     workQuota: formProfile?.workQuota,
+    workSchedule: formProfile?.workSchedule,
     baseSalary: formProfile?.baseSalary,
     residenceAllowance: formProfile?.residenceAllowance,
     ifse: formProfile?.ifse,
@@ -153,6 +159,46 @@ export function payProfileBase(
   };
 }
 
+function payValuesFromProfile(profile: FormProfile | null): PayProfile {
+  return {
+    baseSalary: profile?.baseSalary,
+    residenceAllowance: profile?.residenceAllowance,
+    ifse: profile?.ifse,
+    carenceDay: profile?.carenceDay,
+    otherFixed: profile?.otherFixed,
+    cia: profile?.cia,
+    ciaMonth: profile?.ciaMonth,
+    netRatioFixed: profile?.netRatioFixed,
+    netRatioVariable: profile?.netRatioVariable,
+    netRatioRegime: profile?.netRatioRegime,
+    navigo: profile?.navigo,
+    mealVoucherDeduction: profile?.mealVoucherDeduction,
+    pasRate: profile?.pasRate,
+  };
+}
+
+export function effectivePayProfile(
+  profiles: Record<string, PayProfile>,
+  year: number | string,
+  month: number,
+) {
+  const yearText = String(year);
+  let effective = { ...(profiles[yearText] || {}) };
+  for (let index = 0; index <= month; index += 1) {
+    const key = `${yearText}-${String(index + 1).padStart(2, "0")}`;
+    effective = { ...effective, ...(profiles[key] || {}) };
+  }
+  return effective;
+}
+
+export function hasPayProfileHistory(
+  profiles: Record<string, PayProfile>,
+  year: number | string,
+) {
+  const prefix = `${String(year)}-`;
+  return Object.keys(profiles).some((key) => key === String(year) || key.startsWith(prefix));
+}
+
 export function parsedPayDraft(draft: string) {
   return Number(draft.replace(",", ".").replace(/\s/g, ""));
 }
@@ -161,12 +207,14 @@ export function payAmountPayload(
   field: PayDraftKey,
   value: number,
   payYear: number,
+  payMonth: number,
   profile: FormProfile,
 ) {
   const scaled = Math.round(value * 100);
   return {
     action: "save-form-profile",
     payYear,
+    payMonth,
     fullName: profile.fullName,
     group: profile.group,
     signature: profile.signature,
@@ -222,14 +270,18 @@ export function nextSundayPayoutSlot(year: number, month: number) {
   return null;
 }
 
-export function payslipImportFields(isContractuel: boolean): PayslipImportField[] {
+export function payslipImportFields(
+  isContractuel: boolean,
+  fonctionnaireAmountsDetected = false,
+): PayslipImportField[] {
+  const includeFonctionnaireAmounts = !isContractuel || fonctionnaireAmountsDetected;
   return [
     { key: "baseSalary", label: "Traitement de base" },
     { key: "residenceAllowance", label: "Indemnité de résidence" },
-    ...(isContractuel ? [] : [{ key: "ifse" as const, label: "IFSE" }]),
+    ...(includeFonctionnaireAmounts ? [{ key: "ifse" as const, label: "IFSE" }] : []),
     { key: "carenceDay", label: "Jour de carence" },
     { key: "otherFixed", label: "Autres éléments fixes" },
-    ...(isContractuel ? [] : [{ key: "cia" as const, label: "CIA" }]),
+    ...(includeFonctionnaireAmounts ? [{ key: "cia" as const, label: "CIA" }] : []),
     { key: "navigo", label: "Navigo remboursé" },
     { key: "mealVoucherDeduction", label: "Titres repas (retenue)" },
     { key: "pasRate", label: "Taux d’imposition (PAS)" },
@@ -286,8 +338,6 @@ export function usePayActions(options: PayActionsOptions) {
     post,
   } = options;
   const payYear = String(payView.getFullYear());
-  const importFields = payslipImportFields(isContractuel);
-
   async function savePayAmount(field: PayDraftKey) {
     const value = parsedPayDraft(payDrafts[field]);
     if (!Number.isFinite(value) || value < 0) {
@@ -311,12 +361,14 @@ export function usePayActions(options: PayActionsOptions) {
     try {
       if (!demoMode)
         await post(
-          payAmountPayload(field, value, Number(payYear), nextProfile),
+          payAmountPayload(field, value, Number(payYear), payView.getMonth(), nextProfile),
         );
       setFormProfile(nextProfile);
+      const monthKey = `${payYear}-${String(payView.getMonth() + 1).padStart(2, "0")}`;
       setPayProfiles((current) => ({
         ...current,
-        [payYear]: { ...(current[payYear] || {}), [field]: value },
+        [payYear]: current[payYear] || payValuesFromProfile(formProfile),
+        [monthKey]: { ...(current[monthKey] || {}), [field]: value },
       }));
       setPayDrafts((current) => ({ ...current, [field]: "" }));
     } catch {
@@ -436,6 +488,9 @@ export function usePayActions(options: PayActionsOptions) {
           leave: Boolean(current?.leave),
           wish: Boolean(current?.wish),
           holidayPay: choice,
+          holidayRecoveryMinutes: choice === "recovery"
+            ? holidayRecoveryMinutesForQuota(formProfile?.workQuota || "full")
+            : undefined,
         });
       } catch {
         notify("Le choix n’a pas pu être enregistré. Réessayez.");
@@ -444,7 +499,13 @@ export function usePayActions(options: PayActionsOptions) {
     }
     setEntries((currentEntries) => ({
       ...currentEntries,
-      [key]: { ...(currentEntries[key] || emptyEntry()), holidayPay: choice },
+      [key]: {
+        ...(currentEntries[key] || emptyEntry()),
+        holidayPay: choice,
+        holidayRecoveryMinutes: choice === "recovery"
+          ? holidayRecoveryMinutesForQuota(formProfile?.workQuota || "full")
+          : undefined,
+      },
     }));
   }
 
@@ -511,31 +572,73 @@ export function usePayActions(options: PayActionsOptions) {
       setPayslipResultDetailsOpen(false);
     }
     if (!files.length) return;
+    const includesPhoto = files.some(isPayslipImage);
     if (mode === "calibrate" && files.length < 2) {
       setPayslipImportError(
         "Choisissez au moins deux bulletins de mois différents pour affiner les taux.",
       );
       return;
     }
+    if (includesPhoto) {
+      const qualityReports = await inspectPayslipPhotos(files);
+      if (qualityReports.length) {
+        const details = qualityReports.flatMap(({ file, issues }) =>
+          issues.map((issue) => `${file.name} : ${issue.label} — ${issue.advice}`),
+        );
+        const continueAnyway = window.confirm(
+          `La lecture risque d’être moins fiable :\n\n${details.join("\n")}\n\nChoisissez Annuler pour reprendre la photo, ou OK pour l’analyser quand même.`,
+        );
+        if (!continueAnyway) {
+          setPayslipImportError(`Photo à reprendre. ${details.join(" ")}`);
+          return;
+        }
+      }
+    }
     setPayslipImportBusy(true);
     try {
-      const items: PayslipCheck[] = [];
-      for (const file of files) {
-        try {
+      let items: PayslipCheck[] = [];
+      const failures: string[] = [];
+      for (const result of await readPayslipFiles(files)) {
+        if (result.reading) {
           items.push({
-            name: file.name,
-            reading: readPayslip(
-              await extractPayslipTokens(await file.arrayBuffer()),
-            ),
+            name: result.file.name,
+            reading: result.reading,
           });
-        } catch {
+        } else {
           // Un fichier illisible ne doit pas empêcher de lire les autres.
+          failures.push(result.error || "Fichier illisible.");
         }
       }
       if (!items.length) {
-        setPayslipImportError("Aucun de ces fichiers n’a pu être ouvert.");
+        setPayslipImportError(
+          failures[0] || "Aucun de ces fichiers n’a pu être ouvert.",
+        );
         return;
       }
+      if (mode === "verify" && items.length > 1) {
+        try {
+          items = [{
+            name: `Bulletin (${items.length} pages)`,
+            reading: mergePayslipPageReadings(
+              items.map((item) => item.reading),
+            ),
+          }];
+        } catch (error) {
+          setPayslipImportError(
+            error instanceof Error
+              ? error.message
+              : "Impossible de réunir ces pages.",
+          );
+          return;
+        }
+      }
+      const fonctionnaireAmountsDetected = items.some(
+        ({ reading }) => reading.ifse !== undefined || reading.cia !== undefined,
+      );
+      const importFields = payslipImportFields(
+        isContractuel,
+        fonctionnaireAmountsDetected,
+      );
       items.sort((a, b) => {
         const rank = (reading: PayslipReading) =>
           reading.year !== undefined && reading.month !== undefined
@@ -587,7 +690,7 @@ export function usePayActions(options: PayActionsOptions) {
         Number(targetPayYear),
         targetPayMonth,
       );
-      const targetPayProfile = payProfiles[targetPayYear];
+      const targetPayProfile = effectivePayProfile(payProfiles, targetPayYear, targetPayMonth);
       const found: Partial<Record<PayslipImportFieldKey, number>> = {};
       let importedCiaMonth: number | undefined;
       for (const field of importFields) {
@@ -626,7 +729,6 @@ export function usePayActions(options: PayActionsOptions) {
         rateSamplesByPeriod.set(period, item);
       }
       const nextRateSamples = Array.from(rateSamplesByPeriod.values());
-      setPayslipRateSamples(nextRateSamples);
       const compatibleRateReadings = readingsForCalibrationRegime(
         nextRateSamples.map((item) => item.reading),
         targetNetRatioRegime,
@@ -672,6 +774,23 @@ export function usePayActions(options: PayActionsOptions) {
         );
         return;
       }
+      if (includesPhoto) {
+        const detected = [
+          ...applied.map((field) => {
+            const value = found[field.key];
+            return `${field.label} : ${field.key === "pasRate" ? `${value?.toLocaleString("fr-FR")} %` : euros(value || 0)}`;
+          }),
+          ...(calculatedRates ? ["Taux d’estimation affinés"] : []),
+        ];
+        const confirmed = window.confirm(
+          `Photo analysée sur cet appareil. Vérifiez les valeurs détectées :\n\n${detected.join("\n")}\n\nLes enregistrer dans votre profil de paie ?`,
+        );
+        if (!confirmed) {
+          setPayslipImportError("Les valeurs détectées sur la photo n’ont pas été enregistrées.");
+          return;
+        }
+      }
+      setPayslipRateSamples(nextRateSamples);
       const nextProfile: FormProfile = {
         ...payProfileBase(formProfile, group),
         baseSalary:

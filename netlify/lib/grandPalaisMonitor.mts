@@ -6,6 +6,7 @@ import type {
 const OFFICIAL_ORIGIN = "https://www.grandpalais.fr";
 const GRAND_PALAIS_FETCH_TIMEOUT_MS = 12_000;
 const MAX_GRAND_PALAIS_HTML_BYTES = 3 * 1024 * 1024;
+const MAX_PROGRAM_LISTING_PAGES = 12;
 
 function officialGrandPalaisUrl(value: string, fallback = "") {
   try {
@@ -202,29 +203,105 @@ export function extractGrandPalaisProgramLinks(html: string) {
   return [...new Set(links)];
 }
 
+export function extractGrandPalaisProgramPageLinks(html: string) {
+  const links = [...html.matchAll(/href=["']([^"']+)["']/gi)]
+    .map((match) => decodeHtml(match[1]))
+    .map((href) => {
+      try {
+        return new URL(href, `${OFFICIAL_ORIGIN}/fr/programme`);
+      } catch {
+        return null;
+      }
+    })
+    .filter((url): url is URL => url !== null && url.origin === OFFICIAL_ORIGIN && url.protocol === "https:")
+    .filter((url) => url.pathname.replace(/\/$/, "") === "/fr/programme")
+    .map((url) => Number(url.searchParams.get("page")))
+    .filter((page) => Number.isInteger(page) && page >= 0 && page < MAX_PROGRAM_LISTING_PAGES)
+    .map((page) => page === 0
+      ? `${OFFICIAL_ORIGIN}/fr/programme`
+      : `${OFFICIAL_ORIGIN}/fr/programme?page=${page}`);
+  return [...new Set(links)];
+}
+
+function dynamicVenue(label: string) {
+  const normalizedLabel = label.replace(/^[\s·:,-]+|[\s·:,-]+$/g, "").trim();
+  if (!normalizedLabel || normalizedLabel.length > 90) return null;
+  if (/\b\d{5}\b|\b(?:avenue|boulevard|place|rue)\b/i.test(normalizedLabel)) return null;
+  const slug = normalizedLabel.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug ? { venueKey: `other:${slug}`, venueLabel: normalizedLabel } : null;
+}
+
+const BUILT_IN_PROGRAM_EVENTS = [
+  ["2025-06-20", "transparence"],
+  ["2026-05-06", "hilma af klint les peintures du temple 1906 1915"],
+  ["2026-06-02", "leandro erlich"],
+  ["2026-09-23", "cezanne et nous"],
+  ["2026-10-23", "art basel"],
+  ["2026-10-23", "art basel paris 2026"],
+  ["2026-12-02", "le musee imaginaire d oli"],
+  ["2026-12-09", "girls adolescence mode et rebellion"],
+  ["2026-12-16", "mika ninagawa with eim alive with shadows"],
+] as const;
+
+function normalizedEventTitle(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Évite de proposer les pages générales et les événements déjà livrés dans
+ * le programme de l’application. */
+export function isGrandPalaisProposalRelevant(event: SharedGrandPalaisEvent) {
+  if (/\/grand-palais-dete-2026(?:$|[?#])/i.test(event.url)) return false;
+  const title = normalizedEventTitle(event.title);
+  return !BUILT_IN_PROGRAM_EVENTS.some(([startDate, knownTitle]) =>
+    event.startDate === startDate && title === knownTitle,
+  );
+}
+
 function venueFromPage(html: string) {
-  const candidates = [...html.matchAll(/<span[^>]*class=["'][^"']*icon-map-pin[^"']*["'][^>]*><\/span>([\s\S]{0,120}?)<\/p>/gi)]
-    .map((match) => cleanText(match[1]));
+  const candidates = [...html.matchAll(/<span[^>]*class=["'][^"']*icon-map-pin[^"']*["'][^>]*>[\s\S]*?<\/span>([\s\S]{0,240}?)<\/p>/gi)]
+    .map((match) => cleanText(match[1]))
+    .filter(Boolean);
   const text = candidates.join(" · ");
   const choices: Array<[RegExp, string, string]> = [
     [/galeries?\s*3\s*(?:et|&)\s*4/i, "galleries34", "Galeries 3 et 4"],
-    [/galerie\s*8/i, "gallery8", "Galerie 8"],
-    [/galerie\s*7/i, "gallery7", "Galerie 7"],
+    [/galeries?\s*8(?![\d.])/i, "gallery8", "Galerie 8"],
+    [/galeries?\s*7(?![\d.])/i, "gallery7", "Galerie 7"],
     [/galeries?\s*9\s*(?:et|&)\s*10/i, "gallery910", "Galeries 9 et 10"],
+    [/salon seine/i, "other:salon-seine", "Salon Seine"],
     [/palais des enfants/i, "childrenPalace", "Palais des enfants"],
     [/salon d[’']honneur/i, "other:salon-honneur", "Salon d’honneur"],
     [/\bnef\b/i, "nef", "Nef"],
   ];
   for (const [pattern, key, label] of choices)
     if (pattern.test(text)) return { venueKey: key, venueLabel: label };
-  const genericGallery = text.match(/\b(?:galerie|salon)\s+[^·,;]{1,45}/i)?.[0];
-  if (genericGallery) {
-    const label = genericGallery.trim();
-    const slug = label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    return { venueKey: `other:${slug}`, venueLabel: label };
+  const namedSpace = text.match(/\b(?:galeries?|salons?|rotonde|auditorium|balcons?|foyer|studio)\b[^·,;]{0,70}/i)?.[0];
+  if (namedSpace) return dynamicVenue(namedSpace);
+  for (const candidate of candidates) {
+    const venue = dynamicVenue(candidate);
+    if (venue) return venue;
   }
   return null;
+}
+
+function findJsonLdEvent(value: unknown): Record<string, unknown> | undefined {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const event = findJsonLdEvent(item);
+      if (event) return event;
+    }
+    return undefined;
+  }
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const types = Array.isArray(record["@type"]) ? record["@type"] : [record["@type"]];
+  if (types.includes("Event")) return record;
+  for (const nested of Object.values(record)) {
+    const event = findJsonLdEvent(nested);
+    if (event) return event;
+  }
+  return undefined;
 }
 
 export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGrandPalaisEvent | null {
@@ -232,16 +309,13 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
   let event: Record<string, unknown> | undefined;
   for (const script of scripts) {
     try {
-      const parsed = JSON.parse(decodeHtml(script[1]).trim()) as Record<string, unknown>;
-      if (parsed["@type"] === "Event") {
-        event = parsed;
-        break;
-      }
+      event = findJsonLdEvent(JSON.parse(decodeHtml(script[1]).trim()));
+      if (event) break;
     } catch {
       // Une autre balise JSON-LD malformée ne doit pas annuler toute la relève.
     }
   }
-  const venue = venueFromPage(html);
+  let venue = venueFromPage(html);
   const title = typeof event?.name === "string" ? event.name.trim() : "";
   const startDate = typeof event?.startDate === "string" ? event.startDate.slice(0, 10) : "";
   const endDate = typeof event?.endDate === "string" ? event.endDate.slice(0, 10) : "";
@@ -252,6 +326,13 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
     officialGrandPalaisUrl(pageUrl),
   );
   if (!url) return null;
+  if (/\/journees-europeennes-du-patrimoine-2026(?:$|[?#])/i.test(url))
+    venue = { venueKey: "other:grand-palais", venueLabel: "Grand Palais" };
+  if (/\/fete-de-la-science-2026(?:$|[?#])/i.test(url))
+    venue = {
+      venueKey: "other:rotonde-salon-seine-palais-enfants",
+      venueLabel: "Rotonde d’Antin, Salon Seine et Palais des enfants",
+    };
   return {
     id: stableId(url),
     title,
@@ -264,9 +345,23 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
 }
 
 export async function collectGrandPalaisEvents(fetcher: typeof fetch = fetch) {
-  const listing = await fetchGrandPalaisHtml(`${OFFICIAL_ORIGIN}/fr/programme`, fetcher, true);
-  if (!listing) throw new Error("Programme Grand Palais indisponible");
-  const links = extractGrandPalaisProgramLinks(listing);
+  const listingUrl = `${OFFICIAL_ORIGIN}/fr/programme`;
+  const listingQueue = [listingUrl];
+  const visitedListings = new Set<string>();
+  const programLinks = new Set<string>();
+  while (listingQueue.length && visitedListings.size < MAX_PROGRAM_LISTING_PAGES) {
+    const currentUrl = listingQueue.shift() as string;
+    if (visitedListings.has(currentUrl)) continue;
+    visitedListings.add(currentUrl);
+    const listing = await fetchGrandPalaisHtml(currentUrl, fetcher, currentUrl === listingUrl);
+    if (!listing) continue;
+    for (const link of extractGrandPalaisProgramLinks(listing)) programLinks.add(link);
+    for (const pageLink of extractGrandPalaisProgramPageLinks(listing)) {
+      if (!visitedListings.has(pageLink) && !listingQueue.includes(pageLink)) listingQueue.push(pageLink);
+    }
+  }
+  if (!visitedListings.size) throw new Error("Programme Grand Palais indisponible");
+  const links = [...programLinks];
   const events: SharedGrandPalaisEvent[] = [];
   for (let index = 0; index < links.length; index += 4) {
     const batch = links.slice(index, index + 4);

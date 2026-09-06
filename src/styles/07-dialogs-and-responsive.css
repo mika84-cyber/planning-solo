@@ -394,6 +394,9 @@
   background: #fbfcfe;
   color: var(--text);
 }
+.usual-time-shortcuts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.usual-time-shortcuts > span { flex-basis: 100%; color: var(--muted); font-size: 12px; font-weight: 800; }
+.usual-time-shortcuts button { min-height: 38px; border: 1px solid #bfd2e6; border-radius: 11px; padding: 7px 11px; background: #f2f7fc; color: #174d7e; font-weight: 800; }
 .warning-modal {
   text-align: center;
 }

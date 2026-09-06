@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { FormProfile } from "./appModel";
 import {
   annualPayProfilePayload,
+  effectivePayProfile,
+  hasPayProfileHistory,
   nextSundayPayoutSlot,
   parsedPayDraft,
   payAmountPayload,
@@ -10,6 +12,26 @@ import {
 } from "./usePayActions";
 
 describe("usePayActions — conversions et payloads sûrs", () => {
+  it("applique un changement de paie à partir de son mois sans modifier les mois précédents", () => {
+    const profiles = {
+      "2026": { baseSalary: 2_000, ifse: 300, pasRate: 5 },
+      "2026-09": { baseSalary: 2_100, ifse: 325, pasRate: 6 },
+    };
+    expect(effectivePayProfile(profiles, 2026, 7)).toMatchObject({ baseSalary: 2_000, ifse: 300, pasRate: 5 });
+    expect(effectivePayProfile(profiles, 2026, 8)).toMatchObject({ baseSalary: 2_100, ifse: 325, pasRate: 6 });
+    expect(effectivePayProfile(profiles, 2026, 10)).toMatchObject({ baseSalary: 2_100, ifse: 325, pasRate: 6 });
+  });
+
+  it("ne reprend pas un taux actuel du profil général avant son premier mois d’effet", () => {
+    const profiles = {
+      "2026": { baseSalary: 2_000 },
+      "2026-09": { pasRate: 2.2 },
+    };
+    expect(hasPayProfileHistory(profiles, 2026)).toBe(true);
+    expect(effectivePayProfile(profiles, 2026, 7).pasRate).toBeUndefined();
+    expect(effectivePayProfile(profiles, 2026, 8).pasRate).toBe(2.2);
+  });
+
   it("accepte les formats français usuels sans perdre les centimes", () => {
     expect(parsedPayDraft("1 234,56")).toBe(1234.56);
     expect(parsedPayDraft("79.65")).toBe(79.65);
@@ -21,17 +43,19 @@ describe("usePayActions — conversions et payloads sûrs", () => {
       group: "2",
       signature: "signature",
     };
-    expect(payAmountPayload("netRatioFixed", 79.65, 2026, profile)).toEqual({
+    expect(payAmountPayload("netRatioFixed", 79.65, 2026, 8, profile)).toEqual({
       action: "save-form-profile",
       payYear: 2026,
+      payMonth: 8,
       fullName: "Agent Test",
       group: "2",
       signature: "signature",
       netRatioFixedBp: 7965,
     });
-    expect(payAmountPayload("baseSalary", 2345.67, 2026, profile)).toEqual({
+    expect(payAmountPayload("baseSalary", 2345.67, 2026, 8, profile)).toEqual({
       action: "save-form-profile",
       payYear: 2026,
+      payMonth: 8,
       fullName: "Agent Test",
       group: "2",
       signature: "signature",
@@ -69,6 +93,12 @@ describe("usePayActions — conversions et payloads sûrs", () => {
     expect(fonctionnaire).toContain("cia");
     expect(contractuelle).not.toContain("ifse");
     expect(contractuelle).not.toContain("cia");
+  });
+
+  it("conserve une IFSE réellement détectée même si le profil était contractuel", () => {
+    const detected = payslipImportFields(true, true).map((field) => field.key);
+    expect(detected).toContain("ifse");
+    expect(detected).toContain("cia");
   });
 
   it("reconstruit le socle du profil sans réintroduire un ancien report", () => {

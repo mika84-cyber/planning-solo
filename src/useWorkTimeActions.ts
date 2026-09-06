@@ -3,6 +3,9 @@ import { calendarErrorMessage } from "./calendarApi";
 import { createClientId } from "./clientId";
 import { calculateMecenatVacation, type MecenatEntry } from "./mecenat";
 import {
+  defaultRecoveryMinutes,
+  trainingRecoveryMinutes,
+  trainingRecoveryTimes,
   minutesLabel,
   nextPayPeriod,
   splitOvertimeRange,
@@ -88,8 +91,9 @@ export function solidarityMinutes(draft: SolidarityDraft) {
   );
 }
 
-export function recoveryDraftMinutes(draft: RecoveryDraft) {
-  if (draft.kind === "training") return draft.trainingMinutes;
+export function recoveryDraftMinutes(draft: RecoveryDraft, quota: WorkQuota = "full") {
+  if (draft.kind === "holiday") return defaultRecoveryMinutes("holiday", quota);
+  if (draft.kind === "training") return quota === "half" ? trainingRecoveryMinutes(quota) : draft.trainingMinutes;
   if (draft.durationMinutes !== null) return draft.durationMinutes;
   return Math.round(
     Number(draft.hours.replace(",", ".")) * 60 + Number(draft.minutes),
@@ -246,7 +250,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
 
   async function saveRecoveryUse() {
     if (overtimeSaveInFlightRef.current) return;
-    const minutes = recoveryDraftMinutes(recoveryDraft);
+    const minutes = recoveryDraftMinutes(recoveryDraft, workQuota);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(recoveryDraft.date) || minutes <= 0) {
       notify("Vérifiez la date et la durée de récupération.");
       return;
@@ -256,7 +260,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
       return;
     }
     if (recoveryDraft.kind === "training" && trainingRecoveryMode === "form") {
-      const times = { start: "09:00", end: minutes === 180 ? "12:00" : "15:00" };
+      const times = trainingRecoveryTimes(workQuota, recoveryDraft.trainingMoment || "morning", minutes as 180 | 360);
       const payload = {
         version: 1, requestId: createClientId("request"), requestKind: "recovery" as const,
         ownerKey: userEmail.trim().toLowerCase(), group,
@@ -283,7 +287,9 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     try {
       const localUse: RecoveryUse = {
         id: createClientId("recovery"), date: recoveryDraft.date, minutes,
-        start: recoveryDraft.start || undefined,
+        start: recoveryDraft.kind === "training"
+          ? trainingRecoveryTimes(workQuota, recoveryDraft.trainingMoment || "morning", minutes as 180 | 360).start
+          : recoveryDraft.start || undefined,
         kind: recoveryDraft.kind === "training" ? "training" : undefined,
         updatedAt: new Date().toISOString(),
       };
@@ -325,7 +331,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
 
   async function saveRecoveryRangeDates() {
     if (!recoveryRangeDates.length || savingOvertime) return;
-    const minutes = recoveryDraftMinutes(recoveryDraft);
+    const minutes = recoveryDraftMinutes(recoveryDraft, workQuota);
     if (!Number.isFinite(minutes) || minutes <= 0) {
       notify("Vérifiez la durée de récupération.");
       return;
@@ -340,7 +346,9 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
       const nowIso = new Date().toISOString();
       const localUses: RecoveryUse[] = [...recoveryRangeDates].sort().map((date) => ({
         id: createClientId("recovery"), date, minutes,
-        start: recoveryDraft.start || undefined,
+        start: recoveryDraft.kind === "training"
+          ? trainingRecoveryTimes(workQuota, recoveryDraft.trainingMoment || "morning", minutes as 180 | 360).start
+          : recoveryDraft.start || undefined,
         kind: recoveryDraft.kind === "training" ? "training" : undefined,
         updatedAt: nowIso,
       }));

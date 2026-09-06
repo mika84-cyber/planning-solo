@@ -42,10 +42,6 @@ export function usePlanningUiState() {
   const [deletingPeriod, setDeletingPeriod] = useState<LeavePeriod | null>(null);
   const [savingRange, setSavingRange] = useState(false);
   const [requestChooser, setRequestChooser] = useState(false);
-  const [planningRequestMethod, setPlanningRequestMethod] = useState<RequestKind | null>(null);
-  const [planningRequestDate, setPlanningRequestDate] = useState<string | null>(null);
-  const [pendingRecoveryType, setPendingRecoveryType] = useState<SelectionType>("recovery_day");
-  const [pendingLeaveType, setPendingLeaveType] = useState<SelectionType>("annual");
   const [requestKind, setRequestKind] = useState<RequestKind | null>(null);
   const [sickRequest, setSickRequest] = useState(false);
   const [savingRequest, setSavingRequest] = useState(false);
@@ -71,8 +67,6 @@ export function usePlanningUiState() {
     separatePeople, setSeparatePeople, editingPeriodId, setEditingPeriodId,
     editingLegacyPeriod, setEditingLegacyPeriod, deletingPeriod, setDeletingPeriod,
     savingRange, setSavingRange, requestChooser, setRequestChooser,
-    planningRequestMethod, setPlanningRequestMethod, planningRequestDate, setPlanningRequestDate,
-    pendingRecoveryType, setPendingRecoveryType, pendingLeaveType, setPendingLeaveType,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
     activeType, setActiveType, selections, setSelections, timeDate, setTimeDate,
     timeStart, setTimeStart, timeEnd, setTimeEnd, warningDate, setWarningDate,

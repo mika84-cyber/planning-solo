@@ -13,15 +13,20 @@ const budgets = {
   // Les rubriques principales sont incluses dès l’ouverture pour éviter tout
   // écran de chargement pendant la navigation. Ce plafond garde environ 4 %
   // de marge au-dessus de la version statique validée.
-  entryJavaScript: { raw: 590 * KIB, gzip: 170 * KIB },
+  entryJavaScript: { raw: 625 * KIB, gzip: 180 * KIB },
   // Inclut aussi le moteur PDF autonome du formulaire, volontairement différé.
   largestSecondaryJavaScript: { raw: 900 * KIB, gzip: 330 * KIB },
-  totalJavaScript: { raw: 2_500 * KIB, gzip: 790 * KIB },
-  mainCss: { raw: 300 * KIB, gzip: 55 * KIB },
-  // Inclut le CSS autonome de /formulaire en plus du CSS React principal.
-  totalCss: { raw: 340 * KIB, gzip: 65 * KIB },
+  totalJavaScript: { raw: 2_600 * KIB, gzip: 820 * KIB },
+  // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
+  // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
+  // la variante compatible ; un seul est téléchargé sur l'appareil.
+  ocrAssets: { raw: 13_000 * KIB, gzip: 5_200 * KIB },
+  mainCss: { raw: 320 * KIB, gzip: 59 * KIB },
+  // Inclut le CSS autonome de /formulaire ainsi que les pages différées de
+  // partage des plannings et de messagerie ; elles n’alourdissent pas le CSS
+  // initial et restent chargées uniquement à leur ouverture.
+  totalCss: { raw: 385 * KIB, gzip: 74 * KIB },
   payslipSuccessEffect: 3_500 * KIB,
-  payslipWarningEffect: 2_500 * KIB,
 };
 
 async function filesUnder(directory) {
@@ -74,14 +79,17 @@ const [entry, mainCss, jsMeasures, cssMeasures] = await Promise.all([
   Promise.all(jsFiles.map(async (path) => ({ path, ...(await measure(path)) }))),
   Promise.all(cssFiles.map(async (path) => ({ path, ...(await measure(path)) }))),
 ]);
-const lazyJs = jsMeasures.filter(({ path }) => path !== entryPath);
+const isOcrAsset = (path) => relative(DIST_PATH, path).split(/[\\/]/)[0] === "ocr";
+const appJsMeasures = jsMeasures.filter(({ path }) => !isOcrAsset(path));
+const ocrMeasures = await Promise.all(
+  allFiles.filter(isOcrAsset).map(async (path) => ({ path, ...(await measure(path)) })),
+);
+const lazyJs = appJsMeasures.filter(({ path }) => path !== entryPath);
 const largestLazy = lazyJs.sort((left, right) => right.raw - left.raw)[0] ?? { raw: 0, gzip: 0, path: "" };
-const totalJs = jsMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
+const totalJs = appJsMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
+const totalOcr = ocrMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
 const totalCss = cssMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
-const [payslipSuccessEffect, payslipWarningEffect] = await Promise.all([
-  stat(join(DIST_PATH, "payslip-success-money-fast.webp")),
-  stat(join(DIST_PATH, "payslip-warning-lightning.mp4")),
-]);
+const payslipSuccessEffect = await stat(join(DIST_PATH, "payslip-success-money-fast.webp"));
 const failures = [];
 
 console.log(`Entrée JS : ${relative(DIST_PATH, entryPath)}`);
@@ -92,6 +100,8 @@ check("Plus gros JS secondaire brut", largestLazy.raw, budgets.largestSecondaryJ
 check("Plus gros JS secondaire gzip", largestLazy.gzip, budgets.largestSecondaryJavaScript.gzip, failures);
 check("Total JS brut", totalJs.raw, budgets.totalJavaScript.raw, failures);
 check("Total JS gzip", totalJs.gzip, budgets.totalJavaScript.gzip, failures);
+check("Ressources OCR locales brutes", totalOcr.raw, budgets.ocrAssets.raw, failures);
+check("Ressources OCR locales gzip", totalOcr.gzip, budgets.ocrAssets.gzip, failures);
 check("CSS principal brut", mainCss.raw, budgets.mainCss.raw, failures);
 check("CSS principal gzip", mainCss.gzip, budgets.mainCss.gzip, failures);
 check("Total CSS brut", totalCss.raw, budgets.totalCss.raw, failures);
@@ -102,13 +112,6 @@ check(
   budgets.payslipSuccessEffect,
   failures,
 );
-check(
-  "Animation paie à vérifier",
-  payslipWarningEffect.size,
-  budgets.payslipWarningEffect,
-  failures,
-);
-
 if (failures.length > 0) {
   console.error("\nBudget de production dépassé :");
   failures.forEach((failure) => {

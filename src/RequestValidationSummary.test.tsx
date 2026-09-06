@@ -29,6 +29,7 @@ describe("résumé avant validation", () => {
         ]}
         requestKind="recovery"
         sickRequest={false}
+        recoveryBalanceRemaining={495}
       />,
     );
 
@@ -38,6 +39,22 @@ describe("résumé avant validation", () => {
     expect(html).toContain("09:00");
     expect(html).toContain("11:00");
     expect(html).toContain("Déduit du solde d’heures de récupération");
+    expect(html).toContain("2 h déduites");
+    expect(html).toContain("8 h 15 → 6 h 15");
+  });
+
+  it("montre le décompte et le solde avant de poursuivre", () => {
+    const html = renderToStaticMarkup(
+      <RequestValidationSummary
+        items={[{ date: "2026-08-11", type: "annual" }]}
+        requestKind="leave"
+        sickRequest={false}
+        group={2}
+        leaveRemaining={{ annual: 5 }}
+      />,
+    );
+    expect(html).toContain("1 date sélectionnée");
+    expect(html).toContain("Solde CA");
   });
 
   it("explique que Divers ne modifie ni la paie ni les soldes", () => {

@@ -5,7 +5,7 @@ import type {
   TouchEvent,
 } from "react";
 import type { Entries, RequestKind, SelectedDay, ViewMode } from "./appModel";
-import { trainingRecoveryTimes, type WorkQuota } from "./overtime";
+import { trainingRecoveryTimes, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
 import {
   dateKey,
   fromKey,
@@ -88,6 +88,7 @@ type PlanningInteractionActionsOptions = {
   setView: Dispatch<SetStateAction<Date>>;
   mode: ViewMode;
   workQuota: WorkQuota;
+  workSchedule: WorkSchedule;
   calendarDeleteMode: boolean;
   setCalendarDeleteMode: Dispatch<SetStateAction<boolean>>;
   setCalendarDeleteDates: Dispatch<SetStateAction<string[]>>;
@@ -108,6 +109,7 @@ export function usePlanningInteractionActions({
   setView,
   mode,
   workQuota,
+  workSchedule,
   calendarDeleteMode,
   setCalendarDeleteMode,
   setCalendarDeleteDates,
@@ -340,11 +342,15 @@ export function usePlanningInteractionActions({
       return;
     }
     if (activeType === "recovery_training") {
-      const times = trainingRecoveryTimes(workQuota);
-      setSelections((current) => ({
-        ...current,
-        [key]: { date: key, type: activeType, ...times },
-      }));
+      const existing = selections[key];
+      const times = existing?.start === "13:00"
+        ? trainingRecoveryTimes(workQuota, "afternoon", 180)
+        : existing?.end === "13:00"
+          ? trainingRecoveryTimes(workQuota, "morning", 180)
+          : trainingRecoveryTimes(workQuota);
+      setTimeStart(times.start);
+      setTimeEnd(times.end);
+      setTimeDate(key);
       return;
     }
     if (
@@ -354,8 +360,9 @@ export function usePlanningInteractionActions({
       activeType === "recovery_holiday"
     ) {
       const existing = selections[key];
-      setTimeStart(existing?.start || "09:15");
-      setTimeEnd(existing?.end || "13:00");
+      const usualTimes = workScheduleHalfTimes(workSchedule, "morning");
+      setTimeStart(existing?.start || usualTimes.start);
+      setTimeEnd(existing?.end || usualTimes.end);
       setTimeDate(key);
       return;
     }

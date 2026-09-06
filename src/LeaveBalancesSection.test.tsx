@@ -14,6 +14,8 @@ describe("soldes de congés", () => {
             allowance: 29,
             manualUsed: 1,
             used: 4,
+            taken: 2,
+            upcoming: 2,
             remaining: 25,
             details: [],
           },
@@ -22,6 +24,8 @@ describe("soldes de congés", () => {
             allowance: 5,
             manualUsed: 0,
             used: 0,
+            taken: 0,
+            upcoming: 0,
             remaining: 5,
             details: [],
           },
@@ -30,6 +34,8 @@ describe("soldes de congés", () => {
             allowance: 1,
             manualUsed: 0,
             used: 0,
+            taken: 0,
+            upcoming: 0,
             remaining: 1,
             details: [],
           },
@@ -53,6 +59,7 @@ describe("soldes de congés", () => {
     expect(html).toContain("Mes soldes de congés");
     expect(html).toContain("31 jours restants");
     expect(html).toContain("dont 1 saisi sans date");
+    expect(html).toContain("2 déjà pris · 2 posés à venir");
     expect(html).toContain("2 dimanches");
     expect(html).toContain("Ajouter des jours et dimanches déjà posés, sans préciser les dates");
     expect(html).toContain("Maladie");

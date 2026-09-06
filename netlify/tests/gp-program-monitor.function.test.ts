@@ -10,6 +10,7 @@ vi.mock("@netlify/blobs", () => ({ getStore: vi.fn(() => store) }));
 vi.mock("../lib/grandPalaisMonitor.mts", () => ({
   collectGrandPalaisEvents: vi.fn(),
   detectGrandPalaisChanges: vi.fn(),
+  isGrandPalaisProposalRelevant: vi.fn(() => true),
   sendGrandPalaisAlertEmail: vi.fn(),
 }));
 

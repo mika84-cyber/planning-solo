@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { CalendarCleanupPanel } from "./CalendarCleanup";
 import { ChoicePicker } from "./ChoicePicker";
 import { dayCountLabel, type ViewMode } from "./appModel";
@@ -13,8 +13,14 @@ import {
   s,
   type LeaveType,
   type MultiDatePerson,
+  type SchoolZone,
 } from "./planningLogic";
 import type { RecoveryDraft } from "./useWorkTimeUiState";
+import { defaultRecoveryMinutes, minutesLabel, type WorkQuota } from "./overtime";
+
+const SchoolVacationSettings = lazy(() =>
+  import("./SchoolVacationUi").then(({ SchoolVacationSettings: Component }) => ({ default: Component })),
+);
 
 type WorkedDaySummary = {
   worked: number;
@@ -40,6 +46,7 @@ type PlanningCommandCenterProps = {
   view: Date;
   setView: (view: Date) => void;
   group: number;
+  workQuota?: WorkQuota;
   onGroupChange: (group: number) => void;
   workedDays: WorkedDaysData;
   totals: { work: number; training: number; workedHoliday: number };
@@ -64,6 +71,11 @@ type PlanningCommandCenterProps = {
   onDeleteAbsences: () => void;
   onDeleteNotes: () => void;
   onToday: () => void;
+  onExportPdf?: () => void;
+  showSchoolVacations: boolean;
+  schoolZone: SchoolZone;
+  onShowSchoolVacationsChange: (visible: boolean) => void;
+  onSchoolZoneChange: (zone: SchoolZone) => void;
 };
 
 function closureDetail(count: number) {
@@ -86,6 +98,7 @@ export function PlanningCommandCenter({
   view,
   setView,
   group,
+  workQuota = "full",
   onGroupChange,
   workedDays,
   totals,
@@ -110,6 +123,11 @@ export function PlanningCommandCenter({
   onDeleteAbsences,
   onDeleteNotes,
   onToday,
+  onExportPdf,
+  showSchoolVacations,
+  schoolZone,
+  onShowSchoolVacationsChange,
+  onSchoolZoneChange,
 }: PlanningCommandCenterProps) {
   const [workedDaysOpen, setWorkedDaysOpen] = useState(false);
   const workedDaysRef = useRef<HTMLDivElement | null>(null);
@@ -140,6 +158,7 @@ export function PlanningCommandCenter({
               <span className="step-label">Calendrier</span>
               <h2 id="home-planning-title">Mon planning</h2>
             </div>
+            {onExportPdf ? <button type="button" className="soft-detail-button planning-export-pdf" onClick={onExportPdf}>Exporter en PDF</button> : null}
           </div>
         </section>
       ) : null}
@@ -165,7 +184,7 @@ export function PlanningCommandCenter({
               </div>
             </div>
           </div>
-          <div className="year-choice planning-today-choice" role="group" aria-label="Accès rapide au mois actuel">
+          <div className="year-choice planning-today-choice" role="group" aria-label="Accès rapide au mois actuel" style={{ textAlign: "center" }}>
             <span className="year-choice-label">Navigation</span>
             <button className="planning-today-button" type="button" onClick={onToday}>
               Aujourd’hui
@@ -251,24 +270,23 @@ export function PlanningCommandCenter({
             <fieldset className="overtime-choice-field recovery-range-duration recovery-duration-field">
               <legend>Heures à poser pour chaque date</legend>
               <div className="recovery-duration-choice">
-                {(recoveryDraft.kind === "training"
-                  ? ([[180, "3 h"], [360, "6 h"]] as const)
-                  : ({
-                      day: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [null, "Durée libre"]],
-                      half: [[240, "4 h"], [120, "2 h"], [null, "Durée libre"]],
-                      hours: [[480, "8 h"], [360, "6 h"], [240, "4 h"], [120, "2 h"]],
-                      holiday: [[480, "8 h"], [240, "4 h"], [null, "Durée libre"]],
-                    } as const)[recoveryDraft.kind]
-                ).map(([value, label]) => (
+                {recoveryDraft.kind === "training" ? (
+                  ([
+                    ...(workQuota === "half" ? [] : [["morning", 360, "Journée · 6 h · 10 h–16 h"]] as const),
+                    ["morning", 180, "Matin · 3 h · 10 h–13 h"],
+                    ["afternoon", 180, "Après-midi · 3 h · 13 h–16 h"],
+                  ] as const).map(([value, minutes, label]) => (
+                    <button key={`${value}-${minutes}`} type="button" className={(recoveryDraft.trainingMoment || "morning") === value && recoveryDraft.trainingMinutes === minutes ? "active" : ""} onClick={() => setRecoveryDraft((current) => ({ ...current, trainingMoment: value, trainingMinutes: minutes }))}>{label}</button>
+                  ))
+                ) : ((recoveryDraft.kind === "hours"
+                  ? [[480, "8 h"], [360, "6 h"], [240, "4 h"], [225, "3 h 45"], [120, "2 h"]] as const
+                  : [[defaultRecoveryMinutes(recoveryDraft.kind, workQuota), minutesLabel(defaultRecoveryMinutes(recoveryDraft.kind, workQuota))], ...(recoveryDraft.kind === "holiday" ? [] : [[null, "Durée libre"]] as const)]
+                ) as ReadonlyArray<readonly [number | null, string]>).map(([value, label]) => (
                   <button
                     key={value ?? "custom"}
                     type="button"
-                    className={(recoveryDraft.kind === "training"
-                      ? recoveryDraft.trainingMinutes === value
-                      : recoveryDraft.durationMinutes === value) ? "active" : ""}
-                    onClick={() => recoveryDraft.kind === "training"
-                      ? setRecoveryDraft((current) => ({ ...current, trainingMinutes: value as 180 | 360 }))
-                      : setRecoveryDraft((current) => ({ ...current, durationMinutes: value }))}
+                    className={recoveryDraft.durationMinutes === value ? "active" : ""}
+                    onClick={() => setRecoveryDraft((current) => ({ ...current, durationMinutes: recoveryDraft.kind === "holiday" ? defaultRecoveryMinutes("holiday", workQuota) : value }))}
                   >
                     {label}
                   </button>
@@ -384,6 +402,16 @@ export function PlanningCommandCenter({
           <button className="today-button" type="button" onClick={onToday}>Aujourd’hui</button>
         ) : null}
       </section>
+      {mode === "month" ? (
+        <Suspense fallback={null}>
+          <SchoolVacationSettings
+            visible={showSchoolVacations}
+            zone={schoolZone}
+            onVisibleChange={onShowSchoolVacationsChange}
+            onZoneChange={onSchoolZoneChange}
+          />
+        </Suspense>
+      ) : null}
     </section>
   );
 }

@@ -1,5 +1,5 @@
-import { holidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
-import { json, listBlobs, validId, type CalendarEntry, type FormProfile, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
+import { storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
+import { json, listBlobs, validId, type CalendarEntry, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
 export async function handleDeleteOvertime(
   context: CalendarActionContext,
@@ -18,11 +18,10 @@ export async function handleDeleteOvertime(
     type: "json",
   })) as OvertimeEntry | null;
   if (target?.disposition === "recovery") {
-    const [overtimeList, recoveryList, calendarList, formProfile] = await Promise.all([
+    const [overtimeList, recoveryList, calendarList] = await Promise.all([
       listBlobs(store, overtimePrefix),
       listBlobs(store, recoveryUsePrefix),
       listBlobs(store, entryPrefix),
-      store.get(scopedKey("form-profile"), { type: "json" }) as Promise<FormProfile | null>,
     ]);
     const [overtimeValues, recoveryValues, calendarValues] = await Promise.all([
       Promise.all(
@@ -45,13 +44,9 @@ export async function handleDeleteOvertime(
       .filter((item): item is OvertimeEntry => Boolean(item))
       .filter((item) => item.disposition === "recovery")
       .reduce((total, item) => total + item.minutes, 0);
-    const earned = overtimeEarned + holidayRecoveryCreditMinutes(
-      calendarValues
-        .filter((item): item is CalendarEntry => Boolean(item))
-        .filter((item) => item.holiday_pay === "recovery")
-        .map((item) => item.date),
-      formProfile?.work_quota || "full",
-    );
+    const earned = overtimeEarned + storedHolidayRecoveryCreditMinutes(calendarValues
+      .filter((item): item is CalendarEntry => Boolean(item))
+      .filter((item) => item.holiday_pay === "recovery"));
     const used = recoveryValues
       .filter((item): item is RecoveryUse => Boolean(item))
       .reduce((total, item) => total + item.minutes, 0);

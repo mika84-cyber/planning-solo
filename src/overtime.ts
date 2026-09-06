@@ -1,4 +1,31 @@
 export type WorkQuota = "full" | "three_quarters" | "half";
+export type WorkSchedule = {
+  start: string;
+  end: string;
+};
+
+export const DEFAULT_WORK_SCHEDULE: WorkSchedule = {
+  start: "09:15",
+  end: "17:30",
+};
+
+export function workScheduleHalfTimes(
+  schedule: WorkSchedule,
+  moment: "morning" | "afternoon",
+) {
+  const toMinutes = (value: string) => {
+    const [hours, minutes] = value.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+  const fromMinutes = (value: number) =>
+    `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+  const start = toMinutes(schedule.start);
+  const end = toMinutes(schedule.end);
+  const midpoint = Math.round(((start + end) / 2) / 15) * 15;
+  return moment === "morning"
+    ? { start: schedule.start, end: fromMinutes(midpoint) }
+    : { start: fromMinutes(midpoint), end: schedule.end };
+}
 export type OvertimeDisposition = "paid" | "recovery";
 export type OvertimeInputMode = "range" | "duration";
 export type OvertimePeriod = "day" | "night";
@@ -39,7 +66,7 @@ export const WORK_QUOTA_OPTIONS: Array<{
 }> = [
   { value: "full", label: "Temps plein", dailyMinutes: 8 * 60 },
   { value: "three_quarters", label: "Trois-quarts temps", dailyMinutes: 6 * 60 },
-  { value: "half", label: "Mi-temps", dailyMinutes: 4 * 60 },
+  { value: "half", label: "Mi-temps", dailyMinutes: 3 * 60 + 45 },
 ];
 
 export function dailyMinutesForQuota(quota: WorkQuota) {
@@ -55,32 +82,51 @@ export function trainingRecoveryMinutes(quota: WorkQuota): 180 | 360 {
   return quota === "half" ? 180 : 360;
 }
 
-export function trainingRecoveryTimes(quota: WorkQuota) {
-  return {
-    start: "09:00",
-    end: quota === "half" ? "12:00" : "15:00",
-  };
+export function trainingRecoveryTimes(
+  quota: WorkQuota,
+  moment: "morning" | "afternoon" = "morning",
+  durationMinutes: 180 | 360 = trainingRecoveryMinutes(quota),
+) {
+  if (quota !== "half" && durationMinutes === 360) return { start: "10:00", end: "16:00" };
+  return moment === "afternoon"
+    ? { start: "13:00", end: "16:00" }
+    : { start: "10:00", end: "13:00" };
 }
 
-/** Crédit attaché au choix « prime + récupération » d'un jour férié.
+/** Crédit attaché au choix « prime + récupération » d'un jour férié :
+ * 8 h 15 à temps plein, 6 h 15 à trois-quarts temps et 3 h 45 à mi-temps.
  * Les dates sont dédupliquées : une resynchronisation du même jour ne peut
  * jamais créditer le solde une seconde fois. */
+export function holidayRecoveryMinutesForQuota(quota: WorkQuota) {
+  if (quota === "full") return 8 * 60 + 15;
+  if (quota === "three_quarters") return 6 * 60 + 15;
+  return 3 * 60 + 45;
+}
+
 export function holidayRecoveryCreditMinutes(
   dates: string[],
   quota: WorkQuota,
 ) {
   return new Set(dates.filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date))).size *
-    dailyMinutesForQuota(quota);
+    holidayRecoveryMinutesForQuota(quota);
 }
 
 export function holidayRecoveryEntries(
-  dates: string[],
-  quota: WorkQuota,
+  sources: Array<string | { date: string; minutes?: number }>,
+  quota?: WorkQuota,
 ): OvertimeEntry[] {
-  const minutes = dailyMinutesForQuota(quota);
-  return [...new Set(dates.filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)))]
-    .sort()
-    .map((date) => ({
+  const byDate = new Map<string, number>();
+  for (const source of sources) {
+    const date = typeof source === "string" ? source : source.date;
+    const minutes = typeof source === "string"
+      ? quota ? holidayRecoveryMinutesForQuota(quota) : undefined
+      : source.minutes;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isInteger(minutes) && (minutes as number) > 0)
+      byDate.set(date, minutes as number);
+  }
+  return [...byDate]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, minutes]) => ({
       id: `holiday-recovery-${date}`,
       date,
       minutes,
@@ -89,7 +135,19 @@ export function holidayRecoveryEntries(
       disposition: "recovery",
       inputMode: "duration",
       updatedAt: date,
-    }));
+  }));
+}
+
+/** Additionne uniquement les crédits dont la durée acquise est enregistrée.
+ * Les anciens choix sans durée restent volontairement à reprendre : leur
+ * quotité historique ne peut pas être déduite de la quotité actuelle. */
+export function storedHolidayRecoveryCreditMinutes(
+  entries: Array<{ holiday_recovery_minutes?: number }>,
+) {
+  return entries.reduce((total, entry) =>
+    total + (Number.isInteger(entry.holiday_recovery_minutes) && (entry.holiday_recovery_minutes as number) > 0
+      ? entry.holiday_recovery_minutes as number
+      : 0), 0);
 }
 
 export function minutesLabel(minutes: number) {
@@ -142,11 +200,14 @@ export function recoveryRequestMinutes(
   const dailyMinutes = dailyMinutesForQuota(quota);
   if (type === "recovery_training") {
     const selected = splitOvertimeRange(start, end)?.minutes ?? 0;
-    return selected === 3 * 60 || selected === 6 * 60 ? selected : 0;
+    if ((start === "10:00" && end === "13:00") || (start === "13:00" && end === "16:00"))
+      return 3 * 60;
+    if (quota === "half") return 0;
+    return start === "10:00" && end === "16:00" && selected === 6 * 60 ? selected : 0;
   }
-  if (type === "recovery_day" || type === "recovery_holiday")
-    return dailyMinutes;
-  if (type === "recovery_half") return dailyMinutes / 2;
+  if (type === "recovery_holiday") return holidayRecoveryMinutesForQuota(quota);
+  if (type === "recovery_day") return dailyMinutes;
+  if (type === "recovery_half") return quota === "half" ? dailyMinutes : dailyMinutes / 2;
   return splitOvertimeRange(start, end)?.minutes ?? 0;
 }
 
@@ -232,6 +293,17 @@ function shiftedDateKey(date: string, dayOffset: number) {
     Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + dayOffset),
   );
   return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}-${String(shifted.getUTCDate()).padStart(2, "0")}`;
+}
+
+export function defaultRecoveryMinutes(
+  kind: "hours" | "half" | "day" | "holiday" | "training",
+  quota: WorkQuota,
+) {
+  if (kind === "holiday") return holidayRecoveryMinutesForQuota(quota);
+  if (kind === "day") return dailyMinutesForQuota(quota);
+  if (kind === "half") return quota === "half" ? dailyMinutesForQuota(quota) : dailyMinutesForQuota(quota) / 2;
+  if (kind === "training") return trainingRecoveryMinutes(quota);
+  return dailyMinutesForQuota(quota);
 }
 
 /** Classe une plage selon la date réellement parcourue. La nuit conserve son

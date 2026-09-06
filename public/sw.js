@@ -57,3 +57,45 @@ self.addEventListener("fetch", (event) => {
     ),
   );
 });
+
+self.addEventListener("push", (event) => {
+  let payload = {
+    title: "Rappel Planning Solo",
+    body: "Vous avez une note prévue demain.",
+    url: "/",
+    tag: "planning-note-reminder",
+  };
+  try {
+    if (event.data) payload = { ...payload, ...event.data.json() };
+  } catch {}
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/planning-icon-v3-192.png",
+      badge: "/planning-icon-v3-48.png",
+      tag: payload.tag,
+      renotify: true,
+      data: { url: payload.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(
+    event.notification.data?.url || "/",
+    self.location.origin,
+  ).href;
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        const existing = clients.find(
+          (client) => new URL(client.url).origin === self.location.origin,
+        );
+        if (existing)
+          return existing.navigate(target).then(() => existing.focus());
+        return self.clients.openWindow(target);
+      }),
+  );
+});

@@ -19,8 +19,20 @@ describe("parseCalendarSnapshot", () => {
         full_name: "Agent",
         group: "2",
         signature: "A",
+        work_schedule: { start: "09:15", end: "17:30" },
         base_salary_cents: 250_000,
         pay_profiles: { 2026: { cia_cents: 12_000, cia_month: 7 } },
+      },
+      shared_calendar: {
+        status: "connected",
+        entries: [{
+          date: "2026-09-06",
+          note_text: "Déjeuner avec Agnès",
+          note_color: "#7358d8",
+          note_author: "agnes",
+          agnes_leave: true,
+        }],
+        periods: [{ id: "agnes-1", person: "agnes", from: "2026-09-10", to: "2026-09-12" }],
       },
     });
 
@@ -35,10 +47,18 @@ describe("parseCalendarSnapshot", () => {
     });
     expect(snapshot.periods[0]).toMatchObject({ leaveType: "annual", updatedAt: "u" });
     expect(snapshot.formProfile?.baseSalary).toBe(2500);
+    expect(snapshot.formProfile?.workSchedule).toEqual({ start: "09:15", end: "17:30" });
     expect(snapshot.payProfiles["2026"]).toMatchObject({ cia: 120, ciaMonth: 7 });
     expect(snapshot.overtimeEntries[0].disposition).toBe("paid");
     expect(snapshot.recoveryUses[0].kind).toBe("training");
     expect(snapshot.mecenatEntries[0].grossAmountCents).toBe(7500);
+    expect(snapshot.partnerSharingStatus).toBe("connected");
+    expect(snapshot.partnerEntries["2026-09-06"]).toMatchObject({
+      noteText: "Déjeuner avec Agnès",
+      noteAuthor: "agnes",
+      agnesLeave: true,
+    });
+    expect(snapshot.partnerPeriods).toEqual([{ id: "agnes-1", person: "agnes", from: "2026-09-10", to: "2026-09-12" }]);
   });
 
   it("écarte les lignes mal formées et applique des valeurs sûres", () => {
@@ -54,5 +74,8 @@ describe("parseCalendarSnapshot", () => {
     expect(snapshot.periods).toEqual([]);
     expect(snapshot.overtimeEntries).toEqual([]);
     expect(snapshot.formProfile).toBeNull();
+    expect(snapshot.partnerEntries).toEqual({});
+    expect(snapshot.partnerPeriods).toEqual([]);
+    expect(snapshot.partnerSharingStatus).toBe("disabled");
   });
 });

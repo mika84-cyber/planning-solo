@@ -187,12 +187,12 @@
   gap: 12px;
   margin-bottom: 14px;
   border: 1px solid #c5d7eb;
-  border-radius: 20px;
+  border-radius: 26px;
   padding: 18px;
   background:
     radial-gradient(circle at 92% 8%, rgba(125, 165, 207, 0.13), transparent 34%),
     linear-gradient(135deg, #ffffff 0%, #edf4fb 100%);
-  box-shadow: 0 14px 34px rgba(49, 77, 111, 0.09);
+  box-shadow: 0 18px 42px rgba(78, 57, 38, 0.12);
 }
 .today-overview-heading,
 .section-intro {
@@ -244,12 +244,12 @@
   min-width: 0;
   min-height: 94px;
   border: 1px solid #d4e0ed;
-  border-radius: 15px;
+  border-radius: 18px;
   padding: 13px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 253, 249, 0.95);
   color: var(--text);
   text-align: left;
-  box-shadow: 0 5px 14px rgba(60, 82, 108, 0.06);
+  box-shadow: 0 8px 20px rgba(68, 52, 39, 0.08);
   transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 .today-overview-grid > button {
@@ -999,8 +999,8 @@
   background: #edf9f4;
 }
 .payslip-result-summary.warning {
-  border-color: #efca8f;
-  background: #fff8e9;
+  border-color: #df9c9c;
+  background: #fff4f4;
 }
 .payslip-result-icon {
   display: grid;
@@ -1017,7 +1017,7 @@
   background: #26815d;
 }
 .payslip-result-summary.warning .payslip-result-icon {
-  background: #d18a22;
+  background: #c64d4d;
 }
 .payslip-result-summary > div {
   display: grid;
@@ -1892,7 +1892,7 @@
 
 /* Ajustements de finition : liserés structurants, commandes compactes et
    calendrier mobile organisé comme un écran d'application. */
-:root { --section-outline: rgba(17, 21, 26, 0.78); }
+:root { --section-outline: rgba(92, 72, 55, 0.5); }
 
 .today-overview,
 .home-notes-section,
@@ -2007,16 +2007,19 @@
   color: #123b55;
   outline-color: #000;
 }
+
 .leave-calendar-marker {
   position: absolute;
   z-index: 4;
   right: 5px;
-  bottom: 4px;
-  max-width: calc(100% - 10px);
+  bottom: 5px;
+  max-width: calc(100% - 12px);
   color: #123b55;
   font-size: 10px;
   font-weight: 950;
   line-height: 1;
+  text-align: right;
+  white-space: nowrap;
   pointer-events: none;
 }
 .leave-calendar-marker-childcare { font-size: 14px; }
@@ -2142,11 +2145,12 @@
 }
 .account-menu-data {
   width: 100%;
-  margin-top: 5px;
-  border: 0;
-  border-radius: 9px;
-  padding: 10px;
-  background: transparent;
+  min-height: 42px;
+  margin-top: 7px;
+  border: 1px solid #d4dfeb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.76);
   color: #35465f;
   font-size: 12px;
   font-weight: 800;
@@ -2154,8 +2158,8 @@
   cursor: pointer;
 }
 .account-menu-data:hover {
-  background: #f4f7fb;
-}
+  background: #eef5fc;
+}.account-update-action{border-color:#84a8cf;background:linear-gradient(135deg,#e6f1ff,#f7fbff);color:#185b98}.account-update-action::before{margin-right:7px;content:"↻";font-size:16px;vertical-align:-1px}.account-update-action:disabled{cursor:wait;opacity:.68}
 .overtime-balance-card {
   display: grid;
   gap: 14px;
@@ -2187,51 +2191,20 @@
   color: #2c6a5e;
   font-size: 14px;
 }
-.overtime-balance-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.overtime-balance-summary article {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  border: 1px solid #e0e9e7;
-  border-radius: 13px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.84);
-}
-.overtime-balance-summary article.remaining {
-  border-color: #bbd7d0;
-  background: #eaf5f1;
-}
-.overtime-balance-summary span {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 750;
-}
-.overtime-balance-summary strong {
-  color: #213d3a;
-  font-size: 20px;
-}
-.overtime-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.overtime-actions .secondary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.overtime-history-toggle {
-  justify-self: start;
-}
-.overtime-history {
-  display: grid;
-  gap: 7px;
-  border-top: 1px solid #dce7e4;
-  padding-top: 12px;
-}
+.overtime-balance-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.overtime-balance-summary-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.overtime-balance-summary article small { color: var(--muted); font-size: 10px; }
+.overtime-balance-summary article { display: grid; gap: 4px; min-width: 0; border: 1px solid #e0e9e7; border-radius: 13px; padding: 12px; background: rgba(255,255,255,.84); }
+.overtime-balance-summary article.remaining { border-color: #bbd7d0; background: #eaf5f1; }
+.overtime-balance-summary span { color: var(--muted); font-size: 11px; font-weight: 750; }
+.overtime-balance-summary strong { color: #213d3a; font-size: 20px; }
+.overtime-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.overtime-actions .secondary-button:disabled { opacity: .5; cursor: not-allowed; }
+.overtime-history-toggle { justify-self: start; }
+.overtime-history { display: grid; gap: 7px; border-top: 1px solid #dce7e4; padding-top: 12px; }
+.overtime-history-filters { display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px 4px; scrollbar-width: none; }
+.overtime-history-filters button { flex: 0 0 auto; border: 1px solid #c9d8e5; border-radius: 999px; padding: 7px 10px; background: #fff; color: #315575; font-size: 11px; font-weight: 800; }
+.overtime-history-filters button.active { border-color: #286fae; background: #eaf3fc; color: #14558f; }
 .overtime-history article {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;

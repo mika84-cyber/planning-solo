@@ -1,14 +1,6 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { euros } from "./appModel";
 import { MONTHS } from "./planningLogic";
-
-export type PayDashboardAlert = {
-  id: string;
-  title: string;
-  detail: string;
-  actionLabel: string;
-  onAction: () => void;
-};
 
 export type PayDashboardVariable = {
   key: string;
@@ -29,8 +21,8 @@ type PayDashboardProps = {
     label: string;
     detail: string;
   };
-  alerts: PayDashboardAlert[];
   variables: PayDashboardVariable[];
+  profileContent: ReactNode;
   verificationContent: ReactNode;
   settingsContent: ReactNode;
   settingsOpen: boolean;
@@ -50,8 +42,8 @@ export function PayDashboard({
   net,
   profileLabel,
   reliability,
-  alerts,
   variables,
+  profileContent,
   verificationContent,
   settingsContent,
   settingsOpen,
@@ -62,16 +54,13 @@ export function PayDashboard({
   onOpenAllowances,
   onToggleSettings,
 }: PayDashboardProps) {
-  const [showAllAlerts, setShowAllAlerts] = useState(false);
-  const visibleAlerts = showAllAlerts ? alerts : alerts.slice(0, 3);
-  const hiddenAlertCount = Math.max(0, alerts.length - 3);
-
+  const monthLabel = MONTHS[month].charAt(0).toUpperCase() + MONTHS[month].slice(1);
   return (
     <div className="pay-dashboard">
-      <header className="pay-dashboard-month" aria-labelledby="pay-dashboard-title">
+      <header className="pay-dashboard-month">
         <div>
           <span className="step-label">Ma paie</span>
-          <h2 id="pay-dashboard-title">{MONTHS[month]} {year}</h2>
+          <h2 id="pay-dashboard-title">{monthLabel} {year}</h2>
         </div>
         <div className="pay-dashboard-month-actions" role="group" aria-label="Choisir le mois de paie">
           <button type="button" className="pay-nav-arrow" onClick={onPreviousMonth} aria-label="Mois précédent">
@@ -111,52 +100,6 @@ export function PayDashboard({
           </button>
         </section>
 
-        <section className={`pay-dashboard-checks${alerts.length ? "" : " all-clear"}`} aria-labelledby="pay-dashboard-checks-title">
-          <div className="pay-dashboard-card-heading">
-            <div>
-              <span className="step-label">Actions utiles</span>
-              <h3 id="pay-dashboard-checks-title">À vérifier</h3>
-            </div>
-            {alerts.length ? (
-              <span
-                className="pay-dashboard-count"
-                aria-label={`${alerts.length} action${alerts.length > 1 ? "s" : ""} à effectuer`}
-              >
-                {alerts.length} action{alerts.length > 1 ? "s" : ""}
-              </span>
-            ) : null}
-          </div>
-          {alerts.length ? (
-            <div className="pay-dashboard-alert-list">
-              {visibleAlerts.map((alert) => (
-                <article key={alert.id} className="pay-dashboard-alert">
-                  <span className="pay-dashboard-alert-symbol" aria-hidden="true">!</span>
-                  <div>
-                    <strong>{alert.title}</strong>
-                    <small>{alert.detail}</small>
-                  </div>
-                  <button type="button" className="secondary-button pay-dashboard-alert-action" onClick={alert.onAction}>
-                    {alert.actionLabel}<span aria-hidden="true">→</span>
-                  </button>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="pay-dashboard-all-clear" role="status">
-              <span aria-hidden="true">✓</span> <strong>Tout est à jour</strong>
-            </p>
-          )}
-          {hiddenAlertCount ? (
-            <button
-              type="button"
-              className="text-button pay-dashboard-all-checks"
-              onClick={() => setShowAllAlerts((current) => !current)}
-              aria-expanded={showAllAlerts}
-            >
-              {showAllAlerts ? "Afficher moins" : `Voir toutes les vérifications (${alerts.length})`}
-            </button>
-          ) : null}
-        </section>
       </div>
 
       <section className="pay-dashboard-variables" aria-labelledby="pay-dashboard-variables-title">
@@ -165,7 +108,7 @@ export function PayDashboard({
             <span className="step-label">Éléments variables</span>
             <h3 id="pay-dashboard-variables-title">Prévus sur cette paie</h3>
           </div>
-          <button type="button" className="text-button" onClick={onOpenAllowances}>Voir les primes et jours fériés</button>
+          <button type="button" className="text-button pay-inline-action" onClick={onOpenAllowances}>Primes et jours fériés <span aria-hidden="true">→</span></button>
         </div>
         {variables.length ? (
           <div className="pay-dashboard-variable-list">
@@ -191,6 +134,8 @@ export function PayDashboard({
         </div>
         {verificationContent}
       </section>
+
+      <div className="pay-dashboard-profile-slot">{profileContent}</div>
 
       <section id="pay-dashboard-settings" className={`pay-dashboard-settings${settingsOpen ? " open" : ""}`}>
         <button

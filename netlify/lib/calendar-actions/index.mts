@@ -16,6 +16,7 @@ import { handleDeletePeriod } from "./delete-period.mts";
 import { handleClearLegacyPeriod } from "./clear-legacy-period.mts";
 import { handleSaveNotePeriod } from "./save-note-period.mts";
 import { handleDeleteNotePeriod } from "./delete-note-period.mts";
+import { handleDeleteSharedPartnerNote } from "./delete-shared-partner-note.mts";
 import { handleSaveLeaves } from "./save-leaves.mts";
 import { handleSaveEntry } from "./save-entry.mts";
 import { handleDeleteExchange, handleSaveExchange } from "./work-exchange.mts";
@@ -43,6 +44,7 @@ const actionHandlers: Record<string, CalendarActionHandler> = {
   "clear-legacy-period": handleClearLegacyPeriod,
   "save-note-period": handleSaveNotePeriod,
   "delete-note-period": handleDeleteNotePeriod,
+  "delete-shared-partner-note": handleDeleteSharedPartnerNote,
   "save-leaves": handleSaveLeaves,
   "save-entry": handleSaveEntry,
   "save-exchange": handleSaveExchange,

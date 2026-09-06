@@ -1,15 +1,31 @@
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES, type MecenatEntry } from "./mecenat";
 import { minutesLabel, nextPayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, fromKey, longDate, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
+import "./leaveCollapsibles.css";
+
+export type WorkTimeHistoryFilter = "all" | "gains" | "uses" | "paid";
+
+export function workTimeHistoryItems(
+  overtimeEntries: OvertimeEntry[],
+  holidayRecoveryEarnings: OvertimeEntry[],
+  recoveryUses: RecoveryUse[],
+) {
+  return [
+    ...overtimeEntries.map((entry) => ({ date: entry.date, kind: entry.disposition === "paid" ? "paid" as const : "gain" as const, entry })),
+    ...holidayRecoveryEarnings.map((entry) => ({ date: entry.date, kind: "holiday" as const, entry })),
+    ...recoveryUses.map((entry) => ({ date: entry.date, kind: "use" as const, entry })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+}
 
 type LeaveManagementPageProps = {
   balancesContent: ReactNode;
   cetContent: ReactNode;
   recoveryBalance: { earned: number; used: number; remaining: number };
   recoveryEarningsCount: number;
+  unresolvedHolidayRecoveryCount: number;
   overtimeEntries: OvertimeEntry[];
   holidayRecoveryEarnings: OvertimeEntry[];
   recoveryUses: RecoveryUse[];
@@ -39,6 +55,7 @@ export function LeaveManagementPage({
   cetContent,
   recoveryBalance,
   recoveryEarningsCount,
+  unresolvedHolidayRecoveryCount,
   overtimeEntries,
   holidayRecoveryEarnings,
   recoveryUses,
@@ -62,6 +79,23 @@ export function LeaveManagementPage({
   onOpenArchivedRequest,
   onDeleteArchivedRequest,
 }: LeaveManagementPageProps) {
+  const [historyFilter, setHistoryFilter] = useState<WorkTimeHistoryFilter>("all");
+  const historyItems = useMemo(
+    () => workTimeHistoryItems(overtimeEntries, holidayRecoveryEarnings, recoveryUses),
+    [overtimeEntries, holidayRecoveryEarnings, recoveryUses],
+  );
+  const filteredHistory = historyItems.filter((item) => historyFilter === "all"
+    || (historyFilter === "gains" && (item.kind === "gain" || item.kind === "holiday"))
+    || (historyFilter === "uses" && item.kind === "use")
+    || (historyFilter === "paid" && item.kind === "paid"));
+  const paidPeriods = overtimeEntries
+    .filter((entry) => entry.disposition === "paid")
+    .map((entry) => ({ ...nextPayPeriod(entry.date), minutes: entry.minutes }));
+  const currentPayKey = new Date().getFullYear() * 12 + new Date().getMonth();
+  const nextPaidPeriod = paidPeriods.filter((period) => period.year * 12 + period.month >= currentPayKey).sort((a, b) => a.year - b.year || a.month - b.month)[0];
+  const nextPaidMinutes = nextPaidPeriod
+    ? paidPeriods.filter((period) => period.year === nextPaidPeriod.year && period.month === nextPaidPeriod.month).reduce((sum, period) => sum + period.minutes, 0)
+    : 0;
   return (
     <>
       <section className="section-intro leave-intro">
@@ -75,38 +109,62 @@ export function LeaveManagementPage({
       {balancesContent}
       <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET">
         <div className="leave-secondary-grid">
+          <details className="leave-tool-disclosure">
+            <summary><span><small>Temps de travail</small><strong>Heures supplémentaires et récupérations</strong></span><b>{minutesLabel(recoveryBalance.remaining)}</b><i aria-hidden="true" /></summary>
           <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
             <div className="overtime-balance-heading">
               <div>
-                <span className="step-label">Récupérations en heures</span>
-                <h3 id="overtime-balance-title">Mes heures supplémentaires</h3>
-                <p>Les heures à récupérer restent séparées de vos congés en jours.</p>
+                <h3 id="overtime-balance-title">Heures supplémentaires et récupérations</h3>
+                <p>Les heures disponibles et celles prévues sur votre prochaine paie.</p>
               </div>
               <strong>{minutesLabel(recoveryBalance.remaining)} disponibles</strong>
             </div>
-            <div className="overtime-balance-summary">
-              <article><span>Gagnées</span><strong>{minutesLabel(recoveryBalance.earned)}</strong></article>
-              <article><span>Utilisées</span><strong>{minutesLabel(recoveryBalance.used)}</strong></article>
-              <article className="remaining"><span>Restantes</span><strong>{minutesLabel(recoveryBalance.remaining)}</strong></article>
+            <div className="overtime-balance-summary overtime-balance-summary-primary">
+              <article className="remaining"><span>À récupérer</span><strong>{minutesLabel(recoveryBalance.remaining)}</strong><small>Solde disponible</small></article>
+              <article><span>À payer</span><strong>{minutesLabel(nextPaidMinutes)}</strong><small>{nextPaidPeriod ? `${MONTHS[nextPaidPeriod.month]} ${nextPaidPeriod.year}` : "Aucune heure prévue"}</small></article>
             </div>
             <div className="overtime-actions">
               <button type="button" className="primary-action" onClick={onOpenOvertime}>Déclarer des heures sup</button>
               <button type="button" className="secondary-button solidarity-hours-action" onClick={onOpenSolidarity}>Ajouter des heures manuellement</button>
             </div>
+            {unresolvedHolidayRecoveryCount ? (
+              <p className="allowance-note warn">{unresolvedHolidayRecoveryCount} ancien{unresolvedHolidayRecoveryCount > 1 ? "s" : ""} crédit{unresolvedHolidayRecoveryCount > 1 ? "s" : ""} de férié reste{unresolvedHolidayRecoveryCount > 1 ? "nt" : ""} à confirmer dans Ma paie &gt; Primes et jours fériés. Aucune durée n’est déduite de votre quotité actuelle.</p>
+            ) : null}
             <button type="button" className="soft-detail-button overtime-history-toggle" onClick={onToggleOvertimeHistory} aria-expanded={overtimeHistoryOpen}>
               {overtimeHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
             </button>
             {overtimeHistoryOpen ? (
               <div className="overtime-history">
+                <div className="overtime-history-filters" role="group" aria-label="Filtrer l’historique">
+                  {([["all", "Tout"], ["gains", "Gains"], ["uses", "Récupérations posées"], ["paid", "Heures à payer"]] as const).map(([value, label]) => (
+                    <button key={value} type="button" className={historyFilter === value ? "active" : ""} aria-pressed={historyFilter === value} onClick={() => setHistoryFilter(value)}>{label}</button>
+                  ))}
+                </div>
                 {!recoveryEarningsCount && !recoveryUses.length ? <p className="empty-state">Aucune heure supplémentaire enregistrée.</p> : null}
-                {[...overtimeEntries].sort((a, b) => b.date.localeCompare(a.date)).map((entry) => {
+                {!filteredHistory.length && historyItems.length ? <p className="empty-state">Aucun élément pour ce filtre.</p> : null}
+                {filteredHistory.map((item) => {
+                  if (item.kind === "use") {
+                    const entry = item.entry as RecoveryUse;
+                    return (
+                      <article key={entry.id} className="recovery-use-history">
+                        <span className="overtime-kind used" aria-hidden="true" />
+                        <div><strong>− {minutesLabel(entry.minutes)} · {entry.kind === "training" ? "Formation" : "Récupération consommée"}</strong><span>{longDate(fromKey(entry.date))}</span><small>{entry.kind === "training" ? "Formation déduite du solde" : "Récupération posée"}</small></div>
+                        <button type="button" onClick={() => onDeleteRecoveryUse(entry)}>Annuler</button>
+                      </article>
+                    );
+                  }
+                  const entry = item.entry as OvertimeEntry;
+                  if (item.kind === "holiday") {
+                    const state = recoveryEarningStates.get(entry.id);
+                    return <article key={entry.id} className="holiday-recovery-history"><span className="overtime-kind recovery" aria-hidden="true" /><div><strong>Férié · +{minutesLabel(entry.minutes)}</strong><span>{longDate(fromKey(entry.date))}</span><small>{state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} disponibles` : "Gain utilisé"}</small></div></article>;
+                  }
                   const payPeriod = nextPayPeriod(entry.date);
                   const state = recoveryEarningStates.get(entry.id);
                   return (
                     <article key={entry.id}>
                       <span className={`overtime-kind ${entry.disposition}`} aria-hidden="true" />
                       <div>
-                        <strong>{entry.id.startsWith("solidarity-") ? `Heures de solidarité · +${minutesLabel(entry.minutes)}` : `${minutesLabel(entry.minutes)} · ${entry.disposition === "paid" ? "À payer" : "À récupérer"}`}</strong>
+                        <strong>{entry.id.startsWith("solidarity-") ? `Ajout manuel · +${minutesLabel(entry.minutes)}` : `Heures sup · ${minutesLabel(entry.minutes)} · ${entry.disposition === "paid" ? "À payer" : "À récupérer"}`}</strong>
                         <span>{longDate(fromKey(entry.date))}</span>
                         <small>
                           {entry.id.startsWith("solidarity-")
@@ -120,33 +178,12 @@ export function LeaveManagementPage({
                     </article>
                   );
                 })}
-                {[...holidayRecoveryEarnings].sort((a, b) => b.date.localeCompare(a.date)).map((entry) => {
-                  const state = recoveryEarningStates.get(entry.id);
-                  return (
-                    <article key={entry.id} className="holiday-recovery-history">
-                      <span className="overtime-kind recovery" aria-hidden="true" />
-                      <div>
-                        <strong>Prime + récupération · +{minutesLabel(entry.minutes)}</strong>
-                        <span>{longDate(fromKey(entry.date))}</span>
-                        <small>Crédit automatique selon votre quotité{state?.remainingMinutes ? ` · ${minutesLabel(state.remainingMinutes)} disponibles` : " · gain utilisé"}</small>
-                      </div>
-                    </article>
-                  );
-                })}
-                {[...recoveryUses].sort((a, b) => b.date.localeCompare(a.date)).map((entry) => (
-                  <article key={entry.id} className="recovery-use-history">
-                    <span className="overtime-kind used" aria-hidden="true" />
-                    <div>
-                      <strong>− {minutesLabel(entry.minutes)} · {entry.kind === "training" ? "Formation" : "Récupération posée"}</strong>
-                      <span>{longDate(fromKey(entry.date))}</span>
-                      <small>{entry.kind === "training" ? "Formation déduite comme récupération en heures" : "Déduite du solde en heures"}</small>
-                    </div>
-                    <button type="button" onClick={() => onDeleteRecoveryUse(entry)}>Annuler</button>
-                  </article>
-                ))}
               </div>
             ) : null}
           </section>
+          </details>
+          <details className="leave-tool-disclosure">
+            <summary><span><small>Activités ponctuelles</small><strong>Mécénats</strong></span><b>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</b><i aria-hidden="true" /></summary>
           <section className="overtime-balance-card mecenat-balance-card" aria-labelledby="mecenat-history-title">
             <div className="overtime-balance-heading">
               <div>
@@ -181,8 +218,12 @@ export function LeaveManagementPage({
               </div>
             ) : null}
           </section>
+          </details>
         </div>
-        {cetContent}
+        <details className="leave-tool-disclosure cet-disclosure">
+          <summary><span><small>Compte épargne-temps</small><strong>Mon CET</strong></span><b>Consulter et gérer</b><i aria-hidden="true" /></summary>
+          {cetContent}
+        </details>
         {isProgramAdmin ? (
           <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
             <button className="request-archive-toggle" type="button" onClick={onToggleArchive} aria-expanded={archiveOpen}>

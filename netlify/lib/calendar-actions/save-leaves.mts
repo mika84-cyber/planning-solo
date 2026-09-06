@@ -32,6 +32,9 @@ export async function handleSaveLeaves(
     leave: body.leave === true,
     wish: body.wish === true,
     holiday_pay: holidayPayFrom(body, previous?.holiday_pay),
+    holiday_recovery_minutes: body.holidayPay === "recovery" && [495, 375, 390, 240, 225].includes(Number(body.holidayRecoveryMinutes))
+      ? Number(body.holidayRecoveryMinutes)
+      : body.holidayPay === undefined ? previous?.holiday_recovery_minutes : undefined,
     closure_override: previous?.closure_override,
     exchange_id: previous?.exchange_id,
     exchange_role: previous?.exchange_role,

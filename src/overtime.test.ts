@@ -5,14 +5,18 @@ import {
   allocateRecoveryUses,
   calculatePaidOvertime,
   dailyMinutesForQuota,
+  defaultRecoveryMinutes,
   holidayRecoveryCreditMinutes,
   holidayRecoveryEntries,
+  storedHolidayRecoveryCreditMinutes,
   monthlyRecoveryBalance,
   nextPayPeriod,
   overtimeFromDuration,
   recoveryRequestMinutes,
   splitOvertimeRange,
   splitOvertimeRangeByCalendar,
+  trainingRecoveryTimes,
+  workScheduleHalfTimes,
   type OvertimeEntry,
 } from "./overtime";
 
@@ -32,11 +36,35 @@ const entry = (
   updatedAt: "2026-09-10T12:00:00.000Z",
 });
 
+describe("horaires proposés", () => {
+  it("découpe l’horaire du profil sur un quart d’heure", () => {
+    expect(workScheduleHalfTimes({ start: "09:15", end: "17:30" }, "morning")).toEqual({ start: "09:15", end: "13:30" });
+    expect(workScheduleHalfTimes({ start: "09:15", end: "17:30" }, "afternoon")).toEqual({ start: "13:30", end: "17:30" });
+  });
+
+  it("applique les horaires propres aux formations", () => {
+    expect(trainingRecoveryTimes("full")).toEqual({ start: "10:00", end: "16:00" });
+    expect(trainingRecoveryTimes("three_quarters")).toEqual({ start: "10:00", end: "16:00" });
+    expect(trainingRecoveryTimes("full", "morning", 180)).toEqual({ start: "10:00", end: "13:00" });
+    expect(trainingRecoveryTimes("three_quarters", "afternoon", 180)).toEqual({ start: "13:00", end: "16:00" });
+    expect(trainingRecoveryTimes("half", "morning")).toEqual({ start: "10:00", end: "13:00" });
+    expect(trainingRecoveryTimes("half", "afternoon")).toEqual({ start: "13:00", end: "16:00" });
+  });
+});
+
+describe("durée présélectionnée des récupérations", () => {
+  it.each([
+    ["full", 495], ["three_quarters", 375], ["half", 225],
+  ] as const)("utilise %i minutes pour un férié à quotité %s", (quota, expected) => {
+    expect(defaultRecoveryMinutes("holiday", quota)).toBe(expected);
+  });
+});
+
 describe("quotité de travail", () => {
-  it("utilise 8 h, 6 h et 4 h sans changer le cycle", () => {
+  it("utilise 8 h, 6 h et 3 h 45 sans changer le cycle", () => {
     expect(dailyMinutesForQuota("full")).toBe(480);
     expect(dailyMinutesForQuota("three_quarters")).toBe(360);
-    expect(dailyMinutesForQuota("half")).toBe(240);
+    expect(dailyMinutesForQuota("half")).toBe(225);
   });
 });
 
@@ -175,11 +203,20 @@ describe("solde de récupération", () => {
   it.each([
     ["full", 480, 240],
     ["three_quarters", 360, 180],
-    ["half", 240, 120],
+    ["half", 225, 225],
   ] as const)("convertit journée et demi-journée selon la quotité %s", (quota, day, half) => {
     expect(recoveryRequestMinutes("recovery_day", quota)).toBe(day);
-    expect(recoveryRequestMinutes("recovery_holiday", quota)).toBe(day);
     expect(recoveryRequestMinutes("recovery_half", quota)).toBe(half);
+  });
+
+  it.each([
+    ["full", 495],
+    ["three_quarters", 375],
+    ["half", 225],
+  ] as const)("solde exactement un férié acquis puis posé à la quotité %s", (quota, minutes) => {
+    const earned = holidayRecoveryEntries([{ date: "2026-09-10", minutes }]);
+    const used = [{ id: "holiday-use", date: "2026-10-01", minutes: recoveryRequestMinutes("recovery_holiday", quota), updatedAt: "v1" }];
+    expect(monthlyRecoveryBalance(earned, used)).toEqual({ earned: minutes, used: minutes, remaining: 0 });
   });
 
   it("conserve la durée personnalisée du formulaire complet", () => {
@@ -187,16 +224,19 @@ describe("solde de récupération", () => {
     expect(recoveryRequestMinutes("recovery_hours", "half", "22:30", "00:30")).toBe(120);
   });
 
-  it("décompte la durée de formation choisie entre 3 h et 6 h", () => {
-    expect(recoveryRequestMinutes("recovery_training", "full", "09:00", "12:00")).toBe(180);
-    expect(recoveryRequestMinutes("recovery_training", "half", "09:00", "15:00")).toBe(360);
-    expect(recoveryRequestMinutes("recovery_training", "full", "09:00", "13:00")).toBe(0);
+  it("décompte les plages exactes d’une formation du mercredi", () => {
+    expect(recoveryRequestMinutes("recovery_training", "full", "10:00", "16:00")).toBe(360);
+    expect(recoveryRequestMinutes("recovery_training", "three_quarters", "10:00", "16:00")).toBe(360);
+    expect(recoveryRequestMinutes("recovery_training", "half", "10:00", "13:00")).toBe(180);
+    expect(recoveryRequestMinutes("recovery_training", "half", "13:00", "16:00")).toBe(180);
+    expect(recoveryRequestMinutes("recovery_training", "full", "10:00", "13:00")).toBe(180);
+    expect(recoveryRequestMinutes("recovery_training", "three_quarters", "13:00", "16:00")).toBe(180);
   });
 
   it.each([
-    ["full", 480],
-    ["three_quarters", 360],
-    ["half", 240],
+    ["full", 495],
+    ["three_quarters", 375],
+    ["half", 225],
   ] as const)("crédite prime + récupération selon la quotité %s", (quota, expected) => {
     expect(holidayRecoveryCreditMinutes(["2026-09-10"], quota)).toBe(expected);
     expect(holidayRecoveryEntries(["2026-09-10"], quota)[0].minutes).toBe(expected);
@@ -204,8 +244,17 @@ describe("solde de récupération", () => {
 
   it("ne crédite jamais deux fois le même férié resynchronisé", () => {
     const dates = ["2026-09-10", "2026-09-10", "2026-09-10"];
-    expect(holidayRecoveryCreditMinutes(dates, "full")).toBe(480);
+    expect(holidayRecoveryCreditMinutes(dates, "full")).toBe(495);
     expect(holidayRecoveryEntries(dates, "full")).toHaveLength(1);
+  });
+
+  it("ne recalcule pas un ancien crédit dont la quotité historique est inconnue", () => {
+    expect(holidayRecoveryEntries([{ date: "2025-12-25" }])).toEqual([]);
+    expect(storedHolidayRecoveryCreditMinutes([
+      { holiday_recovery_minutes: 390 },
+      { holiday_recovery_minutes: 240 },
+      {},
+    ])).toBe(630);
   });
 
   it("crédite et débite les minutes sans expiration", () => {
@@ -298,7 +347,7 @@ describe("solde de récupération", () => {
     expect(withClosure.worked).toBe(baseline.worked - 1);
   });
 
-  it("compte aussi une fermeture tombant sur une formation du cycle", () => {
+  it("ne déduit pas une fermeture tombant sur une formation déjà exclue du travail", () => {
     const trainingDate = Array.from({ length: 31 }, (_, index) =>
       new Date(2026, 8, index + 1),
     ).find((date) => getDayInfo(date, 2).kind === "training")!;
@@ -317,8 +366,8 @@ describe("solde de récupération", () => {
     );
 
     expect(withClosure.scheduled).toBe(baseline.scheduled);
-    expect(withClosure.exceptionallyClosed).toBe(1);
-    expect(withClosure.worked).toBe(baseline.worked - 1);
+    expect(withClosure.exceptionallyClosed).toBe(0);
+    expect(withClosure.worked).toBe(baseline.worked);
   });
 
   it("retire aussi la fermeture du travail restant entre deux dates", () => {

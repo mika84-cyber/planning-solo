@@ -13,6 +13,7 @@ export type AbsenceReplacementInput = {
 
 const AUTOMATICALLY_REFUNDED_TYPES = new Set<LeaveType>([
   "annual",
+  "half",
 ]);
 
 /** Ces congés peuvent rester enregistrés sous une maladie ou un accident.
@@ -36,8 +37,9 @@ type PrepareOptions = {
 };
 
 /**
- * Prépare un remplacement atomique : seuls les CA qui recouvrent une maladie
- * ou un accident du travail sont découpés autour des dates concernées.
+ * Prépare un remplacement atomique : seuls les CA entiers ou en demi-journée
+ * qui recouvrent une maladie ou un accident du travail sont découpés autour
+ * des dates concernées.
  * Leur disparition du planning recrédite naturellement les compteurs calculés
  * à partir des périodes restantes.
  */

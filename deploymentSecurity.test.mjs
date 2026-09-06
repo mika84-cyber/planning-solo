@@ -6,6 +6,7 @@ const netlify = readFileSync("netlify.toml", "utf8");
 describe("protections du déploiement", () => {
   it("conserve les en-têtes de sécurité globaux", () => {
     expect(netlify).toContain('Content-Security-Policy = "default-src \'self\'');
+    expect(netlify).toContain("script-src 'self' 'wasm-unsafe-eval'");
     expect(netlify).toContain('Strict-Transport-Security = "max-age=31536000"');
     expect(netlify).toContain('X-Content-Type-Options = "nosniff"');
     expect(netlify).toContain('X-Frame-Options = "DENY"');

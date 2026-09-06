@@ -1,10 +1,21 @@
 import { ChoicePicker } from "./ChoicePicker";
+import { useState } from "react";
 import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
-import { PayslipWarningEffect } from "./PayslipWarningEffect";
 import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s } from "./planningLogic";
 import { minutesLabel } from "./overtime";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
+import {
+  isPayslipImage,
+  PAYSLIP_FILE_ACCEPT,
+} from "./payslipOcr";
+import { explainPayslipGap, type PayslipReviewCheck } from "./payslipReview";
+
+function formatReviewValue(row: PayslipReviewCheck, value: number) {
+  if (row.key === "sundays") return value.toLocaleString("fr-FR");
+  if (row.key === "pas-rate") return `${value.toLocaleString("fr-FR")} %`;
+  return euros(value);
+}
 
 type Props = Pick<
   PayslipCheckSectionProps,
@@ -12,7 +23,7 @@ type Props = Pick<
   "check" | "checkError" | "needsPeriod" | "fallbackMonth" | "setFallbackMonth" |
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "unplannedCarence" | "resultDetailsOpen" |
-  "setResultDetailsOpen" | "grossForMonth" | "baseSalary" | "ifse" | "overtime" |
+  "setResultDetailsOpen" | "grossForMonth" | "overtime" |
   "mecenat" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
   "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover"
 >;
@@ -38,8 +49,6 @@ export function PayslipVerificationCard({
   resultDetailsOpen: payslipResultDetailsOpen,
   setResultDetailsOpen: setPayslipResultDetailsOpen,
   grossForMonth,
-  baseSalary,
-  ifse,
   overtime: overtimeForPayMonth,
   mecenat: mecenatForCurrentPayMonth,
   onReportMissingSundays: reportMissingSundays,
@@ -49,6 +58,7 @@ export function PayslipVerificationCard({
   sundayCarryoverYear,
   onClearSundayCarryover: clearSundayCarryover,
 }: Props) {
+  const [activeImportSource, setActiveImportSource] = useState<"file" | "photo">("file");
   const comparableGross =
     payslipCheck?.reading.month === displayedMonth &&
     payslipCheck.reading.year === allowances.year &&
@@ -61,36 +71,36 @@ export function PayslipVerificationCard({
       : null;
   return (
           <section className="allowance-card pay-function-card payslip-verify-card" aria-label="Sélection et résultat du bulletin">
-            <header>
-              <div>
-                <strong>Comparer avec le bulletin réel</strong>
-                <small>Le PDF est lu sur cet appareil et n’est pas conservé.</small>
-              </div>
-              <small>Un seul PDF suffit</small>
-            </header>
             <div className="payslip-guide-step active">
               <span className="payslip-guide-number">1</span>
               <div>
                 <strong>Choisir le bulletin à vérifier</strong>
-                <small>Son mois et son année seront reconnus automatiquement.</small>
+                <small>La netteté, la lumière, le cadrage et l’inclinaison de la photo sont contrôlés avant la lecture.</small>
               </div>
-              <label className="payslip-drop">
-                <input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  disabled={payslipImportBusy}
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files || []);
-                    event.target.value = "";
-                    if (files.length) void importPayslips(files, "verify");
-                  }}
-                />
-                <span>
-                  {payslipImportBusy && payslipImportMode === "verify"
-                    ? "Lecture en cours…"
-                    : "Choisir le PDF"}
-                </span>
-              </label>
+              <div className="payslip-import-actions">
+                <label className="payslip-drop payslip-file-drop">
+                  <input
+                    type="file"
+                    accept={PAYSLIP_FILE_ACCEPT}
+                    multiple
+                    disabled={payslipImportBusy}
+                    onChange={(event) => {
+                      const files = Array.from(event.target.files || []);
+                      event.target.value = "";
+                      if (!files.length) return;
+                      setActiveImportSource(isPayslipImage(files[0]) ? "photo" : "file");
+                      void importPayslips(files, "verify");
+                    }}
+                  />
+                  <span>
+                    {payslipImportBusy && payslipImportMode === "verify"
+                      ? activeImportSource === "photo"
+                        ? "Reconnaissance des photos…"
+                        : "Lecture en cours…"
+                      : "Choisir PDF ou photo"}
+                  </span>
+                </label>
+              </div>
             </div>
             {payslipCheck && !payslipNeedsPeriod && payslipCheck.reading.month !== undefined && payslipCheck.reading.year !== undefined ? (
               <>
@@ -206,38 +216,32 @@ export function PayslipVerificationCard({
                   key={`${payslipCheck.name}-${payslipCheck.reading.year}-${payslipCheck.reading.month}`}
                 />
               ) : null}
-              {payslipReview?.tone === "warning" ? (
-                <PayslipWarningEffect
-                  key={`${payslipCheck.name}-${payslipCheck.reading.year}-${payslipCheck.reading.month}`}
-                />
-              ) : null}
               {payslipReview ? (
                 <div className={`payslip-result-summary ${payslipReview.tone}`}>
                   <span className="payslip-result-icon" aria-hidden="true">
-                    {payslipReview.tone === "ok" ? "✓" : payslipReview.tone === "warning" ? "!" : "?"}
+                    {payslipReview.tone === "ok" ? "✓" : payslipReview.tone === "warning" ? "!" : payslipReview.tone === "partial" ? "≈" : "?"}
                   </span>
                   <div>
                     <strong>{payslipReview.verdict}</strong>
                     <small>
-                      {payslipReview.verified.length} contrôle
-                      {s(payslipReview.verified.length)} fiable
-                      {s(payslipReview.verified.length)} effectué
-                      {s(payslipReview.verified.length)}
-                      {payslipReview.unavailable.length
-                        ? ` · ${payslipReview.unavailable.length} non vérifiable${s(payslipReview.unavailable.length)}`
-                        : ""}
+                      {payslipReview.verified.length} ligne{s(payslipReview.verified.length)} vérifiée{s(payslipReview.verified.length)}
+                      {` · ${payslipReview.unavailable.length} non vérifiable${s(payslipReview.unavailable.length)}`}
                     </small>
                   </div>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                      setPayslipResultDetailsOpen((current) => !current)
-                    }
-                    aria-expanded={payslipResultDetailsOpen}
-                  >
-                    {payslipResultDetailsOpen ? "Masquer le détail" : "Voir le détail"}
-                  </button>
+                  {payslipReview.tone === "warning" ? (
+                    <strong className="payslip-details-visible">Écarts détaillés ci-dessous</strong>
+                  ) : (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() =>
+                        setPayslipResultDetailsOpen((current) => !current)
+                      }
+                      aria-expanded={payslipResultDetailsOpen}
+                    >
+                      {payslipResultDetailsOpen ? "Masquer le détail" : "Voir le détail"}
+                    </button>
+                  )}
                 </div>
               ) : null}
               {unplannedPayslipCarence ? (
@@ -245,7 +249,30 @@ export function PayslipVerificationCard({
                   Jour de carence de {euros(payslipCheck.reading.carenceDay as number)} présent sur le bulletin, mais aucun arrêt maladie n’était prévu dans l’application pour ce mois.
                 </p>
               ) : null}
-              {payslipResultDetailsOpen ? (
+              {payslipReview?.issues.length ? (
+                <section className="payslip-mismatch-list" aria-label="Détail des points qui ne coïncident pas">
+                  <div className="payslip-mismatch-heading">
+                    <span>Comparaison détaillée</span>
+                    <h3>Tous les points qui ne coïncident pas</h3>
+                  </div>
+                  {payslipReview.issues.map((row) => {
+                    const found = row.found as number;
+                    const difference = found - row.expected;
+                    return (
+                      <article className="payslip-mismatch-item" key={`mismatch-${row.key}`}>
+                        <h4>{row.label}</h4>
+                        <div className="payslip-mismatch-values">
+                          <span><small>Attendu</small><strong>{formatReviewValue(row, row.expected)}</strong></span>
+                          <span><small>Trouvé</small><strong>{formatReviewValue(row, found)}</strong></span>
+                          <span><small>Différence</small><strong>{difference > 0 ? "+" : ""}{formatReviewValue(row, difference)}</strong></span>
+                        </div>
+                        <p><strong>Explication possible :</strong> {explainPayslipGap(row)}</p>
+                      </article>
+                    );
+                  })}
+                </section>
+              ) : null}
+              {payslipResultDetailsOpen || payslipReview?.tone === "warning" ? (
                 <>
               <table className="allowance-table">
                 <thead>
@@ -256,110 +283,35 @@ export function PayslipVerificationCard({
                   </tr>
                 </thead>
                 <tbody>
-                  {(
-                    [
-                      {
-                        key: "gross",
-                        label: "Cumul brut",
-                        found: payslipCheck.reading.gross,
-                        computed: grossForMonth(payslipCheck.reading.month),
-                      },
-                      {
-                        key: "base",
-                        label: "Traitement de base",
-                        found: payslipCheck.reading.baseSalary,
-                        computed: baseSalary,
-                      },
-                      {
-                        key: "ifse",
-                        label: "IFSE",
-                        found: payslipCheck.reading.ifse,
-                        computed: ifse,
-                      },
-                      ...(overtimeForPayMonth.totalMinutes
-                        ? [
-                            {
-                              key: "overtime",
-                              label: `Heures supplémentaires (${minutesLabel(
-                                overtimeForPayMonth.totalMinutes,
-                              )})`,
-                              found: undefined,
-                              computed: overtimeForPayMonth.amount,
-                            },
-                          ]
-                        : []),
-                      ...(mecenatForCurrentPayMonth.totalMinutes
-                        ? [
-                            {
-                              key: "mecenat",
-                              label: `Mécénats (${minutesLabel(
-                                mecenatForCurrentPayMonth.totalMinutes,
-                              )})`,
-                              found: undefined,
-                              computed:
-                                mecenatForCurrentPayMonth.grossAmountCents / 100,
-                            },
-                          ]
-                        : []),
-                    ] as const
-                  ).map((row) => {
+                  {payslipReview ? [...payslipReview.verified, ...payslipReview.unavailable].map((row) => {
                     const gap =
                       row.found === undefined
                         ? null
-                        : Math.abs(row.found - row.computed);
+                        : Math.abs(row.found - row.expected);
+                    const tolerance = row.tolerance ?? 0.05;
                     return (
                       <tr key={row.key}>
                         <th scope="row">
                           {row.label}
                           {gap === null ? (
                             <small>absent du bulletin</small>
-                          ) : gap < 0.05 ? (
+                          ) : gap < tolerance ? (
                             <small>concorde</small>
                           ) : (
                             <small className="gap">
-                              écart de {euros(gap)}
+                              écart de {formatReviewValue(row, gap)}
                             </small>
                           )}
                         </th>
                         <td>
-                          {row.found === undefined ? "—" : euros(row.found)}
+                          {row.found === undefined ? "—" : formatReviewValue(row, row.found)}
                         </td>
-                        <td className={gap !== null && gap >= 0.05 ? "pending" : ""}>
-                          {euros(row.computed)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {(() => {
-                    const found = payslipCheck.reading.sundaysBeyondTen;
-                    const expected =
-                      allowances.monthly.find(
-                        (slot) => slot.index === payslipCheck.reading.month,
-                      )?.sundayCount || 0;
-                    const missing = expected - found;
-                    return (
-                      <tr>
-                        <th scope="row">
-                          Dimanches comptés
-                          {missing === 0 ? (
-                            <small>concorde</small>
-                          ) : missing > 0 ? (
-                            <small className="gap">
-                              {missing} manquant{s(missing)}
-                            </small>
-                          ) : (
-                            <small className="gap">
-                              {-missing} de plus qu’attendu
-                            </small>
-                          )}
-                        </th>
-                        <td>{found}</td>
-                        <td className={missing !== 0 ? "pending" : ""}>
-                          {expected}
+                        <td className={gap !== null && gap >= tolerance ? "pending" : ""}>
+                          {formatReviewValue(row, row.expected)}
                         </td>
                       </tr>
                     );
-                  })()}
+                  }) : null}
                 </tbody>
               </table>
               {overtimeForPayMonth.totalMinutes ? (

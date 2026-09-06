@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { AppHeader, MainMenu } from "./AppNavigation";
+import { AdaptiveNavigation, AppHeader, MainMenu } from "./AppNavigation";
 
 describe("navigation principale", () => {
   it("conserve le bouton de menu et le titre de la programmation GP", () => {
@@ -14,6 +14,9 @@ describe("navigation principale", () => {
       mainMenuOpen={false}
       checkingAppUpdate={false}
       appUpdateAvailable={false}
+      demoMode
+      unreadFeedbackCount={2}
+      notify={vi.fn()}
       accountMenuRef={createRef()}
       accountButtonRef={createRef()}
       onToggleAccount={vi.fn()}
@@ -25,6 +28,8 @@ describe("navigation principale", () => {
     expect(html).toContain("Programmation GP");
     expect(html).toContain('aria-label="Ouvrir le menu principal"');
     expect(html.match(/main-menu-button/g)).toHaveLength(1);
+    expect(html).toContain("2 messages non lus");
+    expect(html).not.toContain("notification-button");
   });
 
   it("garde toutes les rubriques dans l’ordre", () => {
@@ -33,12 +38,39 @@ describe("navigation principale", () => {
       homeSection="home"
       onClose={vi.fn()}
       onNavigate={vi.fn()}
-      onOpenGuide={vi.fn()}
+      onOpenFeedback={vi.fn()}
+      isAdmin={false}
+      unreadFeedbackCount={0}
     />);
-    const labels = ["Accueil", "Congés et récupérations", "Ma paie", "Télécharger les plannings", "Programmation GP", "Formulaires utiles", "Contacts utiles"];
+    const labels = ["Accueil", "Congés et récupérations", "Ma paie", "Documents et contacts", "Programmation GP", "Planning des collègues"];
     labels.slice(1).forEach((label, index) => {
       expect(html.indexOf(labels[index])).toBeLessThan(html.indexOf(label));
     });
-    expect(html).toContain("déclaration d’accident de travail");
+    expect(html).toContain("Plannings PDF, formulaires et annuaires");
+    expect(html.match(/Documents et contacts/g)).toHaveLength(1);
+    expect(html).toContain("Écrire à l’administratrice");
+    expect(html).not.toContain("Mode d’emploi");
+    expect(html).not.toContain("Messagerie interne");
+  });
+
+  it("propose une navigation adaptative sans numéros et marque la rubrique active", () => {
+    const html = renderToStaticMarkup(<AdaptiveNavigation homeSection="colleagues" onNavigate={vi.fn()} onMore={vi.fn()} unreadFeedbackCount={2} />);
+    expect(html).toContain("mobile-bottom-navigation");
+    expect(html).toContain("desktop-side-navigation");
+    expect(html).toContain('aria-current="page"');
+    expect(html).toContain("Collègues");
+    expect(html.indexOf("Programme")).toBeLessThan(html.indexOf("Collègues"));
+    expect(html).toContain("Ma paie");
+    expect(html).toContain("Documents");
+    expect(html).toContain("<svg");
+    expect(html).toContain('d="M12 5v14M5 12h14"');
+    expect(html).not.toContain('aria-hidden="true">+</span>');
+    expect(html).not.toContain(">01<");
+  });
+
+  it("réserve l’entrée de la messagerie à l’administrateur", () => {
+    const html = renderToStaticMarkup(<MainMenu open homeSection="home" onClose={vi.fn()} onNavigate={vi.fn()} onOpenFeedback={vi.fn()} isAdmin unreadFeedbackCount={3} />);
+    expect(html).toContain("Messagerie interne");
+    expect(html).toContain("3 messages non lus");
   });
 });

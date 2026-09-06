@@ -19,6 +19,55 @@ const baseProps = {
 };
 
 describe("PlanningDayCell", () => {
+  it("ajoute les vacances scolaires sans remplacer les autres marqueurs", () => {
+    const html = renderToStaticMarkup(
+      <PlanningDayCell
+        {...baseProps}
+        schoolVacation={{
+          name: "Vacances de la Toussaint",
+          from: "2026-10-17",
+          to: "2026-11-01",
+        }}
+      />,
+    );
+    expect(html).toContain("school-vacation-day");
+    expect(html).toContain("Vacances de la Toussaint");
+    expect(html).toContain("vacances scolaires");
+  });
+
+  it("annonce les congés et notes partagés par Agnès sans les transformer en congé personnel", () => {
+    const html = renderToStaticMarkup(
+      <PlanningDayCell
+        {...baseProps}
+        date={new Date(2026, 8, 10)}
+        agnesLeave
+        sharedNoteText="Rendez-vous partagé"
+      />,
+    );
+    expect(html).toContain("agnes-leave-day");
+    expect(html).not.toContain(" leave-day");
+    expect(html).toContain("congé d’Agnès");
+    expect(html).toContain("note d’Agnès");
+    expect(html).toContain("agnes-leave-date");
+    expect(html).not.toContain("agnes-leave-star");
+    expect(html).toContain("note-band agnes-note-band");
+  });
+
+  it("partage le repère de note entre le bleu de Mika et le jaune d’Agnès", () => {
+    const html = renderToStaticMarkup(
+      <PlanningDayCell
+        {...baseProps}
+        entry={{
+          noteText: "Note de Mika", noteColor: "#3478c5", noteUpdatedAt: "v1", noteGroupId: "",
+          leave: false, wish: false, holidayPay: "", closureOverride: "", updatedAt: "v1",
+        }}
+        sharedNoteText="Note d’Agnès"
+      />,
+    );
+    expect(html).toContain("note-band dual-note-band");
+    expect(html).toContain("note d’Agnès");
+  });
+
   it("conserve le tampon de fermeture et sa date accessible", () => {
     const html = renderToStaticMarkup(
       <PlanningDayCell

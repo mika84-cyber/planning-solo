@@ -1,5 +1,6 @@
 import { json, sanitizeCetAccount, type FormProfile, type ManualYearAdjustments } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
+import { readAtomic, writeAtomic } from "../calendarAtomic.mts";
 export async function handleSaveFormProfile(
   context: CalendarActionContext,
 ): Promise<Response> {
@@ -22,9 +23,8 @@ export async function handleSaveFormProfile(
   // Le traitement n'est envoyé que par l'écran qui le modifie : les autres
   // appels (changement de groupe, formulaire) l'ignorent et doivent le
   // laisser intact plutôt que de l'effacer.
-  const previousProfile = (await store.get(scopedKey("form-profile"), {
-    type: "json",
-  })) as FormProfile | null;
+  const profileVersion = await readAtomic<FormProfile>(store, scopedKey("form-profile"));
+  const previousProfile = profileVersion.value;
   // Même règle pour le groupe : un appel qui ne le renvoie pas ne doit pas
   // effacer le cycle enregistré, qui fausserait ensuite tous les décomptes
   // de dimanches et fériés sans qu'on ait touché au planning.
@@ -43,6 +43,21 @@ export async function handleSaveFormProfile(
     body.workQuota === "half"
       ? body.workQuota
       : previousProfile?.work_quota || "full";
+  const timeValue = (value: unknown) =>
+    typeof value === "string" && /^(?:09|1\d):(?:00|15|30|45)$/.test(value) && value <= "19:45"
+      ? value
+      : null;
+  let workSchedule = previousProfile?.work_schedule;
+  if (body.workSchedule !== undefined) {
+    if (!body.workSchedule || typeof body.workSchedule !== "object" || Array.isArray(body.workSchedule))
+      return json({ error: "Horaires habituels invalides" }, 400);
+    const rawSchedule = body.workSchedule as Record<string, unknown>;
+    const start = timeValue(rawSchedule.start);
+    const end = timeValue(rawSchedule.end);
+    if (!start || !end || start >= end)
+      return json({ error: "Horaires habituels invalides" }, 400);
+    workSchedule = { start, end };
+  }
   const netRatioRegime =
     body.netRatioRegime === "pre-culture-psc" ||
     body.netRatioRegime === "culture-psc"
@@ -70,6 +85,7 @@ export async function handleSaveFormProfile(
     signature,
     status,
     work_quota: workQuota,
+    work_schedule: workSchedule,
     base_salary_cents: amountCents(
       body.baseSalaryCents,
       previousProfile?.base_salary_cents,
@@ -263,12 +279,23 @@ export async function handleSaveFormProfile(
       },
     };
     const payMonth = Number(body.payMonth);
+    const payMonthIsValid = Number.isInteger(payMonth) && payMonth >= 0 && payMonth <= 11;
+    // Une valeur saisie avec un mois d’effet ne doit pas réécrire le profil
+    // annuel utilisé comme historique des mois précédents.
+    if (payMonthIsValid) formProfile.pay_profiles[key] = previousYear;
     if (
-      Number.isInteger(payMonth) &&
-      payMonth >= 0 &&
-      payMonth <= 11 &&
+      payMonthIsValid &&
       (body.baseSalaryCents !== undefined ||
-        body.residenceAllowanceCents !== undefined)
+        body.residenceAllowanceCents !== undefined ||
+        body.ifseCents !== undefined ||
+        body.carenceCents !== undefined ||
+        body.otherFixedCents !== undefined ||
+        body.ciaCents !== undefined ||
+        body.netRatioFixedBp !== undefined ||
+        body.netRatioVariableBp !== undefined ||
+        body.navigoCents !== undefined ||
+        body.mealVoucherDeductionCents !== undefined ||
+        body.pasRateBp !== undefined)
     ) {
       const monthKey = `${payYear}-${String(payMonth + 1).padStart(2, "0")}`;
       const previousMonth = previousProfile?.pay_profiles?.[monthKey] || {};
@@ -282,6 +309,15 @@ export async function handleSaveFormProfile(
           body.residenceAllowanceCents,
           previousMonth.residence_allowance_cents,
         ),
+        ifse_cents: amountCents(body.ifseCents, previousMonth.ifse_cents),
+        carence_cents: amountCents(body.carenceCents, previousMonth.carence_cents),
+        other_fixed_cents: amountCents(body.otherFixedCents, previousMonth.other_fixed_cents),
+        cia_cents: amountCents(body.ciaCents, previousMonth.cia_cents),
+        net_ratio_fixed_bp: ratioBp(body.netRatioFixedBp, previousMonth.net_ratio_fixed_bp),
+        net_ratio_variable_bp: ratioBp(body.netRatioVariableBp, previousMonth.net_ratio_variable_bp),
+        navigo_cents: amountCents(body.navigoCents, previousMonth.navigo_cents),
+        meal_voucher_deduction_cents: amountCents(body.mealVoucherDeductionCents, previousMonth.meal_voucher_deduction_cents),
+        pas_rate_bp: ratioBp(body.pasRateBp, previousMonth.pas_rate_bp),
       };
     }
     if (Array.isArray(body.monthlyPayProfiles)) {
@@ -315,6 +351,7 @@ export async function handleSaveFormProfile(
       }
     }
   }
-  await store.setJSON(scopedKey("form-profile"), formProfile);
+  if (!await writeAtomic(store, scopedKey("form-profile"), formProfile, profileVersion.etag))
+    return json({ error: "Le profil a été modifié sur un autre appareil" }, 409);
   return json({ ok: true, form_profile: formProfile });
 }

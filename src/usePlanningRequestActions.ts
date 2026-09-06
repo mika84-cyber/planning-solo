@@ -2,21 +2,26 @@ import type { Dispatch, SetStateAction } from "react";
 import {
   calendarErrorMessage,
   postCalendarBatch,
+  postCalendarIdempotent,
   postCalendarPeriodsVerified,
 } from "./calendarApi";
 import { prepareAbsenceReplacement } from "./absenceReplacement";
 import { createClientId } from "./clientId";
+import { normalizeLeaveRequest } from "./leaveRequest";
 import { type FormProfile, type LeavePeriod, type SelectedDay } from "./appModel";
 import { cetBalance } from "./cet";
 import {
   minutesLabel,
   recoveryRequestMinutes,
+  type RecoveryUse,
   type RecoveryRequestType,
   type WorkQuota,
 } from "./overtime";
 import {
   groupConsecutive,
+  fromKey,
   leaveTypeLabel,
+  longDate,
   type HalfMoment,
   type LeaveType,
 } from "./planningLogic";
@@ -88,7 +93,9 @@ type PlanningRequestActionsOptions = {
   workQuota: WorkQuota;
   recoveryBalanceRemaining: number;
   periods: LeavePeriod[];
+  recoveryUses: RecoveryUse[];
   setPeriods: Dispatch<SetStateAction<LeavePeriod[]>>;
+  setRecoveryUses: Dispatch<SetStateAction<RecoveryUse[]>>;
   reloadCalendar: () => Promise<void>;
   cancelRequest: () => void;
   notify: (message: string) => void;
@@ -107,7 +114,9 @@ export function usePlanningRequestActions({
   workQuota,
   recoveryBalanceRemaining,
   periods,
+  recoveryUses,
   setPeriods,
+  setRecoveryUses,
   reloadCalendar,
   cancelRequest,
   notify,
@@ -123,12 +132,32 @@ export function usePlanningRequestActions({
     } catch {}
     window.location.href = "/formulaire/index.html";
   }
-  async function validateAndOpenForm() {
+  async function validateAndOpenForm(destination: "form" | "planning" = "form") {
     if (!selectedList.length) {
       notify(
         "Sélectionnez au moins une date avant d’intégrer la demande au formulaire.",
       );
       return;
+    }
+    if (requestKind === "leave" && !sickRequest) {
+      const conflict = selectedList.find((item) => periods.some((period) =>
+        item.date >= period.from && item.date <= period.to,
+      ));
+      if (conflict) {
+        notify(`${longDate(fromKey(conflict.date))} comporte déjà une absence. Modifiez ou retirez-la avant de continuer.`);
+        return;
+      }
+    }
+    if (requestKind === "recovery") {
+      const conflict = selectedList.find((item) => recoveryUses.some((use) => {
+        if (use.date !== item.date) return false;
+        if (!item.start || !item.end || !use.start || !use.end) return true;
+        return item.start < use.end && use.start < item.end;
+      }));
+      if (conflict) {
+        notify(`${longDate(fromKey(conflict.date))} comporte déjà une récupération sur ce créneau.`);
+        return;
+      }
     }
     const requestedCetDays = selectedList.filter((item) => item.type === "cet").length;
     if (requestedCetDays) {
@@ -212,6 +241,7 @@ export function usePlanningRequestActions({
           setPeriods((current) =>
             [...current, ...saved].sort((a, b) => a.from.localeCompare(b.from)),
           );
+        setSavingRequest(false);
         cancelRequest();
         confirm(
           leaveType === "other"
@@ -351,6 +381,43 @@ export function usePlanningRequestActions({
     };
     setSavingRequest(true);
     try {
+      if (destination === "planning") {
+        if (demoMode) {
+          const normalized = normalizeLeaveRequest(payload);
+          const updatedAt = new Date().toISOString();
+          setPeriods((current) => [
+            ...current,
+            ...normalized.periods.map((period) => ({
+              ...period,
+              updatedAt,
+            })),
+          ].sort((left, right) => left.from.localeCompare(right.from)));
+          setRecoveryUses((current) => [
+            ...current,
+            ...normalized.recoverySelections.map((selection) => ({
+              id: selection.id,
+              date: selection.date,
+              minutes: recoveryRequestMinutes(
+                selection.type,
+                workQuota,
+                selection.start,
+                selection.end,
+              ),
+              start: selection.start,
+              end: selection.end,
+              kind: selection.type === "recovery_training" ? "training" as const : undefined,
+              updatedAt,
+            })),
+          ]);
+        } else {
+          await postCalendarIdempotent({ action: "save-request", ...payload });
+          await reloadCalendar();
+        }
+        setSavingRequest(false);
+        cancelRequest();
+        confirm("Les absences sont enregistrées dans votre planning. Aucun formulaire n’a été envoyé.");
+        return;
+      }
       localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
       window.location.href = "/formulaire/index.html?planning=1";
     } catch (error) {
@@ -363,5 +430,9 @@ export function usePlanningRequestActions({
     }
   }
 
-  return { openBlankForm, validateAndOpenForm };
+  function saveRequestToPlanning() {
+    return validateAndOpenForm("planning");
+  }
+
+  return { openBlankForm, validateAndOpenForm, saveRequestToPlanning };
 }

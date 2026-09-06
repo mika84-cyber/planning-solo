@@ -1,4 +1,4 @@
-/** Lecture d'un bulletin de paie PDF, entièrement dans le navigateur.
+/** Lecture d'un bulletin de paie, entièrement dans le navigateur.
  *
  *  Le fichier n'est jamais envoyé nulle part : il est lu sur l'appareil, les
  *  quelques montants utiles en sont tirés, et rien n'est conservé. C'est une

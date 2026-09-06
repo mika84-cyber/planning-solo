@@ -40,6 +40,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.
 - `src/AppNavigation.tsx` : en-tête, compte et menu principal communs à tous
   les écrans.
+- `src/FeedbackMessenger.tsx`, `src/feedbackMessenger.css` et
+  `src/useFeedbackMessaging.ts` : formulaire de retour privé, boîte de réception
+  administratrice, réponses personnalisées, suppression, pastille de messages
+  non lus et alertes privées centrées.
 - `src/AppDialogLayer.tsx` : assemblage des dialogues, messages, confirmations
   et panneaux de gestion qui restent pilotés par l’orchestrateur.
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
@@ -104,6 +108,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats.
 - `src/payEstimate.ts` : disponibilité de l'estimation de paie.
 - `src/payslip.ts` / `src/payslipReview.ts` : lecture et contrôle du bulletin.
+- `src/payslipOcr.ts` : reconnaissance locale des photos de bulletins avec le
+  moteur et le modèle français auto-hébergés dans `public/ocr/`.
 - `src/leaveRequest.ts` : préparation des demandes de congés.
 - `src/cet.ts` : barèmes Centre Pompidou, plafonds, éligibilité et calculs CET.
 - `src/cetFormsPdf.ts` : génération différée des demandes CET à vérifier, signer et envoyer à la RH.
@@ -124,6 +130,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   par les gestionnaires du calendrier.
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,
   d’isolation et d’écriture de l’API calendrier.
+- `netlify/functions/feedback.mts` : stockage privé des retours, photos,
+  réponses et notifications de résolution ; l’accès à la boîte de réception et
+  aux actions administratrices est réservé à `PROGRAM_ADMIN_EMAIL`.
 - `netlify/lib/` : validation, stockage par utilisatrice et sauvegardes.
 - `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles

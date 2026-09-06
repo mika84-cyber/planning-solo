@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Entries, FormProfile, LeavePeriod, PayProfile } from "./appModel";
+import type { Entries, FormProfile, LeavePeriod, PartnerCalendarEntries, PartnerLeavePeriod, PartnerSharingStatus, PayProfile } from "./appModel";
 import type { MecenatEntry } from "./mecenat";
 import type { OvertimeEntry, RecoveryUse } from "./overtime";
 
@@ -12,10 +12,15 @@ export function useCalendarDataState() {
   const [overtimeEntries, setOvertimeEntries] = useState<OvertimeEntry[]>([]);
   const [recoveryUses, setRecoveryUses] = useState<RecoveryUse[]>([]);
   const [mecenatEntries, setMecenatEntries] = useState<MecenatEntry[]>([]);
+  const [partnerEntries, setPartnerEntries] = useState<PartnerCalendarEntries>({});
+  const [partnerPeriods, setPartnerPeriods] = useState<PartnerLeavePeriod[]>([]);
+  const [partnerSharingStatus, setPartnerSharingStatus] = useState<PartnerSharingStatus>("disabled");
 
   return {
     entries, setEntries, periods, setPeriods, formProfile, setFormProfile,
     payProfiles, setPayProfiles, overtimeEntries, setOvertimeEntries,
     recoveryUses, setRecoveryUses, mecenatEntries, setMecenatEntries,
+    partnerEntries, setPartnerEntries, partnerPeriods, setPartnerPeriods,
+    partnerSharingStatus, setPartnerSharingStatus,
   };
 }

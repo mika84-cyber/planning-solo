@@ -21,6 +21,7 @@
   margin-top: 3px;
   color: #182a40;
 }
+.planning-workspace-shell.framed .planning-export-pdf{width:auto;min-height:32px;padding:5px 12px;font-size:.72rem}
 
 .planning-workspace-shell.framed .controls {
   border: 1px solid rgba(81, 111, 146, 0.28);
@@ -410,24 +411,24 @@
   gap: 10px;
   width: 100%;
   border: 1.5px solid rgba(64, 88, 119, 0.38);
-  border-radius: 21px;
+  border-radius: 27px;
   padding: clamp(11px, 1.5vw, 16px);
   background: #fff;
-  box-shadow: 0 8px 22px rgba(34, 57, 84, 0.065);
+  box-shadow: 0 17px 38px rgba(67, 52, 40, 0.11);
 }
 
 .planning-workspace-shell.framed .planning-command-section {
-  border-left: 6px solid #34926c;
+  border-left: 8px solid #34926c;
   background:
-    linear-gradient(90deg, rgba(52, 146, 108, 0.07), transparent 14%),
-    #fff;
+    linear-gradient(120deg, rgba(52, 146, 108, 0.15), transparent 32%),
+    #fffdfa;
 }
 
 .planning-workspace-shell.framed .planning-calendar-section {
-  border-left: 6px solid #496fc0;
+  border-left: 8px solid #496fc0;
   background:
-    linear-gradient(90deg, rgba(73, 111, 192, 0.065), transparent 12%),
-    #fff;
+    linear-gradient(120deg, rgba(73, 111, 192, 0.13), transparent 30%),
+    #fffdfa;
 }
 
 .planning-workspace-shell.framed .planning-command-section .home-planning-heading {
@@ -462,19 +463,22 @@
 }
 
 .home-notes-section {
-  border-left: 6px solid #d99a3c;
+  border-left: 8px solid #d99a3c;
+  background: linear-gradient(135deg, #fff4e2, #fffdfa 58%);
 }
 
 .today-overview {
-  border-left: 6px solid #3475ba;
+  border-left: 8px solid #3475ba;
   background-image:
-    linear-gradient(90deg, rgba(52, 117, 186, 0.075), transparent 15%),
-    linear-gradient(145deg, #fbfdff, #f4f8fd);
+    linear-gradient(120deg, rgba(52, 117, 186, 0.14), transparent 34%),
+    linear-gradient(145deg, #f8fcff, #f6f0ec);
 }
 
 .today-overview .today-overview-heading {
   border-left-width: 0;
 }
+
+.home-setup-alert{background:linear-gradient(135deg,#fff8e8,#fff);border:1px solid #e2b467;border-left:8px solid #d68a22;border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:#5d6d7e;margin:10px 0 14px}.home-setup-list{display:grid;gap:9px}.home-setup-list article{align-items:center;background:#fff;border:1px solid #dfc69e;border-radius:14px;display:flex;gap:12px;justify-content:space-between;padding:10px 12px}.home-setup-list article>span{display:grid;gap:2px}.home-setup-list small{color:#617285}.home-setup-actions{display:flex!important;gap:7px!important}.home-setup-list button{align-items:center;background:#245dab;border:0;border-radius:11px;color:#fff;display:flex;font-weight:850;gap:8px;min-height:40px;padding:8px 13px;white-space:nowrap}.home-setup-list button.home-setup-dismiss{background:#fff;border:1px solid #aebbc9;color:#53677d;font-size:11px}
 
 @media (max-width: 720px) {
   .planning-workspace-shell.framed {
@@ -490,9 +494,12 @@
   }
 
   .today-overview,
-  .home-notes-section {
+  .home-notes-section,
+  .home-setup-alert {
     width: 100%;
   }
+
+  .home-setup-list article{align-items:stretch;flex-direction:column}.home-setup-actions{display:grid!important;grid-template-columns:1fr 1fr}.home-setup-list button{justify-content:center;white-space:normal;width:100%}
 }
 
 /* Tous les écrans principaux suivent désormais la largeur exacte de leur
@@ -500,6 +507,7 @@
 .app-shell > .top-header,
 .app-shell > .home-view-mode-bar,
 .app-shell > .today-overview,
+.app-shell > .home-setup-alert,
 .app-shell > .home-notes-section,
 .app-shell > .planning-workspace-shell,
 .app-shell > .section-intro,
@@ -536,8 +544,7 @@
 
 /* Bulletin conforme : l’animation détourée couvre le viewport sans modifier
    la page ni intercepter les gestes. `cover` remplit aussi les écrans très verticaux. */
-.payslip-success-celebration,
-.payslip-warning-effect {
+.payslip-success-celebration {
   position: fixed;
   z-index: 12000;
   inset: 0;
@@ -555,84 +562,13 @@
   object-position: center;
 }
 
-.payslip-warning-effect {
-  background: transparent;
-  mix-blend-mode: screen;
-  opacity: 0.72;
-}
-
-.payslip-warning-effect video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  filter:
-    grayscale(1)
-    contrast(2.6)
-    brightness(1.55)
-    sepia(1)
-    saturate(16)
-    hue-rotate(4deg)
-    drop-shadow(0 0 4px #fffbd0)
-    drop-shadow(0 0 12px #fff200)
-    drop-shadow(0 0 26px rgba(255, 196, 0, 0.82));
-}
-
-.payslip-warning-caption {
-  position: fixed;
-  z-index: 12001;
-  left: 50%;
-  bottom: max(34px, calc(env(safe-area-inset-bottom) + 22px));
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  width: min(calc(100vw - 32px), 430px);
-  transform: translateX(-50%);
-  border: 1.5px solid #ffe600;
-  border-radius: 17px;
-  padding: 12px 16px;
-  pointer-events: none;
-  color: #fff;
-  background: rgba(13, 20, 34, 0.9);
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.18), 0 13px 34px rgba(0, 0, 0, 0.32);
-  animation: payslip-warning-caption-in 240ms ease-out both;
-}
-
-.payslip-warning-caption > span:first-child {
-  font-size: 28px;
-  filter: drop-shadow(0 0 7px #fff200);
-}
-
-.payslip-warning-caption > span:last-child {
-  display: grid;
-  gap: 2px;
-}
-
-.payslip-warning-caption strong {
-  color: #fff6a2;
-  font-size: 14px;
-}
-
-.payslip-warning-caption small {
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 10px;
-}
-
 @keyframes payslip-success-appear {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes payslip-warning-caption-in {
-  from { opacity: 0; transform: translate(-50%, 12px) scale(0.97); }
-  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .payslip-success-celebration,
-  .payslip-warning-effect,
-  .payslip-warning-caption {
+  .payslip-success-celebration {
     display: none;
   }
 }
@@ -641,6 +577,17 @@
    utilisent bien la grande colonne, les outils partagent un liseré latéral
    et les deux sélecteurs du planning ont exactement la même géométrie. */
 @media (min-width: 721px) {
+  .useful-contacts-root {
+    display: grid;
+    grid-template-columns: minmax(215px, 0.72fr) minmax(0, 2fr);
+    grid-template-areas: "intro search" "intro directories";
+    align-items: stretch;
+    gap: clamp(20px, 3vw, 34px);
+    padding: clamp(22px, 3vw, 34px);
+  }
+  .useful-contacts-root > .native-screen-heading { grid-area: intro; display: flex; flex-direction: column; justify-content: center; margin: 0; }
+  .useful-contacts-root > .resource-search-field { grid-area: search; align-self: start; }
+  .useful-contacts-root > .useful-contact-directory-grid { grid-area: directories; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; margin: 0; }
   .useful-forms-screen:not(.useful-forms-folder-screen) {
     grid-template-areas:
       "intro search"
@@ -653,15 +600,18 @@
     grid-area: intro;
   }
 
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-resource-search {
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .resource-search-field {
     grid-area: search;
     width: 100%;
   }
 
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-folder-grid,
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-search-results {
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-content-stack {
     grid-area: folders;
     width: 100%;
+  }
+
+  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-folder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .useful-forms-screen:not(.useful-forms-folder-screen) .useful-form-folder:hover {
@@ -671,6 +621,7 @@
 }
 
 @media (min-width: 721px) and (max-width: 900px) {
+  .useful-contacts-root { grid-template-areas: "intro" "search" "directories"; grid-template-columns: minmax(0, 1fr); }
   .useful-forms-screen:not(.useful-forms-folder-screen) {
     grid-template-areas:
       "intro"
@@ -811,8 +762,7 @@
   font-size: clamp(1.35rem, 3vw, 1.8rem);
 }
 
-.useful-expo-schedule-heading p,
-.useful-expo-source-note {
+.useful-expo-schedule-heading p {
   margin: 0;
   color: #5e7082;
   line-height: 1.48;
@@ -962,12 +912,6 @@
 .useful-expo-timeline article.is-uncertain > em {
   color: #915613;
   background: #fff0d9;
-}
-
-.useful-expo-source-note {
-  border-top: 1px solid rgba(78, 139, 128, 0.22);
-  padding-top: 12px;
-  font-size: 0.8rem;
 }
 
 @media (max-width: 600px) {
@@ -1496,5 +1440,54 @@ fieldset.leave-choices {
   .work-exchange-list article button {
     grid-column: 1 / -1;
     width: 100%;
+  }
+}
+
+/* La commande de mise à jour reste discrète et occupe le même coin sur tous
+   les bandeaux, du Fold fermé à l’ordinateur. */
+#root .header-update-label{display:none}#root .header-update-label-compact{display:inline;font-size:clamp(.58rem,1.6vw,.68rem);letter-spacing:.01em}.app-shell>header{align-items:flex-start}.app-shell>header>.top-header-title,.app-shell>header>.header-command-area{align-self:flex-start}.app-shell>header .header-control-cluster{align-items:flex-start}#root .app-update-button.header-update-button{bottom:12px;gap:6px;left:auto;min-height:clamp(30px,8vw,34px);padding:clamp(4px,1.2vw,6px) clamp(8px,2vw,11px);position:absolute;right:clamp(6px,1.7vw,12px);width:auto;z-index:4}#root .app-update-button.header-update-button:not(.update-available){background:rgba(255,253,248,.94);border:1.5px solid rgba(29,48,70,.66);box-shadow:0 5px 14px rgba(16,35,58,.2);color:#245b9b}#root .app-update-button.header-update-button svg{height:15px;width:15px}[class~="top-header-forms"]::before{max-width:calc(100% - 96px)}[class~="top-header-contacts"]::before{max-width:calc(100% - 88px)}
+
+/* Contacts et formulaires partagent désormais une seule destination. Les
+   deux univers restent identifiables, mais utilisent le même cadre et le
+   même rythme vertical. */
+.useful-resources-screen {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+}
+
+.header-title-line {
+  display: block;
+}
+
+.useful-resources-screen > .useful-forms-screen,
+.useful-resources-screen > .useful-contacts-screen {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+}
+
+@media (min-width: 1100px) {
+  .useful-resources-screen {
+    grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.8fr);
+    align-items: start;
+  }
+
+  .useful-resources-screen:has(.useful-forms-folder-screen, .work-accident-screen) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .useful-resources-screen:has(.useful-forms-folder-screen, .work-accident-screen)
+    > .useful-contacts-screen {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .useful-resources-screen {
+    gap: 14px;
   }
 }

@@ -4,6 +4,8 @@ import {
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
+  grandPalaisEntryStatus,
+  grandPalaisVenuePalette,
   isGrandPalaisEntryCurrent,
   isGrandPalaisEntryVisible,
   mergeSharedGrandPalaisProgram,
@@ -11,15 +13,15 @@ import {
 } from "./GrandPalaisProgramSection";
 
 describe("programmation du Grand Palais", () => {
-  it("présente les espaces principaux dans l’ordre demandé", () => {
+  it("ouvre sur les expositions en cours et propose les quatre vues", () => {
     const html = renderToStaticMarkup(<GrandPalaisProgramSection />);
-    expect(html.indexOf("Galeries 3 et 4")).toBeLessThan(html.indexOf("Galerie 8"));
-    expect(html.indexOf("Galerie 8")).toBeLessThan(html.indexOf("Galerie 7"));
-    expect(html.indexOf("Galerie 7")).toBeLessThan(html.indexOf("Palais des enfants"));
-    expect(html.indexOf("Palais des enfants")).toBeLessThan(html.indexOf("Autres"));
-    expect(html.indexOf("Autres")).toBeLessThan(html.indexOf("Périodes d’inter expos"));
-    expect(html).toContain("Nef · Galeries 9 et 10");
-    expect(html).not.toContain("Programmé</em>");
+    expect(html).toContain("En ce moment");
+    expect(html).toContain("À venir");
+    expect(html).toContain("Par espace");
+    expect(html).toContain("Inter-expos");
+    expect(html).toContain('aria-selected="true" class="active">En ce moment');
+    expect(html).toContain("Rechercher une exposition");
+    expect(html).toMatch(/data-venue="(?:galleries34|gallery8|gallery7|nef|gallery910|childrenPalace)"/);
   });
 
   it("range la Nef et les galeries 9 et 10 dans les autres espaces", () => {
@@ -32,6 +34,19 @@ describe("programmation du Grand Palais", () => {
       "Mika Ninagawa with EiM - Alive with Shadows",
     ]);
     expect(GRAND_PALAIS_PROGRAM.childrenPalace.schedule[2026]?.[0].title).toBe("Transparence");
+  });
+
+  it("attribue une couleur stable à chaque espace, y compris ceux ajoutés dans Autres", () => {
+    const currentVenueKeys = [
+      ...Object.keys(GRAND_PALAIS_PROGRAM),
+      "other:grand-palais",
+      "other:rotonde-salon-seine-palais-enfants",
+      "other:galeries-2-2",
+    ];
+    const currentBackgrounds = currentVenueKeys.map((venueKey) => grandPalaisVenuePalette(venueKey).background);
+    expect(new Set(currentBackgrounds).size).toBe(currentVenueKeys.length);
+    expect(grandPalaisVenuePalette("galleries34")).toEqual(grandPalaisVenuePalette("galleries34"));
+    expect(grandPalaisVenuePalette("other:nouvelle-galerie")).toEqual(grandPalaisVenuePalette("other:nouvelle-galerie"));
   });
 
   it("conserve Art Basel 2029 sans ajouter de dates de montage", () => {
@@ -55,6 +70,18 @@ describe("programmation du Grand Palais", () => {
     expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.gallery910.schedule[2026]![0], "2026-08-28")).toBe(true);
     expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.childrenPalace.schedule[2026]![0], "2026-08-28")).toBe(true);
     expect(isGrandPalaisEntryCurrent(GRAND_PALAIS_PROGRAM.nef.schedule[2026]![0], "2026-08-28")).toBe(false);
+  });
+
+  it("précise le statut et les délais à partir des dates enregistrées", () => {
+    expect(grandPalaisEntryStatus({
+      title: "En cours", period: "", startsOn: "2026-09-01", endsOn: "2026-09-12",
+    }, "2026-09-02")).toEqual({ label: "En cours", detail: "10 jours restants" });
+    expect(grandPalaisEntryStatus({
+      title: "À venir", period: "", startsOn: "2026-09-05", endsOn: "2026-09-12",
+    }, "2026-09-02")).toEqual({ label: "Prochainement", detail: "Commence dans 3 jours" });
+    expect(grandPalaisEntryStatus({
+      title: "Prévisionnelle", period: "", uncertain: true, startsOn: "2026-09-05", endsOn: "2026-09-12",
+    }, "2026-09-02")).toEqual({ label: "À confirmer", detail: "" });
   });
 
   it("retire automatiquement une exposition dont la date de fin est dépassée", () => {
@@ -121,6 +148,23 @@ describe("programmation du Grand Palais", () => {
     expect(added["other:salon-honneur"].schedule[2027]?.[0].title).toBe("Exposition du Salon");
     const removed = mergeSharedGrandPalaisProgram(added, [{ ...salon, deleted: true }]);
     expect(removed["other:salon-honneur"].schedule[2027]).toEqual([]);
+  });
+
+  it("ajoute une galerie nouvellement détectée dans Autres après validation", () => {
+    const added = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{
+      id: "gallery-2",
+      title: "Exposition Galerie 2",
+      startDate: "2026-11-21",
+      endDate: "2026-11-21",
+      url: "https://www.grandpalais.fr/fr/programme/exposition-galerie-2",
+      venueKey: "other:galeries-2-2",
+      venueLabel: "Galeries 2.2",
+    }]);
+    expect(added["other:galeries-2-2"]).toMatchObject({ label: "Galeries 2.2" });
+    expect(added["other:galeries-2-2"].schedule[2026]?.[0]).toMatchObject({
+      title: "Exposition Galerie 2",
+      period: "Date officielle : 21 novembre 2026",
+    });
   });
 
   it("garde les fermetures exceptionnelles hors des rubriques d’exposition", () => {

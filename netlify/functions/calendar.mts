@@ -6,6 +6,10 @@ import { readCalendarBody } from "../lib/calendarValidation.mts";
 import { json } from "../lib/calendarShared.mts";
 import { handleCalendarAction } from "../lib/calendar-actions/index.mts";
 import { readCalendar } from "../lib/calendarRead.mts";
+import {
+  isMikaSharingAccount,
+  mirrorSharedCalendarAction,
+} from "../lib/sharedCalendarBridge.mts";
 
 async function calendarHandler(request: Request): Promise<Response> {
   if (!isTrustedMutation(request))
@@ -14,6 +18,7 @@ async function calendarHandler(request: Request): Promise<Response> {
   if (!user?.id || !user.email)
     return json({ error: "Connexion requise" }, 401);
   const store = getStore({ name: "planning-solo", consistency: "strong" });
+  const shareWithAgnes = await isMikaSharingAccount(user.email);
   await migrateLegacyData(store, user.id);
   const scopedKey = (key: string) => userDataKey(user.id, key);
   const entryPrefix = scopedKey("entry/");
@@ -31,6 +36,7 @@ async function calendarHandler(request: Request): Promise<Response> {
       overtimePrefix,
       recoveryUsePrefix,
       mecenatPrefix,
+      shareWithAgnes,
     });
   if (request.method !== "POST")
     return json({ error: "Méthode non autorisée" }, 405);
@@ -41,7 +47,9 @@ async function calendarHandler(request: Request): Promise<Response> {
       parsed.error === "Requête trop volumineuse" ? 413 : 400,
     );
   const body = parsed.body;
-  return handleCalendarAction({
+  if (body.action === "delete-shared-partner-note" && !shareWithAgnes)
+    return json({ error: "Partage privé indisponible" }, 403);
+  const response = await handleCalendarAction({
     body,
     request,
     user: { id: user.id, email: user.email },
@@ -54,6 +62,19 @@ async function calendarHandler(request: Request): Promise<Response> {
     mecenatPrefix,
     calendarHandler,
   });
+  if (response.ok && shareWithAgnes) {
+    const result = (await response.clone().json().catch(() => null)) as
+      | Record<string, unknown>
+      | null;
+    const sharedStatus = await mirrorSharedCalendarAction(
+      shareWithAgnes,
+      body,
+      result || undefined,
+    );
+    if (body.action === "delete-shared-partner-note" && sharedStatus !== "shared")
+      return json({ error: "La note partagée n’a pas pu être supprimée" }, 502);
+  }
+  return response;
 }
 
 export default calendarHandler;

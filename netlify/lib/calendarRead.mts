@@ -9,6 +9,8 @@ import {
   json,
   listBlobs,
 } from "./calendarShared.mts";
+import { readAgnesSharedCalendar, syncExistingSharedCalendar } from "./sharedCalendarBridge.mts";
+import { isCalendarTombstone } from "./calendarAtomic.mts";
 
 type CalendarReadContext = {
   email: string;
@@ -19,6 +21,7 @@ type CalendarReadContext = {
   overtimePrefix: string;
   recoveryUsePrefix: string;
   mecenatPrefix: string;
+  shareWithAgnes: boolean;
 };
 
 export async function readCalendar(
@@ -33,6 +36,7 @@ export async function readCalendar(
     overtimePrefix,
     recoveryUsePrefix,
     mecenatPrefix,
+    shareWithAgnes,
   } = context;
   const [
     listed,
@@ -41,6 +45,7 @@ export async function readCalendar(
     listedRecoveryUses,
     listedMecenat,
     formProfile,
+    sharedCalendar,
   ] = await Promise.all([
     listBlobs(store, entryPrefix),
     listBlobs(store, periodPrefix),
@@ -50,6 +55,7 @@ export async function readCalendar(
     store.get(scopedKey("form-profile"), {
       type: "json",
     }) as Promise<FormProfile | null>,
+    readAgnesSharedCalendar(shareWithAgnes),
   ]);
   const [entries, periods, overtimeEntries, recoveryUses, mecenatEntries] =
     await Promise.all([
@@ -78,25 +84,37 @@ export async function readCalendar(
       ),
     ]);
   const cleanEntries = entries.filter((entry): entry is CalendarEntry =>
-    Boolean(entry),
+    Boolean(entry) && !isCalendarTombstone(entry),
   );
   const cleanPeriods = periods.filter((period): period is LeavePeriod =>
-    Boolean(period),
+    Boolean(period) && !isCalendarTombstone(period),
   );
   const cleanOvertime = overtimeEntries.filter(
-    (item): item is OvertimeEntry => Boolean(item),
+    (item): item is OvertimeEntry => Boolean(item) && !isCalendarTombstone(item),
   );
   const cleanRecoveryUses = recoveryUses.filter(
-    (item): item is RecoveryUse => Boolean(item),
+    (item): item is RecoveryUse => Boolean(item) && !isCalendarTombstone(item),
   );
   const cleanMecenat = mecenatEntries.filter(
-    (item): item is MecenatEntry => Boolean(item),
+    (item): item is MecenatEntry => Boolean(item) && !isCalendarTombstone(item),
   );
   cleanEntries.sort((a, b) => a.date.localeCompare(b.date));
   cleanPeriods.sort((a, b) => a.from.localeCompare(b.from));
   cleanOvertime.sort((a, b) => a.date.localeCompare(b.date));
   cleanRecoveryUses.sort((a, b) => a.date.localeCompare(b.date));
   cleanMecenat.sort((a, b) => a.date.localeCompare(b.date));
+  const backfillKey = scopedKey("shared-calendar-backfill-v1");
+  const alreadyBackfilled = shareWithAgnes
+    ? await store.get(backfillKey, { type: "text" })
+    : null;
+  if (shareWithAgnes && alreadyBackfilled !== "done") {
+    const status = await syncExistingSharedCalendar(
+      true,
+      cleanEntries as unknown as Array<Record<string, unknown>>,
+      cleanPeriods as unknown as Array<Record<string, unknown>>,
+    );
+    if (status === "shared") await store.set(backfillKey, "done");
+  }
   return json({
     email,
     entries: cleanEntries,
@@ -104,6 +122,7 @@ export async function readCalendar(
     overtime_entries: cleanOvertime,
     recovery_uses: cleanRecoveryUses,
     mecenat_entries: cleanMecenat,
-    form_profile: formProfile || null,
+    form_profile: formProfile && !isCalendarTombstone(formProfile) ? formProfile : null,
+    shared_calendar: sharedCalendar,
   });
 }

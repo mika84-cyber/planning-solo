@@ -62,7 +62,6 @@ export function WorkAccidentSection({
     <section className="work-accident-screen" aria-labelledby="work-accident-title">
       <header className="work-accident-header">
         <button type="button" className="native-back-button section-back-hit-area" onClick={onBack} aria-label="Revenir aux formulaires utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
-        <img src="/work-accident-icon.png" alt="" width="256" height="205" />
         <div>
           <span className="step-label">Formulaires utiles</span>
           <h2 id="work-accident-title">Déclarer un accident de travail</h2>
@@ -74,6 +73,15 @@ export function WorkAccidentSection({
         <button type="button" className={status === "contractuel" ? "active" : ""} onClick={() => setStatus("contractuel")}>Contractuel</button>
         <button type="button" className={status === "fonctionnaire" ? "active" : ""} onClick={() => setStatus("fonctionnaire")}>Fonctionnaire</button>
       </div>
+
+      <section className="work-accident-card work-accident-primary-documents">
+        <h3>Documents à utiliser</h3>
+        <div className="work-accident-documents">
+          {DOCUMENTS[status].map(([title, href]) => (
+            <a key={href} href={href} download><span>PDF</span><strong>{title}</strong><b>Télécharger</b></a>
+          ))}
+        </div>
+      </section>
 
       <section className="work-accident-urgent" aria-labelledby="work-accident-urgent-title">
         <h3 id="work-accident-urgent-title">À faire immédiatement</h3>
@@ -135,17 +143,8 @@ export function WorkAccidentSection({
           {CONTACTS.map((contact) => (
             <a key={contact.label} href={contact.href}>
               <span><strong>{contact.label}</strong><small>{contact.detail}</small></span>
-              <b>{contact.action}</b>
+              <b className={`work-accident-contact-action ${contact.href.startsWith("mailto:") ? "email" : "phone"}`}>{contact.action}</b>
             </a>
-          ))}
-        </div>
-      </section>
-
-      <section className="work-accident-card">
-        <h3>Documents à utiliser</h3>
-        <div className="work-accident-documents">
-          {DOCUMENTS[status].map(([title, href]) => (
-            <a key={href} href={href} download><span>PDF</span><strong>{title}</strong><b>Télécharger</b></a>
           ))}
         </div>
       </section>

@@ -1,5 +1,7 @@
 import { s } from "./planningLogic";
+import { useState } from "react";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
+import { isPayslipImage, PAYSLIP_FILE_ACCEPT } from "./payslipOcr";
 
 type Props = Pick<
   PayslipCheckSectionProps,
@@ -15,8 +17,9 @@ export function PayslipCalibrationCard({
   rateSamples: payslipRateSamples,
   rateCalibration: payslipRateCalibration,
 }: Props) {
+  const [includesPhoto, setIncludesPhoto] = useState(false);
   return (
-    <section className="allowance-card pay-function-card payslip-calibration-card">
+    <section id="payslip-calibration" className="allowance-card pay-function-card payslip-calibration-card">
       <header>
         <div>
           <span className="step-label">Améliorer la précision</span>
@@ -26,26 +29,30 @@ export function PayslipCalibrationCard({
         <small>Facultatif</small>
       </header>
       <p className="allowance-note">
-        Sélectionnez ensemble au moins deux bulletins de mois différents.
-        Ils servent uniquement à distinguer plus précisément le taux du
-        traitement de celui des primes ; les PDF ne sont pas conservés.
+        Ajoutez idéalement plusieurs bulletins de mois différents, avec des
+        montants de primes variés. L’application remplit automatiquement les
+        éléments de paie à partir des PDF ou des photos : aucune saisie
+        manuelle n’est nécessaire. Les fichiers ne sont pas conservés.
       </p>
       <label className="payslip-drop payslip-calibration-drop">
         <input
           type="file"
-          accept="application/pdf,.pdf"
+          accept={PAYSLIP_FILE_ACCEPT}
           multiple
           disabled={payslipImportBusy}
           onChange={(event) => {
             const files = Array.from(event.target.files || []);
             event.target.value = "";
-            if (files.length) void importPayslips(files, "calibrate");
+            if (files.length) {
+              setIncludesPhoto(files.some(isPayslipImage));
+              void importPayslips(files, "calibrate");
+            }
           }}
         />
         <span>
           {payslipImportBusy && payslipImportMode === "calibrate"
-            ? "Analyse en cours…"
-            : "Choisir plusieurs bulletins"}
+            ? includesPhoto ? "Reconnaissance des photos…" : "Analyse en cours…"
+            : "Choisir plusieurs PDF ou photos"}
         </span>
       </label>
       {payslipImportMode === "calibrate" && payslipImportError ? (

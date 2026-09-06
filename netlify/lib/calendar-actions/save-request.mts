@@ -1,6 +1,7 @@
 import { LeaveRequestValidationError, normalizeLeaveRequest } from "../../../src/leaveRequest.ts";
-import { holidayRecoveryCreditMinutes, recoveryRequestMinutes } from "../../../src/overtime.ts";
+import { recoveryRequestMinutes, storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
 import { json, listBlobs, type CalendarEntry, type FormProfile, type LeavePeriod, type LeaveType, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
+import { acquireAtomicLock } from "../calendarAtomic.mts";
 import type { CalendarActionContext } from "./context.mts";
 export async function handleSaveRequest(
   context: CalendarActionContext,
@@ -22,6 +23,12 @@ export async function handleSaveRequest(
       400,
     );
   }
+  const release = normalized.requestKind === "recovery"
+    ? await acquireAtomicLock(store, scopedKey("lock/recovery-balance"))
+    : null;
+  if (normalized.requestKind === "recovery" && !release)
+    return json({ error: "Le solde est en cours de modification. Réessayez." }, 409);
+  try {
 
   // Les identifiants sont stables : un nouvel appui après une réponse réseau
   // perdue remplace la même demande au lieu de la dupliquer.
@@ -86,13 +93,9 @@ export async function handleSaveRequest(
       .filter((item): item is OvertimeEntry => Boolean(item))
       .filter((item) => item.disposition === "recovery")
       .reduce((total, item) => total + item.minutes, 0);
-    const earnedFromHolidays = holidayRecoveryCreditMinutes(
-      calendarValues
-        .filter((item): item is CalendarEntry => Boolean(item))
-        .filter((item) => item.holiday_pay === "recovery")
-        .map((item) => item.date),
-      quota,
-    );
+    const earnedFromHolidays = storedHolidayRecoveryCreditMinutes(calendarValues
+      .filter((item): item is CalendarEntry => Boolean(item))
+      .filter((item) => item.holiday_pay === "recovery"));
     const targetIds = new Set(recoveryTargets.map(({ value }) => value.id));
     const usedOutsideRequest = recoveryValues
       .filter((item): item is RecoveryUse => Boolean(item))
@@ -132,4 +135,7 @@ export async function handleSaveRequest(
     periods: periodTargets.map(({ value }) => value),
     recovery_uses: recoveryTargets.map(({ value }) => value),
   });
+  } finally {
+    if (release) await release();
+  }
 }

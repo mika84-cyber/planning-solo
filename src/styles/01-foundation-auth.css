@@ -1,9 +1,9 @@
 :root {
-  --bg: #f2f5f9;
-  --card: #ffffff;
-  --text: #172033;
+  --bg: #efe7dd;
+  --card: #fffdfa;
+  --text: #17283e;
   --muted: #687286;
-  --line: #dde3ec;
+  --line: #cdbfae;
   --accent: #2859b8;
   --work: #fffefa;
   --off: #000000;
@@ -19,7 +19,22 @@
   --green: #12a957;
   --blue: #19a7f2;
   --note: #d3943d;
-  --shadow: 0 12px 36px rgba(31, 46, 78, 0.08);
+  --shadow: 0 16px 38px rgba(78, 57, 38, 0.11);
+  --surface-card: rgba(255, 253, 249, 0.98);
+  --surface-soft: #f4f8fc;
+  --border-card: rgba(91, 111, 132, 0.42);
+  --border-control: rgba(100, 124, 150, 0.34);
+  --radius-panel: 24px;
+  --radius-card: 18px;
+  --radius-control: 13px;
+  --shadow-card: 0 10px 26px rgba(39, 61, 88, 0.085);
+  --action-primary: #2b64bf;
+  --action-positive: #287f60;
+  --action-warning: #b97725;
+  --action-danger: #b83d4f;
+  --app-frame-strong: var(--border-card);
+  --app-frame-soft: var(--border-control);
+  --app-subtle-shadow: var(--shadow-card);
 }
 
 * {
@@ -33,8 +48,10 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f9fbff 0, var(--bg) 330px);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(190, 105, 78, 0.15), transparent 32%),
+    linear-gradient(180deg, #fff8ef 0, var(--bg) 430px);
+  font-family: "Segoe UI Variable", "Segoe UI", Arial, Helvetica, sans-serif;
 }
 button,
 select,
