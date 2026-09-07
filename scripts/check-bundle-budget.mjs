@@ -21,11 +21,13 @@ const budgets = {
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
   ocrAssets: { raw: 13_000 * KIB, gzip: 5_200 * KIB },
-  mainCss: { raw: 320 * KIB, gzip: 59 * KIB },
+  // Inclut désormais la navigation complète et les nouveaux états de gestion
+  // des documents, avec une marge limitée au-dessus de la version validée.
+  mainCss: { raw: 340 * KIB, gzip: 63 * KIB },
   // Inclut le CSS autonome de /formulaire ainsi que les pages différées de
   // partage des plannings et de messagerie ; elles n’alourdissent pas le CSS
   // initial et restent chargées uniquement à leur ouverture.
-  totalCss: { raw: 385 * KIB, gzip: 74 * KIB },
+  totalCss: { raw: 420 * KIB, gzip: 81 * KIB },
   payslipSuccessEffect: 3_500 * KIB,
 };
 
