@@ -517,6 +517,7 @@
 .request-validation-impact { display: grid; gap: 3px; border-radius: 11px; padding: 9px 10px; background: #e8f1fc; color: #294f79; }
 .request-validation-impact strong { font-size: 12px; }
 .request-validation-impact span { font-size: 10.5px; font-weight: 700; }
+.request-validation-impact .request-validation-warning{margin-top:3px;border-left:3px solid #b66337;border-radius:7px;padding:7px 8px;background:#fff6eb;color:#7a3f1e;line-height:1.4}
 .request-validation-summary > p {
   display: grid;
   gap: 2px;

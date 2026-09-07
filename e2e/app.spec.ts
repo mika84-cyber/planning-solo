@@ -2994,10 +2994,12 @@ test("une récupération lancée depuis une case suit aussi le calendrier", asyn
     .click();
   const recoveryPanel = page.locator("#request-panel");
   await expect(recoveryPanel.getByLabel("Résumé avant validation").getByText("1 date", { exact: true })).toBeVisible();
+  await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("Vous n’avez plus d’heures de récupération disponibles.");
   await expect(recoveryPanel.getByRole("button", { name: "Récupération en journée" })).toHaveClass(/active/);
-  await expect(recoveryPanel.getByRole("button", { name: "Continuer vers le formulaire" })).toBeVisible();
+  await expect(recoveryPanel.getByRole("button", { name: "Continuer vers le formulaire" })).toBeDisabled();
   const directPlanningChoice = recoveryPanel.getByRole("button", { name: "Enregistrer au planning sans formulaire" });
   await expect(directPlanningChoice).toBeVisible();
+  await expect(directPlanningChoice).toBeDisabled();
   await expect(directPlanningChoice).toHaveClass(/request-planning-choice/);
   await expect(directPlanningChoice.getByText("Sans préparer de formulaire")).toBeVisible();
   await expect(directPlanningChoice).toHaveCSS("border-radius", "14px");
@@ -3024,6 +3026,23 @@ test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page 
     await request.getByRole("button", { name: "Enregistrer au planning sans formulaire" }).click();
     await expect(day.getByText(choices[index].marker, { exact: true })).toBeVisible();
   }
+});
+
+test("une demande mixte détaille séparément les CA et les RTT", async ({ page }) => {
+  await prepareDemo(page);
+  const workDays = page.locator(".month-card .day.work");
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
+  await page.getByRole("dialog", { name: "Poser un congé" })
+    .getByRole("button", { name: /^CA Congés annuels/ })
+    .click();
+  const request = page.locator("#request-panel");
+  await workDays.nth(0).click();
+  await request.getByRole("button", { name: "RTT", exact: true }).click();
+  await workDays.nth(1).click();
+  const summary = request.getByLabel("Résumé avant validation");
+  await expect(summary).toContainText(/CA : 1 jour déduit · \d+ → \d+/);
+  await expect(summary).toContainText(/RTT : 1 jour déduit · \d+ → \d+/);
+  await expect(request.getByRole("button", { name: "Continuer vers le formulaire" })).toBeEnabled();
 });
 
 test("nettoyage et gestion d’un congé utilisent des actions directes", async ({ page }) => {

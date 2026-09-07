@@ -65,7 +65,7 @@ import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
 import { workExchangeForDate } from "./workExchange";
-import { RequestValidationSummary } from "./RequestValidationSummary";
+import { RequestValidationSummary, requestRecoveryMinutes } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -978,7 +978,6 @@ export default function Home() {
       ),
     [selectedList],
   );
-
   function exceptionalClosureFor(key: string) {
     const override = entries[key]?.closureOverride;
     if (override === "open") return undefined;
@@ -1515,6 +1514,8 @@ export default function Home() {
     () => monthlyRecoveryBalance(recoveryEarnings, recoveryUses),
     [recoveryEarnings, recoveryUses],
   );
+  const recoverySelectionInsufficient = requestKind === "recovery" &&
+    requestRecoveryMinutes(selectedList, workQuota) > recoveryBalance.remaining;
   const recoveryEarningStates = useMemo(
     () =>
       new Map(
@@ -3518,6 +3519,15 @@ export default function Home() {
         }}
         unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
+      {installationEnabled && installPrompt && (
+        <button
+          className="install-app-button"
+          type="button"
+          onClick={installApp}
+        >
+          Installer l’application
+        </button>
+      )}
       {homeSection === "home" ? (
         <div className="home-view-mode-bar">
           <div className="view-switch" role="group" aria-label="Mode d’affichage">
@@ -4259,7 +4269,7 @@ export default function Home() {
                 className="validate-button"
                 type="button"
                 onClick={() => void validateAndOpenForm()}
-                disabled={!selectedList.length || savingRequest}
+                disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient}
               >
                 {savingRequest
                   ? requestKind === "other" || sickRequest
@@ -4277,7 +4287,7 @@ export default function Home() {
                   type="button"
                   aria-label="Enregistrer au planning sans formulaire"
                   onClick={() => void saveRequestToPlanning()}
-                  disabled={!selectedList.length || savingRequest}
+                  disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient}
                 >
                   <span aria-hidden="true">✓</span>
                   <strong>Enregistrer au planning</strong>
@@ -5270,15 +5280,6 @@ export default function Home() {
         onArchiveLegacyData={() => void archiveLegacyData()}
         onDeleteAllData={() => void deleteAllUserData()}
       />
-      {installationEnabled && installPrompt && (
-        <button
-          className="install-app-button"
-          type="button"
-          onClick={installApp}
-        >
-          Installer l’application
-        </button>
-      )}
       {viewportDebugEnabled && (
         <div
           style={{

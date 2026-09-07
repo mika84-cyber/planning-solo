@@ -63,10 +63,9 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 .install-app-button {
-  position: fixed;
-  z-index: 90;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
+  display: block;
+  width: fit-content;
+  margin: 0 0 12px auto;
   min-height: 48px;
   border: 0;
   border-radius: 15px;

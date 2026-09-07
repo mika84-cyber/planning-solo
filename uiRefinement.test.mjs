@@ -61,6 +61,13 @@ const requestValidationSummary = readFileSync(new URL("./src/RequestValidationSu
 const planningDialogs = readFileSync(new URL("./src/PlanningDialogs.tsx", import.meta.url), "utf8");
 
 describe("finitions d’interface", () => {
+  it("garde la proposition d’installation dans le flux de la page", () => {
+    expect(appRoot.indexOf('className="install-app-button"')).toBeLessThan(
+      appRoot.indexOf('{homeSection === "home" ? ('),
+    );
+    expect(styles).not.toMatch(/\.install-app-button\s*\{[^}]*position:\s*fixed/s);
+  });
+
   it("diffère les pages secondaires et met le profil de paie en avant", () => {
     expect(appSections).toContain('import("./PayPage").then');
     expect(appSections).toContain('import("./PayEstimateDetails").then');
