@@ -47,6 +47,13 @@ export function savePayslipVerification(accountId: string, record: PayslipVerifi
   localStorage.setItem(storageKey(accountId), JSON.stringify(records));
 }
 
+export function removePayslipVerification(accountId: string, year: number, month: number) {
+  if (typeof localStorage === "undefined") return;
+  const records = readRecords(accountId);
+  delete records[payslipVerificationPeriodKey(year, month)];
+  localStorage.setItem(storageKey(accountId), JSON.stringify(records));
+}
+
 export function payslipAnomalyReportLines(record: PayslipVerificationRecord) {
   const lines = [
     `Bulletin : ${record.sourceName || "fichier non précisé"}`,
@@ -59,6 +66,7 @@ export function payslipAnomalyReportLines(record: PayslipVerificationRecord) {
     lines.push(`${issue.label} — bulletin : ${found} ; attendu : ${expected}`);
   }
   if (record.note.trim()) lines.push(`Observation : ${record.note.trim()}`);
+  if (!record.issues.length && !record.note.trim()) lines.push("Anomalie signalée manuellement — aucun écart n’a été identifié automatiquement.");
   return lines;
 }
 

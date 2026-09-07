@@ -183,8 +183,9 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Taux d’imposition (PAS)");
     expect(html).toContain("0,4 %");
     expect(html).toContain("Dimanches payés");
-    expect(html).toContain("Anomalies ou observations");
-    expect(html).toContain("Enregistrer les anomalies");
+    expect(html).toContain("Signaler une anomalie");
+    expect(html).not.toContain("Anomalies ou observations");
+    expect(html).not.toContain("Enregistrer les anomalies");
   });
 
   it("conserve les arrêts maladie et l'édition des paramètres", () => {

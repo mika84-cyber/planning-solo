@@ -354,6 +354,26 @@ export type InterExhibitionPeriod = {
   endsOn: string;
 };
 
+export function describeInterExhibitionPeriod(period: InterExhibitionPeriod, today: string) {
+  const durationDays = dayDistance(period.startsOn, period.endsOn) + 1;
+  if (period.startsOn <= today && today <= period.endsOn) {
+    const remainingDays = dayDistance(today, period.endsOn);
+    return {
+      durationDays,
+      status: "En cours" as const,
+      timing: remainingDays === 0
+        ? "Se termine aujourd’hui"
+        : `Se termine dans ${remainingDays} jour${remainingDays > 1 ? "s" : ""}`,
+    };
+  }
+  const beforeStart = dayDistance(today, period.startsOn);
+  return {
+    durationDays,
+    status: "À venir" as const,
+    timing: beforeStart === 1 ? "Commence demain" : `Commence dans ${beforeStart} jours`,
+  };
+}
+
 function addIsoDays(value: string, amount: number) {
   const date = new Date(`${value}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + amount);
@@ -583,7 +603,7 @@ export function GrandPalaisProgramSection() {
             <button key={value} type="button" role="tab" aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>{label}</button>
           ))}
         </div>
-        <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label>
+        {programView !== "interexpo" ? <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label> : null}
       </div>
 
       {programView === "space" ? <section className="grand-palais-venue-navigation" aria-labelledby="grand-palais-spaces-title">
@@ -647,11 +667,17 @@ export function GrandPalaisProgramSection() {
             </p>
           </div>
           <div className="grand-palais-interexpo-list">
-            {interExhibitionPeriods.length ? interExhibitionPeriods.map((period) => (
-              <article key={`${period.startsOn}-${period.endsOn}`}>
-                <strong>Du {formatFrenchDate(period.startsOn)} au {formatFrenchDate(period.endsOn)}</strong>
-              </article>
-            )) : <p>Aucune période commune calculable pour le moment.</p>}
+            {interExhibitionPeriods.length ? interExhibitionPeriods.map((period, index) => {
+              const detail = describeInterExhibitionPeriod(period, today);
+              return (
+                <article key={`${period.startsOn}-${period.endsOn}`} data-status={detail.status}>
+                  <header><span>Période {index + 1}</span><em>{detail.status}</em></header>
+                  <strong>Du {formatFrenchDate(period.startsOn)} au {formatFrenchDate(period.endsOn)}</strong>
+                  <p><b>{detail.durationDays} jours</b> sans exposition ouverte dans les trois galeries.</p>
+                  <small>{detail.timing}</small>
+                </article>
+              );
+            }) : <p className="empty-state">Aucune période commune calculable pour le moment.</p>}
           </div>
         </section>
       ) : programView === "now" || programView === "upcoming" ? (

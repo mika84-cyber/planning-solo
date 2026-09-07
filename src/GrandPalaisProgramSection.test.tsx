@@ -4,6 +4,7 @@ import {
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
+  describeInterExhibitionPeriod,
   grandPalaisEntryStatus,
   grandPalaisVenuePalette,
   isGrandPalaisEntryCurrent,
@@ -108,6 +109,19 @@ describe("programmation du Grand Palais", () => {
       const duration = (new Date(period.endsOn).getTime() - new Date(period.startsOn).getTime()) / 86_400_000 + 1;
       return duration >= 3;
     })).toBe(true);
+  });
+
+  it("détaille la durée et l’échéance d’une période d’inter-expositions", () => {
+    expect(describeInterExhibitionPeriod({ startsOn: "2026-08-31", endsOn: "2026-09-22" }, "2026-09-07")).toEqual({
+      durationDays: 23,
+      status: "En cours",
+      timing: "Se termine dans 15 jours",
+    });
+    expect(describeInterExhibitionPeriod({ startsOn: "2026-09-08", endsOn: "2026-09-12" }, "2026-09-07")).toEqual({
+      durationDays: 5,
+      status: "À venir",
+      timing: "Commence demain",
+    });
   });
 
   it("applique une mise à jour acceptée à tous les utilisateurs", () => {

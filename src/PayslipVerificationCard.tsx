@@ -14,6 +14,7 @@ import {
   createPayslipAnomalyPdf,
   loadPayslipVerification,
   payslipAnomalyPdfName,
+  removePayslipVerification,
   savePayslipVerification,
   type PayslipVerificationRecord,
   type PayslipVerificationStatus,
@@ -23,6 +24,29 @@ function formatReviewValue(row: PayslipReviewCheck, value: number) {
   if (row.key === "sundays") return value.toLocaleString("fr-FR");
   if (row.key === "pas-rate") return `${value.toLocaleString("fr-FR")} %`;
   return euros(value);
+}
+
+function PayslipIssueList({ issues, title }: { issues: PayslipReviewCheck[]; title?: string }) {
+  return (
+    <section className="payslip-mismatch-list" aria-label={title || "Détail des anomalies enregistrées"}>
+      {title ? <div className="payslip-mismatch-heading"><span>Comparaison détaillée</span><h3>{title}</h3></div> : null}
+      {issues.map((row) => {
+        const found = row.found as number;
+        const difference = found - row.expected;
+        return (
+          <article className="payslip-mismatch-item" key={`mismatch-${row.key}`}>
+            <h4>{row.label}</h4>
+            <div className="payslip-mismatch-values">
+              <span><small>Attendu</small><strong>{formatReviewValue(row, row.expected)}</strong></span>
+              <span><small>Trouvé</small><strong>{formatReviewValue(row, found)}</strong></span>
+              <span><small>Différence</small><strong>{difference > 0 ? "+" : ""}{formatReviewValue(row, difference)}</strong></span>
+            </div>
+            <p><strong>Explication possible :</strong> {explainPayslipGap(row)}</p>
+          </article>
+        );
+      })}
+    </section>
+  );
 }
 
 type Props = Pick<
@@ -79,18 +103,13 @@ export function PayslipVerificationCard({
   const [activeImportSource, setActiveImportSource] = useState<"file" | "photo">("file");
   const [savedDecision, setSavedDecision] = useState<PayslipVerificationRecord | null>(() =>
     loadPayslipVerification(accountId, allowances.year, displayedMonth));
-  const [decisionMode, setDecisionMode] = useState<PayslipVerificationStatus | null>(() =>
-    savedDecision?.status || (payslipReview?.issues.length ? "attention" : null));
-  const [anomalyNote, setAnomalyNote] = useState(savedDecision?.note || "");
   const [decisionError, setDecisionError] = useState("");
   const [sharingReport, setSharingReport] = useState(false);
   useEffect(() => {
     const stored = loadPayslipVerification(accountId, allowances.year, displayedMonth);
     setSavedDecision(stored);
-    setDecisionMode(stored?.status || (payslipReview?.issues.length ? "attention" : null));
-    setAnomalyNote(stored?.note || "");
     setDecisionError("");
-  }, [accountId, allowances.year, displayedMonth, payslipReview?.issues.length]);
+  }, [accountId, allowances.year, displayedMonth]);
   const comparableGross =
     payslipCheck?.reading.month === displayedMonth &&
     payslipCheck.reading.year === allowances.year &&
@@ -102,16 +121,12 @@ export function PayslipVerificationCard({
         }
       : null;
   const recordDecision = (status: PayslipVerificationStatus) => {
-    if (status === "attention" && !anomalyNote.trim() && !payslipReview?.issues.length) {
-      setDecisionError("Décrivez au moins une anomalie avant de l’enregistrer.");
-      return;
-    }
     const record: PayslipVerificationRecord = {
       status,
       year: allowances.year,
       month: displayedMonth,
       sourceName: payslipCheck?.name || "",
-      note: status === "attention" ? anomalyNote.trim() : "",
+      note: "",
       issues: status === "attention" ? (payslipReview?.issues || []) : [],
       unavailableCount: payslipReview?.unavailable.length || 0,
       verifiedCount: payslipReview?.verified.length || 0,
@@ -119,7 +134,11 @@ export function PayslipVerificationCard({
     };
     savePayslipVerification(accountId, record);
     setSavedDecision(record);
-    setDecisionMode(status);
+    setDecisionError("");
+  };
+  const resetDecision = () => {
+    removePayslipVerification(accountId, allowances.year, displayedMonth);
+    setSavedDecision(null);
     setDecisionError("");
   };
   const prepareReport = async () => {
@@ -169,6 +188,44 @@ export function PayslipVerificationCard({
   };
   return (
           <section className="allowance-card pay-function-card payslip-verify-card" aria-label="Sélection et résultat du bulletin">
+            {savedDecision?.status === "ok" ? (
+              <button
+                type="button"
+                className="payslip-month-check ok"
+                aria-label={`Revoir la vérification de ${MONTHS[savedDecision.month]} ${savedDecision.year}`}
+                onClick={resetDecision}
+              >
+                <span aria-hidden="true">✓</span>
+              </button>
+            ) : savedDecision?.status === "attention" ? (
+              <div className="payslip-month-attention" role="region" aria-label="Résultat du bulletin signalé">
+                <span className="payslip-month-check attention" role="img" aria-label={`Anomalie signalée pour ${MONTHS[savedDecision.month]} ${savedDecision.year}`}>✓</span>
+                <details className="payslip-anomaly-details">
+                  <summary>
+                    <span>Détails de l’anomalie</span>
+                    <strong>{MONTHS[savedDecision.month]} {savedDecision.year}</strong>
+                    <i aria-hidden="true">⌄</i>
+                  </summary>
+                  <div>
+                    <p className="allowance-note">{savedDecision.verifiedCount} ligne{s(savedDecision.verifiedCount)} vérifiée{s(savedDecision.verifiedCount)} · {savedDecision.unavailableCount} non vérifiable{s(savedDecision.unavailableCount)}</p>
+                    {savedDecision.issues.length ? (
+                      <PayslipIssueList issues={savedDecision.issues} />
+                    ) : (
+                      <p className="allowance-note warn">Anomalie signalée. Aucun écart n’a été identifié automatiquement sur les lignes comparables.</p>
+                    )}
+                    {savedDecision.note ? <p className="allowance-note">Observation enregistrée : {savedDecision.note}</p> : null}
+                    <div className="payslip-report-actions">
+                      <button type="button" onClick={() => void downloadReport()} disabled={sharingReport}>Télécharger le PDF</button>
+                      <button type="button" onClick={() => void shareReport("email")} disabled={sharingReport}>E-mail</button>
+                      <button type="button" onClick={() => void shareReport("whatsapp")} disabled={sharingReport}>WhatsApp</button>
+                    </div>
+                    <button type="button" className="text-button" onClick={resetDecision}>Recommencer la vérification</button>
+                    {decisionError ? <p className="allowance-note warn" role="alert">{decisionError}</p> : null}
+                  </div>
+                </details>
+              </div>
+            ) : (
+            <>
             <div className="payslip-guide-step active">
               <span className="payslip-guide-number">1</span>
               <div>
@@ -346,59 +403,18 @@ export function PayslipVerificationCard({
                 <section className="payslip-review-decision" aria-label="Conclusion de la vérification">
                   <div><span>Votre conclusion</span><strong>Valider le contrôle du bulletin</strong></div>
                   <div className="payslip-decision-options">
-                    <button type="button" className={`payslip-decision-ok${decisionMode === "ok" ? " active" : ""}`} onClick={() => recordDecision("ok")}><span aria-hidden="true">✓</span><strong>Tout est OK</strong></button>
-                    <button type="button" className={`payslip-decision-attention${decisionMode === "attention" ? " active" : ""}`} onClick={() => { setDecisionMode("attention"); setDecisionError(""); }}><span aria-hidden="true">!</span><strong>Signaler une anomalie</strong></button>
+                    <button type="button" className="payslip-decision-ok" onClick={() => recordDecision("ok")}><span aria-hidden="true">✓</span><strong>Tout est OK</strong></button>
+                    <button type="button" className="payslip-decision-attention" onClick={() => recordDecision("attention")}><span aria-hidden="true">!</span><strong>Signaler une anomalie</strong></button>
                   </div>
-                  {decisionMode === "attention" ? (
-                    <div className="payslip-anomaly-editor">
-                      <label htmlFor="payslip-anomaly-note">Anomalies ou observations</label>
-                      <textarea id="payslip-anomaly-note" value={anomalyNote} onChange={(event) => setAnomalyNote(event.target.value)} placeholder="Décrivez les lignes ou montants à vérifier…" rows={3} />
-                      <button type="button" className="primary-action" onClick={() => recordDecision("attention")}>Enregistrer les anomalies</button>
-                    </div>
-                  ) : null}
                 </section>
               ) : null}
-              {savedDecision ? (
-                <section className={`payslip-saved-decision ${savedDecision.status}`} aria-label="Résultat enregistré">
-                  <span aria-hidden="true">{savedDecision.status === "ok" ? "✓" : "!"}</span>
-                  <div><strong>{savedDecision.status === "ok" ? "Bulletin vérifié — tout est OK" : "Bulletin vérifié — attention signalée"}</strong><small>{MONTHS[savedDecision.month]} {savedDecision.year}</small></div>
-                  {savedDecision.status === "attention" ? (
-                    <div className="payslip-report-actions">
-                      <button type="button" onClick={() => void downloadReport()} disabled={sharingReport}>Télécharger le PDF</button>
-                      <button type="button" onClick={() => void shareReport("email")} disabled={sharingReport}>E-mail</button>
-                      <button type="button" onClick={() => void shareReport("whatsapp")} disabled={sharingReport}>WhatsApp</button>
-                    </div>
-                  ) : null}
-                </section>
-              ) : null}
-              {decisionError ? <p className="allowance-note warn" role="alert">{decisionError}</p> : null}
               {unplannedPayslipCarence ? (
                 <p className="allowance-note warn">
                   Jour de carence de {euros(payslipCheck.reading.carenceDay as number)} présent sur le bulletin, mais aucun arrêt maladie n’était prévu dans l’application pour ce mois.
                 </p>
               ) : null}
               {payslipReview?.issues.length ? (
-                <section className="payslip-mismatch-list" aria-label="Détail des points qui ne coïncident pas">
-                  <div className="payslip-mismatch-heading">
-                    <span>Comparaison détaillée</span>
-                    <h3>Tous les points qui ne coïncident pas</h3>
-                  </div>
-                  {payslipReview.issues.map((row) => {
-                    const found = row.found as number;
-                    const difference = found - row.expected;
-                    return (
-                      <article className="payslip-mismatch-item" key={`mismatch-${row.key}`}>
-                        <h4>{row.label}</h4>
-                        <div className="payslip-mismatch-values">
-                          <span><small>Attendu</small><strong>{formatReviewValue(row, row.expected)}</strong></span>
-                          <span><small>Trouvé</small><strong>{formatReviewValue(row, found)}</strong></span>
-                          <span><small>Différence</small><strong>{difference > 0 ? "+" : ""}{formatReviewValue(row, difference)}</strong></span>
-                        </div>
-                        <p><strong>Explication possible :</strong> {explainPayslipGap(row)}</p>
-                      </article>
-                    );
-                  })}
-                </section>
+                <PayslipIssueList issues={payslipReview.issues} title="Tous les points qui ne coïncident pas" />
               ) : null}
               {payslipResultDetailsOpen || payslipReview?.tone === "warning" ? (
                 <>
@@ -519,6 +535,8 @@ export function PayslipVerificationCard({
               </button>
             </p>
           ) : null}
+          </>
+          )}
           </section>
   );
 }
