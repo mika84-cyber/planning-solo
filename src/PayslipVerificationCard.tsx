@@ -110,9 +110,10 @@ export function PayslipVerificationCard({
     setSavedDecision(stored);
     setDecisionError("");
   }, [accountId, allowances.year, displayedMonth]);
+  const checkMatchesDisplayedPeriod = payslipCheck?.reading.month === displayedMonth
+    && payslipCheck.reading.year === allowances.year;
   const comparableGross =
-    payslipCheck?.reading.month === displayedMonth &&
-    payslipCheck.reading.year === allowances.year &&
+    checkMatchesDisplayedPeriod && payslipCheck &&
     payslipCheck.reading.gross !== undefined
       ? {
           expected: grossForMonth(displayedMonth),
@@ -257,11 +258,11 @@ export function PayslipVerificationCard({
                 </label>
               </div>
             </div>
-            {payslipCheck && !payslipNeedsPeriod && payslipCheck.reading.month !== undefined && payslipCheck.reading.year !== undefined ? (
+            {checkMatchesDisplayedPeriod && payslipCheck ? (
               <>
                 <div className="payslip-detected-period" role="status">
                   <span>Période reconnue</span>
-                  <strong>{MONTHS[payslipCheck.reading.month]} {payslipCheck.reading.year}</strong>
+                  <strong>{MONTHS[displayedMonth]} {allowances.year}</strong>
                 </div>
                 {comparableGross || payslipCheck.reading.netBeforeTax !== undefined ? (
                   <div className="payslip-actual-values" role="group" aria-label="Valeurs réellement lues sur le bulletin">
@@ -325,7 +326,7 @@ export function PayslipVerificationCard({
             {payslipImportMode === "verify" && payslipImportError ? (
               <p className="allowance-note warn">{payslipImportError}</p>
             ) : null}
-            {payslipImportMode === "verify" && payslipImportResult ? (
+            {payslipImportMode === "verify" && payslipImportResult && (payslipNeedsPeriod || checkMatchesDisplayedPeriod) ? (
               <>
                 <p className="allowance-note">
                   {payslipImportResult.applied.length} champ
@@ -349,22 +350,10 @@ export function PayslipVerificationCard({
                 ) : null}
               </>
             ) : null}
-            {payslipError ? (
+            {payslipError && (!payslipCheck || payslipNeedsPeriod || checkMatchesDisplayedPeriod) ? (
               <p className="allowance-note warn">{payslipError}</p>
             ) : null}
-            {payslipCheck ? (
-            payslipCheck.reading.month === undefined ||
-            payslipCheck.reading.year !== allowances.year ||
-            payslipCheck.reading.month !== displayedMonth ? (
-              <p className="allowance-note warn">
-                Ce bulletin
-                {payslipCheck.reading.month !== undefined
-                  ? ` porte ${MONTHS[payslipCheck.reading.month]} ${payslipCheck.reading.year}`
-                  : " n’indique pas sa période"}{" "}
-                mais sa période ne correspond pas encore au mois affiché.
-                Réessayez ou indiquez sa période manuellement.
-              </p>
-            ) : (
+            {checkMatchesDisplayedPeriod && payslipCheck ? (
             <>
               {payslipReview?.tone === "ok" ? (
                 <PayslipSuccessCelebration
@@ -478,7 +467,7 @@ export function PayslipVerificationCard({
               ) : null}
               <p className="allowance-note">
                 {payslipCheck.name} · comparé à{" "}
-                {MONTHS[payslipCheck.reading.month]} {payslipCheck.reading.year}
+                {MONTHS[displayedMonth]} {allowances.year}
                 . Un écart de quelques centimes vient des arrondis ; au-delà, il
                 y a une vraie différence à comprendre.
               </p>
@@ -486,13 +475,13 @@ export function PayslipVerificationCard({
                 const found = payslipCheck.reading.sundaysBeyondTen;
                 const expected =
                   allowances.monthly.find(
-                    (slot) => slot.index === payslipCheck.reading.month,
+                    (slot) => slot.index === displayedMonth,
                   )?.sundayCount || 0;
                 const missing = expected - found;
                 if (missing <= 0) return null;
                 const target = nextSundayPayoutSlot(
-                  payslipCheck.reading.year,
-                  payslipCheck.reading.month,
+                  allowances.year,
+                  displayedMonth,
                 );
                 if (!target) return null;
                 return (
@@ -518,11 +507,12 @@ export function PayslipVerificationCard({
                 </>
               ) : null}
             </>
-            )
           ) : null}
           {sundayCarryover > 0 &&
           sundayCarryoverMonth !== undefined &&
-          sundayCarryoverYear !== undefined ? (
+          sundayCarryoverYear !== undefined &&
+          sundayCarryoverMonth === displayedMonth &&
+          sundayCarryoverYear === allowances.year ? (
             <p className="allowance-note">
               {sundayCarryover} dimanche{s(sundayCarryover)} en attente pour{" "}
               {MONTHS[sundayCarryoverMonth]} {sundayCarryoverYear}.{" "}

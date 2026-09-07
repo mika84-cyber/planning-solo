@@ -153,6 +153,38 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Signaler une anomalie");
   });
 
+  it("ne reporte pas les détails d’un bulletin sur un autre mois", () => {
+    const html = renderToStaticMarkup(
+      <PayslipCheckSection
+        {...baseProps}
+        displayedMonth={8}
+        importMode="verify"
+        importResult={{ applied: [{ label: "Traitement de base", value: "1 900 €" }], missing: [] }}
+        check={{
+          name: "bulletin-aout.pdf",
+          reading: { month: 7, year: 2026, sundaysBeyondTen: 2, gross: 2500 },
+        }}
+        review={{
+          verdict: "Comparaison disponible",
+          tone: "unknown",
+          issues: [],
+          verified: [{ key: "gross", label: "Cumul brut", found: 2500, expected: 2500 }],
+          unavailable: [],
+        }}
+        sundayCarryover={1}
+        sundayCarryoverMonth={9}
+        sundayCarryoverYear={2026}
+      />,
+    );
+
+    expect(html).toContain("Choisir PDF ou photo");
+    expect(html).not.toContain("Période reconnue");
+    expect(html).not.toContain("bulletin-aout.pdf");
+    expect(html).not.toContain("champ rempli");
+    expect(html).not.toContain("Ce bulletin porte août 2026");
+    expect(html).not.toContain("dimanche en attente pour octobre 2026");
+  });
+
   it("détaille automatiquement toutes les différences reconnues", () => {
     const html = renderToStaticMarkup(
       <PayslipCheckSection

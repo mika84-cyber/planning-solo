@@ -111,7 +111,7 @@ export function PayPage({
             <small>Calculs adaptés à votre statut</small>
           </label>
           <fieldset className="pay-work-schedule">
-            <legend>Sur quels horaires travaillez-vous ?</legend>
+            <legend>Sur quelle plage horaire travaillez-vous ?</legend>
             <p>L’application utilisera cette plage pour proposer des horaires adaptés aux congés et récupérations.</p>
             {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <WorkTimePicker key={key} label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule[key]} onChange={(value) => onWorkScheduleChange({ ...workSchedule, [key]: value })} />)}
           </fieldset>

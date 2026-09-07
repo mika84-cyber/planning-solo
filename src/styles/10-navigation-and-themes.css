@@ -751,13 +751,15 @@
 .pay-profile-picker .choice-picker-trigger {
   min-height: 46px;
   background: rgba(255,255,255,.82);
+  font-size: 15px;
+  font-weight: 850;
 }
 .pay-work-schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; border: 1px solid #d4e0ee; border-radius: 14px; padding: 12px; background: rgba(255,255,255,.58); }.pay-profile-save{grid-column:1/-1;justify-self:end;min-width:180px}
-.pay-work-schedule legend { padding: 0 5px; color: #315d8e; font-size: 12px; font-weight: 850; }
+.pay-work-schedule legend { padding: 0 5px; color: #53677f; font-family: inherit; font-size: 12px; font-weight: 850; }
 .pay-work-schedule > p { grid-column: 1 / -1; font-size: 11px; }
-.pay-work-schedule label,.pay-work-time-field { display: grid; gap: 5px; color: #53677f; font-size: 10.5px; font-weight: 800; }
+.pay-work-schedule label,.pay-work-time-field { display: grid; gap: 5px; color: #53677f; font-family: inherit; font-size: 12px; font-weight: 850; }
 .pay-work-schedule input { min-width: 0; height: 42px; border: 1px solid #c7d5e5; border-radius: 10px; padding: 0 7px; background: #fff; color: var(--text); font: inherit; }
-.pay-work-time-picker{align-items:center;background:#fff;border:1px solid #c7d5e5;border-radius:10px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);height:42px;overflow:hidden}.pay-work-time-picker:focus-within{border-color:#3b75c4;box-shadow:0 0 0 3px rgba(59,117,196,.12)}.pay-work-time-picker select{appearance:none;background:transparent;border:0;color:var(--text);font:inherit;font-weight:850;height:100%;min-width:0;padding:0 8px;text-align:center}.pay-work-time-picker select:focus{outline:0}.pay-work-time-picker b{color:#6b7d91;font-size:14px}
+.pay-work-time-picker{align-items:center;background:#fff;border:1px solid #c7d5e5;border-radius:10px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);height:42px;overflow:hidden}.pay-work-time-picker:focus-within{border-color:#3b75c4;box-shadow:0 0 0 3px rgba(59,117,196,.12)}.pay-work-time-picker select{appearance:none;background:transparent;border:0;color:var(--text);font-family:inherit;font-size:15px;font-weight:850;height:100%;min-width:0;padding:0 8px;text-align:center}.pay-work-time-picker select:focus{outline:0}.pay-work-time-picker b{color:#6b7d91;font-size:15px}
 @media (max-width: 720px) {
   .mecenat-balance-card .overtime-actions,
   .mecenat-balance-card .overtime-actions .mecenat-action,

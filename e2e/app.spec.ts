@@ -628,6 +628,15 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
 
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026", { timeout: 90_000 });
   await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
+  const payMonthNavigation = page.locator(".pay-dashboard-month");
+  await payMonthNavigation.getByRole("button", { name: "Mois suivant" }).click();
+  await expect(page.locator("#pay-dashboard-title")).toHaveText("Octobre 2026");
+  await expect(page.locator(".payslip-detected-period")).toHaveCount(0);
+  await expect(page.locator(".payslip-actual-values")).toHaveCount(0);
+  await expect(page.getByText(/champs remplis : Traitement de base/)).toHaveCount(0);
+  await payMonthNavigation.getByRole("button", { name: "Mois précédent" }).click();
+  await expect(page.locator("#pay-dashboard-title")).toHaveText("Septembre 2026");
+  await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026");
   const decision = page.getByRole("region", { name: "Conclusion de la vérification" });
   await decision.getByRole("button", { name: "Tout est OK" }).click();
   const greenCheck = page.getByRole("button", { name: "Revoir la vérification de septembre 2026" });
@@ -2454,6 +2463,20 @@ test("les horaires du profil alimentent les propositions de congé et récupéra
   await expect(profile).toBeFocused();
   const startHour = page.getByLabel("Heure de début — heures");
   const startMinute = page.getByLabel("Heure de début — minutes");
+  const profileTypography = await profile.evaluate((node) => {
+    const style = (selector: string) => getComputedStyle(node.querySelector(selector)!);
+    const quotaLabel = style(".pay-profile-settings-grid > label > span");
+    const scheduleLegend = style(".pay-work-schedule legend");
+    const hourLabel = style(".pay-work-time-field > span");
+    const quotaValue = style(".pay-profile-picker .choice-picker-trigger");
+    const hourValue = getComputedStyle(node.querySelector(".pay-work-time-picker select")!);
+    return {
+      labels: [quotaLabel, scheduleLegend, hourLabel].map((item) => [item.fontFamily, item.fontSize, item.fontWeight]),
+      values: [quotaValue, hourValue].map((item) => [item.fontFamily, item.fontSize, item.fontWeight]),
+    };
+  });
+  expect(new Set(profileTypography.labels.map((item) => item.join("|"))).size).toBe(1);
+  expect(new Set(profileTypography.values.map((item) => item.join("|"))).size).toBe(1);
   await expect(startHour.locator("option")).toHaveText(["9 h", "10 h", "11 h", "12 h", "13 h", "14 h", "15 h", "16 h", "17 h", "18 h", "19 h"]);
   await expect(startMinute.locator("option")).toHaveText(["00", "15", "30", "45"]);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
