@@ -1159,7 +1159,7 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   await expect(broadcast.getByText("Aperçu local : le message n’a été envoyé à aucun compte.")).toBeVisible();
 
   await page.goto("/?local-test=1&preview-feedback-role=user&demo-feedback-broadcast=1");
-  const popup = page.getByRole("alertdialog", { name: "Message de l’administratrice" });
+  const popup = page.getByRole("alertdialog", { name: "Message de Mika" });
   await expect(popup).toContainText("Une information importante vient d’être publiée");
   const box = await popup.boundingBox();
   const viewport = page.viewportSize()!;

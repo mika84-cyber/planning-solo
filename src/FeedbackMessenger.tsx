@@ -44,7 +44,7 @@ export function FeedbackResolutionAlert({ notice, onDismiss }: {
       <aside className={`feedback-resolution-alert${isReply ? " reply" : ""}`} role="alertdialog" aria-modal="true" aria-labelledby="feedback-notice-title">
         <span className="feedback-resolution-check" aria-hidden="true">{isReply ? "✉" : "✓"}</span>
         <div>
-          <strong id="feedback-notice-title">{isBroadcast ? "Message de l’administratrice" : isReply ? "Vous avez reçu une réponse" : "Votre retour a été traité"}</strong>
+          <strong id="feedback-notice-title">{isBroadcast ? "Message de Mika" : isReply ? "Vous avez reçu une réponse" : "Votre retour a été traité"}</strong>
           <small>{isReply ? notice.message : `${KIND_COPY[notice.kind].label} : ce retour est désormais marqué comme résolu.`}</small>
         </div>
         <button type="button" onClick={onDismiss}>D’accord</button>

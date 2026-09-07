@@ -48,7 +48,7 @@ describe("messagerie interne", () => {
 
   it("affiche un message collectif comme une annonce de l’administratrice", () => {
     const html = renderToStaticMarkup(<FeedbackResolutionAlert notice={{ id: "4", kind: "suggestion", type: "broadcast", message: "Information importante.", createdAt: "2026-09-07" }} onDismiss={() => undefined} />);
-    expect(html).toContain("Message de l’administratrice");
+    expect(html).toContain("Message de Mika");
     expect(html).toContain("Information importante.");
     expect(html).toContain("D’accord");
   });
