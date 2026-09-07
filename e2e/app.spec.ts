@@ -2925,7 +2925,7 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   ]);
   await chooser.getByRole("button", { name: "Fermer" }).click();
 
-  await page.locator(".month-card .day").first().click();
+  await page.locator(".month-card .day.work").first().click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
   await expect(dayDialog.locator(".leave-choices > button")).toHaveText([
     /Congé/,
@@ -2949,6 +2949,14 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   const choiceBorders = await dayDialog.locator(".leave-choices .other-day, .leave-choices .exchange-day-choice")
     .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).borderColor));
   expect(choiceBorders[1]).toBe(choiceBorders[0]);
+
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  const datedChooser = page.getByRole("dialog", { name: "Poser un congé" });
+  await expect(datedChooser).toContainText("Choisissez le type à appliquer");
+  await datedChooser.getByRole("button", { name: /^RTT/ }).click();
+  const datedRequest = page.locator("#request-panel");
+  await expect(datedRequest.getByRole("button", { name: /^RTT/ })).toHaveClass(/active/);
+  await expect(datedRequest.getByLabel("Résumé avant validation").getByText("1 date", { exact: true })).toBeVisible();
 });
 
 test("une récupération ordinaire affiche le cycle sans reproposer Formation", async ({ page }) => {
@@ -3028,7 +3036,7 @@ test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page 
   }
 });
 
-test("une demande mixte détaille séparément les CA et les RTT", async ({ page }) => {
+test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
   await prepareDemo(page);
   const workDays = page.locator(".month-card .day.work");
   await page.locator(".planning-leave-panel .planning-leave-action").click();
@@ -3036,13 +3044,16 @@ test("une demande mixte détaille séparément les CA et les RTT", async ({ page
     .getByRole("button", { name: /^CA Congés annuels/ })
     .click();
   const request = page.locator("#request-panel");
-  await workDays.nth(0).click();
+  await expect(request).toContainText("Une seule demande peut mélanger plusieurs congés.");
+  for (let index = 0; index < 3; index += 1) await workDays.nth(index).click();
   await request.getByRole("button", { name: "RTT", exact: true }).click();
-  await workDays.nth(1).click();
+  for (let index = 3; index < 5; index += 1) await workDays.nth(index).click();
+  await request.getByRole("button", { name: "Congé CET", exact: true }).click();
+  for (let index = 5; index < 8; index += 1) await workDays.nth(index).click();
   const summary = request.getByLabel("Résumé avant validation");
-  await expect(summary).toContainText(/CA : 1 jour déduit · \d+ → \d+/);
-  await expect(summary).toContainText(/RTT : 1 jour déduit · \d+ → \d+/);
-  await expect(request.getByRole("button", { name: "Continuer vers le formulaire" })).toBeEnabled();
+  await expect(summary).toContainText(/CA : 3 jours déduits · \d+ → \d+/);
+  await expect(summary).toContainText(/RTT : 2 jours déduits · \d+ → \d+/);
+  await expect(request.getByRole("button", { name: /^Congé CET/ })).toContainText("3");
 });
 
 test("nettoyage et gestion d’un congé utilisent des actions directes", async ({ page }) => {
@@ -3189,7 +3200,7 @@ test("la signature enregistrée sur téléphone est synchronisée avec le profil
   await expect(page.locator("#msg")).toContainText("synchronisée avec votre compte");
 });
 
-test("les détails des soldes présentent seulement les mois concernés", async ({ page }) => {
+test("les détails des soldes séparent les congés pris et à venir", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem(
       "planning:demo-completed-request-v1",
@@ -3234,18 +3245,18 @@ test("les détails des soldes présentent seulement les mois concernés", async 
   expect(otherTitleBox!.y).toBeLessThan(archivedLabelBox!.y);
   await page.locator(".leave-balance-grid > button.annual").click();
 
-  const months = page.locator(".balance-detail-months > details");
-  await expect(months).toHaveCount(2);
-  await expect(months.nth(0)).toContainText("juillet 2026");
-  await expect(months.nth(1)).toContainText("octobre 2026");
-  await expect(months.locator("[open]")).toHaveCount(0);
-  await months.first().locator("summary").click();
-  await expect(months.first()).toHaveAttribute("open", "");
-  await expect(months.first().locator(".balance-detail-taken")).toContainText("Déjà pris · voir et gérer cette absence");
-  await expect(months.first().locator(".balance-detail-taken .balance-detail-open")).toHaveCSS("background-image", /linear-gradient/);
-  await months.nth(1).locator("summary").click();
-  await expect(months.nth(1).locator(".balance-detail-upcoming")).toContainText("À venir · voir et gérer cette absence");
-  await expect(months.nth(1).locator(".balance-detail-upcoming .balance-detail-open")).toHaveCSS("background-image", /linear-gradient/);
+  const periods = page.locator(".balance-detail-months > details");
+  await expect(periods).toHaveCount(2);
+  await expect(periods.nth(0)).toContainText("Congés déjà pris");
+  await expect(periods.nth(1)).toContainText("Congés à venir");
+  await expect(periods.locator("[open]")).toHaveCount(0);
+  await periods.first().locator("summary").click();
+  await expect(periods.first()).toHaveAttribute("open", "");
+  await expect(periods.first().locator(".balance-detail-taken")).toContainText("Déjà pris · voir et gérer cette absence");
+  await expect(periods.first().locator(".balance-detail-taken .balance-detail-open")).toHaveCSS("background-image", /linear-gradient/);
+  await periods.nth(1).locator("summary").click();
+  await expect(periods.nth(1).locator(".balance-detail-upcoming")).toContainText("À venir · voir et gérer cette absence");
+  await expect(periods.nth(1).locator(".balance-detail-upcoming .balance-detail-open")).toHaveCSS("background-image", /linear-gradient/);
 });
 
 test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", async ({ page }, testInfo) => {

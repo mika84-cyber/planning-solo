@@ -323,7 +323,7 @@ export default function Home() {
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople, setDeletingPeriod,
-    savingRange, requestChooser, setRequestChooser,
+    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
     activeType, setActiveType, selections, setSelections, setTimeDate,
     setWarningDate,
@@ -1930,26 +1930,29 @@ export default function Home() {
       ),
     [balanceDetail],
   );
-  const balanceDetailMonths = useMemo(() => {
-    const months = MONTHS.map((label, monthIndex) => ({
-      key: `${absenceYear}-${String(monthIndex + 1).padStart(2, "0")}`,
-      label: `${label} ${absenceYear}`,
-      units: 0,
-      details: [] as NonNullable<typeof balanceDetail>["details"],
+  const balanceDetailPeriods = useMemo(() => {
+    const todayKey = dateKey(now);
+    const details = balanceDetail?.details ?? [];
+    return [
+      {
+        key: "taken",
+        label: "Congés déjà pris",
+        details: details
+          .filter((detail) => detail.date <= todayKey)
+          .sort((a, b) => b.date.localeCompare(a.date)),
+      },
+      {
+        key: "upcoming",
+        label: "Congés à venir",
+        details: details
+          .filter((detail) => detail.date > todayKey)
+          .sort((a, b) => a.date.localeCompare(b.date)),
+      },
+    ].map((period) => ({
+      ...period,
+      units: period.details.reduce((total, detail) => total + detail.units, 0),
     }));
-    for (const detail of balanceDetail?.details ?? []) {
-      const month = months[Number(detail.date.slice(5, 7)) - 1];
-      if (!month) continue;
-      month.units += detail.units;
-      month.details.push(detail);
-    }
-    return months
-      .map((month) => ({
-        ...month,
-        details: month.details.sort((a, b) => b.date.localeCompare(a.date)),
-      }))
-      .filter((month) => month.details.length > 0);
-  }, [absenceYear, balanceDetail]);
+  }, [balanceDetail, now]);
 
   const agnesLeaveDates = useMemo(() => {
     const dates = new Set(
@@ -2830,8 +2833,18 @@ export default function Home() {
     post: postCalendar,
   });
 
-  function openRequestChooser(_origin: "general" | "planning" = "general") {
+  function openRequestChooser(
+    _origin: "general" | "planning" = "general",
+    initialDate?: string,
+  ) {
+    setRequestChooserDate(initialDate || null);
     setRequestChooser(true);
+  }
+
+  function beginChosenRequest(kind: RequestKind, requestedType: SelectionType) {
+    const initialDate = requestChooserDate || undefined;
+    setRequestChooserDate(null);
+    beginRequest(kind, initialDate, requestedType);
   }
 
   function openPlanningRequestMethod(
@@ -4126,6 +4139,12 @@ export default function Home() {
               {requestKind === "strike" ? "Fermer" : "Annuler la demande"}
             </button>
           </div>
+          {requestKind === "leave" && !sickRequest ? (
+            <p className="multi-type-request-help">
+              <strong>Une seule demande peut mélanger plusieurs congés.</strong>
+              Choisissez un type, cliquez sur ses dates dans le planning, puis changez de type et recommencez — par exemple 3 CA, 2 RTT et 3 CET.
+            </p>
+          ) : null}
           {requestKind === "other" ? (
             <div className="request-option-groups other-request-options">
               <section className="request-option-group">
@@ -4453,32 +4472,36 @@ export default function Home() {
             </button>
             <span className="step-label">Préparer une demande</span>
             <h2 id="request-choice-title">Poser un congé</h2>
-            <p>Choisissez d’abord le type. Les dates, horaires et conséquences seront réunis dans la préparation.</p>
+            <p>
+              {requestChooserDate
+                ? `Choisissez le type à appliquer au ${longDate(fromKey(requestChooserDate))}. Vous pourrez ensuite ajouter d’autres types dans la même demande.`
+                : "Choisissez un premier type. Vous pourrez ensuite sélectionner ses dates, changer de type et continuer dans la même demande."}
+            </p>
             <div className="choice-grid request-primary-choice-grid">
               <button
                 type="button"
-                onClick={() => beginRequest("leave", undefined, "annual")}
+                onClick={() => beginChosenRequest("leave", "annual")}
               >
                 <strong>CA</strong>
                 <span>Congés annuels</span>
               </button>
               <button
                 type="button"
-                onClick={() => beginRequest("leave", undefined, "rtt")}
+                onClick={() => beginChosenRequest("leave", "rtt")}
               >
                 <strong>RTT</strong>
                 <span>Journée ou période</span>
               </button>
               <button
                 type="button"
-                onClick={() => beginRequest("leave", undefined, "fraction")}
+                onClick={() => beginChosenRequest("leave", "fraction")}
               >
                 <strong>Fractionnement</strong>
                 <span>Jour de fractionnement</span>
               </button>
               <button
                 type="button"
-                onClick={() => beginRequest("recovery", undefined, "recovery_day")}
+                onClick={() => beginChosenRequest("recovery", "recovery_day")}
               >
                 <strong>Récupération</strong>
                 <span>Journée, heures, férié ou formation</span>
@@ -4487,12 +4510,12 @@ export default function Home() {
             <details className="request-other-choices">
               <summary>Autres absences</summary>
               <div className="choice-grid">
-                <button type="button" className="cet-leave-choice" onClick={() => beginRequest("leave", undefined, "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
-                <button type="button" className="sick-leave-choice" onClick={() => beginRequest("leave", undefined, "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
-                <button type="button" onClick={() => beginRequest("leave", undefined, "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
-                <button type="button" onClick={() => beginRequest("leave", undefined, "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
-                <button type="button" className="other-leave-choice" onClick={() => beginRequest("other", undefined, "other")}><strong>Divers</strong><span>Jour non travaillé dans le planning</span></button>
-                <button type="button" className="strike-leave-choice" onClick={() => beginRequest("strike", undefined, "strike")}><strong>Grève</strong><span>Avec retenue de paie estimée</span></button>
+                <button type="button" className="cet-leave-choice" onClick={() => beginChosenRequest("leave", "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
+                <button type="button" className="sick-leave-choice" onClick={() => beginChosenRequest("leave", "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
+                <button type="button" onClick={() => beginChosenRequest("leave", "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
+                <button type="button" onClick={() => beginChosenRequest("leave", "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
+                <button type="button" className="other-leave-choice" onClick={() => beginChosenRequest("other", "other")}><strong>Divers</strong><span>Jour non travaillé dans le planning</span></button>
+                <button type="button" className="strike-leave-choice" onClick={() => beginChosenRequest("strike", "strike")}><strong>Grève</strong><span>Avec retenue de paie estimée</span></button>
               </div>
             </details>
           </section>
@@ -4609,9 +4632,11 @@ export default function Home() {
                   <button
                         type="button"
                         className={dayLeave ? "leave active" : "leave"}
-                        onClick={() =>
-                          openPlanningRequestMethod("leave", dayDate)
-                        }
+                        onClick={() => {
+                          const date = dayDate;
+                          setDayDate(null);
+                          openRequestChooser("planning", date);
+                        }}
                       >
                         <i />
                         Congé
@@ -5103,27 +5128,26 @@ export default function Home() {
               </div>
             ) : null}
             <p className="balance-detail-guidance">
-              Ouvrez un mois pour consulter les dates enregistrées. Touchez ensuite une date
+              Ouvrez les congés déjà pris ou les congés à venir. Touchez ensuite une date
               pour la gérer depuis sa fiche.
             </p>
             <div className="balance-detail-months">
-            {balanceDetailMonths.length ? balanceDetailMonths.map((month) => (
-              <details className="balance-detail-month" key={month.key}>
+            {balanceDetailPeriods.map((period) => (
+              <details className={`balance-detail-month balance-detail-${period.key}`} key={period.key}>
                 <summary>
                   <span className="balance-detail-month-label">
-                    <strong>{month.label}</strong>
-                    <small>{month.units.toLocaleString("fr-FR")} jour{s(month.units)}</small>
+                    <strong>{period.label}</strong>
+                    <small>{period.units.toLocaleString("fr-FR")} jour{s(period.units)}</small>
                   </span>
                   <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5" /></svg>
                 </summary>
-                <div className="balance-detail-list">
-                  {month.details.map((detail) => {
+                {period.details.length ? (
+                  <div className="balance-detail-list">
+                  {period.details.map((detail) => {
                     const isUpcoming = detail.date > dateKey(now);
-                    const timingClass = balanceDetail.quota
-                      ? isUpcoming
-                        ? "balance-detail-upcoming"
-                        : "balance-detail-taken"
-                      : "";
+                    const timingClass = isUpcoming
+                      ? "balance-detail-upcoming"
+                      : "balance-detail-taken";
                     return (
                       <article
                         key={`${detail.period.id}-${detail.date}`}
@@ -5164,9 +5188,7 @@ export default function Home() {
                                     ? "Retenue à calculer · voir et gérer"
                                     : `Retenue estimée : −${euros(deduction)} brut · voir et gérer`;
                                 })()
-                              : balanceDetail.quota
-                                ? `${isUpcoming ? "À venir" : "Déjà pris"} · voir et gérer cette absence`
-                                : "Voir et gérer cette absence"}
+                              : `${isUpcoming ? "À venir" : "Déjà pris"} · voir et gérer cette absence`}
                           </small>
                         </span>
                         <span className="balance-detail-value">
@@ -5182,28 +5204,32 @@ export default function Home() {
                       </article>
                     );
                   })}
-                </div>
-                {balanceDetailType === "strike" ? (() => {
-                  const [strikeYear, strikeMonth] = month.key.split("-").map(Number);
-                  return (
-                    <StrikeContinuityDetails
-                      estimate={strikePayEstimate(
-                        periods,
-                        group,
-                        payProfiles,
-                        strikeYear,
-                        strikeMonth - 1,
-                        { entries, recoveryUses },
-                      )}
-                    />
-                  );
-                })() : null}
+                  </div>
+                ) : (
+                  <p className="balance-detail-month-empty">
+                    Aucun congé dans cette rubrique en {absenceYear}.
+                  </p>
+                )}
+                {balanceDetailType === "strike"
+                  ? Array.from(new Set(period.details.map((detail) => detail.date.slice(0, 7)))).map((monthKey) => {
+                      const [strikeYear, strikeMonth] = monthKey.split("-").map(Number);
+                      return (
+                        <StrikeContinuityDetails
+                          key={monthKey}
+                          estimate={strikePayEstimate(
+                            periods,
+                            group,
+                            payProfiles,
+                            strikeYear,
+                            strikeMonth - 1,
+                            { entries, recoveryUses },
+                          )}
+                        />
+                      );
+                    })
+                  : null}
               </details>
-            )) : (
-              <p className="balance-detail-month-empty">
-                Aucune absence datée pour cette catégorie en {absenceYear}.
-              </p>
-            )}
+            ))}
             </div>
             <div className="modal-actions">
               <button

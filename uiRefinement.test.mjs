@@ -191,7 +191,7 @@ describe("finitions d’interface", () => {
 
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {
     expect(app).toContain("Maladie");
-    expect(app).toContain('beginRequest("leave", undefined, "sick")');
+    expect(app).toContain('beginChosenRequest("leave", "sick")');
     expect(app).toContain('dayLeaveType === "sick"');
     expect(app).toContain("saveSickDateDirect(date)");
     expect(app).toContain("prepareAbsenceReplacement");
@@ -273,7 +273,7 @@ describe("finitions d’interface", () => {
   });
 
   it("ajoute Divers directement au planning avec une punaise inclinée", () => {
-    expect(app).toContain('beginRequest("other", undefined, "other")');
+    expect(app).toContain('beginChosenRequest("other", "other")');
     expect(app).toContain("saveOtherDateDirect(dayDate)");
     expect(app).toContain('persistSingleDayPeriod(date, "other")');
     expect(app).not.toContain('openPlanningRequestMethod("other"');
@@ -290,14 +290,14 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("color: #a9243a");
   });
 
-  it("regroupe chaque catégorie de solde par mois", () => {
-    expect(app).toContain("balanceDetailMonths");
-    expect(app).toContain("const months = MONTHS.map");
+  it("sépare chaque catégorie de solde entre congés pris et à venir", () => {
+    expect(app).toContain("balanceDetailPeriods");
+    expect(app).toContain('key: "taken"');
+    expect(app).toContain('key: "upcoming"');
     expect(app).toContain('className="balance-detail-months"');
-    expect(app).toContain('className="balance-detail-month"');
-    expect(app).toContain("month.units.toLocaleString");
-    expect(app).toContain("Aucune absence datée pour cette catégorie");
-    expect(app).toContain(".filter((month) => month.details.length > 0)");
+    expect(app).toContain("balance-detail-${period.key}");
+    expect(app).toContain("period.units.toLocaleString");
+    expect(app).toContain("Aucun congé dans cette rubrique");
     expect(styles).toContain(".balance-detail-month > summary");
     expect(styles).toContain(".balance-detail-month[open]");
   });
@@ -351,8 +351,8 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("balance-multi-delete-toggle");
     expect(app).not.toContain("balance-detail-checkbox");
     expect(app).not.toContain("balance-detail-cancel");
-    expect(app).toContain("Voir et gérer cette absence");
-    expect(app).toContain("Ouvrez un mois pour consulter les dates enregistrées");
+    expect(app).toContain("voir et gérer cette absence");
+    expect(app).toContain("Ouvrez les congés déjà pris ou les congés à venir");
   });
 
   it("place les absences avant les notes avec deux actions de même taille", () => {
@@ -396,7 +396,7 @@ describe("finitions d’interface", () => {
   });
 
   it("réunit la préparation puis propose formulaire ou enregistrement direct", () => {
-    expect(app).toContain('openPlanningRequestMethod("leave", dayDate)');
+    expect(app).toContain('openRequestChooser("planning", date)');
     expect(app).toContain('openPlanningRequestMethod("recovery", dayDate)');
     expect(planningLogic).toContain('"recovery_day",');
     expect(planningLogic).toContain('"recovery_half",');
@@ -406,6 +406,8 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Continuer vers le formulaire");
     expect(app).toContain("Enregistrer au planning sans formulaire");
     expect(app).toContain("Le formulaire est seulement préparé");
+    expect(app).toContain("Une seule demande peut mélanger plusieurs congés.");
+    expect(app).toContain("3 CA, 2 RTT et 3 CET");
     expect(workTimeDialogs).toContain('[480, "8 h"], [360, "6 h"], [240, "4 h"], [225, "3 h 45"], [120, "2 h"]');
     expect(workTimeDialogs).toContain('defaultRecoveryMinutes(draft.kind, effectiveQuota)');
     expect(workTimeDialogs).toContain('draft.kind === "holiday" ? [] : [[null, "Durée libre"]]');
@@ -480,6 +482,8 @@ describe("finitions d’interface", () => {
     expect(leaveDialogs).toContain("Prime de décembre");
     expect(app).toContain('className="balance-detail-open"');
     expect(app).toContain('className="balance-detail-guidance"');
+    expect(app).toContain('label: "Congés déjà pris"');
+    expect(app).toContain('label: "Congés à venir"');
     expect(app).toContain("manualSundayLeaveJanJun");
     expect(styles).toContain(".manual-adjustments-modal");
   });
