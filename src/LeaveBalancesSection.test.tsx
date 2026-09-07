@@ -59,7 +59,7 @@ describe("soldes de congés", () => {
     expect(html).toContain("Mes soldes de congés");
     expect(html).toContain("31 jours restants");
     expect(html).toContain("dont 1 saisi sans date");
-    expect(html).toContain("2 déjà pris · 2 posés à venir");
+    expect(html).toContain("2 déjà pris · 2 à venir");
     expect(html).toContain("2 dimanches");
     expect(html).toContain("Ajouter des jours et dimanches déjà posés, sans préciser les dates");
     expect(html).toContain("Maladie");

@@ -751,6 +751,10 @@
   stroke-linejoin: round;
   stroke-width: 1.8;
 }
+.balance-detail-list article.balance-detail-taken .balance-detail-open { border-color: #9abce0; background: linear-gradient(145deg, #eaf4ff, #f8fbff); }
+.balance-detail-list article.balance-detail-taken .balance-detail-date-copy > strong, .balance-detail-list article.balance-detail-taken .balance-detail-date-copy > small, .balance-detail-list article.balance-detail-taken .balance-detail-value > strong { color: #2363a1; }
+.balance-detail-list article.balance-detail-upcoming .balance-detail-open { border-color: #8fc9aa; background: linear-gradient(145deg, #e9f8f0, #f7fdf9); }
+.balance-detail-list article.balance-detail-upcoming .balance-detail-date-copy > strong, .balance-detail-list article.balance-detail-upcoming .balance-detail-date-copy > small, .balance-detail-list article.balance-detail-upcoming .balance-detail-value > strong { color: #23764e; }
 
 @media (max-width: 720px) {
   .calendar-delete-actions { grid-template-columns: minmax(0, 1fr); }

@@ -1311,7 +1311,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   await expect(workAccidentBalance).toBeVisible();
   await expect(workAccidentBalance).toContainText(/sans carence · CA superposés recrédités/);
   await expect(page.getByRole("button", { name: /Afficher le détail de Congés annuels/ })).toContainText(/0 déjà pris/);
-  await expect(page.getByRole("button", { name: /Afficher le détail de RTT/ })).toContainText(/1 posé à venir/);
+  await expect(page.getByRole("button", { name: /Afficher le détail de RTT/ })).toContainText(/1 à venir/);
   const strikeBalance = page.getByRole("button", { name: /Afficher le détail de Grève/ });
   const balancesGrid = page.locator(".leave-balances-direct .leave-balance-grid");
   await page.evaluate(() => document.fonts.ready);
@@ -3178,7 +3178,10 @@ test("les détails des soldes présentent seulement les mois concernés", async 
         requestId: "e2e-one-balance-month",
         requestKind: "leave",
         group: 2,
-        periods: [{ from: "2026-09-01", to: "2026-09-01", type: "annual" }],
+        periods: [
+          { from: "2026-07-01", to: "2026-07-01", type: "annual" },
+          { from: "2026-10-01", to: "2026-10-01", type: "annual" },
+        ],
         timed: [],
       }),
     );
@@ -3213,12 +3216,17 @@ test("les détails des soldes présentent seulement les mois concernés", async 
   await page.locator(".leave-balance-grid > button.annual").click();
 
   const months = page.locator(".balance-detail-months > details");
-  await expect(months).toHaveCount(1);
-  await expect(months.first()).toContainText("septembre 2026");
+  await expect(months).toHaveCount(2);
+  await expect(months.nth(0)).toContainText("juillet 2026");
+  await expect(months.nth(1)).toContainText("octobre 2026");
   await expect(months.locator("[open]")).toHaveCount(0);
   await months.first().locator("summary").click();
   await expect(months.first()).toHaveAttribute("open", "");
-  await expect(months.first()).toContainText("Voir et gérer cette absence");
+  await expect(months.first().locator(".balance-detail-taken")).toContainText("Déjà pris · voir et gérer cette absence");
+  await expect(months.first().locator(".balance-detail-taken .balance-detail-open")).toHaveCSS("background-image", /linear-gradient/);
+  await months.nth(1).locator("summary").click();
+  await expect(months.nth(1).locator(".balance-detail-upcoming")).toContainText("À venir · voir et gérer cette absence");
+  await expect(months.nth(1).locator(".balance-detail-upcoming .balance-detail-open")).toHaveCSS("background-image", /linear-gradient/);
 });
 
 test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", async ({ page }, testInfo) => {

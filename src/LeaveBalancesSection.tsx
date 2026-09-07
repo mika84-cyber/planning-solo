@@ -90,7 +90,7 @@ export function LeaveBalancesSection({
                 <i>restant{s(balance.remaining)}</i>
               </strong>
               <small>
-                {balance.taken.toLocaleString("fr-FR")} déjà pris · {balance.upcoming.toLocaleString("fr-FR")} posé{s(balance.upcoming)} à venir
+                {balance.taken.toLocaleString("fr-FR")} déjà pris · {balance.upcoming.toLocaleString("fr-FR")} à venir
               </small>
               {balance.manualUsed > 0 ? (
                 <small className="manual-balance-note">

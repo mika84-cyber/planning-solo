@@ -5107,11 +5107,21 @@ export default function Home() {
                   <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5" /></svg>
                 </summary>
                 <div className="balance-detail-list">
-                  {month.details.map((detail) => (
-                    <article
-                      key={`${detail.period.id}-${detail.date}`}
-                      className={recentBalanceDetailDates.has(detail.date) ? "recent-leave-date" : ""}
-                    >
+                  {month.details.map((detail) => {
+                    const isUpcoming = detail.date > dateKey(now);
+                    const timingClass = balanceDetail.quota
+                      ? isUpcoming
+                        ? "balance-detail-upcoming"
+                        : "balance-detail-taken"
+                      : "";
+                    return (
+                      <article
+                        key={`${detail.period.id}-${detail.date}`}
+                        className={[
+                          recentBalanceDetailDates.has(detail.date) ? "recent-leave-date" : "",
+                          timingClass,
+                        ].filter(Boolean).join(" ")}
+                      >
                       <button
                         className="balance-detail-open"
                         type="button"
@@ -5144,7 +5154,9 @@ export default function Home() {
                                     ? "Retenue à calculer · voir et gérer"
                                     : `Retenue estimée : −${euros(deduction)} brut · voir et gérer`;
                                 })()
-                              : "Voir et gérer cette absence"}
+                              : balanceDetail.quota
+                                ? `${isUpcoming ? "À venir" : "Déjà pris"} · voir et gérer cette absence`
+                                : "Voir et gérer cette absence"}
                           </small>
                         </span>
                         <span className="balance-detail-value">
@@ -5157,8 +5169,9 @@ export default function Home() {
                           </svg>
                         </span>
                       </button>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
                 {balanceDetailType === "strike" ? (() => {
                   const [strikeYear, strikeMonth] = month.key.split("-").map(Number);
