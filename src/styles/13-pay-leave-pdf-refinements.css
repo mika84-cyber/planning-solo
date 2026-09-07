@@ -616,7 +616,7 @@
 .pay-calculation-totals article.net strong { color: #423ba6; }
 
 @media (max-width: 720px) {
-  .pay-app-screen:has(.pay-dashboard) { box-sizing: border-box; width: calc(100% - 16px); margin-top: 10px; border-radius: 20px; padding: 9px 9px calc(16px + env(safe-area-inset-bottom)); }
+  #root .pay-app-screen:has(.pay-dashboard) { box-sizing: border-box; width: calc(100vw - 16px); max-width: calc(100vw - 16px); margin-top: 10px; overflow-x: clip; border-radius: 20px; padding: 9px 9px calc(16px + env(safe-area-inset-bottom)); }
   .pay-dashboard,
   .pay-dashboard-motion,
   .pay-dashboard-month,
