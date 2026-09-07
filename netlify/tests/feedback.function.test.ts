@@ -11,7 +11,7 @@ const store = {
     },
   })),
 };
-vi.mock("@netlify/identity", () => ({ getUser: vi.fn(), admin: { getUser: vi.fn() } }));
+vi.mock("@netlify/identity", () => ({ getUser: vi.fn(), admin: { getUser: vi.fn(), listUsers: vi.fn() } }));
 vi.mock("@netlify/blobs", () => ({ getStore: vi.fn(() => store) }));
 vi.mock("../lib/feedbackEmail.mts", () => ({ sendFeedbackAlert: vi.fn() }));
 
@@ -21,6 +21,7 @@ import feedbackHandler from "../functions/feedback.mts";
 
 const mockedGetUser = vi.mocked(getUser);
 const mockedAdminGetUser = vi.mocked(admin.getUser);
+const mockedListUsers = vi.mocked(admin.listUsers);
 const mockedAlert = vi.mocked(sendFeedbackAlert);
 const messageId = "11111111-1111-1111-1111-111111111111";
 const post = (body: unknown, origin?: string) => new Request("https://example.test/api/feedback", {
@@ -40,6 +41,8 @@ describe("messagerie privée des idées et signalements", () => {
     mockedGetUser.mockResolvedValue({ id: "user-1", email: "personne@example.test" } as never);
     mockedAdminGetUser.mockReset();
     mockedAdminGetUser.mockResolvedValue({ id: "user-1", email: "personne@example.test" } as never);
+    mockedListUsers.mockReset();
+    mockedListUsers.mockResolvedValue([] as never);
     mockedAlert.mockReset();
     mockedAlert.mockResolvedValue(true);
     (globalThis as typeof globalThis & { Netlify?: unknown }).Netlify = {
@@ -132,5 +135,22 @@ describe("messagerie privée des idées et signalements", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ sent: true, notified: false });
     expect(data.size).toBe(1);
+  });
+
+  it("réserve le message collectif à l’administrateur et crée seulement des popups pour les invités", async () => {
+    expect((await feedbackHandler(post({ action: "broadcast", message: "Information pour toutes et tous." }))).status).toBe(403);
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    mockedListUsers.mockResolvedValue([
+      { id: "admin", email: "ADMIN@example.test" },
+      { id: "guest-1", email: "invite1@example.test" },
+      { id: "guest-2", email: "invite2@example.test" },
+    ] as never);
+    const response = await feedbackHandler(post({ action: "broadcast", message: "Information pour toutes et tous." }));
+    expect(await response.json()).toMatchObject({ broadcast: true, accounts: 2, delivered: 2, failed: 0 });
+    const notices = [...data.entries()].filter(([key]) => key.startsWith("feedback/resolutions/"));
+    expect(notices).toHaveLength(2);
+    expect(notices.every(([, value]) => (value as { type?: string }).type === "broadcast")).toBe(true);
+    expect(notices.some(([key]) => key.includes("/admin/"))).toBe(false);
+    expect(mockedAlert).not.toHaveBeenCalled();
   });
 });

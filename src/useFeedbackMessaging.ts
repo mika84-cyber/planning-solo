@@ -18,6 +18,8 @@ export function useFeedbackMessaging(isAdmin: boolean, demoMode: boolean, enable
       const showDemoReply = new URLSearchParams(location.search).get("demo-feedback-reply") === "1";
       setResolutionNotices(showDemoReply
         ? [{ id: "22222222-2222-2222-2222-222222222222", kind: "suggestion", type: "reply", message: "Merci pour votre message. Votre proposition sera ajoutée à la prochaine mise à jour.", createdAt: new Date().toISOString() }]
+        : new URLSearchParams(location.search).get("demo-feedback-broadcast") === "1"
+          ? [{ id: "33333333-3333-3333-3333-333333333333", kind: "suggestion", type: "broadcast", message: "Une information importante vient d’être publiée dans Planning Solo.", createdAt: new Date().toISOString() }]
         : showDemoResolution ? [{ id: "11111111-1111-1111-1111-111111111111", kind: "bug", type: "resolved", resolvedAt: new Date().toISOString() }] : []);
       return;
     }

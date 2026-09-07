@@ -29,7 +29,7 @@ async function expectNoSeriousAccessibilityViolation(page: Page, context: string
 }
 
 async function openMainMenu(page: Page) {
-  await page.locator(".mobile-bottom-navigation:visible, .desktop-side-navigation:visible").getByRole("button", { name: "Plus" }).first().click();
+  await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
 }
 
 test("les parcours essentiels ne présentent pas de violation d’accessibilité grave", async ({ page }) => {

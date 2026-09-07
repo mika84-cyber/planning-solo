@@ -33,22 +33,21 @@ function NavigationIcon({ section }: { section: MainSection | "more" | "guide" |
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={paths[section]} /></svg>;
 }
 
-export function AdaptiveNavigation({ homeSection, onNavigate, onMore, unreadFeedbackCount }: {
+export function AdaptiveNavigation({ homeSection, onNavigate }: {
   homeSection: MainSection; onNavigate: (section: MainSection) => void; onMore: () => void; unreadFeedbackCount: number;
 }) {
-  const mobilePrimary = (["home", "leave", "program", "colleagues"] as const).map((key) => ({
+  const mobilePrimary = MAIN_SECTION_ORDER.map((key) => ({
     key,
-    label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "program" ? "Programme" : "Collègues",
+    label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Docs" : key === "program" ? "Prog" : "Collègues",
   }));
   const desktopPrimary = MAIN_SECTION_ORDER.map((key) => ({ key, label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Documents" : key === "program" ? "Programme" : "Collègues" }));
+  const isActive = (key: MainSection) => homeSection === key || (key === "pdf" && homeSection === "forms");
   return <>
     <nav className="mobile-bottom-navigation" aria-label="Navigation principale">
-      {mobilePrimary.map(({ key, label }) => <button key={key} type="button" className={homeSection === key ? "active" : ""} aria-current={homeSection === key ? "page" : undefined} onClick={() => onNavigate(key)}><NavigationIcon section={key} /><span>{label}</span></button>)}
-      <button type="button" aria-label="Plus" className={!mobilePrimary.some(({ key }) => key === homeSection) ? "active" : ""} onClick={onMore}><NavigationIcon section="more" />{unreadFeedbackCount ? <em>{unreadFeedbackCount > 9 ? "9+" : unreadFeedbackCount}</em> : null}</button>
+      {mobilePrimary.map(({ key, label }) => <button key={key} type="button" className={isActive(key) ? "active" : ""} aria-current={isActive(key) ? "page" : undefined} onClick={() => onNavigate(key)}><NavigationIcon section={key} /><span>{label}</span></button>)}
     </nav>
     <nav className="desktop-side-navigation" aria-label="Navigation principale">
-      {desktopPrimary.map(({ key, label }) => <button key={key} type="button" className={homeSection === key || (key === "pdf" && homeSection === "forms") ? "active" : ""} aria-current={homeSection === key || (key === "pdf" && homeSection === "forms") ? "page" : undefined} onClick={() => onNavigate(key)} title={label}><NavigationIcon section={key} /><span>{label}</span></button>)}
-      <button type="button" aria-label="Plus" onClick={onMore} title="Plus"><NavigationIcon section="more" />{unreadFeedbackCount ? <em>{unreadFeedbackCount > 9 ? "9+" : unreadFeedbackCount}</em> : null}</button>
+      {desktopPrimary.map(({ key, label }) => <button key={key} type="button" className={isActive(key) ? "active" : ""} aria-current={isActive(key) ? "page" : undefined} onClick={() => onNavigate(key)} title={label}><NavigationIcon section={key} /><span>{label}</span></button>)}
     </nav>
   </>;
 }

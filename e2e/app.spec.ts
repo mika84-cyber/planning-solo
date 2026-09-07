@@ -58,22 +58,21 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
   }
   if (page.viewportSize()!.width <= 720) {
-    await expect(page.locator(".mobile-bottom-navigation button > span")).toHaveText(["Accueil", "Congés", "Programme", "Collègues"]);
-    await expect(page.locator(".mobile-bottom-navigation").getByRole("button", { name: "Plus" })).toBeVisible();
+    await expect(page.locator(".mobile-bottom-navigation button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Prog", "Collègues"]);
+    await expect(page.locator(".mobile-bottom-navigation").getByRole("button", { name: "Plus" })).toHaveCount(0);
     const navButtons = await page.locator(".mobile-bottom-navigation > button").evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
-    expect(Math.max(...navButtons.slice(0, 4)) - Math.min(...navButtons.slice(0, 4))).toBeLessThan(1);
-    expect(navButtons[4]).toBeLessThan(navButtons[3]);
+    expect(Math.max(...navButtons.slice(0, 6)) - Math.min(...navButtons.slice(0, 6))).toBeLessThan(1);
     const mobileNav = page.locator(".mobile-bottom-navigation");
     const mobileNavHeight = (await mobileNav.boundingBox())!.height;
     expect(mobileNavHeight).toBeGreaterThanOrEqual(60);
     expect(mobileNavHeight).toBeLessThanOrEqual(72);
     const mobileStyles = await mobileNav.locator("button").evaluateAll((buttons) => buttons.slice(0, 2).map((button) => ({
       background: getComputedStyle(button).backgroundColor,
-      divider: getComputedStyle(button).borderLeftColor,
-      dividerWidth: getComputedStyle(button).borderLeftWidth,
+      divider: getComputedStyle(button, "::before").backgroundColor,
+      dividerHeight: getComputedStyle(button, "::before").height,
     })));
     expect(mobileStyles[0].background).not.toBe(mobileStyles[1].background);
-    expect(mobileStyles[1].dividerWidth).toBe("1px");
+    expect(mobileStyles[1].dividerHeight).toBe("22px");
     expect(mobileStyles[1].divider).not.toBe("rgba(0, 0, 0, 0)");
   } else {
     const desktopNav = page.locator(".desktop-side-navigation");
@@ -104,6 +103,27 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   await page.getByText("Heures supplémentaires et récupérations", { exact: true }).first().click();
   await expect(page.locator("details.leave-tool-disclosure").first()).toHaveAttribute("open", "");
   expect(await firstDisclosureToggle.evaluate((node) => getComputedStyle(node, "::before").content)).toContain("Fermer");
+});
+
+test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "Simulation dédiée au téléphone étroit");
+  await page.setViewportSize({ width: 344, height: 882 });
+  await prepareDemo(page);
+  const navigation = page.locator(".mobile-bottom-navigation");
+  await expect(navigation.locator("button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Prog", "Collègues"]);
+  await expect(navigation.locator("button")).toHaveCount(6);
+  const boxes = await navigation.locator("button").evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
+  expect(boxes.slice(0, 6).every((box) => box.width >= 44)).toBe(true);
+  expect(boxes.every((box) => box.x >= 0 && box.right <= 344)).toBe(true);
+  await navigation.getByRole("button", { name: "Docs" }).click();
+  await expect(page.locator(".top-header h1")).toContainText("Documents et contacts");
+  await expect(navigation.getByRole("button", { name: "Docs" })).toHaveAttribute("aria-current", "page");
+  const progLabel = navigation.getByRole("button", { name: "Prog" }).locator("span");
+  const progTypography = await progLabel.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { fontSize: Number.parseFloat(style.fontSize), lineHeight: Number.parseFloat(style.lineHeight) };
+  });
+  expect(progTypography.lineHeight).toBeGreaterThan(progTypography.fontSize);
 });
 
 async function prepareFutureTrainingAbsenceDemo(
@@ -456,6 +476,13 @@ test("le partage de planning reste lisible et privé sur téléphone", async ({ 
   await expect(page.locator('.colleague-day[aria-current="date"] .colleague-today-dot')).toBeVisible();
   await expect(page.getByText("Les absences sont volontairement affichées sans leur motif.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Télécharger le mois" })).toHaveCount(0);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const [desktopTools, desktopCalendar] = await Promise.all([
+    page.locator(".colleague-planning-tools").boundingBox(),
+    page.locator(".colleague-calendar").boundingBox(),
+  ]);
+  expect(Math.abs(desktopTools!.width - desktopCalendar!.width)).toBeLessThan(2);
+  await page.setViewportSize({ width: 344, height: 882 });
   const annualPdfDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "Télécharger en PDF" }).click();
   expect((await annualPdfDownload).suggestedFilename()).toBe("planning-agnes-2026.pdf");
@@ -881,7 +908,7 @@ test("menu, contact administratrice, paie et PDF restent accessibles", async ({ 
 
 test("la messagerie interne reste privée, compacte et utilisable avec une photo", async ({ page }) => {
   await prepareDemo(page);
-  await expect(page.locator(".mobile-bottom-navigation:visible, .desktop-side-navigation:visible").getByRole("button", { name: /Plus/ }).first()).toContainText("1");
+  await expect(page.locator(".top-header").getByRole("status", { name: "1 message non lu" })).toHaveText("1");
   await openMainMenu(page);
   await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Messagerie interne/ }).click();
 
@@ -1090,6 +1117,56 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     "/useful-forms/horaires-tickets-repas-fast.webp",
   );
   await expect(page.locator(".useful-form-download-list")).toHaveCount(0);
+});
+
+test("l’administrateur peut préparer un document et l’alerte invitée ouvre la bonne rubrique", async ({ page }) => {
+  await prepareDemo(page);
+  await openUsefulResource(page, "Formulaires");
+  const adminPanel = page.locator(".useful-document-admin-panel");
+  await expect(adminPanel.getByText("Ajouter un document")).toBeVisible();
+  await adminPanel.locator("summary").click();
+  await expect(adminPanel.getByLabel("Alerter tous les comptes invités")).not.toBeChecked();
+  await expect(adminPanel.getByText("Affiche une fenêtre au centre de leur application et envoie aussi un e-mail.")).toBeVisible();
+  await adminPanel.getByLabel("Titre du document").fill("Nouvelles consignes Expo");
+  await adminPanel.getByLabel("Fichier PDF ou DOCX").setInputFiles("public/useful-forms/demande-conges.pdf");
+  await adminPanel.getByLabel("Alerter tous les comptes invités").check();
+  await adminPanel.getByRole("button", { name: "Ajouter le document" }).click();
+  await expect(adminPanel.getByText("Document ajouté à la démo locale. Aucune alerte ni aucun e-mail n’a été envoyé.")).toBeVisible();
+  await page.getByRole("button", { name: /Formulaire Expo/ }).click();
+  await expect(page.getByText("Nouvelles consignes Expo")).toBeVisible();
+
+  await page.goto("/?local-test=1&preview-feedback-role=user&demo-document-alert=1");
+  const alert = page.getByRole("alertdialog", { name: "Consignes de la nouvelle exposition" });
+  await expect(alert).toBeVisible();
+  const box = await alert.boundingBox();
+  const viewport = page.viewportSize()!;
+  expect(Math.abs(box!.x + box!.width / 2 - viewport.width / 2)).toBeLessThan(8);
+  expect(Math.abs(box!.y + box!.height / 2 - viewport.height / 2)).toBeLessThan(3);
+  await alert.getByRole("button", { name: "Voir le document" }).click();
+  await expect(page.getByRole("heading", { name: "Formulaires utiles" })).toBeVisible();
+  await expect(alert).toHaveCount(0);
+});
+
+test("l’administrateur peut afficher un message collectif sans envoyer d’e-mail", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Messagerie interne/ }).click();
+  const broadcast = page.locator(".feedback-broadcast");
+  await expect(broadcast.getByText("Popup dans l’application uniquement · aucun e-mail")).toBeVisible();
+  await broadcast.locator("summary").click();
+  await broadcast.getByLabel("Message collectif").fill("Le nouveau planning est disponible.");
+  await broadcast.getByRole("button", { name: "Afficher le message à tous" }).click();
+  await expect(broadcast.getByText("Aperçu local : le message n’a été envoyé à aucun compte.")).toBeVisible();
+
+  await page.goto("/?local-test=1&preview-feedback-role=user&demo-feedback-broadcast=1");
+  const popup = page.getByRole("alertdialog", { name: "Message de l’administratrice" });
+  await expect(popup).toContainText("Une information importante vient d’être publiée");
+  const box = await popup.boundingBox();
+  const viewport = page.viewportSize()!;
+  expect(Math.abs(box!.x + box!.width / 2 - viewport.width / 2)).toBeLessThan(8);
+  expect(Math.abs(box!.y + box!.height / 2 - viewport.height / 2)).toBeLessThan(3);
+  await popup.getByRole("button", { name: "D’accord" }).click();
+  await expect(popup).toHaveCount(0);
 });
 
 test("la déclaration d’accident réunit les démarches et marque le planning sans carence", async ({ page }, testInfo) => {
@@ -1362,6 +1439,10 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   expect(exhibitionBorder.left).toBe("5px");
   expect(exhibitionBorder.background).toBe("rgb(233, 221, 247)");
   await expect(page.locator('.useful-expo-timeline article[data-status="En cours"]')).toContainText("Hilma af Klint");
+  const officialLink = page.getByRole("link", { name: "Voir sur le site du Grand Palais" }).first();
+  await expect(officialLink).toHaveCSS("border-top-style", "none");
+  await expect(officialLink).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(officialLink).toHaveCSS("text-decoration-line", "underline");
   await expect(page.locator('.useful-expo-timeline article[data-status="En cours"] > em')).toHaveText("En cours");
   await expect(page.locator(".useful-expo-timeline")).toContainText("Girls - Adolescence, mode et rébellion");
   await expect(page.locator(".useful-expo-timeline")).not.toContainText("Programmé");

@@ -19,7 +19,7 @@ export type FeedbackResolutionNotice = {
   id: string;
   feedbackId?: string;
   kind: FeedbackKind;
-  type?: "resolved" | "reply";
+  type?: "resolved" | "reply" | "broadcast";
   message?: string;
   createdAt?: string;
   resolvedAt?: string;
@@ -137,5 +137,6 @@ export const markFeedbackRead = (id: string) => feedbackAction<{ read: true }>("
 export const resolveFeedback = (id: string) => feedbackAction<{ resolved: true }>("resolve", id);
 export const deleteFeedback = (id: string) => feedbackAction<{ deleted: true }>("delete", id);
 export const replyToFeedback = (id: string, message: string) => feedbackMessageAction<{ replied: true; reply: { id: string; message: string; sentAt: string } }>("reply", id, message);
+export const broadcastFeedback = (message: string) => feedbackMessageAction<{ broadcast: true; accounts: number; delivered: number; failed: number }>("broadcast", "all-guests", message);
 export const dismissFeedbackResolution = (id: string) => feedbackAction<{ dismissed: true }>("dismiss-resolution", id);
 export const feedbackPhotoUrl = (id: string) => `/api/feedback?photo=${encodeURIComponent(id)}`;

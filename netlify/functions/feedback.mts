@@ -27,7 +27,7 @@ type ResolutionNotice = {
   id: string;
   feedbackId?: string;
   kind: FeedbackKind;
-  type?: "resolved" | "reply";
+  type?: "resolved" | "reply" | "broadcast";
   message?: string;
   createdAt?: string;
   resolvedAt?: string;
@@ -109,6 +109,19 @@ async function listKeys(store: ReturnType<typeof getStore>, prefix: string) {
   return keys;
 }
 
+async function guestAccounts(adminEmail: string) {
+  const guests: Array<{ id: string; email: string }> = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const users = await admin.listUsers({ page, perPage: 100 });
+    guests.push(...users
+      .filter((identityUser) => Boolean(identityUser.id && identityUser.email)
+        && identityUser.email?.trim().toLocaleLowerCase("fr") !== adminEmail)
+      .map((identityUser) => ({ id: identityUser.id, email: identityUser.email as string })));
+    if (users.length < 100) break;
+  }
+  return guests;
+}
+
 async function publicMessage(store: ReturnType<typeof getStore>, item: StoredFeedback) {
   const { photo, senderUserId: _senderUserId, ...message } = item;
   const authorName = !item.anonymous && (!item.authorName || item.authorName === "Utilisateur Planning Solo")
@@ -161,6 +174,30 @@ export default async function feedbackHandler(request: Request) {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
     return json({ error: "Données invalides." }, 400);
+  }
+
+  if (body.action === "broadcast") {
+    if (!isAdmin) return json({ error: "Accès réservé." }, 403);
+    const message = typeof body.message === "string" ? body.message.replace(/\r\n?/g, "\n").trim() : "";
+    if (message.length < 5 || message.length > 800)
+      return json({ error: "Le message collectif doit contenir entre 5 et 800 caractères." }, 400);
+    let guests: Array<{ id: string; email: string }>;
+    try {
+      guests = await guestAccounts(configuredAdminEmail());
+    } catch (error) {
+      console.error("Annuaire des comptes invités indisponible", error);
+      return json({ error: "Les comptes invités sont momentanément indisponibles." }, 503);
+    }
+    const notice: ResolutionNotice = {
+      id: crypto.randomUUID(),
+      kind: "suggestion",
+      type: "broadcast",
+      message,
+      createdAt: new Date().toISOString(),
+    };
+    const results = await Promise.allSettled(guests.map((guest) => store.setJSON(noticeKey(guest.id, notice.id), notice)));
+    const delivered = results.filter((result) => result.status === "fulfilled").length;
+    return json({ broadcast: true, accounts: guests.length, delivered, failed: guests.length - delivered });
   }
 
   if (body.action === "dismiss-resolution") {

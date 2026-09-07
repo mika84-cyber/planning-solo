@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   deleteFeedback,
+  broadcastFeedback,
   FEEDBACK_PHOTO_ACCEPT,
   feedbackPhotoUrl,
   getFeedbackInbox,
@@ -36,13 +37,14 @@ export function FeedbackResolutionAlert({ notice, onDismiss }: {
   notice: FeedbackResolutionNotice;
   onDismiss: () => void;
 }) {
-  const isReply = notice.type === "reply";
+  const isBroadcast = notice.type === "broadcast";
+  const isReply = notice.type === "reply" || isBroadcast;
   return (
     <div className="feedback-resolution-backdrop" role="presentation">
       <aside className={`feedback-resolution-alert${isReply ? " reply" : ""}`} role="alertdialog" aria-modal="true" aria-labelledby="feedback-notice-title">
         <span className="feedback-resolution-check" aria-hidden="true">{isReply ? "✉" : "✓"}</span>
         <div>
-          <strong id="feedback-notice-title">{isReply ? "Vous avez reçu une réponse" : "Votre retour a été traité"}</strong>
+          <strong id="feedback-notice-title">{isBroadcast ? "Message de l’administratrice" : isReply ? "Vous avez reçu une réponse" : "Votre retour a été traité"}</strong>
           <small>{isReply ? notice.message : `${KIND_COPY[notice.kind].label} : ce retour est désormais marqué comme résolu.`}</small>
         </div>
         <button type="button" onClick={onDismiss}>D’accord</button>
@@ -69,6 +71,8 @@ export function FeedbackMessenger({
   const [message, setMessage] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastStatus, setBroadcastStatus] = useState("");
   const [photo, setPhoto] = useState<FeedbackPhotoPayload | undefined>();
   const [photoPreview, setPhotoPreview] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -214,6 +218,27 @@ export function FeedbackMessenger({
     }
   }
 
+  async function sendBroadcast(event: FormEvent) {
+    event.preventDefault();
+    if (broadcastMessage.trim().length < 5 || busy) return;
+    setBusy(true);
+    setError("");
+    setBroadcastStatus("");
+    try {
+      const result = demoMode
+        ? { accounts: 2, delivered: 2, failed: 0 }
+        : await broadcastFeedback(broadcastMessage);
+      setBroadcastMessage("");
+      setBroadcastStatus(demoMode
+        ? "Aperçu local : le message n’a été envoyé à aucun compte."
+        : `Message affiché pour ${result.delivered}/${result.accounts} compte${result.accounts > 1 ? "s" : ""} invité${result.accounts > 1 ? "s" : ""}${result.failed ? ` · ${result.failed} échec${result.failed > 1 ? "s" : ""}` : ""}. Aucun e-mail envoyé.`);
+    } catch (broadcastError) {
+      setError(broadcastError instanceof Error ? broadcastError.message : "Le message collectif n’a pas pu être envoyé.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="feedback-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className={`feedback-dialog${isAdmin ? " inbox" : ""}`} role="dialog" aria-modal="true" aria-labelledby="feedback-title" tabIndex={-1} ref={dialogRef}>
@@ -245,7 +270,15 @@ export function FeedbackMessenger({
               <footer><p><span aria-hidden="true">◆</span> Visible uniquement dans la messagerie administrateur.</p><button type="submit" disabled={busy || photoBusy || message.trim().length < 5}>{busy ? "Envoi…" : "Envoyer le message"}</button></footer>
             </form>
           )
-        ) : (
+        ) : (<>
+          <details className="feedback-broadcast">
+            <summary><span aria-hidden="true">✦</span><strong>Écrire à tous les comptes invités</strong><small>Popup dans l’application uniquement · aucun e-mail</small></summary>
+            <form onSubmit={(event) => void sendBroadcast(event)}>
+              <label><span>Message collectif</span><textarea required minLength={5} maxLength={800} rows={3} value={broadcastMessage} onChange={(event) => setBroadcastMessage(event.target.value.slice(0, 800))} placeholder="Écrivez le message qui apparaîtra au centre de leur écran…" /><small>{broadcastMessage.length} / 800</small></label>
+              <button type="submit" disabled={busy || broadcastMessage.trim().length < 5}>{busy ? "Envoi…" : "Afficher le message à tous"}</button>
+              {broadcastStatus ? <p role="status">{broadcastStatus}</p> : null}
+            </form>
+          </details>
           <div className="feedback-inbox-layout">
             <div className="feedback-message-list" role="list" aria-label="Messages reçus">
               {inboxBusy ? <p className="feedback-empty">Chargement…</p> : messages.length === 0 ? <p className="feedback-empty">Aucun message pour le moment.</p> : messages.map((item) => <button key={item.id} type="button" className={`${selectedId === item.id ? "active " : ""}${item.readAt ? "read" : "unread"}`} onClick={() => void openMessage(item)}><span className={`feedback-kind-dot ${item.kind}`} aria-hidden="true" /><span><strong>{KIND_COPY[item.kind].label}{item.resolvedAt ? " · Résolu" : ""}</strong><small>{item.anonymous ? "Anonyme" : item.authorName || "Utilisateur"} · {new Date(item.createdAt).toLocaleDateString("fr-FR")}</small><em>{item.message}</em></span></button>)}
@@ -266,7 +299,7 @@ export function FeedbackMessenger({
               </> : <div className="feedback-detail-placeholder"><span aria-hidden="true">◇</span><p>Sélectionnez un message pour le consulter.</p></div>}
             </article>
           </div>
-        )}
+        </>)}
         {isAdmin && error ? <p className="feedback-error inbox-error" role="alert">{error}</p> : null}
       </section>
     </div>

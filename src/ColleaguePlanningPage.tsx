@@ -101,7 +101,7 @@ export function CommonDaysPanel({ planning, view, getOwnPresence, referenceDate 
 
   return (
     <section className="colleague-common-days" aria-live="polite">
-      <h3>Nos présences en commun</h3>
+      <header><span aria-hidden="true">◎</span><div><h3>Nos présences en commun</h3></div></header>
       {days.length > 0 ? <div>{days.map(({ date, label }) => <article key={dateKey(date)}><strong>{tomorrowDateFormatter.format(date)}</strong><span>{label}</span></article>)}</div> : <p>Aucun jour de présence commune sur cette période</p>}
     </section>
   );
@@ -291,10 +291,13 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
       <section className="colleague-card colleague-planning-view">
         <div className="colleague-planning-heading"><div><p className="eyebrow">Planning partagé</p><h2>{selected.owner.displayName}</h2></div><button className="secondary" type="button" onClick={() => setSelected(null)}>Retour à mes collègues</button></div>
         <div className="colleague-month-nav"><button type="button" aria-label="Mois précédent" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1, 12))}>‹</button><strong>{MONTHS[view.getMonth()]} {view.getFullYear()}</strong><button type="button" aria-label="Mois suivant" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1, 12))}>›</button></div>
-        <div className="colleague-inline-actions colleague-pdf-actions" style={{ justifyContent: "center", marginBottom: 15 }}>
-          <button className="secondary compact colleague-pdf-download" type="button" disabled={busy} onClick={() => void downloadPlanning()}><span aria-hidden="true">↓</span> Télécharger en PDF</button>
-          {getOwnPresence ? <button className="secondary compact" type="button" aria-expanded={commonDaysOpen} onClick={() => setCommonDaysOpen((current) => !current)}>Nos jours en commun</button> : null}
-        </div>
+        <section className={`colleague-planning-tools${commonDaysOpen ? " is-comparing" : ""}`} aria-label="Outils du planning partagé">
+          <div className="colleague-planning-tools-heading"><span>Outils du mois</span><small>{MONTHS[view.getMonth()]} {view.getFullYear()}</small></div>
+          <div className="colleague-planning-tool-actions">
+            {getOwnPresence ? <button className={`colleague-planning-tool common${commonDaysOpen ? " active" : ""}`} type="button" aria-expanded={commonDaysOpen} onClick={() => setCommonDaysOpen((current) => !current)}><span className="colleague-planning-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6m1-6c3.3 0 6 2.2 6 5" /></svg></span><span><strong>Nos jours en commun</strong><small>Comparer nos présences</small></span></button> : null}
+            <button className="colleague-planning-tool pdf colleague-pdf-download" type="button" disabled={busy} onClick={() => void downloadPlanning()}><span className="colleague-planning-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v5h5M12 10v7m-3-3 3 3 3-3" /></svg></span><span><strong>Télécharger en PDF</strong><small>Conserver ce planning</small></span></button>
+          </div>
+        </section>
         {commonDaysOpen && getOwnPresence ? <CommonDaysPanel planning={selected} view={view} getOwnPresence={getOwnPresence} /> : null}
         <MonthGrid planning={selected} view={view} />
         <p className="colleague-privacy-reminder">Les absences sont volontairement affichées sans leur motif.</p>

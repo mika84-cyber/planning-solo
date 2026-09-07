@@ -14,6 +14,9 @@ export const FeedbackMessenger = lazy(() =>
 export const FeedbackResolutionAlert = lazy(() =>
   import("./FeedbackMessenger").then(({ FeedbackResolutionAlert: Component }) => ({ default: Component })),
 );
+export const DocumentAnnouncementNotice = lazy(() =>
+  import("./DocumentAnnouncementNotice").then(({ DocumentAnnouncementNotice: Component }) => ({ default: Component })),
+);
 export { LeaveBalancesSection } from "./LeaveBalancesSection";
 export { LeaveManagementPage } from "./LeaveManagementPage";
 export { PayAllowancesSection } from "./PayAllowancesSection";
@@ -25,6 +28,10 @@ export const PayPage = lazy(() =>
 );
 export { PayslipCheckSection } from "./PayslipCheckSection";
 export { PdfDownloadPage } from "./PdfDownloadPage";
-export { UsefulContactsSection } from "./UsefulContactsSection";
-export { UsefulFormsSection } from "./UsefulFormsSection";
+export const UsefulContactsSection = lazy(() =>
+  import("./UsefulContactsSection").then(({ UsefulContactsSection: Component }) => ({ default: Component })),
+);
+export const UsefulFormsSection = lazy(() =>
+  import("./UsefulFormsSection").then(({ UsefulFormsSection: Component }) => ({ default: Component })),
+);
 export { UserGuideDialogs } from "./UserGuideDialogs";

@@ -59,11 +59,12 @@ describe("navigation principale", () => {
     expect(html).toContain("desktop-side-navigation");
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("Collègues");
-    expect(html.indexOf("Programme")).toBeLessThan(html.indexOf("Collègues"));
+    expect(html.indexOf(">Prog<")).toBeLessThan(html.indexOf("Collègues"));
+    expect(html).toContain("Programme");
     expect(html).toContain("Ma paie");
     expect(html).toContain("Documents");
     expect(html).toContain("<svg");
-    expect(html).toContain('d="M12 5v14M5 12h14"');
+    expect(html).not.toContain('aria-label="Plus"');
     expect(html).not.toContain('aria-hidden="true">+</span>');
     expect(html).not.toContain(">01<");
   });

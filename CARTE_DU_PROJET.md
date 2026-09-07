@@ -65,6 +65,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/UserGuideDialogs.tsx` : mode d’emploi chargé uniquement lorsqu’il est
   ouvert.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
+- `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
+  centrée des nouveaux documents, lecture et ajout administrateur.
 - `src/WorkAccidentSection.tsx` et `src/useWorkAccidentActions.ts` : procédure
   fonctionnaire/contractuel, contacts, documents et périodes d’accident de
   travail marquées dans le planning sans carence ; seuls les CA superposés sont
@@ -133,6 +135,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `netlify/functions/feedback.mts` : stockage privé des retours, photos,
   réponses et notifications de résolution ; l’accès à la boîte de réception et
   aux actions administratrices est réservé à `PROGRAM_ADMIN_EMAIL`.
+- `netlify/functions/useful-documents.mts` : ajout sécurisé de PDF/DOCX par
+  l’administrateur, stockage, alertes par compte invité et téléchargement.
+- `netlify/lib/documentAnnouncementEmail.mts` : e-mail individuel annonçant un
+  nouveau document aux comptes invités.
 - `netlify/lib/` : validation, stockage par utilisatrice et sauvegardes.
 - `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles

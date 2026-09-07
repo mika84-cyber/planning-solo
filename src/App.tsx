@@ -71,6 +71,7 @@ import {
   CetSection,
   ColleaguePlanningPage,
   ColleagueRequestNotice,
+  DocumentAnnouncementNotice,
   FeedbackMessenger,
   FeedbackResolutionAlert,
   GrandPalaisProgramSection,
@@ -401,6 +402,13 @@ export default function Home() {
     url.searchParams.delete("feedback");
     history.replaceState(history.state, "", url);
   }, [authStatus, isProgramAdmin, setFeedbackOpen]);
+  useEffect(() => {
+    if (authStatus !== "ready" || new URLSearchParams(location.search).get("section") !== "forms") return;
+    setHomeSection("forms");
+    const url = new URL(location.href);
+    url.searchParams.delete("section");
+    history.replaceState(history.state, "", url);
+  }, [authStatus, setHomeSection]);
   const visibleSchoolVacations = useMemo<SchoolVacation[]>(
     () => showSchoolVacations ? schoolVacationsForZone(schoolZone) : [],
     [schoolZone, showSchoolVacations],
@@ -3552,6 +3560,17 @@ export default function Home() {
           <FeedbackResolutionAlert notice={feedbackMessaging.resolutionNotice} onDismiss={() => void feedbackMessaging.dismissResolution(feedbackMessaging.resolutionNotice!.id)} />
         </Suspense>
       ) : null}
+      <Suspense fallback={null}>
+        <DocumentAnnouncementNotice
+          enabled={authStatus === "ready" && !feedbackMessaging.resolutionNotice}
+          demoMode={demoMode}
+          isAdmin={isProgramAdmin}
+          onOpen={() => {
+            setHomeSection("forms");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      </Suspense>
       {feedbackOpen ? (
         <Suspense fallback={null}>
           <FeedbackMessenger
@@ -3815,6 +3834,8 @@ export default function Home() {
           forms={(
             <UsefulFormsSection
               accountId={userEmail}
+              isAdmin={isProgramAdmin}
+              demoMode={demoMode}
               today={dateKey(now)}
               status={formProfile?.status || "contractuel"}
               periods={periods}

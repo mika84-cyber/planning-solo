@@ -294,14 +294,15 @@
 .useful-expo-timeline article a {
   display: inline-flex;
   margin-top: 4px;
-  border: 1px solid rgba(36, 111, 102, 0.28);
-  border-radius: 10px;
-  padding: 8px 11px;
+  border: 0;
+  border-radius: 0;
+  padding: 3px 0 1px;
   color: #246f66;
-  background: #f1f8f6;
+  background: transparent;
   font-size: 0.78rem;
   font-weight: 850;
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .grand-palais-interexpo-list {

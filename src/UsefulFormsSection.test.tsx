@@ -69,4 +69,15 @@ describe("formulaires utiles", () => {
     expect(getUsefulFormAction("PDF", true)).toBe("download");
     expect(getUsefulFormAction("DOCX", false)).toBe("download");
   });
+
+  it("affiche l’ajout et l’option d’alerte uniquement pour l’administrateur", () => {
+    const guestHtml = renderToStaticMarkup(<UsefulFormsSection />);
+    const adminHtml = renderToStaticMarkup(<UsefulFormsSection isAdmin />);
+    expect(guestHtml).not.toContain("Ajouter un document");
+    expect(adminHtml).toContain("Ajouter un document");
+    expect(adminHtml).toContain("Alerter tous les comptes invités");
+    expect(adminHtml).toContain("fenêtre au centre de leur application");
+    expect(adminHtml).toContain("type=\"checkbox\"");
+    expect(adminHtml).not.toContain("checked=\"\"");
+  });
 });
