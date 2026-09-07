@@ -752,7 +752,7 @@
   min-height: 46px;
   background: rgba(255,255,255,.82);
 }
-.pay-work-schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; border: 1px solid #d4e0ee; border-radius: 14px; padding: 12px; background: rgba(255,255,255,.58); }
+.pay-work-schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; border: 1px solid #d4e0ee; border-radius: 14px; padding: 12px; background: rgba(255,255,255,.58); }.pay-profile-save{grid-column:1/-1;justify-self:end;min-width:180px}
 .pay-work-schedule legend { padding: 0 5px; color: #315d8e; font-size: 12px; font-weight: 850; }
 .pay-work-schedule > p { grid-column: 1 / -1; font-size: 11px; }
 .pay-work-schedule label,.pay-work-time-field { display: grid; gap: 5px; color: #53677f; font-size: 10.5px; font-weight: 800; }
@@ -831,7 +831,7 @@
   .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; padding: 18px 14px; }
   .pay-profile-settings-grid { grid-template-columns: 1fr; gap: 8px; }
   .pay-profile-settings-grid > label { grid-template-rows: auto minmax(46px, auto); gap: 4px; }
-  .pay-work-schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pay-work-schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pay-profile-save{justify-self:stretch;width:100%}
   .leave-request-archive .request-archive-toggle {
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 11px;

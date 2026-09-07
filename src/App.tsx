@@ -2304,24 +2304,34 @@ export default function Home() {
     });
   }
 
-  function changeWorkSchedule(nextSchedule: WorkSchedule) {
+  async function changeWorkSchedule(nextSchedule: WorkSchedule) {
     const previousProfile = formProfile;
     const nextProfile: FormProfile = {
       ...(formProfile || { fullName: "", group: String(group), signature: "" }),
       workSchedule: nextSchedule,
     };
     setFormProfile(nextProfile);
-    if (demoMode) return;
-    void postCalendar({
-      action: "save-form-profile",
-      fullName: nextProfile.fullName,
-      group: nextProfile.group,
-      signature: nextProfile.signature,
-      workSchedule: nextSchedule,
-    }).catch((error) => {
+    if (demoMode) return true;
+    try {
+      await postCalendar({
+        action: "save-form-profile",
+        fullName: nextProfile.fullName,
+        group: nextProfile.group,
+        signature: nextProfile.signature,
+        workSchedule: nextSchedule,
+      });
+      return true;
+    } catch (error) {
       setFormProfile(previousProfile);
       notify(calendarErrorMessage(error, "Les horaires habituels n’ont pas pu être enregistrés."));
-    });
+      return false;
+    }
+  }
+
+  async function saveCalculationProfile() {
+    const saved = await changeWorkSchedule(formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE);
+    if (!saved) return;
+    setPayProfileOpen(false);
   }
 
   const {
@@ -3215,6 +3225,7 @@ export default function Home() {
       </Suspense>
     );
     const payslipSectionProps: Omit<PayslipCheckSectionProps, "part"> = {
+      accountId: demoMode ? "demo" : userEmail,
       payYear,
       hasPayProfile: Boolean(payProfiles[payYear]),
       helpOpen: showPayslipHelp,
@@ -3774,6 +3785,7 @@ export default function Home() {
           onWorkQuotaChange={changeWorkQuota}
           onWorkScheduleChange={changeWorkSchedule}
           onStatusChange={changeStatus}
+          onSaveProfile={() => void saveCalculationProfile()}
           onPreviousMonth={() => slideAllowancesMonth(-1)}
           onNextMonth={() => slideAllowancesMonth(1)}
           onToday={goPayToday}
@@ -4240,12 +4252,15 @@ export default function Home() {
               </button>
               {requestKind !== "other" && !sickRequest ? (
                 <button
-                  className="secondary-button"
+                  className="request-planning-choice"
                   type="button"
+                  aria-label="Enregistrer au planning sans formulaire"
                   onClick={() => void saveRequestToPlanning()}
                   disabled={!selectedList.length || savingRequest}
                 >
-                  Enregistrer au planning sans formulaire
+                  <span aria-hidden="true">✓</span>
+                  <strong>Enregistrer au planning</strong>
+                  <small>Sans préparer de formulaire</small>
                 </button>
               ) : null}
             </div>

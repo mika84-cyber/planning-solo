@@ -17,6 +17,7 @@ const payDrafts = {
 
 const baseProps = {
   part: "verification" as const,
+  accountId: "demo@test.local",
   payYear: "2026",
   hasPayProfile: true,
   helpOpen: true,
@@ -148,6 +149,8 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Comparaison disponible");
     expect(html).toContain("Cumul brut");
     expect(html).toContain("bulletin-aout.pdf");
+    expect(html).toContain("Tout est OK");
+    expect(html).toContain("Signaler une anomalie");
   });
 
   it("détaille automatiquement toutes les différences reconnues", () => {
@@ -180,6 +183,8 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Taux d’imposition (PAS)");
     expect(html).toContain("0,4 %");
     expect(html).toContain("Dimanches payés");
+    expect(html).toContain("Anomalies ou observations");
+    expect(html).toContain("Enregistrer les anomalies");
   });
 
   it("conserve les arrêts maladie et l'édition des paramètres", () => {

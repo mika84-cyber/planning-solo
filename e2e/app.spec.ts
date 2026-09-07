@@ -628,6 +628,22 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
 
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026", { timeout: 90_000 });
   await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
+  const decision = page.getByRole("region", { name: "Conclusion de la vérification" });
+  await decision.getByRole("button", { name: "Tout est OK" }).click();
+  await expect(page.getByRole("region", { name: "Résultat enregistré" })).toHaveClass(/ok/);
+  await expect(page.getByText("Bulletin vérifié — tout est OK")).toBeVisible();
+
+  await decision.getByRole("button", { name: "Signaler une anomalie" }).click();
+  await decision.getByLabel("Anomalies ou observations").fill("Le montant IFSE doit être contrôlé.");
+  await decision.getByRole("button", { name: "Enregistrer les anomalies" }).click();
+  const savedAttention = page.getByRole("region", { name: "Résultat enregistré" });
+  await expect(savedAttention).toHaveClass(/attention/);
+  await expect(savedAttention.getByText("Bulletin vérifié — attention signalée")).toBeVisible();
+  await expect(savedAttention.getByRole("button", { name: "E-mail" })).toBeVisible();
+  await expect(savedAttention.getByRole("button", { name: "WhatsApp" })).toBeVisible();
+  const download = page.waitForEvent("download");
+  await savedAttention.getByRole("button", { name: "Télécharger le PDF" }).click();
+  expect((await download).suggestedFilename()).toBe("anomalies-bulletin-2026-09.pdf");
 });
 
 test("menu, contact administratrice, paie et PDF restent accessibles", async ({ page }) => {
@@ -2440,9 +2456,13 @@ test("les horaires du profil alimentent les propositions de congé et récupéra
   await startMinute.selectOption("00");
   await page.getByLabel("Heure de fin — heures").selectOption("18");
   await page.getByLabel("Heure de fin — minutes").selectOption("00");
+  const saveProfile = profile.getByRole("button", { name: "Enregistrer le profil" });
+  await expect(saveProfile).toBeVisible();
+  await saveProfile.click();
 
   await page.getByRole("navigation", { name: "Navigation principale" })
     .getByRole("button", { name: "Accueil" }).click();
+  await expect(page.locator(".home-setup-alert")).toHaveCount(0);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
@@ -2810,6 +2830,9 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
     "background-color",
     "rgb(250, 251, 253)",
   );
+  const choiceBorders = await dayDialog.locator(".leave-choices .other-day, .leave-choices .exchange-day-choice")
+    .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).borderColor));
+  expect(choiceBorders[1]).toBe(choiceBorders[0]);
 });
 
 test("une récupération ordinaire affiche le cycle sans reproposer Formation", async ({ page }) => {
@@ -2857,7 +2880,11 @@ test("une récupération lancée depuis une case suit aussi le calendrier", asyn
   await expect(recoveryPanel.getByLabel("Résumé avant validation").getByText("1 date", { exact: true })).toBeVisible();
   await expect(recoveryPanel.getByRole("button", { name: "Récupération en journée" })).toHaveClass(/active/);
   await expect(recoveryPanel.getByRole("button", { name: "Continuer vers le formulaire" })).toBeVisible();
-  await expect(recoveryPanel.getByRole("button", { name: "Enregistrer au planning sans formulaire" })).toBeVisible();
+  const directPlanningChoice = recoveryPanel.getByRole("button", { name: "Enregistrer au planning sans formulaire" });
+  await expect(directPlanningChoice).toBeVisible();
+  await expect(directPlanningChoice).toHaveClass(/request-planning-choice/);
+  await expect(directPlanningChoice.getByText("Sans préparer de formulaire")).toBeVisible();
+  await expect(directPlanningChoice).toHaveCSS("border-radius", "14px");
 });
 
 test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page }) => {

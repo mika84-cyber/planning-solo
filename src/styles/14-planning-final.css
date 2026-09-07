@@ -1353,7 +1353,7 @@
 
 .leave-choices .exchange-day-choice {
   --person-color: #5eb6c4;
-  border-color: #111820;
+  border-color: var(--line);
 }
 
 fieldset.leave-choices {

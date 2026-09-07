@@ -527,6 +527,7 @@
 .request-validation-summary > p strong { color: #3a5877; font-size: 10.5px; }
 .request-validation-summary > p span { color: #607286; font-size: 10.5px; line-height: 1.35; }
 .request-action-clarification { display: block; margin-top: 7px; color: #607286; font-size: 10.5px; line-height: 1.35; }
+.request-planning-choice{align-items:center;background:linear-gradient(145deg,#f8fbff,#e9f2fc);border:1.5px solid #7fa6cf;border-radius:14px;color:#183b61;display:grid;gap:2px 10px;grid-template-columns:34px minmax(0,1fr);min-height:58px;padding:9px 14px;text-align:left}.request-planning-choice>span{align-items:center;background:#d8eafb;border-radius:10px;display:flex;font-size:18px;grid-row:1/3;height:34px;justify-content:center}.request-planning-choice strong{font-size:13px}.request-planning-choice small{color:#5e7187;font-size:10.5px}.request-planning-choice:disabled{cursor:not-allowed;opacity:.52}
 
 /* Le guide suit les PDF dans le menu. */
 .main-menu-drawer nav > button.guide-menu-entry {

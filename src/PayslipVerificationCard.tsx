@@ -1,5 +1,5 @@
 import { ChoicePicker } from "./ChoicePicker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
 import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s } from "./planningLogic";
@@ -10,6 +10,14 @@ import {
   PAYSLIP_FILE_ACCEPT,
 } from "./payslipOcr";
 import { explainPayslipGap, type PayslipReviewCheck } from "./payslipReview";
+import {
+  createPayslipAnomalyPdf,
+  loadPayslipVerification,
+  payslipAnomalyPdfName,
+  savePayslipVerification,
+  type PayslipVerificationRecord,
+  type PayslipVerificationStatus,
+} from "./payslipVerificationDecision";
 
 function formatReviewValue(row: PayslipReviewCheck, value: number) {
   if (row.key === "sundays") return value.toLocaleString("fr-FR");
@@ -19,7 +27,7 @@ function formatReviewValue(row: PayslipReviewCheck, value: number) {
 
 type Props = Pick<
   PayslipCheckSectionProps,
-  "importBusy" | "importMode" | "importError" | "importResult" | "onImport" |
+  "accountId" | "importBusy" | "importMode" | "importError" | "importResult" | "onImport" |
   "check" | "checkError" | "needsPeriod" | "fallbackMonth" | "setFallbackMonth" |
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "unplannedCarence" | "resultDetailsOpen" |
@@ -28,7 +36,17 @@ type Props = Pick<
   "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover"
 >;
 
+function downloadPdf(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}
+
 export function PayslipVerificationCard({
+  accountId,
   importBusy: payslipImportBusy,
   importMode: payslipImportMode,
   importError: payslipImportError,
@@ -59,6 +77,20 @@ export function PayslipVerificationCard({
   onClearSundayCarryover: clearSundayCarryover,
 }: Props) {
   const [activeImportSource, setActiveImportSource] = useState<"file" | "photo">("file");
+  const [savedDecision, setSavedDecision] = useState<PayslipVerificationRecord | null>(() =>
+    loadPayslipVerification(accountId, allowances.year, displayedMonth));
+  const [decisionMode, setDecisionMode] = useState<PayslipVerificationStatus | null>(() =>
+    savedDecision?.status || (payslipReview?.issues.length ? "attention" : null));
+  const [anomalyNote, setAnomalyNote] = useState(savedDecision?.note || "");
+  const [decisionError, setDecisionError] = useState("");
+  const [sharingReport, setSharingReport] = useState(false);
+  useEffect(() => {
+    const stored = loadPayslipVerification(accountId, allowances.year, displayedMonth);
+    setSavedDecision(stored);
+    setDecisionMode(stored?.status || (payslipReview?.issues.length ? "attention" : null));
+    setAnomalyNote(stored?.note || "");
+    setDecisionError("");
+  }, [accountId, allowances.year, displayedMonth, payslipReview?.issues.length]);
   const comparableGross =
     payslipCheck?.reading.month === displayedMonth &&
     payslipCheck.reading.year === allowances.year &&
@@ -69,6 +101,72 @@ export function PayslipVerificationCard({
           gap: Math.abs(payslipCheck.reading.gross - grossForMonth(displayedMonth)),
         }
       : null;
+  const recordDecision = (status: PayslipVerificationStatus) => {
+    if (status === "attention" && !anomalyNote.trim() && !payslipReview?.issues.length) {
+      setDecisionError("Décrivez au moins une anomalie avant de l’enregistrer.");
+      return;
+    }
+    const record: PayslipVerificationRecord = {
+      status,
+      year: allowances.year,
+      month: displayedMonth,
+      sourceName: payslipCheck?.name || "",
+      note: status === "attention" ? anomalyNote.trim() : "",
+      issues: status === "attention" ? (payslipReview?.issues || []) : [],
+      unavailableCount: payslipReview?.unavailable.length || 0,
+      verifiedCount: payslipReview?.verified.length || 0,
+      updatedAt: new Date().toISOString(),
+    };
+    savePayslipVerification(accountId, record);
+    setSavedDecision(record);
+    setDecisionMode(status);
+    setDecisionError("");
+  };
+  const prepareReport = async () => {
+    if (!savedDecision || savedDecision.status !== "attention") return null;
+    const blob = await createPayslipAnomalyPdf(savedDecision, MONTHS[savedDecision.month]);
+    return { blob, name: payslipAnomalyPdfName(savedDecision) };
+  };
+  const downloadReport = async () => {
+    setSharingReport(true);
+    setDecisionError("");
+    try {
+      const report = await prepareReport();
+      if (report) downloadPdf(report.blob, report.name);
+    } catch {
+      setDecisionError("Le PDF des anomalies n’a pas pu être créé.");
+    } finally {
+      setSharingReport(false);
+    }
+  };
+  const shareReport = async (channel: "email" | "whatsapp") => {
+    setSharingReport(true);
+    setDecisionError("");
+    try {
+      const report = await prepareReport();
+      if (!report) return;
+      const file = new File([report.blob], report.name, { type: "application/pdf" });
+      const shareData = {
+        title: `Anomalies du bulletin — ${MONTHS[savedDecision!.month]} ${savedDecision!.year}`,
+        text: "Voici le relevé des anomalies constatées sur mon bulletin.",
+        files: [file],
+      };
+      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+        await navigator.share(shareData);
+      } else {
+        downloadPdf(report.blob, report.name);
+        const subject = encodeURIComponent(shareData.title);
+        const message = encodeURIComponent(`${shareData.text}\nLe PDF vient d’être téléchargé : ajoutez-le au message avant l’envoi.`);
+        if (channel === "email") window.location.href = `mailto:?subject=${subject}&body=${message}`;
+        else window.open(`https://wa.me/?text=${message}`, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setDecisionError("Le partage du PDF n’a pas pu être ouvert. Vous pouvez le télécharger manuellement.");
+    } finally {
+      setSharingReport(false);
+    }
+  };
   return (
           <section className="allowance-card pay-function-card payslip-verify-card" aria-label="Sélection et résultat du bulletin">
             <div className="payslip-guide-step active">
@@ -244,6 +342,36 @@ export function PayslipVerificationCard({
                   )}
                 </div>
               ) : null}
+              {payslipReview ? (
+                <section className="payslip-review-decision" aria-label="Conclusion de la vérification">
+                  <div><span>Votre conclusion</span><strong>Valider le contrôle du bulletin</strong></div>
+                  <div className="payslip-decision-options">
+                    <button type="button" className={`payslip-decision-ok${decisionMode === "ok" ? " active" : ""}`} onClick={() => recordDecision("ok")}><span aria-hidden="true">✓</span><strong>Tout est OK</strong></button>
+                    <button type="button" className={`payslip-decision-attention${decisionMode === "attention" ? " active" : ""}`} onClick={() => { setDecisionMode("attention"); setDecisionError(""); }}><span aria-hidden="true">!</span><strong>Signaler une anomalie</strong></button>
+                  </div>
+                  {decisionMode === "attention" ? (
+                    <div className="payslip-anomaly-editor">
+                      <label htmlFor="payslip-anomaly-note">Anomalies ou observations</label>
+                      <textarea id="payslip-anomaly-note" value={anomalyNote} onChange={(event) => setAnomalyNote(event.target.value)} placeholder="Décrivez les lignes ou montants à vérifier…" rows={3} />
+                      <button type="button" className="primary-action" onClick={() => recordDecision("attention")}>Enregistrer les anomalies</button>
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+              {savedDecision ? (
+                <section className={`payslip-saved-decision ${savedDecision.status}`} aria-label="Résultat enregistré">
+                  <span aria-hidden="true">{savedDecision.status === "ok" ? "✓" : "!"}</span>
+                  <div><strong>{savedDecision.status === "ok" ? "Bulletin vérifié — tout est OK" : "Bulletin vérifié — attention signalée"}</strong><small>{MONTHS[savedDecision.month]} {savedDecision.year}</small></div>
+                  {savedDecision.status === "attention" ? (
+                    <div className="payslip-report-actions">
+                      <button type="button" onClick={() => void downloadReport()} disabled={sharingReport}>Télécharger le PDF</button>
+                      <button type="button" onClick={() => void shareReport("email")} disabled={sharingReport}>E-mail</button>
+                      <button type="button" onClick={() => void shareReport("whatsapp")} disabled={sharingReport}>WhatsApp</button>
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+              {decisionError ? <p className="allowance-note warn" role="alert">{decisionError}</p> : null}
               {unplannedPayslipCarence ? (
                 <p className="allowance-note warn">
                   Jour de carence de {euros(payslipCheck.reading.carenceDay as number)} présent sur le bulletin, mais aucun arrêt maladie n’était prévu dans l’application pour ce mois.

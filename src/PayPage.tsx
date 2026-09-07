@@ -58,6 +58,7 @@ type PayPageProps = {
   onWorkQuotaChange: (quota: WorkQuota) => void;
   onWorkScheduleChange: (schedule: WorkSchedule) => void;
   onStatusChange: (status: PayStatus) => void;
+  onSaveProfile: () => void;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
@@ -71,7 +72,7 @@ export function PayPage({
   reliability, variables, monthSlide, allowancesContent, estimateContent,
   verificationContent, settingsContent, onScreenChange, onToggleProfile, onProfileFocused,
   onToggleSettings, onWorkQuotaChange, onWorkScheduleChange, onStatusChange, onPreviousMonth,
-  onNextMonth, onToday, onTouchStart, onTouchEnd,
+  onSaveProfile, onNextMonth, onToday, onTouchStart, onTouchEnd,
 }: PayPageProps) {
   useEffect(() => {
     if (!profileFocusRequested || screen !== "overview" || !profileOpen) return;
@@ -114,6 +115,7 @@ export function PayPage({
             <p>L’application utilisera cette plage pour proposer des horaires adaptés aux congés et récupérations.</p>
             {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <WorkTimePicker key={key} label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule[key]} onChange={(value) => onWorkScheduleChange({ ...workSchedule, [key]: value })} />)}
           </fieldset>
+          <button type="button" className="primary-action pay-profile-save" onClick={onSaveProfile}>Enregistrer le profil</button>
         </div>
       ) : null}
     </section>

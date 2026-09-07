@@ -31,6 +31,7 @@ type SickLeavesSummary = {
 
 export type PayslipCheckSectionProps = {
   part: "verification" | "settings";
+  accountId: string;
   payYear: string;
   hasPayProfile: boolean;
   helpOpen: boolean;
@@ -92,6 +93,7 @@ export type PayslipCheckSectionProps = {
 
 export function PayslipCheckSection({
   part,
+  accountId,
   payYear,
   hasPayProfile,
   helpOpen: showPayslipHelp,
@@ -161,6 +163,7 @@ export function PayslipCheckSection({
   };
   const verificationCard = (
     <PayslipVerificationCard
+      accountId={accountId}
       importBusy={payslipImportBusy}
       importMode={payslipImportMode}
       importError={payslipImportError}
