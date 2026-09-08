@@ -135,6 +135,14 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
       && imageBox.top >= frameBox.top - 1 && imageBox.bottom <= frameBox.bottom + 1;
   }))).toBe(true);
   expect(await page.locator(".leave-tool-copy").evaluateAll((copies) => copies.every((copy) => getComputedStyle(copy).textAlign === "center"))).toBe(true);
+  expect(await page.locator(".leave-tool-illustration").evaluateAll((frames) => frames.every((frame) => {
+    const summary = frame.closest("summary")!.getBoundingClientRect();
+    return frame.getBoundingClientRect().height >= summary.height * 0.36;
+  }))).toBe(true);
+  expect(await page.locator(".leave-tool-copy").evaluateAll((copies) => copies.every((copy) => {
+    const box = copy.getBoundingClientRect();
+    return copy.scrollWidth <= Math.ceil(box.width) && copy.scrollHeight <= Math.ceil(box.height);
+  }))).toBe(true);
   const boxes = await page.locator("details.leave-tool-disclosure").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(1);
   expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThan(2);
