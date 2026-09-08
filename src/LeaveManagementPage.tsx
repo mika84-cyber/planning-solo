@@ -100,9 +100,9 @@ export function LeaveManagementPage({
         <div className="leave-secondary-grid">
           <details className="leave-tool-disclosure">
             <summary>
-              <span className="leave-tool-illustration work-time" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="30" cy="34" r="18" /><path d="M30 16v-6m-7 0h14M30 24v11l8 5" /><circle cx="48" cy="18" r="9" /><path d="M48 14v8m-4-4h8" /></svg></span>
+              <span className="leave-tool-illustration work-time" aria-hidden="true"><img src="/leave-tools/leave-tool-overtime.webp" alt="" /></span>
               <span className="leave-tool-copy"><small>Temps de travail</small><strong>Heures sup et récupérations</strong></span>
-              <b>{minutesLabel(recoveryBalance.remaining)}</b><i aria-hidden="true" />
+              <b>{minutesLabel(recoveryBalance.remaining)}</b>
             </summary>
           <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
             <div className="overtime-balance-heading">
@@ -177,9 +177,9 @@ export function LeaveManagementPage({
           </details>
           <details className="leave-tool-disclosure">
             <summary>
-              <span className="leave-tool-illustration mecenat" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="m32 10 5.5 11.5L50 23l-9 8.5L43.5 44 32 38l-11.5 6L23 31.5 14 23l12.5-1.5L32 10Z" /><path d="M12 47c7-3 13-2 20 3 7-5 13-6 20-3M16 53h32" /></svg></span>
+              <span className="leave-tool-illustration mecenat" aria-hidden="true"><img src="/leave-tools/leave-tool-mecenat.webp" alt="" /></span>
               <span className="leave-tool-copy"><small>Activités ponctuelles</small><strong>Mécénats</strong></span>
-              <b>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</b><i aria-hidden="true" />
+              <b>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</b>
             </summary>
           <section className="overtime-balance-card mecenat-balance-card" aria-labelledby="mecenat-history-title">
             <div className="overtime-balance-heading">
@@ -218,9 +218,9 @@ export function LeaveManagementPage({
           </details>
           <details className="leave-tool-disclosure cet-disclosure">
             <summary>
-              <span className="leave-tool-illustration cet" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="10" y="13" width="44" height="40" rx="7" /><path d="M10 25h44M21 9v9m22-9v9" /><circle cx="35" cy="39" r="10" /><path d="M35 33v7l5 3" /></svg></span>
+              <span className="leave-tool-illustration cet" aria-hidden="true"><img src="/leave-tools/leave-tool-cet.webp" alt="" /></span>
               <span className="leave-tool-copy"><small>Compte épargne-temps</small><strong>Mon CET</strong></span>
-              <b>Consulter et gérer</b><i aria-hidden="true" />
+              <b>Consulter et gérer</b>
             </summary>
             {cetContent}
           </details>

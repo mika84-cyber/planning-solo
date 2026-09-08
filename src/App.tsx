@@ -352,7 +352,6 @@ export default function Home() {
   const [holidayChoiceEditing, setHolidayChoiceEditing] = useState<string | null>(null);
   const [absenceYear, setAbsenceYear] = useState(() => now.getFullYear());
   const [manualAdjustmentsOpen, setManualAdjustmentsOpen] = useState(false);
-  const [homePlanningOpen, setHomePlanningOpen] = useState(false);
   const [savingManualAdjustments, setSavingManualAdjustments] = useState(false);
   const [savingCet, setSavingCet] = useState(false);
   const [manualAdjustmentDraft, setManualAdjustmentDraft] = useState<
@@ -3888,35 +3887,8 @@ export default function Home() {
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
       {showCalendarWorkspace ? (
         <>
-        <details
-          className={homeSection === "home" ? "home-planning-controls-disclosure" : "planning-controls-always-open"}
-          open={homeSection === "home" ? homePlanningOpen : true}
-          onToggle={(event) => {
-            if (homeSection === "home") setHomePlanningOpen(event.currentTarget.open);
-          }}
-        >
-          {homeSection === "home" ? (
-          <summary className="home-planning-disclosure-summary">
-            <span><span className="step-label">Calendrier</span><strong>Mon planning</strong><small>Afficher les réglages du planning</small></span>
-            <span className="home-planning-summary-actions">
-              <button
-                type="button"
-                className="soft-detail-button planning-export-pdf"
-                disabled={pdfExporting !== null}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void exportAnnualPlanning("my-leaves", showSchoolVacationsOnPdf);
-                }}
-              >
-                {pdfExporting === "my-leaves" ? "Création…" : "Exporter en PDF"}
-              </button>
-              <i aria-hidden="true">⌄</i>
-            </span>
-          </summary>
-          ) : null}
       <PlanningCommandCenter
-        isHome={false}
+        isHome={homeSection === "home"}
         mode={mode}
         view={view}
         setView={setView}
@@ -3950,12 +3922,13 @@ export default function Home() {
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
         onToday={goToday}
+        onExportPdf={homeSection === "home" ? () => void exportAnnualPlanning("my-leaves", showSchoolVacationsOnPdf) : undefined}
+        exportingPdf={pdfExporting === "my-leaves"}
         showSchoolVacations={showSchoolVacations}
         schoolZone={schoolZone}
         onShowSchoolVacationsChange={setShowSchoolVacations}
         onSchoolZoneChange={setSchoolZone}
       />
-        </details>
 
       {mode === "year" && homeSection === "pdf" && (
           <section

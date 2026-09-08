@@ -72,6 +72,7 @@ type PlanningCommandCenterProps = {
   onDeleteNotes: () => void;
   onToday: () => void;
   onExportPdf?: () => void;
+  exportingPdf?: boolean;
   showSchoolVacations: boolean;
   schoolZone: SchoolZone;
   onShowSchoolVacationsChange: (visible: boolean) => void;
@@ -124,6 +125,7 @@ export function PlanningCommandCenter({
   onDeleteNotes,
   onToday,
   onExportPdf,
+  exportingPdf = false,
   showSchoolVacations,
   schoolZone,
   onShowSchoolVacationsChange,
@@ -158,7 +160,7 @@ export function PlanningCommandCenter({
               <span className="step-label">Calendrier</span>
               <h2 id="home-planning-title">Mon planning</h2>
             </div>
-            {onExportPdf ? <button type="button" className="soft-detail-button planning-export-pdf" onClick={onExportPdf}>Exporter en PDF</button> : null}
+            {onExportPdf ? <button type="button" className="soft-detail-button planning-export-pdf" disabled={exportingPdf} onClick={onExportPdf}>{exportingPdf ? "Création…" : "Exporter en PDF"}</button> : null}
           </div>
         </section>
       ) : null}

@@ -55,19 +55,27 @@ async function openMainMenu(page: Page) {
   await expect(page.getByRole("complementary", { name: "Menu principal" })).toBeVisible();
 }
 
-test("mon planning est replié et son export télécharge directement la version avec congés", async ({ page }) => {
+async function openOtherLeaveBalances(page: Page) {
+  const balances = page.locator("details.other-leave-balances");
+  if ((await balances.getAttribute("open")) === null) await balances.locator("summary").click();
+  await expect(balances).toHaveAttribute("open", "");
+  return balances;
+}
+
+test("mon planning et ses réglages partagent un seul cadre et l’export conserve les congés", async ({ page }) => {
   await prepareDemo(page, false, false);
-  const planning = page.locator("details.home-planning-controls-disclosure");
-  await expect(planning).not.toHaveAttribute("open", "");
-  await expect(planning.locator(".planning-command-section")).not.toBeVisible();
+  const planning = page.locator(".planning-workspace-shell.framed .planning-command-section");
+  await expect(page.locator("details.home-planning-controls-disclosure")).toHaveCount(0);
+  await expect(planning).toBeVisible();
+  await expect(planning.getByRole("heading", { name: "Mon planning" })).toBeVisible();
+  await expect(planning.locator(".controls")).toBeVisible();
+  await expect(planning).toHaveCSS("border-left-width", "8px");
   await expect(page.locator(".month-card")).toBeVisible();
   await expect(page.getByRole("button", { name: "Poser un congé" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Faire un échange" })).toBeVisible();
   const downloadPromise = page.waitForEvent("download");
   await planning.getByRole("button", { name: "Exporter en PDF" }).click();
   expect((await downloadPromise).suggestedFilename()).toBe("planning-2026-groupe-2-avec-conges.pdf");
-  await planning.locator("summary").click();
-  await expect(planning.locator(".planning-command-section")).toBeVisible();
 });
 
 test("les outils de congés sont repliés par défaut sur tous les écrans", async ({ page }) => {
@@ -111,8 +119,22 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Congés et récupérations/ }).click();
   await expect(page.locator("details.leave-tool-disclosure")).toHaveCount(3);
   await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
-  const firstDisclosureToggle = page.locator("details.leave-tool-disclosure summary i").first();
-  expect(await firstDisclosureToggle.evaluate((node) => getComputedStyle(node, "::before").content)).toContain("Ouvrir");
+  await expect(page.locator("details.leave-tool-disclosure summary i")).toHaveCount(0);
+  const toolIllustrations = page.locator(".leave-tool-illustration img");
+  await expect(toolIllustrations).toHaveCount(3);
+  await expect.poll(() => toolIllustrations.evaluateAll((images) => images.every((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
+  expect(await toolIllustrations.evaluateAll((images) => images.map((image) => new URL((image as HTMLImageElement).src).pathname))).toEqual([
+    "/leave-tools/leave-tool-overtime.webp",
+    "/leave-tools/leave-tool-mecenat.webp",
+    "/leave-tools/leave-tool-cet.webp",
+  ]);
+  expect(await toolIllustrations.evaluateAll((images) => images.every((image) => {
+    const imageBox = image.getBoundingClientRect();
+    const frameBox = image.parentElement!.getBoundingClientRect();
+    return imageBox.left >= frameBox.left - 1 && imageBox.right <= frameBox.right + 1
+      && imageBox.top >= frameBox.top - 1 && imageBox.bottom <= frameBox.bottom + 1;
+  }))).toBe(true);
+  expect(await page.locator(".leave-tool-copy").evaluateAll((copies) => copies.every((copy) => getComputedStyle(copy).textAlign === "center"))).toBe(true);
   const boxes = await page.locator("details.leave-tool-disclosure").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(1);
   expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThan(2);
@@ -122,7 +144,6 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   await expect(page.locator("details.leave-tool-disclosure").nth(2)).toBeHidden();
   const openedBox = await page.locator("details.leave-tool-disclosure").first().boundingBox();
   expect(openedBox?.width).toBeGreaterThan(boxes[0].width * 2.8);
-  expect(await firstDisclosureToggle.evaluate((node) => getComputedStyle(node, "::before").content)).toContain("Fermer");
 });
 
 test("les quatre soldes principaux et les autres congés restent en grilles équilibrées", async ({ page }) => {
@@ -845,7 +866,6 @@ test("menu, contact administratrice, paie et PDF restent accessibles", async ({ 
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
   await expect(page.getByRole("heading", { name: "Gérer mes récupérations et demandes" })).toHaveCount(0);
   const leaveTools = page.locator(".leave-tools-area");
-  await expectHeaderWidth(page.locator(".section-intro.leave-intro"));
   await expectHeaderWidth(page.locator(".leave-balances-direct"));
   await expectHeaderWidth(leaveTools);
   await expect(leaveTools).toHaveCSS("border-top-width", "1px");
@@ -1386,13 +1406,14 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
+  const otherBalances = await openOtherLeaveBalances(page);
   const workAccidentBalance = page.getByRole("button", { name: /Afficher le détail de Accident de travail/ });
   await expect(workAccidentBalance).toBeVisible();
   await expect(workAccidentBalance).toContainText(/sans carence · CA superposés recrédités/);
   await expect(page.getByRole("button", { name: /Afficher le détail de Congés annuels/ })).toContainText(/0 déjà pris/);
   await expect(page.getByRole("button", { name: /Afficher le détail de RTT/ })).toContainText(/1 à venir/);
   const strikeBalance = page.getByRole("button", { name: /Afficher le détail de Grève/ });
-  const balancesGrid = page.locator(".leave-balances-direct .leave-balance-grid");
+  const balancesGrid = otherBalances.locator(":scope > .leave-balance-grid");
   await page.evaluate(() => document.fonts.ready);
   const [workAccidentBox, strikeBox, balancesGridBox] = await Promise.all([
     workAccidentBalance.boundingBox(),
@@ -1402,13 +1423,8 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   expect(workAccidentBox).not.toBeNull();
   expect(strikeBox).not.toBeNull();
   expect(balancesGridBox).not.toBeNull();
-  if (testInfo.project.name === "mobile") {
-    expect(Math.abs(workAccidentBox!.y - strikeBox!.y)).toBeLessThanOrEqual(1);
-    expect(workAccidentBox!.x).toBeGreaterThan(strikeBox!.x);
-  } else {
-    expect(Math.abs(workAccidentBox!.x - balancesGridBox!.x)).toBeLessThanOrEqual(1);
-    expect(Math.abs(workAccidentBox!.width - balancesGridBox!.width)).toBeLessThanOrEqual(1);
-  }
+  expect(Math.abs(workAccidentBox!.width - strikeBox!.width)).toBeLessThanOrEqual(1);
+  expect(workAccidentBox!.width).toBeGreaterThan(balancesGridBox!.width * 0.4);
 });
 
 test("Z Fold ouvert : la déclaration d’accident reste lisible sans débordement", async ({ page }, testInfo) => {
@@ -1426,16 +1442,19 @@ test("Z Fold ouvert : la déclaration d’accident reste lisible sans débordeme
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
-  const balanceGrid = page.locator(".leave-balances-direct .leave-balance-grid");
+  const otherBalances = await openOtherLeaveBalances(page);
+  const balanceGrid = otherBalances.locator(":scope > .leave-balance-grid");
+  const strikeBalance = page.getByRole("button", { name: /Afficher le détail de Grève/ });
   const workAccidentBalance = page.getByRole("button", { name: /Afficher le détail de Accident de travail/ });
-  const [balanceGridBox, workAccidentBox] = await Promise.all([
+  const [balanceGridBox, workAccidentBox, strikeBox] = await Promise.all([
     balanceGrid.boundingBox(),
     workAccidentBalance.boundingBox(),
+    strikeBalance.boundingBox(),
   ]);
   expect(balanceGridBox).not.toBeNull();
   expect(workAccidentBox).not.toBeNull();
-  expect(Math.abs(workAccidentBox!.x - balanceGridBox!.x)).toBeLessThanOrEqual(1);
-  expect(Math.abs(workAccidentBox!.width - balanceGridBox!.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(workAccidentBox!.width - strikeBox!.width)).toBeLessThanOrEqual(1);
+  expect(workAccidentBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
 });
 
 test("la programmation GP suit l’ordre demandé et sépare les autres espaces", async ({ page }, testInfo) => {
@@ -2325,16 +2344,17 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   expect(Math.abs(foldStatusBox!.width - foldNextWorkBox!.width)).toBeLessThanOrEqual(2);
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
+  await openOtherLeaveBalances(page);
   const [otherBox, strikeBox, cetBox] = await Promise.all([
     page.locator(".leave-balance-grid button.other").boundingBox(),
     page.locator(".leave-balance-grid button.strike").boundingBox(),
     page.locator(".leave-balance-grid button.cet").boundingBox(),
   ]);
-  expect(Math.abs(otherBox!.y - strikeBox!.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(otherBox!.y - cetBox!.y)).toBeLessThanOrEqual(2);
   expect(Math.abs(otherBox!.width - strikeBox!.width)).toBeLessThanOrEqual(2);
   expect(Math.abs(otherBox!.height - strikeBox!.height)).toBeLessThanOrEqual(2);
-  expect(otherBox!.x).toBeLessThan(strikeBox!.x);
-  expect(strikeBox!.x).toBeLessThan(cetBox!.x);
+  expect(otherBox!.x).toBeLessThan(cetBox!.x);
+  expect(strikeBox!.y).toBeGreaterThan(otherBox!.y + otherBox!.height);
 
   await openMainMenu(page);
   await page.getByRole("complementary", { name: "Menu principal" })
@@ -2815,7 +2835,9 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
-  const strikeCard = page.locator(".leave-balance-grid button.strike");
+  const otherBalances = await openOtherLeaveBalances(page);
+  const otherGrid = otherBalances.locator(":scope > .leave-balance-grid");
+  const strikeCard = otherGrid.locator("button.strike");
   await expect(strikeCard).toContainText(/1\s*pris/);
   await expect(strikeCard).toContainText("retenue estimée dans Ma paie");
   await expect(page.locator(".leave-balance-grid button.annual")).toContainText("0 déjà pris");
@@ -2824,25 +2846,22 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
     await expect.poll(async () => {
       const [strikeBox, accidentBox] = await Promise.all([
         strikeCard.boundingBox(),
-        page.locator(".leave-balance-grid button.work_accident").boundingBox(),
+        otherGrid.locator("button.work_accident").boundingBox(),
       ]);
       return strikeBox && accidentBox ? Math.abs(strikeBox.y - accidentBox.y) : Number.POSITIVE_INFINITY;
     }).toBeLessThanOrEqual(2);
   }
   const [balanceGridBox, strikeCardBox, otherCardBox, accidentCardBox] = await Promise.all([
-    page.locator(".leave-balance-grid").boundingBox(),
+    otherGrid.boundingBox(),
     strikeCard.boundingBox(),
-    page.locator(".leave-balance-grid button.other").boundingBox(),
-    page.locator(".leave-balance-grid button.work_accident").boundingBox(),
+    otherGrid.locator("button.other").boundingBox(),
+    otherGrid.locator("button.work_accident").boundingBox(),
   ]);
-  if ((page.viewportSize()?.width ?? 1000) <= 720) {
-    expect(Math.abs(strikeCardBox!.width - accidentCardBox!.width)).toBeLessThanOrEqual(2);
-    expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
-    expect(Math.abs(strikeCardBox!.height - accidentCardBox!.height)).toBeLessThanOrEqual(2);
-  } else {
-    expect(Math.abs(otherCardBox!.y - strikeCardBox!.y)).toBeLessThanOrEqual(2);
-    expect(Math.abs(otherCardBox!.width - strikeCardBox!.width)).toBeLessThanOrEqual(2);
-  }
+  expect(Math.abs(strikeCardBox!.y - accidentCardBox!.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(strikeCardBox!.width - accidentCardBox!.width)).toBeLessThanOrEqual(2);
+  expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
+  expect(Math.abs(strikeCardBox!.height - accidentCardBox!.height)).toBeLessThanOrEqual(2);
+  expect(otherCardBox!.y).toBeLessThan(strikeCardBox!.y);
   await strikeCard.click();
   const strikeBalanceDialog = page.getByRole("dialog", { name: "Grève" });
   await expect(strikeBalanceDialog).toContainText("aucun congé déduit");
@@ -2867,7 +2886,8 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
-  await page.locator(".leave-balance-grid button.strike").click();
+  const reopenedOtherBalances = await openOtherLeaveBalances(page);
+  await reopenedOtherBalances.locator("button.strike").click();
   const deleteMonth = page.getByRole("dialog", { name: "Grève" })
     .locator(".balance-detail-month").filter({ hasText: "1 jour" }).first();
   await deleteMonth.locator("summary").click();
@@ -2878,7 +2898,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await page.getByRole("alertdialog", { name: "Supprimer cette journée de grève ?" })
     .getByRole("button", { name: "Supprimer la grève" })
     .click();
-  await expect(page.locator(".leave-balance-grid button.strike")).toContainText(/0\s*pris/);
+  await expect(reopenedOtherBalances.locator("button.strike")).toContainText(/0\s*pris/);
 
   await openMainMenu(page);
   await page.getByRole("complementary", { name: "Menu principal" })
@@ -2906,7 +2926,7 @@ test("des CA validés entre deux grèves restent exclus de la retenue", async ({
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
-  await page.locator(".leave-balance-grid button.strike").click();
+  await (await openOtherLeaveBalances(page)).locator("button.strike").click();
   const strikeDialog = page.getByRole("dialog", { name: "Grève" });
   const month = strikeDialog.locator(".balance-detail-month").filter({ hasText: "2 jours" }).first();
   await month.locator("summary").click();
@@ -2927,7 +2947,7 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
   await page.getByRole("complementary", { name: "Menu principal" })
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
-  await page.locator(".leave-balance-grid button.strike").click();
+  await (await openOtherLeaveBalances(page)).locator("button.strike").click();
   const strikeDialog = page.getByRole("dialog", { name: "Grève" });
   const month = strikeDialog.locator(".balance-detail-month").filter({ hasText: "2 jours" }).first();
   await month.locator("summary").click();
