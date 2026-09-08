@@ -352,6 +352,7 @@ export default function Home() {
   const [holidayChoiceEditing, setHolidayChoiceEditing] = useState<string | null>(null);
   const [absenceYear, setAbsenceYear] = useState(() => now.getFullYear());
   const [manualAdjustmentsOpen, setManualAdjustmentsOpen] = useState(false);
+  const [homePlanningOpen, setHomePlanningOpen] = useState(false);
   const [savingManualAdjustments, setSavingManualAdjustments] = useState(false);
   const [savingCet, setSavingCet] = useState(false);
   const [manualAdjustmentDraft, setManualAdjustmentDraft] = useState<
@@ -3778,7 +3779,6 @@ export default function Home() {
           isProgramAdmin={isProgramAdmin}
           archiveOpen={archiveOpen}
           archivedRequests={archivedRequests}
-          onRequestLeave={() => openRequestChooser("general")}
           onOpenOvertime={() => setOvertimeDialogOpen(true)}
           onOpenSolidarity={() => setSolidarityDialogOpen(true)}
           onToggleOvertimeHistory={() => setOvertimeHistoryOpen((current) => !current)}
@@ -3888,8 +3888,35 @@ export default function Home() {
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
       {showCalendarWorkspace ? (
         <>
+        <details
+          className={homeSection === "home" ? "home-planning-controls-disclosure" : "planning-controls-always-open"}
+          open={homeSection === "home" ? homePlanningOpen : true}
+          onToggle={(event) => {
+            if (homeSection === "home") setHomePlanningOpen(event.currentTarget.open);
+          }}
+        >
+          {homeSection === "home" ? (
+          <summary className="home-planning-disclosure-summary">
+            <span><span className="step-label">Calendrier</span><strong>Mon planning</strong><small>Afficher les réglages du planning</small></span>
+            <span className="home-planning-summary-actions">
+              <button
+                type="button"
+                className="soft-detail-button planning-export-pdf"
+                disabled={pdfExporting !== null}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void exportAnnualPlanning("my-leaves", showSchoolVacationsOnPdf);
+                }}
+              >
+                {pdfExporting === "my-leaves" ? "Création…" : "Exporter en PDF"}
+              </button>
+              <i aria-hidden="true">⌄</i>
+            </span>
+          </summary>
+          ) : null}
       <PlanningCommandCenter
-        isHome={homeSection === "home"}
+        isHome={false}
         mode={mode}
         view={view}
         setView={setView}
@@ -3923,12 +3950,12 @@ export default function Home() {
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
         onToday={goToday}
-        onExportPdf={() => navigateFromShell("pdf")}
         showSchoolVacations={showSchoolVacations}
         schoolZone={schoolZone}
         onShowSchoolVacationsChange={setShowSchoolVacations}
         onSchoolZoneChange={setSchoolZone}
       />
+        </details>
 
       {mode === "year" && homeSection === "pdf" && (
           <section
@@ -4117,7 +4144,7 @@ export default function Home() {
           <div className="request-heading">
             <div>
               <span className="step-label">
-                {requestKind === "strike" ? "Ajout direct au planning" : "Demande en préparation"}
+                {requestKind === "strike" ? "Ajout direct au planning" : "Étape 2 sur 3 · Choisissez les dates"}
               </span>
               <h2>
                 {requestKind === "leave"
@@ -4135,14 +4162,15 @@ export default function Home() {
               className="text-button danger"
               type="button"
               onClick={cancelRequest}
+              aria-label={requestKind === "strike" ? "Fermer" : "Annuler la demande"}
             >
-              {requestKind === "strike" ? "Fermer" : "Annuler la demande"}
+              {requestKind === "strike" ? "Fermer" : "Annuler"}
             </button>
           </div>
           {requestKind === "leave" && !sickRequest ? (
             <p className="multi-type-request-help">
-              <strong>Une seule demande peut mélanger plusieurs congés.</strong>
-              Choisissez un type, cliquez sur ses dates dans le planning, puis changez de type et recommencez — par exemple 3 CA, 2 RTT et 3 CET.
+              <strong>Vous pouvez mélanger plusieurs types dans une même demande.</strong>
+              Choisissez un type, touchez ses dates dans le planning, puis changez de type si nécessaire.
             </p>
           ) : null}
           {requestKind === "other" ? (
@@ -4206,66 +4234,61 @@ export default function Home() {
                 </section>
               </div>
             ) : (
-            <div className="request-option-groups">
-              {([
-                ["Congés courants", ["annual", "half", "rtt"]],
-                ["Autres congés", ["fraction", "childcare", "exceptional"]],
-                ["Compte épargne-temps", ["cet"]],
-              ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
-                <section className="request-option-group" key={label}>
-                  <h3>{label}</h3>
-                  <div className="type-tabs" role="group" aria-label={label}>
-                    {types.map((type) => (
-                      <button
-                        type="button"
-                        className={activeType === type ? "active" : ""}
-                        style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties}
-                        onClick={() => setActiveType(type)}
-                        key={type}
-                      >
-                        <i />
-                        {TYPE_LABELS[type]}
-                        {selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
+            <div className="request-option-groups request-option-groups-guided">
+              <section className="request-option-group request-option-group-primary">
+                <h3>Choix courants</h3>
+                <div className="type-tabs" role="group" aria-label="Choix courants">
+                  {(["annual", "half", "rtt", "fraction"] as SelectionType[]).map((type) => (
+                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
+                      <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <details className="request-advanced-types" open={(["childcare", "exceptional", "cet"] as SelectionType[]).includes(activeType)}>
+                <summary><span><strong>Autres types de congé</strong><small>Garde d’enfant, jour exceptionnel ou CET</small></span><b aria-hidden="true">⌄</b></summary>
+                <section className="request-option-group">
+                  <div className="type-tabs" role="group" aria-label="Autres types de congé">
+                    {(["childcare", "exceptional", "cet"] as SelectionType[]).map((type) => (
+                      <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
+                        <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
                       </button>
                     ))}
                   </div>
                 </section>
-              ))}
+              </details>
             </div>
             )
           ) : (
-            <div className="request-option-groups">
-              {([
-                ["Récupération à la journée", ["recovery_day", "recovery_half"]],
-                ["Autres récupérations", ["recovery_hours", "recovery_holiday", "recovery_training"]],
-              ] as Array<[string, SelectionType[]]>).map(([label, types]) => (
-                <section className="request-option-group" key={label}>
-                  <h3>{label}</h3>
-                  <div className="type-tabs" role="group" aria-label={label}>
-                    {types.map((type) => (
-                      <button
-                        type="button"
-                        className={activeType === type ? "active" : ""}
-                        style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties}
-                        onClick={() => setActiveType(type)}
-                        key={type}
-                      >
-                        <i />
-                        {TYPE_LABELS[type]}
-                        {selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
+            <div className="request-option-groups request-option-groups-guided">
+              <section className="request-option-group request-option-group-primary">
+                <h3>Choix courants</h3>
+                <div className="type-tabs" role="group" aria-label="Récupérations courantes">
+                  {(["recovery_day", "recovery_half", "recovery_hours"] as SelectionType[]).map((type) => (
+                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
+                      <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <details className="request-advanced-types" open={(["recovery_holiday", "recovery_training"] as SelectionType[]).includes(activeType)}>
+                <summary><span><strong>Férié ou formation</strong><small>Utilisez ces choix uniquement pour ces journées particulières</small></span><b aria-hidden="true">⌄</b></summary>
+                <section className="request-option-group">
+                  <div className="type-tabs" role="group" aria-label="Récupérations particulières">
+                    {(["recovery_holiday", "recovery_training"] as SelectionType[]).map((type) => (
+                      <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
+                        <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
                       </button>
                     ))}
                   </div>
                 </section>
-              ))}
-              <p className="request-help">
-                Un horaire sera demandé pour les demi-journées, les heures et
-                les récupérations de jours fériés.
-              </p>
+              </details>
+              <p className="request-selection-instruction">Touchez ensuite les dates concernées dans le planning. Les horaires utiles vous seront demandés automatiquement.</p>
             </div>
           )}
           {requestKind !== "strike" ? (
             <>
+          {selectedList.length ? <div className="request-review-heading"><span className="step-label">Étape 3 sur 3</span><strong>Vérifiez avant d’enregistrer</strong></div> : null}
           <RequestValidationSummary
             items={selectedList}
             requestKind={requestKind}
@@ -4276,13 +4299,11 @@ export default function Home() {
             leaveRemaining={Object.fromEntries(leaveStats.balances.map((balance) => [balance.type, balance.remaining]))}
           />
           <div className="request-bottom">
-            <p>
-              <strong>{selectedList.length}</strong>{" "}
-              {selectedList.length > 1
-                ? "dates sélectionnées"
-                : "date sélectionnée"}
-              . Cliquez sur une date colorée pour la retirer.
-            </p>
+            {selectedList.length ? (
+              <p><strong>{selectedList.length}</strong> {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}. Touchez une date colorée pour la retirer.</p>
+            ) : (
+              <p><strong>Aucune date sélectionnée.</strong> Touchez une date dans le planning pour commencer.</p>
+            )}
             <div className="request-actions">
               <button
                 className="validate-button"
@@ -4460,7 +4481,7 @@ export default function Home() {
             className="modal-card request-choice"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="request-choice-title"
+            aria-label="Poser un congé"
           >
             <button
               className="modal-close"
@@ -4470,12 +4491,12 @@ export default function Home() {
             >
               ×
             </button>
-            <span className="step-label">Préparer une demande</span>
-            <h2 id="request-choice-title">Poser un congé</h2>
+            <span className="step-label">Étape 1 sur 3</span>
+            <h2 id="request-choice-title">Que voulez-vous poser&nbsp;?</h2>
             <p>
               {requestChooserDate
-                ? `Choisissez le type à appliquer au ${longDate(fromKey(requestChooserDate))}. Vous pourrez ensuite ajouter d’autres types dans la même demande.`
-                : "Choisissez un premier type. Vous pourrez ensuite sélectionner ses dates, changer de type et continuer dans la même demande."}
+                ? `Choisissez le type à appliquer au ${longDate(fromKey(requestChooserDate))}. Vous pourrez encore le modifier ensuite.`
+                : "Commencez par un choix courant. Les choix moins fréquents restent disponibles juste en dessous."}
             </p>
             <div className="choice-grid request-primary-choice-grid">
               <button
@@ -4508,7 +4529,7 @@ export default function Home() {
               </button>
             </div>
             <details className="request-other-choices">
-              <summary>Autres absences</summary>
+              <summary>Voir les autres absences</summary>
               <div className="choice-grid">
                 <button type="button" className="cet-leave-choice" onClick={() => beginChosenRequest("leave", "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
                 <button type="button" className="sick-leave-choice" onClick={() => beginChosenRequest("leave", "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>

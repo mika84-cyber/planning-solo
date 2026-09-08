@@ -95,23 +95,15 @@ export function MecenatDialog({
           {calculation ? (
             <section className="mecenat-preview" aria-live="polite">
               <div>
-                <span>De 7 h à 22 h</span>
+                <span>Avant 22 h</span>
                 <strong>
-                  {minutesLabel(calculation.dayMinutes)} ·{" "}
-                  {euros(
-                    (calculation.dayMinutes / 60) *
-                      (MECENAT_REGULATORY_RATES.dayRateCents / 100),
-                  )}
+                  {euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut
                 </strong>
               </div>
               <div>
-                <span>De 22 h à 7 h</span>
+                <span>Après 22 h</span>
                 <strong>
-                  {minutesLabel(calculation.nightMinutes)} ·{" "}
-                  {euros(
-                    (calculation.nightMinutes / 60) *
-                      (MECENAT_REGULATORY_RATES.nightRateCents / 100),
-                  )}
+                  {euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut
                 </strong>
               </div>
               <p>

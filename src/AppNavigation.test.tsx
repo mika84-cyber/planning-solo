@@ -46,7 +46,8 @@ describe("navigation principale", () => {
     labels.slice(1).forEach((label, index) => {
       expect(html.indexOf(labels[index])).toBeLessThan(html.indexOf(label));
     });
-    expect(html).toContain("Plannings PDF, formulaires et annuaires");
+    expect(html).toContain("Trouver un PDF, un formulaire ou un contact");
+    expect(html).toContain("Où voulez-vous aller");
     expect(html.match(/Documents et contacts/g)).toHaveLength(1);
     expect(html).toContain("Écrire à l’administratrice");
     expect(html).not.toContain("Mode d’emploi");

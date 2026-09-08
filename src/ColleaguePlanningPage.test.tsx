@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { colleagueTomorrowDateLabel, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus } from "./ColleaguePlanningPage";
+import { colleagueTomorrowDateLabel, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
 import type { SharedColleaguePlanning } from "./colleagueSharingApi";
 
 const planning: SharedColleaguePlanning = {
@@ -25,6 +25,13 @@ describe("sharedPlanningDayStatus", () => {
   it("précise la moitié de journée partagée", () => {
     const partial = { ...planning, days: [{ date: "2026-09-05", status: "partial" as const, halfMoment: "afternoon" as const }] };
     expect(sharedPlanningDayStatus(partial, new Date(2026, 8, 5, 12))).toBe("Demi-journée · après-midi");
+  });
+
+  it("associe le groupe au statut affiché dans la liste de demain", () => {
+    expect(sharedPlanningTomorrowSummary(planning, new Date(2026, 8, 5, 12))).toEqual({
+      status: "Absence",
+      group: 1,
+    });
   });
 });
 

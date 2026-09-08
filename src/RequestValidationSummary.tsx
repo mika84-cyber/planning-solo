@@ -14,6 +14,15 @@ function dayAmount(value: number) {
   return `${value.toLocaleString("fr-FR")} jour${s(value)}`;
 }
 
+function leaveBalanceRemainingLabel(type: BalanceType, remaining: number) {
+  const amount = Math.max(0, remaining);
+  const value = amount.toLocaleString("fr-FR");
+  const plural = amount > 1 ? "s" : "";
+  if (type === "annual") return `${value} CA restant${plural}`;
+  if (type === "rtt") return `${value} RTT restant${plural}`;
+  return `${value} jour${plural} de fractionnement restant${plural}`;
+}
+
 function selectedDayAmount(value: number) {
   if (value === 0.5) return "une demi-journée";
   if (value === 1) return "un";
@@ -150,12 +159,11 @@ export function RequestValidationSummary({
             const shortage = remaining === undefined ? "" : leaveBalanceShortageMessage(type, remaining, units);
             return (
               <span key={type} className={shortage ? "request-validation-warning" : undefined}>
-                {leaveBalanceLabel(type)} : {dayAmount(units)} déduit{s(units)}
                 {remaining === undefined
-                  ? null
+                  ? `${leaveBalanceLabel(type)} : ${dayAmount(units)} déduit${s(units)}`
                   : shortage
-                    ? ` · ${shortage}`
-                    : ` · ${remaining.toLocaleString("fr-FR")} → ${(remaining - units).toLocaleString("fr-FR")}`}
+                    ? shortage
+                    : leaveBalanceRemainingLabel(type, remaining - units)}
               </span>
             );
           })}

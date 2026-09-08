@@ -33,6 +33,12 @@ const baseProps = {
 };
 
 describe("HomeDashboard", () => {
+  it("ne répète pas sur l’accueil les actions déjà accessibles dans la navigation", () => {
+    const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
+    expect(html).not.toContain("Accès rapide");
+    expect(html).not.toContain("Trouver un document");
+  });
+
   it("alerte sur les informations importantes encore manquantes", () => {
     const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
     expect(html).toContain("Informations à compléter");

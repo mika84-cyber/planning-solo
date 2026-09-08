@@ -15,12 +15,12 @@ export type MainSection = (typeof MAIN_SECTION_ORDER)[number] | "forms";
 export type PayScreen = "overview" | "allowances" | "payslip";
 
 const MENU_ITEMS: ReadonlyArray<readonly [MainSection, string, string]> = [
-  ["home", "Accueil", "Aujourd’hui, notes et planning"],
-  ["leave", "Congés et récupérations", "Soldes, CET, heures sup et mécénats"],
-  ["pay", "Ma paie", "Estimations, primes et bulletins"],
-  ["pdf", "Documents et contacts", "Plannings PDF, formulaires et annuaires"],
-  ["program", "Programmation GP", "Expositions et événements par espace"],
-  ["colleagues", "Planning des collègues", "Partager et consulter les plannings autorisés"],
+  ["home", "Accueil", "Voir ma journée, mes notes et mon planning"],
+  ["leave", "Congés et récupérations", "Poser une absence et consulter mes soldes"],
+  ["pay", "Ma paie", "Comprendre et vérifier ma paie"],
+  ["pdf", "Documents et contacts", "Trouver un PDF, un formulaire ou un contact"],
+  ["program", "Programmation GP", "Voir les expositions par espace"],
+  ["colleagues", "Planning des collègues", "Partager ou consulter un planning"],
 ];
 
 function NavigationIcon({ section }: { section: MainSection | "more" | "guide" | "feedback" }) {
@@ -235,7 +235,7 @@ export function MainMenu({ open, homeSection, onClose, onNavigate, onOpenFeedbac
     >
       <aside className="main-menu-drawer" id="main-menu-drawer" aria-label="Menu principal">
         <header>
-          <div><span className="step-label">Planning Solo</span><h2>Menu principal</h2></div>
+          <div><span className="step-label">Planning Solo</span><h2>Où voulez-vous aller&nbsp;?</h2></div>
           <button type="button" onClick={onClose} aria-label="Fermer le menu">×</button>
         </header>
         <nav>

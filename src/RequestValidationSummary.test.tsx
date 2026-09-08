@@ -90,7 +90,7 @@ describe("résumé avant validation", () => {
       />,
     );
     expect(html).toContain("1 date sélectionnée");
-    expect(html).toContain("CA : 1 jour déduit · 5 → 4");
+    expect(html).toContain("4 CA restants");
   });
 
   it("met en avant le disponible lorsque les CA ou RTT sont dépassés", () => {
@@ -140,7 +140,6 @@ describe("résumé avant validation", () => {
         leaveRemaining={{ annual: 0.25 }}
       />,
     );
-    expect(halfDay).toContain("CA : 0,5 jour déduit");
     expect(halfDay).toContain("Vous en avez sélectionné une demi-journée.");
 
     const noFraction = renderToStaticMarkup(
@@ -168,8 +167,8 @@ describe("résumé avant validation", () => {
         leaveRemaining={{ annual: 5, rtt: 3 }}
       />,
     );
-    expect(html).toContain("CA : 1 jour déduit · 5 → 4");
-    expect(html).toContain("RTT : 1 jour déduit · 3 → 2");
+    expect(html).toContain("4 CA restants");
+    expect(html).toContain("2 RTT restants");
   });
 
   it("conserve dans le détail une catégorie sélectionnée mais non décomptée", () => {
@@ -182,7 +181,7 @@ describe("résumé avant validation", () => {
         leaveRemaining={{ annual: 5 }}
       />,
     );
-    expect(html).toContain("CA : 0 jour déduit · 5 → 5");
+    expect(html).toContain("5 CA restants");
     expect(html).toContain("1 jour de repos ou férié non décompté.");
   });
 

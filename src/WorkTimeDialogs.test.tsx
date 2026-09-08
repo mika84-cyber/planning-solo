@@ -132,6 +132,9 @@ describe("fenêtres de temps de travail", () => {
     expect(mecenat.match(/step="900"/g)).toHaveLength(2);
     expect(mecenat).not.toContain('min="09:00"');
     expect(mecenat).not.toContain('max="19:00"');
+    expect(mecenat).toContain("Avant 22 h");
+    expect(mecenat).toContain("Après 22 h");
+    expect(mecenat).not.toContain("De 7 h à 22 h");
     expect(mecenat).toContain("Total brut");
     expect(solidarity).toContain("Ajouter des heures manuellement");
     expect(recovery).toContain("Ajouter une récupération");

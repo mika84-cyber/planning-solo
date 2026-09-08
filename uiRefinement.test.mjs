@@ -108,11 +108,7 @@ describe("finitions d’interface", () => {
   it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
     expect(styles).toContain(".cet-section-static");
     expect(styles).toContain("border-left: 6px solid #6c61b8");
-    expect(app).toContain('<strong id="leave-request-archive-title">Autre</strong>');
-    expect(app).toContain('<span className="step-label">Mes demandes archivées</span>');
-    expect(app.indexOf('<strong id="leave-request-archive-title">Autre</strong>')).toBeLessThan(
-      app.indexOf('<span className="step-label">Mes demandes archivées</span>'),
-    );
+    expect(app).toContain('<strong id="leave-request-archive-title">Demandes archivées</strong>');
     expect(cetSection).toContain('className="cet-section open cet-section-static"');
     expect(cetSection).toContain("alimentation du 15 novembre au 31 décembre");
     expect(cetSection).not.toContain("setOpen");
@@ -406,8 +402,9 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Continuer vers le formulaire");
     expect(app).toContain("Enregistrer au planning sans formulaire");
     expect(app).toContain("Le formulaire est seulement préparé");
-    expect(app).toContain("Une seule demande peut mélanger plusieurs congés.");
-    expect(app).toContain("3 CA, 2 RTT et 3 CET");
+    expect(app).toContain("Vous pouvez mélanger plusieurs types dans une même demande.");
+    expect(app).toContain("Étape 2 sur 3 · Choisissez les dates");
+    expect(app).toContain("Autres types de congé");
     expect(workTimeDialogs).toContain('[480, "8 h"], [360, "6 h"], [240, "4 h"], [225, "3 h 45"], [120, "2 h"]');
     expect(workTimeDialogs).toContain('defaultRecoveryMinutes(draft.kind, effectiveQuota)');
     expect(workTimeDialogs).toContain('draft.kind === "holiday" ? [] : [[null, "Durée libre"]]');
@@ -474,7 +471,7 @@ describe("finitions d’interface", () => {
 
   it("permet la reprise annuelle sans dates et ouvre la fiche depuis un solde", () => {
     expect(leaveBalancesSection).toContain("Reprendre mes absences précédentes");
-    expect(leaveBalancesSection).toContain("Ajouter des jours et dimanches déjà posés, sans préciser les dates");
+    expect(leaveBalancesSection).toContain("Ajouter un historique sans renseigner chaque date");
     expect(leaveBalancesSection).toContain("Choisir l’année des absences");
     expect(leaveDialogs).toContain("Dimanches posés en congé");
     expect(leaveDialogs).toContain("Prime de juillet");

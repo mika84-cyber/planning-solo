@@ -13,7 +13,7 @@ import {
 import { workedDayCount } from "../src/appModel";
 import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES } from "../src/grandPalaisClosures";
 
-async function prepareDemo(page: Page, withCurrentLeave = false) {
+async function prepareDemo(page: Page, withCurrentLeave = false, openPlanning = true) {
   await page.addInitScript((seedLeave) => {
     localStorage.setItem("planning:e2e-demo-enabled", "1");
     localStorage.setItem("planning:guide-seen-v1:demo", "1");
@@ -37,6 +37,10 @@ async function prepareDemo(page: Page, withCurrentLeave = false) {
   }, withCurrentLeave);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  if (openPlanning) {
+    const planning = page.locator("details.home-planning-controls-disclosure");
+    if (await planning.count()) await planning.locator("summary").click();
+  }
 }
 
 async function openLeaveTool(page: Page, label: string) {
@@ -50,6 +54,21 @@ async function openMainMenu(page: Page) {
   else await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
   await expect(page.getByRole("complementary", { name: "Menu principal" })).toBeVisible();
 }
+
+test("mon planning est replié et son export télécharge directement la version avec congés", async ({ page }) => {
+  await prepareDemo(page, false, false);
+  const planning = page.locator("details.home-planning-controls-disclosure");
+  await expect(planning).not.toHaveAttribute("open", "");
+  await expect(planning.locator(".planning-command-section")).not.toBeVisible();
+  await expect(page.locator(".month-card")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Poser un congé" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Faire un échange" })).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await planning.getByRole("button", { name: "Exporter en PDF" }).click();
+  expect((await downloadPromise).suggestedFilename()).toBe("planning-2026-groupe-2-avec-conges.pdf");
+  await planning.locator("summary").click();
+  await expect(planning.locator(".planning-command-section")).toBeVisible();
+});
 
 test("les outils de congés sont repliés par défaut sur tous les écrans", async ({ page }) => {
   await prepareDemo(page);
@@ -94,15 +113,50 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
   const firstDisclosureToggle = page.locator("details.leave-tool-disclosure summary i").first();
   expect(await firstDisclosureToggle.evaluate((node) => getComputedStyle(node, "::before").content)).toContain("Ouvrir");
-  if (page.viewportSize()!.width <= 720) {
-    const boxes = await page.locator("details.leave-tool-disclosure").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
-    const firstGap = boxes[1].y - boxes[0].y - boxes[0].height;
-    const secondGap = boxes[2].y - boxes[1].y - boxes[1].height;
-    expect(Math.abs(firstGap - secondGap)).toBeLessThan(1);
-  }
-  await page.getByText("Heures supplémentaires et récupérations", { exact: true }).first().click();
+  const boxes = await page.locator("details.leave-tool-disclosure").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(1);
+  expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThan(2);
+  await page.locator("details.leave-tool-disclosure").first().locator("summary").click();
   await expect(page.locator("details.leave-tool-disclosure").first()).toHaveAttribute("open", "");
+  await expect(page.locator("details.leave-tool-disclosure").nth(1)).toBeHidden();
+  await expect(page.locator("details.leave-tool-disclosure").nth(2)).toBeHidden();
+  const openedBox = await page.locator("details.leave-tool-disclosure").first().boundingBox();
+  expect(openedBox?.width).toBeGreaterThan(boxes[0].width * 2.8);
   expect(await firstDisclosureToggle.evaluate((node) => getComputedStyle(node, "::before").content)).toContain("Fermer");
+});
+
+test("les quatre soldes principaux et les autres congés restent en grilles équilibrées", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Congés et récupérations/ })
+    .click();
+  const primaryCards = page.locator(".direct-balances-content > .leave-balance-grid > button");
+  await expect(primaryCards).toHaveCount(4);
+  const primaryRows = await primaryCards.evaluateAll((cards) =>
+    [...new Set(cards.map((card) => Math.round(card.getBoundingClientRect().top)))],
+  );
+  expect(primaryRows).toHaveLength(2);
+
+  const otherBalances = page.locator("details.other-leave-balances");
+  expect((await otherBalances.locator("summary").boundingBox())?.height).toBeLessThanOrEqual(80);
+  await otherBalances.locator("summary").click();
+  const otherCards = otherBalances.locator(".leave-balance-grid > button");
+  await expect(otherCards).toHaveCount(6);
+  const layout = await otherCards.evaluateAll((cards) => ({
+    widths: cards.map((card) => card.getBoundingClientRect().width),
+    rows: [...new Set(cards.map((card) => Math.round(card.getBoundingClientRect().top)))],
+    containerWidth: cards[0]?.parentElement?.getBoundingClientRect().width || 0,
+  }));
+  expect(layout.rows).toHaveLength(3);
+  expect(Math.max(...layout.widths)).toBeLessThan(layout.containerWidth * 0.6);
+  const previousAbsencesButton = otherBalances.locator(".manual-adjustments-trigger");
+  const [previousAbsencesBox, otherGridBox] = await Promise.all([
+    previousAbsencesButton.boundingBox(),
+    otherBalances.locator(".leave-balance-grid").boundingBox(),
+  ]);
+  expect(previousAbsencesBox?.height).toBeLessThanOrEqual(96);
+  expect(previousAbsencesBox?.width).toBeGreaterThan((otherGridBox?.width || 0) * 0.9);
 });
 
 test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo) => {
@@ -463,6 +517,7 @@ test("le partage de planning reste lisible et privé sur téléphone", async ({ 
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
   await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([^\d]+ \d{1,2} [^)]+\)$/ })).toBeVisible();
   await expect(receivedCard.locator(".colleague-tomorrow-list")).toContainText(/Agnès.*(Travail|Repos|Absence)/);
+  await expect(receivedCard.locator(".colleague-tomorrow-list").getByTitle("Groupe 2")).toHaveText("G2");
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
@@ -524,6 +579,33 @@ test("le partage de planning reste lisible et privé sur téléphone", async ({ 
   expect(desktopHeader!.height).toBeLessThanOrEqual(240);
   await expect(colleagueIllustration).toHaveCSS("max-height", "213px");
   expect(Math.abs((desktopImage!.x + desktopImage!.width / 2) - (desktopHeader!.x + desktopHeader!.width / 2))).toBeLessThan(2);
+});
+
+test("l’aide au partage est ouverte seulement lors de la première utilisation", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Planning des collègues/ })
+    .click();
+
+  const firstToggle = page.locator(".colleague-how-toggle");
+  await expect(firstToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
+
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Accueil/ })
+    .click();
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Planning des collègues/ })
+    .click();
+
+  const returningToggle = page.locator(".colleague-how-toggle");
+  await expect(returningToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toHaveCount(0);
+  await returningToggle.click();
+  await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
 });
 
 test("une invitation acceptée propose le partage en retour", async ({ page }) => {
@@ -745,7 +827,7 @@ test("menu, contact administratrice, paie et PDF restent accessibles", async ({ 
   await expect(adminContact).toHaveCSS("background-image", /linear-gradient/);
 
   const leaveMenuButton = menu.getByRole("button", { name: /Congés et récupérations/ });
-  await expect(leaveMenuButton).toContainText("Soldes, CET, heures sup et mécénats");
+  await expect(leaveMenuButton).toContainText("Poser une absence et consulter mes soldes");
   await leaveMenuButton.click();
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   const leaveHeader = page.locator(".top-header-leave");
@@ -768,28 +850,25 @@ test("menu, contact administratrice, paie et PDF restent accessibles", async ({ 
   await expectHeaderWidth(leaveTools);
   await expect(leaveTools).toHaveCSS("border-top-width", "1px");
   const secondaryDisclosures = leaveTools.locator(".leave-secondary-grid > .leave-tool-disclosure");
-  await expect(secondaryDisclosures).toHaveCount(2);
-  await secondaryDisclosures.nth(0).locator("summary").click();
-  await secondaryDisclosures.nth(1).locator("summary").click();
-  await leaveTools.locator(".cet-disclosure > summary").click();
+  await expect(secondaryDisclosures).toHaveCount(3);
   const overtimeCard = secondaryDisclosures.nth(0).locator(".overtime-balance-card");
   const mecenatCard = secondaryDisclosures.nth(1).locator(".mecenat-balance-card");
-  const cetCard = leaveTools.locator(".cet-disclosure .cet-section-static");
+  const cetCard = secondaryDisclosures.nth(2).locator(".cet-section-static");
+  await secondaryDisclosures.nth(0).locator("summary").click();
+  await expect(secondaryDisclosures.nth(1)).toBeHidden();
+  await expect(overtimeCard).toBeVisible();
+  await expect(overtimeCard).toHaveCSS("border-top-width", "0px");
+  await secondaryDisclosures.nth(0).locator("summary").click();
+  await secondaryDisclosures.nth(1).locator("summary").click();
+  await expect(secondaryDisclosures.nth(0)).toBeHidden();
+  await expect(mecenatCard).toBeVisible();
+  await expect(mecenatCard).toHaveCSS("border-top-width", "0px");
+  await secondaryDisclosures.nth(1).locator("summary").click();
+  await secondaryDisclosures.nth(2).locator("summary").click();
+  await expect(cetCard).toBeVisible();
   await expect(secondaryDisclosures.nth(0)).toHaveCSS("border-left-width", "1px");
   await expect(secondaryDisclosures.nth(1)).toHaveCSS("border-left-width", "1px");
   await expect(leaveTools.locator(".cet-disclosure")).toHaveCSS("border-left-width", "1px");
-  await expect(overtimeCard).toHaveCSS("border-top-width", "0px");
-  await expect(mecenatCard).toHaveCSS("border-top-width", "0px");
-  const [mecenatBox, cetBox] = await Promise.all([mecenatCard.boundingBox(), cetCard.boundingBox()]);
-  expect(mecenatBox).not.toBeNull();
-  expect(cetBox).not.toBeNull();
-  expect(cetBox!.y).toBeGreaterThan(mecenatBox!.y + mecenatBox!.height);
-  if ((page.viewportSize()?.width ?? 1000) <= 720) {
-    const leaveToolCards = await secondaryDisclosures.locator(".overtime-balance-card").evaluateAll((cards) =>
-      cards.map((card) => card.getBoundingClientRect().toJSON()),
-    );
-    expect(leaveToolCards[1].y).toBeGreaterThan(leaveToolCards[0].y + leaveToolCards[0].height);
-  }
 
   await openMainMenu(page);
   await menu.getByRole("button", { name: /Ma paie/ }).click();
@@ -2464,7 +2543,6 @@ test("les heures supplémentaires du dimanche sont acceptées et reconnues", asy
     .getByRole("button", { name: /Congés et récupérations/ })
     .click();
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
-
   await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
   const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
   await dialog.getByLabel("Date").fill("2026-05-10");
@@ -2474,6 +2552,7 @@ test("les heures supplémentaires du dimanche sont acceptées et reconnues", asy
   await dialog.getByRole("button", { name: "Enregistrer les heures" }).click();
 
   await expect(dialog).toBeHidden();
+  await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByLabel("Heures supplémentaires et récupérations")
     .getByRole("button", { name: "Voir l’historique" })
     .click();
@@ -2502,6 +2581,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
     .getByRole("button", { name: /^Récupération/ })
     .click();
   const recoveryPanel = page.locator("#request-panel");
+  await recoveryPanel.locator(".request-advanced-types > summary").click();
   await recoveryPanel.getByRole("button", { name: /formation/i }).click();
   await page.locator(".month-card .day").first().click();
   const trainingHours = page.getByRole("dialog", { name: "Indiquez les horaires" });
@@ -2959,6 +3039,23 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   await expect(datedRequest.getByLabel("Résumé avant validation").getByText("1 date", { exact: true })).toBeVisible();
 });
 
+test("la demande guide sans masquer les options avancées", async ({ page }) => {
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Poser un congé" }).click();
+  const chooser = page.getByRole("dialog", { name: "Poser un congé" });
+  await expect(chooser.getByRole("heading", { name: /Que voulez-vous poser/ })).toBeVisible();
+  await expect(chooser.getByText("Étape 1 sur 3")).toBeVisible();
+  await chooser.getByRole("button", { name: /^CA/ }).click();
+
+  const request = page.locator("#request-panel");
+  await expect(request.getByText(/Étape 2 sur 3/)).toBeVisible();
+  await expect(request.getByRole("button", { name: "Congés annuels" })).toBeVisible();
+  const advanced = request.locator(".request-advanced-types");
+  await expect(advanced).not.toHaveAttribute("open", "");
+  await advanced.getByText("Autres types de congé").click();
+  await expect(advanced.getByRole("button", { name: /Congé CET/ })).toBeVisible();
+});
+
 test("une récupération ordinaire affiche le cycle sans reproposer Formation", async ({ page }) => {
   await prepareDemo(page);
   await openMainMenu(page);
@@ -3044,15 +3141,16 @@ test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
     .getByRole("button", { name: /^CA Congés annuels/ })
     .click();
   const request = page.locator("#request-panel");
-  await expect(request).toContainText("Une seule demande peut mélanger plusieurs congés.");
+  await expect(request).toContainText("Vous pouvez mélanger plusieurs types dans une même demande.");
   for (let index = 0; index < 3; index += 1) await workDays.nth(index).click();
   await request.getByRole("button", { name: "RTT", exact: true }).click();
   for (let index = 3; index < 5; index += 1) await workDays.nth(index).click();
+  await request.locator(".request-advanced-types > summary").click();
   await request.getByRole("button", { name: "Congé CET", exact: true }).click();
   for (let index = 5; index < 8; index += 1) await workDays.nth(index).click();
   const summary = request.getByLabel("Résumé avant validation");
-  await expect(summary).toContainText(/CA : 3 jours déduits · \d+ → \d+/);
-  await expect(summary).toContainText(/RTT : 2 jours déduits · \d+ → \d+/);
+  await expect(summary).toContainText(/\d+ CA restants?/);
+  await expect(summary).toContainText(/\d+ RTT restants?/);
   await expect(request.getByRole("button", { name: /^Congé CET/ })).toContainText("3");
 });
 
@@ -3110,6 +3208,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
     .click();
   const recovery = page.locator("#request-panel");
   await expect(recovery.locator(".type-tabs > button")).toHaveCount(5);
+  await recovery.locator(".request-advanced-types > summary").click();
   await expect(recovery.getByRole("button", { name: /formation/i })).toBeVisible();
   await recovery.getByRole("button", { name: "Annuler la demande" }).click();
 
@@ -3223,7 +3322,7 @@ test("les détails des soldes séparent les congés pris et à venir", async ({ 
     .click();
   await expect(page.getByRole("heading", { name: "Mes soldes de congés" })).toBeVisible();
   await expect(page.locator(".manual-adjustments-trigger")).toContainText(
-    "Ajouter des jours et dimanches déjà posés, sans préciser les dates",
+    "Ajouter un historique sans renseigner chaque date",
   );
   const [mecenatBox, archiveBox] = await Promise.all([
     page.locator(".mecenat-balance-card").boundingBox(),
@@ -3233,16 +3332,11 @@ test("les détails des soldes séparent les congés pris et à venir", async ({ 
   expect(archiveBox).not.toBeNull();
   expect(archiveBox!.y).toBeGreaterThan(mecenatBox!.y);
   const archive = page.locator(".leave-request-archive");
-  await expect(archive.getByRole("button", { name: /Autre/ })).toContainText("Mes demandes archivées");
+  await expect(archive.getByRole("button", { name: /Demandes archivées/ })).toContainText("0 PDF");
+  expect(archiveBox!.height).toBeLessThan(80);
   await expect(archive).toHaveCSS("background-image", /linear-gradient/);
   await expect(archive.locator(".request-archive-icon")).toHaveCSS("color", "rgb(112, 66, 134)");
-  const [otherTitleBox, archivedLabelBox] = await Promise.all([
-    archive.locator(".request-archive-copy strong").boundingBox(),
-    archive.locator(".request-archive-copy .step-label").boundingBox(),
-  ]);
-  expect(otherTitleBox).not.toBeNull();
-  expect(archivedLabelBox).not.toBeNull();
-  expect(otherTitleBox!.y).toBeLessThan(archivedLabelBox!.y);
+  await expect(archive.locator(".request-archive-copy strong")).toHaveText("Demandes archivées");
   await page.locator(".leave-balance-grid > button.annual").click();
 
   const periods = page.locator(".balance-detail-months > details");

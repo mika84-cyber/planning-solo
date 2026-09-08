@@ -630,8 +630,8 @@
   color: #36546d;
 }
 
-/* Toutes les possibilités de congé et de récupération sont visibles. Les
-   groupes gardent la liste lisible, sans ajouter un bouton "plus d'options". */
+/* Le groupe conserve une grille lisible. Les choix rares sont désormais
+   placés dans le panneau guidé prévu dans la dernière passe de styles. */
 .request-option-groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

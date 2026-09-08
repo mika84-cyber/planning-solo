@@ -61,6 +61,10 @@ export function sharedPlanningDayStatus(planning: SharedColleaguePlanning, date:
   return getDayInfo(date, planning.group).kind === "off" ? "Repos" : "Travail";
 }
 
+export function sharedPlanningTomorrowSummary(planning: SharedColleaguePlanning, date: Date) {
+  return { status: sharedPlanningDayStatus(planning, date), group: planning.group };
+}
+
 export type CommonPresence = "full" | "morning" | "afternoon" | "imprecise" | null;
 
 function presentHalves(presence: PersonalPresence): Set<"morning" | "afternoon"> | null {
@@ -152,12 +156,16 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<SharedColleaguePlanning | null>(null);
   const [view, setView] = useState(() => startOfMonth(new Date()));
-  const [tomorrowStatuses, setTomorrowStatuses] = useState<Record<string, TomorrowStatus>>({});
+  const [tomorrowSummaries, setTomorrowSummaries] = useState<Record<string, { status: TomorrowStatus; group: number }>>({});
   const [commonDaysOpen, setCommonDaysOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(() => {
-    if (typeof window === "undefined" || !window.matchMedia?.("(max-width: 720px)").matches) return true;
+    if (typeof window === "undefined") return true;
     try { return window.localStorage.getItem("planning:colleague-guide-seen") !== "1"; } catch { return true; }
   });
+
+  useEffect(() => {
+    try { window.localStorage.setItem("planning:colleague-guide-seen", "1"); } catch {}
+  }, []);
 
   const refresh = useCallback(async () => {
     if (demoMode) return;
@@ -263,7 +271,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
 
   useEffect(() => {
     if (!received.length) {
-      setTomorrowStatuses({});
+      setTomorrowSummaries({});
       return;
     }
     let cancelled = false;
@@ -271,12 +279,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
     void Promise.all(received.map(async (share) => {
       try {
         const planning = demoMode ? demoPlanning : await getSharedColleaguePlanning(share.ownerId);
-        return [share.ownerId, sharedPlanningDayStatus(planning, tomorrow)] as const;
+        return [share.ownerId, sharedPlanningTomorrowSummary(planning, tomorrow)] as const;
       } catch {
         return null;
       }
     })).then((entries) => {
-      if (!cancelled) setTomorrowStatuses(Object.fromEntries(entries.filter((entry) => entry !== null)));
+      if (!cancelled) setTomorrowSummaries(Object.fromEntries(entries.filter((entry) => entry !== null)));
     });
     return () => { cancelled = true; };
   }, [demoMode, received]);
@@ -318,13 +326,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
       <section className="colleague-card colleague-how-it-works" aria-labelledby="colleague-how-title">
         <header className="colleague-how-header">
           <div><p className="eyebrow">Comment ça marche</p><h3 id="colleague-how-title">Un partage simple et maîtrisé</h3></div>
-          <button type="button" className="secondary compact colleague-how-toggle" aria-expanded={howItWorksOpen} aria-controls="colleague-how-content" onClick={() => {
-            setHowItWorksOpen((open) => {
-              const next = !open;
-              if (!next) try { window.localStorage.setItem("planning:colleague-guide-seen", "1"); } catch {}
-              return next;
-            });
-          }}>{howItWorksOpen ? "Replier" : "Afficher"}<span aria-hidden="true">⌃</span></button>
+          <button type="button" className="secondary compact colleague-how-toggle" aria-expanded={howItWorksOpen} aria-controls="colleague-how-content" onClick={() => setHowItWorksOpen((open) => !open)}>{howItWorksOpen ? "Replier" : "Afficher"}<span aria-hidden="true">⌃</span></button>
         </header>
         {howItWorksOpen ? <ol id="colleague-how-content">
           <li><span>1</span><p><strong>Avant de vous inscrire</strong><small>Consultez les noms de l’annuaire et bloquez discrètement une personne si nécessaire.</small></p></li>
@@ -412,8 +414,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
               <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">Qui travaille demain ? ({colleagueTomorrowDateLabel()})</h4></div>
               <div className="colleague-tomorrow-list colleague-list">
                 {received.map((share) => {
-                  const status = tomorrowStatuses[share.ownerId];
-                  return <div key={share.ownerId}><strong>{share.ownerName}</strong>{status ? <span className={`colleague-tomorrow-status ${status === "Travail" ? "work" : status === "Repos" ? "rest" : "absence"}`}>{status}</span> : <small>Chargement…</small>}</div>;
+                  const summary = tomorrowSummaries[share.ownerId];
+                  return <div key={share.ownerId}><span className="colleague-tomorrow-person"><strong>{share.ownerName}</strong>{summary ? <small className="colleague-group-badge" title={`Groupe ${summary.group}`}>G{summary.group}</small> : null}</span>{summary ? <span className={`colleague-tomorrow-status ${summary.status === "Travail" ? "work" : summary.status === "Repos" ? "rest" : "absence"}`}>{summary.status}</span> : <small>Chargement…</small>}</div>;
                 })}
               </div>
             </section> : null}

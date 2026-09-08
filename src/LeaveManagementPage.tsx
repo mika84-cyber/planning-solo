@@ -4,7 +4,6 @@ import { MECENAT_REGULATORY_RATES, type MecenatEntry } from "./mecenat";
 import { minutesLabel, nextPayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, fromKey, longDate, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
-import "./leaveCollapsibles.css";
 
 export type WorkTimeHistoryFilter = "all" | "gains" | "uses" | "paid";
 
@@ -36,7 +35,6 @@ type LeaveManagementPageProps = {
   isProgramAdmin: boolean;
   archiveOpen: boolean;
   archivedRequests: ArchivedRequest[];
-  onRequestLeave: () => void;
   onOpenOvertime: () => void;
   onOpenSolidarity: () => void;
   onToggleOvertimeHistory: () => void;
@@ -66,7 +64,6 @@ export function LeaveManagementPage({
   isProgramAdmin,
   archiveOpen,
   archivedRequests,
-  onRequestLeave,
   onOpenOvertime,
   onOpenSolidarity,
   onToggleOvertimeHistory,
@@ -98,19 +95,15 @@ export function LeaveManagementPage({
     : 0;
   return (
     <>
-      <section className="section-intro leave-intro">
-        <div>
-          <span className="step-label">Congés et récupérations</span>
-          <h2>Mes absences et mes demandes</h2>
-          <p>Vos soldes sont visibles immédiatement. Touchez une carte, puis une date pour ouvrir la fiche du jour.</p>
-        </div>
-        <button className="primary-action" type="button" onClick={onRequestLeave}>Poser un congé</button>
-      </section>
       {balancesContent}
       <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET">
         <div className="leave-secondary-grid">
           <details className="leave-tool-disclosure">
-            <summary><span><small>Temps de travail</small><strong>Heures supplémentaires et récupérations</strong></span><b>{minutesLabel(recoveryBalance.remaining)}</b><i aria-hidden="true" /></summary>
+            <summary>
+              <span className="leave-tool-illustration work-time" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="30" cy="34" r="18" /><path d="M30 16v-6m-7 0h14M30 24v11l8 5" /><circle cx="48" cy="18" r="9" /><path d="M48 14v8m-4-4h8" /></svg></span>
+              <span className="leave-tool-copy"><small>Temps de travail</small><strong>Heures sup et récupérations</strong></span>
+              <b>{minutesLabel(recoveryBalance.remaining)}</b><i aria-hidden="true" />
+            </summary>
           <section className="overtime-balance-card" aria-labelledby="overtime-balance-title">
             <div className="overtime-balance-heading">
               <div>
@@ -183,7 +176,11 @@ export function LeaveManagementPage({
           </section>
           </details>
           <details className="leave-tool-disclosure">
-            <summary><span><small>Activités ponctuelles</small><strong>Mécénats</strong></span><b>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</b><i aria-hidden="true" /></summary>
+            <summary>
+              <span className="leave-tool-illustration mecenat" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="m32 10 5.5 11.5L50 23l-9 8.5L43.5 44 32 38l-11.5 6L23 31.5 14 23l12.5-1.5L32 10Z" /><path d="M12 47c7-3 13-2 20 3 7-5 13-6 20-3M16 53h32" /></svg></span>
+              <span className="leave-tool-copy"><small>Activités ponctuelles</small><strong>Mécénats</strong></span>
+              <b>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</b><i aria-hidden="true" />
+            </summary>
           <section className="overtime-balance-card mecenat-balance-card" aria-labelledby="mecenat-history-title">
             <div className="overtime-balance-heading">
               <div>
@@ -194,8 +191,8 @@ export function LeaveManagementPage({
               <strong>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</strong>
             </div>
             <div className="mecenat-rate-summary" role="group" aria-label="Tarifs réglementaires des mécénats">
-              <article><span>De 7 h à 22 h</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
-              <article><span>De 22 h à 7 h</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
+              <article><span>Avant 22 h</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
+              <article><span>Après 22 h</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
             </div>
             <div className="overtime-actions"><button type="button" className="primary-action mecenat-action" onClick={onOpenMecenat}>Déclarer un mécénat</button></div>
             <button type="button" className="soft-detail-button overtime-history-toggle" onClick={onToggleMecenatHistory} aria-expanded={mecenatHistoryOpen}>
@@ -219,17 +216,21 @@ export function LeaveManagementPage({
             ) : null}
           </section>
           </details>
+          <details className="leave-tool-disclosure cet-disclosure">
+            <summary>
+              <span className="leave-tool-illustration cet" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="10" y="13" width="44" height="40" rx="7" /><path d="M10 25h44M21 9v9m22-9v9" /><circle cx="35" cy="39" r="10" /><path d="M35 33v7l5 3" /></svg></span>
+              <span className="leave-tool-copy"><small>Compte épargne-temps</small><strong>Mon CET</strong></span>
+              <b>Consulter et gérer</b><i aria-hidden="true" />
+            </summary>
+            {cetContent}
+          </details>
         </div>
-        <details className="leave-tool-disclosure cet-disclosure">
-          <summary><span><small>Compte épargne-temps</small><strong>Mon CET</strong></span><b>Consulter et gérer</b><i aria-hidden="true" /></summary>
-          {cetContent}
-        </details>
         {isProgramAdmin ? (
           <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
             <button className="request-archive-toggle" type="button" onClick={onToggleArchive} aria-expanded={archiveOpen}>
               <span className="request-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h5l2 2h7v10H5zM7 4h7l2 2" /></svg></span>
-              <span className="request-archive-copy"><strong id="leave-request-archive-title">Autre</strong><span className="step-label">Mes demandes archivées</span><small>Documents conservés sur cet appareil</small></span>
-              <span className="request-archive-summary"><small>{archivedRequests.length} formulaire{s(archivedRequests.length)}</small><span className="request-archive-caret" aria-hidden="true">⌄</span></span>
+              <span className="request-archive-copy"><strong id="leave-request-archive-title">Demandes archivées</strong></span>
+              <span className="request-archive-summary"><small>{archivedRequests.length} PDF</small><span className="request-archive-caret" aria-hidden="true">⌄</span></span>
             </button>
             {archiveOpen ? (
               <div className="request-archive-list">

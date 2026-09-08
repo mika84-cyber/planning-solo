@@ -53,6 +53,37 @@ export function LeaveBalancesSection({
   onSelectBalance,
   onOpenManualAdjustments,
 }: LeaveBalancesSectionProps) {
+  const otherCountedTypes = [
+    ...COUNTED_ONLY_TYPES.filter((type) => type !== "sick" && type !== "strike"),
+    "strike" as const,
+  ];
+  const countedBalanceButton = (type: CountedOnlyType) => (
+    <button
+      type="button"
+      key={type}
+      className={type}
+      onClick={() => onSelectBalance(type)}
+      aria-label={`Afficher le détail de ${TYPE_LABELS[type]}`}
+    >
+      <span>{typeLabelFor(type, countedOnly[type].used)}</span>
+      <strong>
+        {countedOnly[type].used.toLocaleString("fr-FR")}
+        <i>pris</i>
+      </strong>
+      <small>
+        {type === "cet"
+          ? "déduit du solde CET"
+          : type === "strike"
+            ? "retenue estimée dans Ma paie"
+            : type === "other"
+              ? "compté dans les jours non travaillés"
+              : type === "work_accident"
+                ? "sans carence · CA superposés recrédités"
+                : "sans effet sur les congés"}
+      </small>
+      <em>Voir le détail</em>
+    </button>
+  );
   return (
     <section className="leave-balances-direct" aria-labelledby="leave-balances-title">
       <div className="leave-balances-heading">
@@ -101,55 +132,42 @@ export function LeaveBalancesSection({
               <em>Voir le détail</em>
             </button>
           ))}
-          {[...COUNTED_ONLY_TYPES.filter((type) => type !== "strike"), "strike" as const].map((type) => (
-            <button
-              type="button"
-              key={type}
-              className={type}
-              onClick={() => onSelectBalance(type)}
-              aria-label={`Afficher le détail de ${TYPE_LABELS[type]}`}
-            >
-              <span>{typeLabelFor(type, countedOnly[type].used)}</span>
-              <strong>
-                {countedOnly[type].used.toLocaleString("fr-FR")}
-                <i>pris</i>
-              </strong>
-              <small>
-                {type === "cet"
-                  ? "déduit du solde CET"
-                  : type === "strike"
-                    ? "retenue estimée dans Ma paie"
-                  : type === "other"
-                    ? "compté dans les jours non travaillés"
-                  : type === "work_accident"
-                    ? "sans carence · CA superposés recrédités"
-                    : "sans effet sur les congés"}
-              </small>
-              <em>Voir le détail</em>
-            </button>
-          ))}
+          {countedBalanceButton("sick")}
         </div>
+        <details className="other-leave-balances">
+          <summary>
+            <span className="leave-secondary-menu-icon" aria-hidden="true">•••</span>
+            <span className="leave-secondary-menu-copy">
+              <strong>Autres congés</strong>
+              <small>CET, garde d’enfant et absences particulières</small>
+            </span>
+            <b>{otherCountedTypes.length} catégories</b>
+            <i aria-hidden="true">⌄</i>
+          </summary>
+          <div className="leave-balance-grid">
+            {otherCountedTypes.map(countedBalanceButton)}
+          </div>
+          <button
+            className="manual-adjustments-trigger"
+            type="button"
+            onClick={onOpenManualAdjustments}
+          >
+            <span className="manual-adjustments-icon" aria-hidden="true">
+              ↺
+            </span>
+            <span className="manual-adjustments-copy">
+              <strong>Reprendre mes absences précédentes</strong>
+              <small>Ajouter un historique sans renseigner chaque date</small>
+            </span>
+            <span className="manual-adjustments-summary">
+              {manualSundayLeaveTotal
+                ? `${manualSundayLeaveTotal} dimanche${s(manualSundayLeaveTotal)}`
+                : "Configurer"}
+              <i aria-hidden="true">›</i>
+            </span>
+          </button>
+        </details>
       </div>
-      <button
-        className="manual-adjustments-trigger"
-        type="button"
-        onClick={onOpenManualAdjustments}
-      >
-        <span className="manual-adjustments-icon" aria-hidden="true">
-          ＋
-        </span>
-        <span>
-          <strong>Reprendre mes absences précédentes</strong>
-          <small>
-            Ajouter des jours et dimanches déjà posés, sans préciser les dates
-          </small>
-        </span>
-        <span className="manual-adjustments-summary">
-          {manualSundayLeaveTotal
-            ? `${manualSundayLeaveTotal} dimanche${s(manualSundayLeaveTotal)}`
-            : "Configurer"}
-        </span>
-      </button>
     </section>
   );
 }
