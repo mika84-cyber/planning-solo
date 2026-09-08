@@ -183,14 +183,23 @@ export function effectivePayProfile(
   month: number,
   savedProfile: PayProfile = {},
 ) {
+  const definedValues = (profile: PayProfile | undefined) =>
+    Object.fromEntries(
+      Object.entries(profile || {}).filter(([, value]) => value !== undefined),
+    ) as PayProfile;
   const yearText = String(year);
   // Le profil général contient les réglages de paie durables. Il reste la
   // base de chaque mois ; l'historique annuel puis les changements datés ne
   // remplacent que les valeurs réellement enregistrées pour leur période.
-  let effective = { ...savedProfile, ...(profiles[yearText] || {}) };
+  // Les profils issus de l'API possèdent aussi des clés à `undefined` : elles
+  // ne doivent surtout pas effacer les valeurs durables lors de la fusion.
+  let effective = {
+    ...definedValues(savedProfile),
+    ...definedValues(profiles[yearText]),
+  };
   for (let index = 0; index <= month; index += 1) {
     const key = `${yearText}-${String(index + 1).padStart(2, "0")}`;
-    effective = { ...effective, ...(profiles[key] || {}) };
+    effective = { ...effective, ...definedValues(profiles[key]) };
   }
   return effective;
 }

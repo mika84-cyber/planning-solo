@@ -39,9 +39,28 @@ describe("usePayActions — conversions et payloads sûrs", () => {
       otherFixed: 75.84,
       pasRate: 1.7,
     };
-    const profiles = {
-      "2026": { ciaMonth: 6 },
-      "2026-09": { pasRate: 2.2 },
+    const profiles: Record<string, {
+      baseSalary?: number;
+      ifse?: number;
+      otherFixed?: number;
+      pasRate?: number;
+      ciaMonth?: number;
+    }> = {
+      // La conversion de la réponse API conserve ces clés vides. Elles ne
+      // doivent pas effacer le profil général déjà enregistré.
+      "2026": {
+        baseSalary: undefined,
+        ifse: undefined,
+        otherFixed: undefined,
+        pasRate: undefined,
+        ciaMonth: 6,
+      },
+      "2026-09": {
+        baseSalary: undefined,
+        ifse: undefined,
+        otherFixed: undefined,
+        pasRate: 2.2,
+      },
     };
 
     expect(effectivePayProfile(profiles, 2026, 7, savedProfile)).toMatchObject({
