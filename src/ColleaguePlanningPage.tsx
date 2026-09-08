@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { getDayInfo, MONTHS } from "./planningLogic";
 import type { PersonalPresence } from "./appModel";
 import { ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
@@ -415,11 +415,26 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
             {!received.length ? <p>Aucun planning partagé pour le moment.</p> : null}
             {received.length ? <section className="colleague-tomorrow" aria-labelledby="colleague-tomorrow-title">
               <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">Qui travaille demain ? ({colleagueTomorrowDateLabel()})</h4></div>
-              <div className="colleague-tomorrow-list colleague-list">
-                {received.map((share) => {
-                  const summary = tomorrowSummaries[share.ownerId];
-                  return <div key={share.ownerId}><span className="colleague-tomorrow-person"><strong>{share.ownerName}</strong>{summary ? <small className={`colleague-group-badge group-${summary.group}`} title={`Groupe ${summary.group}`}>Groupe {summary.group}</small> : null}</span>{summary ? <span className={`colleague-tomorrow-status ${summary.status === "Travail" ? "work" : summary.status === "Repos" ? "rest" : "absence"}`}>{summary.status}</span> : <small>Chargement…</small>}</div>;
-                })}
+              <div className="colleague-tomorrow-table-shell">
+                <table className="colleague-tomorrow-table">
+                  <tbody>
+                    {([1, 2, 3] as const).map((group) => {
+                      const groupShares = received.filter((share) => tomorrowSummaries[share.ownerId]?.group === group);
+                      if (!groupShares.length) return null;
+                      return <Fragment key={group}>
+                        <tr className={`colleague-tomorrow-group group-${group}`}><th colSpan={2}>Groupe {group}</th></tr>
+                        {groupShares.map((share) => {
+                          const summary = tomorrowSummaries[share.ownerId]!;
+                          return <tr key={share.ownerId}>
+                            <td><strong>{share.ownerName}</strong></td>
+                            <td><span className={`colleague-tomorrow-status ${summary.status === "Travail" ? "work" : summary.status === "Repos" ? "rest" : "absence"}`}>{summary.status}</span></td>
+                          </tr>;
+                        })}
+                      </Fragment>;
+                    })}
+                    {received.some((share) => !tomorrowSummaries[share.ownerId]) ? <tr className="colleague-tomorrow-loading"><td colSpan={2}>Chargement des plannings…</td></tr> : null}
+                  </tbody>
+                </table>
               </div>
             </section> : null}
           </div> : <p>Inscrivez-vous dans l’annuaire pour consulter les plannings reçus.</p>}

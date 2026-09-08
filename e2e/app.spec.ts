@@ -547,10 +547,10 @@ test("le partage de planning reste lisible et privé sur téléphone", async ({ 
   await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", "rgb(141, 107, 174)");
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
   await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([^\d]+ \d{1,2} [^)]+\)$/ })).toBeVisible();
-  await expect(receivedCard.locator(".colleague-tomorrow-list")).toContainText(/Agnès.*(Travail|Repos|Absence)/);
-  const tomorrowGroup = receivedCard.locator(".colleague-tomorrow-list").getByTitle("Groupe 2");
-  await expect(tomorrowGroup).toHaveText("Groupe 2");
-  await expect(tomorrowGroup).toHaveCSS("border-radius", "999px");
+  const tomorrowTable = receivedCard.locator(".colleague-tomorrow-table");
+  await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Repos|Absence)/);
+  await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toHaveText("Groupe 2");
+  await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(1);
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
