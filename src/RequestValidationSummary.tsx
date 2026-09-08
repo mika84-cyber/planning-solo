@@ -4,6 +4,28 @@ import { TYPE_LABELS, fromKey, getDayInfo, longDate, s } from "./planningLogic";
 
 const QUOTA_BALANCE_TYPES = ["annual", "rtt", "fraction"] as const;
 
+export function requestLeaveBalanceUsage(items: SelectedDay[], group: number) {
+  return Object.fromEntries(QUOTA_BALANCE_TYPES.map((type) => [
+    type,
+    items.reduce((total, item) => {
+      const itemType = item.type === "half" ? "annual" : item.type;
+      if (itemType !== type) return total;
+      const info = getDayInfo(fromKey(item.date), group);
+      if (info.holiday || info.kind === "off") return total;
+      return total + (item.type === "half" ? 0.5 : 1);
+    }, 0),
+  ])) as Record<BalanceType, number>;
+}
+
+export function zeroLeaveBalanceType(
+  items: SelectedDay[],
+  group: number,
+  remaining: Partial<Record<BalanceType, number>>,
+) {
+  const usage = requestLeaveBalanceUsage(items, group);
+  return QUOTA_BALANCE_TYPES.find((type) => usage[type] > 0 && (remaining[type] ?? Number.POSITIVE_INFINITY) <= 0);
+}
+
 function leaveBalanceLabel(type: BalanceType) {
   if (type === "annual") return "CA";
   if (type === "rtt") return "RTT";
@@ -103,15 +125,10 @@ export function RequestValidationSummary({
   const requestedBalanceTypes = new Set(
     leaveItems.map((item) => item.type === "half" ? "annual" : item.type),
   );
+  const balanceUsage = requestLeaveBalanceUsage(items, group);
   const leaveUsage = QUOTA_BALANCE_TYPES.map((type) => ({
     type,
-    units: leaveItems.reduce((total, item) => {
-      const itemType = item.type === "half" ? "annual" : item.type;
-      if (itemType !== type) return total;
-      const info = getDayInfo(fromKey(item.date), group);
-      if (info.holiday || info.kind === "off") return total;
-      return total + (item.type === "half" ? 0.5 : 1);
-    }, 0),
+    units: balanceUsage[type],
   })).filter(({ type }) => requestedBalanceTypes.has(type));
   const deductedDays = leaveUsage.reduce((total, usage) => total + usage.units, 0);
   const skippedDays = leaveItems.filter((item) => {

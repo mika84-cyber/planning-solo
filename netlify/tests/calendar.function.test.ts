@@ -504,6 +504,54 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/period/request-annual-2026-2")).toBeTruthy();
   });
 
+  it("refuse CA, RTT, fractionnement et demi-journée lorsque leur solde est nul", async () => {
+    data.set("user/user-a/form-profile", {
+      manual_adjustments: {
+        "2026": {
+          annual_used: 29,
+          rtt_used: 15,
+          fraction_used: 2,
+          sunday_leave_jan_jun: 0,
+          sunday_leave_jul_sep: 0,
+          sunday_leave_oct_nov: 0,
+          sunday_leave_dec: 0,
+        },
+      },
+    });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const cases = [
+      ["annual", "Vous n’avez plus de congés annuels disponibles."],
+      ["rtt", "Vous n’avez plus de RTT disponibles."],
+      ["fraction", "Vous n’avez plus de jours de fractionnement disponibles."],
+    ] as const;
+    for (const [type, error] of cases) {
+      const response = await calendarHandler(request({
+        action: "save-request",
+        requestId: `request-zero-${type}`,
+        requestKind: "leave",
+        group: 2,
+        periods: [{ from: "2026-08-11", to: "2026-08-11", type }],
+        timed: [],
+      }));
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error });
+      expect(data.has(`user/user-a/period/request-zero-${type}-1`)).toBe(false);
+    }
+
+    const halfDay = await calendarHandler(request({
+      action: "save-request",
+      requestId: "request-zero-half",
+      requestKind: "leave",
+      group: 2,
+      periods: [],
+      timed: [{ date: "2026-08-11", type: "half", start: "09:00" }],
+    }));
+    expect(halfDay.status).toBe(409);
+    expect(await halfDay.json()).toEqual({
+      error: "Vous n’avez plus de congés annuels disponibles.",
+    });
+  });
+
   it("contrôle le solde avant d’enregistrer une demande de récupération", async () => {
     data.set("user/user-a/overtime/overtime-credit-2026", {
       id: "overtime-credit-2026",

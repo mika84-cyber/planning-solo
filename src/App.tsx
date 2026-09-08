@@ -65,7 +65,7 @@ import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
 import { workExchangeForDate } from "./workExchange";
-import { RequestValidationSummary, requestRecoveryMinutes } from "./RequestValidationSummary";
+import { RequestValidationSummary, requestRecoveryMinutes, zeroLeaveBalanceType } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -1883,6 +1883,12 @@ export default function Home() {
     fraction:
       leaveStats.balances.find((balance) => balance.type === "fraction")?.remaining || 0,
   };
+  const leaveRemainingByType = Object.fromEntries(
+    leaveStats.balances.map((balance) => [balance.type, balance.remaining]),
+  ) as Partial<Record<BalanceType, number>>;
+  const leaveSelectionZeroBalance = requestKind === "leave" && Boolean(
+    zeroLeaveBalanceType(selectedList, group, leaveRemainingByType),
+  );
   const cetAnnualDaysTaken =
     leaveStats.balances.find((balance) => balance.type === "annual")?.used || 0;
   const cetPlannedLeaveDays = useMemo(() => {
@@ -2597,6 +2603,7 @@ export default function Home() {
     userEmail,
     workQuota,
     recoveryBalanceRemaining: recoveryBalance.remaining,
+    leaveRemaining: leaveRemainingByType,
     periods,
     recoveryUses,
     setPeriods,
@@ -3730,6 +3737,7 @@ export default function Home() {
       {homeSection === "leave" ? (
         <Suspense fallback={<DeferredSection label="vos congés et récupérations" />}>
         <LeaveManagementPage
+          onRequestLeave={() => openRequestChooser("general")}
           balancesContent={
             <Suspense fallback={<DeferredSection label="vos soldes" />}>
               <LeaveBalancesSection
@@ -4267,7 +4275,7 @@ export default function Home() {
             group={group}
             workQuota={workQuota}
             recoveryBalanceRemaining={recoveryBalance.remaining}
-            leaveRemaining={Object.fromEntries(leaveStats.balances.map((balance) => [balance.type, balance.remaining]))}
+            leaveRemaining={leaveRemainingByType}
           />
           <div className="request-bottom">
             {selectedList.length ? (
@@ -4280,7 +4288,7 @@ export default function Home() {
                 className="validate-button"
                 type="button"
                 onClick={() => void validateAndOpenForm()}
-                disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient}
+                disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || leaveSelectionZeroBalance}
               >
                 {savingRequest
                   ? requestKind === "other" || sickRequest
@@ -4298,7 +4306,7 @@ export default function Home() {
                   type="button"
                   aria-label="Enregistrer au planning sans formulaire"
                   onClick={() => void saveRequestToPlanning()}
-                  disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient}
+                  disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || leaveSelectionZeroBalance}
                 >
                   <span aria-hidden="true">✓</span>
                   <strong>Enregistrer au planning</strong>

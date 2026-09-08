@@ -1,8 +1,45 @@
 import { LeaveRequestValidationError, normalizeLeaveRequest } from "../../../src/leaveRequest.ts";
 import { recoveryRequestMinutes, storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
+import { addDays, dateKey, fromKey, getDayInfo, LEAVE_ALLOWANCES } from "../../../src/planningLogic.ts";
 import { json, listBlobs, type CalendarEntry, type FormProfile, type LeavePeriod, type LeaveType, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
 import { acquireAtomicLock } from "../calendarAtomic.mts";
 import type { CalendarActionContext } from "./context.mts";
+
+type QuotaLeaveType = "annual" | "rtt" | "fraction";
+type QuotaPeriod = { id: string; from: string; to: string; leaveType: string; group: number };
+
+function quotaType(type: string): QuotaLeaveType | null {
+  if (type === "half") return "annual";
+  return type === "annual" || type === "rtt" || type === "fraction" ? type : null;
+}
+
+function quotaUsageByYear(periods: QuotaPeriod[]) {
+  const usage: Record<string, Record<QuotaLeaveType, number>> = {};
+  const counted = new Set<string>();
+  for (const period of periods) {
+    const type = quotaType(period.leaveType);
+    if (!type) continue;
+    const units = period.leaveType === "half" ? 0.5 : 1;
+    for (let date = fromKey(period.from); dateKey(date) <= period.to; date = addDays(date, 1)) {
+      const key = dateKey(date);
+      const info = getDayInfo(date, period.group);
+      if (info.holiday || info.kind === "off") continue;
+      const unique = `${type}:${key}:${units}`;
+      if (counted.has(unique)) continue;
+      counted.add(unique);
+      const year = key.slice(0, 4);
+      usage[year] ||= { annual: 0, rtt: 0, fraction: 0 };
+      usage[year][type] += units;
+    }
+  }
+  return usage;
+}
+
+function emptyBalanceMessage(type: QuotaLeaveType) {
+  if (type === "annual") return "Vous n’avez plus de congés annuels disponibles.";
+  if (type === "rtt") return "Vous n’avez plus de RTT disponibles.";
+  return "Vous n’avez plus de jours de fractionnement disponibles.";
+}
 export async function handleSaveRequest(
   context: CalendarActionContext,
 ): Promise<Response> {
@@ -13,6 +50,7 @@ export async function handleSaveRequest(
     entryPrefix,
     overtimePrefix,
     recoveryUsePrefix,
+    periodPrefix,
   } = context;
   let normalized: ReturnType<typeof normalizeLeaveRequest>;
   try {
@@ -23,10 +61,11 @@ export async function handleSaveRequest(
       400,
     );
   }
-  const release = normalized.requestKind === "recovery"
-    ? await acquireAtomicLock(store, scopedKey("lock/recovery-balance"))
-    : null;
-  if (normalized.requestKind === "recovery" && !release)
+  const balanceLock = normalized.requestKind === "recovery"
+    ? "lock/recovery-balance"
+    : "lock/leave-balance";
+  const release = await acquireAtomicLock(store, scopedKey(balanceLock));
+  if (!release)
     return json({ error: "Le solde est en cours de modification. Réessayez." }, 409);
   try {
 
@@ -45,6 +84,45 @@ export async function handleSaveRequest(
     } satisfies LeavePeriod,
   }));
   let recoveryTargets: Array<{ key: string; value: RecoveryUse }> = [];
+  if (normalized.requestKind === "leave") {
+    const [profile, periodList] = await Promise.all([
+      store.get(scopedKey("form-profile"), { type: "json" }) as Promise<FormProfile | null>,
+      listBlobs(store, periodPrefix),
+    ]);
+    const storedPeriods = (await Promise.all(periodList.blobs.map((blob) =>
+      store.get(blob.key, { type: "json" }) as Promise<LeavePeriod | null>,
+    ))).filter((period): period is LeavePeriod => Boolean(period));
+    const targetIds = new Set(normalized.periods.map((period) => period.id));
+    const existingUsage = quotaUsageByYear(storedPeriods
+      .filter((period) => !targetIds.has(period.id))
+      .map((period) => ({
+        id: period.id,
+        from: period.from,
+        to: period.to,
+        leaveType: period.leave_type || "",
+        group: period.group || normalized.group,
+      })));
+    const requestedUsage = quotaUsageByYear(normalized.periods.map((period) => ({
+      id: period.id,
+      from: period.from,
+      to: period.to,
+      leaveType: period.leaveType,
+      group: period.group,
+    })));
+    for (const [year, categories] of Object.entries(requestedUsage)) {
+      for (const type of ["annual", "rtt", "fraction"] as const) {
+        if (categories[type] <= 0) continue;
+        const manual = profile?.manual_adjustments?.[year];
+        const manualUsed = type === "annual"
+          ? manual?.annual_used || 0
+          : type === "rtt"
+            ? manual?.rtt_used || 0
+            : manual?.fraction_used || 0;
+        const remaining = LEAVE_ALLOWANCES[type] - manualUsed - (existingUsage[year]?.[type] || 0);
+        if (remaining <= 0) return json({ error: emptyBalanceMessage(type) }, 409);
+      }
+    }
+  }
   if (normalized.requestKind === "recovery") {
     const [profile, overtimeList, recoveryList, calendarList] = await Promise.all([
       store.get(scopedKey("form-profile"), { type: "json" }) as Promise<FormProfile | null>,

@@ -36,6 +36,7 @@ type LeaveManagementPageProps = {
   archiveOpen: boolean;
   archivedRequests: ArchivedRequest[];
   onOpenOvertime: () => void;
+  onRequestLeave: () => void;
   onOpenSolidarity: () => void;
   onToggleOvertimeHistory: () => void;
   onDeleteOvertime: (entry: OvertimeEntry) => void;
@@ -65,6 +66,7 @@ export function LeaveManagementPage({
   archiveOpen,
   archivedRequests,
   onOpenOvertime,
+  onRequestLeave,
   onOpenSolidarity,
   onToggleOvertimeHistory,
   onDeleteOvertime,
@@ -95,6 +97,13 @@ export function LeaveManagementPage({
     : 0;
   return (
     <>
+      <div className="leave-primary-action-bar">
+        <button type="button" className="primary-action" onClick={onRequestLeave}>
+          <span aria-hidden="true">＋</span>
+          <strong>Poser un congé</strong>
+          <small>CA, RTT, fractionnement, récupération et autres absences</small>
+        </button>
+      </div>
       {balancesContent}
       <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET">
         <div className="leave-secondary-grid">

@@ -875,6 +875,9 @@ test("menu, contact administratrice, paie et PDF restent accessibles", async ({ 
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
   await expect(page.getByRole("heading", { name: "Gérer mes récupérations et demandes" })).toHaveCount(0);
   const leaveTools = page.locator(".leave-tools-area");
+  const leavePrimaryAction = page.locator(".leave-primary-action-bar");
+  await expectHeaderWidth(leavePrimaryAction);
+  await expect(leavePrimaryAction.getByRole("button", { name: /Poser un congé/ })).toBeVisible();
   await expectHeaderWidth(page.locator(".leave-balances-direct"));
   await expectHeaderWidth(leaveTools);
   await expect(leaveTools).toHaveCSS("border-top-width", "1px");

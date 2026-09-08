@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { RequestValidationSummary } from "./RequestValidationSummary";
+import { RequestValidationSummary, zeroLeaveBalanceType } from "./RequestValidationSummary";
 
 describe("résumé avant validation", () => {
   it("reste absent tant qu’aucune date n’est sélectionnée", () => {
@@ -152,6 +152,34 @@ describe("résumé avant validation", () => {
       />,
     );
     expect(noFraction).toContain("Vous n’avez plus de jours de fractionnement disponibles.");
+  });
+
+  it("identifie les validations à bloquer lorsque le solde utile est nul", () => {
+    expect(zeroLeaveBalanceType(
+      [{ date: "2026-08-11", type: "annual" }],
+      2,
+      { annual: 0 },
+    )).toBe("annual");
+    expect(zeroLeaveBalanceType(
+      [{ date: "2026-08-11", type: "half" }],
+      2,
+      { annual: 0 },
+    )).toBe("annual");
+    expect(zeroLeaveBalanceType(
+      [{ date: "2026-08-11", type: "rtt" }],
+      2,
+      { rtt: 0 },
+    )).toBe("rtt");
+    expect(zeroLeaveBalanceType(
+      [{ date: "2026-08-11", type: "fraction" }],
+      2,
+      { fraction: 0 },
+    )).toBe("fraction");
+    expect(zeroLeaveBalanceType(
+      [{ date: "2026-08-09", type: "annual" }],
+      2,
+      { annual: 0 },
+    )).toBeUndefined();
   });
 
   it("détaille séparément une sélection mixte CA et RTT", () => {

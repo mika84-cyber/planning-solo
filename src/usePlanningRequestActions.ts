@@ -8,7 +8,7 @@ import {
 import { prepareAbsenceReplacement } from "./absenceReplacement";
 import { createClientId } from "./clientId";
 import { normalizeLeaveRequest } from "./leaveRequest";
-import { type FormProfile, type LeavePeriod, type SelectedDay } from "./appModel";
+import { type BalanceType, type FormProfile, type LeavePeriod, type SelectedDay } from "./appModel";
 import { cetBalance } from "./cet";
 import {
   minutesLabel,
@@ -26,6 +26,7 @@ import {
   type LeaveType,
 } from "./planningLogic";
 import type { usePlanningUiState } from "./usePlanningUiState";
+import { leaveBalanceShortageMessage, requestLeaveBalanceUsage, zeroLeaveBalanceType } from "./RequestValidationSummary";
 
 type PlanningUiState = ReturnType<typeof usePlanningUiState>;
 
@@ -92,6 +93,7 @@ type PlanningRequestActionsOptions = {
   userEmail: string;
   workQuota: WorkQuota;
   recoveryBalanceRemaining: number;
+  leaveRemaining: Partial<Record<BalanceType, number>>;
   periods: LeavePeriod[];
   recoveryUses: RecoveryUse[];
   setPeriods: Dispatch<SetStateAction<LeavePeriod[]>>;
@@ -113,6 +115,7 @@ export function usePlanningRequestActions({
   userEmail,
   workQuota,
   recoveryBalanceRemaining,
+  leaveRemaining,
   periods,
   recoveryUses,
   setPeriods,
@@ -156,6 +159,14 @@ export function usePlanningRequestActions({
       }));
       if (conflict) {
         notify(`${longDate(fromKey(conflict.date))} comporte déjà une récupération sur ce créneau.`);
+        return;
+      }
+    }
+    if (requestKind === "leave" && !sickRequest) {
+      const emptyType = zeroLeaveBalanceType(selectedList, group, leaveRemaining);
+      if (emptyType) {
+        const usage = requestLeaveBalanceUsage(selectedList, group);
+        notify(leaveBalanceShortageMessage(emptyType, 0, usage[emptyType]));
         return;
       }
     }
