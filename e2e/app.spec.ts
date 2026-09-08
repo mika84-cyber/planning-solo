@@ -457,6 +457,7 @@ test("le partage de planning reste lisible et privé sur téléphone", async ({ 
   await expect(sharingIntro.getByText("Partage privé", { exact: true })).toBeVisible();
   await expect(sharingIntro).toHaveCSS("border-left-width", "5px");
   await expect(page.getByText("Votre adresse e-mail n’est jamais affichée.")).toBeVisible();
+  await expect(page.locator(".colleague-groups-directory")).toHaveCount(0);
   await expect(page.locator(".colleague-profile-card")).toBeVisible();
   const [profileNameBox, profileSaveBox] = await Promise.all([
     page.locator(".colleague-profile-field input").boundingBox(),

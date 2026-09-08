@@ -2,6 +2,7 @@ import { getStore } from "@netlify/blobs";
 import { admin, getUser } from "@netlify/identity";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { sendColleagueSharingEmail } from "../lib/colleagueSharingEmail.mts";
+import { COLLEAGUE_GROUPS } from "../lib/colleagueGroups.ts";
 import { isMikaSharingAccount } from "../lib/sharedCalendarBridge.mts";
 import { userDataKey } from "../lib/userScopedStore.mts";
 import { personalPresenceForDate, type Entries, type LeavePeriod } from "../../src/appModel.ts";
@@ -194,6 +195,7 @@ async function directoryResponse(store: Store, userId: string, email: string) {
       ? { userId: self.userId, displayName: self.displayName, visible: self.visible }
       : { userId, displayName: await initialName(store, userId), visible: false },
     canShareWithoutApproval: privileged,
+    groups: COLLEAGUE_GROUPS,
     directory: profiles
       .filter((profile) => (privileged || profile.visible) && Boolean(profile.email) && profile.userId !== userId && !excludedIds.has(profile.userId))
       .map(({ userId: id, displayName }) => ({ userId: id, displayName }))

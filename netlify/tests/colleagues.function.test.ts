@@ -52,6 +52,23 @@ describe("partage des plannings entre collègues", () => {
     expect((await colleaguesHandler(new Request("https://example.test/api/colleagues"))).status).toBe(401);
   });
 
+  it("fournit les trois groupes uniquement après authentification, sans les destinataires en copie", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "alice@example.test" } as never);
+    const response = await colleaguesHandler(new Request("https://example.test/api/colleagues"));
+    const payload = await response.json() as { groups: Array<{ number: number; members: string[] }> };
+    const members = payload.groups.flatMap((group) => group.members);
+
+    expect(payload.groups.map((group) => group.members.length)).toEqual([34, 43, 35]);
+    expect(members).toContain("Mickaël Eliaszewicz");
+    expect(members).not.toEqual(expect.arrayContaining([
+      "Maarten Averink",
+      "Hicham Azalmat",
+      "Mathieu Bohet",
+      "Wilnise Cedelle",
+      "Guillaume Fayon",
+    ]));
+  });
+
   it("permet un blocage silencieux avant l’inscription tout en verrouillant le partage", async () => {
     profile("user-b", "Benoît");
     data.set("user/user-a/form-profile", { full_name: "Alice" });

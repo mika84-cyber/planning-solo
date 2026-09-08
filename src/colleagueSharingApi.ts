@@ -12,6 +12,7 @@ export type ColleagueShare = {
 export type ColleagueDirectory = {
   self: { userId: string; displayName: string; visible: boolean };
   canShareWithoutApproval: boolean;
+  groups?: import("./colleagueGroups").ColleagueGroup[];
   directory: Array<{ userId: string; displayName: string }>;
   incoming: ColleagueShare[];
   outgoing: ColleagueShare[];

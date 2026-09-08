@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getDayInfo, MONTHS } from "./planningLogic";
 import type { PersonalPresence } from "./appModel";
+import { ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
 import {
   getColleagueDirectory,
   getSharedColleaguePlanning,
@@ -322,6 +323,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
         <h2>Planning des collègues</h2>
         <p>Partagez uniquement vos jours de présence et d’absence. Vos notes, votre paie et vos informations personnelles restent privées.</p>
       </header>
+
+      {!demoMode && data?.groups?.length ? <ColleagueGroupsDirectory groups={data.groups} /> : null}
 
       <section className="colleague-card colleague-how-it-works" aria-labelledby="colleague-how-title">
         <header className="colleague-how-header">
