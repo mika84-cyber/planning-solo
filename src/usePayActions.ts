@@ -181,9 +181,13 @@ export function effectivePayProfile(
   profiles: Record<string, PayProfile>,
   year: number | string,
   month: number,
+  savedProfile: PayProfile = {},
 ) {
   const yearText = String(year);
-  let effective = { ...(profiles[yearText] || {}) };
+  // Le profil général contient les réglages de paie durables. Il reste la
+  // base de chaque mois ; l'historique annuel puis les changements datés ne
+  // remplacent que les valeurs réellement enregistrées pour leur période.
+  let effective = { ...savedProfile, ...(profiles[yearText] || {}) };
   for (let index = 0; index <= month; index += 1) {
     const key = `${yearText}-${String(index + 1).padStart(2, "0")}`;
     effective = { ...effective, ...(profiles[key] || {}) };

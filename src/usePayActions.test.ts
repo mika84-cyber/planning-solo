@@ -32,6 +32,34 @@ describe("usePayActions — conversions et payloads sûrs", () => {
     expect(effectivePayProfile(profiles, 2026, 8).pasRate).toBe(2.2);
   });
 
+  it("conserve les réglages généraux lorsque l’historique d’un mois est incomplet", () => {
+    const savedProfile = {
+      baseSalary: 1_855.88,
+      ifse: 416.66,
+      otherFixed: 75.84,
+      pasRate: 1.7,
+    };
+    const profiles = {
+      "2026": { ciaMonth: 6 },
+      "2026-09": { pasRate: 2.2 },
+    };
+
+    expect(effectivePayProfile(profiles, 2026, 7, savedProfile)).toMatchObject({
+      baseSalary: 1_855.88,
+      ifse: 416.66,
+      otherFixed: 75.84,
+      pasRate: 1.7,
+      ciaMonth: 6,
+    });
+    expect(effectivePayProfile(profiles, 2026, 8, savedProfile)).toMatchObject({
+      baseSalary: 1_855.88,
+      ifse: 416.66,
+      otherFixed: 75.84,
+      pasRate: 2.2,
+      ciaMonth: 6,
+    });
+  });
+
   it("accepte les formats français usuels sans perdre les centimes", () => {
     expect(parsedPayDraft("1 234,56")).toBe(1234.56);
     expect(parsedPayDraft("79.65")).toBe(79.65);

@@ -22,7 +22,7 @@ import { parseDemoCompletedRequestJson } from "./demoCompletedRequest";
 import { ConnectionStatus } from "./ConnectionStatus";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
-import { effectivePayProfile, hasPayProfileHistory, usePayActions } from "./usePayActions";
+import { effectivePayProfile, usePayActions } from "./usePayActions";
 import type { PayDashboardVariable } from "./PayDashboard";
 import type { PayCalculationBreakdown } from "./PayEstimateDetails";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
@@ -1112,16 +1112,20 @@ export default function Home() {
     [mecenatDraft.start, mecenatDraft.end, workQuota],
   );
   const payYear = String(payView.getFullYear());
-  const activePayProfile = effectivePayProfile(payProfiles, payYear, payView.getMonth());
-  // Dès qu'un historique annuel ou mensuel existe, un champ absent signifie
-  // « inconnu pour cette période ». Reprendre la valeur générale actuelle
-  // ferait par exemple remonter le PAS de septembre sur le mois d'août.
-  const legacyPayProfile = hasPayProfileHistory(payProfiles, payYear) ? null : formProfile;
+  // Les réglages généraux restent disponibles pour tous les mois. Les valeurs
+  // annuelles ou datées ne remplacent que les champs propres à leur période ;
+  // le contrôle d'un bulletin reste, lui, filtré sur son mois plus bas.
+  const activePayProfile = effectivePayProfile(
+    payProfiles,
+    payYear,
+    payView.getMonth(),
+    formProfile || {},
+  );
   const hasPayValue = (field: keyof PayProfile) =>
-    activePayProfile?.[field] !== undefined || legacyPayProfile?.[field] !== undefined;
-  const baseSalary = activePayProfile?.baseSalary ?? legacyPayProfile?.baseSalary ?? 0;
-  const ifse = activePayProfile?.ifse ?? legacyPayProfile?.ifse ?? 0;
-  const carenceDay = activePayProfile?.carenceDay ?? legacyPayProfile?.carenceDay ?? 0;
+    activePayProfile[field] !== undefined;
+  const baseSalary = activePayProfile.baseSalary ?? 0;
+  const ifse = activePayProfile.ifse ?? 0;
+  const carenceDay = activePayProfile.carenceDay ?? 0;
   // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
   // résidence (3 % du traitement) : calculée toute seule plutôt que saisie,
   // et pas la somme à cinq lignes propre à un fonctionnaire (résidence +
@@ -1129,14 +1133,12 @@ export default function Home() {
   // s'applique à elle. Une valeur déjà saisie à la main reste prioritaire,
   // au cas où son bulletin réel montrerait autre chose.
   const otherFixed =
-    activePayProfile?.otherFixed ??
-    legacyPayProfile?.otherFixed ??
+    activePayProfile.otherFixed ??
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
-  const cia = activePayProfile?.cia ?? legacyPayProfile?.cia ?? 0;
-  const ciaMonth = activePayProfile?.ciaMonth ?? legacyPayProfile?.ciaMonth;
+  const cia = activePayProfile.cia ?? 0;
+  const ciaMonth = activePayProfile.ciaMonth;
   const residenceAllowance =
-    activePayProfile?.residenceAllowance ??
-    legacyPayProfile?.residenceAllowance ??
+    activePayProfile.residenceAllowance ??
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : undefined);
   const viewedPayRegime = payCalibrationRegime(
     payView.getFullYear(),
@@ -1150,13 +1152,10 @@ export default function Home() {
   // collectif actuel : on les traite comme tels pour ne pas changer les
   // estimations récentes déjà validées.
   const storedNetRatioRegime =
-    activePayProfile?.netRatioRegime ??
-    legacyPayProfile?.netRatioRegime ??
+    activePayProfile.netRatioRegime ??
     "culture-psc";
-  const storedNetRatioFixed =
-    activePayProfile?.netRatioFixed ?? legacyPayProfile?.netRatioFixed;
-  const storedNetRatioVariable =
-    activePayProfile?.netRatioVariable ?? legacyPayProfile?.netRatioVariable;
+  const storedNetRatioFixed = activePayProfile.netRatioFixed;
+  const storedNetRatioVariable = activePayProfile.netRatioVariable;
   const netRatioFixed =
     storedNetRatioRegime === viewedPayRegime &&
     storedNetRatioFixed &&
@@ -1175,12 +1174,11 @@ export default function Home() {
       viewedPayRegime,
     ),
   );
-  const navigo = activePayProfile?.navigo ?? legacyPayProfile?.navigo ?? 0;
+  const navigo = activePayProfile.navigo ?? 0;
   const mealVoucherDeduction =
-    activePayProfile?.mealVoucherDeduction ??
-    legacyPayProfile?.mealVoucherDeduction ??
+    activePayProfile.mealVoucherDeduction ??
     0;
-  const pasRate = activePayProfile?.pasRate ?? legacyPayProfile?.pasRate ?? 0;
+  const pasRate = activePayProfile.pasRate ?? 0;
   /** Première année de mise à disposition au Grand Palais, où le jour de
    *  fermeture est le lundi et non le mardi comme à Pompidou — tout est
    *  décalé d'un jour, et les fériés compensés (voir plus bas) s'appliquent.
