@@ -44,4 +44,15 @@ describe("détails des trois groupes", () => {
     expect(html).toContain("35 personnes");
     expect(html).not.toContain("<details open=\"");
   });
+
+  it("affiche immédiatement le dossier et ses compteurs avant l’arrivée des noms", () => {
+    const html = renderToStaticMarkup(<ColleagueGroupsDirectory />);
+
+    expect(html).toContain("Détails des 3 groupes");
+    expect(html).toContain("105 collègues classés par groupe");
+    expect(html).toContain("34 personnes");
+    expect(html).toContain("36 personnes");
+    expect(html).toContain("35 personnes");
+    expect(html).toContain("Chargement des noms…");
+  });
 });

@@ -38,7 +38,7 @@ export function AdaptiveNavigation({ homeSection, onNavigate }: {
 }) {
   const mobilePrimary = MAIN_SECTION_ORDER.map((key) => ({
     key,
-    label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Docs" : key === "program" ? "Prog" : "Collègues",
+    label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Docs" : key === "program" ? "Expos" : "Collègues",
   }));
   const desktopPrimary = MAIN_SECTION_ORDER.map((key) => ({ key, label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Documents" : key === "program" ? "Programme" : "Collègues" }));
   const isActive = (key: MainSection) => homeSection === key || (key === "pdf" && homeSection === "forms");

@@ -60,7 +60,7 @@ describe("navigation principale", () => {
     expect(html).toContain("desktop-side-navigation");
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("Collègues");
-    expect(html.indexOf(">Prog<")).toBeLessThan(html.indexOf("Collègues"));
+    expect(html.indexOf(">Expos<")).toBeLessThan(html.indexOf("Collègues"));
     expect(html).toContain("Programme");
     expect(html).toContain("Ma paie");
     expect(html).toContain("Documents");

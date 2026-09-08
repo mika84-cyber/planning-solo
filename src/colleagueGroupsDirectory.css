@@ -1,7 +1,9 @@
 .colleague-groups-directory {
   overflow: hidden;
-  border-color: #9fb9d3;
-  background: linear-gradient(145deg, #f4f9ff, #fff 68%);
+  border: 1px solid #dfb5b5;
+  border-left: 6px solid #cf7777;
+  background: linear-gradient(145deg, #fff8f8, #fff 56%, #f6faff);
+  box-shadow: 0 10px 25px rgba(104, 55, 60, .1);
 }
 
 .colleague-groups-directory > summary {
@@ -26,8 +28,8 @@
   height: 52px;
   place-items: center;
   border-radius: 15px;
-  background: #dfeeff;
-  color: #2869a8;
+  background: #fae5e5;
+  color: #a94f58;
 }
 
 .colleague-groups-folder svg {
@@ -59,8 +61,8 @@
   height: 32px;
   place-items: center;
   border-radius: 50%;
-  background: #edf5fc;
-  color: #315b80;
+  background: #f9e9e9;
+  color: #a04b55;
   font-size: 1.1rem;
   transition: transform .2s ease;
 }
@@ -151,6 +153,13 @@
   padding: 6px 2px;
   border-bottom: 1px solid #e7eef4;
   line-height: 1.25;
+}
+
+.colleague-group-loading {
+  margin: 0;
+  padding: 16px 14px;
+  color: #6a7b8d;
+  font-size: .82rem;
 }
 
 @media (max-width: 820px) {

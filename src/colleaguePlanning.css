@@ -6,6 +6,32 @@
 .colleague-share-disclosure>summary{cursor:pointer;list-style:none}.colleague-share-disclosure>summary::-webkit-details-marker{display:none}.colleague-share-disclosure>summary>span{display:grid;gap:3px}.colleague-share-disclosure>summary strong{font-size:1.15rem}.colleague-share-disclosure>summary small{color:#60758b}.colleague-share-disclosure>summary:after{color:#2865ba;content:'⌄';float:right;font-size:1.5rem;font-weight:900;margin-top:-32px}.colleague-share-disclosure[open]>summary:after{content:'⌃'}.colleague-share-content{border-top:1px solid #d7e2ed;margin-top:14px;padding-top:16px}
 .colleague-share-content .colleague-person-row,.colleague-received-card .colleague-list>div{border-color:rgba(0,0,0,.62);border-width:1.5px}
 @media(max-width:700px){.colleague-profile-row{align-items:stretch;flex-direction:column}.colleague-profile-actions{flex-direction:column}.colleague-profile-actions button{white-space:normal;width:100%}.colleague-list>div{align-items:stretch;flex-direction:column}.colleague-list button{width:100%}.colleague-directory-actions button{font-size:.7rem;line-height:1.05;padding:7px 4px;width:auto}.colleague-shared-status{font-size:.68rem;padding:4px}.colleague-inline-actions{width:100%}.colleague-inline-actions button{flex:1}.colleague-calendar{gap:2px}.colleague-day{aspect-ratio:auto;min-height:54px;padding:5px 3px}.colleague-day small{font-size:.58rem}.colleague-weekday{font-size:.64rem;padding-inline:0}.colleague-sharing-intro,.colleague-card{border-radius:19px;padding:16px}}
+
+.colleague-sharing-intro {
+  border-color: #a9c9e8;
+  background: linear-gradient(145deg, #eaf5ff, #f5faff 62%, #fff);
+  box-shadow: 0 10px 26px rgba(45, 103, 149, .08);
+}
+
+.colleague-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.colleague-group-badge::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.colleague-group-badge.group-1 { background: #e7f3ff; border-color: #91b9df; color: #245f98; }
+.colleague-group-badge.group-2 { background: #f1eafa; border-color: #bba5d5; color: #6d4b91; }
+.colleague-group-badge.group-3 { background: #eef5e6; border-color: #afc58f; color: #4e702f; }
 @media(max-width:700px){.colleague-list>div.colleague-person-row:not(.is-registered){align-items:center;flex-direction:row;padding:9px 10px}.colleague-person-row:not(.is-registered) .colleague-directory-actions{margin-left:auto;width:auto}.colleague-person-row:not(.is-registered) .colleague-directory-actions button{min-width:92px;width:auto}}
 @media(max-width:370px){.colleague-day small{font-size:.5rem}.colleague-day{min-height:46px}.colleague-month-nav strong{font-size:.9rem}}
 .top-header.top-header-colleagues{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);gap:4px 10px;height:215px;min-height:215px;overflow:hidden;border-color:#0b0c10;border-radius:28px;padding:10px 12px 8px;background:#0b0c10;position:relative}.top-header-colleagues .top-header-title{grid-column:1;grid-row:1;align-self:start;margin:0;max-width:none;padding:4px 7px;background:transparent;border-radius:0;text-shadow:0 2px 7px #000;z-index:1}.top-header-colleagues .top-header-title h1{font-size:clamp(.9rem,2.2vw,1.25rem);line-height:1.02}.top-header-colleagues .top-header-title .eyebrow{font-size:.5rem}.top-header-colleagues .top-header-title h1,.top-header-colleagues .top-header-title .eyebrow{color:#fff}.top-header-colleagues .top-header-title h1 span{display:block}.colleague-header-illustration{display:block;grid-column:1/-1;grid-row:2;align-self:center;justify-self:center;width:auto;height:auto;max-width:100%;max-height:142px;object-fit:contain;object-position:center;pointer-events:none;user-select:none}.top-header-colleagues .account-menu,.top-header-colleagues .header-update-button{display:none}.top-header-colleagues .header-command-area{display:block;grid-column:2;grid-row:1;align-self:start;justify-self:end;min-width:0;position:static;width:auto;z-index:2}.top-header-colleagues .header-control-cluster{display:flex;margin:0;width:auto}.top-header-colleagues .main-menu-button{margin-left:auto}

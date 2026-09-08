@@ -20,6 +20,7 @@ import { admin, getUser } from "@netlify/identity";
 import { isMikaSharingAccount } from "../lib/sharedCalendarBridge.mts";
 import { sendColleagueSharingEmail } from "../lib/colleagueSharingEmail.mts";
 import colleaguesHandler from "../functions/colleagues.mts";
+import colleagueGroupsHandler from "../functions/colleague-groups.mts";
 
 const mockedGetUser = vi.mocked(getUser);
 const listIdentityUsers = vi.mocked(admin.listUsers);
@@ -50,6 +51,16 @@ describe("partage des plannings entre collègues", () => {
   it("refuse tout accès sans authentification", async () => {
     mockedGetUser.mockResolvedValue(null);
     expect((await colleaguesHandler(new Request("https://example.test/api/colleagues"))).status).toBe(401);
+    expect((await colleagueGroupsHandler(new Request("https://example.test/api/colleague-groups"))).status).toBe(401);
+  });
+
+  it("charge les groupes par une route authentifiée légère", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "alice@example.test" } as never);
+    const response = await colleagueGroupsHandler(new Request("https://example.test/api/colleague-groups"));
+    const payload = await response.json() as { groups: Array<{ members: string[] }> };
+
+    expect(response.status).toBe(200);
+    expect(payload.groups.map((group) => group.members.length)).toEqual([34, 36, 35]);
   });
 
   it("fournit les trois groupes uniquement après authentification, sans les destinataires en copie", async () => {

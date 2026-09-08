@@ -85,7 +85,7 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
   }
   if (page.viewportSize()!.width <= 720) {
-    await expect(page.locator(".mobile-bottom-navigation button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Prog", "Collègues"]);
+    await expect(page.locator(".mobile-bottom-navigation button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
     await expect(page.locator(".mobile-bottom-navigation").getByRole("button", { name: "Plus" })).toHaveCount(0);
     const navButtons = await page.locator(".mobile-bottom-navigation > button").evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
     expect(Math.max(...navButtons.slice(0, 6)) - Math.min(...navButtons.slice(0, 6))).toBeLessThan(1);
@@ -193,7 +193,7 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
   await page.setViewportSize({ width: 344, height: 882 });
   await prepareDemo(page);
   const navigation = page.locator(".mobile-bottom-navigation");
-  await expect(navigation.locator("button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Prog", "Collègues"]);
+  await expect(navigation.locator("button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
   await expect(navigation.locator("button")).toHaveCount(6);
   const boxes = await navigation.locator("button").evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
   expect(boxes.slice(0, 6).every((box) => box.width >= 44)).toBe(true);
@@ -201,7 +201,7 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
   await navigation.getByRole("button", { name: "Docs" }).click();
   await expect(page.locator(".top-header h1")).toContainText("Documents et contacts");
   await expect(navigation.getByRole("button", { name: "Docs" })).toHaveAttribute("aria-current", "page");
-  const progLabel = navigation.getByRole("button", { name: "Prog" }).locator("span");
+  const progLabel = navigation.getByRole("button", { name: "Expos" }).locator("span");
   const progTypography = await progLabel.evaluate((node) => {
     const style = getComputedStyle(node);
     return { fontSize: Number.parseFloat(style.fontSize), lineHeight: Number.parseFloat(style.lineHeight) };
@@ -456,6 +456,7 @@ test("le partage de planning reste lisible et privé sur téléphone", async ({ 
   await expect(sharingIntro.getByRole("heading", { name: "Planning des collègues" })).toBeVisible();
   await expect(sharingIntro.getByText("Partage privé", { exact: true })).toBeVisible();
   await expect(sharingIntro).toHaveCSS("border-left-width", "5px");
+  await expect(sharingIntro).toHaveCSS("background-image", /linear-gradient/);
   await expect(page.getByText("Votre adresse e-mail n’est jamais affichée.")).toBeVisible();
   await expect(page.locator(".colleague-groups-directory")).toHaveCount(0);
   await expect(page.locator(".colleague-profile-card")).toBeVisible();
@@ -547,7 +548,9 @@ test("le partage de planning reste lisible et privé sur téléphone", async ({ 
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
   await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([^\d]+ \d{1,2} [^)]+\)$/ })).toBeVisible();
   await expect(receivedCard.locator(".colleague-tomorrow-list")).toContainText(/Agnès.*(Travail|Repos|Absence)/);
-  await expect(receivedCard.locator(".colleague-tomorrow-list").getByTitle("Groupe 2")).toHaveText("G2");
+  const tomorrowGroup = receivedCard.locator(".colleague-tomorrow-list").getByTitle("Groupe 2");
+  await expect(tomorrowGroup).toHaveText("Groupe 2");
+  await expect(tomorrowGroup).toHaveCSS("border-radius", "999px");
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
@@ -879,7 +882,7 @@ test("menu, contact administratrice, paie et PDF restent accessibles", async ({ 
   await expectHeaderWidth(leavePrimaryAction);
   const leavePrimaryButton = leavePrimaryAction.getByRole("button", { name: /Poser un congé/ });
   await expect(leavePrimaryButton).toBeVisible();
-  await expect(leavePrimaryButton).toHaveCSS("background-image", /linear-gradient/);
+  await expect(leavePrimaryButton).toHaveClass(/planning-leave-action/);
   await expectHeaderWidth(page.locator(".leave-balances-direct"));
   const [primaryActionBox, balancesBox] = await Promise.all([
     leavePrimaryAction.boundingBox(),

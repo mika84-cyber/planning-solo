@@ -29,6 +29,8 @@ export type SharedColleaguePlanning = {
   }>;
 };
 
+let cachedColleagueGroups: import("./colleagueGroups").ColleagueGroup[] | null = null;
+
 async function parse<T>(response: Response) {
   const body = (await response.json().catch(() => null)) as ({ error?: string } & T) | null;
   if (!response.ok) throw new Error(body?.error || "Le partage est momentanément indisponible.");
@@ -36,7 +38,18 @@ async function parse<T>(response: Response) {
 }
 
 export async function getColleagueDirectory() {
-  return parse<ColleagueDirectory>(await fetch("/api/colleagues", { cache: "no-store", credentials: "same-origin" }));
+  const directory = await parse<ColleagueDirectory>(await fetch("/api/colleagues", { cache: "no-store", credentials: "same-origin" }));
+  if (directory.groups?.length) cachedColleagueGroups = directory.groups;
+  return directory;
+}
+
+export async function getColleagueGroups() {
+  if (cachedColleagueGroups) return cachedColleagueGroups;
+  const response = await parse<{ groups: import("./colleagueGroups").ColleagueGroup[] }>(
+    await fetch("/api/colleague-groups", { cache: "no-store", credentials: "same-origin" }),
+  );
+  cachedColleagueGroups = response.groups;
+  return response.groups;
 }
 
 export async function getSharedColleaguePlanning(ownerId: string) {

@@ -17,6 +17,7 @@ import { AuthScreen } from "./AuthScreen";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
 import { getUsefulContacts } from "./contactsApi";
+import { getColleagueGroups } from "./colleagueSharingApi";
 import { resolvePublicDemoAccess } from "./demoAccess";
 import { parseDemoCompletedRequestJson } from "./demoCompletedRequest";
 import { ConnectionStatus } from "./ConnectionStatus";
@@ -489,6 +490,10 @@ export default function Home() {
     return () => {
       active = false;
     };
+  }, [authStatus, publicDemoAccess.active]);
+  useEffect(() => {
+    if (authStatus !== "ready" || publicDemoAccess.active) return;
+    void getColleagueGroups().catch(() => undefined);
   }, [authStatus, publicDemoAccess.active]);
   useEffect(() => {
     const showUpdateAlert = () => {

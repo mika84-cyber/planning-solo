@@ -324,7 +324,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
         <p>Partagez uniquement vos jours de présence et d’absence. Vos notes, votre paie et vos informations personnelles restent privées.</p>
       </header>
 
-      {!demoMode && data?.groups?.length ? <ColleagueGroupsDirectory groups={data.groups} /> : null}
+      {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
 
       <section className="colleague-card colleague-how-it-works" aria-labelledby="colleague-how-title">
         <header className="colleague-how-header">
@@ -418,7 +418,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
               <div className="colleague-tomorrow-list colleague-list">
                 {received.map((share) => {
                   const summary = tomorrowSummaries[share.ownerId];
-                  return <div key={share.ownerId}><span className="colleague-tomorrow-person"><strong>{share.ownerName}</strong>{summary ? <small className="colleague-group-badge" title={`Groupe ${summary.group}`}>G{summary.group}</small> : null}</span>{summary ? <span className={`colleague-tomorrow-status ${summary.status === "Travail" ? "work" : summary.status === "Repos" ? "rest" : "absence"}`}>{summary.status}</span> : <small>Chargement…</small>}</div>;
+                  return <div key={share.ownerId}><span className="colleague-tomorrow-person"><strong>{share.ownerName}</strong>{summary ? <small className={`colleague-group-badge group-${summary.group}`} title={`Groupe ${summary.group}`}>Groupe {summary.group}</small> : null}</span>{summary ? <span className={`colleague-tomorrow-status ${summary.status === "Travail" ? "work" : summary.status === "Repos" ? "rest" : "absence"}`}>{summary.status}</span> : <small>Chargement…</small>}</div>;
                 })}
               </div>
             </section> : null}

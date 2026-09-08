@@ -97,11 +97,9 @@ export function LeaveManagementPage({
     : 0;
   return (
     <>
-      <div className="leave-primary-action-bar">
-        <button type="button" className="primary-action" onClick={onRequestLeave}>
-          <span aria-hidden="true">＋</span>
-          <strong>Poser un congé</strong>
-          <small>CA, RTT, fractionnement, récupération et autres absences</small>
+      <div className="planning-leave-panel leave-primary-action-bar">
+        <button type="button" className="primary-action planning-leave-action" onClick={onRequestLeave}>
+          Poser un congé
         </button>
       </div>
       {balancesContent}
