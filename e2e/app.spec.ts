@@ -179,13 +179,21 @@ test("les quatre soldes principaux et les autres congés restent en grilles équ
   }));
   expect(layout.rows).toHaveLength(3);
   expect(Math.max(...layout.widths)).toBeLessThan(layout.containerWidth * 0.6);
+  const [primaryFirstBox, otherFirstBox] = await Promise.all([
+    primaryCards.first().boundingBox(),
+    otherCards.first().boundingBox(),
+  ]);
+  expect(Math.abs(primaryFirstBox!.x - otherFirstBox!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(primaryFirstBox!.width - otherFirstBox!.width)).toBeLessThanOrEqual(1);
   const previousAbsencesButton = otherBalances.locator(".manual-adjustments-trigger");
   const [previousAbsencesBox, otherGridBox] = await Promise.all([
     previousAbsencesButton.boundingBox(),
     otherBalances.locator(".leave-balance-grid").boundingBox(),
   ]);
+  const openSummaryBox = await otherBalances.locator("summary").boundingBox();
   expect(previousAbsencesBox?.height).toBeLessThanOrEqual(96);
   expect(previousAbsencesBox?.width).toBeGreaterThan((otherGridBox?.width || 0) * 0.9);
+  expect(openSummaryBox!.y).toBeGreaterThan(previousAbsencesBox!.y + previousAbsencesBox!.height);
 });
 
 test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo) => {

@@ -16,20 +16,20 @@
 .colleague-tomorrow-table-shell {
   overflow: hidden;
   margin-top: 10px;
-  border: 1px solid #d0dce8;
-  border-radius: 15px;
-  background: #fff;
+  background: transparent;
 }
 
 .colleague-tomorrow-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 7px;
 }
 
 .colleague-tomorrow-table th,
 .colleague-tomorrow-table td {
   padding: 9px 13px;
   text-align: left;
+  background: #fff;
 }
 
 .colleague-tomorrow-table td:last-child {
@@ -38,18 +38,16 @@
   white-space: nowrap;
 }
 
-.colleague-tomorrow-table tr + tr td {
-  border-top: 1px solid #e4ebf2;
-}
+.colleague-tomorrow-table td:first-child { border: 1px solid #d7e2eb; border-right: 0; border-radius: 12px 0 0 12px; }
+.colleague-tomorrow-table td:last-child { border: 1px solid #d7e2eb; border-left: 0; border-radius: 0 12px 12px 0; }
 
 .colleague-tomorrow-group th {
-  border-top: 1px solid #d0dce8;
+  border-radius: 11px;
   font-size: .72rem;
   letter-spacing: .05em;
   text-transform: uppercase;
 }
 
-.colleague-tomorrow-group:first-child th { border-top: 0; }
 .colleague-tomorrow-group.group-1 th { background: #eaf4fd; color: #245f98; }
 .colleague-tomorrow-group.group-2 th { background: #f2ecf8; color: #6d4b91; }
 .colleague-tomorrow-group.group-3 th { background: #eef5e8; color: #4e702f; }

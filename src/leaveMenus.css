@@ -14,6 +14,35 @@
   text-align: center;
 }
 
+.leave-balances-direct .other-leave-balances[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+
+.leave-balances-direct .other-leave-balances[open] > summary {
+  order: 3;
+  border: 1px solid #b9c9db;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #f5f8fc, #fff);
+}
+
+.leave-balances-direct .other-leave-balances[open] > .leave-balance-grid {
+  order: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.leave-balances-direct .other-leave-balances[open] > .manual-adjustments-trigger {
+  order: 2;
+  width: 100%;
+  margin: 0;
+}
+
 @media (max-width: 520px) {
   .leave-primary-action-bar {
     padding: 10px;

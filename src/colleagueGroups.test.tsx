@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { COLLEAGUE_GROUPS } from "../netlify/lib/colleagueGroups";
-import { ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
+import { ColleagueGroupsDirectory, searchColleagueGroups } from "./ColleagueGroupsDirectory";
 
 describe("détails des trois groupes", () => {
   it("classe uniquement des noms, sans doublon ni adresse e-mail", () => {
@@ -42,6 +42,8 @@ describe("détails des trois groupes", () => {
     expect(html).toContain("34 personnes");
     expect(html).toContain("36 personnes");
     expect(html).toContain("35 personnes");
+    expect(html).toContain("Rechercher un collègue");
+    expect(html).toContain('placeholder="Prénom ou nom"');
     expect(html).not.toContain("<details open=\"");
   });
 
@@ -54,5 +56,11 @@ describe("détails des trois groupes", () => {
     expect(html).toContain("36 personnes");
     expect(html).toContain("35 personnes");
     expect(html).toContain("Chargement des noms…");
+  });
+
+  it("recherche sans tenir compte des accents et indique le groupe", () => {
+    expect(searchColleagueGroups(COLLEAGUE_GROUPS, "mickael")).toEqual([
+      { member: "Mickaël Eliaszewicz", group: 2 },
+    ]);
   });
 });
