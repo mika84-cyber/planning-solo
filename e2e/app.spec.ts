@@ -877,8 +877,17 @@ test("menu, contact administratrice, paie et PDF restent accessibles", async ({ 
   const leaveTools = page.locator(".leave-tools-area");
   const leavePrimaryAction = page.locator(".leave-primary-action-bar");
   await expectHeaderWidth(leavePrimaryAction);
-  await expect(leavePrimaryAction.getByRole("button", { name: /Poser un congé/ })).toBeVisible();
+  const leavePrimaryButton = leavePrimaryAction.getByRole("button", { name: /Poser un congé/ });
+  await expect(leavePrimaryButton).toBeVisible();
+  await expect(leavePrimaryButton).toHaveCSS("background-image", /linear-gradient/);
   await expectHeaderWidth(page.locator(".leave-balances-direct"));
+  const [primaryActionBox, balancesBox] = await Promise.all([
+    leavePrimaryAction.boundingBox(),
+    page.locator(".leave-balances-direct").boundingBox(),
+  ]);
+  expect(primaryActionBox).not.toBeNull();
+  expect(balancesBox).not.toBeNull();
+  expect(balancesBox!.y - primaryActionBox!.y - primaryActionBox!.height).toBeGreaterThanOrEqual(13);
   await expectHeaderWidth(leaveTools);
   await expect(leaveTools).toHaveCSS("border-top-width", "1px");
   const secondaryDisclosures = leaveTools.locator(".leave-secondary-grid > .leave-tool-disclosure");
