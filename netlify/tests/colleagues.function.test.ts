@@ -58,7 +58,7 @@ describe("partage des plannings entre collègues", () => {
     const payload = await response.json() as { groups: Array<{ number: number; members: string[] }> };
     const members = payload.groups.flatMap((group) => group.members);
 
-    expect(payload.groups.map((group) => group.members.length)).toEqual([34, 43, 35]);
+    expect(payload.groups.map((group) => group.members.length)).toEqual([34, 36, 35]);
     expect(members).toContain("Mickaël Eliaszewicz");
     expect(members).not.toEqual(expect.arrayContaining([
       "Maarten Averink",
@@ -66,6 +66,13 @@ describe("partage des plannings entre collègues", () => {
       "Mathieu Bohet",
       "Wilnise Cedelle",
       "Guillaume Fayon",
+      "Priscilla Fantoli",
+      "Simon Ladjouzi",
+      "Astrid Metri",
+      "Hubert Renard",
+      "Thierry Medout-Marere",
+      "Tarah Geoffre Orgusaare",
+      "Paolo Sescousse",
     ]));
   });
 

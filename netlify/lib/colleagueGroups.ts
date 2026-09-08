@@ -3,13 +3,16 @@ export type ColleagueGroup = {
   members: readonly string[];
 };
 
+const byFirstName = (first: string, second: string) =>
+  first.localeCompare(second, "fr", { sensitivity: "base" });
+
 export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
   {
     number: 1,
     members: [
       "Renaud Angles",
       "Issita Arslanov",
-      "Erwan Ballian",
+      "Erwan Ballan",
       "Jean-Charles Barron",
       "Rachida Ben Khayi",
       "Sébastien Beney",
@@ -41,7 +44,7 @@ export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
       "Andréa Soares Ghilardi",
       "Christophe Stezowski",
       "Sivasankari Verdy",
-    ],
+    ].sort(byFirstName),
   },
   {
     number: 2,
@@ -60,14 +63,12 @@ export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
       "Anthony Dumas",
       "Dominique Durandet",
       "Mickaël Eliaszewicz",
-      "Priscilla Fantoli",
       "Noemie Goke-Lessoua",
       "Claude Griesmar",
       "Yohan Guion",
       "Marta Ilic",
       "Marion Jeannerot",
       "Philippe Klarsfeld",
-      "Simon Ladjouzi",
       "Nathalie Lasgleyzes",
       "Pauline Leberre",
       "Adeline Legris",
@@ -75,21 +76,16 @@ export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
       "Jean-Patient Lucenay",
       "Jean-Luc Maurette",
       "Pierre Melquiond",
-      "Astrid Metri",
       "Vicky Muller",
       "Céline Prunneaux",
       "Anissa Redjem",
-      "Hubert Renard",
       "Julien Rivassou",
       "Sophie Savigny",
       "Olivia Serafino",
       "Dudu Shi",
       "Bruno Tacnet",
       "Justine Trillaud",
-      "Thierry Medout-Marere",
-      "Tarah Geoffre Orgusaare",
-      "Paolo Sescousse",
-    ],
+    ].sort(byFirstName),
   },
   {
     number: 3,
@@ -129,6 +125,6 @@ export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
       "Véronique Testard",
       "Maria Toque",
       "Isabelle Toujet",
-    ],
+    ].sort(byFirstName),
   },
 ];
