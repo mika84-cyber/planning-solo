@@ -349,7 +349,7 @@ export function workedDayCount(
         date, group, periods, entries, recoveryUses, workDayMinutes,
         isExceptionallyClosed,
       );
-      if (kind !== "work") {
+      if (kind !== "work" && kind !== "training") {
         if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
         continue;
       }
@@ -406,7 +406,7 @@ export function workedDayCountBetween(
       date, group, periods, entries, recoveryUses, workDayMinutes,
       isExceptionallyClosed,
     );
-    if (kind !== "work") {
+    if (kind !== "work" && kind !== "training") {
       if (!closureScheduled && exchangeRoleFor(key) === "return") exchangedReturned++;
       continue;
     }

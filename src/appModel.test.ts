@@ -76,11 +76,11 @@ describe("personalPresenceForDate", () => {
     });
   });
 
-  it("ne rend pas négatif le travail lors d’une fermeture un jour de formation", () => {
+  it("retire une fermeture exceptionnelle sur un jour de formation", () => {
     const trainingDate = Array.from({ length: 366 }, (_, index) => new Date(2026, 0, index + 1, 12)).find((date) => getDayInfo(date, 2).kind === "training")!;
     const result = workedDayCount(trainingDate.getFullYear(), trainingDate.getMonth(), trainingDate.getMonth(), 2, [], {}, [], 480, (key) => key === dateKey(trainingDate));
     expect(result.worked).toBeGreaterThanOrEqual(0);
-    expect(result.exceptionallyClosed).toBe(0);
+    expect(result.exceptionallyClosed).toBe(1);
   });
 });
 

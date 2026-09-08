@@ -347,7 +347,7 @@ describe("solde de récupération", () => {
     expect(withClosure.worked).toBe(baseline.worked - 1);
   });
 
-  it("ne déduit pas une fermeture tombant sur une formation déjà exclue du travail", () => {
+  it("déduit une fermeture tombant sur une formation du travail prévu", () => {
     const trainingDate = Array.from({ length: 31 }, (_, index) =>
       new Date(2026, 8, index + 1),
     ).find((date) => getDayInfo(date, 2).kind === "training")!;
@@ -366,8 +366,26 @@ describe("solde de récupération", () => {
     );
 
     expect(withClosure.scheduled).toBe(baseline.scheduled);
-    expect(withClosure.exceptionallyClosed).toBe(0);
-    expect(withClosure.worked).toBe(baseline.worked);
+    expect(withClosure.exceptionallyClosed).toBe(1);
+    expect(withClosure.worked).toBe(baseline.worked - 1);
+  });
+
+  it("applique congé, demi-journée, récupération et échange aux formations", () => {
+    const trainingDate = Array.from({ length: 31 }, (_, index) =>
+      new Date(2026, 8, index + 1),
+    ).find((date) => getDayInfo(date, 2).kind === "training")!;
+    const trainingKey = dateKey(trainingDate);
+    const baseline = workedDayCountBetween(trainingDate, trainingDate, 2, [], {});
+    const fullLeave = workedDayCountBetween(trainingDate, trainingDate, 2, [{ id: "training-leave", from: trainingKey, to: trainingKey, leaveType: "annual", updatedAt: "x" }], {});
+    const halfLeave = workedDayCountBetween(trainingDate, trainingDate, 2, [{ id: "training-half", from: trainingKey, to: trainingKey, leaveType: "half", halfMoment: "morning", updatedAt: "x" }], {});
+    const recovery = workedDayCountBetween(trainingDate, trainingDate, 2, [], {}, [{ date: trainingKey, minutes: 240 }], 480);
+    const exchange = workedDayCountBetween(trainingDate, trainingDate, 2, [], {}, [], 480, () => false, () => "given");
+
+    expect(baseline).toMatchObject({ scheduled: 1, worked: 1 });
+    expect(fullLeave).toMatchObject({ onLeave: 1, worked: 0 });
+    expect(halfLeave).toMatchObject({ onLeave: 0.5, worked: 0.5 });
+    expect(recovery).toMatchObject({ onLeave: 0.5, worked: 0.5 });
+    expect(exchange).toMatchObject({ exchangedGiven: 1, worked: 0 });
   });
 
   it("retire aussi la fermeture du travail restant entre deux dates", () => {

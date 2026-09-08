@@ -1033,7 +1033,7 @@ export default function Home() {
         const notWorked = unavailableWithoutExchange || exchangeRole === "given";
         if ((info.kind === "work" && !notWorked) || (info.kind === "off" && exchangeRole === "return"))
           result.work++;
-        if (info.kind === "training" && !exceptionallyClosed) result.training++;
+        if (info.kind === "training" && !notWorked) result.training++;
         // La paie et les droits liés au cycle restent théoriques : l'échange
         // modifie la présence affichée, jamais le férié de référence.
         if (info.holiday && info.kind === "work" && !unavailableWithoutExchange)
