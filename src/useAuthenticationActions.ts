@@ -1,4 +1,4 @@
-import type { Dispatch, FormEvent, RefObject, SetStateAction } from "react";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
 import {
   acceptInvite,
   login,
@@ -44,7 +44,6 @@ type AuthenticationActionsOptions = {
   setUserEmail: SetState<string>;
   setIsProgramAdmin: SetState<boolean>;
   setAuthStatus: SetState<AuthStatus>;
-  guidePromptCheckedRef: RefObject<boolean>;
   handoffKey: string;
   loadCalendar: () => Promise<void>;
   clearCalendarData: () => void;
@@ -85,7 +84,6 @@ export function useAuthenticationActions({
   setUserEmail,
   setIsProgramAdmin,
   setAuthStatus,
-  guidePromptCheckedRef,
   handoffKey,
   loadCalendar,
   clearCalendarData,
@@ -189,11 +187,6 @@ export function useAuthenticationActions({
     try {
       const user = await services.acceptInvite(inviteToken, loginPassword);
       setUserEmail(user.email || "Compte connecté");
-      if (user.email)
-        localStorage.setItem(
-          `planning:guide-pending-v1:${normalizedAccountEmail(user.email)}`,
-          "1",
-        );
       history.replaceState({}, "", location.pathname);
       setLoginPassword("");
       setPasswordConfirmation("");
@@ -208,7 +201,6 @@ export function useAuthenticationActions({
   async function disconnect() {
     await services.logout();
     localStorage.removeItem(handoffKey);
-    guidePromptCheckedRef.current = false;
     clearCalendarData();
     setUserEmail("");
     setIsProgramAdmin(false);

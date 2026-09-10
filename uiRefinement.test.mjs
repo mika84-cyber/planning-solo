@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 const appRoot = readFileSync(new URL("./src/App.tsx", import.meta.url), "utf8");
 const appNavigation = readFileSync(new URL("./src/AppNavigation.tsx", import.meta.url), "utf8");
-const userGuideDialogs = readFileSync(new URL("./src/UserGuideDialogs.tsx", import.meta.url), "utf8");
 const homeDashboard = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
 const payPage = readFileSync(new URL("./src/PayPage.tsx", import.meta.url), "utf8");
 const payDashboard = readFileSync(new URL("./src/PayDashboard.tsx", import.meta.url), "utf8");
@@ -25,7 +24,7 @@ const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions
 const planningRequestActions = readFileSync(new URL("./src/usePlanningRequestActions.ts", import.meta.url), "utf8");
 const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", import.meta.url), "utf8");
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
-const app = [appRoot, appNavigation, userGuideDialogs, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, payslipCalibrationCard, appDialogLayer, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const app = [appRoot, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, payslipCalibrationCard, appDialogLayer, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
   .map(([, relativePath]) =>
@@ -98,7 +97,7 @@ describe("finitions d’interface", () => {
   });
 
   it("hiérarchise les actions CET et met en valeur les heures de récupération", () => {
-    expect(styles).toContain(".cet-toolbar .primary-action:not(.cet-funding-action)");
+    expect(styles).toContain(".cet-toolbar .secondary-button");
     expect(styles).toContain("background: #fff;");
     expect(workTimeDialogs).toContain("Heures à poser");
     expect(app).toContain("Heures à poser pour chaque date");
@@ -248,19 +247,6 @@ describe("finitions d’interface", () => {
     expect(calendarApi).toContain("postCalendarIdempotent");
   });
 
-  it("résume chaque rubrique actuelle dans le mode d’emploi", () => {
-    expect(app).toContain("1. Accueil");
-    expect(app).toContain("2. Planning et absences");
-    expect(app).toContain("3. Congés, heures et CET");
-    expect(app).toContain("4. Ma paie");
-    expect(app).toContain("5. PDF et programmation GP");
-    expect(app).toContain("6. Contacts et formulaires");
-    expect(app).toContain("7. Planning des collègues");
-    expect(app).toContain("8. Messages, compte et mises à jour");
-    expect(app).toContain("La déclaration d’accident réunit les documents");
-    expect(app).toContain("Les rappels sont activés automatiquement");
-  });
-
   it("compte Divers comme jour non travaillé et permet les suppressions multiples", () => {
     expect(app).toContain("Jour non travaillé dans le planning");
     expect(app).toContain('period.leaveType === "recovery"');
@@ -399,12 +385,15 @@ describe("finitions d’interface", () => {
     expect(planningLogic).toContain('"recovery_hours",');
     expect(planningLogic).toContain('"recovery_holiday",');
     expect(planningLogic).toContain('"recovery_training",');
-    expect(app).toContain("Continuer vers le formulaire");
-    expect(app).toContain("Enregistrer au planning sans formulaire");
-    expect(app).toContain("Le formulaire est seulement préparé");
+    expect(app).toContain("Enregistrer et préparer le formulaire");
+    expect(app).toContain("Enregistrer uniquement");
+    expect(app).toContain("Le formulaire est préparé, mais jamais envoyé automatiquement");
     expect(app).toContain("Vous pouvez mélanger plusieurs types dans une même demande.");
     expect(app).toContain("Étape 2 sur 3 · Choisissez les dates");
     expect(app).toContain("Autres types de congé");
+    expect(app).toContain('role="tablist" aria-label="Contenu de la journée"');
+    expect(app).toContain('role="tabpanel" aria-labelledby="day-leave-tab"');
+    expect(app).toContain('aria-labelledby={quickNoteMode ? undefined : "day-notes-tab"}');
     expect(workTimeDialogs).toContain('[480, "8 h"], [360, "6 h"], [240, "4 h"], [225, "3 h 45"], [120, "2 h"]');
     expect(workTimeDialogs).toContain('defaultRecoveryMinutes(draft.kind, effectiveQuota)');
     expect(workTimeDialogs).toContain('draft.kind === "holiday" ? [] : [[null, "Durée libre"]]');
@@ -412,7 +401,7 @@ describe("finitions d’interface", () => {
     expect(workTimeDialogs).toContain("getDayInfo(chosenDate, group)");
     expect(workTimeDialogs).toContain("Sélectionner dans le calendrier");
     expect(workTimeDialogs).toContain("Ajouter une récupération");
-    expect(workTimeDialogs).toContain("Récupérations courantes");
+    expect(workTimeDialogs).toContain("Type de récupération");
     expect(app).toContain("recoveryDatePicking");
     expect(app).toContain('? "CA"');
     expect(app).toContain('? "RTT"');
@@ -485,15 +474,10 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".manual-adjustments-modal");
   });
 
-  it("propose le mode d’emploi au premier lancement et le conserve dans le menu", () => {
-    expect(app).toContain("planning:guide-seen-v1:");
-    expect(app).toContain("Besoin d’un mode d’emploi rapide ?");
-    expect(app).toContain("Voir le guide");
-    expect(app).toContain("Plus tard");
-    expect(app).toContain("Table des matières du mode d’emploi");
-    expect(app).toContain("Mode d’emploi");
-    expect(app).toContain("Poser un congé");
-    expect(app).toContain("bulletin PDF");
+  it("ne propose plus de mode d’emploi dans l’application", () => {
+    expect(app).not.toContain("planning:guide-seen-v1:");
+    expect(app).not.toContain("Besoin d’un mode d’emploi rapide ?");
+    expect(app).not.toContain("UserGuideDialogs");
   });
 
   it("rend les actions d’un congé visibles sans menu intermédiaire", () => {
@@ -512,11 +496,13 @@ describe("finitions d’interface", () => {
     expect(requestValidationSummary).toContain("Effet de la validation");
   });
 
-  it("regroupe les ressources et met l’écriture à l’administratrice en bas du menu", () => {
-    expect(appNavigation).toContain('["pdf", "Documents et contacts"');
-    expect(appNavigation.indexOf('["pdf", "Documents et contacts"')).toBeLessThan(appNavigation.indexOf("Écrire à l’administratrice"));
+  it("réserve le menu principal au compte et aux réglages", () => {
+    expect(appNavigation).toContain("Compte et réglages");
+    expect(appNavigation).toContain("Vérifier les mises à jour");
+    expect(appNavigation).toContain("Mes données");
+    expect(appNavigation).toContain("Écrire à l’administrateur");
+    expect(appNavigation).not.toContain('const MENU_ITEMS');
     expect(appNavigation).not.toContain("Mode d’emploi");
-    expect(appNavigation).not.toContain('["forms", "Documents et contacts"');
     expect(appRoot).toContain("<UsefulResourcesHub");
     expect(appRoot).toContain("pdf={(");
     expect(usefulResourcesHub).toContain('key: "pdf"');

@@ -1,0 +1,9 @@
+
+ RUN  v4.1.11 D:/Downloads/planning-solo
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  01:19:10
+   Duration  336ms (transform 52ms, setup 0ms, import 77ms, tests 67ms, environment 0ms)
+

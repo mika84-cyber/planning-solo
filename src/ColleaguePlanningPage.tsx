@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { getDayInfo, MONTHS } from "./planningLogic";
 import type { PersonalPresence } from "./appModel";
 import { ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
+import { matchesSearch } from "./searchMatching";
 import {
   getColleagueDirectory,
   getSharedColleaguePlanning,
@@ -50,6 +51,14 @@ const tomorrowDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long"
 export const colleagueTomorrowDateLabel = (reference = new Date()) => tomorrowDateFormatter.format(tomorrowDate(reference));
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "Demi-journée · matin" | "Demi-journée · après-midi" | "Absence partielle";
+
+function tomorrowStatusTone(status: TomorrowStatus) {
+  if (status === "Travail") return "work";
+  if (status === "Formation") return "training";
+  if (status === "Repos") return "rest";
+  if (status.startsWith("Demi-journée") || status === "Absence partielle") return "partial";
+  return "absence";
+}
 
 export function sharedPlanningDayStatus(planning: SharedColleaguePlanning, date: Date): TomorrowStatus {
   const key = dateKey(date);
@@ -153,11 +162,14 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
   const [data, setData] = useState<ColleagueDirectory | null>(demoMode ? demoDirectory : null);
   const [name, setName] = useState(initialName || (demoMode ? demoDirectory.self.displayName : ""));
   const [query, setQuery] = useState("");
+  const [directoryLoading, setDirectoryLoading] = useState(!demoMode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<SharedColleaguePlanning | null>(null);
   const [view, setView] = useState(() => startOfMonth(new Date()));
   const [tomorrowSummaries, setTomorrowSummaries] = useState<Record<string, { status: TomorrowStatus; group: number }>>({});
+  const [tomorrowFailed, setTomorrowFailed] = useState<string[]>([]);
+  const [tomorrowAttempt, setTomorrowAttempt] = useState(0);
   const [commonDaysOpen, setCommonDaysOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(() => {
     if (typeof window === "undefined") return true;
@@ -169,7 +181,11 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
   }, []);
 
   const refresh = useCallback(async () => {
-    if (demoMode) return;
+    if (demoMode) {
+      setDirectoryLoading(false);
+      return;
+    }
+    setDirectoryLoading(true);
     try {
       const next = await getColleagueDirectory();
       setData(next);
@@ -177,7 +193,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
       setError("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Le partage est indisponible.");
-    }
+    } finally { setDirectoryLoading(false); }
   }, [demoMode]);
 
   useEffect(() => { void refresh(); }, [refresh]);
@@ -260,7 +276,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
     if (!data) return [];
     const sharedIds = new Set(data.outgoing.map((share) => share.viewerId));
     return data.directory
-      .filter((item) => item.displayName.toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr")))
+      .filter((item) => matchesSearch(item.displayName, query))
       .sort((first, second) => {
         const sharingPriority = Number(sharedIds.has(second.userId)) - Number(sharedIds.has(first.userId));
         return sharingPriority || first.displayName.localeCompare(second.displayName, "fr");
@@ -270,25 +286,26 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
   const savedName = data?.self.displayName || "";
   const nameChanged = name.trim() !== savedName;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tomorrowAttempt relance les lectures après Réessayer.
   useEffect(() => {
+    setTomorrowFailed([]);
+    setTomorrowSummaries({});
     if (!received.length) {
       setTomorrowSummaries({});
       return;
     }
     let cancelled = false;
     const tomorrow = tomorrowDate();
-    void Promise.all(received.map(async (share) => {
+    for (const share of received) void (async () => {
       try {
         const planning = demoMode ? demoPlanning : await getSharedColleaguePlanning(share.ownerId);
-        return [share.ownerId, sharedPlanningTomorrowSummary(planning, tomorrow)] as const;
+        if (!cancelled) setTomorrowSummaries((current) => ({ ...current, [share.ownerId]: sharedPlanningTomorrowSummary(planning, tomorrow) }));
       } catch {
-        return null;
+        if (!cancelled) setTomorrowFailed((current) => [...current, share.ownerId]);
       }
-    })).then((entries) => {
-      if (!cancelled) setTomorrowSummaries(Object.fromEntries(entries.filter((entry) => entry !== null)));
-    });
+    })();
     return () => { cancelled = true; };
-  }, [demoMode, received]);
+  }, [demoMode, received, tomorrowAttempt]);
 
   useEffect(() => {
     if (selected) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -328,7 +345,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
 
       <section className="colleague-card colleague-how-it-works" aria-labelledby="colleague-how-title">
         <header className="colleague-how-header">
-          <div><p className="eyebrow">Comment ça marche</p><h3 id="colleague-how-title">Un partage simple et maîtrisé</h3></div>
+          <p className="eyebrow" id="colleague-how-title">Comment ça marche</p>
           <button type="button" className="secondary compact colleague-how-toggle" aria-expanded={howItWorksOpen} aria-controls="colleague-how-content" onClick={() => setHowItWorksOpen((open) => !open)}>{howItWorksOpen ? "Replier" : "Afficher"}<span aria-hidden="true">⌃</span></button>
         </header>
         {howItWorksOpen ? <ol id="colleague-how-content">
@@ -408,36 +425,52 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
           </div>
         </details>
 
-        <section className="colleague-card colleague-received-card">
-          <header className="colleague-received-heading"><div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3></div><span>{received.length}</span></header>
-          {data?.self.visible ? <div className="colleague-list">
-            {received.map((share) => <div className="colleague-received-person" key={share.ownerId}><span className="colleague-received-avatar" aria-hidden="true">{share.ownerName.charAt(0).toLocaleUpperCase("fr")}</span><span className="colleague-received-copy"><strong>{share.ownerName}</strong><small>Planning partagé avec vous</small></span><div className="colleague-inline-actions"><button type="button" disabled={busy} onClick={() => void openPlanning(share.ownerId)}>Voir</button><button className="secondary compact" type="button" disabled={busy} onClick={() => confirmMutation(`Supprimer votre accès au planning de ${share.ownerName} ?`, { action: "remove-access", ownerId: share.ownerId })}>Supprimer l’accès</button></div></div>)}
-            {!received.length ? <p>Aucun planning partagé pour le moment.</p> : null}
+        <section className="colleague-card colleague-received-card" aria-busy={directoryLoading}>
+          <header className="colleague-received-heading">
+            <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3><small>Les disponibilités de demain sont résumées ici.</small></div>
+            <span title={`${received.length} planning${received.length > 1 ? "s" : ""} reçu${received.length > 1 ? "s" : ""}`}>{directoryLoading ? "…" : received.length}</span>
+          </header>
+          {directoryLoading ? <div className="colleague-received-loading" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /><span>Actualisation de vos plannings partagés…</span></div> : data?.self.visible ? <>
+            <div className="colleague-list">
+              {received.map((share) => <div className="colleague-received-person" key={share.ownerId}><span className="colleague-received-avatar" aria-hidden="true">{share.ownerName.charAt(0).toLocaleUpperCase("fr")}</span><span className="colleague-received-copy"><strong>{share.ownerName}</strong><small>Planning partagé avec vous</small></span><div className="colleague-inline-actions"><button type="button" disabled={busy} onClick={() => void openPlanning(share.ownerId)}>Voir</button><button className="secondary compact" type="button" disabled={busy} onClick={() => confirmMutation(`Supprimer votre accès au planning de ${share.ownerName} ?`, { action: "remove-access", ownerId: share.ownerId })}>Supprimer l’accès</button></div></div>)}
+              {!received.length ? <p>Aucun planning partagé pour le moment.</p> : null}
+            </div>
             {received.length ? <section className="colleague-tomorrow" aria-labelledby="colleague-tomorrow-title">
-              <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">Qui travaille demain ? ({colleagueTomorrowDateLabel()})</h4></div>
+              <header className="colleague-tomorrow-heading">
+                <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">Qui travaille demain&nbsp;? ({colleagueTomorrowDateLabel()})</h4></div>
+                <span className="colleague-tomorrow-count">{received.length} planning{received.length > 1 ? "s" : ""}</span>
+              </header>
+              {received.some((share) => !tomorrowSummaries[share.ownerId] && !tomorrowFailed.includes(share.ownerId)) ? <div className="colleague-tomorrow-pending" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /> Analyse des plannings en cours…</div> : null}
               <div className="colleague-tomorrow-table-shell">
                 <table className="colleague-tomorrow-table">
+                  <caption className="colleague-tomorrow-caption">Disponibilités des collègues par groupe</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Collègue</th>
+                      <th scope="col">Disponibilité demain</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {([1, 2, 3] as const).map((group) => {
                       const groupShares = received.filter((share) => tomorrowSummaries[share.ownerId]?.group === group);
                       if (!groupShares.length) return null;
                       return <Fragment key={group}>
-                        <tr className={`colleague-tomorrow-group group-${group}`}><th colSpan={2}>Groupe {group}</th></tr>
+                        <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={2}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span><small>{groupShares.length} collègue{groupShares.length > 1 ? "s" : ""}</small></th></tr>
                         {groupShares.map((share) => {
                           const summary = tomorrowSummaries[share.ownerId]!;
-                          return <tr key={share.ownerId}>
+                          return <tr className={`colleague-tomorrow-row status-${tomorrowStatusTone(summary.status)}`} key={share.ownerId}>
                             <td><strong>{share.ownerName}</strong></td>
-                            <td><span className={`colleague-tomorrow-status ${summary.status === "Travail" ? "work" : summary.status === "Repos" ? "rest" : "absence"}`}>{summary.status}</span></td>
+                            <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{summary.status}</span></td>
                           </tr>;
                         })}
                       </Fragment>;
                     })}
-                    {received.some((share) => !tomorrowSummaries[share.ownerId]) ? <tr className="colleague-tomorrow-loading"><td colSpan={2}>Chargement des plannings…</td></tr> : null}
+                    {tomorrowFailed.length > 0 ? <tr className="colleague-tomorrow-error"><td colSpan={2}><p role="status">Planning indisponible : {received.filter((share) => tomorrowFailed.includes(share.ownerId)).map((share) => share.ownerName).join(", ")}.</p><button type="button" onClick={() => setTomorrowAttempt((value) => value + 1)}>Réessayer</button></td></tr> : null}
                   </tbody>
                 </table>
               </div>
             </section> : null}
-          </div> : <p>Inscrivez-vous dans l’annuaire pour consulter les plannings reçus.</p>}
+          </> : <p>Inscrivez-vous dans l’annuaire pour consulter les plannings reçus.</p>}
         </section>
       </div>
 

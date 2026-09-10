@@ -20,7 +20,6 @@ describe("navigation principale", () => {
       accountMenuRef={createRef()}
       accountButtonRef={createRef()}
       onToggleAccount={vi.fn()}
-      onOpenDataManagement={vi.fn()}
       onDisconnect={vi.fn()}
       onOpenMainMenu={vi.fn()}
       onCheckForUpdate={vi.fn()}
@@ -32,25 +31,62 @@ describe("navigation principale", () => {
     expect(html).not.toContain("notification-button");
   });
 
-  it("garde toutes les rubriques dans l’ordre", () => {
+  it("signale une mise à jour à effectuer sur l’initiale du compte", () => {
+    const html = renderToStaticMarkup(<AppHeader
+      homeSection="home"
+      payScreen="overview"
+      userEmail="mika@example.fr"
+      fullName="Mika"
+      accountMenuOpen={false}
+      mainMenuOpen={false}
+      checkingAppUpdate={false}
+      appUpdateAvailable
+      demoMode
+      unreadFeedbackCount={0}
+      notify={vi.fn()}
+      accountMenuRef={createRef()}
+      accountButtonRef={createRef()}
+      onToggleAccount={vi.fn()}
+      onDisconnect={vi.fn()}
+      onOpenMainMenu={vi.fn()}
+      onCheckForUpdate={vi.fn()}
+    />);
+    expect(html).toContain('aria-label="Compte — mise à jour disponible"');
+    expect(html).toContain("account-update-dot");
+    expect(html).toContain("Mise à jour à effectuer");
+  });
+
+  it("remplace les rubriques par les actions du compte", () => {
     const html = renderToStaticMarkup(<MainMenu
       open
-      homeSection="home"
+      userEmail="mika@example.fr"
+      fullName="Mika"
+      checkingAppUpdate={false}
+      appUpdateAvailable={false}
+      online
+      syncStatus="idle"
+      lastSavedAt=""
+      showInstallAction
+      canInstall={false}
       onClose={vi.fn()}
-      onNavigate={vi.fn()}
+      onCheckForUpdate={vi.fn()}
+      onOpenDataManagement={vi.fn()}
+      onInstall={vi.fn()}
       onOpenFeedback={vi.fn()}
       isAdmin={false}
       unreadFeedbackCount={0}
     />);
-    const labels = ["Accueil", "Congés et récupérations", "Ma paie", "Documents et contacts", "Programmation GP", "Planning des collègues"];
-    labels.slice(1).forEach((label, index) => {
-      expect(html.indexOf(labels[index])).toBeLessThan(html.indexOf(label));
-    });
-    expect(html).toContain("Trouver un PDF, un formulaire ou un contact");
-    expect(html).toContain("Où voulez-vous aller");
-    expect(html.match(/Documents et contacts/g)).toHaveLength(1);
-    expect(html).toContain("Écrire à l’administratrice");
-    expect(html).not.toContain("Mode d’emploi");
+    expect(html).toContain("Compte et réglages");
+    expect(html).toContain("mika@example.fr");
+    expect(html).toContain("Vérifier les mises à jour");
+    expect(html).toContain("Mes données");
+    expect(html).toContain("État de sauvegarde");
+    expect(html).toContain("Sauvegarde automatique active");
+    expect(html).toContain("Installer l’application");
+    expect(html).toContain("Disponible après connexion");
+    expect(html).toContain("Écrire à l’administrateur");
+    expect(html).not.toContain("Congés et récupérations");
+    expect(html).not.toContain("Planning des collègues");
     expect(html).not.toContain("Messagerie interne");
   });
 
@@ -68,10 +104,11 @@ describe("navigation principale", () => {
     expect(html).not.toContain('aria-label="Plus"');
     expect(html).not.toContain('aria-hidden="true">+</span>');
     expect(html).not.toContain(">01<");
+    expect(html).not.toContain("Mode d’emploi");
   });
 
   it("réserve l’entrée de la messagerie à l’administrateur", () => {
-    const html = renderToStaticMarkup(<MainMenu open homeSection="home" onClose={vi.fn()} onNavigate={vi.fn()} onOpenFeedback={vi.fn()} isAdmin unreadFeedbackCount={3} />);
+    const html = renderToStaticMarkup(<MainMenu open userEmail="admin@example.fr" fullName="Administrateur" checkingAppUpdate={false} appUpdateAvailable={false} online syncStatus="idle" lastSavedAt="" showInstallAction={false} canInstall={false} onClose={vi.fn()} onCheckForUpdate={vi.fn()} onOpenDataManagement={vi.fn()} onInstall={vi.fn()} onOpenFeedback={vi.fn()} isAdmin unreadFeedbackCount={3} />);
     expect(html).toContain("Messagerie interne");
     expect(html).toContain("3 messages non lus");
   });

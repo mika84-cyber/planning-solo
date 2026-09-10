@@ -1,0 +1,65 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test e2e/accessibility.spec.ts --workers=2
+
+[WebServer] (node:11732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 2 workers
+
+(node:25224) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17760) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [mobile] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (9.4s)
+  x  2 [ordinateur] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (9.2s)
+
+
+  1) [ordinateur] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave 
+
+    Error: Violations d’accessibilité dans Programmation
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 10
+
+    - Array []
+    + Array [
+    +   Object {
+    +     "help": "Elements must meet minimum color contrast ratio thresholds",
+    +     "id": "color-contrast",
+    +     "impact": "serious",
+    +     "targets": Array [
+    +       "button[title=\"Documents\"] > span",
+    +     ],
+    +   },
+    + ]
+
+      26 |     })),
+      27 |     `Violations d’accessibilité ${context}`,
+    > 28 |   ).toEqual([]);
+         |     ^
+      29 | }
+      30 |
+      31 | async function openMainMenu(page: Page) {
+        at expectNoSeriousAccessibilityViolation (D:\Downloads\planning-solo\e2e\accessibility.spec.ts:28:5)
+        at D:\Downloads\planning-solo\e2e\accessibility.spec.ts:52:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\accessibility-les-parcours-f5336-ation-d’accessibilité-grave-ordinateur\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\accessibility-les-parcours-f5336-ation-d’accessibilité-grave-ordinateur\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\accessibility-les-parcours-f5336-ation-d’accessibilité-grave-ordinateur\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\accessibility-les-parcours-f5336-ation-d’accessibilité-grave-ordinateur\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [ordinateur] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave 
+  1 passed (15.4s)

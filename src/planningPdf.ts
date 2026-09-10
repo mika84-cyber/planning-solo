@@ -66,6 +66,8 @@ type PlanningPdfOptions = {
     "A" | "B" | "C",
     Array<{ name: string; from: string; to: string }>
   >;
+  /** La légende détaillée n'est utile que dans le planning avec congés. */
+  showColorLegend?: boolean;
   filenameLabel?: string;
 };
 
@@ -434,6 +436,7 @@ function drawGroupPage(
   closedDates?: ReadonlySet<string>,
   exchangeMarkers?: ReadonlyMap<string, PdfExchangeMarker>,
   assets?: PlanningPdfAssets,
+  showColorLegend = true,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const sidebarX = 7;
@@ -841,6 +844,7 @@ function drawGroupPage(
   doc.roundedRect(sidebarX, tableY, sidebarWidth, sidebarHeight, 1.6, 1.6, "S");
   doc.line(sidebarX, tableY + 9, sidebarX + sidebarWidth, tableY + 9);
 
+  if (showColorLegend) {
   const colorLegendItems: Array<{
     label: string;
     color: readonly [number, number, number];
@@ -983,6 +987,7 @@ function drawGroupPage(
       "S",
     );
   }
+  }
 
   // Le tableau se pose juste sous la grille plutôt que de dériver vers le bas
   // de page : avec six périodes de vacances il déborderait de la feuille.
@@ -1085,6 +1090,7 @@ export function createAnnualPlanningPdf({
   closedDates,
   exchangeMarkers,
   assets,
+  showColorLegend = true,
   filenameLabel,
 }: PlanningPdfOptions) {
   const doc = new jsPDF({
@@ -1110,6 +1116,7 @@ export function createAnnualPlanningPdf({
       closedDates,
       exchangeMarkers,
       assets,
+      showColorLegend,
     );
   });
 

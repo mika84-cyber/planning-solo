@@ -58,8 +58,8 @@ describe("détails des trois groupes", () => {
     expect(html).toContain("Chargement des noms…");
   });
 
-  it("recherche sans tenir compte des accents et indique le groupe", () => {
-    expect(searchColleagueGroups(COLLEAGUE_GROUPS, "mickael")).toEqual([
+  it("recherche malgré un accent ou une petite faute et indique le groupe", () => {
+    expect(searchColleagueGroups(COLLEAGUE_GROUPS, "mikael")).toEqual([
       { member: "Mickaël Eliaszewicz", group: 2 },
     ]);
   });

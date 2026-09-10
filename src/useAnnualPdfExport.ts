@@ -232,6 +232,7 @@ export function useAnnualPdfExport(
         closedDates: overlays?.closedDates,
         exchangeMarkers: overlays?.exchangeMarkers,
         assets,
+        showColorLegend: scope === "my-leaves",
         schoolVacationDates,
         schoolVacationsByZone,
         filenameLabel:

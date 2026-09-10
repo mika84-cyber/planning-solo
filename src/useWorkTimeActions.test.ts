@@ -26,7 +26,7 @@ describe("useWorkTimeActions — validations et payloads", () => {
   });
 
   it.each([
-    ["full", 495], ["three_quarters", 375], ["half", 225],
+    ["full", 495], ["three_quarters", 390], ["half", 240],
   ] as const)("enregistre réellement la durée du férié pour la quotité %s", (quota, expected) => {
     expect(recoveryDraftMinutes({
       date: "2026-09-09", kind: "holiday", hours: "8", minutes: "0",

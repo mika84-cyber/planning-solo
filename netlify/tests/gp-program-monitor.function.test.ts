@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const stored = new Map<string, unknown>();
 const store = {
@@ -49,6 +49,8 @@ const nextState = {
 
 describe("surveillance planifiée du programme Grand Palais", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-28T22:05:00Z"));
     stored.clear();
     store.get.mockClear();
     store.setJSON.mockClear();
@@ -56,6 +58,23 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     mockedDetect.mockReset();
     mockedSendAlert.mockReset();
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => { vi.useRealTimers(); });
+
+  it.each(["2026-08-28T23:05:00Z", "2026-01-28T22:05:00Z", "2026-03-29T23:05:00Z", "2026-10-25T22:05:00Z"])("ignore le créneau UTC hors minuit à Paris : %s", async (date) => {
+    vi.setSystemTime(new Date(date));
+    expect(await (await monitorGrandPalaisProgram()).json()).toMatchObject({ skipped: true });
+    expect(store.get).not.toHaveBeenCalled();
+    expect(mockedCollect).not.toHaveBeenCalled();
+  });
+
+  it.each(["2026-01-28T23:05:00Z", "2026-08-28T22:05:00Z", "2026-03-29T22:05:00Z", "2026-10-25T23:05:00Z"])("collecte à 00h05 heure de Paris : %s", async (date) => {
+    vi.setSystemTime(new Date(date));
+    mockedCollect.mockResolvedValue([]);
+    mockedDetect.mockReturnValue({ state: nextState, proposals: [] } as never);
+    await monitorGrandPalaisProgram();
+    expect(mockedCollect).toHaveBeenCalledTimes(1);
   });
 
   it("collecte, conserve et signale les nouvelles propositions chaque jour", async () => {
@@ -67,7 +86,7 @@ describe("surveillance planifiée du programme Grand Palais", () => {
 
     const response = await monitorGrandPalaisProgram();
 
-    expect(config).toEqual({ schedule: "@daily" });
+    expect(config).toEqual({ schedule: "5 22,23 * * *" });
     expect(store.get).toHaveBeenCalledWith("monitor-state", { type: "json" });
     expect(store.get).toHaveBeenCalledWith("pending", { type: "json" });
     expect(stored.get("monitor-state")).toEqual(nextState);

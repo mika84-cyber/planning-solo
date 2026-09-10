@@ -5,6 +5,7 @@ export type UsefulContactPhone = {
 };
 
 export type UsefulContact = {
+  id?: string;
   name: string;
   email?: string;
   phones?: UsefulContactPhone[];

@@ -1,0 +1,17 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep Ma paie garde
+
+[WebServer] (node:21696) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 2 workers
+
+(node:2352) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [ordinateur] › e2e\app.spec.ts:65:1 › Ma paie garde une palette cohérente par fonction (2.0s)
+  ok 2 [mobile] › e2e\app.spec.ts:65:1 › Ma paie garde une palette cohérente par fonction (2.8s)
+
+  2 passed (6.5s)

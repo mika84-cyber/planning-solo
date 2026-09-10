@@ -5,6 +5,7 @@
 }
 
 .leave-tool-disclosure {
+  --tool-ink: #286b69;
   min-width: 0;
   overflow: hidden;
   border: 1px solid #9cb8cf;
@@ -14,11 +15,13 @@
 }
 
 .leave-tool-disclosure:nth-child(2) {
+  --tool-ink: #6b497d;
   border-color: #b7a7d0;
   background: linear-gradient(155deg, #faf3ff, #fff 74%);
 }
 
 .leave-tool-disclosure:nth-child(3) {
+  --tool-ink: #7a5b25;
   border-color: #cab788;
   background: linear-gradient(155deg, #fff7df, #fff 74%);
 }
@@ -89,32 +92,25 @@
   flex: 1;
   place-content: center;
   justify-items: center;
-  gap: 4px;
+  gap: 7px;
   text-align: center;
-}
-
-.leave-tool-copy small {
-  max-width: 100%;
-  color: #52728f;
-  font-size: clamp(.58rem, .9vw, .72rem);
-  font-weight: 850;
-  letter-spacing: .065em;
-  line-height: 1.16;
-  overflow-wrap: anywhere;
-  text-transform: uppercase;
 }
 
 .leave-tool-copy strong {
   max-width: 100%;
-  font-size: clamp(.8rem, 1.2vw, 1.05rem);
-  line-height: 1.18;
+  color: var(--tool-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.2;
   text-wrap: balance;
 }
 
 .leave-tool-disclosure > summary > b {
   align-self: center;
   margin-top: auto;
-  color: #23705f;
+  color: var(--tool-ink);
   font-size: clamp(.64rem, .85vw, .78rem);
   line-height: 1.2;
   text-align: center;
@@ -166,13 +162,8 @@
     min-height: 52px;
   }
 
-  .leave-tool-copy small {
-    font-size: clamp(.46rem, 1.85vw, .58rem);
-    letter-spacing: .035em;
-  }
-
   .leave-tool-copy strong {
-    font-size: clamp(.66rem, 2.55vw, .82rem);
+    font-size: clamp(.85rem, 2.8vw, 1.05rem);
   }
 
   .leave-tool-disclosure > summary > b {
@@ -203,12 +194,8 @@
     height: 102px;
   }
 
-  .leave-tool-copy small {
-    font-size: .44rem;
-  }
-
   .leave-tool-copy strong {
-    font-size: .62rem;
+    font-size: .85rem;
   }
 
   .leave-tool-disclosure > summary > b {

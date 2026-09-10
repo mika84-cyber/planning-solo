@@ -14,21 +14,12 @@ export const MAIN_SECTION_ORDER = [
 export type MainSection = (typeof MAIN_SECTION_ORDER)[number] | "forms";
 export type PayScreen = "overview" | "allowances" | "payslip";
 
-const MENU_ITEMS: ReadonlyArray<readonly [MainSection, string, string]> = [
-  ["home", "Accueil", "Voir ma journée, mes notes et mon planning"],
-  ["leave", "Congés et récupérations", "Poser une absence et consulter mes soldes"],
-  ["pay", "Ma paie", "Comprendre et vérifier ma paie"],
-  ["pdf", "Documents et contacts", "Trouver un PDF, un formulaire ou un contact"],
-  ["program", "Programmation GP", "Voir les expositions par espace"],
-  ["colleagues", "Planning des collègues", "Partager ou consulter un planning"],
-];
-
-function NavigationIcon({ section }: { section: MainSection | "more" | "guide" | "feedback" }) {
+function NavigationIcon({ section }: { section: MainSection | "more" | "feedback" | "update" | "data" | "install" }) {
   const paths: Record<string, string> = {
     home: "M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z", leave: "M7 3v3m10-3v3M4 9h16M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2z",
     pay: "M4 7h16v12H4zM7 4h10v3M7 12h5m-5 4h9", pdf: "M6 3h9l4 4v14H6zM14 3v5h5M9 13h6m-6 4h6",
     forms: "M4 5h7l2 2h7v12H4z", program: "M4 20V8l8-5 8 5v12M8 20v-7h8v7", colleagues: "M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm8-1a3 3 0 1 0 0-6m-14 16c0-4 3-7 6-7s6 3 6 7m1-7c3 0 6 3 6 7",
-    more: "M12 5v14M5 12h14", guide: "M12 18h.01M9.5 9a2.5 2.5 0 1 1 3.3 2.37c-.8.35-.8 1.13-.8 1.63", feedback: "M4 5h16v12H8l-4 4z",
+    more: "M12 5v14M5 12h14", feedback: "M4 5h16v12H8l-4 4z", update: "M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7", data: "M5 4h14v16H5zM8 8h8M8 12h8M8 16h5", install: "M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3",
   };
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={paths[section]} /></svg>;
 }
@@ -85,10 +76,10 @@ type AppHeaderProps = {
   accountMenuRef: RefObject<HTMLDivElement | null>;
   accountButtonRef: RefObject<HTMLButtonElement | null>;
   onToggleAccount: () => void;
-  onOpenDataManagement: () => void;
   onDisconnect: () => void;
   onOpenMainMenu: () => void;
   onCheckForUpdate: () => void;
+  onOpenAdminTools?: () => void;
 };
 
 export function AppHeader({
@@ -106,10 +97,10 @@ export function AppHeader({
   accountMenuRef,
   accountButtonRef,
   onToggleAccount,
-  onOpenDataManagement,
   onDisconnect,
   onOpenMainMenu,
   onCheckForUpdate,
+  onOpenAdminTools,
 }: AppHeaderProps) {
   const updateLabel = checkingAppUpdate
     ? "Chargement de la mise à jour…"
@@ -147,15 +138,16 @@ export function AppHeader({
             </Suspense>
             <div className="account-menu" ref={accountMenuRef}>
               <button
-                className={`account-button${accountMenuOpen ? " open" : ""}`}
+                className={`account-button${accountMenuOpen ? " open" : ""}${appUpdateAvailable ? " update-available" : ""}`}
                 type="button"
                 ref={accountButtonRef}
                 onClick={onToggleAccount}
                 aria-haspopup="menu"
                 aria-expanded={accountMenuOpen}
-                aria-label="Compte"
+                aria-label={appUpdateAvailable ? "Compte — mise à jour disponible" : "Compte"}
               >
                 {(userEmail[0] || "M").toUpperCase()}
+                {appUpdateAvailable ? <em className="main-menu-feedback-badge account-update-dot" role="status" aria-label="Mise à jour à effectuer">!</em> : null}
               </button>
               {accountMenuOpen ? (
                 <div className="account-menu-panel" role="menu">
@@ -166,15 +158,10 @@ export function AppHeader({
                   {appUpdateAvailable ? (
                     <div className="account-update-alert" role="status">
                       <strong>Une mise à jour est disponible</strong>
-                      <span>Installez-la depuis ce menu.</span>
+                      <span>Ouvrez le menu principal pour l’installer.</span>
                     </div>
                   ) : null}
-                  <button className="account-menu-data account-update-action" type="button" role="menuitem" onClick={onCheckForUpdate} disabled={checkingAppUpdate}>
-                    {checkingAppUpdate ? "Recherche en cours…" : appUpdateAvailable ? "Installer la mise à jour" : "Vérifier les mises à jour"}
-                  </button>
-                  <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenDataManagement}>
-                    Gérer mes données
-                  </button>
+                  {onOpenAdminTools && <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenAdminTools}>Outils administrateur</button>}
                   <button className="account-menu-leave" type="button" role="menuitem" onClick={onDisconnect}>
                     Se déconnecter
                   </button>
@@ -217,16 +204,36 @@ export function AppHeader({
 
 type MainMenuProps = {
   open: boolean;
-  homeSection: MainSection;
+  userEmail: string;
+  fullName: string;
+  checkingAppUpdate: boolean;
+  appUpdateAvailable: boolean;
+  online: boolean;
+  syncStatus: "idle" | "saving" | "saved" | "error";
+  lastSavedAt: string;
+  showInstallAction: boolean;
+  canInstall: boolean;
   onClose: () => void;
-  onNavigate: (section: MainSection) => void;
+  onCheckForUpdate: () => void;
+  onOpenDataManagement: () => void;
+  onInstall: () => void;
   onOpenFeedback: (view: "compose" | "inbox") => void;
   isAdmin: boolean;
   unreadFeedbackCount: number;
 };
 
-export function MainMenu({ open, homeSection, onClose, onNavigate, onOpenFeedback, isAdmin, unreadFeedbackCount }: MainMenuProps) {
+export function MainMenu({ open, userEmail, fullName, checkingAppUpdate, appUpdateAvailable, online, syncStatus, lastSavedAt, showInstallAction, canInstall, onClose, onCheckForUpdate, onOpenDataManagement, onInstall, onOpenFeedback, isAdmin, unreadFeedbackCount }: MainMenuProps) {
   if (!open) return null;
+  const savedTime = lastSavedAt ? new Date(lastSavedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+  const saveState = !online
+    ? { tone: "offline", text: "Hors connexion : les changements attendent la connexion" }
+    : syncStatus === "saving"
+      ? { tone: "saving", text: "Enregistrement en cours…" }
+      : syncStatus === "error"
+        ? { tone: "error", text: "La dernière sauvegarde a échoué" }
+        : syncStatus === "saved"
+          ? { tone: "saved", text: `Dernière sauvegarde à ${savedTime}` }
+          : { tone: "saved", text: "Sauvegarde automatique active" };
   return (
     <div
       className="main-menu-backdrop"
@@ -235,28 +242,38 @@ export function MainMenu({ open, homeSection, onClose, onNavigate, onOpenFeedbac
     >
       <aside className="main-menu-drawer" id="main-menu-drawer" aria-label="Menu principal">
         <header>
-          <div><span className="step-label">Planning Solo</span><h2>Où voulez-vous aller&nbsp;?</h2></div>
+          <div><span className="step-label">Planning Solo</span><h2>Compte et réglages</h2></div>
           <button type="button" onClick={onClose} aria-label="Fermer le menu">×</button>
         </header>
-        <nav>
-          {MENU_ITEMS.map(([key, title, detail]) => (
-            <button
-              key={key}
-              type="button"
-              className={homeSection === key ? "active" : ""}
-              aria-current={homeSection === key ? "page" : undefined}
-              onClick={() => onNavigate(key)}
-            >
-              <span className="main-menu-index" aria-hidden="true"><NavigationIcon section={key} /></span>
-              <span className="main-menu-copy"><strong>{title}</strong><small>{detail}</small></span>
-              <span className="main-menu-chevron" aria-hidden="true">›</span>
-            </button>
-          ))}
+        <div className="main-menu-account-card">
+          <span aria-hidden="true">{(userEmail[0] || "M").toUpperCase()}</span>
+          <div><strong>{fullName || "Mon compte"}</strong><small>{userEmail}</small></div>
+        </div>
+        <div className={`main-menu-save-status ${saveState.tone}`} role="status" aria-live="polite">
+          <span aria-hidden="true">{saveState.tone === "saved" ? "✓" : "!"}</span>
+          <div><strong>État de sauvegarde</strong><small>{saveState.text}</small></div>
+        </div>
+        <nav aria-label="Compte et réglages">
+          <button type="button" onClick={onCheckForUpdate} disabled={checkingAppUpdate}>
+            <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="update" /></span>
+            <span className="main-menu-copy"><strong>{checkingAppUpdate ? "Recherche en cours…" : appUpdateAvailable ? "Installer la mise à jour" : "Vérifier les mises à jour"}</strong><small>{appUpdateAvailable ? "Une nouvelle version est prête" : "Garder l’application à jour"}</small></span>
+            <span className="main-menu-chevron" aria-hidden="true">›</span>
+          </button>
+          <button type="button" onClick={onOpenDataManagement}>
+            <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="data" /></span>
+            <span className="main-menu-copy"><strong>Mes données</strong><small>Sauvegarder, reprendre ou effacer mes informations</small></span>
+            <span className="main-menu-chevron" aria-hidden="true">›</span>
+          </button>
+          {showInstallAction ? <button type="button" onClick={onInstall} disabled={!canInstall}>
+            <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="install" /></span>
+            <span className="main-menu-copy"><strong>Installer l’application</strong><small>{canInstall ? "L’ajouter à l’écran d’accueil" : "Disponible après connexion"}</small></span>
+            <span className="main-menu-chevron" aria-hidden="true">›</span>
+          </button> : null}
         </nav>
         <div className="main-menu-secondary">
           <button type="button" className="guide-menu-entry feedback-menu-entry" onClick={() => onOpenFeedback(isAdmin ? "inbox" : "compose")}>
             <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="feedback" /></span>
-            <span className="main-menu-copy"><strong>{isAdmin ? "Messagerie interne" : "Écrire à l’administratrice"}</strong><small>{isAdmin ? `${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}` : "Une idée, une suggestion ou un bug"}</small></span>
+            <span className="main-menu-copy"><strong>{isAdmin ? "Messagerie interne" : "Écrire à l’administrateur"}</strong><small>{isAdmin ? `${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}` : "Une idée, une suggestion ou un bug"}</small></span>
             <span className="main-menu-chevron" aria-hidden="true">›</span>
           </button>
         </div>

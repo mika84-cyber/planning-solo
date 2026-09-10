@@ -1,0 +1,25 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep Ma paie retrouve|les cartes intérieures restent|la programmation GP suit
+
+[WebServer] (node:15340) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 2 workers
+
+(node:11380) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20916) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [ordinateur] › e2e\app.spec.ts:93:1 › Ma paie retrouve ses couleurs précédentes sans changer la disposition (1.9s)
+  ok 1 [ordinateur] › e2e\app.spec.ts:76:1 › les cartes intérieures restent légères avec des bordures visibles et une ombre douce (2.4s)
+(node:25548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 3 [ordinateur] › e2e\app.spec.ts:1601:1 › la programmation GP suit l’ordre demandé et sépare les autres espaces (3.8s)
+(node:24356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 4 [mobile] › e2e\app.spec.ts:76:1 › les cartes intérieures restent légères avec des bordures visibles et une ombre douce (3.3s)
+  ok 6 [mobile] › e2e\app.spec.ts:93:1 › Ma paie retrouve ses couleurs précédentes sans changer la disposition (3.0s)
+  ok 5 [mobile] › e2e\app.spec.ts:1601:1 › la programmation GP suit l’ordre demandé et sépare les autres espaces (7.1s)
+
+  6 passed (17.5s)

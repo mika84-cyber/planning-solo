@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { getUsefulContacts } from "./contactsApi";
+import { changeUsefulContact, getUsefulContacts } from "./contactsApi";
+import { ContactEditDialog } from "./ContactEditDialog";
 import type {
   PompidouContactSectionKey,
   UsefulContact,
   UsefulContactsPayload,
 } from "./usefulContactsTypes";
 import { readResourceFavorites, writeResourceFavorites } from "./resourceFavorites";
+import { matchesSearch } from "./searchMatching";
+import "./usefulDocumentAdmin.css";
 
 function formatPhone(number: string) {
   return number.replace(/\D/g, "").replace(/(\d{2})(?=\d)/g, "$1 ").trim();
@@ -43,13 +46,13 @@ export function usefulContactId(contact: UsefulContact) {
   return [contact.context || "contact", contact.name, contact.email || "", ...(contact.phones?.map((phone) => phone.number) ?? [])].join("|").toLocaleLowerCase("fr");
 }
 
-function ContactCards({ contacts, favorites, onToggleFavorite }: { contacts: UsefulContact[]; favorites: string[]; onToggleFavorite: (id: string) => void }) {
+function ContactCards({ contacts, favorites, onToggleFavorite, isAdmin, onEdit }: { contacts: UsefulContact[]; favorites: string[]; onToggleFavorite: (id: string) => void; isAdmin: boolean; onEdit: (contact: UsefulContact) => void }) {
   return (
     <div className="useful-contact-list">
       {contacts.map((contact) => (
         <article
           className={`useful-contact-card${contact.singleLineLabel ? " useful-contact-card-single-line-label" : ""}`}
-          key={`${contact.context || "contact"}-${contact.name}`}
+          key={contact.id || `${contact.context || "contact"}-${contact.name}`}
         >
           <div className="useful-contact-identity">
             <span aria-hidden="true">{contactInitials(contact.name)}</span>
@@ -58,7 +61,6 @@ function ContactCards({ contacts, favorites, onToggleFavorite }: { contacts: Use
               {contact.context ? <small>{contact.context}</small> : null}
             </span>
           </div>
-          <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(usefulContactId(contact))} aria-label={`${favorites.includes(usefulContactId(contact)) ? "Retirer" : "Ajouter"} ${contact.name} ${favorites.includes(usefulContactId(contact)) ? "des" : "aux"} favoris`} onClick={() => onToggleFavorite(usefulContactId(contact))}>★</button>
           <div className="useful-contact-actions">
             {contact.email ? (
               <a
@@ -97,6 +99,10 @@ function ContactCards({ contacts, favorites, onToggleFavorite }: { contacts: Use
               );
             })}
           </div>
+          <div className="useful-contact-card-tools" aria-label={`Actions pour ${contact.name}`}>
+            {isAdmin ? <button type="button" className="contact-admin-edit" aria-label={`Modifier ${contact.name}`} title="Modifier ce contact" onClick={() => onEdit(contact)}>✎</button> : null}
+            <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(usefulContactId(contact))} aria-label={`${favorites.includes(usefulContactId(contact)) ? "Retirer" : "Ajouter"} ${contact.name} ${favorites.includes(usefulContactId(contact)) ? "des" : "aux"} favoris`} onClick={() => onToggleFavorite(usefulContactId(contact))}>★</button>
+          </div>
         </article>
       ))}
     </div>
@@ -106,9 +112,11 @@ function ContactCards({ contacts, favorites, onToggleFavorite }: { contacts: Use
 type UsefulContactsSectionProps = {
   initialData?: UsefulContactsPayload;
   accountId?: string;
+  isAdmin?: boolean;
+  demoMode?: boolean;
 };
 
-export function UsefulContactsSection({ initialData, accountId = "" }: UsefulContactsSectionProps) {
+export function UsefulContactsSection({ initialData, accountId = "", isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
   const [directory, setDirectory] = useState<"pompidou" | "gprmn" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
   const [contacts, setContacts] = useState<UsefulContactsPayload | null>(initialData || null);
@@ -116,6 +124,8 @@ export function UsefulContactsSection({ initialData, accountId = "" }: UsefulCon
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState(() => readResourceFavorites(accountId, "contacts"));
+  const [editingContact, setEditingContact] = useState<UsefulContact | null>(null);
+  const [addingContact, setAddingContact] = useState(false);
   const toggleFavorite = (id: string) => setFavorites((current) => {
     const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
     writeResourceFavorites(accountId, "contacts", next);
@@ -147,6 +157,31 @@ export function UsefulContactsSection({ initialData, accountId = "" }: UsefulCon
   const activePompidouSection = contacts?.pompidou.find(
     (section) => section.key === pompidouSection,
   );
+  const mutateContact = async (body: Record<string, unknown>) => {
+    if (demoMode) {
+      setContacts(current => {
+        if (!current) return current;
+        const next = structuredClone(current);
+        if (body.action === "add") {
+          const contact = { ...(body.contact as UsefulContact), id: `demo-${Date.now()}` };
+          if (body.directory === "gprmn") next.gprmn.push(contact); else next.pompidou.find(section => section.key === body.section)?.contacts.push(contact);
+        } else if (body.action === "update") {
+          next.pompidou.forEach(section => { section.contacts = section.contacts.map(item => item.id === body.id ? body.contact as UsefulContact : item); });
+          next.gprmn = next.gprmn.map(item => item.id === body.id ? body.contact as UsefulContact : item);
+        } else {
+          next.pompidou.forEach(section => { section.contacts = section.contacts.filter(item => item.id !== body.id); });
+          next.gprmn = next.gprmn.filter(item => item.id !== body.id);
+        }
+        return next;
+      });
+      return;
+    }
+    setContacts(await changeUsefulContact(body));
+  };
+  const adminDialog = (directoryName: "pompidou" | "gprmn", section?: PompidouContactSectionKey) => <>
+    {isAdmin ? <button type="button" className="contact-admin-add" onClick={() => setAddingContact(true)}>＋ Ajouter un contact</button> : null}
+    {isAdmin && (addingContact || editingContact) ? <ContactEditDialog mode={addingContact ? "add" : "edit"} contact={editingContact || undefined} onClose={() => { setAddingContact(false); setEditingContact(null); }} onSave={contact => mutateContact(addingContact ? { action: "add", directory: directoryName, section, contact } : { action: "update", id: editingContact?.id, contact })} onDelete={editingContact ? () => mutateContact({ action: "delete", id: editingContact.id }) : undefined} /> : null}
+  </>;
   if (!contacts) {
     return (
       <section className="useful-contacts-screen" aria-labelledby="useful-contacts-title">
@@ -188,7 +223,8 @@ export function UsefulContactsSection({ initialData, accountId = "" }: UsefulCon
             <span><strong>Envoyer un e-mail à toute l’équipe des RAS</strong><small>{activePompidouSection.contacts.length} destinataires déjà renseignés</small></span>
           </a>
         ) : null}
-        <ContactCards contacts={activePompidouSection.contacts} favorites={favorites} onToggleFavorite={toggleFavorite} />
+        {adminDialog("pompidou", activePompidouSection.key)}
+        <ContactCards contacts={activePompidouSection.contacts} favorites={favorites} onToggleFavorite={toggleFavorite} isAdmin={isAdmin} onEdit={setEditingContact} />
       </section>
     );
   }
@@ -218,7 +254,8 @@ export function UsefulContactsSection({ initialData, accountId = "" }: UsefulCon
           <button className="section-back-hit-area" type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
           <div><span className="step-label">Contacts utiles</span><h2 id="gprmn-contacts-title">Contact GP‑RMN</h2></div>
         </header>
-        <ContactCards contacts={contacts.gprmn} favorites={favorites} onToggleFavorite={toggleFavorite} />
+        {adminDialog("gprmn")}
+        <ContactCards contacts={contacts.gprmn} favorites={favorites} onToggleFavorite={toggleFavorite} isAdmin={isAdmin} onEdit={setEditingContact} />
       </section>
     );
   }
@@ -232,10 +269,10 @@ export function UsefulContactsSection({ initialData, accountId = "" }: UsefulCon
       </div>
       <label className="resource-search-field"><span>Rechercher une personne ou un service</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom ou service" /></label>
       {(() => {
-        const query = searchQuery.trim().toLocaleLowerCase("fr");
+        const query = searchQuery.trim();
         const allContacts = [...contacts.pompidou.flatMap((section) => section.contacts), ...contacts.gprmn];
-        const matches = allContacts.filter((contact) => !query || `${contact.name} ${contact.context || ""}`.toLocaleLowerCase("fr").includes(query)).sort((left, right) => Number(favorites.includes(usefulContactId(right))) - Number(favorites.includes(usefulContactId(left))));
-        return query || favorites.length ? <ContactCards contacts={matches.filter((contact) => query || favorites.includes(usefulContactId(contact)))} favorites={favorites} onToggleFavorite={toggleFavorite} /> : null;
+        const matches = allContacts.filter((contact) => matchesSearch(`${contact.name} ${contact.context || ""}`, query)).sort((left, right) => Number(favorites.includes(usefulContactId(right))) - Number(favorites.includes(usefulContactId(left))));
+        return query || favorites.length ? <ContactCards contacts={matches.filter((contact) => query || favorites.includes(usefulContactId(contact)))} favorites={favorites} onToggleFavorite={toggleFavorite} isAdmin={isAdmin} onEdit={setEditingContact} /> : null;
       })()}
       <div className="useful-contact-directory-grid">
           <button type="button" onClick={() => setDirectory("pompidou")}>

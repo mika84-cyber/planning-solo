@@ -1,0 +1,17 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep contacts utiles sont
+
+[WebServer] (node:2600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 2 workers
+
+(node:8408) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17876) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [mobile] › e2e\app.spec.ts:1961:1 › les contacts utiles sont classés et directement appelables (4.7s)
+  ok 1 [ordinateur] › e2e\app.spec.ts:1961:1 › les contacts utiles sont classés et directement appelables (5.1s)
+
+  2 passed (7.9s)

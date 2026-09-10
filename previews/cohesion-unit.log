@@ -1,0 +1,53 @@
+
+> planning-solo@1.0.0 test
+> vitest run --reporter=dot
+
+
+ RUN  v4.1.11 D:/Downloads/planning-solo
+
+
+Complexité CSS en hausse :
+- Lignes CSS dépasse la limite de 3
+Réutilisez ou simplifiez une règle existante avant d’ajouter une nouvelle surcharge.
+stderr | netlify/tests/feedback.function.test.ts > messagerie privée des idées et signalements > garde le message lorsque l’alerte e-mail échoue
+Alerte de nouveau message non envoyée SMTP indisponible
+
+stderr | netlify/tests/colleagues.function.test.ts > partage des plannings entre collègues > n’affiche pas une invitation comme envoyée lorsque le mail est refusé
+E-mail de partage indisponible Resend 403
+
+stderr | netlify/tests/password-recovery.function.test.ts > fonction de récupération de mot de passe > ne révèle pas si Identity refuse l’adresse demandée
+Planning Solo: récupération de mot de passe indisponible User not found
+
+stderr | netlify/tests/calendar.function.test.ts > API principale du calendrier > confirme par relecture un lot écrit malgré une réponse de stockage perdue
+save-periods: réponse d'écriture perdue, lot confirmé par relecture { count: 1 }
+
+stderr | netlify/tests/calendar.function.test.ts > API principale du calendrier > annule intégralement un lot de périodes réellement incomplet
+save-periods: échec réel du lot { count: 2, rollbackFailed: false, cause: 'Écriture refusée' }
+
+x····························································································································································································································································································································································································································································································································································································································································································
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  cssComplexity.test.mjs > budget de complexité CSS > contrôle la cascade globale et les familles historiquement dupliquées
+Error: Command failed: C:\Program Files\nodejs\node.exe scripts/check-css-complexity.mjs
+
+Complexité CSS en hausse :
+- Lignes CSS dépasse la limite de 3
+Réutilisez ou simplifiez une règle existante avant d’ajouter une nouvelle surcharge.
+
+ ❯ cssComplexity.test.mjs:7:20
+      5| describe("budget de complexité CSS", () => {
+      6|   it("contrôle la cascade globale et les familles historiquement dupli…
+      7|     const output = execFileSync(
+       |                    ^
+      8|       process.execPath,
+      9|       ["scripts/check-css-complexity.mjs"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 107 passed (108)
+      Tests  1 failed | 668 passed (669)
+   Start at  23:19:53
+   Duration  7.41s (transform 5.03s, setup 0ms, import 11.06s, tests 4.26s, environment 16ms)
+

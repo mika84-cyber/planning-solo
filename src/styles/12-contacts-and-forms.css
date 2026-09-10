@@ -20,6 +20,8 @@
 }
 .useful-contact-card {
   grid-template-columns: minmax(210px, 0.55fr) minmax(0, 1.45fr);
+  position: relative;
+  position: relative;
   border-color: rgba(82, 120, 153, 0.42);
   border-left: 5px solid #4a91bd;
   border-radius: 17px;
@@ -27,7 +29,15 @@
   background: rgba(255, 255, 255, 0.97);
   box-shadow: 0 9px 24px rgba(31, 67, 101, 0.09);
 }
+.useful-contact-card > .resource-favorite-button { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; }
+.useful-contact-card > .useful-contact-identity { padding-right: 48px; }
+.useful-contact-card > .useful-contact-actions { margin-top: 44px; }
 .useful-contact-card:nth-child(even) { border-left-color: #d7924e; }
+.useful-contact-card > .resource-favorite-button { position: absolute; top: 10px; right: 10px; }
+.useful-contact-card > .useful-contact-identity { padding-right: 50px; }
+.useful-contact-card > .useful-contact-actions { margin-top: 4px; }
+.contact-admin-edit { position: absolute; top: 10px; right: 62px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #c6d5e3; border-radius: 11px; padding: 0; background: #fff; color: #49648d; font-size: 20px; font-weight: 800; cursor: pointer; }
+.contact-admin-add { width: 100%; min-height: 44px; margin: 0 0 12px; border: 1.5px dashed #91aac3; border-radius: 13px; background: #f4f7fb; color: #315e89; font-weight: 850; cursor: pointer; }
 .useful-contact-identity > span:first-child {
   width: 44px;
   height: 44px;
@@ -86,7 +96,9 @@
 .useful-contact-phone-actions a:last-child:not(:first-child) { background: #3d8a6f; }
 
 @media (max-width: 720px) {
-  .useful-contact-card { grid-template-columns: 1fr; padding: 13px; }
+  .useful-contact-card { grid-template-columns: 1fr; gap: 8px; padding: 13px; }
+  .useful-contact-card > .useful-contact-identity { min-height: 44px; padding-right: 52px; }
+  .useful-contact-card > .useful-contact-actions { margin-top: 0; }
   .useful-contact-actions { grid-template-columns: 1fr; }
   .useful-contact-actions a.useful-contact-email { width: 100%; }
 }
@@ -687,7 +699,7 @@
 .main-menu-drawer > * {
   position: relative;
   z-index: 1;
-}
+}.main-menu-account-card{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:center;gap:12px;margin:0 0 13px;border:1px solid rgba(255,255,255,.32);border-radius:18px;padding:12px;background:linear-gradient(100deg,rgba(11,27,40,.9),rgba(20,42,57,.7));color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.2)}.main-menu-account-card>span{display:grid;width:44px;height:44px;place-items:center;border:1px solid rgba(255,255,255,.45);border-radius:14px;background:#f2e4da;color:#8f4b36;font-size:16px;font-weight:950}.main-menu-account-card>div{display:grid;gap:3px;min-width:0}.main-menu-account-card strong{font-size:15px}.main-menu-account-card small{overflow:hidden;color:rgba(239,246,255,.76);font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.main-menu-save-status{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:10px;margin:0 0 13px;border:1px solid rgba(134,215,184,.48);border-radius:16px;padding:10px 12px;background:linear-gradient(110deg,rgba(21,73,61,.68),rgba(21,54,57,.72));color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.14)}.main-menu-save-status>span{display:grid;width:34px;height:34px;place-items:center;border-radius:11px;background:#dff5ea;color:#17684f;font-size:17px;font-weight:950}.main-menu-save-status>div{display:grid;gap:2px;min-width:0}.main-menu-save-status strong{font-size:13px}.main-menu-save-status small{color:rgba(239,255,248,.76);font-size:10.5px;line-height:1.35}.main-menu-save-status.saving{border-color:rgba(153,199,240,.55);background:linear-gradient(110deg,rgba(28,67,105,.72),rgba(21,54,73,.72))}.main-menu-save-status.offline,.main-menu-save-status.error{border-color:rgba(239,184,147,.55);background:linear-gradient(110deg,rgba(105,56,37,.72),rgba(74,48,43,.72))}.main-menu-save-status.offline>span,.main-menu-save-status.error>span{background:#fff0e5;color:#a4512d}
 
 .main-menu-drawer header {
   align-items: center;
@@ -1165,7 +1177,7 @@
 
 /* Les deux actions courantes restent secondaires ; seul le formulaire CET
    conserve l'accent bleu sur toute sa largeur. */
-.cet-toolbar .primary-action:not(.cet-funding-action) {
+.cet-toolbar .secondary-button {
   border-color: #4f5f73;
   color: #111827;
   background: #fff;
@@ -1411,14 +1423,14 @@
    traitement neutre des autres options. Sa couleur rose reste réservée au
    planning et aux rubriques de suivi. */
 .request-choice .choice-grid > button.other-leave-choice {
-  border-color: var(--line) !important;
-  background: #fafbfd !important;
-  color: var(--text) !important;
+  border-color: color-mix(in srgb, var(--leave-choice-accent) 45%, #d9e1e9) !important;
+  background: color-mix(in srgb, var(--leave-choice-accent) 8%, #fff) !important;
+  color: var(--text) !important; box-shadow: inset 4px 0 0 color-mix(in srgb, var(--leave-choice-accent) 70%, #fff), 0 4px 10px #243b5410 !important;
 }
 
 .request-choice .choice-grid > button.other-leave-choice:hover {
-  border-color: #93a8d1 !important;
-  background: #f5f8ff !important;
+  border-color: var(--leave-choice-accent) !important;
+  background: color-mix(in srgb, var(--leave-choice-accent) 13%, #fff) !important;
 }
 
 /* Divers devient un vrai jour non travaillé : rose, lisible et cohérent dans
@@ -1545,10 +1557,10 @@
    les autres entrées : leur couleur sert ensuite dans le planning. */
 .request-choice .choice-grid > button.sick-leave-choice,
 .request-choice .choice-grid > button.cet-leave-choice {
-  border-color: var(--line) !important;
+  border-color: color-mix(in srgb, var(--leave-choice-accent) 45%, #d9e1e9) !important;
   color: var(--text) !important;
-  background: #fafbfd !important;
-  box-shadow: none !important;
+  background: color-mix(in srgb, var(--leave-choice-accent) 8%, #fff) !important;
+  box-shadow: inset 4px 0 0 color-mix(in srgb, var(--leave-choice-accent) 70%, #fff), 0 4px 10px #243b5410 !important;
 }
 
 /* L'ouverture officielle du CET est l'action principale ; la confirmation
@@ -1929,6 +1941,7 @@
   .useful-contact-card { grid-template-columns: 1fr; padding: 13px; }
   .useful-contact-actions { grid-template-columns: 1fr; }
   .useful-contact-actions a.useful-contact-email { width: 100%; }
+  .useful-contacts-screen .useful-contacts-subheader{grid-template-columns:46px minmax(0,1fr);gap:12px;padding:13px}.useful-contacts-screen .useful-contacts-subheader .section-back-hit-area{width:46px;height:46px}.useful-contacts-screen .useful-contact-card{grid-template-columns:1fr}.useful-contacts-screen .useful-contact-card>.useful-contact-actions{grid-column:1;grid-row:2}.useful-contacts-screen .useful-contact-card-tools{position:absolute;top:12px;right:12px;grid-column:auto;grid-row:auto;margin-top:0}.useful-contacts-screen .useful-contact-card>.useful-contact-identity{padding-right:96px}
 }
 
 /* Sur un téléphone large ou en paysage, le titre raccourci libère une vraie
@@ -2199,3 +2212,4 @@
     height: 58%;
   }
 }
+.useful-contacts-subheader{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:14px;margin:2px 0 20px;padding:14px 16px}.useful-contacts-subheader .section-back-hit-area{position:static;inset:auto;display:grid;place-items:center;width:48px;height:48px;border:1px solid #c9dbea;border-radius:14px;background:linear-gradient(145deg,#f1f8ff,#e4f0fa);box-shadow:0 5px 13px rgba(35,92,145,.1)}.useful-contacts-subheader .section-back-arrow{position:static;width:auto;height:auto;transform:none;background:transparent;color:#235c91;font-size:22px}.useful-contact-card{grid-template-columns:minmax(190px,.55fr) minmax(0,1.45fr);align-items:start}.useful-contact-card>.useful-contact-identity{grid-column:1;grid-row:1;padding-right:0}.useful-contact-card>.useful-contact-actions{grid-column:2;grid-row:1/span 2}.useful-contact-card-tools{display:flex;grid-column:1;grid-row:2;align-items:center;align-self:end;gap:7px;margin-top:12px}.useful-contact-card-tools .contact-admin-edit,.useful-contact-card-tools .resource-favorite-button{position:static;display:grid;place-items:center;width:42px;height:42px;margin:0;border:1px solid #c7d8e6;border-radius:12px;padding:0;background:linear-gradient(145deg,#fff,#f3f8fc);box-shadow:0 4px 11px rgba(31,67,101,.09);color:#496887;font-size:18px;line-height:1;cursor:pointer}.useful-contact-card-tools .resource-favorite-button[aria-pressed=true]{border-color:#e0bd69;background:#fff5d9;color:#c17a00}

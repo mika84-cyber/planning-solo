@@ -48,7 +48,7 @@ export const USEFUL_CONTACTS_DATA: UsefulContactsPayload = {
       contacts: [
         person("Laurence Nida", [{ label: "Bureau", number: "0144784053" }, { label: "Portable", number: "0621688415" }]),
         person("Mathilde Lucchini", [{ label: "Bureau", number: "0144784036" }, { label: "Portable", number: "0662906793" }]),
-        person("John Lorenc", [{ number: "0144784919" }]),
+        person("John Lorenc", [{ number: "0144784919" }, { number: "0614319695" }]),
         person("Magali Cheval", [{ number: "0144784139" }]),
         person("Isabelle Honoré", [{ label: "Bureau", number: "0144781668" }, { label: "Portable", number: "0650621114" }]),
         person("Sarah Rodrigues", [{ label: "Bureau", number: "0144784787" }, { label: "Portable", number: "0662477642" }]),

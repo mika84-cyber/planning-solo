@@ -186,6 +186,23 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(text).toContain("Divers");
   });
 
+  it("retire la légende des couleurs du planning sans congés", async () => {
+    const result = createAnnualPlanningPdf({
+      year: 2026,
+      groups: [1, 2, 3],
+      getDayInfo,
+      wasPompidouHolidayWorked,
+      showColorLegend: false,
+      filenameLabel: "test-sans-conges",
+    });
+    const text = await extractPdfText(await result.blob.arrayBuffer());
+    expect(text).toContain("Année");
+    expect(text).toContain("Groupe");
+    expect(text).not.toContain("COULEURS");
+    expect(text).not.toContain("Congé validé");
+    expect(text).not.toContain("Récupération");
+  });
+
   it("conserve la légende lisible avec le tableau de vacances des trois zones", async () => {
     const result = createAnnualPlanningPdf({
       year: 2026,

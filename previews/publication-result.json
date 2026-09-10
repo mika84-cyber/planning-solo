@@ -1,0 +1,10 @@
+{
+  "site_id": "70b2f61a-a7a1-4d82-a852-3a7f3d9d3860",
+  "site_name": "planning-solo",
+  "deploy_id": "6aa0868f0ebacf93a4494b89",
+  "deploy_url": "https://6aa0868f0ebacf93a4494b89--planning-solo.netlify.app",
+  "logs": "https://app.netlify.com/projects/planning-solo/deploys/6aa0868f0ebacf93a4494b89",
+  "function_logs": "https://app.netlify.com/projects/planning-solo/logs/functions",
+  "edge_function_logs": "https://app.netlify.com/projects/planning-solo/logs/edge-functions",
+  "url": "https://planning-solo.netlify.app"
+}

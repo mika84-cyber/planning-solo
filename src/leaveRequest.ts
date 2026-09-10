@@ -106,7 +106,8 @@ export function normalizeLeaveRequest(body: Record<string, unknown>) {
     const allowed =
       requestKind === "leave"
         ? type === "half"
-        : type === "recovery_half" ||
+        : type === "recovery_day" ||
+          type === "recovery_half" ||
           type === "recovery_hours" ||
           type === "recovery_holiday" ||
           type === "recovery_training";

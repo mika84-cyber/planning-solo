@@ -18,7 +18,7 @@ connexion peut déclencher une alerte privée vers le compte administrateur.
    build`), le dossier publié (`dist`) et les fonctions (`netlify/functions`).
 3. Activer **Netlify Identity** sur le site, puis, dans ses réglages :
    - « Registration » sur **Invite only** ;
-   - inviter l’adresse e-mail de l’administratrice et, si nécessaire, celles
+   - inviter l’adresse e-mail de l’administrateur et, si nécessaire, celles
      des comptes invités autorisés.
 4. Le stockage (Netlify Blobs, magasin `planning-solo`) se crée tout seul au
    premier enregistrement. Aucune variable d'environnement à renseigner.

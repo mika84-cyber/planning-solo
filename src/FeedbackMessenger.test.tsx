@@ -46,7 +46,7 @@ describe("messagerie interne", () => {
     expect(html).toContain("feedback-resolution-backdrop");
   });
 
-  it("affiche un message collectif comme une annonce de l’administratrice", () => {
+  it("affiche un message collectif comme une annonce de l’administrateur", () => {
     const html = renderToStaticMarkup(<FeedbackResolutionAlert notice={{ id: "4", kind: "suggestion", type: "broadcast", message: "Information importante.", createdAt: "2026-09-07" }} onDismiss={() => undefined} />);
     expect(html).toContain("Message de Mika");
     expect(html).toContain("Information importante.");
@@ -54,11 +54,12 @@ describe("messagerie interne", () => {
   });
 
   it("présente le nouveau document dans une alerte centrale", () => {
-    const html = renderToStaticMarkup(<DocumentAnnouncementAlert notice={{ id: "3", documentId: "doc-1", title: "Consignes exposition", folderTitle: "Formulaire Expo", createdAt: "2026-09-07" }} onOpen={() => undefined} />);
-    expect(html).toContain("Nouveau document");
+    const html = renderToStaticMarkup(<DocumentAnnouncementAlert notice={{ id: "3", documentId: "doc-1", title: "Consignes exposition", folderTitle: "Formulaire Expo", createdAt: "2026-09-07" }} onDownload={() => undefined} onLater={() => undefined} />);
+    expect(html).toContain("Document partagé");
     expect(html).toContain("Consignes exposition");
     expect(html).toContain("Formulaire Expo");
-    expect(html).toContain("Voir le document");
+    expect(html).toContain("Télécharger maintenant");
+    expect(html).toContain("Voir plus tard");
     expect(html).toContain("role=\"alertdialog\"");
   });
 });

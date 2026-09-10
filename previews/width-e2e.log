@@ -1,0 +1,26 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep suivent exactement|mon planning et ses réglages|barre complète tient
+
+[WebServer] (node:17848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 2 workers
+
+(node:24496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [ordinateur] › e2e\app.spec.ts:84:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (1.6s)
+  -  3 [ordinateur] › e2e\app.spec.ts:227:1 › la barre complète tient sur un Z Fold fermé
+(node:18156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [ordinateur] › e2e\app.spec.ts:65:1 › les pages et la navigation suivent exactement la largeur de leur en-tête (3.5s)
+(node:14212) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 5 [mobile] › e2e\app.spec.ts:84:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (1.9s)
+  ok 6 [mobile] › e2e\app.spec.ts:227:1 › la barre complète tient sur un Z Fold fermé (1.3s)
+  ok 4 [mobile] › e2e\app.spec.ts:65:1 › les pages et la navigation suivent exactement la largeur de leur en-tête (5.6s)
+
+  1 skipped
+  5 passed (11.2s)

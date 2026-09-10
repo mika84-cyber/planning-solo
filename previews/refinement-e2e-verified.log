@@ -1,0 +1,6 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=4
+
+Error: http://127.0.0.1:5180/ is already used, make sure that nothing is running on the port/url or set reuseExistingServer:true in config.webServer.
+

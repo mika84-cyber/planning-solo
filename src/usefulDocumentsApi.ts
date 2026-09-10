@@ -1,4 +1,23 @@
 export type UsefulDocumentFolderKey = "expo" | "sap" | "brantome";
+export type UsefulDocumentEdit = { id: string; title?: string; deleted?: boolean; href?: string };
+export type UsefulDocumentVersion = { id: string; savedAt: string; filename: string };
+
+export async function getUsefulDocumentVersions(id: string) {
+  return parse<{ versions: UsefulDocumentVersion[] }>(await fetch(`/api/useful-documents?versions=${encodeURIComponent(id)}`, { credentials: 'same-origin', cache: 'no-store' }));
+}
+
+export async function replaceUsefulDocument(id: string, file: File) {
+  if (file.size > 3 * 1024 * 1024) throw new Error('Le document dépasse la taille maximale de 3 Mo.');
+  return parse(await fetch('/api/useful-documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'replace-document', documentId: id, filename: file.name, contentBase64: await fileToBase64(file) }),
+  }));
+}
+
+export async function restoreUsefulDocumentVersion(id: string, versionId: string) {
+  return parse(await fetch('/api/useful-documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'restore-document-version', documentId: id, versionId }),
+  }));
+}
 
 export type SharedUsefulDocument = {
   id: string;
@@ -7,9 +26,12 @@ export type SharedUsefulDocument = {
   format: "PDF" | "DOCX";
   createdAt: string;
   href: string;
+  publishAt?: string;
 };
 
 export type UsefulDocumentAnnouncement = {
+  message?: string;
+  format?: "PDF" | "DOCX";
   id: string;
   documentId: string;
   title: string;
@@ -24,9 +46,27 @@ async function parse<T>(response: Response) {
 }
 
 export async function getSharedUsefulDocuments() {
-  return parse<{ documents: SharedUsefulDocument[] }>(await fetch("/api/useful-documents", {
+  return parse<{ documents: SharedUsefulDocument[]; catalogEdits?: UsefulDocumentEdit[] }>(await fetch("/api/useful-documents", {
     cache: "no-store",
     credentials: "same-origin",
+  }));
+}
+
+export async function getUsefulDocumentRecipients() {
+  return parse<{ recipients: Array<{ id: string; name: string }> }>(await fetch("/api/useful-documents?recipients=1", { cache: "no-store", credentials: "same-origin" }));
+}
+
+export async function shareUsefulDocument(input: { documentId: string; audience: "all" | "selected"; recipientIds: string[]; message: string; publishAt?: string; reminderId?: string }) {
+  return parse<{ accounts: number; inAppAlerts: number; emailsSent: number; scheduled?: boolean }>(await fetch("/api/useful-documents", {
+    method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "share-document", ...input }),
+  }));
+}
+
+export async function editUsefulDocument(documentId: string, action: "rename-document" | "delete-document", title?: string) {
+  return parse<{ title?: string; deleted?: boolean }>(await fetch("/api/useful-documents", {
+    method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action, documentId, title }),
   }));
 }
 
@@ -46,6 +86,10 @@ export async function dismissUsefulDocumentAnnouncement(id: string) {
   }));
 }
 
+export async function markDocumentAnnouncementSeen(id: string) {
+  return parse(await fetch('/api/useful-documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'seen-notification', id }) }));
+}
+
 function fileToBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -60,6 +104,9 @@ export async function addSharedUsefulDocument(input: {
   folder: UsefulDocumentFolderKey;
   file: File;
   notifyGuests: boolean;
+  publishAt?: string;
+  message?: string;
+  recipientIds?: string[];
 }) {
   if (input.file.size > 3 * 1024 * 1024)
     throw new Error("Le document dépasse la taille maximale de 3 Mo.");
@@ -86,6 +133,9 @@ export async function addSharedUsefulDocument(input: {
       contentType: input.file.type,
       contentBase64,
       notifyGuests: input.notifyGuests,
+      publishAt: input.publishAt,
+      message: input.message,
+      recipientIds: input.recipientIds,
     }),
   }));
 }

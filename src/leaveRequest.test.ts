@@ -53,6 +53,7 @@ describe("validation atomique d'une demande de congé", () => {
       group: 3,
       periods: [],
       timed: [
+        { type: "recovery_day", date: "2026-09-02", start: "09:00", end: "10:30" },
         { type: "recovery_half", date: "2026-09-03", start: "09:00", end: "13:00" },
         { type: "recovery_hours", date: "2026-09-04", start: "10:00", end: "12:30" },
         { type: "recovery_holiday", date: "2026-09-05", start: "09:00", end: "17:00" },
@@ -60,6 +61,7 @@ describe("validation atomique d'une demande de congé", () => {
       ],
     });
     expect(result.recoverySelections.map((item) => item.type)).toEqual([
+      "recovery_day",
       "recovery_half",
       "recovery_hours",
       "recovery_holiday",

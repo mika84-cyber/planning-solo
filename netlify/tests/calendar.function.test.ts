@@ -112,18 +112,18 @@ describe("API principale du calendrier", () => {
     expect([...data.keys()].some((key) => key === "entry/2026-08-28")).toBe(false);
   });
 
-  it("enregistre le crédit férié de 3 h 45 d’un mi-temps", async () => {
+  it("enregistre le crédit férié de 4 h d’un mi-temps", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const response = await calendarHandler(request({
       action: "save-entry",
       date: "2026-09-10",
       holidayPay: "recovery",
-      holidayRecoveryMinutes: 225,
+      holidayRecoveryMinutes: 240,
     }));
     expect(response.status).toBe(200);
     expect(data.get("user/user-a/entry/2026-09-10")).toMatchObject({
       holiday_pay: "recovery",
-      holiday_recovery_minutes: 225,
+      holiday_recovery_minutes: 240,
     });
   });
 
@@ -636,7 +636,7 @@ describe("API principale du calendrier", () => {
     expect(savedUses).toHaveLength(1);
   });
 
-  it("refuse une durée de formation non réglementaire avant toute écriture", async () => {
+  it("enregistre la durée de formation choisie manuellement", async () => {
     data.set("user/user-a/overtime/overtime-credit-2026", {
       id: "overtime-credit-2026",
       date: "2026-09-01",
@@ -661,11 +661,11 @@ describe("API principale du calendrier", () => {
         end: "11:00",
       }],
     }));
-    expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({
-      error: "La durée d’une récupération est invalide",
+    expect(response.status).toBe(200);
+    expect(data.get("user/user-a/recovery-use/request-training-invalid-recovery-1")).toMatchObject({
+      minutes: 60,
+      kind: "training",
     });
-    expect(data.has("user/user-a/recovery-use/request-training-invalid-recovery-1")).toBe(false);
   });
 
   it("restaure l’état précédent si une demande atomique échoue en cours d’écriture", async () => {

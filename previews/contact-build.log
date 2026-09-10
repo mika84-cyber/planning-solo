@@ -1,0 +1,48 @@
+
+> planning-solo@1.0.0 build
+> tsc -b && vite build && node scripts/stamp-sw.mjs
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 365 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.77 kB │ gzip:   0.45 kB
+dist/assets/ColleagueRequestNotice-CJ5UVOe4.css       1.01 kB │ gzip:   0.48 kB
+dist/assets/HomeDashboard-BlJCb8fs.css                3.58 kB │ gzip:   1.17 kB
+dist/assets/usefulDocumentAdmin-D9f-NNiF.css          5.61 kB │ gzip:   1.52 kB
+dist/assets/feedbackMessenger-B-xMGlOe.css           13.40 kB │ gzip:   3.30 kB
+dist/assets/ColleaguePlanningPage-BWaj-7x5.css       26.88 kB │ gzip:   5.67 kB
+dist/assets/index-yNprFWT7.css                      353.21 kB │ gzip:  66.11 kB
+dist/assets/usefulDocumentAdmin-bP0Eysys.js           0.47 kB │ gzip:   0.30 kB
+dist/assets/rolldown-runtime-C0FnF6B9.js              1.29 kB │ gzip:   0.71 kB
+dist/assets/usefulDocumentsApi-CnP4qv6l.js            1.84 kB │ gzip:   0.65 kB
+dist/assets/DocumentAnnouncementNotice-DcpachQM.js    1.89 kB │ gzip:   0.98 kB
+dist/assets/cetFormsPdf-Dh7h1sqq.js                   2.29 kB │ gzip:   1.09 kB
+dist/assets/colleaguePlanningPdf-DC_YnK5X.js          2.77 kB │ gzip:   1.44 kB
+dist/assets/ColleagueRequestNotice-DWtjESFB.js        3.71 kB │ gzip:   1.47 kB
+dist/assets/NoteReminderButton-DeDF336U.js            3.71 kB │ gzip:   1.38 kB
+dist/assets/SchoolVacationUi-CTmL1Zog.js              4.45 kB │ gzip:   1.64 kB
+dist/assets/HomeDashboard-CTNDnxG8.js                 6.24 kB │ gzip:   1.95 kB
+dist/assets/PayEstimateDetails-KUQXygV-.js            8.54 kB │ gzip:   2.29 kB
+dist/assets/WorkAccidentSection-CV8KdFHG.js           9.90 kB │ gzip:   3.24 kB
+dist/assets/PayPage-s5KgMFCz.js                      11.65 kB │ gzip:   3.40 kB
+dist/assets/FeedbackMessenger-tyjScSZp.js            12.01 kB │ gzip:   3.86 kB
+dist/assets/UsefulContactsSection-CO3rpf2s.js        12.29 kB │ gzip:   3.59 kB
+dist/assets/planningPdf-D6Uw4Kkv.js                  17.21 kB │ gzip:   6.44 kB
+dist/assets/src-SuYvKHvm.js                          17.24 kB │ gzip:   7.31 kB
+dist/assets/UsefulFormsSection-DipZb4pp.js           18.65 kB │ gzip:   6.10 kB
+dist/assets/ColleaguePlanningPage-BeKqVMBS.js        24.86 kB │ gzip:   6.96 kB
+dist/assets/purify.es-JEAr64Sr.js                    27.12 kB │ gzip:  10.53 kB
+dist/assets/index.es-CkZl-qt9.js                    151.33 kB │ gzip:  48.89 kB
+dist/assets/html2canvas-CqRbOVeq.js                 199.50 kB │ gzip:  46.77 kB
+dist/assets/jspdf.es.min-By0D8jCb.js                399.19 kB │ gzip: 129.63 kB
+dist/assets/index-CRCfHj8X.js                       636.37 kB │ gzip: 187.10 kB
+
+✓ built in 983ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+stamp-sw: CACHE = planning-solo-2aeeff02d2ad; formulaire = demandes-2aeeff02d2ad

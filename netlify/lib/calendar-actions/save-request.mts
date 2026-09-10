@@ -1,5 +1,5 @@
 import { LeaveRequestValidationError, normalizeLeaveRequest } from "../../../src/leaveRequest.ts";
-import { recoveryRequestMinutes, storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
+import { overtimeRecoveryCreditMinutes, recoveryRequestMinutes, storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
 import { addDays, dateKey, fromKey, getDayInfo, LEAVE_ALLOWANCES } from "../../../src/planningLogic.ts";
 import { json, listBlobs, type CalendarEntry, type FormProfile, type LeavePeriod, type LeaveType, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
 import { acquireAtomicLock } from "../calendarAtomic.mts";
@@ -170,7 +170,21 @@ export async function handleSaveRequest(
     const earnedFromOvertime = overtimeValues
       .filter((item): item is OvertimeEntry => Boolean(item))
       .filter((item) => item.disposition === "recovery")
-      .reduce((total, item) => total + item.minutes, 0);
+      .reduce((total, item) => total + overtimeRecoveryCreditMinutes({
+        id: item.id,
+        date: item.date,
+        minutes: item.minutes,
+        dayMinutes: item.day_minutes,
+        nightMinutes: item.night_minutes,
+        disposition: item.disposition,
+        inputMode: item.input_mode,
+        start: item.start,
+        end: item.end,
+        updatedAt: item.updated_at,
+      }, (key) => {
+        const date = fromKey(key);
+        return date.getDay() === 0 || Boolean(getDayInfo(date, normalized.group).holiday);
+      }), 0);
     const earnedFromHolidays = storedHolidayRecoveryCreditMinutes(calendarValues
       .filter((item): item is CalendarEntry => Boolean(item))
       .filter((item) => item.holiday_pay === "recovery"));

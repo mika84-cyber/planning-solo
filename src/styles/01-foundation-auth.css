@@ -1,10 +1,10 @@
 :root {
-  --bg: #efe7dd;
+  --bg: #f2eee8;
   --card: #fffdfa;
   --text: #17283e;
   --muted: #687286;
-  --line: #cdbfae;
-  --accent: #2859b8;
+  --line: #d5dce5;
+  --accent: #49648d;
   --work: #fffefa;
   --off: #000000;
   --training: #b4b4b4;
@@ -19,16 +19,28 @@
   --green: #12a957;
   --blue: #19a7f2;
   --note: #d3943d;
-  --shadow: 0 16px 38px rgba(78, 57, 38, 0.11);
+  --shadow: 0 8px 24px rgba(39, 61, 88, 0.07);
   --surface-card: rgba(255, 253, 249, 0.98);
   --surface-soft: #f4f8fc;
+  --surface-inset: #fcfdff;
+  --border-inset: #b8c7d8;
+  --shadow-inset: 0 3px 10px rgba(39, 61, 88, 0.065);
+  --surface-info: #e5effb;
+  --surface-info-end: #f4f8ff;
+  --border-info: #aac2da;
+  --surface-support: #eee5f8;
+  --surface-support-end: #f8f3fc;
+  --border-support: #c3acd9;
+  --surface-balance: #e0f1eb;
+  --surface-balance-end: #f1f9f5;
+  --border-balance: #9fc8b8;
   --border-card: rgba(91, 111, 132, 0.42);
   --border-control: rgba(100, 124, 150, 0.34);
   --radius-panel: 24px;
   --radius-card: 18px;
   --radius-control: 13px;
-  --shadow-card: 0 10px 26px rgba(39, 61, 88, 0.085);
-  --action-primary: #2b64bf;
+  --shadow-card: 0 7px 20px rgba(39, 61, 88, 0.09);
+  --action-primary: #49648d;
   --action-positive: #287f60;
   --action-warning: #b97725;
   --action-danger: #b83d4f;
@@ -49,8 +61,8 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 8% 0%, rgba(190, 105, 78, 0.15), transparent 32%),
-    linear-gradient(180deg, #fff8ef 0, var(--bg) 430px);
+    radial-gradient(circle at 8% 0%, rgba(190, 162, 137, 0.08), transparent 32%),
+    linear-gradient(180deg, #faf8f4 0, var(--bg) 430px);
   font-family: "Segoe UI Variable", "Segoe UI", Arial, Helvetica, sans-serif;
 }
 button,

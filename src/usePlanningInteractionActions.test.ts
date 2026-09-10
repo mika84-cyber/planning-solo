@@ -16,7 +16,7 @@ describe("interactions du planning", () => {
     expect(source).toEqual(["2026-09-10", "2026-09-12"]);
   });
 
-  it("préremplit une récupération de formation avec la quotité choisie", () => {
+  it("laisse la durée d’une récupération de formation à saisir", () => {
     const start = buildPlanningRequestStart({
       kind: "recovery",
       initialDate: "2026-09-09",
@@ -33,8 +33,6 @@ describe("interactions du planning", () => {
         "2026-09-09": {
           date: "2026-09-09",
           type: "recovery_training",
-          start: "10:00",
-          end: "13:00",
         },
       },
       warningDate: null,

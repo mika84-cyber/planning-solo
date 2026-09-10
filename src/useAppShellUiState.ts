@@ -16,10 +16,7 @@ export function useAppShellUiState() {
   const [approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates] = useState<SharedGrandPalaisEvent[]>([]);
   const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const [mainMenuOpen, setMainMenuOpen] = useState(false);
-  const [guidePromptOpen, setGuidePromptOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const guidePromptCheckedRef = useRef(false);
   const [groupChooserOpen, setGroupChooserOpen] = useState(false);
   const [noteQuery, setNoteQuery] = useState("");
   const [narrowScreen, setNarrowScreen] = useState(() => window.matchMedia("(max-width: 720px)").matches);
@@ -60,8 +57,7 @@ export function useAppShellUiState() {
     quickNoteMode, setQuickNoteMode, notesOpen, setNotesOpen,
     homeSection, setHomeSection, prefetchedContacts, setPrefetchedContacts,
     approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
-    mainMenuOpen, setMainMenuOpen, guidePromptOpen, setGuidePromptOpen,
-    guideOpen, setGuideOpen, guidePromptCheckedRef, groupChooserOpen, setGroupChooserOpen,
+    mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
     noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,

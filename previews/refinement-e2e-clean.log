@@ -1,0 +1,320 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=4
+
+[WebServer] (node:16100) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 156 tests using 4 workers
+
+(node:19936) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10328) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok   2 [ordinateur] › e2e\app.spec.ts:65:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (3.4s)
+  ok   4 [ordinateur] › e2e\app.spec.ts:157:1 › les quatre soldes principaux et les autres congés restent en grilles équilibrées (3.6s)
+  -    5 [ordinateur] › e2e\app.spec.ts:199:1 › la barre complète tient sur un Z Fold fermé
+  ok   3 [ordinateur] › e2e\app.spec.ts:81:1 › les outils de congés sont repliés par défaut sur tous les écrans (4.9s)
+  ok   6 [ordinateur] › e2e\app.spec.ts:404:1 › les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert (3.5s)
+  ok   1 [ordinateur] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (7.1s)
+  ok   8 [ordinateur] › e2e\app.spec.ts:625:1 › l’aide au partage est ouverte seulement lors de la première utilisation (4.1s)
+  ok  10 [ordinateur] › e2e\app.spec.ts:669:1 › une demi-journée reste le prochain jour travaillé et y est précisée (3.0s)
+  ok   9 [ordinateur] › e2e\app.spec.ts:652:1 › une invitation acceptée propose le partage en retour (3.4s)
+  ok  11 [ordinateur] › e2e\app.spec.ts:691:1 › Aujourd’hui conserve le groupe pendant la demi-journée travaillée (1.7s)
+  ok   7 [ordinateur] › e2e\app.spec.ts:454:1 › le partage de planning reste lisible et privé sur téléphone (6.4s)
+  ok  12 [ordinateur] › e2e\app.spec.ts:713:1 › l’accueil signale uniquement les horaires de travail manquants (2.1s)
+  ok  16 [ordinateur] › e2e\app.spec.ts:1096:1 › le planning avec congés se génère avec les catégories d’absence (4.7s)
+  ok  14 [ordinateur] › e2e\app.spec.ts:812:1 › menu, contact administratrice, paie et PDF restent accessibles (8.5s)
+  ok  15 [ordinateur] › e2e\app.spec.ts:1038:1 › la messagerie interne reste privée, compacte et utilisable avec une photo (8.7s)
+  ok  13 [ordinateur] › e2e\app.spec.ts:725:1 › une photo de bulletin est reconnue localement (11.6s)
+  ok  19 [ordinateur] › e2e\app.spec.ts:1279:1 › l’administrateur peut afficher un message collectif sans envoyer d’e-mail (5.8s)
+  ok  17 [ordinateur] › e2e\app.spec.ts:1134:1 › les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement (8.4s)
+  ok  18 [ordinateur] › e2e\app.spec.ts:1251:1 › l’administrateur peut préparer un document et l’alerte invitée ouvre la bonne rubrique (6.6s)
+  -   21 [ordinateur] › e2e\app.spec.ts:1460:1 › Z Fold ouvert : la déclaration d’accident reste lisible sans débordement
+  ok  23 [ordinateur] › e2e\app.spec.ts:1640:1 › le tampon de fermeture conserve la date lisible sur ordinateur et téléphone (3.4s)
+  ok  24 [ordinateur] › e2e\app.spec.ts:1664:1 › les vacances scolaires restent facultatives et respectent la zone choisie (4.5s)
+  ok  20 [ordinateur] › e2e\app.spec.ts:1301:1 › la déclaration d’accident réunit les démarches et marque le planning sans carence (9.9s)
+  ok  25 [ordinateur] › e2e\app.spec.ts:1707:1 › les sigles de congé restent lisibles à côté de l’encadré d’Agnès sur écran fermé (4.0s)
+  ok  22 [ordinateur] › e2e\app.spec.ts:1490:1 › la programmation GP suit l’ordre demandé et sépare les autres espaces (7.5s)
+  ok  26 [ordinateur] › e2e\app.spec.ts:1743:1 › une fermeture exceptionnelle peut être ajoutée puis retirée manuellement (2.8s)
+  ok  27 [ordinateur] › e2e\app.spec.ts:1767:1 › le compte administrateur peut valider seul une mise à jour du Grand Palais (4.0s)
+  ok  31 [ordinateur] › e2e\app.spec.ts:2155:1 › un congé posé sur une formation retire cette date du prochain jour travaillé (2.8s)
+  ok  30 [ordinateur] › e2e\app.spec.ts:2003:1 › l’en-tête, le sélecteur d’affichage et les années sont confortables (5.4s)
+  ok  28 [ordinateur] › e2e\app.spec.ts:1810:1 › les contacts utiles sont classés et directement appelables (7.9s)
+  ok  29 [ordinateur] › e2e\app.spec.ts:1920:1 › un échange exige et modifie toujours ses deux journées ensemble (7.9s)
+  ok  33 [ordinateur] › e2e\app.spec.ts:2170:1 › une fermeture exceptionnelle retire la présence et le prochain jour reste réellement travaillé (2.6s)
+  -   35 [ordinateur] › e2e\app.spec.ts:2272:1 › le balayage mobile navigue entre toutes les rubriques
+  ok  32 [ordinateur] › e2e\app.spec.ts:2162:1 › une formation posée en récupération est retirée du prochain jour travaillé (2.8s)
+  -   34 [ordinateur] › e2e\app.spec.ts:2221:1 › les menus déroulants restent entièrement visibles sur téléphone
+  -   36 [ordinateur] › e2e\app.spec.ts:2298:1 › le balayage du calendrier mobile change seulement de mois
+  -   37 [ordinateur] › e2e\app.spec.ts:2328:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile
+[WebServer] 22:47:25 [vite] (client) [console.warn] Warning:
+[WebServer] 
+[WebServer] DO NOT USE HTTP IN PRODUCTION FOR GOTRUE EVER!
+[WebServer] GoTrue REQUIRES HTTPS to work securely.
+[WebServer] 22:47:25 [vite] (client) [console.warn] Warning:
+[WebServer] 
+[WebServer] DO NOT USE HTTP IN PRODUCTION FOR GOTRUE EVER!
+[WebServer] GoTrue REQUIRES HTTPS to work securely.
+  ok  38 [ordinateur] › e2e\app.spec.ts:2401:1 › le paramètre de démonstration ne donne plus accès à l’application (2.5s)
+  ok  39 [ordinateur] › e2e\app.spec.ts:2408:1 › un compte invité peut demander un nouveau mot de passe (2.9s)
+  ok  40 [ordinateur] › e2e\app.spec.ts:2422:1 › une panne des notifications ne bloque pas l’ouverture de l’application (3.2s)
+  ok  41 [ordinateur] › e2e\app.spec.ts:2437:1 › le compte avertit lorsqu’une nouvelle version est disponible (4.3s)
+  ok  43 [ordinateur] › e2e\app.spec.ts:2566:1 › un solde manuel supérieur à 24 heures est bien enregistré (5.0s)
+  ok  44 [ordinateur] › e2e\app.spec.ts:2589:1 › les heures supplémentaires du dimanche sont acceptées et reconnues (6.7s)
+  ok  42 [ordinateur] › e2e\app.spec.ts:2465:1 › le CET se configure et conserve un historique cohérent (11.6s)
+  ok  45 [ordinateur] › e2e\app.spec.ts:2612:1 › une formation utilise le bon nombre d’heures et apparaît en REC (9.9s)
+  ok  47 [ordinateur] › e2e\app.spec.ts:2725:1 › Divers est explicite et le résumé apparaît avant validation (5.7s)
+  ok  48 [ordinateur] › e2e\app.spec.ts:2759:1 › Divers indique que je ne travaille pas aujourd’hui (2.6s)
+  ok  46 [ordinateur] › e2e\app.spec.ts:2667:1 › les horaires du profil alimentent les propositions de congé et récupération (9.4s)
+  ok  49 [ordinateur] › e2e\app.spec.ts:2783:1 › un férié couvert par une absence est annulé et retiré de la paie (3.7s)
+  ok  51 [ordinateur] › e2e\app.spec.ts:2941:1 › une grève peut être posée directement depuis une case (3.0s)
+  ok  52 [ordinateur] › e2e\app.spec.ts:2953:1 › des CA validés entre deux grèves restent exclus de la retenue (4.0s)
+  ok  54 [ordinateur] › e2e\app.spec.ts:3016:1 › un congé souhaité s’ajoute et se retire sans enregistrer (3.2s)
+  ok  55 [ordinateur] › e2e\app.spec.ts:3032:1 › le congé CET est proposé depuis les demandes et depuis une case (3.7s)
+  ok  53 [ordinateur] › e2e\app.spec.ts:2970:1 › des repos noirs entre deux grèves sont inclus automatiquement dans la retenue (7.1s)
+  ok  56 [ordinateur] › e2e\app.spec.ts:3045:1 › les choix principaux et ceux d’une date suivent l’ordre demandé (4.4s)
+  ok  57 [ordinateur] › e2e\app.spec.ts:3092:1 › la demande guide sans masquer les options avancées (4.2s)
+  ok  50 [ordinateur] › e2e\app.spec.ts:2811:1 › une grève met à jour le planning, les jours travaillés et la paie (14.6s)
+  ok  59 [ordinateur] › e2e\app.spec.ts:3144:1 › une récupération lancée depuis une case suit aussi le calendrier (3.0s)
+  ok  58 [ordinateur] › e2e\app.spec.ts:3109:1 › une récupération ordinaire affiche le cycle sans reproposer Formation (8.5s)
+  ok  62 [ordinateur] › e2e\app.spec.ts:3207:1 › nettoyage et gestion d’un congé utilisent des actions directes (5.5s)
+  ok  64 [ordinateur] › e2e\app.spec.ts:3284:1 › les dates choisies sont préremplies dans le formulaire de congé (5.6s)
+  ok  63 [ordinateur] › e2e\app.spec.ts:3243:1 › les parcours congé, récupération et maladie s’ouvrent correctement (8.3s)
+  -   65 [ordinateur] › e2e\app.spec.ts:3309:1 › la signature enregistrée sur téléphone est synchronisée avec le profil
+  ok  61 [ordinateur] › e2e\app.spec.ts:3186:1 › une demande mixte accepte 3 CA, 2 RTT et 3 CET (11.8s)
+  ok  60 [ordinateur] › e2e\app.spec.ts:3163:1 › les congés mensuels affichent les repères CA RTT et FRA (14.6s)
+  ok  66 [ordinateur] › e2e\app.spec.ts:3352:1 › les détails des soldes séparent les congés pris et à venir (7.2s)
+  -   70 [ordinateur] › e2e\app.spec.ts:3533:1 › Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordement
+  ok  68 [ordinateur] › e2e\app.spec.ts:3486:1 › le mois de paie reste indépendant du planning et suit une alerte datée (7.8s)
+  ok  69 [ordinateur] › e2e\app.spec.ts:3512:1 › le profil de paie d’une nouvelle année peut être confirmé sans modifier un montant (7.5s)
+  ok  67 [ordinateur] › e2e\app.spec.ts:3406:1 › Ma paie couvre août, septembre et octobre avec un calcul détaillé (9.6s)
+  ok  71 [ordinateur] › e2e\app.spec.ts:3553:1 › le tableau de bord de paie ouvre ses deux pages détaillées (4.2s)
+  ok  74 [ordinateur] › e2e\app.spec.ts:3652:1 › le groupe, les notes, les sauvegardes et le retour du formulaire restent accessibles (5.2s)
+  ok  75 [ordinateur] › e2e\app.spec.ts:3681:1 › Mika et Agnès peuvent supprimer chaque note partagée après confirmation (2.7s)
+  ok  73 [ordinateur] › e2e\app.spec.ts:3640:1 › une paie incomplète conduit directement aux champs à renseigner (5.3s)
+  ok  76 [ordinateur] › e2e\form.spec.ts:3:1 › le formulaire modulaire charge ses données et ses commandes (618ms)
+(node:24136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24404) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11320) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  79 [mobile] › e2e\app.spec.ts:65:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (4.6s)
+  ok  78 [mobile] › e2e\app.spec.ts:81:1 › les outils de congés sont repliés par défaut sur tous les écrans (5.7s)
+  ok  80 [mobile] › e2e\app.spec.ts:157:1 › les quatre soldes principaux et les autres congés restent en grilles équilibrées (3.1s)
+  ok  81 [mobile] › e2e\app.spec.ts:199:1 › la barre complète tient sur un Z Fold fermé (3.6s)
+  ok  77 [mobile] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (9.5s)
+  ok  82 [mobile] › e2e\app.spec.ts:404:1 › les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert (4.3s)
+  ok  84 [mobile] › e2e\app.spec.ts:625:1 › l’aide au partage est ouverte seulement lors de la première utilisation (5.6s)
+  ok  85 [mobile] › e2e\app.spec.ts:652:1 › une invitation acceptée propose le partage en retour (4.0s)
+  ok  83 [mobile] › e2e\app.spec.ts:454:1 › le partage de planning reste lisible et privé sur téléphone (9.2s)
+  ok  86 [mobile] › e2e\app.spec.ts:669:1 › une demi-journée reste le prochain jour travaillé et y est précisée (3.2s)
+  ok  87 [mobile] › e2e\app.spec.ts:691:1 › Aujourd’hui conserve le groupe pendant la demi-journée travaillée (3.1s)
+  ok  88 [mobile] › e2e\app.spec.ts:713:1 › l’accueil signale uniquement les horaires de travail manquants (3.0s)
+  x   72 [ordinateur] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat (34.0s)
+  ok  89 [mobile] › e2e\app.spec.ts:725:1 › une photo de bulletin est reconnue localement (8.2s)
+  ok  90 [mobile] › e2e\app.spec.ts:812:1 › menu, contact administratrice, paie et PDF restent accessibles (8.4s)
+(node:22808) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  91 [mobile] › e2e\app.spec.ts:1038:1 › la messagerie interne reste privée, compacte et utilisable avec une photo (7.4s)
+  ok  94 [mobile] › e2e\app.spec.ts:1096:1 › le planning avec congés se génère avec les catégories d’absence (4.8s)
+  ok  92 [mobile] › e2e\app.spec.ts:1134:1 › les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement (7.4s)
+  -   97 [mobile] › e2e\app.spec.ts:1460:1 › Z Fold ouvert : la déclaration d’accident reste lisible sans débordement
+  ok  93 [mobile] › e2e\app.spec.ts:1251:1 › l’administrateur peut préparer un document et l’alerte invitée ouvre la bonne rubrique (7.1s)
+  ok  95 [mobile] › e2e\app.spec.ts:1279:1 › l’administrateur peut afficher un message collectif sans envoyer d’e-mail (7.4s)
+  ok  99 [mobile] › e2e\app.spec.ts:1640:1 › le tampon de fermeture conserve la date lisible sur ordinateur et téléphone (3.4s)
+  ok 100 [mobile] › e2e\app.spec.ts:1664:1 › les vacances scolaires restent facultatives et respectent la zone choisie (4.3s)
+  ok  96 [mobile] › e2e\app.spec.ts:1301:1 › la déclaration d’accident réunit les démarches et marque le planning sans carence (8.1s)
+  ok 101 [mobile] › e2e\app.spec.ts:1707:1 › les sigles de congé restent lisibles à côté de l’encadré d’Agnès sur écran fermé (4.5s)
+  ok  98 [mobile] › e2e\app.spec.ts:1490:1 › la programmation GP suit l’ordre demandé et sépare les autres espaces (11.1s)
+  ok 103 [mobile] › e2e\app.spec.ts:1767:1 › le compte administrateur peut valider seul une mise à jour du Grand Palais (3.8s)
+  ok 102 [mobile] › e2e\app.spec.ts:1743:1 › une fermeture exceptionnelle peut être ajoutée puis retirée manuellement (5.6s)
+  ok 107 [mobile] › e2e\app.spec.ts:2155:1 › un congé posé sur une formation retire cette date du prochain jour travaillé (2.9s)
+  ok 104 [mobile] › e2e\app.spec.ts:1810:1 › les contacts utiles sont classés et directement appelables (7.0s)
+  ok 106 [mobile] › e2e\app.spec.ts:2003:1 › l’en-tête, le sélecteur d’affichage et les années sont confortables (4.0s)
+  ok 105 [mobile] › e2e\app.spec.ts:1920:1 › un échange exige et modifie toujours ses deux journées ensemble (6.1s)
+  ok 108 [mobile] › e2e\app.spec.ts:2162:1 › une formation posée en récupération est retirée du prochain jour travaillé (2.7s)
+  ok 109 [mobile] › e2e\app.spec.ts:2170:1 › une fermeture exceptionnelle retire la présence et le prochain jour reste réellement travaillé (3.0s)
+  ok 112 [mobile] › e2e\app.spec.ts:2298:1 › le balayage du calendrier mobile change seulement de mois (3.3s)
+  ok 111 [mobile] › e2e\app.spec.ts:2272:1 › le balayage mobile navigue entre toutes les rubriques (4.6s)
+[WebServer] 22:49:23 [vite] (client) [console.warn] Warning:
+[WebServer] 
+[WebServer] DO NOT USE HTTP IN PRODUCTION FOR GOTRUE EVER!
+[WebServer] GoTrue REQUIRES HTTPS to work securely.
+  ok 114 [mobile] › e2e\app.spec.ts:2401:1 › le paramètre de démonstration ne donne plus accès à l’application (2.3s)
+[WebServer] 22:49:24 [vite] (client) [console.warn] Warning:
+[WebServer] 
+[WebServer] DO NOT USE HTTP IN PRODUCTION FOR GOTRUE EVER!
+[WebServer] GoTrue REQUIRES HTTPS to work securely.
+  ok 115 [mobile] › e2e\app.spec.ts:2408:1 › un compte invité peut demander un nouveau mot de passe (2.7s)
+  ok 110 [mobile] › e2e\app.spec.ts:2221:1 › les menus déroulants restent entièrement visibles sur téléphone (9.5s)
+  ok 113 [mobile] › e2e\app.spec.ts:2328:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile (6.6s)
+  ok 116 [mobile] › e2e\app.spec.ts:2422:1 › une panne des notifications ne bloque pas l’ouverture de l’application (3.4s)
+  ok 119 [mobile] › e2e\app.spec.ts:2566:1 › un solde manuel supérieur à 24 heures est bien enregistré (4.5s)
+  ok 117 [mobile] › e2e\app.spec.ts:2437:1 › le compte avertit lorsqu’une nouvelle version est disponible (5.4s)
+  ok 120 [mobile] › e2e\app.spec.ts:2589:1 › les heures supplémentaires du dimanche sont acceptées et reconnues (4.6s)
+  ok 118 [mobile] › e2e\app.spec.ts:2465:1 › le CET se configure et conserve un historique cohérent (8.8s)
+  ok 124 [mobile] › e2e\app.spec.ts:2759:1 › Divers indique que je ne travaille pas aujourd’hui (3.3s)
+  ok 123 [mobile] › e2e\app.spec.ts:2725:1 › Divers est explicite et le résumé apparaît avant validation (5.8s)
+  ok 122 [mobile] › e2e\app.spec.ts:2667:1 › les horaires du profil alimentent les propositions de congé et récupération (10.4s)
+  ok 125 [mobile] › e2e\app.spec.ts:2783:1 › un férié couvert par une absence est annulé et retiré de la paie (3.5s)
+  ok 121 [mobile] › e2e\app.spec.ts:2612:1 › une formation utilise le bon nombre d’heures et apparaît en REC (12.1s)
+  ok 127 [mobile] › e2e\app.spec.ts:2941:1 › une grève peut être posée directement depuis une case (3.7s)
+  ok 128 [mobile] › e2e\app.spec.ts:2953:1 › des CA validés entre deux grèves restent exclus de la retenue (4.5s)
+  ok 126 [mobile] › e2e\app.spec.ts:2811:1 › une grève met à jour le planning, les jours travaillés et la paie (10.8s)
+  ok 130 [mobile] › e2e\app.spec.ts:3016:1 › un congé souhaité s’ajoute et se retire sans enregistrer (4.2s)
+  ok 131 [mobile] › e2e\app.spec.ts:3032:1 › le congé CET est proposé depuis les demandes et depuis une case (4.2s)
+  ok 129 [mobile] › e2e\app.spec.ts:2970:1 › des repos noirs entre deux grèves sont inclus automatiquement dans la retenue (9.0s)
+  ok 132 [mobile] › e2e\app.spec.ts:3045:1 › les choix principaux et ceux d’une date suivent l’ordre demandé (3.8s)
+  ok 133 [mobile] › e2e\app.spec.ts:3092:1 › la demande guide sans masquer les options avancées (4.0s)
+  ok 135 [mobile] › e2e\app.spec.ts:3144:1 › une récupération lancée depuis une case suit aussi le calendrier (3.3s)
+  ok 138 [mobile] › e2e\app.spec.ts:3207:1 › nettoyage et gestion d’un congé utilisent des actions directes (4.0s)
+  ok 134 [mobile] › e2e\app.spec.ts:3109:1 › une récupération ordinaire affiche le cycle sans reproposer Formation (10.4s)
+  ok 136 [mobile] › e2e\app.spec.ts:3163:1 › les congés mensuels affichent les repères CA RTT et FRA (11.2s)
+  ok 137 [mobile] › e2e\app.spec.ts:3186:1 › une demande mixte accepte 3 CA, 2 RTT et 3 CET (10.8s)
+  ok 140 [mobile] › e2e\app.spec.ts:3284:1 › les dates choisies sont préremplies dans le formulaire de congé (4.8s)
+  ok 141 [mobile] › e2e\app.spec.ts:3309:1 › la signature enregistrée sur téléphone est synchronisée avec le profil (2.3s)
+  ok 139 [mobile] › e2e\app.spec.ts:3243:1 › les parcours congé, récupération et maladie s’ouvrent correctement (7.2s)
+  ok 142 [mobile] › e2e\app.spec.ts:3352:1 › les détails des soldes séparent les congés pris et à venir (6.0s)
+  -  146 [mobile] › e2e\app.spec.ts:3533:1 › Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordement
+  ok 144 [mobile] › e2e\app.spec.ts:3486:1 › le mois de paie reste indépendant du planning et suit une alerte datée (6.0s)
+  ok 143 [mobile] › e2e\app.spec.ts:3406:1 › Ma paie couvre août, septembre et octobre avec un calcul détaillé (7.5s)
+  ok 145 [mobile] › e2e\app.spec.ts:3512:1 › le profil de paie d’une nouvelle année peut être confirmé sans modifier un montant (7.0s)
+  ok 149 [mobile] › e2e\app.spec.ts:3640:1 › une paie incomplète conduit directement aux champs à renseigner (4.3s)
+  ok 147 [mobile] › e2e\app.spec.ts:3553:1 › le tableau de bord de paie ouvre ses deux pages détaillées (6.4s)
+  ok 152 [mobile] › e2e\form.spec.ts:3:1 › le formulaire modulaire charge ses données et ses commandes (1.7s)
+  ok 151 [mobile] › e2e\app.spec.ts:3681:1 › Mika et Agnès peuvent supprimer chaque note partagée après confirmation (3.2s)
+  ok 150 [mobile] › e2e\app.spec.ts:3652:1 › le groupe, les notes, les sauvegardes et le retour du formulaire restent accessibles (7.5s)
+(node:1328) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24604) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14012) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 153 [z-fold] › e2e\app.spec.ts:2328:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile (6.3s)
+  ok 155 [z-fold] › e2e\app.spec.ts:404:1 › les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert (5.9s)
+  ok 154 [z-fold] › e2e\app.spec.ts:1460:1 › Z Fold ouvert : la déclaration d’accident reste lisible sans débordement (7.5s)
+  ok 156 [z-fold] › e2e\app.spec.ts:3533:1 › Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordement (4.5s)
+  x  148 [mobile] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat (32.4s)
+
+
+  1) [ordinateur] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.colleague-groups-directory').locator(':scope > summary')
+        - locator resolved to <summary>…</summary>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <button class="" type="button" title="Documents">…</button> from <div id="root">…</div> subtree intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <button class="" type="button" title="Documents">…</button> from <div id="root">…</div> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        57 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <button class="" type="button" title="Documents">…</button> from <div id="root">…</div> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+
+
+      3626 |   });
+      3627 |   const directory = page.locator(".colleague-groups-directory");
+    > 3628 |   await directory.locator(":scope > summary").click();
+           |                                               ^
+      3629 |   await directory.getByRole("searchbox").fill("Camille");
+      3630 |   await expect(directory.locator(".colleague-groups-results")).toHaveText("Chargement des noms…");
+      3631 |   await expect.poll(() => Boolean(respond)).toBe(true);
+        at D:\Downloads\planning-solo\e2e\app.spec.ts:3628:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [mobile] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.colleague-groups-directory').locator(':scope > summary')
+        - locator resolved to <summary>…</summary>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <button class="" type="button">…</button> from <div id="root">…</div> subtree intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <button class="" type="button">…</button> from <div id="root">…</div> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        53 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <button class="" type="button">…</button> from <div id="root">…</div> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+
+
+      3626 |     document.body.append(host);
+      3627 |     (dom.default || dom).createRoot(host).render((React.default || React).createElement(component.ColleagueGroupsDirectory));
+    > 3628 |   });
+           |      ^
+      3629 |   const directory = page.locator(".colleague-groups-directory");
+      3630 |   await directory.locator(":scope > summary").click();
+      3631 |   await directory.getByRole("searchbox").fill("Camille");
+        at D:\Downloads\planning-solo\e2e\app.spec.ts:3628:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [ordinateur] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+    [mobile] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+  10 skipped
+  144 passed (4.2m)

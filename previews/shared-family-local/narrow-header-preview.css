@@ -1,0 +1,26 @@
+/* Prévisualisation ciblée pour les téléphones très étroits (type Z Fold fermé). */
+@media (max-width: 370px) {
+  .shared-photo-header {
+    background:
+      radial-gradient(ellipse at 34% 43%, rgba(255, 244, 228, .14), rgba(255, 255, 255, 0) 42%),
+      linear-gradient(90deg, rgba(17, 13, 15, .43), rgba(17, 13, 15, .02) 56%, rgba(17, 13, 15, .12)),
+      #4a3129 url("/shared-header-family.png") calc(50% - 10px) center / auto 100% no-repeat;
+  }
+
+  .shared-photo-header .top-header-title {
+    align-self: end;
+    max-width: 132px;
+    padding-left: 10px;
+  }
+
+  .shared-photo-header .top-header-title h1 {
+    max-width: 118px;
+    font-size: 0;
+  }
+
+  .shared-photo-header .top-header-title h1::after {
+    content: "Notre planning";
+    font-size: 20px;
+    line-height: 1.04;
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import "./grandPalaisProgram.css";
 import { getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
+import { matchesSearch } from "./searchMatching";
 import type {
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
@@ -439,10 +440,18 @@ function venueYears(
     .sort((left, right) => left - right) as GrandPalaisProgramYear[];
 }
 
+export function grandPalaisClock(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const part = (type: string) => parts.find(item => item.type === type)!.value;
+  return { today: `${part("year")}-${part("month")}-${part("day")}`, openingReady: Number(part("hour")) * 60 + Number(part("minute")) >= 5 };
+}
+
 export function isGrandPalaisEntryCurrent(
   entry: GrandPalaisProgramEntry,
   today = new Date().toISOString().slice(0, 10),
+  openingReady = true,
 ) {
+  if (entry.startsOn === today && !openingReady) return false;
   return entry.currentlyOpen === true
     || Boolean(entry.startsOn && entry.endsOn && entry.startsOn <= today && today <= entry.endsOn);
 }
@@ -456,16 +465,18 @@ function dayDistance(from: string, to: string) {
 export function grandPalaisEntryStatus(
   entry: GrandPalaisProgramEntry,
   today = new Date().toISOString().slice(0, 10),
+  openingReady = true,
 ) {
   if (entry.uncertain || (!entry.startsOn && entry.currentlyOpen !== true))
     return { label: "À confirmer", detail: "" };
-  if (isGrandPalaisEntryCurrent(entry, today)) {
+  if (isGrandPalaisEntryCurrent(entry, today, openingReady)) {
     const remaining = entry.endsOn ? Math.max(0, dayDistance(today, entry.endsOn)) : null;
     return {
       label: "En cours",
       detail: remaining === null ? "" : remaining === 0 ? "Dernier jour" : `${remaining} jour${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}`,
     };
   }
+  if (entry.startsOn === today && !openingReady) return { label: "Prochainement", detail: "Commence aujourd’hui à 00 h 05" };
   if (entry.startsOn && entry.startsOn > today) {
     const beforeOpening = dayDistance(today, entry.startsOn);
     return {
@@ -476,8 +487,21 @@ export function grandPalaisEntryStatus(
   return { label: "À confirmer", detail: "" };
 }
 
-export function GrandPalaisProgramSection() {
-  const today = new Date().toISOString().slice(0, 10);
+export function GrandPalaisProgramSection({ guestPreview = false }: { guestPreview?: boolean }) {
+  const [clock, setClock] = useState(() => grandPalaisClock());
+  const { today, openingReady } = clock;
+  useEffect(() => {
+    const refresh = () => setClock(previous => {
+      const next = grandPalaisClock();
+      return previous.today === next.today && previous.openingReady === next.openingReady ? previous : next;
+    });
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => { refresh(); timer = setTimeout(tick, 60_000 - Date.now() % 60_000); };
+    tick();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { clearTimeout(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, []);
   const [sharedPayload, setSharedPayload] = useState<GrandPalaisProgramPayload | null>(null);
   const [reviewBusy, setReviewBusy] = useState("");
   const [reviewError, setReviewError] = useState("");
@@ -499,9 +523,9 @@ export function GrandPalaisProgramSection() {
   const [selectedYear, setSelectedYear] = useState<GrandPalaisProgramYear>(2026);
   const venue = program[selectedVenueKey] ?? program.nef;
   const years = useMemo(() => venueYears(selectedVenueKey, today, program), [selectedVenueKey, today, program]);
-  const normalizedSearch = searchQuery.trim().toLocaleLowerCase("fr");
+  const normalizedSearch = searchQuery.trim();
   const entries = (venue.schedule[selectedYear] ?? []).filter((entry) => isGrandPalaisEntryVisible(entry, today)
-    && (!normalizedSearch || entry.title.toLocaleLowerCase("fr").includes(normalizedSearch)));
+    && matchesSearch(entry.title, normalizedSearch));
   const interExhibitionPeriods = useMemo(() => calculateInterExhibitionPeriods(today, program), [today, program]);
   const allEntries = useMemo(() => {
     const seen = new Set<string>();
@@ -517,8 +541,8 @@ export function GrandPalaisProgramSection() {
     });
   }, [program, today]);
   const overviewEntries = allEntries.filter(({ entry }) => {
-    if (normalizedSearch && !entry.title.toLocaleLowerCase("fr").includes(normalizedSearch)) return false;
-    return programView === "now" ? isGrandPalaisEntryCurrent(entry, today) : Boolean(entry.startsOn && entry.startsOn > today);
+    if (!matchesSearch(entry.title, normalizedSearch)) return false;
+    return programView === "now" ? isGrandPalaisEntryCurrent(entry, today, openingReady) : Boolean(entry.startsOn && entry.startsOn >= today && !isGrandPalaisEntryCurrent(entry, today, openingReady));
   }).sort((left, right) => (left.entry.startsOn ?? "9999").localeCompare(right.entry.startsOn ?? "9999"));
 
   useEffect(() => {
@@ -565,7 +589,7 @@ export function GrandPalaisProgramSection() {
         </div>
       </div>
 
-      {sharedPayload?.isAdmin && sharedPayload.pending.length ? (
+      {!guestPreview && sharedPayload?.isAdmin && sharedPayload.pending.length ? (
         <section className="grand-palais-admin-alerts" aria-labelledby="grand-palais-alerts-title">
           <div>
             <span className="step-label">Réservé à votre compte</span>
@@ -620,6 +644,7 @@ export function GrandPalaisProgramSection() {
             role="tab"
             aria-selected={primaryChoice === venueKey}
             className={primaryChoice === venueKey ? "active" : ""}
+            style={grandPalaisVenueStyle(venueKey)}
             onClick={() => selectVenue(venueKey)}
           >
             <span>{program[venueKey].label}</span>
@@ -647,6 +672,7 @@ export function GrandPalaisProgramSection() {
                 role="tab"
                 aria-selected={otherVenue === venueKey}
                 className={otherVenue === venueKey ? "active" : ""}
+                style={grandPalaisVenueStyle(venueKey)}
                 onClick={() => selectOtherVenue(venueKey)}
               >
                 {program[venueKey].label}
@@ -685,7 +711,7 @@ export function GrandPalaisProgramSection() {
           <div className="useful-expo-schedule-heading"><h3>{programView === "now" ? "Ouvert en ce moment" : "Prochaines ouvertures"}</h3><p>Tous les espaces sont réunis dans cette vue.</p></div>
           <div className="useful-expo-timeline">
             {overviewEntries.length ? overviewEntries.map(({ entry, venueKey, venueLabel }) => {
-              const status = grandPalaisEntryStatus(entry, today);
+              const status = grandPalaisEntryStatus(entry, today, openingReady);
               return <article key={`${venueKey}-${entry.title}-${entry.period}`} data-venue={venueKey} data-status={status.label} style={grandPalaisVenueStyle(venueKey)}><span className="useful-expo-timeline-mark" aria-hidden="true" /><div><small>{venueLabel} · {entry.period}</small><strong>{entry.title}</strong>{entry.details ? <p>{entry.details}</p> : null}{safeGrandPalaisUrl(entry.officialUrl) ? <a href={safeGrandPalaisUrl(entry.officialUrl)} target="_blank" rel="noreferrer">Voir le site officiel</a> : null}</div><em>{status.label}</em></article>;
             }) : <p className="empty-state">Aucune exposition ne correspond à cette vue.</p>}
           </div>
@@ -713,7 +739,7 @@ export function GrandPalaisProgramSection() {
 
         <div className="useful-expo-timeline" role="tabpanel" aria-label={`${venue.label} - ${selectedYear}`}>
           {entries.map((entry) => {
-            const status = grandPalaisEntryStatus(entry, today);
+            const status = grandPalaisEntryStatus(entry, today, openingReady);
             return (
               <article
                 key={`${entry.title}-${entry.period}`}

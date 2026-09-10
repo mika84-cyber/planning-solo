@@ -6,6 +6,7 @@ import {
   calculateInterExhibitionPeriods,
   describeInterExhibitionPeriod,
   grandPalaisEntryStatus,
+  grandPalaisClock,
   grandPalaisVenuePalette,
   isGrandPalaisEntryCurrent,
   isGrandPalaisEntryVisible,
@@ -14,6 +15,21 @@ import {
 } from "./GrandPalaisProgramSection";
 
 describe("programmation du Grand Palais", () => {
+  it("bascule à 00 h 05 heure de Paris en été comme en hiver, pour tous les espaces", () => {
+    for (const [before, after] of [["2026-09-22T22:04:59Z", "2026-09-22T22:05:00Z"], ["2026-01-22T23:04:59Z", "2026-01-22T23:05:00Z"]]) {
+      const early = grandPalaisClock(new Date(before));
+      const ready = grandPalaisClock(new Date(after));
+      expect(early.openingReady).toBe(false);
+      expect(ready.openingReady).toBe(true);
+      for (const venue of [...Object.keys(GRAND_PALAIS_PROGRAM), "other:new"]) {
+        const entry = { title: venue, period: "", startsOn: ready.today, endsOn: ready.today };
+        expect(isGrandPalaisEntryCurrent(entry, early.today, early.openingReady)).toBe(false);
+        expect(isGrandPalaisEntryCurrent(entry, ready.today, ready.openingReady)).toBe(true);
+        expect(grandPalaisEntryStatus(entry, early.today, false).label).toBe("Prochainement");
+      }
+      expect(isGrandPalaisEntryCurrent({ title: "Déjà ouverte", period: "", startsOn: "2025-01-01", endsOn: ready.today }, early.today, false)).toBe(true);
+    }
+  });
   it("ouvre sur les expositions en cours et propose les quatre vues", () => {
     const html = renderToStaticMarkup(<GrandPalaisProgramSection />);
     expect(html).toContain("En ce moment");

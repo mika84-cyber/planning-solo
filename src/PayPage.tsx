@@ -1,33 +1,12 @@
-import { useEffect, type ReactNode, type TouchEventHandler } from "react";
+import { useEffect, useState, type ReactNode, type TouchEventHandler } from "react";
 import { ChoicePicker } from "./ChoicePicker";
+import { ClockTimePicker } from "./ClockTimePicker";
 import { PayDashboard, type PayDashboardVariable } from "./PayDashboard";
 import { PAY_STATUS_OPTIONS, type PayStatus } from "./appModel";
 import { WORK_QUOTA_OPTIONS, type WorkQuota, type WorkSchedule } from "./overtime";
 import { MONTHS } from "./planningLogic";
 
 export type PayScreen = "overview" | "allowances" | "payslip";
-
-const WORK_HOURS = Array.from({ length: 11 }, (_, index) => String(index + 9).padStart(2, "0"));
-const WORK_MINUTES = ["00", "15", "30", "45"];
-
-function WorkTimePicker({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  const [hour = "09", minute = "00"] = value.split(":");
-  const labelId = `pay-work-${label === "Heure de début" ? "start" : "end"}`;
-  return (
-    <div className="pay-work-time-field">
-      <span id={labelId}>{label}</span>
-      <span className="pay-work-time-picker" role="group" aria-labelledby={labelId}>
-        <select aria-label={`${label} — heures`} value={hour} onChange={(event) => onChange(`${event.target.value}:${minute}`)}>
-          {WORK_HOURS.map((option) => <option key={option} value={option}>{Number(option)} h</option>)}
-        </select>
-        <b aria-hidden="true">:</b>
-        <select aria-label={`${label} — minutes`} value={minute} onChange={(event) => onChange(`${hour}:${event.target.value}`)}>
-          {WORK_MINUTES.map((option) => <option key={option} value={option}>{option}</option>)}
-        </select>
-      </span>
-    </div>
-  );
-}
 
 type PayPageProps = {
   screen: PayScreen;
@@ -44,6 +23,8 @@ type PayPageProps = {
   grossComplete: boolean;
   net: number | null;
   profileLabel: string;
+  missingFields?: string[];
+  onCompleteEstimate?: () => void;
   reliability: { tone: "exact" | "estimated" | "incomplete"; label: string; detail: string };
   variables: PayDashboardVariable[];
   monthSlide: string;
@@ -69,11 +50,22 @@ type PayPageProps = {
 export function PayPage({
   screen, month, year, profileOpen, profileFocusRequested, settingsOpen, workQuota, workSchedule, status,
   netEstimateComplete, gross, grossComplete, net, profileLabel,
+  missingFields, onCompleteEstimate,
   reliability, variables, monthSlide, allowancesContent, estimateContent,
   verificationContent, settingsContent, onScreenChange, onToggleProfile, onProfileFocused,
   onToggleSettings, onWorkQuotaChange, onWorkScheduleChange, onStatusChange, onPreviousMonth,
   onSaveProfile, onNextMonth, onToday, onTouchStart, onTouchEnd,
 }: PayPageProps) {
+  const [focusMissing, setFocusMissing] = useState(false);
+  useEffect(() => {
+    if (!focusMissing || !settingsOpen) return;
+    const panel = document.querySelector<HTMLElement>(".pay-elements-card");
+    if (panel) {
+      panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      panel.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    }
+    setFocusMissing(false);
+  }, [focusMissing, settingsOpen]);
   useEffect(() => {
     if (!profileFocusRequested || screen !== "overview" || !profileOpen) return;
     const frame = window.requestAnimationFrame(() => {
@@ -113,7 +105,7 @@ export function PayPage({
           <fieldset className="pay-work-schedule">
             <legend>Sur quelle plage horaire travaillez-vous ?</legend>
             <p>L’application utilisera cette plage pour proposer des horaires adaptés aux congés et récupérations.</p>
-            {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <WorkTimePicker key={key} label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule[key]} onChange={(value) => onWorkScheduleChange({ ...workSchedule, [key]: value })} />)}
+            {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <ClockTimePicker key={key} className="pay-work-time-field" pickerClassName="pay-work-time-picker" label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule[key]} onChange={(value) => onWorkScheduleChange({ ...workSchedule, [key]: value })} />)}
           </fieldset>
           <button type="button" className="primary-action pay-profile-save" onClick={onSaveProfile}>Enregistrer le profil</button>
         </div>
@@ -129,6 +121,7 @@ export function PayPage({
             key={`${year}-${month}`}
             month={month} year={year} gross={gross} grossComplete={grossComplete}
             net={net} profileLabel={profileLabel} reliability={reliability}
+            missingFields={missingFields} onCompleteEstimate={() => { setFocusMissing(true); onCompleteEstimate?.(); }}
             variables={variables} verificationContent={verificationContent}
             profileContent={profileContent} settingsContent={settingsContent} settingsOpen={settingsOpen}
             onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday}

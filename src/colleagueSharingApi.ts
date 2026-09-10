@@ -30,6 +30,7 @@ export type SharedColleaguePlanning = {
 };
 
 let cachedColleagueGroups: import("./colleagueGroups").ColleagueGroup[] | null = null;
+export function clearColleagueGroupsCache() { cachedColleagueGroups = null; }
 
 async function parse<T>(response: Response) {
   const body = (await response.json().catch(() => null)) as ({ error?: string } & T) | null;
@@ -46,7 +47,7 @@ export async function getColleagueDirectory() {
 export async function getColleagueGroups() {
   if (cachedColleagueGroups) return cachedColleagueGroups;
   const response = await parse<{ groups: import("./colleagueGroups").ColleagueGroup[] }>(
-    await fetch("/api/colleague-groups", { cache: "no-store", credentials: "same-origin" }),
+    await fetch("/api/colleague-groups", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(15000) }),
   );
   cachedColleagueGroups = response.groups;
   return response.groups;
@@ -54,6 +55,7 @@ export async function getColleagueGroups() {
 
 export async function getSharedColleaguePlanning(ownerId: string) {
   return parse<SharedColleaguePlanning>(await fetch(`/api/colleagues?ownerId=${encodeURIComponent(ownerId)}`, {
+    signal: AbortSignal.timeout(15000),
     cache: "no-store",
     credentials: "same-origin",
   }));

@@ -1,0 +1,33 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=3 --grep mon planning et ses réglages|Z Fold ouvert garde|barre complète tient|accessibilité grave
+
+[WebServer] (node:1404) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 9 tests using 3 workers
+
+(node:11656) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  2 [ordinateur] › e2e\app.spec.ts:208:1 › la barre complète tient sur un Z Fold fermé
+  -  4 [ordinateur] › e2e\app.spec.ts:2337:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile
+(node:17036) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 3 [ordinateur] › e2e\app.spec.ts:65:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (2.6s)
+(node:19492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 6 [mobile] › e2e\app.spec.ts:65:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (2.0s)
+  ok 7 [mobile] › e2e\app.spec.ts:208:1 › la barre complète tient sur un Z Fold fermé (2.0s)
+  ok 1 [ordinateur] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (10.1s)
+(node:22912) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 8 [mobile] › e2e\app.spec.ts:2337:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile (3.7s)
+  ok 5 [mobile] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (9.9s)
+  ok 9 [z-fold] › e2e\app.spec.ts:2337:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile (3.3s)
+
+  2 skipped
+  7 passed (19.7s)

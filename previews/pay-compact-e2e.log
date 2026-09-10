@@ -1,0 +1,17 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep une paie incomplète
+
+[WebServer] (node:14140) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 2 workers
+
+(node:7852) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16344) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [mobile] › e2e\app.spec.ts:3642:1 › une paie incomplète conduit directement aux champs à renseigner (3.5s)
+  ok 2 [ordinateur] › e2e\app.spec.ts:3642:1 › une paie incomplète conduit directement aux champs à renseigner (4.5s)
+
+  2 passed (8.6s)

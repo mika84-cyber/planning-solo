@@ -1,0 +1,23 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep partage un document|contacts utiles sont
+
+[WebServer] (node:25152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 2 workers
+
+(node:1596) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16336) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [ordinateur] › e2e\app.spec.ts:1961:1 › les contacts utiles sont classés et directement appelables (4.1s)
+(node:17104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [ordinateur] › e2e\app.spec.ts:1362:1 › l’administrateur partage un document et l’alerte invitée ouvre la bonne rubrique (7.8s)
+(node:25064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 3 [mobile] › e2e\app.spec.ts:1362:1 › l’administrateur partage un document et l’alerte invitée ouvre la bonne rubrique (6.7s)
+  ok 4 [mobile] › e2e\app.spec.ts:1961:1 › les contacts utiles sont classés et directement appelables (3.8s)
+
+  4 passed (18.4s)

@@ -8,12 +8,13 @@ import {
   trainingRecoveryTimes,
   minutesLabel,
   nextPayPeriod,
+  overtimeRecoveryCreditMinutes,
   splitOvertimeRange,
   type OvertimeEntry,
   type RecoveryUse,
   type WorkQuota,
 } from "./overtime";
-import { dateKey, fromKey, s } from "./planningLogic";
+import { dateKey, fromKey, getDayInfo, s } from "./planningLogic";
 import { euros, type FormProfile, type ViewMode } from "./appModel";
 import type {
   MecenatDraft,
@@ -151,6 +152,11 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     mecenatSaveInFlightRef, lastOvertimeSubmissionRef, lastRecoverySubmissionRef,
     lastMecenatSubmissionRef, handoffKey, notify, confirmMessage, post, postBatch,
   } = options;
+  const recoveryCreditFor = (entry: OvertimeEntry) =>
+    overtimeRecoveryCreditMinutes(entry, (key) => {
+      const date = fromKey(key);
+      return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
+    });
 
   async function saveOvertimeEntry() {
     if (overtimeSaveInFlightRef.current) return;
@@ -192,7 +198,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
       confirmMessage(
         localEntry.disposition === "paid"
           ? "Heures enregistrées pour la paie du mois suivant."
-          : `${minutesLabel(localEntry.minutes)} ajoutées au solde de récupération.`,
+          : `${minutesLabel(recoveryCreditFor(localEntry))} ajoutées au solde de récupération.`,
       );
     } catch (error) {
       notify(calendarErrorMessage(error, "Les heures n’ont pas pu être enregistrées."));
@@ -234,7 +240,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
   }
 
   async function deleteOvertimeEntry(entry: OvertimeEntry) {
-    if (entry.disposition === "recovery" && recoveryBalanceRemaining < entry.minutes) {
+    if (entry.disposition === "recovery" && recoveryBalanceRemaining < recoveryCreditFor(entry)) {
       notify("Cette récupération a déjà été utilisée. Annulez d’abord les récupérations posées correspondantes.");
       return;
     }

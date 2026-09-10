@@ -64,7 +64,7 @@ export function groupPlanningRequestSelections(selectedList: SelectedDay[]) {
       ),
       recoveryDay: groupConsecutive(
         selectedList
-          .filter((item) => item.type === "recovery_day")
+          .filter((item) => item.type === "recovery_day" && !item.start && !item.end)
           .map((item) => item.date),
       ),
       // La récupération d'un jour férié conserve sa rubrique du formulaire ;
@@ -331,7 +331,7 @@ export function usePlanningRequestActions({
             ),
           ]
         : [
-            Math.ceil(groups.recoveryDay.length / 5),
+            Math.ceil(selectedList.filter((item) => item.type === "recovery_day").length / 5),
             Math.ceil(
               selectedList.filter((item) => item.type === "recovery_half")
                 .length / 5,
@@ -384,6 +384,7 @@ export function usePlanningRequestActions({
       timed: selectedList.filter(
         (item) =>
           item.type === "half" ||
+          (item.type === "recovery_day" && Boolean(item.start) && Boolean(item.end)) ||
           item.type === "recovery_half" ||
           item.type === "recovery_hours" ||
           item.type === "recovery_holiday" ||

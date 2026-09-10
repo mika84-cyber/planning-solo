@@ -2,7 +2,7 @@ import { getStore } from "@netlify/blobs";
 import { admin, getUser } from "@netlify/identity";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { sendColleagueSharingEmail } from "../lib/colleagueSharingEmail.mts";
-import { COLLEAGUE_GROUPS } from "../lib/colleagueGroups.ts";
+import { adminStore, readGroups } from '../lib/adminTools.mts';
 import { isMikaSharingAccount } from "../lib/sharedCalendarBridge.mts";
 import { userDataKey } from "../lib/userScopedStore.mts";
 import { personalPresenceForDate, type Entries, type LeavePeriod } from "../../src/appModel.ts";
@@ -46,6 +46,8 @@ const blockerKey = (blockerId: string, blockedId: string) =>
   `colleagues/block/by-user/${encodeURIComponent(blockerId)}/${encodeURIComponent(blockedId)}`;
 const blockedKey = (blockedId: string, blockerId: string) =>
   `colleagues/block/against-user/${encodeURIComponent(blockedId)}/${encodeURIComponent(blockerId)}`;
+const identityDirectorySyncKey = "colleagues/meta/identity-directory-sync";
+const IDENTITY_DIRECTORY_SYNC_TTL_MS = 5 * 60 * 1000;
 const validUserId = (value: unknown): value is string =>
   typeof value === "string" && /^[A-Za-z0-9_-]{3,128}$/.test(value);
 
@@ -159,6 +161,8 @@ async function ensureProfile(store: Store, userId: string, email: string, knownN
 }
 
 async function ensureIdentityDirectory(store: Store) {
+  const marker = await store.get(identityDirectorySyncKey, { type: "json" }) as { syncedAt?: unknown } | null;
+  if (typeof marker?.syncedAt === "string" && Date.parse(marker.syncedAt) > Date.now() - IDENTITY_DIRECTORY_SYNC_TTL_MS) return;
   try {
     for (let page = 1; page <= 20; page += 1) {
       const users = await admin.listUsers({ page, perPage: 100 });
@@ -167,6 +171,7 @@ async function ensureIdentityDirectory(store: Store) {
       ));
       if (users.length < 100) break;
     }
+    await store.setJSON(identityDirectorySyncKey, { syncedAt: new Date().toISOString() });
   } catch (error) {
     console.warn("Annuaire Identity momentanément indisponible", error);
   }
@@ -176,13 +181,14 @@ async function directoryResponse(store: Store, userId: string, email: string) {
   const privileged = await isMikaSharingAccount(email);
   if (privileged) await ensureIdentityDirectory(store);
   await ensureProfile(store, userId, email);
-  const [self, profiles, incoming, outgoing, blockedByMe, blockedMe] = await Promise.all([
+  const [self, profiles, incoming, outgoing, blockedByMe, blockedMe, groups] = await Promise.all([
     readProfile(store, userId),
     readMany<PublicProfile>(store, "colleagues/profile/"),
     readMany<Share>(store, `colleagues/share/viewer/${encodeURIComponent(userId)}/`),
     readMany<Share>(store, `colleagues/share/owner/${encodeURIComponent(userId)}/`),
     readMany<ColleagueBlock>(store, `colleagues/block/by-user/${encodeURIComponent(userId)}/`),
     readMany<ColleagueBlock>(store, `colleagues/block/against-user/${encodeURIComponent(userId)}/`),
+    readGroups(adminStore()),
   ]);
   const excludedIds = new Set([
     ...blockedByMe.map((block) => block.blockedId),
@@ -195,7 +201,7 @@ async function directoryResponse(store: Store, userId: string, email: string) {
       ? { userId: self.userId, displayName: self.displayName, visible: self.visible }
       : { userId, displayName: await initialName(store, userId), visible: false },
     canShareWithoutApproval: privileged,
-    groups: COLLEAGUE_GROUPS,
+    groups,
     directory: profiles
       .filter((profile) => (privileged || profile.visible) && Boolean(profile.email) && profile.userId !== userId && !excludedIds.has(profile.userId))
       .map(({ userId: id, displayName }) => ({ userId: id, displayName }))

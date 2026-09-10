@@ -74,10 +74,8 @@ describe("formulaires utiles", () => {
     const guestHtml = renderToStaticMarkup(<UsefulFormsSection />);
     const adminHtml = renderToStaticMarkup(<UsefulFormsSection isAdmin />);
     expect(guestHtml).not.toContain("Ajouter un document");
-    expect(adminHtml).toContain("Ajouter un document");
-    expect(adminHtml).toContain("Alerter tous les comptes invités");
-    expect(adminHtml).toContain("fenêtre au centre de leur application");
-    expect(adminHtml).toContain("type=\"checkbox\"");
+    expect(adminHtml).not.toContain("Ajouter un document");
+    expect(adminHtml).not.toContain("Alerter tous les comptes invités");
     expect(adminHtml).not.toContain("checked=\"\"");
   });
 });

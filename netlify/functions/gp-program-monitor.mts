@@ -9,6 +9,9 @@ import {
 import type { GrandPalaisProgramProposal } from "../../src/grandPalaisProgramTypes.ts";
 
 export default async function monitorGrandPalaisProgram() {
+  // Netlify schedules in UTC: only one of the two daily slots is midnight in Paris.
+  const parisHour = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).find(part => part.type === "hour")?.value;
+  if (parisHour !== "00") return new Response(JSON.stringify({ ok: true, skipped: true }), { headers: { "content-type": "application/json; charset=utf-8" } });
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
   const [state, pending] = await Promise.all([
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
@@ -49,4 +52,4 @@ export default async function monitorGrandPalaisProgram() {
   }), { headers: { "content-type": "application/json; charset=utf-8" } });
 }
 
-export const config = { schedule: "@daily" };
+export const config = { schedule: "5 22,23 * * *" };

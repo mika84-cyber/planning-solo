@@ -1,3 +1,5 @@
+import { HomeAdminMessage } from './HomeAdminMessage';
+import { clearColleagueGroupsCache } from './colleagueSharingApi';
 import {
   lazy,
   Suspense,
@@ -29,6 +31,7 @@ import type { PayCalculationBreakdown } from "./PayEstimateDetails";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 
 const homeDashboardModule = import("./HomeDashboard");
+const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 const HomeDashboard = lazy(() =>
   homeDashboardModule.then(({ HomeDashboard: Component }) => ({ default: Component })),
 );
@@ -85,7 +88,6 @@ import {
   PdfDownloadPage,
   UsefulContactsSection,
   UsefulFormsSection,
-  UserGuideDialogs,
 } from "./appSections";
 import {
   CalendarApiError,
@@ -97,6 +99,7 @@ import {
 } from "./calendarApi";
 import { parseCalendarSnapshot } from "./calendarPayload";
 import { splitNoteItemsIntoColumns } from "./noteColumns";
+import { matchesSearch } from "./searchMatching";
 import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import {
   HOLIDAY_PAY_OPTIONS,
@@ -106,6 +109,7 @@ import {
   noteDateLabel,
   notePeriodFor,
   personalPresenceForDate,
+  attendanceDayMinutes,
   rangeKeys,
   roundCurrency,
   workedDayCount,
@@ -161,6 +165,7 @@ import {
   monthlyRecoveryBalance,
   recoveryRequestMinutes,
   trainingRecoveryMinutes,
+  workScheduleHalfTimes,
   type RecoveryUse,
   type RecoveryRequestType,
   type WorkQuota,
@@ -281,11 +286,15 @@ export default function Home() {
   const [mode, setMode] = useState<ViewMode>("month");
   const {
     authStatus, setAuthStatus, userEmail, setUserEmail,
-    isProgramAdmin, setIsProgramAdmin, loginEmail, setLoginEmail,
+    isProgramAdmin: actualProgramAdmin, setIsProgramAdmin, loginEmail, setLoginEmail,
     loginPassword, setLoginPassword, passwordConfirmation, setPasswordConfirmation,
     inviteToken, setInviteToken, authBusy, setAuthBusy,
     authError, setAuthError, authNotice, setAuthNotice,
   } = useAuthUiState();
+  const [guestPreview, setGuestPreview] = useState(false);
+  const [adminToolsOpen, setAdminToolsOpen] = useState(false);
+  const [adminRevision, setAdminRevision] = useState(0);
+  const isProgramAdmin = actualProgramAdmin && !guestPreview;
   const installationEnabled = canEnableInstallation(
     authStatus,
     demoMode,
@@ -313,7 +322,7 @@ export default function Home() {
   } = workTimeUi;
   const planningUi = usePlanningUiState();
   const {
-    dayDate, setDayDate, noteText, setNoteText, noteColor,
+    dayDate, setDayDate, dayPanelTab, setDayPanelTab, noteText, setNoteText, noteColor,
     noteGroupId, noteSelecting, noteDates,
     dayLeave, setDayLeave, dayPersonalLeave, dayWish, setDayWish,
     dayLeaveType, setDayLeaveType, dayHalfMoment, setDayHalfMoment,
@@ -324,9 +333,9 @@ export default function Home() {
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople, setDeletingPeriod,
-    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate,
+    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, requestSeedDate,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
-    activeType, setActiveType, selections, setSelections, setTimeDate,
+    activeType, setActiveType, selections, setSelections, setTimeDate, setTimeStart, setTimeEnd,
     setWarningDate,
   } = planningUi;
   const showLeaves = true;
@@ -380,8 +389,7 @@ export default function Home() {
     quickNoteMode,
     homeSection, setHomeSection, prefetchedContacts, setPrefetchedContacts,
     approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
-    mainMenuOpen, setMainMenuOpen, guidePromptOpen, setGuidePromptOpen,
-    guideOpen, setGuideOpen, guidePromptCheckedRef, groupChooserOpen, setGroupChooserOpen,
+    mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
     noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,
@@ -511,19 +519,6 @@ export default function Home() {
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
   }, [mainMenuOpen]);
-  useEffect(() => {
-    if (authStatus !== "ready" || !userEmail || guidePromptCheckedRef.current)
-      return;
-    guidePromptCheckedRef.current = true;
-    const demo = demoMode;
-    const identity = demo
-      ? "demo"
-      : userEmail.trim().toLowerCase();
-    if (!demo && !localStorage.getItem(`planning:guide-pending-v1:${identity}`))
-      return;
-    if (!localStorage.getItem(`planning:guide-seen-v1:${identity}`))
-      setGuidePromptOpen(true);
-  }, [authStatus, userEmail, demoMode]);
   useEffect(() => {
     if (!accountMenuOpen) return;
     const close = (event: MouseEvent) => {
@@ -850,7 +845,6 @@ export default function Home() {
     setUserEmail,
     setIsProgramAdmin,
     setAuthStatus,
-    guidePromptCheckedRef,
     handoffKey: HANDOFF_KEY,
     loadCalendar,
     clearCalendarData: () => {
@@ -871,13 +865,13 @@ export default function Home() {
   const {
     exportDataBackup,
     importDataBackup,
-    archiveLegacyData,
     deleteAllUserData,
   } = useAccountDataActions({
     setBusy: setDataManagementBusy,
     setOpen: setDataManagementOpen,
     loadCalendar,
     notify,
+    showSuccess: confirm,
     get: getCalendar,
     post: postCalendar,
   });
@@ -983,6 +977,41 @@ export default function Home() {
       ),
     [selectedList],
   );
+  function selectRecoveryType(type: SelectionType) {
+    setActiveType(type);
+    if (!requestSeedDate) return;
+    const schedule = formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE;
+    const start = schedule.start;
+    const end = schedule.end;
+    setSelections((current) => {
+      return {
+        ...current,
+        [requestSeedDate]: { date: requestSeedDate, type, start, end },
+      };
+    });
+    setTimeStart(start);
+    setTimeEnd(end);
+    setTimeDate(requestSeedDate);
+  }
+  function selectLeaveType(type: SelectionType) {
+    setActiveType(type);
+    if (!requestSeedDate) return;
+    const schedule = formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE;
+    const halfTimes = workScheduleHalfTimes(schedule, "morning");
+    setSelections((current) => {
+      if (!current[requestSeedDate]) return current;
+      return {
+        ...current,
+        [requestSeedDate]: type === "half"
+          ? { date: requestSeedDate, type, start: halfTimes.start, end: halfTimes.end }
+          : { date: requestSeedDate, type },
+      };
+    });
+    if (type !== "half") return;
+    setTimeStart(halfTimes.start);
+    setTimeEnd(halfTimes.end);
+    setTimeDate(requestSeedDate);
+  }
   function exceptionalClosureFor(key: string) {
     const override = entries[key]?.closureOverride;
     if (override === "open") return undefined;
@@ -1033,7 +1062,11 @@ export default function Home() {
         const notWorked = unavailableWithoutExchange || exchangeRole === "given";
         if ((info.kind === "work" && !notWorked) || (info.kind === "off" && exchangeRole === "return"))
           result.work++;
-        if (info.kind === "training" && !notWorked) result.training++;
+        if (info.kind === "training") {
+          const presence = personalPresenceForDate(date, group, periods, entries, recoveryUses, fullDayMinutes, (key) => Boolean(exceptionalClosureFor(key)));
+          if (presence.status === "training" || presence.status === "work") result.training++;
+          else if (presence.status === "partial") result.training += 1 - (presence.absentMinutes || 0) / attendanceDayMinutes(date, group, fullDayMinutes);
+        }
         // La paie et les droits liés au cycle restent théoriques : l'échange
         // modifie la présence affichée, jamais le férié de référence.
         if (info.holiday && info.kind === "work" && !unavailableWithoutExchange)
@@ -1514,20 +1547,29 @@ export default function Home() {
     [overtimeEntries, holidayRecoveryEarnings],
   );
   const recoveryBalance = useMemo(
-    () => monthlyRecoveryBalance(recoveryEarnings, recoveryUses),
-    [recoveryEarnings, recoveryUses],
+    () => monthlyRecoveryBalance(recoveryEarnings, recoveryUses, (key) => {
+      const date = fromKey(key);
+      return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
+    }),
+    [recoveryEarnings, recoveryUses, group],
   );
   const recoverySelectionInsufficient = requestKind === "recovery" &&
     requestRecoveryMinutes(selectedList, workQuota) > recoveryBalance.remaining;
+  const recoverySelectionIncomplete = requestKind === "recovery" && selectedList.some((item) =>
+    item.type.startsWith("recovery_") && requestRecoveryMinutes([item], workQuota) <= 0
+  );
   const recoveryEarningStates = useMemo(
     () =>
       new Map(
-        allocateRecoveryUses(recoveryEarnings, recoveryUses).map((item) => [
+        allocateRecoveryUses(recoveryEarnings, recoveryUses, (key) => {
+          const date = fromKey(key);
+          return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
+        }).map((item) => [
           item.entryId,
           item,
         ]),
       ),
-    [recoveryEarnings, recoveryUses],
+    [recoveryEarnings, recoveryUses, group],
   );
 
   function paidOvertimeForPayPeriod(payYear: number, payMonth: number) {
@@ -1577,26 +1619,6 @@ export default function Home() {
     } finally {
       window.setTimeout(() => window.location.reload(), 250);
     }
-  }
-
-  function rememberGuideSeen() {
-    const demo = demoMode;
-    const identity = demo
-      ? "demo"
-      : userEmail.trim().toLowerCase();
-    localStorage.setItem(`planning:guide-seen-v1:${identity}`, "1");
-    localStorage.removeItem(`planning:guide-pending-v1:${identity}`);
-  }
-
-  function openGuideFromPrompt() {
-    rememberGuideSeen();
-    setGuidePromptOpen(false);
-    setGuideOpen(true);
-  }
-
-  function skipGuidePrompt() {
-    rememberGuideSeen();
-    setGuidePromptOpen(false);
   }
 
   const overtimeForPayMonth = useMemo(() => {
@@ -2044,14 +2066,14 @@ export default function Home() {
   /** Recherche sur toutes les notes enregistrées, passées comme à venir
       (contrairement à `upcoming`, borné aux 365 prochains jours). */
   const noteSearchResults = useMemo(() => {
-    const query = noteQuery.trim().toLowerCase();
+    const query = noteQuery.trim();
     if (!query) return [];
     const items: NoteListItem[] = [];
     const seenGroups = new Set<string>();
     for (const [key, entry] of Object.entries(entries).sort(([a], [b]) =>
       a.localeCompare(b),
     )) {
-      if (!entry.noteText?.toLowerCase().includes(query))
+      if (!entry.noteText || !matchesSearch(entry.noteText, query))
         continue;
       if (entry.noteGroupId) {
         if (seenGroups.has(entry.noteGroupId)) continue;
@@ -2074,7 +2096,7 @@ export default function Home() {
     )) {
       if (
         entry.noteAuthor !== "agnes" ||
-        !entry.noteText.toLowerCase().includes(query) ||
+        !matchesSearch(entry.noteText, query) ||
         (entry.noteGroupId && seenPartnerGroups.has(entry.noteGroupId))
       ) continue;
       if (entry.noteGroupId) seenPartnerGroups.add(entry.noteGroupId);
@@ -2147,7 +2169,7 @@ export default function Home() {
 
     const nextWork = nextAttendanceDay(now, group, (candidateKey) => {
       if (exceptionalClosureFor(candidateKey)) {
-        return false;
+        return true;
       }
       return entries[candidateKey]?.exchangeRole === "given" ||
         Boolean(entries[candidateKey]?.leave) ||
@@ -2162,7 +2184,7 @@ export default function Home() {
             candidateKey >= item.from &&
             candidateKey <= item.to,
         ) ||
-        recoveryUses.some((item) => item.date === candidateKey);
+        personalPresenceForDate(new Date(`${candidateKey}T12:00:00`), group, periods, entries, recoveryUses, dailyMinutesForQuota(formProfile?.workQuota || "full")).status === "absence";
     }, 366, (candidateKey) => entries[candidateKey]?.exchangeRole === "return");
     const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
     const nextWorkExceptionalClosure = nextWork
@@ -3505,6 +3527,7 @@ export default function Home() {
         <PayslipSuccessCelebration durationMs={15_000} />
       ) : null}
       <AppHeader
+        onOpenAdminTools={isProgramAdmin ? () => { setAccountMenuOpen(false); setAdminToolsOpen(true); } : undefined}
         homeSection={homeSection}
         payScreen={payScreen}
         userEmail={userEmail}
@@ -3519,10 +3542,6 @@ export default function Home() {
         accountMenuRef={accountMenuRef}
         accountButtonRef={accountButtonRef}
         onToggleAccount={() => setAccountMenuOpen((current) => !current)}
-        onOpenDataManagement={() => {
-          setAccountMenuOpen(false);
-          setDataManagementOpen(true);
-        }}
         onDisconnect={() => {
           setAccountMenuOpen(false);
           void disconnect();
@@ -3542,15 +3561,6 @@ export default function Home() {
         }}
         unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
-      {installationEnabled && installPrompt && (
-        <button
-          className="install-app-button"
-          type="button"
-          onClick={installApp}
-        >
-          Installer l’application
-        </button>
-      )}
       {homeSection === "home" ? (
         <div className="home-view-mode-bar">
           <div className="view-switch" role="group" aria-label="Mode d’affichage">
@@ -3575,11 +3585,25 @@ export default function Home() {
       ) : null}
       <MainMenu
         open={mainMenuOpen}
-        homeSection={homeSection}
+        userEmail={userEmail}
+        fullName={formProfile?.fullName || ""}
+        checkingAppUpdate={checkingAppUpdate}
+        appUpdateAvailable={appUpdateAvailable}
+        online={connectionStatus.online}
+        syncStatus={connectionStatus.syncStatus}
+        lastSavedAt={connectionStatus.lastSavedAt}
+        showInstallAction={demoMode || Boolean(installPrompt)}
+        canInstall={Boolean(installationEnabled && installPrompt)}
         onClose={() => setMainMenuOpen(false)}
-        onNavigate={(section) => {
-          navigateFromShell(section);
+        onCheckForUpdate={() => {
+          setMainMenuOpen(false);
+          void checkForAppUpdate();
         }}
+        onOpenDataManagement={() => {
+          setMainMenuOpen(false);
+          setDataManagementOpen(true);
+        }}
+        onInstall={() => void installApp()}
         onOpenFeedback={() => {
           setMainMenuOpen(false);
           setFeedbackOpen(true);
@@ -3587,6 +3611,9 @@ export default function Home() {
         isAdmin={isProgramAdmin}
         unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
+      {actualProgramAdmin && guestPreview && <div className="admin-preview-banner" role="status">Aperçu invité · Vos données<button type="button" onClick={() => setGuestPreview(false)}>Quitter l’aperçu</button></div>}
+      {isProgramAdmin && adminToolsOpen && <Suspense fallback={<p role="status">Ouverture des outils…</p>}><AdminToolsPanel demoMode={demoMode} onClose={() => setAdminToolsOpen(false)} onPreview={() => { setAdminToolsOpen(false); setGuestPreview(true); }} onChanged={() => { clearColleagueGroupsCache(); setAdminRevision(value => value + 1); }} /></Suspense>}
+      {homeSection === 'home' && <HomeAdminMessage demoMode={demoMode} />}
 
       {feedbackMessaging.resolutionNotice ? (
         <Suspense fallback={null}>
@@ -3598,10 +3625,6 @@ export default function Home() {
           enabled={authStatus === "ready" && !feedbackMessaging.resolutionNotice}
           demoMode={demoMode}
           isAdmin={isProgramAdmin}
-          onOpen={() => {
-            setHomeSection("forms");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
         />
       </Suspense>
       {feedbackOpen ? (
@@ -3626,18 +3649,6 @@ export default function Home() {
           }}
         />
       </Suspense>
-
-      {guidePromptOpen || guideOpen ? (
-        <Suspense fallback={null}>
-          <UserGuideDialogs
-            guidePromptOpen={guidePromptOpen}
-            guideOpen={guideOpen}
-            setGuideOpen={setGuideOpen}
-            skipGuidePrompt={skipGuidePrompt}
-            openGuideFromPrompt={openGuideFromPrompt}
-          />
-        </Suspense>
-      ) : null}
 
       {homeSection === "home" ? (
         <Suspense fallback={<DeferredSection label="votre accueil" />}>
@@ -3819,6 +3830,8 @@ export default function Home() {
           workSchedule={formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE}
           status={formProfile?.status || "contractuel"}
           netEstimateComplete={netEstimateComplete}
+          missingFields={netEstimateMissing}
+          onCompleteEstimate={() => { setPaySettingsOpen(true); setPayAdvancedOpen(true); }}
           gross={payContent.gross}
           grossComplete={payContent.grossComplete}
           net={payContent.net}
@@ -3866,6 +3879,7 @@ export default function Home() {
           )}
           forms={(
             <UsefulFormsSection
+              key={adminRevision}
               accountId={userEmail}
               isAdmin={isProgramAdmin}
               demoMode={demoMode}
@@ -3876,18 +3890,19 @@ export default function Home() {
               onDeleteWorkAccident={deleteWorkAccident}
             />
           )}
-          contacts={<UsefulContactsSection accountId={userEmail} initialData={prefetchedContacts || undefined} />}
+          contacts={<UsefulContactsSection key={adminRevision} accountId={userEmail} initialData={adminRevision ? undefined : prefetchedContacts || undefined} isAdmin={isProgramAdmin} demoMode={demoMode} />}
         />
         </Suspense>
       ) : null}
       {homeSection === "program" ? (
         <Suspense fallback={<DeferredSection label="la programmation GP" />}>
-          <GrandPalaisProgramSection />
+          <GrandPalaisProgramSection guestPreview={guestPreview} />
         </Suspense>
       ) : null}
       {homeSection === "colleagues" ? (
         <Suspense fallback={<DeferredSection label="les plannings de vos collègues" />}>
           <ColleaguePlanningPage
+            key={adminRevision}
             demoMode={demoMode}
             initialName={formProfile?.fullName || ""}
             getOwnPresence={(date) => personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)))}
@@ -4223,7 +4238,7 @@ export default function Home() {
                 <h3>Choix courants</h3>
                 <div className="type-tabs" role="group" aria-label="Choix courants">
                   {(["annual", "half", "rtt", "fraction"] as SelectionType[]).map((type) => (
-                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
+                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => selectLeaveType(type)} key={type}>
                       <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
                     </button>
                   ))}
@@ -4246,27 +4261,15 @@ export default function Home() {
           ) : (
             <div className="request-option-groups request-option-groups-guided">
               <section className="request-option-group request-option-group-primary">
-                <h3>Choix courants</h3>
-                <div className="type-tabs" role="group" aria-label="Récupérations courantes">
-                  {(["recovery_day", "recovery_half", "recovery_hours"] as SelectionType[]).map((type) => (
-                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
+                <h3>Type de récupération</h3>
+                <div className="type-tabs" role="group" aria-label="Choisir le type de récupération">
+                  {(["recovery_day", "recovery_half", "recovery_hours", "recovery_holiday", "recovery_training"] as SelectionType[]).map((type) => (
+                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => selectRecoveryType(type)} key={type}>
                       <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
                     </button>
                   ))}
                 </div>
               </section>
-              <details className="request-advanced-types" open={(["recovery_holiday", "recovery_training"] as SelectionType[]).includes(activeType)}>
-                <summary><span><strong>Férié ou formation</strong><small>Utilisez ces choix uniquement pour ces journées particulières</small></span><b aria-hidden="true">⌄</b></summary>
-                <section className="request-option-group">
-                  <div className="type-tabs" role="group" aria-label="Récupérations particulières">
-                    {(["recovery_holiday", "recovery_training"] as SelectionType[]).map((type) => (
-                      <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
-                        <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </details>
               <p className="request-selection-instruction">Touchez ensuite les dates concernées dans le planning. Les horaires utiles vous seront demandés automatiquement.</p>
             </div>
           )}
@@ -4293,7 +4296,7 @@ export default function Home() {
                 className="validate-button"
                 type="button"
                 onClick={() => void validateAndOpenForm()}
-                disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || leaveSelectionZeroBalance}
+                disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || recoverySelectionIncomplete || leaveSelectionZeroBalance}
               >
                 {savingRequest
                   ? requestKind === "other" || sickRequest
@@ -4303,25 +4306,25 @@ export default function Home() {
                     ? "Enregistrer Divers"
                     : sickRequest
                       ? "Enregistrer l’arrêt maladie"
-                      : "Continuer vers le formulaire"}
+                      : "Enregistrer et préparer le formulaire"}
               </button>
               {requestKind !== "other" && !sickRequest ? (
                 <button
                   className="request-planning-choice"
                   type="button"
-                  aria-label="Enregistrer au planning sans formulaire"
+                  aria-label="Enregistrer uniquement"
                   onClick={() => void saveRequestToPlanning()}
-                  disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || leaveSelectionZeroBalance}
+                  disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || recoverySelectionIncomplete || leaveSelectionZeroBalance}
                 >
                   <span aria-hidden="true">✓</span>
-                  <strong>Enregistrer au planning</strong>
-                  <small>Sans préparer de formulaire</small>
+                  <strong>Enregistrer uniquement</strong>
+                  <small>Sans formulaire</small>
                 </button>
               ) : null}
             </div>
             {requestKind !== "other" && !sickRequest ? (
               <small className="request-action-clarification">
-                Le formulaire est seulement préparé : il n’est ni envoyé ni accepté automatiquement.
+                Le formulaire est préparé, mais jamais envoyé automatiquement.
               </small>
             ) : null}
           </div>
@@ -4506,14 +4509,15 @@ export default function Home() {
               </button>
               <button
                 type="button"
+                className="recovery-request-choice"
                 onClick={() => beginChosenRequest("recovery", "recovery_day")}
               >
                 <strong>Récupération</strong>
-                <span>Journée, heures, férié ou formation</span>
+                <span>À déduire de votre solde d’heures</span>
               </button>
             </div>
             <details className="request-other-choices">
-              <summary>Voir les autres absences</summary>
+              <summary>Autres</summary>
               <div className="choice-grid">
                 <button type="button" className="cet-leave-choice" onClick={() => beginChosenRequest("leave", "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
                 <button type="button" className="sick-leave-choice" onClick={() => beginChosenRequest("leave", "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
@@ -4606,13 +4610,22 @@ export default function Home() {
                 qui apparaîtra sur le planning.
               </p>
             ) : (
-              <p>
-                Congés, arrêts maladie, congés souhaités et notes se posent
-                sur cette journée, y compris pendant un jour de repos.
+              <p className="day-modal-prompt">
+                Que souhaitez-vous faire pour cette journée&nbsp;?
               </p>
             )}
+            {!quickNoteMode ? (
+              <div className="day-modal-tabs" role="tablist" aria-label="Contenu de la journée">
+                <button id="day-leave-tab" type="button" role="tab" aria-selected={dayPanelTab === "leave"} aria-controls="day-leave-panel" className={dayPanelTab === "leave" ? "active" : ""} onClick={() => setDayPanelTab("leave")}>
+                  <span className="day-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="m8 14 2.2 2.2L16 11"/></svg></span><span className="day-tab-copy"><strong>Congés</strong><small>Poser ou gérer</small></span>
+                </button>
+                <button id="day-notes-tab" type="button" role="tab" aria-selected={dayPanelTab === "notes"} aria-controls="day-notes-panel" className={dayPanelTab === "notes" ? "active" : ""} onClick={() => setDayPanelTab("notes")}>
+                  <span className="day-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span className="day-tab-copy"><strong>Notes</strong><small>{entries[dayDate]?.noteText ? "Note enregistrée" : "Ajouter une note"}</small></span>
+                </button>
+              </div>
+            ) : null}
             {!quickNoteMode && (
-              <>
+              <div id="day-leave-panel" className="day-tab-panel day-leave-tab-panel" role="tabpanel" aria-labelledby="day-leave-tab" hidden={dayPanelTab !== "leave"}>
                 {dayExchange ? (
                   <div className="day-exchange-summary">
                     <strong>Échange avec {dayExchange.partnerName} - Groupe {dayExchange.partnerGroup}</strong>
@@ -4633,7 +4646,12 @@ export default function Home() {
                     </button>
                   </div>
                 ) : null}
-                <fieldset className="leave-choices" disabled={Boolean(dayExchange)} aria-label="Actions de la journée">
+                <section className="day-action-section day-action-primary" aria-labelledby="day-leave-actions-title">
+                  <div className="day-action-section-heading">
+                    <h3 id="day-leave-actions-title">Congé et récupération</h3>
+                    <span>Choisissez le parcours adapté</span>
+                  </div>
+                  <fieldset className="leave-choices leave-choices-primary" disabled={Boolean(dayExchange)} aria-label="Congé et récupération">
                   <button
                         type="button"
                         className={dayLeave ? "leave active" : "leave"}
@@ -4658,6 +4676,11 @@ export default function Home() {
                         Récupération
                         <span>Choisir</span>
                       </button>
+                  </fieldset>
+                </section>
+                <details className="day-action-section day-action-other">
+                  <summary><span><strong>Autres</strong><small>Souhait, maladie, CET et situations particulières</small></span><b aria-hidden="true">⌄</b></summary>
+                  <fieldset className="leave-choices leave-choices-other" disabled={Boolean(dayExchange)} aria-label="Autres actions de la journée">
                       <button
                         type="button"
                         className={dayWish ? "wish active" : "wish"}
@@ -4724,19 +4747,6 @@ export default function Home() {
                       </button>
                       <button
                         type="button"
-                        className="exchange-day-choice"
-                        onClick={() => {
-                          const date = dayDate;
-                          setDayDate(null);
-                          openWorkExchange(date);
-                        }}
-                      >
-                        <i />
-                        Échange
-                        <span>Deux dates obligatoires</span>
-                      </button>
-                      <button
-                        type="button"
                         className={
                           dayExceptionalClosure
                             ? "closure-day active"
@@ -4764,7 +4774,8 @@ export default function Home() {
                           {dayExceptionalClosure ? "Retirer CLOSED" : "Ajouter CLOSED"}
                         </span>
                       </button>
-                </fieldset>
+                  </fieldset>
+                </details>
                 {entries[dayDate]?.wish &&
                   !dayLeave && (
                     <div className="wish-decision">
@@ -4921,9 +4932,11 @@ export default function Home() {
                     ))}
                   </div>
                 )}
-              </>
+              </div>
             )}
+            <div id="day-notes-panel" className="day-tab-panel day-notes-tab-panel" role={quickNoteMode ? undefined : "tabpanel"} aria-labelledby={quickNoteMode ? undefined : "day-notes-tab"} hidden={!quickNoteMode && dayPanelTab !== "notes"}>
             <div className="day-notes-editor" role="group" aria-label="Notes de la journée">
+              {!quickNoteMode ? <div className="day-notes-section-heading"><h3>Notes</h3><span>Rendez-vous, rappel ou information personnelle</span></div> : null}
               {partnerEntries[dayDate]?.noteAuthor === "agnes" && partnerEntries[dayDate].noteText ? (
                 <section
                   className="day-author-note day-author-note-agnes"
@@ -5066,6 +5079,7 @@ export default function Home() {
               >
                 {savingDay ? "Synchronisation…" : "Enregistrer"}
               </button>
+            </div>
             </div>
           </section>
         </div>
@@ -5308,7 +5322,6 @@ export default function Home() {
         }}
         onExportData={() => void exportDataBackup()}
         onImportData={(file) => void importDataBackup(file)}
-        onArchiveLegacyData={() => void archiveLegacyData()}
         onDeleteAllData={() => void deleteAllUserData()}
       />
       {viewportDebugEnabled && (

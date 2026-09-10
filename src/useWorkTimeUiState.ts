@@ -38,19 +38,19 @@ export function useWorkTimeUiState() {
   const [savingMecenat, setSavingMecenat] = useState(false);
   const [savingOvertime, setSavingOvertime] = useState(false);
   const [overtimeDraft, setOvertimeDraft] = useState<OvertimeDraft>({
-    date: dateKey(new Date()), start: "18:00", end: "19:00",
+    date: dateKey(new Date()), start: "09:00", end: "10:00",
     disposition: "paid" as OvertimeDisposition,
   });
   const [solidarityDraft, setSolidarityDraft] = useState<SolidarityDraft>({ hours: "", minutes: "0" });
   const [recoveryDraft, setRecoveryDraft] = useState<RecoveryDraft>({
     date: dateKey(new Date()),
     kind: "hours" as "hours" | "half" | "day" | "holiday" | "training",
-    hours: "2", minutes: "0", start: "", durationMinutes: 480 as number | null,
+    hours: "2", minutes: "0", start: "09:00", durationMinutes: 480 as number | null,
     trainingMinutes: 360 as 180 | 360,
     trainingMoment: "morning" as "morning" | "afternoon",
   });
   const [mecenatDraft, setMecenatDraft] = useState<MecenatDraft>({
-    date: dateKey(new Date()), start: "19:00", end: "00:00",
+    date: dateKey(new Date()), start: "09:00", end: "10:00",
   });
   const overtimeSaveInFlightRef = useRef(false);
   const mecenatSaveInFlightRef = useRef(false);

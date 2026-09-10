@@ -1,0 +1,23 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep les cartes intérieures restent|Ma paie garde
+
+[WebServer] (node:9228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 2 workers
+
+(node:4620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6024) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [ordinateur] › e2e\app.spec.ts:82:1 › Ma paie garde une palette cohérente par fonction (1.9s)
+  ok 2 [ordinateur] › e2e\app.spec.ts:65:1 › les cartes intérieures restent légères avec des bordures visibles et une ombre douce (2.3s)
+(node:23224) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 4 [mobile] › e2e\app.spec.ts:82:1 › Ma paie garde une palette cohérente par fonction (2.6s)
+  ok 3 [mobile] › e2e\app.spec.ts:65:1 › les cartes intérieures restent légères avec des bordures visibles et une ombre douce (3.1s)
+
+  4 passed (8.7s)

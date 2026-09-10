@@ -1,0 +1,17 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=1 --grep partage de planning reste lisible
+
+[WebServer] (node:4508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:10120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [ordinateur] › e2e\app.spec.ts:565:1 › le partage de planning reste lisible et privé sur téléphone (7.8s)
+(node:11908) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [mobile] › e2e\app.spec.ts:565:1 › le partage de planning reste lisible et privé sur téléphone (4.1s)
+
+  2 passed (17.6s)

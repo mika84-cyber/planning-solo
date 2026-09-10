@@ -1,0 +1,467 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=4
+
+[WebServer] (node:20272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:23488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 152 tests using 4 workers
+
+(node:5420) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10460) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14320) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x    1 [ordinateur] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (3ms)
+  x    3 [ordinateur] › e2e\app.spec.ts:81:1 › les outils de congés sont repliés par défaut sur tous les écrans (4ms)
+  x    2 [ordinateur] › e2e\app.spec.ts:157:1 › les quatre soldes principaux et les autres congés restent en grilles équilibrées (3ms)
+  x    4 [ordinateur] › e2e\app.spec.ts:65:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (3ms)
+(node:15596) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11656) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22876) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x    5 [ordinateur] › e2e\app.spec.ts:199:1 › la barre complète tient sur un Z Fold fermé (3ms)
+  x    6 [ordinateur] › e2e\app.spec.ts:404:1 › les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert (5ms)
+  x    7 [ordinateur] › e2e\app.spec.ts:454:1 › le partage de planning reste lisible et privé sur téléphone (4ms)
+  x    8 [ordinateur] › e2e\app.spec.ts:625:1 › l’aide au partage est ouverte seulement lors de la première utilisation (3ms)
+(node:23012) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x    9 [ordinateur] › e2e\app.spec.ts:652:1 › une invitation acceptée propose le partage en retour (4ms)
+  x   10 [ordinateur] › e2e\app.spec.ts:693:1 › Aujourd’hui conserve le groupe pendant la demi-journée travaillée (4ms)
+  x   11 [ordinateur] › e2e\app.spec.ts:669:1 › une demi-journée reste le prochain jour travaillé et y est précisée (3ms)
+  x   12 [ordinateur] › e2e\app.spec.ts:715:1 › l’accueil signale uniquement les horaires de travail manquants (3ms)
+(node:17028) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15388) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3624) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15744) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   13 [ordinateur] › e2e\app.spec.ts:727:1 › une photo de bulletin est reconnue localement (2ms)
+  x   14 [ordinateur] › e2e\app.spec.ts:814:1 › menu, contact administratrice, paie et PDF restent accessibles (2ms)
+  x   15 [ordinateur] › e2e\app.spec.ts:1040:1 › la messagerie interne reste privée, compacte et utilisable avec une photo (2ms)
+  x   16 [ordinateur] › e2e\app.spec.ts:1098:1 › le planning avec congés se génère avec les catégories d’absence (3ms)
+(node:23536) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23448) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   17 [ordinateur] › e2e\app.spec.ts:1136:1 › les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement (2ms)
+  x   18 [ordinateur] › e2e\app.spec.ts:1281:1 › l’administrateur peut afficher un message collectif sans envoyer d’e-mail (3ms)
+(node:23156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11032) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   19 [ordinateur] › e2e\app.spec.ts:1253:1 › l’administrateur peut préparer un document et l’alerte invitée ouvre la bonne rubrique (2ms)
+  x   20 [ordinateur] › e2e\app.spec.ts:1303:1 › la déclaration d’accident réunit les démarches et marque le planning sans carence (3ms)
+  x   21 [ordinateur] › e2e\app.spec.ts:1462:1 › Z Fold ouvert : la déclaration d’accident reste lisible sans débordement (2ms)
+  x   22 [ordinateur] › e2e\app.spec.ts:1492:1 › la programmation GP suit l’ordre demandé et sépare les autres espaces (2ms)
+(node:5452) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:384) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   23 [ordinateur] › e2e\app.spec.ts:1642:1 › le tampon de fermeture conserve la date lisible sur ordinateur et téléphone (9ms)
+  x   24 [ordinateur] › e2e\app.spec.ts:1666:1 › les vacances scolaires restent facultatives et respectent la zone choisie (4ms)
+  x   25 [ordinateur] › e2e\app.spec.ts:1709:1 › les sigles de congé restent lisibles à côté de l’encadré d’Agnès sur écran fermé (4ms)
+  x   26 [ordinateur] › e2e\app.spec.ts:1745:1 › une fermeture exceptionnelle peut être ajoutée puis retirée manuellement (5ms)
+(node:23224) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2480) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   27 [ordinateur] › e2e\app.spec.ts:1769:1 › le compte administrateur peut valider seul une mise à jour du Grand Palais (14ms)
+  x   28 [ordinateur] › e2e\app.spec.ts:1812:1 › les contacts utiles sont classés et directement appelables (5ms)
+  x   30 [ordinateur] › e2e\app.spec.ts:1922:1 › un échange exige et modifie toujours ses deux journées ensemble (3ms)
+  x   29 [ordinateur] › e2e\app.spec.ts:2005:1 › l’en-tête, le sélecteur d’affichage et les années sont confortables (5ms)
+(node:3988) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11000) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   31 [ordinateur] › e2e\app.spec.ts:2157:1 › un congé posé sur une formation retire cette date du prochain jour travaillé (3ms)
+  x   32 [ordinateur] › e2e\app.spec.ts:2164:1 › une formation posée en récupération est retirée du prochain jour travaillé (3ms)
+  x   33 [ordinateur] › e2e\app.spec.ts:2223:1 › les menus déroulants restent entièrement visibles sur téléphone (5ms)
+  x   34 [ordinateur] › e2e\app.spec.ts:2172:1 › une fermeture exceptionnelle retire la présence et le prochain jour reste réellement travaillé (3ms)
+(node:17556) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3368) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22292) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   35 [ordinateur] › e2e\app.spec.ts:2274:1 › le balayage mobile navigue entre toutes les rubriques (3ms)
+  x   36 [ordinateur] › e2e\app.spec.ts:2300:1 › le balayage du calendrier mobile change seulement de mois (5ms)
+  x   37 [ordinateur] › e2e\app.spec.ts:2403:1 › le paramètre de démonstration ne donne plus accès à l’application (5ms)
+  x   38 [ordinateur] › e2e\app.spec.ts:2330:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile (4ms)
+(node:22868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6588) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   39 [ordinateur] › e2e\app.spec.ts:2424:1 › une panne des notifications ne bloque pas l’ouverture de l’application (3ms)
+  x   40 [ordinateur] › e2e\app.spec.ts:2439:1 › le compte avertit lorsqu’une nouvelle version est disponible (3ms)
+  x   41 [ordinateur] › e2e\app.spec.ts:2410:1 › un compte invité peut demander un nouveau mot de passe (3ms)
+  x   42 [ordinateur] › e2e\app.spec.ts:2467:1 › le CET se configure et conserve un historique cohérent (3ms)
+(node:23280) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14056) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11808) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17012) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   44 [ordinateur] › e2e\app.spec.ts:2591:1 › les heures supplémentaires du dimanche sont acceptées et reconnues (3ms)
+  x   43 [ordinateur] › e2e\app.spec.ts:2568:1 › un solde manuel supérieur à 24 heures est bien enregistré (2ms)
+  x   45 [ordinateur] › e2e\app.spec.ts:2614:1 › une formation utilise le bon nombre d’heures et apparaît en REC (4ms)
+  x   46 [ordinateur] › e2e\app.spec.ts:2669:1 › les horaires du profil alimentent les propositions de congé et récupération (4ms)
+(node:21460) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17132) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4652) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   47 [ordinateur] › e2e\app.spec.ts:2761:1 › Divers indique que je ne travaille pas aujourd’hui (4ms)
+  x   48 [ordinateur] › e2e\app.spec.ts:2727:1 › Divers est explicite et le résumé apparaît avant validation (6ms)
+  x   49 [ordinateur] › e2e\app.spec.ts:2785:1 › un férié couvert par une absence est annulé et retiré de la paie (4ms)
+  x   50 [ordinateur] › e2e\app.spec.ts:2813:1 › une grève met à jour le planning, les jours travaillés et la paie (20ms)
+(node:9388) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15684) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6036) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6312) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   52 [ordinateur] › e2e\app.spec.ts:2955:1 › des CA validés entre deux grèves restent exclus de la retenue (3ms)
+  x   51 [ordinateur] › e2e\app.spec.ts:2943:1 › une grève peut être posée directement depuis une case (8ms)
+  x   53 [ordinateur] › e2e\app.spec.ts:2972:1 › des repos noirs entre deux grèves sont inclus automatiquement dans la retenue (4ms)
+  x   54 [ordinateur] › e2e\app.spec.ts:3018:1 › un congé souhaité s’ajoute et se retire sans enregistrer (3ms)
+(node:16372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5028) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   55 [ordinateur] › e2e\app.spec.ts:3034:1 › le congé CET est proposé depuis les demandes et depuis une case (3ms)
+  x   57 [ordinateur] › e2e\app.spec.ts:3094:1 › la demande guide sans masquer les options avancées (7ms)
+  x   56 [ordinateur] › e2e\app.spec.ts:3047:1 › les choix principaux et ceux d’une date suivent l’ordre demandé (6ms)
+  x   58 [ordinateur] › e2e\app.spec.ts:3111:1 › une récupération ordinaire affiche le cycle sans reproposer Formation (4ms)
+(node:14196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3044) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16780) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6476) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   59 [ordinateur] › e2e\app.spec.ts:3146:1 › une récupération lancée depuis une case suit aussi le calendrier (3ms)
+  x   60 [ordinateur] › e2e\app.spec.ts:3188:1 › une demande mixte accepte 3 CA, 2 RTT et 3 CET (3ms)
+  x   61 [ordinateur] › e2e\app.spec.ts:3165:1 › les congés mensuels affichent les repères CA RTT et FRA (3ms)
+  x   62 [ordinateur] › e2e\app.spec.ts:3209:1 › nettoyage et gestion d’un congé utilisent des actions directes (3ms)
+(node:23300) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15624) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9436) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16736) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   63 [ordinateur] › e2e\app.spec.ts:3245:1 › les parcours congé, récupération et maladie s’ouvrent correctement (4ms)
+  x   64 [ordinateur] › e2e\app.spec.ts:3286:1 › les dates choisies sont préremplies dans le formulaire de congé (4ms)
+  x   65 [ordinateur] › e2e\app.spec.ts:3311:1 › la signature enregistrée sur téléphone est synchronisée avec le profil (3ms)
+  x   66 [ordinateur] › e2e\app.spec.ts:3354:1 › les détails des soldes séparent les congés pris et à venir (2ms)
+(node:12176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   67 [ordinateur] › e2e\app.spec.ts:3408:1 › Ma paie couvre août, septembre et octobre avec un calcul détaillé (3ms)
+(node:23076) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18168) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   69 [ordinateur] › e2e\app.spec.ts:3514:1 › le profil de paie d’une nouvelle année peut être confirmé sans modifier un montant (4ms)
+  x   68 [ordinateur] › e2e\app.spec.ts:3535:1 › Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordement (3ms)
+  x   70 [ordinateur] › e2e\app.spec.ts:3488:1 › le mois de paie reste indépendant du planning et suit une alerte datée (3ms)
+  x   71 [ordinateur] › e2e\app.spec.ts:3555:1 › le tableau de bord de paie ouvre ses deux pages détaillées (7ms)
+(node:23464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   72 [ordinateur] › e2e\form.spec.ts:3:1 › le formulaire modulaire charge ses données et ses commandes (3ms)
+(node:15852) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6564) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   74 [ordinateur] › e2e\app.spec.ts:3637:1 › Mika et Agnès peuvent supprimer chaque note partagée après confirmation (3ms)
+  x   73 [ordinateur] › e2e\app.spec.ts:3608:1 › le groupe, les notes, les sauvegardes et le retour du formulaire restent accessibles (4ms)
+  x   75 [mobile] › e2e\accessibility.spec.ts:35:1 › les parcours essentiels ne présentent pas de violation d’accessibilité grave (3ms)
+  x   76 [mobile] › e2e\app.spec.ts:65:1 › mon planning et ses réglages partagent un seul cadre et l’export conserve les congés (2ms)
+(node:4700) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3824) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12212) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10992) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   77 [mobile] › e2e\app.spec.ts:157:1 › les quatre soldes principaux et les autres congés restent en grilles équilibrées (2ms)
+(node:23100) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   78 [mobile] › e2e\app.spec.ts:81:1 › les outils de congés sont repliés par défaut sur tous les écrans (2ms)
+  x   80 [mobile] › e2e\app.spec.ts:199:1 › la barre complète tient sur un Z Fold fermé (2ms)
+  x   79 [mobile] › e2e\app.spec.ts:404:1 › les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert (3ms)
+  x   81 [mobile] › e2e\app.spec.ts:454:1 › le partage de planning reste lisible et privé sur téléphone (5ms)
+(node:14308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4528) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:7812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11452) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   82 [mobile] › e2e\app.spec.ts:652:1 › une invitation acceptée propose le partage en retour (3ms)
+  x   83 [mobile] › e2e\app.spec.ts:669:1 › une demi-journée reste le prochain jour travaillé et y est précisée (5ms)
+  x   84 [mobile] › e2e\app.spec.ts:625:1 › l’aide au partage est ouverte seulement lors de la première utilisation (3ms)
+  x   85 [mobile] › e2e\app.spec.ts:693:1 › Aujourd’hui conserve le groupe pendant la demi-journée travaillée (3ms)
+(node:18832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16676) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:19644) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2256) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   86 [mobile] › e2e\app.spec.ts:715:1 › l’accueil signale uniquement les horaires de travail manquants (4ms)
+  x   87 [mobile] › e2e\app.spec.ts:727:1 › une photo de bulletin est reconnue localement (4ms)
+  x   88 [mobile] › e2e\app.spec.ts:814:1 › menu, contact administratrice, paie et PDF restent accessibles (4ms)
+  x   89 [mobile] › e2e\app.spec.ts:1040:1 › la messagerie interne reste privée, compacte et utilisable avec une photo (3ms)
+(node:22904) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:7860) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3092) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   90 [mobile] › e2e\app.spec.ts:1253:1 › l’administrateur peut préparer un document et l’alerte invitée ouvre la bonne rubrique (4ms)
+  x   91 [mobile] › e2e\app.spec.ts:1098:1 › le planning avec congés se génère avec les catégories d’absence (4ms)
+  x   92 [mobile] › e2e\app.spec.ts:1136:1 › les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement (4ms)
+  x   93 [mobile] › e2e\app.spec.ts:1281:1 › l’administrateur peut afficher un message collectif sans envoyer d’e-mail (5ms)
+(node:12308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13760) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   94 [mobile] › e2e\app.spec.ts:1462:1 › Z Fold ouvert : la déclaration d’accident reste lisible sans débordement (3ms)
+  x   95 [mobile] › e2e\app.spec.ts:1303:1 › la déclaration d’accident réunit les démarches et marque le planning sans carence (5ms)
+  x   96 [mobile] › e2e\app.spec.ts:1492:1 › la programmation GP suit l’ordre demandé et sépare les autres espaces (6ms)
+  x   97 [mobile] › e2e\app.spec.ts:1642:1 › le tampon de fermeture conserve la date lisible sur ordinateur et téléphone (4ms)
+(node:23212) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16368) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4376) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   99 [mobile] › e2e\app.spec.ts:1666:1 › les vacances scolaires restent facultatives et respectent la zone choisie (3ms)
+  x  100 [mobile] › e2e\app.spec.ts:1745:1 › une fermeture exceptionnelle peut être ajoutée puis retirée manuellement (4ms)
+  x   98 [mobile] › e2e\app.spec.ts:1709:1 › les sigles de congé restent lisibles à côté de l’encadré d’Agnès sur écran fermé (3ms)
+  x  101 [mobile] › e2e\app.spec.ts:1769:1 › le compte administrateur peut valider seul une mise à jour du Grand Palais (3ms)
+(node:4008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8032) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21904) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  102 [mobile] › e2e\app.spec.ts:2005:1 › l’en-tête, le sélecteur d’affichage et les années sont confortables (4ms)
+  x  103 [mobile] › e2e\app.spec.ts:1922:1 › un échange exige et modifie toujours ses deux journées ensemble (13ms)
+  x  104 [mobile] › e2e\app.spec.ts:1812:1 › les contacts utiles sont classés et directement appelables (4ms)
+  x  105 [mobile] › e2e\app.spec.ts:2157:1 › un congé posé sur une formation retire cette date du prochain jour travaillé (10ms)
+(node:2000) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:7508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13960) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  108 [mobile] › e2e\app.spec.ts:2164:1 › une formation posée en récupération est retirée du prochain jour travaillé (3ms)
+  x  107 [mobile] › e2e\app.spec.ts:2172:1 › une fermeture exceptionnelle retire la présence et le prochain jour reste réellement travaillé (3ms)
+  x  106 [mobile] › e2e\app.spec.ts:2223:1 › les menus déroulants restent entièrement visibles sur téléphone (4ms)
+  x  109 [mobile] › e2e\app.spec.ts:2274:1 › le balayage mobile navigue entre toutes les rubriques (3ms)
+(node:19488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  110 [mobile] › e2e\app.spec.ts:2300:1 › le balayage du calendrier mobile change seulement de mois (3ms)
+  x  111 [mobile] › e2e\app.spec.ts:2403:1 › le paramètre de démonstration ne donne plus accès à l’application (4ms)
+  x  113 [mobile] › e2e\app.spec.ts:2330:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile (6ms)
+  x  112 [mobile] › e2e\app.spec.ts:2410:1 › un compte invité peut demander un nouveau mot de passe (5ms)
+(node:13748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:876) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  116 [mobile] › e2e\app.spec.ts:2467:1 › le CET se configure et conserve un historique cohérent (6ms)
+  x  114 [mobile] › e2e\app.spec.ts:2424:1 › une panne des notifications ne bloque pas l’ouverture de l’application (5ms)
+  x  115 [mobile] › e2e\app.spec.ts:2439:1 › le compte avertit lorsqu’une nouvelle version est disponible (4ms)
+  x  117 [mobile] › e2e\app.spec.ts:2568:1 › un solde manuel supérieur à 24 heures est bien enregistré (5ms)
+(node:16412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6268) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9248) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  118 [mobile] › e2e\app.spec.ts:2669:1 › les horaires du profil alimentent les propositions de congé et récupération (3ms)
+  x  119 [mobile] › e2e\app.spec.ts:2591:1 › les heures supplémentaires du dimanche sont acceptées et reconnues (2ms)
+  x  120 [mobile] › e2e\app.spec.ts:2614:1 › une formation utilise le bon nombre d’heures et apparaît en REC (3ms)
+  x  121 [mobile] › e2e\app.spec.ts:2727:1 › Divers est explicite et le résumé apparaît avant validation (4ms)
+(node:22796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14996) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18844) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  122 [mobile] › e2e\app.spec.ts:2761:1 › Divers indique que je ne travaille pas aujourd’hui (3ms)
+  x  123 [mobile] › e2e\app.spec.ts:2813:1 › une grève met à jour le planning, les jours travaillés et la paie (3ms)
+  x  124 [mobile] › e2e\app.spec.ts:2785:1 › un férié couvert par une absence est annulé et retiré de la paie (4ms)
+  x  125 [mobile] › e2e\app.spec.ts:2943:1 › une grève peut être posée directement depuis une case (4ms)
+(node:9260) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5020) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20220) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21648) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  126 [mobile] › e2e\app.spec.ts:2955:1 › des CA validés entre deux grèves restent exclus de la retenue (16ms)
+  x  127 [mobile] › e2e\app.spec.ts:2972:1 › des repos noirs entre deux grèves sont inclus automatiquement dans la retenue (8ms)
+  x  128 [mobile] › e2e\app.spec.ts:3018:1 › un congé souhaité s’ajoute et se retire sans enregistrer (5ms)
+  x  129 [mobile] › e2e\app.spec.ts:3034:1 › le congé CET est proposé depuis les demandes et depuis une case (4ms)
+(node:15156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2976) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  131 [mobile] › e2e\app.spec.ts:3094:1 › la demande guide sans masquer les options avancées (3ms)
+  x  130 [mobile] › e2e\app.spec.ts:3047:1 › les choix principaux et ceux d’une date suivent l’ordre demandé (3ms)
+  x  133 [mobile] › e2e\app.spec.ts:3146:1 › une récupération lancée depuis une case suit aussi le calendrier (3ms)
+  x  132 [mobile] › e2e\app.spec.ts:3111:1 › une récupération ordinaire affiche le cycle sans reproposer Formation (4ms)
+(node:6840) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9044) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17884) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  134 [mobile] › e2e\app.spec.ts:3165:1 › les congés mensuels affichent les repères CA RTT et FRA (3ms)
+  x  135 [mobile] › e2e\app.spec.ts:3245:1 › les parcours congé, récupération et maladie s’ouvrent correctement (3ms)
+  x  136 [mobile] › e2e\app.spec.ts:3188:1 › une demande mixte accepte 3 CA, 2 RTT et 3 CET (4ms)
+  x  137 [mobile] › e2e\app.spec.ts:3209:1 › nettoyage et gestion d’un congé utilisent des actions directes (4ms)
+(node:8412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23340) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5436) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  138 [mobile] › e2e\app.spec.ts:3311:1 › la signature enregistrée sur téléphone est synchronisée avec le profil (9ms)
+  x  139 [mobile] › e2e\app.spec.ts:3286:1 › les dates choisies sont préremplies dans le formulaire de congé (5ms)
+  x  140 [mobile] › e2e\app.spec.ts:3354:1 › les détails des soldes séparent les congés pris et à venir (3ms)
+  x  141 [mobile] › e2e\app.spec.ts:3408:1 › Ma paie couvre août, septembre et octobre avec un calcul détaillé (3ms)
+(node:9700) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22912) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21936) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17028) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  142 [mobile] › e2e\app.spec.ts:3488:1 › le mois de paie reste indépendant du planning et suit une alerte datée (3ms)
+  x  144 [mobile] › e2e\app.spec.ts:3535:1 › Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordement (4ms)
+  x  145 [mobile] › e2e\app.spec.ts:3514:1 › le profil de paie d’une nouvelle année peut être confirmé sans modifier un montant (3ms)
+  x  143 [mobile] › e2e\app.spec.ts:3555:1 › le tableau de bord de paie ouvre ses deux pages détaillées (3ms)
+(node:13508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23348) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  146 [mobile] › e2e\form.spec.ts:3:1 › le formulaire modulaire charge ses données et ses commandes (3ms)
+  x  147 [z-fold] › e2e\app.spec.ts:404:1 › les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert (3ms)
+  x  148 [mobile] › e2e\app.spec.ts:3637:1 › Mika et Agnès peuvent supprimer chaque note partagée après confirmation (3ms)
+  x  149 [mobile] › e2e\app.spec.ts:3608:1 › le groupe, les notes, les sauvegardes et le retour du formulaire restent accessibles (3ms)
+(node:2552) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9420) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  150 [z-fold] › e2e\app.spec.ts:1462:1 › Z Fold ouvert : la déclaration d’accident reste lisible sans débordement (3ms)
+  x  151 [z-fold] › e2e\app.spec.ts:2330:1 › le Z Fold ouvert garde un grand en-tête et le balayage tactile (2ms)
+  x  152 [z-fold] › e2e\app.spec.ts:3535:1 › Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordement (2ms)

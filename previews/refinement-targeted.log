@@ -1,0 +1,108 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep la recherche des groupes|une paie incomplète|une demi-journée reste
+
+[WebServer] (node:4632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 2 workers
+
+(node:1568) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20056) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [ordinateur] › e2e\app.spec.ts:669:1 › une demi-journée reste le prochain jour travaillé et y est précisée (10.9s)
+  x  2 [ordinateur] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat (13.5s)
+(node:12964) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 4 [mobile] › e2e\app.spec.ts:669:1 › une demi-journée reste le prochain jour travaillé et y est précisée (3.7s)
+  x  5 [mobile] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat (5.4s)
+(node:3396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 6 [mobile] › e2e\app.spec.ts:3640:1 › une paie incomplète conduit directement aux champs à renseigner (4.8s)
+  x  3 [ordinateur] › e2e\app.spec.ts:3640:1 › une paie incomplète conduit directement aux champs à renseigner (32.7s)
+
+
+  1) [ordinateur] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+
+    Error: page.evaluate: TypeError: dom.createRoot is not a function
+        at eval (eval at evaluate (:311:30), <anonymous>:8:9)
+        at async <anonymous>:337:30
+        at eval (eval at evaluate (:311:30), <anonymous>:8:9)
+        at async <anonymous>:337:30
+        at D:\Downloads\planning-solo\e2e\app.spec.ts:3618:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-ordinateur\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [ordinateur] › e2e\app.spec.ts:3640:1 › une paie incomplète conduit directement aux champs à renseigner 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.mobile-bottom-navigation').getByRole('button', { name: 'Ma paie', exact: true })
+
+
+      3640 | test("une paie incomplète conduit directement aux champs à renseigner", async ({ page }) => {
+      3641 |   await prepareDemo(page);
+    > 3642 |   await page.locator(".mobile-bottom-navigation").getByRole("button", { name: "Ma paie", exact: true }).click();
+           |                                                                                                         ^
+      3643 |   const guidance = page.locator(".pay-missing-guidance");
+      3644 |   await expect(guidance).toContainText("Pour afficher votre estimation, renseignez");
+      3645 |   await guidance.getByRole("button", { name: "Compléter les informations manquantes" }).click();
+        at D:\Downloads\planning-solo\e2e\app.spec.ts:3642:105
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\app-une-paie-incomplète-co-c25c1-ent-aux-champs-à-renseigner-ordinateur\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\app-une-paie-incomplète-co-c25c1-ent-aux-champs-à-renseigner-ordinateur\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\app-une-paie-incomplète-co-c25c1-ent-aux-champs-à-renseigner-ordinateur\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\app-une-paie-incomplète-co-c25c1-ent-aux-champs-à-renseigner-ordinateur\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [mobile] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+
+    Error: page.evaluate: TypeError: dom.createRoot is not a function
+        at eval (eval at evaluate (:311:30), <anonymous>:8:9)
+        at async <anonymous>:337:30
+        at eval (eval at evaluate (:311:30), <anonymous>:8:9)
+        at async <anonymous>:337:30
+        at D:\Downloads\planning-solo\e2e\app.spec.ts:3618:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\app-la-recherche-des-group-ee057-nt-une-panne-et-un-résultat-mobile\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [ordinateur] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+    [ordinateur] › e2e\app.spec.ts:3640:1 › une paie incomplète conduit directement aux champs à renseigner 
+    [mobile] › e2e\app.spec.ts:3606:1 › la recherche des groupes distingue le chargement, une panne et un résultat 
+  3 passed (1.2m)

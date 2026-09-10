@@ -1,0 +1,17 @@
+
+> planning-solo@1.0.0 test:e2e
+> playwright test --workers=2 --grep le 9 septembre reste
+
+[WebServer] (node:25368) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 2 workers
+
+(node:13448) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21036) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [ordinateur] › e2e\app.spec.ts:65:1 › le 9 septembre reste lisible et les rubriques ont des fonds distincts (2.5s)
+  ok 2 [mobile] › e2e\app.spec.ts:65:1 › le 9 septembre reste lisible et les rubriques ont des fonds distincts (3.4s)
+
+  2 passed (7.5s)

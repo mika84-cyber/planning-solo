@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aperçu — Planning partagé</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #eef3f9;
+        color: #172033;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .preview-shell {
+        width: min(344px, calc(100vw - 16px));
+        margin: 8px auto 28px;
+      }
+      .shared-photo-header {
+        min-height: 226px;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid rgba(30, 35, 42, .78);
+        border-radius: 24px;
+        background:
+          radial-gradient(ellipse at 34% 43%, rgba(255, 244, 228, .14), rgba(255, 255, 255, 0) 42%),
+          linear-gradient(90deg, rgba(17, 13, 15, .43), rgba(17, 13, 15, .02) 56%, rgba(17, 13, 15, .12)),
+          #4a3129 url("/shared-header-family.png") calc(50% - 10px) center / auto 100% no-repeat;
+        box-shadow: 0 16px 34px rgba(31, 46, 78, .16);
+      }
+      .header-title {
+        position: absolute;
+        z-index: 2;
+        bottom: 18px;
+        left: 17px;
+        width: 122px;
+        padding-left: 11px;
+        color: #fff;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, .65);
+      }
+      .header-title::before {
+        content: "";
+        position: absolute;
+        top: 1px;
+        bottom: 0;
+        left: 0;
+        width: 3px;
+        border-radius: 999px;
+        background: linear-gradient(#4386df, #83b9f3);
+      }
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0;
+        max-width: 108px;
+        font-size: 20px;
+        line-height: 1.04;
+        letter-spacing: -.035em;
+      }
+      .account-button {
+        position: absolute;
+        z-index: 2;
+        top: 12px;
+        right: 12px;
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border: 1px solid rgba(35, 50, 70, .72);
+        border-radius: 15px;
+        background: rgba(255, 255, 255, .92);
+        color: #2859b8;
+        font-size: 16px;
+        font-weight: 900;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, .16);
+      }
+      .update-panel {
+        display: grid;
+        grid-template-columns: 1fr 45px;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 8px;
+        border: 1px solid #cbd9ec;
+        border-radius: 17px;
+        background: rgba(255, 255, 255, .94);
+        box-shadow: 0 8px 22px rgba(31, 46, 78, .08);
+      }
+      .update-panel button {
+        min-height: 45px;
+        border: 1px solid #9db2cc;
+        border-radius: 15px;
+        background: #f7faff;
+        color: #173f69;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 850;
+      }
+      .update-panel .bell {
+        border: 2px solid #2e64b6;
+        background: #edf3fc;
+        font-size: 20px;
+      }
+      .panel-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .panel-tabs article {
+        min-height: 82px;
+        padding: 14px;
+        border: 1px solid #cbd9ec;
+        border-radius: 17px;
+        background: linear-gradient(145deg, #fff, #f2f6fc);
+        box-shadow: 0 8px 22px rgba(31, 46, 78, .07);
+      }
+      .panel-tabs strong { display: block; margin-bottom: 9px; font-size: 15px; }
+      .panel-tabs span { color: #687286; font-size: 12px; }
+      .note-card {
+        margin-top: 10px;
+        padding: 15px;
+        border: 1px solid #d7e0eb;
+        border-radius: 17px;
+        background: #fff;
+      }
+      .note-card b {
+        display: inline-block;
+        margin-bottom: 10px;
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: #223f69;
+        color: #fff;
+        font-size: 10px;
+      }
+      .note-card p {
+        margin: 0;
+        padding: 11px;
+        border: 1px solid #e1b52f;
+        border-radius: 10px;
+        background: #fff7cf;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="preview-shell">
+      <header class="shared-photo-header">
+        <div class="header-title">
+          <p class="eyebrow">Planning partagé</p>
+          <h1>Notre planning</h1>
+        </div>
+        <div class="account-button" aria-label="Compte Agnès">A</div>
+      </header>
+
+      <section class="update-panel">
+        <button type="button">↻&nbsp;&nbsp; Vérifier les mises à jour</button>
+        <button class="bell" type="button" aria-label="Notifications">♧</button>
+      </section>
+
+      <section class="panel-tabs">
+        <article><strong>Prochaines notes</strong><span>16 notes</span></article>
+        <article><strong>Congés posés</strong><span>0 jour</span></article>
+      </section>
+
+      <section class="note-card">
+        <b>7 sept 2026</b>
+        <p>AGNÈS<br />Rdv généraliste 17h30</p>
+      </section>
+    </main>
+  </body>
+</html>

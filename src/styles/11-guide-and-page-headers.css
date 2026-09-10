@@ -54,52 +54,36 @@
 }
 .guide-heading h2 { margin: 5px 0 6px; }
 .guide-heading p { margin: 0; color: var(--muted); }
-.guide-toc {
+.guide-content { display: grid; gap: 10px; padding: 18px 22px 24px; }
+.guide-task { border: 1px solid #dce3ec; border-radius: 16px; background: #fff; overflow: hidden; }
+.guide-task h3 { margin: 0; }
+.guide-task h3 button {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin: 18px 22px;
-  border: 1px solid rgba(44, 77, 112, .18);
-  border-radius: 18px;
-  padding: 16px;
-  background: #fff;
-}
-.guide-toc > strong {
-  grid-column: 1 / -1;
-  margin-bottom: 2px;
-  color: #173e6d;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-.guide-toc button {
-  min-height: 40px;
+  grid-template-columns: 38px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 76px;
+  padding: 14px 18px;
   border: 0;
-  border-radius: 11px;
-  padding: 8px 11px;
-  background: #f1f5fa;
-  color: #314f70;
-  font-family: inherit;
-  font-weight: 750;
+  background: transparent;
+  color: #29435f;
+  font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.guide-toc button:hover { background: #e3eefc; color: #174f89; }
-.guide-content { display: grid; gap: 12px; padding: 0 22px 24px; }
-.guide-section {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
-  gap: 14px;
-  scroll-margin-top: 18px;
-  border: 1px solid rgba(54, 78, 105, .12);
-  border-radius: 18px;
-  padding: 18px;
-  background: #fff;
-}
-.guide-section.important {
-  border-color: rgba(47, 97, 184, .22);
-  background: linear-gradient(145deg, #f3f8ff, #fff 70%);
-}
+.guide-task h3 button:hover, .guide-task h3 button[aria-expanded="true"] { background: #eef4f9; }
+.guide-task h3 button:focus-visible { outline: 2px solid #49648d; outline-offset: -3px; }
+.guide-task strong { display: block; font-size: 15px; line-height: 1.4; }
+.guide-task small { display: block; margin-top: 4px; color: #617186; font-size: 12px; font-weight: 500; }
+.guide-task-chevron { font-size: 20px; text-align: center; }
+.guide-task [aria-expanded="true"] .guide-task-chevron { transform: rotate(180deg); }
+.guide-task-answer { padding: 4px 22px 18px; color: #465970; font-size: 14px; line-height: 1.65; }
+.guide-task-answer ol { margin: 12px 0 16px; padding-left: 22px; }
+.guide-task-answer li { padding-left: 6px; margin-bottom: 12px; }
+.guide-task-answer li::marker { color: #49648d; font-weight: 750; }
+.guide-task-answer p { margin: 0; border-left: 3px solid #b5c8d6; border-radius: 4px 10px 10px 4px; padding: 12px 14px; background: #f4f7f9; }
+.guide-task-answer p strong { margin-bottom: 4px; color: #29435f; font-size: 12px; }
 .guide-number {
   display: grid;
   place-items: center;
@@ -110,12 +94,6 @@
   color: #2459a7;
   font-weight: 900;
 }
-.guide-section h3 { margin: 2px 0 9px; color: #203b5a; font-size: 17px; }
-.guide-section p,
-.guide-section li { color: #566a80; font-size: 13px; line-height: 1.55; }
-.guide-section p { margin: 0 0 9px; }
-.guide-section p:last-child { margin-bottom: 0; }
-.guide-section ul { margin: 6px 0 10px; padding-left: 20px; }
 .guide-footer {
   position: sticky;
   bottom: 0;
@@ -137,18 +115,10 @@
   .guide-modal { border-radius: 20px; }
   .guide-heading { padding: 23px 58px 17px 18px; }
   .guide-heading h2 { font-size: 21px; }
-  .guide-toc {
-    grid-template-columns: 1fr;
-    margin: 14px 12px;
-    padding: 12px;
-  }
-  .guide-content { gap: 10px; padding: 0 12px 18px; }
-  .guide-section {
-    grid-template-columns: 32px minmax(0, 1fr);
-    gap: 10px;
-    border-radius: 15px;
-    padding: 14px 12px;
-  }
+  .guide-content { gap: 8px; padding: 12px 10px 18px; }
+  .guide-task h3 button { grid-template-columns: 32px minmax(0, 1fr) 14px; gap: 10px; padding: 12px; }
+  .guide-task strong { font-size: 14px; }
+  .guide-task-answer { padding: 4px 14px 16px; }
   .guide-number { width: 32px; height: 32px; border-radius: 11px; }
   .guide-footer { padding-right: 14px; padding-left: 14px; }
   .guide-footer .primary-action { width: 100%; }

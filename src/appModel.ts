@@ -266,6 +266,13 @@ export type PersonalPresence = {
   absentMinutes?: number;
 };
 
+/** Durée effective de présence : une formation dure 6 h, ou 3 h à mi-temps. */
+export function attendanceDayMinutes(date: Date, group: number, workDayMinutes = 480) {
+  return getDayInfo(date, group).kind === "training"
+    ? (workDayMinutes <= 225 ? 180 : 360)
+    : workDayMinutes;
+}
+
 /** Règle commune de présence utilisée par le planning personnel, ses
  * compteurs et le partage anonymisé. Aucun motif d'absence n'en sort. */
 export function personalPresenceForDate(
@@ -279,6 +286,7 @@ export function personalPresenceForDate(
 ): PersonalPresence {
   const key = dateKey(date);
   const scheduled = getDayInfo(date, group).kind;
+  workDayMinutes = attendanceDayMinutes(date, group, workDayMinutes);
   const entry = entries[key];
   if (isExceptionallyClosed(key)) return { status: "absence" };
   if (entry?.exchangeRole === "return") return { status: "work" };
@@ -364,7 +372,7 @@ export function workedDayCount(
       }
       if (presence.status === "absence") onLeave += 1;
       else if (presence.status === "partial")
-        onLeave += Math.min(1, (presence.absentMinutes || workDayMinutes / 2) / workDayMinutes);
+        onLeave += Math.min(1, (presence.absentMinutes || attendanceDayMinutes(date, group, workDayMinutes) / 2) / attendanceDayMinutes(date, group, workDayMinutes));
     }
   return {
     scheduled,
@@ -421,7 +429,7 @@ export function workedDayCountBetween(
     }
     if (presence.status === "absence") onLeave += 1;
     else if (presence.status === "partial")
-      onLeave += Math.min(1, (presence.absentMinutes || workDayMinutes / 2) / workDayMinutes);
+      onLeave += Math.min(1, (presence.absentMinutes || attendanceDayMinutes(date, group, workDayMinutes) / 2) / attendanceDayMinutes(date, group, workDayMinutes));
   }
   return {
     scheduled,

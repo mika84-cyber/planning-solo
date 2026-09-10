@@ -11,6 +11,7 @@ import type {
 /** État des fiches jour et des sélections de congés/récupérations. */
 export function usePlanningUiState() {
   const [dayDate, setDayDate] = useState<string | null>(null);
+  const [dayPanelTab, setDayPanelTab] = useState<"leave" | "notes">("leave");
   const [noteText, setNoteText] = useState("");
   const [noteColor, setNoteColor] = useState("#D3943D");
   const [noteGroupId, setNoteGroupId] = useState("");
@@ -43,6 +44,7 @@ export function usePlanningUiState() {
   const [savingRange, setSavingRange] = useState(false);
   const [requestChooser, setRequestChooser] = useState(false);
   const [requestChooserDate, setRequestChooserDate] = useState<string | null>(null);
+  const [requestSeedDate, setRequestSeedDate] = useState<string | null>(null);
   const [requestKind, setRequestKind] = useState<RequestKind | null>(null);
   const [sickRequest, setSickRequest] = useState(false);
   const [savingRequest, setSavingRequest] = useState(false);
@@ -54,7 +56,7 @@ export function usePlanningUiState() {
   const [warningDate, setWarningDate] = useState<string | null>(null);
 
   return {
-    dayDate, setDayDate, noteText, setNoteText, noteColor, setNoteColor,
+    dayDate, setDayDate, dayPanelTab, setDayPanelTab, noteText, setNoteText, noteColor, setNoteColor,
     noteGroupId, setNoteGroupId, noteSelecting, setNoteSelecting, noteDates, setNoteDates,
     dayLeave, setDayLeave, dayPersonalLeave, setDayPersonalLeave, dayWish, setDayWish,
     dayLeaveType, setDayLeaveType, dayHalfMoment, setDayHalfMoment,
@@ -68,7 +70,7 @@ export function usePlanningUiState() {
     separatePeople, setSeparatePeople, editingPeriodId, setEditingPeriodId,
     editingLegacyPeriod, setEditingLegacyPeriod, deletingPeriod, setDeletingPeriod,
     savingRange, setSavingRange, requestChooser, setRequestChooser,
-    requestChooserDate, setRequestChooserDate,
+    requestChooserDate, setRequestChooserDate, requestSeedDate, setRequestSeedDate,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
     activeType, setActiveType, selections, setSelections, timeDate, setTimeDate,
     timeStart, setTimeStart, timeEnd, setTimeEnd, warningDate, setWarningDate,

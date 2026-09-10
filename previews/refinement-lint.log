@@ -1,0 +1,69 @@
+
+> planning-solo@1.0.0 lint
+> biome lint
+
+src\ColleagueGroupsDirectory.tsx:28:3 lint/correctness/useExhaustiveDependencies  FIXABLE  ━━━━━━━━━━
+
+  × This hook specifies more dependencies than necessary: attempt.
+  
+    26 │   const [attempt, setAttempt] = useState(0);
+    27 │ 
+  > 28 │   useEffect(() => {
+       │   ^^^^^^^^^
+    29 │     setLoadError(false);
+    30 │     if (groups.length) {
+  
+  i This dependency can be removed from the list.
+  
+    37 │     }).catch(() => { if (active) setLoadError(true); });
+    38 │     return () => { active = false; };
+  > 39 │   }, [groups, attempt]);
+       │               ^^^^^^^
+    40 │ 
+    41 │   const visibleGroups = availableGroups.length
+  
+  i React relies on hook dependencies to determine when to re-compute Effects.
+    Specifying more dependencies than required can lead to unnecessary re-rendering
+    and degraded performance.
+  
+  i Unsafe fix: Remove the extra dependencies from the list.
+  
+    39 │ ··},·[groups,·attempt]);
+       │             ---------   
+
+src\ColleaguePlanningPage.tsx:275:3 lint/correctness/useExhaustiveDependencies  FIXABLE  ━━━━━━━━━━━
+
+  × This hook specifies more dependencies than necessary: tomorrowAttempt.
+  
+    273 │   const nameChanged = name.trim() !== savedName;
+    274 │ 
+  > 275 │   useEffect(() => {
+        │   ^^^^^^^^^
+    276 │     setTomorrowFailed([]);
+    277 │     setTomorrowSummaries({});
+  
+  i This dependency can be removed from the list.
+  
+    291 │     })();
+    292 │     return () => { cancelled = true; };
+  > 293 │   }, [demoMode, received, tomorrowAttempt]);
+        │                           ^^^^^^^^^^^^^^^
+    294 │ 
+    295 │   useEffect(() => {
+  
+  i React relies on hook dependencies to determine when to re-compute Effects.
+    Specifying more dependencies than required can lead to unnecessary re-rendering
+    and degraded performance.
+  
+  i Unsafe fix: Remove the extra dependencies from the list.
+  
+    293 │ ··},·[demoMode,·received,·tomorrowAttempt]);
+        │                         -----------------   
+
+Checked 280 files in 2s. No fixes applied.
+Found 2 errors.
+lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+

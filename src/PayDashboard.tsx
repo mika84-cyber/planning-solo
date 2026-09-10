@@ -16,6 +16,8 @@ type PayDashboardProps = {
   grossComplete: boolean;
   net: number | null;
   profileLabel: string;
+  missingFields?: string[];
+  onCompleteEstimate?: () => void;
   reliability: {
     tone: "exact" | "estimated" | "incomplete";
     label: string;
@@ -41,6 +43,8 @@ export function PayDashboard({
   grossComplete,
   net,
   profileLabel,
+  missingFields = [],
+  onCompleteEstimate,
   reliability,
   variables,
   profileContent,
@@ -95,8 +99,22 @@ export function PayDashboard({
             </p>
           </div>
           <p className="pay-dashboard-profile-note">{profileLabel}</p>
+          {(net === null || !grossComplete) && missingFields.length > 0 ? <div className="pay-missing-guidance">
+            <div className="pay-import-heading">
+              <span className="pay-import-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5" /></svg></span>
+              <div><strong>Votre estimation commence ici</strong><p>Ajoutez votre bulletin de paie. Les informations reconnues sont complétées automatiquement.</p></div>
+            </div>
+            <button type="button" className="primary-action" onClick={() => {
+              const section = document.getElementById("pay-dashboard-verification");
+              section?.scrollIntoView({ behavior: "smooth", block: "start" });
+              section?.querySelector<HTMLInputElement>('input[type="file"]')?.click();
+            }}>Ajouter mon bulletin</button>
+            <div className="pay-import-secondary">
+              <button type="button" className="text-button" onClick={onCompleteEstimate}>Compléter manuellement si besoin</button>
+            </div>
+          </div> : null}
           <button type="button" className="secondary-button pay-dashboard-detail-button" onClick={onOpenEstimateDetails}>
-            Voir le détail du calcul
+            Voir le détail du calcul <span aria-hidden="true">→</span>
           </button>
         </section>
 

@@ -46,26 +46,24 @@ describe("fenêtres communes du planning", () => {
       />,
     );
 
+    expect(time).toContain("Choisissez les horaires");
+    expect(time).toContain('aria-label="Heure de début — heures"');
+    expect(time).toContain('aria-label="Heure de fin — heures"');
+    expect(time).toContain("Ces horaires seront repris automatiquement dans le formulaire.");
     expect(time).toContain("Valider les horaires");
-    expect(time.match(/min="09:00"/g)).toHaveLength(2);
-    expect(time.match(/max="19:00"/g)).toHaveLength(2);
-    expect(time.match(/step="900"/g)).toHaveLength(2);
-    expect(time).toContain("Horaires habituels");
-    expect(time).toContain("Matin · 9 h 15–13 h 30");
-    expect(time).toContain("Après-midi · 13 h 30–17 h 30");
+    expect(time).not.toContain("Horaires habituels");
     expect(warning).toContain('role="alertdialog"');
     expect(warning).toContain("groupe 2");
     expect(deletion).toContain("Annuler cette période ?");
   });
 
-  it("propose les deux demi-journées de formation à mi-temps", () => {
+  it("demande aussi les horaires pour une récupération sur formation", () => {
     const time = renderToStaticMarkup(
       <TimeSelectionDialog
         date="2026-08-21"
         activeType="recovery_training"
-        workQuota="half"
-        start="10:00"
-        end="13:00"
+        start="09:15"
+        end="15:15"
         onStartChange={vi.fn()}
         onEndChange={vi.fn()}
         onClose={vi.fn()}
@@ -73,19 +71,34 @@ describe("fenêtres communes du planning", () => {
       />,
     );
 
-    expect(time).toContain("Quelle demi-journée souhaitez-vous poser ?");
-    expect(time).toContain("Matin · 3 h · 10 h–13 h");
-    expect(time).toContain("Après-midi · 3 h · 13 h–16 h");
-    expect(time).not.toContain("Horaires habituels");
+    expect(time).toContain("Choisissez les horaires");
+    expect(time).toContain('<option value="9" selected="">9 h</option>');
+    expect(time).toContain('<option value="15" selected="">15 h</option>');
+    expect(time).toContain("Valider les horaires");
   });
 
-  it("propose 6 h ou 3 h de formation à temps plein", () => {
+  it("demande directement si la demi-journée est posée le matin ou l’après-midi", () => {
     const time = renderToStaticMarkup(
-      <TimeSelectionDialog date="2026-08-21" activeType="recovery_training" workQuota="full" start="10:00" end="16:00" onStartChange={vi.fn()} onEndChange={vi.fn()} onClose={vi.fn()} onConfirm={vi.fn()} />,
+      <TimeSelectionDialog date="2026-08-21" activeType="half" start="09:15" end="13:30" onStartChange={vi.fn()} onEndChange={vi.fn()} onClose={vi.fn()} onConfirm={vi.fn()} />,
     );
-    expect(time).toContain("Journée · 6 h · 10 h–16 h");
-    expect(time).toContain("Matin · 3 h · 10 h–13 h");
-    expect(time).toContain("Après-midi · 3 h · 13 h–16 h");
+    expect(time).toContain("Matin ou après-midi ?");
+    expect(time).toContain("Quelle moitié de journée souhaitez-vous poser ?");
+    expect(time).toContain("Le matin");
+    expect(time).toContain("L’après-midi");
+    expect(time).toContain('role="radiogroup"');
+    expect(time).toContain("Valider la demi-journée");
+    expect(time).not.toContain('type="time"');
+  });
+
+  it.each(["recovery_day", "recovery_half", "recovery_hours", "recovery_holiday", "recovery_training"] as const)("propose les horaires pour %s", (activeType) => {
+    const time = renderToStaticMarkup(
+      <TimeSelectionDialog date="2026-08-21" activeType={activeType} start="09:15" end="17:30" onStartChange={vi.fn()} onEndChange={vi.fn()} onClose={vi.fn()} onConfirm={vi.fn()} />,
+    );
+    expect(time).toContain("Choisissez les horaires");
+    expect(time).toContain('aria-label="Heure de début — heures"');
+    expect(time).toContain('aria-label="Heure de fin — heures"');
+    expect(time).toContain("Ces horaires seront repris automatiquement dans le formulaire.");
+    expect(time).not.toContain("Combien d’heures souhaitez-vous poser ?");
   });
 
   it("conserve l’erreur et la confirmation non bloquante", () => {
