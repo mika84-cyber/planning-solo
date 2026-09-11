@@ -554,7 +554,10 @@
 
 .pay-dashboard-amounts p { display: grid; gap: 4px; margin: 0; }
 .pay-dashboard-amounts span { color: #64758a; font-size: 12px; font-weight: 800; }
-.pay-dashboard-net strong { color: #3f3b9e; font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1; }
+/* Le montant est le point fort de l'écran, mais il n'a pas besoin d'une
+   couleur étrangère à la palette pour cela : sa taille et son poids suffisent.
+   La teinte foncée le distingue du bouton, qui porte l'accent ordinaire. */
+.pay-dashboard-net strong { color: var(--accent-strong); font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1; }
 .pay-dashboard-gross strong { color: #263e59; font-size: clamp(1.05rem, 2vw, 1.35rem); }
 .pay-dashboard-profile-note { margin: 10px 0 14px; color: #5f7084; font-size: 12px; }
 .pay-dashboard-detail-button { width: 100%; min-height: 44px; border-color:#8eadd3;background:#eef5ff;color:#245dab;font-weight:850; }
