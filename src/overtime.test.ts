@@ -509,3 +509,27 @@ describe("aperçu du crédit pendant la saisie", () => {
     expect(overtimeRangeRecoveryPreview("2026-08-21", "14:00", "14:00", dimanche)).toBeNull();
   });
 });
+
+describe("reprise du solde déjà accumulé", () => {
+  it("ne remajore pas un ajout manuel", () => {
+    // Le solde repris vient des compteurs tenus avant l'application : la
+    // majoration y a déjà été faite. La réappliquer gonflerait le solde.
+    const repris = entry("solidarity-manual", 20 * 60, "recovery");
+    expect(overtimeRecoveryCreditMinutes(repris)).toBe(20 * 60);
+  });
+
+  it("laisse aussi intacts les crédits de férié", () => {
+    const ferie = holidayRecoveryEntries([{ date: "2026-07-14", minutes: 6 * 60 + 15 }]);
+    expect(overtimeRecoveryCreditMinutes(ferie[0])).toBe(6 * 60 + 15);
+  });
+
+  it("n’applique les coefficients qu’aux heures déclarées par horaires", () => {
+    const parHoraires = {
+      ...entry("range", 180, "recovery"),
+      inputMode: "range" as const,
+      start: "14:00",
+      end: "17:00",
+    };
+    expect(overtimeRecoveryCreditMinutes(parHoraires)).toBe(225);
+  });
+});

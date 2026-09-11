@@ -4191,3 +4191,22 @@ test("la saisie annonce les heures faites et le crédit obtenu", async ({ page }
   await expect(history).toContainText("3 h de travail");
   await expect(history).toContainText("+3 h 45 à récupérer");
 });
+
+test("la reprise du solde laisse le choix entre valeur nette et heures à majorer", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await openLeaveTool(page, "Heures supplémentaires et récupérations");
+  await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
+  const dialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
+  await dialog.getByLabel("Heures").fill("20");
+
+  // Par défaut, un solde déjà tenu ailleurs : rien n'est remajoré.
+  await expect(dialog).toContainText("Aucune majoration n’est appliquée ici");
+  await dialog.getByRole("button", { name: "Des heures travaillées" }).click();
+  await expect(dialog).toContainText("20 h de travail");
+  await expect(dialog).toContainText("25 h ajoutées au solde");
+
+  await dialog.getByRole("button", { name: "Ajouter au solde" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("25 h ajoutées au solde de récupération")).toBeVisible();
+});

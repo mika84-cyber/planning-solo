@@ -18,7 +18,7 @@ describe("useWorkTimeActions — validations et payloads", () => {
   });
 
   it("convertit les heures de solidarité et les durées libres sans arrondi fragile", () => {
-    expect(solidarityMinutes({ hours: "2,5", minutes: "15" })).toBe(165);
+    expect(solidarityMinutes({ hours: "2,5", minutes: "15", basis: "credited" })).toBe(165);
     expect(recoveryDraftMinutes({
       date: "2026-09-09", kind: "hours", hours: "1,5", minutes: "15",
       start: "", durationMinutes: null, trainingMinutes: 360,
@@ -81,5 +81,18 @@ describe("useWorkTimeActions — validations et payloads", () => {
       start: "19:00", end: "23:00", payYear: 2026, payMonth: 9,
     });
     expect(mecenatSavePayload(entry)).not.toHaveProperty("grossAmountCents");
+  });
+});
+
+describe("reprise du solde de récupération", () => {
+  it("reprend tel quel un solde déjà calculé", () => {
+    expect(solidarityMinutes({ hours: "20", minutes: "0", basis: "credited" })).toBe(1200);
+  });
+
+  it("majore de 25 % des heures saisies comme travaillées", () => {
+    // 20 h travaillées donnent 25 h : 15 minutes gagnées par heure.
+    expect(solidarityMinutes({ hours: "20", minutes: "0", basis: "worked" })).toBe(1500);
+    expect(solidarityMinutes({ hours: "4", minutes: "0", basis: "worked" })).toBe(300);
+    expect(solidarityMinutes({ hours: "3", minutes: "45", basis: "worked" })).toBe(281);
   });
 });

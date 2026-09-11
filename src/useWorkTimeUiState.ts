@@ -9,7 +9,14 @@ export type OvertimeDraft = {
   disposition: OvertimeDisposition;
 };
 
-export type SolidarityDraft = { hours: string; minutes: string };
+/** Le champ basis dit ce que contient la saisie : « credited », un solde déjà
+ *  constitué qu'on reprend tel quel, ou « worked », des heures travaillées
+ *  que l'application doit encore majorer. */
+export type SolidarityDraft = {
+  hours: string;
+  minutes: string;
+  basis: "credited" | "worked";
+};
 
 export type MecenatDraft = { date: string; start: string; end: string };
 
@@ -41,7 +48,7 @@ export function useWorkTimeUiState() {
     date: dateKey(new Date()), start: "09:00", end: "10:00",
     disposition: "paid" as OvertimeDisposition,
   });
-  const [solidarityDraft, setSolidarityDraft] = useState<SolidarityDraft>({ hours: "", minutes: "0" });
+  const [solidarityDraft, setSolidarityDraft] = useState<SolidarityDraft>({ hours: "", minutes: "0", basis: "credited" });
   const [recoveryDraft, setRecoveryDraft] = useState<RecoveryDraft>({
     date: dateKey(new Date()),
     kind: "hours" as "hours" | "half" | "day" | "holiday" | "training",

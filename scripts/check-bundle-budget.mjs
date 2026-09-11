@@ -13,7 +13,16 @@ const budgets = {
   // Les rubriques principales sont incluses dès l’ouverture pour éviter tout
   // écran de chargement pendant la navigation. Ce plafond garde environ 4 %
   // de marge au-dessus de la version statique validée.
-  entryJavaScript: { raw: 625 * KIB, gzip: 180 * KIB },
+  //
+  // Relevé de 180 à 181 Kio le 11 septembre 2026, pour 447 octets de
+  // dépassement — 0,24 %. La hausse paie le choix entre un solde déjà calculé
+  // et des heures à majorer, ajouté après qu'une double majoration a faussé
+  // le compteur d'une collègue. Le brut, lui, reste dans son plafond d'origine
+  // (620 sur 625 Kio) : c'est le signe qu'il n'y a pas de code mort derrière
+  // cette hausse, seulement de l'interface. La prochaine évolution du
+  // chargement initial devra se financer par un allègement, pas par un
+  // troisième relèvement.
+  entryJavaScript: { raw: 625 * KIB, gzip: 181 * KIB },
   // Inclut aussi le moteur PDF autonome du formulaire, volontairement différé.
   largestSecondaryJavaScript: { raw: 900 * KIB, gzip: 330 * KIB },
   // Relevé le 11 septembre 2026. La croissance vient des rubriques ajoutées

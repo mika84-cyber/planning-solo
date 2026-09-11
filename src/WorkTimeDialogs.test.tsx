@@ -49,7 +49,7 @@ describe("fenêtres de temps de travail", () => {
     const solidarity = renderToStaticMarkup(
       <SolidarityHoursDialog
         open
-        draft={{ hours: "2", minutes: "30" }}
+        draft={{ hours: "2", minutes: "30", basis: "credited" }}
         setDraft={vi.fn()}
         saving={false}
         onClose={vi.fn()}
@@ -226,5 +226,40 @@ describe("l’annonce du crédit de récupération", () => {
       />,
     );
     expect(html).not.toContain("à récupérer</b>");
+  });
+});
+
+describe("reprise du solde de récupération", () => {
+  const solde = (basis: "credited" | "worked") =>
+    renderToStaticMarkup(
+      <SolidarityHoursDialog
+        open
+        draft={{ hours: "20", minutes: "0", basis }}
+        setDraft={vi.fn()}
+        saving={false}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+
+  it("laisse le choix entre un solde déjà calculé et des heures à majorer", () => {
+    const html = solde("credited");
+    expect(html).toContain("Un solde déjà calculé");
+    expect(html).toContain("Des heures travaillées");
+  });
+
+  it("ne majore rien pour un solde déjà calculé", () => {
+    // Ce solde vient des compteurs tenus avant l'application : il est déjà
+    // majoré. Le remajorer le gonflerait.
+    const html = solde("credited");
+    expect(html).toContain("Aucune majoration n’est appliquée ici");
+    expect(html).not.toContain("ajoutées au solde</b>");
+  });
+
+  it("annonce les deux durées quand on saisit des heures travaillées", () => {
+    const html = solde("worked");
+    expect(html).toContain("20 h de travail");
+    expect(html).toContain("25 h ajoutées au solde");
+    expect(html).not.toContain("Aucune majoration n’est appliquée ici");
   });
 });

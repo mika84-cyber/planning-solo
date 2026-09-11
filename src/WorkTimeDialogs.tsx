@@ -2,7 +2,7 @@ import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
-import { defaultRecoveryMinutes, minutesLabel, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
+import { defaultRecoveryMinutes, minutesLabel, OVERTIME_RECOVERY_FACTORS, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
 import { DAY_LABELS, getDayInfo } from "./planningLogic";
 
 type MecenatDraft = { date: string; start: string; end: string };
@@ -260,7 +260,11 @@ export function OvertimeDialog({
   );
 }
 
-type SolidarityDraft = { hours: string; minutes: string };
+type SolidarityDraft = {
+  hours: string;
+  minutes: string;
+  basis: "credited" | "worked";
+};
 
 export function SolidarityHoursDialog({
   open,
@@ -278,6 +282,12 @@ export function SolidarityHoursDialog({
   onSave: () => void;
 }) {
   if (!open) return null;
+  const solidarityTyped = Math.round(
+    Number(draft.hours.replace(",", ".")) * 60 + Number(draft.minutes),
+  ) || 0;
+  const solidarityCredited = Math.round(
+    solidarityTyped * OVERTIME_RECOVERY_FACTORS.day,
+  );
   return (
     <div
       className="modal-backdrop"
@@ -299,6 +309,27 @@ export function SolidarityHoursDialog({
           Indiquez le total personnel accumulé au fil des années. Ces heures
           créditent uniquement votre solde de récupération.
         </p>
+        <fieldset className="overtime-choice-field">
+          <legend>Que contient ce total ?</legend>
+          <div className="overtime-destination-grid">
+            <button
+              type="button"
+              className={draft.basis === "credited" ? "active recovery" : "recovery"}
+              onClick={() => setDraft((current) => ({ ...current, basis: "credited" }))}
+            >
+              <strong>Un solde déjà calculé</strong>
+              <span>Repris tel quel, sans majoration</span>
+            </button>
+            <button
+              type="button"
+              className={draft.basis === "worked" ? "active recovery" : "recovery"}
+              onClick={() => setDraft((current) => ({ ...current, basis: "worked" }))}
+            >
+              <strong>Des heures travaillées</strong>
+              <span>Majorées ×1,25 par l’application</span>
+            </button>
+          </div>
+        </fieldset>
         <div className="overtime-duration-grid solidarity-duration-grid">
           <label>
             <span>Heures</span>
@@ -330,6 +361,29 @@ export function SolidarityHoursDialog({
             />
           </label>
         </div>
+        {/* Un solde repris des compteurs tenus avant l'application est déjà
+            majoré : le remajorer le gonflerait. Mais quelqu'un qui a noté ses
+            heures brutes attend l'inverse. Le choix tranche, et le total
+            annoncé enlève le doute dans les deux cas. */}
+        {draft.basis === "worked" && solidarityTyped > 0 ? (
+          <p className="overtime-recovery-preview">
+            <strong>
+              {minutesLabel(solidarityTyped)} de travail
+              <span aria-hidden="true"> → </span>
+              <b>{minutesLabel(solidarityCredited)} ajoutées au solde</b>
+            </strong>
+            <small>
+              La majoration de jour ×1,25 est appliquée à l’ensemble : un total
+              de plusieurs années ne dit pas quelle part a été faite la nuit ou
+              un dimanche.
+            </small>
+          </p>
+        ) : (
+          <p className="solidarity-hours-note">
+            <b>Aucune majoration n’est appliquée ici</b> : le solde est repris
+            tel que vous l’indiquez.
+          </p>
+        )}
         <p className="solidarity-hours-note">
           Chaque ajout reste visible dans l’historique et peut être supprimé en
           cas d’erreur.

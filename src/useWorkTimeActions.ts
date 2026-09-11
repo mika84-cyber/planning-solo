@@ -8,6 +8,7 @@ import {
   trainingRecoveryTimes,
   minutesLabel,
   nextPayPeriod,
+  OVERTIME_RECOVERY_FACTORS,
   overtimeRecoveryCreditMinutes,
   splitOvertimeRange,
   type OvertimeEntry,
@@ -87,9 +88,15 @@ export function validCalendarDate(value: string) {
 }
 
 export function solidarityMinutes(draft: SolidarityDraft) {
-  return Math.round(
+  const typed = Math.round(
     Number(draft.hours.replace(",", ".")) * 60 + Number(draft.minutes),
   );
+  // Un solde repris est déjà majoré : le remajorer le gonflerait. Seules les
+  // heures saisies comme travaillées reçoivent le coefficient, et seulement
+  // celui de jour : un total de plusieurs années ne dit pas quelle part a été
+  // faite la nuit ou un dimanche.
+  if (draft.basis !== "worked") return typed;
+  return Math.round(typed * OVERTIME_RECOVERY_FACTORS.day);
 }
 
 export function recoveryDraftMinutes(draft: RecoveryDraft, quota: WorkQuota = "full") {
@@ -229,7 +236,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
       }
       setOvertimeEntries((current) => [...current, localEntry]);
       setSolidarityDialogOpen(false);
-      setSolidarityDraft({ hours: "", minutes: "0" });
+      setSolidarityDraft({ hours: "", minutes: "0", basis: "credited" });
       confirmMessage(`${minutesLabel(minutes)} ajoutées au solde de récupération.`);
     } catch (error) {
       notify(calendarErrorMessage(error, "Les heures n’ont pas pu être ajoutées au solde."));

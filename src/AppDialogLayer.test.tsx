@@ -60,7 +60,7 @@ const baseProps = {
     setOvertimeDraft: noop,
     solidarityDialogOpen: false,
     setSolidarityDialogOpen: noop,
-    solidarityDraft: { hours: "", minutes: "0" },
+    solidarityDraft: { hours: "", minutes: "0", basis: "credited" as const },
     setSolidarityDraft: noop,
     savingOvertime: false,
     recoveryDialogOpen: false,
