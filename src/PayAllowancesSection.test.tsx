@@ -11,6 +11,11 @@ const props = {
     sundayLeft: 3,
     sundayCount: 15,
     sundaysScheduledPast: 13,
+    sundays: [
+      ...["01-04", "01-25", "02-15", "03-08", "03-29", "04-19", "05-10", "05-31", "06-21", "07-12", "08-02", "08-23"]
+        .map((day) => ({ key: `2026-${day}`, past: true })),
+      ...["09-13", "10-04", "10-25"].map((day) => ({ key: `2026-${day}`, past: false })),
+    ],
     tier: { label: "11 à 15" },
     holidays: [{ key: "2026-07-14", name: "Fête nationale", choice: "prime" as const }],
     cancelledHolidays: [{ key: "2026-05-01", name: "Fête du Travail" }],
@@ -79,5 +84,24 @@ describe("PayAllowancesSection", () => {
     expect(html).toContain("Mois précédent");
     expect(html).toContain("Mois suivant");
     expect(html).not.toContain("Heures supplémentaires payées");
+  });
+});
+
+describe("la liste des dimanches faits", () => {
+  it("reste repliée au premier affichage : la carte garde son résumé", () => {
+    const html = renderToStaticMarkup(<PayAllowancesSection {...props} />);
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain("Dimanche 23/08");
+  });
+
+  it("dit qu'on peut ouvrir, sur la case des dimanches travaillés", () => {
+    const html = renderToStaticMarkup(<PayAllowancesSection {...props} />);
+    // La case du résumé est un vrai bouton, et elle annonce ce qu'il y a
+    // dessous : sans cette mention, rien n'indique qu'elle s'ouvre.
+    expect(html).toContain(
+      'class="allowance-overview-toggle" aria-expanded="false" aria-controls="sunday-done-list"><span>Dimanches travaillés</span>',
+    );
+    expect(html).toContain("Voir les dates");
+    expect(html).not.toContain("Masquer les dates");
   });
 });

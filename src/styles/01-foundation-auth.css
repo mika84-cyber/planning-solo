@@ -90,20 +90,6 @@ textarea {
 button {
   -webkit-tap-highlight-color: transparent;
 }
-.install-app-button {
-  display: block;
-  width: fit-content;
-  margin: 0 0 12px auto;
-  min-height: 48px;
-  border: 0;
-  border-radius: 15px;
-  padding: 0 19px;
-  background: #172033;
-  color: #fff;
-  font-weight: 850;
-  box-shadow: 0 12px 30px rgba(23, 32, 51, 0.28);
-  cursor: pointer;
-}
 .auth-shell {
   position: relative;
   min-height: 100dvh;

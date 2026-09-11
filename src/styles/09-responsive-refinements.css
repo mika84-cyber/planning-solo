@@ -703,7 +703,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-.allowance-overview-grid article {
+.allowance-overview-grid > :is(article, button) {
   display: grid;
   align-content: center;
   gap: 4px;

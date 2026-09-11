@@ -497,10 +497,6 @@
     border-radius: 22px;
     padding: 25px 20px;
   }
-  .install-app-button {
-    width: 100%;
-    margin: 0 0 12px;
-  }
   .app-shell {
     --page-gutter: 8px;
     padding: 16px var(--page-gutter) max(30px, env(safe-area-inset-bottom));

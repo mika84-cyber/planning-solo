@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { HOLIDAY_PAY_OPTIONS, euros } from "./appModel";
 import { minutesLabel } from "./overtime";
@@ -10,6 +11,7 @@ import {
   s,
   shortDate,
   sundayAllowance,
+  sundayPayslip,
   type HolidayPay,
 } from "./planningLogic";
 
@@ -31,6 +33,9 @@ export type PayAllowancesModel = {
   sundayLeft: number;
   sundayCount: number;
   sundaysScheduledPast: number;
+  /** Les dimanches travaillés de l'année, dans l'ordre. `past` distingue ceux
+   *  déjà faits de ceux que le cycle programme encore. */
+  sundays: Array<{ key: string; past: boolean }>;
   tier: { label: string };
   holidays: HolidayAllowanceItem[];
   cancelledHolidays: CancelledHolidayItem[];
@@ -102,6 +107,10 @@ export function PayAllowancesSection({
   onChooseHolidayPay,
 }: PayAllowancesSectionProps) {
   const { sundayTotal } = allowances;
+  /* La liste des dimanches faits est repliée par défaut : la carte reste un
+     résumé, et on ne déroule les dates que si on vient les vérifier. */
+  const [sundayListOpen, setSundayListOpen] = useState(false);
+  const sundaysDone = allowances.sundays.filter((item) => item.past);
   const variableRows = [
     {
       label: "Dimanches",
@@ -233,11 +242,23 @@ export function PayAllowancesSection({
           </div>
         </div>
         <div className="allowance-overview-grid">
-          <article>
+          <button
+            type="button"
+            className="allowance-overview-toggle"
+            aria-expanded={sundayListOpen}
+            aria-controls="sunday-done-list"
+            onClick={() => setSundayListOpen((open) => !open)}
+          >
             <span>Dimanches travaillés</span>
             <strong>{allowances.sundayDone}</strong>
             <small>{allowances.sundayLeft} encore à venir</small>
-          </article>
+            <em>
+              {sundayListOpen ? "Masquer les dates" : "Voir les dates"}
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </em>
+          </button>
           <article>
             <span>Jours fériés dans l’année</span>
             <strong>{allowances.holidays.length}</strong>
@@ -255,6 +276,38 @@ export function PayAllowancesSection({
             <small>hors forfait mensuel</small>
           </article>
         </div>
+        {sundayListOpen ? (
+          <div id="sunday-done-list" className="sunday-done-list">
+            {/* La liste s'ouvre sous les trois cases : sans ce titre, rien ne
+                dirait de quelle case elle vient. */}
+            {sundaysDone.length ? (
+              <>
+                <p className="allowance-note">
+                  Vos {sundaysDone.length} dimanche{s(sundaysDone.length)}{" "}
+                  travaillé{s(sundaysDone.length)} en {allowances.year}, dans
+                  l’ordre
+                </p>
+                <table className="allowance-table">
+                  <tbody>
+                    {sundaysDone.map((item, index) => (
+                      <tr key={item.key}>
+                        <th scope="row">
+                          Dimanche {shortDate(item.key)}
+                          <small>{sundayPayslip(item.key).label}</small>
+                        </th>
+                        <td>n° {index + 1}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : (
+              <p className="allowance-note">
+                Aucun dimanche travaillé pour le moment.
+              </p>
+            )}
+          </div>
+        ) : null}
         {allowances.holidayPending ? (
           <div className="allowance-summary-alert">
             <span aria-hidden="true">!</span>

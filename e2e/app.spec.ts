@@ -4125,3 +4125,37 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
   await agnesDeleteButtons.first().click();
   await expect(agnesDeleteButtons).toHaveCount(1);
 });
+
+test("la case des dimanches travaillés déplie la liste des dates", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
+
+  const toggle = page.locator(".allowance-overview-toggle");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#sunday-done-list")).toHaveCount(0);
+  // Sans cette mention, rien ne dit que la case s'ouvre.
+  await expect(toggle).toContainText("Voir les dates");
+
+  // Le nombre affiché sur la case est celui des dimanches listés.
+  const done = Number(
+    (await toggle.innerText()).match(/(\d+)\s*\n/)?.[1] ?? "-1",
+  );
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(toggle).toContainText("Masquer les dates");
+
+  const list = page.locator("#sunday-done-list");
+  await expect(list).toBeVisible();
+  if (done > 0) {
+    // Autant de lignes que de dimanches annoncés faits, numérotées de 1 à n.
+    await expect(list.locator("tbody tr")).toHaveCount(done);
+    await expect(list.locator("tbody tr").first().locator("th")).toContainText("Dimanche");
+    await expect(list.locator("tbody tr").last().locator("td")).toHaveText(`n° ${done}`);
+  } else {
+    await expect(list).toContainText("Aucun dimanche travaillé pour le moment.");
+  }
+
+  await toggle.click();
+  await expect(page.locator("#sunday-done-list")).toHaveCount(0);
+});
