@@ -12,6 +12,7 @@ import {
   monthlyRecoveryBalance,
   nextPayPeriod,
   overtimeRecoveryCreditMinutes,
+  overtimeRangeRecoveryPreview,
   overtimeFromDuration,
   recoveryRequestMinutes,
   splitOvertimeRange,
@@ -471,5 +472,40 @@ describe("solde de récupération", () => {
       { entryId: "older-gain", earnedMinutes: 120, usedMinutes: 120, remainingMinutes: 0 },
       { entryId: "newer-gain", earnedMinutes: 120, usedMinutes: 30, remainingMinutes: 90 },
     ]);
+  });
+});
+
+describe("aperçu du crédit pendant la saisie", () => {
+  const dimanche = (date: string) => date === "2026-08-23";
+
+  it("donne les heures faites et le crédit majoré", () => {
+    expect(overtimeRangeRecoveryPreview("2026-08-21", "14:00", "17:00", dimanche))
+      .toEqual({ workedMinutes: 180, creditedMinutes: 225 });
+  });
+
+  it("donne le même résultat que le crédit enregistré", () => {
+    // Les deux passent par la même fonction : s'ils divergeaient, l'annonce
+    // faite à la saisie mentirait sur ce qui sera réellement crédité.
+    const entry = {
+      id: "e1",
+      date: "2026-08-21",
+      minutes: 225,
+      dayMinutes: 225,
+      nightMinutes: 0,
+      disposition: "recovery" as const,
+      inputMode: "range" as const,
+      start: "20:00",
+      end: "00:00",
+      updatedAt: "2026-08-21",
+    };
+    const preview = overtimeRangeRecoveryPreview("2026-08-21", "20:00", "00:00", dimanche);
+    expect(preview?.creditedMinutes).toBe(
+      overtimeRecoveryCreditMinutes(entry, dimanche),
+    );
+  });
+
+  it("ne renvoie rien tant que la plage est incomplète", () => {
+    expect(overtimeRangeRecoveryPreview("2026-08-21", "", "", dimanche)).toBeNull();
+    expect(overtimeRangeRecoveryPreview("2026-08-21", "14:00", "14:00", dimanche)).toBeNull();
   });
 });

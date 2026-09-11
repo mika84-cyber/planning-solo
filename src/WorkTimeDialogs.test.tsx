@@ -179,3 +179,52 @@ describe("fenêtres de temps de travail", () => {
     expect(holiday).not.toContain(">8 h</button>");
   });
 });
+
+describe("l’annonce du crédit de récupération", () => {
+  const dialog = (start: string, end: string, date = "2026-08-21") =>
+    renderToStaticMarkup(
+      <OvertimeDialog
+        open
+        draft={{ date, start, end, disposition: "recovery" }}
+        setDraft={vi.fn()}
+        saving={false}
+        group={2}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+
+  it("annonce les heures faites et celles récupérées, avant d’enregistrer", () => {
+    // 3 h de jour : la majoration porte le crédit à 3 h 45.
+    const html = dialog("14:00", "17:00");
+    expect(html).toContain("3 h de travail");
+    expect(html).toContain("3 h 45 à récupérer");
+  });
+
+  it("dit de saisir ses heures réelles, pour qu’on ne majore pas soi-même", () => {
+    // Le piège vécu : 3 h de travail saisies en 3 h 45, créditées 4 h 41.
+    expect(dialog("14:00", "17:00")).toContain(
+      "la majoration est ajoutée par l’application",
+    );
+  });
+
+  it("compte double les heures d’après 22 h", () => {
+    // 20 h → minuit : 2 h de jour majorées à 2 h 30, 2 h de nuit portées à 4 h.
+    expect(dialog("20:00", "00:00")).toContain("6 h 30 à récupérer");
+  });
+
+  it("se tait pour des heures à payer : la majoration ne les concerne pas", () => {
+    const html = renderToStaticMarkup(
+      <OvertimeDialog
+        open
+        draft={{ date: "2026-08-21", start: "14:00", end: "17:00", disposition: "paid" }}
+        setDraft={vi.fn()}
+        saving={false}
+        group={2}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+    expect(html).not.toContain("à récupérer</b>");
+  });
+});

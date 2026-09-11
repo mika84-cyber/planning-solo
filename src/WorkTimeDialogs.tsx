@@ -2,7 +2,7 @@ import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
-import { defaultRecoveryMinutes, minutesLabel, type OvertimeDisposition, type WorkQuota } from "./overtime";
+import { defaultRecoveryMinutes, minutesLabel, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
 import { DAY_LABELS, getDayInfo } from "./planningLogic";
 
 type MecenatDraft = { date: string; start: string; end: string };
@@ -148,6 +148,20 @@ export function OvertimeDialog({
   const sundayOrHoliday = Boolean(
     selectedDate && (selectedDate.getDay() === 0 || selectedDay?.holiday),
   );
+  /* La même règle que le calcul enregistré, appliquée à chaque jour
+     réellement parcouru : une plage qui passe minuit tombe sur le lendemain,
+     qui n'est pas forcément un dimanche comme la veille. */
+  const dayIsSundayOrHoliday = (key: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return false;
+    const day = new Date(`${key}T12:00:00`);
+    return day.getDay() === 0 || Boolean(getDayInfo(day, group).holiday);
+  };
+  const recoveryPreview = overtimeRangeRecoveryPreview(
+    draft.date,
+    draft.start,
+    draft.end,
+    dayIsSundayOrHoliday,
+  );
   return (
     <div
       className="modal-backdrop"
@@ -218,6 +232,19 @@ export function OvertimeDialog({
                 <span>Jour ×1,25 · dimanche/férié ×1,66 · nuit ×2</span>
               </button>
             </div>
+            {draft.disposition === "recovery" && recoveryPreview ? (
+              <p className="overtime-recovery-preview">
+                <strong>
+                  {minutesLabel(recoveryPreview.workedMinutes)} de travail
+                  <span aria-hidden="true"> → </span>
+                  <b>{minutesLabel(recoveryPreview.creditedMinutes)} à récupérer</b>
+                </strong>
+                <small>
+                  Saisissez vos heures réelles : la majoration est ajoutée par
+                  l’application. L’ajouter vous-même la compterait deux fois.
+                </small>
+              </p>
+            ) : null}
           </fieldset>
         </div>
         <div className="modal-actions">

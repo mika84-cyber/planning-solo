@@ -164,8 +164,18 @@ export function LeaveManagementPage({
                     <article key={entry.id}>
                       <span className={`overtime-kind ${entry.disposition}`} aria-hidden="true" />
                       <div>
-                        <strong>{entry.id.startsWith("solidarity-") ? `Ajout manuel · +${minutesLabel(entry.minutes)}` : entry.disposition === "paid" ? `Heures sup · ${minutesLabel(entry.minutes)} · À payer` : `Heures sup · ${minutesLabel(entry.minutes)} de travail · +${minutesLabel(state?.earnedMinutes ?? entry.minutes)} à récupérer`}</strong>
+                        <strong>{entry.id.startsWith("solidarity-") ? `Ajout manuel · +${minutesLabel(entry.minutes)}` : entry.disposition === "paid" ? `Heures sup · ${minutesLabel(entry.minutes)} · À payer` : `Heures sup · ${minutesLabel(entry.minutes)} de travail`}</strong>
                         <span>{longDate(fromKey(entry.date))}</span>
+                        {/* Les deux durées côte à côte, et le mot « majoration »
+                            pour que l'écart entre elles ne surprenne pas. */}
+                        {!entry.id.startsWith("solidarity-") && entry.disposition === "recovery" ? (
+                          <small className="overtime-credit-line">
+                            <b>+{minutesLabel(state?.earnedMinutes ?? entry.minutes)} à récupérer</b>
+                            {(state?.earnedMinutes ?? entry.minutes) > entry.minutes
+                              ? " · majoration comprise"
+                              : null}
+                          </small>
+                        ) : null}
                         <small>
                           {entry.id.startsWith("solidarity-")
                             ? state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles sur cet ajout manuel` : "Ajout manuel entièrement utilisé"

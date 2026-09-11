@@ -2977,7 +2977,9 @@ test("une heure supplémentaire de jour crédite 1 h 15 en récupération", asyn
   await page.getByLabel("Heures supplémentaires et récupérations")
     .getByRole("button", { name: "Voir l’historique" })
     .click();
-  await expect(page.locator(".overtime-history")).toContainText("1 h de travail · +1 h 15 à récupérer");
+  // Les deux durées sont désormais sur deux lignes, et la majoration nommée.
+  await expect(page.locator(".overtime-history")).toContainText("1 h de travail");
+  await expect(page.locator(".overtime-history")).toContainText("+1 h 15 à récupérer · majoration comprise");
 });
 
 test("une formation utilise le bon nombre d’heures et apparaît en REC", async ({ page }) => {
@@ -4158,4 +4160,34 @@ test("la case des dimanches travaillés déplie la liste des dates", async ({ pa
 
   await toggle.click();
   await expect(page.locator("#sunday-done-list")).toHaveCount(0);
+});
+
+test("la saisie annonce les heures faites et le crédit obtenu", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await openLeaveTool(page, "Heures supplémentaires et récupérations");
+  await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
+  const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
+  await dialog.getByLabel("Date").fill("2026-05-12");
+  await setClockTime(dialog, "Heure de début", "14:00");
+  await setClockTime(dialog, "Heure de fin", "17:00");
+  await dialog.getByRole("button", { name: "À récupérer" }).click();
+
+  // 3 h de travail, 3 h 45 créditées : les deux durées avant d'enregistrer.
+  const preview = dialog.locator(".overtime-recovery-preview");
+  await expect(preview).toContainText("3 h de travail");
+  await expect(preview).toContainText("3 h 45 à récupérer");
+  await expect(preview).toContainText("la majoration est ajoutée par l’application");
+
+  await dialog.getByRole("button", { name: "Enregistrer les heures" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Et la même lecture dans l'historique, une fois l'entrée enregistrée.
+  await openLeaveTool(page, "Heures supplémentaires et récupérations");
+  await page.getByLabel("Heures supplémentaires et récupérations")
+    .getByRole("button", { name: "Voir l’historique" })
+    .click();
+  const history = page.locator(".overtime-history");
+  await expect(history).toContainText("3 h de travail");
+  await expect(history).toContainText("+3 h 45 à récupérer");
 });

@@ -360,11 +360,38 @@ export function overtimeRecoveryCreditMinutes(
   if (entry.inputMode !== "range" || !entry.start || !entry.end) return entry.minutes;
   const split = splitOvertimeRangeByCalendar(entry.date, entry.start, entry.end, isSundayOrHoliday);
   if (!split) return entry.minutes;
+  return recoveryCreditFromSplit(split);
+}
+
+/** L'unique endroit où la majoration s'applique : le crédit enregistré et
+ *  celui annoncé au moment de la saisie passent tous deux par ici, pour qu'ils
+ *  ne puissent pas diverger. */
+function recoveryCreditFromSplit(split: OvertimeCalendarSplit) {
   return Math.round(
     split.dayMinutes * OVERTIME_RECOVERY_FACTORS.day +
     split.sundayHolidayMinutes * OVERTIME_RECOVERY_FACTORS.sundayHoliday +
     split.nightMinutes * OVERTIME_RECOVERY_FACTORS.night,
   );
+}
+
+/**
+ * Ce qu'une plage horaire donnera si elle est prise en récupération, avant
+ * tout enregistrement.
+ *
+ * Sert à l'annoncer pendant la saisie : sans cette annonce, quelqu'un qui
+ * connaît la règle applique la majoration lui-même et l'application la
+ * réapplique par-dessus. C'est arrivé — 3 h travaillées saisies en 3 h 45,
+ * créditées 4 h 41.
+ */
+export function overtimeRangeRecoveryPreview(
+  date: string,
+  start: string,
+  end: string,
+  isSundayOrHoliday: (date: string) => boolean,
+) {
+  const split = splitOvertimeRangeByCalendar(date, start, end, isSundayOrHoliday);
+  if (!split) return null;
+  return { workedMinutes: split.minutes, creditedMinutes: recoveryCreditFromSplit(split) };
 }
 
 /** Calcule les IHTS des seules heures « À payer » du mois d'exécution.
