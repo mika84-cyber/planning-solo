@@ -9,7 +9,7 @@
 
 .useful-resource-intro {
   margin-inline: clamp(12px, 2vw, 22px);
-  border-left: 5px solid #3978ba;
+  border-left: 5px solid var(--accent);
   padding: 4px 0 4px clamp(14px, 2vw, 20px);
 }
 

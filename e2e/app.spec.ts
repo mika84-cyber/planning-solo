@@ -157,10 +157,27 @@ async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
 /** La bordure commune des cartes est définie une fois, par la variable
  *  --border-card. La lire plutôt que de recopier sa valeur évite de casser
  *  ces tests au prochain ajustement visuel. */
-async function cardBorderColor(page: Page) {
-  return page.evaluate(() =>
-    getComputedStyle(document.documentElement).getPropertyValue("--border-card").trim(),
+/** Lit une couleur de la palette plutôt que de recopier sa valeur : ces
+ *  contrôles survivent ainsi à un ajustement visuel. */
+async function cssToken(page: Page, name: string) {
+  return page.evaluate(
+    (token) =>
+      getComputedStyle(document.documentElement).getPropertyValue(token).trim(),
+    name,
   );
+}
+
+/** Convertit un jeton hexadécimal en notation rgb(), telle que la renvoie
+ *  toHaveCSS. */
+async function cssTokenRgb(page: Page, name: string) {
+  const value = await cssToken(page, name);
+  const hex = value.replace('#', '');
+  const n = Number.parseInt(hex, 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
+
+async function cardBorderColor(page: Page) {
+  return cssToken(page, "--border-card");
 }
 
 async function openDayOtherActions(dialog: Locator) {
@@ -191,7 +208,16 @@ test("les expositions basculent automatiquement à 00h05 heure de Paris", async 
 test("les cartes intérieures restent légères avec des bordures visibles et une ombre douce", async ({ page }, testInfo) => {
   await prepareDemo(page);
   const card = page.locator('.today-next-work');
-  await expect(card).toHaveCSS('background-image', 'linear-gradient(145deg, rgb(248, 251, 255) 0%, rgb(238, 244, 251) 100%)');
+  // Cette carte ne porte pas d'information de couleur : elle suit la surface
+  // commune, lue dans la palette plutôt que recopiée ici.
+  const [surfaceCarte, surfaceFond] = await Promise.all([
+    cssTokenRgb(page, "--card"),
+    cssTokenRgb(page, "--bg"),
+  ]);
+  await expect(card).toHaveCSS(
+    'background-image',
+    `linear-gradient(145deg, ${surfaceCarte} 0%, ${surfaceFond} 100%)`,
+  );
   await expect(card).toHaveCSS('border-top-width', '2px');
   await expect(card).not.toHaveCSS('box-shadow', 'none');
   await card.scrollIntoViewIfNeeded();
@@ -209,7 +235,13 @@ test("Ma paie retrouve ses couleurs précédentes sans changer la disposition", 
   await prepareDemo(page);
   await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Ma paie', exact: true }).click();
   await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-image', 'linear-gradient(145deg, rgb(238, 234, 251), rgb(255, 250, 245))');
-  await expect(page.locator('.pay-dashboard-net strong')).toHaveCSS('color', 'rgb(63, 59, 158)');
+  // La démo n'a pas de montant : cette ligne mesurait donc « À compléter »,
+  // pas une somme. Une absence se lit désormais en gris discret, pour ne pas
+  // être prise pour une estimation réelle.
+  await expect(page.locator('.pay-dashboard-net.is-missing strong')).toHaveCSS(
+    'color',
+    await cssTokenRgb(page, '--muted'),
+  );
   await page.locator('.pay-dashboard-estimate').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/coherent-pay-${testInfo.project.name}.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -2806,7 +2838,7 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await expect(page.locator(".cet-heading strong")).toHaveCSS("font-size", "18.4px");
   await expect(page.getByLabel("Date d’ouverture (facultatif)")).toHaveCount(0);
   const openingRequest = page.getByRole("button", { name: "Faire une demande d’ouverture" });
-  await expect(openingRequest).toHaveCSS("background-color", "rgb(73, 100, 141)");
+  await expect(openingRequest).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await expect(openingRequest).toHaveCSS("color", "rgb(255, 255, 255)");
   await openingRequest.click();
   const openingForm = page.getByRole("dialog", { name: "Ouvrir mon compte épargne-temps" });
@@ -2857,7 +2889,7 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await expect(leaveAction).toHaveCSS("color", "rgb(17, 24, 39)");
   await expect(operationAction).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(operationAction).toHaveCSS("color", "rgb(17, 24, 39)");
-  await expect(fundingAction).toHaveCSS("background-color", "rgb(73, 100, 141)");
+  await expect(fundingAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await fundingAction.click();
   const fundingForm = page.getByRole("dialog", { name: "Alimenter ou indemniser mon CET" });
   await expect(fundingForm.getByRole("alert")).toContainText("ne peut être envoyé qu’entre le 15 novembre et le 31 décembre");

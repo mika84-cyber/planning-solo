@@ -1,7 +1,7 @@
 /* Cascade finale de l’annuaire : elle doit rester après les anciens styles
    de Formulaires utiles pour préserver les fiches et leurs actions. */
 .top-header.top-header-contacts {
-  --section-accent: #367c7d;
+  --section-accent: var(--sage);
   background:
     radial-gradient(circle at 78% 30%, rgba(112, 215, 238, 0.48), transparent 28%),
     radial-gradient(circle at 63% 112%, rgba(255, 184, 92, 0.38), transparent 40%),
@@ -36,7 +36,7 @@
 .useful-contact-card > .resource-favorite-button { position: absolute; top: 10px; right: 10px; }
 .useful-contact-card > .useful-contact-identity { padding-right: 50px; }
 .useful-contact-card > .useful-contact-actions { margin-top: 4px; }
-.contact-admin-edit { position: absolute; top: 10px; right: 62px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #c6d5e3; border-radius: 11px; padding: 0; background: #fff; color: #49648d; font-size: 20px; font-weight: 800; cursor: pointer; }
+.contact-admin-edit { position: absolute; top: 10px; right: 62px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #c6d5e3; border-radius: 11px; padding: 0; background: #fff; color: var(--accent); font-size: 20px; font-weight: 800; cursor: pointer; }
 .contact-admin-add { width: 100%; min-height: 44px; margin: 0 0 12px; border: 1.5px dashed #91aac3; border-radius: 13px; background: #f4f7fb; color: #315e89; font-weight: 850; cursor: pointer; }
 .useful-contact-identity > span:first-child {
   width: 44px;
@@ -507,7 +507,7 @@
 }
 
 .top-header-title .eyebrow {
-  color: #124f9b;
+  color: var(--accent);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.62);
 }
 

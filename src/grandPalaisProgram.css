@@ -49,7 +49,7 @@
 .grand-palais-view-tools { display: grid; gap: 12px; }
 .grand-palais-view-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
 .grand-palais-view-picker button { border: 1px solid #c7d5e2; border-radius: 12px; padding: 10px 8px; background: #fff; color: #365675; font-weight: 800; }
-.grand-palais-view-picker button.active { border-color: #286fae; background: #eaf3fc; color: #14558f; }
+.grand-palais-view-picker button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
 .grand-palais-search { display: grid; gap: 5px; color: #48627a; font-size: 12px; font-weight: 800; }
 .grand-palais-search input { min-height: 44px; border: 1px solid #bdcedd; border-radius: 12px; padding: 0 13px; background: #fff; color: #17324f; font: inherit; }
 

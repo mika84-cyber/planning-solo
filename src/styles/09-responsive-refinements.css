@@ -339,16 +339,17 @@
   background: #d8edf6;
   color: #397997;
 }
-.today-next-work {
-  background: linear-gradient(145deg, #f8fbff 0%, #eef4fb 100%) !important;
-}
+/* Ces deux cartes ne portent pas d'information de couleur, contrairement à
+   .today-status et à ses tons de journée : elles partagent donc la surface
+   commune. Une teinte par carte ne hiérarchisait rien. */
+.today-next-work,
 .today-leave-balance {
-  border-color: #d8d5ea !important;
-  background: linear-gradient(145deg, #fdfcff 0%, #f3f1fa 100%) !important;
+  border-color: var(--border-card) !important;
+  background: linear-gradient(145deg, var(--card) 0%, var(--bg) 100%) !important;
 }
 .today-leave-balance .today-card-icon {
-  background: #e8e3f4;
-  color: #6e6091;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 .important-alert {
   display: grid;
@@ -2204,7 +2205,7 @@
 .overtime-history { display: grid; gap: 7px; border-top: 1px solid #dce7e4; padding-top: 12px; }
 .overtime-history-filters { display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px 4px; scrollbar-width: none; }
 .overtime-history-filters button { flex: 0 0 auto; border: 1px solid #c9d8e5; border-radius: 999px; padding: 7px 10px; background: #fff; color: #315575; font-size: 11px; font-weight: 800; }
-.overtime-history-filters button.active { border-color: #286fae; background: #eaf3fc; color: #14558f; }
+.overtime-history-filters button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
 .overtime-history article {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;

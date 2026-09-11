@@ -16,8 +16,16 @@ const files = [
 // Baseline du 29 août 2026, ajustée à la rubrique autonome des échanges de
 // journées. La petite marge restante continue d'empêcher les surcharges
 // dispersées lors des prochaines évolutions.
+//
+// Relevée de 30 lignes le 11 septembre 2026 pour la refonte visuelle : la
+// hausse est de l'infrastructure — déclaration de la police d'affichage
+// auto-hébergée et jetons de palette — et non une passe de surcharges. La
+// conversion des couleurs écrites en dur vers ces jetons doit faire
+// redescendre ce total ; si elle n'y parvient pas, c'est le signe qu'elle
+// ajoute au lieu de remplacer, et il faut la reprendre plutôt que relever
+// ce plafond une seconde fois.
 const limits = {
-  totalLines: 16_700,
+  totalLines: 16_730,
   importantDeclarations: 132,
   mediaQueries: 124,
   linesPerFile: 2_900,

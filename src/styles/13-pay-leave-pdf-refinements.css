@@ -479,7 +479,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px 18px;
-  border-left: 8px solid #6658a6;
+  border-left: 8px solid var(--accent);
   background: linear-gradient(145deg, #eeeafb, #fffaf5);
 }
 
@@ -518,7 +518,7 @@
 
 .pay-dashboard-estimate {
   border-color: #9ab6d9;
-  border-left: 6px solid #356fba;
+  border-left: 6px solid var(--accent);
   background: linear-gradient(135deg, #f7fbff 0%, #fff 58%, #fbf6ef 100%);
   box-shadow: 0 10px 28px rgba(35, 62, 91, 0.09);
 }
@@ -1326,4 +1326,15 @@
     grid-template-columns: 40px minmax(0, 1fr);
     align-items: center;
   }
+}
+
+/* Une absence de valeur reste discrète : affichée comme un montant, en très
+   gros et en couleur, « À compléter » se lisait au premier regard comme une
+   somme réellement estimée. */
+.pay-dashboard-net.is-missing strong,
+.pay-dashboard-gross.is-missing strong {
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: 0;
 }

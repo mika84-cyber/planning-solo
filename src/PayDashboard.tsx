@@ -89,11 +89,13 @@ export function PayDashboard({
             </span>
           </div>
           <div className="pay-dashboard-amounts">
-            <p className="pay-dashboard-net">
+            {/* `is-missing` ne sert qu'à l'apparence : une absence de valeur
+                ne doit pas se lire comme un montant. */}
+            <p className={`pay-dashboard-net${net === null ? " is-missing" : ""}`}>
               <span>Net estimé</span>
               <strong>{net === null ? "À compléter" : euros(net)}</strong>
             </p>
-            <p className="pay-dashboard-gross">
+            <p className={`pay-dashboard-gross${grossComplete ? "" : " is-missing"}`}>
               <span>Brut estimé</span>
               <strong>{grossComplete ? euros(gross) : "À compléter"}</strong>
             </p>

@@ -73,7 +73,7 @@
   cursor: pointer;
 }
 .guide-task h3 button:hover, .guide-task h3 button[aria-expanded="true"] { background: #eef4f9; }
-.guide-task h3 button:focus-visible { outline: 2px solid #49648d; outline-offset: -3px; }
+.guide-task h3 button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .guide-task strong { display: block; font-size: 15px; line-height: 1.4; }
 .guide-task small { display: block; margin-top: 4px; color: #617186; font-size: 12px; font-weight: 500; }
 .guide-task-chevron { font-size: 20px; text-align: center; }
@@ -81,7 +81,7 @@
 .guide-task-answer { padding: 4px 22px 18px; color: #465970; font-size: 14px; line-height: 1.65; }
 .guide-task-answer ol { margin: 12px 0 16px; padding-left: 22px; }
 .guide-task-answer li { padding-left: 6px; margin-bottom: 12px; }
-.guide-task-answer li::marker { color: #49648d; font-weight: 750; }
+.guide-task-answer li::marker { color: var(--accent); font-weight: 750; }
 .guide-task-answer p { margin: 0; border-left: 3px solid #b5c8d6; border-radius: 4px 10px 10px 4px; padding: 12px 14px; background: #f4f7f9; }
 .guide-task-answer p strong { margin-bottom: 4px; color: #29435f; font-size: 12px; }
 .guide-number {
@@ -1029,9 +1029,9 @@
 .view-switch button:hover { color: #254f84; }
 .view-switch button:active { transform: scale(0.97); }
 .view-switch button.active {
-  background: linear-gradient(145deg, #356ac5, #2757aa);
+  background: linear-gradient(145deg, var(--accent), var(--accent-strong));
   color: #fff;
-  box-shadow: 0 6px 14px rgba(39, 87, 170, 0.25), inset 0 1px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 14px rgba(140, 61, 24, 0.26), inset 0 1px rgba(255, 255, 255, 0.25);
 }
 .account-button,
 .main-menu-button {
@@ -1377,7 +1377,7 @@
 
 /* La rubrique Congés et récupérations possède son propre visuel d’en-tête. */
 .top-header.top-header-leave {
-  --section-accent: #4f806f;
+  --section-accent: var(--sage);
   background:
     linear-gradient(
       90deg,
@@ -1390,7 +1390,7 @@
 
 /* Ma paie utilise le dessin aux lignes noires uniquement dans son en-tête. */
 .top-header.top-header-pay {
-  --section-accent: #6658a6;
+  --section-accent: var(--accent);
   background:
     linear-gradient(
       90deg,
