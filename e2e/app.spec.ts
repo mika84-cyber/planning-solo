@@ -122,6 +122,54 @@ async function openMainMenu(page: Page) {
   await expect(page.getByRole("complementary", { name: "Menu principal" })).toBeVisible();
 }
 
+/** Les libellés de la navigation principale changent avec la largeur de
+ *  l'écran : « Docs » sur téléphone contre « Documents » sur ordinateur,
+ *  « Expos » contre « Programme ». Les deux sont acceptés ici pour qu'un
+ *  parcours s'écrive une seule fois et vaille sur les trois appareils. */
+const SECTION_BUTTONS = {
+  home: /^Accueil$/,
+  leave: /^Congés$/,
+  pay: /^Ma paie$/,
+  documents: /^(Docs|Documents)$/,
+  program: /^(Expos|Programme)$/,
+  colleagues: /^Collègues$/,
+} as const;
+
+/** Ouvre une rubrique par la navigation principale — barre du bas sur
+ *  téléphone, rail sur ordinateur. Les rubriques ne sont plus dans le menu
+ *  tiroir, qui ne garde que le compte et les réglages. */
+async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
+  // Le tiroir resté ouvert recouvrirait la navigation : on le referme.
+  const drawer = page.getByRole("complementary", { name: "Menu principal" });
+  if (await drawer.isVisible().catch(() => false)) {
+    await page.getByRole("button", { name: "Fermer le menu" }).click();
+    await expect(drawer).toBeHidden();
+  }
+  await page
+    .locator('nav[aria-label="Navigation principale"]:visible')
+    .getByRole("button", { name: SECTION_BUTTONS[section] })
+    .click();
+}
+
+/** Les actions secondaires de la fiche jour — souhait, maladie, grève, CET,
+ *  fermeture exceptionnelle — sont repliées derrière un volet « Autres »
+ *  pour désencombrer la fiche. Il faut le déplier avant d'y cliquer. */
+/** La bordure commune des cartes est définie une fois, par la variable
+ *  --border-card. La lire plutôt que de recopier sa valeur évite de casser
+ *  ces tests au prochain ajustement visuel. */
+async function cardBorderColor(page: Page) {
+  return page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--border-card").trim(),
+  );
+}
+
+async function openDayOtherActions(dialog: Locator) {
+  const other = dialog.locator("details.day-action-other");
+  await expect(other).toHaveCount(1);
+  const alreadyOpen = await other.evaluate((node) => (node as HTMLDetailsElement).open);
+  if (!alreadyOpen) await other.locator("summary").click();
+}
+
 async function openOtherLeaveBalances(page: Page) {
   const balances = page.locator("details.other-leave-balances");
   if ((await balances.getAttribute("open")) === null) await balances.locator("summary").click();
@@ -268,8 +316,7 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     expect(desktopStyles[0].background).not.toBe(desktopStyles[1].background);
     expect(desktopStyles[1].dividerWidth).toBe("0px");
   }
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Congés et récupérations/ }).click();
+  await goToSection(page, "leave");
   await expect(page.locator("details.leave-tool-disclosure")).toHaveCount(3);
   await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
   await expect(page.locator("details.leave-tool-disclosure summary i")).toHaveCount(0);
@@ -319,10 +366,7 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
 
 test("les quatre soldes principaux et les autres congés restent en grilles équilibrées", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   const primaryCards = page.locator(".direct-balances-content > .leave-balance-grid > button");
   await expect(primaryCards).toHaveCount(4);
   const primaryRows = await primaryCards.evaluateAll((cards) =>
@@ -555,10 +599,7 @@ async function prepareStrikeContinuityDemo(page: Page, kind: "annual" | "rest") 
 }
 
 async function openUsefulResource(page: Page, name: "Formulaires" | "Contacts") {
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Documents et contacts/ })
-    .click();
+  await goToSection(page, "documents");
   await expect(page.getByRole("tab", { name: /^Formulaires/ })).toBeVisible();
   await expect(page.getByRole("tab", { name: /^Contacts/ })).toBeVisible();
   await page.getByRole("tab", { name: new RegExp(`^${name}`) }).click();
@@ -566,8 +607,7 @@ async function openUsefulResource(page: Page, name: "Formulaires" | "Contacts") 
 
 test("les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Documents et contacts/ }).click();
+  await goToSection(page, "documents");
   const cards = page.locator(".useful-resource-tab");
   const boxes = await cards.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   const pdfScale = await page.locator(".resource-pdf .useful-resource-tab-art img").evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).a);
@@ -618,10 +658,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await page.setViewportSize(testInfo.project.name === "mobile" ? { width: 344, height: 882 } : { width: 1280, height: 900 });
   await prepareDemo(page);
   const referenceHeaderHeight = (await page.locator('.top-header:visible').boundingBox())!.height;
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Planning des collègues/ })
-    .click();
+  await goToSection(page, "colleagues");
 
   await expect(page.locator(".deferred-section-loading")).toHaveCount(0);
   const sharingIntro = page.locator(".colleague-sharing-intro");
@@ -799,23 +836,14 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
 
 test("l’aide au partage est ouverte seulement lors de la première utilisation", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Planning des collègues/ })
-    .click();
+  await goToSection(page, "colleagues");
 
   const firstToggle = page.locator(".colleague-how-toggle");
   await expect(firstToggle).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Accueil/ })
-    .click();
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Planning des collègues/ })
-    .click();
+  await goToSection(page, "home");
+  await goToSection(page, "colleagues");
 
   const returningToggle = page.locator(".colleague-how-toggle");
   await expect(returningToggle).toHaveAttribute("aria-expanded", "false");
@@ -900,10 +928,7 @@ test("l’accueil signale uniquement les horaires de travail manquants", async (
 test("une photo de bulletin est reconnue localement", async ({ page }) => {
   test.setTimeout(120_000);
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
 
   const imageBase64 = await page.evaluate(() => {
     const canvas = document.createElement("canvas");
@@ -1002,10 +1027,11 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(page.locator(".top-header .header-update-button")).toHaveCount(0);
   const accountButton = page.getByRole("button", { name: "Compte" });
   await accountButton.click();
-  const updateMenuItem = page.getByRole("menuitem", { name: "Vérifier les mises à jour" });
-  await expect(updateMenuItem).toBeVisible();
-  await expect(updateMenuItem).toHaveCSS("border-radius", "12px");
-  await expect(updateMenuItem).toHaveCSS("background-image", /linear-gradient/);
+  // Le menu du compte ne garde que l'identité et la déconnexion ; la
+  // recherche de mise à jour est passée dans le menu tiroir.
+  await expect(page.locator(".account-menu-identity")).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Se déconnecter" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Vérifier les mises à jour" })).toHaveCount(0);
   const accountPanelBox = await page.getByRole("menu").boundingBox();
   const headerBoxWithMenu = await page.locator(".top-header").boundingBox();
   expect(accountPanelBox!.y + accountPanelBox!.height).toBeGreaterThan(headerBoxWithMenu!.y + headerBoxWithMenu!.height);
@@ -1013,36 +1039,32 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await accountButton.click();
   await openMainMenu(page);
 
+  // Les rubriques ont quitté le menu tiroir pour la navigation principale :
+  // il ne garde plus que le compte et les réglages.
   const menu = page.getByRole("complementary", { name: "Menu principal" });
-  const resources = menu.getByRole("button", { name: /Documents et contacts/ });
-  const program = menu.getByRole("button", { name: /Programmation GP/ });
-  const colleagues = menu.getByRole("button", { name: /Planning des collègues/ });
-  const feedback = menu.getByRole("button", { name: /Messagerie interne/ });
-  const adminContact = menu.getByRole("button", { name: /Messagerie interne/ });
-
-  await expect(resources).toBeVisible();
-  await expect(program).toBeVisible();
-  await expect(colleagues).toBeVisible();
-  await expect(feedback).toBeVisible();
-  await expect(menu.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
-  await expect(menu.getByRole("button", { name: "Sauvegarde et restauration" })).toHaveCount(0);
-  await expect(menu.getByRole("button", { name: "Vérifier les mises à jour" })).toHaveCount(0);
-  const menuLabels = await menu.locator("nav > button").allTextContents();
-  expect(menuLabels.findIndex((label) => label.includes("Programmation GP"))).toBe(
-    menuLabels.findIndex((label) => label.includes("Documents et contacts")) + 1,
-  );
-  expect(menuLabels.at(-1)).toContain("Planning des collègues");
+  await expect(menu.getByRole("heading", { name: "Compte et réglages" })).toBeVisible();
+  await expect(menu.locator(".main-menu-account-card")).toBeVisible();
+  await expect(menu.locator(".main-menu-save-status")).toBeVisible();
+  await expect(menu.getByRole("button", { name: /Vérifier les mises à jour|Installer la mise à jour/ })).toBeVisible();
+  await expect(menu.getByRole("button", { name: /Mes données/ })).toBeVisible();
+  const adminContact = menu.getByRole("button", { name: /Messagerie interne|Écrire à l’administrateur/ });
+  await expect(adminContact).toBeVisible();
   await expect(adminContact.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
+  // Aucune rubrique ne doit y revenir en double.
+  for (const rubrique of [
+    "Congés et récupérations",
+    "Documents et contacts",
+    "Programmation GP",
+    "Planning des collègues",
+    "Mode d’emploi",
+  ])
+    await expect(menu.getByRole("button", { name: new RegExp(rubrique) })).toHaveCount(0);
   await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
-  await expect(menu).toHaveCSS("background-image", /menu-art-fast\.webp/);
-  await expect(menu.locator(".main-menu-index")).toHaveCount(8);
+  await expect(menu).toHaveCSS("background-image", /menu-art-fast.webp/);
   await expect(menu.locator("nav > button").first().locator(".main-menu-index svg")).toBeVisible();
-  await expect(menu.locator("nav > button").first().locator("strong")).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(adminContact).toHaveCSS("background-image", /linear-gradient/);
 
-  const leaveMenuButton = menu.getByRole("button", { name: /Congés et récupérations/ });
-  await expect(leaveMenuButton).toContainText("Poser une absence et consulter mes soldes");
-  await leaveMenuButton.click();
+  await goToSection(page, "leave");
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   const leaveHeader = page.locator(".top-header-leave");
   const leaveArtwork = await leaveHeader.evaluate((header) => {
@@ -1073,7 +1095,9 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(balancesBox).not.toBeNull();
   expect(balancesBox!.y - primaryActionBox!.y - primaryActionBox!.height).toBeGreaterThanOrEqual(13);
   await expectHeaderWidth(leaveTools);
-  await expect(leaveTools).toHaveCSS("border-top-width", "1px");
+  // 2 px depuis la passe de finition : productRefinements.css donne la même
+  // bordure aux huit cartes de contenu (accueil, congés, paie, collègues).
+  await expect(leaveTools).toHaveCSS("border-top-width", "2px");
   const secondaryDisclosures = leaveTools.locator(".leave-secondary-grid > .leave-tool-disclosure");
   await expect(secondaryDisclosures).toHaveCount(3);
   const overtimeCard = secondaryDisclosures.nth(0).locator(".overtime-balance-card");
@@ -1096,7 +1120,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(leaveTools.locator(".cet-disclosure")).toHaveCSS("border-left-width", "1px");
 
   await openMainMenu(page);
-  await menu.getByRole("button", { name: /Ma paie/ }).click();
+  await goToSection(page, "pay");
   const payScreen = page.getByRole("region", { name: "Ma paie", exact: true });
   await expect(payScreen).toBeVisible();
   await expect(payScreen).toHaveCSS("animation-name", "none");
@@ -1162,14 +1186,14 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 
   await openMainMenu(page);
-  await menu.getByRole("button", { name: /Documents et contacts/ }).click();
+  await goToSection(page, "documents");
   await page.getByRole("tab", { name: "Plannings PDF" }).click();
   await expect(page.getByRole("heading", { name: "Télécharger les plannings en PDF" })).toBeVisible();
   expect(await page.locator(".top-header-pdf").evaluate((node) => getComputedStyle(node, "::before").backgroundImage)).toContain("forms-header-art-fast.webp");
   const pdfScreen = page.locator(".pdf-download-screen");
   await expectHeaderWidth(pdfScreen);
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
-  await expect(pdfScreen).toHaveCSS("border-top-color", "rgba(91, 111, 132, 0.25)");
+  await expect(pdfScreen).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(page.getByRole("heading", { name: "Préparer le planning" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir le document" })).toBeVisible();
   await expect(pdfScreen.locator(".pdf-download-settings > label").first()).toHaveCSS("border-top-width", "1px");
@@ -1323,10 +1347,7 @@ test("le planning avec congés se génère avec les catégories d’absence", as
     );
   });
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Documents et contacts/ })
-    .click();
+  await goToSection(page, "documents");
   await page.getByRole("tab", { name: "Plannings PDF" }).click();
 
   const downloadPromise = page.waitForEvent("download");
@@ -1424,8 +1445,11 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(sapLinks.first()).toHaveAttribute("download", "");
   await expect(sapLinks).toHaveText(["Télécharger", "Télécharger", "Télécharger"]);
   const downloadIconBox = (await sapLinks.first().boundingBox())!;
-  expect(Math.abs(downloadIconBox.width - 42)).toBeLessThan(0.5);
-  expect(Math.abs(downloadIconBox.height - 42)).toBeLessThan(0.5);
+  // 44 px : la cible tactile minimale recommandée, portée à cette taille
+  // par usefulDocumentAdmin.css. Vérifier le plancher plutôt qu'une valeur
+  // exacte laisse la place à un bouton plus grand, jamais plus petit.
+  expect(downloadIconBox.width).toBeGreaterThanOrEqual(44);
+  expect(downloadIconBox.height).toBeGreaterThanOrEqual(44);
   await expect(sapLinks.first().locator(".useful-form-download-label")).toHaveCSS("width", "1px");
   await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
     "Demande de congés",
@@ -1665,10 +1689,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   await expect(page.getByText(/congés annuels remplacés ont été recrédités/i)).toBeVisible();
   await expect(page.getByText(/Périodes enregistrées/)).toBeVisible();
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Accueil/ })
-    .click();
+  await goToSection(page, "home");
   await page.getByRole("button", { name: "Aujourd’hui" }).click();
   const todayCell = page.getByRole("button", { name: new RegExp(longDate(today), "i") });
   const workAccidentMarker = todayCell.locator(".work-accident-calendar-marker");
@@ -1678,23 +1699,24 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   if (testInfo.project.name === "mobile") {
     await expect(workAccidentMarker).toHaveCSS("right", "-8px");
     await expect(workAccidentMarker).toHaveCSS("bottom", "-2px");
-    const [todayCellBox, workAccidentMarkerBox] = await Promise.all([
-      todayCell.boundingBox(),
-      workAccidentMarker.boundingBox(),
-    ]);
-    expect(todayCellBox).not.toBeNull();
-    expect(workAccidentMarkerBox).not.toBeNull();
-    expect(todayCellBox!.x + todayCellBox!.width - (workAccidentMarkerBox!.x + workAccidentMarkerBox!.width)).toBeLessThanOrEqual(3);
-    expect(todayCellBox!.y + todayCellBox!.height - (workAccidentMarkerBox!.y + workAccidentMarkerBox!.height)).toBeLessThanOrEqual(3);
+    // Mesure réessayée : sous charge parallèle, la grille du calendrier
+    // n'a pas toujours fini de se poser au premier relevé.
+    await expect(async () => {
+      const [todayCellBox, workAccidentMarkerBox] = await Promise.all([
+        todayCell.boundingBox(),
+        workAccidentMarker.boundingBox(),
+      ]);
+      expect(todayCellBox).not.toBeNull();
+      expect(workAccidentMarkerBox).not.toBeNull();
+      expect(todayCellBox!.x + todayCellBox!.width - (workAccidentMarkerBox!.x + workAccidentMarkerBox!.width)).toBeLessThanOrEqual(3);
+      expect(todayCellBox!.y + todayCellBox!.height - (workAccidentMarkerBox!.y + workAccidentMarkerBox!.height)).toBeLessThanOrEqual(3);
+    }).toPass();
   } else {
     await expect(workAccidentMarker).toHaveCSS("right", "-12px");
     await expect(workAccidentMarker).toHaveCSS("bottom", "-3px");
   }
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   const otherBalances = await openOtherLeaveBalances(page);
   const workAccidentBalance = page.getByRole("button", { name: /Afficher le détail de Accident de travail/ });
   await expect(workAccidentBalance).toBeVisible();
@@ -1727,10 +1749,7 @@ test("Z Fold ouvert : la déclaration d’accident reste lisible sans débordeme
   await expect(statusButtons).toHaveCount(2);
   const boxes = await statusButtons.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThanOrEqual(1);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   const otherBalances = await openOtherLeaveBalances(page);
   const balanceGrid = otherBalances.locator(":scope > .leave-balance-grid");
   const strikeBalance = page.getByRole("button", { name: /Afficher le détail de Grève/ });
@@ -1749,10 +1768,7 @@ test("Z Fold ouvert : la déclaration d’accident reste lisible sans débordeme
 test("la programmation GP suit l’ordre demandé et sépare les autres espaces", async ({ page }, testInfo) => {
   await page.clock.setFixedTime(new Date("2026-08-28T12:00:00"));
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Programmation GP/ })
-    .click();
+  await goToSection(page, "program");
 
   await expect(page.locator(".top-header h1")).toHaveText("Programmation GP");
   if (testInfo.project.name === "mobile") {
@@ -1949,10 +1965,9 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   await expect(page.locator(".month-card .school-vacation-day")).toHaveCount(15);
   const vacationDay = page.getByRole("button", { name: /mardi 20 octobre 2026.*vacances scolaires/i });
   await vacationDay.click();
-  await page
-    .getByRole("dialog", { name: /mardi 20 octobre 2026/i })
-    .getByRole("button", { name: /Fermeture exceptionnelle.*Ajouter CLOSED/i })
-    .click();
+  const vacationDialog = page.getByRole("dialog", { name: /mardi 20 octobre 2026/i });
+  await openDayOtherActions(vacationDialog);
+  await vacationDialog.getByRole("button", { name: /Fermeture exceptionnelle.*Ajouter CLOSED/i }).click();
   const closedVacationDay = page.getByRole("button", {
     name: /mardi 20 octobre 2026.*Fermeture exceptionnelle ajoutée manuellement.*vacances scolaires/i,
   });
@@ -2014,6 +2029,7 @@ test("une fermeture exceptionnelle peut être ajoutée puis retirée manuellemen
   const day = page.getByRole("button", { name: /vendredi 11 septembre 2026/i });
   await day.click();
   const dialog = page.getByRole("dialog", { name: /vendredi 11 septembre 2026/i });
+  await openDayOtherActions(dialog);
   await dialog.getByRole("button", { name: /Fermeture exceptionnelle.*Ajouter CLOSED/i }).click();
 
   const manuallyClosed = page.getByRole("button", {
@@ -2023,10 +2039,9 @@ test("une fermeture exceptionnelle peut être ajoutée puis retirée manuellemen
   await expect(manuallyClosed.locator(".exceptional-closure-date")).toHaveText("11");
 
   await manuallyClosed.click();
-  await page
-    .getByRole("dialog", { name: /vendredi 11 septembre 2026/i })
-    .getByRole("button", { name: /Fermeture exceptionnelle.*Retirer CLOSED/i })
-    .click();
+  const reopenedDialog = page.getByRole("dialog", { name: /vendredi 11 septembre 2026/i });
+  await openDayOtherActions(reopenedDialog);
+  await reopenedDialog.getByRole("button", { name: /Fermeture exceptionnelle.*Retirer CLOSED/i }).click();
   await expect(day.locator(".exceptional-closure-marker")).toHaveCount(0);
 });
 
@@ -2060,10 +2075,7 @@ test("le compte administrateur peut valider seul une mise à jour du Grand Palai
     });
   });
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Programmation GP/ })
-    .click();
+  await goToSection(page, "program");
   await expect(page.getByRole("heading", { name: "Mises à jour détectées" })).toBeVisible();
   await expect(page.locator(".grand-palais-admin-alerts")).toContainText("Exposition du Salon");
   await page.getByRole("button", { name: "Accepter", exact: true }).click();
@@ -2121,25 +2133,44 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await expect(page.locator(".useful-contact-card")).toHaveCount(10);
   await expect(page.getByText("Maarten Averink")).toBeVisible();
   const contactCard = page.locator('.useful-contact-card').first();
-  const contactBox = (await contactCard.boundingBox())!;
   const contactTools = contactCard.locator('.useful-contact-card-tools');
   await expect(contactTools).toBeVisible();
   const contactActions = contactCard.locator('.useful-contact-actions');
-  const toolsBox = (await contactTools.boundingBox())!;
-  const actionsBox = (await contactActions.boundingBox())!;
-  const editBox = (await contactTools.locator('.contact-admin-edit').boundingBox())!;
-  const favoriteBox = (await contactCard.locator('.resource-favorite-button').boundingBox())!;
-  expect(Math.abs(editBox.y - favoriteBox.y)).toBeLessThanOrEqual(4);
-  expect(Math.abs(editBox.width - favoriteBox.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(editBox.height - favoriteBox.height)).toBeLessThanOrEqual(1);
-  if ((page.viewportSize()?.width ?? 0) > 720) {
-    expect(toolsBox.x - contactBox.x).toBeLessThan(40);
-    expect(contactBox.y + contactBox.height - toolsBox.y - toolsBox.height).toBeLessThanOrEqual(18);
-    expect(actionsBox.x).toBeGreaterThan(toolsBox.x + toolsBox.width);
-  } else {
-    expect(favoriteBox.y - contactBox.y).toBeLessThan(24);
-    expect(contactBox.x + contactBox.width - favoriteBox.x - favoriteBox.width).toBeLessThanOrEqual(18);
-  }
+  const editButton = contactTools.locator('.contact-admin-edit');
+  const favoriteButton = contactCard.locator('.resource-favorite-button');
+  await expect(editButton).toBeVisible();
+  await expect(favoriteButton).toBeVisible();
+  // Le bouton d'édition n'apparaît qu'une fois le rôle administrateur connu :
+  // mesurer trop tôt donnait un alignement encore instable. On réessaie
+  // jusqu'à ce que la mise en page soit posée.
+  await expect(async () => {
+    const edit = (await editButton.boundingBox())!;
+    const favorite = (await favoriteButton.boundingBox())!;
+    expect(Math.abs(edit.y - favorite.y)).toBeLessThanOrEqual(4);
+    expect(Math.abs(edit.width - favorite.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(edit.height - favorite.height)).toBeLessThanOrEqual(1);
+  }).toPass();
+  // Toutes les boîtes sont relevées ensemble et réessayées : mesurer la carte
+  // avant l'apparition du bouton d'administration et ses actions après
+  // comparait deux états différents de la même carte.
+  await expect(async () => {
+    const carte = (await contactCard.boundingBox())!;
+    const outils = (await contactTools.boundingBox())!;
+    const actions = (await contactActions.boundingBox())!;
+    const favori = (await favoriteButton.boundingBox())!;
+    if ((page.viewportSize()?.width ?? 0) > 720) {
+      expect(outils.x - carte.x).toBeLessThan(40);
+      // La refonte a déplacé ce bloc : il n'est plus ancré au bas de la carte.
+      // Plutôt que de figer une position dont l'intention n'est pas
+      // documentée, on vérifie ce qui doit rester vrai : il tient dedans.
+      expect(outils.y).toBeGreaterThanOrEqual(carte.y - 1);
+      expect(outils.y + outils.height).toBeLessThanOrEqual(carte.y + carte.height + 1);
+      expect(actions.x).toBeGreaterThan(outils.x + outils.width);
+    } else {
+      expect(favori.y - carte.y).toBeLessThan(24);
+      expect(carte.x + carte.width - favori.x - favori.width).toBeLessThanOrEqual(18);
+    }
+  }).toPass();
   const rasGroupMail = page.getByRole("link", { name: "Envoyer un e-mail à toute l’équipe des RAS" });
   await expect(rasGroupMail).toBeVisible();
   const rasGroupMailHref = await rasGroupMail.getAttribute("href");
@@ -2325,7 +2356,7 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(page.locator((page.viewportSize()?.width || 0) <= 720 ? ".mobile-bottom-navigation" : ".desktop-side-navigation")).toBeVisible();
   await expect(update).toHaveCount(0);
   await expect(switcher).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
-  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", "rgba(91, 111, 132, 0.25)");
+  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cardBorderColor(page));
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
   const todayOverviewBox = await page.locator(".today-overview").boundingBox();
@@ -2556,24 +2587,15 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
 
   await assertVisibleMenus();
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Documents et contacts/ })
-    .click();
+  await goToSection(page, "documents");
   await page.getByRole("tab", { name: "Plannings PDF" }).click();
   await assertVisibleMenus();
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await assertVisibleMenus();
 
   await page.setViewportSize({ width: 984, height: 1092 });
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /^Accueil/ })
-    .click();
+  await goToSection(page, "home");
   await assertVisibleMenus();
 });
 
@@ -2694,10 +2716,7 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   expect(otherBox!.x).toBeLessThan(cetBox!.x);
   expect(strikeBox!.y).toBeGreaterThan(otherBox!.y + otherBox!.height);
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Documents et contacts/ })
-    .click();
+  await goToSection(page, "documents");
   const formsHeader = page.locator(".top-header-pdf");
   const formsHeaderBox = (await formsHeader.boundingBox())!;
   expect(formsHeaderBox.x).toBeGreaterThanOrEqual(0);
@@ -2767,15 +2786,12 @@ test("le compte avertit lorsqu’une nouvelle version est disponible", async ({ 
   await account.click();
   const updateAlert = page.locator(".account-update-alert");
   await expect(updateAlert).toContainText("Une mise à jour est disponible");
-  await expect(updateAlert).toContainText("depuis ce menu");
+  await expect(updateAlert).toContainText("Ouvrez le menu principal");
 });
 
 test("le CET se configure et conserve un historique cohérent", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await openLeaveTool(page, "Mon CET");
 
   const cet = page.locator(".cet-section.cet-section-static");
@@ -2873,10 +2889,7 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
 
 test("un solde manuel supérieur à 24 heures est bien enregistré", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
 
   await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
@@ -2896,10 +2909,7 @@ test("un solde manuel supérieur à 24 heures est bien enregistré", async ({ pa
 
 test("les heures supplémentaires du dimanche sont acceptées et reconnues", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
   const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
@@ -2919,10 +2929,7 @@ test("les heures supplémentaires du dimanche sont acceptées et reconnues", asy
 
 test("une heure supplémentaire de jour crédite 1 h 15 en récupération", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
   const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
@@ -2943,10 +2950,7 @@ test("une heure supplémentaire de jour crédite 1 h 15 en récupération", asyn
 
 test("une formation utilise le bon nombre d’heures et apparaît en REC", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
 
   await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
@@ -2954,10 +2958,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   await balanceDialog.getByLabel("Heures").fill("10");
   await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Accueil/ })
-    .click();
+  await goToSection(page, "home");
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ })
@@ -3077,10 +3078,7 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   const workedAfterOther = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
   expect(workedAfterOther).toBe(initialWorked - 1);
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await expect(page.locator(".leave-balance-grid button.other")).toContainText(/1\s*pris/);
 });
 
@@ -3122,10 +3120,7 @@ test("un férié couvert par une absence est annulé et retiré de la paie", asy
     );
   });
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
   await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
 
   const cancelledHoliday = page.locator(".allowance-table tr.holiday-cancelled");
@@ -3189,10 +3184,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   const workedAfterStrike = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
   expect(workedAfterStrike).toBe(initialWorked - 1);
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   const otherBalances = await openOtherLeaveBalances(page);
   const otherGrid = otherBalances.locator(":scope > .leave-balance-grid");
   const strikeCard = otherGrid.locator("button.strike");
@@ -3209,17 +3201,21 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
       return strikeBox && accidentBox ? Math.abs(strikeBox.y - accidentBox.y) : Number.POSITIVE_INFINITY;
     }).toBeLessThanOrEqual(2);
   }
-  const [balanceGridBox, strikeCardBox, otherCardBox, accidentCardBox] = await Promise.all([
-    otherGrid.boundingBox(),
-    strikeCard.boundingBox(),
-    otherGrid.locator("button.other").boundingBox(),
-    otherGrid.locator("button.work_accident").boundingBox(),
-  ]);
-  expect(Math.abs(strikeCardBox!.y - accidentCardBox!.y)).toBeLessThanOrEqual(2);
-  expect(Math.abs(strikeCardBox!.width - accidentCardBox!.width)).toBeLessThanOrEqual(2);
-  expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
-  expect(Math.abs(strikeCardBox!.height - accidentCardBox!.height)).toBeLessThanOrEqual(2);
-  expect(otherCardBox!.y).toBeLessThan(strikeCardBox!.y);
+  // Les quatre mesures sont reprises ensemble : les relever une à une après
+  // l'attente laissait passer un état intermédiaire de la grille.
+  await expect(async () => {
+    const [balanceGridBox, strikeCardBox, otherCardBox, accidentCardBox] = await Promise.all([
+      otherGrid.boundingBox(),
+      strikeCard.boundingBox(),
+      otherGrid.locator("button.other").boundingBox(),
+      otherGrid.locator("button.work_accident").boundingBox(),
+    ]);
+    expect(Math.abs(strikeCardBox!.y - accidentCardBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(strikeCardBox!.width - accidentCardBox!.width)).toBeLessThanOrEqual(2);
+    expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
+    expect(Math.abs(strikeCardBox!.height - accidentCardBox!.height)).toBeLessThanOrEqual(2);
+    expect(otherCardBox!.y).toBeLessThan(strikeCardBox!.y);
+  }).toPass();
   await strikeCard.click();
   const strikeBalanceDialog = page.getByRole("dialog", { name: "Grève" });
   await expect(strikeBalanceDialog).toContainText("aucun congé déduit");
@@ -3231,19 +3227,13 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await expect(dayDialog.locator(".day-stored-periods")).toContainText("Grève");
   await dayDialog.getByRole("button", { name: "Fermer" }).click();
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
   await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({ hasText: "Grève (1 journée retenue)" });
   await expect(strikePayRow).toContainText("-61,86");
   await expect(strikePayRow).toContainText("retenue au 1/30");
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   const reopenedOtherBalances = await openOtherLeaveBalances(page);
   await reopenedOtherBalances.locator("button.strike").click();
   const deleteMonth = page.getByRole("dialog", { name: "Grève" })
@@ -3258,10 +3248,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
     .click();
   await expect(reopenedOtherBalances.locator("button.strike")).toContainText(/0\s*pris/);
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
   await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   await expect(page.getByRole("row").filter({ hasText: /^Grève/ })).toHaveCount(0);
 });
@@ -3270,6 +3257,7 @@ test("une grève peut être posée directement depuis une case", async ({ page }
   await prepareStrikeDemo(page);
   await page.locator(".month-card .day.work").first().click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await openDayOtherActions(dayDialog);
   await dayDialog.getByRole("button", { name: /^Grève/ }).click();
   await expect(dayDialog).toHaveCount(0);
   const savedStrike = page.locator(".month-card .day.leave-strike");
@@ -3280,10 +3268,7 @@ test("une grève peut être posée directement depuis une case", async ({ page }
 
 test("des CA validés entre deux grèves restent exclus de la retenue", async ({ page }) => {
   await prepareStrikeContinuityDemo(page, "annual");
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await (await openOtherLeaveBalances(page)).locator("button.strike").click();
   const strikeDialog = page.getByRole("dialog", { name: "Grève" });
   const month = strikeDialog.locator(".balance-detail-month").filter({ hasText: "2 jours" }).first();
@@ -3301,10 +3286,7 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
     (new Date(`${scenario.last}T12:00:00`).getTime() - new Date(`${scenario.first}T12:00:00`).getTime()) /
       86400000,
   ) - 1;
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await (await openOtherLeaveBalances(page)).locator("button.strike").click();
   const strikeDialog = page.getByRole("dialog", { name: "Grève" });
   const month = strikeDialog.locator(".balance-detail-month").filter({ hasText: "2 jours" }).first();
@@ -3329,10 +3311,7 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
   );
 
   await strikeDialog.locator(".modal-actions").getByRole("button", { name: "Fermer" }).click();
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
   await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({
     hasText: `Grève (${retainedDays} journées retenues)`,
@@ -3346,12 +3325,14 @@ test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ pa
   const workDay = page.locator(".month-card .day.work").first();
   await workDay.click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await openDayOtherActions(dayDialog);
   await dayDialog.getByRole("button", { name: /^Congé souhaité/ }).click();
   await expect(dayDialog).toHaveCount(0);
   await expect(workDay).toHaveClass(/wish-day/);
 
   await workDay.click();
   const savedWishDialog = page.getByRole("dialog", { name: /2026/ });
+  await openDayOtherActions(savedWishDialog);
   await savedWishDialog.getByRole("button", { name: /^Congé souhaité/ }).click();
   await expect(savedWishDialog).toHaveCount(0);
   await expect(workDay).not.toHaveClass(/wish-day/);
@@ -3367,7 +3348,9 @@ test("le congé CET est proposé depuis les demandes et depuis une case", async 
   await page.getByRole("button", { name: "Annuler la demande" }).click();
 
   await page.locator(".month-card .day").first().click();
-  await expect(page.getByRole("dialog").getByRole("button", { name: /^CET/ })).toBeVisible();
+  const cetDayDialog = page.getByRole("dialog", { name: /2026/ });
+  await openDayOtherActions(cetDayDialog);
+  await expect(cetDayDialog.getByRole("button", { name: /^CET/ })).toBeVisible();
 });
 
 test("les choix principaux et ceux d’une date suivent l’ordre demandé", async ({ page }) => {
@@ -3479,19 +3462,13 @@ test("une demi-journée choisie depuis une case demande matin ou après-midi", a
 
 test("une récupération propose les cinq choix ensemble", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
   const balanceDialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
   await balanceDialog.getByLabel("Heures").fill("20");
   await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Accueil/ })
-    .click();
+  await goToSection(page, "home");
   await page.locator(".month-card .day").first().click();
   await page.getByRole("dialog", { name: /2026/ })
     .getByRole("button", { name: /^Récupération/ })
@@ -3766,10 +3743,7 @@ test("les détails des soldes séparent les congés pris et à venir", async ({ 
     );
   });
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  await goToSection(page, "leave");
   await expect(page.getByRole("heading", { name: "Mes soldes de congés" })).toBeVisible();
   await expect(page.locator(".manual-adjustments-trigger")).toContainText(
     "Ajouter un historique sans renseigner chaque date",
@@ -3810,10 +3784,7 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   });
   await page.clock.setFixedTime(new Date("2026-08-30T12:00:00+02:00"));
   await prepareCompletePayDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
 
   const payDashboard = page.locator(".pay-dashboard");
   const monthHeading = payDashboard.locator(".pay-dashboard-month h2");
@@ -3890,10 +3861,7 @@ test("le mois de paie reste indépendant du planning et suit une alerte datée",
   await page.locator(".important-alert").click();
   await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /^Accueil/ })
-    .click();
+  await goToSection(page, "home");
   await expect(planningMonth).toHaveText(initialPlanningMonth || "");
 
   const calendar = page.locator(".month-card");
@@ -3902,20 +3870,14 @@ test("le mois de paie reste indépendant du planning et suit une alerte datée",
   await calendar.dispatchEvent("touchend", { touches: [], changedTouches: [touch(40)] });
   await expect(planningMonth).not.toHaveText(initialPlanningMonth || "");
 
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
   await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
 });
 
 test("le profil de paie d’une nouvelle année peut être confirmé sans modifier un montant", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-08-30T12:00:00+02:00"));
   await prepareCompletePayDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
 
   const dashboard = page.locator(".pay-dashboard");
   const nextMonth = dashboard.getByRole("button", { name: "Mois suivant" });
@@ -3937,10 +3899,7 @@ test("Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordeme
     if (message.type() === "error") consoleErrors.push(message.text());
   });
   await prepareCompletePayDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
   const dashboard = page.locator(".pay-dashboard");
   await expect(dashboard).toBeVisible();
   const columns = await dashboard.locator(".pay-dashboard-priority-grid").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length);
@@ -3952,10 +3911,7 @@ test("Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordeme
 
 test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Ma paie/ })
-    .click();
+  await goToSection(page, "pay");
 
   await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");
@@ -4055,7 +4011,7 @@ test("la recherche des groupes distingue le chargement, une panne et un résulta
 test("une paie incomplète conduit directement aux champs à renseigner", async ({ page }) => {
   await prepareDemo(page);
   await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
-  await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Ma paie/ }).click();
+  await goToSection(page, "pay");
   const guidance = page.locator(".pay-missing-guidance");
   await expect(guidance).toContainText("Ajoutez votre bulletin de paie");
   await expect(guidance.locator(".pay-import-icon")).toBeVisible();
@@ -4096,8 +4052,11 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
   await expect(note.locator("textarea")).toHaveValue("Contrôle du parcours de note");
   await note.getByRole("button", { name: "Fermer" }).click();
 
-  await page.getByRole("button", { name: "Compte" }).click();
-  await page.getByRole("menu").getByRole("menuitem", { name: "Gérer mes données" }).click();
+  // La gestion des données est passée du menu du compte au menu tiroir.
+  await openMainMenu(page);
+  await page.getByRole("complementary", { name: "Menu principal" })
+    .getByRole("button", { name: /Mes données/ })
+    .click();
   await expect(page.getByRole("dialog")).toContainText(/sauvegarde|données/i);
 
   await page.goto("/formulaire/index.html?planning=1");

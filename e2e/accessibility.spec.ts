@@ -11,6 +11,18 @@ async function prepareDemo(page: Page) {
 }
 
 async function expectNoSeriousAccessibilityViolation(page: Page, context: string) {
+  // Auditer une page encore en train d'apparaître fausse le contrôle de
+  // contraste : axe compose la couleur du texte avec un fond encore
+  // semi-transparent. On attend donc la fin du chargement différé et des
+  // animations d'entrée avant de mesurer.
+  await expect(page.locator(".deferred-section-loading")).toHaveCount(0);
+  await page
+    .waitForFunction(
+      () => document.getAnimations().every((animation) => animation.playState !== "running"),
+      null,
+      { timeout: 5000 },
+    )
+    .catch(() => {});
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();

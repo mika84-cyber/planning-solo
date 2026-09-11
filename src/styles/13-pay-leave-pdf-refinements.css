@@ -566,7 +566,7 @@
 .pay-dashboard-variable-list article { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #ded6cc; border-radius: 13px; padding: 11px; background: #fffdf9; }
 .pay-dashboard-variable-list article > span { display: grid; gap: 2px; min-width: 0; }
 .pay-dashboard-variable-list strong { color: #263f5a; font-size: 12px; }
-.pay-dashboard-variable-list small { color: #697b8e; font-size: 10px; line-height: 1.35; }
+.pay-dashboard-variable-list small { color: #5f7185; font-size: 10px; line-height: 1.35; }
 .pay-dashboard-variable-list b { flex: 0 0 auto; color: #207258; font-size: 12px; }
 .pay-dashboard-variable-list b.negative { color: #a33b42; }
 .pay-dashboard-variable-list b.pending { color: #8b571e; }
