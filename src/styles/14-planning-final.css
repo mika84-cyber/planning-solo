@@ -1496,3 +1496,11 @@ fieldset.leave-choices {
     gap: 14px;
   }
 }
+
+/* Le bandeau d’installation Apple reprend la mise en page de l’alerte : seuls
+   le texte sur deux lignes et la taille de l’icône diffèrent. */
+.apple-install-notice{align-items:start;margin:10px auto 0;text-align:left}
+.apple-install-notice>div{display:grid;gap:3px;min-width:0}
+.apple-install-notice small{white-space:normal;line-height:1.4}
+.apple-install-icon svg{width:20px;height:20px;fill:none}
+.apple-install-dismiss{align-self:center;border:0;background:transparent;color:var(--accent-strong);font-weight:800;white-space:nowrap}

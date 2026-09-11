@@ -41,7 +41,6 @@
   --shadow: 0 8px 24px rgba(74, 48, 28, 0.09);
   --surface-card: rgba(255, 253, 249, 0.98);
   --surface-soft: #f9f4ea;
-  --surface-inset: #fcfdff;
   --border-inset: #d9cbb4;
   --shadow-inset: 0 3px 10px rgba(74, 48, 28, 0.07);
   --border-card: rgba(140, 110, 80, 0.38);
@@ -51,9 +50,6 @@
   --radius-control: 13px;
   --shadow-card: 0 7px 20px rgba(74, 48, 28, 0.1);
   --action-primary: #a94d24;
-  --action-positive: #287f60;
-  --action-warning: #b97725;
-  --action-danger: #b83d4f;
   --app-frame-strong: var(--border-card);
   --app-frame-soft: var(--border-control);
   --app-subtle-shadow: var(--shadow-card);

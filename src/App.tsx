@@ -101,6 +101,7 @@ import { parseCalendarSnapshot } from "./calendarPayload";
 import { splitNoteItemsIntoColumns } from "./noteColumns";
 import { matchesSearch } from "./searchMatching";
 import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
+import { AppleInstallNotice } from "./AppleInstallNotice";
 import { monthGross, strikeDeduction } from "./payMonth";
 import {
   HOLIDAY_PAY_OPTIONS,
@@ -3528,6 +3529,9 @@ export default function Home() {
         }}
         unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
+      {/* Placé après la navigation : la marche à suivre s'affiche quelle que
+          soit la rubrique ouverte au lancement. */}
+      <AppleInstallNotice enabled={installationEnabled} />
       {homeSection === "home" ? (
         <div className="home-view-mode-bar">
           <div className="view-switch" role="group" aria-label="Mode d’affichage">
