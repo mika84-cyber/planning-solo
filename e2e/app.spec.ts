@@ -4198,11 +4198,13 @@ test("la reprise du solde laisse le choix entre valeur nette et heures à majore
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
   const dialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
-  await dialog.getByLabel("Heures").fill("20");
-
-  // Par défaut, un solde déjà tenu ailleurs : rien n'est remajoré.
+  // Par défaut, un solde déjà tenu ailleurs : rien n'est remajoré. Le message
+  // doit suivre le choix dès le clic, avant même qu'une durée soit saisie.
   await expect(dialog).toContainText("Aucune majoration n’est appliquée ici");
   await dialog.getByRole("button", { name: "Des heures travaillées" }).click();
+  await expect(dialog).not.toContainText("Aucune majoration");
+
+  await dialog.getByLabel("Heures").fill("20");
   await expect(dialog).toContainText("20 h de travail");
   await expect(dialog).toContainText("25 h ajoutées au solde");
 

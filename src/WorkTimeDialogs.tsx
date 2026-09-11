@@ -365,17 +365,22 @@ export function SolidarityHoursDialog({
             majoré : le remajorer le gonflerait. Mais quelqu'un qui a noté ses
             heures brutes attend l'inverse. Le choix tranche, et le total
             annoncé enlève le doute dans les deux cas. */}
-        {draft.basis === "worked" && solidarityTyped > 0 ? (
+        {draft.basis === "worked" ? (
           <p className="overtime-recovery-preview">
             <strong>
-              {minutesLabel(solidarityTyped)} de travail
-              <span aria-hidden="true"> → </span>
-              <b>{minutesLabel(solidarityCredited)} ajoutées au solde</b>
+              {solidarityTyped > 0 ? (
+                <>
+                  {minutesLabel(solidarityTyped)} de travail
+                  <span aria-hidden="true"> → </span>
+                  <b>{minutesLabel(solidarityCredited)} ajoutées au solde</b>
+                </>
+              ) : (
+                <b>Majoration ×1,25 appliquée</b>
+              )}
             </strong>
             <small>
-              La majoration de jour ×1,25 est appliquée à l’ensemble : un total
-              de plusieurs années ne dit pas quelle part a été faite la nuit ou
-              un dimanche.
+              La majoration de jour vaut pour l’ensemble : un total de plusieurs
+              années ne dit pas quelle part a été faite la nuit ou un dimanche.
             </small>
           </p>
         ) : (

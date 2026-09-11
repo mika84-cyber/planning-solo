@@ -263,3 +263,29 @@ describe("reprise du solde de récupération", () => {
     expect(html).not.toContain("Aucune majoration n’est appliquée ici");
   });
 });
+
+describe("le message suit le choix, même avant la saisie", () => {
+  const solde = (basis: "credited" | "worked", hours: string) =>
+    renderToStaticMarkup(
+      <SolidarityHoursDialog
+        open
+        draft={{ hours, minutes: "0", basis }}
+        setDraft={vi.fn()}
+        saving={false}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+
+  it("ne dit plus « aucune majoration » quand on a choisi des heures à majorer", () => {
+    // Le défaut vécu : la phrase s'affichait sur les deux choix tant qu'aucune
+    // durée n'était saisie, ce qui contredisait le choix fait juste au-dessus.
+    expect(solde("worked", "")).not.toContain("Aucune majoration");
+    expect(solde("worked", "")).toContain("Majoration ×1,25 appliquée");
+  });
+
+  it("garde la phrase pour un solde déjà calculé, saisi ou non", () => {
+    expect(solde("credited", "")).toContain("Aucune majoration n’est appliquée ici");
+    expect(solde("credited", "20")).toContain("Aucune majoration n’est appliquée ici");
+  });
+});
