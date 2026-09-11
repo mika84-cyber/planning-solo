@@ -110,8 +110,12 @@ export type FormProfile = {
   full_name: string;
   group: string;
   signature: string;
-  /** Absent sur les profils créés avant l'ajout de ce champ : traité comme
-   *  « fonctionnaire », le statut jusque-là implicite de l'appli. */
+  /** Absent quand le profil n’a jamais renseigné le statut : traité comme
+   *  « contractuel », qui est le cas de la plupart des collègues invités.
+   *  Le choix est délibéré et partagé par le client (App.tsx teste
+   *  status !== "fonctionnaire") et par le serveur. Une personne
+   *  fonctionnaire doit donc le déclarer explicitement : son traitement
+   *  indiciaire, son IFSE et le calcul de ses retenues en dépendent. */
   status?: "fonctionnaire" | "contractuel";
   work_quota?: "full" | "three_quarters" | "half";
   work_schedule?: {

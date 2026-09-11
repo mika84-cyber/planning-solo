@@ -23,8 +23,21 @@ connexion peut déclencher une alerte privée vers le compte administrateur.
 4. Le stockage (Netlify Blobs, magasin `planning-solo`) se crée tout seul au
    premier enregistrement. Aucune variable d'environnement à renseigner.
 
-Chaque site Netlify a sa propre instance Identity et son propre stockage :
-ce planning n'a aucun point de contact avec le planning partagé d'origine.
+Chaque site Netlify a sa propre instance Identity et son propre stockage : par
+défaut, les deux plannings ne communiquent pas.
+
+**Une seule exception, désactivée par défaut.** Si la variable
+`PLANNING_SHARED_BRIDGE_SECRET` est renseignée, le site ouvre un pont serveur à
+serveur vers le planning partagé (`netlify/lib/sharedCalendarBridge.mts`), et
+cela uniquement pour le compte désigné par `PLANNING_SHARED_OWNER_EMAIL`. Ce
+pont recopie alors sur le planning partagé les seules informations que les deux
+plannings ont en commun : les notes datées, les jours d'absence et les périodes
+de congés, plus l'abonnement aux rappels push. Dans l'autre sens, il lit les
+notes et les jours d'absence de la collègue pour les afficher ici. La paie, les
+arrêts maladie, les grèves, les accidents de travail, le CET et les heures ne
+quittent jamais ce site (voir `sharedOperations`). Sans ce secret, aucun appel
+n'est émis : un site installé en suivant les étapes ci-dessus est donc bien
+totalement isolé.
 
 ## Développer en local
 

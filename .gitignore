@@ -17,8 +17,8 @@ demo-dist-*/
 demo-release-*/
 qa-pdf-dist/
 tmp/
+previews/
 video-frames/
 qa-*.png
 qa-*.pdf
-partage-ia-*.zip
-planning-solo-code-complet-*.zip
+*.zip

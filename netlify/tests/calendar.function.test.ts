@@ -35,6 +35,7 @@ vi.mock("@netlify/blobs", () => ({ getStore: vi.fn(() => store) }));
 import { getUser } from "@netlify/identity";
 import calendarHandler from "../functions/calendar.mts";
 import { CALENDAR_ACTIONS } from "../lib/calendar-actions/index.mts";
+import { WORK_QUOTA_OPTIONS, holidayRecoveryMinutesForQuota } from "../../src/overtime.ts";
 
 const mockedGetUser = vi.mocked(getUser);
 const request = (body: unknown, headers: Record<string, string> = {}) => new Request(
@@ -798,6 +799,113 @@ describe("API principale du calendrier", () => {
     expect(archivedKeys.some((key) => key.endsWith("/entry/2026-08-01"))).toBe(true);
     expect(archivedKeys.some((key) => key.endsWith("/period/old-period-2026"))).toBe(true);
     expect(archivedKeys.some((key) => key.endsWith("/form-profile"))).toBe(true);
+  });
+
+  // Les durées créditées par un jour férié récupéré sont décidées dans
+  // src/overtime.ts, mais le serveur les revalide avec sa propre liste. Ce
+  // test relie les deux : ajouter une quotité sans mettre la liste à jour
+  // échouera ici, au lieu de faire perdre le crédit en silence.
+  // L'import d'un bulletin envoie tous les montants lus d'un coup. Si la
+  // reconnaissance se trompe sur un seul (un taux d'imposition à 755 %, par
+  // exemple), les valeurs correctes du même bulletin doivent quand même être
+  // enregistrées, et la valeur déjà connue du champ douteux rester intacte.
+  it("importe les montants corrects d’un bulletin et ignore la valeur aberrante", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    await calendarHandler(request({
+      action: "save-form-profile",
+      fullName: "Mika",
+      group: "1",
+      signature: "",
+      pasRateBp: 750,
+    }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ pas_rate_bp: 750 });
+
+    const response = await calendarHandler(request({
+      action: "save-form-profile",
+      fullName: "Mika",
+      group: "1",
+      signature: "",
+      baseSalaryCents: 245678,
+      ifseCents: 51200,
+      pasRateBp: 75500,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ ignored_values: ["taux"] });
+    const profile = data.get("user/user-a/form-profile") as Record<string, unknown>;
+    // Les montants correctement lus sont enregistrés…
+    expect(profile).toMatchObject({ base_salary_cents: 245678, ifse_cents: 51200 });
+    // …et le taux déjà connu n'est ni écrasé par la valeur aberrante, ni effacé.
+    expect(profile.pas_rate_bp).toBe(750);
+  });
+
+  it("accepte la durée de récupération de jour férié de chaque quotité", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    for (const { value: quota } of WORK_QUOTA_OPTIONS) {
+      const minutes = holidayRecoveryMinutesForQuota(quota);
+      const response = await calendarHandler(request({
+        action: "save-entry",
+        date: "2026-11-11",
+        holidayPay: "recovery",
+        holidayRecoveryMinutes: minutes,
+      }));
+      expect(response.status).toBe(200);
+      expect(data.get("user/user-a/entry/2026-11-11")).toMatchObject({
+        holiday_pay: "recovery",
+        holiday_recovery_minutes: minutes,
+      });
+      data.clear();
+    }
+  });
+
+  it("conserve les données du compte quand la restauration échoue en cours d’écriture", async () => {
+    data.set("user/user-a/entry/2026-08-01", {
+      date: "2026-08-01",
+      note_text: "État précédent",
+      note_color: "#D3943D",
+      leave: false,
+      updated_at: "2026-08-01T08:00:00.000Z",
+    });
+    data.set("user/user-a/period/old-period-2026", {
+      id: "old-period-2026",
+      from: "2026-08-02",
+      to: "2026-08-02",
+      leave_type: "annual",
+      updated_at: "2026-08-01T08:00:00.000Z",
+    });
+    data.set("user/user-a/form-profile", {
+      full_name: "Ancien profil",
+      group: "1",
+      signature: "",
+    });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    // La panne survient sur la première écriture restaurée : c’est le moment
+    // où l’ancien état ne doit surtout pas avoir déjà été supprimé.
+    store.setJSON.mockImplementation(async (key: string, value: unknown, options?: { onlyIfNew?: boolean; onlyIfMatch?: string }) => {
+      if (key === "user/user-a/entry/2026-09-01") throw new Error("Écriture refusée");
+      return setStoredJson(key, value, options);
+    });
+    const response = await calendarHandler(request({
+      action: "restore-backup",
+      backup: {
+        version: 1,
+        entries: [{ date: "2026-09-01", note_text: "Restauré", leave: false }],
+        periods: [],
+        overtime_entries: [],
+        recovery_uses: [],
+        mecenat_entries: [],
+        form_profile: null,
+      },
+    }));
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({ removed: false });
+    expect(data.get("user/user-a/entry/2026-08-01")).toMatchObject({
+      note_text: "État précédent",
+    });
+    expect(data.get("user/user-a/period/old-period-2026")).toBeTruthy();
+    expect(data.get("user/user-a/form-profile")).toMatchObject({
+      full_name: "Ancien profil",
+    });
   });
 
   it("valide et historise toutes les branches du profil sans effacer les champs absents", async () => {

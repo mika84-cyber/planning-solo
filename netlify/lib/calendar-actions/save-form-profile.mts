@@ -63,21 +63,34 @@ export async function handleSaveFormProfile(
     body.netRatioRegime === "culture-psc"
       ? body.netRatioRegime
       : previousProfile?.net_ratio_regime;
+  // Une valeur hors bornes n'est jamais convertie en `undefined` : `undefined`
+  // signifie « absent » et effacerait le montant déjà enregistré. L'ancienne
+  // valeur est donc conservée et la valeur douteuse ignorée.
+  //
+  // L'import d'un bulletin envoie tous les montants lus en une seule requête :
+  // refuser l'ensemble parce qu'un taux a été mal reconnu ferait perdre les
+  // valeurs correctes du même bulletin. Les champs ignorés sont journalisés et
+  // renvoyés dans la réponse, sans faire échouer l'enregistrement.
+  const rejected: string[] = [];
   const amountCents = (sent: unknown, previous: number | undefined) => {
     if (sent === undefined) return previous;
     const value = Number(sent);
-    return Number.isFinite(value) && value >= 0 && value <= 100000000
-      ? Math.round(value)
-      : undefined;
+    if (!Number.isFinite(value) || value < 0 || value > 100000000) {
+      rejected.push("montant");
+      return previous;
+    }
+    return Math.round(value);
   };
   // Un taux net/brut, en points de base : borné à 100 % (10000), pas au
   // même plafond très large qu'un montant en centimes.
   const ratioBp = (sent: unknown, previous: number | undefined) => {
     if (sent === undefined) return previous;
     const value = Number(sent);
-    return Number.isFinite(value) && value >= 0 && value <= 10000
-      ? Math.round(value)
-      : undefined;
+    if (!Number.isFinite(value) || value < 0 || value > 10000) {
+      rejected.push("taux");
+      return previous;
+    }
+    return Math.round(value);
   };
   const formProfile: FormProfile = {
     full_name: fullName,
@@ -127,20 +140,20 @@ export async function handleSaveFormProfile(
         ? previousProfile?.cia_month
         : body.ciaMonth === 6 || body.ciaMonth === 7 || body.ciaMonth === 8
           ? body.ciaMonth
-          : undefined,
+          : previousProfile?.cia_month,
     sunday_carryover:
       body.sundayCarryover === undefined
         ? previousProfile?.sunday_carryover
         : Number.isFinite(Number(body.sundayCarryover)) &&
             Number(body.sundayCarryover) >= 0
           ? Math.round(Number(body.sundayCarryover))
-          : undefined,
+          : previousProfile?.sunday_carryover,
     sunday_carryover_year:
       body.sundayCarryoverYear === undefined
         ? previousProfile?.sunday_carryover_year
         : Number.isFinite(Number(body.sundayCarryoverYear))
           ? Number(body.sundayCarryoverYear)
-          : undefined,
+          : previousProfile?.sunday_carryover_year,
     sunday_carryover_month:
       body.sundayCarryoverMonth === undefined
         ? previousProfile?.sunday_carryover_month
@@ -148,13 +161,13 @@ export async function handleSaveFormProfile(
             Number(body.sundayCarryoverMonth) >= 0 &&
             Number(body.sundayCarryoverMonth) <= 11
           ? Number(body.sundayCarryoverMonth)
-          : undefined,
+          : previousProfile?.sunday_carryover_month,
     sunday_carryover_from_year:
       body.sundayCarryoverFromYear === undefined
         ? previousProfile?.sunday_carryover_from_year
         : Number.isFinite(Number(body.sundayCarryoverFromYear))
           ? Number(body.sundayCarryoverFromYear)
-          : undefined,
+          : previousProfile?.sunday_carryover_from_year,
     sunday_carryover_from_month:
       body.sundayCarryoverFromMonth === undefined
         ? previousProfile?.sunday_carryover_from_month
@@ -162,7 +175,7 @@ export async function handleSaveFormProfile(
             Number(body.sundayCarryoverFromMonth) >= 0 &&
             Number(body.sundayCarryoverFromMonth) <= 11
           ? Number(body.sundayCarryoverFromMonth)
-          : undefined,
+          : previousProfile?.sunday_carryover_from_month,
     pay_profiles: previousProfile?.pay_profiles,
     manual_adjustments: previousProfile?.manual_adjustments,
     cet_account: previousProfile?.cet_account,
@@ -253,7 +266,7 @@ export async function handleSaveFormProfile(
                 body.ciaMonth === 7 ||
                 body.ciaMonth === 8
               ? body.ciaMonth
-              : undefined,
+              : previousYear.cia_month,
         net_ratio_fixed_bp: ratioBp(
           body.netRatioFixedBp,
           previousYear.net_ratio_fixed_bp,
@@ -351,7 +364,17 @@ export async function handleSaveFormProfile(
       }
     }
   }
+  const ignored = [...new Set(rejected)];
+  if (ignored.length)
+    console.warn("save-form-profile: valeurs hors bornes ignorées, anciennes valeurs conservées", {
+      kinds: ignored,
+      count: rejected.length,
+    });
   if (!await writeAtomic(store, scopedKey("form-profile"), formProfile, profileVersion.etag))
     return json({ error: "Le profil a été modifié sur un autre appareil" }, 409);
-  return json({ ok: true, form_profile: formProfile });
+  return json({
+    ok: true,
+    form_profile: formProfile,
+    ...(ignored.length ? { ignored_values: ignored } : {}),
+  });
 }

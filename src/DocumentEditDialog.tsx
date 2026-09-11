@@ -71,7 +71,7 @@ export function DocumentEditDialog({ document, demoMode, onClose, onEdited }: {
       <p>La nouvelle version sera disponible pour les mêmes destinataires. Vous pourrez revenir à une version précédente.</p>
       <form onSubmit={event => { event.preventDefault(); void changeFile(); }}>
         <label className="document-share-message">Nouveau fichier {format}<input key={status} type="file" required accept={`.${format.toLowerCase()}`} disabled={busy} onChange={event => setFile(event.target.files?.[0] || null)} /><small>3 Mo maximum · Alerte facultative depuis le bouton de partage.</small></label>
-        <button disabled={busy || !file}>{busy ? 'Enregistrement…' : 'Remplacer le fichier'}</button>
+        <button type="submit" disabled={busy || !file}>{busy ? 'Enregistrement…' : 'Remplacer le fichier'}</button>
       </form>
       <details onToggle={event => { if (event.currentTarget.open && !historyOpen) { setHistoryOpen(true); void refreshVersions().catch(() => setError('Historique indisponible. Réessayez en rouvrant le document.')); } }}>
         <summary>Versions précédentes</summary>

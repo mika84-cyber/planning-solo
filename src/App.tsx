@@ -101,6 +101,7 @@ import { parseCalendarSnapshot } from "./calendarPayload";
 import { splitNoteItemsIntoColumns } from "./noteColumns";
 import { matchesSearch } from "./searchMatching";
 import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
+import { monthGross, strikeDeduction } from "./payMonth";
 import {
   HOLIDAY_PAY_OPTIONS,
   emptyEntry,
@@ -1647,18 +1648,13 @@ export default function Home() {
     if (!allowances || !sickLeaves) return null;
     const index = payView.getMonth();
     const month = allowances.monthly.find((slot) => slot.index === index);
-    // La retenue maladie d'un fonctionnaire (carence + 10 %/jour) ne
-    // s'applique pas telle quelle à une contractuelle (IJSS, subrogation) :
-    // ignorée ici, pas seulement cachée, pour ne pas fausser le brut/net en
-    // silence dès qu'un arrêt est posé au calendrier.
-    const sickForMonth = sickLeaves.byMonth[index];
-    const sick = isContractuel
-      ? { days: sickForMonth.days, total: 0 }
-      : sickForMonth;
-    const strikeDeduction =
-      !isContractuel && strikeForCurrentPayMonth.totalDeduction !== null
-        ? strikeForCurrentPayMonth.totalDeduction
-        : 0;
+    // Maladie et grève se retiennent à l'identique quel que soit le statut
+    // (voir src/payMonth.ts) : seules l'IFSE et le CIA sont réservés aux
+    // fonctionnaires.
+    const sick = sickLeaves.byMonth[index];
+    const strikeMonthDeduction = strikeDeduction(
+      strikeForCurrentPayMonth.totalDeduction,
+    );
     const sunday = month?.sunday || 0;
     const holiday = month?.holiday || 0;
     const compensated = month?.compensated || 0;
@@ -1675,7 +1671,7 @@ export default function Home() {
       compensatedCount: month?.compensatedCount || 0,
       sick: sick.total,
       sickDays: sick.days,
-      strike: strikeDeduction,
+      strike: strikeMonthDeduction,
       strikeDays: strikeForCurrentPayMonth.days.length,
       strikeDeductedDays:
         strikeForCurrentPayMonth.days.length +
@@ -1683,41 +1679,20 @@ export default function Home() {
       strikeAutomaticDays: strikeForCurrentPayMonth.automaticAdditionalDays.length,
       strikePotentialDays: strikeForCurrentPayMonth.potentialAdditionalDays.length,
       cia: index === ciaMonth ? cia : 0,
-      premiums:
-        SUNDAY_ALLOWANCE.monthlyFlat +
-        sunday +
-        holiday +
-        compensated -
-        sick.total -
-        strikeDeduction +
-        mecenatForCurrentPayMonth.grossAmountCents / 100,
-      // Le brut du bulletin est la somme de toutes ces lignes : c'est
-      // reconstituable exactement, contrairement au net qui suppose de
-      // modéliser une dizaine de cotisations. Scindé en deux pour
-      // l'estimation du net : le traitement porte la pension civile, les
-      // primes n'y sont pas soumises et en gardent bien plus.
-      grossFixed: baseSalary + ifse + otherFixed - sick.total - strikeDeduction,
-      grossVariable:
-        (index === ciaMonth ? cia : 0) +
-        SUNDAY_ALLOWANCE.monthlyFlat +
-        sunday +
-        holiday +
-        compensated +
-        overtimeForPayMonth.amount +
-        mecenatForCurrentPayMonth.grossAmountCents / 100,
-      gross:
-        baseSalary +
-        ifse +
-        otherFixed +
-        (index === ciaMonth ? cia : 0) +
-        SUNDAY_ALLOWANCE.monthlyFlat +
-        sunday +
-        holiday +
-        compensated -
-        sick.total -
-        strikeDeduction +
-        overtimeForPayMonth.amount +
-        mecenatForCurrentPayMonth.grossAmountCents / 100,
+      ...monthGross({
+        baseSalary,
+        ifse,
+        otherFixed,
+        cia: index === ciaMonth ? cia : 0,
+        monthlyFlat: SUNDAY_ALLOWANCE.monthlyFlat,
+        sunday,
+        holiday,
+        compensated,
+        sickTotal: sick.total,
+        strikeDeduction: strikeMonthDeduction,
+        overtimeAmount: overtimeForPayMonth.amount,
+        mecenatGross: mecenatForCurrentPayMonth.grossAmountCents / 100,
+      }),
     };
   }, [
     allowances,
@@ -1749,14 +1724,10 @@ export default function Home() {
   });
   const strikeEstimateReady =
     !(strikeForCurrentPayMonth.days.length + strikeForCurrentPayMonth.automaticAdditionalDays.length) ||
-    (!isContractuel && strikeForCurrentPayMonth.totalDeduction !== null);
+    strikeForCurrentPayMonth.totalDeduction !== null;
   const strikeMissing =
     strikeForCurrentPayMonth.days.length + strikeForCurrentPayMonth.automaticAdditionalDays.length && !strikeEstimateReady
-      ? [
-          isContractuel
-            ? "règle de retenue de grève pour une contractuelle"
-            : "traitement et indemnité de résidence connus avant la grève",
-        ]
+      ? ["traitement et indemnité de résidence connus avant la grève"]
       : [];
   const grossEstimateComplete = estimateReadiness.grossReady && strikeEstimateReady;
   const netEstimateMissing = [...estimateReadiness.netMissing, ...strikeMissing];
@@ -2977,10 +2948,8 @@ export default function Home() {
         ? {
             key: "sick",
             label: `Arrêt maladie (${monthPay.sickDays} j)`,
-            detail: isContractuel
-              ? "impact à vérifier selon le maintien de salaire, les IJSS et la subrogation"
-              : "carence et retenue de 10 %",
-            amount: isContractuel ? null : -monthPay.sick,
+            detail: "carence et retenue de 10 %",
+            amount: -monthPay.sick,
           }
         : null,
       monthPay.strikeDeductedDays || monthPay.strikePotentialDays
@@ -2988,15 +2957,13 @@ export default function Home() {
             key: "strike",
             label: `Grève (${monthPay.strikeDeductedDays} journée${s(monthPay.strikeDeductedDays)} retenue${s(monthPay.strikeDeductedDays)})`,
             detail:
-              isContractuel
-                ? "règle de retenue à confirmer pour une contractuelle"
-                : strikeForCurrentPayMonth.dailyDeduction === null
+              strikeForCurrentPayMonth.dailyDeduction === null
                   ? "traitement et indemnité de résidence antérieurs à compléter"
                   : strikeForCurrentPayMonth.potentialAdditionalDays.length
                     ? `Attention : ${strikeForCurrentPayMonth.potentialAdditionalDays.length} jour${s(strikeForCurrentPayMonth.potentialAdditionalDays.length)} intermédiaire${s(strikeForCurrentPayMonth.potentialAdditionalDays.length)} à vérifier. Les repos noirs encadrés sont inclus automatiquement ; les autres absences restent hors retenue tant qu’elles ne sont pas confirmées. ${strikeForCurrentPayMonth.exactMonthValues ? "Valeurs exactes du mois." : strikeForCurrentPayMonth.sourcePeriod ? `Dernières valeurs connues : ${strikeForCurrentPayMonth.sourcePeriod}.` : ""}`
                     : `retenue au 1/30 · ${euros(strikeForCurrentPayMonth.dailyDeduction)} brut par jour${strikeForCurrentPayMonth.automaticAdditionalDays.length ? ` · ${strikeForCurrentPayMonth.automaticAdditionalDays.length} repos noir${s(strikeForCurrentPayMonth.automaticAdditionalDays.length)} encadré${s(strikeForCurrentPayMonth.automaticAdditionalDays.length)} inclus` : ""} · ${strikeForCurrentPayMonth.exactMonthValues ? "valeurs exactes du mois" : "dernières valeurs antérieures connues"}`,
             amount:
-              !isContractuel && strikeForCurrentPayMonth.totalDeduction !== null
+              strikeForCurrentPayMonth.totalDeduction !== null
                 ? -strikeForCurrentPayMonth.totalDeduction
                 : null,
           }
@@ -4934,6 +4901,7 @@ export default function Home() {
                 )}
               </div>
             )}
+            {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: role et aria-labelledby sont absents ensemble en mode note rapide ; le linter n'évalue pas le ternaire. */}
             <div id="day-notes-panel" className="day-tab-panel day-notes-tab-panel" role={quickNoteMode ? undefined : "tabpanel"} aria-labelledby={quickNoteMode ? undefined : "day-notes-tab"} hidden={!quickNoteMode && dayPanelTab !== "notes"}>
             <div className="day-notes-editor" role="group" aria-label="Notes de la journée">
               {!quickNoteMode ? <div className="day-notes-section-heading"><h3>Notes</h3><span>Rendez-vous, rappel ou information personnelle</span></div> : null}
@@ -5193,16 +5161,14 @@ export default function Home() {
                             {balanceDetailType === "strike"
                               ? (() => {
                                   const date = fromKey(detail.date);
-                                  const deduction = isContractuel
-                                    ? null
-                                    : strikePayEstimate(
-                                        periods,
-                                        group,
-                                        payProfiles,
-                                        date.getFullYear(),
-                                        date.getMonth(),
-                                        { entries, recoveryUses },
-                                      ).dailyDeduction;
+                                  const deduction = strikePayEstimate(
+                                    periods,
+                                    group,
+                                    payProfiles,
+                                    date.getFullYear(),
+                                    date.getMonth(),
+                                    { entries, recoveryUses },
+                                  ).dailyDeduction;
                                   return deduction === null
                                     ? "Retenue à calculer · voir et gérer"
                                     : `Retenue estimée : −${euros(deduction)} brut · voir et gérer`;

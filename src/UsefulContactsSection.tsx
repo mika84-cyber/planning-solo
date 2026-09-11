@@ -99,7 +99,7 @@ function ContactCards({ contacts, favorites, onToggleFavorite, isAdmin, onEdit }
               );
             })}
           </div>
-          <div className="useful-contact-card-tools" aria-label={`Actions pour ${contact.name}`}>
+          <div className="useful-contact-card-tools" role="group" aria-label={`Actions pour ${contact.name}`}>
             {isAdmin ? <button type="button" className="contact-admin-edit" aria-label={`Modifier ${contact.name}`} title="Modifier ce contact" onClick={() => onEdit(contact)}>✎</button> : null}
             <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(usefulContactId(contact))} aria-label={`${favorites.includes(usefulContactId(contact)) ? "Retirer" : "Ajouter"} ${contact.name} ${favorites.includes(usefulContactId(contact)) ? "des" : "aux"} favoris`} onClick={() => onToggleFavorite(usefulContactId(contact))}>★</button>
           </div>

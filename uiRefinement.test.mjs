@@ -194,7 +194,12 @@ describe("finitions d’interface", () => {
     expect(absenceReplacement).toMatch(
       /AUTOMATICALLY_REFUNDED_TYPES\s*=\s*new Set<LeaveType>\(\[\s*"annual",\s*"half",?\s*\]\)/,
     );
-    expect(app).toContain("impact à vérifier selon le maintien de salaire");
+    // La retenue maladie s'applique désormais aux deux statuts : un bulletin
+    // réel de contractuel déduit bien le jour de carence (voir
+    // src/payMonth.test.ts). L'ancienne mention « impact à vérifier », qui
+    // masquait le montant aux contractuels, ne doit pas revenir.
+    expect(app).toContain('detail: "carence et retenue de 10 %"');
+    expect(app).not.toContain("impact à vérifier selon le maintien de salaire");
   });
 
   it("indique le groupe réellement présent avec l’utilisatrice aujourd’hui", () => {
