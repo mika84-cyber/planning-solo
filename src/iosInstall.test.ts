@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   APPLE_INSTALL_DISMISSED_KEY,
+  appleInstallGesture,
   hasDismissedAppleInstall,
   isAlreadyInstalled,
   isAppleTouchDevice,
@@ -12,6 +13,12 @@ const IPHONE =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
 const IPAD_BUREAU =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15";
+const CHROME_IOS =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/125.0.6422.80 Mobile/15E148 Safari/604.1";
+const EDGE_IOS =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 EdgiOS/125.0 Mobile/15E148 Safari/604.1";
+const FIREFOX_IOS =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/126.0 Mobile/15E148 Safari/605.1.15";
 const ANDROID =
   "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Mobile Safari/537.36";
 const MAC =
@@ -116,5 +123,25 @@ describe("mémoire du bandeau écarté", () => {
     };
     expect(hasDismissedAppleInstall(refuse)).toBe(false);
     expect(() => rememberAppleInstallDismissed(refuse)).not.toThrow();
+  });
+});
+
+describe("où se trouve le geste selon le navigateur", () => {
+  // Sur iOS tous les navigateurs sont du WebKit, mais l'ajout à l'écran
+  // d'accueil n'est pas au même endroit dans chacun.
+  it("Safari : le bouton Partager de la barre du bas", () => {
+    expect(appleInstallGesture(IPHONE)).toBe("share");
+  });
+
+  it("Chrome : le menu à trois points", () => {
+    expect(appleInstallGesture(CHROME_IOS)).toBe("menu");
+  });
+
+  it("Edge : le même menu que Chrome", () => {
+    expect(appleInstallGesture(EDGE_IOS)).toBe("menu");
+  });
+
+  it("Firefox : renvoyer vers Safari plutôt que promettre un geste absent", () => {
+    expect(appleInstallGesture(FIREFOX_IOS)).toBe("other");
   });
 });

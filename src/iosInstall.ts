@@ -37,6 +37,24 @@ export function isAlreadyInstalled({
 }
 
 /**
+ * Sur iOS, tous les navigateurs reposent sur WebKit, mais leur interface
+ * diffère : le geste n'est pas au même endroit selon celui qu'on utilise.
+ *
+ * - `share` : Safari, où le bouton Partager est dans la barre du bas.
+ * - `menu` : Chrome et Edge, où l'ajout se trouve dans le menu à trois
+ *   points, en haut à droite.
+ * - `other` : les navigateurs qui ne proposent pas l'ajout ; il faut alors
+ *   ouvrir le planning dans Safari.
+ */
+export type AppleInstallGesture = "share" | "menu" | "other";
+
+export function appleInstallGesture(userAgent: string): AppleInstallGesture {
+  if (/CriOS\/|EdgiOS\//.test(userAgent)) return "menu";
+  if (/FxiOS\//.test(userAgent)) return "other";
+  return "share";
+}
+
+/**
  * La marche à suivre n'a de sens que sur un appareil Apple qui n'a pas déjà
  * l'application sur son écran d'accueil.
  */
