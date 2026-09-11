@@ -34,4 +34,3 @@ export const UsefulContactsSection = lazy(() =>
 export const UsefulFormsSection = lazy(() =>
   import("./UsefulFormsSection").then(({ UsefulFormsSection: Component }) => ({ default: Component })),
 );
-export { UserGuideDialogs } from "./UserGuideDialogs";

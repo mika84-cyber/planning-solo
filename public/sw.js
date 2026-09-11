@@ -37,6 +37,19 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/api/")
   )
     return;
+  // Les formulaires peuvent être remplacés par l’administrateur sans changer de lien.
+  if (/^\/useful-forms\/[^/]+\.(pdf|docx)$/i.test(url.pathname)) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }).then(response => {
+      if (response.ok && !/private|no-store/i.test(response.headers.get('cache-control') || '')) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then(cache => cache.put(event.request, copy)));
+      } else {
+        event.waitUntil(caches.open(CACHE).then(cache => cache.delete(event.request)));
+      }
+      return response;
+    }).catch(async () => (await caches.match(event.request)) || new Response('Document indisponible hors connexion.', { status: 503 })));
+    return;
+  }
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request, { cache: "no-store" }).catch(() => caches.match("/")),

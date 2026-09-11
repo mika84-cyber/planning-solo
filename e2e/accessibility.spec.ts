@@ -37,12 +37,18 @@ test("les parcours essentiels ne présentent pas de violation d’accessibilité
   await expectNoSeriousAccessibilityViolation(page, "sur l’accueil");
 
   await openMainMenu(page);
-  await expect(page.getByRole("complementary", { name: "Menu principal" })).toBeVisible();
+  const menu = page.getByRole("complementary", { name: "Menu principal" });
+  await expect(menu).toBeVisible();
   await expectNoSeriousAccessibilityViolation(page, "dans le menu principal");
+  await menu.getByRole("button", { name: "Fermer le menu" }).click();
 
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Congés et récupérations/ })
-    .click();
+  const navigation = page.locator('nav[aria-label="Navigation principale"]:visible');
+  await navigation.getByRole("button", { name: "Congés", exact: true }).click();
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   await expectNoSeriousAccessibilityViolation(page, "sur les congés et récupérations");
+  for (const name of [/Ma paie/, /Docs|Documents/, /Expos|Programme/, /Collègues/]) {
+    await navigation.getByRole("button", { name }).click();
+    await expectNoSeriousAccessibilityViolation(page, `dans ${name.source}`);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
 });

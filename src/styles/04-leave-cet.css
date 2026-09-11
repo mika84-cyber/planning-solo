@@ -419,7 +419,7 @@
   .cet-operation-note { grid-column: auto; }
   .cet-summary-grid > div { min-height: 88px; }
   .cet-actions { display: grid; grid-template-columns: 1fr 1fr; }
-  .cet-toolbar .primary-action { white-space: normal; }
+  .cet-toolbar button { white-space: normal; }
   .cet-disable-confirm { align-items: stretch; flex-direction: column; }
   .cet-disable-confirm > div:last-child { display: grid; grid-template-columns: 1fr; }
   .cet-history article { grid-template-columns: auto minmax(0, 1fr) auto; }

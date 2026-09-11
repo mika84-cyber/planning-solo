@@ -116,7 +116,6 @@ type Props = {
   onCheckForUpdate: () => void;
   onExportData: () => void;
   onImportData: (file: File) => void;
-  onArchiveLegacyData: () => void;
   onDeleteAllData: () => void;
 };
 
@@ -152,7 +151,6 @@ export function AppDialogLayer({
   onCheckForUpdate,
   onExportData,
   onImportData,
-  onArchiveLegacyData,
   onDeleteAllData,
 }: Props) {
   return (
@@ -225,7 +223,6 @@ export function AppDialogLayer({
         activeType={planning.activeType}
         start={planning.timeStart}
         end={planning.timeEnd}
-        workQuota={workQuota}
         workSchedule={workSchedule}
         onStartChange={planning.setTimeStart}
         onEndChange={planning.setTimeEnd}
@@ -264,7 +261,6 @@ export function AppDialogLayer({
         onClose={() => shell.setDataManagementOpen(false)}
         onExport={onExportData}
         onImport={onImportData}
-        onArchiveLegacy={onArchiveLegacyData}
         onDeleteAll={onDeleteAllData}
       />
     </>

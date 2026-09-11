@@ -94,13 +94,13 @@ export function trainingRecoveryTimes(
 }
 
 /** Crédit attaché au choix « prime + récupération » d'un jour férié :
- * 8 h 15 à temps plein, 6 h 15 à trois-quarts temps et 3 h 45 à mi-temps.
+ * 8 h 15 à temps plein, 6 h 30 à trois-quarts temps et 4 h à mi-temps.
  * Les dates sont dédupliquées : une resynchronisation du même jour ne peut
  * jamais créditer le solde une seconde fois. */
 export function holidayRecoveryMinutesForQuota(quota: WorkQuota) {
   if (quota === "full") return 8 * 60 + 15;
-  if (quota === "three_quarters") return 6 * 60 + 15;
-  return 3 * 60 + 45;
+  if (quota === "three_quarters") return 6 * 60 + 30;
+  return 4 * 60;
 }
 
 export function holidayRecoveryCreditMinutes(
@@ -198,13 +198,8 @@ export function recoveryRequestMinutes(
   end = "",
 ) {
   const dailyMinutes = dailyMinutesForQuota(quota);
-  if (type === "recovery_training") {
-    const selected = splitOvertimeRange(start, end)?.minutes ?? 0;
-    if ((start === "10:00" && end === "13:00") || (start === "13:00" && end === "16:00"))
-      return 3 * 60;
-    if (quota === "half") return 0;
-    return start === "10:00" && end === "16:00" && selected === 6 * 60 ? selected : 0;
-  }
+  if (start !== "" || end !== "") return splitOvertimeRange(start, end)?.minutes ?? 0;
+  if (type === "recovery_training") return trainingRecoveryMinutes(quota);
   if (type === "recovery_holiday") return holidayRecoveryMinutesForQuota(quota);
   if (type === "recovery_day") return dailyMinutes;
   if (type === "recovery_half") return quota === "half" ? dailyMinutes : dailyMinutes / 2;
@@ -235,10 +230,11 @@ export function nextPayPeriod(date: string) {
 export function monthlyRecoveryBalance(
   overtime: OvertimeEntry[],
   recoveryUses: RecoveryUse[],
+  isSundayOrHoliday?: (date: string) => boolean,
 ) {
   const earned = overtime
     .filter((entry) => entry.disposition === "recovery")
-    .reduce((total, entry) => total + entry.minutes, 0);
+    .reduce((total, entry) => total + overtimeRecoveryCreditMinutes(entry, isSundayOrHoliday), 0);
   const used = recoveryUses.reduce((total, entry) => total + entry.minutes, 0);
   return { earned, used, remaining: earned - used };
 }
@@ -248,6 +244,7 @@ export function monthlyRecoveryBalance(
 export function allocateRecoveryUses(
   overtime: OvertimeEntry[],
   recoveryUses: RecoveryUse[],
+  isSundayOrHoliday?: (date: string) => boolean,
 ) {
   let minutesToAllocate = recoveryUses.reduce(
     (total, entry) => total + entry.minutes,
@@ -257,12 +254,14 @@ export function allocateRecoveryUses(
     .filter((entry) => entry.disposition === "recovery")
     .sort((a, b) => `${a.date}-${a.id}`.localeCompare(`${b.date}-${b.id}`))
     .map((entry) => {
-      const usedMinutes = Math.min(entry.minutes, minutesToAllocate);
+      const earnedMinutes = overtimeRecoveryCreditMinutes(entry, isSundayOrHoliday);
+      const usedMinutes = Math.min(earnedMinutes, minutesToAllocate);
       minutesToAllocate -= usedMinutes;
       return {
         entryId: entry.id,
+        earnedMinutes,
         usedMinutes,
-        remainingMinutes: entry.minutes - usedMinutes,
+        remainingMinutes: earnedMinutes - usedMinutes,
       };
     });
 }
@@ -340,6 +339,32 @@ export function splitOvertimeRangeByCalendar(
     sundayHolidayMinutes,
     nightMinutes,
   };
+}
+
+export const OVERTIME_RECOVERY_FACTORS = {
+  day: 1.25,
+  sundayHoliday: 1.66,
+  night: 2,
+} as const;
+
+/** Crédit généré par des heures supplémentaires choisies en récupération.
+ * Les ajouts manuels et crédits de férié sont déjà exprimés en minutes
+ * créditées. Seules les déclarations par plage horaire sont majorées. */
+export function overtimeRecoveryCreditMinutes(
+  entry: OvertimeEntry,
+  isSundayOrHoliday: (date: string) => boolean = (date) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    return Boolean(match && new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))).getUTCDay() === 0);
+  },
+) {
+  if (entry.inputMode !== "range" || !entry.start || !entry.end) return entry.minutes;
+  const split = splitOvertimeRangeByCalendar(entry.date, entry.start, entry.end, isSundayOrHoliday);
+  if (!split) return entry.minutes;
+  return Math.round(
+    split.dayMinutes * OVERTIME_RECOVERY_FACTORS.day +
+    split.sundayHolidayMinutes * OVERTIME_RECOVERY_FACTORS.sundayHoliday +
+    split.nightMinutes * OVERTIME_RECOVERY_FACTORS.night,
+  );
 }
 
 /** Calcule les IHTS des seules heures « À payer » du mois d'exécution.

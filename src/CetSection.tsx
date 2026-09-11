@@ -293,8 +293,8 @@ export function CetSection({
               <section className="cet-subsection cet-management-panel">
                 <div className="cet-subsection-heading"><span className="step-label">Demandes et suivi</span><h4>Gérer mon CET</h4></div>
                 <div className="cet-toolbar">
-                  <button className="primary-action" type="button" onClick={onRequestLeave}>Poser un congé CET</button>
-                  <button className="primary-action" type="button" onClick={() => { setError(""); setOperationOpen((current) => !current); }}>Ajouter une opération</button>
+                  <button className="secondary-button" type="button" onClick={onRequestLeave}>Poser un congé CET</button>
+                  <button className="secondary-button" type="button" onClick={() => { setError(""); setOperationOpen((current) => !current); }}>Ajouter une opération</button>
                   <button className="primary-action cet-funding-action" type="button" onClick={() => setFormKind("funding")}>Remplir alimentation / indemnisation</button>
                 </div>
                 <button className="cet-disable-trigger" type="button" onClick={() => setDisableConfirmOpen(true)}>Je n’ai pas de CET</button>

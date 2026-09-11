@@ -40,9 +40,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.
 - `src/AppNavigation.tsx` : en-tête, compte et menu principal communs à tous
   les écrans.
+- `src/AdminToolsPanel.tsx`, `src/adminTools.css`, `netlify/functions/admin-tools.mts`
+  et `netlify/lib/adminTools.mts` : aperçu invité, message temporaire, groupes,
+  corbeille de 30 jours et suivi des alertes. `admin-publications.mts` exécute
+  les publications programmées chaque minute ; tests dans `admin-tools.function.test.ts`.
 - `src/FeedbackMessenger.tsx`, `src/feedbackMessenger.css` et
   `src/useFeedbackMessaging.ts` : formulaire de retour privé, boîte de réception
-  administratrice, réponses personnalisées, suppression, pastille de messages
+  administrateur, réponses personnalisées, suppression, pastille de messages
   non lus et alertes privées centrées.
 - `src/AppDialogLayer.tsx` : assemblage des dialogues, messages, confirmations
   et panneaux de gestion qui restent pilotés par l’orchestrateur.
@@ -62,11 +66,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/PayslipSettingsSections.tsx` (résultat, calibration, arrêts et
   paramètres), sans changer la structure DOM attendue par les styles.
 - `src/PdfDownloadPage.tsx` : page de téléchargement des documents.
-- `src/UserGuideDialogs.tsx` : mode d’emploi chargé uniquement lorsqu’il est
-  ouvert.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
   centrée des nouveaux documents, lecture et ajout administrateur.
+- `src/DocumentEditDialog.tsx` et `netlify/lib/documentVersions.mts` : remplacement
+  du fichier et restauration des versions précédentes. `useful-document-file.mts`
+  conserve les liens des formulaires intégrés ; leur cache privilégie le réseau.
 - `src/WorkAccidentSection.tsx` et `src/useWorkAccidentActions.ts` : procédure
   fonctionnaire/contractuel, contacts, documents et périodes d’accident de
   travail marquées dans le planning sans carence ; seuls les CA superposés sont
@@ -134,7 +139,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’isolation et d’écriture de l’API calendrier.
 - `netlify/functions/feedback.mts` : stockage privé des retours, photos,
   réponses et notifications de résolution ; l’accès à la boîte de réception et
-  aux actions administratrices est réservé à `PROGRAM_ADMIN_EMAIL`.
+  aux actions d’administration est réservé à `PROGRAM_ADMIN_EMAIL`.
 - `netlify/functions/useful-documents.mts` : ajout sécurisé de PDF/DOCX par
   l’administrateur, stockage, alertes par compte invité et téléchargement.
 - `netlify/lib/documentAnnouncementEmail.mts` : e-mail individuel annonçant un

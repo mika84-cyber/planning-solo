@@ -1,5 +1,5 @@
 import { getUser } from "@netlify/identity";
-import { COLLEAGUE_GROUPS } from "../lib/colleagueGroups.ts";
+import { adminStore, readGroups } from '../lib/adminTools.mts';
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 
 const headers = {
@@ -13,7 +13,7 @@ export default async (request: Request) => {
   const user = await getUser();
   if (!user?.id)
     return new Response(JSON.stringify({ error: "Authentification requise." }), { status: 401, headers });
-  return new Response(JSON.stringify({ groups: COLLEAGUE_GROUPS }), { status: 200, headers });
+  return new Response(JSON.stringify({ groups: await readGroups(adminStore()) }), { status: 200, headers });
 };
 
 export const config = { path: "/api/colleague-groups" };

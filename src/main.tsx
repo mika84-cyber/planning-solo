@@ -6,6 +6,7 @@ import "./styles/16-work-accident.css";
 import "./dataManagement.css";
 import "./leaveCollapsibles.css";
 import "./leaveMenus.css";
+import "./productRefinements.css";
 
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
 

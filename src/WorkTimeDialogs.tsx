@@ -1,4 +1,5 @@
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
+import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
 import { defaultRecoveryMinutes, minutesLabel, type OvertimeDisposition, type WorkQuota } from "./overtime";
@@ -62,28 +63,8 @@ export function MecenatDialog({
             />
           </label>
           <div className="overtime-time-grid">
-            <label>
-              <span>Début</span>
-              <input
-                type="time"
-                step="900"
-                value={draft.start}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, start: event.target.value }))
-                }
-              />
-            </label>
-            <label>
-              <span>Fin</span>
-              <input
-                type="time"
-                step="900"
-                value={draft.end}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, end: event.target.value }))
-                }
-              />
-            </label>
+            <ClockTimePicker label="Heure de début" value={draft.start} onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
+            <ClockTimePicker label="Heure de fin" value={draft.end} onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
             <small>
               Si l’heure de fin est antérieure au début, la vacation se termine le
               lendemain.
@@ -201,34 +182,10 @@ export function OvertimeDialog({
                 : "Le tarif dimanche/jour férié est appliqué automatiquement selon la date."}
             </small>
           </label>
-          <div className="overtime-time-grid">
-            <strong className="overtime-time-title">Horaires</strong>
-            <label>
-              <span>De</span>
-              <input
-                type="time"
-                min="09:00"
-                max="19:00"
-                step="900"
-                value={draft.start}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, start: event.target.value }))
-                }
-              />
-            </label>
-            <label>
-              <span>À</span>
-              <input
-                type="time"
-                min="09:00"
-                max="19:00"
-                step="900"
-                value={draft.end}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, end: event.target.value }))
-                }
-              />
-            </label>
+          <div className="overtime-time-grid overtime-range-card">
+            <strong className="overtime-time-title">Horaires effectués</strong>
+            <ClockTimePicker label="Heure de début" value={draft.start} onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
+            <ClockTimePicker label="Heure de fin" value={draft.end} onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
             <small>
               La nuit est reconnue automatiquement de 22 h à 7 h. Le dimanche et
               les jours fériés sont majorés de deux tiers. Les horaires peuvent
@@ -258,7 +215,7 @@ export function OvertimeDialog({
                 }
               >
                 <strong>À récupérer</strong>
-                <span>Ajoutées au solde heure pour heure</span>
+                <span>Jour ×1,25 · dimanche/férié ×1,66 · nuit ×2</span>
               </button>
             </div>
           </fieldset>
@@ -385,6 +342,7 @@ const RECOVERY_KIND_LABELS: Record<RecoveryDraft["kind"], string> = {
 const RECOVERY_HOUR_OPTIONS: ReadonlyArray<readonly [number, string]> = [
   [480, "8 h"], [360, "6 h"], [240, "4 h"], [225, "3 h 45"], [120, "2 h"],
 ];
+const RECOVERY_KINDS: readonly RecoveryDraft["kind"][] = ["day", "half", "hours", "holiday", "training"];
 
 export function RecoveryRangeDialog({
   open,
@@ -421,29 +379,24 @@ export function RecoveryRangeDialog({
           Choisissez le type de récupération, puis sélectionnez une ou plusieurs dates
           directement dans le calendrier.
         </p>
-        <div className="request-option-groups manual-leave-options">
-          {([
-            ["Récupérations courantes", ["day", "half", "hours"]],
-            ["Autres récupérations", ["holiday", "training"]],
-          ] as Array<[string, RecoveryDraft["kind"][]]>).map(([label, kinds]) => (
-            <section className="request-option-group" key={label}>
-              <h3>{label}</h3>
-              <div className="type-tabs" role="group" aria-label={label}>
-                {kinds.map((candidate) => (
-                  <button
-                    type="button"
-                    className={kind === candidate ? "active" : ""}
-                    style={{ "--type-color": "#f0a574" } as CSSProperties}
-                    onClick={() => setKind(candidate)}
-                    key={candidate}
-                  >
-                    <i />
-                    {RECOVERY_KIND_LABELS[candidate]}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
+        <div className="request-option-groups manual-leave-options recovery-category-options">
+          <section className="request-option-group">
+            <h3>Type de récupération</h3>
+            <div className="type-tabs" role="group" aria-label="Choisir le type de récupération">
+              {RECOVERY_KINDS.map((candidate) => (
+                <button
+                  type="button"
+                  className={kind === candidate ? "active" : ""}
+                  style={{ "--type-color": "#f0a574" } as CSSProperties}
+                  onClick={() => setKind(candidate)}
+                  key={candidate}
+                >
+                  <i />
+                  {RECOVERY_KIND_LABELS[candidate]}
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
         <div className="modal-actions range-create-actions">
           <button className="secondary-button" type="button" onClick={onClose}>
@@ -521,35 +474,30 @@ export function RecoveryUseDialog({
         </p>
         <div className="overtime-form">
           <div className="request-option-groups manual-leave-options recovery-category-options">
-            {([
-              ["Récupérations courantes", ["day", "half", "hours"]],
-              ["Autres récupérations", ["holiday", "training"]],
-            ] as Array<[string, RecoveryDraft["kind"][]]>).map(([label, kinds]) => (
-              <section className="request-option-group" key={label}>
-                <h3>{label}</h3>
-                <div className="type-tabs" role="group" aria-label={label}>
-                  {kinds.map((kind) => (
-                    <button
-                      type="button"
-                      key={kind}
-                      className={draft.kind === kind ? "active" : ""}
-                      style={{ "--type-color": "#f0b083" } as CSSProperties}
-                      onClick={() =>
-                        setDraft((current) => ({
-                          ...current,
-                          kind,
-                          durationMinutes:
-                            defaultRecoveryMinutes(kind, effectiveQuota),
-                        }))
-                      }
-                    >
-                      <i />
-                      {RECOVERY_KIND_LABELS[kind]}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
+            <section className="request-option-group">
+              <h3>Type de récupération</h3>
+              <div className="type-tabs" role="group" aria-label="Choisir le type de récupération">
+                {RECOVERY_KINDS.map((kind) => (
+                  <button
+                    type="button"
+                    key={kind}
+                    className={draft.kind === kind ? "active" : ""}
+                    style={{ "--type-color": "#f0b083" } as CSSProperties}
+                    onClick={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        kind,
+                        durationMinutes:
+                          defaultRecoveryMinutes(kind, effectiveQuota),
+                      }))
+                    }
+                  >
+                    <i />
+                    {RECOVERY_KIND_LABELS[kind]}
+                  </button>
+                ))}
+              </div>
+            </section>
           </div>
           <p className="recovery-kind-heading">{RECOVERY_KIND_LABELS[draft.kind]}</p>
           {!showCalendar ? (
@@ -623,21 +571,7 @@ export function RecoveryUseDialog({
               </label>
             </div>
           ) : null}
-          {draft.kind !== "training" ? <label>
-            <span>
-              Heure de début <small>(facultatif)</small>
-            </span>
-            <input
-              type="time"
-              min="09:00"
-              max="19:00"
-              step="900"
-              value={draft.start}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, start: event.target.value }))
-              }
-            />
-          </label> : null}
+          {draft.kind !== "training" ? <ClockTimePicker label="Heure de début (facultatif)" value={draft.start} onChange={(value) => setDraft((current) => ({ ...current, start: value }))} /> : null}
           {showCalendar ? (
             <button
               className="recovery-calendar-trigger"

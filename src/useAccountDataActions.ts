@@ -34,6 +34,7 @@ type AccountDataActionsOptions = {
   setOpen: SetState<boolean>;
   loadCalendar: () => Promise<void>;
   notify: (message: string) => void;
+  showSuccess: (message: string) => void;
   get: AccountCalendarGet;
   post: AccountCalendarPost;
   confirmAction?: (message: string) => boolean;
@@ -76,6 +77,7 @@ export function useAccountDataActions({
   setOpen,
   loadCalendar,
   notify,
+  showSuccess,
   get,
   post,
   confirmAction = (message) => window.confirm(message),
@@ -93,7 +95,7 @@ export function useAccountDataActions({
         `planning-solo-sauvegarde-${dateKey(exportDate)}.json`,
         JSON.stringify(backup, null, 2),
       );
-      notify("La sauvegarde JSON a été téléchargée.");
+      showSuccess("La sauvegarde JSON a été téléchargée.");
     } catch (error) {
       notify(calendarErrorMessage(error, "La sauvegarde n’a pas pu être créée."));
     } finally {
@@ -118,7 +120,7 @@ export function useAccountDataActions({
       await post({ action: "restore-backup", backup });
       await loadCalendar();
       setOpen(false);
-      notify("La sauvegarde a été restaurée.");
+      showSuccess("La sauvegarde a été restaurée.");
     } catch (error) {
       notify(calendarErrorMessage(error, "La sauvegarde est invalide ou illisible."));
     } finally {
@@ -139,7 +141,7 @@ export function useAccountDataActions({
         action: "archive-legacy-data",
         confirmation: "ARCHIVER",
       });
-      notify(
+      showSuccess(
         result.archived
           ? `${result.archived} élément${result.archived > 1 ? "s" : ""} historique${result.archived > 1 ? "s" : ""} archivé${result.archived > 1 ? "s" : ""}.`
           : "Aucune ancienne donnée ne restait à archiver.",
@@ -161,7 +163,7 @@ export function useAccountDataActions({
       await post({ action: "delete-user-data", confirmation });
       await loadCalendar();
       setOpen(false);
-      notify("Toutes les données du compte ont été effacées.");
+      showSuccess("Toutes les données du compte ont été effacées.");
     } catch (error) {
       notify(calendarErrorMessage(error, "Les données n’ont pas pu être effacées."));
     } finally {

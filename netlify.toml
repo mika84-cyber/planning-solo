@@ -6,6 +6,75 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."useful-document-file"]
+  included_files = ["public/useful-forms/*.pdf", "public/useful-forms/*.docx"]
+
+[[redirects]]
+  from = "/useful-forms/hilma-af-klint.pdf"
+  to = "/api/useful-document-file?file=hilma-af-klint.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/demande-conges.pdf"
+  to = "/api/useful-document-file?file=demande-conges.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/demande-recuperations.pdf"
+  to = "/api/useful-document-file?file=demande-recuperations.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/demande-annulation-conges.pdf"
+  to = "/api/useful-document-file?file=demande-annulation-conges.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/formulaire-changement-coordonnees.pdf"
+  to = "/api/useful-document-file?file=formulaire-changement-coordonnees.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/changement-coordonnees-bancaires.docx"
+  to = "/api/useful-document-file?file=changement-coordonnees-bancaires.docx"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/demande-carte-restauration-bimpli.pdf"
+  to = "/api/useful-document-file?file=demande-carte-restauration-bimpli.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/procuration-retrait-titres-repas.pdf"
+  to = "/api/useful-document-file?file=procuration-retrait-titres-repas.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/demande-carte-culture-a.pdf"
+  to = "/api/useful-document-file?file=demande-carte-culture-a.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/cet-demande-ouverture.pdf"
+  to = "/api/useful-document-file?file=cet-demande-ouverture.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/useful-forms/cet-alimentation-indemnisation.pdf"
+  to = "/api/useful-document-file?file=cet-alimentation-indemnisation.pdf"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

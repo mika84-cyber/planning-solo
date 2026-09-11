@@ -102,3 +102,16 @@ await writeFile(
   "qa-planning-no-vacations.pdf",
   Buffer.from(await noVacationsResult.blob.arrayBuffer()),
 );
+const noLeaveLegendResult = createAnnualPlanningPdf({
+  ...pdfOptions,
+  groups: [1, 2, 3],
+  leaveTypes: undefined,
+  halfMoments: undefined,
+  leaveSummary: undefined,
+  showColorLegend: false,
+  filenameLabel: "controle-local-sans-conges",
+});
+await writeFile(
+  "qa-planning-no-leave-legend.pdf",
+  Buffer.from(await noLeaveLegendResult.blob.arrayBuffer()),
+);

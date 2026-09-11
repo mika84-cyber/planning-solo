@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent, type MouseEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { LeavePeriod, PayStatus } from "./appModel";
 import { WorkAccidentIcon } from "./WorkAccidentIcon";
 import {
@@ -7,12 +7,15 @@ import {
   type GrandPalaisProgramData,
 } from "./GrandPalaisProgramSection";
 import { readResourceFavorites, writeResourceFavorites } from "./resourceFavorites";
+import { matchesSearch } from "./searchMatching";
 import "./usefulDocumentAdmin.css";
+import { DocumentShareDialog } from "./DocumentShareDialog";
+import { DocumentUpload } from "./DocumentUpload";
+import { DocumentEditDialog } from "./DocumentEditDialog";
 import {
-  addSharedUsefulDocument,
   getSharedUsefulDocuments,
   type SharedUsefulDocument,
-  type UsefulDocumentFolderKey,
+  type UsefulDocumentEdit,
 } from "./usefulDocumentsApi";
 
 const WorkAccidentSection = lazy(() => import("./WorkAccidentSection").then((module) => ({ default: module.WorkAccidentSection })));
@@ -25,6 +28,7 @@ type UsefulFormDocument = {
   format: "PDF" | "DOCX";
   programEntryTitle?: string;
   href?: string;
+  publishAt?: string;
 };
 
 type UsefulFormsFolder = {
@@ -140,26 +144,22 @@ export function UsefulFormsSection({
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState(() => readResourceFavorites(accountId, "documents"));
   const [sharedDocuments, setSharedDocuments] = useState<SharedUsefulDocument[]>([]);
-  const [adminTitle, setAdminTitle] = useState("");
-  const [adminFolder, setAdminFolder] = useState<UsefulDocumentFolderKey>("expo");
-  const [adminFile, setAdminFile] = useState<File | null>(null);
-  const [notifyGuests, setNotifyGuests] = useState(false);
-  const [adminBusy, setAdminBusy] = useState(false);
-  const [adminMessage, setAdminMessage] = useState("");
-  const [adminError, setAdminError] = useState("");
+  const [shareDocument, setShareDocument] = useState<UsefulFormDocument | null>(null);
+  const [editDocument, setEditDocument] = useState<UsefulFormDocument | null>(null);
+  const [documentEdits, setDocumentEdits] = useState<UsefulDocumentEdit[]>([]);
   const allFolders = useMemo(() => usefulFormFoldersForDate(today).map((item) => ({
     ...item,
     documents: [
       ...item.documents,
       ...sharedDocuments
-        .filter((document) => document.folder === item.key)
-        .map((document) => ({ title: document.title, file: document.id, format: document.format, href: document.href })),
-    ],
-  })), [sharedDocuments, today]);
-  const normalizedSearch = searchQuery.trim().toLocaleLowerCase("fr");
-  const visibleFolders = useMemo(() => allFolders.filter((item) => !normalizedSearch
-    || item.title.toLocaleLowerCase("fr").includes(normalizedSearch)
-    || item.documents.some((document) => document.title.toLocaleLowerCase("fr").includes(normalizedSearch))), [allFolders, normalizedSearch]);
+        .filter((document) => document.folder === item.key && (isAdmin || !document.publishAt || Date.parse(document.publishAt) <= Date.now()))
+        .map((document) => ({ title: document.title, file: document.id, format: document.format, href: document.href, publishAt: document.publishAt })),
+    ].filter(document => !documentEdits.find(edit => edit.id === document.file)?.deleted)
+      .map(document => ({ ...document, href: documentEdits.find(edit => edit.id === document.file)?.href || document.href, title: documentEdits.find(edit => edit.id === document.file)?.title || document.title })),
+  })), [sharedDocuments, today, documentEdits, isAdmin]);
+  const normalizedSearch = searchQuery.trim();
+  const visibleFolders = useMemo(() => allFolders.filter((item) => matchesSearch(item.title, normalizedSearch)
+    || item.documents.some((document) => matchesSearch(document.title, normalizedSearch))), [allFolders, normalizedSearch]);
   const favoriteDocuments = allFolders.flatMap((item) => item.documents.map((document) => ({ ...document, folderKey: item.key }))).filter((document) => favorites.includes(document.file));
   const toggleFavorite = (file: string) => setFavorites((current) => {
     const next = current.includes(file) ? current.filter((item) => item !== file) : [...current, file];
@@ -172,10 +172,12 @@ export function UsefulFormsSection({
   useEffect(() => {
     if (demoMode) return;
     let active = true;
-    void getSharedUsefulDocuments()
-      .then((payload) => active && setSharedDocuments(payload.documents))
+    const refresh = () => void getSharedUsefulDocuments()
+      .then((payload) => { if (active) { setSharedDocuments(payload.documents); setDocumentEdits(payload.catalogEdits || []); } })
       .catch(() => { /* Les documents intégrés restent disponibles hors ligne. */ });
-    return () => { active = false; };
+    refresh();
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 60000);
+    return () => { active = false; window.clearInterval(timer); };
   }, [demoMode]);
   const folder = visibleFolders.find((item) => item.key === activeFolder);
   const secureContext = typeof window === "undefined" || window.isSecureContext;
@@ -218,53 +220,6 @@ export function UsefulFormsSection({
     setActiveFolder(key);
   };
 
-  const submitDocument = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!adminFile || adminBusy) return;
-    const form = event.currentTarget;
-    setAdminBusy(true);
-    setAdminError("");
-    setAdminMessage("");
-    try {
-      if (demoMode) {
-        const format = adminFile.name.toLocaleLowerCase("fr").endsWith(".docx") ? "DOCX" : "PDF";
-        setSharedDocuments((current) => [...current, {
-          id: `demo-${Date.now()}`,
-          title: adminTitle.trim(),
-          folder: adminFolder,
-          format,
-          createdAt: new Date().toISOString(),
-          href: URL.createObjectURL(adminFile),
-        }]);
-        setAdminMessage("Document ajouté à la démo locale. Aucune alerte ni aucun e-mail n’a été envoyé.");
-      } else {
-        const result = await addSharedUsefulDocument({
-          title: adminTitle,
-          folder: adminFolder,
-          file: adminFile,
-          notifyGuests,
-        });
-        setSharedDocuments((current) => [...current.filter((item) => item.id !== result.document.id), result.document]);
-        if (!result.announcement) {
-          setAdminMessage("Document ajouté sans alerte aux comptes invités.");
-        } else if (!result.announcement.directoryAvailable) {
-          setAdminMessage("Document ajouté, mais l’annuaire des comptes invités était indisponible : aucune alerte n’a été envoyée.");
-        } else {
-          const { accounts, inAppAlerts, emailsSent, emailsFailed } = result.announcement;
-          setAdminMessage(`Document ajouté · ${inAppAlerts}/${accounts} alerte${accounts > 1 ? "s" : ""} dans l’application · ${emailsSent}/${accounts} e-mail${accounts > 1 ? "s" : ""} envoyé${emailsSent > 1 ? "s" : ""}${emailsFailed ? ` · ${emailsFailed} échec${emailsFailed > 1 ? "s" : ""}` : ""}.`);
-        }
-      }
-      setAdminTitle("");
-      setAdminFile(null);
-      setNotifyGuests(false);
-      form.reset();
-    } catch (error) {
-      setAdminError(error instanceof Error ? error.message : "Le document n’a pas pu être ajouté.");
-    } finally {
-      setAdminBusy(false);
-    }
-  };
-
   if (activeFolder === "work-accident") {
     return (
       <Suspense fallback={<div className="deferred-section-loading" role="status">Ouverture de la déclaration…</div>}>
@@ -298,6 +253,7 @@ export function UsefulFormsSection({
           </div>
         </header>
 
+        {isAdmin && (folder.key === "expo" || folder.key === "sap" || folder.key === "brantome") ? <DocumentUpload key={folder.key} folder={folder.key} demoMode={demoMode} onAdded={document => setSharedDocuments(current => [...current.filter(item => item.id !== document.id), document])} /> : null}
         {folder.image ? (
           <figure className="useful-form-information-image">
             <img
@@ -329,6 +285,8 @@ export function UsefulFormsSection({
                 <span className="useful-form-file-copy">
                   <small>{index + 1}. {document.format}</small>
                   <strong>{document.title}</strong>
+                  {isAdmin && document.publishAt && Date.parse(document.publishAt) > Date.now() && <small>{document.publishAt.startsWith('9999') ? 'Brouillon · À reprogrammer' : `Publication le ${new Date(document.publishAt).toLocaleString('fr-FR')}`}</small>}
+                  {isAdmin && <button className="document-edit-button" type="button" aria-label={`Modifier ${document.title}`} onClick={() => setEditDocument(document)}>Modifier</button>}
                 </span>
                 <a
                   href={document.href || `/useful-forms/${document.file}`}
@@ -346,7 +304,8 @@ export function UsefulFormsSection({
                       : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}
                   </span>
                 </a>
-                <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(document.file)} aria-label={`${favorites.includes(document.file) ? "Retirer" : "Ajouter"} ${document.title} ${favorites.includes(document.file) ? "des" : "aux"} favoris`} onClick={() => toggleFavorite(document.file)}>★</button>
+                {!isAdmin && <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(document.file)} aria-label={`${favorites.includes(document.file) ? "Retirer" : "Ajouter"} ${document.title} ${favorites.includes(document.file) ? "des" : "aux"} favoris`} onClick={() => toggleFavorite(document.file)}>★</button>}
+                {isAdmin && <button type="button" className="document-share-button" aria-label={`Partager ${document.title}`} title="Partager ce document" onClick={() => setShareDocument(document)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>}
               </article>
               );
             })}
@@ -359,6 +318,8 @@ export function UsefulFormsSection({
             <p>Ce dossier est prêt à recevoir les futurs formulaires Expo.</p>
           </div>
         )}
+        {isAdmin && shareDocument ? <DocumentShareDialog document={shareDocument} demoMode={demoMode} onClose={() => setShareDocument(null)} /> : null}
+        {isAdmin && editDocument ? <DocumentEditDialog document={editDocument} demoMode={demoMode} onClose={() => setEditDocument(null)} onEdited={edit => setDocumentEdits(current => [...current.filter(item => item.id !== edit.id), { ...current.find(item => item.id === edit.id), ...edit }])} /> : null}
       </section>
     );
   }
@@ -372,20 +333,6 @@ export function UsefulFormsSection({
         <p>Choisissez un dossier puis téléchargez directement le document dont vous avez besoin.</p>
       </div>
       <label className="resource-search-field"><span>Rechercher un document</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom du document" /></label>
-      {isAdmin ? (
-        <details className="useful-document-admin-panel">
-          <summary><span aria-hidden="true">＋</span><strong>Ajouter un document</strong><small>Compte administrateur</small></summary>
-          <form onSubmit={(event) => void submitDocument(event)}>
-            <label><span>Titre du document</span><input required minLength={3} maxLength={120} value={adminTitle} onChange={(event) => setAdminTitle(event.target.value)} placeholder="Ex. Consignes de la nouvelle exposition" /></label>
-            <label><span>Rubrique</span><select value={adminFolder} onChange={(event) => setAdminFolder(event.target.value as UsefulDocumentFolderKey)}><option value="expo">Formulaire Expo</option><option value="sap">Formulaire SAP</option><option value="brantome">Formulaire Brantôme</option></select></label>
-            <label className="useful-document-file"><span>Fichier PDF ou DOCX</span><input required type="file" accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx" onChange={(event) => setAdminFile(event.target.files?.[0] || null)} /><small>3 Mo maximum</small></label>
-            <label className="useful-document-alert-choice"><input type="checkbox" checked={notifyGuests} onChange={(event) => setNotifyGuests(event.target.checked)} /><span><strong>Alerter tous les comptes invités</strong><small>Affiche une fenêtre au centre de leur application et envoie aussi un e-mail.</small></span></label>
-            <button type="submit" disabled={adminBusy || !adminFile || adminTitle.trim().length < 3}>{adminBusy ? "Ajout en cours…" : "Ajouter le document"}</button>
-            {adminMessage ? <p className="useful-document-admin-success" role="status">{adminMessage}</p> : null}
-            {adminError ? <p className="useful-form-download-error" role="alert">{adminError}</p> : null}
-          </form>
-        </details>
-      ) : null}
       <div className="useful-form-content-stack">
       {favoriteDocuments.length && !normalizedSearch ? <section className="resource-favorites-strip" aria-label="Documents favoris"><strong>Favoris</strong><div>{favoriteDocuments.map((document) => <button key={document.file} type="button" onClick={() => openFolder(document.folderKey)}>★ {document.title}</button>)}</div></section> : null}
       <div className="useful-form-folder-grid">

@@ -36,8 +36,9 @@ describe("résumé avant validation", () => {
     expect(html).toContain("Résumé avant validation");
     expect(html).toContain("2 dates");
     expect(html).toContain("mardi 11 août 2026");
-    expect(html).toContain("09:00");
-    expect(html).toContain("11:00");
+    expect(html).not.toContain("09:00");
+    expect(html).not.toContain("11:00");
+    expect(html).toContain("<em>2 h</em>");
     expect(html).toContain("Déduit du solde d’heures de récupération");
     expect(html).toContain("2 h déduites");
     expect(html).toContain("8 h 15 → 6 h 15");

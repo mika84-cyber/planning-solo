@@ -123,13 +123,20 @@ describe("fenêtres de temps de travail", () => {
     const halfDayHalf = recoveryFor("half", "half");
 
     expect(overtime).toContain("Déclarer des heures supplémentaires");
-    expect(overtime.match(/min="09:00"/g)).toHaveLength(2);
-    expect(overtime.match(/max="19:00"/g)).toHaveLength(2);
-    expect(overtime.match(/step="900"/g)).toHaveLength(2);
+    expect(overtime).toContain("Heure de début");
+    expect(overtime).toContain("Heure de fin");
+    expect(overtime).not.toContain('min="09:00"');
+    expect(overtime).not.toContain('max="19:00"');
+    expect(overtime).toContain('aria-label="Heure de début — heures"');
+    expect(overtime).toContain('aria-label="Heure de fin — minutes"');
+    expect(overtime).not.toContain('type="time"');
     expect(overtime).toContain("À récupérer");
+    expect(overtime).toContain("Jour ×1,25 · dimanche/férié ×1,66 · nuit ×2");
+    expect(overtime).not.toContain("Ajoutées au solde heure pour heure");
     expect(overtime).toContain("Le tarif dimanche/jour férié est appliqué automatiquement");
     expect(mecenat).toContain("Déclarer un mécénat");
-    expect(mecenat.match(/step="900"/g)).toHaveLength(2);
+    expect(mecenat).toContain('aria-label="Heure de début — heures"');
+    expect(mecenat).toContain('aria-label="Heure de fin — minutes"');
     expect(mecenat).not.toContain('min="09:00"');
     expect(mecenat).not.toContain('max="19:00"');
     expect(mecenat).toContain("Avant 22 h");
@@ -142,7 +149,9 @@ describe("fenêtres de temps de travail", () => {
     expect(recovery).toContain('class="overtime-choice-field recovery-duration-field"');
     expect(recovery).toContain("Récupération sur une formation");
     expect(recovery).not.toContain("Récupération de formation");
-    expect(recovery).toContain("Récupérations courantes");
+    expect(recovery).toContain("Type de récupération");
+    expect(recovery).toContain("Récupération de jour férié");
+    expect(recovery).toContain("Récupération sur une formation");
     expect(recovery).not.toContain("Formation · 6 h");
     expect(recovery).toContain(">8 h</button>");
     expect(recovery).toContain(">6 h</button>");
@@ -163,8 +172,8 @@ describe("fenêtres de temps de travail", () => {
     expect(day.match(/>(8 h|Durée libre)<\/button>/g)).toEqual([">8 h</button>", ">Durée libre</button>"]);
     expect(half.match(/>(4 h|Durée libre)<\/button>/g)).toEqual([">4 h</button>", ">Durée libre</button>"]);
     expect(holiday).toContain(">8 h 15</button>");
-    expect(holidayThreeQuarters).toContain(">6 h 15</button>");
-    expect(holidayHalf).toContain(">3 h 45</button>");
+    expect(holidayThreeQuarters).toContain(">6 h 30</button>");
+    expect(holidayHalf).toContain(">4 h</button>");
     expect(dayHalf).toContain(">3 h 45</button>");
     expect(halfDayHalf).toContain(">3 h 45</button>");
     expect(holiday).not.toContain(">8 h</button>");

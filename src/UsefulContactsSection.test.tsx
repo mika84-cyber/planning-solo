@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { mailComposeHref, UsefulContactsSection } from "./UsefulContactsSection";
 import type { UsefulContactsPayload } from "./usefulContactsTypes";
+import { USEFUL_CONTACTS_DATA } from "../netlify/lib/usefulContactsData.mjs";
 
 const CONTACTS_FIXTURE: UsefulContactsPayload = {
   pompidou: [
@@ -15,6 +16,10 @@ const CONTACTS_FIXTURE: UsefulContactsPayload = {
 };
 
 describe("contacts utiles", () => {
+  it("conserve le fixe et ajoute le portable de John Lorenc", () => {
+    const john = USEFUL_CONTACTS_DATA.pompidou.flatMap(section => section.contacts).find(contact => contact.name === "John Lorenc");
+    expect(john?.phones?.map(phone => phone.number)).toEqual(["0144784919", "0614319695"]);
+  });
   it("présente les annuaires et une recherche ciblée", () => {
     const html = renderToStaticMarkup(
       <UsefulContactsSection initialData={CONTACTS_FIXTURE} />,

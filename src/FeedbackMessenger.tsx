@@ -251,7 +251,7 @@ export function FeedbackMessenger({
           sent ? (
             <div className="feedback-success">
               <span aria-hidden="true">✓</span><h3>Merci, votre message est bien arrivé.</h3>
-              <p>Il restera privé. Une alerte apparaîtra dans l’application lorsque l’administratrice vous répondra ou le marquera comme résolu.</p>
+              <p>Il restera privé. Une alerte apparaîtra dans l’application lorsque l’administrateur vous répondra ou le marquera comme résolu.</p>
               <button type="button" onClick={onClose}>Terminer</button>
             </div>
           ) : (

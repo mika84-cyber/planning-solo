@@ -6,7 +6,6 @@ type Props = {
   onClose: () => void;
   onExport: () => void;
   onImport: (file: File) => void;
-  onArchiveLegacy: () => void;
   onDeleteAll: () => void;
 };
 
@@ -16,7 +15,6 @@ export function DataManagementDialog({
   onClose,
   onExport,
   onImport,
-  onArchiveLegacy,
   onDeleteAll,
 }: Props) {
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -38,23 +36,21 @@ export function DataManagementDialog({
         >
           ×
         </button>
-        <span className="step-label">Confidentialité</span>
-        <h2 id="data-management-title">Gérer mes données</h2>
-        <p>
-          Téléchargez une sauvegarde réimportable avant une opération importante.
-          Le fichier contient le planning, le profil et les paramètres de paie :
-          conservez-le dans un emplacement privé.
-        </p>
+        <span className="step-label">Mon compte</span>
+        <h2 id="data-management-title">Mes données</h2>
+        <p className="data-management-intro">Tout est enregistré automatiquement. Vous n’avez rien à faire.</p>
         <div className="data-management-actions">
           <button type="button" onClick={onExport} disabled={busy}>
-            Exporter une sauvegarde JSON
+            <strong>Sauvegarder une copie</strong>
+            <small>Pour la garder sur votre appareil</small>
           </button>
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
             disabled={busy}
           >
-            Restaurer une sauvegarde
+            <strong>Reprendre une copie</strong>
+            <small>Choisir une sauvegarde précédente</small>
           </button>
           <input
             ref={fileInput}
@@ -67,33 +63,22 @@ export function DataManagementDialog({
               if (file) onImport(file);
             }}
           />
-          <button type="button" onClick={onArchiveLegacy} disabled={busy}>
-            Archiver les anciennes données
-          </button>
-          <button
-            className="danger-data-button"
-            type="button"
-            onClick={onDeleteAll}
-            disabled={busy}
-          >
-            Effacer toutes mes données
-          </button>
         </div>
-        <p className="data-management-hint">
-          L’archivage déplace les anciennes clés globales dans votre espace privé.
-          La suppression complète exige de taper le mot SUPPRIMER.
-        </p>
-        <div className="modal-actions">
-          <button
-            className="secondary-button"
-            type="button"
-            data-modal-close
-            onClick={onClose}
-            disabled={busy}
-          >
-            Fermer
-          </button>
-        </div>
+        <details className="data-management-more">
+          <summary>Effacer mes données</summary>
+          <div className="data-management-actions data-management-advanced-actions">
+            <button
+              className="danger-data-button"
+              type="button"
+              onClick={onDeleteAll}
+              disabled={busy}
+            >
+              <strong>Tout effacer définitivement</strong>
+              <small>Planning, paie et réglages seront supprimés</small>
+            </button>
+          </div>
+          <p className="data-management-hint">Une confirmation vous sera demandée.</p>
+        </details>
       </section>
     </div>
   );

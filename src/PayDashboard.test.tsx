@@ -24,6 +24,17 @@ const baseProps = {
 };
 
 describe("PayDashboard", () => {
+  it("explique les informations manquantes sans masquer une estimation complète", () => {
+    const missingFields = ["traitement de base", "taux de prélèvement"];
+    const html = renderToStaticMarkup(<PayDashboard {...baseProps} net={null} grossComplete={false} missingFields={missingFields} onCompleteEstimate={vi.fn()} />);
+    expect(html).not.toContain("À compléter :");
+    expect(html).toContain("Ajouter mon bulletin");
+    expect(html).toContain("Votre estimation commence ici");
+    expect(html).toContain('class="pay-import-secondary"');
+    expect(html).toContain("Compléter manuellement si besoin");
+    const complete = renderToStaticMarkup(<PayDashboard {...baseProps} missingFields={missingFields} />);
+    expect(complete).not.toContain("Compléter manuellement si besoin");
+  });
   it("place le mois et l'estimation avant les éléments secondaires", () => {
     const html = renderToStaticMarkup(<PayDashboard {...baseProps} />);
     expect(html).toContain("Octobre 2026");

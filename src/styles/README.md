@@ -12,6 +12,13 @@ déplacement modifierait la priorité CSS.
 
 ## Usage résiduel de `!important`
 
+Les couleurs et ombres communes sont définies dans `01-foundation-auth.css`.
+Les finitions de page de `productRefinements.css`, chargées après les styles
+des menus par `main.tsx`, réutilisent ces variables pour les actions et cartes.
+Elles ne recolorent pas les cases du calendrier ni les catégories de congés.
+Les actions de danger et la proposition de mise à jour gardent leur priorité
+visuelle propre. Éviter de créer une nouvelle couleur par bouton.
+
 Les occurrences conservées ont été auditées. Elles correspondent principalement
 à quatre situations où retirer la priorité modifierait le rendu :
 

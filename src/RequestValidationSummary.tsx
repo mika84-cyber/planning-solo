@@ -121,6 +121,9 @@ export function RequestValidationSummary({
   const recoveryMinutes = requestKind === "recovery"
     ? requestRecoveryMinutes(items, workQuota)
     : 0;
+  const recoveryDurationMissing = requestKind === "recovery" && items.some((item) =>
+    item.type.startsWith("recovery_") && requestRecoveryMinutes([item], workQuota) <= 0
+  );
   const leaveItems = items.filter((item) => item.type === "annual" || item.type === "half" || item.type === "rtt" || item.type === "fraction");
   const requestedBalanceTypes = new Set(
     leaveItems.map((item) => item.type === "half" ? "annual" : item.type),
@@ -151,7 +154,9 @@ export function RequestValidationSummary({
               <strong>{longDate(fromKey(item.date))}</strong>
               <small>{TYPE_LABELS[item.type]}</small>
             </span>
-            {item.start || item.end ? (
+            {item.type.startsWith("recovery_") ? (
+              <em>{minutesLabel(recoveryRequestMinutes(item.type as RecoveryRequestType, workQuota, item.start, item.end))}</em>
+            ) : item.start || item.end ? (
               <em>
                 {item.start || "—"} → {item.end || "—"}
               </em>
@@ -161,8 +166,10 @@ export function RequestValidationSummary({
       </div>
       {requestKind === "recovery" ? (
         <div className="request-validation-impact" aria-live="polite">
-          <strong>{items.length === 1 && items[0].start && items[0].end ? `${items[0].start}–${items[0].end} · ` : ""}{minutesLabel(recoveryMinutes)} déduites</strong>
-          {recoveryShortage ? (
+          <strong>{recoveryDurationMissing ? "Durée à renseigner" : `${minutesLabel(recoveryMinutes)} déduites`}</strong>
+          {recoveryDurationMissing ? (
+            <span className="request-validation-warning">Choisissez le nombre d’heures et de minutes avant d’enregistrer.</span>
+          ) : recoveryShortage ? (
             <span className="request-validation-warning">{recoveryShortage}</span>
           ) : (
             <span>Solde disponible : {minutesLabel(recoveryBalanceRemaining)} → {minutesLabel(recoveryBalanceRemaining - recoveryMinutes)}</span>

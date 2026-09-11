@@ -5,7 +5,7 @@ import type {
   TouchEvent,
 } from "react";
 import type { Entries, RequestKind, SelectedDay, ViewMode } from "./appModel";
-import { trainingRecoveryTimes, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
+import { splitOvertimeRange, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
 import {
   dateKey,
   fromKey,
@@ -46,7 +46,6 @@ export function buildPlanningRequestStart({
   initialDate,
   requestedType,
   group,
-  workQuota,
   isSelectable = (date, selectedGroup) =>
     getDayInfo(fromKey(date), selectedGroup).selectable,
 }: RequestStartOptions) {
@@ -62,13 +61,9 @@ export function buildPlanningRequestStart({
   const initialDateIsSelectable = Boolean(
     initialDate && isSelectable(initialDate, group),
   );
-  const initialTimes =
-    initialType === "recovery_training"
-      ? trainingRecoveryTimes(workQuota)
-      : {};
   const selections: Record<string, SelectedDay> =
     initialDate && initialDateIsSelectable
-      ? { [initialDate]: { date: initialDate, type: initialType, ...initialTimes } }
+      ? { [initialDate]: { date: initialDate, type: initialType } }
       : {};
   return {
     initialType,
@@ -122,6 +117,7 @@ export function usePlanningInteractionActions({
   const {
     dayDate,
     setDayDate,
+    setDayPanelTab,
     setNoteText,
     setNoteColor,
     setNoteGroupId,
@@ -151,6 +147,7 @@ export function usePlanningInteractionActions({
     setEditingPeriodId,
     setEditingLegacyPeriod,
     setRequestChooser,
+    setRequestSeedDate,
     requestKind,
     setRequestKind,
     setSickRequest,
@@ -191,6 +188,7 @@ export function usePlanningInteractionActions({
     const key = dateKey(date);
     const entry = entries[key];
     setDayDate(key);
+    setDayPanelTab("leave");
     setQuickNoteMode(false);
     // Le champ s'ouvre sur le texte existant tel quel : c'est le bouton
     // « Ajouter une note » qui ouvre une ligne en dessous, à la demande.
@@ -217,6 +215,7 @@ export function usePlanningInteractionActions({
     const key = dateKey(date);
     setQuickNoteMode(true);
     setDayDate(key);
+    setDayPanelTab("notes");
     setNoteText("");
     setNoteColor("#D3943D");
     setNoteGroupId("");
@@ -320,7 +319,12 @@ export function usePlanningInteractionActions({
     });
     setActiveType(start.initialType);
     setSickRequest(start.sickRequest);
-    setSelections(start.selections);
+    const seedDate = Object.keys(start.selections)[0] || null;
+    const nextSelections = kind === "recovery" && seedDate
+      ? {}
+      : start.selections;
+    setSelections(nextSelections);
+    setRequestSeedDate(seedDate);
     setWarningDate(start.warningDate);
     setHomeSection("home");
     setRequestChooser(false);
@@ -334,6 +338,7 @@ export function usePlanningInteractionActions({
   }
 
   function recordSelection(key: string) {
+    setRequestSeedDate(null);
     if (
       activeType === "strike" &&
       getDayInfo(fromKey(key), group).kind !== "work"
@@ -341,23 +346,14 @@ export function usePlanningInteractionActions({
       notify("Une grève ne peut être posée que sur une journée prévue travaillée.");
       return;
     }
-    if (activeType === "recovery_training") {
-      const existing = selections[key];
-      const times = existing?.start === "13:00"
-        ? trainingRecoveryTimes(workQuota, "afternoon", 180)
-        : existing?.end === "13:00"
-          ? trainingRecoveryTimes(workQuota, "morning", 180)
-          : trainingRecoveryTimes(workQuota);
-      setTimeStart(times.start);
-      setTimeEnd(times.end);
+    if (activeType.startsWith("recovery_")) {
+      setTimeStart(workSchedule.start);
+      setTimeEnd(workSchedule.end);
       setTimeDate(key);
       return;
     }
     if (
-      activeType === "half" ||
-      activeType === "recovery_half" ||
-      activeType === "recovery_hours" ||
-      activeType === "recovery_holiday"
+      activeType === "half"
     ) {
       const existing = selections[key];
       const usualTimes = workScheduleHalfTimes(workSchedule, "morning");
@@ -438,14 +434,10 @@ export function usePlanningInteractionActions({
   }
   function commitTime() {
     if (!timeDate) return;
-    const start =
-      (document.getElementById("request-time-start") as HTMLInputElement | null)
-        ?.value || timeStart;
-    const end =
-      (document.getElementById("request-time-end") as HTMLInputElement | null)
-        ?.value || timeEnd;
-    if (!start || !end || end <= start) {
-      notify("L’heure de fin doit être postérieure à l’heure de début.");
+    const start = timeStart;
+    const end = timeEnd;
+    if (!start || !end || !splitOvertimeRange(start, end)) {
+      notify("Choisissez une heure de début et une heure de fin différentes.");
       return;
     }
     setSelections((current) => ({

@@ -26,9 +26,10 @@
 }
 
 .app-shell {
+  --page-gutter: clamp(20px, 3vw, 42px);
   width: min(1440px, 100%);
   margin: 0 auto;
-  padding: 30px clamp(20px, 3vw, 42px) 48px;
+  padding: 30px var(--page-gutter) 48px;
 }
 .top-header {
   display: flex;
@@ -218,7 +219,7 @@ h1 {
   color: #fff;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(40, 89, 184, 0.2);
+  box-shadow: 0 3px 9px rgba(39, 61, 88, 0.09);
 }
 .primary-action {
   flex: 0 0 auto;

@@ -28,12 +28,14 @@ function actionsFixture(options?: {
     } as T;
   };
   const notify = vi.fn();
+  const showSuccess = vi.fn();
   const loadCalendar = vi.fn().mockResolvedValue(undefined);
   const actions = useAccountDataActions({
     setBusy: setter<boolean>(),
     setOpen: setter<boolean>(),
     loadCalendar,
     notify,
+    showSuccess,
     get,
     post,
     confirmAction: () => options?.confirm ?? true,
@@ -41,7 +43,7 @@ function actionsFixture(options?: {
     downloadJson: vi.fn(),
     now: () => new Date(2026, 7, 29, 12),
   });
-  return { actions, payloads, notify, loadCalendar };
+  return { actions, payloads, notify, showSuccess, loadCalendar };
 }
 
 describe("useAccountDataActions", () => {
@@ -64,7 +66,7 @@ describe("useAccountDataActions", () => {
   });
 
   it("archive seulement après confirmation avec le payload attendu", async () => {
-    const { actions, payloads, notify } = actionsFixture({
+    const { actions, payloads, showSuccess } = actionsFixture({
       confirm: true,
       archived: 2,
     });
@@ -72,9 +74,18 @@ describe("useAccountDataActions", () => {
     expect(payloads).toEqual([
       { action: "archive-legacy-data", confirmation: "ARCHIVER" },
     ]);
-    expect(notify).toHaveBeenCalledWith(
+    expect(showSuccess).toHaveBeenCalledWith(
       "2 éléments historiques archivés.",
     );
+  });
+
+  it("confirme le téléchargement sans afficher une erreur", async () => {
+    const { actions, notify, showSuccess } = actionsFixture();
+    await actions.exportDataBackup();
+    expect(showSuccess).toHaveBeenCalledWith(
+      "La sauvegarde JSON a été téléchargée.",
+    );
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it("n’efface le compte qu’après la confirmation textuelle exacte", async () => {

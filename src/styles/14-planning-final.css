@@ -517,7 +517,7 @@
 .app-shell > .pdf-download-screen,
 .app-shell > .useful-forms-screen,
 .app-shell > .useful-contacts-screen,
-.app-shell > .grand-palais-program-screen {
+.app-shell > .grand-palais-program-screen, .app-shell > .colleague-sharing-page {
   box-sizing: border-box;
   width: 100%;
   max-width: none;
@@ -753,7 +753,7 @@
 /* Les détails de programmation gardent un cadre uniforme : le liseré reste
    réservé à la rubrique principale et aux boutons des galeries. */
 .useful-expo-schedule.grand-palais-program-panel {
-  border-left-width: 1.5px;
+  border-left-width: 2px;
 }
 
 .useful-expo-schedule-heading h3 {
@@ -980,6 +980,14 @@
     1px 0 0 rgba(255, 255, 255, 0.9),
     -1px 0 0 rgba(255, 255, 255, 0.9),
     0 -1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root .today .exceptional-closure-date {
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  text-shadow: none;
+  box-shadow: none;
 }
 
 :root .mini-day .exceptional-closure-date {

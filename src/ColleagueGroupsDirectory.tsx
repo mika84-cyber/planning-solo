@@ -1,28 +1,28 @@
 import { useEffect, useState } from "react";
 import type { ColleagueGroup } from "./colleagueGroups";
 import { getColleagueGroups } from "./colleagueSharingApi";
+import { matchesSearch } from "./searchMatching";
 import "./colleagueGroupsDirectory.css";
 
 type Props = { groups?: readonly ColleagueGroup[] };
 const GROUP_COUNTS = [34, 36, 35] as const;
-const normalizeName = (value: string) => value
-  .normalize("NFD")
-  .replace(/\p{Diacritic}/gu, "")
-  .toLocaleLowerCase("fr");
-
+const EMPTY_GROUPS: readonly ColleagueGroup[] = [];
 export function searchColleagueGroups(groups: readonly ColleagueGroup[], query: string) {
-  const normalizedQuery = normalizeName(query.trim());
-  if (!normalizedQuery) return [];
+  if (!query.trim()) return [];
   return groups.flatMap((group) => group.members
-    .filter((member) => normalizeName(member).includes(normalizedQuery))
+    .filter((member) => matchesSearch(member, query))
     .map((member) => ({ member, group: group.number })));
 }
 
-export function ColleagueGroupsDirectory({ groups = [] }: Props) {
+export function ColleagueGroupsDirectory({ groups = EMPTY_GROUPS }: Props) {
   const [availableGroups, setAvailableGroups] = useState<readonly ColleagueGroup[]>(groups);
   const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt déclenche une nouvelle lecture après Réessayer.
   useEffect(() => {
+    setLoadError(false);
     if (groups.length) {
       setAvailableGroups(groups);
       return;
@@ -30,9 +30,9 @@ export function ColleagueGroupsDirectory({ groups = [] }: Props) {
     let active = true;
     void getColleagueGroups().then((next) => {
       if (active) setAvailableGroups(next);
-    }).catch(() => undefined);
+    }).catch(() => { if (active) setLoadError(true); });
     return () => { active = false; };
-  }, [groups]);
+  }, [groups, attempt]);
 
   const visibleGroups = availableGroups.length
     ? availableGroups.map((group) => ({ ...group, count: group.members.length }))
@@ -68,7 +68,7 @@ export function ColleagueGroupsDirectory({ groups = [] }: Props) {
               <strong>{result.member}</strong>
               <span className={`group-${result.group}`}>Groupe {result.group}</span>
             </li>)}
-          </ul> : <p>Aucun collègue trouvé.</p>}
+          </ul> : <p>{!availableGroups.length ? loadError ? "Impossible de charger les noms." : "Chargement des noms…" : "Aucun collègue trouvé."}</p>}
         </div> : <div className="colleague-groups-content">
           {visibleGroups.map((group) => (
             <details className={`colleague-group-card group-${group.number}`} key={group.number}>
@@ -78,10 +78,11 @@ export function ColleagueGroupsDirectory({ groups = [] }: Props) {
               </summary>
               {group.members.length ? <ol>
                 {group.members.map((member) => <li key={member}>{member}</li>)}
-              </ol> : <p className="colleague-group-loading">Chargement des noms…</p>}
+              </ol> : <p className="colleague-group-loading">{loadError ? "Noms indisponibles" : "Chargement des noms…"}</p>}
             </details>
           ))}
         </div>}
+        {loadError ? <div role="status"><p>Les noms sont momentanément indisponibles.</p><button type="button" onClick={() => setAttempt((value) => value + 1)}>Réessayer</button></div> : null}
       </div>
     </details>
   );

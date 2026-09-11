@@ -59,10 +59,8 @@
   border-left: 8px solid #8b4657;
   border-radius: 27px;
   padding: clamp(18px, 2.4vw, 26px);
-  background:
-    radial-gradient(circle at 100% 0, rgba(224, 184, 193, 0.62), transparent 38%),
-    linear-gradient(145deg, #fff3f3, #fff 58%, #f6ecdf);
-  box-shadow: 0 18px 40px rgba(83, 48, 57, 0.13);
+  background: radial-gradient(circle at 100% 0, rgba(224, 184, 193, 0.62), transparent 38%), linear-gradient(145deg, #fff3f3, #fff 58%, #f6ecdf);
+  box-shadow: var(--shadow-card);
 }
 
 .grand-palais-venue-navigation {
@@ -249,13 +247,11 @@
   background: #e1efff;
 }
 
-.grand-palais-program-panel {
-  border: 1.5px solid rgba(74, 104, 145, 0.3);
+.grand-palais-program-screen .grand-palais-program-panel {
+  border: 2px solid rgba(74, 104, 145, 0.3);
   border-radius: 22px;
-  background:
-    radial-gradient(circle at 100% 0, rgba(210, 232, 228, 0.58), transparent 34%),
-    linear-gradient(145deg, #f9fcfb, #fff 62%, #fffaf2);
-  box-shadow: 0 14px 32px rgba(36, 61, 92, 0.09);
+  background: radial-gradient(circle at 100% 0, rgba(225, 240, 204, 0.58), transparent 31%), linear-gradient(145deg, #f8fcfb, #fff 58%, #fffaf1);
+  box-shadow: var(--shadow-card);
 }
 
 .grand-palais-program-panel .useful-expo-timeline {
@@ -271,11 +267,11 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   min-height: 92px;
-  border: 1px solid var(--venue-line, rgba(64, 91, 126, 0.34));
+  border: 2px solid var(--venue-line, var(--border-inset));
   border-left: 5px solid var(--venue-accent, #438b80);
   padding: 17px 18px;
   background: var(--venue-bg, rgba(255, 255, 255, 0.96));
-  box-shadow: 0 9px 22px rgba(34, 57, 85, 0.1);
+  box-shadow: var(--shadow-inset);
 }
 
 .grand-palais-program-panel .useful-expo-timeline article > div {
