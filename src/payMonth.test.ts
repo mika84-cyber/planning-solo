@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { monthGross, strikeDeduction } from "./payMonth";
+import { strikePayEstimate } from "./strike";
 
 /** Un mois ordinaire, sans arrêt ni grève : la base des variations testées. */
 const moisType = {
@@ -135,5 +136,36 @@ describe("composition du brut mensuel", () => {
     const avecMecenat = monthGross({ ...moisType, mecenatGross: 68.7 });
     expect(avecMecenat.premiums - monthGross(moisType).premiums).toBeCloseTo(68.7, 2);
     expect(avecMecenat.gross - monthGross(moisType).gross).toBeCloseTo(68.7, 2);
+  });
+});
+
+describe("portée de la correction pour une personne contractuelle", () => {
+  // La retenue maladie et la retenue de grève ne s'appliquaient pas aux
+  // contractuels. Les rétablir ne change rien tant qu'aucun arrêt ni aucune
+  // grève n'est posé : c'est la question que pose toute personne concernée,
+  // et la réponse doit rester vraie.
+  it("ne change rien à un mois ordinaire", () => {
+    const ordinaire = { ...moisType, sickTotal: 0, strikeDeduction: 0 };
+    expect(monthGross(ordinaire).gross).toBe(monthGross(moisType).gross);
+  });
+
+  it("sans grève enregistrée, la retenue vaut zéro et non « inconnu »", () => {
+    // Une estimation à `null` signifierait « impossible à calculer » ; ici
+    // le calcul est possible et donne zéro.
+    const estimation = strikePayEstimate(
+      [],
+      1,
+      { "2026": { baseSalary: 1733.82, residenceAllowance: 52.01 } },
+      2026,
+      8,
+    );
+    expect(estimation.days).toHaveLength(0);
+    expect(estimation.totalDeduction).toBe(0);
+    expect(strikeDeduction(estimation.totalDeduction)).toBe(0);
+  });
+
+  it("l’écart n’apparaît qu’avec un arrêt réellement posé", () => {
+    const avecArret = monthGross({ ...moisType, sickTotal: 59.53 });
+    expect(monthGross(moisType).gross - avecArret.gross).toBeCloseTo(59.53, 2);
   });
 });

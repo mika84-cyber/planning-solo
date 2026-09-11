@@ -16,18 +16,26 @@ const budgets = {
   entryJavaScript: { raw: 625 * KIB, gzip: 180 * KIB },
   // Inclut aussi le moteur PDF autonome du formulaire, volontairement différé.
   largestSecondaryJavaScript: { raw: 900 * KIB, gzip: 330 * KIB },
-  totalJavaScript: { raw: 2_600 * KIB, gzip: 820 * KIB },
+  // Relevé le 11 septembre 2026. La croissance vient des rubriques ajoutées
+  // depuis la dernière mesure — outils d'administration, gestion des
+  // documents, partage entre collègues — et de la refonte visuelle. Le
+  // chargement initial, lui, reste dans son plafond : c'est lui qui décide de
+  // la vitesse d'ouverture, le reste n'arrive qu'à la demande.
+  totalJavaScript: { raw: 2_650 * KIB, gzip: 840 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
   ocrAssets: { raw: 13_000 * KIB, gzip: 5_200 * KIB },
   // Inclut désormais la navigation complète et les nouveaux états de gestion
   // des documents, avec une marge limitée au-dessus de la version validée.
-  mainCss: { raw: 340 * KIB, gzip: 63 * KIB },
+  // Relevé le 11 septembre 2026 avec la refonte visuelle. Le nombre de lignes
+  // de CSS a lui baissé : la hausse tient aux nouvelles rubriques, pas à un
+  // empilement de surcharges — c'est `check:css` qui surveille ce point.
+  mainCss: { raw: 375 * KIB, gzip: 70 * KIB },
   // Inclut le CSS autonome de /formulaire ainsi que les pages différées de
   // partage des plannings et de messagerie ; elles n’alourdissent pas le CSS
   // initial et restent chargées uniquement à leur ouverture.
-  totalCss: { raw: 420 * KIB, gzip: 81 * KIB },
+  totalCss: { raw: 475 * KIB, gzip: 93 * KIB },
   payslipSuccessEffect: 3_500 * KIB,
 };
 
