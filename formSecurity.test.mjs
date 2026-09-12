@@ -17,6 +17,7 @@ describe("formulaire de demande", () => {
     "src/PlanningRequestPanels.tsx",
     "src/AnnualPdfActions.tsx",
     "src/payContent.tsx",
+    "src/payAllowances.ts",
     "src/HomeDashboard.tsx",
     "src/PayPage.tsx",
     "src/PdfDownloadPage.tsx",

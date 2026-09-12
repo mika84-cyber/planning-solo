@@ -13,30 +13,13 @@ import type { mecenatForPayMonth } from "./mecenat";
 import type { StrikePayEstimate } from "./strike";
 import type { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import type { inspectNetRatioCalibration } from "./payslip";
+import type { computePayAllowances } from "./payAllowances";
 import {
   isUnplannedPayslipCarence,
   summarizePayslipReview,
 } from "./payslipReview";
 import { euros, type PayCalibrationRegime, type PayProfile } from "./appModel";
 import { MONTHS, SUNDAY_ALLOWANCE, s } from "./planningLogic";
-
-/** Les primes de l'année affichée, réduites à ce que la paie du mois en lit. */
-type PayAllowancesSummary = {
-  year: number;
-  compensatedYear: number;
-  monthly: Array<{
-    index: number;
-    sunday: number;
-    sundayCount: number;
-    holiday: number;
-    holidayCount: number;
-    compensated: number;
-    compensatedCount: number;
-    carryover: number;
-    reported: number;
-    total: number;
-  }>;
-};
 
 /** La paie du mois affiché, telle que l'assemble l'écran de paie. */
 type MonthPaySummary = {
@@ -77,7 +60,7 @@ type NetCalculation = {
 export type PayContentInput = {
   payUi: ReturnType<typeof usePayUiState>;
   payActions: ReturnType<typeof usePayActions>;
-  allowances: PayAllowancesSummary | null;
+  allowances: ReturnType<typeof computePayAllowances> | null;
   monthPay: MonthPaySummary | null;
   sickLeaves: ReturnType<typeof sickLeaveSummaryForYear> | null;
   overtimeForPayMonth: PaidOvertimeSummary;
