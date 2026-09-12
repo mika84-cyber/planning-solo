@@ -15,6 +15,7 @@ describe("formulaire de demande", () => {
     "src/App.tsx",
     "src/AppNavigation.tsx",
     "src/PlanningRequestPanels.tsx",
+    "src/AnnualPdfActions.tsx",
     "src/HomeDashboard.tsx",
     "src/PayPage.tsx",
     "src/PdfDownloadPage.tsx",

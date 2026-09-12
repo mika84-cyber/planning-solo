@@ -22,7 +22,7 @@ type PdfExportPeriod = {
   halfMoment?: HalfMoment | "";
 };
 
-type AnnualPdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
+export type AnnualPdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
 
 function normalizePdfBlob(blob: Blob) {
   return blob.type === "application/pdf"
