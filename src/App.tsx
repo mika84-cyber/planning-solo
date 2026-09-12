@@ -76,6 +76,8 @@ import {
 } from "./payAllowances";
 import { computeLeaveStats } from "./leaveStats";
 import { computeTodayOverview } from "./todayOverview";
+import { UpcomingNoteList } from "./UpcomingNoteList";
+import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import { DayDetailDialog } from "./DayDetailDialog";
 import { RequestSelectionPanel } from "./RequestSelectionPanel";
 import {
@@ -120,7 +122,6 @@ import {
   postCalendarBatch,
 } from "./calendarApi";
 import { parseCalendarSnapshot } from "./calendarPayload";
-import { splitNoteItemsIntoColumns } from "./noteColumns";
 import { matchesSearch } from "./searchMatching";
 import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import { AppleInstallNotice } from "./AppleInstallNotice";
@@ -188,9 +189,7 @@ import {
   type WorkSchedule,
 } from "./overtime";
 import { useToast } from "./useToast";
-import { type CetAccount } from "./cet";
 import {
-  LEAVE_ALLOWANCES,
   MONTHS,
   RESIDENCE_ALLOWANCE_RATE,
   SUNDAY_ALLOWANCE,
@@ -214,19 +213,6 @@ import {
   type SelectionType,
   type SchoolVacation,
 } from "./planningLogic";
-
-function keyedNoteLines(value: string) {
-  const occurrences = new Map<string, number>();
-  return value
-    .split("\n")
-    .map((line) => line.replace(/^[–—\-•>]\s*/, "").trim())
-    .filter(Boolean)
-    .map((label) => {
-      const occurrence = (occurrences.get(label) ?? 0) + 1;
-      occurrences.set(label, occurrence);
-      return { key: `${label}-${occurrence}`, label };
-    });
-}
 
 // Conservé prêt à être réactivé lorsque le parcours d’accompagnement sera finalisé.
 const HOME_SETUP_GUIDANCE_ENABLED = false;
@@ -2003,122 +1989,29 @@ export default function Home() {
     setTimeDate(null);
   }
 
-  function openManualAdjustments() {
-    const current =
-      formProfile?.manualAdjustments?.[String(absenceYear)] ??
-      EMPTY_MANUAL_ADJUSTMENTS;
-    setManualAdjustmentDraft(
-      Object.fromEntries(
-        Object.entries(current).map(([key, value]) => [key, String(value)]),
-      ) as Record<keyof ManualYearAdjustments, string>,
-    );
-    setBalanceDetailType(null);
-    setManualAdjustmentsOpen(true);
-  }
+  const {
+    openManualAdjustments,
+    saveManualAdjustments,
+    saveCetAccount,
+  } = useProfileAdjustmentActions({
+    demoMode,
+    group,
+    absenceYear,
+    formProfile,
+    setFormProfile,
+    manualAdjustmentDraft,
+    setManualAdjustmentDraft,
+    setManualAdjustmentsOpen,
+    setSavingManualAdjustments,
+    savingCet,
+    setSavingCet,
+    setBalanceDetailType,
+    notify,
+    confirm,
+  });
 
-  async function saveManualAdjustments() {
-    const parseDays = (key: keyof ManualYearAdjustments) =>
-      Number(manualAdjustmentDraft[key].replace(",", "."));
-    const next: ManualYearAdjustments = {
-      annualUsed: parseDays("annualUsed"),
-      rttUsed: parseDays("rttUsed"),
-      fractionUsed: parseDays("fractionUsed"),
-      sundayLeaveJanJun: parseDays("sundayLeaveJanJun"),
-      sundayLeaveJulSep: parseDays("sundayLeaveJulSep"),
-      sundayLeaveOctNov: parseDays("sundayLeaveOctNov"),
-      sundayLeaveDec: parseDays("sundayLeaveDec"),
-    };
-    const leaveValues = [next.annualUsed, next.rttUsed, next.fractionUsed];
-    const sundayValues = [
-      next.sundayLeaveJanJun,
-      next.sundayLeaveJulSep,
-      next.sundayLeaveOctNov,
-      next.sundayLeaveDec,
-    ];
-    if (
-      leaveValues.some((value) => !Number.isFinite(value) || value < 0 || value * 2 % 1 !== 0) ||
-      sundayValues.some((value) => !Number.isInteger(value) || value < 0 || value > 53)
-    ) {
-      notify("Indiquez des jours entiers ou des demi-journées, et un nombre entier de dimanches.");
-      return;
-    }
-    if (
-      next.annualUsed > LEAVE_ALLOWANCES.annual ||
-      next.rttUsed > LEAVE_ALLOWANCES.rtt ||
-      next.fractionUsed > LEAVE_ALLOWANCES.fraction
-    ) {
-      notify("Le nombre de jours déjà pris ne peut pas dépasser le droit annuel de la catégorie.");
-      return;
-    }
-    const nextProfile: FormProfile = {
-      ...(formProfile || {
-        fullName: "",
-        group: String(group),
-        signature: "",
-      }),
-      manualAdjustments: {
-        ...(formProfile?.manualAdjustments || {}),
-        [String(absenceYear)]: next,
-      },
-    };
-    setSavingManualAdjustments(true);
-    try {
-      if (!demoMode)
-        await postCalendar({
-          action: "save-form-profile",
-          fullName: nextProfile.fullName,
-          group: nextProfile.group,
-          signature: nextProfile.signature,
-          manualYear: absenceYear,
-          manualAnnualUsed: next.annualUsed,
-          manualRttUsed: next.rttUsed,
-          manualFractionUsed: next.fractionUsed,
-          manualSundayLeaveJanJun: next.sundayLeaveJanJun,
-          manualSundayLeaveJulSep: next.sundayLeaveJulSep,
-          manualSundayLeaveOctNov: next.sundayLeaveOctNov,
-          manualSundayLeaveDec: next.sundayLeaveDec,
-        });
-      setFormProfile(nextProfile);
-      setManualAdjustmentsOpen(false);
-      confirm(`Le rattrapage ${absenceYear} est enregistré et les calculs sont à jour.`);
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Le rattrapage n’a pas pu être enregistré."));
-    } finally {
-      setSavingManualAdjustments(false);
-    }
-  }
 
-  async function saveCetAccount(nextAccount: CetAccount) {
-    if (savingCet) return false;
-    const previousProfile = formProfile;
-    const nextProfile: FormProfile = {
-      ...(formProfile || {
-        fullName: "",
-        group: String(group),
-        signature: "",
-      }),
-      cetAccount: nextAccount,
-    };
-    setSavingCet(true);
-    try {
-      if (!demoMode)
-        await postCalendar({
-          action: "save-form-profile",
-          fullName: nextProfile.fullName,
-          group: nextProfile.group,
-          signature: nextProfile.signature,
-          cetAccount: nextAccount,
-        });
-      setFormProfile(nextProfile);
-      return true;
-    } catch (error) {
-      setFormProfile(previousProfile);
-      notify(calendarErrorMessage(error, "Le CET n’a pas pu être enregistré."));
-      return false;
-    } finally {
-      setSavingCet(false);
-    }
-  }
+
   function slideAllowancesMonth(delta: 1 | -1) {
     if (
       payMonthSlide ||
@@ -2252,93 +2145,6 @@ export default function Home() {
       } catch (error) {
         notify(calendarErrorMessage(error, "La note d’Agnès n’a pas pu être supprimée."));
       }
-  }
-  function renderNoteItems(items: NoteListItem[]) {
-    const [leftItems, rightItems] = splitNoteItemsIntoColumns(items);
-    const renderItem = (item: NoteListItem) => {
-      const hasOwnNote = item.author === "mika" || item.notes?.some((note) => note.author === "mika");
-      const ownEntry = hasOwnNote ? entries[item.date] : undefined;
-      const noteDates = ownEntry?.noteGroupId
-        ? Object.entries(entries)
-            .filter(([, entry]) => entry.noteGroupId === ownEntry.noteGroupId && Boolean(entry.noteText))
-            .map(([date]) => date)
-        : hasOwnNote ? [item.date] : [];
-      return (
-      <article
-        className={`upcoming-item ${item.kind}`}
-        key={item.key}
-        style={
-          item.color
-            ? ({ "--item-color": item.color } as React.CSSProperties)
-            : undefined
-        }
-      >
-        <button
-          type="button"
-          className="upcoming-item-open"
-          onClick={() => {
-            const date = fromKey(item.date);
-            setView(localDate(date.getFullYear(), date.getMonth(), 1));
-            setMode("month");
-            openDay(date);
-          }}
-        >
-          {!item.notes ? <i /> : null}
-          <span>
-          {item.kind === "note" ? (
-            <small className="note-date-badge">{noteDateLabel(item.date)}</small>
-          ) : null}
-          {item.notes ? (
-            <span className="shared-note-stack">
-              {item.notes.map((note) => (
-                <span
-                  className={`shared-note-part note-author-${note.author}`}
-                  key={`${item.key}-${note.author}`}
-                >
-                  <b>{note.author === "mika" ? ownNoteAuthorLabel : "Agnès"}</b>
-                  <strong>{note.label}</strong>
-                </span>
-              ))}
-            </span>
-          ) : item.label.includes("\n") ? (
-            <ul className="note-bullets">
-              {keyedNoteLines(item.label).map(({ key, label }) => (
-                <li key={`${item.key}-${key}`}>{label}</li>
-              ))}
-            </ul>
-          ) : (
-            <strong>{item.label}</strong>
-          )}
-          {item.kind !== "note" ? <small>{item.detail}</small> : null}
-          </span>
-        </button>
-        {item.notes?.map((note, index) => {
-          if (note.author === "mika" && !noteDates.length) return null;
-          return (
-            <button
-              key={`${item.key}-delete-${note.author}`}
-              className="note-delete-button"
-              type="button"
-              aria-label={`Supprimer ${note.author === "mika" ? `la note de ${ownNoteAuthorLabel}` : "la note d’Agnès"} du ${noteDateLabel(item.date)}`}
-              title={`Supprimer ${note.author === "mika" ? `la note de ${ownNoteAuthorLabel}` : "la note d’Agnès"}`}
-              style={item.notes!.length > 1 ? { top: index === 0 ? "33%" : "67%" } : undefined}
-              onClick={() => note.author === "mika"
-                ? void deleteMultiplePlanningDates(noteDates, "notes")
-                : void deleteAgnesNote(item.date)}
-            >
-              ×
-            </button>
-          );
-        })}
-      </article>
-      );
-    };
-    return (
-      <div className={`upcoming-list note-column-layout${rightItems.length ? "" : " single"}`}>
-        <div className="upcoming-note-column">{leftItems.map(renderItem)}</div>
-        {rightItems.length ? <div className="upcoming-note-column">{rightItems.map(renderItem)}</div> : null}
-      </div>
-    );
   }
 
   const payActions = usePayActions({
@@ -2806,7 +2612,20 @@ export default function Home() {
           onNoteQueryChange={setNoteQuery}
           noteSearchResults={noteSearchResults}
           upcoming={upcoming}
-          renderNoteItems={renderNoteItems}
+          renderNoteItems={(items) => (
+            <UpcomingNoteList
+              items={items}
+              entries={entries}
+              ownNoteAuthorLabel={ownNoteAuthorLabel}
+              onOpenDate={(date) => {
+                setView(localDate(date.getFullYear(), date.getMonth(), 1));
+                setMode("month");
+                openDay(date);
+              }}
+              onDeleteOwnNotes={(dates) => void deleteMultiplePlanningDates(dates, "notes")}
+              onDeleteAgnesNote={(date) => void deleteAgnesNote(date)}
+            />
+          )}
           onChooseGroup={() => setGroupChooserOpen(true)}
           onOpenNextWork={(date) => {
             setHomeSection("home");
