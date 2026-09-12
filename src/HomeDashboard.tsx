@@ -81,7 +81,12 @@ export function HomeDashboard({
     }
   });
   const visibleSetupItems = setupItems.filter((item) => !dismissedSetupItems.includes(item.id));
-  const setupIntro = visibleSetupItems.length === 1
+  // Plusieurs manques d'une même rubrique partagent la même explication : la
+  // répéter en tête vaut mieux qu'une phrase passe-partout.
+  const sharedIntro = visibleSetupItems.every(
+    (item) => item.intro === visibleSetupItems[0]?.intro,
+  );
+  const setupIntro = visibleSetupItems.length && sharedIntro
     ? visibleSetupItems[0].intro
     : "Plusieurs informations sont encore nécessaires pour adapter votre planning et vos calculs. Complétez les rubriques ci-dessous selon votre situation.";
   const dismissSetupItem = (id: string) => {

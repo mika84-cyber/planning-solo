@@ -217,6 +217,11 @@ import {
 // Conservé prêt à être réactivé lorsque le parcours d’accompagnement sera finalisé.
 const HOME_SETUP_GUIDANCE_ENABLED = false;
 
+/** Ce que l'écran de paie attend, dit une fois pour toutes : chaque
+ *  invitation renvoie ensuite à l'endroit précis où cela se saisit. */
+const PAY_SETUP_INTRO =
+  "Pour estimer votre paie, l’application a besoin de connaître le nombre de dimanches travaillés, le choix de la prime des jours fériés et les valeurs de votre bulletin de salaire.";
+
 const HANDOFF_KEY = "planning:form-handoff-v1";
 
 export default function Home() {
@@ -1772,18 +1777,13 @@ export default function Home() {
      annoncés à des endroits différents — une alerte pour les dimanches et
      les fériés, une invitation pour le reste. Ils tiennent désormais dans un
      seul message, que l'on peut écarter une fois pour toutes. */
+  /* Ce qui manque encore à l'estimation de paie, et surtout : où chaque
+     information se renseigne. Un dimanche reporté sur un prochain bulletin
+     n'attend rien de personne — il se règle tout seul, et n'a donc pas sa
+     place ici. */
   const currentYearPay = payView.getFullYear() === now.getFullYear();
-  const missingPayInformation = [
-    payProfiles[String(now.getFullYear())]
-      ? ""
-      : "Les valeurs de votre bulletin de salaire",
-    currentYearPay && allowances?.holidayPending
-      ? `Le choix de la prime pour ${allowances.holidayPending} jour${s(allowances.holidayPending)} férié${s(allowances.holidayPending)}`
-      : "",
-    currentYearPay && sundayCarryover
-      ? `${sundayCarryover} dimanche${s(sundayCarryover)} travaillé${s(sundayCarryover)} en attente`
-      : "",
-  ].filter(Boolean);
+  const missingPayValues = !payProfiles[String(now.getFullYear())];
+  const missingHolidayChoices = currentYearPay ? allowances?.holidayPending ?? 0 : 0;
 
   const showCalendarWorkspace =
     homeSection === "home" ||
@@ -2552,20 +2552,29 @@ export default function Home() {
           remainingWorkedDaysThisYear={remainingWorkedDaysThisYear}
           setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
           setupItems={[
-            ...(missingPayInformation.length ? [{
-              id: "pay-information",
-              title: "Compléter les informations de paie",
-              intro: "Pour estimer votre paie, l’application a besoin de connaître le nombre de dimanches travaillés, le choix de la prime des jours fériés et les valeurs de votre bulletin de salaire.",
-              detail: missingPayInformation.join(" · "),
+            ...(missingPayValues ? [{
+              id: "pay-values",
+              title: "Renseigner les valeurs de votre bulletin",
+              intro: PAY_SETUP_INTRO,
+              detail: "Traitement, indemnités et taux : sans eux, aucune estimation n’est possible.",
               actionLabel: "Renseigner",
               onAction: () => {
-                if (sundayCarryoverMonth !== undefined && sundayCarryoverYear !== undefined)
-                  setPayView(localDate(sundayCarryoverYear, sundayCarryoverMonth, 1));
                 setHomeSection("pay");
                 setPayScreen("overview");
                 setPayProfileOpen(true);
                 setPayAdvancedOpen(false);
                 setPayProfileFocusRequested(true);
+              },
+            }] : []),
+            ...(missingHolidayChoices ? [{
+              id: "holiday-choice",
+              title: `Choisir la prime de ${missingHolidayChoices} jour${s(missingHolidayChoices)} férié${s(missingHolidayChoices)}`,
+              intro: PAY_SETUP_INTRO,
+              detail: "Pour chacun : la prime seule, ou la prime et un jour de récupération.",
+              actionLabel: "Renseigner",
+              onAction: () => {
+                setHomeSection("pay");
+                setPayScreen("allowances");
               },
             }] : []),
             ...(HOME_SETUP_GUIDANCE_ENABLED ? [

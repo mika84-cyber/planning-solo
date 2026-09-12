@@ -176,14 +176,16 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Congés restants");
   });
 
-  it("réunit en un seul message ce qui manque à l’estimation de paie", () => {
-    // Les dimanches en attente et les fériés à trancher avaient chacun leur
-    // alerte ; ils rejoignent l'invitation, qui s'écarte d'un geste.
-    expect(app).toContain("dimanche${s(sundayCarryover)} travaillé${s(sundayCarryover)} en attente");
-    expect(app).toContain("Le choix de la prime pour");
-    expect(app).toContain("Les valeurs de votre bulletin de salaire");
-    expect(app).toContain("missingPayInformation");
+  it("mène chaque information manquante à l’endroit où elle se saisit", () => {
+    // L'alerte ambre a disparu, et chaque invitation ouvre son propre écran :
+    // le profil pour les valeurs du bulletin, les primes pour les fériés.
+    expect(app).toContain("Renseigner les valeurs de votre bulletin");
+    expect(app).toContain("Choisir la prime de ${missingHolidayChoices} jour");
+    expect(app).toContain("setPayScreen(\"allowances\")");
+    expect(app).toContain("PAY_SETUP_INTRO");
     expect(app).not.toContain("className=\"important-alert\"");
+    // Un dimanche reporté se règle seul : il ne réclame rien à personne.
+    expect(app).not.toContain("dimanche${s(sundayCarryover)} travaillé");
   });
 
   it("actualise les libellés demandés dans les primes", () => {

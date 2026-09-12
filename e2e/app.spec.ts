@@ -992,7 +992,8 @@ test("l’accueil réunit en un message ce qui manque à la paie, et se laisse �
   await prepareDemo(page);
   const setup = page.locator(".home-setup-alert");
   await expect(setup).toHaveCount(1);
-  await expect(setup).toContainText("Compléter les informations de paie");
+  await expect(setup).toContainText("Renseigner les valeurs de votre bulletin");
+  await expect(setup).toContainText("Choisir la prime de 4 jours fériés");
   await expect(setup).toContainText("le nombre de dimanches travaillés");
   await expect(setup).toContainText("le choix de la prime des jours fériés");
   await expect(setup).toContainText("les valeurs de votre bulletin de salaire");
@@ -1003,7 +1004,12 @@ test("l’accueil réunit en un message ce qui manque à la paie, et se laisse �
 
   // Le message ne doit pas s'imposer indéfiniment : une fois écarté, il ne
   // revient pas, même après rechargement.
-  await setup.getByRole("button", { name: "Ne plus me le demander" }).click();
+  // Chaque manque s'écarte séparément : l'un ne doit pas emporter l'autre.
+  const dismiss = setup.getByRole("button", { name: "Ne plus me le demander" });
+  await expect(dismiss).toHaveCount(2);
+  await dismiss.first().click();
+  await expect(dismiss).toHaveCount(1);
+  await dismiss.first().click();
   await expect(setup).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
@@ -3114,8 +3120,8 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
 test("les horaires du profil préremplissent une récupération", async ({ page }) => {
   await prepareDemo(page);
   const setup = page.locator(".home-setup-alert");
-  await expect(setup).toContainText("Compléter les informations de paie");
-  await setup.getByRole("button", { name: "Renseigner" }).click();
+  const payValues = setup.locator("article").filter({ hasText: "Renseigner les valeurs de votre bulletin" });
+  await payValues.getByRole("button", { name: "Renseigner" }).click();
   const profile = page.locator("#pay-profile-settings");
   await expect(profile).toBeInViewport();
   await expect(profile).toBeFocused();
@@ -3970,13 +3976,14 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   expect(consoleErrors).toEqual([]);
 });
 
-test("le mois de paie reste indépendant du planning et suit une alerte datée", async ({ page }) => {
+test("le mois de paie reste indépendant du planning", async ({ page }) => {
   await prepareCompletePayDemo(page);
   const planningMonth = page.getByRole("button", { name: "Sélectionner le mois" });
   const initialPlanningMonth = (await planningMonth.textContent())?.trim();
-  // L'alerte ambre a fusionné avec l'invitation : c'est son bouton qui mène
-  // désormais au mois concerné.
-  await page.locator(".home-setup-alert").getByRole("button", { name: "Renseigner" }).click();
+  // Un dimanche reporté se règle seul : plus d'alerte datée pour y mener. On
+  // choisit donc le mois à la main, et c'est son indépendance qui est en jeu.
+  await goToSection(page, "pay");
+  await page.locator(".pay-dashboard-month").getByRole("button", { name: "Mois suivant" }).click();
   await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
 
   await goToSection(page, "home");
