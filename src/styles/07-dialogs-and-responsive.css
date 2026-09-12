@@ -387,7 +387,6 @@
     grid-template-columns: 1fr;
   }
   .controls {
-    display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     padding: 10px;
@@ -695,9 +694,6 @@
   }
   .choice-grid button {
     padding: 15px;
-  }
-  .leave-choices {
-    grid-template-columns: 1fr;
   }
   .leave-choices {
     grid-template-columns: 1fr;

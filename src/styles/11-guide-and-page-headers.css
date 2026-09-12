@@ -447,7 +447,6 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.65rem;
 }
 
 .balance-detail-checkbox {
@@ -786,20 +785,12 @@
     grid-template-columns: minmax(112px, 0.72fr) minmax(0, 1.28fr);
     gap: 8px;
   }
-  .calendar-toolbar.month-toolbar .period-navigation {
-    grid-column: 1 / -1;
-    grid-row: 1;
-  }
   .calendar-toolbar.month-toolbar .today-button {
-    grid-column: 1;
-    grid-row: 2;
     width: 100%;
     min-width: 0;
     min-height: 50px;
   }
   .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
-    grid-column: 2;
-    grid-row: 2;
     width: 100%;
     min-width: 0;
     min-height: 50px;
@@ -1147,7 +1138,6 @@
 }
 .main-menu-drawer header .step-label { color: #d9e7f7; }
 .main-menu-drawer header h2 {
-  color: #fff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.72);
 }
 .main-menu-drawer header > button {
@@ -1374,28 +1364,6 @@
   }
 }
 
-/* Rendu final des récupérations de formation dans le calendrier.
-   Ces règles restent en fin de cascade afin que les couleurs de travail ou
-   de sélection du jour ne puissent pas masquer la récupération enregistrée. */
-.month-card .calendar-grid .day.training-recovery-day,
-.year-grid .mini-grid .mini-day.training-recovery-day {
-  border-color: #000 !important;
-  background-color: #f3b3a6 !important;
-  background-image: none !important;
-  color: #3d1712 !important;
-  box-shadow: none !important;
-}
-
-.month-card .calendar-grid .day.training-recovery-day {
-  outline: 2px solid #000;
-  outline-offset: -2px;
-}
-
-.year-grid .mini-grid .mini-day.training-recovery-day {
-  outline: 1.5px solid #000;
-  outline-offset: -1.5px;
-}
-
 .month-card .calendar-grid .day.training-recovery-day .training-recovery-label {
   right: 5px;
   bottom: 4px;
@@ -1406,24 +1374,4 @@
   color: #111 !important;
   box-shadow: none;
   text-shadow: none;
-}
-
-.day-recovery-details .recovery-direct-actions {
-  width: 100%;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.day-recovery-details .recovery-direct-actions .period-delete-button {
-  width: 100%;
-  min-height: 44px;
-  border: 1.5px solid #dc8995;
-  border-radius: 11px;
-  padding: 10px 14px;
-  background: #fff1f2;
-  color: #a52235;
-  font-size: 12px;
-  font-weight: 850;
-  line-height: 1.2;
-  text-align: center;
-  white-space: normal;
 }

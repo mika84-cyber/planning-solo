@@ -10,13 +10,7 @@
 
 .planning-workspace-shell.framed .planning-command-section,
 .planning-workspace-shell.framed .planning-calendar-section {
-  box-sizing: border-box;
-  display: grid;
-  gap: 10px;
-  width: 100%;
-  border: 1.5px solid rgba(64, 88, 119, 0.38);
   border-radius: 21px;
-  padding: clamp(11px, 1.5vw, 16px);
   background: #fff;
   box-shadow: 0 8px 22px rgba(34, 57, 84, 0.065);
 }
@@ -29,37 +23,9 @@
   background: linear-gradient(90deg, var(--accent-soft), transparent 14%), #fff;
 }
 
-.planning-workspace-shell.framed .planning-command-section .home-planning-heading {
-  padding: 0 3px 5px;
-}
-
-/* Une seule bordure par menu : le cadre technique du stepper est neutralisé,
-   le bouton déroulant reste la seule surface visible. */
-.planning-workspace-shell.framed .controls .worked-days-stepper,
-.planning-workspace-shell.framed .controls .year-stepper,
-.planning-workspace-shell.framed .controls .year-select-display,
-.planning-workspace-shell.framed .controls .planning-group-action-row {
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.planning-workspace-shell.framed .planning-calendar-section .planning-leave-panel,
-.planning-workspace-shell.framed .planning-calendar-section .month-card,
-.planning-workspace-shell.framed .planning-calendar-section .year-grid {
-  width: 100%;
-  margin-right: 0;
-  margin-left: 0;
-}
-
 .today-overview,
 .home-notes-section {
-  box-sizing: border-box;
   width: min(1120px, calc(100% - 32px));
-  margin-right: auto;
-  margin-left: auto;
 }
 
 .today-overview {
@@ -71,14 +37,7 @@
 
 @media (max-width: 720px) {
   .planning-workspace-shell.framed {
-    width: calc(100% - 16px);
     padding-left: 0;
-  }
-
-  .planning-workspace-shell.framed .planning-command-section,
-  .planning-workspace-shell.framed .planning-calendar-section {
-    border-radius: 18px;
-    padding: 10px;
   }
 
   .planning-workspace-shell.framed .planning-command-section .controls,

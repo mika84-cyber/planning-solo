@@ -552,17 +552,11 @@
 }
 .day.half-morning::after,
 .mini-day.half-morning::after {
-  left: 0;
-  right: 50%;
   border-left: var(--half-frame-width) solid var(--leave);
-  border-radius: var(--half-frame-radius) 0 0 var(--half-frame-radius);
 }
 .day.half-afternoon::after,
 .mini-day.half-afternoon::after {
-  right: 0;
-  left: 50%;
   border-right: var(--half-frame-width) solid var(--leave);
-  border-radius: 0 var(--half-frame-radius) var(--half-frame-radius) 0;
 }
 .day:hover {
   transform: translateY(-1px);

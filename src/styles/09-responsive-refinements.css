@@ -867,7 +867,6 @@
     gap: 8px;
     min-height: 90px;
     border-radius: 13px;
-    padding: 10px;
   }
   .today-card-icon {
     width: 30px;
@@ -888,17 +887,12 @@
   .important-alert {
     grid-template-columns: 28px minmax(0, 1fr);
   }
-  .important-alert small {
-    display: none;
-  }
   .today-overview-grid > button:last-child {
     grid-column: 1 / -1;
     min-height: 70px;
   }
   .today-overview-grid .today-leave-balance {
     grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    text-align: center;
   }
   .today-leave-balance .today-card-icon {
     display: none;
@@ -925,7 +919,6 @@
   }
   .leave-balances-heading {
     align-items: flex-start;
-    flex-direction: column;
     gap: 4px;
   }
   .leave-balances-heading h3 {
@@ -1062,10 +1055,6 @@
   min-width: min(32rem, 100%);
 }
 
-.calendar-delete-actions .secondary-button {
-  grid-column: 1 / -1;
-}
-
 .calendar-delete-actions .delete-notes-button,
 .calendar-delete-actions .delete-absences-button {
   flex: 1 1 calc(50% - 0.35rem);
@@ -1137,7 +1126,6 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
     min-height: 46px;
     border: 1px solid rgba(23, 36, 56, 0.22);
     border-radius: 12px;
@@ -1151,10 +1139,6 @@
 
   .calendar-toolbar.month-toolbar {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .calendar-toolbar.month-toolbar .period-navigation {
-    grid-column: 1 / -1;
   }
 
   .calendar-toolbar.month-toolbar .today-button,
@@ -1467,23 +1451,16 @@
   box-shadow: 0 12px 32px rgba(44, 70, 100, 0.07);
 }
 .planning-workspace-shell.framed .home-planning-heading {
-  margin: 0;
-  border: 0;
   padding: 0 2px 4px;
-  background: transparent;
-  box-shadow: none;
 }
 .planning-workspace-shell.framed .controls,
 .planning-workspace-shell.framed .calendar-toolbar,
 .planning-workspace-shell.framed .month-card,
 .planning-workspace-shell.framed .year-grid { margin-bottom: 0; }
-
-.leave-request-archive + .overtime-balance-card { margin-top: 22px; }
 .overtime-balance-card {
   gap: 18px;
   padding: 20px;
 }
-.overtime-balance-card + .overtime-balance-card { margin-top: 18px; }
 .overtime-balance-summary { gap: 11px; }
 .overtime-balance-summary article { padding: 14px; }
 
@@ -1515,12 +1492,10 @@
 .day.half-morning::after,
 .mini-day.half-morning::after {
   border-right: 2px solid #000;
-  border-radius: var(--half-frame-radius) 0 0 var(--half-frame-radius);
 }
 .day.half-afternoon::after,
 .mini-day.half-afternoon::after {
   border-left: 2px solid #000;
-  border-radius: 0 var(--half-frame-radius) var(--half-frame-radius) 0;
 }
 
 @media (max-width: 720px) {
@@ -1541,18 +1516,12 @@
     align-items: stretch;
   }
   .controls .worked-days {
-    grid-column: 1;
-    grid-row: 1;
     order: initial;
   }
   .controls .planning-group-choice {
-    grid-column: 2;
-    grid-row: 1;
     order: initial;
   }
   .controls > .planning-leave-mobile {
-    grid-column: 1 / -1;
-    grid-row: 2;
     min-height: 48px;
   }
   .planning-group-action-row { grid-template-columns: minmax(0, 1fr); }
@@ -1566,10 +1535,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .pdf-download-settings .school-vacation-choice { grid-column: 1 / -1; }
-
-  .leave-request-archive + .overtime-balance-card { margin-top: 18px; }
-  .overtime-balance-card { gap: 16px; padding: 17px 14px; }
-  .overtime-balance-card + .overtime-balance-card { margin-top: 16px; }
   .variable-pay-total > small { max-width: 120px; text-align: right; }
 }
 
@@ -1719,24 +1684,14 @@
 .mini-day.half-morning::after,
 .mini-day.half-afternoon::after {
   z-index: 1;
-  top: 0;
-  bottom: 0;
-  border: 0;
-  background: var(--leave);
 }
 .day.half-morning::after,
 .mini-day.half-morning::after {
-  left: 0;
-  right: 50%;
   border-right: 1px solid #000;
-  border-radius: var(--half-frame-radius) 0 0 var(--half-frame-radius);
 }
 .day.half-afternoon::after,
 .mini-day.half-afternoon::after {
-  right: 0;
-  left: 50%;
   border-left: 1px solid #000;
-  border-radius: 0 var(--half-frame-radius) var(--half-frame-radius) 0;
 }
 .day.half-morning .date-number,
 .day.half-morning .holiday-date,
@@ -1766,7 +1721,6 @@
   }
   .controls .worked-days { order: 1; width: 100%; min-width: 0; }
   .controls .planning-group-choice { order: 2; width: 100%; min-width: 0; }
-  .controls .planning-year-choice { display: none; }
   .planning-group-action-row {
     grid-template-columns: minmax(0, 1fr) minmax(138px, auto);
     align-items: stretch;
@@ -1775,7 +1729,6 @@
   .planning-leave-mobile { width: 100%; min-height: 46px; }
 
   .calendar-toolbar.month-toolbar {
-    display: grid;
     grid-template-columns: minmax(0, 1fr);
   }
   .calendar-toolbar.month-toolbar .period-navigation,
@@ -1858,7 +1811,7 @@
 .overtime-balance-summary article.remaining { border-color: #bbd7d0; background: #eaf5f1; }
 .overtime-balance-summary span { color: var(--muted); font-size: 11px; font-weight: 750; }
 .overtime-balance-summary strong { color: #213d3a; font-size: 20px; }
-.overtime-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.overtime-actions { display: flex; gap: 8px; }
 .overtime-actions .secondary-button:disabled { opacity: .5; cursor: not-allowed; }
 .overtime-history-toggle { justify-self: start; }
 .overtime-history { display: grid; gap: 7px; border-top: 1px solid #dce7e4; padding-top: 12px; }
@@ -1961,22 +1914,11 @@
   outline-offset: -1.5px;
 }
 .training-recovery-label {
-  position: absolute;
   right: 6px;
   bottom: 5px;
   border: 0;
-  border-radius: 0;
-  padding: 0;
   background: transparent;
   color: #111;
-  font-size: 10px;
-  font-weight: 950;
-  line-height: 1;
-  letter-spacing: 0.06em;
-}
-.day-recovery-details i.recovery {
-  background: #f3b3a6;
-  box-shadow: inset 0 0 0 1px #000;
 }
 .recovery-direct-actions {
   grid-template-columns: minmax(0, 1fr);

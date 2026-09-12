@@ -319,7 +319,6 @@
 
 .pdf-download-actions .pdf-action {
   position: relative;
-  align-items: flex-start;
   gap: 12px;
   min-height: 158px;
   border: 1.5px solid rgba(48, 87, 126, 0.42);
@@ -777,7 +776,6 @@
 .pdf-download-actions { gap: 11px; }
 
 .pdf-download-actions .pdf-action {
-  min-height: 146px;
   border-radius: 17px;
   padding: 15px;
   box-shadow: 0 5px 15px rgba(38, 69, 101, 0.06);
@@ -1076,7 +1074,6 @@
 @media (max-width: 720px) {
   /* Accueil */
   .today-overview {
-    width: 100%;
     gap: 10px;
     margin: 10px 0 0;
     border-radius: 20px;
@@ -1165,7 +1162,6 @@
   }
 
   .planning-workspace-shell.framed {
-    width: calc(100% - 16px);
     gap: 10px;
     margin: 10px auto 0;
     border: 0;
@@ -1209,9 +1205,6 @@
   }
 
   .pdf-download-actions .pdf-action {
-    min-height: 148px;
-    grid-template-columns: 1fr;
-    align-content: start;
     justify-items: start;
     gap: 7px;
     padding: 12px;
@@ -1266,7 +1259,6 @@
 
   .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
     border-left: 0;
-    background: none;
   }
 
   .planning-workspace-shell.framed .controls .choice-picker-trigger,
