@@ -25,14 +25,30 @@ import { ConnectionStatus } from "./ConnectionStatus";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
 import { effectivePayProfile, usePayActions } from "./usePayActions";
-import type { PayDashboardVariable } from "./PayDashboard";
-import type { PayCalculationBreakdown } from "./PayEstimateDetails";
-import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 
 const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 const HomeDashboard = lazy(() =>
   homeDashboardModule.then(({ HomeDashboard: Component }) => ({ default: Component })),
+);
+const BalanceDetailDialog = lazy(() =>
+  import("./BalanceDetailDialog").then(({ BalanceDetailDialog: Component }) => ({ default: Component })),
+);
+const AnnualPdfActions = lazy(() =>
+  import("./AnnualPdfActions").then(({ AnnualPdfActions: Component }) => ({ default: Component })),
+);
+const planningRequestPanelsModule = () => import("./PlanningRequestPanels");
+const GroupChooserDialog = lazy(() =>
+  planningRequestPanelsModule().then(({ GroupChooserDialog: Component }) => ({ default: Component })),
+);
+const NoteSelectionPanel = lazy(() =>
+  planningRequestPanelsModule().then(({ NoteSelectionPanel: Component }) => ({ default: Component })),
+);
+const RecoveryDatePickingPanel = lazy(() =>
+  planningRequestPanelsModule().then(({ RecoveryDatePickingPanel: Component }) => ({ default: Component })),
+);
+const RequestChooserDialog = lazy(() =>
+  planningRequestPanelsModule().then(({ RequestChooserDialog: Component }) => ({ default: Component })),
 );
 const SchoolVacationMonthSummary = lazy(() =>
   import("./SchoolVacationUi").then(({ SchoolVacationMonthSummary: Component }) => ({ default: Component })),
@@ -52,16 +68,10 @@ import { useWorkAccidentActions } from "./useWorkAccidentActions";
 import { useAppShellUiState } from "./useAppShellUiState";
 import { useFeedbackMessaging } from "./useFeedbackMessaging";
 import { AppDialogLayer } from "./AppDialogLayer";
+import { DeferredSection } from "./DeferredSection";
+import { buildPayContent } from "./payContent";
 import { DayDetailDialog } from "./DayDetailDialog";
-import { BalanceDetailDialog } from "./BalanceDetailDialog";
 import { RequestSelectionPanel } from "./RequestSelectionPanel";
-import { AnnualPdfActions } from "./AnnualPdfActions";
-import {
-  GroupChooserDialog,
-  NoteSelectionPanel,
-  RecoveryDatePickingPanel,
-  RequestChooserDialog,
-} from "./PlanningRequestPanels";
 import {
   AppHeader,
   AdaptiveNavigation,
@@ -90,9 +100,7 @@ import {
   LeaveBalancesSection,
   LeaveManagementPage,
   PayAllowancesSection,
-  PayEstimateDetails,
   PayPage,
-  PayslipCheckSection,
   PdfDownloadPage,
   UsefulContactsSection,
   UsefulFormsSection,
@@ -113,7 +121,6 @@ import { AppleInstallNotice } from "./AppleInstallNotice";
 import { monthGross, strikeDeduction } from "./payMonth";
 import {
   emptyEntry,
-  euros,
   groupNoteItemsByDate,
   noteDateLabel,
   notePeriodFor,
@@ -148,10 +155,6 @@ import {
   payCalibrationRegime,
   readingsForCalibrationRegime,
 } from "./payslip";
-import {
-  isUnplannedPayslipCarence,
-  summarizePayslipReview,
-} from "./payslipReview";
 import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
 import { strikePayEstimate } from "./strike";
 import {
@@ -235,10 +238,6 @@ function keyedNoteLines(value: string) {
 
 // Conservé prêt à être réactivé lorsque le parcours d’accompagnement sera finalisé.
 const HOME_SETUP_GUIDANCE_ENABLED = false;
-
-function DeferredSection({ label }: { label: string }) {
-  return <div className="deferred-section-loading" role="status">Chargement de {label}…</div>;
-}
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
 
@@ -370,19 +369,20 @@ export default function Home() {
       Object.keys(EMPTY_MANUAL_ADJUSTMENTS).map((key) => [key, "0"]),
     ) as Record<keyof ManualYearAdjustments, string>,
   );
+  const payUi = usePayUiState();
   const {
     payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
     payProfileFocusRequested, setPayProfileFocusRequested,
     payPeriodOpen, setPayPeriodOpen, payMonthSlide, setPayMonthSlide,
-    payMonthSlideTimer, payslipCheck, setPayslipCheck, payslipError, setPayslipError,
-    payslipImportBusy, setPayslipImportBusy, payslipImportError, setPayslipImportError,
-    payslipImportResult, setPayslipImportResult, payslipImportMode, setPayslipImportMode,
-    payslipNeedsPeriod, setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
+    payMonthSlideTimer, payslipCheck, setPayslipCheck, setPayslipError,
+    setPayslipImportBusy, setPayslipImportError,
+    setPayslipImportResult, setPayslipImportMode,
+    setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
     payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
-    payslipHelpOpen, setPayslipHelpOpen, payslipResultDetailsOpen, setPayslipResultDetailsOpen,
-    paySettingsOpen, setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,
-    payDrafts, setPayDrafts, savingPay, setSavingPay,
-  } = usePayUiState();
+    setPayslipResultDetailsOpen,
+    setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,
+    payDrafts, setPayDrafts, setSavingPay,
+  } = payUi;
   const appShellUi = useAppShellUiState();
   const {
     quickNoteMode,
@@ -2774,18 +2774,7 @@ export default function Home() {
     );
   }
 
-  const {
-    savePayAmount,
-    saveAnnualPayProfile,
-    saveCiaMonth,
-    nextSundayPayoutSlot,
-    reportMissingSundays,
-    clearSundayCarryover,
-    chooseHolidayPay,
-    importPayslips,
-    applyPayslipFallbackPeriod,
-    grossForMonth,
-  } = usePayActions({
+  const payActions = usePayActions({
     demoMode,
     group,
     payView,
@@ -2833,6 +2822,7 @@ export default function Home() {
     notify,
     post: postCalendar,
   });
+  const { chooseHolidayPay } = payActions;
 
   function openRequestChooser(
     _origin: "general" | "planning" = "general",
@@ -2870,476 +2860,6 @@ export default function Home() {
 
   /** Le volet de vérification d'un bulletin, séparé des primes : on y va pour
    *  contrôler, pas pour consulter. */
-  function renderPayContent() {
-    if (!allowances || !monthPay || !sickLeaves) return null;
-    const missing = netEstimateMissing.length > 0;
-    const showPayslipHelp = payslipHelpOpen;
-    /* Seules les primes qui varient d'un mois à l'autre sont détaillées : le
-       traitement, l'IFSE et les éléments fixes se retrouvent dans le brut sans
-       qu'il soit utile de les répéter chaque mois. */
-    const monthPayRows = [
-      monthPay.sundayCount || monthPay.reported
-        ? {
-            key: "sundays",
-            label: `Dimanches (${monthPay.sundayCount})`,
-            detail: monthPay.carryover
-              ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} du bulletin précédent`
-              : monthPay.reported
-                ? `${monthPay.reported} pas encore payé${s(monthPay.reported)}, en attente sur un prochain bulletin`
-                : `${monthPay.sundayCount} × ${euros(SUNDAY_ALLOWANCE.perSunday)}`,
-            amount: monthPay.sunday,
-          }
-        : null,
-      monthPay.holidayCount
-        ? {
-            key: "holidays",
-            label: `Jours fériés (${monthPay.holidayCount})`,
-            detail: monthPay.holiday
-              ? "travaillés le mois précédent"
-              : "compensation à décider",
-            amount: monthPay.holiday,
-          }
-        : null,
-      monthPay.compensatedCount
-        ? {
-            key: "compensated",
-            label: `Fériés compensés (${monthPay.compensatedCount})`,
-            detail: monthPay.compensated
-              ? `non travaillés en ${allowances.compensatedYear}`
-              : `non travaillés en ${allowances.compensatedYear}, compensation à décider`,
-            amount: monthPay.compensated,
-          }
-        : null,
-      monthPay.cia
-        ? {
-            key: "cia",
-            label: "CIA",
-            detail: "complément indemnitaire annuel",
-            amount: monthPay.cia,
-          }
-        : null,
-      overtimeForPayMonth.totalMinutes
-        ? {
-            key: "overtime",
-            label: `Heures supplémentaires (${minutesLabel(
-              overtimeForPayMonth.totalMinutes,
-            )})`,
-            detail: overtimeForPayMonth.ready
-              ? `effectuées en ${MONTHS[overtimeForPayMonth.performedMonth]} · base ${euros(
-                  overtimeForPayMonth.hourlyBase,
-                )}/h${workQuota === "full" ? " · majorations appliquées" : " · règle temps partiel"}`
-              : "traitement de base à compléter pour calculer le montant",
-            amount: overtimeForPayMonth.ready
-              ? overtimeForPayMonth.amount
-              : null,
-          }
-        : null,
-      mecenatForCurrentPayMonth.lines.length
-        ? {
-            key: "mecenat",
-            label: `Mécénats (${mecenatForCurrentPayMonth.lines.length})`,
-            detail: `${minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} · tarifs réglementaires fixes`,
-            amount: mecenatForCurrentPayMonth.grossAmountCents / 100,
-          }
-        : null,
-      monthPay.sickDays
-        ? {
-            key: "sick",
-            label: `Arrêt maladie (${monthPay.sickDays} j)`,
-            detail: "carence et retenue de 10 %",
-            amount: -monthPay.sick,
-          }
-        : null,
-      monthPay.strikeDeductedDays || monthPay.strikePotentialDays
-        ? {
-            key: "strike",
-            label: `Grève (${monthPay.strikeDeductedDays} journée${s(monthPay.strikeDeductedDays)} retenue${s(monthPay.strikeDeductedDays)})`,
-            detail:
-              strikeForCurrentPayMonth.dailyDeduction === null
-                  ? "traitement et indemnité de résidence antérieurs à compléter"
-                  : strikeForCurrentPayMonth.potentialAdditionalDays.length
-                    ? `Attention : ${strikeForCurrentPayMonth.potentialAdditionalDays.length} jour${s(strikeForCurrentPayMonth.potentialAdditionalDays.length)} intermédiaire${s(strikeForCurrentPayMonth.potentialAdditionalDays.length)} à vérifier. Les repos noirs encadrés sont inclus automatiquement ; les autres absences restent hors retenue tant qu’elles ne sont pas confirmées. ${strikeForCurrentPayMonth.exactMonthValues ? "Valeurs exactes du mois." : strikeForCurrentPayMonth.sourcePeriod ? `Dernières valeurs connues : ${strikeForCurrentPayMonth.sourcePeriod}.` : ""}`
-                    : `retenue au 1/30 · ${euros(strikeForCurrentPayMonth.dailyDeduction)} brut par jour${strikeForCurrentPayMonth.automaticAdditionalDays.length ? ` · ${strikeForCurrentPayMonth.automaticAdditionalDays.length} repos noir${s(strikeForCurrentPayMonth.automaticAdditionalDays.length)} encadré${s(strikeForCurrentPayMonth.automaticAdditionalDays.length)} inclus` : ""} · ${strikeForCurrentPayMonth.exactMonthValues ? "valeurs exactes du mois" : "dernières valeurs antérieures connues"}`,
-            amount:
-              strikeForCurrentPayMonth.totalDeduction !== null
-                ? -strikeForCurrentPayMonth.totalDeduction
-                : null,
-          }
-        : null,
-      // Jamais prélevés en décembre (confirmé sur les bulletins de 2024 et
-      // 2025) : signalé ici comme les autres lignes qui varient d'un mois
-      // sur l'autre, plutôt que de laisser deviner pourquoi le net grimpe.
-      monthPay.index === 11 && mealVoucherDeduction
-        ? {
-            key: "mealVoucher",
-            label: "Titres repas",
-            detail: "jamais prélevés en décembre",
-            amount: mealVoucherDeduction,
-          }
-        : null,
-    ].filter((row): row is NonNullable<typeof row> => Boolean(row));
-    const comparablePayslip =
-      payslipCheck?.reading.month !== undefined &&
-      payslipCheck.reading.year === allowances.year &&
-      payslipCheck.reading.month === payView.getMonth();
-    const payslipMonth = comparablePayslip
-      ? (payslipCheck.reading.month as number)
-      : payView.getMonth();
-    const unplannedPayslipCarence = comparablePayslip && isUnplannedPayslipCarence(
-      payslipCheck.reading.carenceDay,
-      sickLeaves.byMonth[payslipMonth]?.days || 0,
-    );
-    const payslipExpectedSundays = comparablePayslip
-      ? allowances.monthly.find(
-          (slot) => slot.index === payslipMonth,
-        )?.sundayCount || 0
-      : 0;
-    const payslipReview = comparablePayslip
-      ? summarizePayslipReview([
-          {
-            key: "gross",
-            label: "Cumul brut",
-            found: payslipCheck.reading.gross,
-            expected: grossForMonth(payslipMonth),
-          },
-          ...(netCalculation?.netBeforeTax !== undefined
-            ? [{
-                key: "net-before-tax",
-                label: "Net avant impôt",
-                found: payslipCheck.reading.netBeforeTax,
-                expected: netCalculation.netBeforeTax,
-                tolerance: 0.5,
-              }]
-            : []),
-          {
-            key: "base",
-            label: "Traitement de base",
-            found: payslipCheck.reading.baseSalary,
-            expected: baseSalary,
-          },
-          ...(residenceAllowance !== undefined
-            ? [{
-                key: "residence",
-                label: "Indemnité de résidence",
-                found: payslipCheck.reading.residenceAllowance,
-                expected: residenceAllowance,
-              }]
-            : []),
-          ...(!isContractuel
-            ? [
-                {
-                  key: "ifse",
-                  label: "IFSE",
-                  found: payslipCheck.reading.ifse,
-                  expected: ifse,
-                },
-              ]
-            : []),
-          ...(otherFixed || payslipCheck.reading.otherFixed !== undefined
-            ? [{
-                key: "other-fixed",
-                label: "Autres éléments fixes",
-                found: payslipCheck.reading.otherFixed,
-                expected: otherFixed,
-              }]
-            : []),
-          ...(monthPay.cia || payslipCheck.reading.cia !== undefined
-            ? [{
-                key: "cia",
-                label: "CIA",
-                found: payslipCheck.reading.cia,
-                expected: monthPay.cia,
-              }]
-            : []),
-          ...(navigo || payslipCheck.reading.navigo !== undefined
-            ? [{
-                key: "navigo",
-                label: "Remboursement Navigo",
-                found: payslipCheck.reading.navigo,
-                expected: navigo,
-              }]
-            : []),
-          ...((netCalculation?.mealVouchers || 0) || payslipCheck.reading.mealVoucherDeduction !== undefined
-            ? [{
-                key: "meal-vouchers",
-                label: "Titres repas",
-                found: payslipCheck.reading.mealVoucherDeduction,
-                expected: netCalculation?.mealVouchers || 0,
-              }]
-            : []),
-          ...(pasRate || payslipCheck.reading.pasRate !== undefined
-            ? [{
-                key: "pas-rate",
-                label: "Taux d’imposition (PAS)",
-                found: payslipCheck.reading.pasRate,
-                expected: pasRate,
-                tolerance: 0.01,
-              }]
-            : []),
-          {
-            key: "sundays",
-            label: "Dimanches payés",
-            found: payslipCheck.reading.sundaysBeyondTen,
-            expected: payslipExpectedSundays,
-            tolerance: 1,
-          },
-          ...(unplannedPayslipCarence
-            ? [
-                {
-                  key: "carence",
-                  label: "Jour de carence non prévu",
-                  found: payslipCheck.reading.carenceDay,
-                  expected: 0,
-                },
-              ]
-            : []),
-          ...(overtimeForPayMonth.totalMinutes
-            ? [
-                {
-                  key: "overtime",
-                  label: "Heures supplémentaires",
-                  found: undefined,
-                  expected: overtimeForPayMonth.amount,
-                },
-              ]
-            : []),
-          ...(mecenatForCurrentPayMonth.totalMinutes
-            ? [
-                {
-                  key: "mecenat",
-                  label: "Mécénats",
-                  found: undefined,
-                  expected:
-                    mecenatForCurrentPayMonth.grossAmountCents / 100,
-                },
-              ]
-            : []),
-        ])
-      : null;
-    const payReliability = !grossEstimateComplete
-      ? {
-          tone: "incomplete" as const,
-          label: "Données à compléter",
-          detail: "Certaines valeurs nécessaires au calcul de la paie sont encore manquantes.",
-        }
-      : payslipReview?.tone === "ok"
-        ? {
-            tone: "exact" as const,
-            label: "Valeurs vérifiées avec le bulletin",
-            detail: `Les lignes lisibles du bulletin de ${MONTHS[monthPay.index]} ${allowances.year} correspondent à l’estimation.`,
-          }
-        : payslipReview?.tone === "partial"
-          ? {
-              tone: "estimated" as const,
-              label: "Vérification partielle",
-              detail: `${payslipReview.verified.length} ligne${s(payslipReview.verified.length)} vérifiée${s(payslipReview.verified.length)} ; des lignes restent non comparables et le net estimé n’est donc pas présenté comme confirmé.`,
-            }
-        : payProfiles[payYear]
-          ? {
-              tone: "estimated" as const,
-              label: "Valeurs enregistrées pour cette année",
-              detail: `Estimation calculée avec le profil de paie ${payYear}.`,
-            }
-          : {
-              tone: "estimated" as const,
-              label: "Estimation avec les dernières valeurs connues",
-              detail: "Le montant sera recalculé lorsqu’un bulletin plus récent sera renseigné.",
-            };
-
-    const otherFixedWithoutResidence =
-      residenceAllowance === undefined ? otherFixed : otherFixed - residenceAllowance;
-    const grossDeductionRows = monthPayRows
-      .filter((row) => row.key === "sick" || row.key === "strike")
-      .map((row) => ({
-        ...row,
-        amount: row.amount === null ? null : Math.abs(row.amount),
-      }));
-    const payCalculation: PayCalculationBreakdown = {
-      grossComposition: [
-        {
-          key: "base",
-          label: isContractuel ? "Traitement de base" : "Traitement indiciaire",
-          detail: "montant mensuel enregistré",
-          amount: hasPayValue("baseSalary") ? baseSalary : null,
-        },
-        residenceAllowance !== undefined
-          ? {
-              key: "residence",
-              label: "Indemnité de résidence",
-              detail: isContractuel && !hasPayValue("residenceAllowance")
-                ? "3 % du traitement de base"
-                : "valeur enregistrée",
-              amount: residenceAllowance,
-            }
-          : null,
-        !isContractuel && (ifse || hasPayValue("ifse"))
-          ? { key: "ifse", label: "IFSE", detail: "indemnité mensuelle", amount: ifse }
-          : null,
-        otherFixedWithoutResidence
-          ? {
-              key: "other-fixed",
-              label: "Autres éléments fixes",
-              detail: residenceAllowance === undefined ? "total enregistré" : "hors indemnité de résidence",
-              amount: otherFixedWithoutResidence,
-            }
-          : null,
-        {
-          key: "sunday-flat",
-          label: "Forfait mensuel de dimanches",
-          detail: "montant fixe déjà inclus dans l’estimation",
-          amount: SUNDAY_ALLOWANCE.monthlyFlat,
-        },
-        monthPay.cia
-          ? { key: "cia", label: "CIA", detail: "complément indemnitaire annuel", amount: monthPay.cia }
-          : null,
-        monthPay.sundayCount
-          ? { key: "sundays", label: `Dimanches (${monthPay.sundayCount})`, detail: monthPay.carryover ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)}` : "prime calculée", amount: monthPay.sunday }
-          : null,
-        monthPay.holidayCount
-          ? { key: "holidays", label: `Jours fériés (${monthPay.holidayCount})`, detail: monthPay.holiday ? "compensation choisie" : "compensation à décider", amount: monthPay.holiday || null }
-          : null,
-        monthPay.compensatedCount
-          ? { key: "compensated", label: `Fériés compensés (${monthPay.compensatedCount})`, detail: monthPay.compensated ? "compensation choisie" : "compensation à décider", amount: monthPay.compensated || null }
-          : null,
-        overtimeForPayMonth.totalMinutes
-          ? { key: "overtime", label: "Heures supplémentaires payées", detail: minutesLabel(overtimeForPayMonth.totalMinutes), amount: overtimeForPayMonth.ready ? overtimeForPayMonth.amount : null }
-          : null,
-        mecenatForCurrentPayMonth.lines.length
-          ? { key: "mecenat", label: "Mécénats", detail: minutesLabel(mecenatForCurrentPayMonth.totalMinutes), amount: mecenatForCurrentPayMonth.grossAmountCents / 100 }
-          : null,
-      ].filter((row): row is NonNullable<typeof row> => Boolean(row)),
-      grossDeductions: grossDeductionRows,
-      grossBeforeDeductions: monthPay.gross + monthPay.sick + monthPay.strike,
-      variableAdditions: monthPay.grossVariable,
-      netRatioFixed,
-      netRatioVariable,
-      estimatedContributions: netCalculation?.estimatedContributions ?? null,
-      navigo,
-      mealVoucherDeduction: netCalculation?.mealVouchers ?? 0,
-      netBeforeTax: netCalculation?.netBeforeTax ?? null,
-      pasRate,
-      incomeTax: netCalculation?.incomeTax ?? null,
-      totalDeductions: netCalculation
-        ? monthPay.sick + monthPay.strike + netCalculation.estimatedContributions + netCalculation.mealVouchers + netCalculation.incomeTax
-        : null,
-    };
-
-    const payEstimateDetails = (
-      <Suspense fallback={<DeferredSection label="la paie" />}>
-      <PayEstimateDetails
-        monthIndex={monthPay.index}
-        year={allowances.year}
-        gross={monthPay.gross}
-        grossEstimateComplete={grossEstimateComplete}
-        net={monthNet}
-        calculation={payCalculation}
-        overtime={overtimeForPayMonth}
-        workQuota={workQuota}
-        mecenat={mecenatForCurrentPayMonth}
-        reliability={payReliability}
-        onPreviousMonth={() => changePayMonth(-1)}
-        onNextMonth={() => changePayMonth(1)}
-        onToday={goPayToday}
-      />
-      </Suspense>
-    );
-    const payslipSectionProps: Omit<PayslipCheckSectionProps, "part"> = {
-      accountId: demoMode ? "demo" : userEmail,
-      payYear,
-      hasPayProfile: Boolean(payProfiles[payYear]),
-      helpOpen: showPayslipHelp,
-      setHelpOpen: setPayslipHelpOpen,
-      missing,
-      isContractuel,
-      importBusy: payslipImportBusy,
-      importMode: payslipImportMode,
-      importError: payslipImportError,
-      importResult: payslipImportResult,
-      onImport: (files, importMode) => void importPayslips(files, importMode),
-      check: payslipCheck,
-      checkError: payslipError,
-      needsPeriod: payslipNeedsPeriod,
-      fallbackMonth: payslipFallbackMonth,
-      setFallbackMonth: setPayslipFallbackMonth,
-      fallbackYear: payslipFallbackYear,
-      setFallbackYear: setPayslipFallbackYear,
-      onApplyFallbackPeriod: applyPayslipFallbackPeriod,
-      allowances,
-      displayedMonth: payView.getMonth(),
-      review: payslipReview,
-      unplannedCarence: unplannedPayslipCarence,
-      resultDetailsOpen: payslipResultDetailsOpen,
-      setResultDetailsOpen: setPayslipResultDetailsOpen,
-      grossForMonth,
-      baseSalary,
-      ifse,
-      overtime: overtimeForPayMonth,
-      mecenat: mecenatForCurrentPayMonth,
-      onReportMissingSundays: (year, month, missingSundays) =>
-        void reportMissingSundays(year, month, missingSundays),
-      nextSundayPayout: nextSundayPayoutSlot,
-      sundayCarryover,
-      sundayCarryoverMonth,
-      sundayCarryoverYear,
-      onClearSundayCarryover: () => void clearSundayCarryover(),
-      rateSamples: payslipRateSamples,
-      rateCalibration: payslipRateCalibration,
-      sickLeaves,
-      paySettingsOpen,
-      setPaySettingsOpen,
-      missingFields: netEstimateMissing,
-      carenceDay,
-      otherFixed,
-      cia,
-      netRatioFixed,
-      netRatioVariable,
-      navigo,
-      mealVoucherDeduction,
-      pasRate,
-      payDrafts,
-      setPayDrafts,
-      savingPay,
-      onSavePayAmount: (field) => void savePayAmount(field),
-      onCreatePayProfile: () => saveAnnualPayProfile({
-        baseSalary,
-        residenceAllowance,
-        ifse,
-        carenceDay,
-        otherFixed,
-        cia,
-        ciaMonth,
-        netRatioFixed,
-        netRatioVariable,
-        netRatioRegime: viewedPayRegime,
-        navigo,
-        mealVoucherDeduction,
-        pasRate,
-      }),
-      ciaMonth,
-      onSaveCiaMonth: (month) => void saveCiaMonth(month),
-    };
-
-    const variables: PayDashboardVariable[] = monthPayRows.map((row) => ({
-      key: row.key,
-      label: row.label,
-      quantity: row.detail,
-      amount: row.amount,
-    }));
-
-    return {
-      gross: monthPay.gross,
-      grossComplete: grossEstimateComplete,
-      net: monthNet,
-      profileLabel: payProfiles[payYear]
-        ? `Estimation réalisée avec votre profil de paie ${payYear}.`
-        : "Estimation réalisée avec les dernières valeurs connues.",
-      reliability: payReliability,
-      variables,
-      estimateContent: payEstimateDetails,
-      verificationContent: <PayslipCheckSection {...payslipSectionProps} part="verification" />,
-      settingsContent: <PayslipCheckSection {...payslipSectionProps} part="settings" />,
-    };
-  }
   const allowancesContent = allowances ? (
     <PayAllowancesSection
       allowances={allowances}
@@ -3360,7 +2880,49 @@ export default function Home() {
       onChooseHolidayPay={chooseHolidayPay}
     />
   ) : null;
-  const payContent = homeSection === "pay" ? renderPayContent() : null;
+  const payContent =
+    homeSection === "pay"
+      ? buildPayContent({
+          payUi,
+          payActions,
+          allowances,
+          monthPay,
+          sickLeaves,
+          overtimeForPayMonth,
+          mecenatForCurrentPayMonth,
+          strikeForCurrentPayMonth,
+          netCalculation,
+          monthNet,
+          grossEstimateComplete,
+          netEstimateMissing,
+          payProfiles,
+          payYear,
+          hasPayValue,
+          viewedPayRegime,
+          payslipRateCalibration,
+          isContractuel,
+          workQuota,
+          baseSalary,
+          residenceAllowance,
+          ifse,
+          otherFixed,
+          cia,
+          ciaMonth,
+          carenceDay,
+          navigo,
+          mealVoucherDeduction,
+          pasRate,
+          netRatioFixed,
+          netRatioVariable,
+          sundayCarryover,
+          sundayCarryoverMonth,
+          sundayCarryoverYear,
+          demoMode,
+          userEmail,
+          changePayMonth,
+          goPayToday,
+        })
+      : null;
   // Le titre d'un mois de la vue Année l'ouvre en grand. On bascule sur la
   // vue Mois plutôt que d'agrandir sur place : c'est elle qui porte la barre
   // d'outils, donc « Poser un congé » et le reste restent accessibles.
@@ -3908,6 +3470,7 @@ export default function Home() {
       />
 
       {mode === "year" && homeSection === "pdf" && (
+        <Suspense fallback={null}>
         <AnnualPdfActions
           narrowScreen={narrowScreen}
           pdfOpen={pdfOpen}
@@ -3922,17 +3485,22 @@ export default function Home() {
             void exportAnnualPlanning(scope, includeSchoolVacations)
           }
         />
+        </Suspense>
       )}
 
-      <NoteSelectionPanel
-        open={noteSelecting}
-        noteColor={noteColor}
-        noteText={noteText}
-        noteDates={noteDates}
-        savingDay={savingDay}
-        onCancel={cancelNoteSelection}
-        onSave={saveNoteAcrossDates}
-      />
+      {noteSelecting ? (
+        <Suspense fallback={null}>
+        <NoteSelectionPanel
+          open={noteSelecting}
+          noteColor={noteColor}
+          noteText={noteText}
+          noteDates={noteDates}
+          savingDay={savingDay}
+          onCancel={cancelNoteSelection}
+          onSave={saveNoteAcrossDates}
+        />
+        </Suspense>
+      ) : null}
 
       <RequestSelectionPanel
         requestKind={requestKind}
@@ -3958,13 +3526,17 @@ export default function Home() {
         onSaveToPlanning={() => void saveRequestToPlanning()}
       />
 
-      <RecoveryDatePickingPanel
-        open={recoveryDatePicking}
-        onCancel={() => {
-          setRecoveryDatePicking(false);
-          setRecoveryDialogOpen(true);
-        }}
-      />
+      {recoveryDatePicking ? (
+        <Suspense fallback={null}>
+        <RecoveryDatePickingPanel
+          open={recoveryDatePicking}
+          onCancel={() => {
+            setRecoveryDatePicking(false);
+            setRecoveryDialogOpen(true);
+          }}
+        />
+        </Suspense>
+      ) : null}
 
       <section className="planning-calendar-section" aria-label="Planning et congés">
       <div className="planning-leave-panel">
@@ -4069,22 +3641,30 @@ export default function Home() {
         onSave={() => void workExchangeUi.save()}
         onDelete={() => void workExchangeUi.remove()}
       />
-      <RequestChooserDialog
-        open={requestChooser}
-        requestChooserDate={requestChooserDate}
-        onClose={() => setRequestChooser(false)}
-        onChoose={beginChosenRequest}
-      />
+      {requestChooser ? (
+        <Suspense fallback={null}>
+        <RequestChooserDialog
+          open={requestChooser}
+          requestChooserDate={requestChooserDate}
+          onClose={() => setRequestChooser(false)}
+          onChoose={beginChosenRequest}
+        />
+        </Suspense>
+      ) : null}
 
-      <GroupChooserDialog
-        open={groupChooserOpen}
-        group={group}
-        onClose={() => setGroupChooserOpen(false)}
-        onChange={(value) => {
-          changeGroup(value);
-          setGroupChooserOpen(false);
-        }}
-      />
+      {groupChooserOpen ? (
+        <Suspense fallback={null}>
+        <GroupChooserDialog
+          open={groupChooserOpen}
+          group={group}
+          onClose={() => setGroupChooserOpen(false)}
+          onChange={(value) => {
+            changeGroup(value);
+            setGroupChooserOpen(false);
+          }}
+        />
+        </Suspense>
+      ) : null}
 
       <DayDetailDialog
         planning={planningUi}
@@ -4118,28 +3698,32 @@ export default function Home() {
         appendNoteLine={appendNoteLine}
       />
 
-      <BalanceDetailDialog
-        balanceDetail={balanceDetail}
-        balanceDetailType={balanceDetailType}
-        balanceDetailPeriods={balanceDetailPeriods}
-        recentBalanceDetailDates={recentBalanceDetailDates}
-        absenceYear={absenceYear}
-        now={now}
-        onClose={() => setBalanceDetailType(null)}
-        onOpenDate={(date) => {
-          setBalanceDetailType(null);
-          setView(localDate(date.getFullYear(), date.getMonth(), 1));
-          setMode("month");
-          openDay(date);
-        }}
-        onOpenManualAdjustments={openManualAdjustments}
-        strikeEstimateFor={(year, monthIndex) =>
-          strikePayEstimate(periods, group, payProfiles, year, monthIndex, {
-            entries,
-            recoveryUses,
-          })
-        }
-      />
+      {balanceDetail ? (
+        <Suspense fallback={null}>
+        <BalanceDetailDialog
+          balanceDetail={balanceDetail}
+          balanceDetailType={balanceDetailType}
+          balanceDetailPeriods={balanceDetailPeriods}
+          recentBalanceDetailDates={recentBalanceDetailDates}
+          absenceYear={absenceYear}
+          now={now}
+          onClose={() => setBalanceDetailType(null)}
+          onOpenDate={(date) => {
+            setBalanceDetailType(null);
+            setView(localDate(date.getFullYear(), date.getMonth(), 1));
+            setMode("month");
+            openDay(date);
+          }}
+          onOpenManualAdjustments={openManualAdjustments}
+          strikeEstimateFor={(year, monthIndex) =>
+            strikePayEstimate(periods, group, payProfiles, year, monthIndex, {
+              entries,
+              recoveryUses,
+            })
+          }
+        />
+        </Suspense>
+      ) : null}
 
       <AppDialogLayer
         manualAdjustments={{
