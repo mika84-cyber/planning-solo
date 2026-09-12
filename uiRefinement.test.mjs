@@ -19,6 +19,7 @@ const appDialogLayer = readFileSync(new URL("./src/AppDialogLayer.tsx", import.m
 const dayDetailDialog = readFileSync(new URL("./src/DayDetailDialog.tsx", import.meta.url), "utf8");
 const balanceDetailDialog = readFileSync(new URL("./src/BalanceDetailDialog.tsx", import.meta.url), "utf8");
 const requestSelectionPanel = readFileSync(new URL("./src/RequestSelectionPanel.tsx", import.meta.url), "utf8");
+const planningRequestPanels = readFileSync(new URL("./src/PlanningRequestPanels.tsx", import.meta.url), "utf8");
 const workTimeActions = readFileSync(new URL("./src/useWorkTimeActions.ts", import.meta.url), "utf8");
 const payActions = readFileSync(new URL("./src/usePayActions.ts", import.meta.url), "utf8");
 const authenticationActions = readFileSync(new URL("./src/useAuthenticationActions.ts", import.meta.url), "utf8");
@@ -27,7 +28,7 @@ const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions
 const planningRequestActions = readFileSync(new URL("./src/usePlanningRequestActions.ts", import.meta.url), "utf8");
 const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", import.meta.url), "utf8");
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
-const app = [appRoot, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, payslipCalibrationCard, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const app = [appRoot, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, payslipCalibrationCard, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
   .map(([, relativePath]) =>
@@ -189,7 +190,7 @@ describe("finitions d’interface", () => {
 
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {
     expect(app).toContain("Maladie");
-    expect(app).toContain('beginChosenRequest("leave", "sick")');
+    expect(app).toContain('onChoose("leave", "sick")');
     expect(app).toContain('dayLeaveType === "sick"');
     expect(app).toContain("saveSickDateDirect(date)");
     expect(app).toContain("prepareAbsenceReplacement");
@@ -263,7 +264,7 @@ describe("finitions d’interface", () => {
   });
 
   it("ajoute Divers directement au planning avec une punaise inclinée", () => {
-    expect(app).toContain('beginChosenRequest("other", "other")');
+    expect(app).toContain('onChoose("other", "other")');
     expect(app).toContain("saveOtherDateDirect(dayDate)");
     expect(app).toContain('persistSingleDayPeriod(date, "other")');
     expect(app).not.toContain('openPlanningRequestMethod("other"');

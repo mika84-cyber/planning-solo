@@ -56,6 +56,12 @@ import { DayDetailDialog } from "./DayDetailDialog";
 import { BalanceDetailDialog } from "./BalanceDetailDialog";
 import { RequestSelectionPanel } from "./RequestSelectionPanel";
 import {
+  GroupChooserDialog,
+  NoteSelectionPanel,
+  RecoveryDatePickingPanel,
+  RequestChooserDialog,
+} from "./PlanningRequestPanels";
+import {
   AppHeader,
   AdaptiveNavigation,
   MainMenu,
@@ -177,7 +183,6 @@ import { type CetAccount } from "./cet";
 import {
   COUNTED_ONLY_TYPES,
   DAY_LABELS,
-  GROUP_OPTIONS,
   LEAVE_ALLOWANCES,
   MONTHS,
   RESIDENCE_ALLOWANCE_RATE,
@@ -202,7 +207,6 @@ import {
   leaveTypeLabel,
   s,
   localDate,
-  longDate,
   monthDays,
   nextAttendanceDay,
   periodLabel,
@@ -4038,45 +4042,15 @@ export default function Home() {
         </section>
       )}
 
-      {noteSelecting && (
-        <section
-          className="request-panel calendar-request-panel"
-          id="note-selection-panel"
-          style={{ "--active-color": noteColor } as React.CSSProperties}
-        >
-          <div className="request-heading">
-            <div>
-              <span className="step-label">Note en préparation</span>
-              <h2>Choisir plusieurs dates</h2>
-            </div>
-            <button
-              className="text-button danger"
-              type="button"
-              onClick={cancelNoteSelection}
-            >
-              Annuler
-            </button>
-          </div>
-          <p className="request-help">{noteText}</p>
-          <div className="request-bottom">
-            <p>
-              <strong>{noteDates.length}</strong>{" "}
-              {noteDates.length > 1
-                ? "dates sélectionnées"
-                : "date sélectionnée"}
-              . Cliquez sur une date colorée pour la retirer.
-            </p>
-            <button
-              className="validate-button"
-              type="button"
-              onClick={saveNoteAcrossDates}
-              disabled={!noteDates.length || !noteText.trim() || savingDay}
-            >
-              {savingDay ? "Synchronisation…" : "Enregistrer la note"}
-            </button>
-          </div>
-        </section>
-      )}
+      <NoteSelectionPanel
+        open={noteSelecting}
+        noteColor={noteColor}
+        noteText={noteText}
+        noteDates={noteDates}
+        savingDay={savingDay}
+        onCancel={cancelNoteSelection}
+        onSave={saveNoteAcrossDates}
+      />
 
       <RequestSelectionPanel
         requestKind={requestKind}
@@ -4102,25 +4076,13 @@ export default function Home() {
         onSaveToPlanning={() => void saveRequestToPlanning()}
       />
 
-      {recoveryDatePicking ? (
-        <section className="request-panel recovery-date-picking-panel" aria-label="Sélection de la date de récupération">
-          <div>
-            <span className="step-label">Récupération</span>
-            <h2>Sélectionnez une date dans le calendrier</h2>
-            <p>Le cycle de votre groupe est affiché normalement. Touchez la date souhaitée pour continuer.</p>
-          </div>
-          <button
-            className="text-button danger"
-            type="button"
-            onClick={() => {
-              setRecoveryDatePicking(false);
-              setRecoveryDialogOpen(true);
-            }}
-          >
-            Annuler la sélection
-          </button>
-        </section>
-      ) : null}
+      <RecoveryDatePickingPanel
+        open={recoveryDatePicking}
+        onCancel={() => {
+          setRecoveryDatePicking(false);
+          setRecoveryDialogOpen(true);
+        }}
+      />
 
       <section className="planning-calendar-section" aria-label="Planning et congés">
       <div className="planning-leave-panel">
@@ -4225,127 +4187,22 @@ export default function Home() {
         onSave={() => void workExchangeUi.save()}
         onDelete={() => void workExchangeUi.remove()}
       />
-      {requestChooser && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setRequestChooser(false)
-          }
-        >
-          <section
-            className="modal-card request-choice"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Poser un congé"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setRequestChooser(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Étape 1 sur 3</span>
-            <h2 id="request-choice-title">Que voulez-vous poser&nbsp;?</h2>
-            <p>
-              {requestChooserDate
-                ? `Choisissez le type à appliquer au ${longDate(fromKey(requestChooserDate))}. Vous pourrez encore le modifier ensuite.`
-                : "Commencez par un choix courant. Les choix moins fréquents restent disponibles juste en dessous."}
-            </p>
-            <div className="choice-grid request-primary-choice-grid">
-              <button
-                type="button"
-                onClick={() => beginChosenRequest("leave", "annual")}
-              >
-                <strong>CA</strong>
-                <span>Congés annuels</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => beginChosenRequest("leave", "rtt")}
-              >
-                <strong>RTT</strong>
-                <span>Journée ou période</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => beginChosenRequest("leave", "fraction")}
-              >
-                <strong>Fractionnement</strong>
-                <span>Jour de fractionnement</span>
-              </button>
-              <button
-                type="button"
-                className="recovery-request-choice"
-                onClick={() => beginChosenRequest("recovery", "recovery_day")}
-              >
-                <strong>Récupération</strong>
-                <span>À déduire de votre solde d’heures</span>
-              </button>
-            </div>
-            <details className="request-other-choices">
-              <summary>Autres</summary>
-              <div className="choice-grid">
-                <button type="button" className="cet-leave-choice" onClick={() => beginChosenRequest("leave", "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
-                <button type="button" className="sick-leave-choice" onClick={() => beginChosenRequest("leave", "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
-                <button type="button" onClick={() => beginChosenRequest("leave", "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
-                <button type="button" onClick={() => beginChosenRequest("leave", "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
-                <button type="button" className="other-leave-choice" onClick={() => beginChosenRequest("other", "other")}><strong>Divers</strong><span>Jour non travaillé dans le planning</span></button>
-                <button type="button" className="strike-leave-choice" onClick={() => beginChosenRequest("strike", "strike")}><strong>Grève</strong><span>Avec retenue de paie estimée</span></button>
-              </div>
-            </details>
-          </section>
-        </div>
-      )}
+      <RequestChooserDialog
+        open={requestChooser}
+        requestChooserDate={requestChooserDate}
+        onClose={() => setRequestChooser(false)}
+        onChoose={beginChosenRequest}
+      />
 
-      {groupChooserOpen ? (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setGroupChooserOpen(false)
-          }
-        >
-          <section
-            className="modal-card group-choice-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="group-choice-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setGroupChooserOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">Cycle de travail</span>
-            <h2 id="group-choice-title">Choisir mon groupe</h2>
-            <p>Le planning est recalculé immédiatement avec le groupe choisi.</p>
-            <div className="group-choice-grid">
-              {GROUP_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={group === option.value ? "active" : ""}
-                  aria-pressed={group === option.value}
-                  onClick={() => {
-                    changeGroup(option.value);
-                    setGroupChooserOpen(false);
-                  }}
-                >
-                  <span>Groupe</span>
-                  <strong>{option.value}</strong>
-                  {group === option.value ? <small>Actuel</small> : null}
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
-      ) : null}
+      <GroupChooserDialog
+        open={groupChooserOpen}
+        group={group}
+        onClose={() => setGroupChooserOpen(false)}
+        onChange={(value) => {
+          changeGroup(value);
+          setGroupChooserOpen(false);
+        }}
+      />
 
       <DayDetailDialog
         planning={planningUi}
