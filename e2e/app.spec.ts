@@ -988,27 +988,27 @@ test("Aujourd’hui conserve le groupe pendant la demi-journée travaillée", as
   await expect(page.locator(".today-status small")).toHaveText(`Avec le groupe ${colleagueGroup}`);
 });
 
-test("l’accueil réunit en un message ce qui manque à la paie, et se laisse écarter", async ({ page }) => {
+test("l’accueil ne propose que deux choses à la fois, et se laisse écarter", async ({ page }) => {
   await prepareDemo(page);
   const setup = page.locator(".home-setup-alert");
   await expect(setup).toHaveCount(1);
-  await expect(setup).toContainText("Renseigner les valeurs de votre bulletin");
+  await expect(setup).toContainText("Compléter votre profil de calcul");
   await expect(setup).toContainText("Choisir la prime de 4 jours fériés");
   await expect(setup).toContainText("le nombre de dimanches travaillés");
-  await expect(setup).toContainText("le choix de la prime des jours fériés");
-  await expect(setup).toContainText("les valeurs de votre bulletin de salaire");
+  // Une troisième attend son tour : l'accueil ne doit pas redevenir une liste
+  // de corvées à faire défiler avant d'atteindre le calendrier.
+  await expect(setup).not.toContainText("Ajouter un bulletin de paie");
   // L'alerte ambre disait la même chose à un autre endroit : elle a disparu.
   await expect(page.locator(".important-alert")).toHaveCount(0);
   await expect(setup).toHaveCSS("margin-top", "12px");
   await expect(setup).toHaveCSS("margin-bottom", "12px");
 
-  // Le message ne doit pas s'imposer indéfiniment : une fois écarté, il ne
-  // revient pas, même après rechargement.
-  // Chaque manque s'écarte séparément : l'un ne doit pas emporter l'autre.
+  // Chaque manque s'écarte séparément, et la suivante prend la place libre.
   const dismiss = setup.getByRole("button", { name: "Ne plus me le demander" });
   await expect(dismiss).toHaveCount(2);
   await dismiss.first().click();
-  await expect(dismiss).toHaveCount(1);
+  await expect(setup).toContainText("Ajouter un bulletin de paie");
+  await dismiss.first().click();
   await dismiss.first().click();
   await expect(setup).toHaveCount(0);
   await page.reload();
@@ -3120,8 +3120,8 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
 test("les horaires du profil préremplissent une récupération", async ({ page }) => {
   await prepareDemo(page);
   const setup = page.locator(".home-setup-alert");
-  const payValues = setup.locator("article").filter({ hasText: "Renseigner les valeurs de votre bulletin" });
-  await payValues.getByRole("button", { name: "Renseigner" }).click();
+  const profileInvite = setup.locator("article").filter({ hasText: "Compléter votre profil de calcul" });
+  await profileInvite.getByRole("button", { name: "Renseigner" }).click();
   const profile = page.locator("#pay-profile-settings");
   await expect(profile).toBeInViewport();
   await expect(profile).toBeFocused();

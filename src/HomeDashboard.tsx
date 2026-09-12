@@ -80,7 +80,12 @@ export function HomeDashboard({
       return [];
     }
   });
-  const visibleSetupItems = setupItems.filter((item) => !dismissedSetupItems.includes(item.id));
+  /* Deux invitations au plus : au-delà, l'accueil redevient une liste de
+     corvées qu'on fait défiler pour atteindre le calendrier. Les suivantes
+     apparaissent quand les premières sont réglées ou écartées. */
+  const visibleSetupItems = setupItems
+    .filter((item) => !dismissedSetupItems.includes(item.id))
+    .slice(0, 2);
   // Plusieurs manques d'une même rubrique partagent la même explication : la
   // répéter en tête vaut mieux qu'une phrase passe-partout.
   const sharedIntro = visibleSetupItems.every(

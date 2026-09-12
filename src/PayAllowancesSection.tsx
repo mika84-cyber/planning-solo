@@ -380,7 +380,8 @@ export function PayAllowancesSection({
           </p>
         </section>
 
-        <section className="allowance-card">
+        {/* Ancre : l'accueil renvoie ici quand des fériés restent à trancher. */}
+        <section className="allowance-card" id="holiday-choices">
           <header>
             <span>Jours fériés {allowances.year}</span>
             <strong>{allowances.holidays.length} <em>travaillés</em></strong>

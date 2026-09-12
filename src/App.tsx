@@ -218,6 +218,18 @@ import {
 // Conservé prêt à être réactivé lorsque le parcours d’accompagnement sera finalisé.
 const HOME_SETUP_GUIDANCE_ENABLED = false;
 
+/** Amène à l'endroit exact où l'information se saisit. L'écran visé se
+ *  charge à la demande : viser l'ancre tout de suite la manquerait, on
+ *  réessaie donc brièvement. */
+function scrollWhenReady(id: string, attempts = 20) {
+  const target = document.getElementById(id);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (attempts > 0) window.setTimeout(() => scrollWhenReady(id, attempts - 1), 100);
+}
+
 /** Ce que l'écran de paie attend, dit une fois pour toutes : chaque
  *  invitation renvoie ensuite à l'endroit précis où cela se saisit. */
 const PAY_SETUP_INTRO =
@@ -1784,6 +1796,9 @@ export default function Home() {
      place ici. */
   const currentYearPay = payView.getFullYear() === now.getFullYear();
   const missingPayValues = !payProfiles[String(now.getFullYear())];
+  // Le formulaire affiche « Temps plein » et « Contractuel » par défaut : tant
+  // que rien n'a été confirmé, ce ne sont que des valeurs de repli.
+  const missingCalculationProfile = !formProfile?.status || !formProfile?.workQuota;
   const missingHolidayChoices = currentYearPay ? allowances?.holidayPending ?? 0 : 0;
 
   const showCalendarWorkspace =
@@ -2557,11 +2572,11 @@ export default function Home() {
           remainingWorkedDaysThisYear={remainingWorkedDaysThisYear}
           setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
           setupItems={[
-            ...(missingPayValues ? [{
-              id: "pay-values",
-              title: "Renseigner les valeurs de votre bulletin",
+            ...(missingCalculationProfile ? [{
+              id: "pay-profile",
+              title: "Compléter votre profil de calcul",
               intro: PAY_SETUP_INTRO,
-              detail: "Traitement, indemnités et taux : sans eux, aucune estimation n’est possible.",
+              detail: "Quotité de travail et statut : ils décident de la façon dont tout est calculé.",
               actionLabel: "Renseigner",
               onAction: () => {
                 setHomeSection("pay");
@@ -2580,6 +2595,19 @@ export default function Home() {
               onAction: () => {
                 setHomeSection("pay");
                 setPayScreen("allowances");
+                scrollWhenReady("holiday-choices");
+              },
+            }] : []),
+            ...(missingPayValues ? [{
+              id: "payslip-upload",
+              title: "Ajouter un bulletin de paie",
+              intro: PAY_SETUP_INTRO,
+              detail: "Les valeurs lues sur le bulletin sont reprises toutes seules : rien à saisir.",
+              actionLabel: "Ajouter",
+              onAction: () => {
+                setHomeSection("pay");
+                setPayScreen("overview");
+                scrollWhenReady("pay-dashboard-verification");
               },
             }] : []),
             ...(HOME_SETUP_GUIDANCE_ENABLED ? [
