@@ -71,6 +71,9 @@ type PlanningCommandCenterProps = {
   onDeleteAbsences: () => void;
   onDeleteNotes: () => void;
   onToday: () => void;
+  /** Bascule Mois / Année, proposée dans la rubrique du planning sur
+   *  l'accueil : elle commande ce calendrier-là. */
+  onModeChange?: (mode: ViewMode) => void;
   onExportPdf?: () => void;
   exportingPdf?: boolean;
   showSchoolVacations: boolean;
@@ -124,6 +127,7 @@ export function PlanningCommandCenter({
   onDeleteAbsences,
   onDeleteNotes,
   onToday,
+  onModeChange,
   onExportPdf,
   exportingPdf = false,
   showSchoolVacations,
@@ -132,6 +136,10 @@ export function PlanningCommandCenter({
   onSchoolZoneChange,
 }: PlanningCommandCenterProps) {
   const [workedDaysOpen, setWorkedDaysOpen] = useState(false);
+  /* Les réglages du planning sont repliés à l'ouverture : on venait y chercher
+     le calendrier, pas le choix du mois. Le résumé affiché sur le volet fermé
+     redit ce qu'ils contiennent, pour qu'on n'ait pas à ouvrir pour savoir. */
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const workedDaysRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -151,6 +159,184 @@ export function PlanningCommandCenter({
     };
   }, [workedDaysOpen]);
 
+  /* Pendant une sélection de dates, le choix du mois redevient nécessaire :
+     le volet s'ouvre alors de lui-même plutôt que de cacher la commande. */
+  const reglagesOuverts =
+    settingsOpen || rangeSelecting || recoveryRangeSelecting || calendarDeleteMode;
+  /* `MONTHS` est écrit en minuscules pour les phrases ; en tête de résumé, le
+     mois ouvre la ligne et prend donc sa majuscule. */
+  const moisAffiche = MONTHS[view.getMonth()];
+  const periodeAffichee =
+    mode === "year"
+      ? `Année ${view.getFullYear()}`
+      : `${moisAffiche.charAt(0).toLocaleUpperCase("fr")}${moisAffiche.slice(1)} ${view.getFullYear()}`;
+  /* Un pas de mois — d'année dans la vue annuelle. Les mois débordants sont
+     gérés par le constructeur de date : décembre + 1 donne janvier suivant. */
+  const stepPeriod = (direction: number) =>
+    setView(
+      mode === "year"
+        ? localDate(view.getFullYear() + direction, view.getMonth(), 1)
+        : localDate(view.getFullYear(), view.getMonth() + direction, 1),
+    );
+  const joursTravaillesResume = `${dayCountLabel(workedDays.month.worked)} jour${s(workedDays.month.worked)} travaillé${s(workedDays.month.worked)} ce mois-ci`;
+  const reglagesDuPlanning = (
+    <>
+        {mode !== "year" ? (
+          <section className="controls" aria-label="Choix du planning">
+            <div className="year-choice planning-year-choice" role="group" aria-label="Choix de l’année affichée">
+              <span className="year-choice-label">Année affichée</span>
+              <div className="year-stepper">
+                <div className="year-select-display">
+                  <span className="year-calendar-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
+                    </svg>
+                  </span>
+                  <ChoicePicker
+                    value={view.getFullYear()}
+                    options={YEAR_OPTIONS}
+                    onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
+                    ariaLabel="Sélectionner l’année"
+                    className="year-choice-picker"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="year-choice planning-today-choice" role="group" aria-label="Accès rapide au mois actuel" style={{ textAlign: "center" }}>
+              <span className="year-choice-label">Navigation</span>
+              <button className="planning-today-button" type="button" onClick={onToday}>
+                Aujourd’hui
+              </button>
+            </div>
+            {isHome ? null : (
+              <>
+              <div className="worked-days" ref={workedDaysRef}>
+                <span className="year-choice-label">Jours travaillés</span>
+                <div className="worked-days-stepper">
+                  <button
+                    type="button"
+                    className="worked-days-trigger"
+                    onClick={() => setWorkedDaysOpen((current) => !current)}
+                    aria-expanded={workedDaysOpen}
+                    aria-label="Détail des jours travaillés"
+                  >
+                    <span>{dayCountLabel(workedDays.month.worked)} ce mois-ci</span>
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="m5 7.5 5 5 5-5" />
+                    </svg>
+                  </button>
+                  {workedDaysOpen ? (
+                    <div className="worked-days-panel">
+                      <article>
+                        <span className="worked-days-scope">
+                          {MONTHS[view.getMonth()]} {view.getFullYear()}
+                        </span>
+                        <strong>{dayCountLabel(workedDays.month.worked)} jour{s(workedDays.month.worked)}</strong>
+                        <small>
+                          {dayCountLabel(workedDays.month.scheduled)} au cycle
+                          {workedDays.month.onLeave
+                            ? `, ${dayCountLabel(workedDays.month.onLeave)} de congé`
+                            : ", aucun congé"}
+                          {closureDetail(workedDays.month.exceptionallyClosed)}
+                          {exchangeDetail(workedDays.month.exchangedGiven, workedDays.month.exchangedReturned)}
+                        </small>
+                      </article>
+                      {workedDays.thirds.map((third) => (
+                        <article key={third.label} className={third.current ? "current" : ""}>
+                          <span className="worked-days-scope">
+                            {third.label}
+                            {third.current ? <em>en cours</em> : null}
+                          </span>
+                          <strong>{dayCountLabel(third.worked)} jour{s(third.worked)}</strong>
+                          <small>
+                            {third.range} · {dayCountLabel(third.scheduled)} au cycle
+                            {third.onLeave
+                              ? `, ${dayCountLabel(third.onLeave)} de congé`
+                              : ", aucun congé"}
+                            {closureDetail(third.exceptionallyClosed)}
+                            {exchangeDetail(third.exchangedGiven, third.exchangedReturned)}
+                          </small>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              </>
+            )}
+          </section>
+        ) : null}
+        <section className={`calendar-toolbar ${mode === "month" ? "month-toolbar" : "year-toolbar"}${mode === "year" ? " annual-toolbar" : ""}`}>
+          {/* Le geste le plus courant est d'avancer d'un mois : deux flèches
+              l'offrent directement, et les menus restent là pour les sauts
+              plus lointains. Mois et année sont réunis dans un seul cadre —
+              c'est une seule période, pas deux réglages. */}
+          <div className="period-navigation">
+            <button
+              type="button"
+              className="period-step"
+              aria-label={mode === "year" ? "Année précédente" : "Mois précédent"}
+              onClick={() => stepPeriod(-1)}
+            >
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="m12.5 5-5 5 5 5" />
+              </svg>
+            </button>
+            <div className="period-pickers">
+              {mode === "month" ? (
+                <ChoicePicker
+                  value={view.getMonth()}
+                  options={MONTH_OPTIONS}
+                  onChange={(month) => setView(localDate(view.getFullYear(), month, 1))}
+                  ariaLabel="Sélectionner le mois"
+                  className="toolbar-month-picker"
+                />
+              ) : null}
+              <ChoicePicker
+                value={view.getFullYear()}
+                options={YEAR_OPTIONS}
+                onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
+                ariaLabel="Sélectionner l’année"
+                className="toolbar-year-picker"
+              />
+            </div>
+            <button
+              type="button"
+              className="period-step"
+              aria-label={mode === "year" ? "Année suivante" : "Mois suivant"}
+              onClick={() => stepPeriod(1)}
+            >
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="m7.5 5 5 5-5 5" />
+              </svg>
+            </button>
+          </div>
+          {mode === "year" ? (
+            <ChoicePicker
+              value={group}
+              options={GROUP_OPTIONS}
+              onChange={onGroupChange}
+              ariaLabel="Sélectionner le groupe du planning annuel"
+              layout="list"
+              className="toolbar-group-picker"
+            />
+          ) : null}
+          {mode === "year" ? (
+            <button className="today-button" type="button" onClick={onToday}>Aujourd’hui</button>
+          ) : null}
+        </section>
+        {mode === "month" ? (
+          <Suspense fallback={null}>
+            <SchoolVacationSettings
+              visible={showSchoolVacations}
+              zone={schoolZone}
+              onVisibleChange={onShowSchoolVacationsChange}
+              onZoneChange={onSchoolZoneChange}
+            />
+          </Suspense>
+        ) : null}
+    </>
+  );
   return (
     <section className="planning-command-section" aria-label="Commandes du planning">
       {isHome ? (
@@ -165,87 +351,37 @@ export function PlanningCommandCenter({
         </section>
       ) : null}
 
-      {mode !== "year" ? (
-        <section className="controls" aria-label="Choix du planning">
-          <div className="year-choice planning-year-choice" role="group" aria-label="Choix de l’année affichée">
-            <span className="year-choice-label">Année affichée</span>
-            <div className="year-stepper">
-              <div className="year-select-display">
-                <span className="year-calendar-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                  </svg>
-                </span>
-                <ChoicePicker
-                  value={view.getFullYear()}
-                  options={YEAR_OPTIONS}
-                  onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-                  ariaLabel="Sélectionner l’année"
-                  className="year-choice-picker"
-                />
+      {isHome ? (
+        <details
+          className="planning-settings-disclosure"
+          open={reglagesOuverts}
+          onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
+        >
+          <summary className="planning-settings-summary">
+            <span className="planning-settings-scope">
+              <strong>{periodeAffichee}</strong>
+              <small>{joursTravaillesResume}</small>
+            </span>
+            <span className="planning-settings-open">
+              {reglagesOuverts ? "Fermer" : "Modifier"}
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="m5 7.5 5 5 5-5" />
+              </svg>
+            </span>
+          </summary>
+          <div className="planning-settings-body">
+            {onModeChange ? (
+              <div className="view-switch" role="group" aria-label="Mode d’affichage">
+                <button className={mode === "month" ? "active" : ""} aria-pressed={mode === "month"} onClick={() => onModeChange("month")} type="button">Mois</button>
+                <button className={mode === "year" ? "active" : ""} aria-pressed={mode === "year"} onClick={() => onModeChange("year")} type="button">Année</button>
               </div>
-            </div>
+            ) : null}
+            {reglagesDuPlanning}
           </div>
-          <div className="year-choice planning-today-choice" role="group" aria-label="Accès rapide au mois actuel" style={{ textAlign: "center" }}>
-            <span className="year-choice-label">Navigation</span>
-            <button className="planning-today-button" type="button" onClick={onToday}>
-              Aujourd’hui
-            </button>
-          </div>
-          <div className="worked-days" ref={workedDaysRef}>
-            <span className="year-choice-label">Jours travaillés</span>
-            <div className="worked-days-stepper">
-              <button
-                type="button"
-                className="worked-days-trigger"
-                onClick={() => setWorkedDaysOpen((current) => !current)}
-                aria-expanded={workedDaysOpen}
-                aria-label="Détail des jours travaillés"
-              >
-                <span>{dayCountLabel(workedDays.month.worked)} ce mois-ci</span>
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="m5 7.5 5 5 5-5" />
-                </svg>
-              </button>
-              {workedDaysOpen ? (
-                <div className="worked-days-panel">
-                  <article>
-                    <span className="worked-days-scope">
-                      {MONTHS[view.getMonth()]} {view.getFullYear()}
-                    </span>
-                    <strong>{dayCountLabel(workedDays.month.worked)} jour{s(workedDays.month.worked)}</strong>
-                    <small>
-                      {dayCountLabel(workedDays.month.scheduled)} au cycle
-                      {workedDays.month.onLeave
-                        ? `, ${dayCountLabel(workedDays.month.onLeave)} de congé`
-                        : ", aucun congé"}
-                      {closureDetail(workedDays.month.exceptionallyClosed)}
-                      {exchangeDetail(workedDays.month.exchangedGiven, workedDays.month.exchangedReturned)}
-                    </small>
-                  </article>
-                  {workedDays.thirds.map((third) => (
-                    <article key={third.label} className={third.current ? "current" : ""}>
-                      <span className="worked-days-scope">
-                        {third.label}
-                        {third.current ? <em>en cours</em> : null}
-                      </span>
-                      <strong>{dayCountLabel(third.worked)} jour{s(third.worked)}</strong>
-                      <small>
-                        {third.range} · {dayCountLabel(third.scheduled)} au cycle
-                        {third.onLeave
-                          ? `, ${dayCountLabel(third.onLeave)} de congé`
-                          : ", aucun congé"}
-                        {closureDetail(third.exceptionallyClosed)}
-                        {exchangeDetail(third.exchangedGiven, third.exchangedReturned)}
-                      </small>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      ) : null}
+        </details>
+      ) : (
+        reglagesDuPlanning
+      )}
 
       {mode === "year" ? (
         <section className="summary" aria-label="Récapitulatif">
@@ -371,49 +507,6 @@ export function PlanningCommandCenter({
         />
       ) : null}
 
-      <section className={`calendar-toolbar ${mode === "month" ? "month-toolbar" : "year-toolbar"}${mode === "year" ? " annual-toolbar" : ""}`}>
-        <div className="period-navigation">
-          {mode === "month" ? (
-            <ChoicePicker
-              value={view.getMonth()}
-              options={MONTH_OPTIONS}
-              onChange={(month) => setView(localDate(view.getFullYear(), month, 1))}
-              ariaLabel="Sélectionner le mois"
-              className="toolbar-month-picker"
-            />
-          ) : null}
-          <ChoicePicker
-            value={view.getFullYear()}
-            options={YEAR_OPTIONS}
-            onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-            ariaLabel="Sélectionner l’année"
-            className="toolbar-year-picker"
-          />
-        </div>
-        {mode === "year" ? (
-          <ChoicePicker
-            value={group}
-            options={GROUP_OPTIONS}
-            onChange={onGroupChange}
-            ariaLabel="Sélectionner le groupe du planning annuel"
-            layout="list"
-            className="toolbar-group-picker"
-          />
-        ) : null}
-        {mode === "year" ? (
-          <button className="today-button" type="button" onClick={onToday}>Aujourd’hui</button>
-        ) : null}
-      </section>
-      {mode === "month" ? (
-        <Suspense fallback={null}>
-          <SchoolVacationSettings
-            visible={showSchoolVacations}
-            zone={schoolZone}
-            onVisibleChange={onShowSchoolVacationsChange}
-            onZoneChange={onSchoolZoneChange}
-          />
-        </Suspense>
-      ) : null}
     </section>
   );
 }

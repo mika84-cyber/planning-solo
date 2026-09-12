@@ -7,6 +7,12 @@ import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
 
 export type WorkTimeHistoryFilter = "all" | "gains" | "uses" | "paid";
 
+/** La date en tête de ligne, avec sa majuscule : « Mardi 12 mai 2026 ». */
+function historyDate(key: string) {
+  const label = longDate(fromKey(key));
+  return `${label.charAt(0).toLocaleUpperCase("fr")}${label.slice(1)}`;
+}
+
 export function workTimeHistoryItems(
   overtimeEntries: OvertimeEntry[],
   holidayRecoveryEarnings: OvertimeEntry[],
@@ -38,6 +44,9 @@ type LeaveManagementPageProps = {
   onOpenOvertime: () => void;
   onRequestLeave: () => void;
   onOpenSolidarity: () => void;
+  /** Conduit à l’écran où ces crédits se confirment, plutôt que de nommer le
+   *  chemin et de laisser chercher. */
+  onOpenHolidayAllowances: () => void;
   onToggleOvertimeHistory: () => void;
   onDeleteOvertime: (entry: OvertimeEntry) => void;
   onDeleteRecoveryUse: (entry: RecoveryUse) => void;
@@ -68,6 +77,7 @@ export function LeaveManagementPage({
   onOpenOvertime,
   onRequestLeave,
   onOpenSolidarity,
+  onOpenHolidayAllowances,
   onToggleOvertimeHistory,
   onDeleteOvertime,
   onDeleteRecoveryUse,
@@ -127,8 +137,14 @@ export function LeaveManagementPage({
               <button type="button" className="primary-action" onClick={onOpenOvertime}>Déclarer des heures sup</button>
               <button type="button" className="secondary-button solidarity-hours-action" onClick={onOpenSolidarity}>Ajouter des heures manuellement</button>
             </div>
+            {/* L'alerte mène là où se règle le problème : lire « dans Ma paie
+                &gt; Primes et jours fériés » puis chercher soi-même l'écran
+                n'apporte rien de plus qu'un bouton qui y conduit. */}
             {unresolvedHolidayRecoveryCount ? (
-              <p className="allowance-note warn">{unresolvedHolidayRecoveryCount} ancien{unresolvedHolidayRecoveryCount > 1 ? "s" : ""} crédit{unresolvedHolidayRecoveryCount > 1 ? "s" : ""} de férié reste{unresolvedHolidayRecoveryCount > 1 ? "nt" : ""} à confirmer dans Ma paie &gt; Primes et jours fériés. Aucune durée n’est déduite de votre quotité actuelle.</p>
+              <button type="button" className="allowance-note warn alert-fix-action" onClick={onOpenHolidayAllowances}>
+                <span>{unresolvedHolidayRecoveryCount} ancien{unresolvedHolidayRecoveryCount > 1 ? "s" : ""} crédit{unresolvedHolidayRecoveryCount > 1 ? "s" : ""} de férié reste{unresolvedHolidayRecoveryCount > 1 ? "nt" : ""} à confirmer. Aucune durée n’est déduite de votre quotité actuelle.</span>
+                <b>Confirmer dans Ma paie <span aria-hidden="true">→</span></b>
+              </button>
             ) : null}
             <button type="button" className="soft-detail-button overtime-history-toggle" onClick={onToggleOvertimeHistory} aria-expanded={overtimeHistoryOpen}>
               {overtimeHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
@@ -148,7 +164,7 @@ export function LeaveManagementPage({
                     return (
                       <article key={entry.id} className="recovery-use-history">
                         <span className="overtime-kind used" aria-hidden="true" />
-                        <div><strong>− {minutesLabel(entry.minutes)} · {entry.kind === "training" ? "Formation" : "Récupération consommée"}</strong><span>{longDate(fromKey(entry.date))}</span><small>{entry.kind === "training" ? "Formation déduite du solde" : "Récupération posée"}</small></div>
+                        <div><strong>{historyDate(entry.date)}</strong><span className="overtime-history-detail">− {minutesLabel(entry.minutes)} · {entry.kind === "training" ? "Formation" : "Récupération consommée"}</span><small>{entry.kind === "training" ? "Formation déduite du solde" : "Récupération posée"}</small></div>
                         <button type="button" onClick={() => onDeleteRecoveryUse(entry)}>Annuler</button>
                       </article>
                     );
@@ -156,32 +172,26 @@ export function LeaveManagementPage({
                   const entry = item.entry as OvertimeEntry;
                   if (item.kind === "holiday") {
                     const state = recoveryEarningStates.get(entry.id);
-                    return <article key={entry.id} className="holiday-recovery-history"><span className="overtime-kind recovery" aria-hidden="true" /><div><strong>Férié · +{minutesLabel(entry.minutes)}</strong><span>{longDate(fromKey(entry.date))}</span><small>{state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} disponibles` : "Gain utilisé"}</small></div></article>;
+                    return <article key={entry.id} className="holiday-recovery-history"><span className="overtime-kind recovery" aria-hidden="true" /><div><strong>{historyDate(entry.date)}</strong><span className="overtime-history-detail">Férié · +{minutesLabel(entry.minutes)}</span><small className={state?.remainingMinutes ? "overtime-history-left" : undefined}>{state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles` : "Gain utilisé"}</small></div></article>;
                   }
                   const payPeriod = nextPayPeriod(entry.date);
                   const state = recoveryEarningStates.get(entry.id);
+                  /* Le gain se lit mieux que le total : « 3 h → 3 h 45 »
+                     laissait chercher l'écart, « 45 min gagnées » le donne. */
+                  const creditedMinutes = state?.earnedMinutes ?? entry.minutes;
+                  const gainedMinutes = creditedMinutes - entry.minutes;
                   return (
                     <article key={entry.id}>
                       <span className={`overtime-kind ${entry.disposition}`} aria-hidden="true" />
                       <div>
-                        <strong>{entry.id.startsWith("solidarity-") ? `Ajout manuel · +${minutesLabel(entry.minutes)}` : entry.disposition === "paid" ? `Heures sup · ${minutesLabel(entry.minutes)} · À payer` : `Heures sup · ${minutesLabel(entry.minutes)} de travail`}</strong>
-                        <span>{longDate(fromKey(entry.date))}</span>
-                        {/* Les deux durées côte à côte, et le mot « majoration »
-                            pour que l'écart entre elles ne surprenne pas. */}
-                        {!entry.id.startsWith("solidarity-") && entry.disposition === "recovery" ? (
-                          <small className="overtime-credit-line">
-                            <b>+{minutesLabel(state?.earnedMinutes ?? entry.minutes)} à récupérer</b>
-                            {(state?.earnedMinutes ?? entry.minutes) > entry.minutes
-                              ? " · majoration comprise"
-                              : null}
-                          </small>
-                        ) : null}
-                        <small>
+                        <strong>{historyDate(entry.date)}</strong>
+                        <span className="overtime-history-detail">{entry.id.startsWith("solidarity-") ? `Ajout manuel · +${minutesLabel(entry.minutes)}` : entry.disposition === "paid" ? `Heures sup · ${minutesLabel(entry.minutes)} · À payer` : gainedMinutes > 0 ? `${minutesLabel(entry.minutes)} travaillées → ${minutesLabel(gainedMinutes)} gagnées (${minutesLabel(creditedMinutes)})` : `${minutesLabel(entry.minutes)} travaillées → ${minutesLabel(creditedMinutes)} de récup`}</span>
+                        <small className={entry.disposition !== "paid" && state?.remainingMinutes ? "overtime-history-left" : undefined}>
                           {entry.id.startsWith("solidarity-")
-                            ? state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles sur cet ajout manuel` : "Ajout manuel entièrement utilisé"
+                            ? state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles` : "Ajout manuel entièrement utilisé"
                             : entry.disposition === "paid"
                               ? `Paiement prévu en ${MONTHS[payPeriod.month]} ${payPeriod.year}`
-                              : state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles sur ce gain` : "Gain entièrement utilisé"}
+                              : state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles` : "Gain entièrement utilisé"}
                         </small>
                       </div>
                       <button type="button" onClick={() => onDeleteOvertime(entry)}>Supprimer</button>

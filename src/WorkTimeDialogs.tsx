@@ -201,9 +201,7 @@ export function OvertimeDialog({
             <ClockTimePicker label="Heure de début" value={draft.start} onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
             <ClockTimePicker label="Heure de fin" value={draft.end} onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
             <small>
-              La nuit est reconnue automatiquement de 22 h à 7 h. Le dimanche et
-              les jours fériés sont majorés de deux tiers. Les horaires peuvent
-              passer minuit.
+              Nuit reconnue de 22 h à 7 h. Les horaires peuvent passer minuit.
             </small>
           </div>
           <fieldset className="overtime-choice-field disposition-choice">
@@ -229,19 +227,25 @@ export function OvertimeDialog({
                 }
               >
                 <strong>À récupérer</strong>
-                <span>Jour ×1,25 · dimanche/férié ×1,66 · nuit ×2</span>
+                <span>1 h travaillée = 1 h 15 · dimanche et férié 1 h 40 · nuit 2 h</span>
               </button>
             </div>
             {draft.disposition === "recovery" && recoveryPreview ? (
               <p className="overtime-recovery-preview">
+                {/* Même formulation que l'historique : c'est le gain qu'on
+                    cherche, le total vient ensuite entre parenthèses. */}
                 <strong>
-                  {minutesLabel(recoveryPreview.workedMinutes)} de travail
+                  {minutesLabel(recoveryPreview.workedMinutes)} travaillées
                   <span aria-hidden="true"> → </span>
-                  <b>{minutesLabel(recoveryPreview.creditedMinutes)} à récupérer</b>
+                  <b>
+                    {minutesLabel(
+                      recoveryPreview.creditedMinutes - recoveryPreview.workedMinutes,
+                    )}{" "}
+                    gagnées ({minutesLabel(recoveryPreview.creditedMinutes)})
+                  </b>
                 </strong>
                 <small>
-                  Saisissez vos heures réelles : la majoration est ajoutée par
-                  l’application. L’ajouter vous-même la compterait deux fois.
+                  Saisissez vos heures réelles : la majoration est ajoutée ici.
                 </small>
               </p>
             ) : null}
@@ -305,28 +309,25 @@ export function SolidarityHoursDialog({
         </button>
         <span className="step-label">Solde de récupération</span>
         <h2 id="solidarity-hours-title">Ajouter des heures manuellement</h2>
-        <p>
-          Indiquez le total personnel accumulé au fil des années. Ces heures
-          créditent uniquement votre solde de récupération.
-        </p>
+        <p>Le total accumulé au fil des années, ajouté à votre solde.</p>
         <fieldset className="overtime-choice-field">
           <legend>Que contient ce total ?</legend>
           <div className="overtime-destination-grid">
-            <button
-              type="button"
-              className={draft.basis === "credited" ? "active recovery" : "recovery"}
-              onClick={() => setDraft((current) => ({ ...current, basis: "credited" }))}
-            >
-              <strong>Un solde déjà calculé</strong>
-              <span>Repris tel quel, sans majoration</span>
-            </button>
             <button
               type="button"
               className={draft.basis === "worked" ? "active recovery" : "recovery"}
               onClick={() => setDraft((current) => ({ ...current, basis: "worked" }))}
             >
               <strong>Des heures travaillées</strong>
-              <span>Majorées ×1,25 par l’application</span>
+              <span>1 h travaillée = 1 h 15 de récup</span>
+            </button>
+            <button
+              type="button"
+              className={draft.basis === "credited" ? "active recovery" : "recovery"}
+              onClick={() => setDraft((current) => ({ ...current, basis: "credited" }))}
+            >
+              <strong>Un solde déjà calculé</strong>
+              <span>Ajouté tel quel</span>
             </button>
           </div>
         </fieldset>
@@ -370,28 +371,28 @@ export function SolidarityHoursDialog({
             <strong>
               {solidarityTyped > 0 ? (
                 <>
-                  {minutesLabel(solidarityTyped)} de travail
+                  {minutesLabel(solidarityTyped)} travaillées
                   <span aria-hidden="true"> → </span>
-                  <b>{minutesLabel(solidarityCredited)} ajoutées au solde</b>
+                  <b>
+                    {minutesLabel(solidarityCredited - solidarityTyped)} gagnées
+                    ({minutesLabel(solidarityCredited)})
+                  </b>
                 </>
               ) : (
-                <b>Majoration ×1,25 appliquée</b>
+                <b>1 h travaillée = 1 h 15 de récup</b>
               )}
             </strong>
             <small>
-              La majoration de jour vaut pour l’ensemble : un total de plusieurs
-              années ne dit pas quelle part a été faite la nuit ou un dimanche.
+              1 h travaillée = 1 h 15 de récup, tarif de jour sur tout le total.
             </small>
           </p>
         ) : (
           <p className="solidarity-hours-note">
-            <b>Aucune majoration n’est appliquée ici</b> : le solde est repris
-            tel que vous l’indiquez.
+            <b>Ajouté tel quel</b>, sans majoration.
           </p>
         )}
         <p className="solidarity-hours-note">
-          Chaque ajout reste visible dans l’historique et peut être supprimé en
-          cas d’erreur.
+          Supprimable ensuite dans l’historique.
         </p>
         <div className="modal-actions">
           <button className="secondary-button" type="button" onClick={onClose}>

@@ -533,3 +533,60 @@ describe("reprise du solde déjà accumulé", () => {
     expect(overtimeRecoveryCreditMinutes(parHoraires)).toBe(225);
   });
 });
+
+describe("plafond mensuel des heures payées", () => {
+  const payee = (minutes: number) =>
+    calculatePaidOvertime(
+      [entry("long", minutes)],
+      2026,
+      8,
+      "full",
+      1855.88,
+      55.68,
+    );
+
+  it("paie tout tant qu’on reste sous vingt-cinq heures", () => {
+    const result = payee(20 * 60);
+    expect(result.cappedMinutes).toBe(0);
+    expect(result.lines[0].lowRateMinutes).toBe(14 * 60);
+    expect(result.lines[0].highRateMinutes).toBe(6 * 60);
+  });
+
+  it("ne paie pas au-delà du plafond, et dit combien reste dehors", () => {
+    // Trente heures déclarées : cinq ne sont pas indemnisables.
+    const result = payee(30 * 60);
+    expect(result.cappedMinutes).toBe(5 * 60);
+    expect(result.totalMinutes).toBe(30 * 60);
+    expect(result.lines[0].lowRateMinutes + result.lines[0].highRateMinutes).toBe(25 * 60);
+    // Le montant est celui de vingt-cinq heures, pas de trente.
+    expect(result.amount).toBeCloseTo(payee(25 * 60).amount, 8);
+  });
+
+  it("applique aussi le plafond à temps partiel", () => {
+    const result = calculatePaidOvertime(
+      [entry("long", 30 * 60)],
+      2026,
+      8,
+      "half",
+      927.94,
+      27.84,
+    );
+    expect(result.cappedMinutes).toBe(5 * 60);
+  });
+});
+
+describe("majoration du dimanche", () => {
+  it("vaut les deux tiers, comme en paie", () => {
+    // 1,66 était la même règle arrondie : sur six heures, l'écart atteignait
+    // deux minutes et demie.
+    const dimanche = (date: string) => date === "2026-05-10";
+    const plage = {
+      ...entry("dimanche", 390, "recovery"),
+      date: "2026-05-10",
+      inputMode: "range" as const,
+      start: "10:00",
+      end: "16:30",
+    };
+    expect(overtimeRecoveryCreditMinutes(plage, dimanche)).toBe(650);
+  });
+});

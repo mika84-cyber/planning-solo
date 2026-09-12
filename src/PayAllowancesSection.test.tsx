@@ -32,7 +32,7 @@ const props = {
     strikeAutomaticDays: 1,
     strikePotentialDays: 0,
   },
-  overtimeForPayMonth: { totalMinutes: 120, ready: true, amount: 50 },
+  overtimeForPayMonth: { totalMinutes: 120, ready: true, amount: 50, cappedMinutes: 0 },
   mecenatForPayMonth: { totalMinutes: 90, grossAmountCents: 3500 },
   strikeForPayMonth: { totalDeduction: 80 },
   isContractuel: false,

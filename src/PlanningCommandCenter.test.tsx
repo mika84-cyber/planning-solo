@@ -67,8 +67,15 @@ describe("PlanningCommandCenter", () => {
     const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} />);
     expect(html).toContain("Mon planning");
     expect(html).toContain("Année affichée");
-    expect(html).toContain("Jours travaillés");
-    expect(html).toContain("16 ce mois-ci");
+    // Le compteur détaillé a quitté l'accueil : le mois et les jours
+    // travaillés se lisent sur le résumé du volet, replié à l'ouverture.
+    expect(html).toContain("Septembre 2026");
+    expect(html).toContain("16 jours travaillés ce mois-ci");
+    expect(html).not.toContain("Détail des jours travaillés");
+    expect(html).toContain("Modifier");
+    // Un pas de mois sans avoir à ouvrir un menu.
+    expect(html).toContain('aria-label="Mois précédent"');
+    expect(html).toContain('aria-label="Mois suivant"');
     expect(html).toContain("Aujourd’hui");
     expect(html).toContain("Accès rapide au mois actuel");
     expect(html).not.toContain("Choix du groupe");

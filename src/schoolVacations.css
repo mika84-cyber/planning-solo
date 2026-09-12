@@ -30,11 +30,12 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 10px;
-  border: 1px solid #d8d0e8;
-  border-radius: 16px;
-  padding: 10px;
-  background: #fbf9ff;
+  margin-top: 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: 9px 2px 0;
+  background: none;
 }
 .school-vacation-switch {
   display: grid;
@@ -45,7 +46,7 @@
   border: 0;
   padding: 0 5px;
   background: transparent;
-  color: #24364d;
+  color: var(--text);
   text-align: left;
 }
 .school-vacation-switch > span {
@@ -70,7 +71,7 @@
 .school-vacation-switch.active > span i { transform: translateX(18px); }
 .school-vacation-switch strong,
 .school-vacation-switch small { grid-column: 2; }
-.school-vacation-switch small { color: #53657a; font-size: .69rem; }
+.school-vacation-switch small { color: var(--muted); font-size: .69rem; }
 
 .school-zone-picker {
   display: grid;
@@ -103,11 +104,11 @@
   border-radius: 14px;
   padding: 9px 12px;
   background: #fbf9ff;
-  color: #35445a;
+  color: var(--text);
 }
 .school-vacation-month-summary > div { display: grid; gap: 2px; min-width: 0; }
 .school-vacation-month-summary strong { font-size: .78rem; }
-.school-vacation-month-summary small { color: #66758a; font-size: .69rem; }
+.school-vacation-month-summary small { color: var(--muted); font-size: .69rem; }
 .school-vacation-swatch {
   flex: 0 0 5px;
   align-self: stretch;

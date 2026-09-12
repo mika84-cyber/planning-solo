@@ -343,9 +343,17 @@ export function splitOvertimeRangeByCalendar(
 
 export const OVERTIME_RECOVERY_FACTORS = {
   day: 1.25,
-  sundayHoliday: 1.66,
+  /** Les deux tiers de majoration, à l'identique du calcul de paie : 1,66
+   *  était la même règle arrondie, et s'en écartait de 2,4 minutes sur six
+   *  heures. */
+  sundayHoliday: 5 / 3,
   night: 2,
 } as const;
+
+/** Plafond mensuel d'heures supplémentaires indemnisables. Au-delà, les heures
+ *  restent déclarées et visibles, mais ne sont plus payées : les compter
+ *  gonflerait l'estimation. */
+export const PAID_OVERTIME_MONTHLY_CAP_MINUTES = 25 * 60;
 
 /** Crédit généré par des heures supplémentaires choisies en récupération.
  * Les ajouts manuels et crédits de férié sont déjà exprimés en minutes
@@ -432,11 +440,13 @@ export function calculatePaidOvertime(
       ready: false as const,
       hourlyBase: 0,
       totalMinutes: paid.reduce((sum, entry) => sum + entry.minutes, 0),
+      cappedMinutes: 0,
       amount: 0,
       lines: [] as PaidOvertimeLine[],
     };
 
   let paidRankMinutes = 0;
+  let cappedMinutes = 0;
   const threshold = 14 * 60;
   const lines: PaidOvertimeLine[] = [];
   for (const entry of paid) {
@@ -468,16 +478,26 @@ export function calculatePaidOvertime(
     ];
     for (const segment of segments) {
       if (!segment.minutes) continue;
+      /* Les minutes au-delà du plafond mensuel restent comptées dans le total
+         déclaré, mais n'entrent ni dans le montant ni dans les tranches. */
+      const payable = Math.max(
+        0,
+        Math.min(
+          segment.minutes,
+          PAID_OVERTIME_MONTHLY_CAP_MINUTES - paidRankMinutes,
+        ),
+      );
+      cappedMinutes += segment.minutes - payable;
       if (quota !== "full") {
-        amount += (segment.minutes / 60) * hourlyBase;
+        amount += (payable / 60) * hourlyBase;
         paidRankMinutes += segment.minutes;
         continue;
       }
       const firstBand = Math.max(
         0,
-        Math.min(segment.minutes, threshold - paidRankMinutes),
+        Math.min(payable, threshold - paidRankMinutes),
       );
-      const secondBand = segment.minutes - firstBand;
+      const secondBand = payable - firstBand;
       amount +=
         (firstBand / 60) * hourlyBase * 1.25 * segment.factor +
         (secondBand / 60) * hourlyBase * 1.27 * segment.factor;
@@ -501,6 +521,9 @@ export function calculatePaidOvertime(
     ready: true as const,
     hourlyBase,
     totalMinutes: paidRankMinutes,
+    /** Les minutes déclarées au-delà des vingt-cinq heures du mois : l'écran
+     *  le dit plutôt que de les passer sous silence. */
+    cappedMinutes,
     amount: lines.reduce((total, line) => total + line.amount, 0),
     lines,
   };

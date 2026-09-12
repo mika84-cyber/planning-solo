@@ -1008,7 +1008,7 @@
   grid-template-columns: repeat(2, minmax(82px, 1fr));
   gap: 5px;
   min-width: 190px;
-  border: 1px solid #bacbe0;
+  border: 1px solid var(--section-outline);
   border-radius: 17px;
   padding: 5px;
   background: linear-gradient(145deg, #ebe5dc, #f7f2eb);
@@ -1019,14 +1019,14 @@
   height: auto;
   border-radius: 12px;
   padding: 0 18px;
-  color: #65758a;
+  color: #6b6252;
   font-size: 13px;
   font-weight: 850;
   letter-spacing: 0.01em;
   transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease,
     transform 150ms ease;
 }
-.view-switch button:hover { color: #254f84; }
+.view-switch button:hover { color: var(--accent-strong); }
 .view-switch button:active { transform: scale(0.97); }
 .view-switch button.active {
   background: linear-gradient(145deg, var(--accent), var(--accent-strong));

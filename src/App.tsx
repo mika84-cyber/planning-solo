@@ -3532,28 +3532,6 @@ export default function Home() {
       {/* Placé après la navigation : la marche à suivre s'affiche quelle que
           soit la rubrique ouverte au lancement. */}
       <AppleInstallNotice enabled={installationEnabled} />
-      {homeSection === "home" ? (
-        <div className="home-view-mode-bar">
-          <div className="view-switch" role="group" aria-label="Mode d’affichage">
-            <button
-              className={mode === "month" ? "active" : ""}
-              aria-pressed={mode === "month"}
-              onClick={() => setMode("month")}
-              type="button"
-            >
-              Mois
-            </button>
-            <button
-              className={mode === "year" ? "active" : ""}
-              aria-pressed={mode === "year"}
-              onClick={() => setMode("year")}
-              type="button"
-            >
-              Année
-            </button>
-          </div>
-        </div>
-      ) : null}
       <MainMenu
         open={mainMenuOpen}
         userEmail={userEmail}
@@ -3725,6 +3703,10 @@ export default function Home() {
         <Suspense fallback={<DeferredSection label="vos congés et récupérations" />}>
         <LeaveManagementPage
           onRequestLeave={() => openRequestChooser("general")}
+          onOpenHolidayAllowances={() => {
+            setHomeSection("pay");
+            setPayScreen("allowances");
+          }}
           balancesContent={
             <Suspense fallback={<DeferredSection label="vos soldes" />}>
               <LeaveBalancesSection
@@ -3919,6 +3901,7 @@ export default function Home() {
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
         onToday={goToday}
+        onModeChange={setMode}
         onExportPdf={homeSection === "home" ? () => void exportAnnualPlanning("my-leaves", showSchoolVacationsOnPdf) : undefined}
         exportingPdf={pdfExporting === "my-leaves"}
         showSchoolVacations={showSchoolVacations}

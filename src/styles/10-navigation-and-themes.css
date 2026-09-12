@@ -801,7 +801,7 @@
   box-shadow: none;
 }
 .home-notes-section { background: linear-gradient(145deg, #fffaf4, #fff 58%); }
-.home-planning-heading { background: linear-gradient(145deg, #f2f8ff, #fff 58%); }
+.home-planning-heading { background: linear-gradient(145deg, #fffdf9, #f5f1eb 58%); }
 .leave-request-archive {
   border-color: transparent;
   background: linear-gradient(135deg, #f4f7ff, #fffaf7);

@@ -2228,6 +2228,15 @@
   color: var(--muted);
   font-size: 10px;
 }
+.overtime-history article .overtime-history-detail {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.overtime-history article small.overtime-history-left {
+  color: #23694f;
+  font-weight: 800;
+}
 .overtime-history article > button {
   border: 0;
   padding: 7px 8px;

@@ -37,10 +37,29 @@ async function prepareDemo(page: Page, withCurrentLeave = false, openPlanning = 
   }, withCurrentLeave);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
-  if (openPlanning) {
-    const planning = page.locator("details.home-planning-controls-disclosure");
-    if (await planning.count()) await planning.locator("summary").click();
-  }
+  if (openPlanning) await openPlanningSettings(page);
+}
+
+/** Déplie les réglages du planning. Ils sont repliés à chaque arrivée sur
+ *  l'accueil : les parcours qui changent de mois, d'année, d'affichage ou de
+ *  zone de vacances passent par là, comme la personne devant l'écran. Le
+ *  planning étant chargé après le reste, on attend qu'il soit posé. */
+/** Le nombre de jours travaillés du mois, lu sur le résumé du volet : le menu
+ *  détaillé a quitté l'accueil. */
+async function workedDaysOnHome(page: Page) {
+  const resume = await page.locator(".planning-settings-scope small").innerText();
+  return Number(resume.match(/[\d,.]+/)![0].replace(",", "."));
+}
+
+async function openPlanningSettings(page: Page) {
+  const planning = page.locator("details.planning-settings-disclosure");
+  await planning
+    .first()
+    .waitFor({ state: "attached", timeout: 10_000 })
+    .catch(() => undefined);
+  if (!(await planning.count())) return;
+  if (await planning.evaluate((node: HTMLDetailsElement) => node.open)) return;
+  await planning.locator("summary").click();
 }
 
 async function openLeaveTool(page: Page, label: string) {
@@ -299,10 +318,19 @@ test("les pages et la navigation suivent exactement la largeur de leur en-tête"
 test("mon planning et ses réglages partagent un seul cadre et l’export conserve les congés", async ({ page }) => {
   await prepareDemo(page, false, false);
   const planning = page.locator(".planning-workspace-shell.framed .planning-command-section");
-  await expect(page.locator("details.home-planning-controls-disclosure")).toHaveCount(0);
   await expect(planning).toBeVisible();
   await expect(planning.getByRole("heading", { name: "Mon planning" })).toBeVisible();
+  // Les réglages sont repliés à l'arrivée, et le volet fermé dit déjà le mois
+  // affiché et les jours travaillés : on ne l'ouvre que pour les modifier.
+  const reglages = page.locator("details.planning-settings-disclosure");
+  await expect(reglages).toHaveJSProperty("open", false);
+  await expect(reglages.locator(".planning-settings-scope")).toContainText(/\d{4}/);
+  await expect(reglages.locator(".planning-settings-scope")).toContainText("travaillé");
+  await expect(reglages.locator(".planning-settings-open")).toContainText("Modifier");
+  await expect(planning.locator(".controls")).toBeHidden();
+  await openPlanningSettings(page);
   await expect(planning.locator(".controls")).toBeVisible();
+  await expect(reglages.locator(".planning-settings-open")).toContainText("Fermer");
   await expect(planning).toHaveCSS("border-left-width", "8px");
   await expect(page.locator(".month-card")).toBeVisible();
   await expect(page.getByRole("button", { name: "Poser un congé" })).toBeVisible();
@@ -425,14 +453,18 @@ test("les quatre soldes principaux et les autres congés restent en grilles équ
   expect(Math.abs(primaryFirstBox!.x - otherFirstBox!.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(primaryFirstBox!.width - otherFirstBox!.width)).toBeLessThanOrEqual(1);
   const previousAbsencesButton = otherBalances.locator(".manual-adjustments-trigger");
-  const [previousAbsencesBox, otherGridBox] = await Promise.all([
-    previousAbsencesButton.boundingBox(),
-    otherBalances.locator(".leave-balance-grid").boundingBox(),
-  ]);
-  const openSummaryBox = await otherBalances.locator("summary").boundingBox();
-  expect(previousAbsencesBox?.height).toBeLessThanOrEqual(96);
-  expect(previousAbsencesBox?.width).toBeGreaterThan((otherGridBox?.width || 0) * 0.9);
-  expect(openSummaryBox!.y).toBeGreaterThan(previousAbsencesBox!.y + previousAbsencesBox!.height);
+  // Les positions sont relues jusqu'à ce que la mise en page se stabilise :
+  // mesurée trop tôt, la grille bouge encore de quelques pixels.
+  await expect(async () => {
+    const [previousAbsencesBox, otherGridBox, openSummaryBox] = await Promise.all([
+      previousAbsencesButton.boundingBox(),
+      otherBalances.locator(".leave-balance-grid").boundingBox(),
+      otherBalances.locator("summary").boundingBox(),
+    ]);
+    expect(previousAbsencesBox?.height).toBeLessThanOrEqual(96);
+    expect(previousAbsencesBox?.width).toBeGreaterThan((otherGridBox?.width || 0) * 0.9);
+    expect(openSummaryBox!.y).toBeGreaterThan(previousAbsencesBox!.y + previousAbsencesBox!.height);
+  }).toPass({ timeout: 10_000 });
 });
 
 test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo) => {
@@ -528,6 +560,7 @@ async function prepareStrikeDemo(page: Page) {
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  await openPlanningSettings(page);
 }
 
 async function prepareCompletePayDemo(page: Page, withSundayCarryover = true) {
@@ -875,6 +908,7 @@ test("l’aide au partage est ouverte seulement lors de la première utilisation
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
 
   await goToSection(page, "home");
+  await openPlanningSettings(page);
   await goToSection(page, "colleagues");
 
   const returningToggle = page.locator(".colleague-how-toggle");
@@ -1722,6 +1756,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   await expect(page.getByText(/Périodes enregistrées/)).toBeVisible();
 
   await goToSection(page, "home");
+  await openPlanningSettings(page);
   await page.getByRole("button", { name: "Aujourd’hui" }).click();
   const todayCell = page.getByRole("button", { name: new RegExp(longDate(today), "i") });
   const workAccidentMarker = todayCell.locator(".work-accident-calendar-marker");
@@ -1922,7 +1957,10 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
     expect(new Set(otherChoiceBoxes.slice(0, firstRowSize).map((box) => Math.round(box.y))).size).toBe(1);
     if (otherChoiceBoxes.length === 5) expect(Math.round(otherChoiceBoxes[3].y)).toBe(Math.round(otherChoiceBoxes[4].y));
   }
-  await expect(page.getByRole("tab", { name: "Nef", exact: true })).toHaveCSS("border-top-color", "rgb(57, 121, 184)");
+  // L'onglet choisi se signale par la couleur d'accent, comme dans le reste
+  // de l'application ; les teintes propres à chaque espace, elles, subsistent.
+  await expect(page.getByRole("tab", { name: "Nef", exact: true }))
+    .toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
   await expect(page.locator(".useful-expo-timeline article")).toHaveCount(8);
   await expect(page.locator(".useful-expo-timeline")).not.toContainText("Grand Palais d’été");
   await page.getByRole("tab", { name: "2028", exact: true }).click();
@@ -2387,7 +2425,13 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(menuButton).toBeVisible();
   await expect(page.locator((page.viewportSize()?.width || 0) <= 720 ? ".mobile-bottom-navigation" : ".desktop-side-navigation")).toBeVisible();
   await expect(update).toHaveCount(0);
-  await expect(switcher).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
+  // La bascule n'est plus un bloc encadré mais deux onglets : plus de cadre
+  // autour, et le choix courant se lit à son trait couleur d'accent.
+  await expect(switcher).toHaveCSS("border-top-width", "0px");
+  await expect(switcher.getByRole("button", { name: "Mois" }))
+    .toHaveCSS("border-bottom-color", await cssTokenRgb(page, "--accent"));
+  await expect(switcher.getByRole("button", { name: "Année" }))
+    .toHaveCSS("border-bottom-color", "rgba(0, 0, 0, 0)");
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cardBorderColor(page));
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
@@ -2409,12 +2453,8 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
     expect(deleteButtonBox!.width).toBeGreaterThan(calendarSectionBox!.width * 0.95);
     expect(deleteButtonBox!.y).toBeGreaterThanOrEqual(calendarGridBox!.y + calendarGridBox!.height);
   }
-  const workedDaysTriggerBox = await page.locator(".worked-days-trigger").boundingBox();
   const planningTodayBox = await page.locator(".planning-today-button").boundingBox();
-  expect(workedDaysTriggerBox).not.toBeNull();
   expect(planningTodayBox).not.toBeNull();
-  expect(Math.abs(workedDaysTriggerBox!.width - planningTodayBox!.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(workedDaysTriggerBox!.height - planningTodayBox!.height)).toBeLessThanOrEqual(1);
   await expect(page.locator(".planning-group-choice")).toHaveCount(0);
   expect(headerBox!.width).toBeLessThanOrEqual(viewportWidth - 12);
   expect(headerBox!.width / viewportWidth).toBeGreaterThan(
@@ -2452,11 +2492,17 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
     await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", "8px");
     await expect(page.locator(".planning-workspace-shell.framed")).toHaveCSS("border-top-width", "0px");
     await expect(page.locator(".planning-workspace-shell.framed")).toHaveCSS("border-left-width", "0px");
+    // Un seul liseré d'accent par rubrique. Le calendrier suit immédiatement
+    // le poste de commande : il garde un filet uniforme, sans second liseré,
+    // et les blocs imbriqués n'en portent aucun.
     await expect(page.locator(".planning-command-section")).toHaveCSS("border-left-width", "8px");
-    await expect(page.locator(".planning-calendar-section")).toHaveCSS("border-left-width", "8px");
+    const calendrier = page.locator(".planning-calendar-section");
+    await expect(calendrier).toHaveCSS(
+      "border-left-width",
+      await calendrier.evaluate((node) => getComputedStyle(node).borderTopWidth),
+    );
     await expect(page.locator(".home-planning-heading")).toHaveCSS("border-left-width", "0px");
-    await expect(page.locator(".planning-workspace-shell.framed .controls")).toHaveCSS("border-left-width", "1px");
-    await expect(page.locator(".calendar-toolbar.month-toolbar")).toHaveCSS("border-top-width", "1px");
+    await expect(page.locator(".planning-workspace-shell.framed .controls")).toHaveCSS("border-left-width", "0px");
     const cleanupButtonBox = await page.locator(".calendar-bulk-delete-below").boundingBox();
     expect(cleanupButtonBox).not.toBeNull();
     expect(cleanupButtonBox!.width).toBeGreaterThan(page.viewportSize()!.width * 0.8);
@@ -2471,16 +2517,20 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
     expect(Math.abs(headerBox!.width - todayOverviewBox!.width)).toBeLessThanOrEqual(1);
   }
   await expect(switcher.getByRole("button", { name: "Mois" })).toHaveAttribute("aria-pressed", "true");
-  await expect(switcher.getByRole("button", { name: "Mois" })).toHaveCSS("background-image", /gradient/);
+  // L'onglet courant se signale par sa couleur, sans aplat : le volet
+  // contenait déjà assez de terracotta.
+  await expect(switcher.getByRole("button", { name: "Mois" })).toHaveCSS("background-image", "none");
+  await expect(switcher.getByRole("button", { name: "Mois" }))
+    .toHaveCSS("color", await cssTokenRgb(page, "--accent-strong"));
+  // La bascule Mois / Année est descendue dans les réglages du planning :
+  // elle commande ce calendrier-là, sa place est auprès de lui et non deux
+  // écrans au-dessus. Elle vient donc après le résumé de la journée.
   const switchBox = await switcher.boundingBox();
   expect(switchBox).not.toBeNull();
-  expect(switchBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
-  expect(switchBox!.y + switchBox!.height).toBeLessThanOrEqual(todayOverviewBox!.y);
-  const modeBar = page.locator(".home-view-mode-bar");
-  const modeBarBox = await modeBar.boundingBox();
-  expect(modeBarBox).not.toBeNull();
-  await expect(modeBar).toHaveCSS("border-top-width", "0px");
-  expect(Math.abs(modeBarBox!.width - todayOverviewBox!.width)).toBeLessThanOrEqual(1);
+  expect(switchBox!.y).toBeGreaterThan(todayOverviewBox!.y);
+  const planningBox = await page.locator(".planning-command-section").boundingBox();
+  expect(planningBox).not.toBeNull();
+  expect(switchBox!.y).toBeGreaterThanOrEqual(planningBox!.y);
 
   await page.locator('.calendar-toolbar button[aria-label="Sélectionner l’année"]').click();
   const years = page.getByRole("listbox", { name: "Sélectionner l’année" }).getByRole("option");
@@ -2509,9 +2559,14 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
     expect(monthPickerBox).not.toBeNull();
     expect(yearPickerBox).not.toBeNull();
     expect(Math.abs(monthPickerBox!.width - yearPickerBox!.width)).toBeLessThanOrEqual(1);
-    expect(yearPickerBox!.x + yearPickerBox!.width).toBeGreaterThan(
+    // La barre de période occupe toute la largeur : c'est la flèche « suivant »
+    // qui en atteint le bord, les menus s'arrêtant juste avant elle.
+    const nextArrowBox = await page.locator(".period-navigation .period-step").last().boundingBox();
+    expect(nextArrowBox).not.toBeNull();
+    expect(nextArrowBox!.x + nextArrowBox!.width).toBeGreaterThan(
       toolbarBox!.x + toolbarBox!.width - 32,
     );
+    expect(nextArrowBox!.x).toBeGreaterThan(yearPickerBox!.x + yearPickerBox!.width - 1);
     await expect(page.locator(".month-toolbar .today-button")).toHaveCount(0);
   }
   expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
@@ -2577,16 +2632,9 @@ test("une fermeture exceptionnelle retire la présence et le prochain jour reste
     (key) => GRAND_PALAIS_EXCEPTIONAL_CLOSURES.some((item) => item.date === key),
   );
   expect(monthCount.exceptionallyClosed).toBe(3);
-  await expect(page.locator(".worked-days-trigger span")).toHaveText(
-    `${monthCount.worked} ce mois-ci`,
-  );
-  await page.locator(".worked-days-trigger").click();
-  const workedDaysPanel = page.locator(".worked-days-panel");
-  await expect(workedDaysPanel).toContainText("3 fermetures exceptionnelles");
-  const panelBox = await workedDaysPanel.boundingBox();
-  expect(panelBox).not.toBeNull();
-  expect(panelBox!.x).toBeGreaterThanOrEqual(0);
-  expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  // Les fermetures exceptionnelles sont déduites du compte annoncé par le
+  // résumé du volet : le menu détaillé a quitté l'accueil.
+  expect(await workedDaysOnHome(page)).toBe(monthCount.worked);
 });
 
 test("les menus déroulants restent entièrement visibles sur téléphone", async ({ page }, testInfo) => {
@@ -2628,6 +2676,7 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
 
   await page.setViewportSize({ width: 984, height: 1092 });
   await goToSection(page, "home");
+  await openPlanningSettings(page);
   await assertVisibleMenus();
 });
 
@@ -2703,37 +2752,32 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
 
   const headerBox = await page.locator(".top-header").boundingBox();
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
-  const [
-    foldMonthBox,
-    foldYearBox,
-    foldTodayBox,
-    foldWorkedDaysBox,
-    foldModeBarBox,
-    foldOverviewBox,
-    foldStatusBox,
-    foldNextWorkBox,
-    foldLeaveBox,
-    foldRemainingBox,
-  ] =
-    await Promise.all([
-      page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
-      page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
-      page.locator(".planning-today-button").boundingBox(),
-      page.locator(".worked-days-trigger").boundingBox(),
-      page.locator(".home-view-mode-bar").boundingBox(),
-      page.locator(".today-overview").boundingBox(),
-      page.locator(".today-status").boundingBox(),
-      page.locator(".today-next-work").boundingBox(),
-      page.locator(".today-leave-balance").boundingBox(),
-      page.locator(".today-remaining-work").boundingBox(),
-    ]);
-  expect(Math.abs(foldMonthBox!.width - foldYearBox!.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(foldTodayBox!.width - foldWorkedDaysBox!.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(foldModeBarBox!.width - foldOverviewBox!.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(foldStatusBox!.y - foldNextWorkBox!.y)).toBeLessThanOrEqual(2);
-  expect(Math.abs(foldLeaveBox!.y - foldRemainingBox!.y)).toBeLessThanOrEqual(2);
-  expect(foldLeaveBox!.y).toBeGreaterThan(foldStatusBox!.y + foldStatusBox!.height);
-  expect(Math.abs(foldStatusBox!.width - foldNextWorkBox!.width)).toBeLessThanOrEqual(2);
+  // Les alignements sont relus jusqu'à ce que la mise en page se stabilise :
+  // sur cet écran large, la grille bouge encore quand on mesure trop tôt.
+  await expect(async () => {
+    const [
+      foldMonthBox,
+      foldYearBox,
+      foldTodayBox,
+      foldStatusBox,
+      foldNextWorkBox,
+      foldLeaveBox,
+      foldRemainingBox,
+    ] = await Promise.all([
+        page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
+        page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
+        page.locator(".planning-today-button").boundingBox(),
+        page.locator(".today-status").boundingBox(),
+        page.locator(".today-next-work").boundingBox(),
+        page.locator(".today-leave-balance").boundingBox(),
+        page.locator(".today-remaining-work").boundingBox(),
+  ]);
+    expect(Math.abs(foldMonthBox!.width - foldYearBox!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(foldStatusBox!.y - foldNextWorkBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(foldLeaveBox!.y - foldRemainingBox!.y)).toBeLessThanOrEqual(2);
+    expect(foldLeaveBox!.y).toBeGreaterThan(foldStatusBox!.y + foldStatusBox!.height);
+    expect(Math.abs(foldStatusBox!.width - foldNextWorkBox!.width)).toBeLessThanOrEqual(2);
+  }).toPass({ timeout: 10_000 });
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   await openOtherLeaveBalances(page);
@@ -2977,9 +3021,8 @@ test("une heure supplémentaire de jour crédite 1 h 15 en récupération", asyn
   await page.getByLabel("Heures supplémentaires et récupérations")
     .getByRole("button", { name: "Voir l’historique" })
     .click();
-  // Les deux durées sont désormais sur deux lignes, et la majoration nommée.
-  await expect(page.locator(".overtime-history")).toContainText("1 h de travail");
-  await expect(page.locator(".overtime-history")).toContainText("+1 h 15 à récupérer · majoration comprise");
+  // Le temps travaillé et le crédit obtenu se lisent sur la même ligne.
+  await expect(page.locator(".overtime-history")).toContainText("1 h travaillées → 15 min gagnées (1 h 15)");
 });
 
 test("une formation utilise le bon nombre d’heures et apparaît en REC", async ({ page }) => {
@@ -2993,6 +3036,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
 
   await goToSection(page, "home");
+  await openPlanningSettings(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ })
@@ -3087,8 +3131,7 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
 
 test("Divers est explicite et le résumé apparaît avant validation", async ({ page }) => {
   await prepareDemo(page);
-  const workedButton = page.getByRole("button", { name: "Détail des jours travaillés" });
-  const initialWorked = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
+  const initialWorked = await workedDaysOnHome(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
 
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
@@ -3109,7 +3152,7 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
     "background-color",
     "rgb(244, 184, 200)",
   );
-  const workedAfterOther = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
+  const workedAfterOther = await workedDaysOnHome(page);
   expect(workedAfterOther).toBe(initialWorked - 1);
 
   await goToSection(page, "leave");
@@ -3167,8 +3210,7 @@ test("un férié couvert par une absence est annulé et retiré de la paie", asy
 
 test("une grève met à jour le planning, les jours travaillés et la paie", async ({ page }) => {
   await prepareStrikeDemo(page);
-  const workedButton = page.getByRole("button", { name: "Détail des jours travaillés" });
-  const initialWorked = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
+  const initialWorked = await workedDaysOnHome(page);
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
@@ -3215,7 +3257,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   }
   await expect(markedStrike).toHaveAttribute("aria-label", /Grève/);
   expect(await markedStrike.getAttribute("aria-label")).toContain(strikeDate!.split(", Travail")[0]);
-  const workedAfterStrike = Number((await workedButton.innerText()).match(/[\d,.]+/)![0].replace(",", "."));
+  const workedAfterStrike = await workedDaysOnHome(page);
   expect(workedAfterStrike).toBe(initialWorked - 1);
 
   await goToSection(page, "leave");
@@ -3503,6 +3545,7 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
   await balanceDialog.getByLabel("Heures").fill("20");
   await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
   await goToSection(page, "home");
+  await openPlanningSettings(page);
   await page.locator(".month-card .day").first().click();
   await page.getByRole("dialog", { name: /2026/ })
     .getByRole("button", { name: /^Récupération/ })
@@ -3896,6 +3939,7 @@ test("le mois de paie reste indépendant du planning et suit une alerte datée",
   await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
 
   await goToSection(page, "home");
+  await openPlanningSettings(page);
   await expect(planningMonth).toHaveText(initialPlanningMonth || "");
 
   const calendar = page.locator(".month-card");
@@ -4175,9 +4219,9 @@ test("la saisie annonce les heures faites et le crédit obtenu", async ({ page }
 
   // 3 h de travail, 3 h 45 créditées : les deux durées avant d'enregistrer.
   const preview = dialog.locator(".overtime-recovery-preview");
-  await expect(preview).toContainText("3 h de travail");
-  await expect(preview).toContainText("3 h 45 à récupérer");
-  await expect(preview).toContainText("la majoration est ajoutée par l’application");
+  await expect(preview).toContainText("3 h travaillées");
+  await expect(preview).toContainText("45 min gagnées (3 h 45)");
+  await expect(preview).toContainText("la majoration est ajoutée ici");
 
   await dialog.getByRole("button", { name: "Enregistrer les heures" }).click();
   await expect(dialog).toBeHidden();
@@ -4188,8 +4232,7 @@ test("la saisie annonce les heures faites et le crédit obtenu", async ({ page }
     .getByRole("button", { name: "Voir l’historique" })
     .click();
   const history = page.locator(".overtime-history");
-  await expect(history).toContainText("3 h de travail");
-  await expect(history).toContainText("+3 h 45 à récupérer");
+  await expect(history).toContainText("3 h travaillées → 45 min gagnées (3 h 45)");
 });
 
 test("la reprise du solde laisse le choix entre valeur nette et heures à majorer", async ({ page }) => {
@@ -4200,15 +4243,16 @@ test("la reprise du solde laisse le choix entre valeur nette et heures à majore
   const dialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
   // Par défaut, un solde déjà tenu ailleurs : rien n'est remajoré. Le message
   // doit suivre le choix dès le clic, avant même qu'une durée soit saisie.
-  await expect(dialog).toContainText("Aucune majoration n’est appliquée ici");
+  await expect(dialog).toContainText("Ajouté tel quel, sans majoration");
   await dialog.getByRole("button", { name: "Des heures travaillées" }).click();
-  await expect(dialog).not.toContainText("Aucune majoration");
+  await expect(dialog).not.toContainText("Ajouté tel quel, sans majoration");
 
   await dialog.getByLabel("Heures").fill("20");
-  await expect(dialog).toContainText("20 h de travail");
-  await expect(dialog).toContainText("25 h ajoutées au solde");
+  await expect(dialog).toContainText("20 h travaillées");
+  await expect(dialog).toContainText("5 h gagnées (25 h)");
 
   await dialog.getByRole("button", { name: "Ajouter au solde" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText("25 h ajoutées au solde de récupération")).toBeVisible();
 });
+

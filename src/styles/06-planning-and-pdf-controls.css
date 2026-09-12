@@ -401,12 +401,12 @@
 
 .month-card {
   padding: 14px;
-  border: 1px solid #c9d6e4;
+  border: 1px solid var(--section-outline);
   border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), transparent 64px),
-    linear-gradient(145deg, #dfe8f1 0%, #d5e0eb 100%);
-  box-shadow: 0 14px 34px rgba(39, 60, 85, 0.1);
+    linear-gradient(145deg, #f0e7d9 0%, #e9dfcd 100%);
+  box-shadow: 0 14px 34px rgba(92, 72, 55, 0.12);
   touch-action: pan-y;
 }
 .calendar-out-left {
@@ -466,7 +466,7 @@
   padding: 8px 2px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.34);
-  color: #5d6c80;
+  color: #6b6252;
   text-align: center;
   font-size: 11px;
   font-weight: 800;
@@ -837,7 +837,7 @@
 }
 .mini-weekdays span {
   padding: 2px;
-  color: var(--muted);
+  color: #6b6252;
   text-align: center;
   font-size: 8px;
   font-weight: 800;

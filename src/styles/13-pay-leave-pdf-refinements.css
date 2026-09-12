@@ -1090,7 +1090,7 @@
   .today-overview-heading {
     align-items: stretch;
     gap: 9px;
-    border-left: 5px solid #3474b9;
+    border-left: 5px solid var(--accent);
     border-radius: 14px;
     padding: 9px 9px 9px 11px;
     background: rgba(255, 255, 255, 0.82);
@@ -1176,12 +1176,11 @@
   }
 
   .planning-workspace-shell.framed .home-planning-heading {
-    border: 1.5px solid var(--app-frame-strong);
-    border-left: 5px solid #3474b9;
-    border-radius: 17px;
-    padding: 12px 13px;
-    background: linear-gradient(145deg, #f2f8ff, #fff 70%);
-    box-shadow: 0 6px 17px rgba(37, 65, 96, 0.06);
+    border: 0;
+    border-radius: 0;
+    padding: 2px 2px 6px;
+    background: none;
+    box-shadow: none;
   }
 
   .planning-workspace-shell.framed .home-planning-heading h2 { font-size: 1.18rem; }
@@ -1256,18 +1255,18 @@
      clairement séparées, sans ajouter de hauteur inutile. */
   .planning-workspace-shell.framed .controls,
   .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    border: 1.5px solid rgba(54, 82, 116, 0.34);
-    padding: 10px;
-    background: linear-gradient(145deg, #f7faff, #ffffff 72%);
+    border: 0;
+    padding: 4px 0 0;
+    background: none;
   }
 
   .planning-workspace-shell.framed .controls {
-    border-left: 5px solid #3474b9;
+    border-left: 0;
   }
 
   .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    border-left: 5px solid #7367b8;
-    background: linear-gradient(145deg, #f8f7ff, #ffffff 72%);
+    border-left: 0;
+    background: none;
   }
 
   .planning-workspace-shell.framed .controls .choice-picker-trigger,

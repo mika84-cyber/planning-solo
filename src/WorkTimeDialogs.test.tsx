@@ -131,7 +131,7 @@ describe("fenêtres de temps de travail", () => {
     expect(overtime).toContain('aria-label="Heure de fin — minutes"');
     expect(overtime).not.toContain('type="time"');
     expect(overtime).toContain("À récupérer");
-    expect(overtime).toContain("Jour ×1,25 · dimanche/férié ×1,66 · nuit ×2");
+    expect(overtime).toContain("1 h travaillée = 1 h 15 · dimanche et férié 1 h 40 · nuit 2 h");
     expect(overtime).not.toContain("Ajoutées au solde heure pour heure");
     expect(overtime).toContain("Le tarif dimanche/jour férié est appliqué automatiquement");
     expect(mecenat).toContain("Déclarer un mécénat");
@@ -197,20 +197,20 @@ describe("l’annonce du crédit de récupération", () => {
   it("annonce les heures faites et celles récupérées, avant d’enregistrer", () => {
     // 3 h de jour : la majoration porte le crédit à 3 h 45.
     const html = dialog("14:00", "17:00");
-    expect(html).toContain("3 h de travail");
-    expect(html).toContain("3 h 45 à récupérer");
+    expect(html).toContain("3 h travaillées");
+    expect(html).toContain("45 min gagnées (3 h 45)");
   });
 
   it("dit de saisir ses heures réelles, pour qu’on ne majore pas soi-même", () => {
     // Le piège vécu : 3 h de travail saisies en 3 h 45, créditées 4 h 41.
     expect(dialog("14:00", "17:00")).toContain(
-      "la majoration est ajoutée par l’application",
+      "la majoration est ajoutée ici",
     );
   });
 
   it("compte double les heures d’après 22 h", () => {
     // 20 h → minuit : 2 h de jour majorées à 2 h 30, 2 h de nuit portées à 4 h.
-    expect(dialog("20:00", "00:00")).toContain("6 h 30 à récupérer");
+    expect(dialog("20:00", "00:00")).toContain("2 h 30 gagnées (6 h 30)");
   });
 
   it("se tait pour des heures à payer : la majoration ne les concerne pas", () => {
@@ -252,15 +252,15 @@ describe("reprise du solde de récupération", () => {
     // Ce solde vient des compteurs tenus avant l'application : il est déjà
     // majoré. Le remajorer le gonflerait.
     const html = solde("credited");
-    expect(html).toContain("Aucune majoration n’est appliquée ici");
+    expect(html).toContain("<b>Ajouté tel quel</b>");
     expect(html).not.toContain("ajoutées au solde</b>");
   });
 
   it("annonce les deux durées quand on saisit des heures travaillées", () => {
     const html = solde("worked");
-    expect(html).toContain("20 h de travail");
-    expect(html).toContain("25 h ajoutées au solde");
-    expect(html).not.toContain("Aucune majoration n’est appliquée ici");
+    expect(html).toContain("20 h travaillées");
+    expect(html).toContain("5 h gagnées (25 h)");
+    expect(html).not.toContain("<b>Ajouté tel quel</b>");
   });
 });
 
@@ -281,11 +281,11 @@ describe("le message suit le choix, même avant la saisie", () => {
     // Le défaut vécu : la phrase s'affichait sur les deux choix tant qu'aucune
     // durée n'était saisie, ce qui contredisait le choix fait juste au-dessus.
     expect(solde("worked", "")).not.toContain("Aucune majoration");
-    expect(solde("worked", "")).toContain("Majoration ×1,25 appliquée");
+    expect(solde("worked", "")).toContain("1 h travaillée = 1 h 15 de récup");
   });
 
   it("garde la phrase pour un solde déjà calculé, saisi ou non", () => {
-    expect(solde("credited", "")).toContain("Aucune majoration n’est appliquée ici");
-    expect(solde("credited", "20")).toContain("Aucune majoration n’est appliquée ici");
+    expect(solde("credited", "")).toContain("<b>Ajouté tel quel</b>");
+    expect(solde("credited", "20")).toContain("<b>Ajouté tel quel</b>");
   });
 });
