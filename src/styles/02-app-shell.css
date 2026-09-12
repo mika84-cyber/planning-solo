@@ -250,6 +250,12 @@ h1 {
   font-weight: 780;
   cursor: pointer;
 }
+/* Rien de choisi : le libellé d'attente se distingue d'une vraie réponse,
+   sinon « À renseigner » se lit comme une valeur déjà retenue. */
+.choice-picker-trigger.empty {
+  color: var(--muted);
+  font-weight: 700;
+}
 .choice-picker-trigger svg {
   flex: 0 0 auto;
   width: 17px;
@@ -365,15 +371,7 @@ h1 {
   flex: 1 1 190px;
   gap: 6px;
   min-width: 190px;
-}
-.year-choice-label {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.year-stepper {
+}.year-stepper {
   display: grid;
   grid-template-columns: minmax(130px, 1fr);
   align-items: center;
@@ -575,12 +573,6 @@ h1 {
   outline: 2px solid rgba(47, 97, 184, 0.35);
   outline-offset: 1px;
 }
-.view-switch button {
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
 .request-panel {
   scroll-margin-top: 12px;
   margin-bottom: 14px;

@@ -19,27 +19,13 @@
     grid-template-columns: repeat(2, minmax(120px, 1fr));
     min-width: 0;
   }
-  .year-toolbar .period-navigation {
-    grid-template-columns: minmax(130px, 1fr);
-  }
   .calendar-toolbar .today-button {
     width: auto;
     padding-right: 10px;
     padding-left: 10px;
   }
-  /* Année, groupe et Aujourd'hui à parts égales : l'année occupait sinon
-     toute la place restante et écrasait les deux autres. */
-.calendar-toolbar.annual-toolbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .annual-toolbar .today-button {
-    width: 100%;
-  }
   .calendar-toolbar.month-toolbar {
     grid-template-columns: minmax(280px, 1fr) auto minmax(165px, 220px);
-  }
-  .annual-toolbar .toolbar-group-picker {
-    grid-column: auto;
   }
 }
 

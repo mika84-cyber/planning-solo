@@ -132,7 +132,6 @@ import {
   noteDateLabel,
   notePeriodFor,
   personalPresenceForDate,
-  attendanceDayMinutes,
   rangeKeys,
   roundCurrency,
   workedDayCount,
@@ -145,7 +144,6 @@ import {
   type PayProfile,
   type PayStatus,
   type RequestKind,
-  type ViewMode,
 } from "./appModel";
 import { useAnnualPdfExport } from "./useAnnualPdfExport";
 import {
@@ -191,7 +189,6 @@ import {
 } from "./overtime";
 import { useToast } from "./useToast";
 import {
-  MONTHS,
   RESIDENCE_ALLOWANCE_RATE,
   SUNDAY_ALLOWANCE,
   yearThirdFor,
@@ -206,7 +203,6 @@ import {
   leaveTypeLabel,
   s,
   localDate,
-  monthDays,
   periodLabel,
   sameDate,
   schoolVacationsForZone,
@@ -269,7 +265,6 @@ export default function Home() {
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
-  const [mode, setMode] = useState<ViewMode>("month");
   const {
     authStatus, setAuthStatus, userEmail, setUserEmail,
     isProgramAdmin: actualProgramAdmin, setIsProgramAdmin, loginEmail, setLoginEmail,
@@ -383,7 +378,7 @@ export default function Home() {
     accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize, setViewportSize,
     showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf,
     showSchoolVacations, setShowSchoolVacations, schoolZone, setSchoolZone, calendarSlide,
-    monthRefs, allowancesSwipeStart,
+    allowancesSwipeStart,
   } = appShellUi;
   const feedbackMessaging = useFeedbackMessaging(isProgramAdmin, demoMode, authStatus === "ready");
 
@@ -762,7 +757,6 @@ export default function Home() {
     openedNotificationDate.current = key;
     const date = fromKey(key);
     setView(localDate(date.getFullYear(), date.getMonth(), 1));
-    setMode("month");
     openDay(date);
     history.replaceState({}, "", location.pathname);
   }, [authStatus, entries]);
@@ -1025,45 +1019,6 @@ export default function Home() {
     openEdit: editWorkExchange,
   } = workExchangeUi;
 
-  const totals = useMemo(() => {
-    const result = { work: 0, training: 0, workedHoliday: 0 };
-    const fullDayMinutes = dailyMinutesForQuota(formProfile?.workQuota || "full");
-    const months =
-      mode === "year"
-        ? Array.from({ length: 12 }, (_, index) => index)
-        : [view.getMonth()];
-    for (const month of months) {
-      for (let day = 1; day <= monthDays(view.getFullYear(), month); day++) {
-        const date = localDate(view.getFullYear(), month, day);
-        const key = dateKey(date);
-        const info = getDayInfo(date, group);
-        const exceptionallyClosed = Boolean(
-          exceptionalClosureFor(key),
-        );
-        const exchangeRole = entries[key]?.exchangeRole || "";
-        const unavailableWithoutExchange =
-          exceptionallyClosed ||
-          Boolean(entries[key]?.leave) ||
-          periods.some((period) => key >= period.from && key <= period.to) ||
-          recoveryUses
-            .filter((item) => item.date === key)
-            .reduce((total, item) => total + item.minutes, 0) >= fullDayMinutes;
-        const notWorked = unavailableWithoutExchange || exchangeRole === "given";
-        if ((info.kind === "work" && !notWorked) || (info.kind === "off" && exchangeRole === "return"))
-          result.work++;
-        if (info.kind === "training") {
-          const presence = personalPresenceForDate(date, group, periods, entries, recoveryUses, fullDayMinutes, (key) => Boolean(exceptionalClosureFor(key)));
-          if (presence.status === "training" || presence.status === "work") result.training++;
-          else if (presence.status === "partial") result.training += 1 - (presence.absentMinutes || 0) / attendanceDayMinutes(date, group, fullDayMinutes);
-        }
-        // La paie et les droits liés au cycle restent théoriques : l'échange
-        // modifie la présence affichée, jamais le férié de référence.
-        if (info.holiday && info.kind === "work" && !unavailableWithoutExchange)
-          result.workedHoliday++;
-      }
-    }
-    return result;
-  }, [view, group, mode, entries, periods, recoveryUses, formProfile?.workQuota, approvedGrandPalaisUpdates]);
 
   /* Le mois affiché, puis les trois tiers de l'année affichée — tous calculés
      par la même fonction, donc jamais en contradiction entre eux. Le tiers
@@ -1833,7 +1788,6 @@ export default function Home() {
     group,
     view,
     setView,
-    mode,
     workQuota,
     workSchedule: usableWorkSchedule(formProfile?.workSchedule),
     calendarDeleteMode,
@@ -1970,7 +1924,6 @@ export default function Home() {
     setRecoveryDialogOpen,
     setMecenatDialogOpen,
     setHomeSection,
-    setMode,
     overtimeSaveInFlightRef,
     mecenatSaveInFlightRef,
     lastOvertimeSubmissionRef,
@@ -2104,9 +2057,9 @@ export default function Home() {
   function renderDay(date: Date, compact = false) {
     const key = dateKey(date);
     const partnerEntry = partnerEntries[key];
-    const schoolVacation = mode === "month"
-      ? visibleSchoolVacations.find(({ from, to }) => key >= from && key <= to)
-      : undefined;
+    const schoolVacation = visibleSchoolVacations.find(
+      ({ from, to }) => key >= from && key <= to,
+    );
     const inPendingRange = Boolean(
       (rangeSelecting && separateDates.includes(key)) ||
         (recoveryRangeSelecting && recoveryRangeDates.includes(key)) ||
@@ -2329,11 +2282,6 @@ export default function Home() {
   // Le titre d'un mois de la vue Année l'ouvre en grand. On bascule sur la
   // vue Mois plutôt que d'agrandir sur place : c'est elle qui porte la barre
   // d'outils, donc « Poser un congé » et le reste restent accessibles.
-  function openMonthFromYear(month: number) {
-    setView(localDate(view.getFullYear(), month, 1));
-    setMode("month");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
 
   function startSectionSwipe(event: TouchEvent<HTMLElement>) {
     if (event.touches.length !== 1) return;
@@ -2671,8 +2619,7 @@ export default function Home() {
               ownNoteAuthorLabel={ownNoteAuthorLabel}
               onOpenDate={(date) => {
                 setView(localDate(date.getFullYear(), date.getMonth(), 1));
-                setMode("month");
-                openDay(date);
+                            openDay(date);
               }}
               onDeleteOwnNotes={(dates) => void deleteMultiplePlanningDates(dates, "notes")}
               onDeleteAgnesNote={(date) => void deleteAgnesNote(date)}
@@ -2681,8 +2628,7 @@ export default function Home() {
           onChooseGroup={() => setGroupChooserOpen(true)}
           onOpenNextWork={(date) => {
             setHomeSection("home");
-            setMode("month");
-            setView(localDate(date.getFullYear(), date.getMonth(), 1));
+                    setView(localDate(date.getFullYear(), date.getMonth(), 1));
           }}
           onOpenLeave={() => setHomeSection("leave")}
           onAddNote={beginQuickNote}
@@ -2770,9 +2716,9 @@ export default function Home() {
           profileOpen={payProfileOpen}
           profileFocusRequested={payProfileFocusRequested}
           settingsOpen={payAdvancedOpen}
-          workQuota={workQuota}
+          workQuota={formProfile?.workQuota}
           workSchedule={formProfile?.workSchedule}
-          status={formProfile?.status || "contractuel"}
+          status={formProfile?.status}
           netEstimateComplete={netEstimateComplete}
           missingFields={netEstimateMissing}
           onCompleteEstimate={() => { setPaySettingsOpen(true); setPayAdvancedOpen(true); }}
@@ -2859,14 +2805,10 @@ export default function Home() {
         <>
       <PlanningCommandCenter
         isHome={homeSection === "home"}
-        mode={mode}
         view={view}
         setView={setView}
-        group={group}
         workQuota={workQuota}
-        onGroupChange={changeGroup}
         workedDays={workedDays}
-        totals={totals}
         recoveryRangeSelecting={recoveryRangeSelecting}
         recoveryDraft={recoveryDraft}
         setRecoveryDraft={setRecoveryDraft}
@@ -2892,7 +2834,6 @@ export default function Home() {
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
         onToday={goToday}
-        onModeChange={setMode}
         onExportPdf={homeSection === "home" ? () => void exportAnnualPlanning("my-leaves", showSchoolVacationsOnPdf) : undefined}
         exportingPdf={pdfExporting === "my-leaves"}
         showSchoolVacations={showSchoolVacations}
@@ -2901,7 +2842,9 @@ export default function Home() {
         onSchoolZoneChange={setSchoolZone}
       />
 
-      {mode === "year" && homeSection === "pdf" && (
+      {/* Les trois exports annuels ne dépendent plus d'une vue annuelle
+          retirée : la rubrique PDF les porte à elle seule. */}
+      {homeSection === "pdf" && (
         <Suspense fallback={null}>
         <AnnualPdfActions
           narrowScreen={narrowScreen}
@@ -2988,59 +2931,27 @@ export default function Home() {
         </button>
       </div>
 
-      {showSchoolVacations && mode === "month" ? (
+      {showSchoolVacations ? (
         <Suspense fallback={null}>
           <SchoolVacationMonthSummary zone={schoolZone} vacations={monthSchoolVacations} />
         </Suspense>
       ) : null}
 
-      {mode === "month" ? (
-        <section
-          className={`month-card${calendarSlide ? ` calendar-${calendarSlide}` : ""}`}
-          onTouchStart={startMonthSwipe}
-          onTouchEnd={endMonthSwipe}
-        >
-          <MonthCalendar
-            year={view.getFullYear()}
-            month={view.getMonth()}
-            renderDay={renderDay}
-          />
-        </section>
-      ) : (
-        <section className="year-grid">
-          {MONTHS.map((month, index) => (
-            <article
-              className="mini-month"
-              id={`month-${index}`}
-              key={month}
-              ref={(node) => {
-                monthRefs.current[index] = node;
-              }}
-            >
-              <h3>
-                <button
-                  className="mini-month-open"
-                  type="button"
-                  onClick={() => openMonthFromYear(index)}
-                  title={`Ouvrir ${month} en grand`}
-                >
-                  {month}
-                </button>
-              </h3>
-              <MonthCalendar
-                year={view.getFullYear()}
-                month={index}
-                compact
-                renderDay={renderDay}
-              />
-            </article>
-          ))}
-        </section>
-      )}
-      {homeSection === "home" && mode === "month" ? (
+      <section
+        className={`month-card${calendarSlide ? ` calendar-${calendarSlide}` : ""}`}
+        onTouchStart={startMonthSwipe}
+        onTouchEnd={endMonthSwipe}
+      >
+        <MonthCalendar
+          year={view.getFullYear()}
+          month={view.getMonth()}
+          renderDay={renderDay}
+        />
+      </section>
+      {homeSection === "home" ? (
         <WorkExchangePanel exchanges={workExchanges} onEdit={editWorkExchange} />
       ) : null}
-      {homeSection === "home" && mode === "month" ? (
+      {homeSection === "home" ? (
         <div className="planning-calendar-cleanup-row">
           {calendarDeleteMode && !narrowScreen ? (
             <CalendarCleanupPanel
@@ -3143,8 +3054,7 @@ export default function Home() {
           onOpenDate={(date) => {
             setBalanceDetailType(null);
             setView(localDate(date.getFullYear(), date.getMonth(), 1));
-            setMode("month");
-            openDay(date);
+                    openDay(date);
           }}
           onOpenManualAdjustments={openManualAdjustments}
           strikeEstimateFor={(year, monthIndex) =>
@@ -3200,8 +3110,7 @@ export default function Home() {
           setRecoveryDialogOpen(false);
           setRecoveryDatePicking(true);
           setHomeSection("home");
-          setMode("month");
-          window.setTimeout(
+                window.setTimeout(
             () => document.querySelector(".month-card")?.scrollIntoView({ behavior: "smooth", block: "center" }),
             0,
           );

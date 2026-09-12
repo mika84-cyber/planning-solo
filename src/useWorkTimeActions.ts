@@ -16,7 +16,7 @@ import {
   type WorkQuota,
 } from "./overtime";
 import { dateKey, fromKey, getDayInfo, s } from "./planningLogic";
-import { euros, type FormProfile, type ViewMode } from "./appModel";
+import { euros, type FormProfile } from "./appModel";
 import type {
   MecenatDraft,
   OvertimeDraft,
@@ -66,7 +66,6 @@ type WorkTimeActionsOptions = {
   setRecoveryDialogOpen: SetState<boolean>;
   setMecenatDialogOpen: SetState<boolean>;
   setHomeSection: (section: "home") => void;
-  setMode: SetState<ViewMode>;
   overtimeSaveInFlightRef: BooleanRef;
   mecenatSaveInFlightRef: BooleanRef;
   lastOvertimeSubmissionRef: SubmissionRef;
@@ -155,7 +154,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, setRecoveryRangeOpen,
     setRecoveryRangeSelecting, savingOvertime, setSavingOvertime, setSavingMecenat,
     setOvertimeDialogOpen, setSolidarityDialogOpen, setRecoveryDialogOpen,
-    setMecenatDialogOpen, setHomeSection, setMode, overtimeSaveInFlightRef,
+    setMecenatDialogOpen, setHomeSection, overtimeSaveInFlightRef,
     mecenatSaveInFlightRef, lastOvertimeSubmissionRef, lastRecoverySubmissionRef,
     lastMecenatSubmissionRef, handoffKey, notify, confirmMessage, post, postBatch,
   } = options;
@@ -329,7 +328,6 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     setRecoveryRangeOpen(false);
     setRecoveryRangeSelecting(true);
     setHomeSection("home");
-    setMode("month");
     window.setTimeout(() =>
       document.getElementById("recovery-range-selection-panel")
         ?.scrollIntoView({ behavior: "smooth", block: "start" }), 80,

@@ -20,7 +20,9 @@ export function ChoicePicker<T extends ChoiceValue>({
   className = "",
   placeholder,
 }: {
-  value: T;
+  /** La chaîne vide vaut « rien de choisi » : le libellé d'attente prend
+   *  alors la place, plutôt qu'une option que personne n'a retenue. */
+  value: T | "";
   options: Array<{ value: T; label: string }>;
   onChange: (value: T) => void;
   ariaLabel: string;
@@ -159,7 +161,7 @@ export function ChoicePicker<T extends ChoiceValue>({
       <button
         ref={triggerRef}
         type="button"
-        className="choice-picker-trigger"
+        className={`choice-picker-trigger${selected ? "" : " empty"}`}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"

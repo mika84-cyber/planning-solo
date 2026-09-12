@@ -4,11 +4,8 @@ import { PlanningCommandCenter } from "./PlanningCommandCenter";
 
 const baseProps = {
   isHome: true,
-  mode: "month" as const,
   view: new Date(2026, 8, 1),
   setView: vi.fn(),
-  group: 2,
-  onGroupChange: vi.fn(),
   workedDays: {
     month: {
       worked: 16, scheduled: 18, onLeave: 1, exceptionallyClosed: 1,
@@ -26,7 +23,6 @@ const baseProps = {
       exchangedReturned: 1,
     }],
   },
-  totals: { work: 16, training: 2, workedHoliday: 1 },
   recoveryRangeSelecting: false,
   recoveryDraft: {
     date: "2026-09-01",
@@ -66,29 +62,33 @@ describe("PlanningCommandCenter", () => {
   it("regroupe les commandes mensuelles du planning", () => {
     const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} />);
     expect(html).toContain("Mon planning");
-    expect(html).toContain("Année affichée");
-    // Le compteur détaillé a quitté l'accueil : le mois et les jours
-    // travaillés se lisent sur le résumé du volet, replié à l'ouverture.
-    expect(html).toContain("Septembre 2026");
-    expect(html).toContain("16 jours travaillés ce mois-ci");
-    expect(html).not.toContain("Détail des jours travaillés");
-    expect(html).toContain("Modifier");
-    // Un pas de mois sans avoir à ouvrir un menu.
+    // Tout est posé à même la page : le mois, les deux flèches, le retour au
+    // mois courant et le compte réel des jours travaillés.
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-label="Mois suivant"');
+    expect(html).toContain("Sélectionner le mois");
+    expect(html).toContain("Sélectionner l’année");
     expect(html).toContain("Aujourd’hui");
-    expect(html).toContain("Accès rapide au mois actuel");
+    expect(html).toContain("16 jours travaillés ce mois-ci");
+    expect(html).toContain("Détail des jours travaillés");
+    // Plus de volet à déplier, ni de bascule vers une vue annuelle retirée.
+    expect(html).not.toContain("Modifier");
+    expect(html).not.toContain("Année affichée");
+    expect(html).not.toContain("Mode d’affichage");
     expect(html).not.toContain("Choix du groupe");
     expect(html).not.toContain("Effacer plusieurs dates ou notes");
   });
 
-  it("affiche le récapitulatif et le groupe dans la vue annuelle", () => {
-    const html = renderToStaticMarkup(
-      <PlanningCommandCenter {...baseProps} isHome={false} mode="year" />,
-    );
-    expect(html).toContain("Récapitulatif");
-    expect(html).toContain("jours travaillés");
-    expect(html).toContain("Sélectionner le groupe du planning annuel");
-    expect(html).not.toContain("Jours travaillés</span>");
+  it("pose les commandes du mois sans volet à déplier", () => {
+    // Changer de mois est le geste le plus courant de cette rubrique : il ne
+    // doit pas demander d'ouvrir quoi que ce soit d'abord.
+    const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} />);
+    expect(html).toContain("Mois précédent");
+    expect(html).toContain("Mois suivant");
+    expect(html).toContain("Sélectionner le mois");
+    expect(html).toContain("Aujourd’hui");
+    expect(html).toContain("jours travaillés ce mois-ci");
+    expect(html).not.toContain("planning-settings-disclosure");
+    expect(html).not.toContain("Mode d’affichage");
   });
 });

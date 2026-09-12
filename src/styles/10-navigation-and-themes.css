@@ -288,9 +288,7 @@
     padding-bottom: 11px;
   }
   .top-header-title .eyebrow { font-size: 9px; }
-  .main-menu-button { order: 4; }
-  .view-switch { order: 5; }
-  .pay-app-screen,
+  .main-menu-button { order: 4; }  .pay-app-screen,
   .pdf-download-screen {
     min-height: calc(100dvh - 112px);
     border-radius: 22px;
@@ -645,7 +643,7 @@
 }
 .pay-work-schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; border: 1px solid #d4e0ee; border-radius: 14px; padding: 12px; background: rgba(255,255,255,.58); }.pay-profile-save{grid-column:1/-1;justify-self:end;min-width:180px}
 .pay-work-schedule legend { padding: 0 5px; color: #53677f; font-family: inherit; font-size: 12px; font-weight: 850; }
-.pay-work-schedule > p { grid-column: 1 / -1; font-size: 11px; }
+.pay-work-schedule > small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
 .pay-work-schedule label,.pay-work-time-field { display: grid; gap: 5px; color: #53677f; font-family: inherit; font-size: 12px; font-weight: 850; }
 .pay-work-schedule input { min-width: 0; height: 42px; border: 1px solid #c7d5e5; border-radius: 10px; padding: 0 7px; background: #fff; color: var(--text); font: inherit; }
 .pay-work-time-picker{align-items:center;background:#fff;border:1px solid #c7d5e5;border-radius:10px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);height:42px;overflow:hidden}.pay-work-time-picker:focus-within{border-color:#3b75c4;box-shadow:0 0 0 3px rgba(59,117,196,.12)}.pay-work-time-picker select{appearance:none;background:transparent;border:0;color:var(--text);font-family:inherit;font-size:15px;font-weight:850;height:100%;min-width:0;padding:0 8px;text-align:center}.pay-work-time-picker select:focus{outline:0}.pay-work-time-picker b{color:#6b7d91;font-size:15px}
@@ -700,13 +698,7 @@
     min-height: 46px;
     padding: 0 14px;
     white-space: nowrap;
-  }
-  .planning-year-choice {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-  .planning-year-choice > .year-choice-label { grid-column: 1 / -1; }
-  .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; }
+  }  .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; }
   .pay-profile-settings-grid { grid-template-columns: 1fr; gap: 8px; }
   .pay-profile-settings-grid > label { grid-template-rows: auto minmax(46px, auto); gap: 4px; }
   .pay-work-schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pay-profile-save{justify-self:stretch;width:100%}
@@ -736,9 +728,7 @@
 .allowance-card { border-color: var(--section-outline); }
 .pay-profile-settings { display: block; padding: 0; }
 
-@media (max-width: 720px) {
-  .controls .planning-year-choice { display: none; }
-  .planning-leave-mobile { width: 100%; }
+@media (max-width: 720px) {  .planning-leave-mobile { width: 100%; }
   .pay-profile-settings { display: block; padding: 0; }
   .variable-pay-heading-actions {
     align-items: center;
@@ -842,12 +832,6 @@
     width: 100%;
     min-width: 0;
   }
-  .calendar-toolbar.annual-toolbar .planning-leave-annual {
-    flex: 1 0 100%;
-    grid-column: 1 / -1;
-    justify-self: stretch;
-    width: 100%;
-  }
 }
 
 @media (max-width: 720px) {
@@ -865,11 +849,7 @@
   .header-actions {
     align-items: center;
     gap: 6px;
-  }
-  .header-actions .view-switch {
-    flex: 0 0 auto;
-  }
-  .overtime-actions > button,
+  }  .overtime-actions > button,
   .solidarity-hours-action {
     width: 100%;
   }

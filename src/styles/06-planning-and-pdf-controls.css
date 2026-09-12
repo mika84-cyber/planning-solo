@@ -67,17 +67,21 @@
   gap: 8px;
   min-width: 0;
 }
-.year-toolbar .period-navigation {
-  grid-template-columns: minmax(145px, 1fr);
-}
+/* Le nom du mois est long : à 17 px il débordait de son cadre et venait
+   toucher le bord. La taille suit donc la place disponible. */
 .period-navigation .choice-picker-trigger {
   min-height: 42px;
   justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
   border-color: transparent;
   background: #f7f9fc;
-  font-size: 17px;
+  font-size: clamp(14px, 3.9vw, 17px);
   font-weight: 850;
   text-transform: capitalize;
+}
+.period-navigation .choice-picker-trigger svg {
+  width: 15px;
 }
 .toolbar-group-picker .choice-picker-trigger {
   min-height: 42px;

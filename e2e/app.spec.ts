@@ -13,7 +13,7 @@ import {
 import { workedDayCount } from "../src/appModel";
 import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES } from "../src/grandPalaisClosures";
 
-async function prepareDemo(page: Page, withCurrentLeave = false, openPlanning = true) {
+async function prepareDemo(page: Page, withCurrentLeave = false) {
   await page.addInitScript((seedLeave) => {
     localStorage.setItem("planning:e2e-demo-enabled", "1");
     localStorage.setItem("planning:guide-seen-v1:demo", "1");
@@ -43,29 +43,13 @@ async function prepareDemo(page: Page, withCurrentLeave = false, openPlanning = 
   // Mesurer une position avant ce basculement, c'est lire une mise en page
   // qui n'existera plus une fraction de seconde après.
   await page.evaluate(() => document.fonts.ready);
-  if (openPlanning) await openPlanningSettings(page);
 }
 
-/** Déplie les réglages du planning. Ils sont repliés à chaque arrivée sur
- *  l'accueil : les parcours qui changent de mois, d'année, d'affichage ou de
- *  zone de vacances passent par là, comme la personne devant l'écran. Le
- *  planning étant chargé après le reste, on attend qu'il soit posé. */
-/** Le nombre de jours travaillés du mois, lu sur le résumé du volet : le menu
- *  détaillé a quitté l'accueil. */
+/** Le nombre de jours travaillés du mois, lu à même la page : le compte
+ *  est posé sous le mois, sans rien à déplier. */
 async function workedDaysOnHome(page: Page) {
-  const resume = await page.locator(".planning-settings-scope small").innerText();
+  const resume = await page.locator(".worked-days-trigger span").first().innerText();
   return Number(resume.match(/[\d,.]+/)![0].replace(",", "."));
-}
-
-async function openPlanningSettings(page: Page) {
-  const planning = page.locator("details.planning-settings-disclosure");
-  await planning
-    .first()
-    .waitFor({ state: "attached", timeout: 10_000 })
-    .catch(() => undefined);
-  if (!(await planning.count())) return;
-  if (await planning.evaluate((node: HTMLDetailsElement) => node.open)) return;
-  await planning.locator("summary").click();
 }
 
 async function openLeaveTool(page: Page, label: string) {
@@ -322,21 +306,17 @@ test("les pages et la navigation suivent exactement la largeur de leur en-tête"
 });
 
 test("mon planning et ses réglages partagent un seul cadre et l’export conserve les congés", async ({ page }) => {
-  await prepareDemo(page, false, false);
+  await prepareDemo(page);
   const planning = page.locator(".planning-workspace-shell.framed .planning-command-section");
   await expect(planning).toBeVisible();
   await expect(planning.getByRole("heading", { name: "Mon planning" })).toBeVisible();
-  // Les réglages sont repliés à l'arrivée, et le volet fermé dit déjà le mois
-  // affiché et les jours travaillés : on ne l'ouvre que pour les modifier.
-  const reglages = page.locator("details.planning-settings-disclosure");
-  await expect(reglages).toHaveJSProperty("open", false);
-  await expect(reglages.locator(".planning-settings-scope")).toContainText(/\d{4}/);
-  await expect(reglages.locator(".planning-settings-scope")).toContainText("travaillé");
-  await expect(reglages.locator(".planning-settings-open")).toContainText("Modifier");
-  await expect(planning.locator(".controls")).toBeHidden();
-  await openPlanningSettings(page);
+  // Les commandes du mois sont posées à même la page : changer de mois est le
+  // geste le plus courant ici, il ne doit pas demander d’ouvrir un volet.
+  await expect(page.locator("details.planning-settings-disclosure")).toHaveCount(0);
   await expect(planning.locator(".controls")).toBeVisible();
-  await expect(reglages.locator(".planning-settings-open")).toContainText("Fermer");
+  await expect(planning.getByRole("button", { name: "Mois précédent" })).toBeVisible();
+  await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
+  await expect(planning.locator(".worked-days-trigger")).toContainText("travaillé");
   await expect(planning).toHaveCSS("border-left-width", "8px");
   await expect(page.locator(".month-card")).toBeVisible();
   await expect(page.getByRole("button", { name: "Poser un congé" })).toBeVisible();
@@ -566,7 +546,6 @@ async function prepareStrikeDemo(page: Page) {
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
-  await openPlanningSettings(page);
 }
 
 async function prepareCompletePayDemo(page: Page, withSundayCarryover = true) {
@@ -914,7 +893,6 @@ test("l’aide au partage est ouverte seulement lors de la première utilisation
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
 
   await goToSection(page, "home");
-  await openPlanningSettings(page);
   await goToSection(page, "colleagues");
 
   const returningToggle = page.locator(".colleague-how-toggle");
@@ -1796,7 +1774,6 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   await expect(page.getByText(/Périodes enregistrées/)).toBeVisible();
 
   await goToSection(page, "home");
-  await openPlanningSettings(page);
   await page.getByRole("button", { name: "Aujourd’hui" }).click();
   const todayCell = page.getByRole("button", { name: new RegExp(longDate(today), "i") });
   const workAccidentMarker = todayCell.locator(".work-accident-calendar-marker");
@@ -2449,10 +2426,9 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await expect(page.getByRole("heading", { name: "Mes échanges" })).toHaveCount(0);
 });
 
-test("l’en-tête, le sélecteur d’affichage et les années sont confortables", async ({ page }, testInfo) => {
+test("l’en-tête et les années sont confortables", async ({ page }, testInfo) => {
   await prepareDemo(page);
   const header = page.locator(".top-header");
-  const switcher = page.getByLabel("Mode d’affichage");
   const update = page.locator(".top-header .header-update-button");
   const account = page.getByRole("button", { name: "Compte" });
   const menuButton = page.getByRole("button", { name: "Ouvrir le menu principal" });
@@ -2465,13 +2441,6 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
   await expect(menuButton).toBeVisible();
   await expect(page.locator((page.viewportSize()?.width || 0) <= 720 ? ".mobile-bottom-navigation" : ".desktop-side-navigation")).toBeVisible();
   await expect(update).toHaveCount(0);
-  // La bascule n'est plus un bloc encadré mais deux onglets : plus de cadre
-  // autour, et le choix courant se lit à son trait couleur d'accent.
-  await expect(switcher).toHaveCSS("border-top-width", "0px");
-  await expect(switcher.getByRole("button", { name: "Mois" }))
-    .toHaveCSS("border-bottom-color", await cssTokenRgb(page, "--accent"));
-  await expect(switcher.getByRole("button", { name: "Année" }))
-    .toHaveCSS("border-bottom-color", "rgba(0, 0, 0, 0)");
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cardBorderColor(page));
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
@@ -2556,21 +2525,11 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
     expect(Math.abs(headerBox!.x - todayOverviewBox!.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(headerBox!.width - todayOverviewBox!.width)).toBeLessThanOrEqual(1);
   }
-  await expect(switcher.getByRole("button", { name: "Mois" })).toHaveAttribute("aria-pressed", "true");
-  // L'onglet courant se signale par sa couleur, sans aplat : le volet
-  // contenait déjà assez de terracotta.
-  await expect(switcher.getByRole("button", { name: "Mois" })).toHaveCSS("background-image", "none");
-  await expect(switcher.getByRole("button", { name: "Mois" }))
-    .toHaveCSS("color", await cssTokenRgb(page, "--accent-strong"));
-  // La bascule Mois / Année est descendue dans les réglages du planning :
-  // elle commande ce calendrier-là, sa place est auprès de lui et non deux
-  // écrans au-dessus. Elle vient donc après le résumé de la journée.
-  const switchBox = await switcher.boundingBox();
-  expect(switchBox).not.toBeNull();
-  expect(switchBox!.y).toBeGreaterThan(todayOverviewBox!.y);
+  // La bascule Mois / Année a disparu avec la vue annuelle : le planning
+  // n’affiche plus qu’un mois, et ses commandes sont posées auprès de lui.
   const planningBox = await page.locator(".planning-command-section").boundingBox();
   expect(planningBox).not.toBeNull();
-  expect(switchBox!.y).toBeGreaterThanOrEqual(planningBox!.y);
+  expect(planningBox!.y).toBeGreaterThan(todayOverviewBox!.y);
 
   await page.locator('.calendar-toolbar button[aria-label="Sélectionner l’année"]').click();
   const years = page.getByRole("listbox", { name: "Sélectionner l’année" }).getByRole("option");
@@ -2599,15 +2558,14 @@ test("l’en-tête, le sélecteur d’affichage et les années sont confortables
     expect(monthPickerBox).not.toBeNull();
     expect(yearPickerBox).not.toBeNull();
     expect(Math.abs(monthPickerBox!.width - yearPickerBox!.width)).toBeLessThanOrEqual(1);
-    // La barre de période occupe toute la largeur : c'est la flèche « suivant »
-    // qui en atteint le bord, les menus s'arrêtant juste avant elle.
-    const nextArrowBox = await page.locator(".period-navigation .period-step").last().boundingBox();
-    expect(nextArrowBox).not.toBeNull();
-    expect(nextArrowBox!.x + nextArrowBox!.width).toBeGreaterThan(
-      toolbarBox!.x + toolbarBox!.width - 32,
-    );
+    // Les deux flèches encadrent les menus, et le retour au mois courant
+    // tient dans la même barre : tout le geste de navigation au même endroit.
+    const arrows = page.locator(".period-navigation .period-step");
+    const previousArrowBox = await arrows.first().boundingBox();
+    const nextArrowBox = await arrows.last().boundingBox();
+    expect(previousArrowBox!.x).toBeLessThan(monthPickerBox!.x);
     expect(nextArrowBox!.x).toBeGreaterThan(yearPickerBox!.x + yearPickerBox!.width - 1);
-    await expect(page.locator(".month-toolbar .today-button")).toHaveCount(0);
+    await expect(page.locator(".month-toolbar .today-button")).toHaveCount(1);
   }
   expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
   expect(leavePanelBox!.y + leavePanelBox!.height).toBeLessThan(monthCardBox!.y);
@@ -2716,7 +2674,6 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
 
   await page.setViewportSize({ width: 984, height: 1092 });
   await goToSection(page, "home");
-  await openPlanningSettings(page);
   await assertVisibleMenus();
 });
 
@@ -3081,7 +3038,6 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
 
   await goToSection(page, "home");
-  await openPlanningSettings(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ })
@@ -3594,7 +3550,6 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
   await balanceDialog.getByLabel("Heures").fill("20");
   await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
   await goToSection(page, "home");
-  await openPlanningSettings(page);
   await page.locator(".month-card .day").first().click();
   await page.getByRole("dialog", { name: /2026/ })
     .getByRole("button", { name: /^Récupération/ })
@@ -3991,7 +3946,6 @@ test("le mois de paie reste indépendant du planning", async ({ page }) => {
   await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
 
   await goToSection(page, "home");
-  await openPlanningSettings(page);
   await expect(planningMonth).toHaveText(initialPlanningMonth || "");
 
   const calendar = page.locator(".month-card");

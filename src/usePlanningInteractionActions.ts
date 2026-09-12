@@ -4,7 +4,7 @@ import type {
   SetStateAction,
   TouchEvent,
 } from "react";
-import type { Entries, RequestKind, SelectedDay, ViewMode } from "./appModel";
+import type { Entries, RequestKind, SelectedDay } from "./appModel";
 import { splitOvertimeRange, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
 import {
   dateKey,
@@ -81,7 +81,6 @@ type PlanningInteractionActionsOptions = {
   group: number;
   view: Date;
   setView: Dispatch<SetStateAction<Date>>;
-  mode: ViewMode;
   workQuota: WorkQuota;
   /** Absent tant que la personne n’a pas saisi ses horaires : les champs
    *  d’heure restent alors vides. */
@@ -104,7 +103,6 @@ export function usePlanningInteractionActions({
   group,
   view,
   setView,
-  mode,
   workQuota,
   workSchedule,
   calendarDeleteMode,
@@ -175,7 +173,6 @@ export function usePlanningInteractionActions({
     setHomeSection,
     calendarSlide,
     setCalendarSlide,
-    monthRefs,
     monthSwipeStart,
   } = appShellUi;
   const {
@@ -453,44 +450,26 @@ export function usePlanningInteractionActions({
   function goToday() {
     const today = new Date();
     setView(localDate(today.getFullYear(), today.getMonth(), 1));
-    if (mode === "year")
-      setTimeout(
-        () =>
-          monthRefs.current[today.getMonth()]?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          }),
-        80,
-      );
   }
   function changePeriod(delta: number) {
-    if (mode === "month") {
-      if (calendarSlide) return;
-      const outgoing = delta > 0 ? "out-left" : "out-right";
-      const incoming = delta > 0 ? "in-right" : "in-left";
-      setCalendarSlide(outgoing);
-      window.setTimeout(() => {
-        setView((current) =>
-          localDate(current.getFullYear(), current.getMonth() + delta, 1),
-        );
-        setCalendarSlide(incoming);
-        window.setTimeout(() => setCalendarSlide(""), 230);
-      }, 125);
-      return;
-    }
-    setView((current) =>
-      mode === "year"
-        ? localDate(current.getFullYear() + delta, current.getMonth(), 1)
-        : localDate(current.getFullYear(), current.getMonth() + delta, 1),
-    );
+    if (calendarSlide) return;
+    const outgoing = delta > 0 ? "out-left" : "out-right";
+    const incoming = delta > 0 ? "in-right" : "in-left";
+    setCalendarSlide(outgoing);
+    window.setTimeout(() => {
+      setView((current) =>
+        localDate(current.getFullYear(), current.getMonth() + delta, 1),
+      );
+      setCalendarSlide(incoming);
+      window.setTimeout(() => setCalendarSlide(""), 230);
+    }, 125);
   }
   function startMonthSwipe(event: TouchEvent<HTMLElement>) {
-    if (mode !== "month") return;
     const touch = event.changedTouches[0];
     monthSwipeStart.current = { x: touch.clientX, y: touch.clientY };
   }
   function endMonthSwipe(event: TouchEvent<HTMLElement>) {
-    if (!monthSwipeStart.current || mode !== "month") return;
+    if (!monthSwipeStart.current) return;
     const touch = event.changedTouches[0];
     const deltaX = touch.clientX - monthSwipeStart.current.x;
     const deltaY = touch.clientY - monthSwipeStart.current.y;

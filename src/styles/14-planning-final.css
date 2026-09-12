@@ -35,14 +35,6 @@
 .planning-workspace-shell.framed .controls .worked-days {
   gap: 6px;
 }
-
-.planning-workspace-shell.framed .controls .year-choice-label {
-  color: var(--muted);
-  font-size: 9.5px;
-  font-weight: 850;
-  letter-spacing: 0.1em;
-}
-
 .planning-workspace-shell.framed .controls .choice-picker-trigger,
 .planning-workspace-shell.framed .controls .worked-days-trigger {
   border: 1px solid rgba(92, 72, 55, 0.3);
@@ -169,11 +161,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
 }
-
-.planning-workspace-shell.framed .controls .planning-year-choice {
-  display: none;
-}
-
 .planning-workspace-shell.framed .controls .worked-days {
   grid-column: 1;
   grid-row: 1;
@@ -875,18 +862,7 @@
 }
 
 /* Planning : l’accès à aujourd’hui remplace le groupe dans les deux commandes
-   principales. Le nettoyage est une action distincte, placée après la grille. */
-.planning-workspace-shell.framed .controls .planning-today-choice {
-  grid-column: 2;
-  grid-row: 1;
-  display: grid;
-  grid-template-rows: auto 46px;
-  gap: 6px;
-  width: 100%;
-  min-width: 0;
-}
-
-.planning-workspace-shell.framed .controls .planning-today-button {
+   principales. Le nettoyage est une action distincte, placée après la grille. */.planning-workspace-shell.framed .controls .planning-today-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1360,35 +1336,14 @@ fieldset.leave-choices {
 .apple-install-icon svg{width:20px;height:20px;fill:none}
 .apple-install-dismiss{align-self:center;border:0;background:transparent;color:var(--accent-strong);font-weight:800;white-space:nowrap}
 
-/* Volet des réglages du planning : replié à l'ouverture, il annonce sur une
-   ligne ce qu'il contient — le mois affiché et les jours travaillés — et dit
-   explicitement qu'on peut l'ouvrir. Sans ce libellé, un chevron seul se
-   remarque mal sur un écran déjà chargé. */
-.planning-settings-disclosure{display:grid;gap:10px}
-.planning-settings-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:9px 2px 0;cursor:pointer;list-style:none}
-.planning-settings-summary::-webkit-details-marker{display:none}
-.planning-settings-summary:hover .planning-settings-open{color:var(--accent)}
-.planning-settings-summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:10px}
-.planning-settings-scope{display:grid;gap:2px;min-width:0}
-.planning-settings-scope strong{font-size:16px;font-weight:900}
-.planning-settings-scope small{color:var(--muted);font-size:11px;font-weight:650}
-.planning-settings-open{display:flex;flex:none;align-items:center;gap:5px;color:var(--accent-strong);font-size:11px;font-weight:850}
-.planning-settings-open svg{width:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .16s ease}
-.planning-settings-disclosure[open] .planning-settings-open svg{transform:rotate(180deg)}
+/* Les commandes du planning, posées à même la page : le volet à déplier a
+   été retiré, on arrivait ici pour changer de mois et il fallait d'abord
+   l'ouvrir. */
 .planning-settings-body{display:grid;gap:6px}
-/* Ordre de lecture du volet : ce qu'on affiche, puis la période, puis les
-   compléments. Les intitulés en petites capitales sont retirés : « 17 ce
-   mois-ci » et « Aujourd’hui » se lisent sans étiquette. */
-.planning-settings-body .view-switch{order:-2}
-.planning-settings-body .calendar-toolbar.month-toolbar{order:-1}
-.planning-settings-body .year-choice-label{display:none}
-.planning-workspace-shell.framed .planning-settings-body .controls>*{grid-template-rows:auto}
-
-/* Deux onglets plutôt qu'un bloc plein : le volet a déjà assez de cadres et
-   le terracotta en aplat y pesait lourd. Le choix se lit au trait. */
-.planning-settings-body .view-switch{gap:0;min-width:0;border:0;border-radius:0;padding:0;background:none;box-shadow:none}
-.planning-settings-body .view-switch button{min-height:34px;border-radius:0;border-bottom:2px solid transparent;padding:0 6px;background:none;box-shadow:none;color:var(--muted)}
-.planning-settings-body .view-switch button.active{border-bottom-color:var(--accent);background:none;box-shadow:none;color:var(--accent-strong)}
+/* La période vient en tête : on arrive ici pour lire un mois, le reste n'est
+   qu'un complément. Les intitulés en petites capitales sont retirés — « 17
+   jours travaillés ce mois-ci » se lit sans étiquette. */
+.planning-settings-body .calendar-toolbar.month-toolbar{order:-1}.planning-workspace-shell.framed .planning-settings-body .controls>*{grid-template-rows:auto}
 
 /* La période se manipule d'un bloc : deux flèches rondes encadrent le mois et
    l'année réunis dans un seul cadre, séparés d'un simple filet. Avancer d'un
@@ -1404,9 +1359,7 @@ fieldset.leave-choices {
 
 /* Le retour au mois courant est la seule commande restante de cette ligne :
    un bouton discret, centré, qui ne concurrence pas la période au-dessus. */
-.planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}
-.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-choice{width:100%}
-.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{font-weight:850}
+.planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{font-weight:850}
 .planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button:hover{background:var(--accent-soft)}
 .planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{width:auto;min-height:32px;border:0;border-radius:0;padding:0;background:none;box-shadow:none;color:var(--accent-strong);font-size:12px;text-decoration:underline;text-underline-offset:3px}
 

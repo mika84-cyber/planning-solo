@@ -15,11 +15,14 @@ type PayPageProps = {
   profileOpen: boolean;
   profileFocusRequested: boolean;
   settingsOpen: boolean;
-  workQuota: WorkQuota;
+  /** Absents tant que rien n’a été choisi : les calculs retiennent bien un
+   *  temps plein contractuel par défaut, mais l’afficher ici ferait passer
+   *  pour renseigné ce qui reste à décider. */
+  workQuota?: WorkQuota;
   /** Absent tant que personne n’a saisi de plage : les champs restent vides
    *  plutôt que d’afficher une plage que l’on n’a pas choisie. */
   workSchedule?: WorkSchedule;
-  status: PayStatus;
+  status?: PayStatus;
   netEstimateComplete: boolean;
   gross: number;
   grossComplete: boolean;
@@ -79,6 +82,14 @@ export function PayPage({
     return () => window.cancelAnimationFrame(frame);
   }, [onProfileFocused, profileFocusRequested, profileOpen, screen]);
 
+  /* Le résumé ne nomme que ce qui a été choisi : annoncer « Temps plein ·
+     Contractuel » sans que personne ne l'ait retenu donnerait le profil pour
+     réglé. */
+  const profileRecap = [
+    WORK_QUOTA_OPTIONS.find((option) => option.value === workQuota)?.label,
+    PAY_STATUS_OPTIONS.find((option) => option.value === status)?.label,
+  ].filter(Boolean).join(" · ") || "Quotité et statut à renseigner";
+
   const profileContent = (
     <section id="pay-profile-settings" tabIndex={-1} className={`pay-profile-settings${profileOpen ? " open" : ""}`} aria-labelledby="pay-profile-settings-title">
       <button type="button" className="pay-profile-summary" onClick={onToggleProfile} aria-expanded={profileOpen}>
@@ -86,7 +97,7 @@ export function PayPage({
         <span className="pay-profile-summary-copy">
           <span className="step-label">Profil utilisé pour les calculs</span>
           <strong id="pay-profile-settings-title">Mon profil de paie</strong>
-          <small>{WORK_QUOTA_OPTIONS.find((option) => option.value === workQuota)?.label}{" · "}{PAY_STATUS_OPTIONS.find((option) => option.value === status)?.label}</small>
+          <small>{profileRecap}</small>
         </span>
         <span className={`pay-profile-open-copy${netEstimateComplete ? " complete" : " missing"}`}>
           {profileOpen ? "Replier" : netEstimateComplete ? "Profil complet" : "À compléter"}
@@ -97,17 +108,17 @@ export function PayPage({
         <div className="pay-profile-settings-grid">
           <label>
             <span>Quotité de travail</span>
-            <ChoicePicker value={workQuota} options={WORK_QUOTA_OPTIONS.map(({ value, label }) => ({ value, label }))} onChange={onWorkQuotaChange} ariaLabel="Choisir la quotité de travail" layout="list" className="pay-profile-picker" />
+            <ChoicePicker value={workQuota ?? ""} options={WORK_QUOTA_OPTIONS.map(({ value, label }) => ({ value, label }))} onChange={onWorkQuotaChange} ariaLabel="Choisir la quotité de travail" layout="list" className="pay-profile-picker" placeholder="À renseigner" />
           </label>
           <label>
             <span>Statut</span>
-            <ChoicePicker value={status} options={PAY_STATUS_OPTIONS} onChange={onStatusChange} ariaLabel="Choisir le statut" layout="list" className="pay-profile-picker" />
+            <ChoicePicker value={status ?? ""} options={PAY_STATUS_OPTIONS} onChange={onStatusChange} ariaLabel="Choisir le statut" layout="list" className="pay-profile-picker" placeholder="À renseigner" />
             <small>Calculs adaptés à votre statut</small>
           </label>
           <fieldset className="pay-work-schedule">
             <legend>Sur quelle plage horaire travaillez-vous ?</legend>
-            <p>L’application utilisera cette plage pour proposer des horaires adaptés aux congés et récupérations.</p>
             {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <ClockTimePicker key={key} className="pay-work-time-field" pickerClassName="pay-work-time-picker" label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule?.[key] ?? ""} allowEmpty onChange={(value) => onWorkScheduleChange({ start: workSchedule?.start ?? "", end: workSchedule?.end ?? "", [key]: value })} />)}
+            <small>Calculs adaptés à vos horaires</small>
           </fieldset>
           <button type="button" className="primary-action pay-profile-save" onClick={onSaveProfile}>Enregistrer le profil</button>
         </div>

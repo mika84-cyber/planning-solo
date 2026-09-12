@@ -262,8 +262,18 @@ describe("finitions d’interface", () => {
     expect(app).toContain('pay-profile-open-copy${netEstimateComplete ? " complete" : " missing"}');
     expect(app).not.toContain('"Informations manquantes"');
     expect(styles).toContain(".pay-profile-open-copy.complete");
-    expect(styles).toContain(".controls .worked-days > .year-choice-label");
     expect(styles).toContain("min-height: 54px");
+  });
+
+  it("laisse la quotité et le statut vides tant qu’ils n’ont pas été choisis", () => {
+    // Les calculs retiennent bien un temps plein contractuel par défaut,
+    // mais l’afficher ferait passer pour renseigné ce qui reste à décider.
+    expect(appRoot).toContain("workQuota={formProfile?.workQuota}");
+    expect(appRoot).toContain("status={formProfile?.status}");
+    expect(payPage).toContain('placeholder="À renseigner"');
+    expect(payPage).toContain("Quotité et statut à renseigner");
+    expect(payPage).not.toContain('status={formProfile?.status || "contractuel"}');
+    expect(styles).toContain(".choice-picker-trigger.empty");
   });
 
   it("n'affiche aucun brut trompeur tant que le profil de paie est incomplet", () => {
@@ -456,7 +466,10 @@ describe("finitions d’interface", () => {
   it("équilibre les commandes du planning sur grand écran", () => {
     expect(styles).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
     expect(styles).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
-    expect(styles).toContain(".calendar-toolbar.annual-toolbar .planning-leave-annual");
+    // La vue annuelle a été retirée : c'est la barre du mois qui se répartit
+    // désormais, et plus la barre de l'année.
+    expect(styles).not.toContain("annual-toolbar");
+    expect(styles).toContain(".calendar-toolbar.month-toolbar .period-navigation");
     expect(styles).toContain("grid-column: 1 / -1");
   });
 
@@ -551,13 +564,19 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("menu-update-button");
   });
 
-  it("aère l’arrêt maladie et modernise le sélecteur Mois Année", () => {
+  it("aère l’arrêt maladie", () => {
     expect(app).toContain("sick-request-panel");
     expect(styles).toContain(".sick-request-options .request-option-group");
     expect(styles).toContain("grid-template-columns: minmax(180px, 0.62fr) minmax(240px, 1.38fr)");
-    expect(app).toContain('aria-pressed={mode === "month"}');
-    expect(styles).toContain(".view-switch button.active");
-    expect(styles).toContain("border-width: 1.5px");
+  });
+
+  it("ne garde aucune trace de la vue annuelle", () => {
+    // Elle ne servait pas, et son seul reste utile — les trois exports PDF —
+    // ne dépend plus d'elle.
+    expect(app).not.toContain("year-grid");
+    expect(app).not.toContain("mini-month");
+    expect(app).not.toContain('mode === "year"');
+    expect(app).not.toContain("Mode d’affichage");
   });
 
   it("intègre l’œuvre en texture discrète dans l’en-tête", () => {
@@ -616,8 +635,10 @@ describe("finitions d’interface", () => {
 
   it("dessine un liseré noir autour des en-têtes et de leurs onglets", () => {
     expect(styles).toContain("border-color: rgba(0, 0, 0, 0.65)");
-    expect(styles).toContain(".top-header .view-switch {\n  border: 1.5px solid rgba(0, 0, 0, 0.62)");
-    expect(styles).toContain(".top-header .view-switch button {\n  border: 1px solid rgba(0, 0, 0, 0.5)");
+    // La bascule Mois / Année a été retirée : ce sont les trois commandes
+    // restantes de l'en-tête qui portent ce liseré sur les œuvres colorées.
+    expect(styles).not.toContain("view-switch");
+    expect(styles).toContain(".top-header .header-update-button {\n  border: 1.5px solid rgba(0, 0, 0, 0.62)");
   });
 
   it("harmonise les cadres principaux et secondaires de l’application", () => {
