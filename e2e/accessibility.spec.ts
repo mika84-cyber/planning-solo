@@ -8,6 +8,9 @@ async function prepareDemo(page: Page) {
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  // Voir app.spec.ts : la police d'affichage arrive après le texte et en
+  // change les largeurs. Le contraste se lit aussi mieux une fois posée.
+  await page.evaluate(() => document.fonts.ready);
 }
 
 async function expectNoSeriousAccessibilityViolation(page: Page, context: string) {

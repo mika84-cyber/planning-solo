@@ -37,6 +37,12 @@ async function prepareDemo(page: Page, withCurrentLeave = false, openPlanning = 
   }, withCurrentLeave);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  // La police d'affichage est auto-hébergée et déclarée « swap » : le texte
+  // s'affiche d'abord dans une police de secours, puis change de largeur
+  // quand Fraunces arrive. Les lignes se replient alors, puis se déplient.
+  // Mesurer une position avant ce basculement, c'est lire une mise en page
+  // qui n'existera plus une fraction de seconde après.
+  await page.evaluate(() => document.fonts.ready);
   if (openPlanning) await openPlanningSettings(page);
 }
 
@@ -932,7 +938,10 @@ test("une invitation acceptée propose le partage en retour", async ({ page }) =
   await expect(page.getByRole("dialog", { name: "Votre planning a bien été envoyé" })).toBeVisible();
   await expect(page.getByText("Agnès pourra désormais consulter votre planning.")).toBeVisible();
   await page.getByRole("button", { name: "Terminer" }).click();
-  await expect(page.getByRole("heading", { name: "Planning des collègues" })).toBeVisible();
+  // Le titre de la rubrique, pas n'importe quel titre : « Planning des
+  // collègues » est aussi le titre de la carte d'introduction, et les deux
+  // coexistent une fois la section posée.
+  await expect(page.locator(".top-header h1")).toHaveText("Planning des collègues");
 });
 
 test("une demi-journée reste le prochain jour travaillé et y est précisée", async ({ page }) => {
@@ -2781,16 +2790,21 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   await openOtherLeaveBalances(page);
-  const [otherBox, strikeBox, cetBox] = await Promise.all([
-    page.locator(".leave-balance-grid button.other").boundingBox(),
-    page.locator(".leave-balance-grid button.strike").boundingBox(),
-    page.locator(".leave-balance-grid button.cet").boundingBox(),
-  ]);
-  expect(Math.abs(otherBox!.y - cetBox!.y)).toBeLessThanOrEqual(2);
-  expect(Math.abs(otherBox!.width - strikeBox!.width)).toBeLessThanOrEqual(2);
-  expect(Math.abs(otherBox!.height - strikeBox!.height)).toBeLessThanOrEqual(2);
-  expect(otherBox!.x).toBeLessThan(cetBox!.x);
-  expect(strikeBox!.y).toBeGreaterThan(otherBox!.y + otherBox!.height);
+  // Même précaution que plus haut : le dépliage des autres soldes réorganise
+  // la grille, et une mesure prise pendant ce mouvement lit des positions
+  // qui n'existent plus une fraction de seconde après.
+  await expect(async () => {
+    const [otherBox, strikeBox, cetBox] = await Promise.all([
+      page.locator(".leave-balance-grid button.other").boundingBox(),
+      page.locator(".leave-balance-grid button.strike").boundingBox(),
+      page.locator(".leave-balance-grid button.cet").boundingBox(),
+    ]);
+    expect(Math.abs(otherBox!.y - cetBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(otherBox!.width - strikeBox!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(otherBox!.height - strikeBox!.height)).toBeLessThanOrEqual(2);
+    expect(otherBox!.x).toBeLessThan(cetBox!.x);
+    expect(strikeBox!.y).toBeGreaterThan(otherBox!.y + otherBox!.height);
+  }).toPass({ timeout: 10_000 });
 
   await goToSection(page, "documents");
   const formsHeader = page.locator(".top-header-pdf");
