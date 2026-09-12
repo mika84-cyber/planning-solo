@@ -144,17 +144,11 @@
 }
 .day-stored-periods article {
   display: grid;
-  grid-template-columns: 6px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 8px;
-  background: #fafbfd;
 }
 .day-stored-periods article > i {
-  width: 6px;
-  height: 36px;
   border-radius: 5px;
   background: var(--leave);
 }
@@ -350,32 +344,20 @@
 .top-header {
     align-items: center;
     flex-direction: row;
-    flex-wrap: wrap;
-    gap: 12px 8px;
     margin-bottom: 14px;
-    border-radius: 17px;
-    padding: 16px 13px;
-  }
-  .top-header-title {
-    padding-left: 12px;
   }
   .top-header h1 {
     font-size: 23px;
   }
-  .header-actions {
-    display: contents;
-  }
   /* Base 0 : le titre cède la largeur aux boutons et passe sur deux
      lignes plutôt que de les repousser en dessous. */
 .top-header-title {
-    flex: 1 1 0;
     min-width: 0;
   }
   .account-menu {
     order: 3;
   }
   .view-switch {
-    order: 4;
     flex: 1 0 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -387,7 +369,6 @@
     grid-template-columns: 1fr;
   }
   .controls {
-    grid-template-columns: 1fr 1fr;
     gap: 8px;
     padding: 10px;
     border-radius: 15px;
@@ -411,9 +392,6 @@
      du DOM (Année, Groupe, Jours travaillés) qui laisserait une case vide. */
   .controls [aria-label="Choix de l’année affichée"] {
     order: 1;
-  }
-  .controls .worked-days {
-    order: 2;
   }
   .controls [aria-label="Choix du groupe"] {
     order: 3;
@@ -482,14 +460,7 @@
   }
   .summary span {
     display: block;
-    font-size: 9px;
     line-height: 1.2;
-  }
-  /* Brique export PDF repliée : l'en-tête cliquable occupe toute la boîte,
-     et les trois formats s'empilent une fois dépliés. */
-.annual-pdf-actions {
-    gap: 0;
-    padding: 0;
   }
   .annual-pdf-toggle {
     padding: 11px;
@@ -597,7 +568,6 @@
   .legend {
     grid-column: 1/-1;
     gap: 7px 10px;
-    font-size: 9px;
   }
   .month-card {
     padding: 7px;
@@ -612,7 +582,6 @@
   }
   .weekdays span {
     padding: 4px 0;
-    font-size: 8px;
   }
   .day {
     --corner-inset: 2px;

@@ -80,7 +80,7 @@
   .today-overview-grid .today-card-copy > span,
   .today-overview-grid .today-card-copy > strong,
   .today-overview-grid .today-card-copy > small { text-align: center; }
-  .today-overview-grid strong { font-size: 11.5px; white-space: normal; }
+  .today-overview-grid strong { white-space: normal; }
   .today-overview-grid small { font-size: 9px; white-space: normal; }
   .planning-group-choice .choice-picker-trigger,
   .worked-days-trigger {
@@ -241,18 +241,6 @@
     aspect-ratio: auto;
   }
 }
-/* Ajustements de sélection et d'actions groupées. */
-.leave-day.leave-other {
-  background: linear-gradient(145deg, #eef1f5, #dde3ea);
-  color: #364152;
-  box-shadow: inset 0 0 0 1px rgba(54, 65, 82, 0.34);
-}
-
-.other-leave-choice,
-.leave-choices .other-day {
-  --choice-accent: #4caee8;
-  --person-color: var(--leave);
-}
 .other-leave-choice strong {
   display: flex;
   align-items: center;
@@ -377,25 +365,11 @@
 .request-validation-summary > p span { color: #607286; font-size: 10.5px; line-height: 1.35; }
 .request-action-clarification { display: block; margin-top: 7px; color: #607286; font-size: 10.5px; line-height: 1.35; }
 .request-planning-choice{align-items:center;background:linear-gradient(145deg,#f8fbff,#e9f2fc);border:1.5px solid #7fa6cf;border-radius:14px;color:#183b61;display:grid;gap:2px 10px;grid-template-columns:34px minmax(0,1fr);min-height:58px;padding:9px 14px;text-align:left}.request-planning-choice>span{align-items:center;background:#d8eafb;border-radius:10px;display:flex;font-size:18px;grid-row:1/3;height:34px;justify-content:center}.request-planning-choice strong{font-size:13px}.request-planning-choice small{color:#5e7187;font-size:10.5px}.request-planning-choice:disabled{cursor:not-allowed;opacity:.52}
-
-/* Le guide suit les PDF dans le menu. */
-.main-menu-drawer nav > button.guide-menu-entry {
-  border-color: #ecc7d2;
-  background: linear-gradient(145deg, #fff4f7, #fbe8ee);
-  color: #7f3d52;
-  box-shadow: inset 4px 0 #e6a9b9;
-}
-.main-menu-drawer nav > button.guide-menu-entry:hover {
-  background: #fff7f9;
-}
 @media (max-width: 520px) {
   .period-direct-actions { grid-template-columns: minmax(0, 1fr); }
 }
 
 .holiday-pay-amount {
-  min-width: 7.5rem;
-  min-height: 2.55rem;
-  padding: 0.55rem 0.8rem;
   border: 1px solid rgba(27, 104, 78, 0.28);
   border-radius: 0.8rem;
   background: #edf8f3;
@@ -419,8 +393,6 @@
   padding: 0.65rem 1rem;
   border: 1px solid rgba(23, 36, 56, 0.22);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #344054;
   font: inherit;
   font-weight: 750;
   cursor: pointer;
@@ -444,7 +416,6 @@
 }
 
 .calendar-delete-actions {
-  display: flex;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -471,10 +442,6 @@
 
   .calendar-delete-actions > button,
 .calendar-bulk-delete-button {
-    width: 100%;
-  }
-
-  .holiday-pay-amount {
     width: 100%;
   }
 }
@@ -819,20 +786,11 @@
   --section-accent: #b96850;
   position: relative;
   top: auto;
-  min-height: 136px;
   gap: 30px;
   border-width: 2px;
   border-color: rgba(0, 0, 0, 0.65);
   border-radius: 28px;
   padding: 24px 28px;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 250, 243, 0.5) 0%,
-      rgba(249, 240, 228, 0.34) 42%,
-      rgba(236, 218, 198, 0.16) 100%
-    ),
-    url("/header-art-fast.webp") center 44% / cover no-repeat;
   box-shadow: 0 20px 46px rgba(66, 48, 32, 0.18);
 }
 .top-header-title { padding-left: 18px; }
@@ -913,7 +871,6 @@
   color: #fff;
   box-shadow: 0 5px 12px rgba(142, 26, 43, 0.2);
 }
-.header-update-button.update-available:hover { background: #a92335; }
 
 .update-available-backdrop { z-index: 1600; }
 .update-available-modal {
@@ -1025,17 +982,9 @@
   .top-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 44px;
-    min-height: 0;
     gap: 10px 8px;
     border-radius: 20px;
     padding: 15px 14px;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 250, 243, 0.43) 0%,
-        rgba(238, 221, 201, 0.22) 100%
-      ),
-      url("/header-art-fast.webp") center 42% / cover no-repeat;
   }
   .top-header-title {
     grid-column: 1;
@@ -1128,40 +1077,14 @@
 
 /* L’œuvre accompagne le menu sans nuire à la lisibilité de ses commandes. */
 .main-menu-drawer {
-  background:
-    linear-gradient(180deg, rgba(10, 14, 22, 0.42), rgba(10, 14, 22, 0.58)),
-    url("/menu-art-fast.webp") 58% center / cover no-repeat;
   color: #fff;
 }
 .main-menu-drawer header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.22);
 }
-.main-menu-drawer header .step-label { color: #d9e7f7; }
-.main-menu-drawer header h2 {
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.72);
-}
-.main-menu-drawer header > button {
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.9);
-}
 .main-menu-drawer nav > button {
   border-color: rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
-.main-menu-drawer nav > button.active {
-  border-color: #8ebbe8;
-  background: rgba(235, 245, 255, 0.92);
-  color: #174f82;
-  box-shadow: inset 4px 0 #5f9bd3, 0 6px 18px rgba(0, 0, 0, 0.15);
-}
-.main-menu-drawer nav > button:hover {
-  background: rgba(255, 255, 255, 0.84);
-}
-.main-menu-copy strong { color: #182b42; }
-.main-menu-copy small { color: #3f5167; font-weight: 750; }
 .main-menu-secondary {
   border-top-color: rgba(255, 255, 255, 0.3);
 }
@@ -1193,22 +1116,11 @@
   .app-shell { overscroll-behavior-x: contain; touch-action: pan-y; }
 }
 
-/* Toutes les rubriques conservent la hauteur de référence de l’en-tête
-   Accueil, même lorsque le sélecteur Mois / Année n’est pas affiché. */
-.top-header { min-height: 153px; }
-
 .pdf-download-screen {
   border: 1.5px solid rgba(31, 35, 40, 0.62);
 }
 
-.pdf-download-settings > label,
-.pdf-download-settings > .school-vacation-choice,
-.pdf-download-actions .pdf-action {
-  border: 1.5px solid rgba(31, 35, 40, 0.62);
-}
-
 @media (max-width: 720px) {
-  .top-header { min-height: 195px; }
   .auth-splash-image {
     object-fit: cover;
     object-position: 46% 50%;
@@ -1227,72 +1139,19 @@
 /* La rubrique Congés et récupérations possède son propre visuel d’en-tête. */
 .top-header.top-header-leave {
   --section-accent: var(--sage);
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 250, 243, 0.5) 0%,
-      rgba(249, 240, 228, 0.34) 42%,
-      rgba(236, 218, 198, 0.16) 100%
-    ),
-    url("/leave-header-art-fast.webp") center / cover no-repeat;
 }
 
 /* Ma paie utilise le dessin aux lignes noires uniquement dans son en-tête. */
 .top-header.top-header-pay {
   --section-accent: var(--accent);
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 250, 243, 0.5) 0%,
-      rgba(249, 240, 228, 0.34) 42%,
-      rgba(236, 218, 198, 0.16) 100%
-    ),
-    url("/pay-header-art-fast.webp") center / cover no-repeat;
 }
 
 /* Les téléchargements PDF utilisent la galerie multicolore dans l’en-tête. */
 .top-header.top-header-pdf {
   --section-accent: #a67432;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 250, 243, 0.5) 0%,
-      rgba(249, 240, 228, 0.34) 42%,
-      rgba(236, 218, 198, 0.16) 100%
-    ),
-    url("/pdf-header-art-fast.webp") center 70% / cover no-repeat;
 }
 
 @media (max-width: 720px) {
-  .top-header.top-header-leave {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 250, 243, 0.43) 0%,
-        rgba(238, 221, 201, 0.22) 100%
-      ),
-      url("/leave-header-art-fast.webp") center / cover no-repeat;
-  }
-
-  .top-header.top-header-pay {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 250, 243, 0.43) 0%,
-        rgba(238, 221, 201, 0.22) 100%
-      ),
-      url("/pay-header-art-fast.webp") center / cover no-repeat;
-  }
-
-  .top-header.top-header-pdf {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 250, 243, 0.43) 0%,
-        rgba(238, 221, 201, 0.22) 100%
-      ),
-      url("/pdf-header-art-fast.webp") center 44% / cover no-repeat;
-  }
 }
 
 /* Les commandes de navigation restent clairement détachées des œuvres. */

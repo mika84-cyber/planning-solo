@@ -262,10 +262,6 @@
   cursor: pointer;
   text-align: left;
   box-shadow: 0 2px 7px rgba(31, 69, 130, 0.07);
-  transition:
-    border-color 140ms ease,
-    background 140ms ease,
-    transform 140ms ease;
 }
 .pdf-action:hover {
   transform: translateY(-1px);
@@ -662,7 +658,6 @@
   border-radius: 7px;
   padding: 5px 7px;
   background: rgba(255, 255, 255, 0.86);
-  color: #20283a;
   font-size: 10px;
   font-weight: 750;
   line-height: 1.2;
@@ -921,7 +916,6 @@
 }
 .leave-choices {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin: 18px 0;
 }

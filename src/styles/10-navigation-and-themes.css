@@ -1,13 +1,10 @@
 /* Navigation principale 2026 : l'accueil redevient un véritable écran et les
    outils spécialisés quittent la zone quotidienne. */
 .main-menu-button {
-  width: 46px;
-  height: 46px;
   flex: 0 0 46px;
   display: grid;
   place-content: center;
   gap: 5px;
-  border: 1px solid rgba(55, 87, 126, 0.14);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.78);
   color: #284668;
@@ -26,94 +23,52 @@
   inset: 0;
   z-index: 1200;
   display: flex;
-  background: rgba(23, 38, 57, 0.34);
-  backdrop-filter: blur(3px);
   animation: menu-fade-in 160ms ease-out;
 }
 .main-menu-drawer {
-  width: min(410px, 90vw);
-  min-height: 100%;
-  padding: max(24px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  background: linear-gradient(160deg, #f9fbfe 0%, #edf4fb 100%);
-  box-shadow: 18px 0 50px rgba(23, 46, 73, 0.2);
   animation: menu-slide-in 220ms cubic-bezier(.2,.7,.2,1);
 }
 .main-menu-drawer header {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 4px 4px 22px;
 }
 .main-menu-drawer header h2 {
   margin: 5px 0 0;
-  color: #152b46;
-  font-size: 1.55rem;
 }
 .main-menu-drawer header > button {
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 13px;
-  background: #fff;
-  color: #38536f;
   font-size: 1.8rem;
   line-height: 1;
   cursor: pointer;
 }
 .main-menu-drawer nav {
   display: grid;
-  gap: 10px;
 }
 .main-menu-drawer nav > button {
-  min-height: 74px;
-  display: flex;
   justify-content: space-between;
-  gap: 14px;
-  padding: 15px 17px;
-  border: 1px solid rgba(65, 94, 128, 0.12);
-  border-radius: 17px;
-  background: rgba(255, 255, 255, 0.74);
-  color: #253f5c;
   text-align: left;
   cursor: pointer;
   transition: 160ms ease;
 }
-.main-menu-drawer nav > button.active {
-  border-color: rgba(76, 128, 179, 0.32);
-  background: #e2effa;
-  box-shadow: inset 4px 0 #7aaed8;
-}
-.main-menu-drawer nav > button:hover { transform: translateX(2px); background: #fff; }
-.main-menu-copy { display: grid; gap: 4px; }
+.main-menu-copy { display: grid; }
 .main-menu-copy strong { font-size: 1rem; }
-.main-menu-copy small { color: #65778b; line-height: 1.35; }
-.main-menu-secondary {
-  padding-top: 22px;
-  border-top: 1px solid rgba(65, 94, 128, 0.12);
-}
 .main-menu-secondary button {
   min-height: 44px;
   border: 0;
   background: transparent;
-  color: #48637e;
   font-weight: 700;
   cursor: pointer;
 }
 @keyframes menu-fade-in { from { opacity: 0; } }
 @keyframes menu-slide-in { from { transform: translateX(-100%); } }
-
-.today-overview-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .home-notes-section,
 .home-planning-heading {
   margin-top: 22px;
   padding: 22px;
   border: 1px solid rgba(62, 91, 124, 0.12);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.83);
-  box-shadow: 0 12px 34px rgba(44, 70, 100, 0.07);
 }
 .home-planning-heading { margin-bottom: 14px; padding-bottom: 18px; }
 .home-content-heading {
@@ -137,20 +92,14 @@
 .leave-request-archive {
   margin-top: 14px;
   border: 1px solid rgba(62, 91, 124, 0.12);
-  border-radius: 18px;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.76);
 }
 .leave-request-archive .request-archive-toggle { width: 100%; }
-.leave-request-archive .request-archive-list { margin-top: 10px; }
 
 @media (max-width: 1000px) {
   .today-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
-  .top-header { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .main-menu-button { display: grid !important; width: 42px; height: 42px; flex-basis: 42px; border-radius: 13px; }
-  .today-overview-grid { grid-template-columns: 1fr 1fr; }
+  .main-menu-button { display: grid !important; flex-basis: 42px; border-radius: 13px; }
   .today-overview-grid .today-leave-balance {
     text-align: center;
   }
@@ -193,9 +142,7 @@
 /* Expérience d'application : barre stable, navigation depuis la droite et
    écrans spécialisés qui occupent toute la zone de travail. */
 .top-header {
-  position: sticky;
   z-index: 1000;
-  top: max(8px, env(safe-area-inset-top));
   backdrop-filter: blur(18px) saturate(1.15);
   -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
@@ -203,7 +150,6 @@
   justify-content: flex-end;
 }
 .main-menu-drawer {
-  box-shadow: -18px 0 50px rgba(23, 46, 73, 0.2);
   animation-name: menu-slide-in-right;
 }
 @keyframes menu-slide-in-right {
@@ -252,8 +198,6 @@
   border: 1px solid rgba(57, 82, 112, 0.1);
   border-radius: 28px;
   padding: clamp(20px, 4vw, 38px);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 50px rgba(32, 56, 84, 0.08);
   animation: none;
 }
 .native-screen-heading { max-width: 720px; }
@@ -312,9 +256,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-radius: 14px;
   padding: 11px 14px;
-  background: #f7f9fc;
 }
 .variable-pay-list article > span { display: grid; gap: 3px; }
 .variable-pay-list small { color: #718094; }
@@ -322,16 +264,10 @@
 .variable-pay-list b.pending { color: #9c6b2e; }
 .pdf-download-settings {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 26px;
 }
 .pdf-download-settings > label,
 .pdf-download-settings > .school-vacation-choice {
   display: grid;
-  gap: 8px;
-  border: 1px solid #e0e6ef;
-  padding: 16px;
-  background: #f9fbfd;
 }
 .pdf-download-settings > label > span {
   color: #66768a;
@@ -341,12 +277,8 @@
 .pdf-download-settings .school-vacation-choice { grid-column: 1 / -1; }
 .pdf-download-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
 }
 .pdf-download-actions .pdf-action {
-  min-height: 96px;
   width: 100%;
 }
 @media (max-width: 720px) {
@@ -355,7 +287,6 @@
     padding-top: 11px;
     padding-bottom: 11px;
   }
-  .top-header-title h1 { font-size: 19px; }
   .top-header-title .eyebrow { font-size: 9px; }
   .main-menu-button { order: 4; }
   .view-switch { order: 5; }
@@ -365,14 +296,9 @@
     border-radius: 22px;
     padding: 18px 14px calc(22px + env(safe-area-inset-bottom));
   }
-  .planning-group-action-row { grid-template-columns: 1fr; }
   .planning-group-leave-action { width: 100%; }
   .group-choice-grid { gap: 7px; }
   .group-choice-grid button { min-height: 92px; }
-  .pdf-download-settings,
-  .pdf-download-actions { grid-template-columns: 1fr; }
-  .pdf-download-settings .school-vacation-choice { grid-column: 1; }
-  .pdf-download-actions .pdf-action { min-height: 76px; }
 }
 
 /* La sculpture dorée reste centrée et entière dans le bandeau, quel que soit
@@ -382,17 +308,6 @@
   position: relative;
   min-height: 205px;
   overflow: hidden;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05)),
-    linear-gradient(
-      180deg,
-      #9f947e 0%,
-      #9a927c 16%,
-      #8f8770 38%,
-      #867e66 60%,
-      #887c64 81%,
-      #938970 100%
-    );
 }
 .top-header.top-header-forms::before {
   position: absolute;
@@ -405,8 +320,6 @@
   content: "";
   pointer-events: none;
   transform: translate(-50%, -50%);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
 }
 .top-header.top-header-forms > * {
   position: relative;
@@ -610,14 +523,7 @@
   overflow-y: auto;
 }
 .main-menu-secondary .guide-menu-entry {
-  display: flex;
   justify-content: space-between;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 13px;
-  padding: 11px 13px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #1f3854;
-  text-shadow: none;
 }
 
 @media (max-width: 720px) {
@@ -655,8 +561,6 @@
     border-radius: 18px;
     padding: 14px;
   }
-  .useful-form-folder-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .useful-form-folder { min-height: 112px; padding: 14px; }
   .useful-forms-folder-screen { padding-top: 0; }
   .useful-forms-folder-header {
     min-height: 112px;
@@ -694,9 +598,6 @@
 .month-toolbar { flex-wrap: wrap; }
 
 .leave-request-archive .request-archive-toggle {
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  gap: clamp(12px, 2vw, 24px);
-  padding: 14px clamp(14px, 2.5vw, 24px);
   text-align: left;
 }
 .request-archive-summary {
@@ -710,12 +611,10 @@
 .request-archive-summary small { font-size: 11px; font-weight: 750; }
 
 .pay-profile-settings {
-  display: grid;
   grid-template-columns: minmax(190px, .8fr) minmax(360px, 1.2fr);
   align-items: center;
   gap: clamp(20px, 4vw, 46px);
   margin-top: 26px;
-  padding: 22px clamp(18px, 3vw, 30px);
   border-radius: 22px;
   background: linear-gradient(135deg, #f2f7ff 0%, #f7f4ff 54%, #fff7f1 100%);
 }
@@ -782,25 +681,14 @@
 /* Palette plus chaleureuse et moins de rectangles fermés. */
 .pay-app-screen,
 .pdf-download-screen {
-  border-color: transparent;
   background: linear-gradient(150deg, rgba(255,255,255,.94), rgba(249,248,255,.9) 52%, rgba(255,249,243,.88));
 }
 .home-notes-section,
 .home-planning-heading {
-  border-color: transparent;
   box-shadow: none;
 }
 .home-notes-section { background: linear-gradient(145deg, #fffaf4, #fff 58%); }
 .home-planning-heading { background: linear-gradient(145deg, #fffdf9, #f5f1eb 58%); }
-.leave-request-archive {
-  border-color: transparent;
-  background: linear-gradient(135deg, #f4f7ff, #fffaf7);
-}
-.overtime-balance-card {
-  border-color: transparent;
-  box-shadow: 0 12px 32px rgba(54, 91, 83, .07);
-}
-.allowance-card { border-color: transparent; box-shadow: 0 10px 28px rgba(47, 67, 92, .055); }
 .variable-pay-list article { border-radius: 10px; background: rgba(244, 247, 251, .78); }
 
 @media (max-width: 720px) {
@@ -810,7 +698,6 @@
     align-items: center;
     justify-content: center;
     min-height: 46px;
-    width: auto;
     padding: 0 14px;
     white-space: nowrap;
   }
@@ -819,7 +706,7 @@
     align-items: end;
   }
   .planning-year-choice > .year-choice-label { grid-column: 1 / -1; }
-  .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; padding: 18px 14px; }
+  .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; }
   .pay-profile-settings-grid { grid-template-columns: 1fr; gap: 8px; }
   .pay-profile-settings-grid > label { grid-template-rows: auto minmax(46px, auto); gap: 4px; }
   .pay-work-schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pay-profile-save{justify-self:stretch;width:100%}
@@ -833,7 +720,6 @@
     padding-left: 53px;
   }
   .variable-pay-card header { align-items: flex-start; }
-  .variable-pay-heading-actions { align-items: flex-end; flex-direction: column-reverse; }
 }
 
 /* Cascade finale des finitions ci-dessus : ces règles doivent rester après les
@@ -852,9 +738,6 @@
 
 @media (max-width: 720px) {
   .controls .planning-year-choice { display: none; }
-  .planning-group-action-row {
-    grid-template-columns: minmax(0, 1fr) minmax(138px, auto);
-  }
   .planning-leave-mobile { width: 100%; }
   .pay-profile-settings { display: block; padding: 0; }
   .variable-pay-heading-actions {
@@ -873,12 +756,6 @@
 .mini-day.half-afternoon::after { border-left-width: 2px; }
 
 @media (max-width: 720px) {
-  .today-overview-grid > .today-next-work {
-    grid-column: 2 / 3;
-  }
-  .today-overview-grid > .today-leave-balance {
-    grid-column: 1 / 2;
-  }
   .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .controls .worked-days { grid-column: 1; grid-row: 1; order: initial; }
   .controls .planning-group-choice { grid-column: 2; grid-row: 1; order: initial; }
@@ -960,12 +837,6 @@
   .planning-workspace-shell.framed .planning-group-action-row .choice-picker {
     width: 100%;
   }
-  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .planning-workspace-shell.framed .month-toolbar .period-navigation {
-    display: contents;
-  }
   .planning-workspace-shell.framed .month-toolbar .today-button,
   .planning-workspace-shell.framed .month-toolbar .planning-leave-desktop {
     width: 100%;
@@ -981,12 +852,10 @@
 
 @media (max-width: 720px) {
   .top-header {
-    display: flex;
     flex-wrap: nowrap;
   }
   .top-header-title { flex: 1 1 auto; }
   .top-header-title h1 {
-    font-size: 16px;
     line-height: 1.05;
   }
   .header-control-cluster {
@@ -994,16 +863,12 @@
     gap: 6px;
   }
   .header-actions {
-    display: flex;
     align-items: center;
     gap: 6px;
   }
   .header-actions .view-switch {
     flex: 0 0 auto;
-    grid-template-columns: repeat(2, auto);
-    width: auto;
   }
-  .header-actions .view-switch button { padding: 0 11px; }
   .overtime-actions > button,
   .solidarity-hours-action {
     width: 100%;

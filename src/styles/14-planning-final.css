@@ -130,18 +130,12 @@
 }
 
 @media (max-width: 720px) {
-  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
 
   .planning-workspace-shell.framed .calendar-toolbar.month-toolbar .period-navigation {
     grid-column: 1 / -1;
   }
 
   .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
-    width: auto;
-    min-width: 136px;
-    padding-inline: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -168,15 +162,6 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-}
-
-/* Composition finale du poste de commande : deux réglages métier, une ligne
-   de période, puis deux actions jumelles. Le violet distingue le planning du
-   liseré orangé des notes. */
-.planning-workspace-shell.framed {
-  border-left: 6px solid var(--accent);
-  padding-left: clamp(9px, 1.25vw, 15px);
-  background-image: linear-gradient(90deg, rgba(200, 120, 92, 0.07), transparent 12%);
 }
 
 .planning-workspace-shell.framed .controls {
@@ -327,10 +312,6 @@
 }
 
 @media (max-width: 720px) {
-  .planning-workspace-shell.framed {
-    border-left-width: 6px;
-    padding-left: 8px;
-  }
 
   .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -397,7 +378,6 @@
   border: 1.5px solid rgba(64, 88, 119, 0.38);
   border-radius: 27px;
   padding: clamp(11px, 1.5vw, 16px);
-  background: #fff;
   box-shadow: 0 17px 38px rgba(67, 52, 40, 0.11);
 }
 
@@ -1339,13 +1319,6 @@ fieldset.leave-choices {
    les bandeaux, du Fold fermé à l’ordinateur. */
 #root .header-update-label{display:none}#root .header-update-label-compact{display:inline;font-size:clamp(.58rem,1.6vw,.68rem);letter-spacing:.01em}.app-shell>header{align-items:flex-start}.app-shell>header>.top-header-title,.app-shell>header>.header-command-area{align-self:flex-start}.app-shell>header .header-control-cluster{align-items:flex-start}#root .app-update-button.header-update-button{bottom:12px;gap:6px;left:auto;min-height:clamp(30px,8vw,34px);padding:clamp(4px,1.2vw,6px) clamp(8px,2vw,11px);position:absolute;right:clamp(6px,1.7vw,12px);width:auto;z-index:4}#root .app-update-button.header-update-button:not(.update-available){background:rgba(255,253,248,.94);border:1.5px solid rgba(29,48,70,.66);box-shadow:0 5px 14px rgba(16,35,58,.2);color:#245b9b}#root .app-update-button.header-update-button svg{height:15px;width:15px}[class~="top-header-forms"]::before{max-width:calc(100% - 96px)}[class~="top-header-contacts"]::before{max-width:calc(100% - 88px)}
 
-/* Contacts et formulaires partagent désormais une seule destination. Les
-   deux univers restent identifiables, mais utilisent le même cadre et le
-   même rythme vertical. */
-.useful-resources-screen {
-  gap: 18px;
-}
-
 .header-title-line {
   display: block;
 }
@@ -1377,9 +1350,6 @@ fieldset.leave-choices {
 }
 
 @media (max-width: 720px) {
-  .useful-resources-screen {
-    gap: 14px;
-  }
 }
 
 /* Le bandeau d’installation Apple reprend la mise en page de l’alerte : seuls
@@ -1436,7 +1406,7 @@ fieldset.leave-choices {
    un bouton discret, centré, qui ne concurrence pas la période au-dessus. */
 .planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}
 .planning-workspace-shell.framed .planning-settings-body .controls .planning-today-choice{width:100%}
-.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{width:100%;min-height:34px;border-radius:11px;font-size:12.5px;font-weight:850}
+.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{font-weight:850}
 .planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button:hover{background:var(--accent-soft)}
 .planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{width:auto;min-height:32px;border:0;border-radius:0;padding:0;background:none;box-shadow:none;color:var(--accent-strong);font-size:12px;text-decoration:underline;text-underline-offset:3px}
 

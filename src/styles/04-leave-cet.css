@@ -209,7 +209,6 @@
   border: 1px solid rgba(19, 35, 56, 0.72);
   border-radius: 20px;
   background: rgba(250, 252, 255, 0.93);
-  box-shadow: 0 12px 30px rgba(25, 48, 78, 0.08);
 }
 .leave-section-divider {
   height: 1px;
@@ -366,7 +365,6 @@
   border-radius: 14px;
   padding: 13px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 254, 0.94));
-  box-shadow: 0 6px 16px rgba(36, 64, 101, 0.06);
 }
 .cet-overview-panel { display: grid; gap: 10px; border-color: #9eb9dc; background: linear-gradient(145deg, #f9fbff, #eef5ff); }
 .cet-management-panel { display: grid; gap: 10px; }

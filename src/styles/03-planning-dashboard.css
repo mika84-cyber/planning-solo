@@ -1,52 +1,13 @@
 
-/* Les deux parties du calendrier ont désormais chacune leur propre liseré :
-   les commandes s'arrêtent avant « Poser un congé », puis le planning forme
-   un second ensemble jusqu'à la dernière ligne du mois. */
-.planning-workspace-shell.framed {
-  border-left: 0;
-  padding-left: 0;
-  background-image: none;
-}
-
-.planning-workspace-shell.framed .planning-command-section,
-.planning-workspace-shell.framed .planning-calendar-section {
-  border-radius: 21px;
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(34, 57, 84, 0.065);
-}
-
-/* Un seul accent pour les liserés de section. Cinq couleurs différentes ne
-   hiérarchisaient rien et noyaient la seule information vraiment urgente. */
-.planning-workspace-shell.framed .planning-command-section,
-.planning-workspace-shell.framed .planning-calendar-section {
-  border-left: 6px solid var(--accent);
-  background: linear-gradient(90deg, var(--accent-soft), transparent 14%), #fff;
-}
-
-.today-overview,
-.home-notes-section {
-  width: min(1120px, calc(100% - 32px));
-}
 
 .today-overview {
   border-left-color: var(--accent);
-  background-image:
-    linear-gradient(90deg, rgba(200, 120, 92, 0.07), transparent 17%),
-    linear-gradient(145deg, #fffdf9, #f5f1eb);
 }
 
 @media (max-width: 720px) {
-  .planning-workspace-shell.framed {
-    padding-left: 0;
-  }
 
   .planning-workspace-shell.framed .planning-command-section .controls,
   .planning-workspace-shell.framed .planning-command-section .calendar-toolbar.month-toolbar {
     width: 100%;
-  }
-
-  .today-overview,
-  .home-notes-section {
-    width: calc(100% - 16px);
   }
 }

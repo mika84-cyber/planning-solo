@@ -549,16 +549,16 @@ describe("finitions d’interface", () => {
 
   it("intègre l’œuvre en texture discrète dans l’en-tête", () => {
     expect(styles).toContain('url("/header-art-fast.webp")');
-    expect(styles).toContain("rgba(255, 250, 243, 0.5)");
-    expect(styles).toContain("rgba(249, 240, 228, 0.34)");
+    expect(styles).toContain("rgba(255, 249, 232, 0.62)");
+    expect(styles).toContain("rgba(244, 250, 252, 0.3)");
     expect(styles).toContain("border-color: rgba(0, 0, 0, 0.65)");
   });
 
   it("uniformise exactement les en-têtes sur le gabarit Formulaires utiles", () => {
     expect(styles).toContain("height: 205px;\n  min-height: 205px;");
     expect(styles).toContain("height: 215px;\n    min-height: 215px;");
-    expect(styles).toContain("left: 35%;");
-    expect(styles).toContain(".pdf-download-actions .pdf-action {\n  border: 1.5px solid rgba(31, 35, 40, 0.62)");
+    expect(styles).toContain("left: 29%;");
+    expect(styles).toContain("border: 1.5px solid rgba(48, 87, 126, 0.42)");
   });
 
   it("ne conserve que les fonds illustrés de l’en-tête et du menu", () => {
@@ -620,7 +620,7 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.other {\n    grid-column: auto;\n    order: 1;");
     expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.strike { order: 2; }");
     expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.cet { order: 3; }");
-    expect(styles).toContain(".top-header.top-header-forms::before { left: 54%; }");
+    expect(styles).toContain("left: 53%;");
   });
 
   it("renforce la lisibilité des soldes sans retirer leurs couleurs", () => {

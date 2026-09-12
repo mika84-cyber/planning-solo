@@ -3,57 +3,21 @@
 .top-header.top-header-contacts {
   --section-accent: var(--sage);
 }
-.useful-contact-card {
-  grid-template-columns: minmax(210px, 0.55fr) minmax(0, 1.45fr);
-  background: rgba(255, 255, 255, 0.97);
-}
 .useful-contact-card > .resource-favorite-button { width: 44px; height: 44px; }
-.useful-contact-card > .useful-contact-identity { padding-right: 48px; }
-.useful-contact-card > .useful-contact-actions { margin-top: 44px; }
 .useful-contact-card > .resource-favorite-button { position: absolute; top: 10px; right: 10px; }
 .useful-contact-card > .useful-contact-identity { padding-right: 50px; }
 .useful-contact-card > .useful-contact-actions { margin-top: 4px; }
 .contact-admin-edit { position: absolute; top: 10px; right: 62px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #c6d5e3; border-radius: 11px; padding: 0; background: #fff; color: var(--accent); font-size: 20px; font-weight: 800; cursor: pointer; }
 .contact-admin-add { width: 100%; min-height: 44px; margin: 0 0 12px; border: 1.5px dashed #91aac3; border-radius: 13px; background: #f4f7fb; color: #315e89; font-weight: 850; cursor: pointer; }
-.useful-contact-identity > span:last-child { gap: 3px; }
-.useful-contact-actions {
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-}
-.useful-contact-actions a.useful-contact-email {
-  grid-column: auto;
-}
-.useful-contact-phone-actions a {
-  padding: 8px 10px;
-}
 
 @media (max-width: 720px) {
-  .useful-contact-card { gap: 8px; }
   .useful-contact-card > .useful-contact-identity { min-height: 44px; padding-right: 52px; }
   .useful-contact-card > .useful-contact-actions { margin-top: 0; }
 }
 
-/* Finition de l’annuaire : cartes identifiables, coordonnées aérées et actions
-   téléphone adaptées au type de numéro. */
-.top-header.top-header-contacts {
-  background:
-    radial-gradient(circle at 78% 30%, rgba(112, 215, 238, 0.48), transparent 28%),
-    radial-gradient(circle at 63% 112%, rgba(255, 184, 92, 0.38), transparent 40%),
-    linear-gradient(125deg, #14365d 0%, #1b5e8b 48%, #2c8193 100%);
-}
-.top-header-contacts .top-header-title h1,
-.top-header-contacts .top-header-title .eyebrow {
-  text-shadow: 0 2px 11px rgba(0, 17, 38, 0.58);
-}
-
-.useful-form-information-image img { width: min(100%, 900px); }
-
 .useful-contacts-screen {
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 96% 4%, rgba(85, 174, 208, 0.14), transparent 29%),
-    radial-gradient(circle at 3% 96%, rgba(240, 170, 86, 0.12), transparent 30%),
-    linear-gradient(145deg, #f5faff, #fff 54%, #fff9f1);
 }
 .useful-contacts-screen::before {
   content: "";
@@ -68,8 +32,6 @@
 .useful-contact-directory-grid > button,
 .useful-contact-category-grid > button {
   border-color: rgba(73, 113, 148, 0.48);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(242, 249, 255, 0.92));
-  box-shadow: 0 12px 28px rgba(32, 68, 103, 0.11), inset 0 1px #fff;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 .useful-contact-directory-grid > button:hover,
@@ -87,20 +49,15 @@
 .useful-contacts-subheader {
   border: 1px solid rgba(89, 121, 151, 0.36);
   border-radius: 17px;
-  padding: 13px 15px;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: 0 8px 22px rgba(38, 71, 104, 0.08);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-.useful-contact-list { gap: 13px; }
 .useful-contact-card {
   position: relative;
   overflow: hidden;
   border-color: rgba(82, 120, 153, 0.42);
-  border-radius: 17px;
-  padding: 15px 16px;
-  background: rgba(255, 255, 255, 0.96);
 }
 .useful-contact-identity > span:first-child {
   flex: 0 0 44px;
@@ -115,19 +72,12 @@
   background: linear-gradient(145deg, #ffead5, #fff7ed);
   color: #9a571e;
 }
-.useful-contact-identity > span:last-child {
-  gap: 4px;
-}
 .useful-contact-identity strong { font-size: 14px; line-height: 1.25; }
 .useful-contact-identity small { color: #6a7e92; font-size: 10px; font-weight: 700; }
 .useful-contact-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
 }
 .useful-contact-actions a.useful-contact-email {
-  min-width: 0;
-  grid-column: 1 / -1;
   border-color: #a8c9e3;
   background: linear-gradient(135deg, #edf7ff, #f8fbff);
   color: #15598d;
@@ -136,8 +86,6 @@
 .useful-contact-phone small { color: #6c7d90; font-size: 9px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
 .useful-contact-phone b { color: #213850; font-size: 12px; white-space: nowrap; }
 .useful-contact-phone-actions a {
-  padding: 8px 9px;
-  color: #fff;
   box-shadow: 0 4px 10px rgba(40, 105, 164, 0.19);
 }
 .useful-contact-phone-actions a:last-child:not(:first-child) {
@@ -163,20 +111,8 @@
 }
 .useful-form-information-image img {
   display: block;
-  width: min(100%, 520px);
   height: auto;
   object-fit: fill;
-}
-
-.top-header.top-header-contacts {
-  background:
-    radial-gradient(circle at 76% 35%, rgba(122, 198, 255, 0.42), transparent 29%),
-    radial-gradient(circle at 64% 105%, rgba(255, 181, 95, 0.34), transparent 38%),
-    linear-gradient(125deg, #14385f 0%, #1f5f8f 48%, #327d98 100%);
-}
-.top-header-contacts .top-header-title h1,
-.top-header-contacts .top-header-title .eyebrow {
-  text-shadow: 0 2px 10px rgba(0, 18, 39, 0.48);
 }
 
 .useful-contacts-screen {
@@ -248,25 +184,17 @@
 }
 .useful-contacts-subheader {
   position: relative;
-  display: flex;
-  margin: -4px 0 18px;
   border-bottom: 1px solid #c7d7e6;
-  padding: 0 0 16px 60px;
 }
 .useful-contacts-subheader .section-back-arrow {
   left: 0;
-  background: #e6f1fb;
 }
 .useful-contacts-subheader h2 { margin: 3px 0 0; color: #172b43; }
 .useful-contact-list { display: grid; gap: 11px; }
 .useful-contact-card {
   display: grid;
-  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.2fr);
-  align-items: center;
   gap: 14px;
   border: 1px solid var(--border-control);
-  border-radius: var(--radius-card);
-  padding: 13px 14px;
   background: rgba(255, 255, 255, 0.94);
 }
 .useful-contact-identity {
@@ -290,7 +218,6 @@
 }
 .useful-contact-actions {
   min-width: 0;
-  display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 8px;
@@ -306,7 +233,6 @@
   color: #164f83;
   text-decoration: none;
 }
-.useful-contact-actions a.useful-contact-email { min-width: min(100%, 270px); }
 .useful-contact-actions small { color: #657d93; font-size: 9px; font-weight: 850; text-transform: uppercase; }
 .useful-contact-actions b { overflow-wrap: anywhere; font-size: 12px; }
 
@@ -339,28 +265,6 @@
     url("/header-art-fast.webp") center 44% / cover no-repeat;
 }
 
-.top-header.top-header-leave {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(242, 249, 255, 0.58) 0%,
-      rgba(218, 242, 252, 0.23) 40%,
-      rgba(42, 125, 151, 0.07) 100%
-    ),
-    url("/leave-header-art-fast.webp") center / cover no-repeat;
-}
-
-.top-header.top-header-pay {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 250, 239, 0.6) 0%,
-      rgba(250, 238, 218, 0.2) 42%,
-      rgba(152, 91, 39, 0.06) 100%
-    ),
-    url("/pay-header-art-fast.webp") center / cover no-repeat;
-}
-
 .top-header.top-header-pdf {
   background:
     linear-gradient(
@@ -370,23 +274,6 @@
       rgba(80, 49, 144, 0.05) 100%
     ),
     url("/pdf-header-art-fast.webp") center 70% / cover no-repeat;
-}
-
-.top-header.top-header-forms {
-  background:
-    linear-gradient(90deg, rgba(255, 244, 205, 0.08), rgba(67, 45, 15, 0.07)),
-    linear-gradient(
-      180deg,
-      #b2a37f 0%,
-      #a4946c 18%,
-      #917d54 43%,
-      #7d6946 68%,
-      #947d52 100%
-    );
-}
-
-.top-header.top-header-forms::before {
-  filter: saturate(1.22) contrast(1.06);
 }
 
 .top-header-title h1 {
@@ -409,18 +296,6 @@
         rgba(10, 91, 119, 0.05) 100%
       ),
       url("/header-art-fast.webp") center 42% / cover no-repeat;
-  }
-
-  .top-header.top-header-leave {
-    background:
-      linear-gradient(180deg, rgba(242, 249, 255, 0.58), rgba(42, 125, 151, 0.06)),
-      url("/leave-header-art-fast.webp") center / cover no-repeat;
-  }
-
-  .top-header.top-header-pay {
-    background:
-      linear-gradient(180deg, rgba(255, 250, 239, 0.58), rgba(152, 91, 39, 0.05)),
-      url("/pay-header-art-fast.webp") center / cover no-repeat;
   }
 
   .top-header.top-header-pdf {
@@ -492,7 +367,6 @@
 }
 
 .planning-leave-panel {
-  display: flex;
   justify-content: center;
   margin-bottom: 12px;
   border: 1.5px solid rgba(55, 73, 98, 0.58);
@@ -514,7 +388,6 @@
 @media (max-width: 720px) {
   .today-overview-heading .group-heading-action {
     min-width: 0;
-    max-width: 52%;
     padding-right: 11px;
     padding-left: 11px;
     white-space: normal;
@@ -780,10 +653,6 @@
 }
 
 @media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
-  .top-header {
-    height: 205px;
-    min-height: 205px;
-  }
 }
 
 /* Finition des grands écrans : la commande de mise à jour occupe désormais
@@ -847,9 +716,6 @@
 
 .leave-secondary-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
-  gap: 16px;
 }
 
 .leave-secondary-grid > .overtime-balance-card {
@@ -879,21 +745,6 @@
 }
 
 @media (max-width: 720px) {
-  .leave-tools-area {
-    width: calc(100% - 20px);
-    gap: 13px;
-    margin-top: 13px;
-    border-radius: 20px;
-    padding: 12px;
-  }
-
-  .leave-tools-heading {
-    padding: 2px 3px 12px;
-  }
-
-  .leave-tools-heading h2 {
-    font-size: 1.2rem;
-  }
 }
 
 /* Formulaires utiles : uniquement sur les grands écrans, l'introduction
@@ -956,9 +807,6 @@
 }
 
 @media (min-width: 721px) and (max-width: 900px) {
-  .useful-forms-screen:not(.useful-forms-folder-screen) {
-    grid-template-columns: 1fr;
-  }
 
   .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading {
     border-right: 0;
@@ -1454,10 +1302,6 @@
   color: #fff;
   background: #315eaa;
 }
-.cet-actions .cet-rights-open-action {
-  border-color: #c75f08;
-  background: #d86f12;
-}
 
 @media (max-width: 720px) {
   .leave-calendar-marker-strike {
@@ -1471,36 +1315,18 @@
     font-size: clamp(7px, 2.2vw, 9px);
   }
   .leave-balances-direct .leave-balance-grid button.strike {
-    display: grid;
-    grid-column: 1 / -1;
     grid-template-columns: 1fr auto;
-    min-height: 78px;
     padding: 9px 12px;
   }
   .leave-balances-direct .leave-balance-grid button.strike > span,
   .leave-balances-direct .leave-balance-grid button.strike > strong,
   .leave-balances-direct .leave-balance-grid button.strike > small,
   .leave-balances-direct .leave-balance-grid button.strike > em { margin: 0; }
-  .leave-balances-direct .leave-balance-grid button.strike > strong {
-    border-bottom: 0;
-    padding-bottom: 0;
-  }
-  .leave-balances-direct .leave-balance-grid button.strike > small { grid-column: 1; }
-  .leave-balances-direct .leave-balance-grid button.strike > em {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    justify-self: end;
-  }
 }
 
 /* Le grand écran tactile d'un téléphone pliable conserve le confort d'une
    tablette : davantage de hauteur et un titre plus présent. */
 @media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
-  .top-header {
-    min-height: 190px;
-    padding: 30px 32px;
-  }
-  .top-header.top-header-forms::before { left: 54%; }
   .top-header-title h1 {
     font-size: clamp(34px, 5vw, 48px);
   }
@@ -1591,30 +1417,6 @@
   );
 }
 
-/* Les dessins Congés et Paie restent lisibles sous le titre mais retrouvent
-   leurs noirs, bleus et rouges sur l'essentiel du bandeau. */
-.top-header.top-header-leave {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(248, 252, 255, 0.42) 0%,
-      rgba(235, 248, 253, 0.1) 38%,
-      rgba(255, 255, 255, 0) 76%
-    ),
-    url("/leave-header-art-fast.webp") center / cover no-repeat;
-}
-
-.top-header.top-header-pay {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 252, 244, 0.42) 0%,
-      rgba(255, 244, 224, 0.09) 38%,
-      rgba(255, 255, 255, 0) 76%
-    ),
-    url("/pay-header-art-fast.webp") center / cover no-repeat;
-}
-
 /* L'image Accueil ne change pas : seul le détourage lumineux des lettres est
    renforcé pour les isoler du dessin. */
 .top-header-home .top-header-title h1 {
@@ -1652,8 +1454,6 @@
 .top-header.top-header-contacts {
   isolation: isolate;
   overflow: hidden;
-  background:
-    linear-gradient(90deg, #111d2a 0%, #060b11 24%, #000 40%, #000 100%);
 }
 .top-header.top-header-contacts::before {
   content: "";
@@ -1716,11 +1516,7 @@
 .top-header-contacts .top-header-title h1,
 .top-header-contacts .top-header-title .eyebrow { color: #fff; text-shadow: 0 2px 11px rgba(0, 17, 38, 0.58); }
 .useful-form-information-image img { width: min(100%, 900px); }
-.useful-contacts-subheader {
-  padding: 17px 19px 17px 78px;
-}
 .useful-contact-card {
-  grid-template-columns: minmax(210px, 0.55fr) minmax(0, 1.45fr);
   border-left: 5px solid #4a91bd;
   border-radius: 17px;
   padding: 15px 16px;
@@ -1802,11 +1598,6 @@
 /* Fold fermé : l’œuvre quitte la ligne du titre, se place dessous et utilise
    toute la scène libre avant le bouton de mise à jour. */
 @media (max-width: 499px) {
-  .top-header.top-header-contacts::before {
-    top: 64%;
-    left: 40%;
-    height: 62%;
-  }
 }
 
 .multi-type-request-help{display:grid;gap:3px;margin:14px 0 0;border:1px solid #cdddf2;border-radius:13px;padding:10px 12px;background:linear-gradient(145deg,#eef5ff,#fbfdff);color:#52677f;font-size:11.5px;line-height:1.45}.multi-type-request-help strong{color:#24579b}.balance-detail-taken>summary{background:#eaf4ff;color:#2363a1}.balance-detail-upcoming>summary{background:#e9f8f0;color:#23764e}.balance-detail-taken>summary:hover,.balance-detail-taken>summary:focus-visible{background:#deedfc}.balance-detail-upcoming>summary:hover,.balance-detail-upcoming>summary:focus-visible{background:#dcf2e6}
@@ -1850,7 +1641,6 @@
     transform: none;
   }
   .top-header.top-header-contacts::before {
-    left: 54%;
     height: 82%;
   }
 }
@@ -1867,10 +1657,6 @@
 }
 
 @media (max-width: 499px) {
-  .top-header.top-header-contacts::before {
-    left: 35%;
-    height: 56%;
-  }
 }
 
 /* Ajustement final de Contacts : noir uniforme, composition plus équilibrée
@@ -1889,10 +1675,6 @@
 }
 
 @media (max-width: 499px) {
-  .top-header.top-header-contacts::before {
-    left: 31%;
-    height: 50%;
-  }
 }
 
 /* Une formation prise sur le solde de récupération est immédiatement

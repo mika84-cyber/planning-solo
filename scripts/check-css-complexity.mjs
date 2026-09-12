@@ -25,15 +25,20 @@ const files = [
 // sans objet : 100 familles de classes n'étaient plus posées nulle part
 // dans le code. Le plafond suit la réalité mesurée plutôt que de garder la
 // place libérée en réserve — sans quoi elle se remplirait d'elle-même.
+//
+// Abaissée à nouveau le même jour après le retrait des déclarations que la
+// cascade écrasait plus loin. Les compteurs par famille tombent beaucoup
+// parce qu'un même sélecteur était redéclaré dans plusieurs fichiers : ce
+// sont ces redites qui rendaient chaque ajustement long à situer.
 const limits = {
-  totalLines: 15_350,
-  importantDeclarations: 121,
+  totalLines: 14_200,
+  importantDeclarations: 116,
   mediaQueries: 123,
-  linesPerFile: 2_400,
+  linesPerFile: 2_200,
   familyReferences: {
-    topHeader: 285,
+    topHeader: 230,
     pdfDownloadScreen: 20,
-    todayOverview: 124,
+    todayOverview: 112,
   },
 };
 
