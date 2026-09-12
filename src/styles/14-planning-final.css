@@ -493,22 +493,19 @@
   .home-setup-list article{align-items:stretch;flex-direction:column}.home-setup-actions{display:grid!important;grid-template-columns:1fr 1fr}.home-setup-list button{justify-content:center;white-space:normal;width:100%}
 }
 
-/* Tous les écrans principaux suivent désormais la largeur exacte de leur
-   en-tête. Les cartes internes conservent leurs propres grilles et dimensions. */
 .app-shell > .top-header,
-.app-shell > .home-view-mode-bar,
 .app-shell > .today-overview,
 .app-shell > .home-setup-alert,
 .app-shell > .home-notes-section,
 .app-shell > .planning-workspace-shell,
-.app-shell > .section-intro,
 .app-shell > .leave-balances-direct,
 .app-shell > .leave-tools-area,
 .app-shell > .pay-app-screen,
 .app-shell > .pdf-download-screen,
 .app-shell > .useful-forms-screen,
 .app-shell > .useful-contacts-screen,
-.app-shell > .grand-palais-program-screen, .app-shell > .colleague-sharing-page {
+.app-shell > .grand-palais-program-screen,
+.app-shell > .colleague-sharing-page {
   box-sizing: border-box;
   width: 100%;
   max-width: none;
@@ -688,46 +685,6 @@
   }
 }
 
-/* Programmation prévisionnelle des galeries 3 et 4 dans le dossier Expo. */
-.useful-expo-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(78, 139, 128, 0.28);
-  border-radius: 16px;
-  padding: 6px;
-  background: #eef7f5;
-}
-
-.useful-expo-tabs button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  padding: 10px 13px;
-  color: #45635f;
-  background: transparent;
-  font: inherit;
-  font-weight: 850;
-  cursor: pointer;
-}
-
-.useful-expo-tabs button.active {
-  border-color: rgba(78, 139, 128, 0.38);
-  color: #164f47;
-  background: #fff;
-  box-shadow: 0 7px 18px rgba(37, 88, 79, 0.1);
-}
-
-.useful-expo-tabs button > span {
-  color: #4e8b80;
-  font-size: 1.1rem;
-}
-
 .useful-expo-schedule {
   display: grid;
   gap: 16px;
@@ -757,32 +714,6 @@
   margin: 0;
   color: #5e7082;
   line-height: 1.48;
-}
-
-.useful-expo-venue-picker {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.useful-expo-venue-picker button {
-  min-height: 52px;
-  border: 1px solid rgba(78, 139, 128, 0.3);
-  border-radius: 13px;
-  padding: 9px 8px;
-  color: #385f59;
-  background: rgba(255, 255, 255, 0.78);
-  font: inherit;
-  font-size: 0.84rem;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.useful-expo-venue-picker button.active {
-  border-color: #4e8b80;
-  color: #fff;
-  background: linear-gradient(135deg, #34766b, #5a9b90);
-  box-shadow: 0 7px 17px rgba(37, 88, 79, 0.18);
 }
 
 .useful-expo-year-picker {
@@ -842,11 +773,6 @@
   background: rgba(255, 255, 255, 0.9);
 }
 
-.useful-expo-timeline article.is-uncertain {
-  border-color: rgba(203, 138, 54, 0.36);
-  background: rgba(255, 250, 241, 0.94);
-}
-
 .useful-expo-timeline-mark {
   position: relative;
   z-index: 1;
@@ -856,11 +782,6 @@
   border-radius: 50%;
   background: #4e8b80;
   box-shadow: 0 0 0 2px #4e8b80;
-}
-
-.useful-expo-timeline article.is-uncertain .useful-expo-timeline-mark {
-  background: #cf8732;
-  box-shadow: 0 0 0 2px #cf8732;
 }
 
 .useful-expo-timeline article > div {
@@ -900,23 +821,7 @@
   white-space: nowrap;
 }
 
-.useful-expo-timeline article.is-uncertain > em {
-  color: #915613;
-  background: #fff0d9;
-}
-
 @media (max-width: 600px) {
-  .useful-expo-tabs {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .useful-expo-tabs button {
-    justify-content: flex-start;
-  }
-
-  .useful-expo-venue-picker {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .useful-expo-timeline article {
     grid-template-columns: 18px minmax(0, 1fr);

@@ -1127,12 +1127,9 @@
 .strike-continuity-details small { font-size: 9.5px; line-height: 1.4; }
 .strike-continuity-details small { color: #607086; }
 
-/* Cadre visuel commun : les grandes rubriques et leurs sous-parties utilisent
-   désormais la même hiérarchie bleu-gris dans toute l’application. */
 .today-overview,
 .home-notes-section,
 .planning-workspace-shell.framed,
-.section-intro,
 .leave-balances-direct,
 .overtime-balance-card,
 .pay-app-screen,
@@ -1624,28 +1621,6 @@
   .top-header-title .eyebrow { font-size: 12px; }
 }
 
-/* Le choix Mois / Année quitte l'œuvre d'Accueil et devient une commande
-   autonome, immédiatement repérable avant le résumé de la journée. */
-.home-view-mode-bar {
-  display: flex;
-  justify-content: center;
-  width: min(620px, 100%);
-  margin: -4px auto 18px;
-  padding: 0;
-}
-
-.home-view-mode-bar .view-switch {
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border: 1.5px solid rgba(0, 0, 0, 0.62);
-}
-
-.home-view-mode-bar .view-switch button {
-  min-height: 44px;
-  border: 1px solid rgba(0, 0, 0, 0.5);
-}
-
 @media (min-width: 721px) {
   .top-header-home .header-command-area {
     flex-basis: 270px;
@@ -1655,16 +1630,6 @@
 }
 
 @media (max-width: 720px) {
-  .home-view-mode-bar {
-    width: 100%;
-    margin-top: -2px;
-    margin-bottom: 14px;
-    padding: 0;
-  }
-
-  .home-view-mode-bar .view-switch button {
-    min-height: 46px;
-  }
 
   .top-header-home .header-update-button {
     grid-row: 3;
@@ -1686,15 +1651,6 @@
     min-width: 0;
     min-height: 46px;
     height: 46px;
-  }
-}
-
-/* Le sélecteur de vue utilise toute la largeur sur ordinateur et Fold ouvert,
-   sans le second liseré qui doublait inutilement son propre encadré. */
-@media (min-width: 721px) {
-  .home-view-mode-bar {
-    width: 100%;
-    border: 0;
   }
 }
 
@@ -1792,9 +1748,6 @@
 }
 
 @media (max-width: 720px) {
-  .home-view-mode-bar {
-    border: 0;
-  }
 
   .top-header.top-header-leave {
     background:

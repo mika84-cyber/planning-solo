@@ -49,11 +49,6 @@
   cursor: pointer;
 }
 
-.toolbar-leave-action {
-  margin-left: auto;
-  min-width: 190px;
-}
-
 .calendar-toolbar {
   display: flex;
   align-items: center;
@@ -126,8 +121,7 @@
 .toolbar-year-picker .choice-picker-menu button {
   min-width: 0;
 }
-.month-jump-menu,
-.year-jump-menu {
+.month-jump-menu {
   position: absolute;
   z-index: 80;
   top: calc(100% + 8px);
@@ -145,12 +139,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 286px;
 }
-.year-jump-menu {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 238px;
-}
-.month-jump-menu button,
-.year-jump-menu button {
+.month-jump-menu button {
   min-width: 0;
   min-height: 36px;
   border: 1px solid transparent;
@@ -163,13 +152,11 @@
   text-transform: capitalize;
   cursor: pointer;
 }
-.month-jump-menu button:hover,
-.year-jump-menu button:hover {
+.month-jump-menu button:hover {
   border-color: #b9cae2;
   background: #eaf1fb;
 }
-.month-jump-menu button.active,
-.year-jump-menu button.active {
+.month-jump-menu button.active {
   border-color: #9bb8df;
   background: var(--accent);
   color: #fff;
@@ -262,9 +249,6 @@
 .school-vacation-toggle.active i {
   background: var(--chip-color);
 }
-.school-vacation-zone-picker {
-  max-width: 140px;
-}
 .pdf-action {
   display: flex;
   align-items: center;
@@ -355,48 +339,6 @@
   height: 14px;
   border: 1px solid var(--line);
   border-radius: 4px;
-}
-.legend-work {
-  background: var(--work);
-}
-.legend-off {
-  background: var(--off);
-  border-color: var(--off) !important;
-}
-.legend-training {
-  background: var(--training);
-}
-.legend .legend-holiday {
-  display: grid;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: #e01832;
-  font-size: 9px;
-  font-weight: 900;
-}
-.legend-note {
-  width: 9px !important;
-  height: 9px !important;
-  border: 0 !important;
-  border-radius: 50% !important;
-  background: var(--note);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--note) 18%, white);
-}
-.legend-leave,
-.legend-both {
-  border: 0 !important;
-  border-radius: 5px !important;
-  background-color: transparent !important;
-  background-position: bottom !important;
-  background-repeat: no-repeat !important;
-  background-size: 100% 5px !important;
-}
-.legend-leave {
-  background-image: linear-gradient(var(--leave), var(--leave));
-}
-.legend-both {
-  background-image: linear-gradient(90deg, var(--leave) 0 50%, var(--blue) 50%);
 }
 
 .month-card {
@@ -714,35 +656,6 @@
 .leave-band.leave {
   background: var(--leave);
 }
-.leave-band.with-personal {
-  left: 27px;
-}
-.personal-marker {
-  position: absolute;
-  z-index: 4;
-  bottom: 1px;
-  left: 50%;
-  display: grid;
-  place-items: center;
-  width: 17px;
-  height: 17px;
-  transform: translateX(-50%);
-  border: 1.5px solid #d72f49;
-  border-radius: 50%;
-  background: #fff2f4;
-  color: #b91f39;
-  pointer-events: none;
-  box-shadow: 0 1px 4px rgba(150, 29, 50, 0.22);
-}
-.personal-marker.with-companions {
-  left: 6px;
-  transform: none;
-}
-.personal-marker svg {
-  width: 11px;
-  height: 11px;
-  fill: currentColor;
-}
 .selection-label {
   position: absolute;
   z-index: 2;
@@ -903,22 +816,6 @@
   left: 2px;
   height: 3px;
 }
-.mini-day .leave-band.with-personal {
-  left: 12px;
-}
-.mini-day .personal-marker {
-  bottom: 0;
-  width: 9px;
-  height: 9px;
-  border-width: 1px;
-}
-.mini-day .personal-marker.with-companions {
-  left: 2px;
-}
-.mini-day .personal-marker svg {
-  width: 6px;
-  height: 6px;
-}
 .mini-blank,
 .day-blank {
   display: block;
@@ -928,12 +825,6 @@
 }
 .day-blank {
   min-height: 88px;
-}
-.footnote {
-  margin: 14px 3px 0;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.5;
 }
 
 .modal-backdrop {

@@ -147,18 +147,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.useful-resource-search-icon {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 48px;
-  color: #315c91;
-  pointer-events: none;
-}
-.useful-resource-search-icon svg { width: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 2; }
 .useful-resource-search input {
   width: 100%;
   min-height: 48px;
@@ -180,50 +168,6 @@
   box-shadow: 0 0 0 4px rgb(45 109 181 / 12%);
   outline: 0;
 }
-.useful-form-search-results,
-.useful-contact-search-results {
-  display: grid;
-  gap: 10px;
-}
-.useful-form-search-results > p,
-.useful-contact-search-results > p {
-  margin: 0 2px 2px;
-  color: #60758b;
-  font-size: 11px;
-  font-weight: 800;
-}
-.useful-form-search-result {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  border: 1.5px solid #b5c8da;
-  border-left: 5px solid #3974b5;
-  border-radius: 15px;
-  padding: 13px;
-  background: #fff;
-  color: var(--ink);
-  text-align: left;
-}
-.useful-form-search-result > span:first-child {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #eaf3fc;
-  color: #2d69aa;
-  font-size: 22px;
-}
-.useful-form-search-result > span:nth-child(2) { display: grid; gap: 4px; min-width: 0; }
-.useful-form-search-result strong { font-size: 14px; }
-.useful-form-search-result small { color: #62768b; font-size: 10px; line-height: 1.4; }
-.useful-form-search-result > i { color: #3974b5; font-size: 24px; font-style: normal; }
-.useful-form-search-result.tone-expo { border-left-color: #4c9a87; }
-.useful-form-search-result.tone-brantome,
-.useful-form-search-result.tone-tickets { border-left-color: #bd6f2a; }
-.useful-resource-empty-search,
 .useful-contact-load-state {
   display: grid;
   place-items: center;
@@ -264,7 +208,5 @@
 @media (max-width: 720px) {
   .useful-resource-search { margin-bottom: 14px; }
   .useful-resource-search input { min-height: 46px; font-size: 13px; }
-  .useful-form-search-result { grid-template-columns: 38px minmax(0, 1fr) auto; padding: 11px; }
-  .useful-form-search-result > span:first-child { width: 38px; height: 38px; }
 }
 

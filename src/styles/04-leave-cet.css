@@ -426,25 +426,6 @@
   .cet-history article > b { grid-column: 2; }
   .cet-history article > button { grid-column: 3; grid-row: 1 / span 2; }
 }
-.upcoming-heading {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.upcoming-heading .step-label {
-  margin-bottom: 4px;
-}
-.upcoming-heading h2 {
-  margin: 0;
-  font-size: 20px;
-}
-.upcoming-hint {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 750;
-}
 .upcoming-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

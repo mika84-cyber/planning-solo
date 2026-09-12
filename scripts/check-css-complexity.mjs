@@ -19,20 +19,21 @@ const files = [
 //
 // Relevée de 30 lignes le 11 septembre 2026 pour la refonte visuelle : la
 // hausse est de l'infrastructure — déclaration de la police d'affichage
-// auto-hébergée et jetons de palette — et non une passe de surcharges. La
-// conversion des couleurs écrites en dur vers ces jetons doit faire
-// redescendre ce total ; si elle n'y parvient pas, c'est le signe qu'elle
-// ajoute au lieu de remplacer, et il faut la reprendre plutôt que relever
-// ce plafond une seconde fois.
+// auto-hébergée et jetons de palette — et non une passe de surcharges.
+//
+// Abaissée le 12 septembre 2026 après la suppression des règles devenues
+// sans objet : 100 familles de classes n'étaient plus posées nulle part
+// dans le code. Le plafond suit la réalité mesurée plutôt que de garder la
+// place libérée en réserve — sans quoi elle se remplirait d'elle-même.
 const limits = {
-  totalLines: 16_730,
-  importantDeclarations: 132,
-  mediaQueries: 124,
-  linesPerFile: 2_900,
+  totalLines: 15_350,
+  importantDeclarations: 121,
+  mediaQueries: 123,
+  linesPerFile: 2_400,
   familyReferences: {
     topHeader: 285,
     pdfDownloadScreen: 20,
-    todayOverview: 128,
+    todayOverview: 124,
   },
 };
 

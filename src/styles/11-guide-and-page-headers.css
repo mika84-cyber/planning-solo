@@ -1,89 +1,4 @@
-/* Première prise en main et aide permanente. */
-.guide-prompt-backdrop,
-.guide-backdrop { z-index: 1400; }
-.guide-prompt-modal {
-  width: min(470px, 100%);
-  border: 1px solid rgba(42, 75, 111, .2);
-  padding: 28px;
-  text-align: center;
-  background: linear-gradient(155deg, #f5f9ff, #fffaf4 72%);
-}
-.guide-prompt-modal h2 { margin: 8px 0; }
-.guide-prompt-modal > p { margin-bottom: 20px; font-size: 14px; }
-.guide-prompt-modal > small {
-  display: block;
-  margin-top: 14px;
-  color: var(--muted);
-  line-height: 1.4;
-}
-.guide-prompt-icon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #dcecff, #f2e9ff);
-  color: #285eb5;
-  font-size: 25px;
-  font-weight: 900;
-}
-.guide-prompt-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.guide-prompt-actions button {
-  min-height: 48px;
-  border-radius: 14px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 850;
-  cursor: pointer;
-}
-.guide-modal {
-  width: min(860px, 100%);
-  padding: 0;
-  scroll-behavior: smooth;
-  border: 1px solid rgba(23, 38, 57, .18);
-  background: #f7f9fc;
-}
-.guide-heading {
-  padding: 28px 74px 20px 28px;
-  background: linear-gradient(135deg, #eef5ff, #fff9f1);
-}
-.guide-heading h2 { margin: 5px 0 6px; }
-.guide-heading p { margin: 0; color: var(--muted); }
-.guide-content { display: grid; gap: 10px; padding: 18px 22px 24px; }
-.guide-task { border: 1px solid #dce3ec; border-radius: 16px; background: #fff; overflow: hidden; }
-.guide-task h3 { margin: 0; }
-.guide-task h3 button {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 18px;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  min-height: 76px;
-  padding: 14px 18px;
-  border: 0;
-  background: transparent;
-  color: #29435f;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.guide-task h3 button:hover, .guide-task h3 button[aria-expanded="true"] { background: #eef4f9; }
-.guide-task h3 button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
-.guide-task strong { display: block; font-size: 15px; line-height: 1.4; }
-.guide-task small { display: block; margin-top: 4px; color: #617186; font-size: 12px; font-weight: 500; }
-.guide-task-chevron { font-size: 20px; text-align: center; }
-.guide-task [aria-expanded="true"] .guide-task-chevron { transform: rotate(180deg); }
-.guide-task-answer { padding: 4px 22px 18px; color: #465970; font-size: 14px; line-height: 1.65; }
-.guide-task-answer ol { margin: 12px 0 16px; padding-left: 22px; }
-.guide-task-answer li { padding-left: 6px; margin-bottom: 12px; }
-.guide-task-answer li::marker { color: var(--accent); font-weight: 750; }
-.guide-task-answer p { margin: 0; border-left: 3px solid #b5c8d6; border-radius: 4px 10px 10px 4px; padding: 12px 14px; background: #f4f7f9; }
-.guide-task-answer p strong { margin-bottom: 4px; color: #29435f; font-size: 12px; }
+
 .guide-number {
   display: grid;
   place-items: center;
@@ -94,16 +9,6 @@
   color: #2459a7;
   font-weight: 900;
 }
-.guide-footer {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid rgba(44, 77, 112, .14);
-  padding: 12px 22px calc(12px + env(safe-area-inset-bottom));
-  background: rgba(247, 249, 252, .94);
-  backdrop-filter: blur(10px);
-}
 .main-menu-secondary {
   display: grid;
   justify-items: start;
@@ -111,17 +16,7 @@
 }
 
 @media (max-width: 720px) {
-  .guide-prompt-modal { padding: 24px 18px; }
-  .guide-modal { border-radius: 20px; }
-  .guide-heading { padding: 23px 58px 17px 18px; }
-  .guide-heading h2 { font-size: 21px; }
-  .guide-content { gap: 8px; padding: 12px 10px 18px; }
-  .guide-task h3 button { grid-template-columns: 32px minmax(0, 1fr) 14px; gap: 10px; padding: 12px; }
-  .guide-task strong { font-size: 14px; }
-  .guide-task-answer { padding: 4px 14px 16px; }
   .guide-number { width: 32px; height: 32px; border-radius: 11px; }
-  .guide-footer { padding-right: 14px; padding-left: 14px; }
-  .guide-footer .primary-action { width: 100%; }
 }
 
 .leave-choices button.recovery { --person-color: #e08a1e; }
@@ -297,23 +192,6 @@
   font-size: 11px;
   font-weight: 850;
   cursor: pointer;
-}
-.pay-profile-completeness {
-  justify-self: start;
-  margin-top: 4px;
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 10px;
-  font-weight: 850;
-  line-height: 1.2;
-}
-.pay-profile-completeness.complete {
-  background: #e3f4eb;
-  color: #216846;
-}
-.pay-profile-completeness.missing {
-  background: #fff0dc;
-  color: #965d17;
 }
 
 /* Le libellé est centré sur la même largeur que son encadré, et non sur le
@@ -534,8 +412,7 @@
   outline-offset: 2px;
 }
 
-.calendar-bulk-delete-button,
-.balance-multi-delete-toggle {
+.calendar-bulk-delete-button {
   width: fit-content;
   min-height: 2.6rem;
   margin: 0.7rem 0 0;
@@ -566,16 +443,11 @@
   margin: 0.2rem 0 0;
 }
 
-.calendar-delete-actions,
-.balance-multi-delete-actions {
+.calendar-delete-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.65rem;
-}
-
-.balance-multi-delete-toggle {
-  margin: 0 0 0.75rem;
 }
 
 .balance-detail-checkbox {
@@ -592,14 +464,6 @@
   accent-color: #c43d43;
 }
 
-.balance-multi-delete-actions {
-  justify-content: space-between;
-  margin-top: 0.9rem;
-  padding: 0.8rem;
-  border-radius: 0.9rem;
-  background: #fff4f2;
-}
-
 @media (max-width: 720px) {
   .calendar-delete-panel {
     align-items: stretch;
@@ -607,9 +471,7 @@
   }
 
   .calendar-delete-actions > button,
-  .calendar-bulk-delete-button,
-  .balance-multi-delete-toggle,
-  .balance-multi-delete-actions .danger-button {
+.calendar-bulk-delete-button {
     width: 100%;
   }
 
@@ -1149,12 +1011,9 @@
   background: rgba(255, 255, 255, 0.88);
 }
 
-/* Les encadrés restent pastel, avec un liseré suffisamment net pour bien
-   séparer chaque bloc sur écran clair. */
 .today-overview,
 .home-notes-section,
 .planning-workspace-shell.framed,
-.section-intro,
 .leave-balances-direct,
 .overtime-balance-card,
 .pay-app-screen,

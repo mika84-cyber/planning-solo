@@ -137,7 +137,6 @@
   cursor: pointer;
 }
 .home-notes-section .request-archive-content { margin-top: 16px; }
-.section-intro > .secondary-button { align-self: center; }
 .leave-request-archive {
   margin-top: 14px;
   border: 1px solid rgba(62, 91, 124, 0.12);
@@ -166,8 +165,6 @@
   .home-content-heading { align-items: flex-start; }
   .home-content-heading h2 { font-size: 1.25rem; }
   .home-content-heading > button { padding: 0 12px; }
-  .section-intro > .primary-action,
-  .section-intro > .secondary-button { width: 100%; }
   .app-shell { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .desktop-side-navigation { display: none; }
   .app-shell > .mobile-bottom-navigation { position: fixed; z-index: 45; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap:2px; padding: 6px 7px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid #d5dde7; border-radius:18px 18px 0 0; background: rgba(250,251,253,.98); box-shadow: 0 -4px 20px #273d5810; backdrop-filter: blur(16px); }

@@ -5,65 +5,8 @@
 .cia-month-picker .choice-picker-menu {
   width: min(150px, calc(100vw - 40px));
 }
-.range-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.range-fields label {
-  display: grid;
-  gap: 6px;
-}
-.range-fields span {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-.range-fields input {
-  width: 100%;
-  height: 48px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 0 11px;
-  background: #fbfcfe;
-  color: var(--text);
-}
-.profile-backdrop {
-  z-index: 120;
-}
 .profile-card {
   width: min(460px, 100%);
-}
-.profile-choices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 18px;
-}
-.profile-choices button {
-  display: grid;
-  gap: 6px;
-  min-height: 120px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px;
-  background: linear-gradient(145deg, #fff, #f5f8fd);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
-.profile-choices button:hover {
-  border-color: #8ba5d4;
-  transform: translateY(-1px);
-}
-.profile-choices strong {
-  font-size: 20px;
-}
-.profile-choices span {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
 }
 .note-meta {
   margin: 8px 0 0 !important;
@@ -180,24 +123,6 @@
 .separate-date-button:hover {
   background: color-mix(in srgb, var(--accent) 13%, white);
 }
-.continuous-range-choice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 13px 0 0;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 850;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.continuous-range-choice::before,
-.continuous-range-choice::after {
-  height: 1px;
-  flex: 1;
-  background: #dce5ea;
-  content: "";
-}
 .leave-period-hint {
   margin: 8px 0 0 !important;
   color: var(--muted);
@@ -257,76 +182,6 @@
   cursor: pointer;
 }
 .day-stored-periods article button.period-delete {
-  border-color: #efd1d5;
-  color: #b43f4d;
-}
-.saved-periods {
-  margin-top: 22px;
-  border-top: 1px solid #e8ecf2;
-  padding-top: 17px;
-}
-.saved-periods-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 9px;
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 850;
-}
-.saved-periods-heading small {
-  display: grid;
-  place-items: center;
-  min-width: 23px;
-  height: 23px;
-  border-radius: 12px;
-  background: #edf1f7;
-  color: var(--muted);
-}
-.saved-periods-list {
-  display: grid;
-  gap: 7px;
-}
-.saved-period {
-  display: grid;
-  grid-template-columns: 6px minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 9px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  padding: 9px;
-  background: #fafbfd;
-}
-.saved-period > i {
-  width: 6px;
-  height: 37px;
-  border-radius: 5px;
-  background: var(--leave);
-}
-.saved-period div {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-.saved-period strong {
-  font-size: 11px;
-}
-.saved-period span {
-  color: var(--muted);
-  font-size: 10px;
-}
-.saved-period button {
-  min-height: 32px;
-  border: 1px solid #d8dfeb;
-  border-radius: 9px;
-  padding: 0 9px;
-  background: #fff;
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.saved-period button.period-delete {
   border-color: #efd1d5;
   color: #b43f4d;
 }
@@ -395,10 +250,7 @@
   padding: 0 12px;
   background: #fbfcfe;
   color: var(--text);
-}
-.usual-time-shortcuts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-.usual-time-shortcuts > span { flex-basis: 100%; color: var(--muted); font-size: 12px; font-weight: 800; } .clock-time-field { display:grid;gap:7px;min-width:0 } .clock-time-field:not(.pay-work-time-field)>span:first-child { color:#3c5875;font-size:11px;font-weight:850;letter-spacing:.035em;text-transform:uppercase } .clock-time-picker { display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;min-height:50px;border:1.5px solid #b6cbe0;border-radius:13px;background:#fff;box-shadow:0 4px 11px rgba(35,70,106,.07);overflow:hidden } .clock-time-picker:focus-within { border-color:#3978b8;box-shadow:0 0 0 3px rgba(57,120,184,.14),0 5px 13px rgba(35,70,106,.09) } .clock-time-picker select { appearance:none;width:100%;height:50px;border:0;padding:0 8px;background:transparent;color:#183f67;font:850 17px/1 system-ui,sans-serif;text-align:center;cursor:pointer } .clock-time-picker select:focus { outline:0 } .clock-time-picker b { color:#66809a;font-size:18px }
-.usual-time-shortcuts button { min-height: 38px; border: 1px solid #bfd2e6; border-radius: 11px; padding: 7px 11px; background: #f2f7fc; color: #174d7e; font-weight: 800; } .recovery-duration-picker { display: grid; gap: 14px; margin-top: 14px; padding: 17px; border: 2px solid #a8c4e5; border-radius: 18px; background: linear-gradient(145deg, #f5f9ff, #eef5fc); box-shadow: 0 10px 24px rgba(36, 82, 128, .1); } .recovery-duration-picker > span { color: #173a61; font-size: 14px; font-weight: 850; text-align: center; } .recovery-duration-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .recovery-duration-controls label { display: grid; gap: 6px; } .recovery-duration-controls label > span { color: #56708d; font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; } .recovery-duration-controls select { width: 100%; height: 56px; border: 2px solid #bfd1e5; border-radius: 14px; padding: 0 12px; background: #fff; color: #16395f; font: 850 18px/1 system-ui, sans-serif; box-shadow: 0 4px 12px rgba(31, 72, 115, .07); } .recovery-duration-controls select:focus { border-color: #3977b8; outline: 3px solid rgba(57, 119, 184, .16); } .recovery-duration-total { display: flex; align-items: center; justify-content: space-between; min-height: 47px; padding: 10px 13px; border-radius: 13px; background: #245f9f; color: #fff; font-size: 18px; box-shadow: 0 7px 16px rgba(28, 78, 130, .16); } .recovery-duration-total span { font-size: 12px; font-weight: 750; } .half-day-moment-picker { display:grid;gap:12px;margin-top:14px;padding:16px;border:2px solid #b9cde4;border-radius:18px;background:linear-gradient(145deg,#f7faff,#edf5fc);box-shadow:0 9px 22px rgba(34,73,115,.09) } .half-day-moment-picker>p { margin:0;color:#294b6f;font-size:13px;font-weight:800;text-align:center } .half-day-moment-picker>div { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px } .half-day-moment-picker button { display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:9px;min-height:82px;border:1.5px solid #c7d7e7;border-radius:14px;padding:11px;background:#fff;color:#31516f;text-align:left;box-shadow:0 4px 11px rgba(39,71,103,.07);cursor:pointer } .half-day-moment-picker button.active { border-color:#3476b6;background:#eaf4ff;box-shadow:0 6px 16px rgba(35,91,147,.16),inset 0 0 0 1px #3476b6 } .half-day-icon { display:grid;grid-row:1/3;width:36px;height:36px;place-items:center;border-radius:11px;background:#e5eff9;color:#286aa8;font-size:19px } .half-day-moment-picker button.active .half-day-icon { background:#3476b6;color:#fff } .half-day-moment-picker strong { align-self:end;font-size:14px } .half-day-moment-picker small { align-self:start;color:#6a7e92;font-size:10px;line-height:1.3 } .overtime-range-card { border:1.5px solid #b9cde2;border-radius:16px;padding:13px;background:linear-gradient(145deg,#f5f9fe,#fff);box-shadow:0 6px 15px rgba(38,72,109,.08) } .overtime-range-card .overtime-time-title { color:#28577f;font-size:13px } .overtime-range-card input[type=time] { border-width:1.5px;border-color:#aac2da;background:#fff;font-weight:800 } .recovery-time-fields { margin-top:14px;border:2px solid #a8c4e5;border-radius:18px;padding:16px;background:linear-gradient(145deg,#f5f9ff,#eef5fc);box-shadow:0 10px 24px rgba(36,82,128,.1) } .recovery-time-fields label { border:1.5px solid #bfd1e5;border-radius:14px;padding:10px;background:#fff;box-shadow:0 4px 12px rgba(31,72,115,.07) } .recovery-time-fields label>span { color:#315b85;font-size:11px;letter-spacing:.04em;text-transform:uppercase } .recovery-time-fields input { border-color:#a9c2de;background:#fafdff;font-size:17px;font-weight:850 } .recovery-time-help { margin:9px 2px 0;color:#58708a;font-size:11px;font-weight:700;text-align:center }
+} .clock-time-field { display:grid;gap:7px;min-width:0 } .clock-time-field:not(.pay-work-time-field)>span:first-child { color:#3c5875;font-size:11px;font-weight:850;letter-spacing:.035em;text-transform:uppercase } .clock-time-picker { display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;min-height:50px;border:1.5px solid #b6cbe0;border-radius:13px;background:#fff;box-shadow:0 4px 11px rgba(35,70,106,.07);overflow:hidden } .clock-time-picker:focus-within { border-color:#3978b8;box-shadow:0 0 0 3px rgba(57,120,184,.14),0 5px 13px rgba(35,70,106,.09) } .clock-time-picker select { appearance:none;width:100%;height:50px;border:0;padding:0 8px;background:transparent;color:#183f67;font:850 17px/1 system-ui,sans-serif;text-align:center;cursor:pointer } .clock-time-picker select:focus { outline:0 } .clock-time-picker b { color:#66809a;font-size:18px } .recovery-duration-picker { display: grid; gap: 14px; margin-top: 14px; padding: 17px; border: 2px solid #a8c4e5; border-radius: 18px; background: linear-gradient(145deg, #f5f9ff, #eef5fc); box-shadow: 0 10px 24px rgba(36, 82, 128, .1); } .recovery-duration-picker > span { color: #173a61; font-size: 14px; font-weight: 850; text-align: center; } .recovery-duration-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .recovery-duration-controls label { display: grid; gap: 6px; } .recovery-duration-controls label > span { color: #56708d; font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; } .recovery-duration-controls select { width: 100%; height: 56px; border: 2px solid #bfd1e5; border-radius: 14px; padding: 0 12px; background: #fff; color: #16395f; font: 850 18px/1 system-ui, sans-serif; box-shadow: 0 4px 12px rgba(31, 72, 115, .07); } .recovery-duration-controls select:focus { border-color: #3977b8; outline: 3px solid rgba(57, 119, 184, .16); } .recovery-duration-total { display: flex; align-items: center; justify-content: space-between; min-height: 47px; padding: 10px 13px; border-radius: 13px; background: #245f9f; color: #fff; font-size: 18px; box-shadow: 0 7px 16px rgba(28, 78, 130, .16); } .recovery-duration-total span { font-size: 12px; font-weight: 750; } .half-day-moment-picker { display:grid;gap:12px;margin-top:14px;padding:16px;border:2px solid #b9cde4;border-radius:18px;background:linear-gradient(145deg,#f7faff,#edf5fc);box-shadow:0 9px 22px rgba(34,73,115,.09) } .half-day-moment-picker>p { margin:0;color:#294b6f;font-size:13px;font-weight:800;text-align:center } .half-day-moment-picker>div { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px } .half-day-moment-picker button { display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:9px;min-height:82px;border:1.5px solid #c7d7e7;border-radius:14px;padding:11px;background:#fff;color:#31516f;text-align:left;box-shadow:0 4px 11px rgba(39,71,103,.07);cursor:pointer } .half-day-moment-picker button.active { border-color:#3476b6;background:#eaf4ff;box-shadow:0 6px 16px rgba(35,91,147,.16),inset 0 0 0 1px #3476b6 } .half-day-icon { display:grid;grid-row:1/3;width:36px;height:36px;place-items:center;border-radius:11px;background:#e5eff9;color:#286aa8;font-size:19px } .half-day-moment-picker button.active .half-day-icon { background:#3476b6;color:#fff } .half-day-moment-picker strong { align-self:end;font-size:14px } .half-day-moment-picker small { align-self:start;color:#6a7e92;font-size:10px;line-height:1.3 } .overtime-range-card { border:1.5px solid #b9cde2;border-radius:16px;padding:13px;background:linear-gradient(145deg,#f5f9fe,#fff);box-shadow:0 6px 15px rgba(38,72,109,.08) } .overtime-range-card .overtime-time-title { color:#28577f;font-size:13px } .overtime-range-card input[type=time] { border-width:1.5px;border-color:#aac2da;background:#fff;font-weight:800 } .recovery-time-fields { margin-top:14px;border:2px solid #a8c4e5;border-radius:18px;padding:16px;background:linear-gradient(145deg,#f5f9ff,#eef5fc);box-shadow:0 10px 24px rgba(36,82,128,.1) } .recovery-time-fields label { border:1.5px solid #bfd1e5;border-radius:14px;padding:10px;background:#fff;box-shadow:0 4px 12px rgba(31,72,115,.07) } .recovery-time-fields label>span { color:#315b85;font-size:11px;letter-spacing:.04em;text-transform:uppercase } .recovery-time-fields input { border-color:#a9c2de;background:#fafdff;font-size:17px;font-weight:850 } .recovery-time-help { margin:9px 2px 0;color:#58708a;font-size:11px;font-weight:700;text-align:center }
 .warning-modal {
   text-align: center;
 }
@@ -445,16 +297,6 @@
   .calendar-toolbar .primary-action {
     min-height: 42px;
     height: 42px;
-  }
-  .toolbar-leave-action {
-    justify-self: end;
-    margin-left: 0;
-  }
-  .annual-toolbar .toolbar-leave-action {
-    grid-column: 1/-1;
-    justify-self: stretch;
-    width: 100%;
-    min-height: 46px;
   }
 }
 @media (max-width: 1000px) {
@@ -541,9 +383,6 @@
   .primary-action {
     width: 100%;
   }
-  .toolbar-leave-action {
-    margin-left: 0;
-  }
   .leave-balance-grid {
     grid-template-columns: 1fr;
   }
@@ -555,9 +394,6 @@
     border-radius: 15px;
   }
   .controls label {
-    min-width: 0;
-  }
-  .control-field {
     min-width: 0;
   }
   .year-choice,
@@ -650,29 +486,6 @@
     font-size: 9px;
     line-height: 1.2;
   }
-  .shared-tools {
-    align-items: stretch;
-    flex-direction: column;
-    padding: 10px;
-  }
-  .filter-group {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-  }
-  .filter-title {
-    grid-column: 1/-1;
-  }
-  .filter-chip {
-    justify-content: center;
-    padding: 0 7px;
-  }
-  .range-button {
-    width: 100%;
-  }
-  .upcoming-panel {
-    padding: 13px 10px;
-    border-radius: 15px;
-  }
   /* Brique export PDF repliée : l'en-tête cliquable occupe toute la boîte,
      et les trois formats s'empilent une fois dépliés. */
 .annual-pdf-actions {
@@ -749,12 +562,8 @@
   .year-toolbar .period-navigation {
     grid-template-columns: minmax(0, 1fr);
   }
-  .month-jump-menu,
-  .year-jump-menu {
+  .month-jump-menu {
     width: min(286px, calc(100vw - 40px));
-  }
-  .year-jump-menu {
-    max-width: 238px;
   }
   .today-button {
     width: 100%;
@@ -776,23 +585,6 @@
     grid-column: 2;
     grid-row: 2;
     width: 100%;
-  }
-  .annual-toolbar .toolbar-leave-action {
-    grid-column: 1;
-    grid-row: 2;
-    width: 100%;
-    min-height: 44px;
-    margin-left: 0;
-  }
-  /* « Poser un congé » à gauche, « Aujourd'hui » à droite. */
-.month-toolbar .toolbar-leave-action {
-    grid-column: 1;
-    grid-row: 2;
-    width: 100%;
-    min-width: 0;
-    min-height: 44px;
-    height: 44px;
-    margin-left: 0;
   }
   .month-toolbar .today-button {
     grid-column: 2;
@@ -864,22 +656,6 @@
     left: 3px;
     height: 5px;
   }
-  .leave-band.with-personal {
-    left: 18px;
-  }
-  .personal-marker {
-    bottom: 0;
-    width: 12px;
-    height: 12px;
-    border-width: 1px;
-  }
-  .personal-marker.with-companions {
-    left: 3px;
-  }
-  .personal-marker svg {
-    width: 8px;
-    height: 8px;
-  }
   .selection-corner {
     width: 22px;
     height: 22px;
@@ -926,26 +702,8 @@
   .leave-choices {
     grid-template-columns: 1fr;
   }
-  .profile-choices {
-    grid-template-columns: 1fr 1fr;
-  }
   .profile-card {
     align-self: center;
-  }
-  .range-fields {
-    grid-template-columns: 1fr 1fr;
-  }
-  .saved-period {
-    grid-template-columns: 5px minmax(0, 1fr) auto;
-  }
-  .saved-period > i {
-    grid-row: 1/3;
-  }
-  .saved-period button {
-    padding: 0 8px;
-  }
-  .saved-period .period-delete {
-    grid-column: 3;
   }
 }
 @media (min-width: 640px) and (max-width: 1000px) {
@@ -968,17 +726,6 @@
     padding-right: 10px;
     padding-left: 10px;
   }
-  .calendar-toolbar .toolbar-leave-action {
-    grid-column: auto;
-    justify-self: end;
-    width: auto;
-    min-width: 165px;
-    min-height: 42px;
-    height: 42px;
-    margin-left: 0;
-    padding-right: 14px;
-    padding-left: 14px;
-  }
   /* Année, groupe et Aujourd'hui à parts égales : l'année occupait sinon
      toute la place restante et écrasait les deux autres. */
 .calendar-toolbar.annual-toolbar {
@@ -992,12 +739,6 @@
   }
   .annual-toolbar .toolbar-group-picker {
     grid-column: auto;
-  }
-  .annual-toolbar .toolbar-leave-action {
-    grid-column: 1/-1;
-    justify-self: stretch;
-    width: 100%;
-    max-width: none;
   }
 }
 @media (max-width: 370px) {
@@ -1019,13 +760,6 @@
     height: 20px;
     font-size: 11px;
   }
-  .filter-group {
-    grid-template-columns: 1fr 1fr;
-  }
-  .filter-title {
-    grid-column: 1/-1;
-  }
-  .range-fields,
   .note-range-fields {
     grid-template-columns: 1fr;
   }
