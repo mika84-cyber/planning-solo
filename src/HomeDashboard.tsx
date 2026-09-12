@@ -36,7 +36,6 @@ type HomeDashboardProps = {
   today: TodayDashboardData;
   totalLeaveRemaining: number;
   remainingWorkedDaysThisYear: number;
-  importantAlert: string;
   setupItems: HomeSetupItem[];
   setupDismissKey: string;
   hasAnyNote: boolean;
@@ -48,7 +47,6 @@ type HomeDashboardProps = {
   onChooseGroup: () => void;
   onOpenNextWork: (date: Date) => void;
   onOpenLeave: () => void;
-  onOpenPayAlert: () => void;
   onAddNote: () => void;
 };
 
@@ -59,7 +57,6 @@ export function HomeDashboard({
   today,
   totalLeaveRemaining,
   remainingWorkedDaysThisYear,
-  importantAlert,
   setupItems,
   setupDismissKey,
   hasAnyNote,
@@ -71,7 +68,6 @@ export function HomeDashboard({
   onChooseGroup,
   onOpenNextWork,
   onOpenLeave,
-  onOpenPayAlert,
   onAddNote,
 }: HomeDashboardProps) {
   const [notesOpen, setNotesOpen] = useState(false);
@@ -197,13 +193,6 @@ export function HomeDashboard({
             </span>
           </article>
         </div>
-        {importantAlert ? (
-          <button className="important-alert" type="button" onClick={onOpenPayAlert}>
-            <span aria-hidden="true">!</span>
-            <strong>{importantAlert}</strong>
-            <small>Voir dans Ma paie</small>
-          </button>
-        ) : null}
       </section>
 
       {visibleSetupItems.length ? (
@@ -219,7 +208,7 @@ export function HomeDashboard({
                 <span><strong>{item.title}</strong><small>{item.detail}</small></span>
                 <span className="home-setup-actions">
                   <button type="button" onClick={item.onAction}>{item.actionLabel}<b aria-hidden="true">→</b></button>
-                  {item.dismissible !== false ? <button className="home-setup-dismiss" type="button" onClick={() => dismissSetupItem(item.id)}>Ne pas renseigner</button> : null}
+                  {item.dismissible !== false ? <button className="home-setup-dismiss" type="button" onClick={() => dismissSetupItem(item.id)}>Ne plus me le demander</button> : null}
                 </span>
               </article>
             ))}

@@ -76,8 +76,8 @@ export function TimeSelectionDialog({
             </div>
           </div>
         ) : <><div className={recovery ? "time-fields recovery-time-fields" : "time-fields"}>
-          <ClockTimePicker label="Heure de début" value={start} onChange={onStartChange} />
-          <ClockTimePicker label="Heure de fin" value={end} onChange={onEndChange} />
+          <ClockTimePicker label="Heure de début" value={start} onChange={onStartChange} allowEmpty />
+          <ClockTimePicker label="Heure de fin" value={end} onChange={onEndChange} allowEmpty />
         </div>
         {recovery ? <p className="recovery-time-help">Ces horaires seront repris automatiquement dans le formulaire.</p> : null}
         </>}

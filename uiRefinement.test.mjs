@@ -170,13 +170,20 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("left: 0");
   });
 
-  it("compacte les quatre cartes mobiles sans icônes et précise le mois des dimanches", () => {
+  it("compacte les quatre cartes mobiles sans icônes", () => {
     expect(styles).toContain("grid-auto-rows: 84px");
     expect(styles).toContain(".today-overview-grid .today-card-icon { display: none !important; }");
-    expect(app).toContain("dimanche${s(sundayCarryover)} en attente${");
-    expect(app).toContain("` pour ${MONTHS[sundayCarryoverMonth]}");
     expect(app).toContain("Congés restants");
-    expect(app).toContain("MONTHS[sundayCarryoverMonth]");
+  });
+
+  it("réunit en un seul message ce qui manque à l’estimation de paie", () => {
+    // Les dimanches en attente et les fériés à trancher avaient chacun leur
+    // alerte ; ils rejoignent l'invitation, qui s'écarte d'un geste.
+    expect(app).toContain("dimanche${s(sundayCarryover)} travaillé${s(sundayCarryover)} en attente");
+    expect(app).toContain("Le choix de la prime pour");
+    expect(app).toContain("Les valeurs de votre bulletin de salaire");
+    expect(app).toContain("missingPayInformation");
+    expect(app).not.toContain("className=\"important-alert\"");
   });
 
   it("actualise les libellés demandés dans les primes", () => {

@@ -947,9 +947,11 @@ export default function Home() {
   function selectRecoveryType(type: SelectionType) {
     setActiveType(type);
     if (!requestSeedDate) return;
-    const schedule = formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE;
-    const start = schedule.start;
-    const end = schedule.end;
+    // Sans horaires enregistrés, les champs restent vides : mieux vaut une
+    // saisie à faire qu'une heure inventée qu'on oublierait de corriger.
+    const schedule = formProfile?.workSchedule;
+    const start = schedule?.start ?? "";
+    const end = schedule?.end ?? "";
     setSelections((current) => {
       return {
         ...current,
@@ -963,8 +965,10 @@ export default function Home() {
   function selectLeaveType(type: SelectionType) {
     setActiveType(type);
     if (!requestSeedDate) return;
-    const schedule = formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE;
-    const halfTimes = workScheduleHalfTimes(schedule, "morning");
+    const schedule = formProfile?.workSchedule;
+    const halfTimes = schedule
+      ? workScheduleHalfTimes(schedule, "morning")
+      : { start: "", end: "" };
     setSelections((current) => {
       if (!current[requestSeedDate]) return current;
       return {
@@ -1764,16 +1768,22 @@ export default function Home() {
     [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates],
   );
 
-  const importantAlert =
-    payView.getFullYear() === now.getFullYear() && sundayCarryover
-      ? `${sundayCarryover} dimanche${s(sundayCarryover)} en attente${
-          sundayCarryoverMonth !== undefined && sundayCarryoverYear !== undefined
-            ? ` pour ${MONTHS[sundayCarryoverMonth]} ${sundayCarryoverYear}`
-            : " pour un prochain bulletin"
-        }`
-      : payView.getFullYear() === now.getFullYear() && allowances?.holidayPending
-        ? `${allowances.holidayPending} jour${s(allowances.holidayPending)} férié${s(allowances.holidayPending)} à préciser pour la paie`
-        : "";
+  /* Ce qui manque encore à l'estimation de paie. Ces trois manques étaient
+     annoncés à des endroits différents — une alerte pour les dimanches et
+     les fériés, une invitation pour le reste. Ils tiennent désormais dans un
+     seul message, que l'on peut écarter une fois pour toutes. */
+  const currentYearPay = payView.getFullYear() === now.getFullYear();
+  const missingPayInformation = [
+    payProfiles[String(now.getFullYear())]
+      ? ""
+      : "Les valeurs de votre bulletin de salaire",
+    currentYearPay && allowances?.holidayPending
+      ? `Le choix de la prime pour ${allowances.holidayPending} jour${s(allowances.holidayPending)} férié${s(allowances.holidayPending)}`
+      : "",
+    currentYearPay && sundayCarryover
+      ? `${sundayCarryover} dimanche${s(sundayCarryover)} travaillé${s(sundayCarryover)} en attente`
+      : "",
+  ].filter(Boolean);
 
   const showCalendarWorkspace =
     homeSection === "home" ||
@@ -1809,7 +1819,7 @@ export default function Home() {
     setView,
     mode,
     workQuota,
-    workSchedule: formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE,
+    workSchedule: formProfile?.workSchedule,
     calendarDeleteMode,
     setCalendarDeleteMode,
     setCalendarDeleteDates,
@@ -2540,17 +2550,17 @@ export default function Home() {
           today={todayOverview}
           totalLeaveRemaining={totalLeaveRemaining}
           remainingWorkedDaysThisYear={remainingWorkedDaysThisYear}
-          importantAlert={importantAlert}
           setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
           setupItems={[
-            ...(!formProfile?.workSchedule ? [{
-              id: "work-schedule",
-              title: "Renseigner vos horaires de travail",
-              intro: "Renseignez votre plage de travail habituelle pour que l’application propose des horaires adaptés lorsque vous posez un congé ou une récupération.",
-              detail: "Ils permettent de proposer automatiquement les bons horaires pour vos congés et récupérations.",
+            ...(missingPayInformation.length ? [{
+              id: "pay-information",
+              title: "Compléter les informations de paie",
+              intro: "Pour estimer votre paie, l’application a besoin de connaître le nombre de dimanches travaillés, le choix de la prime des jours fériés et les valeurs de votre bulletin de salaire.",
+              detail: missingPayInformation.join(" · "),
               actionLabel: "Renseigner",
-              dismissible: false,
               onAction: () => {
+                if (sundayCarryoverMonth !== undefined && sundayCarryoverYear !== undefined)
+                  setPayView(localDate(sundayCarryoverYear, sundayCarryoverMonth, 1));
                 setHomeSection("pay");
                 setPayScreen("overview");
                 setPayProfileOpen(true);
@@ -2633,12 +2643,6 @@ export default function Home() {
             setView(localDate(date.getFullYear(), date.getMonth(), 1));
           }}
           onOpenLeave={() => setHomeSection("leave")}
-          onOpenPayAlert={() => {
-            if (sundayCarryoverMonth !== undefined && sundayCarryoverYear !== undefined)
-              setPayView(localDate(sundayCarryoverYear, sundayCarryoverMonth, 1));
-            setHomeSection("pay");
-            setPayScreen("overview");
-          }}
           onAddNote={beginQuickNote}
         />
         </Suspense>

@@ -45,7 +45,7 @@ describe("HomeDashboard", () => {
     expect(html).toContain("Choisir votre groupe de planning");
     expect(html).toContain("Pour bien démarrer");
     expect(html).toContain("Choisissez votre groupe de planning pour afficher correctement vos jours de travail.");
-    expect(html).toContain("Ne pas renseigner");
+    expect(html).toContain("Ne plus me le demander");
   });
 
   it("affiche un message général lorsque plusieurs rubriques sont à compléter", () => {

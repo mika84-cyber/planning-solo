@@ -988,16 +988,41 @@ test("Aujourd’hui conserve le groupe pendant la demi-journée travaillée", as
   await expect(page.locator(".today-status small")).toHaveText(`Avec le groupe ${colleagueGroup}`);
 });
 
-test("l’accueil signale uniquement les horaires de travail manquants", async ({ page }) => {
+test("l’accueil réunit en un message ce qui manque à la paie, et se laisse écarter", async ({ page }) => {
   await prepareDemo(page);
   const setup = page.locator(".home-setup-alert");
   await expect(setup).toHaveCount(1);
-  await expect(setup).toContainText("Renseigner vos horaires de travail");
-  await expect(setup).toContainText("Renseignez votre plage de travail habituelle");
-  await expect(setup).not.toContainText("Les éléments de paie peuvent être remplis automatiquement");
-  await expect(setup).not.toContainText("Ajouter votre signature");
+  await expect(setup).toContainText("Compléter les informations de paie");
+  await expect(setup).toContainText("le nombre de dimanches travaillés");
+  await expect(setup).toContainText("le choix de la prime des jours fériés");
+  await expect(setup).toContainText("les valeurs de votre bulletin de salaire");
+  // L'alerte ambre disait la même chose à un autre endroit : elle a disparu.
+  await expect(page.locator(".important-alert")).toHaveCount(0);
   await expect(setup).toHaveCSS("margin-top", "12px");
   await expect(setup).toHaveCSS("margin-bottom", "12px");
+
+  // Le message ne doit pas s'imposer indéfiniment : une fois écarté, il ne
+  // revient pas, même après rechargement.
+  await setup.getByRole("button", { name: "Ne plus me le demander" }).click();
+  await expect(setup).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  await expect(page.locator(".home-setup-alert")).toHaveCount(0);
+});
+
+test("sans horaires enregistrés, les heures d’une récupération restent à saisir", async ({ page }) => {
+  await prepareDemo(page);
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
+  await page.getByRole("dialog", { name: "Poser un congé" })
+    .getByRole("button", { name: /^Récupération/ }).click();
+  await page.locator("#request-panel").getByRole("button", { name: /Récupération en heures/ }).click();
+  await page.locator(".month-card .day.work").first().click();
+
+  // Mieux vaut une saisie à faire qu'une heure inventée qu'on oublierait de
+  // corriger : les champs restent vides tant que le profil n'en donne pas.
+  const hours = page.getByRole("dialog", { name: "Choisissez les horaires" });
+  await expect(hours.getByLabel("Heure de début — heures")).toHaveValue("");
+  await expect(hours.getByLabel("Heure de fin — heures")).toHaveValue("");
 });
 
 test("une photo de bulletin est reconnue localement", async ({ page }) => {
@@ -3089,7 +3114,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
 test("les horaires du profil préremplissent une récupération", async ({ page }) => {
   await prepareDemo(page);
   const setup = page.locator(".home-setup-alert");
-  await expect(setup).toContainText("Renseigner vos horaires de travail");
+  await expect(setup).toContainText("Compléter les informations de paie");
   await setup.getByRole("button", { name: "Renseigner" }).click();
   const profile = page.locator("#pay-profile-settings");
   await expect(profile).toBeInViewport();
@@ -3130,7 +3155,7 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
 
   await page.getByRole("navigation", { name: "Navigation principale" })
     .getByRole("button", { name: "Accueil" }).click();
-  await expect(page.locator(".home-setup-alert")).toHaveCount(0);
+  await expect(page.locator(".planning-leave-panel .planning-leave-action")).toBeVisible();
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
@@ -3949,7 +3974,9 @@ test("le mois de paie reste indépendant du planning et suit une alerte datée",
   await prepareCompletePayDemo(page);
   const planningMonth = page.getByRole("button", { name: "Sélectionner le mois" });
   const initialPlanningMonth = (await planningMonth.textContent())?.trim();
-  await page.locator(".important-alert").click();
+  // L'alerte ambre a fusionné avec l'invitation : c'est son bouton qui mène
+  // désormais au mois concerné.
+  await page.locator(".home-setup-alert").getByRole("button", { name: "Renseigner" }).click();
   await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
 
   await goToSection(page, "home");

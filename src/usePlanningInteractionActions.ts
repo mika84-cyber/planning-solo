@@ -83,7 +83,9 @@ type PlanningInteractionActionsOptions = {
   setView: Dispatch<SetStateAction<Date>>;
   mode: ViewMode;
   workQuota: WorkQuota;
-  workSchedule: WorkSchedule;
+  /** Absent tant que la personne n’a pas saisi ses horaires : les champs
+   *  d’heure restent alors vides. */
+  workSchedule?: WorkSchedule;
   calendarDeleteMode: boolean;
   setCalendarDeleteMode: Dispatch<SetStateAction<boolean>>;
   setCalendarDeleteDates: Dispatch<SetStateAction<string[]>>;
@@ -347,8 +349,8 @@ export function usePlanningInteractionActions({
       return;
     }
     if (activeType.startsWith("recovery_")) {
-      setTimeStart(workSchedule.start);
-      setTimeEnd(workSchedule.end);
+      setTimeStart(workSchedule?.start ?? "");
+      setTimeEnd(workSchedule?.end ?? "");
       setTimeDate(key);
       return;
     }
@@ -356,7 +358,9 @@ export function usePlanningInteractionActions({
       activeType === "half"
     ) {
       const existing = selections[key];
-      const usualTimes = workScheduleHalfTimes(workSchedule, "morning");
+      const usualTimes = workSchedule
+        ? workScheduleHalfTimes(workSchedule, "morning")
+        : { start: "", end: "" };
       setTimeStart(existing?.start || usualTimes.start);
       setTimeEnd(existing?.end || usualTimes.end);
       setTimeDate(key);

@@ -15,4 +15,24 @@ describe("sélecteur d’heure commun", () => {
     expect(html).toContain('<option value="30">30</option>');
     expect(html).toContain('<option value="45">45</option>');
   });
+
+  it("laisse le choix vide quand on l’y autorise, et ferme les minutes", () => {
+    // Une liste déroulante affiche toujours une de ses options : sans option
+    // vide, une heure serait proposée que personne n'a choisie.
+    const html = renderToStaticMarkup(
+      <ClockTimePicker label="Heure de début" value="" onChange={vi.fn()} allowEmpty />,
+    );
+    expect(html).toContain('<option value="" selected="">—</option>');
+    expect(html).not.toContain('<option value="9" selected="">9 h</option>');
+    expect(html).toContain("disabled");
+  });
+
+  it("rouvre les minutes dès qu’une heure est choisie", () => {
+    const html = renderToStaticMarkup(
+      <ClockTimePicker label="Heure de début" value="10:30" onChange={vi.fn()} allowEmpty />,
+    );
+    expect(html).toContain('<option value="10" selected="">10 h</option>');
+    expect(html).toContain('<option value="30" selected="">30</option>');
+    expect(html).not.toContain("disabled");
+  });
 });
