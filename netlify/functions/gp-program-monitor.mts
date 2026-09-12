@@ -6,6 +6,7 @@ import {
   sendGrandPalaisAlertEmail,
   type GrandPalaisMonitorState,
 } from "../lib/grandPalaisMonitor.mts";
+import { sendSharedPlanningNotification } from "../lib/sharedCalendarBridge.mts";
 import type {
   GrandPalaisDismissal,
   GrandPalaisProgramProposal,
@@ -40,7 +41,28 @@ export default async function monitorGrandPalaisProgram() {
 
   let alertSent = false;
   let alertWarning = "";
+  let pushSent = false;
+  let pushWarning = "";
   if (fresh.length) {
+    // Deux canaux plutôt qu'un : la notification prévient tout de suite, l'e-mail
+    // reste le filet si le téléphone est éteint ou l'autorisation retirée.
+    const summary = fresh
+      .map((proposal) => (proposal.next ?? proposal.previous)?.title)
+      .filter(Boolean)
+      .join(" · ");
+    try {
+      pushSent = await sendSharedPlanningNotification({
+        title: `Grand Palais : ${fresh.length} changement${fresh.length > 1 ? "s" : ""}`,
+        body: `${summary} — ouvrez Programmation GP pour accepter ou ignorer.`,
+        url: "https://planning-solo.netlify.app/",
+        tag: "gp-program-proposal",
+      });
+      if (!pushSent) pushWarning = "Notification non confirmée par le planning partagé";
+    } catch (error) {
+      pushWarning = error instanceof Error ? error.message : "Notification indisponible";
+    }
+    if (pushWarning)
+      console.warn("Grand Palais monitor: notification non envoyée", pushWarning);
     try {
       await sendGrandPalaisAlertEmail(fresh);
       alertSent = true;
@@ -56,6 +78,8 @@ export default async function monitorGrandPalaisProgram() {
     detected: fresh.length,
     alertSent,
     alertWarning,
+    pushSent,
+    pushWarning,
     checkedAt: detected.state.lastCheckedAt,
   }), { headers: { "content-type": "application/json; charset=utf-8" } });
 }

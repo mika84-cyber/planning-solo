@@ -90,6 +90,23 @@ export async function forwardNotificationRequest(
   }
 }
 
+/** Prévient le téléphone de Mika. Les abonnements vivent sur le planning
+ *  partagé : on lui demande d'envoyer, en s'annonçant avec le secret de
+ *  liaison. Renvoie faux si le service n'a pas confirmé — l'appelant garde
+ *  alors son autre moyen d'alerte. */
+export async function sendSharedPlanningNotification(payload: {
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+}) {
+  const response = await forwardNotificationRequest("POST", {
+    action: "notify",
+    ...payload,
+  });
+  return Boolean(response?.ok);
+}
+
 export async function readAgnesSharedCalendar(
   enabled: boolean,
 ): Promise<SharedSnapshot> {

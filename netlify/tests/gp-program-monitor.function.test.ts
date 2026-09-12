@@ -7,6 +7,9 @@ const store = {
 };
 
 vi.mock("@netlify/blobs", () => ({ getStore: vi.fn(() => store) }));
+vi.mock("../lib/sharedCalendarBridge.mts", () => ({
+  sendSharedPlanningNotification: vi.fn(async () => true),
+}));
 vi.mock("../lib/grandPalaisMonitor.mts", () => ({
   collectGrandPalaisEvents: vi.fn(),
   detectGrandPalaisChanges: vi.fn(),
@@ -19,6 +22,7 @@ import {
   detectGrandPalaisChanges,
   sendGrandPalaisAlertEmail,
 } from "../lib/grandPalaisMonitor.mts";
+import { sendSharedPlanningNotification } from "../lib/sharedCalendarBridge.mts";
 import monitorGrandPalaisProgram, {
   config,
 } from "../functions/gp-program-monitor.mts";
@@ -26,6 +30,7 @@ import monitorGrandPalaisProgram, {
 const mockedCollect = vi.mocked(collectGrandPalaisEvents);
 const mockedDetect = vi.mocked(detectGrandPalaisChanges);
 const mockedSendAlert = vi.mocked(sendGrandPalaisAlertEmail);
+const mockedNotify = vi.mocked(sendSharedPlanningNotification);
 
 const event = {
   id: "event-1",
@@ -57,6 +62,8 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     mockedCollect.mockReset();
     mockedDetect.mockReset();
     mockedSendAlert.mockReset();
+    mockedNotify.mockReset();
+    mockedNotify.mockResolvedValue(true);
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
   });
 
@@ -93,12 +100,15 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     expect(stored.get("pending")).toEqual([proposal]);
     expect(mockedSendAlert).toHaveBeenCalledWith([proposal]);
     expect(response.headers.get("content-type")).toContain("application/json");
+    expect(mockedNotify).toHaveBeenCalledTimes(1);
     expect(await response.json()).toEqual({
       ok: true,
       checked: 1,
       detected: 1,
       alertSent: true,
       alertWarning: "",
+      pushSent: true,
+      pushWarning: "",
       checkedAt: nextState.lastCheckedAt,
     });
   });
@@ -114,6 +124,37 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     expect(store.setJSON).toHaveBeenCalledTimes(1);
     expect(store.setJSON).toHaveBeenCalledWith("monitor-state", nextState);
     expect(await response.json()).toMatchObject({ detected: 0, alertSent: false });
+  });
+
+  it("annonce les titres détectés dans la notification", async () => {
+    mockedCollect.mockResolvedValue([event] as never);
+    mockedDetect.mockReturnValue({ state: nextState, proposals: [proposal] } as never);
+    mockedSendAlert.mockResolvedValue(undefined);
+
+    await monitorGrandPalaisProgram();
+
+    expect(mockedNotify).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Grand Palais : 1 changement",
+      body: expect.stringContaining(event.title),
+      tag: "gp-program-proposal",
+    }));
+  });
+
+  it("envoie quand même l'e-mail si la notification échoue", async () => {
+    mockedNotify.mockRejectedValue(new Error("service injoignable"));
+    mockedCollect.mockResolvedValue([event] as never);
+    mockedDetect.mockReturnValue({ state: nextState, proposals: [proposal] } as never);
+    mockedSendAlert.mockResolvedValue(undefined);
+
+    const response = await monitorGrandPalaisProgram();
+
+    expect(mockedSendAlert).toHaveBeenCalledWith([proposal]);
+    expect(stored.get("pending")).toEqual([proposal]);
+    expect(await response.json()).toMatchObject({
+      pushSent: false,
+      pushWarning: "service injoignable",
+      alertSent: true,
+    });
   });
 
   it("ne revient pas sur une proposition déjà écartée", async () => {
