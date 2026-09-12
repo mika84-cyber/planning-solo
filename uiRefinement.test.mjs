@@ -198,6 +198,18 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("Jours fériés concernés");
   });
 
+  it("tient la barre de navigation dans la palette et marque la rubrique courante", () => {
+    // Elle était le seul élément froid d’une application chaude, avec des
+    // couleurs écrites en dur : elle se lisait comme un bandeau rapporté.
+    expect(styles).not.toContain("#e4ecf7");
+    expect(styles).not.toContain("#304f79");
+    expect(styles).not.toContain("#4c5e76");
+    expect(styles).toContain(".mobile-bottom-navigation button.active { background: var(--accent-soft); color: var(--accent-strong)");
+    // La couleur seule ne suffisait pas : les deux teintes se ressemblaient.
+    expect(styles).toContain(".desktop-side-navigation button.active { font-weight: 880; }");
+    expect(styles).toContain(".desktop-side-navigation button.active svg { stroke-width: 2.2; }");
+  });
+
   it("rend la navigation mensuelle des primes confortable sur téléphone", () => {
     expect(app).toContain('className="pay-period-month"');
     expect(styles).toContain(".variable-pay-card .pay-month-nav.compact .pay-nav-arrow {");
