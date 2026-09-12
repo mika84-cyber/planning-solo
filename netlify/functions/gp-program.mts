@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import { getUser } from "@netlify/identity";
 import type {
+  BoundaryReport,
   GrandPalaisDismissal,
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
@@ -40,10 +41,11 @@ export default async function grandPalaisProgramHandler(request: Request) {
     && normalizedEmail(user.email) === normalizedEmail(adminEmail()),
   );
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
-  const [approvedValue, pendingValue, state] = await Promise.all([
+  const [approvedValue, pendingValue, state, health] = await Promise.all([
     store.get("approved", { type: "json" }) as Promise<SharedGrandPalaisEvent[] | null>,
     store.get("pending", { type: "json" }) as Promise<GrandPalaisProgramProposal[] | null>,
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
+    store.get("health", { type: "json" }) as Promise<BoundaryReport | null>,
   ]);
   const approved = approvedValue ?? [];
   const pending = pendingValue ?? [];
@@ -53,6 +55,9 @@ export default async function grandPalaisProgramHandler(request: Request) {
     pending: isAdmin ? nextPending : [],
     isAdmin,
     lastCheckedAt: state?.lastCheckedAt,
+    // Le contrôle des frontières ne regarde que l'administratrice : c'est
+    // elle qui peut agir, et le détail nomme des variables de configuration.
+    health: isAdmin ? (health ?? undefined) : undefined,
   });
 
   if (request.method === "GET") return json(payload());

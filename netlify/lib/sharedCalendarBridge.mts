@@ -90,6 +90,18 @@ export async function forwardNotificationRequest(
   }
 }
 
+/** Vérifie la liaison avec le planning partagé sans rien envoyer : le
+ *  secret est-il reconnu, et combien d'appareils recevraient une alerte.
+ *  `null` si le service n'a pas répondu. */
+export async function checkSharedNotificationChannel() {
+  const response = await forwardNotificationRequest("POST", { action: "check" });
+  if (!response?.ok) return null;
+  const payload = (await response.json().catch(() => null)) as
+    | { devices?: number }
+    | null;
+  return { devices: Number(payload?.devices ?? 0) };
+}
+
 /** Prévient le téléphone de Mika. Les abonnements vivent sur le planning
  *  partagé : on lui demande d'envoyer, en s'annonçant avec le secret de
  *  liaison. Renvoie faux si le service n'a pas confirmé — l'appelant garde

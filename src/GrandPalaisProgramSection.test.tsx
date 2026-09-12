@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  BoundaryReportPanel,
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
@@ -30,6 +31,39 @@ describe("programmation du Grand Palais", () => {
       expect(isGrandPalaisEntryCurrent({ title: "Déjà ouverte", period: "", startsOn: "2025-01-01", endsOn: ready.today }, early.today, false)).toBe(true);
     }
   });
+  it("annonce que tout répond quand aucune frontière n’est en échec", () => {
+    const html = renderToStaticMarkup(<BoundaryReportPanel report={{
+      checkedAt: "2026-09-14T00:05:00.000Z",
+      boundaries: [
+        { name: "Programme du Grand Palais", ok: true, detail: "12 événements lus" },
+        { name: "Notification sur le téléphone", ok: true, detail: "1 appareil inscrit" },
+      ],
+      lastDeliveryAt: "2026-09-07T00:05:00.000Z",
+      deliveryDetail: "notification envoyée · e-mail envoyé",
+    }} />);
+    expect(html).toContain("Tout ce qui doit vous prévenir répond.");
+    expect(html).toContain("14 septembre 2026");
+    expect(html).toContain("12 événements lus");
+    expect(html).toContain("notification envoyée · e-mail envoyé");
+    expect(html).toContain("7 septembre 2026");
+  });
+
+  it("prévient dès qu’une seule frontière ne répond plus", () => {
+    // Le cas qui compte : la lecture du site marche, mais plus personne ne
+    // serait prévenu. L'ensemble doit être annoncé comme douteux.
+    const html = renderToStaticMarkup(<BoundaryReportPanel report={{
+      checkedAt: "2026-09-14T00:05:00.000Z",
+      boundaries: [
+        { name: "Programme du Grand Palais", ok: true, detail: "12 événements lus" },
+        { name: "Notification sur le téléphone", ok: false, detail: "Aucun appareil inscrit : aucune notification n’arrivera" },
+      ],
+    }} />);
+    expect(html).toContain("Une alerte pourrait ne pas vous parvenir.");
+    expect(html).toContain("Ne répond pas");
+    expect(html).toContain("Aucun appareil inscrit");
+    expect(html).not.toContain("Preuve de livraison");
+  });
+
   it("ouvre sur les expositions en cours et propose les quatre vues", () => {
     const html = renderToStaticMarkup(<GrandPalaisProgramSection />);
     expect(html).toContain("En ce moment");

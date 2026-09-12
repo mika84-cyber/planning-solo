@@ -10,6 +10,7 @@ import type {
   GrandPalaisVenueKey,
 } from "./grandPalaisProgramData";
 import type {
+  BoundaryReport,
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
   SharedGrandPalaisEvent,
@@ -274,6 +275,48 @@ export function grandPalaisEntryStatus(
   return { label: "À confirmer", detail: "" };
 }
 
+/** Ce que le contrôle hebdomadaire des frontières a constaté. Affiché à la
+ *  seule administratrice : un contrôle ne peut pas rendre compte par le
+ *  canal qu'il teste, il lui faut donc un endroit dans l'application. */
+export function BoundaryReportPanel({ report }: { report: BoundaryReport }) {
+  const failingBoundaries = report.boundaries.filter((boundary) => !boundary.ok);
+  return (
+    <section className="grand-palais-admin-alerts" aria-labelledby="grand-palais-health-title">
+      <div>
+        <span className="step-label">Réservé à votre compte</span>
+        <h3 id="grand-palais-health-title">Contrôle des alertes</h3>
+        <p>
+          {failingBoundaries.length
+            ? "Une alerte pourrait ne pas vous parvenir."
+            : "Tout ce qui doit vous prévenir répond."}{" "}
+          Vérifié le {formatFrenchDate(report.checkedAt.slice(0, 10))}.
+        </p>
+      </div>
+      <div className="grand-palais-admin-alert-list">
+        {report.boundaries.map((boundary) => (
+          <article key={boundary.name}>
+            <small>{boundary.ok ? "Répond" : "Ne répond pas"}</small>
+            <strong>{boundary.name}</strong>
+            <span>{boundary.detail}</span>
+          </article>
+        ))}
+        {report.deliveryDetail ? (
+          <article>
+            <small>Envoi réel, une fois par mois</small>
+            <strong>Preuve de livraison</strong>
+            <span>
+              {report.deliveryDetail}
+              {report.lastDeliveryAt
+                ? ` — le ${formatFrenchDate(report.lastDeliveryAt.slice(0, 10))}`
+                : ""}
+            </span>
+          </article>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export function GrandPalaisProgramSection({ guestPreview = false }: { guestPreview?: boolean }) {
   const [clock, setClock] = useState(() => grandPalaisClock());
   const { today, openingReady } = clock;
@@ -375,6 +418,10 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           <p>Consultez le programme par période ou par espace.</p>
         </div>
       </div>
+
+      {!guestPreview && sharedPayload?.isAdmin && sharedPayload.health ? (
+        <BoundaryReportPanel report={sharedPayload.health} />
+      ) : null}
 
       {!guestPreview && sharedPayload?.isAdmin && sharedPayload.pending.length ? (
         <section className="grand-palais-admin-alerts" aria-labelledby="grand-palais-alerts-title">

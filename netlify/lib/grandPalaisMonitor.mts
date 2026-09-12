@@ -476,17 +476,37 @@ export async function sendGrandPalaisAlertEmail(
     const label = event.venueKey === "exceptional-closure" ? "Fermeture complète détectée" : labels[proposal.kind];
     return `<li><strong>${label} :</strong> ${escapeHtml(event.title)} — ${escapeHtml(event.venueLabel)} (${escapeHtml(event.startDate)} au ${escapeHtml(event.endDate)})</li>`;
   }).join("");
+  return sendPlanningEmail(
+    `${proposals.length} changement${proposals.length > 1 ? "s" : ""} dans la programmation du Grand Palais`,
+    `<p>Planning Solo a détecté une évolution du site officiel :</p><ul>${items}</ul><p>Ouvrez la rubrique Programmation GP pour accepter ou ignorer.</p>`,
+    { apiKey, recipient, from },
+    fetcher,
+  );
+}
+
+/** L'envoi lui-même, sans rien supposer du contenu. L'alerte d'un changement
+ *  et le contrôle mensuel n'annoncent pas la même chose, et un sujet qui
+ *  parle d'un changement inexistant est la meilleure façon de faire ignorer
+ *  les vrais. */
+export async function sendPlanningEmail(
+  subject: string,
+  html: string,
+  credentials: { apiKey?: string; recipient?: string; from?: string } = {
+    apiKey: runtimeEnv().RESEND_API_KEY,
+    recipient: runtimeEnv().PROGRAM_ADMIN_EMAIL,
+    from: runtimeEnv().PROGRAM_ALERT_FROM,
+  },
+  fetcher: typeof fetch = fetch,
+) {
+  const { apiKey, recipient, from } = credentials;
+  if (!apiKey || !recipient || !from)
+    throw new Error("Les variables d’alerte e-mail de la programmation GP sont incomplètes");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GRAND_PALAIS_FETCH_TIMEOUT_MS);
   const response = await fetcher("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      from,
-      to: [recipient],
-      subject: `${proposals.length} changement${proposals.length > 1 ? "s" : ""} dans la programmation du Grand Palais`,
-      html: `<p>Planning Solo a détecté une évolution du site officiel :</p><ul>${items}</ul><p>Ouvrez la rubrique Programmation GP pour accepter ou ignorer.</p>`,
-    }),
+    body: JSON.stringify({ from, to: [recipient], subject, html }),
     signal: controller.signal,
   }).finally(() => clearTimeout(timeout));
   if (!response.ok) throw new Error(`Envoi de l’alerte impossible (${response.status})`);

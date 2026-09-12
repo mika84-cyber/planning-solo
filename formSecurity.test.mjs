@@ -22,6 +22,7 @@ describe("formulaire de demande", () => {
     "src/todayOverview.ts",
     "src/UpcomingNoteList.tsx",
     "src/useProfileAdjustmentActions.ts",
+    "src/grandPalaisProgramData.ts",
     "src/HomeDashboard.tsx",
     "src/PayPage.tsx",
     "src/PdfDownloadPage.tsx",
