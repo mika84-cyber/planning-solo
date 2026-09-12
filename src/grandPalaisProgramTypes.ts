@@ -18,6 +18,16 @@ export type GrandPalaisProgramProposal = {
   next?: SharedGrandPalaisEvent;
 };
 
+/** Une proposition écartée. Conservée pour distinguer un refus d'un
+ *  événement jamais soumis, et ne pas revenir sur un choix déjà fait. */
+export type GrandPalaisDismissal = {
+  eventId: string;
+  proposalId: string;
+  title: string;
+  startDate: string;
+  dismissedAt: string;
+};
+
 export type GrandPalaisProgramPayload = {
   approved: SharedGrandPalaisEvent[];
   pending: GrandPalaisProgramProposal[];

@@ -200,16 +200,42 @@ describe("surveillance de la programmation du Grand Palais", () => {
     ]);
   });
 
-  it("crée des propositions seulement après le premier relevé", () => {
+  it("propose dès le premier relevé ce qui n’est pas encore passé", () => {
     const first = extractGrandPalaisEvent(eventPage(), "https://www.grandpalais.fr/fr/programme/exposition-test");
     expect(first).not.toBeNull();
     if (!first) return;
     const baseline = detectGrandPalaisChanges(null, [first], "2026-08-28T06:00:00.000Z");
-    expect(baseline.proposals).toEqual([]);
+    expect(baseline.proposals).toHaveLength(1);
+    expect(baseline.proposals[0]).toMatchObject({ kind: "new", next: first });
     const changed = { ...first, endDate: "2027-08-15" };
     const next = detectGrandPalaisChanges(baseline.state, [changed], "2026-08-29T06:00:00.000Z");
     expect(next.proposals).toHaveLength(1);
     expect(next.proposals[0]).toMatchObject({ kind: "changed", previous: first, next: changed });
+  });
+
+  it("reste muet sur ce qui est déjà terminé au premier relevé", () => {
+    const past = extractGrandPalaisEvent(
+      eventPage({ startDate: "2026-01-05", endDate: "2026-02-10" }),
+      "https://www.grandpalais.fr/fr/programme/exposition-passee",
+    );
+    expect(past).not.toBeNull();
+    if (!past) return;
+    const baseline = detectGrandPalaisChanges(null, [past], "2026-08-28T06:00:00.000Z");
+    expect(baseline.proposals).toEqual([]);
+    // La mémoire le retient malgré tout : il ne doit pas ressortir plus tard.
+    expect(Object.keys(baseline.state.lastKnown)).toHaveLength(1);
+  });
+
+  it("ne propose pas une exposition déjà livrée avec l’application, titre différent", () => {
+    // Le site officiel écrit « Fine Arts Paris 2026 », l'application « Fine
+    // Arts Paris » : à date de début égale, c'est le même événement.
+    const officiel = extractGrandPalaisEvent(
+      eventPage({ name: "Fine Arts Paris 2026", startDate: "2026-09-19", endDate: "2026-09-23", venue: "Nef" }),
+      "https://www.grandpalais.fr/fr/programme/fine-arts-paris-2026",
+    );
+    expect(officiel).not.toBeNull();
+    if (!officiel) return;
+    expect(isGrandPalaisProposalRelevant(officiel)).toBe(false);
   });
 
   it("attend deux relevés absents avant de proposer un retrait", () => {

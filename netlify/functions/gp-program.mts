@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import { getUser } from "@netlify/identity";
 import type {
+  GrandPalaisDismissal,
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
   SharedGrandPalaisEvent,
@@ -80,10 +81,31 @@ export default async function grandPalaisProgramHandler(request: Request) {
     nextApproved = [...approved.filter((event) => event.id !== accepted.id), accepted];
   }
   const nextPending = pending.filter((item) => item.id !== proposal.id);
-  await Promise.all([
+  // Un refus laissait le même état qu'un événement jamais vu : impossible
+  // ensuite de savoir si l'on avait oublié de proposer ou si le choix avait
+  // été fait. On le note, et l'amorçage d'une mémoire vide s'en sert pour ne
+  // pas revenir sur un refus déjà exprimé.
+  const writes = [
     store.setJSON("approved", nextApproved),
     store.setJSON("pending", nextPending),
-  ]);
+  ];
+  if (body.decision === "ignore") {
+    const refused = proposal.next ?? proposal.previous;
+    if (refused) {
+      const dismissed = (await store.get("dismissed", { type: "json" }) as GrandPalaisDismissal[] | null) ?? [];
+      writes.push(store.setJSON("dismissed", [
+        ...dismissed.filter((item) => item.eventId !== refused.id),
+        {
+          eventId: refused.id,
+          proposalId: proposal.id,
+          title: refused.title,
+          startDate: refused.startDate,
+          dismissedAt: new Date().toISOString(),
+        },
+      ]));
+    }
+  }
+  await Promise.all(writes);
   return json(payload(nextApproved, nextPending));
 }
 

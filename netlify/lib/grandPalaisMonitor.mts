@@ -1,3 +1,4 @@
+import { GRAND_PALAIS_PROGRAM } from "../../src/grandPalaisProgramData.ts";
 import type {
   GrandPalaisProgramProposal,
   SharedGrandPalaisEvent,
@@ -232,17 +233,18 @@ function dynamicVenue(label: string) {
   return slug ? { venueKey: `other:${slug}`, venueLabel: normalizedLabel } : null;
 }
 
-const BUILT_IN_PROGRAM_EVENTS = [
-  ["2025-06-20", "transparence"],
-  ["2026-05-06", "hilma af klint les peintures du temple 1906 1915"],
-  ["2026-06-02", "leandro erlich"],
-  ["2026-09-23", "cezanne et nous"],
-  ["2026-10-23", "art basel"],
-  ["2026-10-23", "art basel paris 2026"],
-  ["2026-12-02", "le musee imaginaire d oli"],
-  ["2026-12-09", "girls adolescence mode et rebellion"],
-  ["2026-12-16", "mika ninagawa with eim alive with shadows"],
-] as const;
+/** Le programme livré avec l'application, à plat. Il sert de référence :
+ *  inutile de proposer ce qui est déjà affiché. */
+const BUILT_IN_PROGRAM_EVENTS = Object.values(GRAND_PALAIS_PROGRAM).flatMap((venue) =>
+  Object.values(venue.schedule)
+    .flat()
+    .filter((entry) => Boolean(entry?.startsOn))
+    .map((entry) => ({
+      startDate: entry!.startsOn as string,
+      endDate: entry!.endsOn ?? "",
+      title: normalizedEventTitle(entry!.title),
+    })),
+);
 
 function normalizedEventTitle(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
@@ -254,8 +256,15 @@ function normalizedEventTitle(value: string) {
 export function isGrandPalaisProposalRelevant(event: SharedGrandPalaisEvent) {
   if (/\/grand-palais-dete-2026(?:$|[?#])/i.test(event.url)) return false;
   const title = normalizedEventTitle(event.title);
-  return !BUILT_IN_PROGRAM_EVENTS.some(([startDate, knownTitle]) =>
-    event.startDate === startDate && title === knownTitle,
+  // Le site officiel et l'application n'écrivent pas toujours un titre à
+  // l'identique — « Art Basel Paris 2026 » contre « Art Basel ». À date de
+  // début égale, on reconnaît l'entrée par son titre ou par sa date de fin.
+  return !BUILT_IN_PROGRAM_EVENTS.some((known) =>
+    event.startDate === known.startDate &&
+    (known.title === title ||
+      known.title.includes(title) ||
+      title.includes(known.title) ||
+      (Boolean(known.endDate) && known.endDate === event.endDate)),
   );
 }
 
@@ -392,14 +401,26 @@ export function detectGrandPalaisChanges(
   current: SharedGrandPalaisEvent[],
   now = new Date().toISOString(),
 ) {
+  // Premier passage, mémoire vide. Tout est enregistré comme connu, mais on
+  // propose quand même ce qui n'est pas encore passé : sans cela un événement
+  // déjà en ligne ce jour-là disparaissait pour de bon, sans avoir jamais été
+  // soumis. Ce qui est terminé ne sert plus à rien et reste tu.
   if (!state) {
+    const today = now.slice(0, 10);
     return {
       state: {
         lastCheckedAt: now,
         lastKnown: Object.fromEntries(current.map((event) => [event.id, event])),
         missingCounts: {},
       } satisfies GrandPalaisMonitorState,
-      proposals: [] as GrandPalaisProgramProposal[],
+      proposals: current
+        .filter((event) => !event.endDate || event.endDate >= today)
+        .map((event): GrandPalaisProgramProposal => ({
+          id: proposalId("new", event),
+          kind: "new",
+          detectedAt: now,
+          next: event,
+        })),
     };
   }
 

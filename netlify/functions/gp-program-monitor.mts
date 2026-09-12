@@ -6,23 +6,31 @@ import {
   sendGrandPalaisAlertEmail,
   type GrandPalaisMonitorState,
 } from "../lib/grandPalaisMonitor.mts";
-import type { GrandPalaisProgramProposal } from "../../src/grandPalaisProgramTypes.ts";
+import type {
+  GrandPalaisDismissal,
+  GrandPalaisProgramProposal,
+} from "../../src/grandPalaisProgramTypes.ts";
 
 export default async function monitorGrandPalaisProgram() {
   // Netlify schedules in UTC: only one of the two daily slots is midnight in Paris.
   const parisHour = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).find(part => part.type === "hour")?.value;
   if (parisHour !== "00") return new Response(JSON.stringify({ ok: true, skipped: true }), { headers: { "content-type": "application/json; charset=utf-8" } });
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
-  const [state, pending] = await Promise.all([
+  const [state, pending, dismissed] = await Promise.all([
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
     store.get("pending", { type: "json" }) as Promise<GrandPalaisProgramProposal[] | null>,
+    store.get("dismissed", { type: "json" }) as Promise<GrandPalaisDismissal[] | null>,
   ]);
   const events = await collectGrandPalaisEvents();
   const detected = detectGrandPalaisChanges(state, events);
   const existingIds = new Set((pending ?? []).map((proposal) => proposal.id));
+  // Un événement déjà écarté ne revient pas comme une nouveauté : seule une
+  // modification constatée sur le site justifie de redemander.
+  const dismissedIds = new Set((dismissed ?? []).map((item) => item.eventId));
   const fresh = detected.proposals.filter((proposal) => {
     const event = proposal.next ?? proposal.previous;
-    return event && isGrandPalaisProposalRelevant(event) && !existingIds.has(proposal.id);
+    if (!event || !isGrandPalaisProposalRelevant(event) || existingIds.has(proposal.id)) return false;
+    return !(proposal.kind === "new" && dismissedIds.has(event.id));
   });
 
   await Promise.all([

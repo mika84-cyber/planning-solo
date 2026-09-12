@@ -116,6 +116,41 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     expect(await response.json()).toMatchObject({ detected: 0, alertSent: false });
   });
 
+  it("ne revient pas sur une proposition déjà écartée", async () => {
+    stored.set("dismissed", [{
+      eventId: event.id,
+      proposalId: "ancienne-proposition",
+      title: event.title,
+      startDate: event.startDate,
+      dismissedAt: "2026-09-01T00:00:00.000Z",
+    }]);
+    mockedCollect.mockResolvedValue([event] as never);
+    mockedDetect.mockReturnValue({ state: nextState, proposals: [proposal] } as never);
+
+    const response = await monitorGrandPalaisProgram();
+
+    expect(mockedSendAlert).not.toHaveBeenCalled();
+    expect(store.setJSON).not.toHaveBeenCalledWith("pending", expect.anything());
+    expect(await response.json()).toMatchObject({ detected: 0 });
+  });
+
+  it("redemande malgré un refus quand le site a modifié l'événement", async () => {
+    stored.set("dismissed", [{
+      eventId: event.id,
+      proposalId: "ancienne-proposition",
+      title: event.title,
+      startDate: event.startDate,
+      dismissedAt: "2026-09-01T00:00:00.000Z",
+    }]);
+    const modifiee = { ...proposal, kind: "changed", previous: event, next: { ...event, endDate: "2027-05-10" } };
+    mockedCollect.mockResolvedValue([event] as never);
+    mockedDetect.mockReturnValue({ state: nextState, proposals: [modifiee] } as never);
+
+    const response = await monitorGrandPalaisProgram();
+
+    expect(await response.json()).toMatchObject({ detected: 1 });
+  });
+
   it("conserve les propositions si l'e-mail d'alerte est indisponible", async () => {
     mockedCollect.mockResolvedValue([event] as never);
     mockedDetect.mockReturnValue({ state: nextState, proposals: [proposal] } as never);
