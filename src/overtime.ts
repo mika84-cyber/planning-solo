@@ -4,6 +4,13 @@ export type WorkSchedule = {
   end: string;
 };
 
+/** Une plage n'est exploitable que complète. Une saisie en cours n'en porte
+ *  qu'une moitié : on la garde dans le formulaire, sans rien en proposer
+ *  ailleurs tant que l'autre heure manque. */
+export function usableWorkSchedule(schedule: WorkSchedule | undefined) {
+  return schedule?.start && schedule?.end ? schedule : undefined;
+}
+
 export const DEFAULT_WORK_SCHEDULE: WorkSchedule = {
   start: "09:15",
   end: "17:30",

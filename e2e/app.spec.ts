@@ -3141,8 +3141,12 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
   });
   expect(new Set(profileTypography.labels.map((item) => item.join("|"))).size).toBe(1);
   expect(new Set(profileTypography.values.map((item) => item.join("|"))).size).toBe(1);
-  await expect(startHour.locator("option")).toHaveText(["7 h", "8 h", "9 h", "10 h", "11 h", "12 h", "13 h", "14 h", "15 h", "16 h", "17 h", "18 h", "19 h", "20 h", "21 h", "22 h", "23 h", "0 h", "1 h", "2 h"]);
-  await expect(startMinute.locator("option")).toHaveText(["00", "15", "30", "45"]);
+  // Le tiret ouvre la liste : tant qu'aucune heure n'est prise, le profil
+  // n'en affiche aucune plutôt que d'en proposer une que personne n'a choisie.
+  await expect(startHour.locator("option")).toHaveText(["—", "7 h", "8 h", "9 h", "10 h", "11 h", "12 h", "13 h", "14 h", "15 h", "16 h", "17 h", "18 h", "19 h", "20 h", "21 h", "22 h", "23 h", "0 h", "1 h", "2 h"]);
+  await expect(startHour).toHaveValue("");
+  await expect(startMinute).toBeDisabled();
+  await expect(startMinute.locator("option")).toHaveText(["—", "00", "15", "30", "45"]);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     const profileFields = page.locator(".pay-profile-settings-grid > label");
     const [quotaBox, statusBox] = await Promise.all([

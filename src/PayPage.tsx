@@ -16,7 +16,9 @@ type PayPageProps = {
   profileFocusRequested: boolean;
   settingsOpen: boolean;
   workQuota: WorkQuota;
-  workSchedule: WorkSchedule;
+  /** Absent tant que personne n’a saisi de plage : les champs restent vides
+   *  plutôt que d’afficher une plage que l’on n’a pas choisie. */
+  workSchedule?: WorkSchedule;
   status: PayStatus;
   netEstimateComplete: boolean;
   gross: number;
@@ -105,7 +107,7 @@ export function PayPage({
           <fieldset className="pay-work-schedule">
             <legend>Sur quelle plage horaire travaillez-vous ?</legend>
             <p>L’application utilisera cette plage pour proposer des horaires adaptés aux congés et récupérations.</p>
-            {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <ClockTimePicker key={key} className="pay-work-time-field" pickerClassName="pay-work-time-picker" label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule[key]} onChange={(value) => onWorkScheduleChange({ ...workSchedule, [key]: value })} />)}
+            {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <ClockTimePicker key={key} className="pay-work-time-field" pickerClassName="pay-work-time-picker" label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule?.[key] ?? ""} allowEmpty onChange={(value) => onWorkScheduleChange({ start: workSchedule?.start ?? "", end: workSchedule?.end ?? "", [key]: value })} />)}
           </fieldset>
           <button type="button" className="primary-action pay-profile-save" onClick={onSaveProfile}>Enregistrer le profil</button>
         </div>

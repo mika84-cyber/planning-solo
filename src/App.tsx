@@ -176,6 +176,7 @@ import {
   allocateRecoveryUses,
   calculatePaidOvertime,
   DEFAULT_WORK_SCHEDULE,
+  usableWorkSchedule,
   defaultRecoveryMinutes,
   dailyMinutesForQuota,
   holidayRecoveryEntries,
@@ -954,7 +955,7 @@ export default function Home() {
     if (!requestSeedDate) return;
     // Sans horaires enregistrés, les champs restent vides : mieux vaut une
     // saisie à faire qu'une heure inventée qu'on oublierait de corriger.
-    const schedule = formProfile?.workSchedule;
+    const schedule = usableWorkSchedule(formProfile?.workSchedule);
     const start = schedule?.start ?? "";
     const end = schedule?.end ?? "";
     setSelections((current) => {
@@ -970,7 +971,7 @@ export default function Home() {
   function selectLeaveType(type: SelectionType) {
     setActiveType(type);
     if (!requestSeedDate) return;
-    const schedule = formProfile?.workSchedule;
+    const schedule = usableWorkSchedule(formProfile?.workSchedule);
     const halfTimes = schedule
       ? workScheduleHalfTimes(schedule, "morning")
       : { start: "", end: "" };
@@ -1819,7 +1820,7 @@ export default function Home() {
     setView,
     mode,
     workQuota,
-    workSchedule: formProfile?.workSchedule,
+    workSchedule: usableWorkSchedule(formProfile?.workSchedule),
     calendarDeleteMode,
     setCalendarDeleteMode,
     setCalendarDeleteDates,
@@ -1879,11 +1880,15 @@ export default function Home() {
     });
   }
 
-  async function changeWorkSchedule(nextSchedule: WorkSchedule) {
+  /** Le profil garde la saisie telle quelle, même à moitié faite : sans cela
+   *  on ne pourrait jamais choisir l'heure de début avant celle de fin. Ce
+   *  sont les lectures qui écartent une plage incomplète. */
+  async function changeWorkSchedule(nextSchedule: WorkSchedule | undefined) {
+    const schedule = nextSchedule;
     const previousProfile = formProfile;
     const nextProfile: FormProfile = {
       ...(formProfile || { fullName: "", group: String(group), signature: "" }),
-      workSchedule: nextSchedule,
+      workSchedule: schedule,
     };
     setFormProfile(nextProfile);
     if (demoMode) return true;
@@ -1893,7 +1898,7 @@ export default function Home() {
         fullName: nextProfile.fullName,
         group: nextProfile.group,
         signature: nextProfile.signature,
-        workSchedule: nextSchedule,
+        workSchedule: schedule,
       });
       return true;
     } catch (error) {
@@ -1904,7 +1909,7 @@ export default function Home() {
   }
 
   async function saveCalculationProfile() {
-    const saved = await changeWorkSchedule(formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE);
+    const saved = await changeWorkSchedule(formProfile?.workSchedule);
     if (!saved) return;
     setPayProfileOpen(false);
   }
@@ -2738,7 +2743,7 @@ export default function Home() {
           profileFocusRequested={payProfileFocusRequested}
           settingsOpen={payAdvancedOpen}
           workQuota={workQuota}
-          workSchedule={formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE}
+          workSchedule={formProfile?.workSchedule}
           status={formProfile?.status || "contractuel"}
           netEstimateComplete={netEstimateComplete}
           missingFields={netEstimateMissing}
