@@ -74,6 +74,8 @@ import {
   EMPTY_MANUAL_ADJUSTMENTS,
   computePayAllowances,
 } from "./payAllowances";
+import { computeLeaveStats } from "./leaveStats";
+import { computeTodayOverview } from "./todayOverview";
 import { DayDetailDialog } from "./DayDetailDialog";
 import { RequestSelectionPanel } from "./RequestSelectionPanel";
 import {
@@ -176,7 +178,6 @@ import {
   defaultRecoveryMinutes,
   dailyMinutesForQuota,
   holidayRecoveryEntries,
-  minutesLabel,
   monthlyRecoveryBalance,
   recoveryRequestMinutes,
   trainingRecoveryMinutes,
@@ -189,8 +190,6 @@ import {
 import { useToast } from "./useToast";
 import { type CetAccount } from "./cet";
 import {
-  COUNTED_ONLY_TYPES,
-  DAY_LABELS,
   LEAVE_ALLOWANCES,
   MONTHS,
   RESIDENCE_ALLOWANCE_RATE,
@@ -200,7 +199,6 @@ import {
   YEAR_THIRDS,
   TYPE_LABELS,
   addDays,
-  coWorkingGroupsForDate,
   dateKey,
   fromKey,
   getDayInfo,
@@ -209,11 +207,9 @@ import {
   s,
   localDate,
   monthDays,
-  nextAttendanceDay,
   periodLabel,
   sameDate,
   schoolVacationsForZone,
-  selectionRemovesAttendance,
   type CountedOnlyType,
   type SelectionType,
   type SchoolVacation,
@@ -1530,100 +1526,17 @@ export default function Home() {
       : null;
   const monthNet = netCalculation?.net ?? null;
 
-  const leaveStats = useMemo(() => {
-    const year = absenceYear;
-    const todayKey = dateKey(now);
-    const first = `${year}-01-01`;
-    const last = `${year}-12-31`;
-    const counted = new Set<string>();
-    const manual =
-      formProfile?.manualAdjustments?.[String(year)] ??
-      EMPTY_MANUAL_ADJUSTMENTS;
-    const used: Record<BalanceType, number> = {
-      annual: manual.annualUsed,
-      rtt: manual.rttUsed,
-      fraction: manual.fractionUsed,
-    };
-    const details: Record<
-      BalanceType,
-      Array<{ date: string; units: number; period: LeavePeriod }>
-    > = {
-      annual: [],
-      rtt: [],
-      fraction: [],
-    };
-    // Suivis à part : comptés, mais sans droit à consommer.
-    const countedOnly: Record<
-      CountedOnlyType,
-      { used: number; details: Array<{ date: string; units: number; period: LeavePeriod }> }
-    > = {
-      sick: { used: 0, details: [] },
-      strike: { used: 0, details: [] },
-      childcare: { used: 0, details: [] },
-      exceptional: { used: 0, details: [] },
-      other: { used: 0, details: [] },
-      cet: { used: 0, details: [] },
-      work_accident: { used: 0, details: [] },
-    };
-    for (const period of periods) {
-      if (
-        !period.leaveType ||
-        period.to < first ||
-        period.from > last
-      )
-        continue;
-      // Une récupération rend des heures déjà travaillées : rien n'est déduit,
-      // et elle n'alimente aucun compteur non plus.
-      if (period.leaveType === "recovery")
-        continue;
-      const countedType = COUNTED_ONLY_TYPES.includes(
-        period.leaveType as CountedOnlyType,
-      )
-        ? (period.leaveType as CountedOnlyType)
-        : null;
-      const category =
-        period.leaveType === "half" ? "annual" : period.leaveType;
-      const units = period.leaveType === "half" ? 0.5 : 1;
-      const from = period.from < first ? first : period.from;
-      const to = period.to > last ? last : period.to;
-      for (
-        let date = fromKey(from);
-        dateKey(date) <= to;
-        date = addDays(date, 1)
-      ) {
-        const key = dateKey(date);
-        const info = getDayInfo(date, period.group || group);
-        if (info.holiday || info.kind === "off") continue;
-        const countKey = `${category}:${key}:${units}`;
-        if (counted.has(countKey)) continue;
-        counted.add(countKey);
-        if (countedType) {
-          countedOnly[countedType].used += units;
-          countedOnly[countedType].details.push({ date: key, units, period });
-          continue;
-        }
-        used[category as BalanceType] += units;
-        details[category as BalanceType].push({ date: key, units, period });
-      }
-    }
-    return {
-      balances: (["annual", "rtt", "fraction"] as const).map((type) => {
-        const manualUsed = manual[`${type}Used` as "annualUsed" | "rttUsed" | "fractionUsed"];
-        const sortedDetails = details[type].sort((a, b) => a.date.localeCompare(b.date));
-        return {
-          type,
-          allowance: LEAVE_ALLOWANCES[type],
-          manualUsed,
-          used: used[type],
-          taken: manualUsed + sortedDetails.filter((detail) => detail.date <= todayKey).reduce((sum, detail) => sum + detail.units, 0),
-          upcoming: sortedDetails.filter((detail) => detail.date > todayKey).reduce((sum, detail) => sum + detail.units, 0),
-          remaining: LEAVE_ALLOWANCES[type] - used[type],
-          details: sortedDetails,
-        };
+  const leaveStats = useMemo(
+    () =>
+      computeLeaveStats({
+        year: absenceYear,
+        today: now,
+        periods,
+        group,
+        manualAdjustments: formProfile?.manualAdjustments,
       }),
-      countedOnly,
-    };
-  }, [periods, absenceYear, group, formProfile?.manualAdjustments, now]);
+    [periods, absenceYear, group, formProfile?.manualAdjustments, now],
+  );
 
   const activeManualAdjustments =
     formProfile?.manualAdjustments?.[String(absenceYear)] ??
@@ -1850,134 +1763,20 @@ export default function Home() {
     return groupNoteItemsByDate(items);
   }, [entries, noteQuery, partnerEntries]);
 
-  const todayOverview = useMemo(() => {
-    const key = dateKey(now);
-    const info = getDayInfo(now, group);
-    const coWorkingGroups = coWorkingGroupsForDate(now, group);
-    const coWorkingLabel =
-      coWorkingGroups.length === 1
-        ? `avec le groupe ${coWorkingGroups[0]}`
-        : coWorkingGroups.length > 1
-          ? `avec les groupes ${coWorkingGroups.join(" et ")}`
-          : "sans autre groupe programmé";
-    const period = visibleAbsencePeriod(periods, key);
-    const entry = entries[key];
-    const todayExchange = workExchangeForDate(entries, key);
-    const todayRecoveryMinutes = recoveryUses
-      .filter((item) => item.date === key)
-      .reduce((total, item) => total + item.minutes, 0);
-    const todayExceptionalClosure = exceptionalClosureFor(key);
-    const scheduledStatus =
-      info.kind === "work"
-        ? DAY_LABELS[info.kind]
-        : DAY_LABELS[info.kind];
-    let status = scheduledStatus;
-    let tone: string = info.kind;
-    if (todayExceptionalClosure && info.kind === "work") {
-      status = "Fermeture exceptionnelle";
-      tone = "off";
-    } else if (todayExchange) {
-      status = entry?.exchangeRole === "given"
-        ? `Repos · remplacé par ${todayExchange.partnerName}`
-        : `Travail · remplacement de ${todayExchange.partnerName}`;
-      tone = "exchange";
-    } else if (todayRecoveryMinutes) {
-      status =
-        todayRecoveryMinutes >= workDayMinutes
-          ? `Récupération · ${minutesLabel(todayRecoveryMinutes)}`
-          : `${scheduledStatus} + récup. ${minutesLabel(todayRecoveryMinutes)}`;
-      tone = "recovery";
-    } else if (period && info.kind !== "off") {
-      status =
-        period.leaveType === "half"
-          ? `1/2 journée posée ${period.halfMoment === "afternoon" ? "l’après-midi" : "le matin"}`
-        : period.leaveType === "other"
-          ? "Divers"
-          : period.leaveType === "strike"
-            ? "Grève"
-          : leaveTypeLabel(period.leaveType || "annual");
-      tone = period.leaveType === "recovery" ? "recovery" : "leave";
-    } else if (entry?.leave) {
-      status = "Divers";
-      tone = "leave";
-    } else if (info.holiday) {
-      status = `${scheduledStatus} · ${info.holiday}`;
-    }
-
-    const nextWork = nextAttendanceDay(now, group, (candidateKey) => {
-      if (exceptionalClosureFor(candidateKey)) {
-        return true;
-      }
-      return entries[candidateKey]?.exchangeRole === "given" ||
-        Boolean(entries[candidateKey]?.leave) ||
-        Boolean(
-          selections[candidateKey] &&
-          selections[candidateKey].type !== "half" &&
-          selectionRemovesAttendance(selections[candidateKey].type),
-        ) ||
-        periods.some(
-          (item) =>
-            item.leaveType !== "half" &&
-            candidateKey >= item.from &&
-            candidateKey <= item.to,
-        ) ||
-        personalPresenceForDate(new Date(`${candidateKey}T12:00:00`), group, periods, entries, recoveryUses, dailyMinutesForQuota(formProfile?.workQuota || "full")).status === "absence";
-    }, 366, (candidateKey) => entries[candidateKey]?.exchangeRole === "return");
-    const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
-    const nextWorkExceptionalClosure = nextWork
-      ? exceptionalClosureFor(dateKey(nextWork))
-      : undefined;
-    const nextWorkExchange = nextWork
-      ? workExchangeForDate(entries, dateKey(nextWork))
-      : null;
-    const nextWorkHalfLeave = nextWork
-      ? periods.find((item) =>
-          item.leaveType === "half" &&
-          dateKey(nextWork) >= item.from &&
-          dateKey(nextWork) <= item.to,
-        )
-      : null;
-    const nextWorkHalfLeaveLabel = nextWorkHalfLeave
-      ? `1/2 journée posée ${nextWorkHalfLeave.halfMoment === "afternoon" ? "l’après-midi" : "le matin"}`
-      : "";
-    const nextWorkGroups = nextWork
-      ? coWorkingGroupsForDate(nextWork, group)
-      : [];
-    const nextWorkGroupLabel = nextWorkExchange
-      ? entries[dateKey(nextWork!)]?.exchangeRole === "return"
-        ? `Remplacement de ${nextWorkExchange.partnerName}`
-        : `Remplacé par ${nextWorkExchange.partnerName}`
-      : nextWorkExceptionalClosure
-      ? "Journée normalement prévue au cycle"
-      : nextWorkGroups.length === 1
-      ? `Avec le groupe ${nextWorkGroups[0]}`
-      : nextWorkGroups.length > 1
-        ? `Avec les groupes ${nextWorkGroups.join(" et ")}`
-        : nextWorkKind === "work"
-          ? "Sans autre groupe programmé"
-          : "";
-    const isTodayOther =
-      period?.leaveType === "other" || Boolean(entry?.leave);
-
-    return {
-      status: isTodayOther ? "Je ne travaille pas" : status,
-      tone,
-      todayGroupLabel:
-        info.kind === "work" &&
-        !todayExceptionalClosure &&
-        !todayExchange &&
-        (!period || period.leaveType === "half") &&
-        !entry?.leave &&
-        todayRecoveryMinutes < workDayMinutes
-          ? coWorkingLabel.charAt(0).toUpperCase() + coWorkingLabel.slice(1)
-          : "",
-      nextWork,
-      nextWorkKind,
-      nextWorkExceptionalClosure: Boolean(nextWorkExceptionalClosure),
-      nextWorkGroupLabel,
-      nextWorkHalfLeaveLabel,
-    };
-  }, [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates]);
+  const todayOverview = useMemo(
+    () =>
+      computeTodayOverview({
+        today: now,
+        group,
+        periods,
+        entries,
+        recoveryUses,
+        selections,
+        workDayMinutes,
+        isExceptionallyClosed: (key) => Boolean(exceptionalClosureFor(key)),
+      }),
+    [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates],
+  );
 
   const importantAlert =
     payView.getFullYear() === now.getFullYear() && sundayCarryover
