@@ -53,6 +53,8 @@ import { useAppShellUiState } from "./useAppShellUiState";
 import { useFeedbackMessaging } from "./useFeedbackMessaging";
 import { AppDialogLayer } from "./AppDialogLayer";
 import { DayDetailDialog } from "./DayDetailDialog";
+import { BalanceDetailDialog } from "./BalanceDetailDialog";
+import { RequestSelectionPanel } from "./RequestSelectionPanel";
 import {
   AppHeader,
   AdaptiveNavigation,
@@ -68,7 +70,7 @@ import { WorkExchangeDialog } from "./WorkExchangeDialog";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { workExchangeForDate } from "./workExchange";
-import { RequestValidationSummary, requestRecoveryMinutes, zeroLeaveBalanceType } from "./RequestValidationSummary";
+import { requestRecoveryMinutes, zeroLeaveBalanceType } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -145,7 +147,6 @@ import {
 } from "./payslipReview";
 import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
 import { strikePayEstimate } from "./strike";
-import { StrikeContinuityDetails } from "./StrikeContinuityDetails";
 import {
   payEstimateReadiness,
   type PayEstimateField,
@@ -190,7 +191,6 @@ import {
   yearThirdFor,
   yearThirdRange,
   YEAR_THIRDS,
-  TYPE_COLORS,
   TYPE_LABELS,
   applyManualSundayLeave,
   addDays,
@@ -4078,206 +4078,29 @@ export default function Home() {
         </section>
       )}
 
-      {requestKind && (
-        <section
-          className={`request-panel calendar-request-panel${sickRequest ? " sick-request-panel" : requestKind === "other" ? " other-request-panel" : requestKind === "strike" ? " strike-request-panel" : ""}`}
-          id="request-panel"
-          style={
-            { "--active-color": TYPE_COLORS[activeType] } as React.CSSProperties
-          }
-        >
-          <div className="request-heading">
-            <div>
-              <span className="step-label">
-                {requestKind === "strike" ? "Ajout direct au planning" : "Étape 2 sur 3 · Choisissez les dates"}
-              </span>
-              <h2>
-                {requestKind === "leave"
-                  ? sickRequest
-                    ? "Sélectionnez votre arrêt maladie"
-                    : "Sélectionnez vos congés"
-                  : requestKind === "other"
-                    ? "Sélectionnez vos dates Divers"
-                    : requestKind === "strike"
-                      ? "Ajoutez une journée de grève"
-                    : "Sélectionnez vos récupérations"}
-              </h2>
-            </div>
-            <button
-              className="text-button danger"
-              type="button"
-              onClick={cancelRequest}
-              aria-label={requestKind === "strike" ? "Fermer" : "Annuler la demande"}
-            >
-              {requestKind === "strike" ? "Fermer" : "Annuler"}
-            </button>
-          </div>
-          {requestKind === "leave" && !sickRequest ? (
-            <p className="multi-type-request-help">
-              <strong>Vous pouvez mélanger plusieurs types dans une même demande.</strong>
-              Choisissez un type, touchez ses dates dans le planning, puis changez de type si nécessaire.
-            </p>
-          ) : null}
-          {requestKind === "other" ? (
-            <div className="request-option-groups other-request-options">
-              <section className="request-option-group">
-                <h3>Divers</h3>
-                <div className="type-tabs" role="group" aria-label="Divers">
-                  <button
-                    type="button"
-                    className="active"
-                    style={{ "--type-color": TYPE_COLORS.other } as React.CSSProperties}
-                  >
-                    {TYPE_LABELS.other}
-                    {selectedCounts.other ? <b>{selectedCounts.other}</b> : null}
-                  </button>
-                </div>
-                <p className="request-help">
-                  Ces dates seront visibles dans le planning et déduites des jours travaillés, sans effet sur la paie ni sur les soldes de congés.
-                </p>
-              </section>
-            </div>
-          ) : requestKind === "strike" ? (
-            <div className="request-option-groups strike-request-options">
-              <section className="request-option-group">
-                <h3>Grève</h3>
-                <div className="type-tabs" role="group" aria-label="Grève">
-                  <button
-                    type="button"
-                    className="active"
-                    style={{ "--type-color": TYPE_COLORS.strike } as React.CSSProperties}
-                  >
-                    <i />
-                    {TYPE_LABELS.strike}
-                    {selectedCounts.strike ? <b>{selectedCounts.strike}</b> : null}
-                  </button>
-                </div>
-                <p className="request-help">
-                  Touchez une journée travaillée : elle sera ajoutée immédiatement, sans déduction de congé, avec retenue brute estimée au trentième.
-                </p>
-              </section>
-            </div>
-          ) : requestKind === "leave" ? (
-            sickRequest ? (
-              <div className="request-option-groups sick-request-options">
-                <section className="request-option-group">
-                  <h3>Arrêt maladie</h3>
-                  <div className="type-tabs" role="group" aria-label="Arrêt maladie">
-                    <button
-                      type="button"
-                      className="active"
-                      style={{ "--type-color": TYPE_COLORS.sick } as React.CSSProperties}
-                    >
-                      <i />
-                      {TYPE_LABELS.sick}
-                      {selectedCounts.sick ? <b>{selectedCounts.sick}</b> : null}
-                    </button>
-                  </div>
-                  <p className="request-help">
-                    L’arrêt sera compté dans votre suivi. Un CA déjà posé sera retiré et recrédité automatiquement. Les autres congés ne bloquent pas l’arrêt et resteront annulables manuellement.
-                  </p>
-                </section>
-              </div>
-            ) : (
-            <div className="request-option-groups request-option-groups-guided">
-              <section className="request-option-group request-option-group-primary">
-                <h3>Choix courants</h3>
-                <div className="type-tabs" role="group" aria-label="Choix courants">
-                  {(["annual", "half", "rtt", "fraction"] as SelectionType[]).map((type) => (
-                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => selectLeaveType(type)} key={type}>
-                      <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <details className="request-advanced-types" open={(["childcare", "exceptional", "cet"] as SelectionType[]).includes(activeType)}>
-                <summary><span><strong>Autres types de congé</strong><small>Garde d’enfant, jour exceptionnel ou CET</small></span><b aria-hidden="true">⌄</b></summary>
-                <section className="request-option-group">
-                  <div className="type-tabs" role="group" aria-label="Autres types de congé">
-                    {(["childcare", "exceptional", "cet"] as SelectionType[]).map((type) => (
-                      <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => setActiveType(type)} key={type}>
-                        <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </details>
-            </div>
-            )
-          ) : (
-            <div className="request-option-groups request-option-groups-guided">
-              <section className="request-option-group request-option-group-primary">
-                <h3>Type de récupération</h3>
-                <div className="type-tabs" role="group" aria-label="Choisir le type de récupération">
-                  {(["recovery_day", "recovery_half", "recovery_hours", "recovery_holiday", "recovery_training"] as SelectionType[]).map((type) => (
-                    <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as React.CSSProperties} onClick={() => selectRecoveryType(type)} key={type}>
-                      <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <p className="request-selection-instruction">Touchez ensuite les dates concernées dans le planning. Les horaires utiles vous seront demandés automatiquement.</p>
-            </div>
-          )}
-          {requestKind !== "strike" ? (
-            <>
-          {selectedList.length ? <div className="request-review-heading"><span className="step-label">Étape 3 sur 3</span><strong>Vérifiez avant d’enregistrer</strong></div> : null}
-          <RequestValidationSummary
-            items={selectedList}
-            requestKind={requestKind}
-            sickRequest={sickRequest}
-            group={group}
-            workQuota={workQuota}
-            recoveryBalanceRemaining={recoveryBalance.remaining}
-            leaveRemaining={leaveRemainingByType}
-          />
-          <div className="request-bottom">
-            {selectedList.length ? (
-              <p><strong>{selectedList.length}</strong> {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}. Touchez une date colorée pour la retirer.</p>
-            ) : (
-              <p><strong>Aucune date sélectionnée.</strong> Touchez une date dans le planning pour commencer.</p>
-            )}
-            <div className="request-actions">
-              <button
-                className="validate-button"
-                type="button"
-                onClick={() => void validateAndOpenForm()}
-                disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || recoverySelectionIncomplete || leaveSelectionZeroBalance}
-              >
-                {savingRequest
-                  ? requestKind === "other" || sickRequest
-                    ? "Enregistrement…"
-                    : "Ouverture du formulaire…"
-                  : requestKind === "other"
-                    ? "Enregistrer Divers"
-                    : sickRequest
-                      ? "Enregistrer l’arrêt maladie"
-                      : "Enregistrer et préparer le formulaire"}
-              </button>
-              {requestKind !== "other" && !sickRequest ? (
-                <button
-                  className="request-planning-choice"
-                  type="button"
-                  aria-label="Enregistrer uniquement"
-                  onClick={() => void saveRequestToPlanning()}
-                  disabled={!selectedList.length || savingRequest || recoverySelectionInsufficient || recoverySelectionIncomplete || leaveSelectionZeroBalance}
-                >
-                  <span aria-hidden="true">✓</span>
-                  <strong>Enregistrer uniquement</strong>
-                  <small>Sans formulaire</small>
-                </button>
-              ) : null}
-            </div>
-            {requestKind !== "other" && !sickRequest ? (
-              <small className="request-action-clarification">
-                Le formulaire est préparé, mais jamais envoyé automatiquement.
-              </small>
-            ) : null}
-          </div>
-            </>
-          ) : null}
-        </section>
-      )}
+      <RequestSelectionPanel
+        requestKind={requestKind}
+        sickRequest={sickRequest}
+        activeType={activeType}
+        setActiveType={setActiveType}
+        selectedList={selectedList}
+        selectedCounts={selectedCounts}
+        group={group}
+        workQuota={workQuota}
+        recoveryBalanceRemaining={recoveryBalance.remaining}
+        leaveRemainingByType={leaveRemainingByType}
+        savingRequest={savingRequest}
+        selectionBlocked={
+          recoverySelectionInsufficient ||
+          recoverySelectionIncomplete ||
+          leaveSelectionZeroBalance
+        }
+        onCancel={cancelRequest}
+        onSelectLeaveType={selectLeaveType}
+        onSelectRecoveryType={selectRecoveryType}
+        onValidateAndOpenForm={() => void validateAndOpenForm()}
+        onSaveToPlanning={() => void saveRequestToPlanning()}
+      />
 
       {recoveryDatePicking ? (
         <section className="request-panel recovery-date-picking-panel" aria-label="Sélection de la date de récupération">
@@ -4556,181 +4379,28 @@ export default function Home() {
         appendNoteLine={appendNoteLine}
       />
 
-      {balanceDetail && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setBalanceDetailType(null)
-          }
-        >
-          <section
-            className="modal-card balance-detail-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="balance-detail-title"
-          >
-            <button
-              className="modal-close"
-              type="button"
-              onClick={() => setBalanceDetailType(null)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <span className="step-label">
-              {balanceDetail.quota ? "Solde" : "Suivi"} {absenceYear}
-            </span>
-            <h2 id="balance-detail-title">{balanceDetail.title}</h2>
-            <div className="balance-detail-summary">
-              <strong>
-                {(balanceDetail.quota
-                  ? balanceDetail.remaining
-                  : balanceDetail.used
-                ).toLocaleString("fr-FR")}
-              </strong>
-              <span>
-                {balanceDetail.quota
-                  ? `jours restants sur ${balanceDetail.allowance} · ${balanceDetail.used.toLocaleString("fr-FR")} déduit`
-                  : balanceDetailType === "strike"
-                    ? `${balanceDetail.used > 1 ? "journées" : "journée"} de grève · aucun congé déduit`
-                    : balanceDetailType === "work_accident"
-                      ? `${balanceDetail.used > 1 ? "journées" : "journée"} d’accident de travail · aucun congé déduit`
-                    : `${balanceDetail.used > 1 ? "jours" : "jour"} d’arrêt · aucun congé déduit`}
-              </span>
-            </div>
-            <h3>
-              {balanceDetail.quota
-                ? "Jours déduits"
-                : balanceDetailType === "strike"
-                  ? "Journées enregistrées"
-                  : balanceDetailType === "work_accident"
-                    ? "Journées concernées"
-                  : "Jours d’arrêt"}
-            </h3>
-            {balanceDetail.quota && balanceDetail.manualUsed > 0 ? (
-              <div className="balance-manual-summary">
-                <span>
-                  <strong>{balanceDetail.manualUsed.toLocaleString("fr-FR")} jour{s(balanceDetail.manualUsed)}</strong>
-                  saisi{s(balanceDetail.manualUsed)} sans date
-                </span>
-                <button type="button" onClick={openManualAdjustments}>Modifier</button>
-              </div>
-            ) : null}
-            <p className="balance-detail-guidance">
-              Ouvrez les congés déjà pris ou les congés à venir. Touchez ensuite une date
-              pour la gérer depuis sa fiche.
-            </p>
-            <div className="balance-detail-months">
-            {balanceDetailPeriods.map((period) => (
-              <details className={`balance-detail-month balance-detail-${period.key}`} key={period.key}>
-                <summary>
-                  <span className="balance-detail-month-label">
-                    <strong>{period.label}</strong>
-                    <small>{period.units.toLocaleString("fr-FR")} jour{s(period.units)}</small>
-                  </span>
-                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5" /></svg>
-                </summary>
-                {period.details.length ? (
-                  <div className="balance-detail-list">
-                  {period.details.map((detail) => {
-                    const isUpcoming = detail.date > dateKey(now);
-                    const timingClass = isUpcoming
-                      ? "balance-detail-upcoming"
-                      : "balance-detail-taken";
-                    return (
-                      <article
-                        key={`${detail.period.id}-${detail.date}`}
-                        className={[
-                          recentBalanceDetailDates.has(detail.date) ? "recent-leave-date" : "",
-                          timingClass,
-                        ].filter(Boolean).join(" ")}
-                      >
-                      <button
-                        className="balance-detail-open"
-                        type="button"
-                        onClick={() => {
-                          const date = fromKey(detail.date);
-                          setBalanceDetailType(null);
-                          setView(localDate(date.getFullYear(), date.getMonth(), 1));
-                          setMode("month");
-                          openDay(date);
-                        }}
-                        aria-label={`Ouvrir la fiche du ${longDate(fromKey(detail.date))} pour gérer cette absence`}
-                      >
-                        <span className="balance-detail-date-copy">
-                          <strong>{longDate(fromKey(detail.date))}</strong>
-                          <small>
-                            {balanceDetailType === "strike"
-                              ? (() => {
-                                  const date = fromKey(detail.date);
-                                  const deduction = strikePayEstimate(
-                                    periods,
-                                    group,
-                                    payProfiles,
-                                    date.getFullYear(),
-                                    date.getMonth(),
-                                    { entries, recoveryUses },
-                                  ).dailyDeduction;
-                                  return deduction === null
-                                    ? "Retenue à calculer · voir et gérer"
-                                    : `Retenue estimée : −${euros(deduction)} brut · voir et gérer`;
-                                })()
-                              : `${isUpcoming ? "À venir" : "Déjà pris"} · voir et gérer cette absence`}
-                          </small>
-                        </span>
-                        <span className="balance-detail-value">
-                          <strong>
-                            {balanceDetail.quota ? "−" : ""}
-                            {detail.units.toLocaleString("fr-FR")} jour
-                          </strong>
-                          <svg viewBox="0 0 20 20" aria-hidden="true">
-                            <path d="m7 4 6 6-6 6" />
-                          </svg>
-                        </span>
-                      </button>
-                      </article>
-                    );
-                  })}
-                  </div>
-                ) : (
-                  <p className="balance-detail-month-empty">
-                    Aucun congé dans cette rubrique en {absenceYear}.
-                  </p>
-                )}
-                {balanceDetailType === "strike"
-                  ? Array.from(new Set(period.details.map((detail) => detail.date.slice(0, 7)))).map((monthKey) => {
-                      const [strikeYear, strikeMonth] = monthKey.split("-").map(Number);
-                      return (
-                        <StrikeContinuityDetails
-                          key={monthKey}
-                          estimate={strikePayEstimate(
-                            periods,
-                            group,
-                            payProfiles,
-                            strikeYear,
-                            strikeMonth - 1,
-                            { entries, recoveryUses },
-                          )}
-                        />
-                      );
-                    })
-                  : null}
-              </details>
-            ))}
-            </div>
-            <div className="modal-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setBalanceDetailType(null)}
-              >
-                Fermer
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <BalanceDetailDialog
+        balanceDetail={balanceDetail}
+        balanceDetailType={balanceDetailType}
+        balanceDetailPeriods={balanceDetailPeriods}
+        recentBalanceDetailDates={recentBalanceDetailDates}
+        absenceYear={absenceYear}
+        now={now}
+        onClose={() => setBalanceDetailType(null)}
+        onOpenDate={(date) => {
+          setBalanceDetailType(null);
+          setView(localDate(date.getFullYear(), date.getMonth(), 1));
+          setMode("month");
+          openDay(date);
+        }}
+        onOpenManualAdjustments={openManualAdjustments}
+        strikeEstimateFor={(year, monthIndex) =>
+          strikePayEstimate(periods, group, payProfiles, year, monthIndex, {
+            entries,
+            recoveryUses,
+          })
+        }
+      />
 
       <AppDialogLayer
         manualAdjustments={{
