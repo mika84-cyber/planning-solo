@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import "./grandPalaisProgram.css";
-import { getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
+import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { matchesSearch } from "./searchMatching";
 import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 import type {
@@ -278,7 +278,17 @@ export function grandPalaisEntryStatus(
 /** Ce que le contrôle hebdomadaire des frontières a constaté. Affiché à la
  *  seule administratrice : un contrôle ne peut pas rendre compte par le
  *  canal qu'il teste, il lui faut donc un endroit dans l'application. */
-export function BoundaryReportPanel({ report }: { report: BoundaryReport }) {
+export function BoundaryReportPanel({
+  report,
+  onClear,
+  clearing = false,
+  error = "",
+}: {
+  report: BoundaryReport;
+  onClear?: () => void;
+  clearing?: boolean;
+  error?: string;
+}) {
   const failingBoundaries = report.boundaries.filter((boundary) => !boundary.ok);
   return (
     <section className="grand-palais-admin-alerts" aria-labelledby="grand-palais-health-title">
@@ -291,6 +301,12 @@ export function BoundaryReportPanel({ report }: { report: BoundaryReport }) {
             : "Tout ce qui doit vous prévenir répond."}{" "}
           Vérifié le {formatFrenchDate(report.checkedAt.slice(0, 10))}.
         </p>
+        {onClear ? (
+          <button type="button" className="grand-palais-health-clear" disabled={clearing} onClick={onClear}>
+            {clearing ? "Effacement…" : "Effacer ces données"}
+          </button>
+        ) : null}
+        {error ? <p role="alert">{error}</p> : null}
       </div>
       <div className="grand-palais-admin-alert-list">
         {report.boundaries.map((boundary) => (
@@ -335,6 +351,8 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
   const [sharedPayload, setSharedPayload] = useState<GrandPalaisProgramPayload | null>(null);
   const [reviewBusy, setReviewBusy] = useState("");
   const [reviewError, setReviewError] = useState("");
+  const [healthBusy, setHealthBusy] = useState(false);
+  const [healthError, setHealthError] = useState("");
   const [programView, setProgramView] = useState<ProgramView>("now");
   const [searchQuery, setSearchQuery] = useState("");
   const program = useMemo(
@@ -398,6 +416,19 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
     }
   };
 
+  const clearHealth = async () => {
+    if (!window.confirm("Effacer le contrôle des alertes ? Il sera refait lundi à minuit.")) return;
+    setHealthBusy(true);
+    setHealthError("");
+    try {
+      setSharedPayload(await clearBoundaryReport());
+    } catch (error) {
+      setHealthError(error instanceof Error ? error.message : "Le contrôle n’a pas pu être effacé.");
+    } finally {
+      setHealthBusy(false);
+    }
+  };
+
   const selectVenue = (venueKey: PrimaryChoice) => {
     setPrimaryChoice(venueKey);
     const resolvedVenue = venueKey === "other" ? otherVenue : venueKey;
@@ -420,7 +451,12 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
       </div>
 
       {!guestPreview && sharedPayload?.isAdmin && sharedPayload.health ? (
-        <BoundaryReportPanel report={sharedPayload.health} />
+        <BoundaryReportPanel
+          report={sharedPayload.health}
+          onClear={() => void clearHealth()}
+          clearing={healthBusy}
+          error={healthError}
+        />
       ) : null}
 
       {!guestPreview && sharedPayload?.isAdmin && sharedPayload.pending.length ? (

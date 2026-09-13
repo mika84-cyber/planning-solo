@@ -4,6 +4,7 @@ const data = new Map<string, unknown>();
 const store = {
   get: vi.fn(async (key: string) => data.get(key) ?? null),
   setJSON: vi.fn(async (key: string, value: unknown) => { data.set(key, value); }),
+  delete: vi.fn(async (key: string) => { data.delete(key); }),
 };
 
 vi.mock("@netlify/identity", () => ({ getUser: vi.fn() }));
@@ -33,6 +34,7 @@ describe("API partagée de la programmation GP", () => {
     data.clear();
     store.get.mockClear();
     store.setJSON.mockClear();
+    store.delete.mockClear();
     mockedGetUser.mockReset();
     data.set("pending", [proposal]);
     (globalThis as typeof globalThis & { Netlify?: unknown }).Netlify = {
@@ -68,6 +70,21 @@ describe("API partagée de la programmation GP", () => {
     expect(response.status).toBe(200);
     expect(payload.approved[0].title).toBe("Exposition test");
     expect(payload.pending).toEqual([]);
+  });
+
+  it("laisse l’administratrice effacer le contrôle des alertes, et personne d’autre", async () => {
+    data.set("health", { checkedAt: "2026-09-14T00:05:00.000Z", boundaries: [] });
+    const remove = () => grandPalaisProgramHandler(new Request("https://example.test/api/gp-program", { method: "DELETE" }));
+
+    mockedGetUser.mockResolvedValue({ id: "guest", email: "guest@example.test" } as never);
+    expect((await remove()).status).toBe(403);
+    expect(data.has("health")).toBe(true);
+
+    mockedGetUser.mockResolvedValue({ id: "owner", email: "admin@example.test" } as never);
+    const response = await remove();
+    expect(response.status).toBe(200);
+    expect(await response.json()).not.toHaveProperty("health");
+    expect(data.has("health")).toBe(false);
   });
 
   it("refuse une proposition incomplète au lieu de valider des données corrompues", async () => {

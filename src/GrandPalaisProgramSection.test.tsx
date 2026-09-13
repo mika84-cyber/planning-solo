@@ -48,6 +48,13 @@ describe("programmation du Grand Palais", () => {
     expect(html).toContain("7 septembre 2026");
   });
 
+  it("propose d’effacer le contrôle seulement quand la page sait le faire", () => {
+    const report = { checkedAt: "2026-09-14T00:05:00.000Z", boundaries: [] };
+    expect(renderToStaticMarkup(<BoundaryReportPanel report={report} onClear={() => undefined} />)).toContain("Effacer ces données");
+    expect(renderToStaticMarkup(<BoundaryReportPanel report={report} />)).not.toContain("Effacer ces données");
+    expect(renderToStaticMarkup(<BoundaryReportPanel report={report} onClear={() => undefined} clearing />)).toContain("Effacement…");
+  });
+
   it("prévient dès qu’une seule frontière ne répond plus", () => {
     // Le cas qui compte : la lecture du site marche, mais plus personne ne
     // serait prévenu. L'ensemble doit être annoncé comme douteux.

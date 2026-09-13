@@ -82,6 +82,14 @@ export async function getSharedGrandPalaisProgram() {
   }));
 }
 
+/** Efface le dernier contrôle des alertes (compte administrateur seulement). */
+export async function clearBoundaryReport() {
+  return parse(await fetch("/api/gp-program", {
+    method: "DELETE",
+    credentials: "same-origin",
+  }));
+}
+
 export async function reviewGrandPalaisProposal(
   proposalId: GrandPalaisProgramProposal["id"],
   decision: "accept" | "ignore",

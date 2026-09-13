@@ -61,6 +61,13 @@ export default async function grandPalaisProgramHandler(request: Request) {
   });
 
   if (request.method === "GET") return json(payload());
+  // L’administratrice peut effacer le dernier contrôle des alertes. Le
+  // prochain contrôle du lundi le recrée, preuve de livraison comprise.
+  if (request.method === "DELETE") {
+    if (!isAdmin) return json({ error: "Cette suppression est réservée au compte administrateur" }, 403);
+    await store.delete("health");
+    return json({ ...payload(), health: undefined });
+  }
   if (request.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
   if (!isAdmin) return json({ error: "Cette validation est réservée au compte administrateur" }, 403);
 
