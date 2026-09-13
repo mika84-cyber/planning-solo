@@ -709,6 +709,13 @@ export default function Home() {
           confirm("La demande est enregistrée : le planning et les soldes sont à jour.");
         return;
       }
+      /* Les liens d'invitation et de récupération portent leur jeton dans
+         l'adresse. Une fois consommé, il ne vaut plus rien : le laisser
+         traîner fait échouer le rechargement suivant sur un jeton mort. */
+      const lienAuthentification = /(?:access|invite|recovery|confirmation|email_change)_token=/.test(location.hash);
+      const nettoyerLien = () => {
+        if (lienAuthentification) history.replaceState({}, "", location.pathname + location.search);
+      };
       try {
         const callback = await handleAuthCallback();
         if (callback?.type === "invite" && callback.token) {
@@ -721,6 +728,7 @@ export default function Home() {
           setLoginEmail(callback.user.email || "");
           setLoginPassword("");
           setPasswordConfirmation("");
+          nettoyerLien();
           setAuthStatus("recovery");
           return;
         }
@@ -736,8 +744,13 @@ export default function Home() {
           history.replaceState({}, "", location.pathname);
         }
       } catch {
+        nettoyerLien();
         setAuthStatus("guest");
-        setAuthError("La connexion n’a pas pu être vérifiée. Réessayez.");
+        setAuthError(
+          lienAuthentification
+            ? "Ce lien a déjà été utilisé ou a expiré. Demandez-en un nouveau depuis « Mot de passe oublié ? »."
+            : "La connexion n’a pas pu être vérifiée. Réessayez.",
+        );
       }
   });
 

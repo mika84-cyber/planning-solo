@@ -288,6 +288,16 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".choice-picker-trigger.empty");
   });
 
+  it("ne rejoue jamais un lien d’authentification déjà consommé", () => {
+    // Le jeton reste dans l’adresse après usage : au rechargement suivant,
+    // l’application le rejouait et échouait sur un jeton mort, ce qui
+    // renvoyait à l’écran de connexion après un mot de passe pourtant changé.
+    expect(appRoot).toContain("const lienAuthentification =");
+    expect(appRoot).toContain("const nettoyerLien = () =>");
+    expect(appRoot).toContain("nettoyerLien();");
+    expect(appRoot).toContain("Ce lien a déjà été utilisé ou a expiré");
+  });
+
   it("n'affiche aucun brut trompeur tant que le profil de paie est incomplet", () => {
     expect(payEstimateDetails).toContain("euros(grossEstimateComplete ? gross : 0)");
   });
