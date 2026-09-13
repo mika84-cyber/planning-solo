@@ -24,7 +24,7 @@ describe("sharedPlanningDayStatus", () => {
 
   it("précise la moitié de journée partagée", () => {
     const partial = { ...planning, days: [{ date: "2026-09-05", status: "partial" as const, halfMoment: "afternoon" as const }] };
-    expect(sharedPlanningDayStatus(partial, new Date(2026, 8, 5, 12))).toBe("Demi-journée · après-midi");
+    expect(sharedPlanningDayStatus(partial, new Date(2026, 8, 5, 12))).toBe("1/2 journée · après-midi");
   });
 
   it("associe le groupe au statut affiché dans la liste de demain", () => {

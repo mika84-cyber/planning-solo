@@ -51,13 +51,13 @@ const tomorrowDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long"
 const tomorrowTitleDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
 export const colleagueTomorrowDateLabel = (reference = new Date()) => tomorrowTitleDateFormatter.format(tomorrowDate(reference));
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
-type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "Demi-journée · matin" | "Demi-journée · après-midi" | "Absence partielle";
+type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "1/2 journée · matin" | "1/2 journée · après-midi" | "Absence partielle";
 
 function tomorrowStatusTone(status: TomorrowStatus) {
   if (status === "Travail") return "work";
   if (status === "Formation") return "training";
   if (status === "Repos") return "rest";
-  if (status.startsWith("Demi-journée") || status === "Absence partielle") return "partial";
+  if (status.startsWith("1/2 journée") || status === "Absence partielle") return "partial";
   return "absence";
 }
 
@@ -67,7 +67,7 @@ export function sharedPlanningDayStatus(planning: SharedColleaguePlanning, date:
   if (shared?.status === "absence") return "Absence";
   if (shared?.status === "rest") return "Repos";
   if (shared?.status === "training") return "Formation";
-  if (shared?.status === "partial") return shared.halfMoment === "morning" ? "Demi-journée · matin" : shared.halfMoment === "afternoon" ? "Demi-journée · après-midi" : "Absence partielle";
+  if (shared?.status === "partial") return shared.halfMoment === "morning" ? "1/2 journée · matin" : shared.halfMoment === "afternoon" ? "1/2 journée · après-midi" : "Absence partielle";
   if (shared?.status === "work") return "Travail";
   return getDayInfo(date, planning.group).kind === "off" ? "Repos" : "Travail";
 }
@@ -142,10 +142,10 @@ function MonthGrid({ planning, view }: { planning: SharedColleaguePlanning; view
         const halfClass = partial ? ` half-${shared.halfMoment || "unknown"}` : "";
         const absenceLabel = partial
           ? shared.halfMoment === "morning"
-            ? "Demi-journée · matin"
+            ? "1/2 journée · matin"
             : shared.halfMoment === "afternoon"
-              ? "Demi-journée · après-midi"
-              : "Demi-journée"
+              ? "1/2 journée · après-midi"
+              : "1/2 journée"
           : "Absent";
         return (
           <div key={key} className={`colleague-day ${info.kind}${onLeave ? " absent" : ""}${halfClass}${today ? " today" : ""}`} aria-current={today ? "date" : undefined}>

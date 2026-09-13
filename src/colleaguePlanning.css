@@ -204,11 +204,11 @@
 .colleague-tomorrow-row td:first-child > strong { color: var(--text); display: block; font-size: .84rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-tomorrow-status { align-items: center; display: inline-flex; gap: 6px; justify-content: center; min-width: 86px; }
 .colleague-tomorrow-status i { background: currentColor; border-radius: 50%; display: inline-block; height: 6px; width: 6px; }
-.colleague-tomorrow-status.work { background: #fff; border: 1px solid var(--border-card); color: #236746; }
-.colleague-tomorrow-status.training { background: var(--surface); border: 1px solid var(--border-control); color: var(--muted); }
-.colleague-tomorrow-status.rest { background: var(--surface); border: 1px solid var(--border-control); color: var(--muted); }
+.colleague-tomorrow-status.work { background: #e2f3e8; border: 1px solid #9fd1b2; color: #1f6641; }
+.colleague-tomorrow-status.training { background: #fbf3c1; border: 1px solid #dcc54f; color: #6b5605; }
+.colleague-tomorrow-status.rest { background: #e7eaf1; border: 1px solid #b8c0cf; color: #3e4859; }
 .colleague-tomorrow-status.absence { background: #fde6e9; border: 1px solid #efb4bf; color: #96384a; }
-.colleague-tomorrow-status.partial { background: #fff2d8; border: 1px solid #e7c27d; color: #8a5c13; }
+.colleague-tomorrow-status.partial { background: #efe6fa; border: 1px solid #c6b0e6; color: #5a3b8c; }
 .colleague-tomorrow-error td { background: #fff4f2; border: 1px solid #e6b4ac; border-radius: 12px; color: #8d3c34; padding: 10px 12px; }
 .colleague-tomorrow-error p { color: inherit; font-size: .75rem; margin: 0 0 8px; }
 .colleague-tomorrow-error button { min-height: 36px; padding: 7px 11px; }

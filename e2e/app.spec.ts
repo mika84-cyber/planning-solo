@@ -944,14 +944,14 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(receivedCard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
   const tomorrowTable = receivedCard.locator(".colleague-tomorrow-table");
-  await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Formation|Repos|Absence|Demi-journée|Absence partielle)/);
+  await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Formation|Repos|Absence|1\/2 journée|Absence partielle)/);
   await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toContainText("Groupe 2");
   await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(1);
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
   await expect(page.getByText("Absent").first()).toBeVisible();
-  await expect(page.getByText("Demi-journée · matin")).toBeVisible();
+  await expect(page.getByText("1/2 journée · matin")).toBeVisible();
   await expect(page.locator(".colleague-day.absent").first()).toHaveCSS("background-color", "rgb(239, 171, 184)");
   await expect(page.locator(".colleague-day.half-morning")).toHaveCSS("border-top-color", "rgb(189, 73, 97)");
   await expect(page.locator(".colleague-day.outside")).toHaveCount(12);
