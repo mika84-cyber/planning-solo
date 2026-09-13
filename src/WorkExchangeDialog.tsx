@@ -1,6 +1,9 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useId, useState, type Dispatch, type SetStateAction } from "react";
 import { ChoicePicker } from "./ChoicePicker";
+import { searchColleagueGroups } from "./ColleagueGroupsDirectory";
+import type { ColleagueGroup } from "./colleagueGroups";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
+import { getColleagueGroups } from "./colleagueSharingApi";
 import { GROUP_OPTIONS } from "./planningLogic";
 import { WorkExchangeDatePicker } from "./WorkExchangeDatePicker";
 import type { WorkExchangeDraft } from "./workExchange";
@@ -28,6 +31,32 @@ export function WorkExchangeDialog({
   onSave,
   onDelete,
 }: Props) {
+  const [annuaire, setAnnuaire] = useState<readonly ColleagueGroup[]>([]);
+  const [suggestionsOuvertes, setSuggestionsOuvertes] = useState(false);
+  const listeId = useId();
+
+  /* L'annuaire des collègues sert déjà ailleurs : il donne le nom et le
+     groupe, exactement ce qu'il faut ici pour éviter une double saisie. */
+  useEffect(() => {
+    if (!open || annuaire.length) return;
+    let actif = true;
+    void getColleagueGroups()
+      .then((groupes) => { if (actif) setAnnuaire(groupes); })
+      .catch(() => undefined);
+    return () => { actif = false; };
+  }, [open, annuaire.length]);
+
+  /* Un échange n'a de sens qu'entre deux cycles différents : proposer un
+     collègue de son propre groupe reviendrait à échanger deux journées
+     identiques. */
+  const suggestions = searchColleagueGroups(annuaire, draft.partnerName)
+    .filter((item) => item.group !== group)
+    .slice(0, 6);
+  const choisirCollegue = (nom: string, groupe: number) => {
+    setDraft((current) => ({ ...current, partnerName: nom, partnerGroup: groupe }));
+    setSuggestionsOuvertes(false);
+  };
+
   if (!open) return null;
   const editing = Boolean(draft.id);
   return (
@@ -58,8 +87,29 @@ export function WorkExchangeDialog({
               maxLength={80}
               autoComplete="off"
               placeholder="Prénom et/ou nom"
-              onChange={(event) => setDraft((current) => ({ ...current, partnerName: event.target.value }))}
+              role="combobox"
+              aria-expanded={suggestionsOuvertes && suggestions.length > 0}
+              aria-controls={listeId}
+              aria-autocomplete="list"
+              onFocus={() => setSuggestionsOuvertes(true)}
+              onBlur={() => window.setTimeout(() => setSuggestionsOuvertes(false), 150)}
+              onChange={(event) => {
+                setSuggestionsOuvertes(true);
+                setDraft((current) => ({ ...current, partnerName: event.target.value }));
+              }}
             />
+            {suggestionsOuvertes && suggestions.length ? (
+              <ul className="work-exchange-suggestions" id={listeId} role="listbox" aria-label="Collègues proposés">
+                {suggestions.map((item) => (
+                  <li key={`${item.group}-${item.member}`}>
+                    <button type="button" role="option" aria-selected={false} onMouseDown={(event) => event.preventDefault()} onClick={() => choisirCollegue(item.member, item.group)}>
+                      <strong>{item.member}</strong>
+                      <small>Groupe {item.group}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </label>
           <div className="work-exchange-group-field">
             <span>Son groupe</span>

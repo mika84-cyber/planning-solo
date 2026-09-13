@@ -49,8 +49,11 @@ export async function getColleagueGroups() {
   const response = await parse<{ groups: import("./colleagueGroups").ColleagueGroup[] }>(
     await fetch("/api/colleague-groups", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(15000) }),
   );
-  cachedColleagueGroups = response.groups;
-  return response.groups;
+  /* Une réponse sans liste (page de repli, fonction absente) ne doit pas
+     faire tomber les écrans qui lisent l’annuaire : ils reçoivent une liste vide. */
+  const groups = Array.isArray(response.groups) ? response.groups : [];
+  if (groups.length) cachedColleagueGroups = groups;
+  return groups;
 }
 
 export async function getSharedColleaguePlanning(ownerId: string) {

@@ -1116,14 +1116,10 @@
 .work-exchange-cycle-calendar > small { display: block; min-height: 0; margin-top: 7px; font-size: 0.64rem; }
 
 .work-exchange-date-card {
-  border: 2px solid var(--border-card);
+  border: 1px solid var(--border-card);
   border-radius: 16px;
   padding: 14px;
-  background: linear-gradient(145deg, var(--surface-high), var(--bg));
-}
-
-.work-exchange-date-card.return {
-  background: linear-gradient(145deg, var(--surface), var(--border-control));
+  background: var(--surface);
 }
 
 .work-exchange-error {
@@ -1392,3 +1388,46 @@ fieldset.leave-choices {
 .main-menu-pages > button.main-menu-refresh { --menu-accent: #d8ad78; }
 .main-menu-pages > button.main-menu-refresh:disabled { cursor: default; opacity: .7; }
 .main-menu-pages > button.main-menu-refresh.update-available { --menu-accent: #77aa97; }
+
+/* Les collègues connus sont proposés dès les premières lettres : le nom et
+   le groupe sont saisis ensemble, sans risque de les faire diverger. */
+.work-exchange-person-grid label { position: relative; }
+.work-exchange-suggestions {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 232px;
+  overflow: auto;
+  margin: 4px 0 0;
+  border: 2px solid var(--border-card);
+  border-radius: 13px;
+  padding: 4px;
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(44, 38, 33, 0.18);
+  list-style: none;
+}
+.work-exchange-suggestions button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.work-exchange-suggestions button:hover,
+.work-exchange-suggestions button:focus-visible {
+  background: var(--accent-soft);
+}
+.work-exchange-suggestions strong { font-size: 0.94rem; font-weight: 800; }
+.work-exchange-suggestions small { color: var(--accent-strong); font-size: 0.72rem; font-weight: 850; white-space: nowrap; }
