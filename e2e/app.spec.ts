@@ -710,18 +710,24 @@ function currentMonthStrikeScenario(kind: "annual" | "rest") {
     { length: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() },
     (_, index) => localDate(now.getFullYear(), now.getMonth(), index + 1),
   );
+  // La fenêtre Grève sépare les journées déjà prises de celles à venir : les
+  // deux grèves doivent tomber du même côté d’aujourd’hui pour être comptées
+  // ensemble, quel que soit le jour où le test tourne.
+  const today = dateKey(now);
   const match = dates.flatMap((date) =>
     Array.from({ length: 6 }, (_, index) => index + 2).map((gap) => ({ date, gap })),
   ).find(({ date, gap }) => {
     const end = addDays(date, gap);
     if (end.getMonth() !== now.getMonth()) return false;
+    if (!(dateKey(end) < today || dateKey(date) > today)) return false;
     if (getDayInfo(date, group).kind !== "work" || getDayInfo(end, group).kind !== "work")
       return false;
     const between = Array.from({ length: gap - 1 }, (_, index) => addDays(date, index + 1));
     return kind === "rest"
       ? between.every((day) => getDayInfo(day, group).kind === "off")
       : gap >= 5;
-  })!;
+  });
+  if (!match) throw new Error(`Aucun couple de grèves du même côté d’aujourd’hui ce mois-ci (${kind})`);
   const first = dateKey(match.date);
   const last = dateKey(addDays(match.date, match.gap));
   return {

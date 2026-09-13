@@ -442,7 +442,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
                 <span className="colleague-tomorrow-count">{received.length} planning{received.length > 1 ? "s" : ""}</span>
               </header>
               {received.some((share) => !tomorrowSummaries[share.ownerId] && !tomorrowFailed.includes(share.ownerId)) ? <div className="colleague-tomorrow-pending" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /> Analyse des plannings en cours…</div> : null}
-              <div className="colleague-tomorrow-table-shell">
+              {/* Sur téléphone le tableau défile : il doit pouvoir recevoir le focus pour défiler au clavier. */}
+              <div className="colleague-tomorrow-table-shell" role="region" aria-label="Disponibilités de demain" tabIndex={0}>
                 <table className="colleague-tomorrow-table">
                   <caption className="colleague-tomorrow-caption">Disponibilités des collègues par groupe</caption>
                   <thead>
