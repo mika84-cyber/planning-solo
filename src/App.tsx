@@ -2457,6 +2457,10 @@ export default function Home() {
         showInstallAction={demoMode || Boolean(installPrompt)}
         canInstall={Boolean(installationEnabled && installPrompt)}
         onInstall={() => void installApp()}
+        onOpenDataManagement={() => {
+          setMainMenuOpen(false);
+          setDataManagementOpen(true);
+        }}
         onOpenFeedback={() => {
           setMainMenuOpen(false);
           setFeedbackOpen(true);

@@ -31,7 +31,7 @@ const GRAND_PALAIS_VENUE_PALETTES: Record<string, GrandPalaisVenuePalette> = {
   galleries34: { background: "#dcecff", accent: "#326fa8", line: "#8eb3d6" },
   gallery8: { background: "#e9ddf7", accent: "#73539d", line: "#b49bce" },
   gallery7: { background: "#f8dfe4", accent: "#a85261", line: "#d4a3ac" },
-  childrenPalace: { background: "#f8edc9", accent: "#9a711e", line: "#d5bd71" },
+  childrenPalace: { background: "#f8edc9", accent: "#8f6a1b", line: "#d5bd71" },
   nef: { background: "#d9eee3", accent: "#35745a", line: "#8fbda9" },
   gallery910: { background: "#f5dfd0", accent: "#a45c32", line: "#d5a486" },
   "other:salon-seine": { background: "#d8eef2", accent: "#28798a", line: "#86bac4" },
@@ -47,7 +47,7 @@ const DYNAMIC_VENUE_PALETTES: GrandPalaisVenuePalette[] = [
   { background: "#f4ddd5", accent: "#a4563f", line: "#d3a18f" },
   { background: "#e4e0f3", accent: "#675995", line: "#aba2cb" },
   { background: "#e3edd2", accent: "#607d35", line: "#acc28a" },
-  { background: "#f3e5c8", accent: "#987023", line: "#d2b675" },
+  { background: "#f3e5c8", accent: "#8c6720", line: "#d2b675" },
   { background: "#eeddea", accent: "#8e527b", line: "#c5a2bb" },
 ];
 
@@ -546,7 +546,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           <div className="useful-expo-timeline">
             {overviewEntries.length ? overviewEntries.map(({ entry, venueKey, venueLabel }) => {
               const status = grandPalaisEntryStatus(entry, today, openingReady);
-              return <article key={`${venueKey}-${entry.title}-${entry.period}`} data-venue={venueKey} data-status={status.label} style={grandPalaisVenueStyle(venueKey)}><span className="useful-expo-timeline-mark" aria-hidden="true" /><div><small>{venueLabel} · {entry.period}</small><strong>{entry.title}</strong>{entry.details ? <p>{entry.details}</p> : null}{safeGrandPalaisUrl(entry.officialUrl) ? <a href={safeGrandPalaisUrl(entry.officialUrl)} target="_blank" rel="noreferrer">Voir le site officiel</a> : null}</div><em>{status.label}</em></article>;
+              return <article key={`${venueKey}-${entry.title}-${entry.period}`} data-venue={venueKey} data-status={status.label} style={grandPalaisVenueStyle(venueKey)}><span className="useful-expo-timeline-mark" aria-hidden="true" /><div><span className="useful-expo-venue">{venueLabel}</span><small>{entry.period}</small><strong>{entry.title}</strong>{entry.details ? <p>{entry.details}</p> : null}{safeGrandPalaisUrl(entry.officialUrl) ? <a href={safeGrandPalaisUrl(entry.officialUrl)} target="_blank" rel="noreferrer">Voir le site officiel</a> : null}</div><em>{status.label}</em></article>;
             }) : <p className="empty-state">Aucune exposition ne correspond à cette vue.</p>}
           </div>
         </section>

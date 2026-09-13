@@ -1005,14 +1005,14 @@
 }
 
 .pdf-download-actions .pdf-action.selected {
-  border-color: #adc4df;
-  background: #f4f8fd;
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .pdf-download-actions .pdf-action.selected .pdf-action-icon {
-  background: #e7f1fb;
-  color: #466c95;
+  background: var(--surface);
+  color: var(--accent-strong);
 }
-.pdf-download-actions .pdf-action.selected .pdf-action-cta { color: #466c95; }
+.pdf-download-actions .pdf-action.selected .pdf-action-cta { color: var(--accent-strong); }
 
 .pdf-download-actions .pdf-action.my-leaves {
   border-color: #a9cfbd;

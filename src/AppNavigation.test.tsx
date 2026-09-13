@@ -59,7 +59,7 @@ describe("navigation principale", () => {
   const menuBase = {
     open: true, onClose: vi.fn(), onNavigate: vi.fn(), currentSection: "home" as const,
     checkingAppUpdate: false, appUpdateAvailable: false, onCheckForUpdate: vi.fn(),
-    showInstallAction: true, canInstall: false, onInstall: vi.fn(),
+    showInstallAction: true, canInstall: false, onInstall: vi.fn(), onOpenDataManagement: vi.fn(),
     onOpenFeedback: vi.fn(), isAdmin: false, unreadFeedbackCount: 0,
   };
 
@@ -82,7 +82,7 @@ describe("navigation principale", () => {
     expect(html).toContain("Écrire à l’administrateur");
     expect(html).not.toContain("Mode d’emploi");
     expect(html).not.toContain("Compte et réglages");
-    expect(html).not.toContain("Mes données");
+    expect(html).toContain("Mes données");
   });
 
   it("ouvre la messagerie interne pour l’administrateur", () => {

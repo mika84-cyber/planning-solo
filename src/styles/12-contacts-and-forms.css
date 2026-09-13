@@ -1797,9 +1797,9 @@
 }
 
 .useful-contact-category-grid > button:nth-child(1) {
-  --contact-category-accent: #9b8e7c;
-  --contact-category-text: #574e42;
-  --contact-category-background: linear-gradient(135deg, #fbf5ea, #fdfaf4);
+  --contact-category-accent: var(--sage);
+  --contact-category-text: #2f5f59;
+  --contact-category-background: linear-gradient(135deg, #e8f3f1, #f8fcfb);
 }
 .useful-contact-category-grid > button:nth-child(2) {
   --contact-category-accent: #d48b3c;
@@ -1817,9 +1817,9 @@
   --contact-category-background: linear-gradient(135deg, #e4f7ee, #f8fdfa);
 }
 .useful-contact-category-grid > button:nth-child(5) {
-  --contact-category-accent: #9b8e7c;
-  --contact-category-text: #7a6f5f;
-  --contact-category-background: linear-gradient(135deg, #fbf5ea, #fdfaf4);
+  --contact-category-accent: #8a6a43;
+  --contact-category-text: #6b5128;
+  --contact-category-background: linear-gradient(135deg, #f7efe1, #fdfaf4);
 }
 .useful-contact-category-grid > button:nth-child(6) {
   --contact-category-accent: #d56f52;

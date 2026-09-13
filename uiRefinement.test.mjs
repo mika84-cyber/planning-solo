@@ -564,7 +564,7 @@ describe("finitions d’interface", () => {
     expect(appNavigation).not.toContain("Mode d’emploi");
     expect(appNavigation).not.toContain("Compte et réglages");
     expect(appNavigation).not.toContain("État de sauvegarde");
-    expect(appNavigation).not.toContain("Mes données");
+    expect(appNavigation).toContain("Mes données");
     expect(styles).toContain(".main-menu-refresh");
     expect(appRoot).toContain("<UsefulResourcesHub");
     expect(appRoot).toContain("pdf={(");

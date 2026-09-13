@@ -1108,7 +1108,7 @@
 }
 
 .exchange-cycle-day.off { color: #fff; background: #2c2621; }
-.exchange-cycle-day.training { color: var(--border-card); background: var(--border-control); }
+.exchange-cycle-day.training { color: var(--text); background: var(--training); }
 .exchange-cycle-day.selectable { border: 2px solid var(--border-card); background: var(--border-control); box-shadow: 0 0 0 2px rgba(94, 182, 196, 0.28); }
 .exchange-cycle-day:disabled { cursor: not-allowed; opacity: 1; }
 .exchange-cycle-unavailable { position: absolute; inset: 0; background: linear-gradient(45deg, transparent 45%, #e32636 46% 54%, transparent 55%), linear-gradient(-45deg, transparent 45%, #e32636 46% 54%, transparent 55%); filter: drop-shadow(0 0 1px #fff); }

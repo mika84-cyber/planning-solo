@@ -421,3 +421,34 @@
   border-width: 1px;
   border-left-width: 5px;
 }
+
+/* « En ce moment » réunit tous les espaces : sans repère, on lit le titre
+   d'une exposition sans savoir où elle se tient. La salle passe donc avant
+   le titre, en pastille pleine à sa propre couleur. */
+.useful-expo-venue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: start;
+  margin-bottom: 7px;
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: var(--venue-accent, var(--accent));
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.useful-expo-venue::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  content: "";
+}
+.grand-palais-program-panel .useful-expo-timeline article > div {
+  display: grid;
+  justify-items: start;
+}

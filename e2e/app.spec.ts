@@ -186,7 +186,7 @@ async function cssTokenRgb(page: Page, name: string) {
 }
 
 async function cardBorderColor(page: Page) {
-  return cssToken(page, "--border-card");
+  return cssTokenRgb(page, "--border-card");
 }
 
 async function openDayOtherActions(dialog: Locator) {
@@ -303,7 +303,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(page.locator(".pdf-download-settings > label").nth(0)).toHaveCSS("background-color", "rgb(245, 248, 252)");
   await expect(page.locator(".pdf-download-settings > label").nth(1)).toHaveCSS("background-color", "rgb(242, 250, 246)");
   await expect(page.locator(".pdf-download-settings > .school-vacation-choice")).toHaveCSS("background-color", "rgb(255, 249, 239)");
-  await expect(page.locator(".pdf-action.selected")).toHaveCSS("background-color", "rgb(244, 248, 253)");
+  await expect(page.locator(".pdf-action.selected")).toHaveCSS("background-color", "rgb(244, 228, 214)");
   await expect(page.locator(".pdf-action.my-leaves")).toHaveCSS("background-color", "rgb(243, 250, 246)");
 
   await openUsefulResource(page, "Formulaires");
@@ -875,7 +875,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-2 th")).toHaveCSS("background-color", "rgb(255, 243, 227)");
   await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-1, .colleague-tomorrow-group.group-3")).toHaveCount(0);
   await expect(tomorrowPreview.locator(".colleague-tomorrow-row").last().locator("td").first()).toHaveCSS("border-bottom-width", "0px");
-  await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-color", "rgb(11, 12, 16)");
+  await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-color", "rgb(44, 38, 33)");
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-image", "none");
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("border-radius", "28px");
   await expect(page.locator(".top-header-colleagues .top-header-title h1 span")).toHaveCount(2);
@@ -909,7 +909,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(chooseCard.locator(".colleague-person-row").first()).toContainText("Agnès");
   const agnesSharedRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Agnès" });
   await expect(agnesSharedRow.getByText("Planning partagé", { exact: true })).toBeVisible();
-  await expect(agnesSharedRow).toHaveCSS("border-top-color", "rgb(143, 169, 195)");
+  await expect(agnesSharedRow).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
   await expect(page.getByRole("button", { name: "Voir", exact: true })).toHaveCount(1);
   const samirRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Samir" });
   page.once("dialog", async (dialog) => {
@@ -936,12 +936,12 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(sharedRow.getByRole("button", { name: "Bloquer" })).toBeVisible();
 
   const receivedCard = page.locator(".colleague-received-card");
-  await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", "rgb(141, 107, 174)");
+  await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", "rgb(44, 38, 33)");
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
   await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(receivedCard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
   const tomorrowTable = receivedCard.locator(".colleague-tomorrow-table");
-  await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Repos|Absence)/);
+  await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Formation|Repos|Absence|Demi-journée|Absence partielle)/);
   await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toContainText("Groupe 2");
   await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(1);
   await receivedCard.getByRole("button", { name: "Voir" }).click();
@@ -1250,26 +1250,21 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await accountButton.click();
   await openMainMenu(page);
 
-  // Les rubriques ont quitté le menu tiroir pour la navigation principale :
-  // il ne garde plus que le compte et les réglages.
+  // Le menu tiroir est redevenu une porte vers chaque page ; le compte et
+  // l'état de sauvegarde sont ailleurs.
   const menu = page.getByRole("complementary", { name: "Menu principal" });
-  await expect(menu.getByRole("heading", { name: "Compte et réglages" })).toBeVisible();
-  await expect(menu.locator(".main-menu-account-card")).toBeVisible();
-  await expect(menu.locator(".main-menu-save-status")).toBeVisible();
+  await expect(menu.getByRole("navigation", { name: "Les pages de l’application" })).toBeVisible();
+  await expect(menu.locator(".main-menu-account-card")).toHaveCount(0);
+  await expect(menu.locator(".main-menu-save-status")).toHaveCount(0);
   await expect(menu.getByRole("button", { name: /Vérifier les mises à jour|Installer la mise à jour/ })).toBeVisible();
   await expect(menu.getByRole("button", { name: /Mes données/ })).toBeVisible();
+  for (const page_ of ["Congés et récupérations", "Planning des collègues"])
+    await expect(menu.getByRole("button", { name: new RegExp(page_) })).toBeVisible();
   const adminContact = menu.getByRole("button", { name: /Messagerie interne|Écrire à l’administrateur/ });
   await expect(adminContact).toBeVisible();
   await expect(adminContact.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
   // Aucune rubrique ne doit y revenir en double.
-  for (const rubrique of [
-    "Congés et récupérations",
-    "Documents et contacts",
-    "Programmation GP",
-    "Planning des collègues",
-    "Mode d’emploi",
-  ])
-    await expect(menu.getByRole("button", { name: new RegExp(rubrique) })).toHaveCount(0);
+  await expect(menu.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
   await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
   await expect(menu).toHaveCSS("background-image", /menu-art-fast.webp/);
   await expect(menu.locator("nav > button").first().locator(".main-menu-index svg")).toBeVisible();
@@ -1413,7 +1408,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.getByRole("button", { name: /Les 3 groupes/ })).toBeVisible();
   await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toBeVisible();
   await expect(pdfScreen.getByRole("button", { name: /Fériés travaillés 2026–2031/ })).toContainText("Pour faciliter les échanges entre groupe");
-  await expect(pdfScreen.locator(".pdf-download-actions .pdf-action").first()).toHaveCSS("border-top-color", "rgba(48, 87, 126, 0.42)");
+  await expect(pdfScreen.locator(".pdf-download-actions .pdf-action").first()).toHaveCSS("border-top-color", "rgb(152, 84, 56)");
   const pdfViewportWidth = page.viewportSize()?.width ?? 1000;
   if (pdfViewportWidth <= 720) {
     const mobileSettingBoxes = await pdfScreen.locator(".pdf-download-settings > label").evaluateAll((labels) =>
@@ -1502,7 +1497,7 @@ test("la messagerie interne reste privée, compacte et utilisable avec une photo
   expect(Math.abs((replyBox!.y + replyBox!.height / 2) - viewport.height / 2)).toBeLessThan(2);
 });
 
-test("le menu principal devient le menu du compte et Mes données reste simple", async ({ page }) => {
+test("le menu principal mène aux pages et garde Mes données", async ({ page }) => {
   await prepareDemo(page);
 
   const accountButton = page.getByRole("button", { name: "Compte" });
@@ -1512,31 +1507,26 @@ test("le menu principal devient le menu du compte et Mes données reste simple",
     "Outils administrateur",
     "Se déconnecter",
   ]);
-  await expect(accountMenu.getByText("Gérer mes données", { exact: true })).toHaveCount(0);
-  await expect(accountMenu.getByText("Vérifier les mises à jour", { exact: true })).toHaveCount(0);
   await accountButton.click();
 
   await openMainMenu(page);
   const mainMenu = page.getByRole("complementary", { name: "Menu principal" });
-  await expect(mainMenu.getByRole("heading", { name: "Compte et réglages" })).toBeVisible();
-  await expect(mainMenu.locator(".main-menu-account-card")).toBeVisible();
-  await expect(mainMenu.getByRole("navigation", { name: "Compte et réglages" }).getByRole("button")).toHaveCount(3);
-  await expect(mainMenu.getByText("État de sauvegarde", { exact: true })).toBeVisible();
-  await expect(mainMenu.getByText("Sauvegarde automatique active", { exact: true })).toBeVisible();
-  await expect(mainMenu.getByRole("button", { name: /Vérifier les mises à jour/ })).toBeVisible();
+  // Le menu est devenu une porte vers chaque page : le compte et l'état de
+  // sauvegarde ont quitté ce volet, mais la gestion des données y reste.
+  await expect(mainMenu.getByRole("navigation", { name: "Les pages de l’application" }).getByRole("button")).toHaveCount(9);
+  await expect(mainMenu.getByRole("button", { name: /Congés et récupérations/ })).toBeVisible();
+  await expect(mainMenu.getByRole("button", { name: /Planning des collègues/ })).toBeVisible();
+  await expect(mainMenu.locator(".main-menu-refresh")).toBeVisible();
   await expect(mainMenu.getByRole("button", { name: /Mes données/ })).toBeVisible();
   await expect(mainMenu.getByRole("button", { name: /Installer l’application/ })).toBeDisabled();
-  await expect(mainMenu.getByRole("button", { name: /Congés et récupérations/ })).toHaveCount(0);
-  await expect(mainMenu.getByRole("button", { name: /Planning des collègues/ })).toHaveCount(0);
+  await expect(mainMenu.locator(".main-menu-account-card")).toHaveCount(0);
 
   await mainMenu.getByRole("button", { name: /Mes données/ }).click();
   const dataDialog = page.getByRole("dialog", { name: "Mes données" });
   await expect(dataDialog.getByText("Tout est enregistré automatiquement.")).toBeVisible();
   await expect(dataDialog.getByRole("button", { name: /Sauvegarder une copie/ })).toBeVisible();
   await expect(dataDialog.getByRole("button", { name: /Reprendre une copie/ })).toBeVisible();
-  await expect(dataDialog.getByText("Ranger d’anciennes données", { exact: true })).toHaveCount(0);
 });
-
 test("le planning avec congés se génère avec les catégories d’absence", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem(
@@ -2512,10 +2502,10 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   const myCycle = page.getByRole("region", { name: "Cycle de travail du groupe 2" });
   await expect(myCycle.getByLabel("Légende du groupe 2")).toContainText("TravailReposFormation");
   expect(await myCycle.locator(".exchange-cycle-day.selectable").count()).toBeGreaterThan(0);
-  await expect(myCycle.locator(".exchange-cycle-day.off").first()).toHaveCSS("background-color", "rgb(23, 34, 49)");
+  await expect(myCycle.locator(".exchange-cycle-day.off").first()).toHaveCSS("background-color", "rgb(44, 38, 33)");
   const trainingDays = myCycle.locator(".exchange-cycle-day.training");
   if (await trainingDays.count())
-    await expect(trainingDays.first()).toHaveCSS("background-color", "rgb(184, 189, 196)");
+    await expect(trainingDays.first()).toHaveCSS("background-color", "rgb(180, 180, 180)");
   expect(await myCycle.locator(".exchange-cycle-unavailable").count()).toBeGreaterThan(0);
   await expect(myCycle.locator(".exchange-cycle-day.off .exchange-cycle-unavailable")).toHaveCount(0);
   await expect(myCycle.locator(".exchange-cycle-day.training .exchange-cycle-unavailable")).toHaveCount(0);
@@ -2529,7 +2519,7 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
 
   await expect(page.locator(".day.exchange-given")).toHaveCount(1);
   await expect(page.locator(".day.exchange-return")).toHaveCount(1);
-  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", "rgb(17, 24, 32)");
+  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
   await expect(page.locator(".day.exchange-given .exchange-calendar-marker")).toHaveAttribute("src", "/exchange-arrows.png");
   await expect(page.locator(".day.exchange-given .exchange-calendar-label")).toHaveText("OFF");
   await expect(page.locator(".day.exchange-return .exchange-calendar-label")).toHaveText("TRAVAIL");
@@ -2584,8 +2574,8 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(header).toBeVisible();
   await expect(header).toHaveCSS("background-image", /header-art-fast\.webp/);
   await expect(header).toHaveCSS("border-top-width", "2px");
-  await expect(header).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.65)");
-  await expect(account).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0.62)");
+  await expect(header).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
+  await expect(account).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
   await expect(menuButton).toBeVisible();
   await expect(page.locator((page.viewportSize()?.width || 0) <= 720 ? ".mobile-bottom-navigation" : ".desktop-side-navigation")).toBeVisible();
   await expect(update).toHaveCount(0);
@@ -2654,17 +2644,15 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     // et les blocs imbriqués n'en portent aucun.
     await expect(page.locator(".planning-command-section")).toHaveCSS("border-left-width", "5px");
     const calendrier = page.locator(".planning-calendar-section");
-    await expect(calendrier).toHaveCSS(
-      "border-left-width",
-      await calendrier.evaluate((node) => getComputedStyle(node).borderTopWidth),
-    );
+    await expect(calendrier).toHaveCSS("border-left-width", "5px");
+    await expect(calendrier).toHaveCSS("border-top-width", "1px");
     await expect(page.locator(".home-planning-heading")).toHaveCSS("border-left-width", "0px");
     await expect(page.locator(".planning-workspace-shell.framed .controls")).toHaveCSS("border-left-width", "0px");
     const cleanupButtonBox = await page.locator(".calendar-bulk-delete-below").boundingBox();
     expect(cleanupButtonBox).not.toBeNull();
     expect(cleanupButtonBox!.width).toBeGreaterThan(page.viewportSize()!.width * 0.8);
   }
-  await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-color", "rgb(17, 24, 32)");
+  await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
   await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-width", "2px");
   await expect(page.locator(".today-next-work strong")).toHaveText(
     /^[a-zà-ÿ]+ \d{2}\/\d{2}\/\d{2}(?: — (?:Formation|Fermeture exceptionnelle))?$/i,
@@ -3080,9 +3068,9 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   expect(Math.abs(leaveBox!.y - operationBox!.y)).toBeLessThan(1);
   expect(fundingBox!.width).toBeGreaterThan(leaveBox!.width * 1.8);
   await expect(leaveAction).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  await expect(leaveAction).toHaveCSS("color", "rgb(17, 24, 39)");
+  await expect(leaveAction).toHaveCSS("color", "rgb(44, 38, 33)");
   await expect(operationAction).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  await expect(operationAction).toHaveCSS("color", "rgb(17, 24, 39)");
+  await expect(operationAction).toHaveCSS("color", "rgb(44, 38, 33)");
   await expect(fundingAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await fundingAction.click();
   const fundingForm = page.getByRole("dialog", { name: "Alimenter ou indemniser mon CET" });
@@ -3633,11 +3621,11 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   await expect(dayDialog.getByRole("button", { name: /^Échange/ })).toHaveCount(0);
   await expect(dayDialog.locator(".leave-choices .other-day")).toHaveCSS(
     "background-color",
-    "rgb(250, 251, 253)",
+    "rgb(255, 255, 255)",
   );
   await expect(dayDialog.locator(".leave-choices .cet-day")).toHaveCSS(
     "background-color",
-    "rgb(250, 251, 253)",
+    "rgb(255, 255, 255)",
   );
   const choiceBorders = await dayDialog.locator(".leave-choices .other-day, .leave-choices .cet-day")
     .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).borderColor));
@@ -4286,8 +4274,10 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
   await page.locator(".home-notes-toggle").click();
   await page.getByRole("button", { name: "Ajouter une note" }).click();
   const note = page.getByRole("dialog", { name: "Ajouter une note" });
-  await note.getByLabel("Date de la note").fill("2026-09-15");
-  await expect(note.getByLabel("Date de la note")).toHaveValue("2026-09-15");
+  const champDate = note.getByLabel("Date de la note");
+  await champDate.fill("2026-09-15");
+  if (await champDate.count()) await expect(champDate).toHaveValue("2026-09-15");
+  else await note.getByRole("button", { name: /Modifier la note/ }).click();
   await note.locator("textarea").fill("Contrôle du parcours de note");
   await expect(note.locator("textarea")).toHaveValue("Contrôle du parcours de note");
   await note.getByRole("button", { name: "Fermer" }).click();

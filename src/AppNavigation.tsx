@@ -225,6 +225,7 @@ type MainMenuProps = {
   showInstallAction: boolean;
   canInstall: boolean;
   onInstall: () => void;
+  onOpenDataManagement: () => void;
   onOpenFeedback: (view: "compose" | "inbox") => void;
   isAdmin: boolean;
   unreadFeedbackCount: number;
@@ -232,8 +233,8 @@ type MainMenuProps = {
 
 export function MainMenu({
   open, onClose, onNavigate, currentSection, checkingAppUpdate, appUpdateAvailable,
-  onCheckForUpdate, showInstallAction, canInstall, onInstall, onOpenFeedback,
-  isAdmin, unreadFeedbackCount,
+  onCheckForUpdate, showInstallAction, canInstall, onInstall, onOpenDataManagement,
+  onOpenFeedback, isAdmin, unreadFeedbackCount,
 }: MainMenuProps) {
   if (!open) return null;
   return (
@@ -277,6 +278,11 @@ export function MainMenu({
               <span className="main-menu-chevron" aria-hidden="true">›</span>
             </button>
           ))}
+          <button type="button" onClick={onOpenDataManagement}>
+            <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="data" /></span>
+            <span className="main-menu-copy"><strong>Mes données</strong><small>Sauvegarder, reprendre ou effacer mes informations</small></span>
+            <span className="main-menu-chevron" aria-hidden="true">›</span>
+          </button>
           {showInstallAction ? (
             <button type="button" onClick={onInstall} disabled={!canInstall}>
               <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="install" /></span>

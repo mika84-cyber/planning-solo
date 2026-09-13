@@ -14,7 +14,7 @@
 .pay-import-icon svg { width: 25px; height: 25px; }
 .pay-missing-guidance button { white-space: normal; min-height: 44px; }
 .pay-missing-guidance .primary-action { width: 100%; margin: 18px 0 0; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent); color: #fff; box-shadow: none; font-size: .86rem; font-weight: 700; }
-.pay-missing-guidance .primary-action:hover { background: var(--muted); }
+.pay-missing-guidance .primary-action:hover { background: var(--accent-strong); }
 .pay-import-secondary { margin-top: 4px; padding: 0; text-align: center; }
 .pay-import-secondary .text-button { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 44px; margin: 0; padding: 4px 8px; background: transparent; border: 0; border-radius: 8px; color: var(--muted); font-size: .75rem; font-weight: 600; box-shadow: none; }
 .pay-import-secondary .text-button:hover { text-decoration: underline; }
@@ -60,7 +60,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   outline-offset: 3px;
 }
 @media (hover: hover) {
-  .app-shell :is(.primary-action, .validate-button, .save-button):not(:disabled):not(.update-now-button):not(.danger):not(.warning-button):hover { background: var(--muted); }
+  .app-shell :is(.primary-action, .validate-button, .save-button):not(:disabled):not(.update-now-button):not(.danger):not(.warning-button):hover { background: var(--accent-strong); }
 }
 @media (max-width: 520px) {
   .app-shell .top-header:not(.top-header-colleagues) { height: 175px; min-height: 175px; }
