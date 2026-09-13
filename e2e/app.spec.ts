@@ -3311,7 +3311,7 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   await page.getByRole("button", { name: "Enregistrer Divers" }).click();
   await expect(page.locator(".month-card .day.leave-other")).toHaveCSS(
     "background-color",
-    "rgb(244, 184, 200)",
+    "rgb(243, 216, 132)",
   );
   const workedAfterOther = await workedDaysOnHome(page);
   expect(workedAfterOther).toBe(initialWorked - 1);

@@ -1175,8 +1175,8 @@
 .month-card .calendar-grid .day.personal-day,
 .year-grid .mini-grid .mini-day.personal-day {
   border-color: #000 !important;
-  background: #f4b8c8 !important;
-  color: #3d1723 !important;
+  background: #f3d884 !important;
+  color: #4a3a06 !important;
   box-shadow: none !important;
 }
 
@@ -1184,14 +1184,14 @@
 .leave-choices .other-day,
 .other-request-options .request-option-group,
 .other-request-options .type-tabs button {
-  --choice-accent: #e58aa5;
-  --person-color: #e58aa5;
-  border-color: #d98ca3 !important;
-  background: #fff1f5 !important;
+  --choice-accent: #d9ab2b;
+  --person-color: #d9ab2b;
+  border-color: #dcbc5e !important;
+  background: #fff8e2 !important;
 }
 
 .other-request-options .type-tabs button {
-  color: #6f2940;
+  color: #6b5208;
 }
 
 /* Dans la fiche d'une date, Divers et CET gardent des encadrés neutres : la
@@ -1203,8 +1203,8 @@
   box-shadow: none !important;
 }
 
-.leave-choices .other-day { --person-color: #e58aa5; }
-.leave-choices .cet-day { --person-color: #9b8e7c; }
+.leave-choices .other-day { --person-color: #d9ab2b; }
+.leave-choices .cet-day { --person-color: #2f5fb3; }
 .leave-choices .closure-day {
   --person-color: #d32f36;
   grid-column: 1 / -1;
@@ -1214,8 +1214,8 @@
 .leave-choices .closure-day i { opacity: 0.8; }
 
 /* Les rubriques de suivi restent, elles, immédiatement identifiables. */
-.leave-balance-grid button.other { --balance-color: #e58aa5; }
-.leave-balance-grid button.cet { --balance-color: #9b8e7c; }
+.leave-balance-grid button.other { --balance-color: #d9ab2b; }
+.leave-balance-grid button.cet { --balance-color: #2f5fb3; }
 
 /* La grève est rouge, avec un liseré réellement noir et le poing lisible.
    Le même rendu est conservé pendant la sélection et après l'enregistrement. */
@@ -1263,8 +1263,8 @@
 .leave-choices .strike-day,
 .strike-request-options .request-option-group,
 .strike-request-options .type-tabs button {
-  --choice-accent: #c8424c;
-  --person-color: #c8424c;
+  --choice-accent: #f28b82;
+  --person-color: #f28b82;
 }
 .leave-choices .strike-day {
   border-color: var(--line) !important;
@@ -1272,7 +1272,7 @@
   box-shadow: none !important;
 }
 .leave-balances-direct .leave-balance-grid button.strike {
-  --balance-color: #bcb0a0;
+  --balance-color: #f28b82;
   grid-column: auto;
 }
 /* Sur ordinateur et téléphone pliable ouvert, les trois dernières cartes

@@ -735,7 +735,7 @@ h1 {
   --balance-color: #c2557a;
 }
 .leave-balance-grid button.childcare {
-  --balance-color: var(--muted);
+  --balance-color: #3f9a4a;
 }
 .leave-balance-grid button.exceptional {
   --balance-color: #854d0e;

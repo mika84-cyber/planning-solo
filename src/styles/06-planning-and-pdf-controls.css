@@ -958,7 +958,7 @@
   --person-color: #b91f39;
 }
 .leave-choices button.sick-day {
-  --person-color: var(--leave);
+  --person-color: #c2557a;
 }
 .leave-choices button.wish {
   --person-color: #0d6b34;

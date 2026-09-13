@@ -376,10 +376,10 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("background: #c52f42");
   });
 
-  it("affiche Divers en rose sans pastille dans le choix des absences", () => {
+  it("affiche Divers en doré sans pastille dans le choix des absences", () => {
     expect(app).not.toContain('className="other-choice-dot"');
-    expect(styles).toContain("background: #fff1f5 !important");
-    expect(styles).toContain("--person-color: #e58aa5");
+    expect(styles).toContain("background: #fff8e2 !important");
+    expect(styles).toContain("--person-color: #d9ab2b");
     expect(app).not.toContain("(Grève, décharge syndicale, fermeture exceptionnelle)");
   });
 
@@ -416,12 +416,12 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("max-height: min(58dvh, 420px)");
   });
 
-  it("affiche Divers en rose avec une punaise rouge", () => {
+  it("affiche Divers en doré avec une punaise rouge", () => {
     expect(app).toContain('personalDay ? " personal-day" : ""');
     expect(app).toContain('className={`other-pin${compact ? " compact" : ""}`}');
     expect(styles).toContain(".leave-day.leave-other,\n.day.personal-day,");
     expect(styles).toContain("color: #d51f3b");
-    expect(styles).toContain("background: #f4b8c8 !important");
+    expect(styles).toContain("background: #f3d884 !important");
   });
 
   it("compacte le montant des fériés choisis et espace la navigation de paie", () => {

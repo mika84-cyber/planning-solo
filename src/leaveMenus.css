@@ -40,7 +40,7 @@
 .leave-balances-direct .other-leave-balances[open] > .manual-adjustments-trigger {
   order: 2;
   width: 100%;
-  margin: 0;
+  margin: 12px 0 0;
 }
 
 @media (max-width: 520px) {
