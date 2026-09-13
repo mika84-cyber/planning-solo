@@ -217,16 +217,11 @@ test("les expositions basculent automatiquement à 00h05 heure de Paris", async 
 test("les cartes intérieures restent légères avec des bordures visibles et une ombre douce", async ({ page }, testInfo) => {
   await prepareDemo(page);
   const card = page.locator('.today-next-work');
-  // Cette carte ne porte pas d'information de couleur : elle suit la surface
-  // commune, lue dans la palette plutôt que recopiée ici.
-  const [surfaceCarte, surfaceFond] = await Promise.all([
-    cssTokenRgb(page, "--card"),
-    cssTokenRgb(page, "--bg"),
-  ]);
-  await expect(card).toHaveCSS(
-    'background-image',
-    `linear-gradient(145deg, ${surfaceCarte} 0%, ${surfaceFond} 100%)`,
-  );
+  // Les quatre cases de « En un coup d'œil » partagent un blanc cassé chaud
+  // et un liseré sombre très léger qui les détachent de leur carte.
+  await expect(card).toHaveCSS('background-color', 'rgb(251, 246, 239)');
+  await expect(card).toHaveCSS('background-image', 'none');
+  await expect(card).toHaveCSS('border-top-color', await cssToken(page, '--border-control'));
   await expect(card).toHaveCSS('border-top-width', '1px');
   await expect(card).not.toHaveCSS('box-shadow', 'none');
   await card.scrollIntoViewIfNeeded();

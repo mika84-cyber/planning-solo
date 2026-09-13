@@ -422,7 +422,7 @@
   border-left-width: 0;
 }
 
-.home-setup-alert{background:var(--surface);border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-list{display:grid;gap:9px}.home-setup-list article{align-items:center;background:var(--surface-high);border:1px solid var(--border-card);border-radius:14px;display:flex;gap:12px;justify-content:space-between;padding:10px 12px}.home-setup-list article>span{display:grid;gap:2px}.home-setup-list small{color:var(--muted)}.home-setup-actions{display:flex!important;gap:7px!important}.home-setup-list button{align-items:center;background:var(--accent);border:0;border-radius:11px;color:#fff;display:flex;font-weight:850;gap:8px;min-height:40px;padding:8px 13px;white-space:nowrap}.home-setup-list button.home-setup-dismiss{background:var(--surface);border:1px solid var(--section-outline);color:var(--muted);font-size:11px}
+.home-setup-alert{background:#fdeed6;border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-list{display:grid;gap:9px}.home-setup-list article{align-items:center;background:var(--surface-high);border:1px solid var(--border-card);border-radius:14px;display:flex;gap:12px;justify-content:space-between;padding:10px 12px}.home-setup-list article>span{display:grid;gap:2px}.home-setup-list small{color:var(--muted)}.home-setup-actions{display:flex!important;gap:7px!important}.home-setup-list button{align-items:center;background:var(--accent);border:0;border-radius:11px;color:#fff;display:flex;font-weight:850;gap:8px;min-height:40px;padding:8px 13px;white-space:nowrap}.home-setup-list button.home-setup-dismiss{background:var(--surface);border:1px solid var(--section-outline);color:var(--muted);font-size:11px}
 
 @media (max-width: 720px) {
   .planning-workspace-shell.framed {
@@ -1370,7 +1370,7 @@ fieldset.leave-choices {
 
 /* Le retour au mois courant occupe sa propre ligne, juste avant le compteur. */
 .planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}
-.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button{grid-column:1;width:100%;min-height:42px;border:0;border-radius:11px;padding:9px 14px;background:var(--action-primary);box-shadow:0 5px 12px rgba(152,84,56,.18);color:#fff;font:inherit;font-size:12px;font-weight:850;text-decoration:none;cursor:pointer}
+.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button{grid-column:1;width:100%;min-height:42px;border:1px solid var(--border-control);border-radius:11px;padding:9px 14px;background:var(--action-primary);box-shadow:0 5px 12px rgba(152,84,56,.18);color:#fff;font:inherit;font-size:12px;font-weight:850;text-decoration:none;cursor:pointer}
 .planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button:hover{background:var(--muted)}
 
 /* Une alerte qui nomme l'écran où corriger devient le chemin lui-même : tout
@@ -1431,3 +1431,8 @@ fieldset.leave-choices {
 }
 .work-exchange-suggestions strong { font-size: 0.94rem; font-weight: 800; }
 .work-exchange-suggestions small { color: var(--accent-strong); font-size: 0.72rem; font-weight: 850; white-space: nowrap; }
+
+/* Boutons terracotta : un liseré sombre très léger, comme les cases de l’accueil. */
+:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .pay-inline-action, .payslip-file-drop, .home-setup-list button:not(.home-setup-dismiss), .home-add-note, .add-note-line, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .month-jump-menu button.active, .choice-picker-menu button.active) {
+  border: 1px solid var(--border-control);
+}

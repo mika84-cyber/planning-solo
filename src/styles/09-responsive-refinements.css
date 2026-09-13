@@ -261,7 +261,6 @@
 }
 .today-overview-grid .today-status {
   border-color: var(--border-card);
-  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status .today-card-icon {
   background: rgba(131, 97, 66, 0.12);
@@ -269,7 +268,6 @@
 }
 .today-overview-grid .today-status.tone-off {
   border-color: var(--border-card);
-  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status.tone-off .today-card-icon {
   background: rgba(131, 97, 66, 0.12);
@@ -277,7 +275,6 @@
 }
 .today-overview-grid .today-status.tone-training {
   border-color: var(--border-card);
-  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status.tone-training .today-card-icon {
   background: rgba(131, 97, 66, 0.12);
@@ -286,20 +283,17 @@
 .today-overview-grid .today-status.tone-leave,
 .today-overview-grid .today-status.tone-recovery {
   border-color: var(--border-card);
-  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status.tone-leave .today-card-icon,
 .today-overview-grid .today-status.tone-recovery .today-card-icon {
   background: var(--bg);
   color: var(--muted);
 }
-/* Ces deux cartes ne portent pas d'information de couleur, contrairement à
-   .today-status et à ses tons de journée : elles partagent donc la surface
-   commune. Une teinte par carte ne hiérarchisait rien. */
+/* Le fond des quatre cases vient de la règle commune de productRefinements.css :
+   un même blanc cassé chaud, seule la case d'échange garde son turquoise. */
 .today-next-work,
 .today-leave-balance {
-  border-color: var(--border-soft) !important;
-  background: linear-gradient(145deg, var(--card) 0%, var(--bg) 100%) !important;
+  border-color: var(--border-control) !important;
 }
 .today-leave-balance .today-card-icon {
   background: var(--accent-soft);
