@@ -233,6 +233,7 @@ const PAY_SETUP_INTRO =
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
 
+
 export default function Home() {
   useModalAccessibility();
   const connectionStatus = useConnectionStatus();
@@ -2444,24 +2445,17 @@ export default function Home() {
       <AppleInstallNotice enabled={installationEnabled} />
       <MainMenu
         open={mainMenuOpen}
-        userEmail={userEmail}
-        fullName={formProfile?.fullName || ""}
+        onClose={() => setMainMenuOpen(false)}
+        onNavigate={(section) => navigateFromShell(section)}
+        currentSection={homeSection}
         checkingAppUpdate={checkingAppUpdate}
         appUpdateAvailable={appUpdateAvailable}
-        online={connectionStatus.online}
-        syncStatus={connectionStatus.syncStatus}
-        lastSavedAt={connectionStatus.lastSavedAt}
-        showInstallAction={demoMode || Boolean(installPrompt)}
-        canInstall={Boolean(installationEnabled && installPrompt)}
-        onClose={() => setMainMenuOpen(false)}
         onCheckForUpdate={() => {
           setMainMenuOpen(false);
           void checkForAppUpdate();
         }}
-        onOpenDataManagement={() => {
-          setMainMenuOpen(false);
-          setDataManagementOpen(true);
-        }}
+        showInstallAction={demoMode || Boolean(installPrompt)}
+        canInstall={Boolean(installationEnabled && installPrompt)}
         onInstall={() => void installApp()}
         onOpenFeedback={() => {
           setMainMenuOpen(false);

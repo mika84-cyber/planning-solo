@@ -81,6 +81,29 @@ describe("PlanningDayCell", () => {
     expect(html).toContain(">9</span>");
   });
 
+  it("conserve le bandeau de note dans une case de fermeture", () => {
+    const html = renderToStaticMarkup(
+      <PlanningDayCell
+        {...baseProps}
+        entry={{
+          noteText: "Inventaire",
+          noteColor: "#d3943d",
+          noteUpdatedAt: "2026-09-01T10:00:00Z",
+          noteGroupId: "",
+          leave: false,
+          wish: false,
+          holidayPay: "",
+          closureOverride: "",
+          updatedAt: "2026-09-01T10:00:00Z",
+        }}
+        exceptionalClosure={{ label: "Fermeture exceptionnelle" }}
+      />,
+    );
+    expect(html).toContain("exceptional-closure-day");
+    expect(html).toContain("note-band mika-note-band");
+    expect(html).toContain("exceptional-closure-marker");
+  });
+
   it("rend le type de congé et la note sans modifier les données", () => {
     const html = renderToStaticMarkup(
       <PlanningDayCell

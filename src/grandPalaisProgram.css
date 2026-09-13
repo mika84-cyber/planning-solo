@@ -4,7 +4,7 @@
   position: relative;
   overflow: hidden;
   color: var(--text);
-  background: #f7f5ef;
+  background: #fff;
 }
 
 .top-header.top-header-program::before {
@@ -32,7 +32,7 @@
 .top-header-program .top-header-title h1,
 .top-header-program .top-header-title .eyebrow {
   color: #fff;
-  text-shadow: 0 2px 7px rgba(5, 19, 29, 0.92), 0 0 2px #071722;
+  text-shadow: 0 2px 7px rgba(44, 38, 33, 0.92), 0 0 2px #2c2621;
 }
 
 .grand-palais-program-screen {
@@ -48,26 +48,26 @@
 
 .grand-palais-view-tools { display: grid; gap: 12px; }
 .grand-palais-view-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
-.grand-palais-view-picker button { border: 1px solid var(--section-outline); border-radius: 12px; padding: 10px 8px; background: #fff; color: var(--text); font-weight: 800; }
-.grand-palais-view-picker button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+.grand-palais-view-picker button { border: 1px solid var(--section-outline); border-radius: 12px; padding: 10px 8px; background: var(--surface); color: var(--text); font-weight: 800; }
+.grand-palais-view-picker button.active { border-color: var(--accent); background: var(--accent); color: #fff; }
 .grand-palais-search { display: grid; gap: 5px; color: var(--text); font-size: 12px; font-weight: 800; }
-.grand-palais-search input { min-height: 44px; border: 1px solid var(--section-outline); border-radius: 12px; padding: 0 13px; background: #fff; color: var(--text); font: inherit; }
+.grand-palais-search input { min-height: 44px; border: 1px solid var(--section-outline); border-radius: 12px; padding: 0 13px; background: var(--surface); color: var(--text); font: inherit; }
 
 .grand-palais-program-intro,
 .grand-palais-venue-navigation {
-  border: 1.5px solid rgba(74, 104, 145, 0.34);
-  border-left: 8px solid #8b4657;
+  border: 1.5px solid var(--border-card);
+  border-left: 8px solid var(--border-card);
   border-radius: 27px;
   padding: clamp(18px, 2.4vw, 26px);
-  background: radial-gradient(circle at 100% 0, rgba(224, 184, 193, 0.62), transparent 38%), linear-gradient(145deg, #fff3f3, #fff 58%, #f6ecdf);
+  background: radial-gradient(circle at 100% 0, rgba(224, 184, 193, 0.62), transparent 38%), linear-gradient(145deg, #fff3f3, #fff 58%, #fff);
   box-shadow: var(--shadow-card);
 }
 
 .grand-palais-venue-navigation {
   display: grid;
   gap: 18px;
-  border-left-color: #8b4657;
-  background: linear-gradient(145deg, #fff8f7, #fff 62%, #faf7f2);
+  border-left-color: var(--border-card);
+  background: linear-gradient(145deg, #fff8f7, #fff 62%, #fff);
 }
 
 .grand-palais-venue-navigation-heading h3 {
@@ -92,10 +92,11 @@
 .grand-palais-primary-picker button,
 .grand-palais-other-picker button {
   min-width: 0;
-  border: 1.5px solid var(--section-outline);
+  border: 1.5px solid var(--venue-line, var(--section-outline));
+  border-left: 5px solid var(--venue-accent, var(--border-card));
   border-radius: 15px;
   color: var(--text);
-  background: #f4f7fc;
+  background: var(--venue-bg, var(--surface-high));
   font: inherit;
   font-weight: 900;
   cursor: pointer;
@@ -123,7 +124,7 @@
   color: var(--text);
   outline: 2px solid var(--accent);
   outline-offset: -2px;
-  box-shadow: 0 8px 20px rgba(22, 31, 42, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+  box-shadow: 0 8px 20px rgba(44, 38, 33, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.72);
 }
 
 .grand-palais-primary-picker button.active small {
@@ -135,12 +136,7 @@
   transform: translateY(-1px);
 }
 
-.grand-palais-primary-picker > button:nth-child(1) { background: #eaf2ff; }
-.grand-palais-primary-picker > button:nth-child(2) { background: #f1edff; }
-.grand-palais-primary-picker > button:nth-child(3) { background: #fff0f2; }
-.grand-palais-primary-picker > button:nth-child(4) { background: #fff7e7; }
-.grand-palais-primary-picker > button:nth-child(5) { background: #f1f4f8; }
-.grand-palais-primary-picker > button:nth-child(6) { background: #eef7f7; }
+.grand-palais-primary-picker > button:nth-child(n) { background: var(--venue-bg, var(--surface-high)); }
 
 .grand-palais-other-picker {
   display: grid;
@@ -225,7 +221,7 @@
 .grand-palais-admin-alert-list button + button {
   border-color: var(--section-outline);
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
 }
 
 .grand-palais-review-error {
@@ -238,7 +234,7 @@
   padding: 10px 13px;
   border-color: var(--section-outline);
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
 }
 
 .grand-palais-other-picker button.active {
@@ -250,7 +246,7 @@
 .grand-palais-program-screen .grand-palais-program-panel {
   border: 2px solid var(--section-outline);
   border-radius: 22px;
-  background: radial-gradient(circle at 100% 0, rgba(225, 240, 204, 0.58), transparent 31%), linear-gradient(145deg, #f8fcfb, #fff 58%, #fffaf1);
+  background: radial-gradient(circle at 100% 0, rgba(225, 240, 204, 0.58), transparent 31%), linear-gradient(145deg, #fff, #fff 58%, #fffaf1);
   box-shadow: var(--shadow-card);
 }
 
@@ -268,7 +264,7 @@
   gap: 14px;
   min-height: 92px;
   border: 2px solid var(--venue-line, var(--border-inset));
-  border-left: 5px solid var(--venue-accent, #438b80);
+  border-left: 5px solid var(--venue-accent, var(--border-card));
   padding: 17px 18px;
   background: var(--venue-bg, rgba(255, 255, 255, 0.96));
   box-shadow: var(--shadow-inset);
@@ -281,9 +277,9 @@
 .grand-palais-program-panel .useful-expo-timeline article > em {
   grid-column: 2;
   align-self: start;
-  border: 1px solid #c9d1da;
-  color: #526174;
-  background: #eef1f4;
+  border: 1px solid var(--border-control);
+  color: var(--muted);
+  background: var(--surface);
 }
 
 .useful-expo-timeline article a {
@@ -292,7 +288,7 @@
   border: 0;
   border-radius: 0;
   padding: 3px 0 1px;
-  color: #246f66;
+  color: var(--muted);
   background: transparent;
   font-size: 0.78rem;
   font-weight: 850;
@@ -305,12 +301,12 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
-.grand-palais-interexpo-list > article { display: grid; gap: 9px; min-width: 0; border: 1.5px solid var(--section-outline); border-left: 5px solid var(--section-outline); border-radius: 16px; padding: 14px; background: #f5f9fd; }
-.grand-palais-interexpo-list > article[data-status="En cours"] { border-color: #76a493; border-left-color: #28745a; background: #eff8f4; }
+.grand-palais-interexpo-list > article { display: grid; gap: 9px; min-width: 0; border: 1.5px solid var(--section-outline); border-left: 5px solid var(--section-outline); border-radius: 16px; padding: 14px; background: var(--surface-high); }
+.grand-palais-interexpo-list > article[data-status="En cours"] { border-color: var(--border-card); border-left-color: #28745a; background: #fff; }
 .grand-palais-interexpo-list header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .grand-palais-interexpo-list header span { color: var(--text); font-size: 0.67rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
-.grand-palais-interexpo-list em { border: 1px solid var(--section-outline); border-radius: 999px; padding: 4px 8px; background: #fff; color: var(--text); font-size: 0.68rem; font-style: normal; font-weight: 900; }
-.grand-palais-interexpo-list article[data-status="En cours"] em { border-color: #9bc8b6; color: #23664f; }
+.grand-palais-interexpo-list em { border: 1px solid var(--section-outline); border-radius: 999px; padding: 4px 8px; background: var(--surface); color: var(--text); font-size: 0.68rem; font-style: normal; font-weight: 900; }
+.grand-palais-interexpo-list article[data-status="En cours"] em { border-color: var(--border-card); color: #23664f; }
 .grand-palais-interexpo-list strong { color: var(--text); font-size: 0.88rem; line-height: 1.35; }
 .grand-palais-interexpo-list p { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
 .grand-palais-interexpo-list p b { color: var(--text); }
@@ -319,7 +315,7 @@
 @media (max-width: 720px) {
   .grand-palais-view-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .top-header.top-header-program {
-    background: #f7f5ef;
+    background: #fff;
   }
 
   .top-header.top-header-program::before {
@@ -401,4 +397,27 @@
     grid-template-columns: 1fr;
   }
 
+}
+
+/* Cadres communs : fond blanc, contour fin et liseré terracotta. Les teintes
+   des événements restent attachées à leurs lieux et à leur statut. */
+.grand-palais-program-intro,
+.grand-palais-venue-navigation {
+  border-width: 1px;
+  border-left-width: 5px;
+  border-left-color: var(--accent);
+  background: #fff;
+}
+.grand-palais-program-screen .grand-palais-program-panel {
+  border-width: 1px;
+  border-left-width: 5px;
+  border-left-color: var(--accent);
+  background: #fff;
+}
+.grand-palais-program-screen .useful-expo-schedule.grand-palais-program-panel {
+  border-left-width: 5px;
+}
+.grand-palais-program-panel .useful-expo-timeline article {
+  border-width: 1px;
+  border-left-width: 5px;
 }

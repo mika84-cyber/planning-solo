@@ -1,10 +1,15 @@
 import { lazy, Suspense, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { CalendarCleanupPanel } from "./CalendarCleanup";
 import { ChoicePicker } from "./ChoicePicker";
+
+const SchoolVacationSettings = lazy(() =>
+  import("./SchoolVacationUi").then(({ SchoolVacationSettings: Component }) => ({ default: Component })),
+);
 import { dayCountLabel } from "./appModel";
 import {
   MONTHS,
   MONTH_OPTIONS,
+  type SchoolZone,
   YEAR_OPTIONS,
   leaveTypeLabel,
   localDate,
@@ -12,14 +17,10 @@ import {
   s,
   type LeaveType,
   type MultiDatePerson,
-  type SchoolZone,
 } from "./planningLogic";
 import type { RecoveryDraft } from "./useWorkTimeUiState";
 import { defaultRecoveryMinutes, minutesLabel, type WorkQuota } from "./overtime";
 
-const SchoolVacationSettings = lazy(() =>
-  import("./SchoolVacationUi").then(({ SchoolVacationSettings: Component }) => ({ default: Component })),
-);
 
 type WorkedDaySummary = {
   worked: number;
@@ -45,6 +46,10 @@ type PlanningCommandCenterProps = {
   setView: (view: Date) => void;
   workQuota?: WorkQuota;
   workedDays: WorkedDaysData;
+  showSchoolVacations: boolean;
+  schoolZone: SchoolZone;
+  onShowSchoolVacationsChange: (visible: boolean) => void;
+  onSchoolZoneChange: (zone: SchoolZone) => void;
   recoveryRangeSelecting: boolean;
   recoveryDraft: RecoveryDraft;
   setRecoveryDraft: Dispatch<SetStateAction<RecoveryDraft>>;
@@ -68,10 +73,6 @@ type PlanningCommandCenterProps = {
   onToday: () => void;
   onExportPdf?: () => void;
   exportingPdf?: boolean;
-  showSchoolVacations: boolean;
-  schoolZone: SchoolZone;
-  onShowSchoolVacationsChange: (visible: boolean) => void;
-  onSchoolZoneChange: (zone: SchoolZone) => void;
 };
 
 function closureDetail(count: number) {
@@ -94,6 +95,10 @@ export function PlanningCommandCenter({
   setView,
   workQuota = "full",
   workedDays,
+  showSchoolVacations,
+  schoolZone,
+  onShowSchoolVacationsChange,
+  onSchoolZoneChange,
   recoveryRangeSelecting,
   recoveryDraft,
   setRecoveryDraft,
@@ -117,10 +122,6 @@ export function PlanningCommandCenter({
   onToday,
   onExportPdf,
   exportingPdf = false,
-  showSchoolVacations,
-  schoolZone,
-  onShowSchoolVacationsChange,
-  onSchoolZoneChange,
 }: PlanningCommandCenterProps) {
   const [workedDaysOpen, setWorkedDaysOpen] = useState(false);
   const workedDaysRef = useRef<HTMLDivElement | null>(null);
@@ -250,6 +251,8 @@ export function PlanningCommandCenter({
               </div>
               </>
           </section>
+        {/* Réglage d'affichage du planning : il vit ici faute d'une rubrique
+            de réglages où le loger. */}
         <Suspense fallback={null}>
           <SchoolVacationSettings
             visible={showSchoolVacations}

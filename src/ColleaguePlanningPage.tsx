@@ -48,7 +48,8 @@ const tomorrowDate = (reference = new Date()) => {
   return tomorrow;
 };
 const tomorrowDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-export const colleagueTomorrowDateLabel = (reference = new Date()) => tomorrowDateFormatter.format(tomorrowDate(reference));
+const tomorrowTitleDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
+export const colleagueTomorrowDateLabel = (reference = new Date()) => tomorrowTitleDateFormatter.format(tomorrowDate(reference));
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "Demi-journée · matin" | "Demi-journée · après-midi" | "Absence partielle";
 

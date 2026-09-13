@@ -56,38 +56,46 @@ describe("navigation principale", () => {
     expect(html).toContain("Mise à jour à effectuer");
   });
 
-  it("remplace les rubriques par les actions du compte", () => {
-    const html = renderToStaticMarkup(<MainMenu
-      open
-      userEmail="mika@example.fr"
-      fullName="Mika"
-      checkingAppUpdate={false}
-      appUpdateAvailable={false}
-      online
-      syncStatus="idle"
-      lastSavedAt=""
-      showInstallAction
-      canInstall={false}
-      onClose={vi.fn()}
-      onCheckForUpdate={vi.fn()}
-      onOpenDataManagement={vi.fn()}
-      onInstall={vi.fn()}
-      onOpenFeedback={vi.fn()}
-      isAdmin={false}
-      unreadFeedbackCount={0}
-    />);
-    expect(html).toContain("Compte et réglages");
-    expect(html).toContain("mika@example.fr");
+  const menuBase = {
+    open: true, onClose: vi.fn(), onNavigate: vi.fn(), currentSection: "home" as const,
+    checkingAppUpdate: false, appUpdateAvailable: false, onCheckForUpdate: vi.fn(),
+    showInstallAction: true, canInstall: false, onInstall: vi.fn(),
+    onOpenFeedback: vi.fn(), isAdmin: false, unreadFeedbackCount: 0,
+  };
+
+  it("mène aux pages, au rafraîchissement, à l’installation et à la messagerie", () => {
+    const html = renderToStaticMarkup(<MainMenu {...menuBase} />);
+    expect(html).toContain("Navigation");
+    expect(html).toContain("<h2>Menu principal</h2>");
+    expect(html).toContain("main-menu-refresh");
+    expect(html).toContain("Rafraîchir");
     expect(html).toContain("Vérifier les mises à jour");
-    expect(html).toContain("Mes données");
-    expect(html).toContain("État de sauvegarde");
-    expect(html).toContain("Sauvegarde automatique active");
+    expect(html.indexOf("Vérifier les mises à jour")).toBeLessThan(html.indexOf("Rafraîchir"));
+    expect(html.indexOf("main-menu-refresh")).toBeLessThan(html.indexOf("Accueil"));
+    expect(html).toContain('aria-label="Les pages de l’application"');
+    expect(html).toContain("Congés et récupérations");
+    expect(html).toContain("Planning des collègues");
+    expect(html).toContain("Programmation GP");
+    expect(html).toContain("Documents et contacts");
+    expect(html).toContain('aria-current="page"');
     expect(html).toContain("Installer l’application");
-    expect(html).toContain("Disponible après connexion");
     expect(html).toContain("Écrire à l’administrateur");
-    expect(html).not.toContain("Congés et récupérations");
-    expect(html).not.toContain("Planning des collègues");
-    expect(html).not.toContain("Messagerie interne");
+    expect(html).not.toContain("Mode d’emploi");
+    expect(html).not.toContain("Compte et réglages");
+    expect(html).not.toContain("Mes données");
+  });
+
+  it("ouvre la messagerie interne pour l’administrateur", () => {
+    const html = renderToStaticMarkup(<MainMenu {...menuBase} isAdmin unreadFeedbackCount={3} />);
+    expect(html).toContain("Messagerie interne");
+    expect(html).toContain("3 messages non lus");
+  });
+
+  it("annonce la mise à jour prête dans le menu", () => {
+    const html = renderToStaticMarkup(<MainMenu {...menuBase} appUpdateAvailable />);
+    expect(html).toContain("Installer la mise à jour");
+    expect(html).toContain("Une nouvelle version est prête");
+    expect(html).toContain("update-available");
   });
 
   it("propose une navigation adaptative sans numéros et marque la rubrique active", () => {
@@ -107,9 +115,4 @@ describe("navigation principale", () => {
     expect(html).not.toContain("Mode d’emploi");
   });
 
-  it("réserve l’entrée de la messagerie à l’administrateur", () => {
-    const html = renderToStaticMarkup(<MainMenu open userEmail="admin@example.fr" fullName="Administrateur" checkingAppUpdate={false} appUpdateAvailable={false} online syncStatus="idle" lastSavedAt="" showInstallAction={false} canInstall={false} onClose={vi.fn()} onCheckForUpdate={vi.fn()} onOpenDataManagement={vi.fn()} onInstall={vi.fn()} onOpenFeedback={vi.fn()} isAdmin unreadFeedbackCount={3} />);
-    expect(html).toContain("Messagerie interne");
-    expect(html).toContain("3 messages non lus");
-  });
 });

@@ -7,7 +7,7 @@
   left: 2px;
   width: 4px;
   border-radius: 999px;
-  background: #8c70c4;
+  background: #9b8e7c;
   box-shadow: 1px 0 #fff;
   content: "";
   pointer-events: none;
@@ -54,9 +54,9 @@
   grid-row: 1 / span 2;
   width: 44px;
   height: 26px;
-  border: 2px solid #9d91b5;
+  border: 2px solid var(--border-card);
   border-radius: 999px;
-  background: #e5e0ed;
+  background: var(--bg);
 }
 .school-vacation-switch > span i {
   position: absolute;
@@ -65,9 +65,9 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface);
 }
-.school-vacation-switch.active > span { border-color: #7255ad; background: #8c70c4; }
+.school-vacation-switch.active > span { border-color: var(--border-card); background: var(--border-card); }
 .school-vacation-switch.active > span i { transform: translateX(18px); }
 .school-vacation-switch strong,
 .school-vacation-switch small { grid-column: 2; }
@@ -79,31 +79,31 @@
   flex: 1 1 230px;
   gap: 4px;
   max-width: 330px;
-  border: 1px solid #cfc4e1;
+  border: 1px solid var(--border-control);
   border-radius: 999px;
   padding: 4px;
-  background: #f0ecf7;
+  background: var(--surface);
 }
 .school-zone-picker button {
   min-height: 42px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #514766;
+  color: var(--muted);
   font-size: .76rem;
   font-weight: 850;
 }
-.school-zone-picker button.active { background: #7255ad; color: #fff; }
+.school-zone-picker button.active { background: var(--accent); color: #fff; }
 
 .school-vacation-month-summary {
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 0 0 10px;
-  border: 1px solid #d8d0e8;
+  border: 1px solid var(--border-control);
   border-radius: 14px;
   padding: 9px 12px;
-  background: #fbf9ff;
+  background: var(--surface-high);
   color: var(--text);
 }
 .school-vacation-month-summary > div { display: grid; gap: 2px; min-width: 0; }
@@ -114,7 +114,7 @@
   align-self: stretch;
   min-height: 34px;
   border-radius: 999px;
-  background: #8c70c4;
+  background: #9b8e7c;
 }
 
 @media (max-width: 720px) {

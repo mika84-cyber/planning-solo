@@ -36,12 +36,12 @@ describe("sharedPlanningDayStatus", () => {
 });
 
 describe("colleagueTomorrowDateLabel", () => {
-  it("affiche en français le jour et le mois du lendemain", () => {
-    expect(colleagueTomorrowDateLabel(new Date(2026, 8, 4, 23, 30))).toBe("samedi 5 septembre");
+  it("affiche en français le jour et la date courte du lendemain", () => {
+    expect(colleagueTomorrowDateLabel(new Date(2026, 8, 13, 23, 30))).toBe("lundi 14/09");
   });
 
   it("gère le changement de mois et d’année", () => {
-    expect(colleagueTomorrowDateLabel(new Date(2026, 11, 31, 12))).toBe("vendredi 1 janvier");
+    expect(colleagueTomorrowDateLabel(new Date(2026, 11, 31, 12))).toBe("vendredi 01/01");
   });
 });
 

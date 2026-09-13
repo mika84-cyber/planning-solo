@@ -227,23 +227,117 @@ test("les cartes intérieures restent légères avec des bordures visibles et un
     'background-image',
     `linear-gradient(145deg, ${surfaceCarte} 0%, ${surfaceFond} 100%)`,
   );
-  await expect(card).toHaveCSS('border-top-width', '2px');
+  await expect(card).toHaveCSS('border-top-width', '1px');
   await expect(card).not.toHaveCSS('box-shadow', 'none');
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
   await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Ma paie', exact: true }).click();
   const guidance = page.locator('.pay-missing-guidance');
-  await expect(guidance).toHaveCSS('background-image', 'linear-gradient(135deg, rgb(245, 248, 252), rgb(248, 246, 252))');
-  await expect(guidance).toHaveCSS('border-top-width', '2px');
+  await expect(guidance).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(guidance).toHaveCSS('background-image', 'none');
+  await expect(guidance).toHaveCSS('border-top-width', '1px');
+  await expect(guidance).toHaveCSS('border-top-color', await cssTokenRgb(page, '--border-card'));
   await guidance.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-pay-${testInfo.project.name}.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test("Ma paie retrouve ses couleurs précédentes sans changer la disposition", async ({ page }, testInfo) => {
+test("toutes les rubriques utilisent des cartes blanches, des contours fins et les liserés terracotta", async ({ page }) => {
+  await prepareDemo(page);
+
+  const expectWhiteCard = async (selector: string, leftWidth = "1px") => {
+    const card = page.locator(selector).first();
+    await expect(card).toBeVisible();
+    await expect(card).toHaveCSS("background-color", "rgb(255, 255, 255)");
+    await expect(card).toHaveCSS("background-image", "none");
+    await expect(card).toHaveCSS("border-top-width", "1px");
+    await expect(card).toHaveCSS("border-left-width", leftWidth);
+    if (leftWidth === "5px") {
+      await expect(card).toHaveCSS("border-left-color", await cssTokenRgb(page, "--accent"));
+    }
+  };
+
+  await expectWhiteCard(".today-overview", "5px");
+  await expect(page.locator(".today-overview-grid > article").first()).toHaveCSS("border-top-width", "1px");
+  await openMainMenu(page);
+  await expect(page.getByRole("heading", { name: "Menu principal" })).toBeVisible();
+  const refreshButton = page.locator(".main-menu-refresh");
+  const homeMenuButton = page.locator(".main-menu-pages").getByRole("button", { name: /Accueil/ });
+  expect(await refreshButton.evaluate((node) => getComputedStyle(node).getPropertyValue("--menu-accent"))).not.toBe(
+    await homeMenuButton.evaluate((node) => getComputedStyle(node).getPropertyValue("--menu-accent")),
+  );
+  await expect(refreshButton.locator("strong")).toHaveText("Vérifier les mises à jour");
+  await expect(refreshButton.locator("small")).toHaveText("Rafraîchir");
+  await expect(refreshButton).toHaveCSS("color", "rgb(255, 255, 255)");
+
+  await goToSection(page, "leave");
+  await expectWhiteCard(".leave-balances-direct", "5px");
+  await expectWhiteCard(".leave-tools-area", "5px");
+
+  await goToSection(page, "pay");
+  await expectWhiteCard(".pay-dashboard-month", "5px");
+  await expectWhiteCard(".pay-dashboard-estimate", "5px");
+  await expectWhiteCard(".pay-dashboard-variables", "5px");
+  const allowancesAction = page.locator(".pay-inline-action");
+  await expect(allowancesAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
+  await expect(allowancesAction).toHaveCSS("color", "rgb(255, 255, 255)");
+  const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
+  await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
+  await payProfile.locator(".pay-profile-summary").click();
+  const profileOutline = await cssTokenRgb(page, "--border-card");
+  const profilePicker = payProfile.locator(".pay-profile-picker .choice-picker-trigger").first();
+  await expect(profilePicker).toHaveCSS("border-top-color", profileOutline);
+  await expect(profilePicker).toHaveCSS("border-top-width", "1px");
+  await expect(payProfile.locator(".pay-work-schedule")).toHaveCSS("border-top-color", profileOutline);
+  await expect(payProfile.locator(".pay-work-schedule")).toHaveCSS("border-top-width", "1px");
+  await expect(payProfile.locator(".pay-work-time-picker").first()).toHaveCSS("border-top-color", profileOutline);
+  await expect(payProfile.locator(".pay-work-time-picker").first()).toHaveCSS("border-top-width", "1px");
+  await expect(page.locator(".pay-dashboard-amounts")).toHaveCSS("border-top-width", "2px");
+  const payslipChoice = page.locator(".payslip-file-drop").first();
+  await expect(payslipChoice).toHaveCSS("border-top-width", "1px");
+  await expect(payslipChoice).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
+  await expect(payslipChoice).toHaveCSS("color", "rgb(255, 255, 255)");
+
+  await goToSection(page, "documents");
+  await page.getByRole("tab", { name: /^Plannings PDF/ }).click();
+  await expect(page.locator(".pdf-download-settings > label").nth(0)).toHaveCSS("background-color", "rgb(245, 248, 252)");
+  await expect(page.locator(".pdf-download-settings > label").nth(1)).toHaveCSS("background-color", "rgb(242, 250, 246)");
+  await expect(page.locator(".pdf-download-settings > .school-vacation-choice")).toHaveCSS("background-color", "rgb(255, 249, 239)");
+  await expect(page.locator(".pdf-action.selected")).toHaveCSS("background-color", "rgb(244, 248, 253)");
+  await expect(page.locator(".pdf-action.my-leaves")).toHaveCSS("background-color", "rgb(243, 250, 246)");
+
+  await openUsefulResource(page, "Formulaires");
+  await expectWhiteCard(".useful-forms-screen.useful-forms-root", "5px");
+  await expectWhiteCard(".useful-form-folder");
+  await expect(page.locator(".useful-form-folder").first()).toHaveCSS("box-shadow", "none");
+  await openUsefulResource(page, "Contacts");
+  await expectWhiteCard(".useful-contacts-screen.useful-contacts-root", "5px");
+  await expectWhiteCard(".useful-contact-directory-grid > button");
+  await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("box-shadow", "none");
+
+  await goToSection(page, "program");
+  await expectWhiteCard(".grand-palais-program-intro", "5px");
+  await expectWhiteCard(".grand-palais-program-panel", "5px");
+
+  await goToSection(page, "colleagues");
+  await expectWhiteCard(".colleague-sharing-intro", "5px");
+  await expectWhiteCard(".colleague-profile-card", "5px");
+  const howItWorks = page.locator(".colleague-how-it-works");
+  await expect(howItWorks).toHaveCSS("background-color", "rgb(253, 248, 241)");
+  await expect(howItWorks).toHaveCSS("background-image", "none");
+  await expect(howItWorks).toHaveCSS("border-top-width", "1px");
+  await expect(howItWorks).toHaveCSS("border-left-width", "5px");
+  await expect(howItWorks.locator(".colleague-how-header > .eyebrow")).toHaveCSS("border-left-width", "0px");
+  await expect(page.locator(".colleague-profile-card")).toHaveCSS("box-shadow", "none");
+  await expect(page.locator(".colleague-how-it-works")).toHaveCSS("box-shadow", "none");
+  expect(await page.locator(".colleague-profile-card").evaluate((node) => getComputedStyle(node, "::before").display)).toBe("none");
+});
+
+test("Ma paie utilise une surface blanche sans changer la disposition", async ({ page }, testInfo) => {
   await prepareDemo(page);
   await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Ma paie', exact: true }).click();
-  await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-image', 'linear-gradient(145deg, rgb(238, 234, 251), rgb(255, 250, 245))');
+  await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-image', 'none');
   // La démo n'a pas de montant : cette ligne mesurait donc « À compléter »,
   // pas une somme. Une absence se lit désormais en gris discret, pour ne pas
   // être prise pour une estimation réelle.
@@ -256,7 +350,7 @@ test("Ma paie retrouve ses couleurs précédentes sans changer la disposition", 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test("le 9 septembre reste lisible et les rubriques ont des fonds distincts", async ({ page }, testInfo) => {
+test("le 9 septembre reste lisible et les rubriques utilisent le fond commun", async ({ page }, testInfo) => {
   await page.clock.setFixedTime(new Date(2026, 8, 9, 12));
   await prepareDemo(page);
   const date = page.locator('.day.today .exceptional-closure-date').first();
@@ -266,7 +360,8 @@ test("le 9 septembre reste lisible et les rubriques ont des fonds distincts", as
   await date.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/structured-calendar-${testInfo.project.name}.png` });
   const overview = page.locator('.today-overview').first();
-  await expect(overview).toHaveCSS('background-image', /linear-gradient/);
+  await expect(overview).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(overview).toHaveCSS('background-image', 'none');
   await overview.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/structured-home-${testInfo.project.name}.png` });
   await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Congés', exact: true }).click();
@@ -317,7 +412,28 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   await expect(planning.getByRole("button", { name: "Mois précédent" })).toBeVisible();
   await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
   await expect(planning.locator(".worked-days-trigger")).toContainText("travaillé");
-  await expect(planning).toHaveCSS("border-left-width", "8px");
+  await expect(planning).toHaveCSS("border-left-width", "5px");
+  await expect(planning).toHaveCSS("border-left-color", "rgb(152, 84, 56)");
+  await expect(planning).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(planning).toHaveCSS("background-image", "none");
+  await expect(page.getByRole("button", { name: "Poser un congé" })).toHaveCSS(
+    "background-color",
+    "rgb(152, 84, 56)",
+  );
+  const todayButton = planning.getByRole("button", { name: "Aujourd’hui" });
+  const [todayButtonBox, workedDaysBox] = await Promise.all([
+    todayButton.boundingBox(),
+    planning.locator(".worked-days-trigger").boundingBox(),
+  ]);
+  expect(todayButtonBox).not.toBeNull();
+  expect(workedDaysBox).not.toBeNull();
+  expect(todayButtonBox!.y + todayButtonBox!.height).toBeLessThanOrEqual(workedDaysBox!.y);
+  expect(todayButtonBox!.width).toBeGreaterThan(workedDaysBox!.width * 0.98);
+  await expect(todayButton).toHaveCSS("background-color", "rgb(152, 84, 56)");
+  await expect(todayButton).toHaveCSS("color", "rgb(255, 255, 255)");
+  const trainingDay = page.locator(".month-card .day.training").first();
+  await expect(trainingDay).toHaveCSS("background-color", "rgb(180, 180, 180)");
+  await expect(trainingDay).toHaveCSS("background-image", "none");
   await expect(page.locator(".month-card")).toBeVisible();
   await expect(page.getByRole("button", { name: "Poser un congé" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Faire un échange" })).toBeVisible();
@@ -715,7 +831,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(sharingIntro.getByRole("heading", { name: "Planning des collègues" })).toBeVisible();
   await expect(sharingIntro.getByText("Partage privé", { exact: true })).toBeVisible();
   await expect(sharingIntro).toHaveCSS("border-left-width", "5px");
-  await expect(sharingIntro).toHaveCSS("background-image", /linear-gradient/);
+  await expect(sharingIntro).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(sharingIntro).toHaveCSS("background-image", "none");
   await expect(page.getByText("Votre adresse e-mail n’est jamais affichée.")).toBeVisible();
   await expect(page.locator(".colleague-groups-directory")).toHaveCount(0);
   await expect(page.locator(".colleague-profile-card")).toBeVisible();
@@ -737,11 +854,15 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Afficher mon nom dans l’annuaire" }).click();
   await expect(page.getByRole("button", { name: "Masquer mon nom dans l’annuaire" })).toContainText("Visible");
-  await expect(page.locator(".colleague-profile-row")).toHaveCSS("background-color", "rgb(241, 246, 252)");
+  const profileRow = page.locator(".colleague-profile-row");
+  await expect(profileRow).toHaveCSS("border-top-width", "0px");
+  await expect(profileRow).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(profileRow.locator("input")).toHaveCSS("border-top-width", "1px");
+  await expect(profileRow.locator("input")).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
   const howItWorksTitle = page.getByText("Comment ça marche", { exact: true });
   await expect(howItWorksTitle).toBeVisible();
-  await expect(page.locator(".colleague-how-it-works")).toHaveCSS("border-top-width", "2px");
-  await expect(page.locator(".colleague-how-it-works")).toHaveCSS("background-image", /linear-gradient/);
+  await expect(page.locator(".colleague-how-it-works")).toHaveCSS("border-top-width", "1px");
+  await expect(page.locator(".colleague-how-it-works")).toHaveCSS("background-image", "none");
   expect(parseFloat(await howItWorksTitle.evaluate((node) => getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(12.7);
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
   const colleagueIllustration = page.locator(".top-header-colleagues .colleague-header-illustration");
@@ -749,6 +870,11 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(colleagueIllustration).toHaveAttribute("src", "/colleague-planning-header.png");
   await expect(colleagueIllustration).toHaveCSS("object-fit", "contain");
   expect(await colleagueIllustration.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).f)).toBeLessThanOrEqual(-10);
+  const tomorrowPreview = page.locator(".colleague-tomorrow-table");
+  await expect(page.locator(".colleague-tomorrow-heading").getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
+  await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-2 th")).toHaveCSS("background-color", "rgb(255, 243, 227)");
+  await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-1, .colleague-tomorrow-group.group-3")).toHaveCount(0);
+  await expect(tomorrowPreview.locator(".colleague-tomorrow-row").last().locator("td").first()).toHaveCSS("border-bottom-width", "0px");
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-color", "rgb(11, 12, 16)");
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-image", "none");
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("border-radius", "28px");
@@ -812,7 +938,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const receivedCard = page.locator(".colleague-received-card");
   await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", "rgb(141, 107, 174)");
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
-  await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \(.+\)$/ })).toBeVisible();
+  await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(receivedCard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
   const tomorrowTable = receivedCard.locator(".colleague-tomorrow-table");
   await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Repos|Absence)/);
@@ -980,6 +1106,7 @@ test("l’accueil ne propose que deux choses à la fois, et se laisse écarter",
   await expect(page.locator(".important-alert")).toHaveCount(0);
   await expect(setup).toHaveCSS("margin-top", "12px");
   await expect(setup).toHaveCSS("margin-bottom", "12px");
+  await expect(setup.locator(".home-setup-list article").first()).toHaveCSS("border-top-width", "1px");
 
   // Chaque manque s'écarte séparément, et la suivante prend la place libre.
   const dismiss = setup.getByRole("button", { name: "Ne plus me le demander" });
@@ -1179,9 +1306,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(balancesBox).not.toBeNull();
   expect(balancesBox!.y - primaryActionBox!.y - primaryActionBox!.height).toBeGreaterThanOrEqual(13);
   await expectHeaderWidth(leaveTools);
-  // 2 px depuis la passe de finition : productRefinements.css donne la même
-  // bordure aux huit cartes de contenu (accueil, congés, paie, collègues).
-  await expect(leaveTools).toHaveCSS("border-top-width", "2px");
+  await expect(leaveTools).toHaveCSS("border-top-width", "1px");
   const secondaryDisclosures = leaveTools.locator(".leave-secondary-grid > .leave-tool-disclosure");
   await expect(secondaryDisclosures).toHaveCount(3);
   const overtimeCard = secondaryDisclosures.nth(0).locator(".overtime-balance-card");
@@ -1239,7 +1364,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(allowancesLink).toBeVisible();
   const allowancesLinkPadding = await allowancesLink.evaluate((node) => getComputedStyle(node).paddingLeft);
   expect(Number.parseFloat(allowancesLinkPadding)).toBeGreaterThanOrEqual(14);
-  await expect(payScreen.locator(".pay-dashboard-estimate")).toHaveCSS("border-left-width", "6px");
+  await expect(payScreen.locator(".pay-dashboard-estimate")).toHaveCSS("border-left-width", "5px");
   await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeVisible();
   const profileSummary = payScreen.locator(".pay-profile-summary");
   await expect(profileSummary).toBeVisible();
@@ -1461,7 +1586,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const resourceTabsBox = (await page.locator(".has-active-resource .useful-resource-tabs").boundingBox())!;
   expect(Math.abs(resourceTabsBox.width - formsHeaderBox.width)).toBeLessThanOrEqual(1);
   const formsScreenBox = (await page.locator(".useful-forms-screen").boundingBox())!;
-  await expect(page.locator(".useful-forms-screen.useful-forms-root")).toHaveCSS("border-left-width", "6px");
+  await expect(page.locator(".useful-forms-screen.useful-forms-root")).toHaveCSS("border-left-width", "5px");
   const resourcesScreenBox = (await page.locator(".useful-resources-screen").boundingBox())!;
   await expect(page.locator(".useful-forms-screen .useful-resource-search")).toHaveCount(0);
   const folderBoxes = await page.locator(".useful-form-folder").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
@@ -1486,6 +1611,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     expect(firstFolderBox.width).toBeGreaterThan(200);
   }
   const folders = page.locator(".useful-form-folder-grid > button");
+  await expect(folders.first()).toHaveCSS("box-shadow", "none");
   await expect(folders).toHaveText([
     /Formulaire Expo.*Vide pour le moment/,
     /Formulaire SAP.*3 documents/,
@@ -1875,23 +2001,26 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
     const style = getComputedStyle(node);
     return { left: style.borderLeftWidth, top: style.borderTopWidth };
   });
-  expect(programPanelBorders.left).toBe(programPanelBorders.top);
-  await expect(page.locator('.grand-palais-program-panel')).toHaveCSS('background-image', /rgb\(255, 255, 255\) 58%/);
+  expect(programPanelBorders.left).toBe("5px");
+  expect(programPanelBorders.top).toBe("1px");
+  await expect(page.locator('.grand-palais-program-panel')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.grand-palais-program-panel')).toHaveCSS('background-image', 'none');
   await page.locator('.grand-palais-program-panel').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/expos-blue-panel-${testInfo.project.name}.png` });
-  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", "8px");
+  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", "5px");
   await expect(page.getByRole("tab", { name: "En ce moment" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tab", { name: "À venir" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Inter-expos" })).toBeVisible();
   const overviewVenueColors = await page.locator(".grand-palais-program-panel article[data-venue]").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
   expect(new Set(overviewVenueColors).size).toBeGreaterThan(1);
   await page.getByRole("tab", { name: "Par espace" }).click();
-  await expect(page.locator(".grand-palais-venue-navigation")).toHaveCSS("border-left-width", "8px");
+  await expect(page.locator(".grand-palais-venue-navigation")).toHaveCSS("border-left-width", "5px");
   await expect(page.getByText("Expos en cours et à venir", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/Programmation prévisionnelle/)).toHaveCount(0);
   await expect(page.locator(".grand-palais-program-panel .useful-expo-timeline-mark").first()).toBeHidden();
   const choices = page.locator(".grand-palais-primary-picker > button");
-  await expect(choices.first()).toHaveCSS('background-color', 'rgb(234, 242, 255)');
+  await expect(choices.first()).toHaveCSS('background-color', 'rgb(220, 236, 255)');
+  expect(new Set(await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
   await expect(choices).toHaveText([
     /Galeries 3 et 4.*Voir la programmation/,
     /Galerie 8.*Voir la programmation/,
@@ -1929,7 +2058,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
       background: style.backgroundColor,
     };
   });
-  expect([exhibitionBorder.top, exhibitionBorder.right, exhibitionBorder.bottom]).toEqual(["2px", "2px", "2px"]);
+  expect([exhibitionBorder.top, exhibitionBorder.right, exhibitionBorder.bottom]).toEqual(["1px", "1px", "1px"]);
   expect(exhibitionBorder.left).toBe("5px");
   expect(exhibitionBorder.background).toBe("rgb(233, 221, 247)");
   await expect(page.locator('.useful-expo-timeline article[data-status="En cours"]')).toContainText("Hilma af Klint");
@@ -2021,6 +2150,23 @@ test("le tampon de fermeture conserve la date lisible sur ordinateur et téléph
   await expect(visibleDate).toBeVisible();
   await expect(visibleDate).toHaveCSS("border-top-style", "none");
   await expect(visibleDate).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await firstClosedDay.click();
+  const closedDayDialog = page.getByRole("dialog", { name: /mercredi 9 septembre 2026/i });
+  await closedDayDialog.getByRole("tab", { name: /^Notes/ }).click();
+  await closedDayDialog.locator("textarea").fill("Inventaire après fermeture");
+  await closedDayDialog.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(firstClosedDay).toHaveClass(/exceptional-closure-day/);
+  const closedNoteBand = firstClosedDay.locator(".note-band");
+  await expect(closedNoteBand).toBeVisible();
+  await expect(closedNoteBand).toHaveCSS("z-index", "9");
+  const [closedDayBox, closedNoteBandBox] = await Promise.all([
+    firstClosedDay.boundingBox(),
+    closedNoteBand.boundingBox(),
+  ]);
+  expect(closedDayBox).not.toBeNull();
+  expect(closedNoteBandBox).not.toBeNull();
+  expect(closedNoteBandBox!.x).toBeGreaterThan(closedDayBox!.x);
+  expect(closedNoteBandBox!.x + closedNoteBandBox!.width).toBeLessThan(closedDayBox!.x + closedDayBox!.width);
   await expect(page.getByRole("button", { name: /jeudi 10 septembre 2026.*Fermeture exceptionnelle du Grand Palais/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /samedi 26 septembre 2026.*Fermeture exceptionnelle du Grand Palais/i })).toBeVisible();
   const [dayBox, markerBox] = await Promise.all([firstClosedDay.boundingBox(), markers.first().boundingBox()]);
@@ -2180,10 +2326,11 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   const resourcesScreen = page.locator(".useful-resources-screen");
   const contactsRoot = page.locator(".useful-contacts-screen.useful-contacts-root");
   await expect(contactsRoot).toBeVisible();
+  await expect(contactsRoot.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("box-shadow", "none");
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-image', /svg/);
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-position', /14px/);
   await expect(contactsRoot.locator(".useful-resource-search")).toHaveCount(0);
-  await expect(contactsRoot).toHaveCSS("border-left-width", "6px");
+  await expect(contactsRoot).toHaveCSS("border-left-width", "5px");
   await expect(contactsRoot.locator(".useful-contact-directory-grid > button i")).toHaveCount(0);
   const [contactHeaderBox, resourcesScreenBox, contactsRootBox] = await Promise.all([
     contactHeader.boundingBox(),
@@ -2220,6 +2367,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await expect(page.locator(".useful-contact-card")).toHaveCount(10);
   await expect(page.getByText("Maarten Averink")).toBeVisible();
   const contactCard = page.locator('.useful-contact-card').first();
+  await expect(contactCard).toHaveCSS('box-shadow', 'none');
   const contactTools = contactCard.locator('.useful-contact-card-tools');
   await expect(contactTools).toBeVisible();
   const contactActions = contactCard.locator('.useful-contact-actions');
@@ -2478,7 +2626,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
   await expect(remainingWorkCard).toContainText("D’ici au 31 décembre");
   if (viewportWidth > 720) {
-    await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", "8px");
+    await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", "5px");
   }
   if (viewportWidth > 720) {
     const [statusBox, nextWorkBox, leaveBox, remainingBox] = await Promise.all([
@@ -2498,13 +2646,13 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
   }
   if (viewportWidth <= 720) {
-    await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", "8px");
+    await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", "5px");
     await expect(page.locator(".planning-workspace-shell.framed")).toHaveCSS("border-top-width", "0px");
     await expect(page.locator(".planning-workspace-shell.framed")).toHaveCSS("border-left-width", "0px");
     // Un seul liseré d'accent par rubrique. Le calendrier suit immédiatement
     // le poste de commande : il garde un filet uniforme, sans second liseré,
     // et les blocs imbriqués n'en portent aucun.
-    await expect(page.locator(".planning-command-section")).toHaveCSS("border-left-width", "8px");
+    await expect(page.locator(".planning-command-section")).toHaveCSS("border-left-width", "5px");
     const calendrier = page.locator(".planning-calendar-section");
     await expect(calendrier).toHaveCSS(
       "border-left-width",
@@ -3839,8 +3987,10 @@ test("les détails des soldes séparent les congés pris et à venir", async ({ 
   const archive = page.locator(".leave-request-archive");
   await expect(archive.getByRole("button", { name: /Demandes archivées/ })).toContainText("0 PDF");
   expect(archiveBox!.height).toBeLessThan(80);
-  await expect(archive).toHaveCSS("background-image", /linear-gradient/);
-  await expect(archive.locator(".request-archive-icon")).toHaveCSS("color", "rgb(112, 66, 134)");
+  await expect(archive).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(archive).toHaveCSS("background-image", "none");
+  await expect(archive).toHaveCSS("border-color", "rgb(44, 38, 33)");
+  await expect(archive.locator(".request-archive-icon")).toHaveCSS("color", "rgb(111, 100, 85)");
   await expect(archive.locator(".request-archive-copy strong")).toHaveText("Demandes archivées");
   await page.locator(".leave-balance-grid > button.annual").click();
 
@@ -3972,6 +4122,7 @@ test("le profil de paie d’une nouvelle année peut être confirmé sans modifi
   await expect(settingsToggle).toHaveAttribute("aria-expanded", "true");
   const confirm = dashboard.getByRole("button", { name: "Utiliser ces valeurs pour 2027" });
   await expect(confirm).toBeVisible();
+  await expect(confirm).toHaveCSS("border-top-width", "1px");
   await confirm.click();
   await expect(dashboard.locator(".pay-year-notice")).toHaveCount(0);
 });
@@ -3999,6 +4150,7 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
 
   await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");
+  await expect(page.locator(".allowance-summary-alert")).toHaveCSS("border-top-width", "1px");
   if ((page.viewportSize()?.width || 0) <= 720) {
     const card = page.locator(".variable-pay-card");
     const previous = card.getByRole("button", { name: "Mois précédent", exact: true });
@@ -4038,6 +4190,10 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Détail du calcul");
   await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toBeVisible();
+  const calculationTotals = page.locator(".pay-calculation-totals article");
+  await expect(calculationTotals).toHaveCount(4);
+  await expect(calculationTotals.first()).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
+  await expect(calculationTotals.first()).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(page.locator(".pay-reliability")).toContainText(/Données à compléter|Valeurs enregistrées|dernières valeurs|Valeurs vérifiées/);
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await expect(page.locator(".pay-dashboard-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
@@ -4261,4 +4417,3 @@ test("la reprise du solde laisse le choix entre valeur nette et heures à majore
   await expect(dialog).toBeHidden();
   await expect(page.getByText("25 h ajoutées au solde de récupération")).toBeVisible();
 });
-

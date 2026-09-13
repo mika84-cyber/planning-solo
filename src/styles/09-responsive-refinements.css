@@ -87,10 +87,10 @@
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(40, 89, 184, 0.22);
+  box-shadow: 0 4px 12px rgba(122, 111, 95, 0.22);
 }
 .add-note-line:hover {
-  background: #1f4a9c;
+  background: #7a6f5f;
 }
 
 /* « restant » / « pris » accolés au chiffre, dans sa couleur : la mention
@@ -115,11 +115,11 @@
   border: 1px solid transparent;
   border-radius: 999px;
   padding: 7px 13px;
-  background: #eef4ff;
-  color: #234f9b;
+  background: var(--surface-high);
+  color: var(--muted);
   font-size: 12px;
   font-weight: 800;
-  box-shadow: 0 6px 18px rgba(31, 46, 78, 0.12);
+  box-shadow: 0 6px 18px rgba(58, 51, 44, 0.12);
 }
 .connection-status.offline,
 .connection-status.error {
@@ -128,23 +128,20 @@
   color: #9f2f3b;
 }
 .connection-status.saved {
-  border-color: #b9dfd1;
-  background: #edf9f4;
+  border-color: var(--border-card);
+  background: #fff;
   color: #176a50;
 }
 .pay-year-notice {
   display: grid;
   gap: 9px;
   margin: 4px 0 12px;
-  border-left: 3px solid var(--accent);
-  padding: 8px 10px;
-  background: #f4f7fd;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
 }
 .pay-year-notice p { margin: 0; }
-.pay-year-notice .secondary-button { justify-self: start; min-height: 40px; border-radius: 10px; padding: 0 12px; color: #315c91; font-weight: 850; }
+.pay-year-notice .secondary-button { justify-self: start; min-height: 40px; border: 1px solid var(--border-card); border-radius: 10px; padding: 0 14px; background: var(--surface-high); color: var(--accent-strong); font-weight: 850; }
 .pay-year-notice strong {
   color: var(--text);
 }
@@ -157,9 +154,7 @@
   margin-bottom: 14px;
   border-radius: 26px;
   padding: 18px;
-  background:
-    radial-gradient(circle at 92% 8%, rgba(125, 165, 207, 0.13), transparent 34%),
-    linear-gradient(135deg, #ffffff 0%, #edf4fb 100%);
+  background: var(--surface);
 }
 .today-overview-heading {
   display: flex;
@@ -174,7 +169,8 @@
 .today-overview-heading small {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
 }
 .add-action {
   display: inline-flex;
@@ -187,10 +183,10 @@
   font-weight: 500;
 }
 .today-overview .add-action {
-  border: 1px solid #aec2da;
-  background: linear-gradient(145deg, #e7f0fa 0%, #d7e6f5 100%);
-  box-shadow: 0 5px 13px rgba(63, 86, 116, 0.13);
-  color: #294d78;
+  border: 1px solid var(--border-control);
+  background: linear-gradient(145deg, var(--surface) 0%, var(--bg) 100%);
+  box-shadow: 0 5px 13px rgba(87, 78, 66, 0.13);
+  color: var(--muted);
 }
 .today-overview-grid {
   display: grid;
@@ -203,7 +199,7 @@
   align-items: center;
   gap: 11px;
   min-width: 0;
-  border: 1px solid #d4e0ed;
+  border: 1px solid var(--border-control);
   border-radius: 18px;
   background: rgba(255, 253, 249, 0.95);
   color: var(--text);
@@ -214,9 +210,9 @@
   cursor: pointer;
 }
 .today-overview-grid > button:hover {
-  border-color: #9fb9dc;
-  background: #fff;
-  box-shadow: 0 9px 20px rgba(60, 82, 108, 0.1);
+  border-color: var(--border-card);
+  background: var(--surface);
+  box-shadow: 0 9px 20px rgba(87, 78, 66, 0.1);
   transform: translateY(-1px);
 }
 .today-card-copy {
@@ -237,8 +233,8 @@
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: rgba(67, 112, 154, 0.11);
-  color: #426b95;
+  background: rgba(122, 111, 95, 0.11);
+  color: var(--muted);
 }
 .today-card-icon svg {
   width: 20px;
@@ -264,38 +260,38 @@
   white-space: nowrap;
 }
 .today-overview-grid .today-status {
-  border-color: #b9d7ca;
-  background: linear-gradient(145deg, #f4fbf7 0%, #e9f6f0 100%);
+  border-color: var(--border-card);
+  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status .today-card-icon {
-  background: #d9eee4;
-  color: #32725b;
+  background: rgba(131, 97, 66, 0.12);
+  color: var(--accent-strong);
 }
 .today-overview-grid .today-status.tone-off {
-  border-color: #d7dce5;
-  background: #f4f6f9;
+  border-color: var(--border-card);
+  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status.tone-off .today-card-icon {
-  background: #e4e8ee;
-  color: #5c687a;
+  background: rgba(131, 97, 66, 0.12);
+  color: var(--accent-strong);
 }
 .today-overview-grid .today-status.tone-training {
-  border-color: #c9c7e8;
-  background: #f3f1ff;
+  border-color: var(--border-card);
+  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status.tone-training .today-card-icon {
-  background: #e2def5;
-  color: #665c9a;
+  background: rgba(131, 97, 66, 0.12);
+  color: var(--accent-strong);
 }
 .today-overview-grid .today-status.tone-leave,
 .today-overview-grid .today-status.tone-recovery {
-  border-color: #b8d9e9;
-  background: #edf8fd;
+  border-color: var(--border-card);
+  background: linear-gradient(145deg, var(--surface), var(--bg));
 }
 .today-overview-grid .today-status.tone-leave .today-card-icon,
 .today-overview-grid .today-status.tone-recovery .today-card-icon {
-  background: #d8edf6;
-  color: #397997;
+  background: var(--bg);
+  color: var(--muted);
 }
 /* Ces deux cartes ne portent pas d'information de couleur, contrairement à
    .today-status et à ses tons de journée : elles partagent donc la surface
@@ -350,17 +346,17 @@
   margin-bottom: 14px;
   border-radius: 18px;
   padding: 16px;
-  background: linear-gradient(145deg, #ffffff 0%, #f3f7fc 100%);
+  background: linear-gradient(145deg, #ffffff 0%, var(--surface-high) 100%);
 }
 .leave-balances-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 14px;
-  border: 1px solid #c8d5e5;
+  border: 1px solid var(--border-control);
   border-radius: 13px;
   padding: 11px 12px;
-  background: rgba(247, 250, 255, 0.9);
+  background: #fff;
 }
 .leave-balances-heading h3 {
   margin: 2px 0 0;
@@ -372,16 +368,16 @@
   font-size: 13px;
 }
 .direct-balances-content {
-  border: 1px solid #c8d4e3;
+  border: 1px solid var(--border-control);
   border-radius: 14px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface);
 }
 .leave-balances-direct .leave-balance-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .leave-balances-direct .leave-balance-grid button {
-  border: 1px solid color-mix(in srgb, var(--balance-color) 52%, #aeb9c7);
+  border: 1px solid color-mix(in srgb, var(--balance-color) 52%, var(--border-card));
   border-left-width: 5px;
   padding: 11px 12px;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.72);
@@ -393,25 +389,25 @@
   font-size: 23px;
 }
 .leave-balances-direct .leave-balance-grid span {
-  color: #17243a;
+  color: #2c2621;
   font-size: 10px;
   font-weight: 900;
 }
 .leave-balances-direct .leave-balance-grid strong {
-  color: color-mix(in srgb, var(--balance-color) 58%, #17243a);
+  color: color-mix(in srgb, var(--balance-color) 58%, #2c2621);
   font-weight: 950;
 }
 .leave-balances-direct .leave-balance-grid strong i {
-  color: color-mix(in srgb, var(--balance-color) 48%, #233149);
+  color: color-mix(in srgb, var(--balance-color) 48%, #3a332c);
   font-weight: 900;
 }
 .leave-balances-direct .leave-balance-grid small {
-  color: #4b596d;
+  color: var(--muted);
   font-size: 9px;
   font-weight: 700;
 }
 .leave-balances-direct .leave-balance-grid em {
-  color: color-mix(in srgb, var(--balance-color) 60%, #16263c);
+  color: color-mix(in srgb, var(--balance-color) 60%, #2c2621);
   font-weight: 950;
 }
 
@@ -424,14 +420,14 @@
   margin: 16px 0;
 }
 .request-option-group {
-  border: 1px solid #dde5ef;
+  border: 1px solid var(--bg);
   border-radius: 14px;
   padding: 12px;
-  background: #f8fafc;
+  background: var(--surface-high);
 }
 .request-option-group h3 {
   margin: 0 0 8px;
-  color: #536174;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.055em;
@@ -455,10 +451,10 @@
 
 .allowance-overview {
   display: grid;
-  border: 1px solid #d6e2df;
+  border: 1px solid var(--border-card);
   border-radius: 16px;
   padding: 15px;
-  background: #fff;
+  background: var(--surface);
 }
 .allowance-overview-heading {
   display: flex;
@@ -472,10 +468,10 @@
 }
 .soft-detail-button {
   min-height: 38px;
-  border: 1px solid #b8cdc8;
+  border: 1px solid var(--border-card);
   border-radius: 11px;
   padding: 0 13px;
-  background: #eef5f3;
+  background: #fff;
   color: #35675e;
   font-size: 12px;
   font-weight: 850;
@@ -491,20 +487,20 @@
   align-content: center;
   gap: 4px;
   min-height: 92px;
-  border: 1px solid #e0e7e7;
+  border: 1px solid var(--border-card);
   border-radius: 13px;
   padding: 12px;
-  background: #f8faf9;
+  background: var(--surface-high);
 }
 .allowance-overview-grid span {
-  color: #65766f;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.035em;
   text-transform: uppercase;
 }
 .allowance-overview-grid strong {
-  color: #244f48;
+  color: var(--text);
   font-size: 24px;
   line-height: 1.05;
 }
@@ -517,10 +513,10 @@
   grid-template-columns: 26px minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
-  border: 1px solid #e7d8bd;
+  border: 1px solid var(--border-card);
   border-radius: 12px;
   padding: 9px 11px;
-  background: #fbf8f1;
+  background: #fff;
   color: #6c5835;
   text-align: left;
   cursor: pointer;
@@ -557,10 +553,10 @@
   justify-content: space-between;
   gap: 10px;
   margin-top: 9px;
-  border: 1px solid #c8ddd7;
+  border: 1px solid var(--border-card);
   border-radius: 11px;
   padding: 9px 12px;
-  background: #f1f7f5;
+  background: #fff;
   color: #35675e;
   font-size: 11px;
 }
@@ -573,31 +569,31 @@
   font-size: 17px;
 }
 .pay-function-card > header .step-label {
-  color: #718096;
+  color: #9b8e7c;
   font-size: 9px;
   letter-spacing: 0.065em;
   text-transform: uppercase;
 }
 .payslip-verify-card {
-  border-color: #c8ded7;
-  background: #fbfefd;
+  border-color: var(--border-card);
+  background: #fff;
 }
 .payslip-verify-card::before {
   background: #82afa2 !important;
 }
 .payslip-calibration-card {
   border-style: solid !important;
-  border-color: #ddd5e8;
+  border-color: var(--border-control);
 }
 .payslip-calibration-card::before {
-  background: #a899be !important;
+  background: #bcb0a0 !important;
 }
 .pay-elements-card {
-  border-color: #d9e0e9;
-  background: #fcfdfe;
+  border-color: var(--border-control);
+  background: var(--surface-high);
 }
 .pay-elements-card::before {
-  background: #8b9caf !important;
+  background: #bcb0a0 !important;
 }
 .pay-month-nav.compact {
   gap: 4px;
@@ -611,14 +607,14 @@
   align-items: center;
   gap: 8px;
   margin-top: 7px;
-  border: 1px solid #c9dce7;
+  border: 1px solid var(--border-control);
   border-radius: 11px;
   padding: 8px 10px;
-  background: #f5f9fc;
+  background: var(--surface-high);
 }
 .payslip-actual-values > span {
   margin-right: auto;
-  color: #4e667c;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 850;
   text-transform: uppercase;
@@ -626,7 +622,7 @@
 .payslip-actual-values > div {
   display: grid;
   gap: 1px;
-  border-left: 1px solid #d8e4ec;
+  border-left: 1px solid var(--border-control);
   padding-left: 10px;
 }
 .payslip-actual-values small {
@@ -634,7 +630,7 @@
   font-size: 9px;
 }
 .payslip-actual-values strong {
-  color: #294d78;
+  color: var(--muted);
   font-size: 12px;
 }
 .payslip-period-fallback {
@@ -659,7 +655,7 @@
 }
 .payslip-calibration-card {
   border-style: dashed;
-  background: #fbfcfd;
+  background: var(--surface-high);
 }
 .payslip-calibration-card header small {
   color: #68817b;
@@ -675,14 +671,14 @@
   display: grid;
   gap: 2px;
   margin-top: 9px;
-  border: 1px solid #dbe3e5;
+  border: 1px solid var(--border-control);
   border-radius: 11px;
   padding: 10px 12px;
-  background: #f5f7f8;
+  background: var(--surface-high);
 }
 .payslip-calibration-status.ready {
-  border-color: #bdd7d0;
-  background: #eef7f4;
+  border-color: var(--border-card);
+  background: #fff;
   color: #2e685c;
 }
 .payslip-calibration-status strong {
@@ -698,15 +694,15 @@
   align-items: center;
   gap: 11px;
   margin-top: 9px;
-  border: 1px solid #e0e6ef;
+  border: 1px solid var(--bg);
   border-radius: 13px;
   padding: 11px;
-  background: #f7f9fc;
+  background: var(--surface-high);
   opacity: 0.68;
 }
 .payslip-guide-step.active {
-  border-color: #c9d9ed;
-  background: #f4f8ff;
+  border-color: var(--border-control);
+  background: var(--surface-high);
   opacity: 1;
 }
 .payslip-guide-number {
@@ -715,7 +711,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #dce9fa;
+  background: var(--bg);
   color: var(--accent);
   font-size: 13px;
   font-weight: 900;
@@ -744,14 +740,14 @@
   align-items: center;
   gap: 12px;
   margin-top: 12px;
-  border: 1px solid #c9d9ed;
+  border: 1px solid var(--border-control);
   border-radius: 15px;
   padding: 13px;
-  background: #f3f7fd;
+  background: var(--surface-high);
 }
 .payslip-result-summary.ok {
-  border-color: #abd8c6;
-  background: #edf9f4;
+  border-color: var(--border-card);
+  background: #fff;
 }
 .payslip-result-summary.warning {
   border-color: #df9c9c;
@@ -789,10 +785,10 @@
   display: grid;
   gap: 4px;
   width: 100%;
-  border: 1px dashed #c5d2e3;
+  border: 1px dashed var(--border-control);
   border-radius: 12px;
   padding: 12px;
-  background: #f7f9fc;
+  background: var(--surface-high);
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -1011,7 +1007,7 @@
 }
 
 .calendar-delete-actions .delete-absences-button {
-  background: #2f63bf;
+  background: #7a6f5f;
 }
 
 .note-modal .modal-actions,
@@ -1025,8 +1021,8 @@
   bottom: calc(-24px + env(safe-area-inset-bottom));
   margin-inline: -24px;
   padding: 0.85rem 24px calc(0.85rem + env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(31, 46, 78, 0.1);
-  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid var(--border-card);
+  background: #fff;
   backdrop-filter: blur(10px);
 }
 
@@ -1037,8 +1033,8 @@
   bottom: env(safe-area-inset-bottom);
   padding: 0.4rem;
   border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 24px rgba(26, 37, 57, 0.1);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(44, 38, 33, 0.1);
   backdrop-filter: blur(9px);
 }
 
@@ -1048,12 +1044,12 @@
   bottom: env(safe-area-inset-bottom);
   margin: 0 -0.45rem -0.45rem;
   padding: 0.85rem 0.45rem 0.45rem;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
   backdrop-filter: blur(9px);
 }
 
 .balance-detail-modal .balance-detail-checkbox input {
-  accent-color: #2f63bf;
+  accent-color: var(--muted);
 }
 
 @media (max-width: 720px) {
@@ -1065,11 +1061,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(23, 36, 56, 0.22);
+    border: 1px solid var(--border-card);
     border-radius: 12px;
     padding: 0.45rem 0.65rem;
-    background: #fff;
-    color: #344054;
+    background: var(--surface);
+    color: var(--muted);
     font: inherit;
     font-size: 0.76rem;
     font-weight: 800;
@@ -1136,7 +1132,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  border: 1px solid #d7c99d;
+  border: 1px solid var(--border-card);
   border-radius: 14px;
   padding: 11px 13px;
   background: linear-gradient(135deg, #fffaf0, #fff 70%);
@@ -1144,7 +1140,7 @@
   text-align: left;
   cursor: pointer;
 }
-.manual-adjustments-trigger:hover { border-color: #b79c52; }
+.manual-adjustments-trigger:hover { border-color: var(--border-card); }
 .manual-adjustments-icon {
   display: grid;
   place-items: center;
@@ -1181,7 +1177,7 @@
   margin-top: 12px;
   border-radius: 16px;
   padding: 14px;
-  background: #f6f9fd;
+  background: var(--surface-high);
 }
 .sunday-adjustment-section { background: #fff8ec; }
 .manual-adjustment-heading {
@@ -1213,20 +1209,20 @@
 .manual-sunday-inputs > label {
   display: grid;
   gap: 7px;
-  border: 1px solid #dde5ef;
+  border: 1px solid var(--bg);
   border-radius: 12px;
   padding: 10px;
-  background: rgba(255,255,255,.88);
+  background: #fff;
 }
-.manual-leave-inputs > label > span:first-child { color: #475a72; font-size: 10px; font-weight: 850; }
+.manual-leave-inputs > label > span:first-child { color: var(--muted); font-size: 10px; font-weight: 850; }
 .manual-number-field { display: flex; align-items: center; gap: 6px; }
 .manual-number-field input {
   width: 74px;
   min-height: 40px;
-  border: 1px solid #cbd7e6;
+  border: 1px solid var(--border-control);
   border-radius: 9px;
   padding: 7px 9px;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   font: inherit;
   font-weight: 850;
@@ -1370,7 +1366,7 @@
   border: 1px solid var(--section-outline);
   border-radius: 24px;
   padding: 20px;
-  background: linear-gradient(150deg, #f3f8ff 0%, #fff 48%, #fbf8ff 100%);
+  background: linear-gradient(150deg, var(--surface-high) 0%, #fff 48%, var(--surface-high) 100%);
 }
 .planning-workspace-shell.framed .controls,
 .planning-workspace-shell.framed .calendar-toolbar,
@@ -1383,9 +1379,9 @@
   cursor: pointer;
   transition: background 150ms ease, box-shadow 150ms ease;
 }
-.variable-pay-card > header[role="button"]:hover { background: rgba(237, 244, 252, 0.72); }
+.variable-pay-card > header[role="button"]:hover { background: #fff; }
 .variable-pay-card > header[role="button"]:focus-visible {
-  outline: 3px solid rgba(47, 97, 184, 0.2);
+  outline: 3px solid rgba(122, 111, 95, 0.2);
   outline-offset: 3px;
 }
 .variable-pay-card > header[role="button"][aria-expanded="true"] .pay-period-chevron {
@@ -1393,7 +1389,7 @@
 }
 .variable-pay-total { display: grid; justify-items: end; gap: 3px; }
 .variable-pay-total > small {
-  color: #60748b;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 850;
 }
@@ -1428,7 +1424,7 @@
 
 /* Ajustements de finition : liserés structurants, commandes compactes et
    calendrier mobile organisé comme un écran d'application. */
-:root { --section-outline: rgba(92, 72, 55, 0.5); }
+:root { --section-outline: var(--border-card); }
 
 .today-overview,
 .home-notes-section,
@@ -1467,10 +1463,10 @@
   cursor: pointer;
 }
 .pay-profile-summary > span { display: grid; gap: 3px; }
-.pay-profile-summary strong { color: #213a58; font-size: 17px; }
-.pay-profile-summary small { color: #5e7187; font-weight: 750; }
+.pay-profile-summary strong { color: var(--text); font-size: 17px; }
+.pay-profile-summary small { color: var(--muted); font-weight: 750; }
 .pay-profile-summary > i {
-  color: #496985;
+  color: var(--muted);
   font-size: 22px;
   font-style: normal;
   transition: transform 170ms ease;
@@ -1501,7 +1497,7 @@
   flex: 0 0 22px;
   width: 22px;
   height: 22px;
-  color: #496985;
+  color: var(--muted);
   transition: transform 170ms ease;
 }
 .pay-period-chevron svg {
@@ -1514,7 +1510,7 @@
   stroke-width: 2.2;
 }
 .variable-pay-card header h3 {
-  color: #173f70;
+  color: var(--muted);
   font-size: clamp(1.7rem, 4vw, 2.25rem);
   letter-spacing: -0.045em;
 }
@@ -1537,7 +1533,7 @@
 .mini-grid .mini-day.leave-day.leave-childcare,
 .mini-grid .mini-day.leave-day.leave-sick {
   background: var(--leave);
-  color: #123b55;
+  color: #3a332c;
   outline-color: #000;
 }
 
@@ -1547,7 +1543,7 @@
   right: 5px;
   bottom: 5px;
   max-width: calc(100% - 12px);
-  color: #123b55;
+  color: #3a332c;
   font-size: 10px;
   font-weight: 950;
   line-height: 1;
@@ -1630,24 +1626,24 @@
   width: 100%;
   min-height: 42px;
   margin-top: 7px;
-  border: 1px solid #d4dfeb;
+  border: 1px solid var(--border-control);
   border-radius: 12px;
   padding: 10px 12px;
-  background: rgba(255,255,255,.76);
+  background: #fff;
   font-size: 12px;
   font-weight: 800;
   text-align: left;
   cursor: pointer;
 }
 .account-menu-data:hover {
-  background: #eef5fc;
+  background: var(--surface);
 }
 .overtime-balance-card {
   display: grid;
   margin-bottom: 14px;
-  border: 1px solid #d3e2df;
+  border: 1px solid var(--border-card);
   border-radius: 18px;
-  background: linear-gradient(145deg, #fff 0%, #f5faf8 100%);
+  background: linear-gradient(145deg, #fff 0%, #fff 100%);
 }
 .overtime-balance-heading {
   display: flex;
@@ -1673,26 +1669,26 @@
 .overtime-balance-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
 .overtime-balance-summary-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .overtime-balance-summary article small { color: var(--muted); font-size: 10px; }
-.overtime-balance-summary article { display: grid; gap: 4px; min-width: 0; border: 1px solid #e0e9e7; border-radius: 13px; padding: 12px; background: rgba(255,255,255,.84); }
-.overtime-balance-summary article.remaining { border-color: #bbd7d0; background: #eaf5f1; }
+.overtime-balance-summary article { display: grid; gap: 4px; min-width: 0; border: 1px solid #e0e9e7; border-radius: 13px; padding: 12px; background: #fff; }
+.overtime-balance-summary article.remaining { border-color: var(--border-card); background: #fff; }
 .overtime-balance-summary span { color: var(--muted); font-size: 11px; font-weight: 750; }
-.overtime-balance-summary strong { color: #213d3a; font-size: 20px; }
+.overtime-balance-summary strong { color: #3a332c; font-size: 20px; }
 .overtime-actions { display: flex; gap: 8px; }
 .overtime-actions .secondary-button:disabled { opacity: .5; cursor: not-allowed; }
 .overtime-history-toggle { justify-self: start; }
-.overtime-history { display: grid; gap: 7px; border-top: 1px solid #dce7e4; padding-top: 12px; }
+.overtime-history { display: grid; gap: 7px; border-top: 1px solid var(--border-card); padding-top: 12px; }
 .overtime-history-filters { display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px 4px; scrollbar-width: none; }
-.overtime-history-filters button { flex: 0 0 auto; border: 1px solid #c9d8e5; border-radius: 999px; padding: 7px 10px; background: #fff; color: #315575; font-size: 11px; font-weight: 800; }
+.overtime-history-filters button { flex: 0 0 auto; border: 1px solid var(--border-control); border-radius: 999px; padding: 7px 10px; background: var(--surface); color: var(--muted); font-size: 11px; font-weight: 800; }
 .overtime-history-filters button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
 .overtime-history article {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  border: 1px solid #e1e8ea;
+  border: 1px solid var(--bg);
   border-radius: 12px;
   padding: 10px;
-  background: #fff;
+  background: var(--surface);
 }
 .overtime-history article > div {
   display: grid;
@@ -1728,7 +1724,7 @@
   width: 9px;
   height: 32px;
   border-radius: 999px;
-  background: #7899c8;
+  background: #bcb0a0;
 }
 .overtime-kind.recovery {
   background: #65a694;
@@ -1737,15 +1733,15 @@
   background: #d39b5a;
 }
 .overtime-kind.mecenat {
-  background: #8d7bb8;
+  background: #9b8e7c;
 }
 .day.hourly-recovery-day,
 .mini-day.hourly-recovery-day {
-  border-color: #82b5a7;
+  border-color: var(--border-card);
   box-shadow: inset 0 -5px 0 #8fc6b7;
 }
 .day.hourly-recovery-day:not(.off):not(.leave-day):not(.recovery-day) {
-  background: linear-gradient(145deg, #f8fcfa 0%, #e9f5f1 100%);
+  background: linear-gradient(145deg, #fff 0%, #fff 100%);
 }
 .hourly-recovery-label {
   position: absolute;
@@ -1783,15 +1779,15 @@
   grid-template-columns: minmax(0, 1fr);
 }
 .mecenat-pay-detail {
-  border-color: #d9d0e7;
-  background: #faf7fc;
+  border-color: var(--border-control);
+  background: var(--surface-high);
 }
 .mecenat-pay-detail .overtime-pay-lines article {
-  border-color: #e6dfee;
+  border-color: var(--bg);
 }
 .mecenat-balance-card {
-  border-color: #d9d0e7;
-  background: linear-gradient(145deg, #fdfbff 0%, #f7f3fb 100%);
+  border-color: var(--border-control);
+  background: linear-gradient(145deg, var(--surface-high) 0%, var(--surface-high) 100%);
 }
 .mecenat-rate-summary {
   display: grid;
@@ -1801,45 +1797,45 @@
 .mecenat-rate-summary article {
   display: grid;
   gap: 3px;
-  border: 1px solid #e2dbea;
+  border: 1px solid var(--border-control);
   border-radius: 11px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.8);
+  background: #fff;
 }
 .mecenat-rate-summary span {
   color: var(--muted);
   font-size: 10px;
 }
 .mecenat-rate-summary strong {
-  color: #574970;
+  color: var(--muted);
   font-size: 13px;
 }
 .mecenat-action {
-  border-color: #9c8ab8;
-  background: #75618f;
+  border-color: var(--border-card);
+  background: #7a6f5f;
 }
 .mecenat-preview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
-  border: 1px solid #d9d0e7;
+  border: 1px solid var(--border-control);
   border-radius: 13px;
   padding: 10px;
-  background: #faf7fc;
+  background: var(--surface-high);
 }
 .mecenat-preview > div {
   display: grid;
   gap: 3px;
   border-radius: 9px;
   padding: 9px;
-  background: rgba(255, 255, 255, 0.8);
+  background: #fff;
 }
 .mecenat-preview span {
   color: var(--muted);
   font-size: 10px;
 }
 .mecenat-preview > div strong {
-  color: #54456f;
+  color: var(--muted);
   font-size: 13px;
 }
 .mecenat-preview > p {
@@ -1848,21 +1844,21 @@
   align-items: center;
   justify-content: space-between;
   margin: 0;
-  border-top: 1px solid #e5deed;
+  border-top: 1px solid var(--bg);
   padding: 9px 5px 0;
 }
 .mecenat-preview > p strong {
-  color: #54456f;
+  color: var(--muted);
   font-size: 18px;
 }
 .overtime-pay-detail {
   display: grid;
   gap: 9px;
   margin-top: 12px;
-  border: 1px solid #cddfd9;
+  border: 1px solid var(--border-card);
   border-radius: 13px;
   padding: 12px;
-  background: #f4faf8;
+  background: #fff;
 }
 .overtime-pay-detail-heading,
 .overtime-pay-lines article {
@@ -1892,7 +1888,7 @@
   gap: 5px;
 }
 .overtime-pay-lines article {
-  border-top: 1px solid #dbe8e4;
+  border-top: 1px solid var(--border-card);
   padding-top: 7px;
   font-size: 11px;
 }
@@ -1918,7 +1914,7 @@
 }
 .overtime-form label > span,
 .overtime-choice-field legend {
-  color: #3e4c61;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.02em;
@@ -1931,10 +1927,10 @@
 .overtime-form input {
   width: 100%;
   min-height: 46px;
-  border: 1px solid #d7e0eb;
+  border: 1px solid var(--border-control);
   border-radius: 11px;
   padding: 0 12px;
-  background: #fbfcfe;
+  background: var(--surface-high);
   color: var(--text);
   font: inherit;
 }
@@ -1952,7 +1948,7 @@
   gap: 6px;
   border-radius: 12px;
   padding: 4px;
-  background: #f0f3f7;
+  background: var(--surface);
 }
 .recovery-duration-choice button {
   min-height: 42px;
@@ -1960,16 +1956,16 @@
   border-radius: 9px;
   padding: 8px;
   background: transparent;
-  color: #5c687a;
+  color: var(--muted);
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
 .recovery-duration-choice button.active {
-  border-color: #c9d8e8;
-  background: #fff;
-  box-shadow: 0 3px 9px rgba(44, 66, 93, 0.09);
-  color: #294d78;
+  border-color: var(--border-control);
+  background: var(--surface);
+  box-shadow: 0 3px 9px rgba(87, 78, 66, 0.09);
+  color: var(--muted);
 }
 .overtime-time-grid,
 .overtime-duration-grid {
@@ -1990,10 +1986,10 @@
   display: grid;
   gap: 4px;
   min-height: 76px;
-  border: 1px solid #d9e1eb;
+  border: 1px solid var(--border-control);
   border-radius: 13px;
   padding: 12px;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -2007,19 +2003,19 @@
   line-height: 1.35;
 }
 .overtime-destination-grid button.paid.active {
-  border-color: #aebfd7;
-  background: #edf3fa;
-  box-shadow: inset 0 0 0 1px rgba(77, 109, 151, 0.08);
+  border-color: var(--border-control);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px rgba(122, 111, 95, 0.08);
 }
 .overtime-destination-grid button.recovery.active {
-  border-color: #a8c9c0;
-  background: #edf7f3;
+  border-color: var(--border-card);
+  background: #fff;
   box-shadow: inset 0 0 0 1px rgba(60, 113, 99, 0.08);
 }
 /* Les heures faites et le crédit obtenu, annoncés avant d'enregistrer :
    c'est ce qui évite qu'on majore soi-même par-dessus l'application. Même
    fond que le choix « À récupérer », pour qu'on voie qu'il en découle. */
-.overtime-recovery-preview{display:grid;gap:3px;margin:8px 0 0;border:1px solid #a8c9c0;border-radius:12px;padding:10px 12px;background:#edf7f3}
+.overtime-recovery-preview{display:grid;gap:3px;margin:8px 0 0;border:1px solid #a8c9c0;border-radius:12px;padding:10px 12px;background:#fff}
 .overtime-recovery-preview strong{font-size:13px}
 .overtime-recovery-preview b{color:#2f6f5e}
 .overtime-recovery-preview small{color:var(--muted);font-size:10.5px;line-height:1.35}
@@ -2027,10 +2023,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #c7ddd7;
+  border: 1px solid var(--border-card);
   border-radius: 12px;
   padding: 11px 12px;
-  background: #edf7f3;
+  background: #fff;
   color: #41675f !important;
 }
 .recovery-available strong {
@@ -2110,9 +2106,9 @@
     position: sticky;
     bottom: -14px;
     margin: 17px -14px -14px;
-    border-top: 1px solid #e1e7ee;
+    border-top: 1px solid var(--bg);
     padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.96);
+    background: #fff;
     backdrop-filter: blur(8px);
   }
 }

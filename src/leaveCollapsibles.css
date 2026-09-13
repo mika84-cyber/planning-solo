@@ -5,24 +5,24 @@
 }
 
 .leave-tool-disclosure {
-  --tool-ink: #286b69;
+  --tool-ink: #574e42;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #9cb8cf;
+  border: 1px solid var(--border-card);
   border-radius: 20px;
-  background: linear-gradient(155deg, #eef8ff, #fff 74%);
+  background: linear-gradient(155deg, var(--surface-high), #fff 74%);
   box-shadow: 0 5px 16px #52728f17;
 }
 
 .leave-tool-disclosure:nth-child(2) {
-  --tool-ink: #6b497d;
-  border-color: #b7a7d0;
-  background: linear-gradient(155deg, #faf3ff, #fff 74%);
+  --tool-ink: #7a6f5f;
+  border-color: var(--border-card);
+  background: linear-gradient(155deg, var(--surface-high), #fff 74%);
 }
 
 .leave-tool-disclosure:nth-child(3) {
   --tool-ink: #7a5b25;
-  border-color: #cab788;
+  border-color: var(--border-card);
   background: linear-gradient(155deg, #fff7df, #fff 74%);
 }
 
@@ -33,7 +33,7 @@
   flex-direction: column;
   gap: 9px;
   padding: 13px;
-  color: #173454;
+  color: #3a332c;
   cursor: pointer;
   list-style: none;
 }
@@ -51,13 +51,13 @@
   overflow: hidden;
   place-items: center;
   border-radius: 16px;
-  background: #dff0ff;
-  color: #296aa5;
+  background: var(--surface);
+  color: var(--muted);
 }
 
 .leave-tool-illustration.mecenat {
-  background: #f0e3fb;
-  color: #7a54a8;
+  background: var(--surface);
+  color: #9b8e7c;
 }
 
 .leave-tool-illustration.cet {
@@ -122,7 +122,7 @@
 
 .leave-tool-disclosure[open] > summary {
   min-height: 172px;
-  border-bottom: 1px solid #c9d8e5;
+  border-bottom: 1px solid var(--border-control);
 }
 
 .leave-tool-disclosure[open] > summary .leave-tool-illustration {

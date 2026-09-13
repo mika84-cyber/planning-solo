@@ -110,7 +110,7 @@ describe("finitions d’interface", () => {
 
   it("hiérarchise les actions CET et met en valeur les heures de récupération", () => {
     expect(styles).toContain(".cet-toolbar .secondary-button");
-    expect(styles).toContain("background: #fff;");
+    expect(styles).toContain("background: var(--surface);");
     expect(workTimeDialogs).toContain("Heures à poser");
     expect(app).toContain("Heures à poser pour chaque date");
     expect(styles).toContain(".recovery-duration-field .recovery-duration-choice button.active");
@@ -118,7 +118,7 @@ describe("finitions d’interface", () => {
 
   it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
     expect(styles).toContain(".cet-section-static");
-    expect(styles).toContain("border-left: 6px solid #6c61b8");
+    expect(styles).toContain("border-left: 6px solid var(--border-card)");
     expect(app).toContain('<strong id="leave-request-archive-title">Demandes archivées</strong>');
     expect(cetSection).toContain('className="cet-section open cet-section-static"');
     expect(cetSection).toContain("alimentation du 15 novembre au 31 décembre");
@@ -319,7 +319,7 @@ describe("finitions d’interface", () => {
 
   it("colore l’action de suppression multiple", () => {
     expect(styles).toContain(".calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {");
-    expect(styles).toContain("background: #f8faff");
+    expect(styles).toContain("background: var(--surface-high)");
     expect(styles).toContain("color: #a9243a");
   });
 
@@ -550,13 +550,22 @@ describe("finitions d’interface", () => {
     expect(requestValidationSummary).toContain("Effet de la validation");
   });
 
-  it("réserve le menu principal au compte et aux réglages", () => {
-    expect(appNavigation).toContain("Compte et réglages");
-    expect(appNavigation).toContain("Vérifier les mises à jour");
-    expect(appNavigation).toContain("Mes données");
-    expect(appNavigation).toContain("Écrire à l’administrateur");
-    expect(appNavigation).not.toContain('const MENU_ITEMS');
+  it("réduit le menu principal aux pages de l’application", () => {
+    // Le menu ne fait plus qu'une chose : mener à une page. Le mode d'emploi
+    // l'accompagne parce qu'il explique ces pages-là.
+    expect(appNavigation).toContain("const MENU_PAGES");
+    expect(appNavigation).toContain("Les pages de l’application");
+    // Le rafraîchissement tient la tête du menu, l'installation ferme la
+    // liste des pages, la messagerie la suit.
+    expect(appNavigation).toContain("main-menu-refresh");
+    expect(appNavigation).toContain("Rafraîchir");
+    expect(appNavigation).toContain("Installer l’application");
+    expect(appNavigation).toContain("Messagerie interne");
     expect(appNavigation).not.toContain("Mode d’emploi");
+    expect(appNavigation).not.toContain("Compte et réglages");
+    expect(appNavigation).not.toContain("État de sauvegarde");
+    expect(appNavigation).not.toContain("Mes données");
+    expect(styles).toContain(".main-menu-refresh");
     expect(appRoot).toContain("<UsefulResourcesHub");
     expect(appRoot).toContain("pdf={(");
     expect(usefulResourcesHub).toContain('key: "pdf"');
@@ -564,7 +573,7 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
     expect(styles).toContain('url("/menu-art-fast.webp")');
-    expect(styles).toContain("background: linear-gradient(90deg, #101c27, rgba(5, 11, 19, 0.82) 65%, transparent)");
+    expect(styles).toContain("background: linear-gradient(90deg, #2c2621, rgba(44, 38, 33, 0.82) 65%, transparent)");
     expect(app).toContain('className="main-menu-index"');
     expect(app).toContain('className="main-menu-chevron"');
     expect(app).toContain("header-command-area");
@@ -594,15 +603,15 @@ describe("finitions d’interface", () => {
   it("intègre l’œuvre en texture discrète dans l’en-tête", () => {
     expect(styles).toContain('url("/header-art-fast.webp")');
     expect(styles).toContain("rgba(255, 249, 232, 0.62)");
-    expect(styles).toContain("rgba(244, 250, 252, 0.3)");
-    expect(styles).toContain("border-color: rgba(0, 0, 0, 0.65)");
+    expect(styles).toContain("rgba(253, 250, 244, 0.3)");
+    expect(styles).toContain("border-color: var(--border-card)");
   });
 
   it("uniformise exactement les en-têtes sur le gabarit Formulaires utiles", () => {
     expect(styles).toContain("height: 205px;\n  min-height: 205px;");
     expect(styles).toContain("height: 215px;\n    min-height: 215px;");
     expect(styles).toContain("left: 29%;");
-    expect(styles).toContain("border: 1.5px solid rgba(48, 87, 126, 0.42)");
+    expect(styles).toContain("border-color: var(--border-card)");
   });
 
   it("ne conserve que les fonds illustrés de l’en-tête et du menu", () => {
@@ -635,10 +644,10 @@ describe("finitions d’interface", () => {
 
   it("renforce la lisibilité du menu et les contours de l’en-tête", () => {
     expect(styles).toContain(".main-menu-copy strong { color: #fff; }");
-    expect(styles).toContain(".main-menu-copy small {\n  color: rgba(239, 246, 255, 0.78);");
+    expect(styles).toContain(".main-menu-copy small {\n  color: rgba(253, 250, 244, 0.78);");
     expect(styles).toContain("backdrop-filter: saturate(1.08) contrast(1.02)");
     expect(styles).toContain(".top-header .account-button,");
-    expect(styles).toContain("border: 1.5px solid rgba(0, 0, 0, 0.62)");
+    expect(styles).toContain("border: 1.5px solid var(--border-card)");
   });
 
   it("centre l’image de chargement sur téléphone", () => {
@@ -646,11 +655,11 @@ describe("finitions d’interface", () => {
   });
 
   it("dessine un liseré noir autour des en-têtes et de leurs onglets", () => {
-    expect(styles).toContain("border-color: rgba(0, 0, 0, 0.65)");
+    expect(styles).toContain("border-color: var(--border-card)");
     // La bascule Mois / Année a été retirée : ce sont les trois commandes
     // restantes de l'en-tête qui portent ce liseré sur les œuvres colorées.
     expect(styles).not.toContain("view-switch");
-    expect(styles).toContain(".top-header .header-update-button {\n  border: 1.5px solid rgba(0, 0, 0, 0.62)");
+    expect(styles).toContain(".top-header .header-update-button {\n  border: 1.5px solid var(--border-card)");
   });
 
   it("harmonise les cadres principaux et secondaires de l’application", () => {
@@ -670,9 +679,9 @@ describe("finitions d’interface", () => {
   });
 
   it("renforce la lisibilité des soldes sans retirer leurs couleurs", () => {
-    expect(styles).toContain("color-mix(in srgb, var(--balance-color) 58%, #17243a)");
-    expect(styles).toContain(".leave-balances-direct .leave-balance-grid small {\n  color: #4b596d;");
-    expect(styles).toContain("border: 1px solid color-mix(in srgb, var(--balance-color) 52%, #aeb9c7)");
+    expect(styles).toContain("color-mix(in srgb, var(--balance-color) 58%, #2c2621)");
+    expect(styles).toContain(".leave-balances-direct .leave-balance-grid small {\n  color: var(--muted);");
+    expect(styles).toContain("color-mix(in srgb, var(--balance-color) 52%, var(--border-card))");
   });
 
   it("élargit uniquement l’en-tête sur les grands écrans", () => {

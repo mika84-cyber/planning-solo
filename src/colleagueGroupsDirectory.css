@@ -1,8 +1,8 @@
 .colleague-groups-directory {
   overflow: hidden;
-  border: 1px solid #dfb5b5;
-  border-left: 6px solid #cf7777;
-  background: linear-gradient(145deg, #fff8f8, #fff 56%, #f6faff);
+  border: 1px solid var(--border-card);
+  border-left: 5px solid var(--accent);
+  background: #fff;
   box-shadow: 0 10px 25px rgba(104, 55, 60, .1);
 }
 
@@ -28,7 +28,7 @@
   height: 52px;
   place-items: center;
   border-radius: 15px;
-  background: #fae5e5;
+  background: #fff;
   color: #a94f58;
 }
 
@@ -47,12 +47,12 @@
 }
 
 .colleague-groups-heading strong {
-  color: #173454;
+  color: #3a332c;
   font-size: 1.08rem;
 }
 
 .colleague-groups-heading small {
-  color: #62778d;
+  color: var(--muted);
 }
 
 .colleague-groups-caret {
@@ -61,14 +61,14 @@
   height: 32px;
   place-items: center;
   border-radius: 50%;
-  background: #f9e9e9;
+  background: #fff;
   color: #a04b55;
   font-size: 1.1rem;
   transition: transform .2s ease;
 }
 
 .colleague-groups-directory[open] > summary {
-  border-bottom: 1px solid #cdddea;
+  border-bottom: 1px solid var(--border-control);
 }
 
 .colleague-groups-directory[open] > summary .colleague-groups-caret {
@@ -93,7 +93,7 @@
 }
 
 .colleague-groups-search > span {
-  color: #536b82;
+  color: var(--muted);
   font-size: .72rem;
   font-weight: 850;
 }
@@ -102,17 +102,17 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 44px;
-  border: 1px solid #b7c9da;
+  border: 1px solid var(--border-control);
   border-radius: 13px;
   padding: 9px 13px;
-  background: #fff;
-  color: #1d354f;
+  background: var(--surface);
+  color: #3a332c;
   font: inherit;
 }
 
 .colleague-groups-search input:focus {
-  border-color: #5c8fbd;
-  outline: 3px solid #d8eafb;
+  border-color: var(--border-card);
+  outline: 3px solid var(--bg);
 }
 
 .colleague-groups-results ul {
@@ -128,10 +128,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #d3dfe9;
+  border: 1px solid var(--border-control);
   border-radius: 13px;
   padding: 10px 12px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .colleague-groups-results li > span {
@@ -142,24 +142,24 @@
   font-weight: 850;
 }
 
-.colleague-groups-results li > span.group-1 { background: #eaf4fd; color: #245f98; }
-.colleague-groups-results li > span.group-2 { background: #f2ecf8; color: #6d4b91; }
-.colleague-groups-results li > span.group-3 { background: #eef5e8; color: #4e702f; }
-.colleague-groups-results > p { margin: 0; color: #687b8e; text-align: center; }
+.colleague-groups-results li > span.group-1 { background: var(--surface); color: var(--muted); }
+.colleague-groups-results li > span.group-2 { background: var(--surface); color: var(--muted); }
+.colleague-groups-results li > span.group-3 { background: #fff; color: #4e702f; }
+.colleague-groups-results > p { margin: 0; color: var(--muted); text-align: center; }
 
 .colleague-group-card {
   overflow: hidden;
-  border: 1px solid #aec8dc;
+  border: 1px solid var(--border-control);
   border-radius: 15px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .colleague-group-card.group-2 {
-  border-color: #b8acd4;
+  border-color: var(--border-control);
 }
 
 .colleague-group-card.group-3 {
-  border-color: #b9c8a3;
+  border-color: var(--border-card);
 }
 
 .colleague-group-card > summary {
@@ -171,15 +171,15 @@
   padding: 11px 13px;
   cursor: pointer;
   list-style: none;
-  background: #eef7ff;
+  background: var(--surface-high);
 }
 
 .colleague-group-card.group-2 > summary {
-  background: #f5f0fb;
+  background: var(--surface-high);
 }
 
 .colleague-group-card.group-3 > summary {
-  background: #f2f7ea;
+  background: #fff;
 }
 
 .colleague-group-card > summary span {
@@ -188,15 +188,15 @@
 }
 
 .colleague-group-card > summary strong {
-  color: #173454;
+  color: #3a332c;
 }
 
 .colleague-group-card > summary small {
-  color: #61758a;
+  color: var(--muted);
 }
 
 .colleague-group-card > summary i {
-  color: #315b80;
+  color: var(--muted);
   font-style: normal;
   transition: transform .2s ease;
 }
@@ -211,19 +211,19 @@
   column-gap: 24px;
   margin: 0;
   padding: 10px 14px 14px 36px;
-  color: #263f5b;
+  color: var(--muted);
 }
 
 .colleague-group-card li {
   padding: 6px 2px; break-inside: avoid;
-  border-bottom: 1px solid #e7eef4;
+  border-bottom: 1px solid var(--bg);
   line-height: 1.25;
 }
 
 .colleague-group-loading {
   margin: 0;
   padding: 16px 14px;
-  color: #6a7b8d;
+  color: var(--muted);
   font-size: .82rem;
 }
 

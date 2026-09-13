@@ -21,8 +21,8 @@
   transform: translateX(-50%);
   border-radius: 50%;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.22);
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(44, 38, 33, 0.22);
 }
 
 .app-shell {
@@ -36,7 +36,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
-  border: 1px solid #cbd9ec;
+  border: 1px solid var(--border-control);
 }
 .top-header-title {
   position: relative;
@@ -64,7 +64,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #dbe6f8;
+  background: var(--bg);
   color: var(--accent);
   font-size: 14px;
   font-weight: 800;
@@ -73,7 +73,7 @@
 .account-button.open {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 0 0 3px #dbe6f8;
+  box-shadow: 0 0 0 3px var(--bg);
 }
 .app-shell > header:has(.account-button.open) { overflow: visible; z-index: 50; }
 .account-menu-panel {
@@ -81,19 +81,19 @@
   z-index: 20;
   top: calc(100% + 6px);
   right: 0;
-  border: 1px solid #b7c8da;
+  border: 1px solid var(--border-control);
   border-radius: 18px;
   padding: 8px;
-  background: linear-gradient(155deg, #f8fbff, #fffaf3);
-  box-shadow: 0 16px 38px rgba(31, 46, 78, 0.2);
+  background: linear-gradient(155deg, var(--surface-high), #fffaf3);
+  box-shadow: 0 16px 38px rgba(58, 51, 44, 0.2);
 }
 .account-menu-identity {
   display: grid;
   gap: 2px;
-  border: 1px solid #dce6f0;
+  border: 1px solid var(--bg);
   border-radius: 12px;
   padding: 10px 11px;
-  background: rgba(255,255,255,.74);
+  background: #fff;
 }
 .account-menu-identity strong {
   font-size: 12px;
@@ -122,7 +122,7 @@
   border: 0;
   border-radius: 9px;
   padding: 10px;
-  background: #f6f8fc;
+  background: var(--surface-high);
   color: #a92f3b;
   font-size: 12px;
   font-weight: 800;
@@ -143,7 +143,7 @@
   cursor: pointer;
 }
 .notification-button:hover:not(:disabled) {
-  background: #fff;
+  background: var(--surface);
   color: var(--accent);
 }
 .notification-button svg {
@@ -158,7 +158,7 @@
 /* La pastille reste dans le carré blanc du bouton actif : un débord
    sur le gris de la pastille grise se lirait comme une salissure. */
 .notification-button.on {
-  background: #fff;
+  background: var(--surface);
   color: #08773b;
 }
 .notification-button.blocked {
@@ -172,7 +172,7 @@
 .step-label {
   display: block;
   margin: 0 0 7px;
-  color: var(--accent);
+  color: var(--accent-strong);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -196,7 +196,7 @@ h1 {
   color: #fff;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 3px 9px rgba(39, 61, 88, 0.09);
+  box-shadow: 0 3px 9px rgba(58, 51, 44, 0.09);
 }
 .primary-action {
   flex: 0 0 auto;
@@ -211,7 +211,7 @@ h1 {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 .controls label {
@@ -245,7 +245,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 11px;
   padding: 0 11px 0 13px;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   font-weight: 780;
   cursor: pointer;
@@ -285,7 +285,7 @@ h1 {
   border: 1px solid var(--section-outline);
   border-radius: 14px;
   padding: 9px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 16px 34px rgb(38 58 88 / 20%);
   transform: translateX(-50%);
 }
@@ -302,7 +302,7 @@ h1 {
   border: 1px solid transparent;
   border-radius: 9px;
   padding: 6px 10px;
-  background: #f5f8fc;
+  background: var(--surface-high);
   color: var(--text);
   font-size: 12px;
   font-weight: 780;
@@ -333,7 +333,7 @@ h1 {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  box-shadow: 0 18px 42px rgba(27, 45, 70, 0.28);
+  box-shadow: 0 18px 42px rgba(58, 51, 44, 0.28);
 }
 .choice-picker-menu.choice-picker-menu-portal.year-choice-picker {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -363,7 +363,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 11px;
   padding: 0 34px 0 12px;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
 }
 .year-choice {
@@ -379,7 +379,7 @@ h1 {
   padding: 4px;
   border: 1px solid var(--section-outline);
   border-radius: 12px;
-  background: linear-gradient(135deg, #fffdf9 0%, #f5f1eb 100%);
+  background: linear-gradient(135deg, var(--surface-high) 0%, #fff 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 /* Jours travaillés : même gabarit que le sélecteur d'année, posé à côté de lui
@@ -397,7 +397,7 @@ h1 {
   padding: 4px;
   border: 1px solid var(--section-outline);
   border-radius: 12px;
-  background: linear-gradient(135deg, #fffdf9 0%, #f5f1eb 100%);
+  background: linear-gradient(135deg, var(--surface-high) 0%, #fff 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 .worked-days-trigger {
@@ -453,8 +453,8 @@ h1 {
   border: 1px solid var(--section-outline);
   border-radius: 13px;
   padding: 8px;
-  background: #fff;
-  box-shadow: 0 16px 34px rgba(31, 46, 78, 0.16);
+  background: var(--surface);
+  box-shadow: 0 16px 34px rgba(58, 51, 44, 0.16);
 }
 /* Grille à 2 colonnes sans réassignation : le mois affiché (1er) se pose
    naturellement à côté du 1er tier, puis les 2e et 3e tiers suivent en
@@ -465,7 +465,7 @@ h1 {
   gap: 1px;
   border-radius: 9px;
   padding: 5px 8px;
-  background: rgba(47, 97, 184, 0.06);
+  background: rgba(122, 111, 95, 0.06);
 }
 /* Le mois affiché : jours réellement travaillés, distingué en rouge léger
    de la teinte bleue des tiers pour qu'on le repère au premier coup d'œil. */
@@ -473,8 +473,8 @@ h1 {
   background: rgba(196, 55, 45, 0.09);
 }
 .worked-days-panel article.current {
-  background: rgba(40, 89, 184, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(40, 89, 184, 0.4);
+  background: rgba(122, 111, 95, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(122, 111, 95, 0.4);
 }
 .worked-days-scope {
   display: flex;
@@ -516,7 +516,7 @@ h1 {
   padding: 4px;
   border: 1px solid var(--section-outline);
   border-radius: 12px;
-  background: linear-gradient(135deg, #fffdf9 0%, #f5f1eb 100%);
+  background: linear-gradient(135deg, var(--surface-high) 0%, #fff 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 .group-stepper .choice-picker-trigger {
@@ -570,7 +570,7 @@ h1 {
   width: 15px;
 }
 .controls .year-select-display .choice-picker-trigger:focus-visible {
-  outline: 2px solid rgba(47, 97, 184, 0.35);
+  outline: 2px solid rgba(122, 111, 95, 0.35);
   outline-offset: 1px;
 }
 .request-panel {
@@ -580,7 +580,7 @@ h1 {
   border: 1px solid color-mix(in srgb, var(--active-color) 32%, var(--line));
   border-left: 5px solid var(--active-color);
   border-radius: 18px;
-  background: #fff;
+  background: var(--surface);
 }
 .request-heading,
 .request-bottom {
@@ -619,7 +619,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0 12px;
-  background: #f9fafc;
+  background: var(--surface-high);
   color: var(--text);
   font-size: 13px;
   font-weight: 750;
@@ -653,7 +653,7 @@ h1 {
   line-height: 1.45;
 }
 .request-bottom {
-  border-top: 1px solid #edf0f5;
+  border-top: 1px solid var(--surface);
   padding-top: 14px;
 }
 .request-bottom p {
@@ -735,7 +735,7 @@ h1 {
   --balance-color: #c2557a;
 }
 .leave-balance-grid button.childcare {
-  --balance-color: #0891b2;
+  --balance-color: var(--muted);
 }
 .leave-balance-grid button.exceptional {
   --balance-color: #854d0e;
@@ -779,11 +779,11 @@ h1 {
   display: flex;
   justify-content: center;
   flex-direction: column;
-  border: 1px solid #bfd0e5;
+  border: 1px solid var(--border-control);
   border-left: 5px solid var(--accent);
   border-radius: 13px;
   padding: 12px 14px;
-  background: linear-gradient(145deg, #eef5fd, #e2edf9);
+  background: linear-gradient(145deg, var(--surface-high), var(--bg));
 }
 .leave-total-card small {
   display: block;
@@ -802,7 +802,7 @@ h1 {
   text-align: center;
 }
 .leave-total-values > div + div {
-  border-left: 1px solid #c7d6e7;
+  border-left: 1px solid var(--border-control);
 }
 .leave-total-values span,
 .leave-total-values strong {
@@ -815,7 +815,7 @@ h1 {
 }
 .leave-total-values strong {
   margin-top: 5px;
-  color: #163c76;
+  color: var(--muted);
   font-size: 22px;
   line-height: 1;
 }
@@ -832,7 +832,7 @@ h1 {
   margin: 14px 0 18px;
   border-radius: 14px;
   padding: 13px;
-  background: #eef4fb;
+  background: var(--surface);
 }
 .balance-detail-summary > strong {
   color: var(--accent);
@@ -864,7 +864,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 7px 10px;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -882,7 +882,7 @@ h1 {
 .balance-detail-empty {
   border-radius: 11px;
   padding: 13px;
-  background: #f4f7fb;
+  background: var(--surface-high);
   color: var(--muted);
   font-size: 12px;
 }
@@ -901,7 +901,7 @@ h1 {
   flex: 0 0 auto;
   width: 15px;
   height: 15px;
-  border: 1px solid #5f6877;
+  border: 1px solid var(--border-card);
   border-radius: 4px;
   background: var(--off);
 }

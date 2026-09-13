@@ -10,7 +10,7 @@
 }
 .note-meta {
   margin: 8px 0 0 !important;
-  color: #59657a !important;
+  color: var(--muted) !important;
   font-size: 11px !important;
   font-weight: 750;
 }
@@ -78,7 +78,7 @@
   border: 1px solid var(--line);
   border-radius: 11px;
   padding: 0 9px;
-  background: #fbfcfe;
+  background: var(--surface-high);
   color: var(--text);
 }
 .note-period-hint {
@@ -88,13 +88,13 @@
 }
 .leave-range-box {
   margin: -3px 0 17px;
-  border: 1px solid #dce5ea;
+  border: 1px solid var(--bg);
   border-radius: 13px;
   padding: 12px;
-  background: #f8fbfb;
+  background: var(--surface-high);
 }
 .leave-range-box .note-range-toggle {
-  color: #285f63;
+  color: var(--muted);
 }
 .separate-date-button {
   display: grid;
@@ -109,7 +109,7 @@
   color: var(--accent);
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 5px 15px rgba(40, 89, 184, 0.12);
+  box-shadow: 0 5px 15px rgba(122, 111, 95, 0.12);
 }
 .separate-date-button strong {
   font-size: 13px;
@@ -133,7 +133,7 @@
   display: grid;
   gap: 7px;
   margin: 0 0 17px;
-  border-top: 1px solid #e8ecf2;
+  border-top: 1px solid var(--bg);
   padding-top: 13px;
 }
 .day-stored-periods > strong {
@@ -166,10 +166,10 @@
 }
 .day-stored-periods article button {
   min-height: 32px;
-  border: 1px solid #d8dfeb;
+  border: 1px solid var(--border-control);
   border-radius: 9px;
   padding: 0 9px;
-  background: #fff;
+  background: var(--surface);
   color: var(--accent);
   font-size: 10px;
   font-weight: 800;
@@ -210,8 +210,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   padding: 10px 15px;
-  background: #f7f9fc;
-  color: #405977;
+  background: var(--surface-high);
+  color: var(--muted);
 }
 .delete-button {
   margin-right: auto;
@@ -242,9 +242,9 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0 12px;
-  background: #fbfcfe;
+  background: var(--surface-high);
   color: var(--text);
-} .clock-time-field { display:grid;gap:7px;min-width:0 } .clock-time-field:not(.pay-work-time-field)>span:first-child { color:#3c5875;font-size:11px;font-weight:850;letter-spacing:.035em;text-transform:uppercase } .clock-time-picker { display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;min-height:50px;border:1.5px solid #b6cbe0;border-radius:13px;background:#fff;box-shadow:0 4px 11px rgba(35,70,106,.07);overflow:hidden } .clock-time-picker:focus-within { border-color:#3978b8;box-shadow:0 0 0 3px rgba(57,120,184,.14),0 5px 13px rgba(35,70,106,.09) } .clock-time-picker select { appearance:none;width:100%;height:50px;border:0;padding:0 8px;background:transparent;color:#183f67;font:850 17px/1 system-ui,sans-serif;text-align:center;cursor:pointer } .clock-time-picker select:focus { outline:0 } .clock-time-picker b { color:#66809a;font-size:18px } .recovery-duration-picker { display: grid; gap: 14px; margin-top: 14px; padding: 17px; border: 2px solid #a8c4e5; border-radius: 18px; background: linear-gradient(145deg, #f5f9ff, #eef5fc); box-shadow: 0 10px 24px rgba(36, 82, 128, .1); } .recovery-duration-picker > span { color: #173a61; font-size: 14px; font-weight: 850; text-align: center; } .recovery-duration-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .recovery-duration-controls label { display: grid; gap: 6px; } .recovery-duration-controls label > span { color: #56708d; font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; } .recovery-duration-controls select { width: 100%; height: 56px; border: 2px solid #bfd1e5; border-radius: 14px; padding: 0 12px; background: #fff; color: #16395f; font: 850 18px/1 system-ui, sans-serif; box-shadow: 0 4px 12px rgba(31, 72, 115, .07); } .recovery-duration-controls select:focus { border-color: #3977b8; outline: 3px solid rgba(57, 119, 184, .16); } .recovery-duration-total { display: flex; align-items: center; justify-content: space-between; min-height: 47px; padding: 10px 13px; border-radius: 13px; background: #245f9f; color: #fff; font-size: 18px; box-shadow: 0 7px 16px rgba(28, 78, 130, .16); } .recovery-duration-total span { font-size: 12px; font-weight: 750; } .half-day-moment-picker { display:grid;gap:12px;margin-top:14px;padding:16px;border:2px solid #b9cde4;border-radius:18px;background:linear-gradient(145deg,#f7faff,#edf5fc);box-shadow:0 9px 22px rgba(34,73,115,.09) } .half-day-moment-picker>p { margin:0;color:#294b6f;font-size:13px;font-weight:800;text-align:center } .half-day-moment-picker>div { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px } .half-day-moment-picker button { display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:9px;min-height:82px;border:1.5px solid #c7d7e7;border-radius:14px;padding:11px;background:#fff;color:#31516f;text-align:left;box-shadow:0 4px 11px rgba(39,71,103,.07);cursor:pointer } .half-day-moment-picker button.active { border-color:#3476b6;background:#eaf4ff;box-shadow:0 6px 16px rgba(35,91,147,.16),inset 0 0 0 1px #3476b6 } .half-day-icon { display:grid;grid-row:1/3;width:36px;height:36px;place-items:center;border-radius:11px;background:#e5eff9;color:#286aa8;font-size:19px } .half-day-moment-picker button.active .half-day-icon { background:#3476b6;color:#fff } .half-day-moment-picker strong { align-self:end;font-size:14px } .half-day-moment-picker small { align-self:start;color:#6a7e92;font-size:10px;line-height:1.3 } .overtime-range-card { border:1.5px solid #b9cde2;border-radius:16px;padding:13px;background:linear-gradient(145deg,#f5f9fe,#fff);box-shadow:0 6px 15px rgba(38,72,109,.08) } .overtime-range-card .overtime-time-title { color:#28577f;font-size:13px } .overtime-range-card input[type=time] { border-width:1.5px;border-color:#aac2da;background:#fff;font-weight:800 } .recovery-time-fields { margin-top:14px;border:2px solid #a8c4e5;border-radius:18px;padding:16px;background:linear-gradient(145deg,#f5f9ff,#eef5fc);box-shadow:0 10px 24px rgba(36,82,128,.1) } .recovery-time-fields label { border:1.5px solid #bfd1e5;border-radius:14px;padding:10px;background:#fff;box-shadow:0 4px 12px rgba(31,72,115,.07) } .recovery-time-fields label>span { color:#315b85;font-size:11px;letter-spacing:.04em;text-transform:uppercase } .recovery-time-fields input { border-color:#a9c2de;background:#fafdff;font-size:17px;font-weight:850 } .recovery-time-help { margin:9px 2px 0;color:#58708a;font-size:11px;font-weight:700;text-align:center }
+} .clock-time-field { display:grid;gap:7px;min-width:0 } .clock-time-field:not(.pay-work-time-field)>span:first-child { color:var(--muted);font-size:11px;font-weight:850;letter-spacing:.035em;text-transform:uppercase } .clock-time-picker { display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;min-height:50px;border:1.5px solid var(--border-control);border-radius:13px;background:var(--surface);box-shadow:0 4px 11px rgba(87, 78, 66,.07);overflow:hidden } .clock-time-picker:focus-within { border-color: var(--muted);box-shadow:0 0 0 3px rgba(122, 111, 95,.14),0 5px 13px rgba(87, 78, 66,.09) } .clock-time-picker select { appearance:none;width:100%;height:50px;border:0;padding:0 8px;background:transparent;color:#3a332c;font:850 17px/1 system-ui,sans-serif;text-align:center;cursor:pointer } .clock-time-picker select:focus { outline:0 } .clock-time-picker b { color:#9b8e7c;font-size:18px } .recovery-duration-picker { display: grid; gap: 14px; margin-top: 14px; padding: 17px; border: 2px solid var(--border-control); border-radius: 18px; background: linear-gradient(145deg, var(--surface-high), var(--surface)); box-shadow: 0 10px 24px rgba(87, 78, 66, .1); } .recovery-duration-picker > span { color: #3a332c; font-size: 14px; font-weight: 850; text-align: center; } .recovery-duration-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .recovery-duration-controls label { display: grid; gap: 6px; } .recovery-duration-controls label > span { color: var(--muted); font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; } .recovery-duration-controls select { width: 100%; height: 56px; border: 2px solid var(--border-control); border-radius: 14px; padding: 0 12px; background: var(--surface); color: #3a332c; font: 850 18px/1 system-ui, sans-serif; box-shadow: 0 4px 12px rgba(87, 78, 66, .07); } .recovery-duration-controls select:focus { border-color: var(--muted); outline: 3px solid rgba(122, 111, 95, .16); } .recovery-duration-total { display: flex; align-items: center; justify-content: space-between; min-height: 47px; padding: 10px 13px; border-radius: 13px; background: #7a6f5f; color: #fff; font-size: 18px; box-shadow: 0 7px 16px rgba(87, 78, 66, .16); } .recovery-duration-total span { font-size: 12px; font-weight: 750; } .half-day-moment-picker { display:grid;gap:12px;margin-top:14px;padding:16px;border:2px solid var(--border-control);border-radius:18px;background:linear-gradient(145deg,var(--surface-high),var(--surface));box-shadow:0 9px 22px rgba(87, 78, 66,.09) } .half-day-moment-picker>p { margin:0;color:var(--muted);font-size:13px;font-weight:800;text-align:center } .half-day-moment-picker>div { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px } .half-day-moment-picker button { display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:9px;min-height:82px;border:1.5px solid var(--border-control);border-radius:14px;padding:11px;background:var(--surface);color:var(--muted);text-align:left;box-shadow:0 4px 11px rgba(87, 78, 66,.07);cursor:pointer } .half-day-moment-picker button.active { border-color: var(--muted);background:var(--surface);box-shadow:0 6px 16px rgba(87, 78, 66,.16),inset 0 0 0 1px #7a6f5f } .half-day-icon { display:grid;grid-row:1/3;width:36px;height:36px;place-items:center;border-radius:11px;background:var(--surface);color: var(--muted);font-size:19px } .half-day-moment-picker button.active .half-day-icon { background:#7a6f5f;color:#fff } .half-day-moment-picker strong { align-self:end;font-size:14px } .half-day-moment-picker small { align-self:start;color:#9b8e7c;font-size:10px;line-height:1.3 } .overtime-range-card { border:1.5px solid var(--border-control);border-radius:16px;padding:13px;background:linear-gradient(145deg,var(--surface-high),#fff);box-shadow:0 6px 15px rgba(87, 78, 66,.08) } .overtime-range-card .overtime-time-title { color:var(--muted);font-size:13px } .overtime-range-card input[type=time] { border-width:1.5px;border-color:var(--border-control);background:var(--surface);font-weight:800 } .recovery-time-fields { margin-top:14px;border:2px solid var(--border-control);border-radius:18px;padding:16px;background:linear-gradient(145deg,var(--surface-high),var(--surface));box-shadow:0 10px 24px rgba(87, 78, 66,.1) } .recovery-time-fields label { border:1.5px solid var(--border-control);border-radius:14px;padding:10px;background:var(--surface);box-shadow:0 4px 12px rgba(87, 78, 66,.07) } .recovery-time-fields label>span { color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase } .recovery-time-fields input { border-color:var(--border-control);background:var(--surface-high);font-size:17px;font-weight:850 } .recovery-time-help { margin:9px 2px 0;color: var(--muted);font-size:11px;font-weight:700;text-align:center }
 .warning-modal {
   text-align: center;
 }
@@ -457,7 +457,7 @@
     padding: 11px;
   }
   .annual-pdf-buttons {
-    border-top: 1px solid #e1e8f1;
+    border-top: 1px solid var(--bg);
     padding: 11px;
   }
   /* Grille sur deux colonnes comme en écran ouvert, au lieu du carrousel

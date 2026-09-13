@@ -37,10 +37,10 @@
 }
 .planning-workspace-shell.framed .controls .choice-picker-trigger,
 .planning-workspace-shell.framed .controls .worked-days-trigger {
-  border: 1px solid rgba(92, 72, 55, 0.3);
+  border: 1px solid var(--border-control);
   border-radius: 13px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 3px 10px rgba(42, 67, 96, 0.055);
+  background: var(--surface);
+  box-shadow: 0 3px 10px rgba(87, 78, 66, 0.055);
 }
 
 .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
@@ -55,10 +55,10 @@
 .planning-workspace-shell.framed .month-toolbar .today-button,
 .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
   min-height: 46px;
-  border: 1px solid rgba(92, 72, 55, 0.3);
+  border: 1px solid var(--border-control);
   border-radius: 13px;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(39, 62, 90, 0.055);
+  background: var(--surface);
+  box-shadow: 0 4px 12px rgba(87, 78, 66, 0.055);
 }
 
 .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker .choice-picker-trigger,
@@ -68,12 +68,12 @@
 
 .planning-workspace-shell.framed .month-toolbar .today-button {
   border-color: var(--section-outline);
-  background: linear-gradient(145deg, var(--accent-soft), #fffdf9);
+  background: linear-gradient(145deg, var(--accent-soft), var(--surface-high));
   color: var(--accent-strong);
 }
 
 .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
-  border-color: rgba(180, 72, 84, 0.25);
+  border-color: var(--border-card);
   background: linear-gradient(145deg, #fff8f8, #fff);
   color: #ad2738;
 }
@@ -222,19 +222,19 @@
   position: relative;
   width: 100%;
   margin: 0;
-  border: 1.5px solid rgba(89, 80, 151, 0.46);
-  border-left: 6px solid #6c61b8;
+  border: 1.5px solid var(--border-card);
+  border-left: 6px solid var(--border-card);
   border-radius: 20px;
   background:
-    radial-gradient(circle at 100% 0, rgba(112, 96, 190, 0.12), transparent 34%),
-    linear-gradient(150deg, #f7f5ff, #fff 48%);
-  box-shadow: 0 9px 23px rgba(65, 55, 122, 0.09);
+    radial-gradient(circle at 100% 0, rgba(155, 142, 124, 0.12), transparent 34%),
+    linear-gradient(150deg, var(--surface-high), #fff 48%);
+  box-shadow: 0 9px 23px rgba(87, 78, 66, 0.09);
 }
 
 .cet-section-static .cet-heading-static {
   grid-template-columns: auto minmax(0, 1fr);
   min-height: 84px;
-  border-bottom: 1px solid rgba(99, 88, 164, 0.22);
+  border-bottom: 1px solid var(--border-card);
   padding: 15px 17px;
   background: transparent;
   cursor: default;
@@ -243,20 +243,20 @@
 .cet-section-static .cet-heading-static .cet-symbol {
   width: 50px;
   height: 50px;
-  border-color: #55499e;
+  border-color: var(--muted);
   border-radius: 15px;
-  background: linear-gradient(145deg, #7468c1, #51458f);
-  box-shadow: 0 6px 14px rgba(70, 58, 135, 0.2), inset 0 0 0 3px rgba(255, 255, 255, 0.15);
+  background: linear-gradient(145deg, #9b8e7c, #7a6f5f);
+  box-shadow: 0 6px 14px rgba(122, 111, 95, 0.2), inset 0 0 0 3px rgba(255, 255, 255, 0.15);
 }
 
 .cet-section-static .cet-heading-static strong {
-  color: #282151;
+  color: #3a332c;
   font-size: 1.15rem;
 }
 
 .cet-section-static .cet-heading-static small {
   max-width: 760px;
-  color: #5e5877;
+  color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.4;
 }
@@ -264,17 +264,17 @@
 .cet-section-static .cet-content {
   border-top: 0;
   padding: clamp(13px, 1.8vw, 18px);
-  background: rgba(255, 255, 255, 0.5);
+  background: #fff;
 }
 
 .cet-section-static .cet-callout {
   border-left-width: 1px;
-  background: linear-gradient(145deg, #f1efff, #fbfaff);
+  background: linear-gradient(145deg, var(--surface-high), var(--surface-high));
 }
 
 .cet-section-static .cet-callout p {
   margin: 5px 0 0;
-  color: #5d5873;
+  color: var(--muted);
 }
 
 @media (max-width: 720px) {
@@ -362,22 +362,20 @@
   display: grid;
   gap: 10px;
   width: 100%;
-  border: 1.5px solid rgba(64, 88, 119, 0.38);
+  border: 1.5px solid var(--border-card);
   border-radius: 27px;
   padding: clamp(11px, 1.5vw, 16px);
   box-shadow: 0 17px 38px rgba(67, 52, 40, 0.11);
 }
 
 .planning-workspace-shell.framed .planning-command-section {
-  border-left: 8px solid var(--accent);
-  background:
-    linear-gradient(120deg, rgba(200, 120, 92, 0.12), transparent 32%),
-    #fffdfa;
+  border-left: 5px solid var(--accent);
+  background: var(--surface-high);
 }
 
 .planning-workspace-shell.framed .planning-calendar-section {
-  border-left: 1.5px solid rgba(64, 88, 119, 0.38);
-  background: #fffdfa;
+  border-left: 1.5px solid var(--border-card);
+  background: var(--surface-high);
 }
 
 .planning-workspace-shell.framed .planning-command-section .home-planning-heading {
@@ -416,15 +414,15 @@
    seule alerte qui demande une action. */
 .today-overview,
 .home-notes-section {
-  border-left: 8px solid var(--accent);
-  background-image: linear-gradient(135deg, var(--accent-soft), var(--card) 58%);
+  border-left: 5px solid var(--accent);
+  background: var(--card);
 }
 
 .today-overview .today-overview-heading {
   border-left-width: 0;
 }
 
-.home-setup-alert{background:linear-gradient(135deg,var(--accent-soft),var(--card));border:1px solid var(--line);border-left:8px solid var(--accent);border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-list{display:grid;gap:9px}.home-setup-list article{align-items:center;background:#fff;border:1px solid #dfc69e;border-radius:14px;display:flex;gap:12px;justify-content:space-between;padding:10px 12px}.home-setup-list article>span{display:grid;gap:2px}.home-setup-list small{color:var(--muted)}.home-setup-actions{display:flex!important;gap:7px!important}.home-setup-list button{align-items:center;background:var(--accent);border:0;border-radius:11px;color:#fff;display:flex;font-weight:850;gap:8px;min-height:40px;padding:8px 13px;white-space:nowrap}.home-setup-list button.home-setup-dismiss{background:#fff;border:1px solid var(--section-outline);color:var(--muted);font-size:11px}
+.home-setup-alert{background:var(--surface);border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-list{display:grid;gap:9px}.home-setup-list article{align-items:center;background:var(--surface-high);border:1px solid var(--border-card);border-radius:14px;display:flex;gap:12px;justify-content:space-between;padding:10px 12px}.home-setup-list article>span{display:grid;gap:2px}.home-setup-list small{color:var(--muted)}.home-setup-actions{display:flex!important;gap:7px!important}.home-setup-list button{align-items:center;background:var(--accent);border:0;border-radius:11px;color:#fff;display:flex;font-weight:850;gap:8px;min-height:40px;padding:8px 13px;white-space:nowrap}.home-setup-list button.home-setup-dismiss{background:var(--surface);border:1px solid var(--section-outline);color:var(--muted);font-size:11px}
 
 @media (max-width: 720px) {
   .planning-workspace-shell.framed {
@@ -477,8 +475,8 @@
 .useful-contacts-screen.useful-contacts-root {
   border-left: 6px solid var(--accent);
   background:
-    linear-gradient(90deg, rgba(57, 120, 186, 0.07), transparent 15%),
-    linear-gradient(145deg, #f7fbff, #fff 56%, #fff8ef);
+    linear-gradient(90deg, rgba(122, 111, 95, 0.07), transparent 15%),
+    linear-gradient(145deg, var(--surface-high), #fff 56%, #fff8ef);
 }
 
 .cet-section-static .cet-callout p {
@@ -576,8 +574,8 @@
 }
 
 .leave-secondary-grid > .overtime-balance-card:first-child {
-  border: 1.5px solid rgba(63, 115, 181, 0.42);
-  border-left: 6px solid #3f73b5;
+  border: 1.5px solid var(--border-card);
+  border-left: 6px solid var(--border-card);
 }
 
 .leave-secondary-grid > .mecenat-balance-card {
@@ -643,14 +641,14 @@
 .useful-expo-schedule {
   display: grid;
   gap: 16px;
-  border: 1.5px solid rgba(78, 139, 128, 0.38);
-  border-left: 6px solid #4e8b80;
+  border: 1.5px solid var(--border-card);
+  border-left: 6px solid var(--border-card);
   border-radius: 18px;
   padding: clamp(16px, 2.4vw, 24px);
   background:
     radial-gradient(circle at 100% 0, rgba(225, 240, 204, 0.58), transparent 31%),
     linear-gradient(145deg, #f8fcfb, #fff 58%, #fffaf1);
-  box-shadow: 0 12px 30px rgba(35, 72, 67, 0.08);
+  box-shadow: 0 12px 30px rgba(58, 51, 44, 0.08);
 }
 
 /* Les détails de programmation gardent un cadre uniforme : le liseré reste
@@ -661,13 +659,13 @@
 
 .useful-expo-schedule-heading h3 {
   margin: 4px 0 6px;
-  color: #17283e;
+  color: #2c2621;
   font-size: clamp(1.35rem, 3vw, 1.8rem);
 }
 
 .useful-expo-schedule-heading p {
   margin: 0;
-  color: #5e7082;
+  color: var(--muted);
   line-height: 1.48;
 }
 
@@ -677,14 +675,14 @@
   gap: 7px;
   border-radius: 14px;
   padding: 5px;
-  background: rgba(224, 238, 235, 0.76);
+  background: #fff;
 }
 
 .useful-expo-year-picker button {
   min-height: 42px;
   border: 1px solid transparent;
   border-radius: 10px;
-  color: #5b706d;
+  color: var(--muted);
   background: transparent;
   font: inherit;
   font-weight: 900;
@@ -692,9 +690,9 @@
 }
 
 .useful-expo-year-picker button.active {
-  border-color: rgba(78, 139, 128, 0.42);
-  color: #164f47;
-  background: #fff;
+  border-color: var(--border-card);
+  color: #3a332c;
+  background: var(--surface);
   box-shadow: 0 5px 13px rgba(37, 88, 79, 0.1);
 }
 
@@ -722,10 +720,10 @@
   align-items: center;
   gap: 12px;
   min-height: 86px;
-  border: 1px solid rgba(79, 123, 117, 0.28);
+  border: 1px solid var(--border-card);
   border-radius: 15px;
   padding: 13px 14px 13px 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface);
 }
 
 .useful-expo-timeline-mark {
@@ -746,7 +744,7 @@
 }
 
 .useful-expo-timeline article small {
-  color: #397168;
+  color: var(--muted);
   font-size: 0.76rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -754,13 +752,13 @@
 }
 
 .useful-expo-timeline article strong {
-  color: #17283e;
+  color: #2c2621;
   font-size: 1.02rem;
 }
 
 .useful-expo-timeline article p {
   margin: 0;
-  color: #667486;
+  color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.4;
 }
@@ -768,8 +766,8 @@
 .useful-expo-timeline article > em {
   border-radius: 999px;
   padding: 6px 9px;
-  color: #276b60;
-  background: #e3f3ef;
+  color: var(--muted);
+  background: #fff;
   font-size: 0.72rem;
   font-style: normal;
   font-weight: 900;
@@ -797,7 +795,7 @@
   height: 100%;
   border-radius: inherit;
   object-fit: contain;
-  background: #fff;
+  background: var(--surface);
   pointer-events: none;
   filter: none;
 }
@@ -810,7 +808,7 @@
 
 /* La date reste visible par-dessus le tampon CLOSED, en haut à gauche. */
 :root .exceptional-closure-date {
-  z-index: 8;
+  z-index: 10;
   top: 6px;
   left: 7px;
   width: auto;
@@ -821,7 +819,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #14233a;
+  color: #2c2621;
   box-shadow: none;
   font-size: clamp(10px, 1.25vw, 13px);
   font-weight: 950;
@@ -831,6 +829,23 @@
     1px 0 0 rgba(255, 255, 255, 0.9),
     -1px 0 0 rgba(255, 255, 255, 0.9),
     0 -1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Une note reste visible dans une case CLOSED, sans déborder du cadre ni
+   masquer la date placée au-dessus. */
+.exceptional-closure-day.has-note > .note-band {
+  z-index: 9;
+  top: 2px;
+  right: 2px;
+  left: 2px;
+  border-radius: 9px 9px 3px 3px;
+}
+
+.mini-day.exceptional-closure-day.has-note > .note-band {
+  top: 1px;
+  right: 1px;
+  left: 1px;
+  border-radius: 6px 6px 2px 2px;
 }
 
 :root .today .exceptional-closure-date {
@@ -868,10 +883,10 @@
   justify-content: center;
   width: 100%;
   min-height: 46px;
-  border: 1px solid rgba(92, 72, 55, 0.3);
+  border: 1px solid var(--border-control);
   border-radius: 13px;
   color: var(--accent-strong);
-  background: #fffdf9;
+  background: var(--surface-high);
   box-shadow: 0 3px 10px rgba(92, 72, 55, 0.06);
   font: inherit;
   font-weight: 850;
@@ -899,7 +914,7 @@
   width: 100%;
   min-height: 46px;
   margin: 2px 0 0;
-  border: 2px solid #111820;
+  border: 2px solid var(--border-card);
 }
 
 /* Échanges : teinte turquoise inédite dans l'application, avec le contour
@@ -935,22 +950,22 @@
 
 :root .day.exchange-day,
 :root .mini-day.exchange-day {
-  border: 2px solid #111820;
-  color: #10262a;
-  background: linear-gradient(145deg, #e3f7f9 0%, #9ddae3 100%);
+  border: 2px solid var(--border-card);
+  color: #2c2621;
+  background: linear-gradient(145deg, var(--surface) 0%, var(--border-control) 100%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.75),
-    0 4px 11px rgba(30, 99, 110, 0.16);
+    0 4px 11px rgba(87, 78, 66, 0.16);
 }
 
 :root .day.exchange-return,
 :root .mini-day.exchange-return {
-  background: linear-gradient(145deg, #d8f3f5 0%, #5eb6c4 100%);
+  background: linear-gradient(145deg, var(--bg) 0%, #5eb6c4 100%);
 }
 
 .today-status.tone-exchange {
   border-color: #5eb6c4;
-  background: linear-gradient(145deg, #effbfc, #c4e9ed);
+  background: linear-gradient(145deg, var(--surface-high), var(--border-control));
 }
 
 .exchange-calendar-marker {
@@ -979,7 +994,7 @@
   bottom: 4px;
   z-index: 4;
   max-width: 60%;
-  color: #10262a;
+  color: #2c2621;
   font-size: clamp(8px, 1.05vw, 11px);
   font-weight: 950;
   letter-spacing: 0.045em;
@@ -1007,7 +1022,7 @@
 .work-exchange-person-grid label > span,
 .work-exchange-group-field > span,
 .work-exchange-date-card > span {
-  color: #516178;
+  color: var(--muted);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -1016,11 +1031,11 @@
   width: 100%;
   min-height: 46px;
   box-sizing: border-box;
-  border: 1.5px solid #aebdce;
+  border: 1.5px solid var(--border-control);
   border-radius: 12px;
   padding: 10px 12px;
-  color: #17283e;
-  background: #fff;
+  color: #2c2621;
+  background: var(--surface);
   font: inherit;
   font-weight: 750;
 }
@@ -1034,24 +1049,24 @@
   gap: 3px;
   width: 100%;
   min-height: 52px;
-  border: 1.5px solid #78959b;
+  border: 1.5px solid var(--border-card);
   border-radius: 12px;
   padding: 8px 12px;
-  color: #17283e;
-  background: #fff;
+  color: #2c2621;
+  background: var(--surface);
   text-align: left;
   cursor: pointer;
 }
 
-.work-exchange-date-trigger span { color: #607287; font-size: 0.7rem; font-weight: 750; }
+.work-exchange-date-trigger span { color: var(--muted); font-size: 0.7rem; font-weight: 750; }
 .work-exchange-date-trigger strong { font-size: 0.83rem; }
 
 .work-exchange-cycle-calendar {
   margin-top: 8px;
-  border: 1.5px solid #111820;
+  border: 1.5px solid var(--border-card);
   border-radius: 13px;
   padding: 9px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
 }
 
 .work-exchange-cycle-calendar > header {
@@ -1065,50 +1080,50 @@
 
 .work-exchange-cycle-calendar > header button {
   min-height: 32px;
-  border: 1px solid #78959b;
+  border: 1px solid var(--border-card);
   border-radius: 9px;
-  color: #17283e;
-  background: #fff;
+  color: #2c2621;
+  background: var(--surface);
   font-size: 1.2rem;
   cursor: pointer;
 }
 
 .work-exchange-cycle-legend { display: flex; gap: 5px; margin-bottom: 7px; }
 .work-exchange-cycle-legend span { flex: 1; border-radius: 7px; padding: 4px; text-align: center; font-size: 0.61rem; font-weight: 850; }
-.work-exchange-cycle-legend .work { background: #eaf1fa; }
-.work-exchange-cycle-legend .off { color: #fff; background: #172231; }
-.work-exchange-cycle-legend .training { background: #b8bdc4; }
+.work-exchange-cycle-legend .work { background: var(--surface); }
+.work-exchange-cycle-legend .off { color: #fff; background: #2c2621; }
+.work-exchange-cycle-legend .training { background: var(--border-control); }
 .work-exchange-cycle-calendar .mini-weekdays { margin-bottom: 3px; }
 
 .exchange-cycle-day {
   position: relative;
   aspect-ratio: 1;
-  border: 1px solid #9cabbc;
+  border: 1px solid var(--border-card);
   border-radius: 7px;
   padding: 0;
-  color: #17283e;
-  background: #eaf1fa;
+  color: #2c2621;
+  background: var(--surface);
   font-weight: 850;
   cursor: pointer;
 }
 
-.exchange-cycle-day.off { color: #fff; background: #172231; }
-.exchange-cycle-day.training { color: #171717; background: #b8bdc4; }
-.exchange-cycle-day.selectable { border: 2px solid #111820; background: #9ddae3; box-shadow: 0 0 0 2px rgba(94, 182, 196, 0.28); }
+.exchange-cycle-day.off { color: #fff; background: #2c2621; }
+.exchange-cycle-day.training { color: var(--border-card); background: var(--border-control); }
+.exchange-cycle-day.selectable { border: 2px solid var(--border-card); background: var(--border-control); box-shadow: 0 0 0 2px rgba(94, 182, 196, 0.28); }
 .exchange-cycle-day:disabled { cursor: not-allowed; opacity: 1; }
 .exchange-cycle-unavailable { position: absolute; inset: 0; background: linear-gradient(45deg, transparent 45%, #e32636 46% 54%, transparent 55%), linear-gradient(-45deg, transparent 45%, #e32636 46% 54%, transparent 55%); filter: drop-shadow(0 0 1px #fff); }
-.exchange-cycle-day.selected { outline: 3px solid #111820; outline-offset: -2px; opacity: 1; }
+.exchange-cycle-day.selected { outline: 3px solid #2c2621; outline-offset: -2px; opacity: 1; }
 .work-exchange-cycle-calendar > small { display: block; min-height: 0; margin-top: 7px; font-size: 0.64rem; }
 
 .work-exchange-date-card {
-  border: 2px solid #111820;
+  border: 2px solid var(--border-card);
   border-radius: 16px;
   padding: 14px;
-  background: linear-gradient(145deg, #f5fcfd, #d9f2f5);
+  background: linear-gradient(145deg, var(--surface-high), var(--bg));
 }
 
 .work-exchange-date-card.return {
-  background: linear-gradient(145deg, #eefafb, #bce6eb);
+  background: linear-gradient(145deg, var(--surface), var(--border-control));
 }
 
 .work-exchange-error {
@@ -1127,10 +1142,10 @@
 
 .work-exchange-panel {
   margin-top: 14px;
-  border: 2px solid #111820;
+  border: 2px solid var(--border-card);
   border-radius: 18px;
   padding: 16px;
-  background: linear-gradient(145deg, #f9fefe, #e2f5f7);
+  background: linear-gradient(145deg, var(--surface-high), var(--bg));
 }
 
 .work-exchange-panel-heading {
@@ -1150,8 +1165,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  color: #10262a;
-  background: #8fd2dc;
+  color: #2c2621;
+  background: #bcb0a0;
 }
 
 .work-exchange-list {
@@ -1166,10 +1181,10 @@
   grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  border: 1.5px solid #7f9aa0;
+  border: 1.5px solid var(--border-card);
   border-radius: 14px;
   padding: 11px;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface);
 }
 
 .work-exchange-list img {
@@ -1185,16 +1200,16 @@
 }
 
 .work-exchange-list article span {
-  color: #5b6b80;
+  color: var(--muted);
   font-size: 0.72rem;
 }
 
 .work-exchange-list article button {
-  border: 1px solid #111820;
+  border: 1px solid var(--border-card);
   border-radius: 10px;
   padding: 8px 10px;
-  color: #17283e;
-  background: #fff;
+  color: #2c2621;
+  background: var(--surface);
   font-weight: 850;
   cursor: pointer;
 }
@@ -1214,10 +1229,10 @@ fieldset.leave-choices {
   display: grid;
   gap: 8px;
   margin: 16px 0;
-  border: 2px solid #111820;
+  border: 2px solid var(--border-card);
   border-radius: 15px;
   padding: 13px;
-  background: linear-gradient(145deg, #eefafb, #bce6eb);
+  background: linear-gradient(145deg, var(--surface), var(--border-control));
 }
 
 .day-exchange-summary button {
@@ -1293,7 +1308,7 @@ fieldset.leave-choices {
 
 /* La commande de mise à jour reste discrète et occupe le même coin sur tous
    les bandeaux, du Fold fermé à l’ordinateur. */
-#root .header-update-label{display:none}#root .header-update-label-compact{display:inline;font-size:clamp(.58rem,1.6vw,.68rem);letter-spacing:.01em}.app-shell>header{align-items:flex-start}.app-shell>header>.top-header-title,.app-shell>header>.header-command-area{align-self:flex-start}.app-shell>header .header-control-cluster{align-items:flex-start}#root .app-update-button.header-update-button{bottom:12px;gap:6px;left:auto;min-height:clamp(30px,8vw,34px);padding:clamp(4px,1.2vw,6px) clamp(8px,2vw,11px);position:absolute;right:clamp(6px,1.7vw,12px);width:auto;z-index:4}#root .app-update-button.header-update-button:not(.update-available){background:rgba(255,253,248,.94);border:1.5px solid rgba(29,48,70,.66);box-shadow:0 5px 14px rgba(16,35,58,.2);color:#245b9b}#root .app-update-button.header-update-button svg{height:15px;width:15px}[class~="top-header-forms"]::before{max-width:calc(100% - 96px)}[class~="top-header-contacts"]::before{max-width:calc(100% - 88px)}
+#root .header-update-label{display:none}#root .header-update-label-compact{display:inline;font-size:clamp(.58rem,1.6vw,.68rem);letter-spacing:.01em}.app-shell>header{align-items:flex-start}.app-shell>header>.top-header-title,.app-shell>header>.header-command-area{align-self:flex-start}.app-shell>header .header-control-cluster{align-items:flex-start}#root .app-update-button.header-update-button{bottom:12px;gap:6px;left:auto;min-height:clamp(30px,8vw,34px);padding:clamp(4px,1.2vw,6px) clamp(8px,2vw,11px);position:absolute;right:clamp(6px,1.7vw,12px);width:auto;z-index:4}#root .app-update-button.header-update-button:not(.update-available){background:rgba(255,253,248,.94);border:1.5px solid var(--border-card);box-shadow:0 5px 14px var(--border-card);color: var(--muted)}#root .app-update-button.header-update-button svg{height:15px;width:15px}[class~="top-header-forms"]::before{max-width:calc(100% - 96px)}[class~="top-header-contacts"]::before{max-width:calc(100% - 88px)}
 
 .header-title-line {
   display: block;
@@ -1343,28 +1358,37 @@ fieldset.leave-choices {
 /* La période vient en tête : on arrive ici pour lire un mois, le reste n'est
    qu'un complément. Les intitulés en petites capitales sont retirés — « 17
    jours travaillés ce mois-ci » se lit sans étiquette. */
-.planning-settings-body .calendar-toolbar.month-toolbar{order:-1}.planning-workspace-shell.framed .planning-settings-body .controls>*{grid-template-rows:auto}
+.planning-settings-body .calendar-toolbar.month-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;order:-1}.planning-workspace-shell.framed .planning-settings-body .controls>*{grid-template-rows:auto}
 
 /* La période se manipule d'un bloc : deux flèches rondes encadrent le mois et
    l'année réunis dans un seul cadre, séparés d'un simple filet. Avancer d'un
    mois ne demande plus d'ouvrir un menu, ce qui est le geste le plus fréquent. */
-.planning-workspace-shell.framed .planning-settings-body .period-navigation{display:flex;align-items:center;gap:8px;margin:4px 0;grid-template-columns:none}
-.period-step{display:grid;flex:none;place-items:center;width:38px;height:38px;border:1px solid rgba(92,72,55,.3);border-radius:50%;padding:0;background:#fffdf9;color:var(--accent-strong);cursor:pointer;transition:background-color 140ms ease,border-color 140ms ease}
+.planning-workspace-shell.framed .planning-settings-body .period-navigation{display:flex;align-items:center;gap:8px;width:100%;margin:4px 0 0;grid-template-columns:none}
+.period-step{display:grid;flex:none;place-items:center;width:38px;height:38px;border:1px solid rgba(92,72,55,.3);border-radius:50%;padding:0;background:var(--surface-high);color:var(--accent-strong);cursor:pointer;transition:background-color 140ms ease,border-color 140ms ease}
 .period-step:hover{border-color:var(--accent);background:var(--accent-soft)}
 .period-step svg{width:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.period-pickers{display:flex;flex:1 1 auto;align-items:center;min-width:0;border:1px solid rgba(92,72,55,.3);border-radius:14px;background:#fffdf9;overflow:hidden}
+.period-pickers{display:flex;flex:1 1 auto;align-items:center;min-width:0;border:1px solid rgba(92,72,55,.3);border-radius:14px;background:var(--surface-high);overflow:hidden}
 .period-pickers>*{flex:1 1 auto;min-width:0}
 .period-pickers>*+*{border-left:1px solid var(--line)}
 .planning-workspace-shell.framed .period-pickers .choice-picker-trigger{width:100%;border:0;border-radius:0;background:none;box-shadow:none}
 
-/* Le retour au mois courant est la seule commande restante de cette ligne :
-   un bouton discret, centré, qui ne concurrence pas la période au-dessus. */
-.planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{font-weight:850}
-.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button:hover{background:var(--accent-soft)}
-.planning-workspace-shell.framed .planning-settings-body .controls .planning-today-button{width:auto;min-height:32px;border:0;border-radius:0;padding:0;background:none;box-shadow:none;color:var(--accent-strong);font-size:12px;text-decoration:underline;text-underline-offset:3px}
+/* Le retour au mois courant occupe sa propre ligne, juste avant le compteur. */
+.planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}
+.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button{grid-column:1;width:100%;min-height:42px;border:0;border-radius:11px;padding:9px 14px;background:var(--action-primary);box-shadow:0 5px 12px rgba(152,84,56,.18);color:#fff;font:inherit;font-size:12px;font-weight:850;text-decoration:none;cursor:pointer}
+.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button:hover{background:var(--muted)}
 
 /* Une alerte qui nomme l'écran où corriger devient le chemin lui-même : tout
    le bloc est cliquable, et la dernière ligne annonce où il mène. */
 .alert-fix-action{display:grid;gap:5px;width:100%;border:1px solid rgba(168,57,47,.3);border-radius:13px;padding:11px 12px;background:#fffaf8;text-align:left;cursor:pointer}
 .alert-fix-action:hover{border-color:#a8392f;background:#fff4f1}
 .alert-fix-action>b{color:#8f2b22}
+
+
+/* L'action de mise à jour suit désormais le même gabarit que les rubriques. */
+.main-menu-drawer header > .main-menu-close { margin-left: auto; }
+.main-menu-title { display: grid; gap: 3px; min-width: 0; }
+.main-menu-title > span { color: #efc89e; font-size: .62rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.main-menu-title > h2 { margin: 0; line-height: 1.05; }
+.main-menu-pages > button.main-menu-refresh { --menu-accent: #d8ad78; }
+.main-menu-pages > button.main-menu-refresh:disabled { cursor: default; opacity: .7; }
+.main-menu-pages > button.main-menu-refresh.update-available { --menu-accent: #77aa97; }

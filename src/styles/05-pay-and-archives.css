@@ -8,7 +8,7 @@
 .allowance-card {
   border-radius: 14px;
   padding: 13px 14px 12px;
-  background: #fff;
+  background: var(--surface);
 }
 .allowance-card > header {
   display: flex;
@@ -51,11 +51,11 @@
 /* Un vrai effet de survol, pas juste un curseur qui change : c'est la souris
    du PC qui en profite, le doigt garde le glissé déjà en place. */
 .pay-nav-arrow:hover {
-  background: rgba(40, 89, 184, 0.14);
+  background: rgba(122, 111, 95, 0.14);
   color: var(--accent);
 }
 .pay-nav-arrow:active {
-  background: rgba(40, 89, 184, 0.22);
+  background: rgba(122, 111, 95, 0.22);
 }
 .pay-nav-arrow svg {
   width: 13px;
@@ -80,8 +80,8 @@
   text-transform: none;
 }
 .allowance-card-lead {
-  border-color: rgba(47, 97, 184, 0.28);
-  background: linear-gradient(135deg, #f7faff 0%, #eef4fd 100%);
+  border-color: var(--border-card);
+  background: linear-gradient(135deg, var(--surface-high) 0%, var(--surface-high) 100%);
 }
 /* Brut et net côte à côte, le net mis en avant : c'est le chiffre qu'on
    vient chercher, le brut ne sert qu'à le situer. */
@@ -99,7 +99,7 @@
   gap: 2px;
   border-radius: 12px;
   padding: 9px 11px;
-  background: rgba(255, 255, 255, 0.75);
+  background: #fff;
 }
 .pay-amount span {
   color: var(--muted);
@@ -154,11 +154,11 @@
 }
 .allowance-table tbody tr + tr th,
 .allowance-table tbody tr + tr td {
-  border-top: 1px solid #eef2f8;
+  border-top: 1px solid var(--surface);
 }
 .allowance-table tfoot th,
 .allowance-table tfoot td {
-  border-top: 2px solid rgba(47, 97, 184, 0.24);
+  border-top: 2px solid var(--border-card);
   padding-top: 8px;
   font-size: 14px;
   font-weight: 900;
@@ -185,7 +185,7 @@
   height: 6px;
   margin-right: 8px;
   border-radius: 999px;
-  background: rgba(47, 97, 184, 0.16);
+  background: rgba(122, 111, 95, 0.16);
   vertical-align: middle;
 }
 .allowance-progress i {
@@ -219,22 +219,22 @@
   width: min(360px, 100%);
   min-height: 42px;
   margin: -10px auto 18px;
-  border: 1px solid #b9cce3;
+  border: 1px solid var(--border-control);
   border-radius: 13px;
   padding: 8px 14px;
-  background: #f8faff;
-  color: #2d5da7;
+  background: var(--surface-high);
+  color: var(--muted);
   font: inherit;
   font-size: 12px;
   font-weight: 850;
   cursor: pointer;
-  box-shadow: 0 5px 14px rgba(45, 93, 167, 0.08);
+  box-shadow: 0 5px 14px rgba(122, 111, 95, 0.08);
 }
 .app-update-button:hover,
 .app-update-button:focus-visible {
-  border-color: #7fa3d2;
-  background: #eef4ff;
-  outline: 2px solid rgba(45, 93, 167, 0.15);
+  border-color: var(--border-card);
+  background: var(--surface-high);
+  outline: 2px solid rgba(122, 111, 95, 0.15);
   outline-offset: 2px;
 }
 .app-update-button:disabled { cursor: wait; opacity: 0.72; }
@@ -259,10 +259,10 @@
   align-items: center;
   gap: 9px;
   width: min(390px, calc(100vw - 24px));
-  border: 1px solid #a9cfc2;
+  border: 1px solid var(--border-card);
   border-radius: 15px;
   padding: 10px;
-  background: #f2faf7;
+  background: #fff;
   box-shadow: 0 14px 38px rgba(39, 80, 68, 0.2);
   color: #245e50;
 }
@@ -314,19 +314,19 @@
   align-items: center;
   justify-content: center;
   margin-top: 9px;
-  border: 1.5px dashed #6f96c6;
+  border: 1px solid var(--action-primary);
   border-radius: 11px;
   padding: 13px;
-  background: linear-gradient(145deg, #f4f8ff, #fff);
-  color: var(--ui);
+  background: var(--action-primary);
+  color: #fff;
   font-size: 12.5px;
   font-weight: 800;
   text-align: center;
   cursor: pointer;
 }
 .payslip-drop:hover {
-  border-color: #245dab;
-  background: #edf5ff;
+  border-color: var(--muted);
+  background: var(--muted);
 }
 .payslip-drop input {
   position: absolute;
@@ -353,10 +353,10 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 2px 8px;
-  border: 1px solid #eef2f8;
+  border: 1px solid var(--surface);
   border-radius: 12px;
   padding: 7px 9px;
-  background: #fbfcfe;
+  background: var(--surface-high);
 }
 .pay-field-head {
   grid-column: 1;
@@ -399,7 +399,7 @@
   grid-row: 1;
   border-radius: 999px;
   padding: 5px 8px;
-  background: #e7f0ff;
+  background: var(--surface);
   color: var(--accent);
   font-size: 9px;
   font-weight: 850;
@@ -474,7 +474,7 @@
   border-left: 3px solid var(--leave);
   border-radius: 0;
   padding: 8px 6px 8px 10px;
-  background: #fff;
+  background: var(--surface);
 }
 .leave-request strong {
   display: block;
@@ -492,7 +492,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 6px;
-  background: #fff;
+  background: var(--surface);
 }
 .archived-request-open {
   display: grid;
