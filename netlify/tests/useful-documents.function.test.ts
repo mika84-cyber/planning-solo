@@ -91,7 +91,11 @@ describe("documents utiles partagés", () => {
     mockedGetUser.mockResolvedValue({ id: 'admin', email: 'admin@example.test' } as never);
     const history = await (await usefulDocumentsHandler(new Request(`https://example.test/api/useful-documents?versions=${id}`))).json();
     await usefulDocumentsHandler(post({ action: 'restore-document-version', documentId: id, versionId: history.versions[0].id }));
-    expect(Buffer.from(await (await documentFileHandler(request)).arrayBuffer())).toEqual(original);
+    // Comparaison directe des octets : toEqual parcourt les 600 Ko un par un et
+    // dépassait la limite de 5 s pendant la mesure de couverture sur GitHub.
+    const restored = Buffer.from(await (await documentFileHandler(request)).arrayBuffer());
+    expect(restored.length).toBe(original.length);
+    expect(restored.equals(original)).toBe(true);
     await usefulDocumentsHandler(post({ action: 'delete-document', documentId: id }));
     expect((await documentFileHandler(request)).status).toBe(404);
     const unknownFile = await documentFileHandler(new Request('https://example.test/useful-forms/non-prevu.pdf'));
