@@ -1405,20 +1405,11 @@
 
 .top-header.top-header-forms::before {
   filter: none;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 18%,
-    #000 82%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 18%,
-    #000 82%,
-    transparent 100%
-  );
+  /* Bords de la photo fondus à gauche, à droite et en haut : seule la tête se détache. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent), linear-gradient(180deg, transparent, #000 24%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent), linear-gradient(180deg, transparent, #000 24%);
+  mask-composite: intersect;
 }
 
 /* L'image Accueil ne change pas : seul le détourage lumineux des lettres est
@@ -1655,8 +1646,8 @@
     min-height: 235px;
     padding: 24px 28px;
   }
-  .top-header.top-header-forms::before {
-    left: 53%;
+  .top-header.top-header-forms {
+    --art-x: calc(50% + 18px);
   }
 }
 

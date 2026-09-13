@@ -875,7 +875,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(colleagueIllustration).toBeVisible();
   await expect(colleagueIllustration).toHaveAttribute("src", "/colleague-planning-header.png");
   await expect(colleagueIllustration).toHaveCSS("object-fit", "contain");
-  expect(await colleagueIllustration.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).f)).toBeLessThanOrEqual(-10);
+  // Le panda occupe l'espace libre de l'en-tête, sans décalage qui le ferait chevaucher le titre.
+  expect(await colleagueIllustration.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).f)).toBe(0);
   const tomorrowPreview = page.locator(".colleague-tomorrow-table");
   await expect(page.locator(".colleague-tomorrow-heading").getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-2 th")).toHaveCSS("background-color", "rgb(255, 243, 227)");
@@ -986,13 +987,24 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   await page.setViewportSize({ width: 646, height: 904 });
+  const intermediateHeader = await page.locator(".top-header-colleagues").boundingBox();
   const intermediateTitle = await page.locator(".top-header-colleagues .top-header-title").boundingBox();
   const intermediateMenu = await page.locator(".top-header-colleagues .account-button").boundingBox();
   const intermediateImage = await colleagueIllustration.boundingBox();
-  expect(intermediateImage!.width).toBeGreaterThan(300);
-  expect(intermediateImage!.height).toBeGreaterThan(140);
-  expect(intermediateImage!.x).toBeGreaterThanOrEqual(intermediateTitle!.x + intermediateTitle!.width);
-  expect(intermediateImage!.x + intermediateImage!.width).toBeLessThanOrEqual(intermediateMenu!.x);
+  // Le panda occupe le centre, derrière le titre et les boutons dont il épouse les coins vides.
+  expect(intermediateImage!.height).toBeGreaterThan(130);
+  expect(Math.abs((intermediateImage!.x + intermediateImage!.width / 2) - (intermediateHeader!.x + intermediateHeader!.width / 2))).toBeLessThan(2);
+  expect(intermediateImage!.y + intermediateImage!.height).toBeGreaterThan(intermediateTitle!.y + intermediateTitle!.height);
+  expect(intermediateImage!.y + intermediateImage!.height).toBeLessThanOrEqual(intermediateHeader!.y + intermediateHeader!.height);
+  expect(intermediateMenu!.x + intermediateMenu!.width).toBeLessThanOrEqual(intermediateHeader!.x + intermediateHeader!.width);
+  const titleCover = await page.evaluate(() => {
+    // Le défilement doux de la page laisserait l’en-tête hors de l’écran au moment de la mesure.
+    window.scrollTo({ top: 0, behavior: "instant" });
+    const title = document.querySelector(".top-header-colleagues .top-header-title h1")!.getBoundingClientRect();
+    const hit = document.elementFromPoint(title.left + 4, title.top + title.height / 2);
+    return { onTop: Boolean(hit?.closest(".top-header-title")), element: hit ? `${hit.tagName}.${hit.className}` : "aucun" };
+  });
+  expect(titleCover.onTop, titleCover.element).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   await page.setViewportSize({ width: 900, height: 1000 });
@@ -1000,7 +1012,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const openScreenMenu = await page.locator(".top-header-colleagues .account-button").boundingBox();
   const openScreenImage = await colleagueIllustration.boundingBox();
   expect(openScreenHeader!.height).toBeLessThanOrEqual(240);
-  await expect(colleagueIllustration).toHaveCSS("max-height", "213px");
+  expect((await colleagueIllustration.boundingBox())!.height).toBeGreaterThan(205);
   expect(Math.abs((openScreenImage!.x + openScreenImage!.width / 2) - (openScreenHeader!.x + openScreenHeader!.width / 2))).toBeLessThan(2);
   expect(openScreenHeader!.x + openScreenHeader!.width - openScreenMenu!.x - openScreenMenu!.width).toBeLessThan(90);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -1010,7 +1022,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const desktopHeader = await page.locator(".top-header-colleagues").boundingBox();
   const desktopImage = await colleagueIllustration.boundingBox();
   expect(desktopHeader!.height).toBeLessThanOrEqual(240);
-  await expect(colleagueIllustration).toHaveCSS("max-height", "213px");
+  expect((await colleagueIllustration.boundingBox())!.height).toBeGreaterThan(205);
   expect(Math.abs((desktopImage!.x + desktopImage!.width / 2) - (desktopHeader!.x + desktopHeader!.width / 2))).toBeLessThan(2);
   await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Accueil', exact: true }).click();
   const desktopReferenceHeader = await page.locator('.top-header:visible').boundingBox();

@@ -306,20 +306,26 @@
   .group-choice-grid button { min-height: 92px; }
 }
 
-/* La sculpture dorée reste centrée et entière dans le bandeau, quel que soit
-   le rapport largeur / hauteur de l’écran. */
+/* Tête dorée de taille modérée, loin du liseré, sans toucher titre ni boutons ;
+   left vise le centre de la tête, top pose son bas près du liseré inférieur. */
 .top-header.top-header-forms {
   --section-accent: #a66c2f;
+  --art-h: 220px;
+  --art-x: 50%;
+  --art-gap: 10px;
   position: relative;
   min-height: 205px;
   overflow: hidden;
 }
+.top-header.top-header-forms .top-header-title {
+  width: max-content;
+}
 .top-header.top-header-forms::before {
   position: absolute;
   z-index: 0;
-  top: 50%;
-  left: 52%;
-  height: 112%;
+  top: calc(100% - var(--art-gap) - var(--art-h) * 0.4171);
+  left: calc(var(--art-x) + var(--art-h) * 0.0169);
+  height: var(--art-h);
   aspect-ratio: 680 / 531;
   background: url("/forms-header-art-fast.webp") center / 100% 100% no-repeat;
   content: "";
@@ -533,12 +539,8 @@
 
 @media (max-width: 720px) {
   .top-header.top-header-forms {
+    --art-h: 200px;
     min-height: 215px;
-  }
-  .top-header.top-header-forms::before {
-    top: 54%;
-    left: 45%;
-    height: 86%;
   }
   .top-header.top-header-forms .top-header-title,
   .top-header.top-header-forms .account-menu,
@@ -584,6 +586,14 @@
     width: 42px;
     align-self: center;
   }
+}
+
+/* Écran étroit : la tête s’écarte juste assez du titre, au plus près du centre (mesuré au pixel). */
+@media (max-width: 520px) {
+  .top-header.top-header-forms { --art-h: min(164px, calc(57.6vw - 69px)); --art-x: calc(50% + clamp(0px, (506px - 100vw) * 0.47, 46px)); }
+}
+@media (max-width: 412px) {
+  .top-header.top-header-forms { --art-h: min(164px, calc(26vw + 64px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .pay-app-screen,
