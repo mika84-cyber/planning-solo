@@ -54,9 +54,9 @@
   grid-row: 1 / span 2;
   width: 44px;
   height: 26px;
-  border: 2px solid var(--border-card);
+  border: 2px solid #9d91b5;
   border-radius: 999px;
-  background: var(--bg);
+  background: #e5e0ed;
 }
 .school-vacation-switch > span i {
   position: absolute;
@@ -67,7 +67,7 @@
   border-radius: 50%;
   background: var(--surface);
 }
-.school-vacation-switch.active > span { border-color: var(--border-card); background: var(--border-card); }
+.school-vacation-switch.active > span { border-color: #7255ad; background: #8c70c4; }
 .school-vacation-switch.active > span i { transform: translateX(18px); }
 .school-vacation-switch strong,
 .school-vacation-switch small { grid-column: 2; }

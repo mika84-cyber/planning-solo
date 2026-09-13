@@ -342,8 +342,6 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
         <p>Partagez uniquement vos jours de présence et d’absence. Vos notes, votre paie et vos informations personnelles restent privées.</p>
       </header>
 
-      {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
-
       <section className="colleague-card colleague-how-it-works" aria-labelledby="colleague-how-title">
         <header className="colleague-how-header">
           <p className="eyebrow" id="colleague-how-title">Comment ça marche</p>
@@ -355,6 +353,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
           <li><span>3</span><p><strong>Gardez le contrôle</strong><small>Le destinataire peut supprimer son accès et vous pouvez arrêter la diffusion à tout moment.</small></p></li>
         </ol> : null}
       </section>
+
+      {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
 
       <section className="colleague-card colleague-profile-card">
         <header className="colleague-profile-card-heading">

@@ -507,7 +507,7 @@
   border-block: 1px solid var(--bg);
   padding: 15px 0;
 }
-.pay-dashboard-amounts { border-top: 2px solid var(--border-card); }
+.pay-dashboard-amounts { border-top: 1px solid var(--border-soft); }
 
 .pay-dashboard-amounts p { display: grid; gap: 4px; margin: 0; }
 .pay-dashboard-amounts span { color: var(--muted); font-size: 12px; font-weight: 800; }

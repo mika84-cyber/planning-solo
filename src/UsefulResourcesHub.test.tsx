@@ -16,9 +16,9 @@ describe("choix des documents et contacts", () => {
     expect(html).toContain("Contacts");
     expect(html).toContain("Plannings PDF");
     expect(html).toContain("Retrouvez rapidement vos documents et vos contacts utiles.");
-    expect(html).toContain("/resource-forms-brancusi.png");
-    expect(html).toContain("/resource-contacts-brancusi-v3.png");
-    expect(html).toContain("/resource-pdf-brancusi-v3.png");
+    expect(html).toContain("/resource-forms-brancusi-v2.png");
+    expect(html).toContain("/resource-contacts-brancusi-v4.png");
+    expect(html).toContain("/resource-pdf-brancusi-v5.png");
     expect(html).not.toContain("Toutes les rubriques");
     expect(html).not.toContain("Page des formulaires");
     expect(html).not.toContain("Page des contacts");

@@ -57,8 +57,10 @@
      sa rubrique sans qu'on ait à chercher où elle commence. */
   /* Chaque encadré est délimité par un trait noir : sur du blanc, c'est
      le seul moyen de voir où une sous-partie commence. */
-  --border-card: #2c2621;
-  --border-control: rgba(44, 38, 33, 0.45);
+  --border-card: #968b80;
+  /* Séparations intérieures : lignes entre éléments d'une même carte. */
+  --border-soft: #e7e1d9;
+  --border-control: rgba(44, 38, 33, 0.3);
   --radius-panel: 24px;
   --radius-card: 18px;
   --radius-control: 13px;

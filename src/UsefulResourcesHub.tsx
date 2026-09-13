@@ -14,16 +14,16 @@ const RESOURCE_TABS: ReadonlyArray<{
   title: string;
   image: string;
 }> = [
-  { key: "pdf", title: "Plannings PDF", image: "/resource-pdf-brancusi-v3.png" },
+  { key: "pdf", title: "Plannings PDF", image: "/resource-pdf-brancusi-v5.png" },
   {
     key: "forms",
     title: "Formulaires",
-    image: "/resource-forms-brancusi.png",
+    image: "/resource-forms-brancusi-v2.png",
   },
   {
     key: "contacts",
     title: "Contacts",
-    image: "/resource-contacts-brancusi-v3.png",
+    image: "/resource-contacts-brancusi-v4.png",
   },
 ];
 

@@ -292,7 +292,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(payProfile.locator(".pay-work-schedule")).toHaveCSS("border-top-width", "1px");
   await expect(payProfile.locator(".pay-work-time-picker").first()).toHaveCSS("border-top-color", profileOutline);
   await expect(payProfile.locator(".pay-work-time-picker").first()).toHaveCSS("border-top-width", "1px");
-  await expect(page.locator(".pay-dashboard-amounts")).toHaveCSS("border-top-width", "2px");
+  await expect(page.locator(".pay-dashboard-amounts")).toHaveCSS("border-top-width", "1px");
   const payslipChoice = page.locator(".payslip-file-drop").first();
   await expect(payslipChoice).toHaveCSS("border-top-width", "1px");
   await expect(payslipChoice).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
@@ -776,8 +776,14 @@ test("les documents et contacts gardent trois onglets accessibles sur petit écr
   await goToSection(page, "documents");
   const cards = page.locator(".useful-resource-tab");
   const boxes = await cards.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
-  const pdfScale = await page.locator(".resource-pdf .useful-resource-tab-art img").evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).a);
-  expect(pdfScale).toBeGreaterThanOrEqual(1.24);
+  // Les trois illustrations sont rognées au ras de leur objet : même cadre,
+  // même ligne de sol, quelle que soit la rubrique.
+  const arts = await page.locator(".useful-resource-tab-art img").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  expect(arts).toHaveLength(3);
+  for (const art of arts.slice(1)) {
+    expect(Math.abs(art.height - arts[0].height)).toBeLessThan(2);
+    expect(Math.abs(art.bottom - arts[0].bottom)).toBeLessThan(2);
+  }
   if (page.viewportSize()!.width <= 720) {
     expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(3);
     expect(Math.abs(boxes[1].y - boxes[2].y)).toBeLessThan(3);
@@ -876,7 +882,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-1, .colleague-tomorrow-group.group-3")).toHaveCount(0);
   await expect(tomorrowPreview.locator(".colleague-tomorrow-row").last().locator("td").first()).toHaveCSS("border-bottom-width", "0px");
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-color", "rgb(44, 38, 33)");
-  await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-image", "none");
+  // Un halo chaud derrière le panda, sur la même base sombre.
+  await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-image", /radial-gradient/);
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("border-radius", "28px");
   await expect(page.locator(".top-header-colleagues .top-header-title h1 span")).toHaveCount(2);
   expect(parseFloat(await page.locator(".top-header-colleagues .top-header-title h1").evaluate((node) => getComputedStyle(node).fontSize))).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) <= 700 ? 16 : 20);
@@ -909,7 +916,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(chooseCard.locator(".colleague-person-row").first()).toContainText("Agnès");
   const agnesSharedRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Agnès" });
   await expect(agnesSharedRow.getByText("Planning partagé", { exact: true })).toBeVisible();
-  await expect(agnesSharedRow).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
+  await expect(agnesSharedRow).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-soft"));
   await expect(page.getByRole("button", { name: "Voir", exact: true })).toHaveCount(1);
   const samirRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Samir" });
   page.once("dialog", async (dialog) => {
@@ -936,7 +943,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(sharedRow.getByRole("button", { name: "Bloquer" })).toBeVisible();
 
   const receivedCard = page.locator(".colleague-received-card");
-  await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", "rgb(44, 38, 33)");
+  await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", await cardBorderColor(page));
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
   await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(receivedCard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
@@ -2519,7 +2526,7 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
 
   await expect(page.locator(".day.exchange-given")).toHaveCount(1);
   await expect(page.locator(".day.exchange-return")).toHaveCount(1);
-  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
+  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(page.locator(".day.exchange-given .exchange-calendar-marker")).toHaveAttribute("src", "/exchange-arrows.png");
   await expect(page.locator(".day.exchange-given .exchange-calendar-label")).toHaveText("OFF");
   await expect(page.locator(".day.exchange-return .exchange-calendar-label")).toHaveText("TRAVAIL");
@@ -2574,8 +2581,8 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(header).toBeVisible();
   await expect(header).toHaveCSS("background-image", /header-art-fast\.webp/);
   await expect(header).toHaveCSS("border-top-width", "2px");
-  await expect(header).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
-  await expect(account).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
+  await expect(header).toHaveCSS("border-top-color", await cardBorderColor(page));
+  await expect(account).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(menuButton).toBeVisible();
   await expect(page.locator((page.viewportSize()?.width || 0) <= 720 ? ".mobile-bottom-navigation" : ".desktop-side-navigation")).toBeVisible();
   await expect(update).toHaveCount(0);
@@ -2652,7 +2659,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(cleanupButtonBox).not.toBeNull();
     expect(cleanupButtonBox!.width).toBeGreaterThan(page.viewportSize()!.width * 0.8);
   }
-  await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
+  await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-width", "2px");
   await expect(page.locator(".today-next-work strong")).toHaveText(
     /^[a-zà-ÿ]+ \d{2}\/\d{2}\/\d{2}(?: — (?:Formation|Fermeture exceptionnelle))?$/i,
@@ -3977,7 +3984,7 @@ test("les détails des soldes séparent les congés pris et à venir", async ({ 
   expect(archiveBox!.height).toBeLessThan(80);
   await expect(archive).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(archive).toHaveCSS("background-image", "none");
-  await expect(archive).toHaveCSS("border-color", "rgb(44, 38, 33)");
+  await expect(archive).toHaveCSS("border-color", await cardBorderColor(page));
   await expect(archive.locator(".request-archive-icon")).toHaveCSS("color", "rgb(111, 100, 85)");
   await expect(archive.locator(".request-archive-copy strong")).toHaveText("Demandes archivées");
   await page.locator(".leave-balance-grid > button.annual").click();

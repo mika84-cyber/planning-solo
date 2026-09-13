@@ -84,22 +84,23 @@
   min-width: 0;
   overflow: hidden;
   padding: clamp(12px, 2vw, 20px);
-  background: linear-gradient(145deg, #d5c7ad, #9b8667);
+  /* Un seul fond pour les trois rubriques : elles forment une famille. */
+  background: linear-gradient(160deg, #fbf3e7, #ecdcc5);
 }
-.resource-pdf{background:#e4ded2}.resource-forms{background:#ead6c4}.resource-contacts{background:#dde6e4}.resource-pdf .useful-resource-tab-art{padding:0;background:var(--border-control)}.resource-pdf .useful-resource-tab-art img{object-fit:cover;transform:scale(1.26)}.resource-contacts .useful-resource-tab-art { background: linear-gradient(145deg, var(--border-card), var(--border-card)); }
+.resource-pdf{background:#e4ded2}.resource-forms{background:#ead6c4}.resource-contacts{background:#dde6e4}
 
 .useful-resource-tab-art img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: center;
-  transform: scale(1.04);
+  /* Les images sont rognées au ras de leur objet : posées sur la même ligne
+     de sol, les trois gardent la même taille et le même niveau. */
+  object-position: center bottom;
+  /* Une ombre qui suit le contour : les feuilles crème se détachent du fond. */
+  filter: drop-shadow(0 1px 1px rgba(92, 58, 28, 0.38)) drop-shadow(0 4px 7px rgba(92, 58, 28, 0.2));
 }
 
-.resource-contacts .useful-resource-tab-art img {
-  object-position: center;
-  transform: translateY(5%) scale(0.89);
-}
+
 
 .useful-resource-tab-copy {
   display: grid; place-items: center;
