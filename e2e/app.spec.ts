@@ -985,7 +985,9 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toContainText("Groupe 2");
   // L'utilisateur figure dans la liste, dans son propre groupe.
   await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(2);
-  await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2 ~ .colleague-tomorrow-row.is-self")).toContainText("(vous)");
+  const selfRow = tomorrowTable.locator(".colleague-tomorrow-group.group-2 ~ .colleague-tomorrow-row.is-self");
+  await expect(selfRow).toHaveCount(1);
+  await expect(selfRow).not.toContainText("(vous)");
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
