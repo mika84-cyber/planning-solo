@@ -316,3 +316,4 @@
   background: transparent;
   box-shadow: none;
 }
+.colleague-tomorrow-self { color: var(--muted); font-size: .72rem; font-weight: 700; }

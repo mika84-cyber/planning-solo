@@ -13,7 +13,7 @@ import {
 } from "./colleagueSharingApi";
 import "./colleaguePlanning.css";
 
-type Props = { demoMode: boolean; initialName: string; getOwnPresence?: (date: Date) => PersonalPresence };
+type Props = { demoMode: boolean; initialName: string; getOwnPresence?: (date: Date) => PersonalPresence; ownGroup?: number };
 
 const demoDirectory: ColleagueDirectory = {
   self: { userId: "demo-mika", displayName: "Mika", visible: true },
@@ -59,6 +59,15 @@ function tomorrowStatusTone(status: TomorrowStatus) {
   if (status === "Repos") return "rest";
   if (status.startsWith("1/2 journée") || status === "Absence partielle") return "partial";
   return "absence";
+}
+
+/** Statut de demain pour l'utilisateur, lu dans son propre planning. */
+export function personalTomorrowStatus(presence: PersonalPresence): TomorrowStatus {
+  if (presence.status === "work") return "Travail";
+  if (presence.status === "training") return "Formation";
+  if (presence.status === "rest") return "Repos";
+  if (presence.status === "absence") return "Absence";
+  return presence.halfMoment === "morning" ? "1/2 journée · matin" : presence.halfMoment === "afternoon" ? "1/2 journée · après-midi" : "Absence partielle";
 }
 
 export function sharedPlanningDayStatus(planning: SharedColleaguePlanning, date: Date): TomorrowStatus {
@@ -159,7 +168,7 @@ function MonthGrid({ planning, view }: { planning: SharedColleaguePlanning; view
   );
 }
 
-export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }: Props) {
+export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, ownGroup }: Props) {
   const [data, setData] = useState<ColleagueDirectory | null>(demoMode ? demoDirectory : null);
   const [name, setName] = useState(initialName || (demoMode ? demoDirectory.self.displayName : ""));
   const [query, setQuery] = useState("");
@@ -286,6 +295,9 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
   const received = useMemo(() => data?.incoming.filter(isReadableShare) || [], [data?.incoming]);
   const savedName = data?.self.displayName || "";
   const nameChanged = name.trim() !== savedName;
+  // L'utilisateur figure aussi dans « Qui travaille demain ? », dans son groupe.
+  const selfTomorrow = getOwnPresence && ownGroup ? { status: personalTomorrowStatus(getOwnPresence(tomorrowDate())), group: ownGroup } : null;
+  const selfName = data?.self.displayName || name.trim() || "Vous";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: tomorrowAttempt relance les lectures après Réessayer.
   useEffect(() => {
@@ -455,9 +467,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence }:
                   <tbody>
                     {([1, 2, 3] as const).map((group) => {
                       const groupShares = received.filter((share) => tomorrowSummaries[share.ownerId]?.group === group);
-                      if (!groupShares.length) return null;
+                      const selfHere = selfTomorrow?.group === group;
+                      const groupCount = groupShares.length + (selfHere ? 1 : 0);
+                      if (!groupCount) return null;
                       return <Fragment key={group}>
-                        <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={2}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span><small>{groupShares.length} collègue{groupShares.length > 1 ? "s" : ""}</small></th></tr>
+                        <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={2}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span><small>{groupCount} collègue{groupCount > 1 ? "s" : ""}</small></th></tr>
+                        {selfHere && selfTomorrow ? <tr className={`colleague-tomorrow-row is-self status-${tomorrowStatusTone(selfTomorrow.status)}`}><td><strong>{selfName}</strong> <small className="colleague-tomorrow-self">(vous)</small></td><td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(selfTomorrow.status)}`}><i aria-hidden="true" />{selfTomorrow.status}</span></td></tr> : null}
                         {groupShares.map((share) => {
                           const summary = tomorrowSummaries[share.ownerId]!;
                           return <tr className={`colleague-tomorrow-row status-${tomorrowStatusTone(summary.status)}`} key={share.ownerId}>

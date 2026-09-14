@@ -576,7 +576,7 @@
 
 /* Téléphone : une tête plus petite, glissée à gauche sous le titre (mesuré au pixel). */
 @media (max-width: 520px) {
-  .top-header.top-header-forms { --art-h: 136px; --art-x: 55%; }
+  .top-header.top-header-forms { --art-h: 140px; --art-gap: 6px; --art-x: calc(54.5% - clamp(0px, (100vw - 412px) * 0.5, 60px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .pay-app-screen,

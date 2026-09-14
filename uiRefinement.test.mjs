@@ -205,7 +205,7 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain("#304f79");
     expect(styles).not.toContain("#4c5e76");
     // Verre sombre du menu : l'onglet ouvert devient une pastille terracotta.
-    expect(styles).toContain(".desktop-side-navigation button.active { background: rgba(152, 84, 56, 0.85); color: #fff;");
+    expect(styles).toContain(".desktop-side-navigation button.active::after { width: 36px; opacity: 1; }");
     // La couleur seule ne suffisait pas : les deux teintes se ressemblaient.
     expect(styles).toContain(".desktop-side-navigation button.active { font-weight: 880; }");
     expect(styles).toContain(".desktop-side-navigation button.active svg { stroke-width: 2.2; }");

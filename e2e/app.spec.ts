@@ -441,8 +441,12 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   expect(workedDaysBox).not.toBeNull();
   expect(todayButtonBox!.y + todayButtonBox!.height).toBeLessThanOrEqual(workedDaysBox!.y);
   expect(todayButtonBox!.width).toBeGreaterThan(workedDaysBox!.width * 0.98);
-  await expect(todayButton).toHaveCSS("background-color", "rgb(152, 84, 56)");
-  await expect(todayButton).toHaveCSS("color", "rgb(255, 255, 255)");
+  // « Aujourd’hui » : le mot en terracotta dans le même encadré que les jours travaillés.
+  await expect(todayButton).toHaveCSS("background-color", await cssTokenRgb(page, "--surface"));
+  await expect(todayButton).toHaveCSS("border-top-width", "1px");
+  await expect(todayButton).toHaveCSS("border-top-left-radius", "13px");
+  await expect(todayButton).toHaveCSS("color", await cssTokenRgb(page, "--accent-strong"));
+  expect(parseFloat(await todayButton.evaluate((node) => getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(15);
   const trainingDay = page.locator(".month-card .day.training").first();
   await expect(trainingDay).toHaveCSS("background-color", "rgb(180, 180, 180)");
   await expect(trainingDay).toHaveCSS("background-image", "none");
@@ -474,7 +478,9 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
       divider: getComputedStyle(button, "::before").backgroundColor,
       dividerHeight: getComputedStyle(button, "::before").height,
     })));
-    expect(mobileStyles[0].background).not.toBe(mobileStyles[1].background);
+    // L’onglet ouvert s’allume d’un trait terracotta sous son nom.
+    await expect.poll(() => mobileNav.locator("button").first().evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("1");
+    expect(await mobileNav.locator("button").nth(1).evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("0");
     expect(mobileStyles[1].divider).toBe("rgba(0, 0, 0, 0)");
   } else {
     const desktopNav = page.locator(".desktop-side-navigation");
@@ -487,7 +493,8 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
       background: getComputedStyle(button).backgroundColor,
       dividerWidth: getComputedStyle(button).borderLeftWidth,
     })));
-    expect(desktopStyles[0].background).not.toBe(desktopStyles[1].background);
+    await expect.poll(() => desktopNav.locator("button").first().evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("1");
+    expect(await desktopNav.locator("button").nth(1).evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("0");
     expect(desktopStyles[1].dividerWidth).toBe("0px");
   }
   await goToSection(page, "leave");
@@ -976,7 +983,9 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const tomorrowTable = receivedCard.locator(".colleague-tomorrow-table");
   await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Formation|Repos|Absence|1\/2 journée|Absence partielle)/);
   await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toContainText("Groupe 2");
-  await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(1);
+  // L'utilisateur figure dans la liste, dans son propre groupe.
+  await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(2);
+  await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2 ~ .colleague-tomorrow-row.is-self")).toContainText("(vous)");
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);

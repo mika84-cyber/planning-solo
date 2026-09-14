@@ -84,9 +84,10 @@
   min-width: 0;
   overflow: hidden;
   padding: 9px 9px 16px;
-  /* Un seul fond pour les trois rubriques : un gris chaud repris de l'en-tête
-     Documents, qui fait ressortir le rouge, le bleu et le doré des objets. */
-  background: linear-gradient(160deg, #f1eee7, #ddd6c7);
+  /* Un seul fond pour les trois rubriques : un bleu nuit doux, repris du
+     téléphone et de la sphère. Plus clair en haut, il donne aux objets l'air
+     d'être posés sur une scène. */
+  background: linear-gradient(165deg, #4a5d7e, #26324a);
 }
 .resource-pdf{background:#e4ded2}.resource-forms{background:#ead6c4}.resource-contacts{background:#dde6e4}
 
