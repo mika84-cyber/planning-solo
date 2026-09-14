@@ -37,7 +37,7 @@ describe('outils administrateur', () => {
   it('ne révèle aux invités que le message actif et refuse toutes leurs écritures', async () => {
     guest();
     expect(await (await handler(get())).json()).toEqual({ pin: null });
-    for (const action of ['pin', 'move-member', 'remove-member', 'restore', 'cancel-job']) expect((await handler(post({ action }))).status).toBe(403);
+    for (const action of ['pin', 'move-member', 'remove-member', 'restore', 'cancel-job', 'dismiss-alert', 'delete-job', 'purge-trash']) expect((await handler(post({ action }))).status).toBe(403);
     vi.mocked(getUser).mockResolvedValue(null);
     expect((await handler(get())).status).toBe(401);
     owner();
@@ -117,6 +117,30 @@ describe('outils administrateur', () => {
     vi.setSystemTime(new Date('2026-09-09T12:01:00Z')); await runPublications(adminStore());
     expect(sendDocumentAnnouncementEmail).not.toHaveBeenCalled();
     expect((await overview()).jobs.some((job: { status: string }) => job.status === 'error')).toBe(true);
+  });
+  it('efface une alerte, une publication à venir et un élément de corbeille', async () => {
+    await documents(post({ action: 'share-document', documentId: 'demande-conges.pdf', audience: 'all', message: 'À consulter' }, 'useful-documents'));
+    const alert = (await overview()).alerts[0];
+    guest(); await documents(post({ action: 'seen-notification', id: alert.id }, 'useful-documents'));
+    owner(); expect((await handler(post({ action: 'dismiss-alert', id: alert.id }))).status).toBe(200);
+    expect((await overview()).alerts).toHaveLength(0);
+    expect([...data.keys()].some(key => key.startsWith('admin-tools/seen/' + alert.id + '/'))).toBe(false);
+    expect((await handler(post({ action: 'dismiss-alert', id: alert.id }))).status).toBe(404);
+
+    vi.mocked(sendDocumentAnnouncementEmail).mockClear();
+    await documents(post(upload({ publishAt: '2026-09-09T11:00:00Z' }), 'useful-documents'));
+    const job = (await overview()).jobs[0];
+    expect((await handler(post({ action: 'delete-job', id: job.id }))).status).toBe(200);
+    expect((await overview()).jobs).toHaveLength(0);
+    vi.setSystemTime(new Date('2026-09-09T11:01:00Z')); await runPublications(adminStore());
+    expect(sendDocumentAnnouncementEmail).not.toHaveBeenCalled();
+
+    const member = (await overview()).groups[0].members[0];
+    await handler(post({ action: 'remove-member', member }));
+    const trashId = (await overview()).trash[0].id;
+    expect((await handler(post({ action: 'purge-trash', id: trashId }))).status).toBe(200);
+    expect((await overview()).trash).toHaveLength(0);
+    expect((await handler(post({ action: 'restore', id: trashId }))).status).toBe(410);
   });
   it('compte chaque affichage une seule fois, refuse les faux reçus et relance uniquement les non-vus', async () => {
     await documents(post({ action: 'share-document', documentId: 'demande-conges.pdf', audience: 'all', message: 'À consulter' }, 'useful-documents'));

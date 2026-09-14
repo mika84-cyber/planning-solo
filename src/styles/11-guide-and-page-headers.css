@@ -816,7 +816,8 @@
   background-color: color-mix(in srgb, var(--section-accent) 10%, #fffdf8);
 }
 
-.update-available-backdrop { z-index: 1600; }
+/* La mise à jour s’annonce au centre de l’écran, même sur téléphone. */
+.update-available-backdrop { z-index: 1600; align-items: center; }
 .update-available-modal {
   width: min(430px, calc(100vw - 24px));
   border: 1.5px solid var(--border-card);

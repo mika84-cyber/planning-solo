@@ -1,6 +1,6 @@
 import { getUser } from '@netlify/identity';
 import { isTrustedMutation } from '../lib/requestSecurity.mts';
-import { adminStore, archive, isOwner, records, readGroups, groupsKey, trashValid, futureDate, receiptKey, type Trash, type Pin, type Delivery, type Job } from '../lib/adminTools.mts';
+import { adminStore, archive, isOwner, records, readGroups, groupsKey, trashValid, futureDate, receiptKey, deliveryKey, type Trash, type Pin, type Delivery, type Job } from '../lib/adminTools.mts';
 import type { UsefulContactsPayload, UsefulContact } from '../../src/usefulContactsTypes.ts';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'private, no-store' } });
 export default async function handler(request: Request) {
@@ -71,6 +71,31 @@ export default async function handler(request: Request) {
       const docKey = `useful-documents/metadata/${job.documentId}`;
       const doc = await store.get(docKey, { type: 'json' }) as Record<string, unknown> | null;
       if (job.publishesDocument && doc?.publishAt === job.at) await store.setJSON(docKey, { ...doc, publishAt: '9999-01-01T00:00:00.000Z' });
+    } else if (body.action === 'dismiss-alert') {
+      if (typeof body.id !== 'string' || !/^[A-Za-z0-9_-]{1,80}$/.test(body.id)) return json({ error: 'Alerte invalide.' }, 400);
+      if (!await store.get(deliveryKey(body.id), { type: 'json' })) return json({ error: 'Alerte introuvable.' }, 404);
+      await store.delete(deliveryKey(body.id));
+      // Les accusés de lecture de cette alerte n'ont plus de raison d'être.
+      for await (const page of store.list({ prefix: 'admin-tools/seen/' + body.id + '/', paginate: true })) for (const blob of page.blobs) await store.delete(blob.key);
+    } else if (body.action === 'delete-job') {
+      if (typeof body.id !== 'string' || !/^[a-f0-9-]{36}$/.test(body.id)) return json({ error: 'Publication invalide.' }, 400);
+      const key = 'admin-tools/jobs/' + body.id;
+      const job = await store.get(key, { type: 'json' }) as Job | null;
+      if (!job) return json({ error: 'Publication introuvable.' }, 404);
+      if (job.status === 'pending') {
+        if (Date.parse(job.at) <= Date.now()) return json({ error: 'Cette publication est en cours : attendez la fin avant de l’effacer.' }, 409);
+        // Effacer une publication à venir l'annule : le document reste un brouillon.
+        const docKey = 'useful-documents/metadata/' + job.documentId;
+        const doc = await store.get(docKey, { type: 'json' }) as Record<string, unknown> | null;
+        if (job.publishesDocument && doc?.publishAt === job.at) await store.setJSON(docKey, { ...doc, publishAt: '9999-01-01T00:00:00.000Z' });
+      }
+      await store.delete(key);
+      await store.delete('admin-tools/locks/' + body.id);
+    } else if (body.action === 'purge-trash') {
+      if (typeof body.id !== 'string' || !/^[a-f0-9-]{36}$/.test(body.id)) return json({ error: 'Élément invalide.' }, 400);
+      const key = 'admin-tools/trash/' + body.id;
+      if (!await store.get(key, { type: 'json' })) return json({ error: 'Élément introuvable dans la corbeille.' }, 404);
+      await store.delete(key);
     } else if (body.action === 'restore') {
       if (typeof body.id !== 'string' || !/^[a-f0-9-]{36}$/.test(body.id)) return json({ error: 'Élément invalide.' }, 400);
       const key = `admin-tools/trash/${body.id}`;

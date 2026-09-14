@@ -109,11 +109,20 @@ test('outils administrateur et aperçu invité sur Z Fold ouvert', async ({ page
   await panel.getByLabel('Nouveau groupe').selectOption('3');
   await panel.getByRole('button', { name: 'Déplacer le collègue' }).click();
   await expect(panel.getByText('Groupe 1 : 0 · Groupe 2 : 1 · Groupe 3 : 1', { exact: true })).toBeVisible();
+  // Chaque manipulation réussie s'annonce dans un bandeau visible au bas de la fenêtre.
+  await expect(panel.locator('.admin-toast.is-success')).toContainText('Camille Exemple déplacé·e dans le groupe 3');
+  await expect(panel.locator('.admin-toast')).toBeInViewport();
   await memberSearch.fill('ale');
   await panel.getByRole('option', { name: /Alex Exemple/ }).click();
   page.once('dialog', dialog => dialog.accept());
   await panel.getByRole('button', { name: 'Retirer des groupes' }).click();
   await expect(panel.getByText('Groupe 1 : 0 · Groupe 2 : 0 · Groupe 3 : 1', { exact: true })).toBeVisible();
+  await expect(panel.locator('.admin-toast.is-success')).toContainText('Alex Exemple retiré·e des trois groupes');
+  // Chaque alerte se retire manuellement depuis sa croix.
+  await panel.locator('summary').filter({ hasText: 'Suivi des alertes (1)' }).click();
+  await panel.getByRole('button', { name: 'Effacer l’alerte Consignes exposition' }).click();
+  await expect(panel.locator('.admin-toast.is-success')).toContainText('Alerte effacée du suivi');
+  await expect(panel.locator('summary').filter({ hasText: 'Suivi des alertes (0)' })).toBeVisible();
   await page.screenshot({ path: `previews/admin-tools-${testInfo.project.name}.png` });
   await panel.getByRole('button', { name: 'Voir comme un invité' }).click();
   await expect(panel).not.toBeVisible();
@@ -908,8 +917,15 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(colleagueTitleBox!.y - colleagueHeaderBox!.y).toBeLessThan(22);
   expect(colleagueHeaderBox!.x + colleagueHeaderBox!.width - colleagueMenuBox!.x - colleagueMenuBox!.width).toBeLessThan(22);
   expect(colleagueMenuBox!.y - colleagueHeaderBox!.y).toBeLessThan(30);
-  expect(colleagueImageBox!.y).toBeGreaterThanOrEqual(colleagueHeaderBox!.y);
-  expect(colleagueImageBox!.y + colleagueImageBox!.height).toBeLessThanOrEqual(colleagueHeaderBox!.y + colleagueHeaderBox!.height);
+  // En-tête et image mesurés dans la même image : un défilement entre deux relevés
+  // faisait croire que l’image sortait du bandeau.
+  const imageInHeader = await page.evaluate(() => {
+    const header = document.querySelector(".top-header-colleagues")!.getBoundingClientRect();
+    const image = document.querySelector(".top-header-colleagues .colleague-header-illustration")!.getBoundingClientRect();
+    return { top: image.top - header.top, bottom: header.bottom - image.bottom };
+  });
+  expect(imageInHeader.top, JSON.stringify({ colleagueImageBox })).toBeGreaterThanOrEqual(0);
+  expect(imageInHeader.bottom).toBeGreaterThanOrEqual(0);
   await page.locator(".top-header-colleagues").screenshot({ path: `previews/colleague-header-${testInfo.project.name}.png` });
   await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
   await expect(page.locator(".top-header-colleagues .header-update-button")).toBeVisible();

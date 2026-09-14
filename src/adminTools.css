@@ -13,3 +13,16 @@
 .admin-member-suggestions strong{font-size:.94rem}
 .admin-tools-dialog .admin-member-suggestions small{display:inline;color:var(--accent-strong);font-size:.72rem;font-weight:800;white-space:nowrap}
 .admin-tools-dialog .admin-member-selected{margin:4px 0;color:var(--text)}
+/* Retour de chaque manipulation : collé au bas de la fenêtre, visible où que l’on soit. */
+.admin-toast{position:sticky;z-index:6;bottom:0;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;margin:14px 0 0;border:1.5px solid;border-radius:14px;padding:10px 12px;box-shadow:0 10px 26px rgba(44,38,33,.22);animation:admin-toast-in .2s ease-out}
+.admin-toast.is-success{border-color:#7fb89a;background:#eaf6ef;color:#1f5a3c}
+.admin-toast.is-error{border-color:#d88f99;background:#fdecee;color:#8b2434}
+.admin-toast>span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:currentColor;font-weight:900}
+.admin-toast.is-success>span::before{content:"✓";color:#fff}.admin-toast.is-error>span::before{content:"!";color:#fff}
+.admin-tools-dialog .admin-toast p{margin:0;color:inherit;font-weight:700;line-height:1.35}
+.admin-tools-dialog .admin-toast button{min-height:34px;margin:0;border:0;background:none;color:inherit;font-size:1.3rem;padding:0 6px}
+@keyframes admin-toast-in{from{opacity:0;transform:translateY(8px)}}
+/* Petite croix pour effacer une alerte, une publication ou un élément de corbeille. */
+.admin-tools-dialog article{position:relative;padding-right:44px}
+.admin-tools-dialog button.admin-dismiss{position:absolute;top:8px;right:0;display:grid;place-items:center;width:32px;height:32px;min-height:32px;margin:0;padding:0;border-radius:50%;font-size:1.15rem;line-height:1}
+.admin-tools-dialog button.admin-dismiss:hover{border-color:#d88f99;background:#fdecee;color:#8b2434}
