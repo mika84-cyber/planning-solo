@@ -31,7 +31,7 @@ describe("navigation principale", () => {
     expect(html).not.toContain("notification-button");
   });
 
-  it("signale une mise à jour à effectuer sur l’initiale du compte", () => {
+  it("signale la mise à jour par une seule pastille, sur l’icône ↻", () => {
     const html = renderToStaticMarkup(<AppHeader
       homeSection="home"
       payScreen="overview"
@@ -52,26 +52,25 @@ describe("navigation principale", () => {
       onCheckForUpdate={vi.fn()}
     />);
     expect(html).toContain('aria-label="Compte — mise à jour disponible"');
-    expect(html).toContain("account-update-dot");
-    expect(html).toContain("Mise à jour à effectuer");
+    expect(html).not.toContain("account-update-dot");
+    expect(html).toContain("header-update-dot");
   });
 
   const menuBase = {
     open: true, onClose: vi.fn(), onNavigate: vi.fn(), currentSection: "home" as const,
-    checkingAppUpdate: false, appUpdateAvailable: false, onCheckForUpdate: vi.fn(),
     showInstallAction: true, canInstall: false, onInstall: vi.fn(), onOpenDataManagement: vi.fn(),
     onOpenFeedback: vi.fn(), isAdmin: false, unreadFeedbackCount: 0,
   };
 
-  it("mène aux pages, au rafraîchissement, à l’installation et à la messagerie", () => {
+  it("mène aux pages puis aux outils, sans mise à jour dans le menu", () => {
     const html = renderToStaticMarkup(<MainMenu {...menuBase} />);
-    expect(html).toContain("Navigation");
+    expect(html).toContain("Planning Solo");
     expect(html).toContain("<h2>Menu principal</h2>");
-    expect(html).toContain("main-menu-refresh");
-    expect(html).toContain("Rafraîchir");
-    expect(html).toContain("Vérifier les mises à jour");
-    expect(html.indexOf("Vérifier les mises à jour")).toBeLessThan(html.indexOf("Rafraîchir"));
-    expect(html.indexOf("main-menu-refresh")).toBeLessThan(html.indexOf("Accueil"));
+    expect(html).not.toContain("main-menu-refresh");
+    expect(html).not.toContain("Vérifier les mises à jour");
+    expect(html.indexOf(">Pages<")).toBeLessThan(html.indexOf("Accueil"));
+    expect(html.indexOf("Accueil")).toBeLessThan(html.indexOf(">Outils<"));
+    expect(html.indexOf(">Outils<")).toBeLessThan(html.indexOf("Mes données"));
     expect(html).toContain('aria-label="Les pages de l’application"');
     expect(html).toContain("Congés et récupérations");
     expect(html).toContain("Planning des collègues");
@@ -91,11 +90,21 @@ describe("navigation principale", () => {
     expect(html).toContain("3 messages non lus");
   });
 
-  it("annonce la mise à jour prête dans le menu", () => {
-    const html = renderToStaticMarkup(<MainMenu {...menuBase} appUpdateAvailable />);
-    expect(html).toContain("Installer la mise à jour");
-    expect(html).toContain("Une nouvelle version est prête");
-    expect(html).toContain("update-available");
+  it("place la mise à jour dans l’en-tête, avec une pastille quand une version attend", () => {
+    const headerProps = {
+      homeSection: "home" as const, payScreen: "overview" as const, userEmail: "mika@example.fr", fullName: "Mika",
+      accountMenuOpen: false, mainMenuOpen: false, checkingAppUpdate: false, demoMode: true, unreadFeedbackCount: 0,
+      notify: vi.fn(), accountMenuRef: createRef<HTMLDivElement>(), accountButtonRef: createRef<HTMLButtonElement>(),
+      onToggleAccount: vi.fn(), onDisconnect: vi.fn(), onOpenMainMenu: vi.fn(), onCheckForUpdate: vi.fn(),
+    };
+    const idle = renderToStaticMarkup(<AppHeader {...headerProps} appUpdateAvailable={false} />);
+    expect(idle).toContain('class="header-update-button"');
+    expect(idle).toContain('aria-label="Vérifier les mises à jour"');
+    expect(idle).not.toContain("header-update-dot");
+    const ready = renderToStaticMarkup(<AppHeader {...headerProps} appUpdateAvailable />);
+    expect(ready).toContain('aria-label="Installer la mise à jour"');
+    expect(ready).toContain("header-update-dot");
+    expect(ready.indexOf("header-update-button")).toBeLessThan(ready.indexOf("account-button"));
   });
 
   it("propose une navigation adaptative sans numéros et marque la rubrique active", () => {

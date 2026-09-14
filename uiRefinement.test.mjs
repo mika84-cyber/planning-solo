@@ -361,7 +361,7 @@ describe("finitions d’interface", () => {
     expect(serviceWorker).toContain('event.data?.type === "SKIP_WAITING"');
     expect(serviceWorker.match(/self\.addEventListener\("install"[\s\S]*?\n\}\);/)?.[0]).not.toContain("skipWaiting");
     expect(app).toContain("checkForAppUpdate");
-    expect(app).toContain('className={`app-update-button');
+    expect(app).toContain('className={`header-update-button');
     expect(app).toContain("Vérifier les mises à jour");
     expect(app).toContain("Une mise à jour est disponible");
     expect(app).toContain("planning-app-update-available");
@@ -371,7 +371,7 @@ describe("finitions d’interface", () => {
     expect(planningDialogs).toContain("Mettre à jour maintenant");
     expect(planningDialogs).toContain('className="save-button update-now-button"');
     expect(planningDialogs).toContain("La page ne sera actualisée qu’après votre confirmation");
-    expect(styles).toContain(".app-update-button");
+    expect(styles).toContain(".header-update-button.checking");
     expect(styles).toContain(".update-available-modal .update-now-button");
     expect(styles).toContain("background: #c52f42");
   });
@@ -565,17 +565,17 @@ describe("finitions d’interface", () => {
     // l'accompagne parce qu'il explique ces pages-là.
     expect(appNavigation).toContain("const MENU_PAGES");
     expect(appNavigation).toContain("Les pages de l’application");
-    // Le rafraîchissement tient la tête du menu, l'installation ferme la
-    // liste des pages, la messagerie la suit.
-    expect(appNavigation).toContain("main-menu-refresh");
-    expect(appNavigation).toContain("Rafraîchir");
+    // La mise à jour a quitté le menu pour l'en-tête ; les pages puis les
+    // outils (données, installation, messagerie) s'y suivent.
+    expect(appNavigation).not.toContain("main-menu-refresh");
+    expect(appNavigation).toContain("main-menu-section-label");
     expect(appNavigation).toContain("Installer l’application");
     expect(appNavigation).toContain("Messagerie interne");
     expect(appNavigation).not.toContain("Mode d’emploi");
     expect(appNavigation).not.toContain("Compte et réglages");
     expect(appNavigation).not.toContain("État de sauvegarde");
     expect(appNavigation).toContain("Mes données");
-    expect(styles).toContain(".main-menu-refresh");
+    expect(styles).not.toContain(".main-menu-refresh");
     expect(appRoot).toContain("<UsefulResourcesHub");
     expect(appRoot).toContain("pdf={(");
     expect(usefulResourcesHub).toContain('key: "pdf"');
@@ -583,15 +583,13 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
     expect(styles).toContain('url("/menu-art-fast.webp")');
-    expect(styles).toContain("background: linear-gradient(90deg, #2c2621, rgba(44, 38, 33, 0.82) 65%, transparent)");
+    expect(styles).toContain(".main-menu-drawer > .main-menu-hero");
     expect(app).toContain('className="main-menu-index"');
     expect(app).toContain('className="main-menu-chevron"');
     expect(app).toContain("header-command-area");
     expect(app).toContain("header-update-button");
     expect(styles).toContain(".header-update-button");
-    expect(styles).toContain("width: fit-content");
-    expect(styles).toContain("min-height: 32px");
-    expect(styles).toContain("font-size: 10px");
+    expect(styles).toContain(".header-update-dot");
     expect(app).not.toContain("menu-update-button");
   });
 
@@ -653,9 +651,8 @@ describe("finitions d’interface", () => {
   });
 
   it("renforce la lisibilité du menu et les contours de l’en-tête", () => {
-    expect(styles).toContain(".main-menu-copy strong { color: #fff; }");
-    expect(styles).toContain(".main-menu-copy small {\n  color: rgba(253, 250, 244, 0.78);");
-    expect(styles).toContain("backdrop-filter: saturate(1.08) contrast(1.02)");
+    expect(styles).toContain(".main-menu-copy strong { color: var(--text);");
+    expect(styles).toContain(".main-menu-copy small { overflow: hidden; color: var(--muted);");
     expect(styles).toContain(".top-header .account-button,");
     expect(styles).toContain("border: 1.5px solid var(--border-card)");
   });

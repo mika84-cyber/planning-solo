@@ -26,10 +26,8 @@
 
 .top-header.top-header-pay .account-menu,
 .top-header.top-header-pay .main-menu-button,
-.top-header.top-header-pay .header-update-button,
 .top-header.top-header-leave .account-menu,
-.top-header.top-header-leave .main-menu-button,
-.top-header.top-header-leave .header-update-button {
+.top-header.top-header-leave .main-menu-button {
   position: relative;
   z-index: 2;
 }

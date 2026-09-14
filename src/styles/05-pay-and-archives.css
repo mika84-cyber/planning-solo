@@ -211,43 +211,6 @@
   justify-content: flex-end;
   gap: 9px;
 }
-.app-update-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: min(360px, 100%);
-  min-height: 42px;
-  margin: -10px auto 18px;
-  border: 1px solid var(--border-control);
-  border-radius: 13px;
-  padding: 8px 14px;
-  background: var(--surface-high);
-  color: var(--muted);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 850;
-  cursor: pointer;
-  box-shadow: 0 5px 14px rgba(122, 111, 95, 0.08);
-}
-.app-update-button:hover,
-.app-update-button:focus-visible {
-  border-color: var(--border-card);
-  background: var(--surface-high);
-  outline: 2px solid rgba(122, 111, 95, 0.15);
-  outline-offset: 2px;
-}
-.app-update-button:disabled { cursor: wait; opacity: 0.72; }
-.app-update-button svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.9;
-}
-.app-update-button.checking svg { animation: update-button-spin 700ms linear infinite; }
 @keyframes update-button-spin { to { transform: rotate(360deg); } }
 .success-toast {
   position: fixed;

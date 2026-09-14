@@ -256,14 +256,10 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(page.locator(".today-overview-grid > article").first()).toHaveCSS("border-top-width", "1px");
   await openMainMenu(page);
   await expect(page.getByRole("heading", { name: "Menu principal" })).toBeVisible();
-  const refreshButton = page.locator(".main-menu-refresh");
-  const homeMenuButton = page.locator(".main-menu-pages").getByRole("button", { name: /Accueil/ });
-  expect(await refreshButton.evaluate((node) => getComputedStyle(node).getPropertyValue("--menu-accent"))).not.toBe(
-    await homeMenuButton.evaluate((node) => getComputedStyle(node).getPropertyValue("--menu-accent")),
-  );
-  await expect(refreshButton.locator("strong")).toHaveText("Vérifier les mises à jour");
-  await expect(refreshButton.locator("small")).toHaveText("Rafraîchir");
-  await expect(refreshButton).toHaveCSS("color", "rgb(255, 255, 255)");
+  // La mise à jour a quitté le menu : elle vit dans l'en-tête. La page
+  // ouverte se repère à son icône pleine, dans la couleur d'accent.
+  await expect(page.locator(".main-menu-refresh")).toHaveCount(0);
+  await expect(page.locator(".main-menu-pages button.active .main-menu-index")).toHaveCSS("background-color", await cssTokenRgb(page, "--accent"));
 
   await goToSection(page, "leave");
   await expectWhiteCard(".leave-balances-direct", "5px");
@@ -904,7 +900,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(colleagueImageBox!.y + colleagueImageBox!.height).toBeLessThanOrEqual(colleagueHeaderBox!.y + colleagueHeaderBox!.height);
   await page.locator(".top-header-colleagues").screenshot({ path: `previews/colleague-header-${testInfo.project.name}.png` });
   await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
-  await expect(page.locator(".top-header-colleagues .header-update-button")).toHaveCount(0);
+  await expect(page.locator(".top-header-colleagues .header-update-button")).toBeVisible();
   const shareMenu = page.locator("summary").filter({ hasText: "Partager mon planning" });
   await expect(shareMenu).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
@@ -1255,7 +1251,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
     expect(Math.abs(categoryBox!.width - headerBox!.width)).toBeLessThanOrEqual(1);
   };
   const homeHeaderHeight = await headerHeight();
-  await expect(page.locator(".top-header .header-update-button")).toHaveCount(0);
+  await expect(page.locator(".top-header .header-update-button")).toHaveAttribute("aria-label", "Vérifier les mises à jour");
   const accountButton = page.getByRole("button", { name: "Compte" });
   await accountButton.click();
   // Le menu du compte ne garde que l'identité et la déconnexion ; la
@@ -1276,7 +1272,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(menu.getByRole("navigation", { name: "Les pages de l’application" })).toBeVisible();
   await expect(menu.locator(".main-menu-account-card")).toHaveCount(0);
   await expect(menu.locator(".main-menu-save-status")).toHaveCount(0);
-  await expect(menu.getByRole("button", { name: /Vérifier les mises à jour|Installer la mise à jour/ })).toBeVisible();
+  await expect(menu.getByRole("button", { name: /Vérifier les mises à jour|Installer la mise à jour/ })).toHaveCount(0);
   await expect(menu.getByRole("button", { name: /Mes données/ })).toBeVisible();
   for (const page_ of ["Congés et récupérations", "Planning des collègues"])
     await expect(menu.getByRole("button", { name: new RegExp(page_) })).toBeVisible();
@@ -1286,9 +1282,9 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   // Aucune rubrique ne doit y revenir en double.
   await expect(menu.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
   await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
-  await expect(menu).toHaveCSS("background-image", /menu-art-fast.webp/);
+  await expect(menu.locator(".main-menu-hero")).toHaveCSS("background-image", /menu-art-fast.webp/);
   await expect(menu.locator("nav > button").first().locator(".main-menu-index svg")).toBeVisible();
-  await expect(adminContact).toHaveCSS("background-image", /linear-gradient/);
+  await expect(adminContact).toHaveCSS("background-image", "none");
 
   await goToSection(page, "leave");
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
@@ -1533,10 +1529,10 @@ test("le menu principal mène aux pages et garde Mes données", async ({ page })
   const mainMenu = page.getByRole("complementary", { name: "Menu principal" });
   // Le menu est devenu une porte vers chaque page : le compte et l'état de
   // sauvegarde ont quitté ce volet, mais la gestion des données y reste.
-  await expect(mainMenu.getByRole("navigation", { name: "Les pages de l’application" }).getByRole("button")).toHaveCount(9);
+  await expect(mainMenu.getByRole("navigation", { name: "Les pages de l’application" }).getByRole("button")).toHaveCount(6);
   await expect(mainMenu.getByRole("button", { name: /Congés et récupérations/ })).toBeVisible();
   await expect(mainMenu.getByRole("button", { name: /Planning des collègues/ })).toBeVisible();
-  await expect(mainMenu.locator(".main-menu-refresh")).toBeVisible();
+  await expect(mainMenu.locator(".main-menu-refresh")).toHaveCount(0);
   await expect(mainMenu.getByRole("button", { name: /Mes données/ })).toBeVisible();
   await expect(mainMenu.getByRole("button", { name: /Installer l’application/ })).toBeDisabled();
   await expect(mainMenu.locator(".main-menu-account-card")).toHaveCount(0);
@@ -1611,7 +1607,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
   expect(Math.abs(formsHeaderBox.width - homeHeaderBox.width)).toBeLessThan(0.5);
   expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 520 ? 175 : (page.viewportSize()?.width ?? 1000) <= 720 ? 215 : 235))).toBeLessThan(0.5);
-  await expect(formsHeader.locator(".header-update-button")).toHaveCount(0);
+  await expect(formsHeader.locator(".header-update-button")).toHaveCount(1);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     expect(parseFloat(await formsHeader.locator("h1").evaluate((node) => getComputedStyle(node).fontSize))).toBeLessThanOrEqual(21);
   } else {
@@ -1803,7 +1799,10 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
 
 test("la déclaration d’accident réunit les démarches et marque le planning sans carence", async ({ page }, testInfo) => {
   const now = new Date();
-  const rttWorkDate = Array.from({ length: 4 }, (_, index) => addDays(now, index + 3))
+  // Le RTT doit tomber un jour travaillé après les CA (J à J+2). Le cycle peut
+  // enchaîner quatre repos : on cherche jusqu'à J+10, et la période d'accident
+  // s'allonge au besoin pour le contenir, quel que soit le jour du test.
+  const rttWorkDate = Array.from({ length: 8 }, (_, index) => addDays(now, index + 3))
     .find((date) => getDayInfo(date, 2).kind === "work");
   if (!rttWorkDate) throw new Error("Aucun jour RTT ouvré trouvé dans la période d’accident");
   await page.addInitScript(({ rttKey }) => {
@@ -1897,8 +1896,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
 
   const today = new Date();
   const todayKey = dateKey(today);
-  const periodEnd = new Date(today);
-  periodEnd.setDate(periodEnd.getDate() + 6);
+  const periodEnd = new Date(Math.max(addDays(today, 6).getTime(), rttWorkDate.getTime()));
   if (testInfo.project.name === "mobile") {
     await expect(page.locator(".work-accident-date-input > span")).toHaveText(["jj/mm/aaaa", "jj/mm/aaaa"]);
     await expect(page.locator(".work-accident-date-input > span").first()).toBeVisible();
@@ -2598,7 +2596,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(account).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(menuButton).toBeVisible();
   await expect(page.locator((page.viewportSize()?.width || 0) <= 720 ? ".mobile-bottom-navigation" : ".desktop-side-navigation")).toBeVisible();
-  await expect(update).toHaveCount(0);
+  await expect(update).toBeVisible();
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cardBorderColor(page));
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
@@ -3013,14 +3011,15 @@ test("le compte avertit lorsqu’une nouvelle version est disponible", async ({ 
 
   const account = page.getByRole("button", { name: "Compte — mise à jour disponible" });
   await expect(account).toHaveClass(/update-available/);
-  await expect(account.locator(".account-update-dot")).toBeVisible();
-  const checkUpdateButton = page.getByRole("button", { name: "Vous avez une mise à jour" });
+  // Une seule pastille signale la mise à jour : celle de l'icône ↻.
+  await expect(account.locator(".account-update-dot")).toHaveCount(0);
+  const checkUpdateButton = page.locator(".top-header").getByRole("button", { name: "Installer la mise à jour" });
   await expect(checkUpdateButton).toHaveClass(/update-available/);
-  await expect(checkUpdateButton).toHaveCSS("color", "rgb(181, 22, 47)");
+  await expect(checkUpdateButton.locator(".header-update-dot")).toBeVisible();
   await account.click();
   const updateAlert = page.locator(".account-update-alert");
   await expect(updateAlert).toContainText("Une mise à jour est disponible");
-  await expect(updateAlert).toContainText("Ouvrez le menu principal");
+  await expect(updateAlert).toContainText("Touchez l’icône ↻");
 });
 
 test("le CET se configure et conserve un historique cohérent", async ({ page }) => {

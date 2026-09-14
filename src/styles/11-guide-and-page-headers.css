@@ -815,26 +815,6 @@
   border: 1px solid var(--border-control);
   background-color: color-mix(in srgb, var(--section-accent) 10%, #fffdf8);
 }
-.header-update-button {
-  justify-self: end;
-  width: fit-content;
-  min-height: 32px;
-  margin: 0;
-  border-color: var(--border-control);
-  border-radius: 10px;
-  padding: 5px 10px;
-  background: #fff;
-  color: var(--section-accent);
-  font-size: 10px;
-  box-shadow: none;
-}
-.header-update-button svg { width: 14px; height: 14px; }
-.header-update-button.update-available {
-  border-color: #8f1728 !important;
-  background: #c52f42;
-  color: #fff;
-  box-shadow: 0 5px 12px rgba(142, 26, 43, 0.2);
-}
 
 .update-available-backdrop { z-index: 1600; }
 .update-available-modal {
@@ -945,7 +925,7 @@
 @media (max-width: 720px) {
   .top-header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr) repeat(3, 44px);
     gap: 10px 8px;
     border-radius: 20px;
     padding: 15px 14px;
@@ -967,22 +947,17 @@
   }
   .header-actions { display: contents; }
   .header-actions .account-menu {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 1;
     order: initial;
   }
   .header-control-cluster .main-menu-button {
-    grid-column: 3;
+    grid-column: 4;
     grid-row: 1;
     order: initial;
   }
   .account-button,
   .main-menu-button { width: 44px; height: 44px; }
-  .header-update-button {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    min-height: 32px;
-  }
 
   .year-choice-picker .choice-picker-menu {
     max-height: min(58dvh, 460px);
@@ -1023,35 +998,6 @@
   .sick-request-panel .request-heading .text-button.danger {
     justify-self: start;
   }
-}
-
-/* L’œuvre accompagne le menu sans nuire à la lisibilité de ses commandes. */
-.main-menu-drawer {
-  color: #fff;
-}
-.main-menu-drawer header {
-  border-bottom: 1px solid var(--border-card);
-}
-.main-menu-drawer nav > button {
-  border-color: var(--border-card);
-}
-.main-menu-secondary {
-  border-top-color: var(--border-card);
-}
-.main-menu-secondary button {
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.72);
-}
-
-/* Le mode d’emploi reprend le style neutre des autres rubriques. */
-.main-menu-drawer nav > button.guide-menu-entry {
-  border-color: var(--border-card);
-  background: #fff;
-  color: var(--muted);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-}
-.main-menu-drawer nav > button.guide-menu-entry:hover {
-  background: var(--surface);
 }
 
 /* Les trois commandes de l'en-tête restent nettes sur les œuvres colorées. */

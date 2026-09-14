@@ -2461,12 +2461,6 @@ export default function Home() {
         onClose={() => setMainMenuOpen(false)}
         onNavigate={(section) => navigateFromShell(section)}
         currentSection={homeSection}
-        checkingAppUpdate={checkingAppUpdate}
-        appUpdateAvailable={appUpdateAvailable}
-        onCheckForUpdate={() => {
-          setMainMenuOpen(false);
-          void checkForAppUpdate();
-        }}
         showInstallAction={demoMode || Boolean(installPrompt)}
         canInstall={Boolean(installationEnabled && installPrompt)}
         onInstall={() => void installApp()}

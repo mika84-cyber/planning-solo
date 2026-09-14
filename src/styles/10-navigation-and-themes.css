@@ -544,23 +544,9 @@
   }
   .top-header.top-header-forms .top-header-title,
   .top-header.top-header-forms .account-menu,
-  .top-header.top-header-forms .main-menu-button,
-  .top-header.top-header-forms .header-update-button {
+  .top-header.top-header-forms .main-menu-button {
     position: relative;
     z-index: 2;
-  }
-  .top-header.top-header-forms .header-update-button {
-    max-width: 154px;
-    padding: 5px 8px;
-    background: #fff;
-    font-size: 9px;
-    white-space: nowrap;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  .top-header.top-header-forms .header-update-button svg {
-    width: 12px;
-    height: 12px;
   }
   .useful-forms-screen {
     width: calc(100% - 20px);

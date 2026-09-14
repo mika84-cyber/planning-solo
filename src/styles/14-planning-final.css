@@ -1304,7 +1304,7 @@ fieldset.leave-choices {
 
 /* La commande de mise à jour reste discrète et occupe le même coin sur tous
    les bandeaux, du Fold fermé à l’ordinateur. */
-#root .header-update-label{display:none}#root .header-update-label-compact{display:inline;font-size:clamp(.58rem,1.6vw,.68rem);letter-spacing:.01em}.app-shell>header{align-items:flex-start}.app-shell>header>.top-header-title,.app-shell>header>.header-command-area{align-self:flex-start}.app-shell>header .header-control-cluster{align-items:flex-start}#root .app-update-button.header-update-button{bottom:12px;gap:6px;left:auto;min-height:clamp(30px,8vw,34px);padding:clamp(4px,1.2vw,6px) clamp(8px,2vw,11px);position:absolute;right:clamp(6px,1.7vw,12px);width:auto;z-index:4}#root .app-update-button.header-update-button:not(.update-available){background:rgba(255,253,248,.94);border:1.5px solid var(--border-card);box-shadow:0 5px 14px var(--border-card);color: var(--muted)}#root .app-update-button.header-update-button svg{height:15px;width:15px}[class~="top-header-forms"]::before{max-width:calc(100% - 96px)}[class~="top-header-contacts"]::before{max-width:calc(100% - 88px)}
+.app-shell>header{align-items:flex-start}.app-shell>header>.top-header-title,.app-shell>header>.header-command-area{align-self:flex-start}.app-shell>header .header-control-cluster{align-items:flex-start}[class~="top-header-forms"]::before{max-width:calc(100% - 96px)}[class~="top-header-contacts"]::before{max-width:calc(100% - 88px)}
 
 .header-title-line {
   display: block;
@@ -1381,13 +1381,6 @@ fieldset.leave-choices {
 
 
 /* L'action de mise à jour suit désormais le même gabarit que les rubriques. */
-.main-menu-drawer header > .main-menu-close { margin-left: auto; }
-.main-menu-title { display: grid; gap: 3px; min-width: 0; }
-.main-menu-title > span { color: #efc89e; font-size: .62rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
-.main-menu-title > h2 { margin: 0; line-height: 1.05; }
-.main-menu-pages > button.main-menu-refresh { --menu-accent: #d8ad78; }
-.main-menu-pages > button.main-menu-refresh:disabled { cursor: default; opacity: .7; }
-.main-menu-pages > button.main-menu-refresh.update-available { --menu-accent: #77aa97; }
 
 /* Les collègues connus sont proposés dès les premières lettres : le nom et
    le groupe sont saisis ensemble, sans risque de les faire diverger. */

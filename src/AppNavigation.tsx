@@ -105,9 +105,9 @@ export function AppHeader({
   onOpenAdminTools,
 }: AppHeaderProps) {
   const updateLabel = checkingAppUpdate
-    ? "Chargement de la mise à jour…"
+    ? "Mise à jour en cours…"
     : appUpdateAvailable
-      ? "Vous avez une mise à jour"
+      ? "Installer la mise à jour"
       : "Vérifier les mises à jour";
   return (
     <header className={headerClass(homeSection)} data-section={homeSection} data-pay-screen={homeSection === "pay" ? payScreen : undefined}>
@@ -138,6 +138,22 @@ export function AppHeader({
             <Suspense fallback={null}>
               <NoteReminderButton demoMode={demoMode} notify={notify} />
             </Suspense>
+            {/* La mise à jour reste à portée de doigt, au gabarit des autres
+                commandes ; une pastille signale une version prête. */}
+            <button
+              className={`header-update-button${appUpdateAvailable ? " update-available" : ""}${checkingAppUpdate ? " checking" : ""}`}
+              type="button"
+              onClick={onCheckForUpdate}
+              disabled={checkingAppUpdate}
+              aria-label={updateLabel}
+              title={updateLabel}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+                <path d="M20 4v7h-7" />
+              </svg>
+              {appUpdateAvailable ? <em className="header-update-dot" aria-hidden="true" /> : null}
+            </button>
             <div className="account-menu" ref={accountMenuRef}>
               <button
                 className={`account-button${accountMenuOpen ? " open" : ""}${appUpdateAvailable ? " update-available" : ""}`}
@@ -149,7 +165,6 @@ export function AppHeader({
                 aria-label={appUpdateAvailable ? "Compte — mise à jour disponible" : "Compte"}
               >
                 {(userEmail[0] || "M").toUpperCase()}
-                {appUpdateAvailable ? <em className="main-menu-feedback-badge account-update-dot" role="status" aria-label="Mise à jour à effectuer">!</em> : null}
               </button>
               {accountMenuOpen ? (
                 <div className="account-menu-panel" role="menu">
@@ -160,7 +175,7 @@ export function AppHeader({
                   {appUpdateAvailable ? (
                     <div className="account-update-alert" role="status">
                       <strong>Une mise à jour est disponible</strong>
-                      <span>Ouvrez le menu principal pour l’installer.</span>
+                      <span>Touchez l’icône ↻ en haut de l’écran pour l’installer.</span>
                     </div>
                   ) : null}
                   {onOpenAdminTools && <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenAdminTools}>Outils administrateur</button>}
@@ -185,20 +200,6 @@ export function AppHeader({
             {unreadFeedbackCount > 0 ? <em className="main-menu-feedback-badge" role="status" aria-label={`${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}`}>{unreadFeedbackCount > 9 ? "9+" : unreadFeedbackCount}</em> : null}
           </button>
         </div>
-        {appUpdateAvailable ? <button
-          className={`app-update-button header-update-button${checkingAppUpdate ? " checking" : ""}${appUpdateAvailable ? " update-available" : ""}`}
-          type="button"
-          onClick={onCheckForUpdate}
-          disabled={checkingAppUpdate}
-          aria-label={updateLabel}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20 11a8 8 0 1 0-2.3 5.7" />
-            <path d="M20 4v7h-7" />
-          </svg>
-          <span className="header-update-label">{updateLabel}</span>
-          <span className="header-update-label-compact" aria-hidden="true">Installer</span>
-        </button> : null}
       </div>
     </header>
   );
@@ -219,9 +220,6 @@ type MainMenuProps = {
   onClose: () => void;
   onNavigate: (section: MainSection) => void;
   currentSection: MainSection;
-  checkingAppUpdate: boolean;
-  appUpdateAvailable: boolean;
-  onCheckForUpdate: () => void;
   showInstallAction: boolean;
   canInstall: boolean;
   onInstall: () => void;
@@ -232,8 +230,7 @@ type MainMenuProps = {
 };
 
 export function MainMenu({
-  open, onClose, onNavigate, currentSection, checkingAppUpdate, appUpdateAvailable,
-  onCheckForUpdate, showInstallAction, canInstall, onInstall, onOpenDataManagement,
+  open, onClose, onNavigate, currentSection, showInstallAction, canInstall, onInstall, onOpenDataManagement,
   onOpenFeedback, isAdmin, unreadFeedbackCount,
 }: MainMenuProps) {
   if (!open) return null;
@@ -244,27 +241,15 @@ export function MainMenu({
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <aside className="main-menu-drawer" id="main-menu-drawer" aria-label="Menu principal">
-        <header>
+        <header className="main-menu-hero">
           <div className="main-menu-title">
-            <span>Navigation</span>
+            <span>Planning Solo</span>
             <h2>Menu principal</h2>
           </div>
           <button className="main-menu-close" type="button" onClick={onClose} aria-label="Fermer le menu">×</button>
         </header>
+        <p className="main-menu-section-label" aria-hidden="true">Pages</p>
         <nav className="main-menu-pages" aria-label="Les pages de l’application">
-          <button
-            className={`main-menu-refresh${appUpdateAvailable ? " update-available" : ""}`}
-            type="button"
-            onClick={onCheckForUpdate}
-            disabled={checkingAppUpdate}
-          >
-            <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="update" /></span>
-            <span className="main-menu-copy">
-              <strong>{checkingAppUpdate ? "Vérification en cours…" : appUpdateAvailable ? "Installer la mise à jour" : "Vérifier les mises à jour"}</strong>
-              <small>{appUpdateAvailable ? "Une nouvelle version est prête" : "Rafraîchir"}</small>
-            </span>
-            <span className="main-menu-chevron" aria-hidden="true">›</span>
-          </button>
           {MENU_PAGES.map(({ key, titre, detail }) => (
             <button
               key={key}
@@ -278,6 +263,9 @@ export function MainMenu({
               <span className="main-menu-chevron" aria-hidden="true">›</span>
             </button>
           ))}
+        </nav>
+        <p className="main-menu-section-label" aria-hidden="true">Outils</p>
+        <div className="main-menu-secondary">
           <button type="button" onClick={onOpenDataManagement}>
             <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="data" /></span>
             <span className="main-menu-copy"><strong>Mes données</strong><small>Sauvegarder, reprendre ou effacer mes informations</small></span>
@@ -290,8 +278,6 @@ export function MainMenu({
               <span className="main-menu-chevron" aria-hidden="true">›</span>
             </button>
           ) : null}
-        </nav>
-        <div className="main-menu-secondary">
           <button type="button" className="guide-menu-entry feedback-menu-entry" onClick={() => onOpenFeedback(isAdmin ? "inbox" : "compose")}>
             <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="feedback" /></span>
             <span className="main-menu-copy"><strong>{isAdmin ? "Messagerie interne" : "Écrire à l’administrateur"}</strong><small>{isAdmin ? `${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}` : "Une idée, une suggestion ou un bug"}</small></span>
