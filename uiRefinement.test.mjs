@@ -204,7 +204,8 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain("#e4ecf7");
     expect(styles).not.toContain("#304f79");
     expect(styles).not.toContain("#4c5e76");
-    expect(styles).toContain(".mobile-bottom-navigation button.active { background: var(--accent-soft); color: var(--accent-strong)");
+    // Verre sombre du menu : l'onglet ouvert devient une pastille terracotta.
+    expect(styles).toContain(".desktop-side-navigation button.active { background: rgba(152, 84, 56, 0.85); color: #fff;");
     // La couleur seule ne suffisait pas : les deux teintes se ressemblaient.
     expect(styles).toContain(".desktop-side-navigation button.active { font-weight: 880; }");
     expect(styles).toContain(".desktop-side-navigation button.active svg { stroke-width: 2.2; }");
