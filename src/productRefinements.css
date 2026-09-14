@@ -127,6 +127,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .pay-dashboard-profile-slot .pay-profile-settings,
   .pdf-download-screen
 ) {
-  border-left-width: 5px;
+  /* 5 px, affiné à 3 px sur téléphone (voir 18-main-menu.css). */
+  border-left-width: var(--accent-spine, 5px);
   border-left-color: var(--accent);
 }

@@ -47,6 +47,12 @@ async function prepareDemo(page: Page, withCurrentLeave = false) {
 
 /** Le nombre de jours travaillés du mois, lu à même la page : le compte
  *  est posé sous le mois, sans rien à déplier. */
+/** Largeur du repère terracotta des grands blocs : 5 px, affiné à 3 px sur
+ *  téléphone où les cartes occupent toute la largeur de l'écran. */
+function accentSpine(page: Page) {
+  return (page.viewportSize()?.width ?? 1280) <= 720 ? "3px" : "5px";
+}
+
 async function workedDaysOnHome(page: Page) {
   const resume = await page.locator(".worked-days-trigger span").first().innerText();
   return Number(resume.match(/[\d,.]+/)![0].replace(",", "."));
@@ -268,12 +274,12 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
     await expect(card).toHaveCSS("background-image", "none");
     await expect(card).toHaveCSS("border-top-width", "1px");
     await expect(card).toHaveCSS("border-left-width", leftWidth);
-    if (leftWidth === "5px") {
+    if (leftWidth !== "1px") {
       await expect(card).toHaveCSS("border-left-color", await cssTokenRgb(page, "--accent"));
     }
   };
 
-  await expectWhiteCard(".today-overview", "5px");
+  await expectWhiteCard(".today-overview", accentSpine(page));
   await expect(page.locator(".today-overview-grid > article").first()).toHaveCSS("border-top-width", "1px");
   await openMainMenu(page);
   await expect(page.getByRole("heading", { name: "Menu principal" })).toBeVisible();
@@ -283,13 +289,13 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(page.locator(".main-menu-pages button.active .main-menu-index")).toHaveCSS("background-color", await cssTokenRgb(page, "--accent"));
 
   await goToSection(page, "leave");
-  await expectWhiteCard(".leave-balances-direct", "5px");
-  await expectWhiteCard(".leave-tools-area", "5px");
+  await expectWhiteCard(".leave-balances-direct", accentSpine(page));
+  await expectWhiteCard(".leave-tools-area", accentSpine(page));
 
   await goToSection(page, "pay");
-  await expectWhiteCard(".pay-dashboard-month", "5px");
-  await expectWhiteCard(".pay-dashboard-estimate", "5px");
-  await expectWhiteCard(".pay-dashboard-variables", "5px");
+  await expectWhiteCard(".pay-dashboard-month", accentSpine(page));
+  await expectWhiteCard(".pay-dashboard-estimate", accentSpine(page));
+  await expectWhiteCard(".pay-dashboard-variables", accentSpine(page));
   const allowancesAction = page.locator(".pay-inline-action");
   await expect(allowancesAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await expect(allowancesAction).toHaveCSS("color", "rgb(255, 255, 255)");
@@ -319,26 +325,26 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(page.locator(".pdf-action.my-leaves")).toHaveCSS("background-color", "rgb(243, 250, 246)");
 
   await openUsefulResource(page, "Formulaires");
-  await expectWhiteCard(".useful-forms-screen.useful-forms-root", "5px");
+  await expectWhiteCard(".useful-forms-screen.useful-forms-root", accentSpine(page));
   await expectWhiteCard(".useful-form-folder");
   await expect(page.locator(".useful-form-folder").first()).toHaveCSS("box-shadow", "none");
   await openUsefulResource(page, "Contacts");
-  await expectWhiteCard(".useful-contacts-screen.useful-contacts-root", "5px");
+  await expectWhiteCard(".useful-contacts-screen.useful-contacts-root", accentSpine(page));
   await expectWhiteCard(".useful-contact-directory-grid > button");
   await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("box-shadow", "none");
 
   await goToSection(page, "program");
-  await expectWhiteCard(".grand-palais-program-intro", "5px");
-  await expectWhiteCard(".grand-palais-program-panel", "5px");
+  await expectWhiteCard(".grand-palais-program-intro", accentSpine(page));
+  await expectWhiteCard(".grand-palais-program-panel", accentSpine(page));
 
   await goToSection(page, "colleagues");
-  await expectWhiteCard(".colleague-sharing-intro", "5px");
-  await expectWhiteCard(".colleague-profile-card", "5px");
+  await expectWhiteCard(".colleague-sharing-intro", accentSpine(page));
+  await expectWhiteCard(".colleague-profile-card", accentSpine(page));
   const howItWorks = page.locator(".colleague-how-it-works");
   await expect(howItWorks).toHaveCSS("background-color", "rgb(253, 248, 241)");
   await expect(howItWorks).toHaveCSS("background-image", "none");
   await expect(howItWorks).toHaveCSS("border-top-width", "1px");
-  await expect(howItWorks).toHaveCSS("border-left-width", "5px");
+  await expect(howItWorks).toHaveCSS("border-left-width", accentSpine(page));
   await expect(howItWorks.locator(".colleague-how-header > .eyebrow")).toHaveCSS("border-left-width", "0px");
   await expect(page.locator(".colleague-profile-card")).toHaveCSS("box-shadow", "none");
   await expect(page.locator(".colleague-how-it-works")).toHaveCSS("box-shadow", "none");
@@ -424,7 +430,7 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   await expect(planning.getByRole("button", { name: "Mois précédent" })).toBeVisible();
   await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
   await expect(planning.locator(".worked-days-trigger")).toContainText("travaillé");
-  await expect(planning).toHaveCSS("border-left-width", "5px");
+  await expect(planning).toHaveCSS("border-left-width", accentSpine(page));
   await expect(planning).toHaveCSS("border-left-color", "rgb(152, 84, 56)");
   await expect(planning).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(planning).toHaveCSS("background-image", "none");
@@ -861,7 +867,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const sharingIntro = page.locator(".colleague-sharing-intro");
   await expect(sharingIntro.getByRole("heading", { name: "Planning des collègues" })).toBeVisible();
   await expect(sharingIntro.getByText("Partage privé", { exact: true })).toBeVisible();
-  await expect(sharingIntro).toHaveCSS("border-left-width", "5px");
+  await expect(sharingIntro).toHaveCSS("border-left-width", accentSpine(page));
   await expect(sharingIntro).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(sharingIntro).toHaveCSS("background-image", "none");
   await expect(page.getByText("Votre adresse e-mail n’est jamais affichée.")).toBeVisible();
@@ -1414,7 +1420,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(allowancesLink).toBeVisible();
   const allowancesLinkPadding = await allowancesLink.evaluate((node) => getComputedStyle(node).paddingLeft);
   expect(Number.parseFloat(allowancesLinkPadding)).toBeGreaterThanOrEqual(14);
-  await expect(payScreen.locator(".pay-dashboard-estimate")).toHaveCSS("border-left-width", "5px");
+  await expect(payScreen.locator(".pay-dashboard-estimate")).toHaveCSS("border-left-width", accentSpine(page));
   await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeVisible();
   const profileSummary = payScreen.locator(".pay-profile-summary");
   await expect(profileSummary).toBeVisible();
@@ -1631,7 +1637,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const resourceTabsBox = (await page.locator(".has-active-resource .useful-resource-tabs").boundingBox())!;
   expect(Math.abs(resourceTabsBox.width - formsHeaderBox.width)).toBeLessThanOrEqual(1);
   const formsScreenBox = (await page.locator(".useful-forms-screen").boundingBox())!;
-  await expect(page.locator(".useful-forms-screen.useful-forms-root")).toHaveCSS("border-left-width", "5px");
+  await expect(page.locator(".useful-forms-screen.useful-forms-root")).toHaveCSS("border-left-width", accentSpine(page));
   const resourcesScreenBox = (await page.locator(".useful-resources-screen").boundingBox())!;
   await expect(page.locator(".useful-forms-screen .useful-resource-search")).toHaveCount(0);
   const folderBoxes = await page.locator(".useful-form-folder").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
@@ -2048,20 +2054,20 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
     const style = getComputedStyle(node);
     return { left: style.borderLeftWidth, top: style.borderTopWidth };
   });
-  expect(programPanelBorders.left).toBe("5px");
+  expect(programPanelBorders.left).toBe(accentSpine(page));
   expect(programPanelBorders.top).toBe("1px");
   await expect(page.locator('.grand-palais-program-panel')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.grand-palais-program-panel')).toHaveCSS('background-image', 'none');
   await page.locator('.grand-palais-program-panel').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/expos-blue-panel-${testInfo.project.name}.png` });
-  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", "5px");
+  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", accentSpine(page));
   await expect(page.getByRole("tab", { name: "En ce moment" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tab", { name: "À venir" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Inter-expos" })).toBeVisible();
   const overviewVenueColors = await page.locator(".grand-palais-program-panel article[data-venue]").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
   expect(new Set(overviewVenueColors).size).toBeGreaterThan(1);
   await page.getByRole("tab", { name: "Par espace" }).click();
-  await expect(page.locator(".grand-palais-venue-navigation")).toHaveCSS("border-left-width", "5px");
+  await expect(page.locator(".grand-palais-venue-navigation")).toHaveCSS("border-left-width", accentSpine(page));
   await expect(page.getByText("Expos en cours et à venir", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/Programmation prévisionnelle/)).toHaveCount(0);
   await expect(page.locator(".grand-palais-program-panel .useful-expo-timeline-mark").first()).toBeHidden();
@@ -2377,7 +2383,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-image', /svg/);
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-position', /14px/);
   await expect(contactsRoot.locator(".useful-resource-search")).toHaveCount(0);
-  await expect(contactsRoot).toHaveCSS("border-left-width", "5px");
+  await expect(contactsRoot).toHaveCSS("border-left-width", accentSpine(page));
   await expect(contactsRoot.locator(".useful-contact-directory-grid > button i")).toHaveCount(0);
   const [contactHeaderBox, resourcesScreenBox, contactsRootBox] = await Promise.all([
     contactHeader.boundingBox(),
@@ -2673,7 +2679,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
   await expect(remainingWorkCard).toContainText("D’ici au 31 décembre");
   if (viewportWidth > 720) {
-    await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", "5px");
+    await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", accentSpine(page));
   }
   if (viewportWidth > 720) {
     const [statusBox, nextWorkBox, leaveBox, remainingBox] = await Promise.all([
@@ -2693,15 +2699,15 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
   }
   if (viewportWidth <= 720) {
-    await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", "5px");
+    await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", accentSpine(page));
     await expect(page.locator(".planning-workspace-shell.framed")).toHaveCSS("border-top-width", "0px");
     await expect(page.locator(".planning-workspace-shell.framed")).toHaveCSS("border-left-width", "0px");
     // Un seul liseré d'accent par rubrique. Le calendrier suit immédiatement
     // le poste de commande : il garde un filet uniforme, sans second liseré,
     // et les blocs imbriqués n'en portent aucun.
-    await expect(page.locator(".planning-command-section")).toHaveCSS("border-left-width", "5px");
+    await expect(page.locator(".planning-command-section")).toHaveCSS("border-left-width", accentSpine(page));
     const calendrier = page.locator(".planning-calendar-section");
-    await expect(calendrier).toHaveCSS("border-left-width", "5px");
+    await expect(calendrier).toHaveCSS("border-left-width", accentSpine(page));
     await expect(calendrier).toHaveCSS("border-top-width", "1px");
     await expect(page.locator(".home-planning-heading")).toHaveCSS("border-left-width", "0px");
     await expect(page.locator(".planning-workspace-shell.framed .controls")).toHaveCSS("border-left-width", "0px");
