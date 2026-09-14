@@ -22,6 +22,7 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [status, setStatus] = useState('');
   const [message, setMessage] = useState(''); const [until, setUntil] = useState('');
   const [member, setMember] = useState(''); const [group, setGroup] = useState(1); const [search, setSearch] = useState('');
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<Overview['alerts'][number] | null>(null);
   const [jobDates, setJobDates] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -39,7 +40,7 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
         if (payload.action === 'move-member') setData(current => current && { ...current, groups: current.groups.map(item => ({ ...item, members: [...item.members.filter(name => name !== payload.member), ...(item.number === payload.group ? [String(payload.member)] : [])].sort((a, b) => a.localeCompare(b, 'fr')) })) });
         if (payload.action === 'remove-member') setData(current => current && { ...current, groups: current.groups.map(item => ({ ...item, members: item.members.filter(name => name !== payload.member) })) });
       } else { await api(payload); setData(await api<Overview>()); }
-      if (payload.action === 'remove-member') setMember('');
+      if (payload.action === 'remove-member') { setMember(''); setSearch(''); }
       setStatus(demoMode ? 'Modification simulée dans cette démo.' : 'Modification enregistrée.'); onChanged(); window.dispatchEvent(new Event('admin-tools-updated'));
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Action impossible.'); } finally { setBusy(false); }
   }
@@ -60,7 +61,7 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
     <section><h3>Aperçu invité</h3><p>Parcourez l’interface sans les outils administrateur. Les données personnelles affichées restent les vôtres.</p><button type="button" disabled={busy} onClick={onPreview}>Voir comme un invité</button></section>
     {!data && !error && <p role="status">Chargement des outils…</p>}
     {data && <>
-      <details open><summary>Message temporaire sur l’accueil</summary><form onSubmit={event => { event.preventDefault(); void act({ action: 'pin', message, until: new Date(until).toISOString() }); }}>
+      <details><summary>Message temporaire sur l’accueil</summary><form onSubmit={event => { event.preventDefault(); void act({ action: 'pin', message, until: new Date(until).toISOString() }); }}>
         <label>Message<textarea required maxLength={1000} value={message} onChange={event => setMessage(event.target.value)} /></label>
         <label>Afficher jusqu’au<input type="datetime-local" required value={until} onChange={event => setUntil(event.target.value)} /></label><small>Heure de cet appareil · Tous les comptes invités.</small>
         <button type="submit" disabled={busy || !message.trim() || !until}>Enregistrer le message</button>{data.pin && <button type="button" disabled={busy} onClick={() => void act({ action: 'pin', message: '' })}>Retirer le message</button>}
@@ -76,8 +77,10 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
         {data.trash.length ? data.trash.map(item => <article key={item.id}><strong>{item.title}</strong><small>{item.kind === 'contact' ? 'Contact' : item.kind === 'group-member' ? 'Collègue retiré des groupes' : 'Document'} · Supprimé le {formatDate(item.deletedAt)}</small><button type="button" disabled={busy} onClick={() => void act({ action: 'restore', id: item.id })}>Restaurer</button></article>) : <p>La corbeille est vide.</p>}
       </details>
       <details><summary>Composition des groupes</summary><p>{data.groups.map(item => `Groupe ${item.number} : ${item.members.length}`).join(' · ')}</p><p>Modifie l’annuaire de l’équipe. Le cycle personnel de planning reste réglé par chaque collègue.</p>
-        <label>Rechercher un collègue<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label>
-        <form onSubmit={event => { event.preventDefault(); void act({ action: 'move-member', member, group }); }}><label>Collègue<select aria-label="Collègue" required value={member} onChange={event => setMember(event.target.value)}><option value="">Choisir un collègue</option>{data.groups.flatMap(item => item.members.filter(name => matchesSearch(name, search)).map(name => <option key={name} value={name}>{name} · Groupe {item.number}</option>))}</select></label>
+        <div className="admin-member-picker"><label>Rechercher un collègue<input type="search" role="combobox" autoComplete="off" placeholder="Prénom ou nom" aria-autocomplete="list" aria-controls="admin-member-suggestions" aria-expanded={suggestionsOpen && search.trim() !== '' && search !== member} value={search} onFocus={() => setSuggestionsOpen(true)} onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 150)} onChange={event => { setSearch(event.target.value); setMember(''); setSuggestionsOpen(true); }} /></label>
+          {suggestionsOpen && search.trim() && search !== member ? <ul id="admin-member-suggestions" className="admin-member-suggestions" role="listbox" aria-label="Collègues proposés">{data.groups.flatMap(item => item.members.filter(name => matchesSearch(name, search)).map(name => <li key={name}><button type="button" role="option" aria-selected={name === member} onMouseDown={event => event.preventDefault()} onClick={() => { setMember(name); setSearch(name); setSuggestionsOpen(false); }}><strong>{name}</strong><small>Groupe {item.number}</small></button></li>)).slice(0, 8)}</ul> : null}
+        </div>
+        <form onSubmit={event => { event.preventDefault(); void act({ action: 'move-member', member, group }); }}>{member && <p className="admin-member-selected">Collègue choisi : <strong>{member}</strong> · Groupe {data.groups.find(item => item.members.includes(member))?.number}</p>}
         <label>Nouveau groupe<select aria-label="Nouveau groupe" value={group} onChange={event => setGroup(Number(event.target.value))}>{[1, 2, 3].map(value => <option key={value} value={value}>Groupe {value}</option>)}</select></label><div><button type="submit" disabled={busy || !member}>Déplacer le collègue</button><button className="admin-danger" type="button" disabled={busy || !member} onClick={() => { if (window.confirm(`Retirer ${member} des trois groupes ? Son compte Netlify et ses données seront conservés.`)) void act({ action: 'remove-member', member }); }}>Retirer des groupes</button></div></form>
       </details>
     </>}

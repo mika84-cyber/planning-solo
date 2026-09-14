@@ -90,16 +90,27 @@ test('outils administrateur et aperçu invité sur Z Fold ouvert', async ({ page
   await page.getByRole('menuitem', { name: 'Outils administrateur' }).click();
   const panel = page.getByRole('dialog', { name: 'Outils administrateur' });
   await expect(panel).toBeVisible();
+  // Tous les volets sont repliés à l'ouverture.
+  await expect(panel.locator('details')).toHaveCount(5);
+  await expect(panel.locator('details[open]')).toHaveCount(0);
+  await panel.locator('summary').filter({ hasText: 'Message temporaire sur l’accueil' }).click();
   await panel.getByLabel('Message', { exact: true }).fill('Organisation de demain : rendez-vous à 9 heures.');
   await panel.getByLabel('Afficher jusqu’au').fill('2030-01-01T12:00');
   await panel.getByRole('button', { name: 'Enregistrer le message' }).click();
   await expect(panel.getByRole('status')).toContainText('simulée');
   await panel.locator('summary').filter({ hasText: 'Composition des groupes' }).click();
-  await panel.getByLabel('Collègue', { exact: true }).selectOption('Camille Exemple');
+  // Plus de liste « Choisir un collègue » : le nom est proposé dès les premières lettres.
+  await expect(panel.getByRole('option', { name: 'Choisir un collègue' })).toHaveCount(0);
+  const memberSearch = panel.getByRole('combobox', { name: 'Rechercher un collègue' });
+  await memberSearch.fill('Cam');
+  await panel.getByRole('option', { name: /Camille Exemple/ }).click();
+  await expect(memberSearch).toHaveValue('Camille Exemple');
+  await expect(panel.locator('.admin-member-selected')).toContainText('Camille Exemple · Groupe 1');
   await panel.getByLabel('Nouveau groupe').selectOption('3');
   await panel.getByRole('button', { name: 'Déplacer le collègue' }).click();
   await expect(panel.getByText('Groupe 1 : 0 · Groupe 2 : 1 · Groupe 3 : 1', { exact: true })).toBeVisible();
-  await panel.getByLabel('Collègue', { exact: true }).selectOption('Alex Exemple');
+  await memberSearch.fill('ale');
+  await panel.getByRole('option', { name: /Alex Exemple/ }).click();
   page.once('dialog', dialog => dialog.accept());
   await panel.getByRole('button', { name: 'Retirer des groupes' }).click();
   await expect(panel.getByText('Groupe 1 : 0 · Groupe 2 : 0 · Groupe 3 : 1', { exact: true })).toBeVisible();
@@ -118,6 +129,7 @@ test('outils administrateur et aperçu invité sur Z Fold ouvert', async ({ page
   await page.getByRole('button', { name: 'Quitter l’aperçu' }).click();
   await page.locator('.account-button').click();
   await page.getByRole('menuitem', { name: 'Outils administrateur' }).click();
+  await panel.locator('summary').filter({ hasText: 'Message temporaire sur l’accueil' }).click();
   await panel.getByRole('button', { name: 'Retirer le message' }).click();
   await panel.getByRole('button', { name: 'Fermer les outils administrateur' }).click();
   await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Accueil', exact: true }).click();
