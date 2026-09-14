@@ -574,12 +574,9 @@
   }
 }
 
-/* Écran étroit : la tête s’écarte juste assez du titre, au plus près du centre (mesuré au pixel). */
+/* Téléphone : une tête plus petite, glissée à gauche sous le titre (mesuré au pixel). */
 @media (max-width: 520px) {
-  .top-header.top-header-forms { --art-h: min(164px, calc(57.6vw - 69px)); --art-x: calc(50% + clamp(0px, (506px - 100vw) * 0.47, 46px)); }
-}
-@media (max-width: 412px) {
-  .top-header.top-header-forms { --art-h: min(164px, calc(26vw + 64px)); }
+  .top-header.top-header-forms { --art-h: 120px; --art-x: 44%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pay-app-screen,

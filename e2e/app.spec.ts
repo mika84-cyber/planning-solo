@@ -1282,7 +1282,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   // Aucune rubrique ne doit y revenir en double.
   await expect(menu.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
   await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
-  await expect(menu.locator(".main-menu-hero")).toHaveCSS("background-image", /menu-art-fast.webp/);
+  await expect(menu).toHaveCSS("background-image", /menu-art-fast.webp/);
   await expect(menu.locator("nav > button").first().locator(".main-menu-index svg")).toBeVisible();
   await expect(adminContact).toHaveCSS("background-image", "none");
 

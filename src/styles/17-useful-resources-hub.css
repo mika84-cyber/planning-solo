@@ -83,7 +83,7 @@
   align-self: stretch;
   min-width: 0;
   overflow: hidden;
-  padding: clamp(12px, 2vw, 20px);
+  padding: 4px 2px 12px;
   /* Un seul fond pour les trois rubriques : elles forment une famille. */
   background: linear-gradient(160deg, #fbf3e7, #ecdcc5);
 }
@@ -93,9 +93,9 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  /* Les images sont rognées au ras de leur objet : posées sur la même ligne
-     de sol, les trois gardent la même taille et le même niveau. */
-  object-position: center bottom;
+  /* Les images sont rognées au ras de leur objet : centrées dans des cases
+     identiques, les trois gardent la même taille et le même niveau. */
+  object-position: center;
   /* Une ombre qui suit le contour : les feuilles crème se détachent du fond. */
   filter: drop-shadow(0 1px 1px rgba(92, 58, 28, 0.38)) drop-shadow(0 4px 7px rgba(92, 58, 28, 0.2));
 }
