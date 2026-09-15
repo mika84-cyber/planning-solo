@@ -653,7 +653,7 @@ describe("finitions d’interface", () => {
 
   it("renforce la lisibilité du menu et les contours de l’en-tête", () => {
     expect(styles).toContain(".main-menu-copy strong { color: #fff;");
-    expect(styles).toContain(".main-menu-copy small { overflow: hidden; color: rgba(253, 250, 244, 0.8);");
+    expect(styles).toContain(".main-menu-copy small { overflow: hidden; color: rgba(253, 250, 244, 0.9);");
     expect(styles).toContain(".top-header .account-button,");
     expect(styles).toContain("border: 1.5px solid var(--border-card)");
   });
