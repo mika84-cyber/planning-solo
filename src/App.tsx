@@ -567,7 +567,8 @@ export default function Home() {
   const [noteEditorOpen, setNoteEditorOpen] = useState(false);
   useEffect(() => {
     if (!dayDate) return;
-    setNoteEditorOpen(!entries[dayDate]?.noteText);
+    // Le champ de note ne s'ouvre qu'à la demande, par « Ajouter une note ».
+    setNoteEditorOpen(false);
   }, [dayDate]);
   /** Ouvre une entrée sous la note existante : une ligne vide pour aérer, puis
    *  un tiret qui marque le début de l'ajout. */
@@ -2981,6 +2982,7 @@ export default function Home() {
       </div>
       <WorkExchangeDialog
         open={workExchangeUi.open}
+        demoMode={demoMode}
         group={group}
         draft={workExchangeUi.draft}
         setDraft={workExchangeUi.setDraft}

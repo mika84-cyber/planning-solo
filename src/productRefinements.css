@@ -131,3 +131,12 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   border-left-width: var(--accent-spine, 5px);
   border-left-color: var(--accent);
 }
+
+/* Accueil : dans « Mon planning », les cases Mois/Année, « Aujourd’hui », les
+   jours travaillés et le nettoyage prennent le blanc cassé des cases « En un
+   coup d’œil ». Les notes gardent un jaune léger. */
+.app-shell .planning-workspace-shell.framed :is(.period-pickers, .calendar-toolbar .planning-today-button, .controls .worked-days-trigger) { background: #fbf6ef; }
+.app-shell .planning-calendar-section .calendar-bulk-delete-below { background: #fbf6ef; }
+.app-shell .home-notes-section { background: #fdf6d9; }
+/* Fiche du jour : un seul bouton pour écrire une note, sur toute la largeur. */
+.day-notes-editor .day-add-note-button { justify-self: stretch; min-height: 46px; border-radius: 13px; font-size: 15px; }

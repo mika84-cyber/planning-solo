@@ -46,7 +46,7 @@
   position: relative;
   display: grid;
   width: 100%;
-  height: clamp(128px, 13vw, 158px);
+  height: clamp(146px, 15vw, 184px);
   flex: none;
   overflow: hidden;
   place-items: center;
@@ -147,15 +147,20 @@
   }
 
   .leave-tool-disclosure > summary {
-    min-height: 242px;
+    min-height: 258px;
     gap: 7px;
     padding: 8px;
   }
 
   .leave-tool-illustration {
-    height: clamp(96px, 28vw, 120px);
+    height: clamp(110px, 32vw, 138px);
     border-radius: 11px;
   }
+
+  /* Sur téléphone, ces deux dessins gardent une large marge vide dans leur
+     case étroite : on les rapproche du bord sans les rogner. */
+  .leave-tool-illustration.work-time img { transform: scale(1.16); }
+  .leave-tool-illustration.mecenat img { transform: scale(1.06); }
 
   .leave-tool-copy {
     align-content: center;
@@ -192,12 +197,12 @@
   }
 
   .leave-tool-disclosure > summary {
-    min-height: 230px;
+    min-height: 244px;
     padding: 6px;
   }
 
   .leave-tool-illustration {
-    height: 102px;
+    height: 116px;
   }
 
   .leave-tool-copy strong {

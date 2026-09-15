@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { useLayoutEffect, type RefObject } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
@@ -148,6 +148,16 @@ export function DayDetailDialog({
     setNoteText,
     noteGroupId,
   } = planning;
+  const ownDayNote = dayDate ? entries[dayDate]?.noteText || "" : "";
+  const agnesDayNote = dayDate && partnerEntries[dayDate]?.noteAuthor === "agnes" ? partnerEntries[dayDate]?.noteText || "" : "";
+  const dayNoteCount = (ownDayNote ? 1 : 0) + (agnesDayNote ? 1 : 0);
+
+  // Une journée qui porte déjà des notes s'ouvre directement sur elles :
+  // on les lit sans passer par l'onglet.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: seule l'ouverture d'une journée choisit l'onglet de départ.
+  useLayoutEffect(() => {
+    if (dayDate && !quickNoteMode && dayNoteCount > 0) setDayPanelTab("notes");
+  }, [dayDate, quickNoteMode]);
 
   if (!dayDate) return null;
 
@@ -190,10 +200,11 @@ export function DayDetailDialog({
         {!quickNoteMode ? (
           <div className="day-modal-tabs" role="tablist" aria-label="Contenu de la journée">
             <button id="day-leave-tab" type="button" role="tab" aria-selected={dayPanelTab === "leave"} aria-controls="day-leave-panel" className={dayPanelTab === "leave" ? "active" : ""} onClick={() => setDayPanelTab("leave")}>
-              <span className="day-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="m8 14 2.2 2.2L16 11"/></svg></span><span className="day-tab-copy"><strong>Congés</strong><small>Poser ou gérer</small></span>
+              <span className="day-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="m8 14 2.2 2.2L16 11"/></svg></span><span className="day-tab-copy"><strong>Congés</strong><small>{dayStoredPeriods.length ? "Congé posé · gérer" : "Poser ou gérer"}</small></span>
             </button>
             <button id="day-notes-tab" type="button" role="tab" aria-selected={dayPanelTab === "notes"} aria-controls="day-notes-panel" className={dayPanelTab === "notes" ? "active" : ""} onClick={() => setDayPanelTab("notes")}>
-              <span className="day-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span className="day-tab-copy"><strong>Notes</strong><small>{entries[dayDate]?.noteText ? "Note enregistrée" : "Ajouter une note"}</small></span>
+              <span className="day-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span className="day-tab-copy"><strong>Notes</strong><small>{dayNoteCount ? `${dayNoteCount} note${dayNoteCount > 1 ? "s" : ""} enregistrée${dayNoteCount > 1 ? "s" : ""}` : "Ajouter une note"}</small></span>
+              {dayNoteCount ? <span className="day-tab-count" aria-hidden="true">{dayNoteCount}</span> : null}
             </button>
           </div>
         ) : null}
@@ -529,7 +540,7 @@ export function DayDetailDialog({
               </button>
             </section>
           ) : null}
-          {entries[dayDate]?.noteText && !noteEditorOpen ? (
+          {entries[dayDate]?.noteText && !noteEditorOpen && !quickNoteMode ? (
             <button
               className="day-author-note day-author-note-mika saved-note-card"
               type="button"
@@ -539,6 +550,24 @@ export function DayDetailDialog({
               <strong>{ownNoteAuthorLabel}</strong>
               <p>{entries[dayDate].noteText}</p>
             </button>
+          ) : null}
+          {/* Un seul geste pour écrire, qu'une note existe déjà ou non : le
+              champ ne s'ouvre qu'à la demande. */}
+          {!quickNoteMode && !noteEditorOpen ? (
+            <button
+              className="add-note-line day-add-note-button"
+              type="button"
+              onClick={() => {
+                if (entries[dayDate]?.noteText) {
+                  appendNoteLine();
+                  return;
+                }
+                setNoteEditorOpen(true);
+                requestAnimationFrame(() => noteFieldRef.current?.focus());
+              }}
+            >
+              Ajouter une note
+            </button>
           ) : (
           <section className="day-author-note day-author-note-mika">
             <div className="note-field-heading">
@@ -546,17 +575,6 @@ export function DayDetailDialog({
                 <strong>{ownNoteAuthorLabel}</strong>
                 <span>{quickNoteMode ? "Contenu de la note" : "Rendez-vous ou note"}</span>
               </label>
-          {/* Sans note existante, il n'y a rien à compléter : le bouton ne
-              sert qu'à ouvrir une ligne sous ce qui est déjà écrit. */}
-          {entries[dayDate]?.noteText && (
-            <button
-              className="add-note-line"
-              type="button"
-              onClick={appendNoteLine}
-            >
-              Ajouter une note
-            </button>
-          )}
             </div>
         {quickNoteMode ? (
           <label className="leave-type-field note-date-direct-choice">
@@ -585,16 +603,8 @@ export function DayDetailDialog({
             />
           </section>
           )}
-          {entries[dayDate]?.noteText && !noteEditorOpen ? (
-            <button
-              className="add-note-line saved-note-add-button"
-              type="button"
-              onClick={appendNoteLine}
-            >
-              Ajouter une note
-            </button>
-          ) : null}
         </div>
+        {quickNoteMode || noteEditorOpen ? (
         <div className="leave-range-box note-date-choice">
           <button
             className="separate-date-button"
@@ -608,6 +618,7 @@ export function DayDetailDialog({
             </span>
           </button>
         </div>
+        ) : null}
         {entries[dayDate]?.noteText && entries[dayDate].noteUpdatedAt && (
           <p className="note-meta">
             {dateTimeLabel(entries[dayDate].noteUpdatedAt)}
@@ -645,6 +656,7 @@ export function DayDetailDialog({
           >
             Annuler
           </button>
+          {quickNoteMode || noteEditorOpen ? (
           <button
             className="save-button"
             type="button"
@@ -653,6 +665,7 @@ export function DayDetailDialog({
           >
             {savingDay ? "Synchronisation…" : "Enregistrer"}
           </button>
+          ) : null}
         </div>
         </div>
       </section>

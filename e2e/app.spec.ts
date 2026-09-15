@@ -448,7 +448,7 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   expect(todayButtonBox!.y + todayButtonBox!.height).toBeLessThanOrEqual(workedDaysBox!.y);
   expect(todayButtonBox!.width).toBeGreaterThan(workedDaysBox!.width * 0.98);
   // « Aujourd’hui » : le mot en terracotta dans le même encadré que les jours travaillés.
-  await expect(todayButton).toHaveCSS("background-color", await cssTokenRgb(page, "--surface"));
+  await expect(todayButton).toHaveCSS("background-color", "rgb(251, 246, 239)");
   await expect(todayButton).toHaveCSS("border-top-width", "1px");
   await expect(todayButton).toHaveCSS("border-top-left-radius", "13px");
   await expect(todayButton).toHaveCSS("color", await cssTokenRgb(page, "--accent-strong"));
@@ -515,11 +515,15 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     "/leave-tools/leave-tool-mecenat.webp",
     "/leave-tools/leave-tool-cet.webp",
   ]);
+  // La boîte de l'image reste posée dans son cadre. Sur téléphone, un léger
+  // zoom rapproche les dessins du bord : il ne compte pas ici, puisque le
+  // cadre rogne et que les marges des images sont transparentes.
   expect(await toolIllustrations.evaluateAll((images) => images.every((image) => {
-    const imageBox = image.getBoundingClientRect();
-    const frameBox = image.parentElement!.getBoundingClientRect();
-    return imageBox.left >= frameBox.left - 1 && imageBox.right <= frameBox.right + 1
-      && imageBox.top >= frameBox.top - 1 && imageBox.bottom <= frameBox.bottom + 1;
+    const img = image as HTMLImageElement;
+    const frame = img.parentElement!;
+    return img.offsetLeft >= -1 && img.offsetTop >= -1
+      && img.offsetLeft + img.offsetWidth <= frame.clientWidth + 1
+      && img.offsetTop + img.offsetHeight <= frame.clientHeight + 1;
   }))).toBe(true);
   expect(await page.locator(".leave-tool-copy").evaluateAll((copies) => copies.every((copy) => getComputedStyle(copy).textAlign === "center"))).toBe(true);
   expect(await page.locator(".leave-tool-illustration").evaluateAll((frames) => frames.every((frame) => {
@@ -2206,6 +2210,9 @@ test("le tampon de fermeture conserve la date lisible sur ordinateur et téléph
   await firstClosedDay.click();
   const closedDayDialog = page.getByRole("dialog", { name: /mercredi 9 septembre 2026/i });
   await closedDayDialog.getByRole("tab", { name: /^Notes/ }).click();
+  // Le champ ne s'ouvre qu'à la demande, par le bouton unique « Ajouter une note ».
+  await expect(closedDayDialog.locator("textarea")).toHaveCount(0);
+  await closedDayDialog.getByRole("button", { name: "Ajouter une note" }).click();
   await closedDayDialog.locator("textarea").fill("Inventaire après fermeture");
   await closedDayDialog.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(firstClosedDay).toHaveClass(/exceptional-closure-day/);
@@ -2598,11 +2605,14 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   expect(narrowDateBox).not.toBeNull();
   expect(narrowLabelBox).not.toBeNull();
   expect(narrowMarkerBox).not.toBeNull();
-  expect(narrowMarkerBox!.width).toBeGreaterThanOrEqual(20);
+  // Repère discret, posé dans le coin supérieur droit : assez petit pour
+  // laisser la date respirer, assez grand pour rester reconnaissable.
+  expect(narrowMarkerBox!.width).toBeGreaterThanOrEqual(12);
+  expect(narrowMarkerBox!.width).toBeLessThanOrEqual(18);
   await expect(narrowExchangeCell.locator(".exchange-calendar-marker")).toHaveCSS("border-top-width", "0px");
   await expect(narrowExchangeCell.locator(".exchange-calendar-marker")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  expect(narrowCellBox!.x + narrowCellBox!.width - (narrowMarkerBox!.x + narrowMarkerBox!.width)).toBeLessThanOrEqual(3);
-  expect(narrowMarkerBox!.y - narrowCellBox!.y).toBeLessThanOrEqual(3);
+  expect(narrowCellBox!.x + narrowCellBox!.width - (narrowMarkerBox!.x + narrowMarkerBox!.width)).toBeLessThanOrEqual(5);
+  expect(narrowMarkerBox!.y - narrowCellBox!.y).toBeLessThanOrEqual(5);
   expect(narrowCellBox!.y + narrowCellBox!.height - (narrowLabelBox!.y + narrowLabelBox!.height)).toBeLessThanOrEqual(4);
   expect(Math.abs((narrowDateBox!.y + narrowDateBox!.height / 2) - (narrowCellBox!.y + narrowCellBox!.height / 2))).toBeLessThanOrEqual(1);
   expect(Math.abs((narrowDateBox!.x + narrowDateBox!.width / 2) - (narrowCellBox!.x + narrowCellBox!.width / 2))).toBeLessThanOrEqual(1);

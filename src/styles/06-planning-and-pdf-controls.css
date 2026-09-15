@@ -437,10 +437,13 @@
   border-color: var(--border-control);
   background: linear-gradient(145deg, var(--surface-high) 0%, var(--surface) 100%);
 }
+/* Repos : un aplat noir jusqu'aux bords. Le reflet blanc intérieur des cases
+   claires traçait ici un filet clair au sommet de la case. */
 .day.off {
-  border-color: var(--border-card);
+  border-color: #2c2621;
   background: linear-gradient(145deg, #2c2621 0%, #2c2621 100%);
   color: #fff;
+  box-shadow: 0 3px 8px rgba(58, 51, 44, 0.08);
 }
 .day.training {
   border-color: var(--border-card);
