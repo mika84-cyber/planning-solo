@@ -174,6 +174,16 @@ function formatFrenchDate(value: string) {
     .format(new Date(`${value}T12:00:00Z`));
 }
 
+function formatDatePart(value: string, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat("fr-FR", { ...options, timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`));
+}
+
+/** Intitulé d'un regroupement mensuel : « Septembre 2026 ». */
+function monthHeading(value: string) {
+  const label = formatDatePart(value, { month: "long", year: "numeric" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export function isGrandPalaisEntryVisible(
   entry: GrandPalaisProgramEntry,
   today = new Date().toISOString().slice(0, 10),
@@ -273,6 +283,55 @@ export function grandPalaisEntryStatus(
     };
   }
   return { label: "À confirmer", detail: "" };
+}
+
+/** Une exposition : la salle, le titre, la période et le temps restant. Une
+ *  exposition ouverte montre en plus où elle en est. */
+function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel }: {
+  entry: GrandPalaisProgramEntry;
+  venueKey: string;
+  venueLabel?: string;
+  today: string;
+  openingReady: boolean;
+  linkLabel: string;
+}) {
+  const status = grandPalaisEntryStatus(entry, today, openingReady);
+  const current = status.label === "En cours";
+  const countdown = status.label === "Prochainement" ? status.detail.replace(/^Commence /, "") : "";
+  const upcomingCountdown = countdown ? countdown.charAt(0).toUpperCase() + countdown.slice(1) : "";
+  const totalDays = entry.startsOn && entry.endsOn ? dayDistance(entry.startsOn, entry.endsOn) : 0;
+  const progress = current && totalDays > 0 && entry.startsOn
+    ? Math.min(100, Math.max(0, Math.round((dayDistance(entry.startsOn, today) / totalDays) * 100)))
+    : null;
+  const officialUrl = safeGrandPalaisUrl(entry.officialUrl);
+  return (
+    <article
+      className="expo-card"
+      data-venue={venueKey}
+      data-status={status.label}
+      style={grandPalaisVenueStyle(venueKey)}
+    >
+      <span className="useful-expo-timeline-mark" aria-hidden="true" />
+      <div>
+        {venueLabel ? <span className="useful-expo-venue">{venueLabel}</span> : null}
+        <strong>{entry.title}</strong>
+        {entry.details ? <p>{entry.details}</p> : null}
+        <small>{entry.period}</small>
+        {progress !== null ? (
+          <span className="expo-progress" aria-hidden="true">
+            <i style={{ width: `${progress}%` }} />
+          </span>
+        ) : null}
+        {officialUrl ? <a href={officialUrl} target="_blank" rel="noreferrer">{linkLabel}</a> : null}
+      </div>
+      {/* Une exposition à venir n'a besoin que de son compte à rebours :
+          « Prochainement » redirait ce que la date annonce déjà. */}
+      <footer className="expo-card-status">
+        {upcomingCountdown ? <em>{upcomingCountdown}</em> : <em>{status.label}</em>}
+        {status.detail && !upcomingCountdown ? <span>{status.detail}</span> : null}
+      </footer>
+    </article>
+  );
 }
 
 /** Ce que le contrôle hebdomadaire des frontières a constaté. Affiché à la
@@ -388,10 +447,25 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
       return true;
     });
   }, [program, today]);
-  const overviewEntries = allEntries.filter(({ entry }) => {
-    if (!matchesSearch(entry.title, normalizedSearch)) return false;
-    return programView === "now" ? isGrandPalaisEntryCurrent(entry, today, openingReady) : Boolean(entry.startsOn && entry.startsOn >= today && !isGrandPalaisEntryCurrent(entry, today, openingReady));
-  }).sort((left, right) => (left.entry.startsOn ?? "9999").localeCompare(right.entry.startsOn ?? "9999"));
+  const currentEntries = allEntries
+    .filter(({ entry }) => isGrandPalaisEntryCurrent(entry, today, openingReady))
+    // Celles qui ferment le plus tôt d'abord : ce sont les dernières à voir.
+    .sort((left, right) => (left.entry.endsOn ?? "9999").localeCompare(right.entry.endsOn ?? "9999"));
+  const upcomingEntries = allEntries
+    .filter(({ entry }) => Boolean(entry.startsOn && entry.startsOn >= today && !isGrandPalaisEntryCurrent(entry, today, openingReady)))
+    .sort((left, right) => (left.entry.startsOn ?? "9999").localeCompare(right.entry.startsOn ?? "9999"));
+  const overviewEntries = (programView === "now" ? currentEntries : upcomingEntries)
+    .filter(({ entry }) => matchesSearch(entry.title, normalizedSearch));
+  const nextOpening = upcomingEntries[0];
+  const viewCounts: Partial<Record<ProgramView, number>> = {
+    now: currentEntries.length,
+    upcoming: upcomingEntries.length,
+    interexpo: interExhibitionPeriods.length,
+  };
+  const venueEntryCount = (venueKey: string) => new Set(Object.values(program[venueKey]?.schedule ?? {})
+    .flatMap((scheduled) => scheduled ?? [])
+    .filter((entry) => isGrandPalaisEntryVisible(entry, today))
+    .map((entry) => entry.title)).size;
 
   useEffect(() => {
     let active = true;
@@ -446,7 +520,14 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         <div className="native-screen-heading">
           <span className="step-label">Grand Palais</span>
           <h2 id="grand-palais-program-title">Expositions et événements</h2>
-          <p>Consultez le programme par période ou par espace.</p>
+          <p className="grand-palais-program-summary">
+            {currentEntries.length
+              ? `${currentEntries.length} exposition${currentEntries.length > 1 ? "s" : ""} ouverte${currentEntries.length > 1 ? "s" : ""} aujourd’hui.`
+              : "Aucune exposition ouverte aujourd’hui."}
+            {nextOpening ? (
+              <> Prochaine ouverture : <b>{nextOpening.entry.title}</b>, {grandPalaisEntryStatus(nextOpening.entry, today, openingReady).detail.replace(/^Commence /, "") || "bientôt"}.</>
+            ) : null}
+          </p>
         </div>
       </div>
 
@@ -494,7 +575,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
       <div className="grand-palais-view-tools">
         <div className="grand-palais-view-picker" role="tablist" aria-label="Vue de la programmation">
           {([["now", "En ce moment"], ["upcoming", "À venir"], ["space", "Par espace"], ["interexpo", "Inter-expos"]] as const).map(([value, label]) => (
-            <button key={value} type="button" role="tab" aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>{label}</button>
+            <button key={value} type="button" role="tab" aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>{label}{viewCounts[value] !== undefined ? <b className="grand-palais-view-count" aria-hidden="true">{viewCounts[value]}</b> : null}</button>
           ))}
         </div>
         {programView !== "interexpo" ? <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label> : null}
@@ -518,7 +599,9 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             onClick={() => selectVenue(venueKey)}
           >
             <span>{program[venueKey].label}</span>
-            <small>Voir la programmation</small>
+            <small>{venueEntryCount(venueKey)
+              ? `${venueEntryCount(venueKey)} exposition${venueEntryCount(venueKey) > 1 ? "s" : ""} au programme`
+              : "Rien d’annoncé pour l’instant"}</small>
           </button>
         ))}
         <button
@@ -578,11 +661,23 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         </section>
       ) : programView === "now" || programView === "upcoming" ? (
         <section className="useful-expo-schedule grand-palais-program-panel" aria-live="polite">
-          <div className="useful-expo-schedule-heading"><h3>{programView === "now" ? "Ouvert en ce moment" : "Prochaines ouvertures"}</h3><p>Tous les espaces sont réunis dans cette vue.</p></div>
+          <div className="useful-expo-schedule-heading">
+            <h3>{programView === "now" ? "Ouvert en ce moment" : "Prochaines ouvertures"}</h3>
+            <p>{programView === "now"
+              ? "Tous les espaces réunis, celles qui ferment le plus tôt en premier."
+              : "Tous les espaces réunis, mois par mois."}</p>
+          </div>
           <div className="useful-expo-timeline">
-            {overviewEntries.length ? overviewEntries.map(({ entry, venueKey, venueLabel }) => {
-              const status = grandPalaisEntryStatus(entry, today, openingReady);
-              return <article key={`${venueKey}-${entry.title}-${entry.period}`} data-venue={venueKey} data-status={status.label} style={grandPalaisVenueStyle(venueKey)}><span className="useful-expo-timeline-mark" aria-hidden="true" /><div><span className="useful-expo-venue">{venueLabel}</span><small>{entry.period}</small><strong>{entry.title}</strong>{entry.details ? <p>{entry.details}</p> : null}{safeGrandPalaisUrl(entry.officialUrl) ? <a href={safeGrandPalaisUrl(entry.officialUrl)} target="_blank" rel="noreferrer">Voir le site officiel</a> : null}</div><em>{status.label}</em></article>;
+            {overviewEntries.length ? overviewEntries.map(({ entry, venueKey, venueLabel }, index) => {
+              // « À venir » se lit mois par mois : un intitulé ouvre chaque mois.
+              const month = programView === "upcoming" && entry.startsOn ? entry.startsOn.slice(0, 7) : "";
+              const previousMonth = index > 0 ? overviewEntries[index - 1].entry.startsOn?.slice(0, 7) : "";
+              return (
+                <div className="expo-card-slot" key={`${venueKey}-${entry.title}-${entry.period}`}>
+                  {month && month !== previousMonth ? <h4 className="expo-month-heading">{monthHeading(entry.startsOn!)}</h4> : null}
+                  <ExpoCard entry={entry} venueKey={venueKey} venueLabel={venueLabel} today={today} openingReady={openingReady} linkLabel="Voir le site officiel" />
+                </div>
+              );
             }) : <p className="empty-state">Aucune exposition ne correspond à cette vue.</p>}
           </div>
         </section>
@@ -608,30 +703,16 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         </div>
 
         <div className="useful-expo-timeline" role="tabpanel" aria-label={`${venue.label} - ${selectedYear}`}>
-          {entries.map((entry) => {
-            const status = grandPalaisEntryStatus(entry, today, openingReady);
-            return (
-              <article
-                key={`${entry.title}-${entry.period}`}
-                data-venue={selectedVenueKey}
-                data-status={status.label}
-                style={grandPalaisVenueStyle(selectedVenueKey)}
-              >
-                <span className="useful-expo-timeline-mark" aria-hidden="true" />
-                <div>
-                  <small>{entry.period}</small>
-                  <strong>{entry.title}</strong>
-                  {entry.details ? <p>{entry.details}</p> : null}
-                  {safeGrandPalaisUrl(entry.officialUrl) ? (
-                    <a href={safeGrandPalaisUrl(entry.officialUrl)} target="_blank" rel="noreferrer">
-                      Voir sur le site du Grand Palais
-                    </a>
-                  ) : null}
-                </div>
-                <em>{status.label}</em>
-              </article>
-            );
-          })}
+          {entries.map((entry) => (
+            <ExpoCard
+              key={`${entry.title}-${entry.period}`}
+              entry={entry}
+              venueKey={selectedVenueKey}
+              today={today}
+              openingReady={openingReady}
+              linkLabel="Voir sur le site du Grand Palais"
+            />
+          ))}
         </div>
 
       </section>

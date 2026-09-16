@@ -57,21 +57,15 @@ test("les parcours essentiels ne présentent pas de violation d’accessibilité
   await expectNoSeriousAccessibilityViolation(page, "dans le menu principal");
   await menu.getByRole("button", { name: "Fermer le menu" }).click();
 
-  // La navigation est une boussole : on l'ouvre, puis on choisit la rubrique.
+  // La navigation est un dock toujours visible en bas de l'écran.
   const navigation = page.locator('nav[aria-label="Navigation principale"]:visible');
   const choisir = async (name: RegExp) => {
-    await navigation.locator(".compass-toggle").click();
-    await expect(navigation.locator(".compass-choices")).toBeVisible();
     await navigation.getByRole("button", { name }).click();
-    await expect(navigation.locator(".compass-choices")).toHaveCount(0);
+    await expect(navigation.getByRole("button", { name })).toHaveAttribute("aria-current", "page");
   };
   await choisir(/^Congés$/);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   await expectNoSeriousAccessibilityViolation(page, "sur les congés et récupérations");
-  await navigation.locator(".compass-toggle").click();
-  await expect(navigation.locator(".compass-choices")).toBeVisible();
-  await expectNoSeriousAccessibilityViolation(page, "dans la boussole ouverte");
-  await page.keyboard.press("Escape");
   for (const name of [/^Ma paie$/, /^(Docs|Documents)$/, /^(Expos|Programme)$/, /^Collègues$/]) {
     await choisir(name);
     await expectNoSeriousAccessibilityViolation(page, `dans ${name.source}`);

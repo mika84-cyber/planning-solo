@@ -171,18 +171,15 @@ const SECTION_BUTTONS = {
   colleagues: /^Collègues$/,
 } as const;
 
-/** La navigation principale est une boussole : une capsule qui nomme la
- *  rubrique en cours, à ouvrir pour voir les six rubriques. */
-async function openCompass(page: Page) {
-  const compass = page.locator('nav[aria-label="Navigation principale"]:visible');
-  // Ouverte, la boussole n'a plus de bouton : c'est la présence des six
-  // rubriques qui dit si elle est déjà dépliée.
-  if (!(await compass.locator(".compass-choices").count())) await compass.locator(".compass-toggle").click();
-  await expect(compass.locator(".compass-choices")).toBeVisible();
-  return compass;
+/** La navigation principale est un dock fixé en bas de l'écran : les six
+ *  rubriques y sont toujours visibles. */
+async function sectionDock(page: Page) {
+  const tabs = page.locator('nav[aria-label="Navigation principale"]:visible');
+  await expect(tabs.getByRole("button")).toHaveCount(6);
+  return tabs;
 }
 
-/** Ouvre une rubrique par la boussole. Les rubriques ne sont plus dans le
+/** Ouvre une rubrique par le dock. Les rubriques ne sont plus dans le
  *  menu tiroir, qui ne garde que le compte et les réglages. */
 async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
   // Le tiroir resté ouvert recouvrirait la navigation : on le referme.
@@ -191,8 +188,8 @@ async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
     await page.getByRole("button", { name: "Fermer le menu" }).click();
     await expect(drawer).toBeHidden();
   }
-  const compass = await openCompass(page);
-  await compass.getByRole("button", { name: SECTION_BUTTONS[section] }).click();
+  const tabs = await sectionDock(page);
+  await tabs.getByRole("button", { name: SECTION_BUTTONS[section] }).click();
 }
 
 /** Les actions secondaires de la fiche jour — souhait, maladie, grève, CET,
@@ -403,10 +400,8 @@ test("le 9 septembre reste lisible et les rubriques utilisent le fond commun", a
 
 test("le mode d’emploi n’est plus proposé", async ({ page }) => {
   await prepareDemo(page);
-  const navigation = await openCompass(page);
-  await expect(navigation.locator(".compass-choices").getByRole("button")).toHaveCount(6);
+  const navigation = await sectionDock(page);
   await expect(navigation.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
-  await page.keyboard.press("Escape");
   await openMainMenu(page);
   await expect(page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "Planning Solo, simplement" })).toHaveCount(0);
@@ -424,10 +419,10 @@ test("les pages et la navigation suivent exactement la largeur de leur en-tête"
       const box = (await page.locator(selector).boundingBox())!;
       expect(Math.abs(box.x - header.x)).toBeLessThan(1);
       expect(Math.abs(box.width - header.width)).toBeLessThan(1);
-      // La boussole, elle, reste posée dans l'écran sans le déborder.
-      const compass = (await navigation.boundingBox())!;
-      expect(compass.x).toBeGreaterThanOrEqual(0);
-      expect(compass.x + compass.width).toBeLessThanOrEqual(width);
+      // Le dock, lui, reste posé dans l'écran sans le déborder.
+      const dockBox = (await navigation.boundingBox())!;
+      expect(dockBox.x).toBeGreaterThanOrEqual(0);
+      expect(dockBox.x + dockBox.width).toBeLessThanOrEqual(width);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
   }
@@ -485,30 +480,27 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
   }
-  // La boussole, sur tous les écrans : fermée, elle nomme la rubrique en
-  // cours ; ouverte, elle déploie les six rubriques, la rubrique en cours
-  // soulignée d'un trait terracotta, sans bouton de fermeture — Échap,
-  // un choix ou un appui à côté suffisent.
-  const compass = page.locator(".section-compass");
-  const toggle = compass.locator(".compass-toggle");
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(toggle).toHaveAttribute("aria-label", "Changer de rubrique · Accueil");
-  await expect(compass.locator(".compass-choices")).toHaveCount(0);
-  const closedHeight = (await compass.boundingBox())!.height;
-  expect(closedHeight).toBeGreaterThanOrEqual(44);
-  expect(closedHeight).toBeLessThanOrEqual(80);
-  await openCompass(page);
-  const choices = compass.locator(".compass-choices > button");
+  // Le dock, sur tous les écrans : une capsule sombre en bas de l'écran. La
+  // rubrique en cours s'étire en pastille claire et montre son nom ; les
+  // autres ne gardent que leur icône.
+  const dock = await sectionDock(page);
+  const choices = dock.getByRole("button");
   await expect(choices.locator(":scope > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
   await expect(choices.first()).toHaveAttribute("aria-current", "page");
-  await expect.poll(() => choices.first().evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("1");
-  expect(await choices.nth(1).evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("0");
-  const tileBoxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
-  expect(tileBoxes.every((box) => box.width >= 44 && box.x >= 0 && box.right <= page.viewportSize()!.width)).toBe(true);
-  await expect(toggle).toHaveCount(0);
-  await page.keyboard.press("Escape");
-  await expect(compass.locator(".compass-choices")).toHaveCount(0);
-  await expect(toggle).toHaveCount(1);
+  await expect(choices.first()).toHaveCSS("background-color", "rgb(255, 253, 249)");
+  await expect(choices.nth(1)).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect.poll(() => choices.first().locator("span").evaluate((node) => node.getBoundingClientRect().width)).toBeGreaterThan(30);
+  expect(await choices.nth(1).locator("span").evaluate((node) => node.getBoundingClientRect().width)).toBe(0);
+  const dockBoxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
+  expect(dockBoxes.every((box) => box.width >= 38 && box.height >= 44)).toBe(true);
+  expect(new Set(dockBoxes.map((box) => Math.round(box.y))).size).toBe(1);
+  const viewportHeight = page.viewportSize()!.height;
+  await page.evaluate(() => window.scrollTo(0, 1600));
+  await expect.poll(async () => {
+    const box = (await dock.boundingBox())!;
+    return viewportHeight - (box.y + box.height);
+  }).toBeLessThanOrEqual(24);
+  await page.evaluate(() => window.scrollTo(0, 0));
   await goToSection(page, "leave");
   await expect(page.locator("details.leave-tool-disclosure")).toHaveCount(3);
   await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
@@ -611,17 +603,22 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
   test.skip(testInfo.project.name !== "mobile", "Simulation dédiée au téléphone étroit");
   await page.setViewportSize({ width: 344, height: 882 });
   await prepareDemo(page);
-  const navigation = await openCompass(page);
-  const choices = navigation.locator(".compass-choices > button");
+  const navigation = await sectionDock(page);
+  const choices = navigation.getByRole("button");
   await expect(choices.locator(":scope > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
-  await expect(choices).toHaveCount(6);
   const boxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
-  expect(boxes.every((box) => box.width >= 44)).toBe(true);
+  expect(boxes.every((box) => box.width >= 38)).toBe(true);
   expect(boxes.every((box) => box.x >= 0 && box.right <= 344)).toBe(true);
+  // Même le nom le plus long, une fois étiré, tient dans l'écran le plus étroit.
+  await navigation.getByRole("button", { name: SECTION_BUTTONS.colleagues }).click();
+  await expect(page.locator(".top-header h1")).toContainText("Planning des collègues");
+  await expect.poll(async () => {
+    const box = (await navigation.boundingBox())!;
+    return box.x >= 0 && box.x + box.width <= 344;
+  }).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await navigation.getByRole("button", { name: SECTION_BUTTONS.documents }).click();
   await expect(page.locator(".top-header h1")).toContainText("Documents et contacts");
-  await expect(navigation.locator(".compass-choices")).toHaveCount(0);
-  await openCompass(page);
   await expect(navigation.getByRole("button", { name: SECTION_BUTTONS.documents })).toHaveAttribute("aria-current", "page");
   // Le nom d'une tuile garde un interlignage supérieur à son corps : les
   // accents ne sont pas rognés, même sur l'écran le plus étroit.
@@ -631,8 +628,6 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
     return { fontSize: Number.parseFloat(style.fontSize), lineHeight: Number.parseFloat(style.lineHeight) };
   });
   expect(progTypography.lineHeight).toBeGreaterThan(progTypography.fontSize);
-  await page.keyboard.press("Escape");
-  await expect(navigation.locator(".compass-choices")).toHaveCount(0);
 });
 
 async function prepareFutureTrainingAbsenceDemo(
@@ -2055,7 +2050,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
 
   await expect(page.locator(".top-header h1")).toHaveText("Programmation GP");
   if (testInfo.project.name === "mobile") {
-    await expect(page.locator(".section-compass")).toBeVisible();
+    await expect(page.locator(".section-dock")).toBeVisible();
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
   }
   const [programHeaderBox, programScreenBox] = await Promise.all([
@@ -2095,10 +2090,10 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(choices.first()).toHaveCSS('background-color', 'rgb(220, 236, 255)');
   expect(new Set(await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
   await expect(choices).toHaveText([
-    /Galeries 3 et 4.*Voir la programmation/,
-    /Galerie 8.*Voir la programmation/,
-    /Galerie 7.*Voir la programmation/,
-    /Palais des enfants.*Voir la programmation/,
+    /Galeries 3 et 4.*au programme/,
+    /Galerie 8.*au programme/,
+    /Galerie 7.*au programme/,
+    /Palais des enfants.*au programme/,
     /Autres.*Nef et autres galeries RMN/,
   ]);
   const choiceBoxes = await choices.evaluateAll((buttons) =>
@@ -2110,7 +2105,9 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await page.mouse.move(0, 0);
   await page.locator('.grand-palais-venue-navigation').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/coherent-expos-${testInfo.project.name}.png` });
-  await expect(page.locator(".useful-expo-timeline article").first()).toContainText("Prochainement");
+  // Une exposition à venir affiche son compte à rebours plutôt que « Prochainement ».
+  await expect(page.locator(".useful-expo-timeline article").first()).toHaveAttribute("data-status", "Prochainement");
+  await expect(page.locator(".useful-expo-timeline article").first().locator(".expo-card-status em")).toHaveText(/^Dans [0-9]+ jours$|^Demain$/);
 
   await page.getByRole("tab", { name: /Galerie 8/ }).click();
   await expect(page.locator('.useful-expo-timeline article[data-status="En cours"]')).toHaveCount(1);
@@ -2119,7 +2116,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
     return `${style.backgroundColor}|${style.borderTopColor}|${style.borderLeftColor}`;
   }));
   expect(new Set(gallery8CardColors).size).toBe(1);
-  const gallery8StatusBackgrounds = await page.locator(".useful-expo-timeline article > em").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
+  const gallery8StatusBackgrounds = await page.locator(".useful-expo-timeline article .expo-card-status em").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
   expect(new Set(gallery8StatusBackgrounds).size).toBe(1);
   const exhibitionBorder = await page.locator('.useful-expo-timeline article[data-status="En cours"]').evaluate((node) => {
     const style = getComputedStyle(node);
@@ -2139,7 +2136,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(officialLink).toHaveCSS("border-top-style", "none");
   await expect(officialLink).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(officialLink).toHaveCSS("text-decoration-line", "underline");
-  await expect(page.locator('.useful-expo-timeline article[data-status="En cours"] > em')).toHaveText("En cours");
+  await expect(page.locator('.useful-expo-timeline article[data-status="En cours"] .expo-card-status em')).toHaveText("En cours");
   await expect(page.locator(".useful-expo-timeline")).toContainText("Girls - Adolescence, mode et rébellion");
   await expect(page.locator(".useful-expo-timeline")).not.toContainText("Programmé");
   await page.getByRole("tab", { name: /Galerie 7/ }).click();
@@ -2666,7 +2663,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(header).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(account).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(menuButton).toBeVisible();
-  await expect(page.locator(".section-compass")).toBeVisible();
+  await expect(page.locator(".section-dock")).toBeVisible();
   await expect(update).toBeVisible();
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
@@ -2782,7 +2779,8 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(toolbarBox).not.toBeNull();
     expect(monthPickerBox).not.toBeNull();
     expect(yearPickerBox).not.toBeNull();
-    expect(Math.abs(monthPickerBox!.width - yearPickerBox!.width)).toBeLessThanOrEqual(1);
+    // Le mois, plus long en capitales espacées, prend davantage de place que l’année.
+    expect(monthPickerBox!.width).toBeGreaterThan(yearPickerBox!.width);
     // Les deux flèches encadrent les menus, et le retour au mois courant
     // tient dans la même barre : tout le geste de navigation au même endroit.
     const arrows = page.locator(".period-navigation .period-step");
@@ -2968,14 +2966,9 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   await page.setViewportSize({ width: 900, height: 1000 });
   await prepareDemo(page);
 
-  const foldNavigation = page.locator(".section-compass");
-  await expect(foldNavigation).toBeVisible();
+  const foldNavigation = await sectionDock(page);
   expect((await foldNavigation.boundingBox())!.height).toBeGreaterThanOrEqual(50);
-  await expect(foldNavigation.locator(".compass-toggle")).toHaveAttribute("aria-label", /Accueil/);
-  await openCompass(page);
   await expect(foldNavigation.getByRole("button", { name: SECTION_BUTTONS.home })).toHaveClass(/active/);
-  await page.keyboard.press("Escape");
-  await expect(foldNavigation.locator(".compass-choices")).toHaveCount(0);
 
   const headerBox = await page.locator(".top-header").boundingBox();
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
@@ -2999,7 +2992,8 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
         page.locator(".today-leave-balance").boundingBox(),
         page.locator(".today-remaining-work").boundingBox(),
   ]);
-    expect(Math.abs(foldMonthBox!.width - foldYearBox!.width)).toBeLessThanOrEqual(1);
+    // Le mois, en capitales espacées, prend davantage de place que l’année.
+    expect(foldMonthBox!.width).toBeGreaterThan(foldYearBox!.width);
     expect(Math.abs(foldStatusBox!.y - foldNextWorkBox!.y)).toBeLessThanOrEqual(2);
     expect(Math.abs(foldLeaveBox!.y - foldRemainingBox!.y)).toBeLessThanOrEqual(2);
     expect(foldLeaveBox!.y).toBeGreaterThan(foldStatusBox!.y + foldStatusBox!.height);

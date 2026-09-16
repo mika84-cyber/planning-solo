@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type RefObject } from "react";
+import { lazy, Suspense, type RefObject } from "react";
 
 const NoteReminderButton = lazy(() => import("./NoteReminderButton"));
 
@@ -26,83 +26,38 @@ function NavigationIcon({ section }: { section: MainSection | "more" | "feedback
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={paths[section]} /></svg>;
 }
 
-/** Les six rubriques : un nom court pour la capsule ouverte, un nom complet
- *  pour la rubrique en cours et pour les lecteurs d'écran. */
-const COMPASS_SECTIONS = MAIN_SECTION_ORDER.map((key) => ({
+/** Les six rubriques : un nom court pour le dock, un nom complet pour les
+ *  lecteurs d'écran. */
+const SECTION_TABS = MAIN_SECTION_ORDER.map((key) => ({
   key,
   short: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Docs" : key === "program" ? "Expos" : "Collègues",
   long: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Documents" : key === "program" ? "Programme" : "Collègues",
 }));
 
-/** La boussole : une capsule flottante qui nomme la rubrique en cours. Un
- *  appui la déplie sur les six rubriques ; choisir, toucher à côté ou Échap
- *  la referme. Un seul composant pour le téléphone et l'ordinateur. */
+/** Le dock : une capsule sombre posée en bas de l'écran, avec les six
+ *  rubriques en icônes. La rubrique ouverte s'étire pour montrer son nom ;
+ *  les autres gardent le leur pour les lecteurs d'écran. */
 export function AdaptiveNavigation({ homeSection, onNavigate }: {
   homeSection: MainSection; onNavigate: (section: MainSection) => void; onMore: () => void; unreadFeedbackCount: number;
 }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLElement | null>(null);
   const isActive = (key: MainSection) => homeSection === key || (key === "pdf" && homeSection === "forms");
-  const current = COMPASS_SECTIONS.find((section) => isActive(section.key)) ?? COMPASS_SECTIONS[0];
-
-  useEffect(() => {
-    if (!open) return;
-    const closeOutside = (event: PointerEvent) => {
-      const target = event.target as Element | null;
-      if (!target?.closest(".compass-choices, .compass-toggle")) setOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOutside);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOutside);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
-
   return (
-    <>
-    {/* Sur téléphone, un voile assombrit la page pendant le choix. */}
-    {open ? <div className="compass-scrim" aria-hidden="true" /> : null}
-    <nav ref={rootRef} className={`section-compass${open ? " open" : ""}`} aria-label="Navigation principale">
-      {open ? (
-        <div className="compass-choices">
-          {COMPASS_SECTIONS.map(({ key, short, long }) => (
-            <button
-              key={key}
-              type="button"
-              className={isActive(key) ? "active" : ""}
-              aria-current={isActive(key) ? "page" : undefined}
-              aria-label={long}
-              onClick={() => {
-                onNavigate(key);
-                setOpen(false);
-              }}
-            >
-              <NavigationIcon section={key} />
-              <span aria-hidden="true">{short}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {/* Ouverte, la boussole n'a pas de bouton de fermeture : choisir une
-          rubrique, toucher à côté ou Échap la referme. */}
-      {open ? null : (
+    <nav className="section-dock" aria-label="Navigation principale">
+      {SECTION_TABS.map(({ key, short, long }) => (
         <button
+          key={key}
           type="button"
-          className="compass-toggle"
-          aria-expanded={false}
-          aria-label={`Changer de rubrique · ${current.long}`}
-          onClick={() => setOpen(true)}
+          data-section={key}
+          className={isActive(key) ? "active" : ""}
+          aria-current={isActive(key) ? "page" : undefined}
+          aria-label={long}
+          onClick={() => onNavigate(key)}
         >
-          <span className="compass-current-icon" aria-hidden="true"><NavigationIcon section={current.key} /></span>
-          <span className="compass-current-label" aria-hidden="true">{current.long}</span>
+          <NavigationIcon section={key} />
+          <span aria-hidden="true">{short}</span>
         </button>
-      )}
+      ))}
     </nav>
-    </>
   );
 }
 
@@ -306,6 +261,7 @@ export function MainMenu({
           <div className="main-menu-title">
             <span>Planning Solo</span>
             <h2>Menu principal</h2>
+            <small>{new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}</small>
           </div>
           <button className="main-menu-close" type="button" onClick={onClose} aria-label="Fermer le menu">×</button>
         </header>

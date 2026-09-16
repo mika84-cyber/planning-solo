@@ -204,10 +204,10 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain("#e4ecf7");
     expect(styles).not.toContain("#304f79");
     expect(styles).not.toContain("#4c5e76");
-    // La boussole : la rubrique en cours se repère à un trait terracotta et
-    // à un trait d'icône plus épais — la couleur seule ne suffisait pas.
-    expect(styles).toContain(".compass-choices > button.active::after { width: 22px; opacity: 1; }");
-    expect(styles).toContain(".compass-choices > button.active svg { stroke-width: 2.3; }");
+    // Le dock : la rubrique en cours s'étire en pastille claire et montre son
+    // nom, avec un trait d'icône plus épais — la couleur seule ne suffisait pas.
+    expect(styles).toContain(".section-dock > button.active > span { max-width: 110px; opacity: 1; }");
+    expect(styles).toContain(".section-dock > button.active svg { stroke-width: 2.3; }");
   });
 
   it("rend la navigation mensuelle des primes confortable sur téléphone", () => {

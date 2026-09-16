@@ -109,15 +109,15 @@ describe("navigation principale", () => {
 
   it("propose une navigation adaptative sans numéros et marque la rubrique active", () => {
     const html = renderToStaticMarkup(<AdaptiveNavigation homeSection="colleagues" onNavigate={vi.fn()} onMore={vi.fn()} unreadFeedbackCount={2} />);
-    // Fermée, la boussole ne montre que la rubrique en cours ; les autres
-    // n'apparaissent qu'une fois ouverte.
-    expect(html).toContain("section-compass");
-    expect(html).toContain('aria-label="Changer de rubrique · Collègues"');
-    expect(html).toContain('aria-expanded="false"');
-    expect(html).not.toContain("compass-choices");
-    expect(html).not.toContain("Programme");
-    expect(html).not.toContain("Ma paie");
-    expect(html).not.toContain("Documents");
+    // Les six rubriques sont toujours dans le dock ; seule la rubrique en
+    // cours porte aria-current.
+    expect(html).toContain("section-dock");
+    expect(html.match(/<button/g)).toHaveLength(6);
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+    expect(html).toContain('class="active" aria-current="page" aria-label="Collègues"');
+    expect(html).toContain('aria-label="Programme"');
+    expect(html).toContain('aria-label="Documents"');
+    expect(html).not.toContain("compass");
     expect(html).toContain("<svg");
     expect(html).not.toContain('aria-label="Plus"');
     expect(html).not.toContain('aria-hidden="true">+</span>');

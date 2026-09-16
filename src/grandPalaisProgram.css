@@ -261,28 +261,36 @@
   display: none;
 }
 
+/* Carte d'exposition : contenu, puis statut et compte à
+   rebours. La teinte de la salle reste celle de la carte. */
 .grand-palais-program-panel .useful-expo-timeline article {
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
-  min-height: 92px;
-  border: 2px solid var(--venue-line, var(--border-inset));
+  align-items: start;
+  gap: 8px 16px;
+  min-height: 0;
+  border: 1px solid var(--venue-line, var(--border-inset));
   border-left: 5px solid var(--venue-accent, var(--border-card));
-  padding: 17px 18px;
+  padding: 14px 16px;
   background: var(--venue-bg, rgba(255, 255, 255, 0.96));
   box-shadow: var(--shadow-inset);
 }
-
-.grand-palais-program-panel .useful-expo-timeline article > div {
-  grid-column: 1;
-}
-
-.grand-palais-program-panel .useful-expo-timeline article > em {
-  grid-column: 2;
-  align-self: start;
-  border: 1px solid var(--border-control);
-  color: var(--muted);
-  background: var(--surface);
-}
+.grand-palais-program-panel .useful-expo-timeline article > div { grid-column: 1; gap: 3px; }
+.grand-palais-program-panel .useful-expo-timeline article strong { font-size: 1.06rem; line-height: 1.3; }
+.grand-palais-program-panel .useful-expo-timeline article > div > small { margin-top: 2px; font-size: 0.68rem; letter-spacing: 0.04em; }
+.expo-card-slot { display: contents; }
+.expo-month-heading { display: flex; align-items: center; gap: 10px; margin: 10px 0 -2px; color: var(--text); font-size: 0.74rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+.expo-card-slot:first-child .expo-month-heading { margin-top: 0; }
+.expo-month-heading::after { flex: 1; height: 1px; background: var(--line); content: ""; }
+.expo-progress { display: block; width: min(100%, 260px); height: 5px; margin: 5px 0 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.9); box-shadow: inset 0 0 0 1px var(--venue-line, var(--line)); overflow: hidden; }
+.expo-progress i { display: block; height: 100%; border-radius: inherit; background: var(--venue-accent, var(--accent)); }
+.expo-card-status { display: grid; grid-column: 2; justify-items: end; gap: 5px; }
+.expo-card-status em { border: 1px solid var(--border-control); border-radius: 999px; padding: 5px 10px; background: var(--surface); color: var(--muted); font-size: 0.72rem; font-style: normal; font-weight: 900; white-space: nowrap; }
+.useful-expo-timeline article[data-status="En cours"] .expo-card-status em::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); content: ""; }
+.expo-card-status span { color: var(--text); font-size: 0.74rem; font-weight: 800; white-space: nowrap; }
+.grand-palais-view-picker button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.grand-palais-view-count { min-width: 22px; border-radius: 999px; padding: 2px 6px; background: var(--accent-soft); color: var(--accent-strong); font-size: 0.72rem; line-height: 1.3; }
+.grand-palais-view-picker button.active .grand-palais-view-count { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.grand-palais-program-summary b { color: var(--text); }
 
 .useful-expo-timeline article a {
   display: inline-flex;
@@ -373,17 +381,8 @@
     padding: 14px;
   }
 
-  .grand-palais-program-panel .useful-expo-timeline article {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    min-height: 0;
-    padding: 14px;
-  }
-
-  .grand-palais-program-panel .useful-expo-timeline article > em {
-    grid-column: 1;
-    justify-self: start;
-  }
+  .grand-palais-program-panel .useful-expo-timeline article { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 13px 14px; }
+  .expo-card-status { grid-column: 1; display: flex; flex-wrap: wrap; align-items: center; justify-items: start; gap: 6px 10px; }
 
   .grand-palais-admin-alert-list article {
     grid-template-columns: 1fr;
@@ -419,11 +418,6 @@
 .grand-palais-program-screen .useful-expo-schedule.grand-palais-program-panel {
   border-left-width: 5px;
 }
-.grand-palais-program-panel .useful-expo-timeline article {
-  border-width: 1px;
-  border-left-width: 5px;
-}
-
 /* « En ce moment » réunit tous les espaces : sans repère, on lit le titre
    d'une exposition sans savoir où elle se tient. La salle passe donc avant
    le titre, en pastille pleine à sa propre couleur. */

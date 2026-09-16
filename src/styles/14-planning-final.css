@@ -1380,6 +1380,18 @@ fieldset.leave-choices {
 .period-pickers>*{flex:1 1 auto;min-width:0}
 .period-pickers>*+*{border-left:1px solid var(--line)}
 .planning-workspace-shell.framed .period-pickers .choice-picker-trigger{width:100%;border:0;border-radius:0;background:none;box-shadow:none}
+/* Mois et année côte à côte, sans cadre, en capitales espacées : le mois en
+   brun, l'année en italique violette, reliés par un trait violet. Le mois,
+   plus long, prend davantage de place. Chaque moitié ouvre toujours son menu. */
+.app-shell .planning-workspace-shell.framed .period-pickers{border:0;border-radius:0;background:none;overflow:visible}
+.app-shell .planning-workspace-shell.framed .period-pickers>*{flex:1 1 0}
+.app-shell .planning-workspace-shell.framed .period-pickers>.toolbar-month-picker{flex-grow:1.55}
+.app-shell .planning-workspace-shell.framed .period-pickers>*+*{border-left:0}
+.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger{min-height:48px;border-radius:12px;font-family:var(--font-display);font-size:clamp(.98rem,4.1vw,1.15rem);font-weight:600;letter-spacing:.2em;line-height:1.1;text-transform:uppercase}
+.app-shell .planning-workspace-shell.framed .period-pickers .toolbar-month-picker .choice-picker-trigger{justify-content:flex-end;padding:0 4px 0 2px;color:var(--text)}
+.app-shell .planning-workspace-shell.framed .period-pickers .toolbar-year-picker .choice-picker-trigger{justify-content:flex-start;gap:0;padding:0 2px;color:#7255ad;font-style:italic;font-weight:400}
+.app-shell .planning-workspace-shell.framed .period-pickers .toolbar-year-picker .choice-picker-trigger::before{flex:none;width:clamp(14px,4vw,24px);height:1px;margin-right:10px;background:#7255ad;content:""}
+.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger:is(:hover,[aria-expanded="true"]){background:rgba(114,85,173,.08);color:#5b4390}
 
 /* Le retour au mois courant occupe sa propre ligne, juste avant le compteur. */
 .planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}
