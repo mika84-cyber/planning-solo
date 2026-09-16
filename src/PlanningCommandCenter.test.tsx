@@ -64,9 +64,8 @@ describe("PlanningCommandCenter", () => {
     expect(html).toContain("Mon planning");
     // Tout est posé à même la page : le mois, les deux flèches, le retour au
     // mois courant et le compte réel des jours travaillés.
-    // Le mois se change par ses deux menus : plus de flèches à côté.
-    expect(html).not.toContain('aria-label="Mois précédent"');
-    expect(html).not.toContain('aria-label="Mois suivant"');
+    expect(html).toContain('aria-label="Mois précédent"');
+    expect(html).toContain('aria-label="Mois suivant"');
     expect(html).toContain("Sélectionner le mois");
     expect(html).toContain("Sélectionner l’année");
     expect(html).toContain("Aujourd’hui");
@@ -84,8 +83,8 @@ describe("PlanningCommandCenter", () => {
     // Changer de mois est le geste le plus courant de cette rubrique : il ne
     // doit pas demander d'ouvrir quoi que ce soit d'abord.
     const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} />);
-    expect(html).not.toContain("Mois précédent");
-    expect(html).not.toContain("Mois suivant");
+    expect(html).toContain("Mois précédent");
+    expect(html).toContain("Mois suivant");
     expect(html).toContain("Sélectionner le mois");
     expect(html).toContain("Aujourd’hui");
     expect(html).toContain("jours travaillés ce mois-ci");
