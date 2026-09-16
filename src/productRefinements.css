@@ -131,7 +131,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .pay-dashboard-settings,
   .pay-dashboard-profile-slot .pay-profile-settings,
   .pdf-download-screen,
-  .useful-resource-intro,
   .useful-resource-panel > .useful-forms-root,
   .useful-contacts-screen.useful-contacts-root,
   .grand-palais-program-intro,
@@ -148,6 +147,14 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   border-top-style: solid;
   border-top-width: var(--accent-spine, 4px);
   border-top-color: var(--accent);
+}
+
+/* « Choisir une rubrique » n'a pas de cadre : son repère reste un simple trait
+   à gauche, sans ligne au-dessus du titre. */
+.app-shell.app-shell .useful-resource-intro {
+  border-left-width: var(--accent-spine, 4px);
+  border-left-color: var(--accent);
+  border-top-width: 0;
 }
 
 /* Accueil : dans « Mon planning », les cases Mois/Année, « Aujourd’hui », les

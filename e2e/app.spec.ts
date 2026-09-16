@@ -442,7 +442,8 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   // geste le plus courant ici, il ne doit pas demander d’ouvrir un volet.
   await expect(page.locator("details.planning-settings-disclosure")).toHaveCount(0);
   await expect(planning.locator(".controls")).toBeVisible();
-  await expect(planning.getByRole("button", { name: "Mois précédent" })).toBeVisible();
+  await expect(planning.getByRole("button", { name: "Mois précédent" })).toHaveCount(0);
+  await expect(planning.getByRole("button", { name: "Sélectionner le mois" })).toBeVisible();
   await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
   await expect(planning.locator(".worked-days-trigger")).toContainText("travaillé");
   await expect(planning).toHaveCSS("border-left-width", accentSpine(page));
@@ -2783,13 +2784,12 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(monthPickerBox).not.toBeNull();
     expect(yearPickerBox).not.toBeNull();
     expect(Math.abs(monthPickerBox!.width - yearPickerBox!.width)).toBeLessThanOrEqual(1);
-    // Les deux flèches encadrent les menus, et le retour au mois courant
-    // tient dans la même barre : tout le geste de navigation au même endroit.
-    const arrows = page.locator(".period-navigation .period-step");
-    const previousArrowBox = await arrows.first().boundingBox();
-    const nextArrowBox = await arrows.last().boundingBox();
-    expect(previousArrowBox!.x).toBeLessThan(monthPickerBox!.x);
-    expect(nextArrowBox!.x).toBeGreaterThan(yearPickerBox!.x + yearPickerBox!.width - 1);
+    // Plus de flèches : le mois et l'année se choisissent par leurs deux
+    // menus, côte à côte dans le même cadre, et le retour au mois courant
+    // tient dans la même barre — tout le geste au même endroit.
+    await expect(page.locator(".period-navigation .period-step")).toHaveCount(0);
+    expect(yearPickerBox!.x).toBeGreaterThan(monthPickerBox!.x);
+    expect(Math.abs(monthPickerBox!.y - yearPickerBox!.y)).toBeLessThanOrEqual(1);
     await expect(page.locator(".month-toolbar .today-button")).toHaveCount(1);
   }
   expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
@@ -4421,15 +4421,17 @@ test("la case des dimanches travaillés déplie la liste des dates", async ({ pa
   await goToSection(page, "pay");
   await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
 
-  const toggle = page.locator(".allowance-overview-toggle");
+  // Le détail des dates se déplie depuis la carte des dimanches elle-même.
+  const sundayCard = page.locator(".allowance-detail-stack .allowance-card").first();
+  const toggle = sundayCard.locator(".allowance-overview-toggle");
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.locator("#sunday-done-list")).toHaveCount(0);
-  // Sans cette mention, rien ne dit que la case s'ouvre.
+  // Sans cette mention, rien ne dit que la carte s'ouvre.
   await expect(toggle).toContainText("Voir les dates");
 
-  // Le nombre affiché sur la case est celui des dimanches listés.
+  // Le nombre annoncé par la carte est celui des dimanches listés.
   const done = Number(
-    (await toggle.innerText()).match(/(\d+)\s*\n/)?.[1] ?? "-1",
+    (await sundayCard.locator("header strong").innerText()).match(/\d+/)?.[0] ?? "-1",
   );
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");

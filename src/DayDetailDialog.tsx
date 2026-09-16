@@ -631,7 +631,7 @@ export function DayDetailDialog({
               <path d="m14.8 6.1 3.1 3.1" />
             </svg>
           </span>
-          Rouge clair pour votre note, jaune pour une note d’Agnès.
+          Bleu pour votre note, rose pour une note d’Agnès.
         </p>
         <div className="modal-actions">
           {entries[dayDate]?.noteText && (

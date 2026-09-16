@@ -1996,15 +1996,13 @@
   font-size: 10px;
   line-height: 1.35;
 }
-.overtime-destination-grid button.paid.active {
-  border-color: var(--border-control);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px rgba(122, 111, 95, 0.08);
-}
+/* Le choix retenu s'éclaire d'un terracotta léger : on voit d'un coup d'œil
+   ce que contient le total qu'on est en train d'ajouter. */
+.overtime-destination-grid button.paid.active,
 .overtime-destination-grid button.recovery.active {
-  border-color: var(--border-card);
-  background: #fff;
-  box-shadow: inset 0 0 0 1px rgba(60, 113, 99, 0.08);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(152, 84, 56, 0.18);
 }
 /* Les heures faites et le crédit obtenu, annoncés avant d'enregistrer :
    c'est ce qui évite qu'on majore soi-même par-dessus l'application. Même

@@ -143,28 +143,12 @@ export function PlanningCommandCenter({
     };
   }, [workedDaysOpen]);
 
-  /* Un pas de mois. Les mois débordants sont gérés par le constructeur de
-     date : décembre + 1 donne janvier suivant. */
-  const stepPeriod = (direction: number) =>
-    setView(localDate(view.getFullYear(), view.getMonth() + direction, 1));
   const reglagesDuPlanning = (
     <>
         <section className="calendar-toolbar month-toolbar">
-          {/* Le geste le plus courant est d'avancer d'un mois : deux flèches
-              l'offrent directement, et les menus restent là pour les sauts
-              plus lointains. Mois et année sont réunis dans un seul cadre —
-              c'est une seule période, pas deux réglages. */}
+          {/* Mois et année sont réunis dans un seul cadre : c'est une seule
+              période, pas deux réglages. Les menus suffisent à en changer. */}
           <div className="period-navigation">
-            <button
-              type="button"
-              className="period-step"
-              aria-label="Mois précédent"
-              onClick={() => stepPeriod(-1)}
-            >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="m12.5 5-5 5 5 5" />
-              </svg>
-            </button>
             <div className="period-pickers">
               <ChoicePicker
                 value={view.getMonth()}
@@ -181,19 +165,9 @@ export function PlanningCommandCenter({
                 className="toolbar-year-picker"
               />
             </div>
-            <button
-              type="button"
-              className="period-step"
-              aria-label="Mois suivant"
-              onClick={() => stepPeriod(1)}
-            >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="m7.5 5 5 5-5 5" />
-              </svg>
-            </button>
           </div>
           {/* Revenir au mois courant est le second geste le plus fréquent :
-              il tient dans la même barre que les flèches. */}
+              il tient dans la même barre que la période. */}
           <button className="today-button planning-today-button" type="button" onClick={onToday}>Aujourd’hui</button>
         </section>
           <section className="controls" aria-label="Choix du planning">

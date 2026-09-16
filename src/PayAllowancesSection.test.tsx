@@ -96,11 +96,10 @@ describe("la liste des dimanches faits", () => {
 
   it("dit qu'on peut ouvrir, sur la case des dimanches travaillés", () => {
     const html = renderToStaticMarkup(<PayAllowancesSection {...props} />);
-    // La case du résumé est un vrai bouton, et elle annonce ce qu'il y a
-    // dessous : sans cette mention, rien n'indique qu'elle s'ouvre.
-    expect(html).toContain(
-      'class="allowance-overview-toggle" aria-expanded="false" aria-controls="sunday-done-list"><span>Dimanches travaillés</span>',
-    );
+    // Le détail des dates se déplie depuis la carte des dimanches, et elle
+    // annonce ce qu'il y a dessous : sans cette mention, rien ne l'indique.
+    expect(html).toContain('aria-controls="sunday-done-list"');
+    expect(html).toContain("Dates des dimanches faits");
     expect(html).toContain("Voir les dates");
     expect(html).not.toContain("Masquer les dates");
   });
