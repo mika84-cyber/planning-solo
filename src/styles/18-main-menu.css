@@ -247,7 +247,7 @@
      largeur, chaque écran en montre trois ou quatre. Le sol se réchauffe pour
      ne plus paraître gris à côté du blanc, et le repère terracotta s'affine :
      5 px sur un écran de 375 px pesaient autant qu'un bandeau. */
-  :root { --bg: #f6f1ea; --accent-spine: 3px; }
+  :root { --bg: #f6f1ea; --accent-spine: 2px; }
   .app-shell.app-shell :is(
     .home-setup-alert,
     .useful-resource-intro,
@@ -260,7 +260,7 @@
     .colleague-sharing-intro,
     .colleague-groups-directory,
     .admin-home-message
-  ) { border-left-width: 3px; }
+  ) { border-left-width: var(--accent-spine); border-top-width: var(--accent-spine); }
   /* Un seul repère par bloc : l'encart imbriqué dans l'estimation n'en porte plus. */
   .app-shell.app-shell .pay-dashboard-estimate .pay-missing-guidance { border-left-width: 1px; border-left-color: var(--border-card); }
 }

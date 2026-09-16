@@ -50,7 +50,7 @@ async function prepareDemo(page: Page, withCurrentLeave = false) {
 /** Largeur du repère terracotta des grands blocs : 5 px, affiné à 3 px sur
  *  téléphone où les cartes occupent toute la largeur de l'écran. */
 function accentSpine(page: Page) {
-  return (page.viewportSize()?.width ?? 1280) <= 720 ? "3px" : "5px";
+  return (page.viewportSize()?.width ?? 1280) <= 720 ? "2px" : "4px";
 }
 
 async function workedDaysOnHome(page: Page) {

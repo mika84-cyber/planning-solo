@@ -112,8 +112,8 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 
 /* Les grands blocs portent le même repère terracotta : un angle, sur leur
    côté gauche et sur leur ligne du haut. L'épaisseur tient dans une seule
-   variable — 5 px, ramenés à 3 px sur téléphone (voir 18-main-menu.css). */
-.app-shell :is(
+   variable — 4 px, ramenés à 2 px sur téléphone (voir 18-main-menu.css). */
+.app-shell.app-shell :is(
   .today-overview,
   .home-notes-section,
   .home-setup-alert,
@@ -143,10 +143,10 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .colleague-request-notice,
   .admin-home-message
 ) {
-  border-left-width: var(--accent-spine, 5px);
+  border-left-width: var(--accent-spine, 4px);
   border-left-color: var(--accent);
   border-top-style: solid;
-  border-top-width: var(--accent-spine, 5px);
+  border-top-width: var(--accent-spine, 4px);
   border-top-color: var(--accent);
 }
 
