@@ -1,4 +1,4 @@
-import { lazy, Suspense, type RefObject } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState, type RefObject } from "react";
 
 const NoteReminderButton = lazy(() => import("./NoteReminderButton"));
 
@@ -26,23 +26,88 @@ function NavigationIcon({ section }: { section: MainSection | "more" | "feedback
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={paths[section]} /></svg>;
 }
 
+/** Les six rubriques : un nom court pour la capsule ouverte, un nom complet
+ *  pour la rubrique en cours et pour les lecteurs d'écran. */
+const COMPASS_SECTIONS = MAIN_SECTION_ORDER.map((key) => ({
+  key,
+  short: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Docs" : key === "program" ? "Expos" : "Collègues",
+  long: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Documents" : key === "program" ? "Programme" : "Collègues",
+}));
+
+/** La boussole : une capsule flottante qui nomme la rubrique en cours. Un
+ *  appui la déplie sur les six rubriques ; choisir, toucher à côté ou Échap
+ *  la referme. Un seul composant pour le téléphone et l'ordinateur. */
 export function AdaptiveNavigation({ homeSection, onNavigate }: {
   homeSection: MainSection; onNavigate: (section: MainSection) => void; onMore: () => void; unreadFeedbackCount: number;
 }) {
-  const mobilePrimary = MAIN_SECTION_ORDER.map((key) => ({
-    key,
-    label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Docs" : key === "program" ? "Expos" : "Collègues",
-  }));
-  const desktopPrimary = MAIN_SECTION_ORDER.map((key) => ({ key, label: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Documents" : key === "program" ? "Programme" : "Collègues" }));
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const choicesId = useId();
   const isActive = (key: MainSection) => homeSection === key || (key === "pdf" && homeSection === "forms");
-  return <>
-    <nav className="mobile-bottom-navigation" aria-label="Navigation principale">
-      {mobilePrimary.map(({ key, label }) => <button key={key} type="button" className={isActive(key) ? "active" : ""} aria-current={isActive(key) ? "page" : undefined} onClick={() => onNavigate(key)}><NavigationIcon section={key} /><span>{label}</span></button>)}
+  const current = COMPASS_SECTIONS.find((section) => isActive(section.key)) ?? COMPASS_SECTIONS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest(".compass-choices, .compass-toggle")) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <>
+    {/* Sur téléphone, un voile assombrit la page pendant le choix. */}
+    {open ? <div className="compass-scrim" aria-hidden="true" /> : null}
+    <nav ref={rootRef} className={`section-compass${open ? " open" : ""}`} aria-label="Navigation principale">
+      {open ? (
+        <div className="compass-choices" id={choicesId}>
+          {COMPASS_SECTIONS.map(({ key, short, long }) => (
+            <button
+              key={key}
+              type="button"
+              className={isActive(key) ? "active" : ""}
+              aria-current={isActive(key) ? "page" : undefined}
+              aria-label={long}
+              onClick={() => {
+                onNavigate(key);
+                setOpen(false);
+              }}
+            >
+              <NavigationIcon section={key} />
+              <span aria-hidden="true">{short}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="compass-toggle"
+        aria-expanded={open}
+        aria-controls={open ? choicesId : undefined}
+        aria-label={open ? "Fermer le choix de rubrique" : `Changer de rubrique · ${current.long}`}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {open ? (
+          <span className="compass-close" aria-hidden="true">×</span>
+        ) : (
+          <>
+            <span className="compass-current-icon" aria-hidden="true"><NavigationIcon section={current.key} /></span>
+            <span className="compass-current-label" aria-hidden="true">{current.long}</span>
+          </>
+        )}
+      </button>
     </nav>
-    <nav className="desktop-side-navigation" aria-label="Navigation principale">
-      {desktopPrimary.map(({ key, label }) => <button key={key} type="button" className={isActive(key) ? "active" : ""} aria-current={isActive(key) ? "page" : undefined} onClick={() => onNavigate(key)} title={label}><NavigationIcon section={key} /><span>{label}</span></button>)}
-    </nav>
-  </>;
+    </>
+  );
 }
 
 function headerTitle(section: MainSection, payScreen: PayScreen) {

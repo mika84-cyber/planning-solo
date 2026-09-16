@@ -110,14 +110,19 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   border-color: var(--border-card);
 }
 
-/* Les grands blocs portent le repère terracotta commun sur leur côté gauche. */
+/* Les grands blocs portent le même repère terracotta : un angle, sur leur
+   côté gauche et sur leur ligne du haut. L'épaisseur tient dans une seule
+   variable — 5 px, ramenés à 3 px sur téléphone (voir 18-main-menu.css). */
 .app-shell :is(
   .today-overview,
   .home-notes-section,
+  .home-setup-alert,
   .planning-command-section,
   .planning-calendar-section,
   .leave-balances-direct,
   .leave-tools-area,
+  .leave-total-card,
+  .leave-type-field,
   .pay-dashboard-month,
   .pay-dashboard-estimate,
   .pay-dashboard-variables,
@@ -125,11 +130,24 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .pay-missing-guidance,
   .pay-dashboard-settings,
   .pay-dashboard-profile-slot .pay-profile-settings,
-  .pdf-download-screen
+  .pdf-download-screen,
+  .useful-resource-intro,
+  .useful-resource-panel > .useful-forms-root,
+  .useful-contacts-screen.useful-contacts-root,
+  .grand-palais-program-intro,
+  .grand-palais-venue-navigation,
+  .grand-palais-program-screen .grand-palais-program-panel,
+  .colleague-sharing-page .colleague-card,
+  .colleague-sharing-intro,
+  .colleague-groups-directory,
+  .colleague-request-notice,
+  .admin-home-message
 ) {
-  /* 5 px, affiné à 3 px sur téléphone (voir 18-main-menu.css). */
   border-left-width: var(--accent-spine, 5px);
   border-left-color: var(--accent);
+  border-top-style: solid;
+  border-top-width: var(--accent-spine, 5px);
+  border-top-color: var(--accent);
 }
 
 /* Accueil : dans « Mon planning », les cases Mois/Année, « Aujourd’hui », les

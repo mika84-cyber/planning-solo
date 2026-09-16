@@ -204,11 +204,10 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain("#e4ecf7");
     expect(styles).not.toContain("#304f79");
     expect(styles).not.toContain("#4c5e76");
-    // Verre sombre du menu : l'onglet ouvert devient une pastille terracotta.
-    expect(styles).toContain(".desktop-side-navigation button.active::after { width: 36px; opacity: 1; }");
-    // La couleur seule ne suffisait pas : les deux teintes se ressemblaient.
-    expect(styles).toContain(".desktop-side-navigation button.active { font-weight: 880; }");
-    expect(styles).toContain(".desktop-side-navigation button.active svg { stroke-width: 2.2; }");
+    // La boussole : la rubrique en cours se repère à un trait terracotta et
+    // à un trait d'icône plus épais — la couleur seule ne suffisait pas.
+    expect(styles).toContain(".compass-choices > button.active::after { width: 22px; opacity: 1; }");
+    expect(styles).toContain(".compass-choices > button.active svg { stroke-width: 2.3; }");
   });
 
   it("rend la navigation mensuelle des primes confortable sur téléphone", () => {

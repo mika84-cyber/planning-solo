@@ -46,7 +46,7 @@
   position: relative;
   display: grid;
   width: 100%;
-  height: clamp(146px, 15vw, 184px);
+  height: clamp(164px, 17vw, 212px);
   flex: none;
   overflow: hidden;
   place-items: center;
@@ -121,13 +121,22 @@
 }
 
 .leave-tool-disclosure[open] > summary {
-  min-height: 172px;
+  min-height: 0;
   border-bottom: 1px solid var(--border-control);
 }
 
+/* Carte ouverte : l'illustration garde toute sa place, centrée dans un cadre
+   de largeur mesurée, sans zoom ni rognage. */
 .leave-tool-disclosure[open] > summary .leave-tool-illustration {
-  height: 82px;
+  width: min(100%, 380px);
+  height: 176px;
+  margin: 0 auto;
 }
+.leave-tool-disclosure[open] > summary .leave-tool-illustration img {
+  transform: none;
+}
+.leave-tool-disclosure[open] > summary .leave-tool-copy { min-height: 0; }
+.leave-tool-disclosure[open] > summary > b { margin-top: 0; }
 
 .leave-tool-disclosure > .overtime-balance-card,
 .leave-tool-disclosure > .cet-section {
@@ -147,13 +156,13 @@
   }
 
   .leave-tool-disclosure > summary {
-    min-height: 258px;
+    min-height: 272px;
     gap: 7px;
     padding: 8px;
   }
 
   .leave-tool-illustration {
-    height: clamp(110px, 32vw, 138px);
+    height: clamp(124px, 36vw, 154px);
     border-radius: 11px;
   }
 
@@ -182,12 +191,13 @@
   }
 
   .leave-tool-disclosure[open] > summary {
-    min-height: 158px;
+    min-height: 0;
     padding: 10px;
   }
 
   .leave-tool-disclosure[open] > summary .leave-tool-illustration {
-    height: 72px;
+    width: min(100%, 320px);
+    height: 156px;
   }
 }
 
@@ -197,12 +207,12 @@
   }
 
   .leave-tool-disclosure > summary {
-    min-height: 244px;
+    min-height: 258px;
     padding: 6px;
   }
 
   .leave-tool-illustration {
-    height: 116px;
+    height: 130px;
   }
 
   .leave-tool-copy strong {

@@ -110,41 +110,138 @@
   .header-update-button { grid-column: 2; grid-row: 1; width: 44px; height: 44px; }
 }
 
-/* Barre de navigation : un sable doré, plus présent que le crème des cartes
-   sans retomber dans le brun sombre ; onglet ouvert en terracotta. */
-.app-shell > .mobile-bottom-navigation,
-.app-shell > .desktop-side-navigation {
-  border-color: rgba(44, 38, 33, 0.42);
-  background: linear-gradient(180deg, rgba(246, 233, 218, 0.97), rgba(236, 216, 194, 0.98));
-  box-shadow: 0 10px 28px rgba(92, 62, 42, 0.16), 0 1px 4px rgba(92, 62, 42, 0.08);
+/* La boussole : une capsule flottante, centrée en bas, qui nomme la rubrique
+   en cours. Ouverte, elle s'élargit et déploie les six rubriques. */
+.section-compass {
+  position: fixed;
+  z-index: 45;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100vw - 20px);
+  border: 1px solid rgba(44, 38, 33, 0.5);
+  border-radius: 999px;
+  padding: 5px;
+  background: linear-gradient(180deg, #fffdf9, #f7efe5);
+  box-shadow: 0 14px 34px rgba(92, 62, 42, 0.22), 0 2px 6px rgba(92, 62, 42, 0.1);
+  transform: translateX(-50%);
   backdrop-filter: blur(16px) saturate(1.1);
   -webkit-backdrop-filter: blur(16px) saturate(1.1);
 }
-.mobile-bottom-navigation button,
-.desktop-side-navigation button { color: #5f4c40; }
-.mobile-bottom-navigation button:hover,
-.desktop-side-navigation button:hover { background: rgba(255, 250, 244, 0.5); }
-/* Onglet ouvert : pas de pastille, un simple trait terracotta sous le nom. */
-.mobile-bottom-navigation button.active,
-.desktop-side-navigation button.active { background: transparent; color: var(--accent-strong); box-shadow: none; }
-.mobile-bottom-navigation button::after,
-.desktop-side-navigation button::after { position: absolute; bottom: 2px; left: 50%; width: 0; height: 3px; border-radius: 999px; background: var(--accent); content: ""; opacity: 0; transform: translateX(-50%); transition: width .25s ease, opacity .25s ease; }
-.mobile-bottom-navigation button.active::after,
-.desktop-side-navigation button.active::after { width: 36px; opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .mobile-bottom-navigation button::after, .desktop-side-navigation button::after { transition: none; } }
+.section-compass.open { width: min(560px, calc(100vw - 20px)); }
+.compass-toggle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 16px 4px 4px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.section-compass.open .compass-toggle { width: 44px; min-height: 44px; justify-content: center; padding: 0; }
+.compass-current-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-control);
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+}
+.compass-current-icon svg,
+.compass-choices svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.compass-current-label { white-space: nowrap; }
+.compass-close { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--border-control); border-radius: 50%; color: var(--muted); font-size: 1.4rem; line-height: 1; }
+.compass-choices {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  animation: compass-fan 0.22s ease;
+}
+.compass-choices > button {
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 2px 8px;
+  background: transparent;
+  color: #6b584b;
+  font: inherit;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+.compass-choices > button > span { max-width: 100%; overflow: hidden; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.compass-choices > button:hover { background: rgba(152, 84, 56, 0.06); }
+.compass-choices > button.active { color: var(--accent-strong); }
+.compass-choices > button.active svg { stroke-width: 2.3; }
+/* Rubrique en cours : un simple trait terracotta sous le nom. */
+.compass-choices > button::after { position: absolute; bottom: 3px; left: 50%; width: 0; height: 3px; border-radius: 999px; background: var(--accent); content: ""; opacity: 0; transform: translateX(-50%); }
+.compass-choices > button.active::after { width: 22px; opacity: 1; }
+.compass-choices > button:focus-visible,
+.compass-toggle:focus-visible { outline: 3px solid rgba(152, 84, 56, 0.4); outline-offset: 2px; }
+.compass-scrim { display: none; }
+@keyframes compass-fan { from { opacity: 0; transform: scaleX(0.7); } }
+@keyframes compass-rise { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { .compass-choices { animation: none; } }
 
 /* Téléphone : la barre devient une capsule flottante, posée sur la page plutôt
    que collée au bas de l’écran : plus de coupure nette sur toute la largeur. */
 @media (max-width: 720px) {
   .app-shell { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
-  .app-shell > .mobile-bottom-navigation {
+  /* Téléphone : fermée, la boussole n'est qu'un bouton compact en bas à
+     droite, qui laisse le contenu libre. Ouverte, elle s'étend sur toute la
+     largeur et six tuiles montent au-dessus, sous un voile. */
+  .section-compass {
     right: 10px;
     bottom: calc(10px + env(safe-area-inset-bottom));
-    left: 10px;
-    border: 1px solid rgba(44, 38, 33, 0.42);
-    border-radius: 22px;
-    padding: 6px 7px;
+    left: auto;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: calc(100vw - 20px);
+    border-radius: 999px;
+    padding: 5px;
+    transform: none;
   }
+  .section-compass.open { right: 10px; left: 10px; align-items: stretch; width: auto; max-width: none; border-radius: 22px; padding: 6px; }
+  .section-compass .compass-toggle { min-height: 46px; padding: 3px 14px 3px 3px; }
+  .section-compass.open .compass-toggle { width: auto; min-height: 44px; justify-content: center; padding: 0; }
+  .section-compass .compass-choices {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    animation-name: compass-rise;
+  }
+  .section-compass .compass-choices > button {
+    min-height: 66px;
+    border: 1px solid var(--border-control);
+    border-radius: 16px;
+    padding: 8px 4px 11px;
+    background: #fff;
+    font-size: 10.5px;
+  }
+  .section-compass .compass-choices > button.active { border-color: var(--accent); background: var(--accent-soft); }
+  .section-compass .compass-choices > button::after { bottom: 5px; }
+  .compass-scrim { position: fixed; z-index: 44; inset: 0; display: block; background: rgba(44, 38, 33, 0.3); }
 
   /* Couleurs plus douces sur téléphone : les cartes s'empilent sur toute la
      largeur, chaque écran en montre trois ou quatre. Le sol se réchauffe pour

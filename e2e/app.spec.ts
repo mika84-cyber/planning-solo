@@ -147,7 +147,7 @@ test('outils administrateur et aperçu invité sur Z Fold ouvert', async ({ page
   await panel.locator('summary').filter({ hasText: 'Message temporaire sur l’accueil' }).click();
   await panel.getByRole('button', { name: 'Retirer le message' }).click();
   await panel.getByRole('button', { name: 'Fermer les outils administrateur' }).click();
-  await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Accueil', exact: true }).click();
+  await goToSection(page, "home");
   await expect(page.getByRole('complementary', { name: 'Information de l’équipe' })).toHaveCount(0);
 });
 
@@ -171,9 +171,18 @@ const SECTION_BUTTONS = {
   colleagues: /^Collègues$/,
 } as const;
 
-/** Ouvre une rubrique par la navigation principale — barre du bas sur
- *  téléphone, rail sur ordinateur. Les rubriques ne sont plus dans le menu
- *  tiroir, qui ne garde que le compte et les réglages. */
+/** La navigation principale est une boussole : une capsule qui nomme la
+ *  rubrique en cours, à ouvrir pour voir les six rubriques. */
+async function openCompass(page: Page) {
+  const compass = page.locator('nav[aria-label="Navigation principale"]:visible');
+  const toggle = compass.locator(".compass-toggle");
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  await expect(compass.locator(".compass-choices")).toBeVisible();
+  return compass;
+}
+
+/** Ouvre une rubrique par la boussole. Les rubriques ne sont plus dans le
+ *  menu tiroir, qui ne garde que le compte et les réglages. */
 async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
   // Le tiroir resté ouvert recouvrirait la navigation : on le referme.
   const drawer = page.getByRole("complementary", { name: "Menu principal" });
@@ -181,10 +190,8 @@ async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
     await page.getByRole("button", { name: "Fermer le menu" }).click();
     await expect(drawer).toBeHidden();
   }
-  await page
-    .locator('nav[aria-label="Navigation principale"]:visible')
-    .getByRole("button", { name: SECTION_BUTTONS[section] })
-    .click();
+  const compass = await openCompass(page);
+  await compass.getByRole("button", { name: SECTION_BUTTONS[section] }).click();
 }
 
 /** Les actions secondaires de la fiche jour — souhait, maladie, grève, CET,
@@ -233,7 +240,7 @@ async function openOtherLeaveBalances(page: Page) {
 test("les expositions basculent automatiquement à 00h05 heure de Paris", async ({ page }) => {
   await page.clock.install({ time: new Date('2026-09-22T22:04:00Z') });
   await prepareDemo(page);
-  await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: /Expos|Programme/ }).click();
+  await goToSection(page, "program");
   const starting = page.locator('.grand-palais-program-panel article[data-venue="galleries34"]');
   await expect(starting).toHaveCount(0);
   await page.clock.fastForward(60_000);
@@ -253,12 +260,12 @@ test("les cartes intérieures restent légères avec des bordures visibles et un
   await expect(card).not.toHaveCSS('box-shadow', 'none');
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
-  await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Ma paie', exact: true }).click();
+  await goToSection(page, "pay");
   const guidance = page.locator('.pay-missing-guidance');
   await expect(guidance).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(guidance).toHaveCSS('background-image', 'none');
-  await expect(guidance).toHaveCSS('border-top-width', '1px');
-  await expect(guidance).toHaveCSS('border-top-color', await cssTokenRgb(page, '--border-card'));
+  await expect(guidance).toHaveCSS('border-top-width', accentSpine(page));
+  await expect(guidance).toHaveCSS('border-top-color', await cssTokenRgb(page, '--accent'));
   await guidance.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-pay-${testInfo.project.name}.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -272,10 +279,14 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
     await expect(card).toBeVisible();
     await expect(card).toHaveCSS("background-color", "rgb(255, 255, 255)");
     await expect(card).toHaveCSS("background-image", "none");
-    await expect(card).toHaveCSS("border-top-width", "1px");
     await expect(card).toHaveCSS("border-left-width", leftWidth);
     if (leftWidth !== "1px") {
+      // Repère de rubrique : le même angle terracotta à gauche et en haut.
       await expect(card).toHaveCSS("border-left-color", await cssTokenRgb(page, "--accent"));
+      await expect(card).toHaveCSS("border-top-width", leftWidth);
+      await expect(card).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
+    } else {
+      await expect(card).toHaveCSS("border-top-width", "1px");
     }
   };
 
@@ -300,7 +311,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(allowancesAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await expect(allowancesAction).toHaveCSS("color", "rgb(255, 255, 255)");
   const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
-  await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
+  await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
   await payProfile.locator(".pay-profile-summary").click();
   const profileOutline = await cssTokenRgb(page, "--border-card");
   const profilePicker = payProfile.locator(".pay-profile-picker .choice-picker-trigger").first();
@@ -343,7 +354,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   const howItWorks = page.locator(".colleague-how-it-works");
   await expect(howItWorks).toHaveCSS("background-color", "rgb(253, 248, 241)");
   await expect(howItWorks).toHaveCSS("background-image", "none");
-  await expect(howItWorks).toHaveCSS("border-top-width", "1px");
+  await expect(howItWorks).toHaveCSS("border-top-width", accentSpine(page));
   await expect(howItWorks).toHaveCSS("border-left-width", accentSpine(page));
   await expect(howItWorks.locator(".colleague-how-header > .eyebrow")).toHaveCSS("border-left-width", "0px");
   await expect(page.locator(".colleague-profile-card")).toHaveCSS("box-shadow", "none");
@@ -353,7 +364,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
 
 test("Ma paie utilise une surface blanche sans changer la disposition", async ({ page }, testInfo) => {
   await prepareDemo(page);
-  await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Ma paie', exact: true }).click();
+  await goToSection(page, "pay");
   await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-image', 'none');
   // La démo n'a pas de montant : cette ligne mesurait donc « À compléter »,
@@ -382,7 +393,7 @@ test("le 9 septembre reste lisible et les rubriques utilisent le fond commun", a
   await expect(overview).toHaveCSS('background-image', 'none');
   await overview.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/structured-home-${testInfo.project.name}.png` });
-  await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Congés', exact: true }).click();
+  await goToSection(page, "leave");
   await expect(page.locator('.leave-balances-direct')).toBeVisible();
   await page.locator('.leave-balances-direct').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/structured-leave-${testInfo.project.name}.png` });
@@ -391,9 +402,10 @@ test("le 9 septembre reste lisible et les rubriques utilisent le fond commun", a
 
 test("le mode d’emploi n’est plus proposé", async ({ page }) => {
   await prepareDemo(page);
-  const navigation = page.locator('nav[aria-label="Navigation principale"]:visible');
-  await expect(navigation.getByRole("button")).toHaveCount(6);
+  const navigation = await openCompass(page);
+  await expect(navigation.locator(".compass-choices").getByRole("button")).toHaveCount(6);
   await expect(navigation.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await openMainMenu(page);
   await expect(page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "Planning Solo, simplement" })).toHaveCount(0);
@@ -404,15 +416,17 @@ test("les pages et la navigation suivent exactement la largeur de leur en-tête"
   for (const width of [320, 412, 900, 1440, 1920]) {
     await page.setViewportSize({ width, height: 950 });
     const navigation = page.locator('nav[aria-label="Navigation principale"]:visible');
-    for (const [label, selector] of [["Collègues", ".colleague-sharing-page"], ["Ma paie", ".pay-app-screen"]]) {
-      await navigation.getByRole("button", { name: label, exact: true }).click();
+    for (const [section, selector] of [["colleagues", ".colleague-sharing-page"], ["pay", ".pay-app-screen"]] as const) {
+      await goToSection(page, section);
       await expect(page.locator(selector)).toBeVisible();
       const header = (await page.locator(".top-header").boundingBox())!;
-      for (const target of [navigation, page.locator(selector)]) {
-        const box = (await target.boundingBox())!;
-        expect(Math.abs(box.x - header.x)).toBeLessThan(1);
-        expect(Math.abs(box.width - header.width)).toBeLessThan(1);
-      }
+      const box = (await page.locator(selector).boundingBox())!;
+      expect(Math.abs(box.x - header.x)).toBeLessThan(1);
+      expect(Math.abs(box.width - header.width)).toBeLessThan(1);
+      // La boussole, elle, reste posée dans l'écran sans le déborder.
+      const compass = (await navigation.boundingBox())!;
+      expect(compass.x).toBeGreaterThanOrEqual(0);
+      expect(compass.x + compass.width).toBeLessThanOrEqual(width);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
   }
@@ -470,39 +484,28 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
   }
-  if (page.viewportSize()!.width <= 720) {
-    await expect(page.locator(".mobile-bottom-navigation button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
-    await expect(page.locator(".mobile-bottom-navigation").getByRole("button", { name: "Plus" })).toHaveCount(0);
-    const navButtons = await page.locator(".mobile-bottom-navigation > button").evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
-    expect(Math.max(...navButtons.slice(0, 6)) - Math.min(...navButtons.slice(0, 6))).toBeLessThan(1);
-    const mobileNav = page.locator(".mobile-bottom-navigation");
-    const mobileNavHeight = (await mobileNav.boundingBox())!.height;
-    expect(mobileNavHeight).toBeGreaterThanOrEqual(60);
-    expect(mobileNavHeight).toBeLessThanOrEqual(72);
-    const mobileStyles = await mobileNav.locator("button").evaluateAll((buttons) => buttons.slice(0, 2).map((button) => ({
-      background: getComputedStyle(button).backgroundColor,
-      divider: getComputedStyle(button, "::before").backgroundColor,
-      dividerHeight: getComputedStyle(button, "::before").height,
-    })));
-    // L’onglet ouvert s’allume d’un trait terracotta sous son nom.
-    await expect.poll(() => mobileNav.locator("button").first().evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("1");
-    expect(await mobileNav.locator("button").nth(1).evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("0");
-    expect(mobileStyles[1].divider).toBe("rgba(0, 0, 0, 0)");
-  } else {
-    const desktopNav = page.locator(".desktop-side-navigation");
-    await expect(desktopNav.locator("button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Documents", "Programme", "Collègues"]);
-    const desktopNavBox = (await desktopNav.boundingBox())!;
-    expect(Math.abs(desktopNavBox.width - (await page.locator(".top-header").boundingBox())!.width)).toBeLessThan(2);
-    expect(Math.abs(desktopNavBox.x + desktopNavBox.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(2);
-    expect(desktopNavBox.height).toBeGreaterThanOrEqual(60);
-    const desktopStyles = await desktopNav.locator("button").evaluateAll((buttons) => buttons.slice(0, 2).map((button) => ({
-      background: getComputedStyle(button).backgroundColor,
-      dividerWidth: getComputedStyle(button).borderLeftWidth,
-    })));
-    await expect.poll(() => desktopNav.locator("button").first().evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("1");
-    expect(await desktopNav.locator("button").nth(1).evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("0");
-    expect(desktopStyles[1].dividerWidth).toBe("0px");
-  }
+  // La boussole, sur tous les écrans : fermée, elle nomme la rubrique en
+  // cours ; ouverte, elle déploie les six rubriques, la rubrique en cours
+  // soulignée d'un trait terracotta ; la croix la referme.
+  const compass = page.locator(".section-compass");
+  const toggle = compass.locator(".compass-toggle");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toHaveAttribute("aria-label", "Changer de rubrique · Accueil");
+  await expect(compass.locator(".compass-choices")).toHaveCount(0);
+  const closedHeight = (await compass.boundingBox())!.height;
+  expect(closedHeight).toBeGreaterThanOrEqual(44);
+  expect(closedHeight).toBeLessThanOrEqual(80);
+  await openCompass(page);
+  const choices = compass.locator(".compass-choices > button");
+  await expect(choices.locator(":scope > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
+  await expect(choices.first()).toHaveAttribute("aria-current", "page");
+  await expect.poll(() => choices.first().evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("1");
+  expect(await choices.nth(1).evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("0");
+  const tileBoxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
+  expect(tileBoxes.every((box) => box.width >= 44 && box.x >= 0 && box.right <= page.viewportSize()!.width)).toBe(true);
+  await expect(toggle).toHaveAttribute("aria-label", "Fermer le choix de rubrique");
+  await toggle.click();
+  await expect(compass.locator(".compass-choices")).toHaveCount(0);
   await goToSection(page, "leave");
   await expect(page.locator("details.leave-tool-disclosure")).toHaveCount(3);
   await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
@@ -560,8 +563,11 @@ test("les quatre soldes principaux et les autres congés restent en grilles équ
   await goToSection(page, "leave");
   const primaryCards = page.locator(".direct-balances-content > .leave-balance-grid > button");
   await expect(primaryCards).toHaveCount(4);
+  // Deux lignes de deux cartes : les hauts sont regroupés à 2 px près, un
+  // arrondi de sous-pixel ne devant pas couper une ligne en deux.
   const primaryRows = await primaryCards.evaluateAll((cards) =>
-    [...new Set(cards.map((card) => Math.round(card.getBoundingClientRect().top)))],
+    cards.map((card) => card.getBoundingClientRect().top).sort((a, b) => a - b)
+      .reduce<number[]>((rows, top) => (rows.length && top - rows[rows.length - 1] <= 2 ? rows : [...rows, top]), []),
   );
   expect(primaryRows).toHaveLength(2);
 
@@ -602,21 +608,28 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
   test.skip(testInfo.project.name !== "mobile", "Simulation dédiée au téléphone étroit");
   await page.setViewportSize({ width: 344, height: 882 });
   await prepareDemo(page);
-  const navigation = page.locator(".mobile-bottom-navigation");
-  await expect(navigation.locator("button > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
-  await expect(navigation.locator("button")).toHaveCount(6);
-  const boxes = await navigation.locator("button").evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
-  expect(boxes.slice(0, 6).every((box) => box.width >= 44)).toBe(true);
+  const navigation = await openCompass(page);
+  const choices = navigation.locator(".compass-choices > button");
+  await expect(choices.locator(":scope > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
+  await expect(choices).toHaveCount(6);
+  const boxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
+  expect(boxes.every((box) => box.width >= 44)).toBe(true);
   expect(boxes.every((box) => box.x >= 0 && box.right <= 344)).toBe(true);
-  await navigation.getByRole("button", { name: "Docs" }).click();
+  await navigation.getByRole("button", { name: SECTION_BUTTONS.documents }).click();
   await expect(page.locator(".top-header h1")).toContainText("Documents et contacts");
-  await expect(navigation.getByRole("button", { name: "Docs" })).toHaveAttribute("aria-current", "page");
-  const progLabel = navigation.getByRole("button", { name: "Expos" }).locator("span");
+  await expect(navigation.locator(".compass-choices")).toHaveCount(0);
+  await openCompass(page);
+  await expect(navigation.getByRole("button", { name: SECTION_BUTTONS.documents })).toHaveAttribute("aria-current", "page");
+  // Le nom d'une tuile garde un interlignage supérieur à son corps : les
+  // accents ne sont pas rognés, même sur l'écran le plus étroit.
+  const progLabel = navigation.getByRole("button", { name: SECTION_BUTTONS.program }).locator("span");
   const progTypography = await progLabel.evaluate((node) => {
     const style = getComputedStyle(node);
     return { fontSize: Number.parseFloat(style.fontSize), lineHeight: Number.parseFloat(style.lineHeight) };
   });
   expect(progTypography.lineHeight).toBeGreaterThan(progTypography.fontSize);
+  await page.keyboard.press("Escape");
+  await expect(navigation.locator(".compass-choices")).toHaveCount(0);
 });
 
 async function prepareFutureTrainingAbsenceDemo(
@@ -902,7 +915,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(profileRow.locator("input")).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
   const howItWorksTitle = page.getByText("Comment ça marche", { exact: true });
   await expect(howItWorksTitle).toBeVisible();
-  await expect(page.locator(".colleague-how-it-works")).toHaveCSS("border-top-width", "1px");
+  await expect(page.locator(".colleague-how-it-works")).toHaveCSS("border-top-width", accentSpine(page));
   await expect(page.locator(".colleague-how-it-works")).toHaveCSS("background-image", "none");
   expect(parseFloat(await howItWorksTitle.evaluate((node) => getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(12.7);
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
@@ -1070,7 +1083,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(desktopHeader!.height).toBeLessThanOrEqual(240);
   expect((await colleagueIllustration.boundingBox())!.height).toBeGreaterThan(205);
   expect(Math.abs((desktopImage!.x + desktopImage!.width / 2) - (desktopHeader!.x + desktopHeader!.width / 2))).toBeLessThan(2);
-  await page.locator('nav[aria-label="Navigation principale"]:visible').getByRole('button', { name: 'Accueil', exact: true }).click();
+  await goToSection(page, "home");
   const desktopReferenceHeader = await page.locator('.top-header:visible').boundingBox();
   expect(Math.abs(desktopHeader!.height - desktopReferenceHeader!.height), JSON.stringify({ desktopReferenceHeight: desktopReferenceHeader!.height, colleagueHeight: desktopHeader!.height })).toBeLessThanOrEqual(1);
 });
@@ -1366,7 +1379,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(balancesBox).not.toBeNull();
   expect(balancesBox!.y - primaryActionBox!.y - primaryActionBox!.height).toBeGreaterThanOrEqual(13);
   await expectHeaderWidth(leaveTools);
-  await expect(leaveTools).toHaveCSS("border-top-width", "1px");
+  await expect(leaveTools).toHaveCSS("border-top-width", accentSpine(page));
   const secondaryDisclosures = leaveTools.locator(".leave-secondary-grid > .leave-tool-disclosure");
   await expect(secondaryDisclosures).toHaveCount(3);
   const overtimeCard = secondaryDisclosures.nth(0).locator(".overtime-balance-card");
@@ -1462,7 +1475,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   const pdfScreen = page.locator(".pdf-download-screen");
   await expectHeaderWidth(pdfScreen);
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
-  await expect(pdfScreen).toHaveCSS("border-top-color", await cardBorderColor(page));
+  await expect(pdfScreen).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
   await expect(page.getByRole("heading", { name: "Préparer le planning" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir le document" })).toBeVisible();
   await expect(pdfScreen.locator(".pdf-download-settings > label").first()).toHaveCSS("border-top-width", "1px");
@@ -2039,7 +2052,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
 
   await expect(page.locator(".top-header h1")).toHaveText("Programmation GP");
   if (testInfo.project.name === "mobile") {
-    await expect(page.locator(".mobile-bottom-navigation")).toBeVisible();
+    await expect(page.locator(".section-compass")).toBeVisible();
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
   }
   const [programHeaderBox, programScreenBox] = await Promise.all([
@@ -2059,7 +2072,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
     return { left: style.borderLeftWidth, top: style.borderTopWidth };
   });
   expect(programPanelBorders.left).toBe(accentSpine(page));
-  expect(programPanelBorders.top).toBe("1px");
+  expect(programPanelBorders.top).toBe(accentSpine(page));
   await expect(page.locator('.grand-palais-program-panel')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.grand-palais-program-panel')).toHaveCSS('background-image', 'none');
   await page.locator('.grand-palais-program-panel').scrollIntoViewIfNeeded();
@@ -2650,9 +2663,9 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(header).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(account).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(menuButton).toBeVisible();
-  await expect(page.locator((page.viewportSize()?.width || 0) <= 720 ? ".mobile-bottom-navigation" : ".desktop-side-navigation")).toBeVisible();
+  await expect(page.locator(".section-compass")).toBeVisible();
   await expect(update).toBeVisible();
-  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cardBorderColor(page));
+  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
   const todayOverviewBox = await page.locator(".today-overview").boundingBox();
@@ -2718,7 +2731,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     await expect(page.locator(".planning-command-section")).toHaveCSS("border-left-width", accentSpine(page));
     const calendrier = page.locator(".planning-calendar-section");
     await expect(calendrier).toHaveCSS("border-left-width", accentSpine(page));
-    await expect(calendrier).toHaveCSS("border-top-width", "1px");
+    await expect(calendrier).toHaveCSS("border-top-width", accentSpine(page));
     await expect(page.locator(".home-planning-heading")).toHaveCSS("border-left-width", "0px");
     await expect(page.locator(".planning-workspace-shell.framed .controls")).toHaveCSS("border-left-width", "0px");
     const cleanupButtonBox = await page.locator(".calendar-bulk-delete-below").boundingBox();
@@ -2950,11 +2963,14 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   await page.setViewportSize({ width: 900, height: 1000 });
   await prepareDemo(page);
 
-  const foldNavigation = page.locator(".desktop-side-navigation");
+  const foldNavigation = page.locator(".section-compass");
   await expect(foldNavigation).toBeVisible();
-  expect((await foldNavigation.boundingBox())!.height).toBeGreaterThanOrEqual(60);
-  expect(await foldNavigation.locator("button").nth(1).evaluate((button) => getComputedStyle(button).borderLeftWidth)).toBe("0px");
-  await expect(foldNavigation.getByRole("button", { name: "Accueil" })).toHaveClass(/active/);
+  expect((await foldNavigation.boundingBox())!.height).toBeGreaterThanOrEqual(50);
+  await expect(foldNavigation.locator(".compass-toggle")).toHaveAttribute("aria-label", /Accueil/);
+  await openCompass(page);
+  await expect(foldNavigation.getByRole("button", { name: SECTION_BUTTONS.home })).toHaveClass(/active/);
+  await page.keyboard.press("Escape");
+  await expect(foldNavigation.locator(".compass-choices")).toHaveCount(0);
 
   const headerBox = await page.locator(".top-header").boundingBox();
   expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
@@ -3329,8 +3345,7 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
   await expect(saveProfile).toBeVisible();
   await saveProfile.click();
 
-  await page.getByRole("navigation", { name: "Navigation principale" })
-    .getByRole("button", { name: "Accueil" }).click();
+  await goToSection(page, "home");
   await expect(page.locator(".planning-leave-panel .planning-leave-action")).toBeVisible();
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
