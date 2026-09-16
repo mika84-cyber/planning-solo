@@ -175,8 +175,9 @@ const SECTION_BUTTONS = {
  *  rubrique en cours, à ouvrir pour voir les six rubriques. */
 async function openCompass(page: Page) {
   const compass = page.locator('nav[aria-label="Navigation principale"]:visible');
-  const toggle = compass.locator(".compass-toggle");
-  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  // Ouverte, la boussole n'a plus de bouton : c'est la présence des six
+  // rubriques qui dit si elle est déjà dépliée.
+  if (!(await compass.locator(".compass-choices").count())) await compass.locator(".compass-toggle").click();
   await expect(compass.locator(".compass-choices")).toBeVisible();
   return compass;
 }
@@ -486,7 +487,8 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   }
   // La boussole, sur tous les écrans : fermée, elle nomme la rubrique en
   // cours ; ouverte, elle déploie les six rubriques, la rubrique en cours
-  // soulignée d'un trait terracotta ; la croix la referme.
+  // soulignée d'un trait terracotta, sans bouton de fermeture — Échap,
+  // un choix ou un appui à côté suffisent.
   const compass = page.locator(".section-compass");
   const toggle = compass.locator(".compass-toggle");
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -503,9 +505,10 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   expect(await choices.nth(1).evaluate((button) => getComputedStyle(button, "::after").opacity)).toBe("0");
   const tileBoxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
   expect(tileBoxes.every((box) => box.width >= 44 && box.x >= 0 && box.right <= page.viewportSize()!.width)).toBe(true);
-  await expect(toggle).toHaveAttribute("aria-label", "Fermer le choix de rubrique");
-  await toggle.click();
+  await expect(toggle).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await expect(compass.locator(".compass-choices")).toHaveCount(0);
+  await expect(toggle).toHaveCount(1);
   await goToSection(page, "leave");
   await expect(page.locator("details.leave-tool-disclosure")).toHaveCount(3);
   await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);

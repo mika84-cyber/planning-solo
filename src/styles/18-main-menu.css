@@ -147,7 +147,6 @@
   font-weight: 850;
   cursor: pointer;
 }
-.section-compass.open .compass-toggle { width: 44px; min-height: 44px; justify-content: center; padding: 0; }
 .compass-current-icon {
   display: grid;
   place-items: center;
@@ -161,7 +160,6 @@
 .compass-current-icon svg,
 .compass-choices svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .compass-current-label { white-space: nowrap; }
-.compass-close { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--border-control); border-radius: 50%; color: var(--muted); font-size: 1.4rem; line-height: 1; }
 .compass-choices {
   display: flex;
   flex: 1 1 auto;
@@ -224,7 +222,6 @@
   }
   .section-compass.open { right: 10px; left: 10px; align-items: stretch; width: auto; max-width: none; border-radius: 22px; padding: 6px; }
   .section-compass .compass-toggle { min-height: 46px; padding: 3px 14px 3px 3px; }
-  .section-compass.open .compass-toggle { width: auto; min-height: 44px; justify-content: center; padding: 0; }
   .section-compass .compass-choices {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

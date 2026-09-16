@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useId, useRef, useState, type RefObject } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type RefObject } from "react";
 
 const NoteReminderButton = lazy(() => import("./NoteReminderButton"));
 
@@ -42,7 +42,6 @@ export function AdaptiveNavigation({ homeSection, onNavigate }: {
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
-  const choicesId = useId();
   const isActive = (key: MainSection) => homeSection === key || (key === "pdf" && homeSection === "forms");
   const current = COMPASS_SECTIONS.find((section) => isActive(section.key)) ?? COMPASS_SECTIONS[0];
 
@@ -69,7 +68,7 @@ export function AdaptiveNavigation({ homeSection, onNavigate }: {
     {open ? <div className="compass-scrim" aria-hidden="true" /> : null}
     <nav ref={rootRef} className={`section-compass${open ? " open" : ""}`} aria-label="Navigation principale">
       {open ? (
-        <div className="compass-choices" id={choicesId}>
+        <div className="compass-choices">
           {COMPASS_SECTIONS.map(({ key, short, long }) => (
             <button
               key={key}
@@ -88,23 +87,20 @@ export function AdaptiveNavigation({ homeSection, onNavigate }: {
           ))}
         </div>
       ) : null}
-      <button
-        type="button"
-        className="compass-toggle"
-        aria-expanded={open}
-        aria-controls={open ? choicesId : undefined}
-        aria-label={open ? "Fermer le choix de rubrique" : `Changer de rubrique · ${current.long}`}
-        onClick={() => setOpen((value) => !value)}
-      >
-        {open ? (
-          <span className="compass-close" aria-hidden="true">×</span>
-        ) : (
-          <>
-            <span className="compass-current-icon" aria-hidden="true"><NavigationIcon section={current.key} /></span>
-            <span className="compass-current-label" aria-hidden="true">{current.long}</span>
-          </>
-        )}
-      </button>
+      {/* Ouverte, la boussole n'a pas de bouton de fermeture : choisir une
+          rubrique, toucher à côté ou Échap la referme. */}
+      {open ? null : (
+        <button
+          type="button"
+          className="compass-toggle"
+          aria-expanded={false}
+          aria-label={`Changer de rubrique · ${current.long}`}
+          onClick={() => setOpen(true)}
+        >
+          <span className="compass-current-icon" aria-hidden="true"><NavigationIcon section={current.key} /></span>
+          <span className="compass-current-label" aria-hidden="true">{current.long}</span>
+        </button>
+      )}
     </nav>
     </>
   );
