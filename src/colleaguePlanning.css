@@ -345,3 +345,39 @@
    le rond violet du planning. */
 .colleague-sharing-page button.period-step { display: grid; place-items: center; width: 38px; min-width: 38px; height: 38px; min-height: 38px; border: 1px solid rgba(44, 38, 33, .3); border-radius: 50%; padding: 0; background: #7255ad; color: #fff; box-shadow: 0 3px 8px rgba(114, 85, 173, .28); }
 .colleague-sharing-page button.period-step:hover:not(:disabled) { background: #8c70c4; }
+
+/* « Qui travaille ? » : choix entre le jour et la semaine. */
+.colleague-board-mode { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 0 12px; border: 1px solid var(--border-control); border-radius: 999px; padding: 3px; background: #fff; }
+.colleague-sharing-page .colleague-board-mode button { min-width: 92px; min-height: 34px; border: 0; border-radius: 999px; padding: 0 14px; background: transparent; color: var(--muted); font: inherit; font-size: .82rem; font-weight: 850; box-shadow: none; cursor: pointer; }
+.colleague-sharing-page .colleague-board-mode button.active { background: #7255ad; color: #fff; }
+
+/* Vue semaine : une ligne par personne, sept cases lettrées. Tient sur un
+   téléphone sans défiler ; défile au besoin sur les écrans les plus étroits. */
+.colleague-week-shell { overflow-x: auto; border: 1px solid var(--section-outline); border-radius: 14px; background: #fff; }
+.colleague-week-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.colleague-week-table thead th { padding: 8px 2px 6px; color: var(--muted); font-size: .66rem; font-weight: 900; text-align: center; }
+.colleague-week-table thead th:first-child { width: 34%; padding-left: 12px; text-align: left; text-transform: uppercase; letter-spacing: .06em; }
+.colleague-week-table thead th span,
+.colleague-week-table thead th b { display: block; line-height: 1.2; }
+.colleague-week-table thead th b { color: var(--text); font-size: .82rem; }
+.colleague-week-table thead th.is-today b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #7255ad; color: #fff; }
+.colleague-week-table tbody th[scope="row"] { overflow: hidden; padding: 7px 4px 7px 12px; color: var(--text); font-size: .8rem; font-weight: 800; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.colleague-week-table tbody tr.is-self th[scope="row"] { color: var(--accent-strong); }
+.colleague-week-table tbody td { padding: 4px 1px; text-align: center; }
+.colleague-week-table tbody td.is-today { background: rgba(114, 85, 173, .07); }
+.colleague-week-table tbody tr + tr > * { border-top: 1px solid var(--border-soft); }
+.colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 1px solid var(--border-soft); }
+.colleague-week-cell { display: inline-grid; place-items: center; width: 26px; height: 26px; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
+.colleague-week-cell.work { background: #e2f3e8; border-color: #9fd1b2; color: #1f6641; }
+.colleague-week-cell.training { background: #fbf3c1; border-color: #dcc54f; color: #6b5605; }
+.colleague-week-cell.rest { background: #e7eaf1; border-color: #b8c0cf; color: #3e4859; }
+.colleague-week-cell.absence { background: #fde6e9; border-color: #efb4bf; color: #96384a; }
+.colleague-week-cell.partial { background: #efe6fa; border-color: #c6b0e6; color: #5a3b8c; }
+.colleague-week-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 10px 2px 0; padding: 0; color: var(--muted); font-size: .72rem; font-weight: 700; list-style: none; }
+.colleague-week-legend li { display: inline-flex; align-items: center; gap: 5px; }
+.colleague-week-legend .colleague-week-cell { width: 20px; height: 20px; border-radius: 6px; font-size: .64rem; }
+@media (max-width: 370px) {
+  .colleague-week-cell { width: 22px; height: 22px; font-size: .68rem; }
+  .colleague-week-table thead th:first-child { width: 30%; }
+}
+.colleague-week-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

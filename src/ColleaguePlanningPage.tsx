@@ -67,6 +67,46 @@ export function colleagueBoardTitle(offset: number, reference = new Date()) {
 }
 /** On peut regarder jusqu'à deux mois devant soi. */
 const BOARD_MAX_OFFSET = 60;
+const BOARD_MAX_WEEK_OFFSET = 8;
+
+/** Lundi de la semaine consultée : la semaine en cours, puis les suivantes. */
+export function colleagueWeekStart(weekOffset: number, reference = new Date()) {
+  const monday = new Date(reference);
+  monday.setHours(12, 0, 0, 0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) + weekOffset * 7);
+  return monday;
+}
+
+export function colleagueWeekDays(weekOffset: number, reference = new Date()) {
+  const monday = colleagueWeekStart(weekOffset, reference);
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + index);
+    return day;
+  });
+}
+
+const weekDayFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+/** « Semaine du 14 au 20 septembre », ou « du 28 septembre au 4 octobre ». */
+export function colleagueWeekTitle(weekOffset: number, reference = new Date()) {
+  const days = colleagueWeekDays(weekOffset, reference);
+  const first = days[0];
+  const last = days[6];
+  const start = first.getMonth() === last.getMonth() ? String(first.getDate()) : weekDayFormatter.format(first);
+  return `Semaine du ${start === "1" ? "1er" : start} au ${weekDayFormatter.format(last)}`;
+}
+
+/** Une lettre par statut, pour tenir sept jours sur un téléphone. */
+const WEEK_STATUS_LETTERS: Record<TomorrowStatus, string> = {
+  Travail: "T",
+  Formation: "F",
+  Repos: "R",
+  Absence: "A",
+  "1/2 journée · matin": "½",
+  "1/2 journée · après-midi": "½",
+  "Absence partielle": "½",
+};
+const WEEKDAY_INITIALS = ["L", "M", "M", "J", "V", "S", "D"];
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "1/2 journée · matin" | "1/2 journée · après-midi" | "Absence partielle";
 
@@ -148,6 +188,67 @@ export function CommonDaysPanel({ planning, view, getOwnPresence, referenceDate 
   );
 }
 
+type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus };
+
+/** La semaine en un tableau : une ligne par personne, rangée par groupe, et
+ *  une case par jour avec la lettre de son statut. La colonne d'aujourd'hui
+ *  est soulignée ; la légende rappelle les lettres. */
+export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: { days: Date[]; rows: WeekRow[]; referenceDate?: Date }) {
+  const todayKey = dateKey(referenceDate);
+  return (
+    <div className="colleague-week">
+      <div className="colleague-week-shell" role="region" aria-label="Disponibilités de la semaine" tabIndex={0}>
+        <table className="colleague-week-table">
+          <caption className="colleague-tomorrow-caption">Disponibilités de la semaine, par groupe</caption>
+          <thead>
+            <tr>
+              <th scope="col">Collègue</th>
+              {days.map((day, index) => (
+                <th scope="col" key={dateKey(day)} className={dateKey(day) === todayKey ? "is-today" : ""} aria-label={tomorrowDateFormatter.format(day)}>
+                  <span aria-hidden="true">{WEEKDAY_INITIALS[index]}</span>
+                  <b aria-hidden="true">{day.getDate()}</b>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {([1, 2, 3] as const).map((group) => {
+              const groupRows = rows.filter((row) => row.group === group);
+              if (!groupRows.length) return null;
+              return <Fragment key={group}>
+                <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={8}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span></th></tr>
+                {groupRows.map((row) => (
+                  <tr key={row.id} className={row.isSelf ? "is-self" : ""}>
+                    <th scope="row">{row.name}</th>
+                    {days.map((day) => {
+                      const status = row.statusFor(day);
+                      return (
+                        <td key={dateKey(day)} className={dateKey(day) === todayKey ? "is-today" : ""}>
+                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}`} title={status}>
+                            <span aria-hidden="true">{WEEK_STATUS_LETTERS[status]}</span>
+                            <span className="colleague-week-sr">{status}</span>
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </Fragment>;
+            })}
+          </tbody>
+        </table>
+      </div>
+      <ul className="colleague-week-legend" aria-label="Légende">
+        <li><span className="colleague-week-cell work" aria-hidden="true">T</span>Travail</li>
+        <li><span className="colleague-week-cell training" aria-hidden="true">F</span>Formation</li>
+        <li><span className="colleague-week-cell rest" aria-hidden="true">R</span>Repos</li>
+        <li><span className="colleague-week-cell absence" aria-hidden="true">A</span>Absence</li>
+        <li><span className="colleague-week-cell partial" aria-hidden="true">½</span>Demi-journée</li>
+      </ul>
+    </div>
+  );
+}
+
 function MonthGrid({ planning, view }: { planning: SharedColleaguePlanning; view: Date }) {
   const first = startOfMonth(view);
   const mondayOffset = (first.getDay() + 6) % 7;
@@ -196,6 +297,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
   const [view, setView] = useState(() => startOfMonth(new Date()));
   const [receivedPlannings, setReceivedPlannings] = useState<Record<string, SharedColleaguePlanning>>({});
   const [boardOffset, setBoardOffset] = useState(1);
+  const [boardMode, setBoardMode] = useState<"day" | "week">("day");
+  const [weekOffset, setWeekOffset] = useState(0);
   const [tomorrowFailed, setTomorrowFailed] = useState<string[]>([]);
   const [tomorrowAttempt, setTomorrowAttempt] = useState(0);
   const [commonDaysOpen, setCommonDaysOpen] = useState(false);
@@ -427,13 +530,36 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
       {/* Ce qui sert chaque jour vient en premier : qui travaille, jour par jour. */}
       {data?.self.visible && received.length ? <section className="colleague-card colleague-tomorrow colleague-day-board" aria-labelledby="colleague-tomorrow-title">
         <header className="colleague-tomorrow-heading">
-          <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">{colleagueBoardTitle(boardOffset)}</h4></div>
+          <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">{boardMode === "day" ? colleagueBoardTitle(boardOffset) : colleagueWeekTitle(weekOffset)}</h4></div>
           <div className="colleague-day-steps">
-            <button className="period-step" type="button" aria-label="Jour précédent" disabled={boardOffset <= 0} onClick={() => setBoardOffset((offset) => Math.max(0, offset - 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button>
-            <button className="period-step" type="button" aria-label="Jour suivant" disabled={boardOffset >= BOARD_MAX_OFFSET} onClick={() => setBoardOffset((offset) => Math.min(BOARD_MAX_OFFSET, offset + 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button>
+            {boardMode === "day" ? <>
+              <button className="period-step" type="button" aria-label="Jour précédent" disabled={boardOffset <= 0} onClick={() => setBoardOffset((offset) => Math.max(0, offset - 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button>
+              <button className="period-step" type="button" aria-label="Jour suivant" disabled={boardOffset >= BOARD_MAX_OFFSET} onClick={() => setBoardOffset((offset) => Math.min(BOARD_MAX_OFFSET, offset + 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button>
+            </> : <>
+              <button className="period-step" type="button" aria-label="Semaine précédente" disabled={weekOffset <= 0} onClick={() => setWeekOffset((offset) => Math.max(0, offset - 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button>
+              <button className="period-step" type="button" aria-label="Semaine suivante" disabled={weekOffset >= BOARD_MAX_WEEK_OFFSET} onClick={() => setWeekOffset((offset) => Math.min(BOARD_MAX_WEEK_OFFSET, offset + 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button>
+            </>}
           </div>
         </header>
+        {/* Un jour pour savoir qui est là ; une semaine pour préparer un échange. */}
+        <div className="colleague-board-mode" role="group" aria-label="Affichage">
+          <button type="button" className={boardMode === "day" ? "active" : ""} aria-pressed={boardMode === "day"} onClick={() => setBoardMode("day")}>Jour</button>
+          <button type="button" className={boardMode === "week" ? "active" : ""} aria-pressed={boardMode === "week"} onClick={() => setBoardMode("week")}>Semaine</button>
+        </div>
         {received.some((share) => !tomorrowSummaries[share.ownerId] && !tomorrowFailed.includes(share.ownerId)) ? <div className="colleague-tomorrow-pending" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /> Analyse des plannings en cours…</div> : null}
+        {boardMode === "week" ? <ColleagueWeekTable
+          days={colleagueWeekDays(weekOffset)}
+          rows={[
+            ...(getOwnPresence && ownGroup ? [{ id: "self", name: selfName, group: ownGroup, isSelf: true, statusFor: (date: Date) => personalTomorrowStatus(getOwnPresence(date)) }] : []),
+            ...received.filter((share) => receivedPlannings[share.ownerId]).map((share) => ({
+              id: share.ownerId,
+              name: share.ownerName,
+              group: receivedPlannings[share.ownerId].group,
+              isSelf: false,
+              statusFor: (date: Date) => sharedPlanningDayStatus(receivedPlannings[share.ownerId], date),
+            })),
+          ]}
+        /> : <>
         {/* Sur téléphone le tableau défile : il doit pouvoir recevoir le focus pour défiler au clavier. */}
         <div className="colleague-tomorrow-table-shell" role="region" aria-label="Disponibilités du jour choisi" tabIndex={0}>
           <table className="colleague-tomorrow-table">
@@ -466,6 +592,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
             </tbody>
           </table>
         </div>
+        </>}
       </section> : null}
 
       {/* À la première visite, ou tant qu'on n'est pas inscrit, l'aide et le

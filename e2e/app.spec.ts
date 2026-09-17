@@ -1068,6 +1068,22 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await previousDay.click();
   await expect(dayBoard.getByRole("heading", { name: /^Qui travaille aujourd’hui \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(previousDay).toBeDisabled();
+  // Vue semaine : une ligne par personne, sept cases lettrées, aujourd’hui souligné.
+  await dayBoard.getByRole("button", { name: "Semaine", exact: true }).click();
+  await expect(dayBoard.getByRole("heading", { name: /^Semaine du \d+( [a-zéû]+)? au \d+ [a-zéû]+$/ })).toBeVisible();
+  const weekTable = dayBoard.locator(".colleague-week-table");
+  await expect(weekTable.locator("thead th")).toHaveCount(8);
+  await expect(weekTable.locator("thead th.is-today")).toHaveCount(1);
+  await expect(weekTable.locator("tbody th[scope=row]")).toHaveText(["Mika", "Agnès"]);
+  await expect(weekTable.locator("tbody .colleague-week-cell")).toHaveCount(14);
+  expect(await dayBoard.locator(".colleague-week-shell").evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  await expect(dayBoard.getByRole("button", { name: "Semaine précédente" })).toBeDisabled();
+  const firstWeekTitle = await dayBoard.locator("#colleague-tomorrow-title").innerText();
+  await dayBoard.getByRole("button", { name: "Semaine suivante" }).click();
+  await expect(dayBoard.locator("#colleague-tomorrow-title")).not.toHaveText(firstWeekTitle);
+  await expect(weekTable.locator("thead th.is-today")).toHaveCount(0);
+  await dayBoard.getByRole("button", { name: "Jour", exact: true }).click();
+  await expect(dayBoard.locator(".colleague-tomorrow-table")).toBeVisible();
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { colleagueBoardTitle, colleagueTomorrowDateLabel, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
+import { colleagueBoardTitle, colleagueTomorrowDateLabel, colleagueWeekDays, colleagueWeekTitle, ColleagueWeekTable, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
 import type { SharedColleaguePlanning } from "./colleagueSharingApi";
 
 const planning: SharedColleaguePlanning = {
@@ -32,6 +32,35 @@ describe("sharedPlanningDayStatus", () => {
       status: "Absence",
       group: 1,
     });
+  });
+});
+
+describe("vue semaine des collègues", () => {
+  const reference = new Date(2026, 8, 17, 9);
+
+  it("part du lundi de la semaine en cours et avance d’une semaine à la fois", () => {
+    expect(colleagueWeekDays(0, reference).map((day) => day.getDate())).toEqual([14, 15, 16, 17, 18, 19, 20]);
+    expect(colleagueWeekDays(1, reference)[0].getDate()).toBe(21);
+    expect(colleagueWeekTitle(0, reference)).toBe("Semaine du 14 au 20 septembre");
+    expect(colleagueWeekTitle(2, reference)).toBe("Semaine du 28 septembre au 4 octobre");
+    // Un dimanche appartient encore à la semaine commencée le lundi précédent.
+    expect(colleagueWeekDays(0, new Date(2026, 8, 20, 9))[0].getDate()).toBe(14);
+  });
+
+  it("range les personnes par groupe, une lettre par jour et aujourd’hui souligné", () => {
+    const html = renderToStaticMarkup(<ColleagueWeekTable
+      days={colleagueWeekDays(0, reference)}
+      referenceDate={reference}
+      rows={[
+        { id: "self", name: "Mika", group: 2, isSelf: true, statusFor: () => "Repos" },
+        { id: "agnes", name: "Agnès", group: 1, isSelf: false, statusFor: (date) => sharedPlanningDayStatus(planning, date) },
+      ]}
+    />);
+    expect(html.indexOf("Groupe 1")).toBeLessThan(html.indexOf("Groupe 2"));
+    expect(html.match(/class="colleague-week-cell /g)).toHaveLength(14 + 5);
+    expect(html.match(/<th scope="col" class="is-today"/g)).toHaveLength(1);
+    expect(html).toContain('class="is-self"');
+    expect(html).toContain("Demi-journée");
   });
 });
 
