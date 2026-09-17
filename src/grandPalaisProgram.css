@@ -281,6 +281,7 @@
 .expo-month-heading { display: flex; align-items: center; gap: 10px; margin: 10px 0 -2px; color: var(--text); font-size: 0.74rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
 .expo-card-slot:first-child .expo-month-heading { margin-top: 0; }
 .expo-month-heading::after { flex: 1; height: 1px; background: var(--line); content: ""; }
+.useful-expo-schedule-heading h3 + p { margin: 4px 0 0; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
 .expo-progress { display: block; width: min(100%, 260px); height: 5px; margin: 5px 0 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.9); box-shadow: inset 0 0 0 1px var(--venue-line, var(--line)); overflow: hidden; }
 .expo-progress i { display: block; height: 100%; border-radius: inherit; background: var(--venue-accent, var(--accent)); }
 .expo-card-status { display: grid; grid-column: 2; justify-items: end; gap: 5px; }
@@ -309,17 +310,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
-.grand-palais-interexpo-list > article { display: grid; gap: 9px; min-width: 0; border: 1.5px solid var(--section-outline); border-left: 5px solid var(--section-outline); border-radius: 16px; padding: 14px; background: var(--surface-high); }
+.grand-palais-interexpo-list > article { display: grid; gap: 0; align-content: start; min-width: 0; border: 1.5px solid var(--section-outline); border-left: 5px solid var(--section-outline); border-radius: 16px; padding: 14px 15px; background: var(--surface-high); }
 .grand-palais-interexpo-list > article[data-status="En cours"] { border-color: var(--border-card); border-left-color: #28745a; background: #fff; }
-.grand-palais-interexpo-list header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.grand-palais-interexpo-list header span { color: var(--text); font-size: 0.67rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
-.grand-palais-interexpo-list em { border: 1px solid var(--section-outline); border-radius: 999px; padding: 4px 8px; background: var(--surface); color: var(--text); font-size: 0.68rem; font-style: normal; font-weight: 900; }
+.grand-palais-interexpo-list header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-bottom: 9px; }
+.grand-palais-interexpo-list header span { color: var(--muted); font-size: 0.75rem; font-weight: 600; }
+.grand-palais-interexpo-list em { border: 1px solid var(--border-control); border-radius: 999px; padding: 3px 9px; background: var(--surface); color: var(--text); font-size: 0.69rem; font-style: normal; font-weight: 600; }
 .grand-palais-interexpo-list article[data-status="En cours"] em { border-color: var(--border-card); color: #23664f; }
-.grand-palais-interexpo-list strong { color: var(--text); font-size: 0.88rem; line-height: 1.35; }
-.grand-palais-interexpo-list p { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
-.grand-palais-interexpo-list p b { color: var(--text); }
-.grand-palais-interexpo-list .grand-palais-interexpo-last { border-top: 1px solid var(--line); padding-top: 8px; color: var(--text); }
-.grand-palais-interexpo-list article > small { color: var(--text); font-size: 0.72rem; font-weight: 800; }
+.grand-palais-interexpo-list article[data-status="En cours"] em::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); content: ""; }
+.grand-palais-interexpo-list strong { color: var(--text); font-family: var(--font-display); font-size: 1.12rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
+.grand-palais-interexpo-list article > small { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 8px; color: var(--muted); font-size: 0.79rem; font-weight: 500; }
+.grand-palais-interexpo-list article > small b { color: var(--text); font-weight: 600; }
 
 @media (max-width: 720px) {
   .grand-palais-view-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -141,10 +141,52 @@ type ProgramView = "now" | "upcoming" | "space" | "interexpo";
 export type InterExhibitionPeriod = {
   startsOn: string;
   endsOn: string;
-  /** Les expositions qui ferment juste avant la période, la veille de son
-   *  premier jour. */
-  lastExhibitions?: string[];
 };
+
+/** Une date décalée de quelques mois. Un 31 reporté sur un mois plus court
+ *  s'arrête à son dernier jour, comme le fait un calendrier. */
+function addMonths(date: Date, months: number) {
+  const shifted = new Date(date.getTime());
+  const day = shifted.getUTCDate();
+  shifted.setUTCDate(1);
+  shifted.setUTCMonth(shifted.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, 0)).getUTCDate();
+  shifted.setUTCDate(Math.min(day, lastDay));
+  return shifted;
+}
+
+/** Un délai dit en années, mois et jours, sans jamais énoncer une unité qui
+ *  vaut zéro : « 4 jours », « 10 mois et 15 jours », « 1 an et 3 jours ». Les
+ *  mois sont comptés de quantième en quantième, et non par tranches fixes. */
+export function delayLabel(from: string, to: string) {
+  const start = new Date(`${from}T12:00:00Z`);
+  const end = new Date(`${to}T12:00:00Z`);
+  if (end <= start) return "";
+  let elapsedMonths = 0;
+  while (addMonths(start, elapsedMonths + 1) <= end) elapsedMonths += 1;
+  const days = Math.round((end.getTime() - addMonths(start, elapsedMonths).getTime()) / 86_400_000);
+  const years = Math.floor(elapsedMonths / 12);
+  const months = elapsedMonths % 12;
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} an${years > 1 ? "s" : ""}`);
+  if (months > 0) parts.push(`${months} mois`);
+  if (days > 0) parts.push(`${days} jour${days > 1 ? "s" : ""}`);
+  if (!parts.length) return "";
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}`;
+}
+
+/** « Du 31 août au 22 septembre 2026 » : l'année, puis le mois, ne sont écrits
+ *  qu'une fois lorsque les deux bornes les partagent. */
+export function interExhibitionRangeLabel(period: InterExhibitionPeriod) {
+  const sameYear = period.startsOn.slice(0, 4) === period.endsOn.slice(0, 4);
+  const sameMonth = sameYear && period.startsOn.slice(0, 7) === period.endsOn.slice(0, 7);
+  const start = formatDatePart(period.startsOn, sameMonth
+    ? { day: "numeric" }
+    : sameYear
+      ? { day: "numeric", month: "long" }
+      : { day: "numeric", month: "long", year: "numeric" });
+  return `Du ${start} au ${formatFrenchDate(period.endsOn)}`;
+}
 
 export function describeInterExhibitionPeriod(period: InterExhibitionPeriod, today: string) {
   const durationDays = dayDistance(period.startsOn, period.endsOn) + 1;
@@ -153,16 +195,15 @@ export function describeInterExhibitionPeriod(period: InterExhibitionPeriod, tod
     return {
       durationDays,
       status: "En cours" as const,
-      timing: remainingDays === 0
-        ? "Se termine aujourd’hui"
-        : `Se termine dans ${remainingDays} jour${remainingDays > 1 ? "s" : ""}`,
+      timing: remainingDays === 0 ? "Dernier jour" : `Encore ${delayLabel(today, period.endsOn)}`,
     };
   }
-  const beforeStart = dayDistance(today, period.startsOn);
   return {
     durationDays,
     status: "À venir" as const,
-    timing: beforeStart === 1 ? "Commence demain" : `Commence dans ${beforeStart} jours`,
+    timing: dayDistance(today, period.startsOn) === 1
+      ? "Demain"
+      : `Dans ${delayLabel(today, period.startsOn)}`,
   };
 }
 
@@ -225,10 +266,7 @@ export function calculateInterExhibitionPeriods(
       (new Date(`${endsOn}T12:00:00Z`).getTime() - new Date(`${startsOn}T12:00:00Z`).getTime()) / 86_400_000,
     ) + 1;
     if (durationInDays < 3 || endsOn < today) return [];
-    const lastExhibitions = [...new Set(datedEntries
-      .filter((entry) => entry.endsOn === openPeriods[index].endsOn)
-      .map((entry) => entry.title))];
-    return [{ startsOn, endsOn, lastExhibitions }];
+    return [{ startsOn, endsOn }];
   });
 }
 
@@ -289,18 +327,33 @@ export function grandPalaisEntryStatus(
     const remaining = entry.endsOn ? Math.max(0, dayDistance(today, entry.endsOn)) : null;
     return {
       label: "En cours",
-      detail: remaining === null ? "" : remaining === 0 ? "Dernier jour" : `${remaining} jour${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}`,
+      detail: remaining === null ? "" : remaining === 0 ? "Dernier jour"
+        : `Encore ${delayLabel(today, entry.endsOn!)}`,
     };
   }
   if (entry.startsOn === today && !openingReady) return { label: "Prochainement", detail: "Commence aujourd’hui à 00 h 05" };
   if (entry.startsOn && entry.startsOn > today) {
-    const beforeOpening = dayDistance(today, entry.startsOn);
     return {
       label: "Prochainement",
-      detail: beforeOpening === 1 ? "Commence demain" : `Commence dans ${beforeOpening} jours`,
+      detail: dayDistance(today, entry.startsOn) === 1
+        ? "Commence demain"
+        : `Commence dans ${delayLabel(today, entry.startsOn)}`,
     };
   }
   return { label: "À confirmer", detail: "" };
+}
+
+/** Le repère qui ouvre un groupe dans « En ce moment » : la liste commence par
+ *  ce qui ferme le plus tôt, ces intitulés disent à partir d'où on respire. */
+export function currentExhibitionGroupLabel(
+  entry: GrandPalaisProgramEntry,
+  today = new Date().toISOString().slice(0, 10),
+) {
+  if (!entry.endsOn) return "Sans date de fin annoncée";
+  const remaining = dayDistance(today, entry.endsOn);
+  if (remaining <= 7) return "Derniers jours";
+  if (remaining <= 31) return "Se termine dans le mois";
+  return "Encore plusieurs mois";
 }
 
 /** Une exposition : la salle, le titre, la période et le temps restant. Une
@@ -469,7 +522,14 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
     .filter(({ entry }) => Boolean(entry.startsOn && entry.startsOn >= today && !isGrandPalaisEntryCurrent(entry, today, openingReady)))
     .sort((left, right) => (left.entry.startsOn ?? "9999").localeCompare(right.entry.startsOn ?? "9999"));
   const overviewEntries = (programView === "now" ? currentEntries : upcomingEntries)
-    .filter(({ entry }) => matchesSearch(entry.title, normalizedSearch));
+    .filter(({ entry }) => matchesSearch(entry.title, normalizedSearch))
+    .map((item) => ({
+      ...item,
+      // « À venir » se lit mois par mois, « En ce moment » par échéance.
+      heading: programView === "upcoming"
+        ? (item.entry.startsOn ? monthHeading(item.entry.startsOn) : "")
+        : currentExhibitionGroupLabel(item.entry, today),
+    }));
   const nextOpening = upcomingEntries[0];
   const venueEntryCount = (venueKey: string) => new Set(Object.values(program[venueKey]?.schedule ?? {})
     .flatMap((scheduled) => scheduled ?? [])
@@ -652,24 +712,19 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             <span className="step-label">Galeries 3–4 · 8 · 7</span>
             <h3 id="grand-palais-interexpo-title">Périodes d’inter expos</h3>
             <p>
-              À la date d’aujourd’hui, le {formatFrenchDate(today)}, voici les périodes où aucune exposition
-              n’est ouverte dans les galeries 3–4, 8 et 7.
+              À la date d’aujourd’hui, le {formatFrenchDate(today)}, {interExhibitionPeriods.length
+                ? `${interExhibitionPeriods.length} période${interExhibitionPeriods.length > 1 ? "s" : ""} où aucune exposition n’est ouverte dans les trois galeries.`
+                : "aucune période sans exposition ouverte dans les trois galeries."}
             </p>
           </div>
           <div className="grand-palais-interexpo-list">
-            {interExhibitionPeriods.length ? interExhibitionPeriods.map((period, index) => {
+            {interExhibitionPeriods.length ? interExhibitionPeriods.map((period) => {
               const detail = describeInterExhibitionPeriod(period, today);
               return (
                 <article key={`${period.startsOn}-${period.endsOn}`} data-status={detail.status}>
-                  <header><span>Période {index + 1}</span><em>{detail.status}</em></header>
-                  <strong>Du {formatFrenchDate(period.startsOn)} au {formatFrenchDate(period.endsOn)}</strong>
-                  <p><b>{detail.durationDays} jours</b> sans exposition ouverte dans les trois galeries.</p>
-                  {period.lastExhibitions?.length ? (
-                    <p className="grand-palais-interexpo-last">
-                      Dernière expo avant : <b>{period.lastExhibitions.join(" et ")}</b>
-                    </p>
-                  ) : null}
-                  <small>{detail.timing}</small>
+                  <header><em>{detail.status}</em><span>{detail.timing}</span></header>
+                  <strong>{interExhibitionRangeLabel(period)}</strong>
+                  <small><b>{detail.durationDays} jours</b> de fermeture</small>
                 </article>
               );
             }) : <p className="empty-state">Aucune période commune calculable pour le moment.</p>}
@@ -679,28 +734,31 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         <section className="useful-expo-schedule grand-palais-program-panel" aria-live="polite">
           <div className="useful-expo-schedule-heading">
             <h3>{programView === "now" ? "Ouvert en ce moment" : "Prochaines ouvertures"}</h3>
-            <p>{programView === "now"
-              ? "Tous les espaces réunis, celles qui ferment le plus tôt en premier."
-              : "Tous les espaces réunis, mois par mois."}</p>
+            <p>{overviewEntries.length
+              ? programView === "now"
+                ? `${overviewEntries.length} exposition${overviewEntries.length > 1 ? "s" : ""} dans tous les espaces, celles qui ferment le plus tôt en premier.`
+                : `${overviewEntries.length} ouverture${overviewEntries.length > 1 ? "s" : ""} annoncée${overviewEntries.length > 1 ? "s" : ""}, mois par mois.`
+              : "Tous les espaces réunis."}</p>
           </div>
           <div className="useful-expo-timeline">
-            {overviewEntries.length ? overviewEntries.map(({ entry, venueKey, venueLabel }, index) => {
-              // « À venir » se lit mois par mois : un intitulé ouvre chaque mois.
-              const month = programView === "upcoming" && entry.startsOn ? entry.startsOn.slice(0, 7) : "";
-              const previousMonth = index > 0 ? overviewEntries[index - 1].entry.startsOn?.slice(0, 7) : "";
-              return (
-                <div className="expo-card-slot" key={`${venueKey}-${entry.title}-${entry.period}`}>
-                  {month && month !== previousMonth ? <h4 className="expo-month-heading">{monthHeading(entry.startsOn!)}</h4> : null}
-                  <ExpoCard entry={entry} venueKey={venueKey} venueLabel={venueLabel} today={today} openingReady={openingReady} linkLabel="Voir le site officiel" />
-                </div>
-              );
-            }) : <p className="empty-state">Aucune exposition ne correspond à cette vue.</p>}
+            {overviewEntries.length ? overviewEntries.map(({ entry, venueKey, venueLabel, heading }, index) => (
+              <div className="expo-card-slot" key={`${venueKey}-${entry.title}-${entry.period}`}>
+                {heading && heading !== (index > 0 ? overviewEntries[index - 1].heading : "") ? (
+                  <h4 className="expo-month-heading">{heading}</h4>
+                ) : null}
+                <ExpoCard entry={entry} venueKey={venueKey} venueLabel={venueLabel} today={today} openingReady={openingReady} linkLabel="Voir le site officiel" />
+              </div>
+            )) : <p className="empty-state">Aucune exposition ne correspond à cette vue.</p>}
           </div>
         </section>
       ) : (
       <section className="useful-expo-schedule grand-palais-program-panel" aria-label={`Programmation ${venue.label}`}>
         <div className="useful-expo-schedule-heading">
           <span className="step-label">{venue.heading}</span>
+          <h3>{venue.label}</h3>
+          <p>{entries.length
+            ? `${entries.length} exposition${entries.length > 1 ? "s" : ""} au programme en ${selectedYear}.`
+            : `Rien à afficher pour ${selectedYear}.`}</p>
         </div>
 
         <div className="useful-expo-year-picker" role="tablist" aria-label="Année de programmation">
@@ -719,6 +777,9 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         </div>
 
         <div className="useful-expo-timeline" role="tabpanel" aria-label={`${venue.label} - ${selectedYear}`}>
+          {entries.length ? null : (
+            <p className="empty-state">Aucune exposition ne correspond à cette vue.</p>
+          )}
           {entries.map((entry) => (
             <ExpoCard
               key={`${entry.title}-${entry.period}`}

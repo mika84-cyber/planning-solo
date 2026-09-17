@@ -2361,8 +2361,8 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();
   await expect(page.locator(".grand-palais-interexpo-panel")).toContainText("À la date d’aujourd’hui");
   const firstInterexpo = page.locator(".grand-palais-interexpo-list article").first();
-  await expect(firstInterexpo).toContainText("Du 31 août 2026 au 22 septembre 2026");
-  await expect(firstInterexpo).toContainText("23 jours");
+  await expect(firstInterexpo).toContainText("Du 31 août au 22 septembre 2026");
+  await expect(firstInterexpo).toContainText("23 jours de fermeture");
   const firstInterexpoStatus = await firstInterexpo.getAttribute("data-status");
   expect(["En cours", "À venir"]).toContain(firstInterexpoStatus);
   await expect(firstInterexpo.locator("em")).toHaveText(firstInterexpoStatus!);

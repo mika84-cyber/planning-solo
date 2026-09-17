@@ -5,7 +5,10 @@ import {
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
+  currentExhibitionGroupLabel,
+  delayLabel,
   describeInterExhibitionPeriod,
+  interExhibitionRangeLabel,
   grandPalaisEntryStatus,
   grandPalaisClock,
   grandPalaisVenuePalette,
@@ -134,7 +137,7 @@ describe("programmation du Grand Palais", () => {
   it("précise le statut et les délais à partir des dates enregistrées", () => {
     expect(grandPalaisEntryStatus({
       title: "En cours", period: "", startsOn: "2026-09-01", endsOn: "2026-09-12",
-    }, "2026-09-02")).toEqual({ label: "En cours", detail: "10 jours restants" });
+    }, "2026-09-02")).toEqual({ label: "En cours", detail: "Encore 10 jours" });
     expect(grandPalaisEntryStatus({
       title: "À venir", period: "", startsOn: "2026-09-05", endsOn: "2026-09-12",
     }, "2026-09-02")).toEqual({ label: "Prochainement", detail: "Commence dans 3 jours" });
@@ -155,14 +158,8 @@ describe("programmation du Grand Palais", () => {
       startsOn: "2026-08-31",
       endsOn: "2026-09-22",
     }));
-    // Chaque période nomme l'exposition qui ferme la veille de son début.
-    for (const period of periods) {
-      expect(period.lastExhibitions?.length).toBeGreaterThan(0);
-      const closing = (["galleries34", "gallery8", "gallery7"] as const).flatMap((key) =>
-        Object.values(GRAND_PALAIS_PROGRAM[key].schedule).flatMap((entries) => entries ?? []))
-        .filter((entry) => period.lastExhibitions!.includes(entry.title));
-      expect(closing.some((entry) => entry.endsOn && entry.endsOn < period.startsOn)).toBe(true);
-    }
+    // Une période ne retient que ses dates : aucune exposition n'y est nommée.
+    for (const period of periods) expect(Object.keys(period).sort()).toEqual(["endsOn", "startsOn"]);
     expect(periods).toContainEqual(expect.objectContaining({
       startsOn: "2027-08-02",
       endsOn: "2027-10-04",
@@ -177,17 +174,55 @@ describe("programmation du Grand Palais", () => {
     })).toBe(true);
   });
 
+  it("regroupe « En ce moment » par ce qui ferme le plus tôt", () => {
+    const grouped = (endsOn?: string) =>
+      currentExhibitionGroupLabel({ title: "Expo", period: "", startsOn: "2026-01-01", endsOn }, "2026-09-07");
+    expect(grouped("2026-09-07")).toBe("Derniers jours");
+    expect(grouped("2026-09-14")).toBe("Derniers jours");
+    expect(grouped("2026-09-15")).toBe("Se termine dans le mois");
+    expect(grouped("2026-10-08")).toBe("Se termine dans le mois");
+    expect(grouped("2026-10-09")).toBe("Encore plusieurs mois");
+    expect(grouped(undefined)).toBe("Sans date de fin annoncée");
+  });
+
+  it("dit un délai en années, mois et jours sans énoncer les unités nulles", () => {
+    expect(delayLabel("2026-09-18", "2026-09-22")).toBe("4 jours");
+    expect(delayLabel("2026-09-18", "2026-09-19")).toBe("1 jour");
+    expect(delayLabel("2026-09-18", "2026-11-18")).toBe("2 mois");
+    expect(delayLabel("2026-09-18", "2027-09-18")).toBe("1 an");
+    expect(delayLabel("2026-09-18", "2027-08-02")).toBe("10 mois et 15 jours");
+    expect(delayLabel("2026-09-18", "2028-01-17")).toBe("1 an, 3 mois et 30 jours");
+    expect(delayLabel("2026-09-18", "2028-09-21")).toBe("2 ans et 3 jours");
+    // Les mois se comptent de quantième en quantième : un 31 janvier suivi
+    // d'un 1er mars fait un mois et un jour, et non un reste négatif.
+    expect(delayLabel("2026-01-31", "2026-03-01")).toBe("1 mois et 1 jour");
+    expect(delayLabel("2026-09-18", "2026-09-18")).toBe("");
+  });
+
+  it("n’écrit qu’une fois ce que les deux bornes d’une période partagent", () => {
+    expect(interExhibitionRangeLabel({ startsOn: "2026-08-31", endsOn: "2026-09-22" }))
+      .toBe("Du 31 août au 22 septembre 2026");
+    expect(interExhibitionRangeLabel({ startsOn: "2027-03-03", endsOn: "2027-03-19" }))
+      .toBe("Du 3 au 19 mars 2027");
+    expect(interExhibitionRangeLabel({ startsOn: "2026-12-28", endsOn: "2027-01-06" }))
+      .toBe("Du 28 décembre 2026 au 6 janvier 2027");
+  });
+
   it("détaille la durée et l’échéance d’une période d’inter-expositions", () => {
     expect(describeInterExhibitionPeriod({ startsOn: "2026-08-31", endsOn: "2026-09-22" }, "2026-09-07")).toEqual({
       durationDays: 23,
       status: "En cours",
-      timing: "Se termine dans 15 jours",
+      timing: "Encore 15 jours",
     });
     expect(describeInterExhibitionPeriod({ startsOn: "2026-09-08", endsOn: "2026-09-12" }, "2026-09-07")).toEqual({
       durationDays: 5,
       status: "À venir",
-      timing: "Commence demain",
+      timing: "Demain",
     });
+    expect(describeInterExhibitionPeriod({ startsOn: "2026-09-01", endsOn: "2026-09-07" }, "2026-09-07").timing)
+      .toBe("Dernier jour");
+    expect(describeInterExhibitionPeriod({ startsOn: "2028-01-17", endsOn: "2028-03-20" }, "2026-09-18").timing)
+      .toBe("Dans 1 an, 3 mois et 30 jours");
   });
 
   it("applique une mise à jour acceptée à tous les utilisateurs", () => {
