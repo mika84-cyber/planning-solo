@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import {
   deleteFeedback,
   broadcastFeedback,
+  getFeedbackGuests,
+  type FeedbackGuest,
   FEEDBACK_PHOTO_ACCEPT,
   feedbackPhotoUrl,
   getFeedbackInbox,
@@ -32,6 +34,12 @@ const DEMO_MESSAGES: FeedbackMessage[] = [{
   createdAt: "2026-09-05T10:00:00.000Z",
   hasPhoto: false,
 }];
+
+const DEMO_GUESTS: FeedbackGuest[] = [
+  { id: "demo-agnes", email: "agnes@demo.local", name: "Agnès" },
+  { id: "demo-camille", email: "camille@demo.local", name: "Camille Dupont" },
+  { id: "demo-samir", email: "samir@demo.local", name: "Samir" },
+];
 
 export function FeedbackResolutionAlert({ notice, onDismiss }: {
   notice: FeedbackResolutionNotice;
@@ -73,6 +81,11 @@ export function FeedbackMessenger({
   const [replyMessage, setReplyMessage] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState("");
+  /** Destinataires du message collectif : tout le monde, ou les comptes cochés. */
+  const [guests, setGuests] = useState<FeedbackGuest[]>([]);
+  const [guestsError, setGuestsError] = useState("");
+  const [everyone, setEveryone] = useState(true);
+  const [chosenGuests, setChosenGuests] = useState<string[]>([]);
   const [photo, setPhoto] = useState<FeedbackPhotoPayload | undefined>();
   const [photoPreview, setPhotoPreview] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -218,16 +231,35 @@ export function FeedbackMessenger({
     }
   }
 
+  /** La liste des comptes n'est lue qu'à l'ouverture du volet collectif. */
+  async function loadGuests() {
+    if (guests.length || !isAdmin) return;
+    setGuestsError("");
+    try {
+      setGuests(demoMode ? DEMO_GUESTS : (await getFeedbackGuests()).guests);
+    } catch (error) {
+      setGuestsError(error instanceof Error ? error.message : "Les comptes invités sont momentanément indisponibles.");
+    }
+  }
+
+  function toggleGuest(id: string) {
+    setChosenGuests((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
   async function sendBroadcast(event: FormEvent) {
     event.preventDefault();
     if (broadcastMessage.trim().length < 5 || busy) return;
+    if (!everyone && !chosenGuests.length) {
+      setError("Choisissez au moins un compte, ou cochez « Tout le monde ».");
+      return;
+    }
     setBusy(true);
     setError("");
     setBroadcastStatus("");
     try {
       const result = demoMode
-        ? { accounts: 2, delivered: 2, failed: 0 }
-        : await broadcastFeedback(broadcastMessage);
+        ? { accounts: everyone ? Math.max(guests.length, 2) : chosenGuests.length, delivered: everyone ? Math.max(guests.length, 2) : chosenGuests.length, failed: 0 }
+        : await broadcastFeedback(broadcastMessage, everyone ? undefined : chosenGuests);
       setBroadcastMessage("");
       setBroadcastStatus(demoMode
         ? "Aperçu local : le message n’a été envoyé à aucun compte."
@@ -271,11 +303,31 @@ export function FeedbackMessenger({
             </form>
           )
         ) : (<>
-          <details className="feedback-broadcast">
-            <summary><span aria-hidden="true">✦</span><strong>Écrire à tous les comptes invités</strong><small>Popup dans l’application uniquement · aucun e-mail</small></summary>
+          <details className="feedback-broadcast" onToggle={(event) => { if ((event.currentTarget as HTMLDetailsElement).open) void loadGuests(); }}>
+            <summary><span aria-hidden="true">✦</span><strong>Écrire aux comptes invités</strong><small>Popup dans l’application uniquement · aucun e-mail</small></summary>
             <form onSubmit={(event) => void sendBroadcast(event)}>
               <label><span>Message collectif</span><textarea required minLength={5} maxLength={800} rows={3} value={broadcastMessage} onChange={(event) => setBroadcastMessage(event.target.value.slice(0, 800))} placeholder="Écrivez le message qui apparaîtra au centre de leur écran…" /><small>{broadcastMessage.length} / 800</small></label>
-              <button type="submit" disabled={busy || broadcastMessage.trim().length < 5}>{busy ? "Envoi…" : "Afficher le message à tous"}</button>
+              {/* Tout le monde par défaut ; sinon, un compte par case à cocher. */}
+              <fieldset className="feedback-recipients">
+                <legend>Destinataires</legend>
+                <label className="feedback-recipient-all">
+                  <input type="checkbox" checked={everyone} onChange={(event) => setEveryone(event.target.checked)} />
+                  <span>Tout le monde{guests.length ? ` (${guests.length} compte${guests.length > 1 ? "s" : ""})` : ""}</span>
+                </label>
+                {everyone ? null : guestsError ? <p className="feedback-error" role="alert">{guestsError}</p> : guests.length ? (
+                  <div className="feedback-recipient-list">
+                    {guests.map((guest) => (
+                      <label key={guest.id}>
+                        <input type="checkbox" checked={chosenGuests.includes(guest.id)} onChange={() => toggleGuest(guest.id)} />
+                        <span><strong>{guest.name || guest.email}</strong>{guest.name ? <small>{guest.email}</small> : null}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : <p className="feedback-empty">Chargement des comptes…</p>}
+              </fieldset>
+              <button type="submit" disabled={busy || broadcastMessage.trim().length < 5 || (!everyone && !chosenGuests.length)}>
+                {busy ? "Envoi…" : everyone ? "Afficher le message à tous" : `Envoyer à ${chosenGuests.length} compte${chosenGuests.length > 1 ? "s" : ""}`}
+              </button>
               {broadcastStatus ? <p role="status">{broadcastStatus}</p> : null}
             </form>
           </details>

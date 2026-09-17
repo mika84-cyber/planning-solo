@@ -1,5 +1,5 @@
 import { lazy, Suspense, type RefObject } from "react";
-import { ThemePreferenceControl } from "./ThemePreferenceControl";
+import { ThemeSwitch } from "./ThemePreferenceControl";
 
 const NoteReminderButton = lazy(() => import("./NoteReminderButton"));
 
@@ -195,6 +195,8 @@ export function AppHeader({
                       <span>Touchez l’icône ↻ en haut de l’écran pour l’installer.</span>
                     </div>
                   ) : null}
+                  {/* L'apparence est un réglage personnel : elle vit avec le compte. */}
+                  <ThemeSwitch />
                   {onOpenAdminTools && <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenAdminTools}>Outils administrateur</button>}
                   <button className="account-menu-leave" type="button" role="menuitem" onClick={onDisconnect}>
                     Se déconnecter
@@ -301,8 +303,6 @@ export function MainMenu({
             <span className="main-menu-copy"><strong>{isAdmin ? "Messagerie interne" : "Écrire à l’administrateur"}</strong><small>{isAdmin ? `${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}` : "Une idée, une suggestion ou un bug"}</small></span>
             <span className="main-menu-chevron" aria-hidden="true">›</span>
           </button>
-          {/* L'apparence ferme la liste des outils : on y touche rarement. */}
-          <ThemePreferenceControl />
         </div>
       </aside>
     </div>

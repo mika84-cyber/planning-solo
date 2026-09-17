@@ -359,22 +359,36 @@ export function PayAllowancesSection({
                 <>
                   <p className="allowance-note">
                     Vos {sundaysDone.length} dimanche{s(sundaysDone.length)}{" "}
-                    travaillé{s(sundaysDone.length)} en {allowances.year}, dans
-                    l’ordre
+                    travaillé{s(sundaysDone.length)} en {allowances.year}, dans l’ordre des paies
                   </p>
-                  <table className="allowance-table">
-                    <tbody>
-                      {sundaysDone.map((item, index) => (
-                        <tr key={item.key}>
-                          <th scope="row">
-                            Dimanche {shortDate(item.key)}
-                            <small>{sundayPayslip(item.key).label}</small>
-                          </th>
-                          <td>n° {index + 1}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {/* Groupés par paie, puis par mois : c'est ainsi qu'on les
+                      retrouve sur un bulletin, et la liste tient en quelques lignes. */}
+                  {[...new Set(sundaysDone.map((item) => sundayPayslip(item.key).label))].map((payslipLabel) => {
+                    const paid = sundaysDone.filter((item) => sundayPayslip(item.key).label === payslipLabel);
+                    const firstRank = sundaysDone.indexOf(paid[0]) + 1;
+                    const lastRank = sundaysDone.indexOf(paid[paid.length - 1]) + 1;
+                    return (
+                      <section className="sunday-done-group" key={payslipLabel}>
+                        <p className="sunday-done-group-heading">
+                          <strong>{payslipLabel.charAt(0).toUpperCase() + payslipLabel.slice(1)}</strong>
+                          <small>{paid.length} dimanche{s(paid.length)} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
+                        </p>
+                        <table className="allowance-table sunday-done-table">
+                          <tbody>
+                            {[...new Set(paid.map((item) => Number(item.key.slice(5, 7)) - 1))].map((monthIndex) => {
+                              const days = paid.filter((item) => Number(item.key.slice(5, 7)) - 1 === monthIndex);
+                              return (
+                                <tr key={monthIndex}>
+                                  <th scope="row">{MONTHS[monthIndex]}</th>
+                                  <td>{days.map((item) => Number(item.key.slice(8, 10))).join(", ")}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </section>
+                    );
+                  })}
                 </>
               ) : (
                 <p className="allowance-note">

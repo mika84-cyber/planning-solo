@@ -1434,7 +1434,8 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(adminContact.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
   // Aucune rubrique ne doit y revenir en double.
   await expect(menu.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
-  await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(1);
+  // L'apparence n'est plus dans ce menu : elle vit avec le compte.
+  await expect(menu.getByRole("menuitemcheckbox", { name: /Mode sombre/ })).toHaveCount(0);
   await expect(menu).toHaveCSS("background-image", /menu-art-fast.webp/);
   await expect(menu.locator("nav > button").first().locator(".main-menu-index svg")).toBeVisible();
   await expect(adminContact).toHaveCSS("background-image", "none");
@@ -1669,12 +1670,15 @@ test("la messagerie interne reste privée, compacte et utilisable avec une photo
 
 test("le mode sombre s’applique à toute l’application et se mémorise", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  const appearance = page.getByRole("radiogroup", { name: "Choisir l’apparence" });
-  await expect(appearance.getByRole("radio", { name: "Auto" })).toHaveAttribute("aria-checked", "true");
-  await appearance.getByRole("radio", { name: "Sombre" }).click();
+  // Un seul interrupteur, dans le menu du compte.
+  const accountButton = page.getByRole("button", { name: /^Compte/ });
+  await accountButton.click();
+  const themeSwitch = page.getByRole("menuitemcheckbox", { name: /Mode sombre/ });
+  await expect(themeSwitch).toHaveAttribute("aria-checked", "false");
+  await themeSwitch.click();
+  await expect(themeSwitch).toHaveAttribute("aria-checked", "true");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByRole("button", { name: "Fermer le menu" }).click();
+  await accountButton.click();
 
   const luminance = (rgb: string) => {
     const [r, g, b] = rgb.match(/\d+/g)!.slice(0, 3).map(Number);
@@ -1720,8 +1724,8 @@ test("le mode sombre s’applique à toute l’application et se mémorise", asy
   // Le choix survit au rechargement, puis « Clair » rend l’apparence d’origine.
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await openMainMenu(page);
-  await page.getByRole("radiogroup", { name: "Choisir l’apparence" }).getByRole("radio", { name: "Clair" }).click();
+  await page.getByRole("button", { name: /^Compte/ }).click();
+  await page.getByRole("menuitemcheckbox", { name: /Mode sombre/ }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("#planning-dark-theme")).toHaveCount(0);
 });
@@ -1996,6 +2000,15 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   await expect(broadcast.getByText("Popup dans l’application uniquement · aucun e-mail")).toBeVisible();
   await broadcast.locator("summary").click();
   await broadcast.getByLabel("Message collectif").fill("Le nouveau planning est disponible.");
+  // Par défaut, le message part à tout le monde ; on peut aussi choisir les comptes.
+  const everyone = broadcast.getByRole("checkbox", { name: /Tout le monde/ });
+  await expect(everyone).toBeChecked();
+  await everyone.uncheck();
+  const firstGuest = broadcast.locator(".feedback-recipient-list input").first();
+  await expect(broadcast.locator(".feedback-recipient-list label")).not.toHaveCount(0);
+  await firstGuest.check();
+  await expect(broadcast.getByRole("button", { name: "Envoyer à 1 compte" })).toBeEnabled();
+  await everyone.check();
   await broadcast.getByRole("button", { name: "Afficher le message à tous" }).click();
   await expect(broadcast.getByText("Aperçu local : le message n’a été envoyé à aucun compte.")).toBeVisible();
 
@@ -4601,10 +4614,15 @@ test("la case des dimanches travaillés déplie la liste des dates", async ({ pa
   const list = page.locator("#sunday-done-list");
   await expect(list).toBeVisible();
   if (done > 0) {
-    // Autant de lignes que de dimanches annoncés faits, numérotées de 1 à n.
-    await expect(list.locator("tbody tr")).toHaveCount(done);
-    await expect(list.locator("tbody tr").first().locator("th")).toContainText("Dimanche");
-    await expect(list.locator("tbody tr").last().locator("td")).toHaveText(`n° ${done}`);
+    // Les dates sont groupées par paie, puis par mois : autant de dates listées
+    // que de dimanches annoncés, et le dernier numéro d'ordre est le total.
+    await expect(list.locator(".sunday-done-group").first()).toContainText("Paie de");
+    const listedDates = await list.locator(".sunday-done-table td").evaluateAll((cells) =>
+      cells.reduce((total, cell) => total + cell.textContent!.split(",").length, 0),
+    );
+    expect(listedDates).toBe(done);
+    await expect(list.locator(".sunday-done-group-heading small").last()).toContainText(`${done}`);
+    await expect(list.locator(".sunday-done-table th").first()).not.toHaveText("");
   } else {
     await expect(list).toContainText("Aucun dimanche travaillé pour le moment.");
   }

@@ -645,7 +645,7 @@ describe("finitions d’interface", () => {
   it("propose le mode sombre dans le menu et réduit le téléchargement des formulaires à son icône", () => {
     // Le mode sombre est dérivé des feuilles de style au lancement (src/darkStyles.ts),
     // pas écrit en double dans les fichiers CSS.
-    expect(app).toContain("<ThemePreferenceControl />");
+    expect(app).toContain("<ThemeSwitch />");
     expect(main).toContain("initTheme();");
     expect(styles).not.toContain('html[data-theme="dark"]');
     expect(styles).toContain(".useful-form-download-label");

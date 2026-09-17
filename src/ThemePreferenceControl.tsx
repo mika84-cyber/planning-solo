@@ -1,55 +1,31 @@
 import { useEffect, useState } from "react";
-import {
-  currentResolvedTheme,
-  readThemePreference,
-  setThemePreference,
-  THEME_CHANGE_EVENT,
-  type ThemePreference,
-} from "./theme";
+import { currentResolvedTheme, setThemePreference, THEME_CHANGE_EVENT } from "./theme";
 
-const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
-  { value: "system", label: "Auto" },
-  { value: "light", label: "Clair" },
-  { value: "dark", label: "Sombre" },
-];
-
-/** Apparence : automatique (suit le téléphone), claire ou sombre. */
-export function ThemePreferenceControl() {
-  const [preference, setPreference] = useState<ThemePreference>(() => readThemePreference());
-  const [resolved, setResolved] = useState(() => currentResolvedTheme());
+/** Interrupteur du mode sombre, dans le menu du compte. Tant qu'on n'y a pas
+ *  touché, l'application suit l'apparence du téléphone ; dès qu'on bascule,
+ *  le choix est mémorisé. */
+export function ThemeSwitch() {
+  const [dark, setDark] = useState(() => currentResolvedTheme() === "dark");
 
   useEffect(() => {
-    const update = () => {
-      setPreference(readThemePreference());
-      setResolved(currentResolvedTheme());
-    };
+    const update = () => setDark(currentResolvedTheme() === "dark");
     window.addEventListener(THEME_CHANGE_EVENT, update);
     return () => window.removeEventListener(THEME_CHANGE_EVENT, update);
   }, []);
 
   return (
-    <div className="main-menu-theme">
-      <span className="main-menu-index" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></svg>
+    <button
+      type="button"
+      role="menuitemcheckbox"
+      aria-checked={dark}
+      className={`account-menu-theme${dark ? " active" : ""}`}
+      onClick={() => setThemePreference(dark ? "light" : "dark")}
+    >
+      <span className="account-menu-theme-copy">
+        <strong>Mode sombre</strong>
+        <small>{dark ? "Activé" : "Désactivé"}</small>
       </span>
-      <span className="main-menu-copy">
-        <strong id="theme-preference-title">Apparence</strong>
-        <small>{preference === "system" ? `Automatique · ${resolved === "dark" ? "sombre" : "clair"}` : preference === "dark" ? "Mode sombre" : "Mode clair"}</small>
-      </span>
-      <div className="main-menu-theme-options" role="radiogroup" aria-label="Choisir l’apparence">
-        {THEME_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={preference === option.value}
-            className={preference === option.value ? "active" : ""}
-            onClick={() => setThemePreference(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
+      <span className="account-menu-switch" aria-hidden="true"><i /></span>
+    </button>
   );
 }

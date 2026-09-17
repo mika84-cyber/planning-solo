@@ -110,13 +110,17 @@ async function listKeys(store: ReturnType<typeof getStore>, prefix: string) {
 }
 
 async function guestAccounts(adminEmail: string) {
-  const guests: Array<{ id: string; email: string }> = [];
+  const guests: Array<{ id: string; email: string; name?: string }> = [];
   for (let page = 1; page <= 20; page += 1) {
     const users = await admin.listUsers({ page, perPage: 100 });
     guests.push(...users
       .filter((identityUser) => Boolean(identityUser.id && identityUser.email)
         && identityUser.email?.trim().toLocaleLowerCase("fr") !== adminEmail)
-      .map((identityUser) => ({ id: identityUser.id, email: identityUser.email as string })));
+      .map((identityUser) => ({
+        id: identityUser.id,
+        email: identityUser.email as string,
+        name: (identityUser as { user_metadata?: { full_name?: string } }).user_metadata?.full_name,
+      })));
     if (users.length < 100) break;
   }
   return guests;
@@ -148,6 +152,16 @@ export default async function feedbackHandler(request: Request) {
       return json({ notifications });
     }
     if (!isAdmin) return json({ error: "Accès réservé." }, 403);
+    // Les destinataires possibles d'un message collectif, pour l'administratrice.
+    if (url.searchParams.get("guests") === "1") {
+      try {
+        const guests = await guestAccounts(configuredAdminEmail());
+        return json({ guests: guests.map(({ id, email, name }) => ({ id, email, name: name || "" })) });
+      } catch (error) {
+        console.error("Annuaire des comptes invités indisponible", error);
+        return json({ error: "Les comptes invités sont momentanément indisponibles." }, 503);
+      }
+    }
     const photoId = url.searchParams.get("photo");
     if (photoId) {
       if (!validId(photoId)) return json({ error: "Message invalide." }, 400);
@@ -195,9 +209,15 @@ export default async function feedbackHandler(request: Request) {
       message,
       createdAt: new Date().toISOString(),
     };
-    const results = await Promise.allSettled(guests.map((guest) => store.setJSON(noticeKey(guest.id, notice.id), notice)));
+    // Sans liste de destinataires, le message part à tout le monde ; sinon,
+    // seuls les comptes choisis le reçoivent.
+    const chosen = Array.isArray(body.recipients)
+      ? guests.filter((guest) => (body.recipients as unknown[]).includes(guest.id))
+      : guests;
+    if (!chosen.length) return json({ error: "Choisissez au moins un compte invité." }, 400);
+    const results = await Promise.allSettled(chosen.map((guest) => store.setJSON(noticeKey(guest.id, notice.id), notice)));
     const delivered = results.filter((result) => result.status === "fulfilled").length;
-    return json({ broadcast: true, accounts: guests.length, delivered, failed: guests.length - delivered });
+    return json({ broadcast: true, accounts: chosen.length, delivered, failed: chosen.length - delivered });
   }
 
   if (body.action === "dismiss-resolution") {

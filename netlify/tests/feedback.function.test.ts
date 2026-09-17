@@ -153,4 +153,25 @@ describe("messagerie privée des idées et signalements", () => {
     expect(notices.some(([key]) => key.includes("/admin/"))).toBe(false);
     expect(mockedAlert).not.toHaveBeenCalled();
   });
+
+  it("liste les comptes invités et n’écrit qu’aux destinataires choisis", async () => {
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    mockedListUsers.mockResolvedValue([
+      { id: "admin", email: "ADMIN@example.test" },
+      { id: "guest-1", email: "invite1@example.test", user_metadata: { full_name: "Agnès" } },
+      { id: "guest-2", email: "invite2@example.test" },
+    ] as never);
+    const listed = await (await feedbackHandler(new Request("https://example.test/api/feedback?guests=1"))).json();
+    expect(listed).toMatchObject({ guests: [{ id: "guest-1", email: "invite1@example.test", name: "Agnès" }, { id: "guest-2", email: "invite2@example.test", name: "" }] });
+
+    const response = await feedbackHandler(post({ action: "broadcast", message: "Message pour une seule personne.", recipients: ["guest-2"] }));
+    expect(await response.json()).toMatchObject({ broadcast: true, accounts: 1, delivered: 1, failed: 0 });
+    const notices = [...data.keys()].filter((key) => key.startsWith("feedback/resolutions/"));
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toContain("/guest-2/");
+
+    // Une liste vide, ou des comptes inconnus, ne doit écrire à personne.
+    const refused = await feedbackHandler(post({ action: "broadcast", message: "Message sans destinataire.", recipients: ["inconnu"] }));
+    expect(refused.status).toBe(400);
+  });
 });

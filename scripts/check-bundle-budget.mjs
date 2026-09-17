@@ -30,7 +30,11 @@ const budgets = {
   // documents, partage entre collègues — et de la refonte visuelle. Le
   // chargement initial, lui, reste dans son plafond : c'est lui qui décide de
   // la vitesse d'ouverture, le reste n'arrive qu'à la demande.
-  totalJavaScript: { raw: 2_650 * KIB, gzip: 840 * KIB },
+  // Relevé le 18 septembre 2026 : mode sombre de toute l'application, vue
+  // semaine des collègues et choix des destinataires d'un message collectif.
+  // Le chargement initial, lui, reste sous son plafond et a même diminué —
+  // la conversion sombre et les formulaires CET ne sont chargés qu'à l'usage.
+  totalJavaScript: { raw: 2_672 * KIB, gzip: 846 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

@@ -137,6 +137,16 @@ export const markFeedbackRead = (id: string) => feedbackAction<{ read: true }>("
 export const resolveFeedback = (id: string) => feedbackAction<{ resolved: true }>("resolve", id);
 export const deleteFeedback = (id: string) => feedbackAction<{ deleted: true }>("delete", id);
 export const replyToFeedback = (id: string, message: string) => feedbackMessageAction<{ replied: true; reply: { id: string; message: string; sentAt: string } }>("reply", id, message);
-export const broadcastFeedback = (message: string) => feedbackMessageAction<{ broadcast: true; accounts: number; delivered: number; failed: number }>("broadcast", "all-guests", message);
+export type FeedbackGuest = { id: string; email: string; name: string };
+
+export const getFeedbackGuests = async () => parse<{ guests: FeedbackGuest[] }>(await fetch("/api/feedback?guests=1", { credentials: "same-origin" }));
+
+/** Sans destinataires, le message part à tous les comptes invités. */
+export const broadcastFeedback = async (message: string, recipients?: string[]) => parse<{ broadcast: true; accounts: number; delivered: number; failed: number }>(await fetch("/api/feedback", {
+  method: "POST",
+  credentials: "same-origin",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ action: "broadcast", id: "all-guests", message, ...(recipients ? { recipients } : {}) }),
+}));
 export const dismissFeedbackResolution = (id: string) => feedbackAction<{ dismissed: true }>("dismiss-resolution", id);
 export const feedbackPhotoUrl = (id: string) => `/api/feedback?photo=${encodeURIComponent(id)}`;

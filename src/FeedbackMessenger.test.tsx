@@ -29,7 +29,9 @@ describe("messagerie interne", () => {
     expect(html).toContain("Messages reçus");
     expect(html).toContain("Sélectionnez un message");
     expect(html).not.toContain("Envoyer un retour");
-    expect(html).toContain("Écrire à tous les comptes invités");
+    expect(html).toContain("Écrire aux comptes invités");
+    expect(html).toContain("Destinataires");
+    expect(html).toContain("Tout le monde");
     expect(html).toContain("aucun e-mail");
   });
 
