@@ -316,3 +316,32 @@
   background: transparent;
   box-shadow: none;
 }
+
+/* « Qui travaille ? » ouvre la page : c'est ce qui sert chaque jour. Deux
+   flèches violettes, comme celles du planning, passent d'un jour à l'autre. */
+.colleague-sharing-page .colleague-day-board { margin-top: 0; }
+.colleague-day-board .colleague-tomorrow-heading { align-items: center; }
+.colleague-day-steps { display: flex; flex: none; gap: 8px; }
+.colleague-day-steps .period-step:disabled { box-shadow: none; cursor: default; opacity: .35; }
+
+/* Une fois inscrit, l'aide et le profil tiennent sur une ligne dépliable. */
+.colleague-settings-disclosure { padding: 0; }
+.colleague-settings-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; padding: 12px 18px; cursor: pointer; list-style: none; }
+.colleague-settings-disclosure > summary::-webkit-details-marker { display: none; }
+.colleague-settings-disclosure > summary > span { display: grid; gap: 2px; min-width: 0; }
+.colleague-settings-disclosure > summary strong { color: var(--text); font-size: 1rem; }
+.colleague-settings-disclosure > summary small { color: var(--muted); font-size: .78rem; font-weight: 700; }
+.colleague-settings-disclosure > summary::after { flex: none; width: 9px; height: 9px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); content: ""; transform: rotate(45deg) translateY(-3px); transition: transform .2s ease; }
+.colleague-settings-disclosure[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
+.colleague-settings-content { display: grid; gap: 12px; padding: 0 12px 12px; }
+.colleague-settings-content > .colleague-card { box-shadow: none; }
+
+/* Planning d'un collègue : le mois et l'année comme sur votre planning, en
+   capitales espacées reliées par un trait violet, entre deux flèches violettes. */
+.colleague-sharing-page .colleague-month-nav button { min-width: 38px; font-size: inherit; }
+.colleague-month-nav strong { display: flex; align-items: center; gap: 12px; color: var(--text); font-family: var(--font-display); font-size: clamp(.98rem, 4.1vw, 1.15rem); font-weight: 600; letter-spacing: .2em; text-transform: uppercase; }
+.colleague-month-nav strong i { width: clamp(14px, 4vw, 24px); height: 1px; background: #7255ad; }
+/* Les boutons de la page prennent le terracotta : les flèches, elles, gardent
+   le rond violet du planning. */
+.colleague-sharing-page button.period-step { display: grid; place-items: center; width: 38px; min-width: 38px; height: 38px; min-height: 38px; border: 1px solid rgba(44, 38, 33, .3); border-radius: 50%; padding: 0; background: #7255ad; color: #fff; box-shadow: 0 3px 8px rgba(114, 85, 173, .28); }
+.colleague-sharing-page button.period-step:hover:not(:disabled) { background: #8c70c4; }

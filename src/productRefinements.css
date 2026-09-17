@@ -110,9 +110,18 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   border-color: var(--border-card);
 }
 
-/* Les grands blocs portent le même repère terracotta : un angle, sur leur
-   côté gauche et sur leur ligne du haut. L'épaisseur tient dans une seule
-   variable — 4 px, ramenés à 2 px sur téléphone (voir 18-main-menu.css). */
+/* Chapitres et sous-chapitres. Plus de liseré terracotta : un chapitre se
+   repère à son en-tête, posé sur une bande terracotta très pâle qui court
+   d'un bord à l'autre du cadre ; le reste du cadre reste blanc, bordé d'un
+   filet fin. Les sous-chapitres deviennent des encarts crème, sans bordure.
+   Le cadre et son en-tête partagent la même marge intérieure, --chapter-pad,
+   pour que la bande rejoigne exactement les bords. */
+:root {
+  --chapter-pad: clamp(13px, 2.4vw, 22px);
+  --chapter-tint: #f8ebe0;
+  --chapter-tint-line: #efd9c8;
+  --subchapter-bg: #fbf6ef;
+}
 .app-shell.app-shell :is(
   .today-overview,
   .home-notes-section,
@@ -142,19 +151,92 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .colleague-request-notice,
   .admin-home-message
 ) {
-  border-left-width: var(--accent-spine, 4px);
-  border-left-color: var(--accent);
-  border-top-style: solid;
-  border-top-width: var(--accent-spine, 4px);
-  border-top-color: var(--accent);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border-card);
 }
+/* Les chapitres qui ont un en-tête prennent la marge commune. */
+.app-shell.app-shell :is(
+  .today-overview,
+  .home-setup-alert,
+  .planning-command-section,
+  .leave-balances-direct,
+  .pay-dashboard-estimate,
+  .pay-dashboard-variables,
+  .pay-dashboard-verification,
+  .pay-missing-guidance,
+  .pdf-download-screen,
+  .useful-resource-panel > .useful-forms-root,
+  .useful-contacts-screen.useful-contacts-root,
+  .grand-palais-venue-navigation,
+  .grand-palais-program-screen .grand-palais-program-panel,
+  .colleague-sharing-page .colleague-card:is(.colleague-day-board, .colleague-how-it-works, .colleague-profile-card, .colleague-received-card, .colleague-share-disclosure)
+) { padding: var(--chapter-pad); }
+.app-shell.app-shell :is(
+  .today-overview > .today-overview-heading,
+  .home-setup-alert > header,
+  .planning-command-section > .home-planning-heading,
+  .leave-balances-direct > .leave-balances-heading,
+  .pay-dashboard-estimate > .pay-dashboard-estimate-heading,
+  .pay-dashboard-variables > .pay-dashboard-card-heading,
+  .pay-dashboard-verification > .pay-dashboard-card-heading,
+  .pay-missing-guidance > .pay-import-heading,
+  .pdf-download-screen > .native-screen-heading,
+  .useful-resource-panel > .useful-forms-root > .native-screen-heading,
+  .useful-contacts-screen.useful-contacts-root > .native-screen-heading,
+  .grand-palais-venue-navigation > .grand-palais-venue-navigation-heading,
+  .grand-palais-program-screen .grand-palais-program-panel > .useful-expo-schedule-heading,
+  .colleague-sharing-page .colleague-card:is(.colleague-day-board, .colleague-how-it-works, .colleague-profile-card, .colleague-received-card) > header,
+  .colleague-sharing-page .colleague-share-disclosure > summary
+) {
+  margin: calc(-1 * var(--chapter-pad)) calc(-1 * var(--chapter-pad)) 12px;
+  border: 0;
+  border-bottom: 1px solid var(--chapter-tint-line);
+  border-radius: inherit;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 12px var(--chapter-pad);
+  background: var(--chapter-tint);
+  box-shadow: none;
+}
+/* Replié, un « details » ne montre que son en-tête : la bande occupe tout le
+   cadre. Son résumé n'hérite pas de l'arrondi du cadre (il passe par l'ombre
+   interne du navigateur) : c'est le cadre qui découpe la bande à son arrondi. */
+.app-shell.app-shell .colleague-sharing-page .colleague-share-disclosure:not([open]) > summary {
+  margin-bottom: calc(-1 * var(--chapter-pad));
+  border-bottom: 0;
+}
+.app-shell.app-shell .colleague-sharing-page :is(.colleague-share-disclosure, .colleague-settings-disclosure) { overflow: hidden; }
+.app-shell.app-shell .colleague-sharing-page .colleague-share-disclosure:not([open]) { background: var(--chapter-tint); }
+/* Les chapitres réduits à leur titre, ou à un bouton qui les déplie, sont
+   teintés en entier. */
+.app-shell.app-shell :is(.grand-palais-program-intro, .colleague-sharing-intro) { background: var(--chapter-tint); }
+.app-shell.app-shell :is(
+  .pay-dashboard-settings > .pay-dashboard-settings-toggle,
+  .pay-dashboard-profile-slot .pay-profile-settings > .pay-profile-summary,
+  .colleague-settings-disclosure > summary
+) { background: var(--chapter-tint); }
 
-/* « Choisir une rubrique » n'a pas de cadre : son repère reste un simple trait
-   à gauche, sans ligne au-dessus du titre. */
+/* Sous-chapitres : encarts crème, sans bordure ni ombre. */
+.app-shell.app-shell :is(
+  .home-setup-list > *,
+  .leave-tool-disclosure,
+  .other-leave-balances,
+  .pay-dashboard-estimate .pay-missing-guidance,
+  .cet-callout,
+  .colleague-settings-content > .colleague-card
+) {
+  border-color: transparent;
+  background: var(--subchapter-bg);
+  box-shadow: none;
+}
+/* Sur un chapitre déjà crème, l'encart repasse au blanc pour rester lisible. */
+.app-shell.app-shell .home-setup-alert .home-setup-list > * { background: #fff; }
+
+/* « Choisir une rubrique » n'a pas de cadre : un simple titre, sans trait. */
 .app-shell.app-shell .useful-resource-intro {
-  border-left-width: var(--accent-spine, 4px);
-  border-left-color: var(--accent);
-  border-top-width: 0;
+  border-left-width: 0;
+  padding-left: 0;
 }
 
 /* Accueil : dans « Mon planning », « Aujourd’hui », les

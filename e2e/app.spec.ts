@@ -49,9 +49,14 @@ async function prepareDemo(page: Page, withCurrentLeave = false) {
  *  est posé sous le mois, sans rien à déplier. */
 /** Largeur du repère terracotta des grands blocs : 5 px, affiné à 3 px sur
  *  téléphone où les cartes occupent toute la largeur de l'écran. */
-function accentSpine(page: Page) {
-  return (page.viewportSize()?.width ?? 1280) <= 720 ? "2px" : "4px";
+/** Épaisseur du contour des chapitres. Le liseré terracotta a disparu : un
+ *  chapitre se repère à son en-tête teinté, son cadre garde un filet fin. */
+function accentSpine(_page: Page) {
+  return "1px";
 }
+
+const CHAPTER_TINT = "rgb(248, 235, 224)";
+const SUBCHAPTER_CREAM = "rgb(251, 246, 239)";
 
 async function workedDaysOnHome(page: Page) {
   const resume = await page.locator(".worked-days-trigger span").first().innerText();
@@ -179,6 +184,21 @@ async function sectionDock(page: Page) {
   return tabs;
 }
 
+/** Écart, en pixels, entre le centre du texte « MOIS — ANNÉE » et le centre de
+ *  l’espace laissé entre les deux flèches violettes. Mesuré sur le texte lui-même :
+ *  les boutons peuvent être plus larges que leur contenu. */
+async function periodTextOffset(page: Page) {
+  return page.evaluate(() => {
+    const arrows = [...document.querySelectorAll(".period-navigation .period-step")].map((node) => node.getBoundingClientRect());
+    const texts = [...document.querySelectorAll(".period-pickers .choice-picker-trigger")].map((trigger) => {
+      const range = document.createRange();
+      range.selectNodeContents(trigger.querySelector("span") ?? trigger);
+      return range.getBoundingClientRect();
+    });
+    return (texts[0].left + texts[1].right) / 2 - (arrows[0].right + arrows[1].left) / 2;
+  });
+}
+
 /** Ouvre une rubrique par le dock. Les rubriques ne sont plus dans le
  *  menu tiroir, qui ne garde que le compte et les réglages. */
 async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
@@ -259,17 +279,17 @@ test("les cartes intérieures restent légères avec des bordures visibles et un
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
   await goToSection(page, "pay");
-  const guidance = page.locator('.pay-missing-guidance');
-  await expect(guidance).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  // Dans l'estimation, le guide d'import est un sous-chapitre : un encart crème, sans bordure.
+  const guidance = page.locator('.pay-dashboard-estimate .pay-missing-guidance');
+  await expect(guidance).toHaveCSS('background-color', SUBCHAPTER_CREAM);
   await expect(guidance).toHaveCSS('background-image', 'none');
-  await expect(guidance).toHaveCSS('border-top-width', accentSpine(page));
-  await expect(guidance).toHaveCSS('border-top-color', await cssTokenRgb(page, '--accent'));
+  await expect(guidance).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
   await guidance.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-pay-${testInfo.project.name}.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test("toutes les rubriques utilisent des cartes blanches, des contours fins et les liserés terracotta", async ({ page }) => {
+test("toutes les rubriques utilisent des cartes blanches, des contours fins et des en-têtes teintés", async ({ page }) => {
   await prepareDemo(page);
 
   const expectWhiteCard = async (selector: string, leftWidth = "1px") => {
@@ -309,7 +329,8 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(allowancesAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await expect(allowancesAction).toHaveCSS("color", "rgb(255, 255, 255)");
   const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
-  await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
+  await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
+  await expect(payProfile.locator(".pay-profile-summary")).toHaveCSS("background-color", CHAPTER_TINT);
   await payProfile.locator(".pay-profile-summary").click();
   const profileOutline = await cssTokenRgb(page, "--border-card");
   const profilePicker = payProfile.locator(".pay-profile-picker .choice-picker-trigger").first();
@@ -343,11 +364,23 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et l
   await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("box-shadow", "none");
 
   await goToSection(page, "program");
-  await expectWhiteCard(".grand-palais-program-intro", accentSpine(page));
+  // Un chapitre réduit à son titre est teinté en entier ; les autres portent
+  // leur titre sur une bande teintée qui touche les bords du cadre.
+  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("background-color", CHAPTER_TINT);
+  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", "1px");
   await expectWhiteCard(".grand-palais-program-panel", accentSpine(page));
+  const expoHeading = page.locator(".grand-palais-program-panel > .useful-expo-schedule-heading").first();
+  await expect(expoHeading).toHaveCSS("background-color", CHAPTER_TINT);
+  const [expoPanelBox, expoHeadingBox] = await Promise.all([
+    page.locator(".grand-palais-program-panel").first().boundingBox(),
+    expoHeading.boundingBox(),
+  ]);
+  expect(Math.abs(expoHeadingBox!.x - expoPanelBox!.x - 1)).toBeLessThanOrEqual(1);
+  expect(Math.abs(expoHeadingBox!.y - expoPanelBox!.y - 1)).toBeLessThanOrEqual(1);
+  expect(Math.abs(expoHeadingBox!.width - (expoPanelBox!.width - 2))).toBeLessThanOrEqual(1);
 
   await goToSection(page, "colleagues");
-  await expectWhiteCard(".colleague-sharing-intro", accentSpine(page));
+  await expect(page.locator(".colleague-sharing-intro")).toHaveCSS("background-color", CHAPTER_TINT);
   await expectWhiteCard(".colleague-profile-card", accentSpine(page));
   const howItWorks = page.locator(".colleague-how-it-works");
   await expect(howItWorks).toHaveCSS("background-color", "rgb(253, 248, 241)");
@@ -411,6 +444,9 @@ test("les pages et la navigation suivent exactement la largeur de leur en-tête"
   await prepareDemo(page);
   for (const width of [320, 412, 900, 1440, 1920]) {
     await page.setViewportSize({ width, height: 950 });
+    // Sur chaque largeur, le mois et l’année restent centrés entre leurs flèches.
+    await goToSection(page, "home");
+    await expect.poll(async () => Math.abs(await periodTextOffset(page))).toBeLessThanOrEqual(2);
     const navigation = page.locator('nav[aria-label="Navigation principale"]:visible');
     for (const [section, selector] of [["colleagues", ".colleague-sharing-page"], ["pay", ".pay-app-screen"]] as const) {
       await goToSection(page, section);
@@ -441,7 +477,8 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
   await expect(planning.locator(".worked-days-trigger")).toContainText("travaillé");
   await expect(planning).toHaveCSS("border-left-width", accentSpine(page));
-  await expect(planning).toHaveCSS("border-left-color", "rgb(152, 84, 56)");
+  await expect(planning).toHaveCSS("border-left-color", await cssTokenRgb(page, "--border-card"));
+  await expect(planning.locator("> .home-planning-heading")).toHaveCSS("background-color", CHAPTER_TINT);
   await expect(planning).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(planning).toHaveCSS("background-image", "none");
   await expect(page.getByRole("button", { name: "Poser un congé" })).toHaveCSS(
@@ -883,7 +920,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(sharingIntro.getByRole("heading", { name: "Planning des collègues" })).toBeVisible();
   await expect(sharingIntro.getByText("Partage privé", { exact: true })).toBeVisible();
   await expect(sharingIntro).toHaveCSS("border-left-width", accentSpine(page));
-  await expect(sharingIntro).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(sharingIntro).toHaveCSS("background-color", CHAPTER_TINT);
   await expect(sharingIntro).toHaveCSS("background-image", "none");
   await expect(page.getByText("Votre adresse e-mail n’est jamais affichée.")).toBeVisible();
   await expect(page.locator(".colleague-groups-directory")).toHaveCount(0);
@@ -999,9 +1036,12 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const receivedCard = page.locator(".colleague-received-card");
   await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", await cardBorderColor(page));
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
-  await expect(receivedCard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
-  await expect(receivedCard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
-  const tomorrowTable = receivedCard.locator(".colleague-tomorrow-table");
+  // « Qui travaille ? » ouvre la page, avant les réglages et l'annuaire.
+  const dayBoard = page.locator(".colleague-day-board");
+  await expect(dayBoard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
+  await expect(dayBoard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
+  expect((await dayBoard.boundingBox())!.y).toBeLessThan((await page.locator(".colleague-how-it-works").boundingBox())!.y);
+  const tomorrowTable = dayBoard.locator(".colleague-tomorrow-table");
   await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Formation|Repos|Absence|1\/2 journée|Absence partielle)/);
   await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toContainText("Groupe 2");
   // L'utilisateur figure dans la liste, dans son propre groupe.
@@ -1009,6 +1049,16 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const selfRow = tomorrowTable.locator(".colleague-tomorrow-group.group-2 ~ .colleague-tomorrow-row.is-self");
   await expect(selfRow).toHaveCount(1);
   await expect(selfRow).not.toContainText("(vous)");
+  // Deux flèches violettes font défiler les jours, sans remonter avant aujourd'hui.
+  await expect(dayBoard.getByRole("button", { name: "Jour suivant" })).toHaveCSS("background-color", "rgb(114, 85, 173)");
+  await dayBoard.getByRole("button", { name: "Jour suivant" }).click();
+  await expect(dayBoard.getByRole("heading", { name: /^Qui travaille [a-zéû]+ \d{2}\/\d{2} \?$/ })).toBeVisible();
+  await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(2);
+  const previousDay = dayBoard.getByRole("button", { name: "Jour précédent" });
+  await previousDay.click();
+  await previousDay.click();
+  await expect(dayBoard.getByRole("heading", { name: /^Qui travaille aujourd’hui \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
+  await expect(previousDay).toBeDisabled();
   await receivedCard.getByRole("button", { name: "Voir" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
@@ -1021,6 +1071,9 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(page.locator('.colleague-day[aria-current="date"]')).toHaveCount(1);
   await expect(page.locator('.colleague-day[aria-current="date"] .colleague-today-dot')).toBeVisible();
   await expect(page.getByText("Les absences sont volontairement affichées sans leur motif.")).toBeVisible();
+  // Le mois du planning partagé suit le style du vôtre : capitales espacées et flèches violettes.
+  await expect(page.locator(".colleague-month-nav strong")).toHaveCSS("text-transform", "uppercase");
+  await expect(page.locator(".colleague-month-nav").getByRole("button", { name: "Mois suivant" })).toHaveCSS("background-color", "rgb(114, 85, 173)");
   await expect(page.getByRole("button", { name: "Télécharger le mois" })).toHaveCount(0);
   await page.setViewportSize({ width: 1280, height: 900 });
   const [desktopTools, desktopCalendar] = await Promise.all([
@@ -1093,10 +1146,18 @@ test("l’aide au partage est ouverte seulement lors de la première utilisation
   const firstToggle = page.locator(".colleague-how-toggle");
   await expect(firstToggle).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
+  await expect(page.locator(".colleague-settings-disclosure")).toHaveCount(0);
 
   await goToSection(page, "home");
   await goToSection(page, "colleagues");
 
+  // Une fois inscrit, l'aide et le profil se replient dans « Réglages du partage ».
+  const settings = page.locator(".colleague-settings-disclosure");
+  await expect(settings.locator("summary")).toContainText("Réglages du partage");
+  await expect(settings.locator("summary")).toContainText("Visible dans l’annuaire sous « Mika »");
+  await expect(page.locator(".colleague-profile-card")).toBeHidden();
+  await settings.locator("summary").click();
+  await expect(page.locator(".colleague-profile-card")).toBeVisible();
   const returningToggle = page.locator(".colleague-how-toggle");
   await expect(returningToggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toHaveCount(0);
@@ -1473,7 +1534,8 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   const pdfScreen = page.locator(".pdf-download-screen");
   await expectHeaderWidth(pdfScreen);
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
-  await expect(pdfScreen).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
+  await expect(pdfScreen).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
+  await expect(pdfScreen.locator("> .native-screen-heading")).toHaveCSS("background-color", CHAPTER_TINT);
   await expect(page.getByRole("heading", { name: "Préparer le planning" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir le document" })).toBeVisible();
   await expect(pdfScreen.locator(".pdf-download-settings > label").first()).toHaveCSS("border-top-width", "1px");
@@ -2665,7 +2727,8 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(menuButton).toBeVisible();
   await expect(page.locator(".section-dock")).toBeVisible();
   await expect(update).toBeVisible();
-  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
+  await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
+  await expect(page.locator(".today-overview-heading")).toHaveCSS("background-color", CHAPTER_TINT);
   const todayHeadingBox = await page.locator(".today-overview-heading").boundingBox();
   const headerBox = await header.boundingBox();
   const todayOverviewBox = await page.locator(".today-overview").boundingBox();
@@ -2693,7 +2756,10 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   expect(headerBox!.width / viewportWidth).toBeGreaterThan(
     viewportWidth >= 1200 ? 0.93 : 0.85,
   );
-  expect(Math.abs(groupActionBox!.y - todayHeadingBox!.y)).toBeLessThan(
+  // Le bouton de groupe s'aligne sur le haut du contenu de l'en-tête teinté,
+  // c'est-à-dire sous sa marge intérieure.
+  const headingPaddingTop = await page.locator(".today-overview-heading").evaluate((node) => Number.parseFloat(getComputedStyle(node).paddingTop));
+  expect(Math.abs(groupActionBox!.y - (todayHeadingBox!.y + headingPaddingTop))).toBeLessThan(
     viewportWidth <= 720 ? 12 : 1,
   );
   await expect(groupAction).toContainText(/Choisir mon groupe|Je suis groupe [123]/);
@@ -2779,8 +2845,8 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(toolbarBox).not.toBeNull();
     expect(monthPickerBox).not.toBeNull();
     expect(yearPickerBox).not.toBeNull();
-    // Le mois, plus long en capitales espacées, prend davantage de place que l’année.
-    expect(monthPickerBox!.width).toBeGreaterThan(yearPickerBox!.width);
+    // Le texte du mois et de l’année est centré entre les deux flèches.
+    expect(Math.abs(await periodTextOffset(page))).toBeLessThanOrEqual(2);
     // Les deux flèches encadrent les menus, et le retour au mois courant
     // tient dans la même barre : tout le geste de navigation au même endroit.
     const arrows = page.locator(".period-navigation .period-step");
@@ -2992,8 +3058,8 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
         page.locator(".today-leave-balance").boundingBox(),
         page.locator(".today-remaining-work").boundingBox(),
   ]);
-    // Le mois, en capitales espacées, prend davantage de place que l’année.
-    expect(foldMonthBox!.width).toBeGreaterThan(foldYearBox!.width);
+    // Le mois et l’année forment un couple centré, le mois juste avant l’année.
+    expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
     expect(Math.abs(foldStatusBox!.y - foldNextWorkBox!.y)).toBeLessThanOrEqual(2);
     expect(Math.abs(foldLeaveBox!.y - foldRemainingBox!.y)).toBeLessThanOrEqual(2);
     expect(foldLeaveBox!.y).toBeGreaterThan(foldStatusBox!.y + foldStatusBox!.height);

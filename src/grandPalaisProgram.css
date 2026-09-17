@@ -288,8 +288,6 @@
 .useful-expo-timeline article[data-status="En cours"] .expo-card-status em::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); content: ""; }
 .expo-card-status span { color: var(--text); font-size: 0.74rem; font-weight: 800; white-space: nowrap; }
 .grand-palais-view-picker button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
-.grand-palais-view-count { min-width: 22px; border-radius: 999px; padding: 2px 6px; background: var(--accent-soft); color: var(--accent-strong); font-size: 0.72rem; line-height: 1.3; }
-.grand-palais-view-picker button.active .grand-palais-view-count { background: rgba(255, 255, 255, 0.24); color: #fff; }
 .grand-palais-program-summary b { color: var(--text); }
 
 .useful-expo-timeline article a {
@@ -320,6 +318,7 @@
 .grand-palais-interexpo-list strong { color: var(--text); font-size: 0.88rem; line-height: 1.35; }
 .grand-palais-interexpo-list p { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
 .grand-palais-interexpo-list p b { color: var(--text); }
+.grand-palais-interexpo-list .grand-palais-interexpo-last { border-top: 1px solid var(--line); padding-top: 8px; color: var(--text); }
 .grand-palais-interexpo-list article > small { color: var(--text); font-size: 0.72rem; font-weight: 800; }
 
 @media (max-width: 720px) {

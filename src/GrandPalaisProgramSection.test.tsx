@@ -12,6 +12,7 @@ import {
   isGrandPalaisEntryCurrent,
   isGrandPalaisEntryVisible,
   mergeSharedGrandPalaisProgram,
+  otherGrandPalaisVenueKeys,
   safeGrandPalaisUrl,
 } from "./GrandPalaisProgramSection";
 
@@ -154,6 +155,14 @@ describe("programmation du Grand Palais", () => {
       startsOn: "2026-08-31",
       endsOn: "2026-09-22",
     }));
+    // Chaque période nomme l'exposition qui ferme la veille de son début.
+    for (const period of periods) {
+      expect(period.lastExhibitions?.length).toBeGreaterThan(0);
+      const closing = (["galleries34", "gallery8", "gallery7"] as const).flatMap((key) =>
+        Object.values(GRAND_PALAIS_PROGRAM[key].schedule).flatMap((entries) => entries ?? []))
+        .filter((entry) => period.lastExhibitions!.includes(entry.title));
+      expect(closing.some((entry) => entry.endsOn && entry.endsOn < period.startsOn)).toBe(true);
+    }
     expect(periods).toContainEqual(expect.objectContaining({
       startsOn: "2027-08-02",
       endsOn: "2027-10-04",
@@ -199,10 +208,10 @@ describe("programmation du Grand Palais", () => {
       startsOn: "2026-09-24",
       endsOn: "2027-01-24",
     }));
-    expect(calculateInterExhibitionPeriods("2026-08-28", updated)).toContainEqual({
+    expect(calculateInterExhibitionPeriods("2026-08-28", updated)).toContainEqual(expect.objectContaining({
       startsOn: "2026-08-31",
       endsOn: "2026-09-23",
-    });
+    }));
   });
 
   it("ajoute un nouvel espace accepté dans Autres et respecte un retrait validé", () => {
@@ -219,6 +228,11 @@ describe("programmation du Grand Palais", () => {
     expect(added["other:salon-honneur"].schedule[2027]?.[0].title).toBe("Exposition du Salon");
     const removed = mergeSharedGrandPalaisProgram(added, [{ ...salon, deleted: true }]);
     expect(removed["other:salon-honneur"].schedule[2027]).toEqual([]);
+    // Sans exposition, l'espace quitte « Autres » ; il y revient dès qu'une
+    // exposition acceptée l'alimente de nouveau.
+    expect(otherGrandPalaisVenueKeys(removed, "2026-09-17")).not.toContain("other:salon-honneur");
+    expect(otherGrandPalaisVenueKeys(added, "2026-09-17")).toContain("other:salon-honneur");
+    expect(otherGrandPalaisVenueKeys(added, "2027-05-02")).not.toContain("other:salon-honneur");
   });
 
   it("ajoute une galerie nouvellement détectée dans Autres après validation", () => {

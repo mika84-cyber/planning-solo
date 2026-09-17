@@ -50,6 +50,23 @@ const tomorrowDate = (reference = new Date()) => {
 const tomorrowDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const tomorrowTitleDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
 export const colleagueTomorrowDateLabel = (reference = new Date()) => tomorrowTitleDateFormatter.format(tomorrowDate(reference));
+/** Le jour consulté dans « Qui travaille ? », compté depuis aujourd'hui. */
+export const colleagueBoardDate = (offset: number, reference = new Date()) => {
+  const date = new Date(reference);
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + offset);
+  return date;
+};
+/** « Qui travaille demain ? (vendredi 18/09) », « … aujourd’hui ? … » ou,
+ *  plus loin, « Qui travaille mardi 22/09 ? ». */
+export function colleagueBoardTitle(offset: number, reference = new Date()) {
+  const label = tomorrowTitleDateFormatter.format(colleagueBoardDate(offset, reference));
+  if (offset === 0) return `Qui travaille aujourd’hui ? (${label})`;
+  if (offset === 1) return `Qui travaille demain ? (${label})`;
+  return `Qui travaille ${label} ?`;
+}
+/** On peut regarder jusqu'à deux mois devant soi. */
+const BOARD_MAX_OFFSET = 60;
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "1/2 journée · matin" | "1/2 journée · après-midi" | "Absence partielle";
 
@@ -177,14 +194,18 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<SharedColleaguePlanning | null>(null);
   const [view, setView] = useState(() => startOfMonth(new Date()));
-  const [tomorrowSummaries, setTomorrowSummaries] = useState<Record<string, { status: TomorrowStatus; group: number }>>({});
+  const [receivedPlannings, setReceivedPlannings] = useState<Record<string, SharedColleaguePlanning>>({});
+  const [boardOffset, setBoardOffset] = useState(1);
   const [tomorrowFailed, setTomorrowFailed] = useState<string[]>([]);
   const [tomorrowAttempt, setTomorrowAttempt] = useState(0);
   const [commonDaysOpen, setCommonDaysOpen] = useState(false);
-  const [howItWorksOpen, setHowItWorksOpen] = useState(() => {
+  // Première visite : l'aide et le profil sont dépliés. Ensuite, une fois
+  // inscrit, ils se replient dans « Réglages du partage ».
+  const [firstVisit] = useState(() => {
     if (typeof window === "undefined") return true;
     try { return window.localStorage.getItem("planning:colleague-guide-seen") !== "1"; } catch { return true; }
   });
+  const [howItWorksOpen, setHowItWorksOpen] = useState(firstVisit);
 
   useEffect(() => {
     try { window.localStorage.setItem("planning:colleague-guide-seen", "1"); } catch {}
@@ -296,23 +317,23 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
   const savedName = data?.self.displayName || "";
   const nameChanged = name.trim() !== savedName;
   // L'utilisateur figure aussi dans « Qui travaille demain ? », dans son groupe.
-  const selfTomorrow = getOwnPresence && ownGroup ? { status: personalTomorrowStatus(getOwnPresence(tomorrowDate())), group: ownGroup } : null;
+  const boardDate = colleagueBoardDate(boardOffset);
+  const tomorrowSummaries: Record<string, { status: TomorrowStatus; group: number }> = Object.fromEntries(
+    Object.entries(receivedPlannings).map(([ownerId, planning]) => [ownerId, sharedPlanningTomorrowSummary(planning, boardDate)]),
+  );
+  const selfTomorrow = getOwnPresence && ownGroup ? { status: personalTomorrowStatus(getOwnPresence(boardDate)), group: ownGroup } : null;
   const selfName = data?.self.displayName || name.trim() || "Vous";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: tomorrowAttempt relance les lectures après Réessayer.
   useEffect(() => {
     setTomorrowFailed([]);
-    setTomorrowSummaries({});
-    if (!received.length) {
-      setTomorrowSummaries({});
-      return;
-    }
+    setReceivedPlannings({});
+    if (!received.length) return;
     let cancelled = false;
-    const tomorrow = tomorrowDate();
     for (const share of received) void (async () => {
       try {
         const planning = demoMode ? demoPlanning : await getSharedColleaguePlanning(share.ownerId);
-        if (!cancelled) setTomorrowSummaries((current) => ({ ...current, [share.ownerId]: sharedPlanningTomorrowSummary(planning, tomorrow) }));
+        if (!cancelled) setReceivedPlannings((current) => ({ ...current, [share.ownerId]: planning }));
       } catch {
         if (!cancelled) setTomorrowFailed((current) => [...current, share.ownerId]);
       }
@@ -329,7 +350,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
       {error ? <p className="colleague-error" role="alert">{error}</p> : null}
       <section className="colleague-card colleague-planning-view">
         <div className="colleague-planning-heading"><div><p className="eyebrow">Planning partagé</p><h2>{selected.owner.displayName}</h2></div><button className="secondary" type="button" onClick={() => setSelected(null)}>Retour à mes collègues</button></div>
-        <div className="colleague-month-nav"><button type="button" aria-label="Mois précédent" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1, 12))}>‹</button><strong>{MONTHS[view.getMonth()]} {view.getFullYear()}</strong><button type="button" aria-label="Mois suivant" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1, 12))}>›</button></div>
+        <div className="colleague-month-nav"><button className="period-step" type="button" aria-label="Mois précédent" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1, 12))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button><strong><span>{MONTHS[view.getMonth()]}</span><i aria-hidden="true" /><span>{view.getFullYear()}</span></strong><button className="period-step" type="button" aria-label="Mois suivant" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1, 12))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button></div>
         <section className={`colleague-planning-tools${commonDaysOpen ? " is-comparing" : ""}`} aria-label="Outils du planning partagé">
           <div className="colleague-planning-tools-heading"><span>Outils du mois</span><small>{MONTHS[view.getMonth()]} {view.getFullYear()}</small></div>
           <div className="colleague-planning-tool-actions">
@@ -344,16 +365,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
     </section>
   );
 
-  return (
-    <section className="colleague-sharing-page">
-      {error ? <p className="colleague-error" role="alert">{error}</p> : null}
-
-      <header className="colleague-sharing-intro colleague-share-disclosure">
-        <p className="eyebrow">Partage privé</p>
-        <h2>Planning des collègues</h2>
-        <p>Partagez uniquement vos jours de présence et d’absence. Vos notes, votre paie et vos informations personnelles restent privées.</p>
-      </header>
-
+  const settingsCards = (
+    <>
       <section className="colleague-card colleague-how-it-works" aria-labelledby="colleague-how-title">
         <header className="colleague-how-header">
           <p className="eyebrow" id="colleague-how-title">Comment ça marche</p>
@@ -365,8 +378,6 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
           <li><span>3</span><p><strong>Gardez le contrôle</strong><small>Le destinataire peut supprimer son accès et vous pouvez arrêter la diffusion à tout moment.</small></p></li>
         </ol> : null}
       </section>
-
-      {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
 
       <section className="colleague-card colleague-profile-card">
         <header className="colleague-profile-card-heading">
@@ -398,6 +409,75 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
         </div>
         <p className="colleague-profile-privacy"><span aria-hidden="true">✓</span><small>{data?.self.visible ? "Votre nom est visible dans l’annuaire. " : "Votre nom est actuellement masqué. "}Votre adresse e-mail n’est jamais affichée.</small></p>
       </section>
+    </>
+  );
+
+  return (
+    <section className="colleague-sharing-page">
+      {error ? <p className="colleague-error" role="alert">{error}</p> : null}
+
+      <header className="colleague-sharing-intro colleague-share-disclosure">
+        <p className="eyebrow">Partage privé</p>
+        <h2>Planning des collègues</h2>
+        <p>Partagez uniquement vos jours de présence et d’absence. Vos notes, votre paie et vos informations personnelles restent privées.</p>
+      </header>
+
+      {/* Ce qui sert chaque jour vient en premier : qui travaille, jour par jour. */}
+      {data?.self.visible && received.length ? <section className="colleague-card colleague-tomorrow colleague-day-board" aria-labelledby="colleague-tomorrow-title">
+        <header className="colleague-tomorrow-heading">
+          <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">{colleagueBoardTitle(boardOffset)}</h4></div>
+          <div className="colleague-day-steps">
+            <button className="period-step" type="button" aria-label="Jour précédent" disabled={boardOffset <= 0} onClick={() => setBoardOffset((offset) => Math.max(0, offset - 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button>
+            <button className="period-step" type="button" aria-label="Jour suivant" disabled={boardOffset >= BOARD_MAX_OFFSET} onClick={() => setBoardOffset((offset) => Math.min(BOARD_MAX_OFFSET, offset + 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button>
+          </div>
+        </header>
+        {received.some((share) => !tomorrowSummaries[share.ownerId] && !tomorrowFailed.includes(share.ownerId)) ? <div className="colleague-tomorrow-pending" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /> Analyse des plannings en cours…</div> : null}
+        {/* Sur téléphone le tableau défile : il doit pouvoir recevoir le focus pour défiler au clavier. */}
+        <div className="colleague-tomorrow-table-shell" role="region" aria-label="Disponibilités du jour choisi" tabIndex={0}>
+          <table className="colleague-tomorrow-table">
+            <caption className="colleague-tomorrow-caption">Disponibilités des collègues par groupe</caption>
+            <thead>
+              <tr>
+                <th scope="col">Collègue</th>
+                <th scope="col">Disponibilité</th>
+              </tr>
+            </thead>
+            <tbody>
+              {([1, 2, 3] as const).map((group) => {
+                const groupShares = received.filter((share) => tomorrowSummaries[share.ownerId]?.group === group);
+                const selfHere = selfTomorrow?.group === group;
+                const groupCount = groupShares.length + (selfHere ? 1 : 0);
+                if (!groupCount) return null;
+                return <Fragment key={group}>
+                  <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={2}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span><small>{groupCount} collègue{groupCount > 1 ? "s" : ""}</small></th></tr>
+                  {selfHere && selfTomorrow ? <tr className={`colleague-tomorrow-row is-self status-${tomorrowStatusTone(selfTomorrow.status)}`}><td><strong>{selfName}</strong></td><td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(selfTomorrow.status)}`}><i aria-hidden="true" />{selfTomorrow.status}</span></td></tr> : null}
+                  {groupShares.map((share) => {
+                    const summary = tomorrowSummaries[share.ownerId]!;
+                    return <tr className={`colleague-tomorrow-row status-${tomorrowStatusTone(summary.status)}`} key={share.ownerId}>
+                      <td><strong>{share.ownerName}</strong></td>
+                      <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{summary.status}</span></td>
+                    </tr>;
+                  })}
+                </Fragment>;
+              })}
+              {tomorrowFailed.length > 0 ? <tr className="colleague-tomorrow-error"><td colSpan={2}><p role="status">Planning indisponible : {received.filter((share) => tomorrowFailed.includes(share.ownerId)).map((share) => share.ownerName).join(", ")}.</p><button type="button" onClick={() => setTomorrowAttempt((value) => value + 1)}>Réessayer</button></td></tr> : null}
+            </tbody>
+          </table>
+        </div>
+      </section> : null}
+
+      {/* Une fois inscrit, l'aide et le profil ne servent plus qu'à l'occasion :
+          ils se replient sur une ligne. À la première visite, ils restent dépliés. */}
+      {data?.self.visible && !firstVisit ? (
+        <details className="colleague-card colleague-settings-disclosure">
+          <summary>
+            <span><strong>Réglages du partage</strong><small>Visible dans l’annuaire sous « {data.self.displayName} »</small></span>
+          </summary>
+          <div className="colleague-settings-content">{settingsCards}</div>
+        </details>
+      ) : settingsCards}
+
+      {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
 
       <div className="colleague-sharing-columns">
         <details className="colleague-card colleague-share-disclosure">
@@ -440,7 +520,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
 
         <section className="colleague-card colleague-received-card" aria-busy={directoryLoading}>
           <header className="colleague-received-heading">
-            <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3><small>Les disponibilités de demain sont résumées ici.</small></div>
+            <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3><small>Ouvrez le planning complet d’un collègue.</small></div>
             <span title={`${received.length} planning${received.length > 1 ? "s" : ""} reçu${received.length > 1 ? "s" : ""}`}>{directoryLoading ? "…" : received.length}</span>
           </header>
           {directoryLoading ? <div className="colleague-received-loading" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /><span>Actualisation de vos plannings partagés…</span></div> : data?.self.visible ? <>
@@ -448,45 +528,6 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
               {received.map((share) => <div className="colleague-received-person" key={share.ownerId}><span className="colleague-received-avatar" aria-hidden="true">{share.ownerName.charAt(0).toLocaleUpperCase("fr")}</span><span className="colleague-received-copy"><strong>{share.ownerName}</strong><small>Planning partagé avec vous</small></span><div className="colleague-inline-actions"><button type="button" disabled={busy} onClick={() => void openPlanning(share.ownerId)}>Voir</button><button className="secondary compact" type="button" disabled={busy} onClick={() => confirmMutation(`Supprimer votre accès au planning de ${share.ownerName} ?`, { action: "remove-access", ownerId: share.ownerId })}>Supprimer l’accès</button></div></div>)}
               {!received.length ? <p>Aucun planning partagé pour le moment.</p> : null}
             </div>
-            {received.length ? <section className="colleague-tomorrow" aria-labelledby="colleague-tomorrow-title">
-              <header className="colleague-tomorrow-heading">
-                <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">Qui travaille demain&nbsp;? ({colleagueTomorrowDateLabel()})</h4></div>
-                <span className="colleague-tomorrow-count">{received.length} planning{received.length > 1 ? "s" : ""}</span>
-              </header>
-              {received.some((share) => !tomorrowSummaries[share.ownerId] && !tomorrowFailed.includes(share.ownerId)) ? <div className="colleague-tomorrow-pending" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /> Analyse des plannings en cours…</div> : null}
-              {/* Sur téléphone le tableau défile : il doit pouvoir recevoir le focus pour défiler au clavier. */}
-              <div className="colleague-tomorrow-table-shell" role="region" aria-label="Disponibilités de demain" tabIndex={0}>
-                <table className="colleague-tomorrow-table">
-                  <caption className="colleague-tomorrow-caption">Disponibilités des collègues par groupe</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Collègue</th>
-                      <th scope="col">Disponibilité demain</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {([1, 2, 3] as const).map((group) => {
-                      const groupShares = received.filter((share) => tomorrowSummaries[share.ownerId]?.group === group);
-                      const selfHere = selfTomorrow?.group === group;
-                      const groupCount = groupShares.length + (selfHere ? 1 : 0);
-                      if (!groupCount) return null;
-                      return <Fragment key={group}>
-                        <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={2}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span><small>{groupCount} collègue{groupCount > 1 ? "s" : ""}</small></th></tr>
-                        {selfHere && selfTomorrow ? <tr className={`colleague-tomorrow-row is-self status-${tomorrowStatusTone(selfTomorrow.status)}`}><td><strong>{selfName}</strong></td><td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(selfTomorrow.status)}`}><i aria-hidden="true" />{selfTomorrow.status}</span></td></tr> : null}
-                        {groupShares.map((share) => {
-                          const summary = tomorrowSummaries[share.ownerId]!;
-                          return <tr className={`colleague-tomorrow-row status-${tomorrowStatusTone(summary.status)}`} key={share.ownerId}>
-                            <td><strong>{share.ownerName}</strong></td>
-                            <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{summary.status}</span></td>
-                          </tr>;
-                        })}
-                      </Fragment>;
-                    })}
-                    {tomorrowFailed.length > 0 ? <tr className="colleague-tomorrow-error"><td colSpan={2}><p role="status">Planning indisponible : {received.filter((share) => tomorrowFailed.includes(share.ownerId)).map((share) => share.ownerName).join(", ")}.</p><button type="button" onClick={() => setTomorrowAttempt((value) => value + 1)}>Réessayer</button></td></tr> : null}
-                  </tbody>
-                </table>
-              </div>
-            </section> : null}
           </> : <p>Inscrivez-vous dans l’annuaire pour consulter les plannings reçus.</p>}
         </section>
       </div>

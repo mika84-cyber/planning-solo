@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { colleagueTomorrowDateLabel, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
+import { colleagueBoardTitle, colleagueTomorrowDateLabel, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
 import type { SharedColleaguePlanning } from "./colleagueSharingApi";
 
 const planning: SharedColleaguePlanning = {
@@ -32,6 +32,16 @@ describe("sharedPlanningDayStatus", () => {
       status: "Absence",
       group: 1,
     });
+  });
+});
+
+describe("colleagueBoardTitle", () => {
+  it("nomme aujourd’hui, demain puis la date des jours suivants", () => {
+    const reference = new Date(2026, 8, 17, 9);
+    expect(colleagueBoardTitle(0, reference)).toBe("Qui travaille aujourd’hui ? (jeudi 17/09)");
+    expect(colleagueBoardTitle(1, reference)).toBe("Qui travaille demain ? (vendredi 18/09)");
+    expect(colleagueBoardTitle(4, reference)).toBe("Qui travaille lundi 21/09 ?");
+    expect(colleagueBoardTitle(15, reference)).toBe("Qui travaille vendredi 02/10 ?");
   });
 });
 
