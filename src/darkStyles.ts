@@ -117,12 +117,18 @@ function translateRule(style: CSSStyleDeclaration) {
   return declarations.join(";");
 }
 
+/** Les couleurs qui disent quelque chose — type de congé, statut d'un jour,
+ *  case de la vue semaine — gardent leur teinte d'origine : les assombrir les
+ *  rendrait ternes et indistinctes. Le fond de ces cases est repris à la main
+ *  dans darkTheme.css. */
+const KEEP_COLORS = /\.(day|mini-day|leave-band|note-band|leave-calendar-marker|recovery-calendar-label|exchange-calendar-label|work-accident-calendar-marker|exceptional-closure-marker|holiday-date|agnes-leave-date|school-vacation-day|colleague-week-cell|colleague-tomorrow-status)(?![\w-])/;
+
 function translateRules(rules: CSSRuleList): string {
   let output = "";
   for (const rule of Array.from(rules)) {
     if (rule instanceof CSSStyleRule) {
       // Les retouches de darkTheme.css sont déjà sombres : on ne les convertit pas.
-      if (rule.selectorText.includes("data-theme")) continue;
+      if (rule.selectorText.includes("data-theme") || KEEP_COLORS.test(rule.selectorText)) continue;
       const body = translateRule(rule.style);
       if (body) output += `${rule.selectorText}{${body}}`;
     } else if (rule instanceof CSSMediaRule || rule instanceof CSSSupportsRule) {

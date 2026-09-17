@@ -284,7 +284,6 @@ export function MainMenu({
         </nav>
         <p className="main-menu-section-label" aria-hidden="true">Outils</p>
         <div className="main-menu-secondary">
-          <ThemePreferenceControl />
           <button type="button" onClick={onOpenDataManagement}>
             <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="data" /></span>
             <span className="main-menu-copy"><strong>Mes données</strong><small>Sauvegarder, reprendre ou effacer mes informations</small></span>
@@ -302,6 +301,8 @@ export function MainMenu({
             <span className="main-menu-copy"><strong>{isAdmin ? "Messagerie interne" : "Écrire à l’administrateur"}</strong><small>{isAdmin ? `${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}` : "Une idée, une suggestion ou un bug"}</small></span>
             <span className="main-menu-chevron" aria-hidden="true">›</span>
           </button>
+          {/* L'apparence ferme la liste des outils : on y touche rarement. */}
+          <ThemePreferenceControl />
         </div>
       </aside>
     </div>

@@ -1689,10 +1689,27 @@ test("le mode sombre s’applique à toute l’application et se mémorise", asy
   const overview = await colorsOf(".today-overview");
   expect(luminance(overview.background)).toBeLessThan(0.15);
   expect(luminance((await colorsOf(".today-overview-heading h2")).color)).toBeGreaterThan(0.7);
-  // Dans le calendrier, un jour travaillé reste plus clair qu’un jour de repos.
+  // Dans le calendrier, un jour travaillé se distingue nettement d’un jour de repos.
   const work = await colorsOf(".calendar-grid .day.work:not(.leave-day)");
   const off = await colorsOf(".calendar-grid .day.off");
-  expect(luminance(work.background)).toBeGreaterThan(luminance(off.background));
+  expect(luminance(work.background) - luminance(off.background)).toBeGreaterThan(0.08);
+  // Les couleurs qui disent quelque chose gardent leur teinte : un jour de congé
+  // reste vif, et les cases de la vue semaine aussi.
+  const leaveBackground = await page.locator(".calendar-grid").evaluate((grid) => {
+    const probe = document.createElement("div");
+    probe.className = "day leave-day leave-annual";
+    grid.append(probe);
+    const background = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return background;
+  });
+  expect(luminance(leaveBackground)).toBeGreaterThan(0.4);
+  await goToSection(page, "colleagues");
+  await page.locator(".colleague-board-mode").getByRole("button", { name: "Semaine", exact: true }).click();
+  const weekCell = await colorsOf(".colleague-week-cell.work");
+  expect(luminance(weekCell.background)).toBeGreaterThan(0.4);
+  expect(luminance(weekCell.color)).toBeLessThan(0.4);
+  await goToSection(page, "home");
   for (const section of ["leave", "pay", "program", "colleagues"] as const) {
     await goToSection(page, section);
     const chapter = page.locator(".leave-balances-direct, .pay-dashboard-estimate, .grand-palais-program-panel, .colleague-received-card").first();

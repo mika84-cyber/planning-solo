@@ -7,12 +7,18 @@ html[data-theme="dark"] :is(.step-label, .eyebrow) { color: #e2a383; }
 
 /* Planning : un jour travaillé reste plus clair qu'un jour de repos. */
 html[data-theme="dark"] .calendar-grid .day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training),
-html[data-theme="dark"] .mini-grid .mini-day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training) { background: #2e2722; color: #f1e8df; }
+html[data-theme="dark"] .mini-grid .mini-day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training) { border-color: #6f6156; background: #61544a; color: #fdf7f0; }
 html[data-theme="dark"] .calendar-grid .day.off,
-html[data-theme="dark"] .mini-grid .mini-day.off { border-color: #3a312a; background: #050403; color: #bfb2a6; }
+html[data-theme="dark"] .mini-grid .mini-day.off { border: 2px solid #9d8b7b !important; background: #0a0807; color: #c6b8ab; }
 /* Formation : case grise, chiffre sombre pour rester lisible. */
 html[data-theme="dark"] :is(.calendar-grid .day.training, .mini-grid .mini-day.training),
 html[data-theme="dark"] :is(.calendar-grid .day.training, .mini-grid .mini-day.training) :is(.date-number, span, b) { color: #211c18; }
+
+/* Soldes et choix de congés : la carte suit le fond sombre, mais le chiffre
+   et le repère gardent la couleur du type de congé, éclaircie pour rester
+   lisible sur sombre. */
+html[data-theme="dark"] .leave-balance-grid > button strong { color: color-mix(in srgb, var(--balance-color) 72%, #fff); }
+html[data-theme="dark"] .leave-choices :is(.type-choice, button) { --person-color: color-mix(in srgb, var(--choice-accent, var(--type-color, #985438)) 72%, #fff); }
 
 /* Expositions : la teinte de chaque salle, fondue dans le fond sombre. */
 html[data-theme="dark"] .grand-palais-program-panel .useful-expo-timeline article,
