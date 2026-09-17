@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { colleagueBoardTitle, colleagueTomorrowDateLabel, colleagueWeekDays, colleagueWeekTitle, ColleagueWeekTable, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
+import { colleagueBoardTitle, colleagueWeekDays, colleagueWeekTitle, ColleagueWeekTable, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
 import type { SharedColleaguePlanning } from "./colleagueSharingApi";
 
 const planning: SharedColleaguePlanning = {
@@ -74,13 +74,10 @@ describe("colleagueBoardTitle", () => {
   });
 });
 
-describe("colleagueTomorrowDateLabel", () => {
-  it("affiche en français le jour et la date courte du lendemain", () => {
-    expect(colleagueTomorrowDateLabel(new Date(2026, 8, 13, 23, 30))).toBe("lundi 14/09");
-  });
-
-  it("gère le changement de mois et d’année", () => {
-    expect(colleagueTomorrowDateLabel(new Date(2026, 11, 31, 12))).toBe("vendredi 01/01");
+describe("date du lendemain dans « Qui travaille ? »", () => {
+  it("passe au lendemain même tard le soir et franchit le changement d’année", () => {
+    expect(colleagueBoardTitle(1, new Date(2026, 8, 13, 23, 30))).toBe("Qui travaille demain ? (lundi 14/09)");
+    expect(colleagueBoardTitle(1, new Date(2026, 11, 31, 12))).toBe("Qui travaille demain ? (vendredi 01/01)");
   });
 });
 

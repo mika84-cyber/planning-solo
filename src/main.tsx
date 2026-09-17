@@ -7,6 +7,11 @@ import "./dataManagement.css";
 import "./leaveCollapsibles.css";
 import "./leaveMenus.css";
 import "./productRefinements.css";
+import "./darkTheme.css";
+import { initTheme } from "./theme";
+
+// Le thème est posé avant le premier rendu : pas d'éclair clair au lancement.
+initTheme();
 
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
 

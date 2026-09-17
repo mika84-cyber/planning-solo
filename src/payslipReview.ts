@@ -1,3 +1,5 @@
+import { euros } from "./appModel";
+
 export type PayslipReviewCheck = {
   key: string;
   label: string;
@@ -28,6 +30,36 @@ const PAYSLIP_GAP_EXPLANATIONS: Record<string, string> = {
   sundays: "Un dimanche peut être payé le mois suivant en raison du délai de traitement.",
   carence: "Un jour de carence apparaît sur le bulletin alors qu’aucun arrêt maladie correspondant n’est enregistré dans l’application.",
 };
+
+const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? "s" : ""}`;
+
+/**
+ * L'écart dit en une phrase simple, plutôt qu'un montant brut : « 2 dimanches
+ * non payés », « IFSE : 30,00 € de moins que prévu ». Ne s'applique qu'à une
+ * ligne réellement lue sur le bulletin.
+ */
+export function describePayslipGap(check: PayslipReviewCheck) {
+  if (check.found === undefined) return "";
+  const difference = check.found - check.expected;
+  const gap = Math.abs(difference);
+  if (check.key === "sundays") {
+    const count = Math.round(gap);
+    return difference < 0
+      ? `${plural(count, "dimanche")} non payé${count > 1 ? "s" : ""}`
+      : `${plural(count, "dimanche")} payé${count > 1 ? "s" : ""} en plus`;
+  }
+  if (check.key === "carence") {
+    return `Jour de carence retenu (${euros(check.found)}) sans arrêt maladie enregistré`;
+  }
+  if (check.key === "pas-rate") {
+    const rate = (value: number) => `${value.toLocaleString("fr-FR")} %`;
+    return `Taux d’imposition de ${rate(check.found)} au lieu de ${rate(check.expected)}`;
+  }
+  if (check.key === "meal-vouchers") {
+    return `Titres repas : ${euros(gap)} de retenue ${difference > 0 ? "en plus" : "en moins"}`;
+  }
+  return `${check.label} : ${euros(gap)} de ${difference < 0 ? "moins" : "plus"} que prévu`;
+}
 
 export function explainPayslipGap(check: PayslipReviewCheck) {
   return PAYSLIP_GAP_EXPLANATIONS[check.key] ||

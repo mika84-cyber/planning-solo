@@ -1,6 +1,10 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import type { PayStatus } from "./appModel";
-import { CetFormDialog, type CetFormKind } from "./CetFormDialog";
+import type { CetFormKind } from "./CetFormDialog";
+
+// La saisie des formulaires CET ne sert qu'à l'ouverture d'un formulaire :
+// elle est chargée à ce moment-là, pour alléger l'ouverture de l'application.
+const CetFormDialog = lazy(() => import("./CetFormDialog").then((module) => ({ default: module.CetFormDialog })));
 import {
   CET_OPERATION_LABELS,
   CET_SOURCE_LABELS,
@@ -339,7 +343,7 @@ export function CetSection({
             </>
           )}
       </div>
-      <CetFormDialog
+      {formKind ? <Suspense fallback={null}><CetFormDialog
         kind={formKind}
         fullName={fullName}
         signature={signature}
@@ -349,7 +353,7 @@ export function CetSection({
         depositDays={currentYearDeposits.reduce((total, operation) => total + operation.days, 0)}
         balanceBefore={trackedAccount ? cetBalance(trackedAccount) - currentYearDeposits.reduce((total, operation) => total + operation.days, 0) : 0}
         onClose={() => setFormKind(null)}
-      />
+      /></Suspense> : null}
     </section>
   );
 }

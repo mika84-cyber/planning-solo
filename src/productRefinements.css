@@ -350,3 +350,10 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .app-shell .home-notes-section { background-color: #fdfaea; background-image: linear-gradient(rgba(96, 132, 176, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(96, 132, 176, 0.16) 1px, transparent 1px); background-size: 18px 18px; background-position: -1px -1px; }
 /* Fiche du jour : un seul bouton pour écrire une note, sur toute la largeur. */
 .day-notes-editor .day-add-note-button { justify-self: stretch; min-height: 46px; border-radius: 13px; font-size: 15px; }
+
+/* Contrôle du bulletin : chaque écart dit en une phrase simple, en tête du
+   résultat puis en titre de son détail chiffré. */
+.payslip-gap-sentences { display: grid; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
+.payslip-gap-sentences li { position: relative; padding-left: 14px; color: #8e3040; font-size: .86rem; font-weight: 800; line-height: 1.35; }
+.payslip-gap-sentences li::before { position: absolute; top: .5em; left: 0; width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+.payslip-mismatch-sentence { margin: 2px 0 8px; color: #8e3040; font-weight: 800; }

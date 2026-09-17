@@ -1,4 +1,5 @@
 import { lazy, Suspense, type RefObject } from "react";
+import { ThemePreferenceControl } from "./ThemePreferenceControl";
 
 const NoteReminderButton = lazy(() => import("./NoteReminderButton"));
 
@@ -283,6 +284,7 @@ export function MainMenu({
         </nav>
         <p className="main-menu-section-label" aria-hidden="true">Outils</p>
         <div className="main-menu-secondary">
+          <ThemePreferenceControl />
           <button type="button" onClick={onOpenDataManagement}>
             <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="data" /></span>
             <span className="main-menu-copy"><strong>Mes données</strong><small>Sauvegarder, reprendre ou effacer mes informations</small></span>

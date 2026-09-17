@@ -9,7 +9,7 @@ import {
   isPayslipImage,
   PAYSLIP_FILE_ACCEPT,
 } from "./payslipOcr";
-import { explainPayslipGap, type PayslipReviewCheck } from "./payslipReview";
+import { describePayslipGap, explainPayslipGap, type PayslipReviewCheck } from "./payslipReview";
 import {
   createPayslipAnomalyPdf,
   loadPayslipVerification,
@@ -36,6 +36,7 @@ function PayslipIssueList({ issues, title }: { issues: PayslipReviewCheck[]; tit
         return (
           <article className="payslip-mismatch-item" key={`mismatch-${row.key}`}>
             <h4>{row.label}</h4>
+            <p className="payslip-mismatch-sentence">{describePayslipGap(row)}</p>
             <div className="payslip-mismatch-values">
               <span><small>Attendu</small><strong>{formatReviewValue(row, row.expected)}</strong></span>
               <span><small>Trouvé</small><strong>{formatReviewValue(row, found)}</strong></span>
@@ -371,6 +372,12 @@ export function PayslipVerificationCard({
                       {payslipReview.verified.length} ligne{s(payslipReview.verified.length)} vérifiée{s(payslipReview.verified.length)}
                       {` · ${payslipReview.unavailable.length} non vérifiable${s(payslipReview.unavailable.length)}`}
                     </small>
+                    {/* L'essentiel d'abord : chaque écart en une phrase, avant le détail chiffré. */}
+                    {payslipReview.issues.length ? (
+                      <ul className="payslip-gap-sentences">
+                        {payslipReview.issues.map((row) => <li key={`gap-${row.key}`}>{describePayslipGap(row)}</li>)}
+                      </ul>
+                    ) : null}
                   </div>
                   {payslipReview.tone === "warning" ? (
                     <strong className="payslip-details-visible">Écarts détaillés ci-dessous</strong>

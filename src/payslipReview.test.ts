@@ -1,10 +1,36 @@
 import { describe, expect, it } from "vitest";
 import {
+  describePayslipGap,
   explainPayslipGap,
   isUnplannedPayslipCarence,
   shouldReportMissingPayslipField,
   summarizePayslipReview,
 } from "./payslipReview";
+
+// Les montants gardent leurs espaces insécables : on les ramène à des espaces simples pour comparer.
+const plain = (text: string) => text.replace(/[\u00a0\u202f]/g, " ");
+
+describe("écart expliqué en une phrase", () => {
+  it("compte les dimanches manquants ou en trop", () => {
+    expect(plain(describePayslipGap({ key: "sundays", label: "Dimanches payés", found: 1, expected: 3 }))).toBe("2 dimanches non payés");
+    expect(plain(describePayslipGap({ key: "sundays", label: "Dimanches payés", found: 2, expected: 1 }))).toBe("1 dimanche payé en plus");
+  });
+
+  it("dit le sens et le montant de l’écart pour une ligne en euros", () => {
+    expect(plain(describePayslipGap({ key: "ifse", label: "IFSE", found: 470, expected: 500 }))).toBe("IFSE : 30,00 € de moins que prévu");
+    expect(plain(describePayslipGap({ key: "navigo", label: "Remboursement Navigo", found: 50.5, expected: 43.2 }))).toBe("Remboursement Navigo : 7,30 € de plus que prévu");
+  });
+
+  it("reformule le taux d’imposition, les titres repas et la carence", () => {
+    expect(plain(describePayslipGap({ key: "pas-rate", label: "Taux", found: 6.1, expected: 5.2 }))).toBe("Taux d’imposition de 6,1 % au lieu de 5,2 %");
+    expect(plain(describePayslipGap({ key: "meal-vouchers", label: "Titres repas", found: 72.4, expected: 60 }))).toBe("Titres repas : 12,40 € de retenue en plus");
+    expect(plain(describePayslipGap({ key: "carence", label: "Jour de carence", found: 45.5, expected: 0 }))).toBe("Jour de carence retenu (45,50 €) sans arrêt maladie enregistré");
+  });
+
+  it("ne dit rien d’une ligne absente du bulletin", () => {
+    expect(describePayslipGap({ key: "ifse", label: "IFSE", found: undefined, expected: 500 })).toBe("");
+  });
+});
 
 describe("résumé de vérification d'un bulletin", () => {
   it("annonce un résultat rassurant quand les lignes lisibles concordent", () => {

@@ -41,15 +41,8 @@ const demoPlanning: SharedColleaguePlanning = {
 
 const dateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1, 12);
-const tomorrowDate = (reference = new Date()) => {
-  const tomorrow = new Date(reference);
-  tomorrow.setHours(12, 0, 0, 0);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow;
-};
 const tomorrowDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const tomorrowTitleDateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit" });
-export const colleagueTomorrowDateLabel = (reference = new Date()) => tomorrowTitleDateFormatter.format(tomorrowDate(reference));
 /** Le jour consulté dans « Qui travaille ? », compté depuis aujourd'hui. */
 export const colleagueBoardDate = (offset: number, reference = new Date()) => {
   const date = new Date(reference);

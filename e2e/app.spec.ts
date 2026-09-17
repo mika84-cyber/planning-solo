@@ -1434,7 +1434,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(adminContact.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
   // Aucune rubrique ne doit y revenir en double.
   await expect(menu.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
-  await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(0);
+  await expect(menu.getByRole("radiogroup", { name: "Choisir l’apparence" })).toHaveCount(1);
   await expect(menu).toHaveCSS("background-image", /menu-art-fast.webp/);
   await expect(menu.locator("nav > button").first().locator(".main-menu-index svg")).toBeVisible();
   await expect(adminContact).toHaveCSS("background-image", "none");
@@ -1665,6 +1665,48 @@ test("la messagerie interne reste privée, compacte et utilisable avec une photo
   const viewport = page.viewportSize()!;
   expect(Math.abs((replyBox!.x + replyBox!.width / 2) - viewport.width / 2)).toBeLessThan(8);
   expect(Math.abs((replyBox!.y + replyBox!.height / 2) - viewport.height / 2)).toBeLessThan(2);
+});
+
+test("le mode sombre s’applique à toute l’application et se mémorise", async ({ page }) => {
+  await prepareDemo(page);
+  await openMainMenu(page);
+  const appearance = page.getByRole("radiogroup", { name: "Choisir l’apparence" });
+  await expect(appearance.getByRole("radio", { name: "Auto" })).toHaveAttribute("aria-checked", "true");
+  await appearance.getByRole("radio", { name: "Sombre" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: "Fermer le menu" }).click();
+
+  const luminance = (rgb: string) => {
+    const [r, g, b] = rgb.match(/\d+/g)!.slice(0, 3).map(Number);
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  };
+  const colorsOf = (selector: string) => page.locator(selector).first().evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { background: style.backgroundColor, color: style.color };
+  });
+  // Fond de page et cartes sombres, textes clairs, sur plusieurs rubriques.
+  expect(luminance(await page.evaluate(() => getComputedStyle(document.body).backgroundColor))).toBeLessThan(0.1);
+  const overview = await colorsOf(".today-overview");
+  expect(luminance(overview.background)).toBeLessThan(0.15);
+  expect(luminance((await colorsOf(".today-overview-heading h2")).color)).toBeGreaterThan(0.7);
+  // Dans le calendrier, un jour travaillé reste plus clair qu’un jour de repos.
+  const work = await colorsOf(".calendar-grid .day.work:not(.leave-day)");
+  const off = await colorsOf(".calendar-grid .day.off");
+  expect(luminance(work.background)).toBeGreaterThan(luminance(off.background));
+  for (const section of ["leave", "pay", "program", "colleagues"] as const) {
+    await goToSection(page, section);
+    const chapter = page.locator(".leave-balances-direct, .pay-dashboard-estimate, .grand-palais-program-panel, .colleague-received-card").first();
+    await expect(chapter).toBeVisible();
+    expect(luminance(await chapter.evaluate((node) => getComputedStyle(node).backgroundColor))).toBeLessThan(0.15);
+  }
+
+  // Le choix survit au rechargement, puis « Clair » rend l’apparence d’origine.
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await openMainMenu(page);
+  await page.getByRole("radiogroup", { name: "Choisir l’apparence" }).getByRole("radio", { name: "Clair" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("#planning-dark-theme")).toHaveCount(0);
 });
 
 test("le menu principal mène aux pages et garde Mes données", async ({ page }) => {

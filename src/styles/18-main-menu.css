@@ -92,6 +92,12 @@
 .main-menu-drawer button.active .main-menu-chevron { color: #f1d3b3; }
 .main-menu-drawer button:disabled { cursor: default; opacity: .55; }
 .main-menu-drawer .main-menu-secondary .guide-menu-entry .main-menu-copy small { color: #f1d3b3; }
+/* Apparence : même encart que les rubriques, avec le choix Auto / Clair / Sombre sur sa propre ligne. */
+.main-menu-drawer .main-menu-theme { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 10px 13px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 16px; padding: 10px 11px; background: rgba(24, 19, 15, 0.86); color: #fff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24); }
+.main-menu-drawer .main-menu-theme svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.main-menu-theme-options { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 999px; padding: 3px; background: rgba(0, 0, 0, 0.25); }
+.main-menu-theme-options button { min-height: 36px; border: 0; border-radius: 999px; background: transparent; color: rgba(253, 250, 244, 0.86); font: inherit; font-size: .84rem; font-weight: 800; text-shadow: none; cursor: pointer; }
+.main-menu-theme-options button.active { background: #fffdf9; color: #83452c; }
 
 /* Mise à jour : une icône au gabarit du compte et du menu. La pastille
    n’apparaît que lorsqu’une nouvelle version attend d’être installée. */

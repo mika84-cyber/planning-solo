@@ -1,0 +1,29 @@
+/* Mode sombre : retouches écrites à la main, là où la couleur porte un sens que
+   la conversion automatique (src/darkStyles.ts) ne peut pas deviner. Ces règles
+   ne s'appliquent qu'en mode sombre et ne sont pas reconverties. */
+html[data-theme="dark"],
+html[data-theme="dark"] body { background: #141110; }
+html[data-theme="dark"] :is(.step-label, .eyebrow) { color: #e2a383; }
+
+/* Planning : un jour travaillé reste plus clair qu'un jour de repos. */
+html[data-theme="dark"] .calendar-grid .day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training),
+html[data-theme="dark"] .mini-grid .mini-day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training) { background: #2e2722; color: #f1e8df; }
+html[data-theme="dark"] .calendar-grid .day.off,
+html[data-theme="dark"] .mini-grid .mini-day.off { border-color: #3a312a; background: #050403; color: #bfb2a6; }
+/* Formation : case grise, chiffre sombre pour rester lisible. */
+html[data-theme="dark"] :is(.calendar-grid .day.training, .mini-grid .mini-day.training),
+html[data-theme="dark"] :is(.calendar-grid .day.training, .mini-grid .mini-day.training) :is(.date-number, span, b) { color: #211c18; }
+
+/* Expositions : la teinte de chaque salle, fondue dans le fond sombre. */
+html[data-theme="dark"] .grand-palais-program-panel .useful-expo-timeline article,
+html[data-theme="dark"] .grand-palais-primary-picker > button {
+  border-color: color-mix(in srgb, var(--venue-line) 45%, #1d1916);
+  background: color-mix(in srgb, var(--venue-bg) 16%, #1d1916);
+}
+
+/* Les illustrations dessinées sur fond clair gardent leur fond, sans éblouir. */
+html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: brightness(.88); }
+
+/* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
+html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }
+html[data-theme="dark"] :is(.section-dock > button.active, .main-menu-theme-options button.active) { background: #f1e8df; color: #83452c; }

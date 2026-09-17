@@ -642,9 +642,11 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Math.abs(deltaX) < 48");
   });
 
-  it("retire le mode sombre et réduit le téléchargement des formulaires à son icône", () => {
-    expect(app).not.toContain("ThemePreferenceControl");
-    expect(main).not.toContain("applyInitialTheme");
+  it("propose le mode sombre dans le menu et réduit le téléchargement des formulaires à son icône", () => {
+    // Le mode sombre est dérivé des feuilles de style au lancement (src/darkStyles.ts),
+    // pas écrit en double dans les fichiers CSS.
+    expect(app).toContain("<ThemePreferenceControl />");
+    expect(main).toContain("initTheme();");
     expect(styles).not.toContain('html[data-theme="dark"]');
     expect(styles).toContain(".useful-form-download-label");
     expect(styles).toContain("width: 42px;\n  height: 42px;");
