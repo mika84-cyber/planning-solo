@@ -227,8 +227,10 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   background: #fff;
 }
 /* Côté paie, la phrase est rangée dans un sous-bloc de l'en-tête : même traitement. */
-.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading:has(> div:last-child > p:last-child) { border-bottom: 0; }
+.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading:has(> div:last-child > p:last-child) { grid-template-columns: minmax(0, 1fr); border-bottom: 0; }
+.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading:has(> div:last-child > p:last-child) > div:last-child { flex: 1 1 100%; width: 100%; min-width: 0; justify-self: stretch; }
 .app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading > div:last-child > p:last-child {
+  max-width: none;
   margin: 12px calc(-1 * var(--chapter-pad)) -12px;
   border-top: 1px solid var(--chapter-tint-line);
   padding: 12px var(--chapter-pad) 0;
@@ -257,15 +259,19 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Sous-chapitres : encarts crème, sans bordure ni ombre. */
 .app-shell.app-shell :is(
   .home-setup-list > *,
-  .leave-tool-disclosure,
   .other-leave-balances,
-  .pay-dashboard-estimate .pay-missing-guidance,
   .cet-callout
 ) {
   border-color: transparent;
   background: var(--subchapter-bg);
   box-shadow: none;
 }
+/* « Votre estimation commence ici » : sous son en-tête teinté, le bloc est
+   blanc et délimité par le filet sombre des encadrés. */
+.app-shell.app-shell .pay-dashboard-estimate .pay-missing-guidance { border: 1px solid var(--border-card); background: #fff; box-shadow: none; }
+/* Outils de congés (heures supp, mécénats, CET) : cartes entièrement blanches,
+   détachées du cadre par un filet léger. */
+.app-shell.app-shell .leave-tool-disclosure { border-color: var(--border-soft); background: #fff; box-shadow: none; }
 /* Sur un chapitre déjà crème, l'encart repasse au blanc pour rester lisible. */
 .app-shell.app-shell .home-setup-alert .home-setup-list > * { background: #fff; }
 /* « Comment ça marche » et « Être trouvé par mes collègues » : sous leur

@@ -56,7 +56,6 @@ function accentSpine(_page: Page) {
 }
 
 const CHAPTER_TINT = "rgb(248, 235, 224)";
-const SUBCHAPTER_CREAM = "rgb(251, 246, 239)";
 
 async function workedDaysOnHome(page: Page) {
   const resume = await page.locator(".worked-days-trigger span").first().innerText();
@@ -279,11 +278,12 @@ test("les cartes intérieures restent légères avec des bordures visibles et un
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
   await goToSection(page, "pay");
-  // Dans l'estimation, le guide d'import est un sous-chapitre : un encart crème, sans bordure.
+  // Dans l'estimation, le guide d'import est blanc, délimité par le filet sombre des encadrés.
   const guidance = page.locator('.pay-dashboard-estimate .pay-missing-guidance');
-  await expect(guidance).toHaveCSS('background-color', SUBCHAPTER_CREAM);
+  await expect(guidance).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(guidance).toHaveCSS('background-image', 'none');
-  await expect(guidance).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+  await expect(guidance).toHaveCSS('border-top-width', '1px');
+  await expect(guidance).toHaveCSS('border-top-color', await cssTokenRgb(page, '--border-card'));
   await guidance.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-pay-${testInfo.project.name}.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

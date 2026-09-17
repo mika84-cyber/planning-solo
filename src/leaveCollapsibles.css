@@ -51,17 +51,16 @@
   overflow: hidden;
   place-items: center;
   border-radius: 16px;
-  background: var(--surface);
+  /* Fond blanc pour les trois dessins : ils se détachent de l'encart crème. */
+  background: #fff;
   color: var(--muted);
 }
 
 .leave-tool-illustration.mecenat {
-  background: var(--surface);
   color: #9b8e7c;
 }
 
 .leave-tool-illustration.cet {
-  background: #f8e8b9;
   color: #82601f;
 }
 
