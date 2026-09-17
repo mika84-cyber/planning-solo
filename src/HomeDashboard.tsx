@@ -227,22 +227,27 @@ export function HomeDashboard({
       ) : null}
 
       <section className="home-notes-section" aria-labelledby="home-notes-title">
-        <button
-          className="home-notes-toggle"
-          type="button"
-          aria-expanded={notesOpen}
-          aria-controls="home-notes-content"
-          onClick={() => setNotesOpen((open) => !open)}
-        >
-          <span>
-            <span className="step-label">À ne pas oublier</span>
-            <h2 id="home-notes-title">Mes notes</h2>
-          </span>
-          <b aria-hidden="true">⌄</b>
-        </button>
+        {/* L'en-tête porte le bouton d'ajout, juste avant la flèche : on peut
+            écrire une note sans déplier la liste. Les deux boutons partagent
+            la même case de grille, l'ajout posé par-dessus le côté droit. */}
+        <div className="home-notes-header">
+          <button
+            className="home-notes-toggle"
+            type="button"
+            aria-expanded={notesOpen}
+            aria-controls="home-notes-content"
+            onClick={() => setNotesOpen((open) => !open)}
+          >
+            <span>
+              <span className="step-label">À ne pas oublier</span>
+              <h2 id="home-notes-title">Mes notes</h2>
+            </span>
+            <b aria-hidden="true">⌄</b>
+          </button>
+          <button className="home-add-note" type="button" onClick={onAddNote}>Ajouter une note</button>
+        </div>
         {notesOpen ? (
           <div id="home-notes-content" className="home-notes-content">
-            <button className="home-add-note" type="button" onClick={onAddNote}>Ajouter une note</button>
             <NotesPanelContent
               hasAnyNote={hasAnyNote}
               query={noteQuery}

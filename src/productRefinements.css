@@ -170,7 +170,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .useful-contacts-screen.useful-contacts-root,
   .grand-palais-venue-navigation,
   .grand-palais-program-screen .grand-palais-program-panel,
-  .colleague-sharing-page .colleague-card:is(.colleague-day-board, .colleague-how-it-works, .colleague-profile-card, .colleague-received-card, .colleague-share-disclosure)
+  .colleague-sharing-page .colleague-card:is(.colleague-day-board, .colleague-how-it-works, .colleague-profile-card, .colleague-received-card)
 ) { padding: var(--chapter-pad); }
 .app-shell.app-shell :is(
   .today-overview > .today-overview-heading,
@@ -186,8 +186,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .useful-contacts-screen.useful-contacts-root > .native-screen-heading,
   .grand-palais-venue-navigation > .grand-palais-venue-navigation-heading,
   .grand-palais-program-screen .grand-palais-program-panel > .useful-expo-schedule-heading,
-  .colleague-sharing-page .colleague-card:is(.colleague-day-board, .colleague-how-it-works, .colleague-profile-card, .colleague-received-card) > header,
-  .colleague-sharing-page .colleague-share-disclosure > summary
+  .colleague-sharing-page .colleague-card:is(.colleague-day-board, .colleague-how-it-works, .colleague-profile-card, .colleague-received-card) > header
 ) {
   margin: calc(-1 * var(--chapter-pad)) calc(-1 * var(--chapter-pad)) 12px;
   border: 0;
@@ -199,15 +198,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   background: var(--chapter-tint);
   box-shadow: none;
 }
-/* Replié, un « details » ne montre que son en-tête : la bande occupe tout le
-   cadre. Son résumé n'hérite pas de l'arrondi du cadre (il passe par l'ombre
-   interne du navigateur) : c'est le cadre qui découpe la bande à son arrondi. */
-.app-shell.app-shell .colleague-sharing-page .colleague-share-disclosure:not([open]) > summary {
-  margin-bottom: calc(-1 * var(--chapter-pad));
-  border-bottom: 0;
-}
-.app-shell.app-shell .colleague-sharing-page :is(.colleague-share-disclosure, .colleague-settings-disclosure) { overflow: hidden; }
-.app-shell.app-shell .colleague-sharing-page .colleague-share-disclosure:not([open]) { background: var(--chapter-tint); }
 /* Sous un en-tête teinté, seuls le surtitre et le titre restent sur la bande :
    la phrase d'explication qui les suit passe sur le blanc du cadre. La bande
    s'arrête alors juste au-dessus d'elle, avec son filet. */
@@ -236,6 +226,14 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   padding: 12px var(--chapter-pad) 0;
   background: #fff;
 }
+/* Côté paie, la phrase est rangée dans un sous-bloc de l'en-tête : même traitement. */
+.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading:has(> div:last-child > p:last-child) { border-bottom: 0; }
+.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading > div:last-child > p:last-child {
+  margin: 12px calc(-1 * var(--chapter-pad)) -12px;
+  border-top: 1px solid var(--chapter-tint-line);
+  padding: 12px var(--chapter-pad) 0;
+  background: #fff;
+}
 /* L'introduction des collègues : surtitre et titre teintés, présentation sur blanc. */
 .app-shell.app-shell .colleague-sharing-intro { padding: var(--chapter-pad); background: var(--chapter-tint); }
 .app-shell.app-shell .colleague-sharing-intro > p:last-child {
@@ -248,13 +246,13 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   background: #fff;
 }
 .colleague-received-intro { margin: 0 0 12px; color: var(--muted); font-size: .8rem; }
-/* Les chapitres réduits à un bouton qui les déplie sont teintés en entier.
-   L'introduction des expositions, elle, reste blanche. */
+/* Un bloc replié reste blanc : la bande teintée n'apparaît que sur l'en-tête
+   d'un bloc ouvert. Quand plusieurs blocs repliés se suivent, ils ne forment
+   plus une pile de pavés colorés. */
 .app-shell.app-shell :is(
   .pay-dashboard-settings > .pay-dashboard-settings-toggle,
-  .pay-dashboard-profile-slot .pay-profile-settings > .pay-profile-summary,
-  .colleague-settings-disclosure > summary
-) { background: var(--chapter-tint); }
+  .pay-dashboard-profile-slot .pay-profile-settings > .pay-profile-summary
+)[aria-expanded="true"] { background: var(--chapter-tint); }
 
 /* Sous-chapitres : encarts crème, sans bordure ni ombre. */
 .app-shell.app-shell :is(
@@ -277,12 +275,60 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   background: #fff;
   box-shadow: none;
 }
-/* « Détails des 3 groupes » suit la même règle : en-tête teinté, groupes et
-   recherche sur blanc une fois déplié. */
-.app-shell.app-shell .colleague-sharing-page .colleague-groups-directory { padding: 0; background: #fff; }
-.app-shell.app-shell .colleague-groups-directory > summary { border-bottom: 1px solid transparent; background: var(--chapter-tint); }
-.app-shell.app-shell .colleague-groups-directory[open] > summary { border-bottom-color: var(--chapter-tint-line); }
-.app-shell.app-shell .colleague-groups-directory > .colleague-groups-panel { background: #fff; }
+/* Page Collègues : ce qu'on ouvre rarement — partager son planning, les trois
+   groupes, les réglages — tient dans un seul cadre blanc. Chaque sujet y est
+   une ligne séparée d'un filet ; déplié, il prend l'en-tête teinté et montre
+   son contenu sur blanc. Les lignes gardent le même gabarit : titre, petite
+   précision, chevron à droite. */
+.app-shell.app-shell .colleague-sharing-page .colleague-more-list { overflow: hidden; padding: 0; background: #fff; }
+.app-shell.app-shell .colleague-more-list > details.colleague-card {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: #fff;
+  box-shadow: none;
+}
+.app-shell.app-shell .colleague-more-list > details.colleague-card + details.colleague-card { border-top: 1px solid var(--border-soft); }
+.app-shell.app-shell .colleague-more-list > details.colleague-card > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 62px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 12px var(--chapter-pad);
+  background: transparent;
+  cursor: pointer;
+  list-style: none;
+}
+.app-shell.app-shell .colleague-more-list > details.colleague-card[open] > summary {
+  border-bottom: 1px solid var(--chapter-tint-line);
+  background: var(--chapter-tint);
+}
+.app-shell.app-shell .colleague-more-list > details > summary > span { display: grid; gap: 2px; min-width: 0; }
+.app-shell.app-shell .colleague-more-list > details > summary strong { color: var(--text); font-size: 1rem; }
+.app-shell.app-shell .colleague-more-list > details > summary small { color: var(--muted); font-size: .78rem; font-weight: 700; }
+.app-shell.app-shell .colleague-more-list > details > summary .eyebrow,
+.app-shell.app-shell .colleague-more-list .colleague-groups-folder,
+.app-shell.app-shell .colleague-more-list .colleague-groups-caret { display: none; }
+.app-shell.app-shell .colleague-more-list > details > summary::after {
+  flex: none;
+  float: none;
+  width: 9px;
+  height: 9px;
+  margin: 0 4px 0 0;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  content: "";
+  transform: rotate(45deg) translateY(-3px);
+  transition: transform .2s ease;
+}
+.app-shell.app-shell .colleague-more-list > details[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
+.app-shell.app-shell .colleague-more-list > .colleague-share-disclosure > .colleague-share-content { margin-top: 0; border-top: 0; padding: 14px var(--chapter-pad) var(--chapter-pad); }
+.app-shell.app-shell .colleague-more-list > .colleague-groups-directory > .colleague-groups-panel { background: #fff; }
 
 /* « Choisir une rubrique » n'a pas de cadre : un simple titre, sans trait. */
 .app-shell.app-shell .useful-resource-intro {

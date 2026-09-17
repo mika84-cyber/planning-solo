@@ -199,13 +199,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
   const [tomorrowFailed, setTomorrowFailed] = useState<string[]>([]);
   const [tomorrowAttempt, setTomorrowAttempt] = useState(0);
   const [commonDaysOpen, setCommonDaysOpen] = useState(false);
-  // Première visite : l'aide et le profil sont dépliés. Ensuite, une fois
-  // inscrit, ils se replient dans « Réglages du partage ».
+  // Première visite : l'aide et le profil sont visibles d'emblée. Ensuite, une
+  // fois inscrit, ils se rangent dans « Réglages du partage ».
   const [firstVisit] = useState(() => {
     if (typeof window === "undefined") return true;
     try { return window.localStorage.getItem("planning:colleague-guide-seen") !== "1"; } catch { return true; }
   });
-  const [howItWorksOpen, setHowItWorksOpen] = useState(firstVisit);
 
   useEffect(() => {
     try { window.localStorage.setItem("planning:colleague-guide-seen", "1"); } catch {}
@@ -365,18 +364,21 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
     </section>
   );
 
+  // Une fois inscrit, l'aide et le profil ne servent plus qu'à l'occasion :
+  // ils rejoignent la liste de ce qu'on ouvre rarement.
+  const settingsCollapsed = Boolean(data?.self.visible && !firstVisit);
   const settingsCards = (
     <>
       <section className="colleague-card colleague-how-it-works" aria-labelledby="colleague-how-title">
+        {/* Les trois étapes restent toujours affichées : rien à déplier. */}
         <header className="colleague-how-header">
           <p className="eyebrow" id="colleague-how-title">Comment ça marche</p>
-          <button type="button" className="secondary compact colleague-how-toggle" aria-expanded={howItWorksOpen} aria-controls="colleague-how-content" onClick={() => setHowItWorksOpen((open) => !open)}>{howItWorksOpen ? "Replier" : "Afficher"}<span aria-hidden="true">⌃</span></button>
         </header>
-        {howItWorksOpen ? <ol id="colleague-how-content">
+        <ol id="colleague-how-content">
           <li><span>1</span><p><strong>Avant de vous inscrire</strong><small>Consultez les noms de l’annuaire et bloquez discrètement une personne si nécessaire.</small></p></li>
           <li><span>2</span><p><strong>Envoyez une invitation</strong><small>Le collègue est prévenu par e-mail et dans l’application, puis choisit d’accepter ou de refuser.</small></p></li>
           <li><span>3</span><p><strong>Gardez le contrôle</strong><small>Le destinataire peut supprimer son accès et vous pouvez arrêter la diffusion à tout moment.</small></p></li>
-        </ol> : null}
+        </ol>
       </section>
 
       <section className="colleague-card colleague-profile-card">
@@ -466,20 +468,27 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
         </div>
       </section> : null}
 
-      {/* Une fois inscrit, l'aide et le profil ne servent plus qu'à l'occasion :
-          ils se replient sur une ligne. À la première visite, ils restent dépliés. */}
-      {data?.self.visible && !firstVisit ? (
-        <details className="colleague-card colleague-settings-disclosure">
-          <summary>
-            <span><strong>Réglages du partage</strong><small>Visible dans l’annuaire sous « {data.self.displayName} »</small></span>
-          </summary>
-          <div className="colleague-settings-content">{settingsCards}</div>
-        </details>
-      ) : settingsCards}
+      {/* À la première visite, ou tant qu'on n'est pas inscrit, l'aide et le
+          profil restent dépliés, juste sous ce qui sert chaque jour. */}
+      {settingsCollapsed ? null : settingsCards}
 
-      {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
+      <section className="colleague-card colleague-received-card" aria-busy={directoryLoading}>
+        <header className="colleague-received-heading">
+          <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3></div>
+          <span title={`${received.length} planning${received.length > 1 ? "s" : ""} reçu${received.length > 1 ? "s" : ""}`}>{directoryLoading ? "…" : received.length}</span>
+        </header>
+        <p className="colleague-received-intro">Ouvrez le planning complet d’un collègue.</p>
+        {directoryLoading ? <div className="colleague-received-loading" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /><span>Actualisation de vos plannings partagés…</span></div> : data?.self.visible ? <>
+          <div className="colleague-list">
+            {received.map((share) => <div className="colleague-received-person" key={share.ownerId}><span className="colleague-received-avatar" aria-hidden="true">{share.ownerName.charAt(0).toLocaleUpperCase("fr")}</span><span className="colleague-received-copy"><strong>{share.ownerName}</strong><small>Planning partagé avec vous</small></span><div className="colleague-inline-actions"><button type="button" disabled={busy} onClick={() => void openPlanning(share.ownerId)}>Voir</button><button className="secondary compact" type="button" disabled={busy} onClick={() => confirmMutation(`Supprimer votre accès au planning de ${share.ownerName} ?`, { action: "remove-access", ownerId: share.ownerId })}>Supprimer l’accès</button></div></div>)}
+            {!received.length ? <p>Aucun planning partagé pour le moment.</p> : null}
+          </div>
+        </> : <p>Inscrivez-vous dans l’annuaire pour consulter les plannings reçus.</p>}
+      </section>
 
-      <div className="colleague-sharing-columns">
+      {/* Ce qu'on ouvre rarement tient dans une seule liste : une ligne par
+          sujet, qui se déplie sur place. */}
+      <section className="colleague-card colleague-more-list" aria-label="Partage, équipe et réglages">
         <details className="colleague-card colleague-share-disclosure">
           <summary>
             <span><span className="eyebrow">Annuaire</span><strong>Partager mon planning</strong><small>{data?.directory.length || 0} collègue{(data?.directory.length || 0) > 1 ? "s" : ""} disponible{(data?.directory.length || 0) > 1 ? "s" : ""}</small></span>
@@ -517,21 +526,16 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
             </div>
           </div>
         </details>
-
-        <section className="colleague-card colleague-received-card" aria-busy={directoryLoading}>
-          <header className="colleague-received-heading">
-            <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3></div>
-            <span title={`${received.length} planning${received.length > 1 ? "s" : ""} reçu${received.length > 1 ? "s" : ""}`}>{directoryLoading ? "…" : received.length}</span>
-          </header>
-          <p className="colleague-received-intro">Ouvrez le planning complet d’un collègue.</p>
-          {directoryLoading ? <div className="colleague-received-loading" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /><span>Actualisation de vos plannings partagés…</span></div> : data?.self.visible ? <>
-            <div className="colleague-list">
-              {received.map((share) => <div className="colleague-received-person" key={share.ownerId}><span className="colleague-received-avatar" aria-hidden="true">{share.ownerName.charAt(0).toLocaleUpperCase("fr")}</span><span className="colleague-received-copy"><strong>{share.ownerName}</strong><small>Planning partagé avec vous</small></span><div className="colleague-inline-actions"><button type="button" disabled={busy} onClick={() => void openPlanning(share.ownerId)}>Voir</button><button className="secondary compact" type="button" disabled={busy} onClick={() => confirmMutation(`Supprimer votre accès au planning de ${share.ownerName} ?`, { action: "remove-access", ownerId: share.ownerId })}>Supprimer l’accès</button></div></div>)}
-              {!received.length ? <p>Aucun planning partagé pour le moment.</p> : null}
-            </div>
-          </> : <p>Inscrivez-vous dans l’annuaire pour consulter les plannings reçus.</p>}
-        </section>
-      </div>
+        {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
+        {settingsCollapsed ? (
+          <details className="colleague-card colleague-settings-disclosure">
+            <summary>
+              <span><strong>Réglages du partage</strong><small>Visible dans l’annuaire sous « {data?.self.displayName} »</small></span>
+            </summary>
+            <div className="colleague-settings-content">{settingsCards}</div>
+          </details>
+        ) : null}
+      </section>
 
       {data?.blocked.length ? <section className="colleague-card"><p className="eyebrow">Noms bloqués</p><h3>Gérer mes blocages</h3><p>Ces personnes ne peuvent pas vous trouver ni vous envoyer leur planning.</p><div className="colleague-list">{data.blocked.map((person) => <div key={person.userId}><strong>{person.displayName}</strong><button className="secondary" type="button" disabled={busy} onClick={() => confirmMutation(`Débloquer ${person.displayName} ?`, { action: "unblock-person", userId: person.userId })}>Débloquer</button></div>)}</div></section> : null}
 

@@ -328,10 +328,14 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   const allowancesAction = page.locator(".pay-inline-action");
   await expect(allowancesAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await expect(allowancesAction).toHaveCSS("color", "rgb(255, 255, 255)");
+  // Sous « Vérifier mon bulletin », la phrase d’explication est sur blanc.
+  await expect(page.locator(".pay-dashboard-verification > .pay-dashboard-card-heading p")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
   await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
-  await expect(payProfile.locator(".pay-profile-summary")).toHaveCSS("background-color", CHAPTER_TINT);
+  // Replié, le profil reste blanc ; son en-tête ne se teinte qu'une fois ouvert.
+  await expect(payProfile.locator(".pay-profile-summary")).not.toHaveCSS("background-color", CHAPTER_TINT);
   await payProfile.locator(".pay-profile-summary").click();
+  await expect(payProfile.locator(".pay-profile-summary")).toHaveCSS("background-color", CHAPTER_TINT);
   const profileOutline = await cssTokenRgb(page, "--border-card");
   const profilePicker = payProfile.locator(".pay-profile-picker .choice-picker-trigger").first();
   await expect(profilePicker).toHaveCSS("border-top-color", profileOutline);
@@ -1133,7 +1137,13 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  expect(await page.locator(".colleague-sharing-columns").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(1);
+  // Les plannings reçus puis la liste des sujets rarement ouverts s'empilent sur toute la largeur.
+  const [receivedWideBox, moreListWideBox] = await Promise.all([
+    page.locator(".colleague-received-card").boundingBox(),
+    page.locator(".colleague-more-list").boundingBox(),
+  ]);
+  expect(Math.abs(receivedWideBox!.width - moreListWideBox!.width)).toBeLessThanOrEqual(1);
+  expect(moreListWideBox!.y).toBeGreaterThan(receivedWideBox!.y + receivedWideBox!.height);
   const desktopHeader = await page.locator(".top-header-colleagues").boundingBox();
   const desktopImage = await colleagueIllustration.boundingBox();
   expect(desktopHeader!.height).toBeLessThanOrEqual(240);
@@ -1144,12 +1154,12 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(Math.abs(desktopHeader!.height - desktopReferenceHeader!.height), JSON.stringify({ desktopReferenceHeight: desktopReferenceHeader!.height, colleagueHeight: desktopHeader!.height })).toBeLessThanOrEqual(1);
 });
 
-test("l’aide au partage est ouverte seulement lors de la première utilisation", async ({ page }) => {
+test("l’aide au partage reste dépliée et se range dans les réglages une fois inscrit", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "colleagues");
 
-  const firstToggle = page.locator(".colleague-how-toggle");
-  await expect(firstToggle).toHaveAttribute("aria-expanded", "true");
+  // « Comment ça marche » n'a plus de bouton : ses trois étapes sont toujours affichées.
+  await expect(page.locator(".colleague-how-toggle")).toHaveCount(0);
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
   await expect(page.locator(".colleague-settings-disclosure")).toHaveCount(0);
 
@@ -1163,11 +1173,12 @@ test("l’aide au partage est ouverte seulement lors de la première utilisation
   await expect(page.locator(".colleague-profile-card")).toBeHidden();
   await settings.locator("summary").click();
   await expect(page.locator(".colleague-profile-card")).toBeVisible();
-  const returningToggle = page.locator(".colleague-how-toggle");
-  await expect(returningToggle).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toHaveCount(0);
-  await returningToggle.click();
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
+  // Les sujets rarement ouverts forment une seule liste, blanche tant qu'ils sont repliés.
+  const moreList = page.locator(".colleague-more-list");
+  await expect(moreList.locator("> details")).toHaveCount(2);
+  await expect(moreList.locator("> .colleague-share-disclosure > summary")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(settings.locator("> summary")).toHaveCSS("background-color", CHAPTER_TINT);
 });
 
 test("une invitation acceptée propose le partage en retour", async ({ page }) => {
@@ -4430,7 +4441,14 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
   await expect(groups).toHaveCount(0);
   await expect(page.locator(".today-overview-heading .group-heading-action")).toHaveText("Je suis groupe 1");
 
-  await page.locator(".home-notes-toggle").click();
+  // « Ajouter une note » est dans l’en-tête, juste avant la flèche, même liste repliée.
+  const addNote = page.locator(".home-notes-header > .home-add-note");
+  await expect(addNote).toBeVisible();
+  const [addNoteBox, notesArrowBox] = await Promise.all([addNote.boundingBox(), page.locator(".home-notes-toggle b").boundingBox()]);
+  expect(addNoteBox!.x + addNoteBox!.width).toBeLessThanOrEqual(notesArrowBox!.x);
+  expect(notesArrowBox!.x - (addNoteBox!.x + addNoteBox!.width)).toBeLessThan(40);
+  // On déplie par le titre, puisque l’ajout occupe le côté droit de l’en-tête.
+  await page.locator(".home-notes-toggle h2").click();
   await page.getByRole("button", { name: "Ajouter une note" }).click();
   const note = page.getByRole("dialog", { name: "Ajouter une note" });
   const champDate = note.getByLabel("Date de la note");
@@ -4456,7 +4474,8 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
 
 test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation", async ({ page }) => {
   await prepareDemo(page);
-  await page.locator(".home-notes-toggle").click();
+  // « Ajouter une note » occupe le côté droit de l’en-tête : on déplie par le titre.
+  await page.locator(".home-notes-toggle h2").click();
 
   const personalNotes = page.locator(".home-notes-content .upcoming-item").filter({
     has: page.locator(".note-author-mika"),
