@@ -520,9 +520,10 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
 
         <section className="colleague-card colleague-received-card" aria-busy={directoryLoading}>
           <header className="colleague-received-heading">
-            <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3><small>Ouvrez le planning complet d’un collègue.</small></div>
+            <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3></div>
             <span title={`${received.length} planning${received.length > 1 ? "s" : ""} reçu${received.length > 1 ? "s" : ""}`}>{directoryLoading ? "…" : received.length}</span>
           </header>
+          <p className="colleague-received-intro">Ouvrez le planning complet d’un collègue.</p>
           {directoryLoading ? <div className="colleague-received-loading" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /><span>Actualisation de vos plannings partagés…</span></div> : data?.self.visible ? <>
             <div className="colleague-list">
               {received.map((share) => <div className="colleague-received-person" key={share.ownerId}><span className="colleague-received-avatar" aria-hidden="true">{share.ownerName.charAt(0).toLocaleUpperCase("fr")}</span><span className="colleague-received-copy"><strong>{share.ownerName}</strong><small>Planning partagé avec vous</small></span><div className="colleague-inline-actions"><button type="button" disabled={busy} onClick={() => void openPlanning(share.ownerId)}>Voir</button><button className="secondary compact" type="button" disabled={busy} onClick={() => confirmMutation(`Supprimer votre accès au planning de ${share.ownerName} ?`, { action: "remove-access", ownerId: share.ownerId })}>Supprimer l’accès</button></div></div>)}

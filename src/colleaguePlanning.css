@@ -333,7 +333,7 @@
 .colleague-settings-disclosure > summary small { color: var(--muted); font-size: .78rem; font-weight: 700; }
 .colleague-settings-disclosure > summary::after { flex: none; width: 9px; height: 9px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); content: ""; transform: rotate(45deg) translateY(-3px); transition: transform .2s ease; }
 .colleague-settings-disclosure[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
-.colleague-settings-content { display: grid; gap: 12px; padding: 0 12px 12px; }
+.colleague-settings-content { display: grid; gap: 12px; padding: 14px 12px 12px; }
 .colleague-settings-content > .colleague-card { box-shadow: none; }
 
 /* Planning d'un collègue : le mois et l'année comme sur votre planning, en

@@ -666,7 +666,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                   <p><b>{detail.durationDays} jours</b> sans exposition ouverte dans les trois galeries.</p>
                   {period.lastExhibitions?.length ? (
                     <p className="grand-palais-interexpo-last">
-                      Dernière expo avant : <b>{period.lastExhibitions.join(" et ")}</b>, jusqu’au {formatFrenchDate(addIsoDays(period.startsOn, -1)).replace(/^1 /, "1er ")}
+                      Dernière expo avant : <b>{period.lastExhibitions.join(" et ")}</b>
                     </p>
                   ) : null}
                   <small>{detail.timing}</small>

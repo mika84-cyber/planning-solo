@@ -208,9 +208,48 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 }
 .app-shell.app-shell .colleague-sharing-page :is(.colleague-share-disclosure, .colleague-settings-disclosure) { overflow: hidden; }
 .app-shell.app-shell .colleague-sharing-page .colleague-share-disclosure:not([open]) { background: var(--chapter-tint); }
-/* Les chapitres réduits à leur titre, ou à un bouton qui les déplie, sont
-   teintés en entier. */
-.app-shell.app-shell :is(.grand-palais-program-intro, .colleague-sharing-intro) { background: var(--chapter-tint); }
+/* Sous un en-tête teinté, seuls le surtitre et le titre restent sur la bande :
+   la phrase d'explication qui les suit passe sur le blanc du cadre. La bande
+   s'arrête alors juste au-dessus d'elle, avec son filet. */
+.app-shell.app-shell :is(
+  .pay-dashboard-variables > .pay-dashboard-card-heading,
+  .pay-dashboard-verification > .pay-dashboard-card-heading,
+  .pay-missing-guidance > .pay-import-heading,
+  .pdf-download-screen > .native-screen-heading,
+  .useful-resource-panel > .useful-forms-root > .native-screen-heading,
+  .useful-contacts-screen.useful-contacts-root > .native-screen-heading,
+  .grand-palais-venue-navigation > .grand-palais-venue-navigation-heading,
+  .grand-palais-program-screen .grand-palais-program-panel > .useful-expo-schedule-heading
+):has(> p:last-child) { border-bottom: 0; }
+.app-shell.app-shell :is(
+  .pay-dashboard-variables > .pay-dashboard-card-heading,
+  .pay-dashboard-verification > .pay-dashboard-card-heading,
+  .pay-missing-guidance > .pay-import-heading,
+  .pdf-download-screen > .native-screen-heading,
+  .useful-resource-panel > .useful-forms-root > .native-screen-heading,
+  .useful-contacts-screen.useful-contacts-root > .native-screen-heading,
+  .grand-palais-venue-navigation > .grand-palais-venue-navigation-heading,
+  .grand-palais-program-screen .grand-palais-program-panel > .useful-expo-schedule-heading
+) > p:last-child {
+  margin: 12px calc(-1 * var(--chapter-pad)) -12px;
+  border-top: 1px solid var(--chapter-tint-line);
+  padding: 12px var(--chapter-pad) 0;
+  background: #fff;
+}
+/* L'introduction des collègues : surtitre et titre teintés, présentation sur blanc. */
+.app-shell.app-shell .colleague-sharing-intro { padding: var(--chapter-pad); background: var(--chapter-tint); }
+.app-shell.app-shell .colleague-sharing-intro > p:last-child {
+  margin: 12px calc(-1 * var(--chapter-pad)) calc(-1 * var(--chapter-pad));
+  border-top: 1px solid var(--chapter-tint-line);
+  border-radius: inherit;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  padding: 12px var(--chapter-pad) var(--chapter-pad);
+  background: #fff;
+}
+.colleague-received-intro { margin: 0 0 12px; color: var(--muted); font-size: .8rem; }
+/* Les chapitres réduits à un bouton qui les déplie sont teintés en entier.
+   L'introduction des expositions, elle, reste blanche. */
 .app-shell.app-shell :is(
   .pay-dashboard-settings > .pay-dashboard-settings-toggle,
   .pay-dashboard-profile-slot .pay-profile-settings > .pay-profile-summary,
@@ -223,8 +262,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .leave-tool-disclosure,
   .other-leave-balances,
   .pay-dashboard-estimate .pay-missing-guidance,
-  .cet-callout,
-  .colleague-settings-content > .colleague-card
+  .cet-callout
 ) {
   border-color: transparent;
   background: var(--subchapter-bg);
@@ -232,6 +270,19 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 }
 /* Sur un chapitre déjà crème, l'encart repasse au blanc pour rester lisible. */
 .app-shell.app-shell .home-setup-alert .home-setup-list > * { background: #fff; }
+/* « Comment ça marche » et « Être trouvé par mes collègues » : sous leur
+   en-tête teinté, le contenu est sur blanc, dans un cadre au filet léger. */
+.app-shell.app-shell .colleague-sharing-page :is(.colleague-how-it-works, .colleague-profile-card) {
+  border-color: var(--border-soft);
+  background: #fff;
+  box-shadow: none;
+}
+/* « Détails des 3 groupes » suit la même règle : en-tête teinté, groupes et
+   recherche sur blanc une fois déplié. */
+.app-shell.app-shell .colleague-sharing-page .colleague-groups-directory { padding: 0; background: #fff; }
+.app-shell.app-shell .colleague-groups-directory > summary { border-bottom: 1px solid transparent; background: var(--chapter-tint); }
+.app-shell.app-shell .colleague-groups-directory[open] > summary { border-bottom-color: var(--chapter-tint-line); }
+.app-shell.app-shell .colleague-groups-directory > .colleague-groups-panel { background: #fff; }
 
 /* « Choisir une rubrique » n'a pas de cadre : un simple titre, sans trait. */
 .app-shell.app-shell .useful-resource-intro {

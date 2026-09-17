@@ -366,11 +366,12 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await goToSection(page, "program");
   // Un chapitre réduit à son titre est teinté en entier ; les autres portent
   // leur titre sur une bande teintée qui touche les bords du cadre.
-  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("background-color", CHAPTER_TINT);
+  await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", "1px");
   await expectWhiteCard(".grand-palais-program-panel", accentSpine(page));
   const expoHeading = page.locator(".grand-palais-program-panel > .useful-expo-schedule-heading").first();
   await expect(expoHeading).toHaveCSS("background-color", CHAPTER_TINT);
+  await expect(expoHeading.locator("> p")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   const [expoPanelBox, expoHeadingBox] = await Promise.all([
     page.locator(".grand-palais-program-panel").first().boundingBox(),
     expoHeading.boundingBox(),
@@ -381,9 +382,13 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
 
   await goToSection(page, "colleagues");
   await expect(page.locator(".colleague-sharing-intro")).toHaveCSS("background-color", CHAPTER_TINT);
+  // Sous le titre teinté, la présentation est sur blanc.
+  await expect(page.locator(".colleague-sharing-intro > p").last()).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expectWhiteCard(".colleague-profile-card", accentSpine(page));
   const howItWorks = page.locator(".colleague-how-it-works");
-  await expect(howItWorks).toHaveCSS("background-color", "rgb(253, 248, 241)");
+  // Sous l'en-tête teinté, le contenu de « Comment ça marche » est sur blanc.
+  await expect(howItWorks).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.locator(".colleague-profile-card")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(howItWorks).toHaveCSS("background-image", "none");
   await expect(howItWorks).toHaveCSS("border-top-width", accentSpine(page));
   await expect(howItWorks).toHaveCSS("border-left-width", accentSpine(page));
