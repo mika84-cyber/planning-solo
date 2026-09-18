@@ -27,12 +27,19 @@ function systemPrefersDark() {
   return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
+/** Le thème réellement appliqué. On ne relit pas le stockage : s'il est
+ *  indisponible, le choix de la session doit quand même tenir. */
+let appliedTheme: ResolvedTheme | null = null;
+/** Vrai dès que la conversion sombre a été chargée une fois. */
+let darkStylesLoaded = false;
+
 export function currentResolvedTheme(): ResolvedTheme {
-  return resolveTheme(readThemePreference(), systemPrefersDark());
+  return appliedTheme ?? resolveTheme(readThemePreference(), systemPrefersDark());
 }
 
 function applyTheme(preference: ThemePreference) {
   const resolved = resolveTheme(preference, systemPrefersDark());
+  appliedTheme = resolved;
   const root = document.documentElement;
   root.dataset.theme = resolved;
   root.dataset.themePreference = preference;
@@ -40,8 +47,20 @@ function applyTheme(preference: ThemePreference) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLORS[resolved]);
   // La conversion sombre n'est chargée que si elle sert ; en clair, on retire
   // simplement la feuille qu'elle avait posée.
-  if (resolved === "dark") void import("./darkStyles").then(({ syncDarkStyles }) => syncDarkStyles(currentResolvedTheme() === "dark"));
-  else document.getElementById("planning-dark-theme")?.remove();
+  if (resolved === "dark")
+    void import("./darkStyles").then(({ syncDarkStyles }) => {
+      darkStylesLoaded = true;
+      syncDarkStyles(currentResolvedTheme() === "dark");
+    });
+  else {
+    document.getElementById("planning-dark-theme")?.remove();
+    // La conversion surveille l'arrivée des feuilles de style des rubriques
+    // ouvertes à la demande. Sans cet arrêt explicite, elle restait armée et
+    // reconstruisait le thème sombre à la prochaine rubrique ouverte : le mode
+    // sombre semblait se réactiver tout seul.
+    if (darkStylesLoaded)
+      void import("./darkStyles").then(({ syncDarkStyles }) => syncDarkStyles(currentResolvedTheme() === "dark"));
+  }
   window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { preference, resolved } }));
   return resolved;
 }

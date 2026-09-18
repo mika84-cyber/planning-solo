@@ -1668,6 +1668,33 @@ test("la messagerie interne reste privée, compacte et utilisable avec une photo
   expect(Math.abs((replyBox!.y + replyBox!.height / 2) - viewport.height / 2)).toBeLessThan(2);
 });
 
+test("le mode sombre désactivé ne revient pas en ouvrant une autre rubrique", async ({ page }) => {
+  await prepareDemo(page);
+  const accountButton = page.getByRole("button", { name: /^Compte/ });
+  const themeSwitch = page.getByRole("menuitemcheckbox", { name: /Mode sombre/ });
+  await accountButton.click();
+  await themeSwitch.click();
+  await expect(page.locator("#planning-dark-theme")).toHaveCount(1);
+  await themeSwitch.click();
+  await expect(themeSwitch).toHaveAttribute("aria-checked", "false");
+  await accountButton.click();
+  await expect(page.locator("#planning-dark-theme")).toHaveCount(0);
+
+  // Chaque rubrique chargée à la demande apporte sa propre feuille de style :
+  // aucune ne doit ranimer la conversion sombre.
+  for (const section of ["pay", "colleagues", "documents", "program", "leave"] as const) {
+    await goToSection(page, section);
+    await page.waitForTimeout(300);
+    await expect(page.locator("#planning-dark-theme")).toHaveCount(0);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  }
+  const bodyLuminance = await page.evaluate(() => {
+    const [r, g, b] = getComputedStyle(document.body).backgroundColor.match(/\d+/g)!.map(Number);
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  });
+  expect(bodyLuminance).toBeGreaterThan(0.8);
+});
+
 test("le mode sombre s’applique à toute l’application et se mémorise", async ({ page }) => {
   await prepareDemo(page);
   // Un seul interrupteur, dans le menu du compte.
