@@ -345,7 +345,7 @@ export function PayAllowancesSection({
             aria-controls="sunday-done-list"
             onClick={() => setSundayListOpen((open) => !open)}
           >
-            <span>Dates des dimanches faits</span>
+            <span>Dates des dimanches</span>
             <em>
               {sundayListOpen ? "Masquer les dates" : "Voir les dates"}
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -355,11 +355,17 @@ export function PayAllowancesSection({
           </button>
           {sundayListOpen ? (
             <div id="sunday-done-list" className="sunday-done-list">
-              {sundaysDone.length ? (
+              {allowances.sundays.length ? (
                 <>
+                  {/* Les dimanches à venir y figurent aussi : la paie
+                      prévisionnelle les compte déjà, la liste doit donner le
+                      même nombre qu'elle. */}
                   <p className="allowance-note">
-                    Vos {sundaysDone.length} dimanche{s(sundaysDone.length)}{" "}
-                    travaillé{s(sundaysDone.length)} en {allowances.year}, dans l’ordre des paies
+                    Vos {allowances.sundays.length} dimanche{s(allowances.sundays.length)} de {allowances.year}
+                    {allowances.sundays.length > sundaysDone.length
+                      ? ` : ${sundaysDone.length} fait${s(sundaysDone.length)}, ${allowances.sundays.length - sundaysDone.length} à venir selon votre cycle`
+                      : ""}
+                    , dans l’ordre des paies
                   </p>
                   {/* Le rang d'un dimanche dit ce qu'il rapporte : les dix
                       premiers sont dans le forfait mensuel, les suivants sont
@@ -367,18 +373,22 @@ export function PayAllowancesSection({
                   <p className="sunday-done-legend">
                     <span className="paid">Payé {euros(SUNDAY_ALLOWANCE.perSunday)}</span>
                     <span className="flat">Dans le forfait</span>
-                    {sundaysDone.length > SUNDAY_ALLOWANCE.paidUntil ? <span className="unpaid">Non payé</span> : null}
+                    {allowances.sundays.length > SUNDAY_ALLOWANCE.paidUntil ? <span className="unpaid">Non payé</span> : null}
+                    {allowances.sundays.length > sundaysDone.length ? <span className="upcoming">À venir</span> : null}
                   </p>
                   {/* Groupés par paie, puis par mois : c'est ainsi qu'on les
                       retrouve sur un bulletin, et la liste tient en quelques lignes. */}
-                  {[...new Set(sundaysDone.map((item) => sundayPayslip(item.key).label))].map((payslipLabel) => {
-                    const paid = sundaysDone.filter((item) => sundayPayslip(item.key).label === payslipLabel);
-                    const firstRank = sundaysDone.indexOf(paid[0]) + 1;
-                    const lastRank = sundaysDone.indexOf(paid[paid.length - 1]) + 1;
-                    const rankOf = (item: (typeof sundaysDone)[number]) => sundaysDone.indexOf(item) + 1;
+                  {[...new Set(allowances.sundays.map((item) => sundayPayslip(item.key).label))].map((payslipLabel) => {
+                    const paid = allowances.sundays.filter((item) => sundayPayslip(item.key).label === payslipLabel);
+                    // Les dimanches de l'année sont dans l'ordre : leur place est leur rang.
+                    const rankOf = (item: (typeof paid)[number]) => allowances.sundays.indexOf(item) + 1;
+                    const firstRank = rankOf(paid[0]);
+                    const lastRank = rankOf(paid[paid.length - 1]);
                     const kindOf = (rank: number) =>
                       rank <= SUNDAY_ALLOWANCE.flatUntil ? "flat" : rank <= SUNDAY_ALLOWANCE.paidUntil ? "paid" : "unpaid";
-                    const paidHere = paid.filter((item) => kindOf(rankOf(item)) === "paid").length;
+                    const paidSundays = paid.filter((item) => kindOf(rankOf(item)) === "paid");
+                    const paidHere = paidSundays.length;
+                    const paidUpcoming = paidSundays.filter((item) => !item.past).length;
                     return (
                       <section className="sunday-done-group" key={payslipLabel}>
                         <p className="sunday-done-group-heading">
@@ -387,8 +397,16 @@ export function PayAllowancesSection({
                         </p>
                         <p className={`sunday-done-group-pay${paidHere ? "" : " none"}`}>
                           {paidHere
-                            ? `${paidHere} payé${s(paidHere)} sur cette paie · ${euros(paidHere * SUNDAY_ALLOWANCE.perSunday)}`
-                            : "Tous compris dans le forfait mensuel"}
+                            ? `${paidHere} payé${s(paidHere)} sur cette paie · ${euros(paidHere * SUNDAY_ALLOWANCE.perSunday)}${
+                                paidUpcoming
+                                  ? paidUpcoming === paidHere
+                                    ? " · à venir"
+                                    : ` · ${paidHere - paidUpcoming} fait${s(paidHere - paidUpcoming)}, ${paidUpcoming} à venir`
+                                  : ""
+                              }`
+                            : paid.some((item) => kindOf(rankOf(item)) === "flat")
+                              ? "Tous compris dans le forfait mensuel"
+                              : `Au-delà du ${SUNDAY_ALLOWANCE.paidUntil}e dimanche : non payés`}
                         </p>
                         <table className="allowance-table sunday-done-table">
                           <tbody>
@@ -405,8 +423,8 @@ export function PayAllowancesSection({
                                         <span key={item.key}>
                                           {index ? ", " : ""}
                                           <span
-                                            className={`sunday-day ${kind}`}
-                                            title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}`}
+                                            className={`sunday-day ${kind}${item.past ? "" : " upcoming"}`}
+                                            title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}${item.past ? "" : " · à venir"}`}
                                           >
                                             {Number(item.key.slice(8, 10))}
                                           </span>

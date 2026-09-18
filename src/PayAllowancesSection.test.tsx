@@ -99,7 +99,7 @@ describe("la liste des dimanches faits", () => {
     // Le détail des dates se déplie depuis la carte des dimanches, et elle
     // annonce ce qu'il y a dessous : sans cette mention, rien ne l'indique.
     expect(html).toContain('aria-controls="sunday-done-list"');
-    expect(html).toContain("Dates des dimanches faits");
+    expect(html).toContain("Dates des dimanches");
     expect(html).toContain("Voir les dates");
     expect(html).not.toContain("Masquer les dates");
   });

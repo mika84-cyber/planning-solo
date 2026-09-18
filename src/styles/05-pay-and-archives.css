@@ -544,6 +544,10 @@
 .sunday-day.paid{color:#207258;font-weight:800}
 .sunday-day.flat{color:var(--muted);font-weight:600}
 .sunday-day.unpaid{color:var(--muted);font-weight:600;text-decoration:line-through}
+/* Un dimanche pas encore passé, que le cycle fait travailler. */
+.sunday-day.upcoming{font-style:italic;opacity:.55}
+.sunday-done-legend .upcoming{color:var(--muted);font-style:italic}
+.sunday-done-legend .upcoming::before{opacity:.55}
 .sunday-done-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:2px 0 0;font-size:.72rem;font-weight:700}
 .sunday-done-legend span{display:inline-flex;align-items:center;gap:6px}
 .sunday-done-legend span::before{width:8px;height:8px;border-radius:50%;background:currentColor;content:""}

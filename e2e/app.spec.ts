@@ -4736,11 +4736,14 @@ test("la case des dimanches travaillés déplie la liste des dates", async ({ pa
     // Les dates sont groupées par paie, puis par mois : autant de dates listées
     // que de dimanches annoncés, et le dernier numéro d'ordre est le total.
     await expect(list.locator(".sunday-done-group").first()).toContainText("Paie de");
+    // La liste montre aussi les dimanches à venir : ceux déjà faits sont
+    // exactement ceux qu'annonce la carte.
+    await expect(list.locator(".sunday-day:not(.upcoming)")).toHaveCount(done);
     const listedDates = await list.locator(".sunday-done-table td").evaluateAll((cells) =>
       cells.reduce((total, cell) => total + cell.textContent!.split(",").length, 0),
     );
-    expect(listedDates).toBe(done);
-    await expect(list.locator(".sunday-done-group-heading small").last()).toContainText(`${done}`);
+    expect(listedDates).toBeGreaterThanOrEqual(done);
+    await expect(list.locator(".sunday-done-group-heading small").last()).toContainText(`${listedDates}`);
     await expect(list.locator(".sunday-done-table th").first()).not.toHaveText("");
   } else {
     await expect(list).toContainText("Aucun dimanche travaillé pour le moment.");
