@@ -19,6 +19,10 @@ import {
   dayNumber,
   fromKey,
   groupConsecutive,
+  halfBalanceFromApi,
+  halfBalanceOf,
+  localHalfBalance,
+  type HalfBalance,
   type HalfMoment,
   type LeaveType,
 } from "./planningLogic";
@@ -58,6 +62,7 @@ type BuildDaySaveOperationsOptions = {
   leaveRangeTo: string;
   leaveType: LeaveType;
   halfMoment: HalfMoment;
+  halfBalance: HalfBalance;
   editingPeriodId: string | null;
   periods: LeavePeriod[];
   group: number;
@@ -84,6 +89,7 @@ export function buildDaySaveOperations({
   leaveRangeTo,
   leaveType,
   halfMoment,
+  halfBalance,
   editingPeriodId,
   periods,
   group,
@@ -122,6 +128,7 @@ export function buildDaySaveOperations({
       to: leaveRangeTo,
       leaveType,
       halfMoment: leaveType === "half" ? halfMoment : undefined,
+      halfBalance: leaveType === "half" ? halfBalance : undefined,
       group,
     });
   if (wish && leaveRangeEnabled && leaveRangeFrom && leaveRangeTo)
@@ -171,6 +178,8 @@ export function usePlanningEditorActions({
     setDayLeaveType,
     dayHalfMoment,
     setDayHalfMoment,
+    dayHalfBalance,
+    setDayHalfBalance,
     dayHolidayPay,
     leaveRangeEnabled,
     setLeaveRangeEnabled,
@@ -181,6 +190,7 @@ export function usePlanningEditorActions({
     setSavingDay,
     rangeLeaveType,
     rangeHalfMoment,
+    rangeHalfBalance,
     separateDates,
     separatePeople,
     editingPeriodId,
@@ -196,6 +206,7 @@ export function usePlanningEditorActions({
     setDayLeave(true);
     setDayLeaveType(period.leaveType || "annual");
     setDayHalfMoment(period.halfMoment || "morning");
+    setDayHalfBalance(halfBalanceOf(period));
     setLeaveRangeEnabled(true);
     setLeaveRangeFrom(period.from);
     setLeaveRangeTo(period.to);
@@ -240,6 +251,7 @@ export function usePlanningEditorActions({
       leaveRangeTo,
       leaveType: dayLeaveType,
       halfMoment: dayHalfMoment,
+      halfBalance: dayHalfBalance,
       editingPeriodId,
       periods,
       group,
@@ -298,6 +310,7 @@ export function usePlanningEditorActions({
             to: leaveRangeTo,
             leaveType: dayLeaveType,
             halfMoment: dayLeaveType === "half" ? dayHalfMoment : "",
+            ...localHalfBalance(dayLeaveType, dayHalfBalance),
             group,
             updatedAt,
           } satisfies LeavePeriod,
@@ -439,6 +452,7 @@ export function usePlanningEditorActions({
           leaveType: period.leaveType || "annual",
           halfMoment:
             period.leaveType === "half" ? period.halfMoment || "" : "",
+          halfBalance: period.leaveType === "half" ? halfBalanceOf(period) : undefined,
           group: period.group || group,
         });
         await postCalendarBatch(operations);
@@ -515,6 +529,8 @@ export function usePlanningEditorActions({
               leaveType: rangeLeaveType,
               halfMoment:
                 rangeLeaveType === "half" ? rangeHalfMoment : undefined,
+              halfBalance:
+                rangeLeaveType === "half" ? rangeHalfBalance : undefined,
               group,
             };
             if (useFastPeriodBatch) {
@@ -531,6 +547,7 @@ export function usePlanningEditorActions({
               to: date,
               leaveType: rangeLeaveType,
               halfMoment: rangeLeaveType === "half" ? rangeHalfMoment : "",
+              ...localHalfBalance(rangeLeaveType, rangeHalfBalance),
               group,
               updatedAt: new Date().toISOString(),
             });
@@ -559,6 +576,7 @@ export function usePlanningEditorActions({
             to: string;
             leave_type?: LeaveType;
             half_moment?: HalfMoment;
+            half_balance?: string;
             group?: number;
             updated_at: string;
           };
@@ -590,6 +608,7 @@ export function usePlanningEditorActions({
             to: period.to,
             leaveType: period.leave_type || "",
             halfMoment: period.half_moment || "",
+            ...halfBalanceFromApi(period),
             group: period.group,
             updatedAt: period.updated_at,
           });

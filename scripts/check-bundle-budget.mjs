@@ -34,7 +34,11 @@ const budgets = {
   // semaine des collègues et choix des destinataires d'un message collectif.
   // Le chargement initial, lui, reste sous son plafond et a même diminué —
   // la conversion sombre et les formulaires CET ne sont chargés qu'à l'usage.
-  totalJavaScript: { raw: 2_672 * KIB, gzip: 846 * KIB },
+  // Relevé à nouveau le 18 septembre 2026 : retenues maladie et grève sur la
+  // paie qui les porte, demi-journées de RTT et de fractionnement. Le
+  // contrôle du bulletin a quitté le démarrage pour se charger avec Ma paie,
+  // ce qui ramène le chargement initial sous son plafond.
+  totalJavaScript: { raw: 2_690 * KIB, gzip: 850 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

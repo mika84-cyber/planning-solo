@@ -553,6 +553,81 @@ describe("API principale du calendrier", () => {
     });
   });
 
+  it("décompte une demi-journée de RTT sur les RTT, et l’enregistre comme telle", async () => {
+    // Plus aucun RTT, mais des congés annuels intacts : la demi-journée de RTT
+    // doit être refusée, celle de CA acceptée.
+    data.set("user/user-a/form-profile", {
+      manual_adjustments: {
+        "2026": {
+          annual_used: 0,
+          rtt_used: 15,
+          fraction_used: 0,
+          sunday_leave_jan_jun: 0,
+          sunday_leave_jul_sep: 0,
+          sunday_leave_oct_nov: 0,
+          sunday_leave_dec: 0,
+        },
+      },
+    });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const refused = await calendarHandler(request({
+      action: "save-request",
+      requestId: "request-half-rtt",
+      requestKind: "leave",
+      group: 2,
+      periods: [],
+      timed: [{ date: "2026-08-11", type: "half", start: "09:00", halfBalance: "rtt" }],
+    }));
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toEqual({ error: "Vous n’avez plus de RTT disponibles." });
+
+    const accepted = await calendarHandler(request({
+      action: "save-request",
+      requestId: "request-half-fraction",
+      requestKind: "leave",
+      group: 2,
+      periods: [],
+      timed: [{ date: "2026-08-11", type: "half", start: "13:30", halfBalance: "fraction" }],
+    }));
+    expect(accepted.status).toBe(200);
+    expect(data.get("user/user-a/period/request-half-fraction-1")).toMatchObject({
+      leave_type: "half",
+      half_moment: "afternoon",
+      half_balance: "fraction",
+    });
+  });
+
+  it("garde, change ou efface le solde d’une demi-journée enregistrée", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const save = (body: Record<string, unknown>) => calendarHandler(request({
+      action: "save-period",
+      id: "half-2026-09-15",
+      from: "2026-09-15",
+      to: "2026-09-15",
+      group: 2,
+      ...body,
+    }));
+    const stored = () => data.get("user/user-a/period/half-2026-09-15") as Record<string, unknown>;
+
+    await save({ leaveType: "half", halfMoment: "morning", halfBalance: "rtt" });
+    expect(stored()).toMatchObject({ leave_type: "half", half_balance: "rtt" });
+    // Changer seulement la moitié de journée garde le solde.
+    await save({ leaveType: "half", halfMoment: "afternoon" });
+    expect(stored()).toMatchObject({ half_moment: "afternoon", half_balance: "rtt" });
+    // Revenir aux congés annuels efface le champ, qui n'est pas écrit pour eux.
+    await save({ leaveType: "half", halfBalance: "annual" });
+    expect(stored()).not.toHaveProperty("half_balance");
+    // Une période qui n'est plus une demi-journée n'a plus de solde de demi-journée.
+    await save({ leaveType: "half", halfBalance: "fraction" });
+    await save({ leaveType: "annual" });
+    expect(stored()).toMatchObject({ leave_type: "annual" });
+    expect(stored()).not.toHaveProperty("half_balance");
+    // Un solde inconnu est ignoré, sans faire échouer l'enregistrement.
+    const odd = await save({ leaveType: "half", halfBalance: "cet" });
+    expect(odd.status).toBe(200);
+    expect(stored()).not.toHaveProperty("half_balance");
+  });
+
   it("contrôle le solde avant d’enregistrer une demande de récupération", async () => {
     data.set("user/user-a/overtime/overtime-credit-2026", {
       id: "overtime-credit-2026",
@@ -839,6 +914,47 @@ describe("API principale du calendrier", () => {
     expect(profile.pas_rate_bp).toBe(750);
   });
 
+  it("enregistre les mois de retenue déplacés et les garde quand un autre réglage change", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const response = await calendarHandler(request({
+      action: "save-form-profile",
+      fullName: "Mika",
+      group: "1",
+      signature: "",
+      deductionPayMonths: {
+        "sick:2024-03-20": "2024-03",
+        "strike:2026-09-17": "2026-09",
+        // Écartées une à une, sans faire échouer le reste :
+        "annual:2026-09-18": "2026-09",
+        "sick:2026-02-30": "2026-03",
+        "strike:2026-09-24": "2026-13",
+      },
+    }));
+    expect(response.status).toBe(200);
+    expect(data.get("user/user-a/form-profile")).toMatchObject({
+      deduction_pay_months: {
+        "sick:2024-03-20": "2024-03",
+        "strike:2026-09-17": "2026-09",
+      },
+    });
+    const stored = data.get("user/user-a/form-profile") as { deduction_pay_months: Record<string, string> };
+    expect(Object.keys(stored.deduction_pay_months)).toHaveLength(2);
+
+    // Un enregistrement qui ne renvoie pas la table (changement de groupe,
+    // import d'un bulletin sans carence) ne doit pas l'effacer.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "" }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({
+      group: "2",
+      deduction_pay_months: { "sick:2024-03-20": "2024-03" },
+    });
+
+    // Une table vide rend toutes les retenues à la règle du 10.
+    await calendarHandler(request({
+      action: "save-form-profile", fullName: "Mika", group: "2", signature: "", deductionPayMonths: {},
+    }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ deduction_pay_months: {} });
+  });
+
   it("accepte la durée de récupération de jour férié de chaque quotité", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     for (const { value: quota } of WORK_QUOTA_OPTIONS) {
@@ -1034,6 +1150,8 @@ describe("API principale du calendrier", () => {
       { action: "save-form-profile", signature: "data:image/jpeg;base64,abc" },
       { action: "save-form-profile", signature: "", cetAccount: { employer: "invalid" } },
       { action: "save-form-profile", signature: "", manualYear: 1999 },
+      { action: "save-form-profile", signature: "", deductionPayMonths: ["sick:2024-03-20"] },
+      { action: "save-form-profile", signature: "", deductionPayMonths: null },
       {
         action: "save-form-profile",
         signature: "",

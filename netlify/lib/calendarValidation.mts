@@ -33,11 +33,32 @@ export type NormalizedBulkPeriod = {
     | "exceptional"
     | "work_accident";
   half_moment: "morning" | "afternoon" | "";
+  half_balance?: "rtt" | "fraction";
   group?: number;
   updated_at: string;
 };
 
 /** Vérifie à la fois le format ISO et l'existence réelle de la date. */
+/** Retenues maladie et grève rattachées à un autre mois de paie que celui
+ *  de la règle du 10. Clé « sick:AAAA-MM-JJ » ou « strike:AAAA-MM-JJ »
+ *  (premier jour de la tranche), valeur « AAAA-MM ». Les entrées invalides
+ *  sont écartées une à une, sans faire échouer le reste. */
+export function sanitizeDeductionPayMonths(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const clean: Record<string, string> = {};
+  for (const [key, month] of Object.entries(value as Record<string, unknown>).slice(0, 500)) {
+    const match = /^(?:sick|strike):(\d{4}-\d{2}-\d{2})$/.exec(key);
+    if (
+      match &&
+      isValidDateKey(match[1]) &&
+      typeof month === "string" &&
+      /^\d{4}-(?:0[1-9]|1[0-2])$/.test(month)
+    )
+      clean[key] = month;
+  }
+  return clean;
+}
+
 export function isValidDateKey(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
     return false;
@@ -95,6 +116,9 @@ export function normalizeBulkPeriods(
       to,
       leave_type: leaveType as NormalizedBulkPeriod["leave_type"],
       half_moment: leaveType === "half" ? halfMoment : "",
+      ...(leaveType === "half" && (item.halfBalance === "rtt" || item.halfBalance === "fraction")
+        ? { half_balance: item.halfBalance }
+        : {}),
       group,
       updated_at: updatedAt,
     });

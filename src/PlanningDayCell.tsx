@@ -8,6 +8,7 @@ import {
   TYPE_LABELS,
   dateKey,
   getDayInfo,
+  halfBalanceOf,
   leaveTypeLabel,
   longDate,
   type LeaveType,
@@ -88,6 +89,8 @@ export function PlanningDayCell({
   const myLeaveType = visibleLeave ? leavePeriod?.leaveType || "" : "";
   const myRecovery = myLeaveType === "recovery";
   const myHalfMoment = myLeaveType === "half" ? leavePeriod?.halfMoment || "" : "";
+  // Une demi-journée de RTT ou de fractionnement prend la couleur de son solde.
+  const myHalfBalance = myLeaveType === "half" && leavePeriod ? halfBalanceOf(leavePeriod) : "annual";
   const hasMikaNote = Boolean(showNotes && entry?.noteText);
   const hasAgnesNote = Boolean(showNotes && sharedNoteText);
   const visibleNote = hasMikaNote || hasAgnesNote;
@@ -96,7 +99,7 @@ export function PlanningDayCell({
       ? myRecovery
         ? "Récupération"
         : myHalfMoment
-          ? `Demi-journée ${myHalfMoment === "morning" ? "matin" : "après-midi"}`
+          ? `Demi-journée ${myHalfMoment === "morning" ? "matin" : "après-midi"}${myHalfBalance === "rtt" ? " · RTT" : myHalfBalance === "fraction" ? " · fractionnement" : ""}`
           : leaveTypeLabel(myLeaveType as LeaveType)
       : "",
     personalDay ? "Divers" : "",
@@ -132,7 +135,7 @@ export function PlanningDayCell({
   return (
     <button
       type="button"
-      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}` : ""}${wishOutline ? " wish-day" : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected range-edge" : ""}`}
+      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}${myHalfBalance === "annual" ? "" : ` half-${myHalfBalance}`}` : ""}${wishOutline ? " wish-day" : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected range-edge" : ""}`}
       style={selectionStyle}
       onClick={onClick}
       title={title}

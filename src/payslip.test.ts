@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateNetRatios,
+  carenceDateFromLabel,
   defaultNetRatiosForPeriod,
   inspectNetRatioCalibration,
   payCalibrationRegime,
@@ -382,6 +383,20 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
     // Le libellé exact (« Jour de carence 20/3/2024 ») ne se reverra jamais
     // à l'identique : seul le préfixe permet de le repérer.
     expect(readPayslip(mars2024).carenceDay).toBe(77.5);
+  });
+
+  it("garde la date de chaque jour de carence, quel que soit son format", () => {
+    expect(readPayslip(mars2024).carenceDates).toEqual(["2024-03-20"]);
+    expect(
+      readPayslip([
+        "Jour de carence 05/10/2025", "78.17", "-78.17",
+        "Jour de carence 16/09/2025", "78.17", "-78.17",
+      ]).carenceDates,
+    ).toEqual(["2025-09-16", "2025-10-05"]);
+    expect(carenceDateFromLabel("Jour de carence 2026/03/02")).toBe("2026-03-02");
+    expect(carenceDateFromLabel("Jour de carence 31/02/2026")).toBeUndefined();
+    expect(carenceDateFromLabel("Jour de carence")).toBeUndefined();
+    expect(readPayslip(["CUMUL BRUT", "1000"]).carenceDates).toBeUndefined();
   });
 
   it("additionne les rappels de plusieurs jours de carence", () => {

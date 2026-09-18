@@ -39,6 +39,7 @@ describe("lecture locale d’une photo de bulletin", () => {
       Jour de carence 2026/03/18 77,50 -77,50
     `);
     expect(reading.carenceDay).toBe(155);
+    expect(reading.carenceDates).toEqual(["2026-03-02", "2026-03-18"]);
     expect(reading.gross).toBeUndefined();
   });
 

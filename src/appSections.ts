@@ -23,10 +23,20 @@ export { PayAllowancesSection } from "./PayAllowancesSection";
 export const PayEstimateDetails = lazy(() =>
   import("./PayEstimateDetails").then(({ PayEstimateDetails: Component }) => ({ default: Component })),
 );
-export const PayPage = lazy(() =>
-  import("./PayPage").then(({ PayPage: Component }) => ({ default: Component })),
+// Le contrôle du bulletin ne s'affiche que dans Ma paie : il se charge avec
+// elle, hors du démarrage, et il est prêt dès que la page s'ouvre.
+const payslipCheckModule = () => import("./PayslipCheckSection");
+export const PayPage = lazy(() => {
+  // Les deux téléchargements partent ensemble ; la page attend le contrôle.
+  const payslipCheck = payslipCheckModule();
+  return import("./PayPage").then(async ({ PayPage: Component }) => {
+    await payslipCheck;
+    return { default: Component };
+  });
+});
+export const PayslipCheckSection = lazy(() =>
+  payslipCheckModule().then(({ PayslipCheckSection: Component }) => ({ default: Component })),
 );
-export { PayslipCheckSection } from "./PayslipCheckSection";
 export { PdfDownloadPage } from "./PdfDownloadPage";
 export const UsefulContactsSection = lazy(() =>
   import("./UsefulContactsSection").then(({ UsefulContactsSection: Component }) => ({ default: Component })),

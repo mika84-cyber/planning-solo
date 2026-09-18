@@ -20,6 +20,7 @@ type PdfExportPeriod = {
   to: string;
   leaveType?: LeaveType | "";
   halfMoment?: HalfMoment | "";
+  halfBalance?: "annual" | "rtt" | "fraction";
 };
 
 export type AnnualPdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
@@ -38,6 +39,9 @@ export function buildAnnualPdfAbsences(
 ) {
   const leaveTypes = new Map<string, LeaveType>();
   const halfMoments = new Map<string, HalfMoment>();
+  // Seules les demi-journées de RTT et de fractionnement y figurent : les
+  // autres restent des demi-journées de congés annuels.
+  const halfBalances = new Map<string, "rtt" | "fraction">();
   const first = `${year}-01-01`;
   const last = `${year}-12-31`;
 
@@ -56,6 +60,8 @@ export function buildAnnualPdfAbsences(
       leaveTypes.set(key, leaveType);
       if (leaveType === "half" && period.halfMoment)
         halfMoments.set(key, period.halfMoment);
+      if (leaveType === "half" && (period.halfBalance === "rtt" || period.halfBalance === "fraction"))
+        halfBalances.set(key, period.halfBalance);
     }
   }
 
@@ -77,7 +83,7 @@ export function buildAnnualPdfAbsences(
     if (date >= first && date <= last && !leaveTypes.has(date))
       leaveTypes.set(date, "other");
 
-  return { leaveTypes, halfMoments };
+  return { leaveTypes, halfMoments, halfBalances };
 }
 
 export function buildAnnualPdfOverlays(
@@ -158,6 +164,7 @@ export function useAnnualPdfExport(
       }
       let leaveTypes = new Map<string, LeaveType>();
       let halfMoments = new Map<string, HalfMoment>();
+      let halfBalances = new Map<string, "rtt" | "fraction">();
       // Bornée à l'année affichée, comme le reste du PDF : une case déborde
       // volontairement de part et d'autre pour qu'une période à cheval sur
       // le 1er janvier affiche quand même son vrai repère de début ou de fin.
@@ -186,7 +193,7 @@ export function useAnnualPdfExport(
       }
       if (scope === "my-leaves") {
         const year = view.getFullYear();
-        ({ leaveTypes, halfMoments } = buildAnnualPdfAbsences(
+        ({ leaveTypes, halfMoments, halfBalances } = buildAnnualPdfAbsences(
           year,
           periods,
           recoveryUses,
@@ -214,6 +221,7 @@ export function useAnnualPdfExport(
         wasPompidouHolidayWorked,
         leaveTypes: scope === "my-leaves" ? leaveTypes : undefined,
         halfMoments: scope === "my-leaves" ? halfMoments : undefined,
+        halfBalances: scope === "my-leaves" ? halfBalances : undefined,
         leaveSummary:
           scope === "my-leaves"
             ? {

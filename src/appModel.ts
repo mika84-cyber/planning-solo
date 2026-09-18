@@ -5,6 +5,7 @@ import {
   getDayInfo,
   localDate,
   monthDays,
+  type HalfBalance,
   type HalfMoment,
   type HolidayPay,
   type LeaveType,
@@ -73,6 +74,8 @@ export type LeavePeriod = {
   to: string;
   leaveType?: LeaveType | "";
   halfMoment?: HalfMoment | "";
+  /** Solde débité par une demi-journée ; absent, ce sont les congés annuels. */
+  halfBalance?: HalfBalance;
   group?: number;
   updatedAt: string;
   legacy?: boolean;
@@ -131,12 +134,18 @@ export type FormProfile = {
   /** Reprise sans dates des absences antérieures à l'utilisation de l'app. */
   manualAdjustments?: Record<string, ManualYearAdjustments>;
   cetAccount?: CetAccount;
+  /** Retenues maladie et grève rattachées à un autre mois de paie que celui
+   *  de la règle du 10 (voir deductionPayMonth.ts). */
+  deductionPayMonths?: Record<string, string>;
 };
 export type SelectedDay = {
   date: string;
   type: SelectionType;
   start?: string;
   end?: string;
+  /** Solde d'une demi-journée demandée, transmis tel quel au formulaire et
+   *  relu à son retour. */
+  halfBalance?: HalfBalance;
 };
 export type NoteListItem = {
   key: string;

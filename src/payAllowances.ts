@@ -184,6 +184,10 @@ export function computePayAllowances({
     compensatedCount: 0,
     carryover: 0,
     reported: 0,
+    /** Paie primée d'où viennent les dimanches reportés sur celle-ci. */
+    carriedFrom: undefined as { year: number; month: number } | undefined,
+    /** Paie primée sur laquelle partent les dimanches manquants de celle-ci. */
+    reportedTo: undefined as { year: number; month: number } | undefined,
   }));
   // Seuls les dimanches du onzième au trente-et-unième se versent ; les
   // suivants ne sont pas majorés, ils n'apparaissent donc sur aucune paie.
@@ -220,6 +224,8 @@ export function computePayAllowances({
     slot.sunday += sundayCarryover * SUNDAY_ALLOWANCE.perSunday;
     slot.sundayCount += sundayCarryover;
     slot.carryover = sundayCarryover;
+    if (sundayCarryoverFromYear !== undefined && sundayCarryoverFromMonth !== undefined)
+      slot.carriedFrom = { year: sundayCarryoverFromYear, month: sundayCarryoverFromMonth };
   }
   // Le bulletin d'où vient le report n'a, lui, pas payé ces dimanches : sa
   // propre case doit le montrer plutôt que d'afficher ce que le cycle
@@ -236,6 +242,8 @@ export function computePayAllowances({
     );
     slot.sundayCount = Math.max(0, slot.sundayCount - sundayCarryover);
     slot.reported = sundayCarryover;
+    if (sundayCarryoverYear !== undefined && sundayCarryoverMonth !== undefined)
+      slot.reportedTo = { year: sundayCarryoverYear, month: sundayCarryoverMonth };
   }
   const addHoliday = (
     item: { key: string; choice: HolidayPay | "" },

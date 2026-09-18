@@ -11,6 +11,8 @@ import type { calculatePaidOvertime, WorkQuota } from "./overtime";
 import { minutesLabel } from "./overtime";
 import type { mecenatForPayMonth } from "./mecenat";
 import type { StrikePayEstimate } from "./strike";
+import { DeductionSources, type DeductionSourceLine } from "./DeductionSources";
+import { ofPayMonth, payMonthKey } from "./deductionPayMonth";
 import type { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import type { inspectNetRatioCalibration } from "./payslip";
 import type { computePayAllowances } from "./payAllowances";
@@ -29,6 +31,8 @@ type MonthPaySummary = {
   sundayCount: number;
   carryover: number;
   reported: number;
+  carriedFrom?: { year: number; month: number };
+  reportedTo?: { year: number; month: number };
   holiday: number;
   holidayCount: number;
   compensated: number;
@@ -173,6 +177,7 @@ export function buildPayContent({
     savePayAmount,
     saveAnnualPayProfile,
     saveCiaMonth,
+    moveDeduction,
   } = payActions;
 
   if (!allowances || !monthPay || !sickLeaves) return null;
@@ -186,10 +191,16 @@ export function buildPayContent({
       ? {
           key: "sundays",
           label: `Dimanches (${monthPay.sundayCount})`,
+          // Les dimanches se paient en juillet, octobre, décembre et janvier :
+          // un dimanche manquant attend la paie primée suivante, qu'on nomme.
           detail: monthPay.carryover
-            ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} du bulletin précédent`
+            ? monthPay.carriedFrom
+              ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} de la paie ${ofPayMonth(payMonthKey(monthPay.carriedFrom.year, monthPay.carriedFrom.month))}`
+              : `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} d’une paie précédente`
             : monthPay.reported
-              ? `${monthPay.reported} pas encore payé${s(monthPay.reported)}, en attente sur un prochain bulletin`
+              ? monthPay.reportedTo
+                ? `${monthPay.reported} pas encore payé${s(monthPay.reported)}, reporté${s(monthPay.reported)} sur la paie ${ofPayMonth(payMonthKey(monthPay.reportedTo.year, monthPay.reportedTo.month))}`
+                : `${monthPay.reported} pas encore payé${s(monthPay.reported)}, reporté${s(monthPay.reported)} sur la paie primée suivante`
               : `${monthPay.sundayCount} × ${euros(SUNDAY_ALLOWANCE.perSunday)}`,
           amount: monthPay.sunday,
         }
@@ -623,6 +634,34 @@ export function buildPayContent({
     onSaveCiaMonth: (month) => void saveCiaMonth(month),
   };
 
+  // Chaque tranche de maladie ou de grève retenue sur cette paie, chiffrée.
+  const strikeDeducted = new Set([
+    ...strikeForCurrentPayMonth.days,
+    ...strikeForCurrentPayMonth.automaticAdditionalDays,
+  ]);
+  const deductionSources: DeductionSourceLine[] = [
+    ...(sickLeaves.byMonth[monthPay.index]?.sources ?? []).map(({ slice, amount }) => ({
+      slice,
+      amount: Math.round(amount * 100) / 100,
+    })),
+    ...strikeForCurrentPayMonth.sources.map((slice) => ({
+      slice,
+      amount: strikeForCurrentPayMonth.dailyDeduction === null
+        ? null
+        : Math.round(
+            strikeForCurrentPayMonth.dailyDeduction *
+              slice.dates.filter((date) => strikeDeducted.has(date)).length * 100,
+          ) / 100,
+    })),
+  ].sort((left, right) => left.slice.from.localeCompare(right.slice.from));
+  const deductionContent = (
+    <DeductionSources
+      payMonth={payMonthKey(payView.getFullYear(), payView.getMonth())}
+      sources={deductionSources}
+      onMove={(slice, month) => void moveDeduction(slice, month)}
+    />
+  );
+
   const variables: PayDashboardVariable[] = monthPayRows.map((row) => ({
     key: row.key,
     label: row.label,
@@ -639,6 +678,7 @@ export function buildPayContent({
       : "Estimation réalisée avec les dernières valeurs connues.",
     reliability: payReliability,
     variables,
+    deductionContent,
     estimateContent: payEstimateDetails,
     verificationContent: <PayslipCheckSection {...payslipSectionProps} part="verification" />,
     settingsContent: <PayslipCheckSection {...payslipSectionProps} part="settings" />,

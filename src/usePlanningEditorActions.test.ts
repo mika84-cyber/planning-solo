@@ -37,6 +37,7 @@ describe("édition d'une fiche du planning", () => {
       leaveRangeTo: "2026-09-10",
       leaveType: "half",
       halfMoment: "afternoon",
+      halfBalance: "rtt",
       editingPeriodId: "period-1",
       periods: [editedPeriod],
       group: 2,
@@ -67,6 +68,7 @@ describe("édition d'une fiche du planning", () => {
         to: "2026-09-10",
         leaveType: "half",
         halfMoment: "afternoon",
+        halfBalance: "rtt",
         group: 2,
       },
       {
@@ -103,6 +105,7 @@ describe("édition d'une fiche du planning", () => {
       leaveRangeTo: "",
       leaveType: "annual",
       halfMoment: "morning",
+      halfBalance: "annual",
       editingPeriodId: null,
       periods: [],
       group: 2,

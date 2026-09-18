@@ -20,6 +20,7 @@ import {
 import {
   groupConsecutive,
   fromKey,
+  halfBalanceFromApi,
   leaveTypeLabel,
   longDate,
   type HalfMoment,
@@ -235,6 +236,7 @@ export function usePlanningRequestActions({
             to: string;
             leave_type?: LeaveType;
             half_moment?: HalfMoment;
+            half_balance?: string;
             group?: number;
             updated_at: string;
           }>(inputs);
@@ -244,6 +246,7 @@ export function usePlanningRequestActions({
             to: period.to,
             leaveType: period.leave_type || leaveType,
             halfMoment: period.half_moment || "",
+            ...halfBalanceFromApi(period),
             group: period.group,
             updatedAt: period.updated_at,
           }));

@@ -1,13 +1,16 @@
 import type { LeavePeriod } from "./appModel";
+import { ChoicePicker } from "./ChoicePicker";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { DEFAULT_WORK_SCHEDULE, workScheduleHalfTimes, type WorkSchedule } from "./overtime";
 import {
+  HALF_BALANCE_OPTIONS,
   TYPE_LABELS,
   fromKey,
-  leaveTypeLabel,
   longDate,
   periodLabel,
+  periodTypeLabel,
   shortDate,
+  type HalfBalance,
   type SelectionType,
 } from "./planningLogic";
 
@@ -19,6 +22,8 @@ export function TimeSelectionDialog({
   workSchedule = DEFAULT_WORK_SCHEDULE,
   onStartChange,
   onEndChange,
+  halfBalance = "annual",
+  onHalfBalanceChange,
   onClose,
   onConfirm,
 }: {
@@ -29,6 +34,8 @@ export function TimeSelectionDialog({
   workSchedule?: WorkSchedule;
   onStartChange: (value: string) => void;
   onEndChange: (value: string) => void;
+  halfBalance?: HalfBalance;
+  onHalfBalanceChange?: (value: HalfBalance) => void;
   onClose: () => void;
   onConfirm: () => void;
 }) {
@@ -74,6 +81,20 @@ export function TimeSelectionDialog({
                 <small>De la reprise jusqu’à la fin de journée</small>
               </button>
             </div>
+            {onHalfBalanceChange ? (
+              // Le formulaire range toutes les demi-journées dans la même
+              // case : c'est ici seulement qu'on dit de quel solde elle vient.
+              <div className="leave-type-field half-day-balance-field">
+                <span>Prise sur</span>
+                <ChoicePicker
+                  value={halfBalance}
+                  options={HALF_BALANCE_OPTIONS}
+                  onChange={onHalfBalanceChange}
+                  ariaLabel="Choisir le solde de la demi-journée"
+                  className="leave-type-picker"
+                />
+              </div>
+            ) : null}
           </div>
         ) : <><div className={recovery ? "time-fields recovery-time-fields" : "time-fields"}>
           <ClockTimePicker label="Heure de début" value={start} onChange={onStartChange} allowEmpty />
@@ -159,7 +180,7 @@ export function DeletePeriodDialog({
           {strike ? "Supprimer cette journée de grève ?" : "Annuler cette période ?"}
         </h2>
         <p>
-          {periodLabel(period.from, period.to)} · {leaveTypeLabel(period.leaveType)}
+          {periodLabel(period.from, period.to)} · {periodTypeLabel(period)}
         </p>
         <div className="modal-actions">
           <button className="secondary-button" type="button" data-modal-close onClick={onCancel}>

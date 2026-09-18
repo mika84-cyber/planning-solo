@@ -35,6 +35,7 @@ export async function handleSavePeriods(
       candidate.to === right.to &&
       candidate.leave_type === right.leave_type &&
       (candidate.half_moment || "") === right.half_moment &&
+      candidate.half_balance === right.half_balance &&
       Number(candidate.group) === Number(right.group)
     );
   };

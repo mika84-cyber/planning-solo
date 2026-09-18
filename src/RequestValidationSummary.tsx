@@ -1,6 +1,6 @@
 import type { BalanceType, RequestKind, SelectedDay } from "./appModel";
 import { minutesLabel, recoveryRequestMinutes, type RecoveryRequestType, type WorkQuota } from "./overtime";
-import { TYPE_LABELS, fromKey, getDayInfo, longDate, s } from "./planningLogic";
+import { TYPE_LABELS, fromKey, getDayInfo, halfBalanceOf, longDate, periodTypeLabel, s } from "./planningLogic";
 
 const QUOTA_BALANCE_TYPES = ["annual", "rtt", "fraction"] as const;
 
@@ -8,7 +8,7 @@ export function requestLeaveBalanceUsage(items: SelectedDay[], group: number) {
   return Object.fromEntries(QUOTA_BALANCE_TYPES.map((type) => [
     type,
     items.reduce((total, item) => {
-      const itemType = item.type === "half" ? "annual" : item.type;
+      const itemType = item.type === "half" ? halfBalanceOf(item) : item.type;
       if (itemType !== type) return total;
       const info = getDayInfo(fromKey(item.date), group);
       if (info.holiday || info.kind === "off") return total;
@@ -126,7 +126,7 @@ export function RequestValidationSummary({
   );
   const leaveItems = items.filter((item) => item.type === "annual" || item.type === "half" || item.type === "rtt" || item.type === "fraction");
   const requestedBalanceTypes = new Set(
-    leaveItems.map((item) => item.type === "half" ? "annual" : item.type),
+    leaveItems.map((item) => item.type === "half" ? halfBalanceOf(item) : item.type),
   );
   const balanceUsage = requestLeaveBalanceUsage(items, group);
   const leaveUsage = QUOTA_BALANCE_TYPES.map((type) => ({
@@ -152,7 +152,7 @@ export function RequestValidationSummary({
           <article key={item.date}>
             <span>
               <strong>{longDate(fromKey(item.date))}</strong>
-              <small>{TYPE_LABELS[item.type]}</small>
+              <small>{item.type === "half" ? periodTypeLabel({ leaveType: "half", halfBalance: item.halfBalance }) : TYPE_LABELS[item.type]}</small>
             </span>
             {item.type.startsWith("recovery_") ? (
               <em>{minutesLabel(recoveryRequestMinutes(item.type as RecoveryRequestType, workQuota, item.start, item.end))}</em>

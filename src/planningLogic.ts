@@ -69,6 +69,59 @@ export const HALF_MOMENT_OPTIONS: Array<{ value: HalfMoment; label: string }> = 
 export function halfMomentFromStart(start: string): HalfMoment {
   return start < "13:30" ? "morning" : "afternoon";
 }
+/** Solde qu'une demi-journée consomme. Sur le formulaire officiel, toutes
+ *  les demi-journées vont dans la même case « Congés en 1/2 journées » : seule
+ *  l'application sait de quel solde elle est déduite. Une demi-journée
+ *  enregistrée avant ce choix reste prise sur les congés annuels. */
+export type HalfBalance = "annual" | "rtt" | "fraction";
+export const HALF_BALANCE_OPTIONS: Array<{ value: HalfBalance; label: string }> = [
+  { value: "annual", label: "Congés annuels" },
+  { value: "rtt", label: "RTT" },
+  { value: "fraction", label: "Fractionnement" },
+];
+export function isHalfBalance(value: unknown): value is HalfBalance {
+  return value === "annual" || value === "rtt" || value === "fraction";
+}
+/** Le solde proposé pour une nouvelle demi-journée : les congés annuels
+ *  d'abord, les RTT quand il n'en reste plus, le fractionnement ensuite.
+ *  `pending` compte ce que la demande en cours prend déjà sur chaque solde.
+ *  Si tout est épuisé, ce sont les congés annuels, et le contrôle des soldes
+ *  signalera le manque. */
+export function automaticHalfBalance(
+  remaining: Partial<Record<HalfBalance, number>>,
+  pending: Partial<Record<HalfBalance, number>> = {},
+): HalfBalance {
+  const order: HalfBalance[] = ["annual", "rtt", "fraction"];
+  return order.find((type) => (remaining[type] ?? 0) - (pending[type] ?? 0) >= 0.5) ?? "annual";
+}
+/** Le solde d'une demi-journée : celui enregistré, sinon les congés annuels. */
+export function halfBalanceOf(item: { halfBalance?: string }): HalfBalance {
+  return item.halfBalance === "rtt" || item.halfBalance === "fraction" ? item.halfBalance : "annual";
+}
+/** Le solde d'une demi-journée renvoyée par le serveur, à recopier sur la
+ *  période locale. Les congés annuels, valeur par défaut, ne s'écrivent pas. */
+export function halfBalanceFromApi(period: { leave_type?: string; half_balance?: unknown }) {
+  return period.leave_type === "half" && (period.half_balance === "rtt" || period.half_balance === "fraction")
+    ? { halfBalance: period.half_balance as "rtt" | "fraction" }
+    : {};
+}
+/** Le solde d'une demi-journée à ranger sur une période locale : rien pour
+ *  les congés annuels ni pour un autre type de congé. */
+export function localHalfBalance(leaveType: string, halfBalance: HalfBalance) {
+  return leaveType === "half" && halfBalance !== "annual" ? { halfBalance } : {};
+}
+const HALF_BALANCE_LABELS: Record<HalfBalance, string> = {
+  annual: "Congés en demi-journée",
+  rtt: "RTT en demi-journée",
+  fraction: "Fractionnement en demi-journée",
+};
+/** Le libellé d'une absence enregistrée, demi-journées de RTT et de
+ *  fractionnement comprises. */
+export function periodTypeLabel(period: { leaveType?: LeaveType | ""; halfBalance?: string }) {
+  return period.leaveType === "half"
+    ? HALF_BALANCE_LABELS[halfBalanceOf(period)]
+    : leaveTypeLabel(period.leaveType);
+}
 /** Ce que porte une date sélectionnée sur plusieurs jours : un congé, une
  *  note libre, ou un congé seulement souhaité. */
 export type MultiDatePerson = "leave" | "personal" | "wish";

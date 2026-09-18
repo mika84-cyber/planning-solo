@@ -24,6 +24,8 @@ type PayDashboardProps = {
     detail: string;
   };
   variables: PayDashboardVariable[];
+  /** Détail des retenues maladie et grève, sous la liste des variables. */
+  deductionContent?: ReactNode;
   profileContent: ReactNode;
   verificationContent: ReactNode;
   settingsContent: ReactNode;
@@ -47,6 +49,7 @@ export function PayDashboard({
   onCompleteEstimate,
   reliability,
   variables,
+  deductionContent,
   profileContent,
   verificationContent,
   settingsContent,
@@ -142,6 +145,7 @@ export function PayDashboard({
             ))}
           </div>
         ) : <p className="allowance-note">Aucun élément variable prévu pour ce mois.</p>}
+        {deductionContent}
       </section>
 
       <section id="pay-dashboard-verification" className="pay-dashboard-verification" aria-labelledby="pay-dashboard-verification-title">

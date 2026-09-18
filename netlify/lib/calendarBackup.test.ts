@@ -21,6 +21,21 @@ describe("restauration d'une sauvegarde", () => {
           to: "2026-08-20",
           leave_type: "annual",
         },
+        {
+          id: "period-half-rtt",
+          from: "2026-08-25",
+          to: "2026-08-25",
+          leave_type: "half",
+          half_moment: "morning",
+          half_balance: "rtt",
+        },
+        {
+          id: "period-annual-balance",
+          from: "2026-08-26",
+          to: "2026-08-26",
+          leave_type: "annual",
+          half_balance: "rtt",
+        },
       ],
       overtime_entries: [
         {
@@ -79,6 +94,10 @@ describe("restauration d'une sauvegarde", () => {
             sunday_leave_dec: 1,
           },
         },
+        deduction_pay_months: {
+          "sick:2024-03-20": "2024-03",
+          "strike:2026-09-17": "2026-13",
+        },
         cet_account: {
           enabled: true,
           employer: "public-establishment",
@@ -108,6 +127,13 @@ describe("restauration d'une sauvegarde", () => {
       const backup = result.backup;
       expect(backup).toBeDefined();
       if (!backup) return;
+      // Le solde d'une demi-journée survit à la restauration ; sur une période
+      // qui n'en est pas une, il est écarté.
+      expect(backup.periods.find((period) => period.id === "period-half-rtt")).toMatchObject({
+        half_balance: "rtt",
+      });
+      expect(backup.periods.find((period) => period.id === "period-annual-balance"))
+        .not.toHaveProperty("half_balance");
       expect(backup.entries[0]).toMatchObject({
         date: "2026-08-17",
         note_text: "Réunion",
@@ -134,6 +160,11 @@ describe("restauration d'une sauvegarde", () => {
         annual_used: 4.5,
         sunday_leave_jan_jun: 2,
         sunday_leave_dec: 1,
+      });
+      // Les retenues déplacées survivent à la restauration ; un mois
+      // impossible est écarté sans refuser toute la sauvegarde.
+      expect(backup.form_profile?.deduction_pay_months).toEqual({
+        "sick:2024-03-20": "2024-03",
       });
       expect(backup.form_profile?.cet_account).toMatchObject({
         employer_name: "Centre Pompidou",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   latestStrikePayValues,
+  strikeEstimateForCalendarMonth,
   strikeIntermediateDay,
   strikePayEstimate,
 } from "./strike";
@@ -192,6 +193,86 @@ describe("retenue pour grève", () => {
       sourcePeriod: "2026-06",
       exactMonthValues: false,
     });
+  });
+
+  it("retient une grève posée après le 10 sur la paie du mois suivant", () => {
+    const late = workDates.find((date) => Number(date.slice(8, 10)) > 10)!;
+    const profiles = {
+      "2026-08": payProfiles["2026-08"],
+      "2026-09": payProfiles["2026-08"],
+    };
+    const august = strikePayEstimate([strikePeriod("late", late)], 1, profiles, 2026, 7);
+    expect(august.days).toEqual([]);
+    expect(august.totalDeduction).toBe(0);
+    const september = strikePayEstimate([strikePeriod("late", late)], 1, profiles, 2026, 8);
+    expect(september.days).toEqual([late]);
+    expect(september.totalDeduction).toBe(61.86);
+    expect(september.sources[0]).toMatchObject({
+      key: `strike:${late}`,
+      ruleMonth: "2026-09",
+      overridden: false,
+    });
+  });
+
+  it("garde sur la paie du mois une grève posée jusqu’au 10, et sépare les deux", () => {
+    const early = workDates.find((date) => Number(date.slice(8, 10)) <= 10)!;
+    const late = workDates.find((date) => Number(date.slice(8, 10)) > 12)!;
+    const profiles = { "2026-08": payProfiles["2026-08"], "2026-09": payProfiles["2026-08"] };
+    const source = [strikePeriod("early", early), strikePeriod("late", late)];
+    expect(strikePayEstimate(source, 1, profiles, 2026, 7).days).toEqual([early]);
+    expect(strikePayEstimate(source, 1, profiles, 2026, 8).days).toEqual([late]);
+  });
+
+  it("emporte avec la grève les repos du cycle qui la relient à la suivante", () => {
+    const allDates = Array.from({ length: 730 }, (_, index) => localDate(2025, 0, index + 1));
+    const match = allDates.flatMap((date) =>
+      Array.from({ length: 6 }, (_, index) => index + 2).map((gap) => ({ date, gap })),
+    ).find(({ date, gap }) =>
+      date.getDate() > 10 &&
+      getDayInfo(date, 1).kind === "work" &&
+      getDayInfo(addDays(date, gap), 1).kind === "work" &&
+      Array.from({ length: gap - 1 }, (_, index) => addDays(date, index + 1))
+        .every((day) => getDayInfo(day, 1).kind === "off") &&
+      date.getMonth() === addDays(date, gap).getMonth(),
+    )!;
+    const firstKey = dateKey(match.date);
+    const lastKey = dateKey(addDays(match.date, match.gap));
+    const payMonth = addDays(new Date(match.date.getFullYear(), match.date.getMonth(), 1), 32);
+    const profiles = {
+      [firstKey.slice(0, 7)]: payProfiles["2026-08"],
+      [dateKey(payMonth).slice(0, 7)]: payProfiles["2026-08"],
+    };
+    const source = [strikePeriod("one", firstKey), strikePeriod("two", lastKey)];
+    const sameMonth = strikePayEstimate(source, 1, profiles, match.date.getFullYear(), match.date.getMonth());
+    expect(sameMonth.days).toEqual([]);
+    expect(sameMonth.automaticAdditionalDays).toEqual([]);
+    const next = strikePayEstimate(source, 1, profiles, payMonth.getFullYear(), payMonth.getMonth());
+    expect(next.days).toEqual([firstKey, lastKey]);
+    expect(next.automaticAdditionalDays).toHaveLength(match.gap - 1);
+    expect(next.sources).toHaveLength(1);
+    expect(next.totalDeduction).toBe(Math.round(61.86 * (match.gap + 1) * 100) / 100);
+  });
+
+  it("suit la correction enregistrée quand le bulletin retient la grève le mois même", () => {
+    const late = workDates.find((date) => Number(date.slice(8, 10)) > 10)!;
+    const profiles = { "2026-08": payProfiles["2026-08"], "2026-09": payProfiles["2026-08"] };
+    const corrections = { [`strike:${late}`]: "2026-08" };
+    const august = strikePayEstimate([strikePeriod("late", late)], 1, profiles, 2026, 7, {}, corrections);
+    expect(august.days).toEqual([late]);
+    expect(august.sources[0].overridden).toBe(true);
+    expect(strikePayEstimate([strikePeriod("late", late)], 1, profiles, 2026, 8, {}, corrections).days)
+      .toEqual([]);
+  });
+
+  it("montre dans le mois vécu une grève retenue sur la paie suivante", () => {
+    const late = workDates.find((date) => Number(date.slice(8, 10)) > 10)!;
+    const profiles = { "2026-08": payProfiles["2026-08"], "2026-09": payProfiles["2026-08"] };
+    const lived = strikeEstimateForCalendarMonth([strikePeriod("late", late)], 1, profiles, 2026, 7);
+    expect(lived.days).toEqual([late]);
+    expect(lived.totalDeduction).toBe(61.86);
+    expect(lived.sources[0].payMonth).toBe("2026-09");
+    expect(strikeEstimateForCalendarMonth([strikePeriod("late", late)], 1, profiles, 2026, 8).days)
+      .toEqual([]);
   });
 
   it("ne chiffre rien lorsqu’une valeur indispensable manque", () => {

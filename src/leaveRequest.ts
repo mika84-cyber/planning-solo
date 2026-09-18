@@ -12,6 +12,8 @@ export type NormalizedRequestPeriod = {
     | "childcare"
     | "exceptional";
   halfMoment?: "morning" | "afternoon";
+  /** Solde d'une demi-journée ; absent, ce sont les congés annuels. */
+  halfBalance?: "rtt" | "fraction";
   group: number;
 };
 
@@ -134,6 +136,11 @@ export function normalizeLeaveRequest(body: Record<string, unknown>) {
         to: item.date,
         leaveType: "half",
         halfMoment: start < "13:30" ? "morning" : "afternoon",
+        // Le formulaire renvoie la demi-journée telle que l'application la lui
+        // a confiée : le solde choisi y est resté.
+        ...(item.halfBalance === "rtt" || item.halfBalance === "fraction"
+          ? { halfBalance: item.halfBalance }
+          : {}),
       });
   }
   if (

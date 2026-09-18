@@ -33,6 +33,15 @@ import {
   type HolidayPay,
 } from "./planningLogic";
 import { strikePayEstimate } from "./strike";
+import { monthGross, strikeDeduction } from "./payMonth";
+import {
+  attachCarencesToPayslips,
+  deductionSliceLabel,
+  ofPayMonth,
+  withDeductionPayMonth,
+  type DeductionSlice,
+} from "./deductionPayMonth";
+import { sickLeaveDates } from "./sickLeaveSummary";
 import type {
   PayDraftKey,
   PayslipCheck,
@@ -50,6 +59,8 @@ export type PayAllowanceMonth = {
   sunday: number;
   sundayCount: number;
   holiday: number;
+  /** Part des fériés compensés : absente des anciens résumés. */
+  compensated?: number;
 };
 
 export type PayAllowancesSummary = {
@@ -156,6 +167,14 @@ export function payProfileBase(
     pasRate: formProfile?.pasRate,
     manualAdjustments: formProfile?.manualAdjustments,
     cetAccount: formProfile?.cetAccount,
+    deductionPayMonths: formProfile?.deductionPayMonths,
+    // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
+    // ou le retirent : les autres enregistrements doivent le laisser tel quel.
+    sundayCarryover: formProfile?.sundayCarryover,
+    sundayCarryoverYear: formProfile?.sundayCarryoverYear,
+    sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
+    sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
+    sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
   };
 }
 
@@ -491,6 +510,34 @@ export function usePayActions(options: PayActionsOptions) {
     }
   }
 
+  /** Rattache une tranche de maladie ou de grève à la paie qui l'a
+   *  réellement retenue ; `null` la rend à la règle du 10. */
+  async function moveDeduction(
+    slice: Pick<DeductionSlice, "key" | "ruleMonth">,
+    payMonth: string | null,
+  ) {
+    const previous = formProfile;
+    const deductionPayMonths = withDeductionPayMonth(formProfile?.deductionPayMonths, slice, payMonth);
+    const nextProfile: FormProfile = {
+      ...payProfileBase(formProfile, group),
+      deductionPayMonths,
+    };
+    setFormProfile(nextProfile);
+    if (demoMode) return;
+    try {
+      await post({
+        action: "save-form-profile",
+        fullName: nextProfile.fullName,
+        group: nextProfile.group,
+        signature: nextProfile.signature,
+        deductionPayMonths,
+      });
+    } catch {
+      setFormProfile(previous);
+      notify("Le mois de la retenue n’a pas pu être enregistré. Réessayez.");
+    }
+  }
+
   async function chooseHolidayPay(key: string, choice: HolidayPay) {
     const current = entries[key];
     if (!demoMode) {
@@ -552,23 +599,25 @@ export function usePayActions(options: PayActionsOptions) {
       payView.getFullYear(),
       index,
       { entries, recoveryUses },
+      formProfile?.deductionPayMonths,
     );
-    const sick = isContractuel ? 0 : sickLeaves?.byMonth[index]?.total || 0;
-    return (
-      baseSalary +
-      ifse +
-      otherFixed +
-      (index === ciaMonth ? cia : 0) +
-      SUNDAY_ALLOWANCE.monthlyFlat +
-      (month?.sunday || 0) +
-      (month?.holiday || 0) -
-      sick -
-      (!isContractuel && strike.totalDeduction !== null
-        ? strike.totalDeduction
-        : 0) +
-      overtime.amount +
-      mecenat.grossAmountCents / 100
-    );
+    // La même formule que l'estimation du mois (voir payMonth.ts) : maladie
+    // et grève se retiennent quel que soit le statut, et la vérification d'un
+    // bulletin ne peut plus attendre un autre brut que celui affiché.
+    return monthGross({
+      baseSalary,
+      ifse,
+      otherFixed,
+      cia: index === ciaMonth ? cia : 0,
+      monthlyFlat: SUNDAY_ALLOWANCE.monthlyFlat,
+      sunday: month?.sunday || 0,
+      holiday: month?.holiday || 0,
+      compensated: month?.compensated || 0,
+      sickTotal: sickLeaves?.byMonth[index]?.total || 0,
+      strikeDeduction: strikeDeduction(strike.totalDeduction),
+      overtimeAmount: overtime.amount,
+      mecenatGross: mecenat.grossAmountCents / 100,
+    }).gross;
   }
 
   async function importPayslips(
@@ -804,8 +853,20 @@ export function usePayActions(options: PayActionsOptions) {
         }
       }
       setPayslipRateSamples(nextRateSamples);
+      // Un « Jour de carence » nomme le premier jour d'un arrêt : cet arrêt
+      // est donc retenu sur la paie de ce bulletin, quoi qu'en dise la règle
+      // du 10. Seuls les arrêts enregistrés dans l'application sont rattachés.
+      const { payMonths: deductionPayMonths, attached } = attachCarencesToPayslips(
+        sickLeaveDates(periods),
+        items.map(({ reading }) => reading),
+        formProfile?.deductionPayMonths,
+      );
+      const attachedByPayslip = attached.map(({ slice, payMonth }) =>
+        `${deductionSliceLabel(slice)} rattaché à la paie ${ofPayMonth(payMonth)}, comme le montre le bulletin.`,
+      );
       const nextProfile: FormProfile = {
         ...payProfileBase(formProfile, group),
+        deductionPayMonths,
         baseSalary:
           found.baseSalary ??
           targetPayProfile?.baseSalary ??
@@ -915,6 +976,7 @@ export function usePayActions(options: PayActionsOptions) {
           );
           body.netRatioRegime = targetNetRatioRegime;
         }
+        if (attachedByPayslip.length) body.deductionPayMonths = deductionPayMonths;
         if (automaticSundayReport) {
           body.sundayCarryover = automaticSundayReport.count;
           body.sundayCarryoverYear = automaticSundayReport.target.year;
@@ -994,6 +1056,7 @@ export function usePayActions(options: PayActionsOptions) {
           .map((field) => field.label),
         adjustment:
           [
+            ...attachedByPayslip,
             automaticSundayReport
               ? `${automaticSundayReport.count} dimanche${s(
                   automaticSundayReport.count,
@@ -1028,6 +1091,7 @@ export function usePayActions(options: PayActionsOptions) {
     nextSundayPayoutSlot,
     reportMissingSundays,
     clearSundayCarryover,
+    moveDeduction,
     chooseHolidayPay,
     importPayslips,
     applyPayslipFallbackPeriod,

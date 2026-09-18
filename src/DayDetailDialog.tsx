@@ -15,12 +15,13 @@ import type {
 import { HOLIDAY_PAY_OPTIONS, euros, noteDateLabel } from "./appModel";
 import { minutesLabel, type RecoveryUse } from "./overtime";
 import {
+  HALF_BALANCE_OPTIONS,
   HALF_MOMENT_OPTIONS,
   LEAVE_TYPE_OPTIONS,
   dateTimeLabel,
   fromKey,
   holidayAllowance,
-  leaveTypeLabel,
+  periodTypeLabel,
   longDate,
   periodLabel,
   type LeaveType,
@@ -43,6 +44,8 @@ type DayPlanningState = Pick<
   | "setDayLeaveType"
   | "dayHalfMoment"
   | "setDayHalfMoment"
+  | "dayHalfBalance"
+  | "setDayHalfBalance"
   | "dayHolidayPay"
   | "setDayHolidayPay"
   | "setLeaveRangeEnabled"
@@ -137,6 +140,8 @@ export function DayDetailDialog({
     setDayLeaveType,
     dayHalfMoment,
     setDayHalfMoment,
+    dayHalfBalance,
+    setDayHalfBalance,
     dayHolidayPay,
     setDayHolidayPay,
     setLeaveRangeEnabled,
@@ -408,16 +413,28 @@ export function DayDetailDialog({
             )}
             {dayLeave &&
               dayLeaveType === "half" && (
-                <div className="leave-type-field">
-                  <span>Moitié de journée</span>
-                  <ChoicePicker
-                    value={dayHalfMoment}
-                    options={HALF_MOMENT_OPTIONS}
-                    onChange={setDayHalfMoment}
-                    ariaLabel="Choisir le matin ou l’après-midi"
-                    className="leave-type-picker"
-                  />
-                </div>
+                <>
+                  <div className="leave-type-field">
+                    <span>Moitié de journée</span>
+                    <ChoicePicker
+                      value={dayHalfMoment}
+                      options={HALF_MOMENT_OPTIONS}
+                      onChange={setDayHalfMoment}
+                      ariaLabel="Choisir le matin ou l’après-midi"
+                      className="leave-type-picker"
+                    />
+                  </div>
+                  <div className="leave-type-field">
+                    <span>Prise sur</span>
+                    <ChoicePicker
+                      value={dayHalfBalance}
+                      options={HALF_BALANCE_OPTIONS}
+                      onChange={setDayHalfBalance}
+                      ariaLabel="Choisir le solde de la demi-journée"
+                      className="leave-type-picker"
+                    />
+                  </div>
+                </>
               )}
             {dayHolidayChoiceVisible && (
               <div className="leave-type-field">
@@ -466,7 +483,7 @@ export function DayDetailDialog({
                     <i className="leave" />
                     <span>
                       {periodLabel(period.from, period.to)}
-                      <small>{leaveTypeLabel(period.leaveType)}</small>
+                      <small>{periodTypeLabel(period)}</small>
                     </span>
                     <div className="period-direct-actions" role="group" aria-label={`Gérer ${periodLabel(period.from, period.to)}`}>
                       <button

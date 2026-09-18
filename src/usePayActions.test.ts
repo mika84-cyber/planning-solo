@@ -148,7 +148,7 @@ describe("usePayActions — conversions et payloads sûrs", () => {
     expect(detected).toContain("cia");
   });
 
-  it("reconstruit le socle du profil sans réintroduire un ancien report", () => {
+  it("reconstruit le socle du profil en gardant le report de dimanches en cours", () => {
     const profile: FormProfile = {
       fullName: "Agent Test",
       group: "3",
@@ -167,7 +167,8 @@ describe("usePayActions — conversions et payloads sûrs", () => {
       baseSalary: 2500,
     });
     expect(base).not.toHaveProperty("netRatioRegime");
-    expect(base).not.toHaveProperty("sundayCarryover");
-    expect(base).not.toHaveProperty("sundayCarryoverYear");
+    // Changer un autre réglage ne doit pas faire disparaître le report de
+    // l'estimation jusqu'au prochain rechargement.
+    expect(base).toMatchObject({ sundayCarryover: 2, sundayCarryoverYear: 2026, sundayCarryoverMonth: 9 });
   });
 });

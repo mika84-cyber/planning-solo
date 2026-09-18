@@ -3741,6 +3741,55 @@ test("une grève peut être posée directement depuis une case", async ({ page }
   await expect(savedStrike).toHaveCSS("outline-color", "rgb(0, 0, 0)");
 });
 
+test("une absence qui déborde après le 10 est retenue sur la paie suivante, et se déplace", async ({ page }) => {
+  const now = new Date();
+  const day = (date: number) => dateKey(localDate(now.getFullYear(), now.getMonth(), date));
+  const strikeDate = Array.from({ length: 12 }, (_, index) =>
+    localDate(now.getFullYear(), now.getMonth(), 15 + index),
+  ).find((date) => date.getMonth() === now.getMonth() && getDayInfo(date, 2).kind === "work")!;
+  await page.addInitScript((periods) => {
+    localStorage.setItem(
+      "planning:demo-completed-request-v1",
+      JSON.stringify({
+        requestId: `e2e-retenues-${Date.now()}`,
+        requestKind: "leave",
+        group: 2,
+        periods,
+        timed: [],
+      }),
+    );
+  }, [
+    { from: day(2), to: day(4), type: "sick" },
+    { from: day(8), to: day(14), type: "sick" },
+    { from: dateKey(strikeDate), to: dateKey(strikeDate), type: "strike" },
+  ]);
+  await prepareStrikeDemo(page);
+  await goToSection(page, "pay");
+
+  // Paie du mois : seul l'arrêt fini avant le 10 y est retenu.
+  const sources = page.locator(".deduction-sources");
+  await expect(sources).toContainText(/Arrêt maladie du 2 au 4 /);
+  await expect(sources).toContainText("Retenue le mois même");
+  await expect(sources).not.toContainText(/du 8 au 14/);
+  await expect(sources.locator("li").filter({ hasText: "Grève" })).toHaveCount(0);
+
+  // Paie suivante : l'arrêt à cheval sur le 10, en entier, et la grève.
+  await page.getByRole("button", { name: "Mois suivant" }).click();
+  await expect(sources).toContainText(/Arrêt maladie du 8 au 14 /);
+  const strike = sources.locator("li").filter({ hasText: "Grève" });
+  await expect(strike).toContainText("Retenue sur la paie suivante");
+  await expect(strike).toContainText("61,86");
+
+  // Le bulletin l'a retenue le mois même : on la ramène, puis on annule.
+  await strike.getByRole("button", { name: /^Déplacer sur la paie/ }).click();
+  await expect(sources.locator("li").filter({ hasText: "Grève" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Mois précédent" }).click();
+  const moved = sources.locator("li").filter({ hasText: "Grève" });
+  await expect(moved).toContainText("Retenue déplacée sur cette paie");
+  await moved.getByRole("button", { name: "Revenir à la règle du 10" }).click();
+  await expect(sources.locator("li").filter({ hasText: "Grève" })).toHaveCount(0);
+});
+
 test("des CA validés entre deux grèves restent exclus de la retenue", async ({ page }) => {
   await prepareStrikeContinuityDemo(page, "annual");
   await goToSection(page, "leave");
@@ -3787,6 +3836,10 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
 
   await strikeDialog.locator(".modal-actions").getByRole("button", { name: "Fermer" }).click();
   await goToSection(page, "pay");
+  // La paie est arrêtée vers le 10 : des grèves qui finissent après sont
+  // retenues sur la paie du mois suivant.
+  if (Number(scenario.last.slice(8, 10)) > 10)
+    await page.getByRole("button", { name: "Mois suivant" }).click();
   await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({
     hasText: `Grève (${retainedDays} journées retenues)`,
@@ -3933,6 +3986,72 @@ test("une demi-journée choisie depuis une case demande matin ou après-midi", a
   await expect(halfDialog.getByRole("radio", { name: /L’après-midi/ })).toHaveAttribute("aria-checked", "true");
   await halfDialog.getByRole("button", { name: "Valider la demi-journée" }).click();
   await expect(request.getByLabel("Résumé avant validation")).toContainText("Congés en demi-journée");
+});
+
+test("une demi-journée de RTT est décomptée des RTT, pas des congés annuels", async ({ page }) => {
+  await prepareDemo(page);
+  const day = page.locator(".month-card .day.work").first();
+  await day.click();
+  await page.getByRole("dialog", { name: /2026/ })
+    .getByRole("button", { name: /^Congé/ })
+    .click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  const request = page.locator("#request-panel");
+  await request.getByRole("button", { name: "Congés en demi-journée" }).click();
+
+  // Le formulaire range toutes les demi-journées dans la même case : c'est
+  // ici qu'on dit de quel solde elle vient.
+  // Sans horaires enregistrés dans le profil, « Le matin » est bien pris en
+  // compte sans avoir à le recliquer.
+  const halfDialog = page.getByRole("dialog", { name: "Matin ou après-midi ?" });
+  await halfDialog.getByRole("button", { name: "Choisir le solde de la demi-journée" }).click();
+  await page.getByRole("option", { name: "RTT" }).click();
+  await halfDialog.getByRole("button", { name: "Valider la demi-journée" }).click();
+
+  const summary = request.getByLabel("Résumé avant validation");
+  await expect(summary).toContainText("RTT en demi-journée");
+  await expect(summary).toContainText("14,5 RTT restants");
+  await expect(summary).not.toContainText("CA restants");
+
+  await request.getByRole("button", { name: "Enregistrer uniquement" }).click();
+  await expect(day).toHaveAttribute("aria-label", /Demi-journée matin · RTT/);
+  await expect(day).toHaveClass(/half-rtt/);
+
+  await goToSection(page, "leave");
+  await expect(page.locator(".leave-balance-grid button.rtt")).toContainText("0,5");
+  await expect(page.locator(".leave-balance-grid button.annual")).not.toContainText("0,5");
+});
+
+test("une demi-journée passe d’elle-même sur les RTT quand il n’y a plus de CA", async ({ page }) => {
+  await page.addInitScript(() => {
+    const year = String(new Date().getFullYear());
+    localStorage.setItem("planning:e2e-pay-profile", JSON.stringify({
+      fullName: "",
+      group: "2",
+      signature: "",
+      manualAdjustments: {
+        [year]: {
+          annualUsed: 29,
+          rttUsed: 0,
+          fractionUsed: 0,
+          sundayLeaveJanJun: 0,
+          sundayLeaveJulSep: 0,
+          sundayLeaveOctNov: 0,
+          sundayLeaveDec: 0,
+        },
+      },
+    }));
+  });
+  await prepareDemo(page);
+  await page.locator(".month-card .day.work").first().click();
+  await page.getByRole("dialog", { name: /\d{4}/ })
+    .getByRole("button", { name: /^Congé/ })
+    .click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  await page.locator("#request-panel").getByRole("button", { name: "Congés en demi-journée" }).click();
+  const halfDialog = page.getByRole("dialog", { name: "Matin ou après-midi ?" });
+  await expect(halfDialog.getByRole("button", { name: "Choisir le solde de la demi-journée" }))
+    .toContainText("RTT");
 });
 
 test("une récupération propose les cinq choix ensemble", async ({ page }) => {

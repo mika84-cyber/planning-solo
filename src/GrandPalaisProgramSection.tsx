@@ -720,11 +720,23 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           <div className="grand-palais-interexpo-list">
             {interExhibitionPeriods.length ? interExhibitionPeriods.map((period) => {
               const detail = describeInterExhibitionPeriod(period, today);
+              // Une période en cours montre où on en est, comme une exposition.
+              const elapsed = detail.status === "En cours"
+                ? Math.min(detail.durationDays, dayDistance(period.startsOn, today) + 1)
+                : 0;
               return (
                 <article key={`${period.startsOn}-${period.endsOn}`} data-status={detail.status}>
                   <header><em>{detail.status}</em><span>{detail.timing}</span></header>
                   <strong>{interExhibitionRangeLabel(period)}</strong>
-                  <small><b>{detail.durationDays} jours</b> de fermeture</small>
+                  {elapsed ? (
+                    <span className="grand-palais-interexpo-progress" aria-hidden="true">
+                      <i style={{ width: `${Math.round((elapsed / detail.durationDays) * 100)}%` }} />
+                    </span>
+                  ) : null}
+                  <small>
+                    <b>{detail.durationDays} jours</b> de fermeture
+                    {elapsed ? <> · {elapsed} passé{elapsed > 1 ? "s" : ""}</> : null}
+                  </small>
                 </article>
               );
             }) : <p className="empty-state">Aucune période commune calculable pour le moment.</p>}

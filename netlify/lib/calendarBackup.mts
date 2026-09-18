@@ -1,4 +1,4 @@
-import { isValidDateKey } from "./calendarValidation.mts";
+import { isValidDateKey, sanitizeDeductionPayMonths } from "./calendarValidation.mts";
 
 const ID_RE = /^[a-zA-Z0-9-]{8,80}$/;
 const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
@@ -169,6 +169,10 @@ export function sanitizeCalendarBackup(value: unknown) {
         (item.half_moment === "morning" || item.half_moment === "afternoon")
           ? item.half_moment
           : "",
+      ...(item.leave_type === "half" &&
+      (item.half_balance === "rtt" || item.half_balance === "fraction")
+        ? { half_balance: item.half_balance }
+        : {}),
       group: [1, 2, 3].includes(Number(item.group)) ? Number(item.group) : undefined,
       updated_at:
         typeof item.updated_at === "string"
@@ -355,6 +359,7 @@ export function sanitizeCalendarBackup(value: unknown) {
       pay_profiles: payProfiles,
       manual_adjustments: manualAdjustments,
       cet_account: cetAccount,
+      deduction_pay_months: sanitizeDeductionPayMonths(raw.deduction_pay_months),
       sunday_carryover: optionalNumber(raw.sunday_carryover, 100),
       sunday_carryover_year: optionalNumber(raw.sunday_carryover_year, 2100),
       sunday_carryover_month: optionalNumber(raw.sunday_carryover_month, 11),

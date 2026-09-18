@@ -529,9 +529,24 @@
 .sunday-done-list{margin-top:10px;border-top:1px solid var(--line)}
 /* Dimanches faits : un bloc par paie, une ligne par mois. On lit les dates
    comme sur un bulletin, sans transformer la carte en grille de pastilles. */
-.sunday-done-group{margin-top:12px}
-.sunday-done-group-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 2px}
-.sunday-done-group-heading strong{color:var(--text);font-size:.92rem}
+.sunday-done-group{margin-top:10px;border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px 4px;background:var(--surface-soft)}
+.sunday-done-group-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0}
+.sunday-done-group-heading strong{color:var(--text);font-family:var(--font-display);font-size:1rem;font-weight:600}
 .sunday-done-group-heading small{color:var(--muted);font-size:.72rem;font-weight:700;white-space:nowrap}
+/* Ce que la paie verse vraiment : seuls les dimanches du 11e au 31e. */
+.sunday-done-group-pay{margin:2px 0 4px;color:#207258;font-size:.76rem;font-weight:800}
+.sunday-done-group-pay.none{color:var(--muted);font-weight:700}
 .sunday-done-table th{text-transform:capitalize}
 .sunday-done-table td{color:var(--text);font-variant-numeric:tabular-nums;font-weight:800;text-align:right}
+/* Dates lues comme sur un bulletin, en texte : la couleur seule dit ce que
+   chaque dimanche rapporte. */
+.sunday-done-table td{color:var(--muted);font-weight:600}
+.sunday-day.paid{color:#207258;font-weight:800}
+.sunday-day.flat{color:var(--muted);font-weight:600}
+.sunday-day.unpaid{color:var(--muted);font-weight:600;text-decoration:line-through}
+.sunday-done-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:2px 0 0;font-size:.72rem;font-weight:700}
+.sunday-done-legend span{display:inline-flex;align-items:center;gap:6px}
+.sunday-done-legend span::before{width:8px;height:8px;border-radius:50%;background:currentColor;content:""}
+.sunday-done-legend .paid{color:#207258}
+.sunday-done-legend .flat{color:var(--muted)}
+.sunday-done-legend .unpaid{color:var(--muted);text-decoration:line-through}

@@ -311,7 +311,11 @@
   gap: 12px;
 }
 .grand-palais-interexpo-list > article { display: grid; gap: 0; align-content: start; min-width: 0; border: 1.5px solid var(--section-outline); border-left: 5px solid var(--section-outline); border-radius: 16px; padding: 14px 15px; background: var(--surface-high); }
-.grand-palais-interexpo-list > article[data-status="En cours"] { border-color: var(--border-card); border-left-color: #28745a; background: #fff; }
+.grand-palais-interexpo-list > article[data-status="En cours"] { border-color: #b9d6c8; border-left-color: #28745a; background: #f3f9f5; }
+/* Une période à venir s'efface derrière celle en cours. */
+.grand-palais-interexpo-list > article[data-status="À venir"] { border-color: var(--border-soft); border-left-color: var(--border-card); }
+.grand-palais-interexpo-progress { display: block; height: 5px; margin: 9px 0 0; border-radius: 999px; background: #dcebe3; overflow: hidden; }
+.grand-palais-interexpo-progress i { display: block; height: 100%; border-radius: inherit; background: #28745a; }
 .grand-palais-interexpo-list header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-bottom: 9px; }
 .grand-palais-interexpo-list header span { color: var(--muted); font-size: 0.75rem; font-weight: 600; }
 .grand-palais-interexpo-list em { border: 1px solid var(--border-control); border-radius: 999px; padding: 3px 9px; background: var(--surface); color: var(--text); font-size: 0.69rem; font-style: normal; font-weight: 600; }

@@ -1,0 +1,93 @@
+/* Retenues maladie et grève d'une paie : une ligne par tranche d'absence,
+   la raison du mois retenu, et le moyen de la déplacer. */
+.deduction-sources {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 12px;
+}
+
+.deduction-sources h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.deduction-sources > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.deduction-sources ul {
+  display: grid;
+  gap: 7px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deduction-sources li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: start;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.deduction-sources li[data-overridden] {
+  border-color: var(--border-card);
+}
+
+.deduction-sources li > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.deduction-sources strong {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.deduction-sources small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.deduction-sources b {
+  color: #a33b42;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.deduction-sources-actions {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 6px;
+}
+
+.deduction-sources-actions button {
+  min-height: 32px;
+  border: 1px solid var(--border-control);
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.deduction-sources-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

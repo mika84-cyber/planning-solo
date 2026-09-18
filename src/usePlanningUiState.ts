@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { LeavePeriod, RequestKind, SelectedDay } from "./appModel";
 import type {
+  HalfBalance,
   HalfMoment,
   HolidayPay,
   LeaveType,
@@ -22,6 +23,7 @@ export function usePlanningUiState() {
   const [dayWish, setDayWish] = useState(false);
   const [dayLeaveType, setDayLeaveType] = useState<LeaveType>("annual");
   const [dayHalfMoment, setDayHalfMoment] = useState<HalfMoment>("morning");
+  const [dayHalfBalance, setDayHalfBalance] = useState<HalfBalance>("annual");
   const [dayHolidayPay, setDayHolidayPay] = useState<HolidayPay | "">("");
   const [leaveRangeEnabled, setLeaveRangeEnabled] = useState(false);
   const [leaveRangeFrom, setLeaveRangeFrom] = useState("");
@@ -31,6 +33,7 @@ export function usePlanningUiState() {
   const [rangePrefillDate, setRangePrefillDate] = useState<string | null>(null);
   const [rangeLeaveType, setRangeLeaveType] = useState<LeaveType>("annual");
   const [rangeHalfMoment, setRangeHalfMoment] = useState<HalfMoment>("morning");
+  const [rangeHalfBalance, setRangeHalfBalance] = useState<HalfBalance>("annual");
   const [rangeSelecting, setRangeSelecting] = useState(false);
   const [separateDates, setSeparateDates] = useState<string[]>([]);
   const [recoveryRangeOpen, setRecoveryRangeOpen] = useState(false);
@@ -52,6 +55,9 @@ export function usePlanningUiState() {
   const [selections, setSelections] = useState<Record<string, SelectedDay>>({});
   const [timeDate, setTimeDate] = useState<string | null>(null);
   const [timeStart, setTimeStart] = useState("09:15");
+  // Gardé d'une date à l'autre : plusieurs demi-journées de RTT se posent
+  // sans le rechoisir à chaque fois.
+  const [timeHalfBalance, setTimeHalfBalance] = useState<HalfBalance>("annual");
   const [timeEnd, setTimeEnd] = useState("13:00");
   const [warningDate, setWarningDate] = useState<string | null>(null);
 
@@ -59,11 +65,11 @@ export function usePlanningUiState() {
     dayDate, setDayDate, dayPanelTab, setDayPanelTab, noteText, setNoteText, noteColor, setNoteColor,
     noteGroupId, setNoteGroupId, noteSelecting, setNoteSelecting, noteDates, setNoteDates,
     dayLeave, setDayLeave, dayPersonalLeave, setDayPersonalLeave, dayWish, setDayWish,
-    dayLeaveType, setDayLeaveType, dayHalfMoment, setDayHalfMoment,
+    dayLeaveType, setDayLeaveType, dayHalfMoment, setDayHalfMoment, dayHalfBalance, setDayHalfBalance,
     dayHolidayPay, setDayHolidayPay, leaveRangeEnabled, setLeaveRangeEnabled,
     leaveRangeFrom, setLeaveRangeFrom, leaveRangeTo, setLeaveRangeTo, savingDay, setSavingDay,
     rangeOpen, setRangeOpen, rangePrefillDate, setRangePrefillDate,
-    rangeLeaveType, setRangeLeaveType, rangeHalfMoment, setRangeHalfMoment,
+    rangeLeaveType, setRangeLeaveType, rangeHalfMoment, setRangeHalfMoment, rangeHalfBalance, setRangeHalfBalance,
     rangeSelecting, setRangeSelecting, separateDates, setSeparateDates,
     recoveryRangeOpen, setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
@@ -73,6 +79,6 @@ export function usePlanningUiState() {
     requestChooserDate, setRequestChooserDate, requestSeedDate, setRequestSeedDate,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
     activeType, setActiveType, selections, setSelections, timeDate, setTimeDate,
-    timeStart, setTimeStart, timeEnd, setTimeEnd, warningDate, setWarningDate,
+    timeStart, setTimeStart, timeEnd, setTimeEnd, timeHalfBalance, setTimeHalfBalance, warningDate, setWarningDate,
   };
 }

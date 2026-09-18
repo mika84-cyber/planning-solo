@@ -32,6 +32,7 @@ type PayPageProps = {
   onCompleteEstimate?: () => void;
   reliability: { tone: "exact" | "estimated" | "incomplete"; label: string; detail: string };
   variables: PayDashboardVariable[];
+  deductionContent: ReactNode;
   monthSlide: string;
   allowancesContent: ReactNode;
   estimateContent: ReactNode;
@@ -56,7 +57,7 @@ export function PayPage({
   screen, month, year, profileOpen, profileFocusRequested, settingsOpen, workQuota, workSchedule, status,
   netEstimateComplete, gross, grossComplete, net, profileLabel,
   missingFields, onCompleteEstimate,
-  reliability, variables, monthSlide, allowancesContent, estimateContent,
+  reliability, variables, deductionContent, monthSlide, allowancesContent, estimateContent,
   verificationContent, settingsContent, onScreenChange, onToggleProfile, onProfileFocused,
   onToggleSettings, onWorkQuotaChange, onWorkScheduleChange, onStatusChange, onPreviousMonth,
   onSaveProfile, onNextMonth, onToday, onTouchStart, onTouchEnd,
@@ -135,7 +136,7 @@ export function PayPage({
             month={month} year={year} gross={gross} grossComplete={grossComplete}
             net={net} profileLabel={profileLabel} reliability={reliability}
             missingFields={missingFields} onCompleteEstimate={() => { setFocusMissing(true); onCompleteEstimate?.(); }}
-            variables={variables} verificationContent={verificationContent}
+            variables={variables} deductionContent={deductionContent} verificationContent={verificationContent}
             profileContent={profileContent} settingsContent={settingsContent} settingsOpen={settingsOpen}
             onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday}
             onOpenEstimateDetails={() => onScreenChange("payslip")}

@@ -361,17 +361,34 @@ export function PayAllowancesSection({
                     Vos {sundaysDone.length} dimanche{s(sundaysDone.length)}{" "}
                     travaillé{s(sundaysDone.length)} en {allowances.year}, dans l’ordre des paies
                   </p>
+                  {/* Le rang d'un dimanche dit ce qu'il rapporte : les dix
+                      premiers sont dans le forfait mensuel, les suivants sont
+                      payés un par un jusqu'au plafond, au-delà rien. */}
+                  <p className="sunday-done-legend">
+                    <span className="paid">Payé {euros(SUNDAY_ALLOWANCE.perSunday)}</span>
+                    <span className="flat">Dans le forfait</span>
+                    {sundaysDone.length > SUNDAY_ALLOWANCE.paidUntil ? <span className="unpaid">Non payé</span> : null}
+                  </p>
                   {/* Groupés par paie, puis par mois : c'est ainsi qu'on les
                       retrouve sur un bulletin, et la liste tient en quelques lignes. */}
                   {[...new Set(sundaysDone.map((item) => sundayPayslip(item.key).label))].map((payslipLabel) => {
                     const paid = sundaysDone.filter((item) => sundayPayslip(item.key).label === payslipLabel);
                     const firstRank = sundaysDone.indexOf(paid[0]) + 1;
                     const lastRank = sundaysDone.indexOf(paid[paid.length - 1]) + 1;
+                    const rankOf = (item: (typeof sundaysDone)[number]) => sundaysDone.indexOf(item) + 1;
+                    const kindOf = (rank: number) =>
+                      rank <= SUNDAY_ALLOWANCE.flatUntil ? "flat" : rank <= SUNDAY_ALLOWANCE.paidUntil ? "paid" : "unpaid";
+                    const paidHere = paid.filter((item) => kindOf(rankOf(item)) === "paid").length;
                     return (
                       <section className="sunday-done-group" key={payslipLabel}>
                         <p className="sunday-done-group-heading">
                           <strong>{payslipLabel.charAt(0).toUpperCase() + payslipLabel.slice(1)}</strong>
                           <small>{paid.length} dimanche{s(paid.length)} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
+                        </p>
+                        <p className={`sunday-done-group-pay${paidHere ? "" : " none"}`}>
+                          {paidHere
+                            ? `${paidHere} payé${s(paidHere)} sur cette paie · ${euros(paidHere * SUNDAY_ALLOWANCE.perSunday)}`
+                            : "Tous compris dans le forfait mensuel"}
                         </p>
                         <table className="allowance-table sunday-done-table">
                           <tbody>
@@ -380,7 +397,23 @@ export function PayAllowancesSection({
                               return (
                                 <tr key={monthIndex}>
                                   <th scope="row">{MONTHS[monthIndex]}</th>
-                                  <td>{days.map((item) => Number(item.key.slice(8, 10))).join(", ")}</td>
+                                  <td>
+                                    {days.map((item, index) => {
+                                      const rank = rankOf(item);
+                                      const kind = kindOf(rank);
+                                      return (
+                                        <span key={item.key}>
+                                          {index ? ", " : ""}
+                                          <span
+                                            className={`sunday-day ${kind}`}
+                                            title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}`}
+                                          >
+                                            {Number(item.key.slice(8, 10))}
+                                          </span>
+                                        </span>
+                                      );
+                                    })}
+                                  </td>
                                 </tr>
                               );
                             })}

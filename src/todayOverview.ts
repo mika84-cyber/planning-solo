@@ -8,10 +8,14 @@ import {
   coWorkingGroupsForDate,
   dateKey,
   getDayInfo,
+  halfBalanceOf,
   leaveTypeLabel,
   nextAttendanceDay,
   selectionRemovesAttendance,
 } from "./planningLogic";
+
+/** Ce que la carte d'accueil ajoute à « 1/2 journée » selon le solde. */
+const HALF_BALANCE_SHORT = { annual: "", rtt: " de RTT", fraction: " de fractionnement" } as const;
 
 export type TodayOverviewInput = {
   today: Date;
@@ -76,7 +80,7 @@ export function computeTodayOverview({
   } else if (period && info.kind !== "off") {
     status =
       period.leaveType === "half"
-        ? `1/2 journée posée ${period.halfMoment === "afternoon" ? "l’après-midi" : "le matin"}`
+        ? `1/2 journée${HALF_BALANCE_SHORT[halfBalanceOf(period)]} posée ${period.halfMoment === "afternoon" ? "l’après-midi" : "le matin"}`
       : period.leaveType === "other"
         ? "Divers"
         : period.leaveType === "strike"

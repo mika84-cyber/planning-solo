@@ -1,5 +1,5 @@
 import type { PayslipReading } from "./payslip";
-import { extractPayslipTokens, readPayslip } from "./payslip";
+import { carenceDatesFromLabels, extractPayslipTokens, readPayslip } from "./payslip";
 
 export const PAYSLIP_FILE_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
@@ -269,6 +269,9 @@ export function readPayslipOcrText(text: string): PayslipReading {
       return value === undefined ? undefined : Math.abs(value);
     })(),
     carenceDay: carence > 0 ? Math.round(carence * 100) / 100 : undefined,
+    carenceDates: carenceDatesFromLabels(
+      matchingLineIndexes(lines, ["Jour de carence"]).map((index) => lines[index]),
+    ),
     pasRate: lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]),
     otherFixed: fixedParts.length
       ? Math.round(fixedParts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
@@ -386,7 +389,10 @@ export function mergePayslipPageReadings(
     for (const [key, value] of Object.entries(reading)) {
       if (value === undefined || key === "sundaysBeyondTen") continue;
       if (key === "carenceDay") {
-        merged.carenceDay = Math.round(((merged.carenceDay || 0) + value) * 100) / 100;
+        merged.carenceDay = Math.round(((merged.carenceDay || 0) + (value as number)) * 100) / 100;
+      } else if (key === "carenceDates") {
+        // Chaque photo peut porter des arrêts différents : on les réunit.
+        merged.carenceDates = [...new Set([...(merged.carenceDates || []), ...(value as string[])])].sort();
       } else if (merged[key as keyof PayslipReading] === undefined) {
         Object.assign(merged, { [key]: value });
       }

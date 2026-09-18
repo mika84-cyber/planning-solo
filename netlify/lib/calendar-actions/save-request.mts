@@ -6,10 +6,12 @@ import { acquireAtomicLock } from "../calendarAtomic.mts";
 import type { CalendarActionContext } from "./context.mts";
 
 type QuotaLeaveType = "annual" | "rtt" | "fraction";
-type QuotaPeriod = { id: string; from: string; to: string; leaveType: string; group: number };
+type QuotaPeriod = { id: string; from: string; to: string; leaveType: string; halfBalance?: string; group: number };
 
-function quotaType(type: string): QuotaLeaveType | null {
-  if (type === "half") return "annual";
+/** Solde consommé : une demi-journée est prise sur le solde choisi, CA par
+ *  défaut. */
+function quotaType(type: string, halfBalance?: string): QuotaLeaveType | null {
+  if (type === "half") return halfBalance === "rtt" || halfBalance === "fraction" ? halfBalance : "annual";
   return type === "annual" || type === "rtt" || type === "fraction" ? type : null;
 }
 
@@ -17,7 +19,7 @@ function quotaUsageByYear(periods: QuotaPeriod[]) {
   const usage: Record<string, Record<QuotaLeaveType, number>> = {};
   const counted = new Set<string>();
   for (const period of periods) {
-    const type = quotaType(period.leaveType);
+    const type = quotaType(period.leaveType, period.halfBalance);
     if (!type) continue;
     const units = period.leaveType === "half" ? 0.5 : 1;
     for (let date = fromKey(period.from); dateKey(date) <= period.to; date = addDays(date, 1)) {
@@ -79,6 +81,9 @@ export async function handleSaveRequest(
       to: candidate.to,
       leave_type: candidate.leaveType as LeaveType,
       half_moment: candidate.leaveType === "half" ? candidate.halfMoment || "" : "",
+      ...(candidate.leaveType === "half" && candidate.halfBalance
+        ? { half_balance: candidate.halfBalance }
+        : {}),
       group: candidate.group,
       updated_at: new Date().toISOString(),
     } satisfies LeavePeriod,
@@ -100,6 +105,7 @@ export async function handleSaveRequest(
         from: period.from,
         to: period.to,
         leaveType: period.leave_type || "",
+        halfBalance: period.half_balance,
         group: period.group || normalized.group,
       })));
     const requestedUsage = quotaUsageByYear(normalized.periods.map((period) => ({
@@ -107,6 +113,7 @@ export async function handleSaveRequest(
       from: period.from,
       to: period.to,
       leaveType: period.leaveType,
+      halfBalance: period.halfBalance,
       group: period.group,
     })));
     for (const [year, categories] of Object.entries(requestedUsage)) {

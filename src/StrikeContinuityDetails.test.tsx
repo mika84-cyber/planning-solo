@@ -14,6 +14,7 @@ const base: StrikePayEstimate = {
   sourcePeriod: "2026-09",
   exactMonthValues: true,
   continuityIntervals: [],
+  sources: [],
 };
 
 describe("détail de continuité de grève", () => {

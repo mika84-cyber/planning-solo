@@ -51,6 +51,8 @@ export type LeavePeriod = {
   leave_type?: LeaveType;
   /** Renseigné seulement quand `leave_type` vaut « half ». */
   half_moment?: HalfMoment;
+  /** Solde d'une demi-journée ; absent, ce sont les congés annuels. */
+  half_balance?: "rtt" | "fraction";
   group?: number;
   updated_at: string;
 };
@@ -169,6 +171,8 @@ export type FormProfile = {
   pay_profiles?: Record<string, PayProfileValues>;
   manual_adjustments?: Record<string, ManualYearAdjustments>;
   cet_account?: CetStoredAccount;
+  /** Retenues maladie et grève déplacées sur un autre mois de paie. */
+  deduction_pay_months?: Record<string, string>;
   updated_at: string;
 };
 

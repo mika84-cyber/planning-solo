@@ -95,7 +95,7 @@ import { WorkExchangeDialog } from "./WorkExchangeDialog";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { workExchangeForDate } from "./workExchange";
-import { requestRecoveryMinutes, zeroLeaveBalanceType } from "./RequestValidationSummary";
+import { requestLeaveBalanceUsage, requestRecoveryMinutes, zeroLeaveBalanceType } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -144,6 +144,7 @@ import {
   type PayProfile,
   type PayStatus,
   type RequestKind,
+  type SelectedDay,
 } from "./appModel";
 import { useAnnualPdfExport } from "./useAnnualPdfExport";
 import {
@@ -161,7 +162,7 @@ import {
   readingsForCalibrationRegime,
 } from "./payslip";
 import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
-import { strikePayEstimate } from "./strike";
+import { strikeEstimateForCalendarMonth, strikePayEstimate } from "./strike";
 import {
   payEstimateReadiness,
   type PayEstimateField,
@@ -199,6 +200,7 @@ import {
   dateKey,
   fromKey,
   getDayInfo,
+  automaticHalfBalance,
   halfMomentFromStart,
   leaveTypeLabel,
   s,
@@ -315,7 +317,7 @@ export default function Home() {
     separatePeople,
     savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, requestSeedDate,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
-    activeType, setActiveType, selections, setSelections, setTimeDate, setTimeStart, setTimeEnd,
+    activeType, setActiveType, selections, setSelections, setTimeDate, setTimeStart, setTimeEnd, setTimeHalfBalance,
     setWarningDate,
   } = planningUi;
   const showLeaves = true;
@@ -691,6 +693,7 @@ export default function Home() {
                     to: item.date,
                     leaveType: "half" as const,
                     halfMoment: halfMomentFromStart(item.start || "13:30"),
+                    ...(item.halfBalance ? { halfBalance: item.halfBalance } : {}),
                     group: completed.group,
                     updatedAt: new Date().toISOString(),
                   })),
@@ -894,6 +897,14 @@ export default function Home() {
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
+      deductionPayMonths: formProfile?.deductionPayMonths,
+      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
+      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
+      sundayCarryover: formProfile?.sundayCarryover,
+      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
+      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
+      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
+      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
     };
     setFormProfile(nextProfile);
     if (demoMode)
@@ -938,6 +949,14 @@ export default function Home() {
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
+      deductionPayMonths: formProfile?.deductionPayMonths,
+      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
+      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
+      sundayCarryover: formProfile?.sundayCarryover,
+      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
+      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
+      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
+      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
     };
     setFormProfile(nextProfile);
     if (demoMode)
@@ -989,13 +1008,35 @@ export default function Home() {
     setTimeEnd(end);
     setTimeDate(requestSeedDate);
   }
+  /** Solde d'une nouvelle demi-journée : CA d'abord, puis RTT, puis
+   *  fractionnement, dans l'année de la date et en déduisant ce que la demande
+   *  en cours prend déjà (hors la date elle-même). */
+  function proposeHalfBalance(key: string, pending: SelectedDay[] = []) {
+    const year = Number(key.slice(0, 4));
+    const stats = computeLeaveStats({
+      year,
+      today: now,
+      periods,
+      group,
+      manualAdjustments: formProfile?.manualAdjustments,
+    });
+    return automaticHalfBalance(
+      Object.fromEntries(stats.balances.map((balance) => [balance.type, balance.remaining])),
+      requestLeaveBalanceUsage(
+        pending.filter((item) => item.date !== key && item.date.startsWith(`${year}-`)),
+        group,
+      ),
+    );
+  }
   function selectLeaveType(type: SelectionType) {
     setActiveType(type);
     if (!requestSeedDate) return;
-    const schedule = usableWorkSchedule(formProfile?.workSchedule);
-    const halfTimes = schedule
-      ? workScheduleHalfTimes(schedule, "morning")
-      : { start: "", end: "" };
+    // Mêmes horaires que ceux de la fenêtre « Matin ou après-midi ? » : sans
+    // horaires enregistrés, la journée type, pour que « Le matin » soit vrai.
+    const halfTimes = workScheduleHalfTimes(
+      usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
+      "morning",
+    );
     setSelections((current) => {
       if (!current[requestSeedDate]) return current;
       return {
@@ -1008,6 +1049,7 @@ export default function Home() {
     if (type !== "half") return;
     setTimeStart(halfTimes.start);
     setTimeEnd(halfTimes.end);
+    setTimeHalfBalance(proposeHalfBalance(requestSeedDate, selectedList));
     setTimeDate(requestSeedDate);
   }
   function exceptionalClosureFor(key: string) {
@@ -1196,9 +1238,17 @@ export default function Home() {
    *  qu'un seul arrêt. Deux arrêts séparés dans le mois donnent bien deux
    *  carences.
    */
+  const deductionPayMonths = formProfile?.deductionPayMonths;
   const sickLeaves = useMemo(() => {
-    return sickLeaveSummaryForYear(periods, payView.getFullYear(), baseSalary, ifse, carenceDay);
-  }, [payView, periods, baseSalary, ifse, carenceDay]);
+    return sickLeaveSummaryForYear(
+      periods,
+      payView.getFullYear(),
+      baseSalary,
+      ifse,
+      carenceDay,
+      deductionPayMonths,
+    );
+  }, [payView, periods, baseSalary, ifse, carenceDay, deductionPayMonths]);
 
   /* Le choix ne s'affiche que sur un férié effectivement travaillé : ni posé
      en congé, ni tombé sur un repos ou une formation — `getDayInfo` a déjà
@@ -1378,8 +1428,9 @@ export default function Home() {
         payView.getFullYear(),
         payView.getMonth(),
         { entries, recoveryUses },
+        deductionPayMonths,
       ),
-    [periods, group, payProfiles, payView, entries, recoveryUses],
+    [periods, group, payProfiles, payView, entries, recoveryUses, deductionPayMonths],
   );
 
   /* La paie du mois affiché : les primes de ce mois-là, retenues déduites.
@@ -1405,6 +1456,8 @@ export default function Home() {
       sundayCount: month?.sundayCount || 0,
       carryover: month?.carryover || 0,
       reported: month?.reported || 0,
+      carriedFrom: month?.carriedFrom,
+      reportedTo: month?.reportedTo,
       holiday,
       holidayCount: month?.holidayCount || 0,
       compensated,
@@ -1813,6 +1866,7 @@ export default function Home() {
     saveStrikeDateDirect,
     notify,
     isExchangeDate: (key) => Boolean(entries[key]?.exchangeId),
+    proposeHalfBalance: (key) => proposeHalfBalance(key, Object.values(selections)),
   });
   function changePayMonth(delta: 1 | -1) {
     setPayView((current) =>
@@ -1846,6 +1900,14 @@ export default function Home() {
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
+      deductionPayMonths: formProfile?.deductionPayMonths,
+      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
+      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
+      sundayCarryover: formProfile?.sundayCarryover,
+      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
+      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
+      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
+      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
     };
     setFormProfile(nextProfile);
     if (demoMode)
@@ -2734,6 +2796,7 @@ export default function Home() {
           profileLabel={payContent.profileLabel}
           reliability={payContent.reliability}
           variables={payContent.variables}
+          deductionContent={payContent.deductionContent}
           monthSlide={payMonthSlide}
           allowancesContent={allowancesContent}
           estimateContent={payContent.estimateContent}
@@ -3066,10 +3129,15 @@ export default function Home() {
           }}
           onOpenManualAdjustments={openManualAdjustments}
           strikeEstimateFor={(year, monthIndex) =>
-            strikePayEstimate(periods, group, payProfiles, year, monthIndex, {
-              entries,
-              recoveryUses,
-            })
+            strikeEstimateForCalendarMonth(
+              periods,
+              group,
+              payProfiles,
+              year,
+              monthIndex,
+              { entries, recoveryUses },
+              deductionPayMonths,
+            )
           }
         />
         </Suspense>
@@ -3091,7 +3159,7 @@ export default function Home() {
         toast={toastUi}
         group={group}
         workQuota={workQuota}
-        workSchedule={formProfile?.workSchedule || DEFAULT_WORK_SCHEDULE}
+        workSchedule={usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE}
         mecenatCalculation={mecenatDraftCalculation}
         recoveryRemainingMinutes={recoveryBalance.remaining}
         onStartRangeSelection={beginRangeSelection}

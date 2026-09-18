@@ -9,9 +9,10 @@ import type {
   PayProfile,
 } from "./appModel";
 import { cetAccountFromApi } from "./cet";
+import { sanitizeDeductionPayMonths } from "./deductionPayMonth";
 import type { MecenatEntry } from "./mecenat";
 import type { OvertimeEntry, RecoveryUse } from "./overtime";
-import type { HalfMoment, HolidayPay, LeaveType } from "./planningLogic";
+import { halfBalanceFromApi, type HalfMoment, type HolidayPay, type LeaveType } from "./planningLogic";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -135,6 +136,7 @@ function formProfileFromApi(value: unknown): FormProfile | null {
     sundayCarryoverFromMonth: optionalFiniteNumber(raw.sunday_carryover_from_month),
     manualAdjustments: manualAdjustmentsFromApi(raw.manual_adjustments),
     cetAccount: cetAccountFromApi(raw.cet_account),
+    deductionPayMonths: sanitizeDeductionPayMonths(raw.deduction_pay_months),
   };
 }
 
@@ -196,6 +198,7 @@ function periodsFromApi(value: unknown): LeavePeriod[] {
       to,
       leaveType,
       halfMoment,
+      ...halfBalanceFromApi({ leave_type: leaveType, half_balance: raw.half_balance }),
       group: optionalFiniteNumber(raw.group),
       updatedAt: text(raw.updated_at),
     }];

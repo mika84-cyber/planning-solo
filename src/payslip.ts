@@ -44,6 +44,10 @@ export type PayslipReading = {
    *  par préfixe. Absente la plupart des mois : normal, ce n'est pas un
    *  échec de lecture. Ramenée à sa valeur absolue. */
   carenceDay?: number;
+  /** Les dates portées par les lignes « Jour de carence » : chacune nomme le
+   *  premier jour d'un arrêt, et dit donc sur quelle paie cet arrêt a été
+   *  retenu. Au format « AAAA-MM-JJ », sans doublon. */
+  carenceDates?: string[];
   /** Ligne « PAS - Taux » : le taux lui-même, pas une assiette — une seule
    *  valeur suit le libellé, contrairement aux lignes de cotisation. */
   pasRate?: number;
@@ -241,6 +245,29 @@ function amountAfter(
   const index = tokens.findIndex((token) => token.trim() === label);
   if (index === -1) return undefined;
   return parseAmount(tokens[index + offset]);
+}
+
+/** La date d'un « Jour de carence », telle que son libellé la porte :
+ *  « 20/3/2024 » dans les PDF, « 2026/03/02 » après lecture d'une photo. */
+export function carenceDateFromLabel(label: string): string | undefined {
+  const text = label.replace(/^.*?Jour de carence/i, "");
+  const yearFirst = /(\d{4})\/(\d{1,2})\/(\d{1,2})/.exec(text);
+  const dayFirst = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(text);
+  const parts = yearFirst
+    ? [yearFirst[1], yearFirst[2], yearFirst[3]]
+    : dayFirst
+      ? [dayFirst[3], dayFirst[2], dayFirst[1]]
+      : null;
+  if (!parts) return undefined;
+  const key = `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+  const date = new Date(`${key}T12:00:00Z`);
+  // Un 31 février lu de travers ne devient pas un 3 mars.
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === key ? key : undefined;
+}
+
+export function carenceDatesFromLabels(labels: string[]): string[] | undefined {
+  const dates = [...new Set(labels.map(carenceDateFromLabel).filter((date): date is string => Boolean(date)))].sort();
+  return dates.length ? dates : undefined;
 }
 
 /** Certaines régularisations portent plusieurs lignes « Jour de carence »
@@ -476,6 +503,9 @@ export function readPayslip(tokens: string[]): PayslipReading {
       amountAfter(tokens, "Titres repas carte", 2),
     ),
     carenceDay: sumAmountsAfterPrefix(tokens, "Jour de carence", 2),
+    carenceDates: carenceDatesFromLabels(
+      tokens.filter((token) => token.trim().startsWith("Jour de carence")),
+    ),
     pasRate: amountAfter(tokens, "PAS - Taux"),
     otherFixed: readOtherFixed(tokens),
     ...readPeriod(tokens),

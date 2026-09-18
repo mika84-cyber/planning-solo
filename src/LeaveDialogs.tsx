@@ -2,11 +2,13 @@ import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import type { ManualYearAdjustments } from "./appModel";
 import {
+  HALF_BALANCE_OPTIONS,
   HALF_MOMENT_OPTIONS,
   LEAVE_ALLOWANCES,
   TYPE_COLORS,
   TYPE_LABELS,
   s,
+  type HalfBalance,
   type HalfMoment,
   type LeaveType,
 } from "./planningLogic";
@@ -160,6 +162,8 @@ export function RangeLeaveDialog({
   setLeaveType,
   halfMoment,
   setHalfMoment,
+  halfBalance,
+  setHalfBalance,
   onClose,
   onStartSelection,
 }: {
@@ -168,6 +172,8 @@ export function RangeLeaveDialog({
   setLeaveType: Dispatch<SetStateAction<LeaveType>>;
   halfMoment: HalfMoment;
   setHalfMoment: Dispatch<SetStateAction<HalfMoment>>;
+  halfBalance: HalfBalance;
+  setHalfBalance: Dispatch<SetStateAction<HalfBalance>>;
   onClose: () => void;
   onStartSelection: () => void;
 }) {
@@ -237,16 +243,28 @@ export function RangeLeaveDialog({
           </div>
         )}
         {leaveType === "half" && (
-          <div className="leave-type-field">
-            <span>Moitié de journée</span>
-            <ChoicePicker
-              value={halfMoment}
-              options={HALF_MOMENT_OPTIONS}
-              onChange={setHalfMoment}
-              ariaLabel="Choisir le matin ou l’après-midi"
-              className="leave-type-picker"
-            />
-          </div>
+          <>
+            <div className="leave-type-field">
+              <span>Moitié de journée</span>
+              <ChoicePicker
+                value={halfMoment}
+                options={HALF_MOMENT_OPTIONS}
+                onChange={setHalfMoment}
+                ariaLabel="Choisir le matin ou l’après-midi"
+                className="leave-type-picker"
+              />
+            </div>
+            <div className="leave-type-field">
+              <span>Prise sur</span>
+              <ChoicePicker
+                value={halfBalance}
+                options={HALF_BALANCE_OPTIONS}
+                onChange={setHalfBalance}
+                ariaLabel="Choisir le solde de la demi-journée"
+                className="leave-type-picker"
+              />
+            </div>
+          </>
         )}
         <div className="modal-actions range-create-actions">
           <button className="secondary-button" type="button" onClick={onClose}>

@@ -5,12 +5,14 @@ import type {
   TouchEvent,
 } from "react";
 import type { Entries, RequestKind, SelectedDay } from "./appModel";
-import { splitOvertimeRange, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
+import { DEFAULT_WORK_SCHEDULE, splitOvertimeRange, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
 import {
   dateKey,
   fromKey,
   getDayInfo,
+  halfBalanceOf,
   localDate,
+  type HalfBalance,
   type LeaveType,
   type MultiDatePerson,
   type SelectionType,
@@ -93,6 +95,9 @@ type PlanningInteractionActionsOptions = {
   saveStrikeDateDirect: (date: string) => Promise<void>;
   notify: (message: string) => void;
   isExchangeDate?: (date: string) => boolean;
+  /** Solde proposé pour une nouvelle demi-journée à cette date : CA, puis
+   *  RTT, puis fractionnement, selon ce qu'il reste. */
+  proposeHalfBalance?: (date: string) => HalfBalance;
 };
 
 export function usePlanningInteractionActions({
@@ -113,6 +118,7 @@ export function usePlanningInteractionActions({
   saveStrikeDateDirect,
   notify,
   isExchangeDate = () => false,
+  proposeHalfBalance = () => "annual",
 }: PlanningInteractionActionsOptions) {
   const {
     dayDate,
@@ -132,6 +138,8 @@ export function usePlanningInteractionActions({
     dayLeaveType,
     setDayLeaveType,
     dayHalfMoment,
+    dayHalfBalance,
+    setDayHalfBalance,
     setDayHolidayPay,
     setLeaveRangeEnabled,
     setLeaveRangeFrom,
@@ -141,6 +149,7 @@ export function usePlanningInteractionActions({
     setRangePrefillDate,
     setRangeLeaveType,
     setRangeHalfMoment,
+    setRangeHalfBalance,
     setRangeSelecting,
     setSeparateDates,
     setSeparatePeople,
@@ -161,6 +170,8 @@ export function usePlanningInteractionActions({
     setTimeStart,
     timeEnd,
     setTimeEnd,
+    timeHalfBalance,
+    setTimeHalfBalance,
     warningDate,
     setWarningDate,
     recoveryRangeSelecting,
@@ -199,6 +210,7 @@ export function usePlanningInteractionActions({
     setDayWish(Boolean(entry?.wish));
     setDayHolidayPay(entry?.holidayPay || "");
     setDayLeaveType("annual");
+    setDayHalfBalance(proposeHalfBalance(key));
     setLeaveRangeEnabled(false);
     setLeaveRangeFrom(key);
     setLeaveRangeTo(key);
@@ -254,6 +266,7 @@ export function usePlanningInteractionActions({
       return;
     }
     setRangeLeaveType(initialType);
+    setRangeHalfBalance(proposeHalfBalance(initialDate || dateKey(new Date())));
     setRangePrefillDate(initialDate || null);
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
@@ -291,6 +304,7 @@ export function usePlanningInteractionActions({
     if (!people.length) return;
     setRangeLeaveType(dayLeaveType);
     setRangeHalfMoment(dayHalfMoment);
+    setRangeHalfBalance(dayHalfBalance);
     setSeparatePeople(people);
     setSeparateDates([dayDate]);
     setDayDate(null);
@@ -355,11 +369,13 @@ export function usePlanningInteractionActions({
       activeType === "half"
     ) {
       const existing = selections[key];
-      const usualTimes = workSchedule
-        ? workScheduleHalfTimes(workSchedule, "morning")
-        : { start: "", end: "" };
+      // Une demi-journée se choisit par « matin » ou « après-midi », sans
+      // champ d'heure : sans horaires enregistrés, on prend ceux que la
+      // fenêtre affiche déjà, sinon la validation échouerait sans raison visible.
+      const usualTimes = workScheduleHalfTimes(workSchedule ?? DEFAULT_WORK_SCHEDULE, "morning");
       setTimeStart(existing?.start || usualTimes.start);
       setTimeEnd(existing?.end || usualTimes.end);
+      setTimeHalfBalance(existing ? halfBalanceOf(existing) : proposeHalfBalance(key));
       setTimeDate(key);
       return;
     }
@@ -443,7 +459,13 @@ export function usePlanningInteractionActions({
     }
     setSelections((current) => ({
       ...current,
-      [timeDate]: { date: timeDate, type: activeType, start, end },
+      [timeDate]: {
+        date: timeDate,
+        type: activeType,
+        start,
+        end,
+        ...(activeType === "half" && timeHalfBalance !== "annual" ? { halfBalance: timeHalfBalance } : {}),
+      },
     }));
     setTimeDate(null);
   }

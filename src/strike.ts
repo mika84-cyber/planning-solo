@@ -4,6 +4,12 @@ import {
   type LeavePeriod,
   type PayProfile,
 } from "./appModel";
+import {
+  deductionSlices,
+  payMonthKey,
+  type DeductionPayMonths,
+  type DeductionSlice,
+} from "./deductionPayMonth";
 import type { RecoveryUse } from "./overtime";
 import { dateKey, fromKey, getDayInfo } from "./planningLogic";
 
@@ -36,7 +42,8 @@ export type StrikeContinuityInterval = {
 };
 
 export type StrikePayEstimate = {
-  /** Journées que l'utilisatrice a explicitement enregistrées comme grève. */
+  /** Journées enregistrées comme grève et retenues sur cette paie : selon la
+   *  règle du 10, elles peuvent dater du mois précédent. */
   days: string[];
   dailyDeduction: number | null;
   /** Retenue intégrée à la paie : grèves explicites et repos noirs encadrés. */
@@ -50,6 +57,9 @@ export type StrikePayEstimate = {
   continuityIntervals: StrikeContinuityInterval[];
   sourcePeriod: string | null;
   exactMonthValues: boolean;
+  /** Tranches de grève retenues sur cette paie, pour les expliquer et les
+   *  déplacer une à une. */
+  sources: DeductionSlice[];
 };
 
 export type StrikeContinuityContext = {
@@ -111,16 +121,6 @@ export function strikeDates(
     }
   }
   return [...dates].sort();
-}
-
-export function strikeDatesForMonth(
-  periods: LeavePeriod[],
-  group: number,
-  year: number,
-  month: number,
-) {
-  const prefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
-  return strikeDates(periods, group).filter((date) => date.startsWith(prefix));
 }
 
 function periodLabel(type: LeavePeriod["leaveType"]) {
@@ -207,6 +207,9 @@ export function strikeContinuityIntervals(
   return intervals;
 }
 
+/** Retenue de grève d'une paie. `year` et `month` désignent le mois de
+ *  paie : une grève posée après le 10 est retenue sur la paie suivante, avec
+ *  les repos qui la prolongent (voir deductionPayMonth.ts). */
 export function strikePayEstimate(
   periods: LeavePeriod[],
   group: number,
@@ -214,36 +217,63 @@ export function strikePayEstimate(
   year: number,
   month: number,
   context: StrikeContinuityContext = {},
+  payMonths: DeductionPayMonths = {},
 ): StrikePayEstimate {
-  const days = strikeDatesForMonth(periods, group, year, month);
-  const prefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
-  const continuityIntervals = strikeContinuityIntervals(
-    periods,
-    group,
-    context,
-  ).filter((interval) =>
-    interval.days.some((day) => day.date.startsWith(prefix)) ||
-    interval.fromStrike.startsWith(prefix) ||
-    interval.toStrike.startsWith(prefix),
+  return strikeEstimate(periods, group, profiles, year, month, context, payMonths, (slice) => slice.payMonth);
+}
+
+/** Les grèves vécues dans un mois et ce qu'elles retiennent, où que tombe la
+ *  paie qui les porte : la vue des absences, pas celle de la paie. Chaque
+ *  tranche garde son mois de paie dans `sources`. */
+export function strikeEstimateForCalendarMonth(
+  periods: LeavePeriod[],
+  group: number,
+  profiles: Record<string, PayProfile>,
+  year: number,
+  month: number,
+  context: StrikeContinuityContext = {},
+  payMonths: DeductionPayMonths = {},
+): StrikePayEstimate {
+  // Une tranche ne chevauche jamais deux mois : son premier jour dit le sien.
+  return strikeEstimate(periods, group, profiles, year, month, context, payMonths, (slice) => slice.from.slice(0, 7));
+}
+
+function strikeEstimate(
+  periods: LeavePeriod[],
+  group: number,
+  profiles: Record<string, PayProfile>,
+  year: number,
+  month: number,
+  context: StrikeContinuityContext,
+  payMonths: DeductionPayMonths,
+  monthOfSlice: (slice: DeductionSlice) => string,
+): StrikePayEstimate {
+  const target = payMonthKey(year, month);
+  const allIntervals = strikeContinuityIntervals(periods, group, context);
+  const intervalDates = (status: StrikeContinuityInterval["status"]) =>
+    allIntervals
+      .filter((interval) => interval.status === status)
+      .flatMap((interval) => interval.days.map((day) => day.date));
+  const allStrikeDays = strikeDates(periods, group);
+  const allAutomatic = intervalDates("confirmed-cycle-rest");
+  const allPotential = intervalDates("ambiguous");
+  // Une grève et les repos qui la relient à la suivante forment une même
+  // tranche : ils partent ensemble sur la même paie.
+  const slices = deductionSlices(
+    "strike",
+    [...allStrikeDays, ...allAutomatic, ...allPotential],
+    payMonths,
   );
-  const potentialAdditionalDays = [
-    ...new Set(
-      continuityIntervals
-        .filter((interval) => interval.status === "ambiguous")
-        .flatMap((interval) => interval.days)
-        .map((day) => day.date)
-        .filter((date) => date.startsWith(prefix)),
-    ),
-  ].sort();
-  const automaticAdditionalDays = [
-    ...new Set(
-      continuityIntervals
-        .filter((interval) => interval.status === "confirmed-cycle-rest")
-        .flatMap((interval) => interval.days)
-        .map((day) => day.date)
-        .filter((date) => date.startsWith(prefix)),
-    ),
-  ].sort();
+  const sources = slices.filter((slice) => monthOfSlice(slice) === target);
+  const selected = new Set(sources.flatMap((slice) => slice.dates));
+  const onTarget = (dates: string[]) => [...new Set(dates)].filter((date) => selected.has(date)).sort();
+  const days = onTarget(allStrikeDays);
+  const automaticAdditionalDays = onTarget(allAutomatic);
+  const potentialAdditionalDays = onTarget(allPotential);
+  const continuityIntervals = allIntervals.filter((interval) =>
+    [interval.fromStrike, interval.toStrike, ...interval.days.map((day) => day.date)]
+      .some((date) => selected.has(date)),
+  );
   const values = latestStrikePayValues(profiles, year, month);
   if (
     values.baseSalary === undefined ||
@@ -260,6 +290,7 @@ export function strikePayEstimate(
       continuityIntervals,
       sourcePeriod: null,
       exactMonthValues: false,
+      sources,
     };
   const dailyDeduction =
     Math.round(((values.baseSalary + values.residenceAllowance) / 30) * 100) /
@@ -286,5 +317,6 @@ export function strikePayEstimate(
     continuityIntervals,
     sourcePeriod: values.sourcePeriod,
     exactMonthValues: values.exactMonthValues,
+    sources,
   };
 }

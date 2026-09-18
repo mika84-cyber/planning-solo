@@ -7,6 +7,7 @@ import {
   dateKey,
   fromKey,
   getDayInfo,
+  halfBalanceOf,
   type CountedOnlyType,
 } from "./planningLogic";
 
@@ -80,8 +81,9 @@ export function computeLeaveStats({
     )
       ? (period.leaveType as CountedOnlyType)
       : null;
+    // Une demi-journée est prise sur le solde choisi, CA par défaut.
     const category =
-      period.leaveType === "half" ? "annual" : period.leaveType;
+      period.leaveType === "half" ? halfBalanceOf(period) : period.leaveType;
     const units = period.leaveType === "half" ? 0.5 : 1;
     const from = period.from < first ? first : period.from;
     const to = period.to > last ? last : period.to;

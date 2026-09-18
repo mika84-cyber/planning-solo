@@ -39,6 +39,8 @@ describe("fenêtres de congés", () => {
         setLeaveType={vi.fn()}
         halfMoment="morning"
         setHalfMoment={vi.fn()}
+        halfBalance="annual"
+        setHalfBalance={vi.fn()}
         onClose={vi.fn()}
         onStartSelection={vi.fn()}
       />,

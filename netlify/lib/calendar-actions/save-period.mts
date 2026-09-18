@@ -30,6 +30,12 @@ export async function handleSavePeriod(
     body.halfMoment === "morning" || body.halfMoment === "afternoon"
       ? body.halfMoment
       : "";
+  // Un solde absent de la requête garde celui déjà enregistré ; « annual »
+  // le ramène aux congés annuels, qui n'ont pas besoin d'être écrits.
+  const halfBalance =
+    body.halfBalance === "rtt" || body.halfBalance === "fraction" || body.halfBalance === "annual"
+      ? body.halfBalance
+      : undefined;
   const periodGroup = [1, 2, 3].includes(Number(body.group))
     ? Number(body.group)
     : undefined;
@@ -56,6 +62,14 @@ export async function handleSavePeriod(
       409,
     );
   const resolvedType: LeaveType = leaveType || previous?.leave_type || "";
+  const resolvedHalfBalance =
+    resolvedType !== "half"
+      ? undefined
+      : halfBalance === undefined
+        ? previous?.half_balance
+        : halfBalance === "annual"
+          ? undefined
+          : halfBalance;
   const period: LeavePeriod = {
     id,
     from,
@@ -67,6 +81,7 @@ export async function handleSavePeriod(
       resolvedType === "half"
         ? halfMoment || previous?.half_moment || ""
         : "",
+    ...(resolvedHalfBalance ? { half_balance: resolvedHalfBalance } : {}),
     group: periodGroup || previous?.group,
     updated_at: new Date().toISOString(),
   };

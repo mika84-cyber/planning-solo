@@ -51,6 +51,9 @@ type PlanningPdfOptions = {
   leaveTypes?: ReadonlyMap<string, PdfLeaveType>;
   /** Moitié posée, jour par jour, pour les seules demi-journées. */
   halfMoments?: ReadonlyMap<string, PdfHalfMoment>;
+  /** Solde des demi-journées de RTT et de fractionnement ; les autres sont
+   *  des demi-journées de congés annuels. */
+  halfBalances?: ReadonlyMap<string, "rtt" | "fraction">;
   leaveSummary?: { used: number; remaining: number };
   schoolVacationDates?: ReadonlySet<string>;
   /** Congés souhaités, pas encore validés : leur case est verte. */
@@ -430,6 +433,7 @@ function drawGroupPage(
   wasPompidouHolidayWorked: PlanningPdfOptions["wasPompidouHolidayWorked"],
   leaveTypes?: ReadonlyMap<string, PdfLeaveType>,
   halfMoments?: ReadonlyMap<string, PdfHalfMoment>,
+  halfBalances?: ReadonlyMap<string, "rtt" | "fraction">,
   schoolVacationDates?: ReadonlySet<string>,
   wishDates?: ReadonlySet<string>,
   schoolVacationsByZone?: PlanningPdfOptions["schoolVacationsByZone"],
@@ -529,6 +533,7 @@ function drawGroupPage(
         exchange,
         leaveType,
         halfMoment: leaveType === "half" ? halfMoments?.get(key) : undefined,
+        halfBalance: leaveType === "half" ? halfBalances?.get(key) : undefined,
         isRecovery,
         isFullLeave,
         isWish,
@@ -550,6 +555,7 @@ function drawGroupPage(
         exchange,
         leaveType,
         halfMoment,
+        halfBalance,
         isRecovery,
         isFullLeave,
         isWish,
@@ -648,9 +654,11 @@ function drawGroupPage(
       } else {
         doc.rect(x, y, monthWidth, dayHeight, "FD");
         if (leaveType === "half") {
-          // Le bleu des congés ne couvre que la moitié posée : à gauche le
+          // La couleur du solde ne couvre que la moitié posée : à gauche le
           // matin, à droite l'après-midi.
-          doc.setFillColor(...COLORS.leave);
+          const [red, green, blue] =
+            halfBalance === "rtt" ? COLORS.rtt : halfBalance === "fraction" ? COLORS.fraction : COLORS.leave;
+          doc.setFillColor(red, green, blue);
           doc.rect(
             halfMoment === "afternoon" ? x + monthWidth / 2 : x,
             y,
@@ -700,7 +708,9 @@ function drawGroupPage(
           drawLeaveEmoji(doc, leaveType, codeRight - 1.25, y + dayHeight / 2);
           continue;
         }
-        const code = leaveType === "half" ? "½ CA" : LEAVE_CODES[leaveType];
+        const code = leaveType === "half"
+          ? halfBalance === "rtt" ? "½ RTT" : halfBalance === "fraction" ? "½ Frac." : "½ CA"
+          : LEAVE_CODES[leaveType];
         doc.setTextColor(...COLORS.black);
         doc.setFont("helvetica", "bold");
         // Les libellés longs (« Congé enf. ») sont réduits juste ce qu'il faut
@@ -1084,6 +1094,7 @@ export function createAnnualPlanningPdf({
   wasPompidouHolidayWorked,
   leaveTypes,
   halfMoments,
+  halfBalances,
   schoolVacationDates,
   wishDates,
   schoolVacationsByZone,
@@ -1110,6 +1121,7 @@ export function createAnnualPlanningPdf({
       wasPompidouHolidayWorked,
       leaveTypes,
       halfMoments,
+      halfBalances,
       schoolVacationDates,
       wishDates,
       schoolVacationsByZone,
