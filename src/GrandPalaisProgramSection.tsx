@@ -558,7 +558,6 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         ? monthHeading(item.entry.startsOn)
         : "",
     }));
-  const nextOpening = upcomingEntries[0];
   // Une recherche cherche partout : tous les espaces, toutes les années, quel
   // que soit l'onglet ouvert. Les expositions terminées en restent exclues,
   // comme dans le reste de l'écran.
@@ -649,20 +648,6 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                 </>
               ) : <strong className="grand-palais-summary-none">Aucune</strong>}
             </article>
-            {nextOpening ? (
-              <article
-                className="grand-palais-summary-next"
-                style={grandPalaisVenueStyle(nextOpening.venueKey)}
-              >
-                <span className="step-label">Prochaine ouverture</span>
-                <strong>{nextOpening.entry.title}</strong>
-                <small>
-                  {nextOpening.venueLabel}
-                  {" · "}
-                  {grandPalaisEntryStatus(nextOpening.entry, today, openingReady).detail.replace(/^Commence /, "") || "bientôt"}
-                </small>
-              </article>
-            ) : null}
           </div>
         </div>
       </div>

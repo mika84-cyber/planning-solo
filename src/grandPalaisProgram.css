@@ -305,7 +305,7 @@
 .expo-card-status span { color: var(--text); font-size: 0.74rem; font-weight: 800; white-space: nowrap; }
 .grand-palais-view-picker button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
 /* En-tête des expos : deux repères côte à côte, à la couleur de leur espace. */
-.grand-palais-program-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
+.grand-palais-program-summary { display: grid; gap: 10px; margin-top: 12px; }
 .grand-palais-program-summary > article { display: grid; align-content: start; gap: 4px; min-width: 0; border: 1px solid var(--venue-line, var(--border-soft)); border-left: 4px solid var(--venue-accent, var(--accent)); border-radius: 14px; padding: 10px 12px; background: var(--venue-bg, var(--surface-soft)); }
 .grand-palais-program-summary strong { color: var(--text); font-family: var(--font-display); font-size: 1.04rem; font-weight: 600; line-height: 1.25; }
 .grand-palais-program-summary small { color: var(--muted); font-size: 0.75rem; font-weight: 600; line-height: 1.35; }
