@@ -17,6 +17,7 @@ export function MecenatDialog({
   draft,
   setDraft,
   calculation,
+  violations = [],
   saving,
   onClose,
   onSave,
@@ -25,6 +26,8 @@ export function MecenatDialog({
   draft: MecenatDraft;
   setDraft: Dispatch<SetStateAction<MecenatDraft>>;
   calculation: MecenatCalculation | null;
+  /** Pourquoi ce mécénat ne respecte pas le temps de travail ; vide sinon. */
+  violations?: string[];
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
@@ -70,6 +73,14 @@ export function MecenatDialog({
               lendemain.
             </small>
           </div>
+          {violations.length ? (
+            <section className="mecenat-rule-alert" role="alert">
+              <strong>Vous ne pouvez pas vous inscrire sur ce mécénat</strong>
+              <ul>
+                {violations.map((reason) => <li key={reason}>{reason}</li>)}
+              </ul>
+            </section>
+          ) : null}
           <p className="mecenat-next-month-note">
             Le paiement sera automatiquement intégré à la paie du mois suivant.
           </p>
@@ -106,7 +117,7 @@ export function MecenatDialog({
             className="save-button"
             type="button"
             onClick={onSave}
-            disabled={saving || !calculation}
+            disabled={saving || !calculation || violations.length > 0}
           >
             {saving ? "Enregistrement…" : "Enregistrer le mécénat"}
           </button>

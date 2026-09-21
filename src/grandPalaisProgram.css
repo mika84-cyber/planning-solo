@@ -303,7 +303,6 @@
 .grand-palais-program-summary { display: grid; gap: 10px; margin-top: 12px; }
 .grand-palais-program-summary > article { display: grid; align-content: start; gap: 4px; min-width: 0; border: 1px solid var(--venue-line, var(--border-soft)); border-left: 4px solid var(--venue-accent, var(--accent)); border-radius: 14px; padding: 10px 12px; background: var(--venue-bg, var(--surface-soft)); }
 .grand-palais-program-summary strong { color: var(--text); font-family: var(--font-display); font-size: 1.04rem; font-weight: 600; line-height: 1.25; }
-.grand-palais-program-summary small { color: var(--muted); font-size: 0.75rem; font-weight: 600; line-height: 1.35; }
 .grand-palais-summary-none { color: var(--muted); }
 .grand-palais-summary-venues { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .grand-palais-summary-venues .useful-expo-venue { margin-bottom: 0; font-size: 0.62rem; }
