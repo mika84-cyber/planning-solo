@@ -949,19 +949,25 @@
   cursor: pointer;
 }
 
+/* Un échange change la nature du jour : celui qu'on cède devient un vrai
+   repos (aplat noir), celui qu'on reprend un vrai jour travaillé (fond clair).
+   Le filet turquoise et le reflet en pied de case signalent l'échange. */
 :root .day.exchange-day,
 :root .mini-day.exchange-day {
-  border: 2px solid var(--border-card);
+  border: 2px solid #5eb6c4;
   color: #2c2621;
-  background: linear-gradient(145deg, #e3f7f9 0%, #9ddae3 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
-    0 4px 11px rgba(87, 78, 66, 0.16);
+  background: linear-gradient(180deg, var(--surface) 58%, #d6f0f3 100%);
+  box-shadow: 0 4px 11px rgba(87, 78, 66, 0.14);
 }
 
-:root .day.exchange-return,
-:root .mini-day.exchange-return {
-  background: linear-gradient(145deg, var(--bg) 0%, #5eb6c4 100%);
+:root .day.exchange-given,
+:root .mini-day.exchange-given {
+  color: #fff;
+  background: linear-gradient(180deg, #2c2621 58%, #1f4d54 100%);
+}
+
+:root .day.exchange-given .exchange-calendar-label {
+  color: #9fe2ea;
 }
 
 .today-status.tone-exchange {
@@ -1180,42 +1186,122 @@
   margin-top: 14px;
 }
 
+/* Une carte par échange : la personne et son groupe en tête, puis les deux
+   journées dans l'ordre, chacune avec ce qu'elle devient pour vous. */
 .work-exchange-list article {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  align-items: center;
   gap: 10px;
   border: 1.5px solid var(--border-card);
   border-radius: 14px;
-  padding: 11px;
+  padding: 12px;
   background: var(--surface);
 }
 
+.work-exchange-list article > header {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
 .work-exchange-list img {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
 }
 
-.work-exchange-list article > div {
-  display: grid;
-  gap: 3px;
+.work-exchange-list header > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   min-width: 0;
 }
 
-.work-exchange-list article span {
-  color: var(--muted);
-  font-size: 0.72rem;
+.work-exchange-list header strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-exchange-group {
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #eee6dc;
+  color: #5b4e43;
+  font-size: 0.68rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.work-exchange-group.group-1 { background: #fdf0ec; color: #844a3b; }
+.work-exchange-group.group-2 { background: #fff3e3; color: #7c542f; }
+.work-exchange-group.group-3 { background: #eaf3e6; color: #3f6536; }
+
+.work-exchange-list ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Chaque journée porte l'étiquette du planning : OFF sur fond noir pour le
+   jour cédé, TRAVAIL sur fond clair pour le jour repris. */
+.work-exchange-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-left: 3px solid #5eb6c4;
+  border-radius: 4px 10px 10px 4px;
+  padding: 6px 10px 6px 8px;
+  background: #f1f9fa;
+}
+
+.work-exchange-list li b {
+  box-sizing: border-box;
+  min-width: 66px;
+  text-align: center;
+  border: 1.5px solid #5eb6c4;
+  border-radius: 7px;
+  padding: 3px 7px;
+  background: #fff;
+  color: #2c2621;
+  font-size: 0.64rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.work-exchange-list li.exchange-given b {
+  background: #2c2621;
+  color: #fff;
+}
+
+.work-exchange-list li p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
 }
 
 .work-exchange-list article button {
   border: 1px solid var(--border-card);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 7px 12px;
   color: #2c2621;
   background: var(--surface);
+  font-size: 0.8rem;
   font-weight: 850;
   cursor: pointer;
+}
+
+.work-exchange-list article button:hover {
+  background: #f4ede4;
 }
 
 .leave-choices .exchange-day-choice {
@@ -1300,13 +1386,8 @@ fieldset.leave-choices {
     margin: 0;
   }
 
-  .work-exchange-list article {
-    grid-template-columns: 34px minmax(0, 1fr);
-  }
-
-  .work-exchange-list article button {
-    grid-column: 1 / -1;
-    width: 100%;
+  .work-exchange-list li {
+    gap: 8px;
   }
 }
 

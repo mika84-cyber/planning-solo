@@ -181,6 +181,11 @@ export function CommonDaysPanel({ planning, view, getOwnPresence, referenceDate 
   );
 }
 
+/** Aujourd'hui ressort, le week-end se devine : deux repères de colonne. */
+function weekCellClass(day: Date, index: number, todayKey: string) {
+  return [dateKey(day) === todayKey ? "is-today" : "", index >= 5 ? "is-weekend" : ""].filter(Boolean).join(" ") || undefined;
+}
+
 type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus };
 
 /** La semaine en un tableau : une ligne par personne, rangée par groupe, et
@@ -197,7 +202,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
             <tr>
               <th scope="col">Collègue</th>
               {days.map((day, index) => (
-                <th scope="col" key={dateKey(day)} className={dateKey(day) === todayKey ? "is-today" : ""} aria-label={tomorrowDateFormatter.format(day)}>
+                <th scope="col" key={dateKey(day)} className={weekCellClass(day, index, todayKey)} aria-label={tomorrowDateFormatter.format(day)}>
                   <span aria-hidden="true">{WEEKDAY_INITIALS[index]}</span>
                   <b aria-hidden="true">{day.getDate()}</b>
                 </th>
@@ -213,10 +218,10 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                 {groupRows.map((row) => (
                   <tr key={row.id} className={row.isSelf ? "is-self" : ""}>
                     <th scope="row">{row.name}</th>
-                    {days.map((day) => {
+                    {days.map((day, index) => {
                       const status = row.statusFor(day);
                       return (
-                        <td key={dateKey(day)} className={dateKey(day) === todayKey ? "is-today" : ""}>
+                        <td key={dateKey(day)} className={weekCellClass(day, index, todayKey)}>
                           <span className={`colleague-week-cell ${tomorrowStatusTone(status)}`} title={status}>
                             <span aria-hidden="true">{WEEK_STATUS_LETTERS[status]}</span>
                             <span className="colleague-week-sr">{status}</span>

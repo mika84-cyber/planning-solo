@@ -392,7 +392,15 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
     >
       <span className="useful-expo-timeline-mark" aria-hidden="true" />
       <div>
-        {venueLabel ? <span className="useful-expo-venue">{venueLabel}</span> : null}
+        {/* En tête de carte : la salle à gauche, l'état à droite. Une
+            exposition à venir n'a besoin que de son compte à rebours :
+            « Prochainement » redirait ce que la date annonce déjà. */}
+        <div className="expo-card-top">
+          {venueLabel ? <span className="useful-expo-venue">{venueLabel}</span> : null}
+          <span className="expo-card-status">
+            <em>{upcomingCountdown || status.label}</em>
+          </span>
+        </div>
         <strong>{entry.title}</strong>
         {entry.details ? <p>{entry.details}</p> : null}
         <small>{entry.period}</small>
@@ -401,6 +409,7 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
             <i style={{ width: `${progress}%` }} />
           </span>
         ) : null}
+        {status.detail && !upcomingCountdown ? <span className="expo-card-remaining">{status.detail}</span> : null}
         {/* Les tarifs ferment la carte, juste avant le lien : on lit d'abord
             ce qu'est l'exposition, puis ce qu'elle coûte. */}
         {visiblePrices.length ? (
@@ -421,12 +430,6 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
         ) : null}
         {officialUrl ? <a href={officialUrl} target="_blank" rel="noreferrer">{linkLabel}</a> : null}
       </div>
-      {/* Une exposition à venir n'a besoin que de son compte à rebours :
-          « Prochainement » redirait ce que la date annonce déjà. */}
-      <footer className="expo-card-status">
-        {upcomingCountdown ? <em>{upcomingCountdown}</em> : <em>{status.label}</em>}
-        {status.detail && !upcomingCountdown ? <span>{status.detail}</span> : null}
-      </footer>
     </article>
   );
 }
@@ -547,6 +550,10 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
     .sort((left, right) =>
       currentVenueRank(left.venueKey) - currentVenueRank(right.venueKey) ||
       (left.entry.endsOn ?? "9999").localeCompare(right.entry.endsOn ?? "9999"));
+  // Un espace ouvert n'apparaît qu'une fois dans l'en-tête, même s'il
+  // accueille plusieurs expositions.
+  const openVenues = currentEntries.filter((item, index) =>
+    currentEntries.findIndex((other) => other.venueKey === item.venueKey) === index);
   const upcomingEntries = allEntries
     .filter(({ entry }) => Boolean(entry.startsOn && entry.startsOn >= today && !isGrandPalaisEntryCurrent(entry, today, openingReady)))
     .sort((left, right) => (left.entry.startsOn ?? "9999").localeCompare(right.entry.startsOn ?? "9999"));
@@ -629,15 +636,27 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           {/* Deux repères, chacun à la couleur de son espace : ce qui est
               ouvert maintenant, et ce qui ouvre ensuite. */}
           <div className="grand-palais-program-summary">
-            <article className="grand-palais-summary-open">
-              <span className="step-label">Ouvert aujourd’hui</span>
+            {/* Au-delà de deux espaces, les pastilles passent sous le nombre
+                plutôt que de s'entasser à sa droite. */}
+            <article
+              className="grand-palais-summary-open"
+              data-open={currentEntries.length > 0}
+              data-venues={openVenues.length > 2 ? "many" : "few"}
+            >
+              <span className="grand-palais-summary-live">
+                <i aria-hidden="true" />
+                Ouvert aujourd’hui
+              </span>
               {currentEntries.length ? (
                 <>
-                  <strong>{currentEntries.length} exposition{currentEntries.length > 1 ? "s" : ""}</strong>
+                  <strong className="grand-palais-summary-count">
+                    <b>{currentEntries.length}</b>
+                    <span>exposition{currentEntries.length > 1 ? "s" : ""}</span>
+                  </strong>
                   <div className="grand-palais-summary-venues">
-                    {currentEntries.map(({ entry, venueKey, venueLabel }) => (
+                    {openVenues.map(({ venueKey, venueLabel }) => (
                       <span
-                        key={`${venueKey}-${entry.title}`}
+                        key={venueKey}
                         className="useful-expo-venue"
                         style={grandPalaisVenueStyle(venueKey)}
                       >

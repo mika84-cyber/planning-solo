@@ -1708,6 +1708,9 @@ test("le mode sombre s’applique à toute l’application et se mémorise", asy
   await themeSwitch.click();
   await expect(themeSwitch).toHaveAttribute("aria-checked", "true");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  // La feuille sombre est dérivée des styles chargés à la volée : on attend
+  // qu'elle soit posée avant de mesurer les couleurs.
+  await expect(page.locator("#planning-dark-theme")).toHaveCount(1);
   await accountButton.click();
 
   const luminance = (rgb: string) => {
@@ -2813,7 +2816,11 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
 
   await expect(page.locator(".day.exchange-given")).toHaveCount(1);
   await expect(page.locator(".day.exchange-return")).toHaveCount(1);
-  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", await cardBorderColor(page));
+  // Le jour cédé devient un vrai repos (fond sombre), le jour repris un jour
+  // travaillé (fond clair) ; tous deux gardent le filet turquoise de l'échange.
+  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", "rgb(94, 182, 196)");
+  await expect(page.locator(".day.exchange-given")).toHaveCSS("background-image", /rgb\(44, 38, 33\)/);
+  await expect(page.locator(".day.exchange-return")).toHaveCSS("border-top-color", "rgb(94, 182, 196)");
   await expect(page.locator(".day.exchange-given .exchange-calendar-marker")).toHaveAttribute("src", "/exchange-arrows.png");
   await expect(page.locator(".day.exchange-given .exchange-calendar-label")).toHaveText("OFF");
   await expect(page.locator(".day.exchange-return .exchange-calendar-label")).toHaveText("TRAVAIL");
@@ -2842,8 +2849,8 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   expect(Math.abs((narrowDateBox!.x + narrowDateBox!.width / 2) - (narrowCellBox!.x + narrowCellBox!.width / 2))).toBeLessThanOrEqual(1);
   expect(narrowLabelBox!.x + narrowLabelBox!.width).toBeLessThanOrEqual(narrowCellBox!.x + narrowCellBox!.width - 2);
   await expect(page.getByRole("heading", { name: "Mes échanges" })).toBeVisible();
-  await expect(page.getByText(/Camille - Groupe 1/).first()).toBeVisible();
-  await expect(page.locator(".work-exchange-list article span")).toHaveText([
+  await expect(page.locator(".work-exchange-list article header")).toContainText("CamilleGroupe 1");
+  await expect(page.locator(".work-exchange-list article li p")).toHaveText([
     `Vous la remplacez le ${longDate(returned)}`,
     `Camille vous remplace le ${longDate(agreement)}`,
   ]);

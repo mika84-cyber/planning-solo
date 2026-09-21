@@ -215,23 +215,25 @@ function drawExchangeMarker(
   centerX: number,
   centerY: number,
   number: number,
+  scale = 1,
 ) {
+  const k = scale;
+  // Une étiquette blanche cerclée de turquoise : la pastille des flèches, puis
+  // le numéro de l'échange en brun foncé, comme sur le planning de l'appli.
   doc.setFillColor(...COLORS.white);
-  doc.setDrawColor(38, 53, 70);
-  doc.setLineWidth(0.18);
-  doc.roundedRect(centerX - 4.1, centerY - 2.05, 8.2, 4.1, 1.25, 1.25, "FD");
-  if (!drawAsset(doc, image, centerX - 3.55, centerY - 1.55, 3.1, 3.1, "exchange-marker")) {
-    doc.setTextColor(...COLORS.black);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(5.2);
-    doc.text("⇄", centerX - 2, centerY, { align: "center", baseline: "middle" });
+  doc.setDrawColor(94, 182, 196);
+  doc.setLineWidth(0.3 * k);
+  doc.roundedRect(centerX - 4.1 * k, centerY - 2.05 * k, 8.2 * k, 4.1 * k, 2.05 * k, 2.05 * k, "FD");
+  if (!drawAsset(doc, image, centerX - 3.65 * k, centerY - 1.6 * k, 3.2 * k, 3.2 * k, "exchange-marker")) {
+    doc.setFillColor(43, 133, 147);
+    doc.circle(centerX - 2.05 * k, centerY, 1.55 * k, "F");
   }
-  doc.setFillColor(94, 182, 196);
-  doc.circle(centerX + 2.15, centerY, 1.45, "F");
-  doc.setTextColor(...COLORS.black);
+  doc.setFillColor(44, 38, 33);
+  doc.circle(centerX + 2.15 * k, centerY, 1.45 * k, "F");
+  doc.setTextColor(...COLORS.white);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(number > 9 ? 3.3 : 4.2);
-  doc.text(String(number), centerX + 2.15, centerY, { align: "center", baseline: "middle" });
+  doc.setFontSize((number > 9 ? 3.3 : 4.2) * k);
+  doc.text(String(number), centerX + 2.15 * k, centerY, { align: "center", baseline: "middle" });
 }
 
 function drawClosedFrame(
@@ -964,13 +966,17 @@ function drawGroupPage(
           : schoolVacationsByZone
             ? 4.1
             : 4.6;
-        doc.rect(symbolX - symbolWidth / 2, centerY - symbolHeight / 2, symbolWidth, symbolHeight, "FD");
+        // L'étiquette d'échange a son propre contour : pas de case derrière.
+        if (item.assetType !== "exchange")
+          doc.rect(symbolX - symbolWidth / 2, centerY - symbolHeight / 2, symbolWidth, symbolHeight, "FD");
         if (item.emojiType)
           drawLeaveEmoji(doc, item.emojiType, symbolX, centerY);
         else if (item.assetType === "workAccident")
           drawWorkAccidentMarker(doc, assets?.workAccident, symbolX, centerY);
         else if (item.assetType === "exchange")
-          drawExchangeMarker(doc, assets?.exchange, symbolX, centerY, 1);
+          // Légende étroite (avec vacances scolaires) : l'étiquette réduite
+          // tient dans sa colonne sans mordre sur le texte.
+          drawExchangeMarker(doc, assets?.exchange, schoolVacationsByZone ? legendX + 3.7 : symbolX, centerY, 1, schoolVacationsByZone ? 0.7 : 1);
         else if (item.closedBadge) {
           doc.setTextColor(225, 28, 35);
           doc.setFont("helvetica", "bold");

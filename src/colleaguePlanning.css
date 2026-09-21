@@ -380,4 +380,23 @@
   .colleague-week-cell { width: 22px; height: 22px; font-size: .68rem; }
   .colleague-week-table thead th:first-child { width: 30%; }
 }
+/* Lecture de la semaine : le week-end légèrement grisé, la colonne du jour
+   teintée de violet d'un bout à l'autre, la ligne survolée éclairée et les
+   prénoms figés à gauche quand le tableau défile sur un écran étroit. */
+.colleague-week-table thead th { border-bottom: 1px solid var(--border-soft); }
+.colleague-week-table thead th.is-weekend span,
+.colleague-week-table thead th.is-weekend b { color: var(--muted); }
+.colleague-week-table :is(thead th, tbody td).is-weekend { background: rgba(44, 38, 33, .035); }
+.colleague-week-table :is(thead th, tbody td).is-today { background: rgba(114, 85, 173, .09); }
+.colleague-week-table thead th.is-today span { color: #7255ad; }
+.colleague-week-table tbody td { padding: 6px 1px; }
+.colleague-week-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+.colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(114, 85, 173, .05); }
+.colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > th[scope="row"] { background: #f7f3fb; }
+.colleague-week-table .colleague-tomorrow-group th { border-top: 0; }
+.colleague-week-cell { width: 28px; height: 28px; box-shadow: 0 1px 2px rgba(44, 38, 33, .08); }
+.colleague-week-legend { gap: 8px 14px; }
+@media (max-width: 370px) {
+  .colleague-week-table .colleague-week-cell { width: 23px; height: 23px; }
+}
 .colleague-week-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

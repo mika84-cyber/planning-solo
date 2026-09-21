@@ -17,7 +17,11 @@ describe("WorkExchangePanel", () => {
         onEdit={vi.fn()}
       />,
     );
-    expect(html).toContain("Adriana - Groupe 1");
+    expect(html).toContain("<strong>Adriana</strong>");
+    expect(html).toContain("Groupe 1");
+    // Le jour repris porte l'étiquette TRAVAIL, le jour cédé l'étiquette OFF.
+    expect(html).toMatch(/exchange-return"><b aria-hidden="true">Travail<\/b><p>Vous la remplacez/);
+    expect(html).toMatch(/exchange-given"><b aria-hidden="true">Off<\/b><p>Adriana vous remplace/);
     expect(html.indexOf("Vous la remplacez le mardi 15 septembre 2026"))
       .toBeLessThan(html.indexOf("Adriana vous remplace le vendredi 18 septembre 2026"));
   });

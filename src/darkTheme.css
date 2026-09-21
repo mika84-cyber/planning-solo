@@ -35,3 +35,49 @@ html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: 
 /* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
 html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }
 html[data-theme="dark"] :is(.section-dock > button.active, .main-menu-theme-options button.active) { background: #f1e8df; color: #83452c; }
+
+/* Échanges : le jour cédé garde le noir des repos, le jour repris le beige
+   des jours travaillés ; le filet turquoise reste celui du mode clair. */
+html[data-theme="dark"] :is(.calendar-grid .day, .mini-grid .mini-day).exchange-day {
+  border-color: #5eb6c4;
+  background: linear-gradient(180deg, #ece2cd 58%, #bfe3e6 100%);
+  color: #2c2621;
+}
+/* !important : la règle des jours travaillés, plus haut, est plus précise, et
+   le jour cédé reste un jour « travail » de votre cycle. */
+html[data-theme="dark"] :is(.calendar-grid .day, .mini-grid .mini-day).exchange-given {
+  background: linear-gradient(180deg, #0a0807 58%, #173a3f 100%) !important;
+  color: #f4ece2 !important;
+}
+html[data-theme="dark"] .day.exchange-return .exchange-calendar-label { color: #2c2621; }
+html[data-theme="dark"] .work-exchange-list li { background: #1d2426; }
+html[data-theme="dark"] .work-exchange-list li b { border-color: #5eb6c4; background: #ece2cd; color: #2c2621; }
+html[data-theme="dark"] .work-exchange-list li.exchange-given b { background: #0a0807; color: #f4ece2; }
+
+/* Semaine des collègues : des pastilles de teinte moyenne, lettres foncées,
+   qui gardent leur couleur sans éblouir ; bandeaux de groupe, week-end et
+   colonne du jour repris dans des tons sombres. */
+html[data-theme="dark"] .colleague-week-shell { border-color: #4a403a; background: #1b1715; }
+html[data-theme="dark"] .colleague-week-table thead th { border-bottom-color: #3a322d; color: #b5a699; }
+html[data-theme="dark"] .colleague-week-table thead th b { color: #f1e8de; }
+html[data-theme="dark"] .colleague-week-table thead th.is-weekend :is(span, b) { color: #9c8e82; }
+html[data-theme="dark"] .colleague-week-table thead th.is-today span { color: #c7b3f0; }
+html[data-theme="dark"] .colleague-week-table thead th.is-today b { background: #8a6fd0; color: #fff; }
+html[data-theme="dark"] .colleague-week-table :is(thead th, tbody td).is-weekend { background: rgba(255, 255, 255, .025); }
+html[data-theme="dark"] .colleague-week-table :is(thead th, tbody td).is-today { background: rgba(150, 120, 220, .16); }
+html[data-theme="dark"] .colleague-week-table tbody th[scope="row"] { background: #1b1715; color: #f1e8de; }
+html[data-theme="dark"] .colleague-week-table tbody tr.is-self th[scope="row"] { color: #f0a988; }
+html[data-theme="dark"] .colleague-week-table tbody tr + tr > * { border-top-color: #332c28; }
+html[data-theme="dark"] .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(255, 255, 255, .04); }
+html[data-theme="dark"] .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > th[scope="row"] { background: #25201d; }
+html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group.group-1 th { background: #3a241e; color: #f0b3a1; }
+html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group.group-2 th { background: #3a2b1b; color: #f0c48f; }
+html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group.group-3 th { background: #22321d; color: #b4dca5; }
+html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group th .colleague-tomorrow-group-label b { border-color: #1b1715; }
+html[data-theme="dark"] .colleague-week-cell { box-shadow: none; }
+html[data-theme="dark"] .colleague-week-cell.work { border-color: #5fb483; background: #8fd1a8; color: #10301d; }
+html[data-theme="dark"] .colleague-week-cell.training { border-color: #c9ad2f; background: #e6cf62; color: #3a2f02; }
+html[data-theme="dark"] .colleague-week-cell.rest { border-color: #8791a6; background: #aeb7c9; color: #1f2633; }
+html[data-theme="dark"] .colleague-week-cell.absence { border-color: #cf7688; background: #eea3b1; color: #4a1420; }
+html[data-theme="dark"] .colleague-week-cell.partial { border-color: #9a7fcc; background: #c4affa; color: #2c1a4d; }
+html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
