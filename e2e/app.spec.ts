@@ -373,6 +373,9 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", "1px");
   await expectWhiteCard(".grand-palais-program-panel", accentSpine(page));
+  // « En ce moment » se passe de commentaire sous son titre : on vérifie la
+  // bande teintée et son texte sur « À venir », qui en garde un.
+  await page.getByRole("tab", { name: "À venir" }).click();
   const expoHeading = page.locator(".grand-palais-program-panel > .useful-expo-schedule-heading").first();
   await expect(expoHeading).toHaveCSS("background-color", CHAPTER_TINT);
   await expect(expoHeading.locator("> p")).toHaveCSS("background-color", "rgb(255, 255, 255)");
@@ -2242,6 +2245,20 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await goToSection(page, "program");
 
   await expect(page.locator(".top-header h1")).toHaveText("Programmation GP");
+
+  // « En ce moment » se lit toujours dans le même ordre d'espaces : les
+  // quatre grands d'abord, la Nef en dernier, quelles que soient les dates.
+  await page.getByRole("tab", { name: "En ce moment" }).click();
+  const openVenues = await page.locator(".useful-expo-timeline .expo-card").evaluateAll((cards) =>
+    cards.map((card) => card.getAttribute("data-venue") ?? ""),
+  );
+  const rank = (venue: string) => {
+    const primary = ["galleries34", "gallery8", "gallery7", "childrenPalace"].indexOf(venue);
+    return primary === -1 ? (venue === "nef" ? 104 : 4) : primary;
+  };
+  expect(openVenues.length).toBeGreaterThan(0);
+  expect(openVenues.map(rank)).toEqual([...openVenues.map(rank)].sort((left, right) => left - right));
+  await expect(page.locator(".useful-expo-timeline .expo-month-heading")).toHaveCount(0);
   if (testInfo.project.name === "mobile") {
     await expect(page.locator(".section-dock")).toBeVisible();
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
@@ -2393,7 +2410,8 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   const firstInterexpoStatus = await firstInterexpo.getAttribute("data-status");
   expect(["En cours", "À venir"]).toContain(firstInterexpoStatus);
   await expect(firstInterexpo.locator("em")).toHaveText(firstInterexpoStatus!);
-  await expect(page.getByLabel("Rechercher une exposition")).toHaveCount(0);
+  // La recherche porte sur toute la programmation : elle reste offerte ici.
+  await expect(page.getByLabel("Rechercher une exposition")).toHaveCount(1);
   await expect(page.locator(".grand-palais-interexpo-list")).not.toContainText("Galerie");
   await expect(page.locator(".grand-palais-interexpo-list")).not.toContainText("Nef");
 });

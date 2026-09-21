@@ -680,6 +680,14 @@ export function buildPayContent({
     variables,
     deductionContent,
     estimateContent: payEstimateDetails,
-    verificationContent: <PayslipCheckSection {...payslipSectionProps} part="verification" />,
-    settingsContent: <PayslipCheckSection {...payslipSectionProps} part="settings" />,
+    verificationContent: (
+      <Suspense fallback={<p role="status">Ouverture du contrôle du bulletin…</p>}>
+        <PayslipCheckSection {...payslipSectionProps} part="verification" />
+      </Suspense>
+    ),
+    settingsContent: (
+      <Suspense fallback={null}>
+        <PayslipCheckSection {...payslipSectionProps} part="settings" />
+      </Suspense>
+    ),
   };}

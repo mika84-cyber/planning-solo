@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { matchesSearch } from "./searchMatching";
@@ -119,6 +119,7 @@ export function mergeSharedGrandPalaisProgram(
       officialUrl,
       startsOn: shared.startDate,
       endsOn: shared.endDate,
+      ...(shared.prices?.length ? { prices: shared.prices } : {}),
     };
     const firstYear = Number(shared.startDate.slice(0, 4));
     const lastYear = Number(shared.endDate.slice(0, 4));
@@ -134,6 +135,14 @@ export function mergeSharedGrandPalaisProgram(
 const PRIMARY_VENUES = ["galleries34", "gallery8", "gallery7", "childrenPalace"] as const;
 const OTHER_VENUES = ["nef", "gallery910"] as const;
 const INTEREXPO_VENUES = ["galleries34", "gallery8", "gallery7"] as const;
+
+/** « En ce moment » se lit toujours dans le même ordre : les quatre grands
+ *  espaces d'abord, les autres ensuite, la Nef en dernier. */
+export function currentVenueRank(venueKey: string) {
+  const primary = PRIMARY_VENUES.indexOf(venueKey as (typeof PRIMARY_VENUES)[number]);
+  if (primary !== -1) return primary;
+  return venueKey === "nef" ? PRIMARY_VENUES.length + 100 : PRIMARY_VENUES.length;
+}
 
 type PrimaryChoice = GrandPalaisVenueKey | "other";
 type ProgramView = "now" | "upcoming" | "space" | "interexpo";
@@ -343,17 +352,14 @@ export function grandPalaisEntryStatus(
   return { label: "À confirmer", detail: "" };
 }
 
-/** Le repère qui ouvre un groupe dans « En ce moment » : la liste commence par
- *  ce qui ferme le plus tôt, ces intitulés disent à partir d'où on respire. */
-export function currentExhibitionGroupLabel(
-  entry: GrandPalaisProgramEntry,
-  today = new Date().toISOString().slice(0, 10),
-) {
-  if (!entry.endsOn) return "Sans date de fin annoncée";
-  const remaining = dayDistance(today, entry.endsOn);
-  if (remaining <= 7) return "Derniers jours";
-  if (remaining <= 31) return "Se termine dans le mois";
-  return "Encore plusieurs mois";
+/** « 22 octobre » : le jour d'un tarif qui ne vaut que pour une date. */
+function dayAndMonth(key: string) {
+  return formatDatePart(key, { day: "numeric", month: "long" });
+}
+
+/** « 19 € » : les tarifs du Grand Palais tombent juste, sans centimes. */
+export function priceLabel(value: number) {
+  return `${value.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`;
 }
 
 /** Une exposition : la salle, le titre, la période et le temps restant. Une
@@ -374,6 +380,8 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
   const progress = current && totalDays > 0 && entry.startsOn
     ? Math.min(100, Math.max(0, Math.round((dayDistance(entry.startsOn, today) / totalDays) * 100)))
     : null;
+  // Un tarif qui ne valait que pour un jour passé n'a plus à être montré.
+  const visiblePrices = (entry.prices ?? []).filter((price) => !price.until || price.until >= today);
   const officialUrl = safeGrandPalaisUrl(entry.officialUrl);
   return (
     <article
@@ -392,6 +400,24 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
           <span className="expo-progress" aria-hidden="true">
             <i style={{ width: `${progress}%` }} />
           </span>
+        ) : null}
+        {/* Les tarifs ferment la carte, juste avant le lien : on lit d'abord
+            ce qu'est l'exposition, puis ce qu'elle coûte. */}
+        {visiblePrices.length ? (
+          <div className="expo-price">
+            <p>Tarifs</p>
+            <dl>
+              {visiblePrices.map((price) => (
+                <Fragment key={price.label}>
+                  <dt>
+                    {price.label}
+                    {price.until ? <span> le {dayAndMonth(price.until)}</span> : null}
+                  </dt>
+                  <dd>{price.amount === 0 ? "Gratuit" : priceLabel(price.amount)}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          </div>
         ) : null}
         {officialUrl ? <a href={officialUrl} target="_blank" rel="noreferrer">{linkLabel}</a> : null}
       </div>
@@ -498,8 +524,8 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
   const venue = program[selectedVenueKey] ?? program.nef;
   const years = useMemo(() => venueYears(selectedVenueKey, today, program), [selectedVenueKey, today, program]);
   const normalizedSearch = searchQuery.trim();
-  const entries = (venue.schedule[selectedYear] ?? []).filter((entry) => isGrandPalaisEntryVisible(entry, today)
-    && matchesSearch(entry.title, normalizedSearch));
+  // Une recherche a son propre panneau : chaque onglet montre tout son contenu.
+  const entries = (venue.schedule[selectedYear] ?? []).filter((entry) => isGrandPalaisEntryVisible(entry, today));
   const interExhibitionPeriods = useMemo(() => calculateInterExhibitionPeriods(today, program), [today, program]);
   const allEntries = useMemo(() => {
     const seen = new Set<string>();
@@ -516,21 +542,33 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
   }, [program, today]);
   const currentEntries = allEntries
     .filter(({ entry }) => isGrandPalaisEntryCurrent(entry, today, openingReady))
-    // Celles qui ferment le plus tôt d'abord : ce sont les dernières à voir.
-    .sort((left, right) => (left.entry.endsOn ?? "9999").localeCompare(right.entry.endsOn ?? "9999"));
+    // Par espace, dans l'ordre fixe ci-dessus ; à espace égal, celle qui ferme
+    // le plus tôt d'abord, c'est la dernière à voir.
+    .sort((left, right) =>
+      currentVenueRank(left.venueKey) - currentVenueRank(right.venueKey) ||
+      (left.entry.endsOn ?? "9999").localeCompare(right.entry.endsOn ?? "9999"));
   const upcomingEntries = allEntries
     .filter(({ entry }) => Boolean(entry.startsOn && entry.startsOn >= today && !isGrandPalaisEntryCurrent(entry, today, openingReady)))
     .sort((left, right) => (left.entry.startsOn ?? "9999").localeCompare(right.entry.startsOn ?? "9999"));
   const overviewEntries = (programView === "now" ? currentEntries : upcomingEntries)
-    .filter(({ entry }) => matchesSearch(entry.title, normalizedSearch))
     .map((item) => ({
       ...item,
       // « À venir » se lit mois par mois, « En ce moment » par échéance.
-      heading: programView === "upcoming"
-        ? (item.entry.startsOn ? monthHeading(item.entry.startsOn) : "")
-        : currentExhibitionGroupLabel(item.entry, today),
+      heading: programView === "upcoming" && item.entry.startsOn
+        ? monthHeading(item.entry.startsOn)
+        : "",
     }));
   const nextOpening = upcomingEntries[0];
+  // Une recherche cherche partout : tous les espaces, toutes les années, quel
+  // que soit l'onglet ouvert. Les expositions terminées en restent exclues,
+  // comme dans le reste de l'écran.
+  const searchResults = normalizedSearch
+    ? allEntries
+        .filter(({ entry }) => matchesSearch(entry.title, normalizedSearch))
+        .sort((left, right) =>
+          (left.entry.startsOn ?? "9999").localeCompare(right.entry.startsOn ?? "9999") ||
+          currentVenueRank(left.venueKey) - currentVenueRank(right.venueKey))
+    : null;
   const venueEntryCount = (venueKey: string) => new Set(Object.values(program[venueKey]?.schedule ?? {})
     .flatMap((scheduled) => scheduled ?? [])
     .filter((entry) => isGrandPalaisEntryVisible(entry, today))
@@ -589,14 +627,43 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         <div className="native-screen-heading">
           <span className="step-label">Grand Palais</span>
           <h2 id="grand-palais-program-title">Expositions et événements</h2>
-          <p className="grand-palais-program-summary">
-            {currentEntries.length
-              ? `${currentEntries.length} exposition${currentEntries.length > 1 ? "s" : ""} ouverte${currentEntries.length > 1 ? "s" : ""} aujourd’hui.`
-              : "Aucune exposition ouverte aujourd’hui."}
+          {/* Deux repères, chacun à la couleur de son espace : ce qui est
+              ouvert maintenant, et ce qui ouvre ensuite. */}
+          <div className="grand-palais-program-summary">
+            <article className="grand-palais-summary-open">
+              <span className="step-label">Ouvert aujourd’hui</span>
+              {currentEntries.length ? (
+                <>
+                  <strong>{currentEntries.length} exposition{currentEntries.length > 1 ? "s" : ""}</strong>
+                  <div className="grand-palais-summary-venues">
+                    {currentEntries.map(({ entry, venueKey, venueLabel }) => (
+                      <span
+                        key={`${venueKey}-${entry.title}`}
+                        className="useful-expo-venue"
+                        style={grandPalaisVenueStyle(venueKey)}
+                      >
+                        {venueLabel}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : <strong className="grand-palais-summary-none">Aucune</strong>}
+            </article>
             {nextOpening ? (
-              <> Prochaine ouverture : <b>{nextOpening.entry.title}</b>, {grandPalaisEntryStatus(nextOpening.entry, today, openingReady).detail.replace(/^Commence /, "") || "bientôt"}.</>
+              <article
+                className="grand-palais-summary-next"
+                style={grandPalaisVenueStyle(nextOpening.venueKey)}
+              >
+                <span className="step-label">Prochaine ouverture</span>
+                <strong>{nextOpening.entry.title}</strong>
+                <small>
+                  {nextOpening.venueLabel}
+                  {" · "}
+                  {grandPalaisEntryStatus(nextOpening.entry, today, openingReady).detail.replace(/^Commence /, "") || "bientôt"}
+                </small>
+              </article>
             ) : null}
-          </p>
+          </div>
         </div>
       </div>
 
@@ -647,10 +714,10 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             <button key={value} type="button" role="tab" aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>{label}</button>
           ))}
         </div>
-        {programView !== "interexpo" ? <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label> : null}
+        <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label>
       </div>
 
-      {programView === "space" ? <section className="grand-palais-venue-navigation" aria-labelledby="grand-palais-spaces-title">
+      {programView === "space" && !searchResults ? <section className="grand-palais-venue-navigation" aria-labelledby="grand-palais-spaces-title">
         <div className="grand-palais-venue-navigation-heading">
           <span className="step-label">Les galeries</span>
           <h3 id="grand-palais-spaces-title">Choisir un espace</h3>
@@ -706,7 +773,25 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         ) : null}
       </section> : null}
 
-      {programView === "interexpo" ? (
+      {searchResults ? (
+        <section className="useful-expo-schedule grand-palais-program-panel" aria-live="polite">
+          <div className="useful-expo-schedule-heading">
+            <h3>Résultats de la recherche</h3>
+            <p>
+              {searchResults.length
+                ? `${searchResults.length} exposition${searchResults.length > 1 ? "s" : ""} dans toute la programmation, la plus proche d'abord.`
+                : "Aucune exposition de la programmation ne porte ce titre."}
+            </p>
+          </div>
+          <div className="useful-expo-timeline">
+            {searchResults.map(({ entry, venueKey, venueLabel }) => (
+              <div className="expo-card-slot" key={`${venueKey}-${entry.title}-${entry.period}`}>
+                <ExpoCard entry={entry} venueKey={venueKey} venueLabel={venueLabel} today={today} openingReady={openingReady} linkLabel="Voir le site officiel" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : programView === "interexpo" ? (
         <section className="useful-expo-schedule grand-palais-program-panel grand-palais-interexpo-panel" aria-labelledby="grand-palais-interexpo-title">
           <div className="useful-expo-schedule-heading">
             <span className="step-label">Galeries 3–4 · 8 · 7</span>
@@ -746,11 +831,10 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         <section className="useful-expo-schedule grand-palais-program-panel" aria-live="polite">
           <div className="useful-expo-schedule-heading">
             <h3>{programView === "now" ? "Ouvert en ce moment" : "Prochaines ouvertures"}</h3>
-            <p>{overviewEntries.length
-              ? programView === "now"
-                ? `${overviewEntries.length} exposition${overviewEntries.length > 1 ? "s" : ""} dans tous les espaces, celles qui ferment le plus tôt en premier.`
-                : `${overviewEntries.length} ouverture${overviewEntries.length > 1 ? "s" : ""} annoncée${overviewEntries.length > 1 ? "s" : ""}, mois par mois.`
-              : "Tous les espaces réunis."}</p>
+            {/* « En ce moment » se passe de commentaire : la liste parle. */}
+            {programView === "upcoming" && overviewEntries.length ? (
+              <p>{overviewEntries.length} ouverture{overviewEntries.length > 1 ? "s" : ""} annoncée{overviewEntries.length > 1 ? "s" : ""}, mois par mois.</p>
+            ) : null}
           </div>
           <div className="useful-expo-timeline">
             {overviewEntries.length ? overviewEntries.map(({ entry, venueKey, venueLabel, heading }, index) => (

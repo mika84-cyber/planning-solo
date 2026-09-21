@@ -27,12 +27,10 @@ export const PayEstimateDetails = lazy(() =>
 // elle, hors du démarrage, et il est prêt dès que la page s'ouvre.
 const payslipCheckModule = () => import("./PayslipCheckSection");
 export const PayPage = lazy(() => {
-  // Les deux téléchargements partent ensemble ; la page attend le contrôle.
-  const payslipCheck = payslipCheckModule();
-  return import("./PayPage").then(async ({ PayPage: Component }) => {
-    await payslipCheck;
-    return { default: Component };
-  });
+  // Le contrôle du bulletin est préchargé avec la page, mais ne la retarde
+  // pas : il a sa propre attente, à l'endroit où il s'affiche.
+  void payslipCheckModule();
+  return import("./PayPage").then(({ PayPage: Component }) => ({ default: Component }));
 });
 export const PayslipCheckSection = lazy(() =>
   payslipCheckModule().then(({ PayslipCheckSection: Component }) => ({ default: Component })),

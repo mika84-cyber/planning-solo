@@ -5,7 +5,7 @@ import {
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
-  currentExhibitionGroupLabel,
+  currentVenueRank,
   delayLabel,
   describeInterExhibitionPeriod,
   interExhibitionRangeLabel,
@@ -174,15 +174,11 @@ describe("programmation du Grand Palais", () => {
     })).toBe(true);
   });
 
-  it("regroupe « En ce moment » par ce qui ferme le plus tôt", () => {
-    const grouped = (endsOn?: string) =>
-      currentExhibitionGroupLabel({ title: "Expo", period: "", startsOn: "2026-01-01", endsOn }, "2026-09-07");
-    expect(grouped("2026-09-07")).toBe("Derniers jours");
-    expect(grouped("2026-09-14")).toBe("Derniers jours");
-    expect(grouped("2026-09-15")).toBe("Se termine dans le mois");
-    expect(grouped("2026-10-08")).toBe("Se termine dans le mois");
-    expect(grouped("2026-10-09")).toBe("Encore plusieurs mois");
-    expect(grouped(undefined)).toBe("Sans date de fin annoncée");
+  it("range « En ce moment » par espace : les quatre grands d'abord, la Nef en dernier", () => {
+    const order = ["nef", "gallery910", "childrenPalace", "gallery7", "other:grand-palais", "gallery8", "galleries34"]
+      .sort((left, right) => currentVenueRank(left) - currentVenueRank(right));
+    expect(order.slice(0, 4)).toEqual(["galleries34", "gallery8", "gallery7", "childrenPalace"]);
+    expect(order.at(-1)).toBe("nef");
   });
 
   it("dit un délai en années, mois et jours sans énoncer les unités nulles", () => {

@@ -1,3 +1,8 @@
+/** Un tarif publié : son nom tel quel, son montant en euros, et le dernier
+ *  jour où il a cours quand il ne vaut que pour une date — un vernissage, une
+ *  soirée. Passé ce jour, la carte ne le montre plus. */
+export type GrandPalaisPrice = { label: string; amount: number; until?: string };
+
 export type SharedGrandPalaisEvent = {
   id: string;
   title: string;
@@ -6,6 +11,9 @@ export type SharedGrandPalaisEvent = {
   url: string;
   venueKey: string;
   venueLabel: string;
+  /** Tarifs lus dans la rubrique « Tarifs » de la fiche officielle, dans leur
+   *  ordre et sous leur nom. */
+  prices?: GrandPalaisPrice[];
   deleted?: boolean;
   approvedAt?: string;
 };

@@ -3,6 +3,7 @@ import {
   collectGrandPalaisEvents,
   detectGrandPalaisChanges,
   extractGrandPalaisEvent,
+  extractGrandPalaisPrices,
   extractGrandPalaisExceptionalClosures,
   extractGrandPalaisProgramLinks,
   extractGrandPalaisProgramPageLinks,
@@ -53,6 +54,26 @@ describe("surveillance de la programmation du Grand Palais", () => {
       "https://www.grandpalais.fr/fr/programme?page=1",
       "https://www.grandpalais.fr/fr/programme?page=2",
     ]);
+  });
+
+  it("relève les tarifs publiés, dans leur ordre et sous leur nom", () => {
+    expect(extractGrandPalaisPrices(
+      "<div>Tarifs <p>Tarif plein&nbsp;: 19 €</p><p>Tarif réduit : 16 €</p><p>Gratuit - 18 ans, demandeurs d’emploi.</p></div>",
+    )).toEqual([
+      { label: "Plein", amount: 19 },
+      { label: "Réduit", amount: 16 },
+    ]);
+    // Un salon annonce plus de deux billets : tous sont repris.
+    expect(extractGrandPalaisPrices(
+      "Tarifs Billet jour - Plein tarif : 47 €. Billet jour - Tarif réduit : 30 €. Billet soirée : 40 €. Vernissage : 120 €.",
+    ).map((price) => price.amount)).toEqual([47, 30, 40, 120]);
+    // Les fiches anglaises écrivent le montant avant l’euro.
+    expect(extractGrandPalaisPrices("Prices Full price : €15 Reduced price : €12"))
+      .toEqual([{ label: "Full price", amount: 15 }, { label: "Reduced price", amount: 12 }]);
+    // Une fiche gratuite l’annonce au lieu d’un montant.
+    expect(extractGrandPalaisPrices("<h2>Tarifs</h2><p>Gratuit</p>")).toEqual([{ label: "Gratuit", amount: 0 }]);
+    // Une fiche muette ne renvoie aucun tarif, jamais un prix deviné.
+    expect(extractGrandPalaisPrices("<p>Une exposition sans rubrique tarifs.</p>")).toEqual([]);
   });
 
   it("extrait les dates, le titre et la galerie depuis une fiche", () => {

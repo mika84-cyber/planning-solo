@@ -1,3 +1,4 @@
+import type { GrandPalaisPrice } from "./grandPalaisProgramTypes";
 /** Le programme du Grand Palais livré avec l'application.
  *
  *  Séparé du composant pour que la surveillance du site officiel puisse s'y
@@ -17,6 +18,11 @@ export type GrandPalaisProgramEntry = {
   title: string;
   period: string;
   details?: string;
+  /** Tarifs relevés sur la page officielle, dans leur ordre et sous leur nom :
+   *  une exposition en annonce deux, un salon peut en annoncer quatre. Absents
+   *  tant que le Grand Palais ne les publie pas : mieux vaut aucun tarif qu'un
+   *  prix inventé. */
+  prices?: GrandPalaisPrice[];
   uncertain?: boolean;
   officialUrl?: string;
   startsOn?: string;
@@ -43,6 +49,10 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           period: "Du 23 septembre 2026 au 17 janvier 2027",
           details: "J-R Touzet · X. Rey · C. Bernardi · M. Gauthier",
           officialUrl: "https://www.grandpalais.fr/fr/programme/cezanne-et-nous",
+          prices: [
+            { label: "Plein", amount: 19 },
+            { label: "Réduit", amount: 16 },
+          ],
           startsOn: "2026-09-23",
           endsOn: "2027-01-17",
         },
@@ -131,7 +141,11 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
         {
           title: "Girls - Adolescence, mode et rébellion",
           period: "Du 9 décembre 2026 au 21 mars 2027",
-          officialUrl: "https://www.grandpalais.fr/fr/programme/girls-adolescence-mode-et-rebellion",
+          officialUrl: "https://www.grandpalais.fr/fr/programme/girls-adolescence-mode-rebellion",
+          prices: [
+            { label: "Plein", amount: 15 },
+            { label: "Réduit", amount: 12 },
+          ],
           startsOn: "2026-12-09",
           endsOn: "2027-03-21",
         },
@@ -159,8 +173,8 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
       2026: [
         { title: "SIBCA - Salon de l’Immobilier Bas Carbone", period: "Du 1er au 3 septembre 2026", startsOn: "2026-09-01", endsOn: "2026-09-03" },
         { title: "Sommet international sur l’espace", period: "Les 9 et 10 septembre 2026", startsOn: "2026-09-09", endsOn: "2026-09-10" },
-        { title: "Fine Arts Paris", period: "Du 19 au 23 septembre 2026", startsOn: "2026-09-19", endsOn: "2026-09-23" },
-        { title: "Art Basel", period: "Du 23 au 25 octobre 2026", startsOn: "2026-10-23", endsOn: "2026-10-25" },
+        { title: "Fine Arts Paris", period: "Du 19 au 23 septembre 2026", startsOn: "2026-09-19", endsOn: "2026-09-23", officialUrl: "https://www.grandpalais.fr/fr/programme/fine-arts-paris-2026", prices: [{ label: "Plein", amount: 30 }, { label: "Réduit", amount: 25 }, { label: "Demi-tarif", amount: 15 }] },
+        { title: "Art Basel", period: "Du 23 au 25 octobre 2026", startsOn: "2026-10-23", endsOn: "2026-10-25", officialUrl: "https://www.grandpalais.fr/fr/programme/art-basel-paris-2026", prices: [{ label: "Billet jour", amount: 47 }, { label: "Billet jour, réduit", amount: 30 }, { label: "Billet soirée", amount: 40, until: "2026-10-23" }, { label: "Vernissage", amount: 120, until: "2026-10-22" }] },
         { title: "Paris Photo World Supreme", period: "Du 12 au 15 novembre 2026", startsOn: "2026-11-12", endsOn: "2026-11-15" },
         { title: "Arabian Horse Championship", period: "Du 25 au 27 novembre 2026", startsOn: "2026-11-25", endsOn: "2026-11-27" },
         { title: "Adopt AI", period: "Les 3 et 4 décembre 2026", startsOn: "2026-12-03", endsOn: "2026-12-04" },
@@ -194,6 +208,10 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           title: "Mika Ninagawa with EiM - Alive with Shadows",
           period: "Du 16 décembre 2026 au 21 mars 2027",
           officialUrl: "https://www.grandpalais.fr/en/program/mika-ninagawa-eim-alive-shadows",
+          prices: [
+            { label: "Plein", amount: 15 },
+            { label: "Réduit", amount: 12 },
+          ],
           startsOn: "2026-12-16",
           endsOn: "2027-03-21",
         },
@@ -217,6 +235,10 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           title: "Transparence",
           period: "Du 20 juin 2025 au 29 août 2027",
           officialUrl: "https://www.grandpalais.fr/fr/programme/transparence",
+          prices: [
+            { label: "Plein", amount: 13 },
+            { label: "Abonné", amount: 8 },
+          ],
           startsOn: "2025-06-20",
           endsOn: "2027-08-29",
         },
@@ -226,6 +248,10 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           title: "Transparence",
           period: "Jusqu’au 29 août 2027",
           officialUrl: "https://www.grandpalais.fr/fr/programme/transparence",
+          prices: [
+            { label: "Plein", amount: 13 },
+            { label: "Abonné", amount: 8 },
+          ],
           startsOn: "2025-06-20",
           endsOn: "2027-08-29",
         },

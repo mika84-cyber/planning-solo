@@ -1,6 +1,7 @@
 import { GRAND_PALAIS_PROGRAM } from "../../src/grandPalaisProgramData.ts";
 import type {
   GrandPalaisProgramProposal,
+  GrandPalaisPrice,
   SharedGrandPalaisEvent,
 } from "../../src/grandPalaisProgramTypes.ts";
 
@@ -313,6 +314,38 @@ function findJsonLdEvent(value: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
+/** Les tarifs publiés par une fiche, dans leur ordre et sous leur nom : une
+ *  exposition en annonce deux (plein, réduit), un salon peut en annoncer
+ *  quatre (jour, réduit, soirée, vernissage). Une fiche gratuite le dit à la
+ *  place d'un montant, une fiche muette ne renvoie rien : mieux vaut aucun
+ *  tarif qu'un prix inventé. Le français et l'anglais sont lus pareil. */
+export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
+  const text = decodeHtml(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
+  const start = text.search(/\b(?:tarifs?|prices?)\b/i);
+  if (start === -1) return [];
+  const block = text.slice(start, start + 1400);
+  const prices: GrandPalaisPrice[] = [];
+  const seen = new Set<string>();
+  for (const match of block.matchAll(/([^.;!?•]{2,60}?)\s*:\s*(?:€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*€)/g)) {
+    const amount = Number((match[2] ?? match[3]).replace(",", "."));
+    // Un tarif du Grand Palais tient largement sous cette borne : au-delà, la
+    // lecture a attrapé autre chose qu'un prix.
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 500) continue;
+    // « Tarifs Tarif plein » et « Tarif réduit » donnent tous deux un nom
+    // court : « Plein », « Réduit ».
+    let label = match[1].replace(/^[\s,–-]+|[\s,–-]+$/g, "").trim();
+    while (/^(?:tarifs?|prices?)\s+\S/i.test(label)) label = label.replace(/^(?:tarifs?|prices?)\s+/i, "");
+    if (!label || label.length > 45 || seen.has(label.toLowerCase())) continue;
+    seen.add(label.toLowerCase());
+    prices.push({ label: label.charAt(0).toUpperCase() + label.slice(1), amount });
+    if (prices.length >= 6) break;
+  }
+  if (prices.length) return prices;
+  return /(?:tarifs?|prices?|admission)\s*:?\s*(?:gratuit|entrée libre|free)/i.test(block)
+    ? [{ label: "Gratuit", amount: 0 }]
+    : [];
+}
+
 export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGrandPalaisEvent | null {
   const scripts = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
   let event: Record<string, unknown> | undefined;
@@ -350,6 +383,7 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
     url,
     venueKey: venue.venueKey,
     venueLabel: venue.venueLabel,
+    prices: extractGrandPalaisPrices(html),
   };
 }
 
@@ -388,7 +422,7 @@ export async function collectGrandPalaisEvents(fetcher: typeof fetch = fetch) {
 }
 
 function eventChanged(previous: SharedGrandPalaisEvent, next: SharedGrandPalaisEvent) {
-  return ["title", "startDate", "endDate", "venueKey", "venueLabel"]
+  return ["title", "startDate", "endDate", "venueKey", "venueLabel", "fullPrice", "reducedPrice", "reducedLabel"]
     .some((key) => previous[key as keyof SharedGrandPalaisEvent] !== next[key as keyof SharedGrandPalaisEvent]);
 }
 
