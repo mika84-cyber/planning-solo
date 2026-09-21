@@ -1,6 +1,6 @@
 import { getUser } from '@netlify/identity';
 import { isTrustedMutation } from '../lib/requestSecurity.mts';
-import { adminStore, archive, isOwner, records, readGroups, groupsKey, trashValid, futureDate, receiptKey, deliveryKey, type Trash, type Pin, type Delivery, type Job } from '../lib/adminTools.mts';
+import { adminStore, archive, isOwner, records, readGroups, groupsKey, readGenders, gendersKey, trashValid, futureDate, receiptKey, deliveryKey, type Trash, type Pin, type Delivery, type Job } from '../lib/adminTools.mts';
 import type { UsefulContactsPayload, UsefulContact } from '../../src/usefulContactsTypes.ts';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'private, no-store' } });
 export default async function handler(request: Request) {
@@ -40,6 +40,15 @@ export default async function handler(request: Request) {
       if (!groups.some(group => group.members.includes(body.member))) return json({ error: 'Collègue introuvable.' }, 404);
       const next = groups.map(group => ({ ...group, members: [...group.members.filter(name => name !== body.member), ...(group.number === body.group ? [body.member] : [])].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })) }));
       await store.setJSON(groupsKey, next);
+    } else if (body.action === 'set-genders') {
+      // Plusieurs choix H/F validés d'un coup ; seuls les noms des groupes sont acceptés.
+      const choices = body.genders;
+      if (!choices || typeof choices !== 'object' || Array.isArray(choices)) return json({ error: 'Choix invalides.' }, 400);
+      const entries = Object.entries(choices as Record<string, unknown>);
+      if (!entries.length || entries.length > 200 || entries.some(([, gender]) => gender !== 'h' && gender !== 'f')) return json({ error: 'Choisissez H ou F.' }, 400);
+      const members = new Set((await readGroups(store)).flatMap(group => group.members));
+      if (entries.some(([member]) => !members.has(member))) return json({ error: 'Collègue introuvable.' }, 404);
+      await store.setJSON(gendersKey, { ...await readGenders(store), ...Object.fromEntries(entries) });
     } else if (body.action === 'remove-member') {
       if (typeof body.member !== 'string' || !body.member.trim()) return json({ error: 'Collègue invalide.' }, 400);
       const groups = await readGroups(store);

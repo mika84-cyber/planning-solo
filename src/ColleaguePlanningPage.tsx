@@ -13,7 +13,7 @@ import {
 } from "./colleagueSharingApi";
 import "./colleaguePlanning.css";
 
-type Props = { demoMode: boolean; initialName: string; getOwnPresence?: (date: Date) => PersonalPresence; ownGroup?: number };
+type Props = { demoMode: boolean; initialName: string; getOwnPresence?: (date: Date) => PersonalPresence; ownGroup?: number; isAdmin?: boolean };
 
 const demoDirectory: ColleagueDirectory = {
   self: { userId: "demo-mika", displayName: "Mika", visible: true },
@@ -284,7 +284,7 @@ function MonthGrid({ planning, view }: { planning: SharedColleaguePlanning; view
   );
 }
 
-export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, ownGroup }: Props) {
+export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, ownGroup, isAdmin = false }: Props) {
   const [data, setData] = useState<ColleagueDirectory | null>(demoMode ? demoDirectory : null);
   const [name, setName] = useState(initialName || (demoMode ? demoDirectory.self.displayName : ""));
   const [query, setQuery] = useState("");
@@ -651,7 +651,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
             </div>
           </div>
         </details>
-        {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} /> : null}
+        {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} isAdmin={isAdmin} /> : null}
         {settingsCollapsed ? (
           <details className="colleague-card colleague-settings-disclosure">
             <summary>

@@ -1,3 +1,4 @@
+import { rememberColleagueGenders } from "./colleagueGenders";
 export type ColleagueShareStatus = "pending" | "accepted" | "automatic" | "blocked";
 export type ColleagueShare = {
   ownerId: string;
@@ -44,14 +45,24 @@ export async function getColleagueDirectory() {
   return directory;
 }
 
+/** Relit les genres des collègues, même quand les groupes sont en cache :
+ *  appelé à l'ouverture de l'application. */
+export async function refreshColleagueGenders() {
+  const response = await parse<{ genders?: unknown }>(
+    await fetch("/api/colleague-groups", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(15000) }),
+  );
+  if (response.genders) rememberColleagueGenders(response.genders);
+}
+
 export async function getColleagueGroups() {
   if (cachedColleagueGroups) return cachedColleagueGroups;
-  const response = await parse<{ groups: import("./colleagueGroups").ColleagueGroup[] }>(
+  const response = await parse<{ groups: import("./colleagueGroups").ColleagueGroup[]; genders?: unknown }>(
     await fetch("/api/colleague-groups", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(15000) }),
   );
   /* Une réponse sans liste (page de repli, fonction absente) ne doit pas
      faire tomber les écrans qui lisent l’annuaire : ils reçoivent une liste vide. */
   const groups = Array.isArray(response.groups) ? response.groups : [];
+  if (response.genders) rememberColleagueGenders(response.genders);
   if (groups.length) cachedColleagueGroups = groups;
   return groups;
 }

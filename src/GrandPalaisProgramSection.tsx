@@ -293,7 +293,7 @@ function venueYears(
 
 /** Les espaces de « Autres » qui ont encore une exposition au programme. Un
  *  espace vide en disparaît, et y revient seul dès qu'une exposition détectée
- *  sur le site du Grand Palais y est acceptée par l'administratrice. */
+ *  sur le site du Grand Palais y est acceptée par l'administrateur. */
 export function otherGrandPalaisVenueKeys(program: GrandPalaisProgramData, today: string) {
   return [
     ...OTHER_VENUES,
@@ -435,7 +435,7 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
 }
 
 /** Ce que le contrôle hebdomadaire des frontières a constaté. Affiché à la
- *  seule administratrice : un contrôle ne peut pas rendre compte par le
+ *  seul administrateur : un contrôle ne peut pas rendre compte par le
  *  canal qu'il teste, il lui faut donc un endroit dans l'application. */
 export function BoundaryReportPanel({
   report,

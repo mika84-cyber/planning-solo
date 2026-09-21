@@ -17,6 +17,14 @@ export const groupsKey = 'admin-tools/groups';
 export async function readGroups(store: Store): Promise<readonly ColleagueGroup[]> {
   return await store.get(groupsKey, { type: 'json' }) as ColleagueGroup[] | null || COLLEAGUE_GROUPS;
 }
+/** Genre de chaque collègue, renseigné par l'administrateur : il accorde
+ *  « vous le remplacez » ou « vous la remplacez » dans les échanges. */
+export type ColleagueGender = 'h' | 'f';
+export const gendersKey = 'admin-tools/genders';
+export async function readGenders(store: Store): Promise<Record<string, ColleagueGender>> {
+  const stored = await store.get(gendersKey, { type: 'json' }) as Record<string, unknown> | null;
+  return Object.fromEntries(Object.entries(stored ?? {}).filter((entry): entry is [string, ColleagueGender] => entry[1] === 'h' || entry[1] === 'f'));
+}
 export type Pin = { message: string; until: string };
 export type Trash = { id: string; title: string; kind: 'document' | 'contact' | 'group-member'; deletedAt: string; entries: Array<{ key: string; value: unknown }> };
 export const trashValid = (item: Trash) => Date.now() - Date.parse(item.deletedAt) < 30 * 86400000;

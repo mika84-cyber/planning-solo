@@ -36,7 +36,7 @@ export type GrandPalaisDismissal = {
   dismissedAt: string;
 };
 
-/** Résultat du dernier contrôle des frontières, affiché à l'administratrice :
+/** Résultat du dernier contrôle des frontières, affiché à l'administrateur :
  *  un contrôle ne peut pas rendre compte par le canal qu'il teste. */
 export type BoundaryReport = {
   checkedAt: string;

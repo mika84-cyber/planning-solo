@@ -72,7 +72,7 @@ describe("API partagée de la programmation GP", () => {
     expect(payload.pending).toEqual([]);
   });
 
-  it("laisse l’administratrice effacer le contrôle des alertes, et personne d’autre", async () => {
+  it("laisse l’administrateur effacer le contrôle des alertes, et personne d’autre", async () => {
     data.set("health", { checkedAt: "2026-09-14T00:05:00.000Z", boundaries: [] });
     const remove = () => grandPalaisProgramHandler(new Request("https://example.test/api/gp-program", { method: "DELETE" }));
 

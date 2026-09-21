@@ -55,13 +55,13 @@ export default async function grandPalaisProgramHandler(request: Request) {
     pending: isAdmin ? nextPending : [],
     isAdmin,
     lastCheckedAt: state?.lastCheckedAt,
-    // Le contrôle des frontières ne regarde que l'administratrice : c'est
+    // Le contrôle des frontières ne regarde que l'administrateur : c'est
     // elle qui peut agir, et le détail nomme des variables de configuration.
     health: isAdmin ? (health ?? undefined) : undefined,
   });
 
   if (request.method === "GET") return json(payload());
-  // L’administratrice peut effacer le dernier contrôle des alertes. Le
+  // L’administrateur peut effacer le dernier contrôle des alertes. Le
   // prochain contrôle du lundi le recrée, preuve de livraison comprise.
   if (request.method === "DELETE") {
     if (!isAdmin) return json({ error: "Cette suppression est réservée au compte administrateur" }, 403);

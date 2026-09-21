@@ -18,7 +18,8 @@ import { AuthScreen } from "./AuthScreen";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
 import { getUsefulContacts } from "./contactsApi";
-import { getColleagueGroups } from "./colleagueSharingApi";
+import { getColleagueGroups, refreshColleagueGenders } from "./colleagueSharingApi";
+import { useColleagueGenders } from "./colleagueGenders";
 import { resolvePublicDemoAccess } from "./demoAccess";
 import { parseDemoCompletedRequestJson } from "./demoCompletedRequest";
 import { ConnectionStatus } from "./ConnectionStatus";
@@ -443,6 +444,14 @@ export default function Home() {
     setInstallMetadataEnabled(installationEnabled);
     return () => setInstallMetadataEnabled(false);
   }, [installationEnabled]);
+
+  // Genres des collègues renseignés dans les groupes : relus à l'ouverture,
+  // ils accordent « vous le/la remplacez » dans les échanges.
+  useColleagueGenders();
+  useEffect(() => {
+    if (authStatus !== "ready" || demoMode || publicDemoAccess.active) return;
+    void refreshColleagueGenders().catch(() => undefined);
+  }, [authStatus, demoMode, publicDemoAccess.active]);
 
   useEffect(() => {
     if (authStatus !== "ready" || publicDemoAccess.active) return;
@@ -2874,6 +2883,7 @@ export default function Home() {
             demoMode={demoMode}
             initialName={formProfile?.fullName || ""}
             ownGroup={group}
+            isAdmin={isProgramAdmin}
             getOwnPresence={(date) => personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)))}
           />
         </Suspense>

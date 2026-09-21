@@ -152,7 +152,7 @@ export default async function feedbackHandler(request: Request) {
       return json({ notifications });
     }
     if (!isAdmin) return json({ error: "Accès réservé." }, 403);
-    // Les destinataires possibles d'un message collectif, pour l'administratrice.
+    // Les destinataires possibles d'un message collectif, pour l'administrateur.
     if (url.searchParams.get("guests") === "1") {
       try {
         const guests = await guestAccounts(configuredAdminEmail());

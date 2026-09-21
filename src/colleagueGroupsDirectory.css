@@ -214,6 +214,11 @@
   line-height: 1.25;
 }
 
+/* Choix H/F réservé à l'administrateur : deux pastilles au bout du nom, puis un bouton de validation. */
+.colleague-group-card li:has(.colleague-gender-choice) { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.colleague-gender-choice { display: inline-flex; flex: none; gap: 4px; } .colleague-gender-choice button { width: 28px; height: 26px; border: 1px solid var(--border-control); border-radius: 8px; padding: 0; background: var(--surface); color: var(--text); font-size: .72rem; font-weight: 900; cursor: pointer; } .colleague-gender-choice button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: #fff; }
+.colleague-gender-validate { display: block; margin: 0 14px 14px auto; border: 0; border-radius: 10px; padding: 8px 14px; background: var(--accent); color: #fff; font-weight: 850; cursor: pointer; } .colleague-gender-error { margin: 0; color: #a8392f; font-size: .8rem; font-weight: 750; }
+
 .colleague-group-loading {
   margin: 0;
   padding: 16px 14px;

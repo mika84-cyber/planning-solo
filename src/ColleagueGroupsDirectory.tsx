@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
+import { adminToolsApi } from "./adminToolsApi";
+import { type ColleagueGender, rememberColleagueGenders, useColleagueGenders } from "./colleagueGenders";
 import type { ColleagueGroup } from "./colleagueGroups";
 import { getColleagueGroups } from "./colleagueSharingApi";
 import { matchesSearch } from "./searchMatching";
 import "./colleagueGroupsDirectory.css";
 
-type Props = { groups?: readonly ColleagueGroup[] };
+type Props = {
+  groups?: readonly ColleagueGroup[];
+  /** L'administrateur indique ici le genre de chaque collègue. */
+  isAdmin?: boolean;
+};
 const GROUP_COUNTS = [34, 36, 35] as const;
 const EMPTY_GROUPS: readonly ColleagueGroup[] = [];
 export function searchColleagueGroups(groups: readonly ColleagueGroup[], query: string) {
@@ -14,8 +20,29 @@ export function searchColleagueGroups(groups: readonly ColleagueGroup[], query: 
     .map((member) => ({ member, group: group.number })));
 }
 
-export function ColleagueGroupsDirectory({ groups = EMPTY_GROUPS }: Props) {
+export function ColleagueGroupsDirectory({ groups = EMPTY_GROUPS, isAdmin = false }: Props) {
   const [availableGroups, setAvailableGroups] = useState<readonly ColleagueGroup[]>(groups);
+  const knownGenders = useColleagueGenders();
+  // Choix H/F pas encore validés, par nom ; ils partent groupe par groupe.
+  const [pendingGenders, setPendingGenders] = useState<Record<string, ColleagueGender>>({});
+  const [savingGroup, setSavingGroup] = useState<number | null>(null);
+  const [genderError, setGenderError] = useState("");
+  const chooseGender = (member: string, gender: ColleagueGender) =>
+    setPendingGenders((current) => ({ ...current, [member]: gender }));
+  const validateGenders = async (groupNumber: number, members: readonly string[]) => {
+    const choices = Object.fromEntries(members.filter((member) => pendingGenders[member]).map((member) => [member, pendingGenders[member]]));
+    setSavingGroup(groupNumber);
+    setGenderError("");
+    try {
+      await adminToolsApi({ action: "set-genders", genders: choices });
+      rememberColleagueGenders(choices, true);
+      setPendingGenders((current) => Object.fromEntries(Object.entries(current).filter(([member]) => !(member in choices))));
+    } catch (error) {
+      setGenderError(error instanceof Error ? error.message : "Les choix n’ont pas pu être enregistrés.");
+    } finally {
+      setSavingGroup(null);
+    }
+  };
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -70,17 +97,41 @@ export function ColleagueGroupsDirectory({ groups = EMPTY_GROUPS }: Props) {
             </li>)}
           </ul> : <p>{!availableGroups.length ? loadError ? "Impossible de charger les noms." : "Chargement des noms…" : "Aucun collègue trouvé."}</p>}
         </div> : <div className="colleague-groups-content">
-          {visibleGroups.map((group) => (
-            <details className={`colleague-group-card group-${group.number}`} key={group.number}>
-              <summary>
-                <span><strong>Groupe {group.number}</strong><small>{group.count} personnes</small></span>
-                <i aria-hidden="true">⌄</i>
-              </summary>
-              {group.members.length ? <ol>
-                {group.members.map((member) => <li key={member}>{member}</li>)}
-              </ol> : <p className="colleague-group-loading">{loadError ? "Noms indisponibles" : "Chargement des noms…"}</p>}
-            </details>
-          ))}
+          {visibleGroups.map((group) => {
+            // Seuls les noms sans genre enregistré proposent H/F, et à
+            // l'administrateur seulement : une fois validés, ils disparaissent.
+            const missing = isAdmin ? group.members.filter((member) => !knownGenders[member]) : [];
+            const chosen = missing.filter((member) => pendingGenders[member]).length;
+            return (
+              <details className={`colleague-group-card group-${group.number}`} key={group.number}>
+                <summary>
+                  <span><strong>Groupe {group.number}</strong><small>{group.count} personnes{missing.length ? ` · ${missing.length} sans H/F` : ""}</small></span>
+                  <i aria-hidden="true">⌄</i>
+                </summary>
+                {group.members.length ? <ol>
+                  {group.members.map((member) => <li key={member}>
+                    <span>{member}</span>
+                    {missing.includes(member) ? <span className="colleague-gender-choice" role="group" aria-label={`Genre de ${member}`}>
+                      {(["h", "f"] as const).map((gender) => <button
+                        key={gender}
+                        type="button"
+                        aria-pressed={pendingGenders[member] === gender}
+                        aria-label={`${member} : ${gender === "h" ? "homme" : "femme"}`}
+                        onClick={() => chooseGender(member, gender)}
+                      >{gender.toUpperCase()}</button>)}
+                    </span> : null}
+                  </li>)}
+                </ol> : <p className="colleague-group-loading">{loadError ? "Noms indisponibles" : "Chargement des noms…"}</p>}
+                {chosen ? <button
+                  type="button"
+                  className="colleague-gender-validate"
+                  disabled={savingGroup === group.number}
+                  onClick={() => void validateGenders(group.number, missing)}
+                >{savingGroup === group.number ? "Enregistrement…" : `Valider ${chosen} choix`}</button> : null}
+              </details>
+            );
+          })}
+          {genderError ? <p className="colleague-gender-error" role="alert">{genderError}</p> : null}
         </div>}
         {loadError ? <div role="status"><p>Les noms sont momentanément indisponibles.</p><button type="button" onClick={() => setAttempt((value) => value + 1)}>Réessayer</button></div> : null}
       </div>

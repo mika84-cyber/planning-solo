@@ -4882,3 +4882,36 @@ test("un mécénat hors des règles du temps de travail explique pourquoi il est
   await expect(alert).toBeHidden();
   await expect(dialog.getByRole("button", { name: "Enregistrer le mécénat" })).toBeEnabled();
 });
+
+test("l’administrateur indique H ou F dans les groupes, puis les choix disparaissent", async ({ page }) => {
+  let saved: unknown = null;
+  await page.route("**/api/colleague-groups", (route) => route.fulfill({ json: { groups: [{ number: 1, members: ["Auricio Lemos Bomfim", "Nikky"] }], genders: {} } }));
+  await page.route("**/api/admin-tools", async (route) => {
+    saved = route.request().postDataJSON();
+    await route.fulfill({ json: { ok: true } });
+  });
+  await prepareDemo(page);
+  await page.evaluate(async () => {
+    const [React, dom, component] = await Promise.all([
+      import("/node_modules/.vite/deps/react.js" as string),
+      import("/node_modules/.vite/deps/react-dom_client.js" as string),
+      import("/src/ColleagueGroupsDirectory.tsx" as string),
+    ]);
+    const host = document.createElement("div");
+    document.getElementById("root")!.style.display = "none";
+    host.style.cssText = "max-width:700px;margin:20px auto;padding:16px";
+    document.body.append(host);
+    (dom.default || dom).createRoot(host).render((React.default || React).createElement(component.ColleagueGroupsDirectory, { isAdmin: true }));
+  });
+  const directory = page.locator(".colleague-groups-directory");
+  await directory.locator(":scope > summary").click();
+  const group = directory.locator(".colleague-group-card");
+  await group.locator(":scope > summary").click();
+  await expect(group).toContainText("2 sans H/F");
+  await group.getByRole("button", { name: "Auricio Lemos Bomfim : homme" }).click();
+  await group.getByRole("button", { name: "Nikky : femme" }).click();
+  await group.getByRole("button", { name: "Valider 2 choix" }).click();
+  await expect(group.locator(".colleague-gender-choice")).toHaveCount(0);
+  await expect(group).not.toContainText("sans H/F");
+  expect(saved).toEqual({ action: "set-genders", genders: { "Auricio Lemos Bomfim": "h", Nikky: "f" } });
+});

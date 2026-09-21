@@ -1,3 +1,5 @@
+import { genderOfColleague } from "./colleagueGenders";
+
 export type ColleagueObjectPronoun = "le" | "la" | "le/la";
 
 const FEMININE_NAMES = new Set(
@@ -22,6 +24,9 @@ function normalizedFirstName(value: string) {
 }
 
 export function colleagueObjectPronoun(name: string): ColleagueObjectPronoun {
+  // Le genre renseigné dans les groupes passe avant toute supposition.
+  const known = genderOfColleague(name);
+  if (known) return known === "f" ? "la" : "le";
   const firstName = normalizedFirstName(name);
   if (!firstName) return "le/la";
   if (FEMININE_NAMES.has(firstName)) return "la";

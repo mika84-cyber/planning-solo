@@ -37,7 +37,7 @@ describe('outils administrateur', () => {
   it('ne révèle aux invités que le message actif et refuse toutes leurs écritures', async () => {
     guest();
     expect(await (await handler(get())).json()).toEqual({ pin: null });
-    for (const action of ['pin', 'move-member', 'remove-member', 'restore', 'cancel-job', 'dismiss-alert', 'delete-job', 'purge-trash']) expect((await handler(post({ action }))).status).toBe(403);
+    for (const action of ['pin', 'move-member', 'set-genders', 'remove-member', 'restore', 'cancel-job', 'dismiss-alert', 'delete-job', 'purge-trash']) expect((await handler(post({ action }))).status).toBe(403);
     vi.mocked(getUser).mockResolvedValue(null);
     expect((await handler(get())).status).toBe(401);
     owner();
@@ -57,6 +57,16 @@ describe('outils administrateur', () => {
     expect(after.groups[0].members).not.toContain(member); expect(after.groups[1].members).toContain(member);
     expect(after.groups.flatMap((group: { members: string[] }) => group.members).filter((name: string) => name === member)).toHaveLength(1);
     expect(after.groups.flatMap((group: { members: string[] }) => group.members)).toHaveLength(before.flatMap((group: { members: string[] }) => group.members).length);
+  });
+  it('retient le genre choisi par l’administrateur et le donne à tous les comptes', async () => {
+    const [first, second] = (await overview()).groups[0].members;
+    expect((await handler(post({ action: 'set-genders', genders: { [first]: 'f' } }))).status).toBe(200);
+    expect((await handler(post({ action: 'set-genders', genders: { [second]: 'h' } }))).status).toBe(200);
+    expect((await handler(post({ action: 'set-genders', genders: { [first]: 'x' } }))).status).toBe(400);
+    expect((await handler(post({ action: 'set-genders', genders: { 'Personne Inconnue': 'h' } }))).status).toBe(404);
+    guest();
+    const { genders } = await (await groupsHandler(get('colleague-groups'))).json();
+    expect(genders).toEqual({ [first]: 'f', [second]: 'h' });
   });
   it('retire un collègue des groupes sans supprimer son compte et permet de le restaurer', async () => {
     const before = (await overview()).groups;
