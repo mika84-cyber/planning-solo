@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "reac
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { matchesSearch } from "./searchMatching";
-import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
+import { GRAND_PALAIS_KNOWN_PRICES, GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 import type {
   GrandPalaisProgramData,
   GrandPalaisProgramEntry,
@@ -109,7 +109,7 @@ export function mergeSharedGrandPalaisProgram(
     const knownPrices = Object.values(merged)
       .flatMap((venue) => Object.values(venue.schedule).flatMap((entries) => entries ?? []))
       .find((entry) => entry.prices?.length && (entry.officialUrl === officialUrl || entry.title.toLowerCase() === shared.title.toLowerCase()))
-      ?.prices;
+      ?.prices ?? GRAND_PALAIS_KNOWN_PRICES[officialUrl.split(/[?#]/)[0].replace(/\/$/, "")];
     for (const venue of Object.values(merged))
       for (const year of Object.keys(venue.schedule))
         venue.schedule[Number(year)] = (venue.schedule[Number(year)] ?? []).filter((entry) =>
@@ -429,7 +429,8 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
               {visiblePrices.map((price) => (
                 <Fragment key={price.label}>
                   <dt>
-                    {price.label}
+                    {/* « Gratuit : Gratuit » se lit « Accès : Gratuit ». */}
+                    {price.amount === 0 && /^gratuit$/i.test(price.label) ? "Accès" : price.label}
                     {price.until ? <span> le {dayAndMonth(price.until)}</span> : null}
                   </dt>
                   <dd>{price.amount === 0 ? "Gratuit" : priceLabel(price.amount)}</dd>
