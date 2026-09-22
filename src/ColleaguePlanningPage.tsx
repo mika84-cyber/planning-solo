@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDayInfo, MONTHS } from "./planningLogic";
 import type { PersonalPresence } from "./appModel";
 import { ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
@@ -11,9 +11,10 @@ import {
   type ColleagueShare,
   type SharedColleaguePlanning,
 } from "./colleagueSharingApi";
+import { readColleagueBoardCache, writeColleagueBoardCache } from "./colleagueBoardCache";
 import "./colleaguePlanning.css";
 
-type Props = { demoMode: boolean; initialName: string; getOwnPresence?: (date: Date) => PersonalPresence; ownGroup?: number; isAdmin?: boolean };
+type Props = { demoMode: boolean; initialName: string; accountId?: string; getOwnPresence?: (date: Date) => PersonalPresence; ownGroup?: number; isAdmin?: boolean };
 
 const demoDirectory: ColleagueDirectory = {
   self: { userId: "demo-mika", displayName: "Mika", visible: true },
@@ -286,16 +287,23 @@ function MonthGrid({ planning, view }: { planning: SharedColleaguePlanning; view
   );
 }
 
-export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, ownGroup, isAdmin = false }: Props) {
-  const [data, setData] = useState<ColleagueDirectory | null>(demoMode ? demoDirectory : null);
-  const [name, setName] = useState(initialName || (demoMode ? demoDirectory.self.displayName : ""));
+export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", getOwnPresence, ownGroup, isAdmin = false }: Props) {
+  // Le dernier état connu s'affiche d'emblée ; la lecture du serveur le met à
+  // jour ensuite sans vider le tableau.
+  const [cached] = useState(() => demoMode ? null : readColleagueBoardCache(accountId));
+  const [data, setData] = useState<ColleagueDirectory | null>(demoMode ? demoDirectory : cached?.directory ?? null);
+  const [name, setName] = useState(initialName || (demoMode ? demoDirectory.self.displayName : cached?.directory.self.displayName ?? ""));
   const [query, setQuery] = useState("");
-  const [directoryLoading, setDirectoryLoading] = useState(!demoMode);
+  const [directoryLoading, setDirectoryLoading] = useState(!demoMode && !cached);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<SharedColleaguePlanning | null>(null);
   const [view, setView] = useState(() => startOfMonth(new Date()));
-  const [receivedPlannings, setReceivedPlannings] = useState<Record<string, SharedColleaguePlanning>>({});
+  const [receivedPlannings, setReceivedPlannings] = useState<Record<string, SharedColleaguePlanning>>(() => cached?.plannings ?? {});
+  const [planningRefresh, setPlanningRefresh] = useState(0);
+  const directoryRead = useRef(false);
+  const planningsRef = useRef(receivedPlannings);
+  planningsRef.current = receivedPlannings;
   const [boardOffset, setBoardOffset] = useState(1);
   const [boardMode, setBoardMode] = useState<"day" | "week">("day");
   const [weekOffset, setWeekOffset] = useState(0);
@@ -318,10 +326,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
       setDirectoryLoading(false);
       return;
     }
-    setDirectoryLoading(true);
     try {
       const next = await getColleagueDirectory();
       setData(next);
+      // La première lecture suffit à charger les plannings ; les suivantes les relisent.
+      if (directoryRead.current) setPlanningRefresh((value) => value + 1);
+      directoryRead.current = true;
       setName((current) => current || next.self.displayName);
       setError("");
     } catch (reason) {
@@ -426,10 +436,14 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
   const selfTomorrow = getOwnPresence && ownGroup ? { status: personalTomorrowStatus(getOwnPresence(boardDate)), group: ownGroup } : null;
   const selfName = data?.self.displayName || name.trim() || "Vous";
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: tomorrowAttempt relance les lectures après Réessayer.
+  // Les plannings déjà affichés restent en place pendant leur relecture : le
+  // tableau ne se vide plus à chaque rafraîchissement de l'annuaire.
+  const receivedKey = received.map((share) => share.ownerId).join("|");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: receivedKey résume `received` ; tomorrowAttempt et planningRefresh relancent les lectures.
   useEffect(() => {
     setTomorrowFailed([]);
-    setReceivedPlannings({});
+    const ids = new Set(received.map((share) => share.ownerId));
+    setReceivedPlannings((current) => Object.fromEntries(Object.entries(current).filter(([ownerId]) => ids.has(ownerId))));
     if (!received.length) return;
     let cancelled = false;
     for (const share of received) void (async () => {
@@ -437,11 +451,17 @@ export function ColleaguePlanningPage({ demoMode, initialName, getOwnPresence, o
         const planning = demoMode ? demoPlanning : await getSharedColleaguePlanning(share.ownerId);
         if (!cancelled) setReceivedPlannings((current) => ({ ...current, [share.ownerId]: planning }));
       } catch {
-        if (!cancelled) setTomorrowFailed((current) => [...current, share.ownerId]);
+        // Un planning déjà connu reste affiché ; seul un planning jamais lu est signalé.
+        if (!cancelled && !planningsRef.current[share.ownerId]) setTomorrowFailed((failed) => [...failed, share.ownerId]);
       }
     })();
     return () => { cancelled = true; };
-  }, [demoMode, received, tomorrowAttempt]);
+  }, [demoMode, receivedKey, tomorrowAttempt, planningRefresh]);
+
+  useEffect(() => {
+    if (demoMode || !data) return;
+    writeColleagueBoardCache(accountId, { directory: data, plannings: receivedPlannings });
+  }, [accountId, data, demoMode, receivedPlannings]);
 
   useEffect(() => {
     if (selected) window.scrollTo({ top: 0, behavior: "smooth" });

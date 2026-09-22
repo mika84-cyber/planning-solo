@@ -345,7 +345,7 @@ export function PayAllowancesSection({
             aria-controls="sunday-done-list"
             onClick={() => setSundayListOpen((open) => !open)}
           >
-            <span>Dates des dimanches</span>
+            <span>Détails des dimanches</span>
             <em>
               {sundayListOpen ? "Masquer les dates" : "Voir les dates"}
               <svg viewBox="0 0 24 24" aria-hidden="true">

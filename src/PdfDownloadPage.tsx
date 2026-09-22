@@ -49,7 +49,7 @@ export function PdfDownloadPage({
         <div className="pdf-download-settings">
           <label>
             <span className="pdf-setting-title">
-              <i aria-hidden="true">A</i>
+              <i aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M4 10h16M9 3v4m6-4v4" /></svg></i>
               <span><b>Année du planning</b><small>Période du document</small></span>
             </span>
             <ChoicePicker
@@ -62,7 +62,7 @@ export function PdfDownloadPage({
           </label>
           <label>
             <span className="pdf-setting-title">
-              <i aria-hidden="true">G</i>
+              <i aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.5" /><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M14.5 15.2c.8-.7 1.6-1 2.5-1 2 0 3.4 1.4 3.8 4" /></svg></i>
               <span><b>Groupe</b><small>Cycle de travail</small></span>
             </span>
             <ChoicePicker
@@ -73,22 +73,23 @@ export function PdfDownloadPage({
               className="year-choice-picker"
             />
           </label>
+          {/* Même présentation que l'année et le groupe : titre en haut, commande
+              dessous, ici un interrupteur. */}
           <div className="school-vacation-choice">
+            <span className="pdf-setting-title">
+              <i aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.5m0 14v2.5M2.5 12H5m14 0h2.5M5.3 5.3l1.8 1.8m9.8 9.8 1.8 1.8m0-13.4-1.8 1.8m-9.8 9.8-1.8 1.8" /></svg></i>
+              <span><b>Vacances scolaires</b><small>Zones A, B et C</small></span>
+            </span>
             <button
               type="button"
+              role="switch"
               className={showSchoolVacations ? "school-vacation-toggle active" : "school-vacation-toggle"}
-              aria-pressed={showSchoolVacations}
+              aria-checked={showSchoolVacations}
               onClick={() => onShowSchoolVacationsChange((current) => !current)}
             >
+              <span>Ajouter les vacances scolaires au planning</span>
               <i aria-hidden="true" />
-              <span>
-                <strong>Vacances scolaires</strong>
-                <small>Cocher la case pour intégrer les vacances scolaires au planning</small>
-              </span>
             </button>
-            {showSchoolVacations ? (
-              <small className="pdf-option-confirmation">Les vacances scolaires seront ajoutées au document.</small>
-            ) : null}
           </div>
         </div>
       </section>

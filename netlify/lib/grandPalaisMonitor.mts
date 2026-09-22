@@ -320,10 +320,29 @@ function findJsonLdEvent(value: unknown): Record<string, unknown> | undefined {
  *  place d'un montant, une fiche muette ne renvoie rien : mieux vaut aucun
  *  tarif qu'un prix inventé. Le français et l'anglais sont lus pareil. */
 export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
-  const text = decodeHtml(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
-  const start = text.search(/\b(?:tarifs?|prices?)\b/i);
-  if (start === -1) return [];
-  const block = text.slice(start, start + 1400);
+  // Les scripts ne sont pas du texte lu : leurs données (« "price": 10 ») ou
+  // leurs gabarits de billetterie masquaient la rubrique « Tarifs » affichée.
+  const visible = html.replace(/<(script|style|noscript|template)\b[^>]*>[\s\S]*?<\/\1>/gi, " ");
+  const text = decodeHtml(visible.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
+  let free = false;
+  // Le premier « tarif » de la page peut être un lien de menu : chaque mention
+  // est essayée jusqu'à celle qui annonce vraiment des montants.
+  for (const mention of text.matchAll(/\b(?:tarifs?|prices?)\b/gi)) {
+    let block = text.slice(mention.index, mention.index + 1400);
+    // L'audioguide ou les visites de groupe suivent la rubrique : leur prix
+    // (« Tarif : 3 € ») n'est pas un billet d'entrée.
+    const nextSection = block.slice(1).search(/\b(?:audioguides?|audio guides?|groupes et professionnels)\b/i);
+    if (nextSection !== -1) block = block.slice(0, nextSection + 1);
+    const prices = pricesInBlock(block);
+    if (prices.length) return prices;
+    free ||= /^(?:tarifs?|prices?|admission)\s*:?\s*(?:gratuit|entrée libre|free)/i.test(block);
+  }
+  // Un événement gratuit l'annonce parfois sans rubrique « Tarifs ».
+  free ||= /(?:accès gratuit|entrée (?:gratuite|libre)|free (?:admission|entry))\b/i.test(text);
+  return free ? [{ label: "Gratuit", amount: 0 }] : [];
+}
+
+function pricesInBlock(block: string) {
   const prices: GrandPalaisPrice[] = [];
   const seen = new Set<string>();
   for (const match of block.matchAll(/([^.;!?•]{2,60}?)\s*:\s*(?:€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*€)/g)) {
@@ -334,16 +353,16 @@ export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
     // « Tarifs Tarif plein » et « Tarif réduit » donnent tous deux un nom
     // court : « Plein », « Réduit ».
     let label = match[1].replace(/^[\s,–-]+|[\s,–-]+$/g, "").trim();
+    // Un menu « Tarifs et billetterie » juste avant la rubrique ne fait pas
+    // partie du nom : on repart de la dernière rubrique « Tarifs ».
+    label = label.replace(/^.*\b(?:tarifs|prices)\b\s*/i, "") || label;
     while (/^(?:tarifs?|prices?)\s+\S/i.test(label)) label = label.replace(/^(?:tarifs?|prices?)\s+/i, "");
     if (!label || label.length > 45 || seen.has(label.toLowerCase())) continue;
     seen.add(label.toLowerCase());
     prices.push({ label: label.charAt(0).toUpperCase() + label.slice(1), amount });
     if (prices.length >= 6) break;
   }
-  if (prices.length) return prices;
-  return /(?:tarifs?|prices?|admission)\s*:?\s*(?:gratuit|entrée libre|free)/i.test(block)
-    ? [{ label: "Gratuit", amount: 0 }]
-    : [];
+  return prices;
 }
 
 export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGrandPalaisEvent | null {
@@ -422,8 +441,10 @@ export async function collectGrandPalaisEvents(fetcher: typeof fetch = fetch) {
 }
 
 function eventChanged(previous: SharedGrandPalaisEvent, next: SharedGrandPalaisEvent) {
+  // Des tarifs publiés après l'annonce, ou modifiés, sont un changement à proposer.
   return ["title", "startDate", "endDate", "venueKey", "venueLabel", "fullPrice", "reducedPrice", "reducedLabel"]
-    .some((key) => previous[key as keyof SharedGrandPalaisEvent] !== next[key as keyof SharedGrandPalaisEvent]);
+    .some((key) => previous[key as keyof SharedGrandPalaisEvent] !== next[key as keyof SharedGrandPalaisEvent]) ||
+    JSON.stringify(previous.prices ?? []) !== JSON.stringify(next.prices ?? []);
 }
 
 function proposalId(kind: GrandPalaisProgramProposal["kind"], event: SharedGrandPalaisEvent) {

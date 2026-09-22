@@ -72,6 +72,25 @@ describe("surveillance de la programmation du Grand Palais", () => {
       .toEqual([{ label: "Full price", amount: 15 }, { label: "Reduced price", amount: 12 }]);
     // Une fiche gratuite l’annonce au lieu d’un montant.
     expect(extractGrandPalaisPrices("<h2>Tarifs</h2><p>Gratuit</p>")).toEqual([{ label: "Gratuit", amount: 0 }]);
+    // Les données cachées de la page (« "price": 10 ») ne masquent plus la
+    // rubrique « Tarifs » affichée plus bas, cas de Rebecca Saunders.
+    expect(extractGrandPalaisPrices(
+      '<script type="application/ld+json">{"offers":{"@type":"Offer","price":10,"priceCurrency":"EUR"}}</script>'
+      + '<nav><a href="/fr/billetterie">Tarifs et billetterie</a></nav>'
+      + '<div role="button">Tarifs</div><p>Tarif plein : 25 €</p><p>Tarif réduit : 15 €</p>'
+      + '<p>Titulaires de l’Abonnement, étudiants jusqu’à 30 ans inclus, familles nombreuses...</p><p>Tarif réduit jeune : 10 €</p>',
+    )).toEqual([
+      { label: "Plein", amount: 25 },
+      { label: "Réduit", amount: 15 },
+      { label: "Réduit jeune", amount: 10 },
+    ]);
+    // Le prix de l'audioguide, qui suit la rubrique, n'est pas un billet.
+    expect(extractGrandPalaisPrices(
+      "Tarifs Tarif plein : 19 € Tarif réduit : 16 € Billet Liberté : 24 € Audioguide Disponible à la billetterie. Tarif : 3 €",
+    ).map((price) => price.label)).toEqual(["Plein", "Réduit", "Billet Liberté"]);
+    // Un événement gratuit sans rubrique « Tarifs » est reconnu.
+    expect(extractGrandPalaisPrices("<p>Ateliers et animations</p><p>Accès gratuit sans réservation</p>"))
+      .toEqual([{ label: "Gratuit", amount: 0 }]);
     // Une fiche muette ne renvoie aucun tarif, jamais un prix deviné.
     expect(extractGrandPalaisPrices("<p>Une exposition sans rubrique tarifs.</p>")).toEqual([]);
   });
@@ -232,6 +251,11 @@ describe("surveillance de la programmation du Grand Palais", () => {
     const next = detectGrandPalaisChanges(baseline.state, [changed], "2026-08-29T06:00:00.000Z");
     expect(next.proposals).toHaveLength(1);
     expect(next.proposals[0]).toMatchObject({ kind: "changed", previous: first, next: changed });
+    // Des tarifs publiés après l'annonce sont eux aussi proposés.
+    const priced = { ...changed, prices: [{ label: "Plein", amount: 25 }] };
+    const later = detectGrandPalaisChanges(next.state, [priced], "2026-08-30T06:00:00.000Z");
+    expect(later.proposals).toHaveLength(1);
+    expect(later.proposals[0]).toMatchObject({ kind: "changed", next: priced });
   });
 
   it("reste muet sur ce qui est déjà terminé au premier relevé", () => {

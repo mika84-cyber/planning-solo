@@ -355,7 +355,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(page.locator(".pdf-download-settings > label").nth(0)).toHaveCSS("background-color", "rgb(245, 248, 252)");
   await expect(page.locator(".pdf-download-settings > label").nth(1)).toHaveCSS("background-color", "rgb(242, 250, 246)");
   await expect(page.locator(".pdf-download-settings > .school-vacation-choice")).toHaveCSS("background-color", "rgb(255, 249, 239)");
-  await expect(page.locator(".pdf-action.selected")).toHaveCSS("background-color", "rgb(244, 228, 214)");
+  await expect(page.locator(".pdf-action.selected")).toHaveCSS("background-color", "rgb(251, 243, 237)");
   await expect(page.locator(".pdf-action.my-leaves")).toHaveCSS("background-color", "rgb(243, 250, 246)");
 
   await openUsefulResource(page, "Formulaires");
@@ -1576,13 +1576,13 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(page.getByRole("heading", { name: "Choisir le document" })).toBeVisible();
   await expect(pdfScreen.locator(".pdf-download-settings > label").first()).toHaveCSS("border-top-width", "1px");
   await expect(pdfScreen.locator(".pdf-download-actions .pdf-action")).toHaveCount(4);
-  await expect(pdfScreen).toContainText("Cocher la case pour intégrer les vacances scolaires au planning");
+  await expect(pdfScreen.getByRole("switch", { name: "Ajouter les vacances scolaires au planning" })).toHaveAttribute("aria-checked", "false");
   await expect(pdfScreen).not.toContainText("Pour faciliter les échanges sur jours fériés");
   await expect(pdfScreen.getByRole("button", { name: /Mon groupe/ })).toContainText("Planning annuel du groupe 2");
   await expect(pdfScreen.getByRole("button", { name: /Les 3 groupes/ })).toBeVisible();
   await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toBeVisible();
   await expect(pdfScreen.getByRole("button", { name: /Fériés travaillés 2026–2031/ })).toContainText("Pour faciliter les échanges entre groupe");
-  await expect(pdfScreen.locator(".pdf-download-actions .pdf-action").first()).toHaveCSS("border-top-color", "rgb(152, 84, 56)");
+  await expect(pdfScreen.locator(".pdf-download-actions .pdf-action").first()).toHaveCSS("border-top-color", "rgb(220, 188, 169)");
   const pdfViewportWidth = page.viewportSize()?.width ?? 1000;
   if (pdfViewportWidth <= 720) {
     const mobileSettingBoxes = await pdfScreen.locator(".pdf-download-settings > label").evaluateAll((labels) =>
@@ -2383,9 +2383,9 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
     expect(Math.abs(otherChoiceBoxes[0].height - otherChoiceBoxes[3].height)).toBeLessThanOrEqual(1);
     await otherPicker.locator('[data-qa-venue="true"]').evaluateAll((buttons) => buttons.forEach((button) => button.remove()));
   } else {
-    const firstRowSize = otherChoiceBoxes.length === 4 || otherChoiceBoxes.length < 3 ? 2 : 3;
-    expect(new Set(otherChoiceBoxes.slice(0, firstRowSize).map((box) => Math.round(box.y))).size).toBe(1);
-    if (otherChoiceBoxes.length === 5) expect(Math.round(otherChoiceBoxes[3].y)).toBe(Math.round(otherChoiceBoxes[4].y));
+    // Deux colonnes aussi sur ordinateur : un nombre pair d'espaces ne laisse pas de case vide.
+    expect(Math.round(otherChoiceBoxes[0].y)).toBe(Math.round(otherChoiceBoxes[1].y));
+    if (otherChoiceBoxes.length >= 4) expect(Math.round(otherChoiceBoxes[2].y)).toBe(Math.round(otherChoiceBoxes[3].y));
   }
   // L'onglet choisi se signale par la couleur d'accent, comme dans le reste
   // de l'application ; les teintes propres à chaque espace, elles, subsistent.

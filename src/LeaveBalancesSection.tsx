@@ -143,6 +143,11 @@ export function LeaveBalancesSection({
             </span>
             <b>{otherCountedTypes.length} catégories</b>
             <i aria-hidden="true">⌄</i>
+            {/* Une fois ouvert, le même bouton se contente de dire qu'il referme. */}
+            <span className="other-leave-close">
+              Refermer le volet
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+            </span>
           </summary>
           <div className="leave-balance-grid">
             {otherCountedTypes.map(countedBalanceButton)}

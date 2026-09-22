@@ -104,6 +104,12 @@ export function mergeSharedGrandPalaisProgram(
     if (shared.venueKey === "exceptional-closure") continue;
     const officialUrl = safeGrandPalaisUrl(shared.url);
     if (!officialUrl) continue;
+    // Une fiche relue avant la publication de ses tarifs ne fait pas perdre
+    // ceux déjà connus pour la même exposition.
+    const knownPrices = Object.values(merged)
+      .flatMap((venue) => Object.values(venue.schedule).flatMap((entries) => entries ?? []))
+      .find((entry) => entry.prices?.length && (entry.officialUrl === officialUrl || entry.title.toLowerCase() === shared.title.toLowerCase()))
+      ?.prices;
     for (const venue of Object.values(merged))
       for (const year of Object.keys(venue.schedule))
         venue.schedule[Number(year)] = (venue.schedule[Number(year)] ?? []).filter((entry) =>
@@ -123,7 +129,7 @@ export function mergeSharedGrandPalaisProgram(
       officialUrl,
       startsOn: shared.startDate,
       endsOn: shared.endDate,
-      ...(shared.prices?.length ? { prices: shared.prices } : {}),
+      ...(shared.prices?.length ? { prices: shared.prices } : knownPrices ? { prices: knownPrices } : {}),
     };
     const firstYear = Number(shared.startDate.slice(0, 4));
     const lastYear = Number(shared.endDate.slice(0, 4));

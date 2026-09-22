@@ -57,9 +57,11 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .app-shell :is(.today-overview-heading, .section-intro, .pay-dashboard-card-heading, .useful-resource-intro) h2,
 .app-shell .pay-dashboard-card-heading h3 { font-weight: 750; line-height: 1.3; }
 .app-shell :is(.text-button, .secondary-button) { line-height: 1.4; }
+/* Le repère clavier colle à la bordure : un décalage laissait voir un
+   second cadre, pris pour une double bordure. */
 .app-shell :is(button, summary, a, input, select, textarea):focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline-offset: 0;
 }
 @media (hover: hover) {
   .app-shell :is(.primary-action, .validate-button, .save-button):not(:disabled):not(.update-now-button):not(.danger):not(.warning-button):hover { background: var(--accent-strong); }

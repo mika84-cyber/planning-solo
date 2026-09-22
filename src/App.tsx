@@ -2873,6 +2873,7 @@ export default function Home() {
             key={adminRevision}
             demoMode={demoMode}
             initialName={formProfile?.fullName || ""}
+            accountId={userEmail}
             ownGroup={group}
             isAdmin={isProgramAdmin}
             getOwnPresence={(date) => personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)))}

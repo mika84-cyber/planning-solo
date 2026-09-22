@@ -521,9 +521,9 @@
    qu'il y a quelque chose dessous, sans avoir à cliquer pour le découvrir. */
 /* Le bouton des dates gardait l'apparence par défaut du navigateur : il
    prend le cadre blanc et le mot terracotta des autres commandes. */
-.allowance-overview-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:46px;margin-top:10px;border:1px solid var(--border-control);border-radius:13px;padding:8px 14px;background:var(--surface);color:var(--text);font-family:inherit;font-size:.92rem;font-weight:800;text-align:left;cursor:pointer}
+.allowance-overview-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:50px;margin-top:10px;border:1px solid var(--border-soft);border-radius:14px;padding:8px 8px 8px 14px;background:var(--surface-soft);color:var(--text);font-family:inherit;font-size:.92rem;font-weight:800;text-align:left;cursor:pointer}
 .allowance-overview-toggle:hover{border-color:var(--accent)}
-.allowance-overview-toggle em{display:flex;align-items:center;gap:4px;margin-top:0;color:var(--accent-strong);font-size:12px;font-style:normal;font-weight:850}
+.allowance-overview-toggle em{display:flex;align-items:center;gap:5px;margin-top:0;border-radius:999px;padding:5px 11px;background:var(--accent-soft);color:var(--accent-strong);font-size:12px;font-style:normal;font-weight:800;white-space:nowrap}
 .allowance-overview-toggle em svg{width:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .14s ease}
 .allowance-overview-toggle[aria-expanded="true"] em svg{transform:rotate(180deg)}
 .sunday-done-list{margin-top:10px;border-top:1px solid var(--line)}
