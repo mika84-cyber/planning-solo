@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { colleagueBoardTitle, colleagueWeekDays, colleagueWeekTitle, ColleagueWeekTable, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
 import type { SharedColleaguePlanning } from "./colleagueSharingApi";
+import { dateKey, getDayInfo } from "./planningLogic";
 
 const planning: SharedColleaguePlanning = {
   owner: { userId: "agnes", displayName: "Agnès" },
@@ -20,6 +21,13 @@ describe("sharedPlanningDayStatus", () => {
     );
     expect(statuses).toContain("Travail");
     expect(statuses).toContain("Repos");
+  });
+
+  it("affiche F sur les jours de formation du cycle", () => {
+    const dates = Array.from({ length: 42 }, (_, index) => new Date(2026, 8, index + 1, 12))
+      .filter((date) => getDayInfo(date, planning.group).kind === "training" && dateKey(date) !== "2026-09-05");
+    expect(dates.length).toBeGreaterThan(0);
+    for (const date of dates) expect(sharedPlanningDayStatus(planning, date)).toBe("Formation");
   });
 
   it("précise la moitié de journée partagée", () => {

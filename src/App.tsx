@@ -172,7 +172,6 @@ import {
   calculateMecenatVacation,
   mecenatForPayMonth,
 } from "./mecenat";
-import { mecenatRuleViolations } from "./mecenatRules";
 import {
   allocateRecoveryUses,
   calculatePaidOvertime,
@@ -1160,13 +1159,6 @@ export default function Home() {
       ),
     [mecenatDraft.start, mecenatDraft.end, workQuota],
   );
-  // Amplitude, repos de 11 h et lundis : ce qui empêcherait de prendre ce
-  // mécénat, expliqué dans la fenêtre avant l'enregistrement.
-  const mecenatViolations = mecenatRuleViolations(mecenatDraft, {
-    presenceFor: (key) => personalPresenceForDate(fromKey(key), group, periods, entries, recoveryUses, workDayMinutes, (closed) => Boolean(exceptionalClosureFor(closed))),
-    schedule: usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
-    mecenats: mecenatEntries,
-  });
   const payYear = String(payView.getFullYear());
   // Les réglages généraux restent disponibles pour tous les mois. Les valeurs
   // annuelles ou datées ne remplacent que les champs propres à leur période ;
@@ -2003,7 +1995,6 @@ export default function Home() {
     setSolidarityDraft,
     recoveryDraft,
     mecenatDraft,
-    mecenatViolations,
     trainingRecoveryMode,
     recoveryRangeDates,
     setRecoveryRangeDates,
@@ -3180,7 +3171,6 @@ export default function Home() {
         workQuota={workQuota}
         workSchedule={usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE}
         mecenatCalculation={mecenatDraftCalculation}
-        mecenatViolations={mecenatViolations}
         recoveryRemainingMinutes={recoveryBalance.remaining}
         onStartRangeSelection={beginRangeSelection}
         onSaveMecenat={() => void saveMecenatEntry()}

@@ -51,8 +51,6 @@ type WorkTimeActionsOptions = {
   setSolidarityDraft: SetState<SolidarityDraft>;
   recoveryDraft: RecoveryDraft;
   mecenatDraft: MecenatDraft;
-  /** Règles du temps de travail non respectées par ce mécénat. */
-  mecenatViolations?: string[];
   trainingRecoveryMode: "manual" | "form";
   recoveryRangeDates: string[];
   setRecoveryRangeDates: SetState<string[]>;
@@ -151,7 +149,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
   const {
     demoMode, userEmail, group, formProfile, workQuota,
     recoveryBalanceRemaining, setOvertimeEntries, setRecoveryUses, setMecenatEntries,
-    overtimeDraft, solidarityDraft, setSolidarityDraft, recoveryDraft, mecenatDraft, mecenatViolations = [],
+    overtimeDraft, solidarityDraft, setSolidarityDraft, recoveryDraft, mecenatDraft,
     trainingRecoveryMode, recoveryRangeDates, setRecoveryRangeDates,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, setRecoveryRangeOpen,
     setRecoveryRangeSelecting, savingOvertime, setSavingOvertime, setSavingMecenat,
@@ -392,10 +390,6 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     const calculation = calculateMecenatVacation(mecenatDraft.start, mecenatDraft.end, workQuota);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(mecenatDraft.date) || !calculation) {
       notify("Vérifiez la date et les horaires du mécénat.");
-      return;
-    }
-    if (mecenatViolations.length) {
-      notify(mecenatViolations[0]);
       return;
     }
     const { year: payYear, month: payMonth } = nextPayPeriod(mecenatDraft.date);

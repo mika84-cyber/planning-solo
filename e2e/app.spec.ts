@@ -4855,34 +4855,6 @@ test("la reprise du solde laisse le choix entre valeur nette et heures à majore
   await expect(page.getByText("25 h ajoutées au solde de récupération")).toBeVisible();
 });
 
-test("un mécénat hors des règles du temps de travail explique pourquoi il est refusé", async ({ page }) => {
-  // Un jour travaillé du groupe de démonstration, suivi d'un autre jour travaillé.
-  let day = addDays(new Date(), 1);
-  while (getDayInfo(day, 2).kind !== "work" || getDayInfo(addDays(day, 1), 2).kind !== "work") day = addDays(day, 1);
-
-  await prepareDemo(page);
-  await goToSection(page, "leave");
-  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
-  await page.locator(".mecenat-action").click();
-  const dialog = page.getByRole("dialog", { name: "Déclarer un mécénat" });
-  await dialog.locator('input[type="date"]').fill(dateKey(day));
-  const [startHour, , endHour] = await dialog.getByRole("combobox").all();
-  await startHour.selectOption("19");
-  await endHour.selectOption("23");
-
-  const alert = dialog.getByRole("alert");
-  await expect(alert).toContainText("Vous ne pouvez pas vous inscrire sur ce mécénat");
-  await expect(alert).toContainText("12 heures au maximum");
-  await expect(alert).toContainText("au moins 11 heures de repos");
-  await expect(dialog.getByRole("button", { name: "Enregistrer le mécénat" })).toBeDisabled();
-
-  // Une soirée plus courte respecte l'amplitude et le repos : l'inscription redevient possible.
-  await startHour.selectOption("18");
-  await endHour.selectOption("21");
-  await expect(alert).toBeHidden();
-  await expect(dialog.getByRole("button", { name: "Enregistrer le mécénat" })).toBeEnabled();
-});
-
 test("l’administrateur indique H ou F dans les groupes, puis les choix disparaissent", async ({ page }) => {
   let saved: unknown = null;
   await page.route("**/api/colleague-groups", (route) => route.fulfill({ json: { groups: [{ number: 1, members: ["Auricio Lemos Bomfim", "Nikky"] }], genders: {} } }));

@@ -128,7 +128,9 @@ export function sharedPlanningDayStatus(planning: SharedColleaguePlanning, date:
   if (shared?.status === "training") return "Formation";
   if (shared?.status === "partial") return shared.halfMoment === "morning" ? "1/2 journée · matin" : shared.halfMoment === "afternoon" ? "1/2 journée · après-midi" : "Absence partielle";
   if (shared?.status === "work") return "Travail";
-  return getDayInfo(date, planning.group).kind === "off" ? "Repos" : "Travail";
+  // Sans journée partagée, le cycle du groupe fait foi, formations comprises.
+  const scheduled = getDayInfo(date, planning.group).kind;
+  return scheduled === "off" ? "Repos" : scheduled === "training" ? "Formation" : "Travail";
 }
 
 export function sharedPlanningTomorrowSummary(planning: SharedColleaguePlanning, date: Date) {
