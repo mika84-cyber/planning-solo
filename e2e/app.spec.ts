@@ -2312,7 +2312,8 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   const choiceBoxes = await choices.evaluateAll((buttons) =>
     buttons.map((button) => button.getBoundingClientRect().toJSON()),
   );
-  const expectedColumns = (page.viewportSize()?.width ?? 1000) <= 720 ? 2 : 3;
+  // Les quatre galeries sur une ligne (deux sur téléphone), « Autres » en bandeau dessous.
+  const expectedColumns = (page.viewportSize()?.width ?? 1000) <= 720 ? 2 : 4;
   expect(new Set(choiceBoxes.slice(0, expectedColumns).map((box) => Math.round(box.y))).size).toBe(1);
   expect(choiceBoxes[expectedColumns].y).toBeGreaterThan(choiceBoxes[0].y + choiceBoxes[0].height);
   await page.mouse.move(0, 0);
@@ -2406,10 +2407,10 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
 
   await page.getByRole("tab", { name: "Inter-expos" }).click();
   await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();
-  await expect(page.locator(".grand-palais-interexpo-panel")).toContainText("À la date d’aujourd’hui");
+  await expect(page.locator(".grand-palais-interexpo-panel")).toContainText("où aucune exposition n’est ouverte dans les trois galeries");
   const firstInterexpo = page.locator(".grand-palais-interexpo-list article").first();
   await expect(firstInterexpo).toContainText("Du 31 août au 22 septembre 2026");
-  await expect(firstInterexpo).toContainText("23 jours de fermeture");
+  await expect(firstInterexpo.getByLabel("23 jours de fermeture")).toBeVisible();
   const firstInterexpoStatus = await firstInterexpo.getAttribute("data-status");
   expect(["En cours", "À venir"]).toContain(firstInterexpoStatus);
   await expect(firstInterexpo.locator("em")).toHaveText(firstInterexpoStatus!);

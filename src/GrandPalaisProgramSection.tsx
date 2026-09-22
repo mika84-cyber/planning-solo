@@ -58,6 +58,10 @@ export function grandPalaisVenuePalette(venueKey: string): GrandPalaisVenuePalet
   return DYNAMIC_VENUE_PALETTES[hash % DYNAMIC_VENUE_PALETTES.length];
 }
 
+function venueCountLabel(count: number) {
+  return count ? `${count} exposition${count > 1 ? "s" : ""} au programme` : "rien d’annoncé pour l’instant";
+}
+
 function grandPalaisVenueStyle(venueKey: string): CSSProperties {
   const palette = grandPalaisVenuePalette(venueKey);
   return { "--venue-bg": palette.background, "--venue-accent": palette.accent, "--venue-line": palette.line } as CSSProperties;
@@ -579,6 +583,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
     .flatMap((scheduled) => scheduled ?? [])
     .filter((entry) => isGrandPalaisEntryVisible(entry, today))
     .map((entry) => entry.title)).size;
+  const otherEntryCount = otherVenueKeys.reduce((total, venueKey) => total + venueEntryCount(venueKey), 0);
 
   useEffect(() => {
     let active = true;
@@ -737,11 +742,13 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             className={primaryChoice === venueKey ? "active" : ""}
             style={grandPalaisVenueStyle(venueKey)}
             onClick={() => selectVenue(venueKey)}
+            aria-label={`${program[venueKey].label}, ${venueCountLabel(venueEntryCount(venueKey))}`}
           >
-            <span>{program[venueKey].label}</span>
-            <small>{venueEntryCount(venueKey)
-              ? `${venueEntryCount(venueKey)} exposition${venueEntryCount(venueKey) > 1 ? "s" : ""} au programme`
-              : "Rien d’annoncé pour l’instant"}</small>
+            {/* Le nombre ressort à droite, en grand : on compare les espaces d'un coup d'œil. */}
+            <span>{program[venueKey].label}<small>{venueEntryCount(venueKey)
+              ? `exposition${venueEntryCount(venueKey) > 1 ? "s" : ""} au programme`
+              : "Rien d’annoncé pour l’instant"}</small></span>
+            {venueEntryCount(venueKey) ? <b aria-hidden="true">{venueEntryCount(venueKey)}</b> : null}
           </button>
         ))}
         {otherVenueKeys.length ? (
@@ -749,11 +756,12 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             type="button"
             role="tab"
             aria-selected={primaryChoice === "other"}
-            className={primaryChoice === "other" ? "active" : ""}
+            className={`grand-palais-other-choice${primaryChoice === "other" ? " active" : ""}`}
             onClick={() => selectVenue("other")}
+            aria-label={`Autres, Nef et autres galeries RMN, ${venueCountLabel(otherEntryCount)}`}
           >
-            <span>Autres</span>
-            <small>Nef et autres galeries RMN</small>
+            <span>Autres<small>Nef et autres galeries RMN</small></span>
+            {otherEntryCount ? <b aria-hidden="true">{otherEntryCount}</b> : null}
           </button>
         ) : null}
         </div>
@@ -801,9 +809,9 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             <span className="step-label">Galeries 3–4 · 8 · 7</span>
             <h3 id="grand-palais-interexpo-title">Périodes d’inter expos</h3>
             <p>
-              À la date d’aujourd’hui, le {formatFrenchDate(today)}, {interExhibitionPeriods.length
-                ? `${interExhibitionPeriods.length} période${interExhibitionPeriods.length > 1 ? "s" : ""} où aucune exposition n’est ouverte dans les trois galeries.`
-                : "aucune période sans exposition ouverte dans les trois galeries."}
+              {interExhibitionPeriods.length
+                ? `${interExhibitionPeriods.length} période${interExhibitionPeriods.length > 1 ? "s" : ""}, en cours ou à venir, où aucune exposition n’est ouverte dans les trois galeries.`
+                : "Aucune période sans exposition ouverte dans les trois galeries."}
             </p>
           </div>
           <div className="grand-palais-interexpo-list">
@@ -815,17 +823,23 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                 : 0;
               return (
                 <article key={`${period.startsOn}-${period.endsOn}`} data-status={detail.status}>
-                  <header><em>{detail.status}</em><span>{detail.timing}</span></header>
-                  <strong>{interExhibitionRangeLabel(period)}</strong>
-                  {elapsed ? (
-                    <span className="grand-palais-interexpo-progress" aria-hidden="true">
-                      <i style={{ width: `${Math.round((elapsed / detail.durationDays) * 100)}%` }} />
-                    </span>
-                  ) : null}
-                  <small>
-                    <b>{detail.durationDays} jours</b> de fermeture
-                    {elapsed ? <> · {elapsed} passé{elapsed > 1 ? "s" : ""}</> : null}
-                  </small>
+                  {/* La durée d'abord, en grand : c'est ce qu'on cherche d'un coup d'œil. */}
+                  <p className="grand-palais-interexpo-duration" aria-label={`${detail.durationDays} jours de fermeture`}>
+                    <b aria-hidden="true">{detail.durationDays}</b>
+                    <span aria-hidden="true">jours</span>
+                  </p>
+                  <div className="grand-palais-interexpo-body">
+                    <header><em>{detail.status}</em><span>{detail.timing}</span></header>
+                    <strong>{interExhibitionRangeLabel(period)}</strong>
+                    {elapsed ? (
+                      <div className="grand-palais-interexpo-progress-row">
+                        <span className="grand-palais-interexpo-progress" aria-hidden="true">
+                          <i style={{ width: `${Math.round((elapsed / detail.durationDays) * 100)}%` }} />
+                        </span>
+                        <small>Jour {elapsed} sur {detail.durationDays}</small>
+                      </div>
+                    ) : null}
+                  </div>
                 </article>
               );
             }) : <p className="empty-state">Aucune période commune calculable pour le moment.</p>}
