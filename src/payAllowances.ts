@@ -80,6 +80,15 @@ export function collectWorkedDays({
       const date = localDate(year, month, day);
       const info = getDayInfo(date, group);
       const key = dateKey(date);
+      // Un échange déplace le dimanche : le jour cédé n'est plus travaillé,
+      // le jour repris sur un repos le devient.
+      const exchangeRole = entries[key]?.exchangeRole;
+      if (date.getDay() === 0 && !info.holiday && exchangeRole) {
+        if (info.kind === "work" && key <= todayKey) sundaysScheduledPast++;
+        if (exchangeRole === "return" && !onLeave(key))
+          sundays.push({ key, rank: sundays.length + 1, past: key <= todayKey });
+        continue;
+      }
       if (info.kind !== "work") {
         if (info.holiday && wasPompidouHolidayWorked(date, group))
           compensated.push({

@@ -32,4 +32,18 @@ describe("report des dimanches manquants", () => {
     expect(october).toMatchObject({ reported: 2, reportedTo: { year: 2026, month: 11 } });
     expect(december).toMatchObject({ carryover: 2, carriedFrom: { year: 2026, month: 9 } });
   });
+
+  it("tient compte des échanges pour les dimanches travaillés", () => {
+    const base = { year: 2026, today: new Date(2026, 8, 22), periods: [], group: 2, manualAdjustments: undefined, baseSalary: 2000, sundayCarryover: 0, sundayCarryoverYear: undefined, sundayCarryoverMonth: undefined, sundayCarryoverFromYear: undefined, sundayCarryoverFromMonth: undefined };
+    const sundays = (entries = {}) => computePayAllowances({ ...base, entries }).sundays.map((item) => item.key);
+    const scheduled = sundays();
+    const given = scheduled.find((key) => key > "2026-09-22")!;
+    const rest = Array.from({ length: 60 }, (_, index) => new Date(2026, 8, 27 + index * 7, 12))
+      .map((date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-"))
+      .find((key) => key.startsWith("2026") && !scheduled.includes(key))!;
+    const exchanged = sundays({ [given]: { exchangeRole: "given" }, [rest]: { exchangeRole: "return" } });
+    expect(exchanged).not.toContain(given);
+    expect(exchanged).toContain(rest);
+    expect(exchanged).toEqual([...exchanged].sort());
+  });
 });
