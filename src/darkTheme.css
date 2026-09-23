@@ -61,10 +61,10 @@ html[data-theme="dark"] .colleague-week-shell { border-color: #4a403a; backgroun
 html[data-theme="dark"] .colleague-week-table thead th { border-bottom-color: #3a322d; color: #b5a699; }
 html[data-theme="dark"] .colleague-week-table thead th b { color: #f1e8de; }
 html[data-theme="dark"] .colleague-week-table thead th.is-weekend :is(span, b) { color: #9c8e82; }
-html[data-theme="dark"] .colleague-week-table thead th.is-today span { color: #c7b3f0; }
-html[data-theme="dark"] .colleague-week-table thead th.is-today b { background: #8a6fd0; color: #fff; }
+html[data-theme="dark"] .colleague-week-table thead th.is-today span { color: #f0a988; }
+html[data-theme="dark"] .colleague-week-table thead th.is-today b { background: #c0643f; color: #fff; }
 html[data-theme="dark"] .colleague-week-table :is(thead th, tbody td).is-weekend { background: rgba(255, 255, 255, .025); }
-html[data-theme="dark"] .colleague-week-table :is(thead th, tbody td).is-today { background: rgba(150, 120, 220, .16); }
+html[data-theme="dark"] .colleague-week-table :is(thead th, tbody td).is-today { background: rgba(240, 169, 136, .1); }
 html[data-theme="dark"] .colleague-week-table tbody th[scope="row"] { background: #1b1715; color: #f1e8de; }
 html[data-theme="dark"] .colleague-week-table tbody tr.is-self th[scope="row"] { color: #f0a988; }
 html[data-theme="dark"] .colleague-week-table tbody tr + tr > * { border-top-color: #332c28; }

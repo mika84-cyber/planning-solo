@@ -349,7 +349,9 @@
 /* « Qui travaille ? » : choix entre le jour et la semaine. */
 .colleague-board-mode { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 0 12px; border: 1px solid var(--border-control); border-radius: 999px; padding: 3px; background: #fff; }
 .colleague-sharing-page .colleague-board-mode button { min-width: 92px; min-height: 34px; border: 0; border-radius: 999px; padding: 0 14px; background: transparent; color: var(--muted); font: inherit; font-size: .82rem; font-weight: 850; box-shadow: none; cursor: pointer; }
-.colleague-sharing-page .colleague-board-mode button.active { background: #7255ad; color: #fff; }
+/* Jour/Semaine et aujourd'hui suivent la couleur d'accent des autres sélecteurs ;
+   seules les flèches gardent le violet de la navigation, comme dans le planning. */
+.colleague-sharing-page .colleague-board-mode button.active { background: var(--accent); color: #fff; }
 
 /* Vue semaine : une ligne par personne, sept cases lettrées. Tient sur un
    téléphone sans défiler ; défile au besoin sur les écrans les plus étroits. */
@@ -360,11 +362,11 @@
 .colleague-week-table thead th span,
 .colleague-week-table thead th b { display: block; line-height: 1.2; }
 .colleague-week-table thead th b { color: var(--text); font-size: .82rem; }
-.colleague-week-table thead th.is-today b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #7255ad; color: #fff; }
+.colleague-week-table thead th.is-today b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; }
 .colleague-week-table tbody th[scope="row"] { overflow: hidden; padding: 7px 4px 7px 12px; color: var(--text); font-size: .8rem; font-weight: 800; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-table tbody tr.is-self th[scope="row"] { color: var(--accent-strong); }
 .colleague-week-table tbody td { padding: 4px 1px; text-align: center; }
-.colleague-week-table tbody td.is-today { background: rgba(114, 85, 173, .07); }
+.colleague-week-table tbody td.is-today { background: rgba(152, 84, 56, .06); }
 .colleague-week-table tbody tr + tr > * { border-top: 1px solid var(--border-soft); }
 .colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 1px solid var(--border-soft); }
 .colleague-week-cell { display: inline-grid; place-items: center; width: 26px; height: 26px; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
@@ -387,12 +389,12 @@
 .colleague-week-table thead th.is-weekend span,
 .colleague-week-table thead th.is-weekend b { color: var(--muted); }
 .colleague-week-table :is(thead th, tbody td).is-weekend { background: rgba(44, 38, 33, .035); }
-.colleague-week-table :is(thead th, tbody td).is-today { background: rgba(114, 85, 173, .09); }
-.colleague-week-table thead th.is-today span { color: #7255ad; }
+.colleague-week-table :is(thead th, tbody td).is-today { background: rgba(152, 84, 56, .07); }
+.colleague-week-table thead th.is-today span { color: var(--accent-strong); }
 .colleague-week-table tbody td { padding: 6px 1px; }
 .colleague-week-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; background: var(--surface); }
-.colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(114, 85, 173, .05); }
-.colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > th[scope="row"] { background: #f7f3fb; }
+.colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(152, 84, 56, .045); }
+.colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > th[scope="row"] { background: #fbf4ef; }
 .colleague-week-table .colleague-tomorrow-group th { border-top: 0; }
 .colleague-week-cell { width: 28px; height: 28px; box-shadow: 0 1px 2px rgba(44, 38, 33, .08); }
 .colleague-week-legend { gap: 8px 14px; }
@@ -400,3 +402,21 @@
   .colleague-week-table .colleague-week-cell { width: 23px; height: 23px; }
 }
 .colleague-week-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Le nom d'un collègue ouvre son planning : il garde l'allure d'un nom,
+   souligné en pointillé pour dire qu'on peut le toucher. */
+.colleague-sharing-page .colleague-row-open { appearance: none; min-height: 0; border: 0; border-radius: 0; padding: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px; cursor: pointer; }
+.colleague-sharing-page .colleague-row-open:hover { background: none; text-decoration-color: currentColor; }
+/* Lisibilité : pas de texte à lire sous 11 px dans les tableaux. */
+.colleague-sharing-page :is(.colleague-tomorrow-table th, .colleague-tomorrow-group small, .colleague-tomorrow-caption, .colleague-tomorrow-status, .colleague-week-table thead th:first-child) { font-size: 11px; }
+/* Le tableau garde son conteneur (il défile sur téléphone), avec un trait léger. */
+.colleague-sharing-page :is(.colleague-tomorrow-table-shell, .colleague-week-shell) { border-color: var(--border-soft); }
+/* Tableaux plus aérés : le texte ne touche plus les traits, et la légende
+   prend du recul sous le tableau. */
+.colleague-sharing-page .colleague-tomorrow-caption { padding: 10px 14px 6px; }
+.colleague-sharing-page .colleague-week-table thead th { padding: 10px 2px 9px; }
+.colleague-sharing-page .colleague-week-table thead th:first-child { padding-left: 14px; }
+.colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 12px 6px 12px 14px; }
+.colleague-sharing-page .colleague-week-table tbody td { padding: 10px 2px; }
+.colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
+.colleague-sharing-page .colleague-tomorrow-row td { padding-top: 12px; padding-bottom: 12px; }
+.colleague-sharing-page .colleague-week-legend { gap: 10px 16px; margin: 16px 4px 2px; }

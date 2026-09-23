@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ChoicePicker } from "./ChoicePicker";
-import { GROUP_OPTIONS, YEAR_OPTIONS } from "./planningLogic";
+import { GROUP_OPTIONS, YEAR_OPTIONS, workedHolidaysYearRange } from "./planningLogic";
 
 type PdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
 
@@ -27,6 +27,7 @@ export function PdfDownloadPage({
   onShowSchoolVacationsChange,
   onExport,
 }: PdfDownloadPageProps) {
+  const holidayYears = workedHolidaysYearRange();
   return (
     <section className="pdf-download-screen" id="planning-pdf" aria-labelledby="pdf-download-title">
       <div className="native-screen-heading pdf-download-intro">
@@ -106,7 +107,7 @@ export function PdfDownloadPage({
             ["selected", "Mon groupe", `Planning annuel du groupe ${group}`, "1 page"],
             ["all", "Les 3 groupes", "Groupes 1, 2 et 3", "3 pages"],
             ["my-leaves", "Mon planning avec congés", `Groupe ${group} · absences enregistrées`, "1 page"],
-            ["worked-holidays", "Fériés travaillés 2026–2031", "Pour faciliter les échanges entre groupe", "1 page"],
+            ["worked-holidays", `Fériés travaillés ${holidayYears.firstYear}–${holidayYears.lastYear}`, "Pour faciliter les échanges entre groupe", "1 page"],
           ] as const).map(([scope, title, detail, pageCount]) => (
             <button
               key={scope}

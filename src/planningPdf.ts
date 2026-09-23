@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { workedHolidaysYearRange } from "./planningLogic";
 
 type PdfDayInfo = {
   kind: "work" | "off" | "training";
@@ -1189,8 +1190,8 @@ export function buildWorkedHolidaySchedule(
 /** Tableau paysage d'une page, conçu comme aide visuelle aux échanges de
  * fériés entre les trois groupes. */
 export function createWorkedHolidaysPdf({
-  firstYear = 2026,
-  lastYear = 2031,
+  firstYear = workedHolidaysYearRange().firstYear,
+  lastYear = workedHolidaysYearRange().lastYear,
   getDayInfo,
 }: {
   firstYear?: number;

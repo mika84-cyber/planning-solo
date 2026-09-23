@@ -194,6 +194,32 @@ export function delayLabel(from: string, to: string) {
   return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}`;
 }
 
+/** La même durée, arrondie pour un petit écran : exacte sous un mois
+ *  (« 12 jours »), sinon au mois le plus proche (« ~2 mois », « ~1 an 4 mois »).
+ *  La date exacte est toujours affichée à côté. */
+export function shortDelayLabel(from: string, to: string) {
+  const start = new Date(`${from}T12:00:00Z`);
+  const end = new Date(`${to}T12:00:00Z`);
+  if (end <= start) return "";
+  let elapsedMonths = 0;
+  while (addMonths(start, elapsedMonths + 1) <= end) elapsedMonths += 1;
+  if (!elapsedMonths) return delayLabel(from, to);
+  const days = Math.round((end.getTime() - addMonths(start, elapsedMonths).getTime()) / 86_400_000);
+  const rounded = elapsedMonths + (days >= 15 ? 1 : 0);
+  const years = Math.floor(rounded / 12);
+  const months = rounded % 12;
+  const approximate = days > 0 ? "~" : "";
+  if (!years) return `${approximate}${months} mois`;
+  return `${approximate}${years} an${years > 1 ? "s" : ""}${months ? ` ${months} mois` : ""}`;
+}
+
+/** Une durée longue sur grand écran, arrondie sur téléphone : le CSS montre
+ *  l'une ou l'autre. */
+function DelayText({ long, short }: { long: string; short: string }) {
+  if (!short || short === long) return <>{long}</>;
+  return <><span className="delay-long">{long}</span><span className="delay-short">{short}</span></>;
+}
+
 /** « Du 31 août au 22 septembre 2026 » : l'année, puis le mois, ne sont écrits
  *  qu'une fois lorsque les deux bornes les partagent. */
 export function interExhibitionRangeLabel(period: InterExhibitionPeriod) {
@@ -215,6 +241,7 @@ export function describeInterExhibitionPeriod(period: InterExhibitionPeriod, tod
       durationDays,
       status: "En cours" as const,
       timing: remainingDays === 0 ? "Dernier jour" : `Encore ${delayLabel(today, period.endsOn)}`,
+      shortTiming: remainingDays === 0 ? "Dernier jour" : `Encore ${shortDelayLabel(today, period.endsOn)}`,
     };
   }
   return {
@@ -223,6 +250,9 @@ export function describeInterExhibitionPeriod(period: InterExhibitionPeriod, tod
     timing: dayDistance(today, period.startsOn) === 1
       ? "Demain"
       : `Dans ${delayLabel(today, period.startsOn)}`,
+    shortTiming: dayDistance(today, period.startsOn) === 1
+      ? "Demain"
+      : `Dans ${shortDelayLabel(today, period.startsOn)}`,
   };
 }
 
@@ -403,17 +433,24 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
       <span className="useful-expo-timeline-mark" aria-hidden="true" />
       <div>
         {/* En tête de carte : la salle à gauche, l'état à droite. Une
-            exposition à venir n'a besoin que de son compte à rebours :
-            « Prochainement » redirait ce que la date annonce déjà. */}
+            exposition à venir montre plutôt son compte à rebours exact, sous
+            ses dates : trop long pour tenir en haut à côté de la salle. */}
         <div className="expo-card-top">
           {venueLabel ? <span className="useful-expo-venue">{venueLabel}</span> : null}
-          <span className="expo-card-status">
-            <em>{upcomingCountdown || status.label}</em>
-          </span>
+          {upcomingCountdown ? null : (
+            <span className="expo-card-status">
+              <em>{status.label}</em>
+            </span>
+          )}
         </div>
         <strong>{entry.title}</strong>
         {entry.details ? <p>{entry.details}</p> : null}
         <small>{entry.period}</small>
+        {upcomingCountdown ? (
+          <span className="expo-card-status expo-card-countdown">
+            <em>{upcomingCountdown}</em>
+          </span>
+        ) : null}
         {progress !== null ? (
           <span className="expo-progress" aria-hidden="true">
             <i style={{ width: `${progress}%` }} />
@@ -836,7 +873,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                     <span aria-hidden="true">jours</span>
                   </p>
                   <div className="grand-palais-interexpo-body">
-                    <header><em>{detail.status}</em><span>{detail.timing}</span></header>
+                    <header><em>{detail.status}</em><span><DelayText long={detail.timing} short={detail.shortTiming} /></span></header>
                     <strong>{interExhibitionRangeLabel(period)}</strong>
                     {elapsed ? (
                       <div className="grand-palais-interexpo-progress-row">

@@ -7,6 +7,7 @@ import {
   calculateInterExhibitionPeriods,
   currentVenueRank,
   delayLabel,
+  shortDelayLabel,
   describeInterExhibitionPeriod,
   interExhibitionRangeLabel,
   grandPalaisEntryStatus,
@@ -192,6 +193,12 @@ describe("programmation du Grand Palais", () => {
     // Les mois se comptent de quantième en quantième : un 31 janvier suivi
     // d'un 1er mars fait un mois et un jour, et non un reste négatif.
     expect(delayLabel("2026-01-31", "2026-03-01")).toBe("1 mois et 1 jour");
+    // Sur téléphone, la durée s'arrondit au mois ; sous un mois, elle reste exacte.
+    expect(shortDelayLabel("2026-09-18", "2026-09-22")).toBe("4 jours");
+    expect(shortDelayLabel("2026-09-23", "2026-11-12")).toBe("~2 mois");
+    expect(shortDelayLabel("2026-09-18", "2026-11-18")).toBe("2 mois");
+    expect(shortDelayLabel("2026-09-18", "2027-09-18")).toBe("1 an");
+    expect(shortDelayLabel("2026-09-18", "2028-01-17")).toBe("~1 an 4 mois");
     expect(delayLabel("2026-09-18", "2026-09-18")).toBe("");
   });
 
@@ -209,11 +216,13 @@ describe("programmation du Grand Palais", () => {
       durationDays: 23,
       status: "En cours",
       timing: "Encore 15 jours",
+      shortTiming: "Encore 15 jours",
     });
     expect(describeInterExhibitionPeriod({ startsOn: "2026-09-08", endsOn: "2026-09-12" }, "2026-09-07")).toEqual({
       durationDays: 5,
       status: "À venir",
       timing: "Demain",
+      shortTiming: "Demain",
     });
     expect(describeInterExhibitionPeriod({ startsOn: "2026-09-01", endsOn: "2026-09-07" }, "2026-09-07").timing)
       .toBe("Dernier jour");

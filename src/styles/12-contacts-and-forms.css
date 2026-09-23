@@ -432,9 +432,6 @@
   }
 }
 
-@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
-}
-
 
 /* Congés et récupérations : les soldes restent intacts. Les outils placés
    après eux forment maintenant un espace cohérent, clairement hiérarchisé. */
@@ -511,9 +508,6 @@
   .leave-secondary-grid {
     grid-template-columns: 1fr;
   }
-}
-
-@media (max-width: 720px) {
 }
 
 /* Formulaires utiles : uniquement sur les grands écrans, l'introduction
@@ -1196,12 +1190,6 @@
       linear-gradient(180deg, rgba(253, 250, 244, 0.4), rgba(255, 255, 255, 0.03)),
       url("/leave-header-art-fast.webp") center / cover no-repeat;
   }
-
-  .top-header.top-header-pay {
-    background:
-      linear-gradient(180deg, rgba(255, 252, 244, 0.4), rgba(255, 255, 255, 0.03)),
-      url("/pay-header-art-fast.webp") center / cover no-repeat;
-  }
 }
 
 /* Annuaire final : placé après les anciens thèmes d’en-tête et de formulaires. */
@@ -1345,11 +1333,6 @@
   .useful-contact-phone-actions a { width: 100%; }
 }
 
-/* Fold fermé : l’œuvre quitte la ligne du titre, se place dessous et utilise
-   toute la scène libre avant le bouton de mise à jour. */
-@media (max-width: 499px) {
-}
-
 .multi-type-request-help{display:grid;gap:3px;margin:14px 0 0;border:1px solid var(--border-control);border-radius:13px;padding:10px 12px;background:linear-gradient(145deg,var(--surface-high),var(--surface-high));color: var(--muted);font-size:11.5px;line-height:1.45}.multi-type-request-help strong{color: var(--muted)}.balance-detail-taken>summary{background:var(--surface);color: var(--muted)}.balance-detail-upcoming>summary{background:#fff;color:#23764e}.balance-detail-taken>summary:hover,.balance-detail-taken>summary:focus-visible{background:var(--bg)}.balance-detail-upcoming>summary:hover,.balance-detail-upcoming>summary:focus-visible{background:#fff}
 
 /* Fold ouvert : le titre Contacts retrouve le coin supérieur gauche et les
@@ -1406,9 +1389,6 @@
   }
 }
 
-@media (max-width: 499px) {
-}
-
 /* Ajustement final de Contacts : noir uniforme, composition plus équilibrée
    sur grand écran et œuvre plus discrète sur les téléphones en portrait. */
 .top-header.top-header-contacts {
@@ -1422,9 +1402,6 @@
   .top-header.top-header-contacts::before {
     left: 49%;
   }
-}
-
-@media (max-width: 499px) {
 }
 
 /* Une formation prise sur le solde de récupération est immédiatement

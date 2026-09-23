@@ -80,13 +80,18 @@ export function collectWorkedDays({
       const date = localDate(year, month, day);
       const info = getDayInfo(date, group);
       const key = dateKey(date);
-      // Un échange déplace le dimanche : le jour cédé n'est plus travaillé,
-      // le jour repris sur un repos le devient.
+      // Un échange déplace le dimanche ou le férié : le jour cédé n'est plus
+      // travaillé, le jour repris sur un repos le devient.
       const exchangeRole = entries[key]?.exchangeRole;
-      if (date.getDay() === 0 && !info.holiday && exchangeRole) {
-        if (info.kind === "work" && key <= todayKey) sundaysScheduledPast++;
-        if (exchangeRole === "return" && !onLeave(key))
+      if (exchangeRole && (info.holiday || date.getDay() === 0)) {
+        if (!info.holiday && info.kind === "work" && key <= todayKey) sundaysScheduledPast++;
+        if (exchangeRole !== "return") continue;
+        if (info.holiday) {
+          if (onLeave(key)) cancelledHolidays.push({ key, name: info.holiday });
+          else holidays.push({ key, name: info.holiday, choice: entries[key]?.holidayPay || "", past: key <= todayKey });
+        } else if (!onLeave(key)) {
           sundays.push({ key, rank: sundays.length + 1, past: key <= todayKey });
+        }
         continue;
       }
       if (info.kind !== "work") {

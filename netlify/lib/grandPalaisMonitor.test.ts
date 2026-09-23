@@ -8,6 +8,8 @@ import {
   extractGrandPalaisProgramLinks,
   extractGrandPalaisProgramPageLinks,
   isGrandPalaisProposalRelevant,
+  isPriceOnlyChange,
+  syncGrandPalaisPrices,
 } from "./grandPalaisMonitor.mts";
 
 const eventPage = (overrides: Record<string, string> = {}) => `
@@ -251,11 +253,17 @@ describe("surveillance de la programmation du Grand Palais", () => {
     const next = detectGrandPalaisChanges(baseline.state, [changed], "2026-08-29T06:00:00.000Z");
     expect(next.proposals).toHaveLength(1);
     expect(next.proposals[0]).toMatchObject({ kind: "changed", previous: first, next: changed });
-    // Des tarifs publiés après l'annonce sont eux aussi proposés.
+    // Des tarifs publiés après l'annonce sont un changement de tarifs seuls :
+    // la veille les recopie sur l'événement accepté sans rien demander.
     const priced = { ...changed, prices: [{ label: "Plein", amount: 25 }] };
     const later = detectGrandPalaisChanges(next.state, [priced], "2026-08-30T06:00:00.000Z");
     expect(later.proposals).toHaveLength(1);
-    expect(later.proposals[0]).toMatchObject({ kind: "changed", next: priced });
+    expect(isPriceOnlyChange(later.proposals[0])).toBe(true);
+    expect(isPriceOnlyChange(next.proposals[0])).toBe(false);
+    const synced = syncGrandPalaisPrices([changed], [], [priced]);
+    expect(synced).toMatchObject({ changed: true, approved: [priced] });
+    // Une fiche relue sans tarif n'efface pas ceux déjà connus.
+    expect(syncGrandPalaisPrices([priced], [], [changed]).changed).toBe(false);
   });
 
   it("reste muet sur ce qui est déjà terminé au premier relevé", () => {

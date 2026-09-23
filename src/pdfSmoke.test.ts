@@ -262,7 +262,7 @@ describe("tableau des fériés réellement travaillés", () => {
   });
 
   it("génère le récapitulatif 2026–2031 sur une page", async () => {
-    const result = createWorkedHolidaysPdf({ getDayInfo });
+    const result = createWorkedHolidaysPdf({ firstYear: 2026, lastYear: 2031, getDayInfo });
     expect(result.filename).toBe("feries-travailles-2026-2031.pdf");
     expect(result.schedule).toHaveLength(6);
     expect(result.schedule.every(({ entries }) => entries.every(({ groups }) => groups.length > 0))).toBe(true);

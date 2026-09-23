@@ -3,13 +3,16 @@ import {
   collectGrandPalaisEvents,
   detectGrandPalaisChanges,
   isGrandPalaisProposalRelevant,
+  isPriceOnlyChange,
   sendGrandPalaisAlertEmail,
+  syncGrandPalaisPrices,
   type GrandPalaisMonitorState,
 } from "../lib/grandPalaisMonitor.mts";
 import { sendSharedPlanningNotification } from "../lib/sharedCalendarBridge.mts";
 import type {
   GrandPalaisDismissal,
   GrandPalaisProgramProposal,
+  SharedGrandPalaisEvent,
 } from "../../src/grandPalaisProgramTypes.ts";
 
 export default async function monitorGrandPalaisProgram() {
@@ -17,26 +20,32 @@ export default async function monitorGrandPalaisProgram() {
   const parisHour = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).find(part => part.type === "hour")?.value;
   if (parisHour !== "00") return new Response(JSON.stringify({ ok: true, skipped: true }), { headers: { "content-type": "application/json; charset=utf-8" } });
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
-  const [state, pending, dismissed] = await Promise.all([
+  const [state, storedPending, dismissed, storedApproved] = await Promise.all([
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
     store.get("pending", { type: "json" }) as Promise<GrandPalaisProgramProposal[] | null>,
     store.get("dismissed", { type: "json" }) as Promise<GrandPalaisDismissal[] | null>,
+    store.get("approved", { type: "json" }) as Promise<SharedGrandPalaisEvent[] | null>,
   ]);
   const events = await collectGrandPalaisEvents();
   const detected = detectGrandPalaisChanges(state, events);
-  const existingIds = new Set((pending ?? []).map((proposal) => proposal.id));
+  // Les tarifs se mettent à jour d'eux-mêmes : seuls les autres changements
+  // attendent l'accord de l'administrateur.
+  const prices = syncGrandPalaisPrices(storedApproved ?? [], storedPending ?? [], events);
+  const pending = prices.pending;
+  const existingIds = new Set(pending.map((proposal) => proposal.id));
   // Un événement déjà écarté ne revient pas comme une nouveauté : seule une
   // modification constatée sur le site justifie de redemander.
   const dismissedIds = new Set((dismissed ?? []).map((item) => item.eventId));
   const fresh = detected.proposals.filter((proposal) => {
     const event = proposal.next ?? proposal.previous;
-    if (!event || !isGrandPalaisProposalRelevant(event) || existingIds.has(proposal.id)) return false;
+    if (!event || !isGrandPalaisProposalRelevant(event) || existingIds.has(proposal.id) || isPriceOnlyChange(proposal)) return false;
     return !(proposal.kind === "new" && dismissedIds.has(event.id));
   });
 
   await Promise.all([
     store.setJSON("monitor-state", detected.state),
-    fresh.length ? store.setJSON("pending", [...(pending ?? []), ...fresh]) : Promise.resolve(),
+    fresh.length || prices.changed ? store.setJSON("pending", [...pending, ...fresh]) : Promise.resolve(),
+    prices.changed ? store.setJSON("approved", prices.approved) : Promise.resolve(),
   ]);
 
   let alertSent = false;
@@ -76,6 +85,7 @@ export default async function monitorGrandPalaisProgram() {
     ok: true,
     checked: events.length,
     detected: fresh.length,
+    pricesUpdated: prices.changed,
     alertSent,
     alertWarning,
     pushSent,

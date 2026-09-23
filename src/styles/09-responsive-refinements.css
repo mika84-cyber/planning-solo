@@ -2032,7 +2032,6 @@
 @media (max-width: 680px) {
   .payslip-actual-values {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .payslip-actual-values > span {
     grid-column: 1 / -1;

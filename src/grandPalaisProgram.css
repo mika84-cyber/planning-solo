@@ -345,7 +345,7 @@
 .grand-palais-interexpo-list > article { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 16px; min-width: 0; border: 1.5px solid var(--border-soft); border-left: 5px solid var(--border-card); border-radius: 16px; padding: 14px 16px 14px 12px; background: var(--surface-high); }
 .grand-palais-interexpo-list > article[data-status="En cours"] { border-color: #b9d6c8; border-left-color: #28745a; background: #f3f9f5; }
 .grand-palais-interexpo-duration { display: grid; justify-items: center; align-content: center; gap: 2px; margin: 0; border-right: 1px solid var(--line); padding: 4px 14px 4px 0; line-height: 1; }
-.grand-palais-interexpo-duration b { color: var(--text); font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; letter-spacing: -0.02em; }
+.grand-palais-interexpo-duration b { color: var(--text); font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; }
 .grand-palais-interexpo-duration span { color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .grand-palais-interexpo-body { display: grid; gap: 6px; min-width: 0; }
 .grand-palais-interexpo-list header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
@@ -353,12 +353,17 @@
 .grand-palais-interexpo-list em { border: 1px solid var(--border-control); border-radius: 999px; padding: 3px 9px; background: var(--surface); color: var(--text); font-size: 0.69rem; font-style: normal; font-weight: 600; }
 .grand-palais-interexpo-list article[data-status="En cours"] :is(.grand-palais-interexpo-duration b, header span, em, small) { border-color: #b9d6c8; color: #23664f; }
 .grand-palais-interexpo-list article[data-status="En cours"] em::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); content: ""; }
-.grand-palais-interexpo-list strong { color: var(--text); font-family: var(--font-display); font-size: 1.12rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
+.grand-palais-interexpo-list strong { color: var(--text); font-size: 1.02rem; font-weight: 800; line-height: 1.3; }
 .grand-palais-interexpo-progress-row { display: flex; align-items: center; gap: 10px; margin-top: 2px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 .grand-palais-interexpo-progress { display: block; flex: 1; height: 5px; border-radius: 999px; background: #dcebe3; overflow: hidden; }
 .grand-palais-interexpo-progress i { display: block; height: 100%; border-radius: inherit; background: #28745a; }
 
+/* Durée complète sur grand écran, arrondie sur téléphone (« Dans ~2 mois »). */
+.delay-short { display: none; }
+
 @media (max-width: 720px) {
+  .delay-long { display: none; }
+  .delay-short { display: inline; }
   .top-header.top-header-program {
     background: #fff;
   }
@@ -493,4 +498,6 @@
 .expo-card-top { display: flex; justify-self: stretch; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .expo-card-top .expo-card-status { margin-left: auto; }
 .expo-card-top .useful-expo-venue { margin-bottom: 0; }
+/* Compte à rebours d'une exposition à venir : exact, sous les dates. */
+.expo-card-countdown { display: block; justify-self: start; margin-top: 8px; }
 .expo-card-remaining { color: var(--text); font-size: 0.74rem; font-weight: 800; }

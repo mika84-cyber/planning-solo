@@ -359,3 +359,29 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .payslip-gap-sentences li { position: relative; padding-left: 14px; color: #8e3040; font-size: .86rem; font-weight: 800; line-height: 1.35; }
 .payslip-gap-sentences li::before { position: absolute; top: .5em; left: 0; width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
 .payslip-mismatch-sentence { margin: 2px 0 8px; color: #8e3040; font-weight: 800; }
+
+/* Lisibilité : aucun texte à lire sous 11 px. Les repères décoratifs (petites
+   capitales des en-têtes, numéros du calendrier, pastilles) restent compacts.
+   `:root` place ces règles au-dessus des réglages mobiles plus anciens. */
+:root .leave-balance-grid > button :is(span, small, em),
+:root .other-leave-balances > summary :is(b, small),
+:root :is(.manual-adjustments-copy small, .manual-adjustments-summary, .request-archive-summary small),
+:root .today-card-copy > :is(span, small),
+:root :is(.pay-profile-summary-copy small, .pay-dashboard-reliability),
+:root :is(.pdf-setting-title small, .pdf-action-page-count, .pdf-panel-heading p),
+:root .pdf-download-actions .pdf-action-cta,
+:root .has-active-resource .useful-resource-tab-copy small,
+:root :is(.overtime-balance-summary, .mecenat-rate-summary) article > :is(small, span),
+:root :is(.leave-tool-disclosure > summary b, .leave-year-tools label > span),
+:root :is(.payslip-guide-step small, .pay-dashboard-variable-list small) { font-size: 11px; }
+:root .leave-balance-grid > button > span:first-child { font-size: 11.5px; }
+
+/* Moins de cadres emboîtés : la page porte déjà le cadre. Les deux étapes
+   du PDF se suivent, séparées par un filet, et les soldes de congés se
+   posent directement dans leur carte. */
+:root :is(.pdf-preparation-panel, .pdf-format-panel) { border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; }
+:root .pdf-format-panel { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 18px; }
+:root .leave-balances-direct .direct-balances-content { border: 0; padding: 0; background: transparent; }
+/* Les listes de l'année et du groupe restent alignées en bas de leur tuile,
+   même quand un titre passe sur deux lignes. */
+:root .pdf-download-settings > label { grid-template-rows: 1fr auto; align-items: end; }

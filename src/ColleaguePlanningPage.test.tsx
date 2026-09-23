@@ -61,9 +61,12 @@ describe("vue semaine des collègues", () => {
       referenceDate={reference}
       rows={[
         { id: "self", name: "Mika", group: 2, isSelf: true, statusFor: () => "Repos" },
-        { id: "agnes", name: "Agnès", group: 1, isSelf: false, statusFor: (date) => sharedPlanningDayStatus(planning, date) },
+        { id: "agnes", name: "Agnès", group: 1, isSelf: false, statusFor: (date) => sharedPlanningDayStatus(planning, date), onOpen: () => undefined },
       ]}
     />);
+    // Le nom d'un collègue ouvre son planning ; le sien reste un simple nom.
+    expect(html).toContain('aria-label="Voir le planning de Agnès"');
+    expect(html).not.toContain("Voir le planning de Mika");
     expect(html.indexOf("Groupe 1")).toBeLessThan(html.indexOf("Groupe 2"));
     expect(html.match(/class="colleague-week-cell /g)).toHaveLength(14 + 5);
     expect(html.match(/<th scope="col" class="is-today"/g)).toHaveLength(1);

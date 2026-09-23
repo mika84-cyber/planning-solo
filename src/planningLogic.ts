@@ -257,6 +257,13 @@ export const GROUP_OPTIONS = [1, 2, 3].map((value) => ({
   value,
   label: `Groupe ${value}`,
 }));
+/** Les six années du récapitulatif des fériés travaillés : à partir de
+ *  l'année en cours, jamais avant 2026, première année du cycle connu. */
+export function workedHolidaysYearRange(today = new Date()) {
+  const firstYear = Math.max(2026, today.getFullYear());
+  return { firstYear, lastYear: firstYear + 5 };
+}
+
 export const YEAR_OPTIONS = Array.from({ length: 25 }, (_, index) => ({
   value: 2026 + index,
   label: String(2026 + index),

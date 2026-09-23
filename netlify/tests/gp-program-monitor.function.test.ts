@@ -10,12 +10,17 @@ vi.mock("@netlify/blobs", () => ({ getStore: vi.fn(() => store) }));
 vi.mock("../lib/sharedCalendarBridge.mts", () => ({
   sendSharedPlanningNotification: vi.fn(async () => true),
 }));
-vi.mock("../lib/grandPalaisMonitor.mts", () => ({
-  collectGrandPalaisEvents: vi.fn(),
-  detectGrandPalaisChanges: vi.fn(),
-  isGrandPalaisProposalRelevant: vi.fn(() => true),
-  sendGrandPalaisAlertEmail: vi.fn(),
-}));
+vi.mock("../lib/grandPalaisMonitor.mts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/grandPalaisMonitor.mts")>();
+  return {
+    collectGrandPalaisEvents: vi.fn(),
+    detectGrandPalaisChanges: vi.fn(),
+    isGrandPalaisProposalRelevant: vi.fn(() => true),
+    isPriceOnlyChange: actual.isPriceOnlyChange,
+    sendGrandPalaisAlertEmail: vi.fn(),
+    syncGrandPalaisPrices: actual.syncGrandPalaisPrices,
+  };
+});
 
 import {
   collectGrandPalaisEvents,
@@ -105,6 +110,7 @@ describe("surveillance planifiée du programme Grand Palais", () => {
       ok: true,
       checked: 1,
       detected: 1,
+      pricesUpdated: false,
       alertSent: true,
       alertWarning: "",
       pushSent: true,
@@ -219,6 +225,22 @@ describe("surveillance planifiée du programme Grand Palais", () => {
       alertSent: false,
       alertWarning: "Alerte e-mail indisponible",
     });
+  });
+
+  it("applique seuls les nouveaux tarifs d'un événement accepté, sans proposition ni alerte", async () => {
+    const priced = { ...event, prices: [{ label: "Plein", amount: 25 }] };
+    stored.set("approved", [{ ...event, approvedAt: "2026-08-01T10:00:00.000Z" }]);
+    mockedCollect.mockResolvedValue([priced] as never);
+    mockedDetect.mockReturnValue({
+      state: nextState,
+      proposals: [{ id: "prices-1", kind: "changed", detectedAt: "2026-08-29T06:00:00.000Z", previous: event, next: priced }],
+    } as never);
+
+    const response = await monitorGrandPalaisProgram();
+    expect(stored.get("approved")).toEqual([{ ...priced, approvedAt: "2026-08-01T10:00:00.000Z" }]);
+    expect(stored.get("pending")).toEqual([]);
+    expect(mockedSendAlert).not.toHaveBeenCalled();
+    expect(await response.json()).toMatchObject({ detected: 0, pricesUpdated: true });
   });
 
   it("ne remplace pas l'état si la collecte distante échoue", async () => {

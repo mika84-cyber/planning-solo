@@ -181,7 +181,7 @@
   grid-template-rows: 58px;
   min-height: 58px;
   border-radius: 18px;
-  padding: 0 16px 0 0;
+  padding: 0;
 }
 
 .has-active-resource .useful-resource-tab-art {
@@ -189,7 +189,10 @@
 }
 .has-active-resource .resource-pdf{border-color:var(--border-card);background:#eeeae2;color:var(--text)}.has-active-resource .resource-forms{border-color:var(--border-card);background:#f4e8d8;color:#704a25}.has-active-resource .resource-contacts{border-color:var(--border-card);background:#e4ecea;color:var(--text)}[data-section="pdf"]{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(0,0,0,.05)),linear-gradient(180deg,#9f947e,#9a927c 16%,#8f8770 38%,#867e66 60%,#887c64 81%,#938970)}
 
+/* La zone du texte remplit tout l'onglet : une marge à droite laissait voir
+   la teinte de fond en liseré, comme un défaut d'affichage. */
 .has-active-resource .useful-resource-tab-copy {
+  border-radius: 17px;
   padding: 10px 12px;
 }
 
@@ -285,7 +288,6 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 52px;
     min-height: 52px;
-    padding-right: 6px;
   }
 
   .has-active-resource .useful-resource-tab-art {

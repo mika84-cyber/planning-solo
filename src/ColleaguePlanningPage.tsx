@@ -189,7 +189,7 @@ function weekCellClass(day: Date, index: number, todayKey: string) {
   return [dateKey(day) === todayKey ? "is-today" : "", index >= 5 ? "is-weekend" : ""].filter(Boolean).join(" ") || undefined;
 }
 
-type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus };
+type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus; onOpen?: () => void };
 
 /** La semaine en un tableau : une ligne par personne, rangée par groupe, et
  *  une case par jour avec la lettre de son statut. La colonne d'aujourd'hui
@@ -220,7 +220,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                 <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={8}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span></th></tr>
                 {groupRows.map((row) => (
                   <tr key={row.id} className={row.isSelf ? "is-self" : ""}>
-                    <th scope="row">{row.name}</th>
+                    <th scope="row">{row.onOpen ? <button type="button" className="colleague-row-open" onClick={row.onOpen} aria-label={`Voir le planning de ${row.name}`}>{row.name}</button> : row.name}</th>
                     {days.map((day, index) => {
                       const status = row.statusFor(day);
                       return (
@@ -340,16 +340,27 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   }, [demoMode]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  // Le dernier état connu est gardé : inutile de tout relire chaque minute.
+  // On relit au retour sur l'application (au plus une fois par minute) et
+  // après un enregistrement réussi, ce qui épargne batterie et données.
   useEffect(() => {
     if (demoMode) return;
-    const update = () => void refresh();
-    const timer = window.setInterval(update, 60_000);
-    window.addEventListener("calendar-sync", update);
-    document.addEventListener("visibilitychange", update);
+    let lastRead = Date.now();
+    const update = () => {
+      lastRead = Date.now();
+      void refresh();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastRead > 60_000) update();
+    };
+    const onSync = (event: Event) => {
+      if ((event as CustomEvent<{ status?: string }>).detail?.status === "saved") update();
+    };
+    window.addEventListener("calendar-sync", onSync);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
-      window.removeEventListener("calendar-sync", update);
-      document.removeEventListener("visibilitychange", update);
-      window.clearInterval(timer);
+      window.removeEventListener("calendar-sync", onSync);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [demoMode, refresh]);
 
@@ -401,6 +412,14 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Ce planning est indisponible.");
     } finally { setBusy(false); }
+  };
+
+  // Depuis le tableau, le planning déjà lu s'ouvre aussitôt sur le mois regardé.
+  const openFromBoard = (ownerId: string, date: Date) => {
+    setView(startOfMonth(date));
+    const known = receivedPlannings[ownerId];
+    if (known) setSelected(known);
+    else void openPlanning(ownerId);
   };
 
   const downloadPlanning = async () => {
@@ -577,6 +596,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
               group: receivedPlannings[share.ownerId].group,
               isSelf: false,
               statusFor: (date: Date) => sharedPlanningDayStatus(receivedPlannings[share.ownerId], date),
+              onOpen: () => openFromBoard(share.ownerId, colleagueWeekDays(weekOffset)[0]),
             })),
           ]}
         /> : <>
@@ -602,7 +622,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
                   {groupShares.map((share) => {
                     const summary = tomorrowSummaries[share.ownerId]!;
                     return <tr className={`colleague-tomorrow-row status-${tomorrowStatusTone(summary.status)}`} key={share.ownerId}>
-                      <td><strong>{share.ownerName}</strong></td>
+                      <td><strong><button type="button" className="colleague-row-open" onClick={() => openFromBoard(share.ownerId, boardDate)} aria-label={`Voir le planning de ${share.ownerName}`}>{share.ownerName}</button></strong></td>
                       <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{summary.status}</span></td>
                     </tr>;
                   })}

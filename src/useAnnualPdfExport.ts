@@ -8,6 +8,7 @@ import {
   getDayInfo,
   schoolVacationsForZone,
   wasPompidouHolidayWorked,
+  workedHolidaysYearRange,
   type HalfMoment,
   type LeaveType,
 } from "./planningLogic";
@@ -158,7 +159,7 @@ export function useAnnualPdfExport(
     try {
       const { createAnnualPlanningPdf, createWorkedHolidaysPdf, loadPlanningPdfAssets } = await import("./planningPdf");
       if (scope === "worked-holidays") {
-        const result = createWorkedHolidaysPdf({ getDayInfo });
+        const result = createWorkedHolidaysPdf({ ...workedHolidaysYearRange(), getDayInfo });
         deliverPdf(result.blob, result.filename);
         return;
       }

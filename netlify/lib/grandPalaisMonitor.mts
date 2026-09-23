@@ -440,11 +440,47 @@ export async function collectGrandPalaisEvents(fetcher: typeof fetch = fetch) {
   return [...new Map(events.map((event) => [event.id, event])).values()];
 }
 
+const EVENT_IDENTITY_KEYS = ["title", "startDate", "endDate", "venueKey", "venueLabel", "fullPrice", "reducedPrice", "reducedLabel"];
+
+function samePrices(previous: SharedGrandPalaisEvent, next: SharedGrandPalaisEvent) {
+  return JSON.stringify(previous.prices ?? []) === JSON.stringify(next.prices ?? []);
+}
+
+function sameIdentity(previous: SharedGrandPalaisEvent, next: SharedGrandPalaisEvent) {
+  return EVENT_IDENTITY_KEYS.every((key) => previous[key as keyof SharedGrandPalaisEvent] === next[key as keyof SharedGrandPalaisEvent]);
+}
+
 function eventChanged(previous: SharedGrandPalaisEvent, next: SharedGrandPalaisEvent) {
-  // Des tarifs publiés après l'annonce, ou modifiés, sont un changement à proposer.
-  return ["title", "startDate", "endDate", "venueKey", "venueLabel", "fullPrice", "reducedPrice", "reducedLabel"]
-    .some((key) => previous[key as keyof SharedGrandPalaisEvent] !== next[key as keyof SharedGrandPalaisEvent]) ||
-    JSON.stringify(previous.prices ?? []) !== JSON.stringify(next.prices ?? []);
+  return !sameIdentity(previous, next) || !samePrices(previous, next);
+}
+
+/** Un changement qui ne touche que les tarifs : sans risque, il est appliqué
+ *  sans attendre l'accord de l'administrateur. */
+export function isPriceOnlyChange(proposal: GrandPalaisProgramProposal) {
+  return proposal.kind === "changed" && Boolean(proposal.previous && proposal.next) &&
+    sameIdentity(proposal.previous!, proposal.next!) && !samePrices(proposal.previous!, proposal.next!);
+}
+
+/** Recopie sur les événements acceptés, et sur les propositions encore en
+ *  attente, les tarifs que la fiche officielle affiche aujourd'hui. Seuls
+ *  les tarifs changent : dates, titre et lieu restent soumis à validation.
+ *  Une fiche relue sans tarif n'efface pas ceux déjà connus. */
+export function syncGrandPalaisPrices(
+  approved: SharedGrandPalaisEvent[],
+  pending: GrandPalaisProgramProposal[],
+  current: SharedGrandPalaisEvent[],
+) {
+  const currentById = new Map(current.map((event) => [event.id, event]));
+  let changed = false;
+  const withPrices = <T extends SharedGrandPalaisEvent>(event: T): T => {
+    const seen = currentById.get(event.id);
+    if (!seen?.prices?.length || samePrices(event, seen)) return event;
+    changed = true;
+    return { ...event, prices: seen.prices };
+  };
+  const nextApproved = approved.map((event) => (event.deleted ? event : withPrices(event)));
+  const nextPending = pending.map((proposal) => (proposal.next ? { ...proposal, next: withPrices(proposal.next) } : proposal));
+  return { approved: nextApproved, pending: nextPending, changed };
 }
 
 function proposalId(kind: GrandPalaisProgramProposal["kind"], event: SharedGrandPalaisEvent) {

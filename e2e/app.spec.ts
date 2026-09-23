@@ -655,9 +655,12 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
   const navigation = await sectionDock(page);
   const choices = navigation.getByRole("button");
   await expect(choices.locator(":scope > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
-  const boxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
-  expect(boxes.every((box) => box.width >= 38)).toBe(true);
-  expect(boxes.every((box) => box.x >= 0 && box.right <= 344)).toBe(true);
+  // Mesures relues jusqu'à la fin des animations du dock : sous la charge de
+  // la suite complète, une lecture unique tombait parfois en pleine transition.
+  await expect.poll(() => choices.evaluateAll((buttons) => buttons.every((button) => {
+    const box = button.getBoundingClientRect();
+    return box.width >= 38 && box.x >= 0 && box.right <= 344;
+  }))).toBe(true);
   // Même le nom le plus long, une fois étiré, tient dans l'écran le plus étroit.
   await navigation.getByRole("button", { name: SECTION_BUTTONS.colleagues }).click();
   await expect(page.locator(".top-header h1")).toContainText("Planning des collègues");
@@ -665,7 +668,7 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
     const box = (await navigation.boundingBox())!;
     return box.x >= 0 && box.x + box.width <= 344;
   }).toBe(true);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await navigation.getByRole("button", { name: SECTION_BUTTONS.documents }).click();
   await expect(page.locator(".top-header h1")).toContainText("Documents et contacts");
   await expect(navigation.getByRole("button", { name: SECTION_BUTTONS.documents })).toHaveAttribute("aria-current", "page");
@@ -1085,6 +1088,11 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await dayBoard.getByRole("button", { name: "Semaine suivante" }).click();
   await expect(dayBoard.locator("#colleague-tomorrow-title")).not.toHaveText(firstWeekTitle);
   await expect(weekTable.locator("thead th.is-today")).toHaveCount(0);
+  // Le nom d'un collègue ouvre son planning du mois ; le retour ramène au tableau.
+  await weekTable.getByRole("button", { name: "Voir le planning de Agnès" }).click();
+  await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Retour à mes collègues" }).click();
+  await expect(dayBoard.locator(".colleague-week-table")).toBeVisible();
   await dayBoard.getByRole("button", { name: "Jour", exact: true }).click();
   await expect(dayBoard.locator(".colleague-tomorrow-table")).toBeVisible();
   await receivedCard.getByRole("button", { name: "Voir" }).click();
@@ -1581,7 +1589,9 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.getByRole("button", { name: /Mon groupe/ })).toContainText("Planning annuel du groupe 2");
   await expect(pdfScreen.getByRole("button", { name: /Les 3 groupes/ })).toBeVisible();
   await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toBeVisible();
-  await expect(pdfScreen.getByRole("button", { name: /Fériés travaillés 2026–2031/ })).toContainText("Pour faciliter les échanges entre groupe");
+  // Six années à partir de l’année en cours.
+  const holidayFirstYear = Math.max(2026, new Date().getFullYear());
+  await expect(pdfScreen.getByRole("button", { name: new RegExp(`Fériés travaillés ${holidayFirstYear}–${holidayFirstYear + 5}`) })).toContainText("Pour faciliter les échanges entre groupe");
   await expect(pdfScreen.locator(".pdf-download-actions .pdf-action").first()).toHaveCSS("border-top-color", "rgb(220, 188, 169)");
   const pdfViewportWidth = page.viewportSize()?.width ?? 1000;
   if (pdfViewportWidth <= 720) {
@@ -1823,9 +1833,10 @@ test("le planning avec congés se génère avec les catégories d’absence", as
   );
   await expect(page.getByRole("dialog", { name: "Que souhaitez-vous faire ?" })).toHaveCount(0);
   const holidaysDownloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: /Fériés travaillés 2026–2031/ }).click();
+  const firstHolidayYear = Math.max(2026, new Date().getFullYear());
+  await page.getByRole("button", { name: /Fériés travaillés \d{4}–\d{4}/ }).click();
   const holidaysDownload = await holidaysDownloadPromise;
-  expect(holidaysDownload.suggestedFilename()).toBe("feries-travailles-2026-2031.pdf");
+  expect(holidaysDownload.suggestedFilename()).toBe(`feries-travailles-${firstHolidayYear}-${firstHolidayYear + 5}.pdf`);
 });
 
 test("les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement", async ({ page }) => {

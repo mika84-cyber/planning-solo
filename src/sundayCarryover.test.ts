@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computePayAllowances } from "./payAllowances";
+import { collectWorkedDays, computePayAllowances } from "./payAllowances";
+import { dateKey, getDayInfo } from "./planningLogic";
 import { nextSundayPayoutSlot } from "./usePayActions";
 
 describe("report des dimanches manquants", () => {
@@ -45,5 +46,18 @@ describe("report des dimanches manquants", () => {
     expect(exchanged).not.toContain(given);
     expect(exchanged).toContain(rest);
     expect(exchanged).toEqual([...exchanged].sort());
+  });
+
+  it("tient compte des échanges pour les jours fériés travaillés", () => {
+    const base = { year: 2026, today: new Date(2026, 8, 22), periods: [], group: 2, manualAdjustments: undefined, baseSalary: 2000, sundayCarryover: 0, sundayCarryoverYear: undefined, sundayCarryoverMonth: undefined, sundayCarryoverFromYear: undefined, sundayCarryoverFromMonth: undefined };
+    const holidays = (entries = {}) => collectWorkedDays({ ...base, entries }).holidays.map((item) => item.key);
+    const worked = holidays();
+    const days = Array.from({ length: 365 }, (_, index) => new Date(2026, 0, 1 + index, 12));
+    const restHoliday = days.find((date) => getDayInfo(date, 2).holiday && getDayInfo(date, 2).kind === "off")!;
+    const given = worked[0];
+    const returned = dateKey(restHoliday);
+    const exchanged = holidays({ [given]: { exchangeRole: "given" }, [returned]: { exchangeRole: "return" } });
+    expect(exchanged).not.toContain(given);
+    expect(exchanged).toContain(returned);
   });
 });

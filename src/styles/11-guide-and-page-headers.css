@@ -1048,9 +1048,6 @@
   --section-accent: #a67432;
 }
 
-@media (max-width: 720px) {
-}
-
 /* Sur un grand écran, l’en-tête profite davantage de la largeur disponible
    sans élargir les cartes et le calendrier placés dessous. */
 @media (min-width: 1200px) {

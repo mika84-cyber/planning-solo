@@ -1425,9 +1425,6 @@ fieldset.leave-choices {
   }
 }
 
-@media (max-width: 720px) {
-}
-
 /* Le bandeau d’installation Apple reprend la mise en page de l’alerte : seuls
    le texte sur deux lignes et la taille de l’icône diffèrent. */
 .apple-install-notice{align-items:start;margin:10px auto 0;text-align:left}

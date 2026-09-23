@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  workedHolidaysYearRange,
   applyManualSundayLeave,
   coWorkingGroupsForDate,
   compactWeekdayDate,
@@ -454,5 +455,13 @@ describe("retenue maladie", () => {
 
   it("ne retient rien sans arrêt", () => {
     expect(sickLeaveDeduction(0, traitement, ifse, carence).total).toBe(0);
+  });
+});
+
+describe("récapitulatif des fériés travaillés", () => {
+  it("couvre six années à partir de l’année en cours, jamais avant 2026", () => {
+    expect(workedHolidaysYearRange(new Date(2026, 8, 23))).toEqual({ firstYear: 2026, lastYear: 2031 });
+    expect(workedHolidaysYearRange(new Date(2028, 0, 2))).toEqual({ firstYear: 2028, lastYear: 2033 });
+    expect(workedHolidaysYearRange(new Date(2025, 11, 31))).toEqual({ firstYear: 2026, lastYear: 2031 });
   });
 });

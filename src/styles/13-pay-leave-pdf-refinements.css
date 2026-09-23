@@ -104,9 +104,6 @@
   }
 }
 
-@media (max-width: 720px) {
-}
-
 /* Plannings PDF : le parcours est présenté en deux étapes immédiatement
    repérables, avec des réglages compacts et trois choix de document distincts. */
 .pdf-download-screen {
@@ -224,29 +221,16 @@
 }
 
 .pdf-download-settings > .school-vacation-choice {
-  gap: 7px;
-  border-color: #dec69d;
   background: #fff9ef;
 }
 
 .pdf-download-settings .school-vacation-toggle {
   width: 100%;
-  justify-content: flex-start;
-  gap: 11px;
-  border: 0;
-  border-radius: 13px;
-  padding: 8px 11px;
-  color: var(--muted);
-  background: var(--surface-high);
   text-align: left;
 }
 
 .pdf-download-settings .school-vacation-toggle > i {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
   border-width: 2px;
-  box-shadow: inset 0 0 0 3px #fff;
 }
 
 .pdf-download-settings .school-vacation-toggle > span {
@@ -281,11 +265,6 @@
   background: linear-gradient(145deg, #fff7ec, #fff);
 }
 
-.pdf-download-actions .pdf-action.my-leaves {
-  border-color: var(--border-card);
-  background: linear-gradient(145deg, #fff, #fff);
-}
-
 .pdf-download-actions .pdf-action:hover {
   transform: translateY(-3px);
   box-shadow: 0 14px 27px rgba(87, 78, 66, 0.13);
@@ -304,19 +283,12 @@
   background: #ffead1;
 }
 
-.pdf-download-actions .pdf-action.my-leaves .pdf-action-icon {
-  color: var(--muted);
-  background: #fff;
-}
-
 .pdf-download-actions .pdf-action-icon svg {
   width: 21px;
   height: 21px;
 }
 
 .pdf-download-actions .pdf-action-copy {
-  align-content: start;
-  gap: 5px;
   width: 100%;
   padding-top: 1px;
 }
@@ -329,9 +301,6 @@
 }
 
 .pdf-download-actions .pdf-action-copy small {
-  min-height: 29px;
-  color: #9b8e7c;
-  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -416,7 +385,6 @@
 .pay-dashboard-settings {
   border: 1px solid var(--border-card);
   border-radius: var(--radius-panel);
-  background: var(--surface-card);
   box-shadow: var(--shadow-card);
 }
 
@@ -427,7 +395,6 @@
   gap: 16px;
   padding: 16px 18px;
   border-left: 5px solid var(--accent);
-  background: linear-gradient(145deg, #fff, #fdf8f1);
 }
 
 .pay-dashboard-month h2,
@@ -448,8 +415,8 @@
   min-width: 44px;
   min-height: 44px;
 }
-.pay-allowances-shortcut{align-items:center;background:linear-gradient(135deg,#fff,var(--surface-high));border:1px solid rgba(140,61,24,.28);border-radius:var(--radius-card);box-shadow:var(--shadow-card);box-sizing:border-box;color:var(--text);display:grid;gap:18px;grid-template-columns:44px minmax(0,1fr) 34px;min-height:96px;padding:13px 18px;text-align:left;width:100%}.pay-allowances-shortcut>span:first-child,.pay-allowances-shortcut>b{align-items:center;border-radius:var(--radius-control);display:flex;justify-content:center}.pay-allowances-shortcut>span:first-child{height:44px;background:var(--action-primary);color:#fff;font-size:20px}.pay-allowances-shortcut>span:nth-child(2){display:grid;gap:3px}.pay-allowances-shortcut strong{font-size:17px}.pay-allowances-shortcut small{color:var(--muted);font-size:12px;font-weight:750}.pay-allowances-shortcut>b{height:34px;border:1px solid rgba(140,61,24,.26);background:var(--accent-soft);color:var(--accent-strong);font-size:19px}.pay-allowances-shortcut:hover{background:linear-gradient(135deg,#fff,var(--surface-high));transform:translateY(-1px)}
-.pay-dashboard-profile-slot .pay-profile-settings{margin:0;border:1px solid rgba(140,61,24,.28);border-radius:var(--radius-card);background:linear-gradient(135deg,#fff,var(--surface-high));box-shadow:var(--shadow-card);overflow:hidden}.pay-dashboard-profile-slot .pay-profile-summary{min-height:96px;padding:13px 18px}.pay-dashboard-profile-slot .pay-profile-symbol{background:var(--action-primary);border-radius:var(--radius-control);color:#fff;display:grid;flex:0 0 44px;font-weight:900;height:44px;place-items:center}.pay-profile-open-copy{border-radius:999px;color:var(--accent-strong);font-size:11px;font-weight:850;padding:6px 9px;white-space:nowrap}.pay-profile-open-copy.complete{background:#fff;color:#216846}.pay-profile-open-copy.missing{background:#fff0d9;color:#8b4d13}
+.pay-allowances-shortcut{align-items:center;border:1px solid rgba(140,61,24,.28);border-radius:var(--radius-card);box-shadow:var(--shadow-card);box-sizing:border-box;color:var(--text);display:grid;gap:18px;grid-template-columns:44px minmax(0,1fr) 34px;min-height:96px;padding:13px 18px;text-align:left;width:100%}.pay-allowances-shortcut>span:first-child,.pay-allowances-shortcut>b{align-items:center;border-radius:var(--radius-control);display:flex;justify-content:center}.pay-allowances-shortcut>span:first-child{height:44px;background:var(--action-primary);color:#fff;font-size:20px}.pay-allowances-shortcut>span:nth-child(2){display:grid;gap:3px}.pay-allowances-shortcut strong{font-size:17px}.pay-allowances-shortcut small{color:var(--muted);font-size:12px;font-weight:750}.pay-allowances-shortcut>b{height:34px;border:1px solid rgba(140,61,24,.26);background:var(--accent-soft);color:var(--accent-strong);font-size:19px}.pay-allowances-shortcut:hover{background:linear-gradient(135deg,#fff,var(--surface-high));transform:translateY(-1px)}
+.pay-dashboard-profile-slot .pay-profile-settings{margin:0;border:1px solid rgba(140,61,24,.28);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}.pay-dashboard-profile-slot .pay-profile-summary{min-height:96px;padding:13px 18px}.pay-dashboard-profile-slot .pay-profile-symbol{background:var(--action-primary);border-radius:var(--radius-control);color:#fff;display:grid;flex:0 0 44px;font-weight:900;height:44px;place-items:center}.pay-profile-open-copy{border-radius:999px;color:var(--accent-strong);font-size:11px;font-weight:850;padding:6px 9px;white-space:nowrap}.pay-profile-open-copy.complete{background:#fff;color:#216846}.pay-profile-open-copy.missing{background:#fff0d9;color:#8b4d13}
 
 .pay-dashboard-priority-grid {
   display: grid;
@@ -466,7 +433,6 @@
 .pay-dashboard-estimate {
   border-color: rgba(140, 61, 24, 0.26);
   border-left: 4px solid var(--accent);
-  background: linear-gradient(135deg, var(--surface-high) 0%, var(--surface) 58%, #fff 100%);
   box-shadow: 0 10px 28px rgba(58, 51, 44, 0.09);
 }
 
@@ -620,23 +586,15 @@
 @media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
   .pdf-download-actions .pdf-action {
     gap: 10px;
-    min-height: 184px;
-    padding: 15px;
   }
 
   .pdf-download-actions .pdf-action-copy {
-    gap: 6px;
     height: 100%;
-    grid-template-rows: auto minmax(36px, auto) minmax(38px, auto) 1fr;
   }
 
   .pdf-download-actions .pdf-action-copy strong {
     padding-right: 0;
     font-size: 13px;
-  }
-
-  .pdf-download-actions .pdf-action-copy small {
-    min-height: 28px;
   }
 
   .pdf-download-actions .pdf-action-page-count {
@@ -649,11 +607,6 @@
     width: 38px;
     height: 38px;
   }
-
-  .pdf-download-actions .pdf-action-cta {
-    align-self: end;
-    margin-top: 0;
-  }
 }
 
 /* Dernière passe PDF : ces règles restent volontairement après les anciens
@@ -662,9 +615,6 @@
   gap: 15px;
   border-radius: 30px;
   padding: clamp(18px, 2.8vw, 30px);
-  background:
-    radial-gradient(circle at 100% 0, rgba(166, 116, 50, 0.18), transparent 34%),
-    linear-gradient(145deg, rgba(253, 250, 244, 0.98), rgba(255, 247, 236, 0.98));
   box-shadow: 0 18px 42px rgba(78, 57, 38, 0.13);
 }
 
@@ -716,12 +666,7 @@
 
 .pdf-download-settings > .school-vacation-choice {
   grid-column: auto;
-  display: flex;
-  align-items: center;
-  padding: 11px;
 }
-
-.pdf-download-settings .school-vacation-toggle { min-height: 72px; }
 .pdf-download-actions { gap: 11px; }
 
 .pdf-download-actions .pdf-action {
@@ -883,9 +828,6 @@
     margin-top: 10px;
     border-radius: 21px;
     padding: 10px 10px calc(16px + env(safe-area-inset-bottom));
-    background:
-      radial-gradient(circle at 100% 0, rgba(122, 111, 95, 0.13), transparent 32%),
-      linear-gradient(155deg, var(--surface-high), #fffaf4);
     box-shadow: 0 9px 23px rgba(58, 51, 44, 0.09);
   }
 
@@ -945,7 +887,6 @@
   .pdf-setting-title b { font-size: 11px; }
   .pdf-setting-title small { font-size: 8.5px; }
   .pdf-download-settings .year-choice-picker { min-height: 43px; }
-  .pdf-download-settings .school-vacation-toggle { min-height: 60px; }
 
   .pdf-download-actions {
     gap: 8px;
@@ -963,17 +904,11 @@
   }
 
   .pdf-download-actions .pdf-action-copy {
-    grid-template-rows: auto auto auto;
-    gap: 3px;
     height: auto;
     padding: 0;
   }
 
   .pdf-download-actions .pdf-action-copy strong {
-    min-height: 0;
-  }
-
-  .pdf-download-actions .pdf-action-copy small {
     min-height: 0;
   }
 
@@ -1154,10 +1089,6 @@
   .pay-profile-summary-copy small { font-size: 9.5px; }
 
   /* PDF : les quatre documents suivent exactement le même modèle. */
-  .pdf-download-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-  }
 
   .pdf-download-actions .pdf-action {
     justify-items: start;
@@ -1169,8 +1100,6 @@
     padding-right: 42px;
     font-size: 11.5px;
   }
-
-  .pdf-download-actions .pdf-action-copy small { font-size: 8.5px; }
 }
 
 /* Une grille 2 × 2 donne aux quatre documents le même poids visuel sur les
@@ -1229,10 +1158,6 @@
     grid-column: 1 / -1;
     width: 100%;
     min-width: 0;
-  }
-
-  .payslip-import-actions {
-    grid-template-columns: 1fr;
   }
 
   /* Sur un téléphone étroit, le sigle du congé personnel reste dans son

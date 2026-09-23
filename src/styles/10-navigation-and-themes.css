@@ -678,10 +678,6 @@
 .holiday-recovery-history { background: #fff !important; }
 
 /* Palette plus chaleureuse et moins de rectangles fermés. */
-.pay-app-screen,
-.pdf-download-screen {
-  background: linear-gradient(150deg, rgba(255,255,255,.94), #fff 52%, rgba(255,249,243,.88));
-}
 .home-notes-section,
 .home-planning-heading {
   box-shadow: none;
