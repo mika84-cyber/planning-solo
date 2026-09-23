@@ -1,5 +1,6 @@
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { AuthStatus } from "./appModel";
+import { rememberSessionEnabled, setRememberSession } from "./rememberedSession";
 
 type Props = {
   status: Exclude<AuthStatus, "ready">;
@@ -34,6 +35,7 @@ export function AuthScreen({
   submitPasswordReset,
   requestPasswordReset,
 }: Props) {
+  const [remember, setRemember] = useState(rememberSessionEnabled);
   if (status === "loading") {
     return (
       <main className="auth-splash">
@@ -154,6 +156,19 @@ export function AuthScreen({
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
+            </label>
+            {/* Sur un appareil partagé, on décoche : la connexion sera
+                redemandée à la prochaine ouverture. */}
+            <label className="auth-remember">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(event) => {
+                  setRemember(event.target.checked);
+                  setRememberSession(event.target.checked);
+                }}
+              />
+              <span>Rester connecté sur cet appareil</span>
             </label>
             {error && (
               <p className="auth-error" role="alert">

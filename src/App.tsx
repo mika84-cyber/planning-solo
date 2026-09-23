@@ -13,7 +13,9 @@ import {
 import {
   getUser,
   handleAuthCallback,
+  refreshSession,
 } from "@netlify/identity";
+import { restoreRememberedSession } from "./rememberedSession";
 import { AuthScreen } from "./AuthScreen";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
@@ -745,11 +747,15 @@ export default function Home() {
           setAuthStatus("recovery");
           return;
         }
+        // « Rester connecté » : le cookie effacé à la fermeture est recréé
+        // depuis la session gardée, puis le jeton est renouvelé s'il a expiré.
+        restoreRememberedSession();
         const user = await getUser();
         if (!user) {
           setAuthStatus("guest");
           return;
         }
+        await refreshSession();
         setUserEmail(user.email || "Compte connecté");
         await loadCalendar();
         if (new URLSearchParams(location.search).get("request") === "saved") {

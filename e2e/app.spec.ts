@@ -3257,6 +3257,15 @@ test("le paramètre de démonstration ne donne plus accès à l’application", 
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toHaveCount(0);
 });
 
+test("la connexion propose de rester connecté et retient le choix", async ({ page }) => {
+  await page.goto("/");
+  const remember = page.getByRole("checkbox", { name: "Rester connecté sur cet appareil" });
+  await expect(remember).toBeChecked();
+  await remember.uncheck();
+  await page.reload();
+  await expect(page.getByRole("checkbox", { name: "Rester connecté sur cet appareil" })).not.toBeChecked();
+});
+
 test("un compte invité peut demander un nouveau mot de passe", async ({ page }) => {
   let requestedEmail = "";
   await page.route("**/api/password-recovery", async (route) => {
