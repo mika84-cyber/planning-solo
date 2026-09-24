@@ -125,6 +125,7 @@ export function mergeSharedGrandPalaisProgram(
     };
     const entry: GrandPalaisProgramEntry = {
       title: shared.title,
+      ...(shared.details ? { details: shared.details } : {}),
       period: remotePeriod(shared),
       officialUrl,
       startsOn: shared.startDate,
@@ -736,7 +737,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
               return (
                 <article key={proposal.id}>
                   <small>{kindLabel} · {event.venueLabel}</small>
-                  <strong>{event.title}</strong>
+                  <strong>{event.title}{event.details ? ` · ${event.details}` : ""}</strong>
                   <span>{event.startDate === event.endDate
                     ? `Date officielle : ${formatFrenchDate(event.startDate)}`
                     : `Du ${formatFrenchDate(event.startDate)} au ${formatFrenchDate(event.endDate)}`}</span>

@@ -28,6 +28,7 @@ function isSharedEvent(value: unknown) {
     typeof value.url === "string" &&
     typeof value.venueKey === "string" &&
     typeof value.venueLabel === "string" &&
+    isOptionalString(value.details) &&
     (value.deleted === undefined || typeof value.deleted === "boolean") &&
     isOptionalString(value.approvedAt)
   );

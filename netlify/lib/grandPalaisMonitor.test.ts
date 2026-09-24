@@ -97,6 +97,35 @@ describe("surveillance de la programmation du Grand Palais", () => {
     expect(extractGrandPalaisPrices("<p>Une exposition sans rubrique tarifs.</p>")).toEqual([]);
   });
 
+  it("relève l’artiste et le prix d’appel d’un concert, cas de COLLECTOR 2027", () => {
+    const html = `${eventPage({
+      name: "COLLECTOR 2027",
+      startDate: "2027-01-15",
+      endDate: "2027-01-15",
+      url: "https://www.grandpalais.fr/fr/programme/collector-2027",
+      venue: "Nef - Entrée Gabrielle Chanel",
+    })}
+      <h1 class="cp-headline"><p>COLLECTOR 2027</p>
+      <p><span style="color:#948f99;">Étienne Daho</span></p></h1>
+      <p>Cet évènement est accessible aux personnes à mobilité réduite.</p>
+      <div>Tarifs</div><p>À partir de 45€</p><a>Réserver</a>`;
+    expect(extractGrandPalaisEvent(html, "https://www.grandpalais.fr/fr/programme/collector-2027")).toMatchObject({
+      title: "COLLECTOR 2027",
+      details: "Étienne Daho",
+      venueKey: "nef",
+      prices: [{ label: "À partir de", amount: 45 }],
+    });
+    // Une fiche sans sous-titre n’en invente pas.
+    expect(extractGrandPalaisEvent(eventPage(), "https://www.grandpalais.fr/fr/programme/exposition-test"))
+      .not.toHaveProperty("details");
+    // Déjà acceptés sans artiste ni tarif : les deux arrivent sans validation.
+    const accepted = { id: "c", title: "COLLECTOR 2027", startDate: "2027-01-15", endDate: "2027-01-15", url: "u", venueKey: "nef", venueLabel: "Nef", prices: [] };
+    const seen = { ...accepted, details: "Étienne Daho", prices: [{ label: "À partir de", amount: 45 }] };
+    const synced = syncGrandPalaisPrices([accepted], [], [seen]);
+    expect(synced.changed).toBe(true);
+    expect(synced.approved[0]).toMatchObject({ details: "Étienne Daho", prices: [{ label: "À partir de", amount: 45 }] });
+  });
+
   it("extrait les dates, le titre et la galerie depuis une fiche", () => {
     expect(extractGrandPalaisEvent(eventPage(), "https://www.grandpalais.fr/fr/programme/exposition-test"))
       .toMatchObject({

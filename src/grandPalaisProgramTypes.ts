@@ -6,6 +6,8 @@ export type GrandPalaisPrice = { label: string; amount: number; until?: string }
 export type SharedGrandPalaisEvent = {
   id: string;
   title: string;
+  /** Sous-titre de la fiche officielle : l'artiste d'un concert. */
+  details?: string;
   startDate: string;
   endDate: string;
   url: string;

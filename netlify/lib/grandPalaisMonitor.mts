@@ -335,6 +335,12 @@ export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
     if (nextSection !== -1) block = block.slice(0, nextSection + 1);
     const prices = pricesInBlock(block);
     if (prices.length) return prices;
+    // Un concert n'annonce parfois qu'un prix d'appel, sans deux-points :
+    // « Tarifs À partir de 45€ ».
+    const from = block.match(/^(?:tarifs?|prices?)\s*:?\s*(à partir de|dès|from)\s*(?:€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*€)/i);
+    const fromAmount = from ? Number((from[2] ?? from[3]).replace(",", ".")) : 0;
+    if (from && fromAmount > 0 && fromAmount <= 500)
+      return [{ label: from[1].charAt(0).toUpperCase() + from[1].slice(1).toLowerCase(), amount: fromAmount }];
     free ||= /^(?:tarifs?|prices?|admission)\s*:?\s*(?:gratuit|entrée libre|free)/i.test(block);
   }
   // Un événement gratuit l'annonce parfois sans rubrique « Tarifs ».
@@ -363,6 +369,17 @@ function pricesInBlock(block: string) {
     if (prices.length >= 6) break;
   }
   return prices;
+}
+
+/** Le sous-titre de la fiche, deuxième ligne de son grand titre : l'artiste
+ *  d'un concert (« COLLECTOR 2027 » puis « Étienne Daho »). */
+export function extractGrandPalaisSubtitle(html: string, title: string) {
+  const headline = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ?? "";
+  const lines = [...headline.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
+    .map((line) => decodeHtml(line[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim())
+    .filter((line) => line && line.toLowerCase() !== title.toLowerCase());
+  const subtitle = lines.join(" · ");
+  return subtitle.length <= 120 ? subtitle : "";
 }
 
 export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGrandPalaisEvent | null {
@@ -394,9 +411,11 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
       venueKey: "other:rotonde-salon-seine-palais-enfants",
       venueLabel: "Rotonde d’Antin, Salon Seine et Palais des enfants",
     };
+  const details = extractGrandPalaisSubtitle(html, title);
   return {
     id: stableId(url),
     title,
+    ...(details ? { details } : {}),
     startDate,
     endDate,
     url,
@@ -462,9 +481,9 @@ export function isPriceOnlyChange(proposal: GrandPalaisProgramProposal) {
 }
 
 /** Recopie sur les événements acceptés, et sur les propositions encore en
- *  attente, les tarifs que la fiche officielle affiche aujourd'hui. Seuls
- *  les tarifs changent : dates, titre et lieu restent soumis à validation.
- *  Une fiche relue sans tarif n'efface pas ceux déjà connus. */
+ *  attente, les tarifs et le sous-titre (l'artiste) que la fiche officielle
+ *  affiche aujourd'hui. Dates, titre et lieu restent soumis à validation.
+ *  Une fiche relue sans tarif ni sous-titre n'efface pas ceux déjà connus. */
 export function syncGrandPalaisPrices(
   approved: SharedGrandPalaisEvent[],
   pending: GrandPalaisProgramProposal[],
@@ -474,9 +493,15 @@ export function syncGrandPalaisPrices(
   let changed = false;
   const withPrices = <T extends SharedGrandPalaisEvent>(event: T): T => {
     const seen = currentById.get(event.id);
-    if (!seen?.prices?.length || samePrices(event, seen)) return event;
+    const newPrices = Boolean(seen?.prices?.length) && !samePrices(event, seen!);
+    const newDetails = Boolean(seen?.details) && seen!.details !== event.details;
+    if (!newPrices && !newDetails) return event;
     changed = true;
-    return { ...event, prices: seen.prices };
+    return {
+      ...event,
+      ...(newPrices ? { prices: seen!.prices } : {}),
+      ...(newDetails ? { details: seen!.details } : {}),
+    };
   };
   const nextApproved = approved.map((event) => (event.deleted ? event : withPrices(event)));
   const nextPending = pending.map((proposal) => (proposal.next ? { ...proposal, next: withPrices(proposal.next) } : proposal));
