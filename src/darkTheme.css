@@ -86,4 +86,4 @@ html[data-theme="dark"] .today-overview-grid > :is(article, button) + :is(articl
 html[data-theme="dark"] .today-overview-grid .today-card-copy > :is(span, strong) { color: #f1e8de; }
 html[data-theme="dark"] .today-overview-grid .today-card-icon { background: color-mix(in srgb, var(--row-ink) 28%, transparent); color: color-mix(in srgb, var(--row-ink) 55%, #fff); }
 html[data-theme="dark"] .today-overview-grid > .today-status .today-card-copy > strong { color: color-mix(in srgb, var(--row-ink) 55%, #fff); }
-html[data-theme="dark"] .today-overview-grid .today-card-copy > strong { background: #2a2420; }
+html[data-theme="dark"] .today-overview-grid .today-card-copy > strong { background: #2a2420; box-shadow: inset 1px 0 0 #3a322d; }
