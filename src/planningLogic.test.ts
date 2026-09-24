@@ -5,6 +5,7 @@ import {
   applyManualSundayLeave,
   coWorkingGroupsForDate,
   compactWeekdayDate,
+  nextWorkDayLabel,
   dateKey,
   fromKey,
   getDayInfo,
@@ -238,7 +239,10 @@ describe("date helpers", () => {
   });
 
   it("affiche le prochain jour travaillé au format court", () => {
-    expect(compactWeekdayDate(localDate(2026, 7, 26))).toBe("Mer 26/08/26");
+    expect(compactWeekdayDate(localDate(2026, 7, 26))).toBe("Mer 26/08");
+    // Le lendemain s'écrit « Demain » ; au-delà, la date abrégée.
+    expect(nextWorkDayLabel(localDate(2026, 8, 25), localDate(2026, 8, 24))).toBe("Demain");
+    expect(nextWorkDayLabel(localDate(2026, 8, 28), localDate(2026, 8, 24))).toBe("Lun 28/09");
   });
 });
 

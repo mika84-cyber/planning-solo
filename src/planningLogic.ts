@@ -363,14 +363,22 @@ export function longDate(date: Date) {
 
 const SHORT_WEEKDAYS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
-/** « Ven 25/09/26 » : le jour abrégé tient sur une ligne, même sur téléphone. */
+/** « Ven 25/09 » : jour abrégé, jour et mois, sans l'année ; tient sur une
+ *  ligne, même sur téléphone. */
 export function compactWeekdayDate(date: Date) {
   const weekday = SHORT_WEEKDAYS[date.getDay()];
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = String(date.getFullYear()).slice(-2);
-  return `${weekday} ${day}/${month}/${year}`;
+  return `${weekday} ${day}/${month}`;
 }
+/** Le prochain jour travaillé : « Demain » s'il suit aujourd'hui, sinon
+ *  sa date abrégée. */
+export function nextWorkDayLabel(date: Date, reference = new Date()) {
+  const tomorrow = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate() + 1);
+  const sameDay = date.getFullYear() === tomorrow.getFullYear() && date.getMonth() === tomorrow.getMonth() && date.getDate() === tomorrow.getDate();
+  return sameDay ? "Demain" : compactWeekdayDate(date);
+}
+
 export function shortDate(key: string) {
   const date = fromKey(key);
   return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;

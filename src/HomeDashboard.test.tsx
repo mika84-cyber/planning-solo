@@ -78,7 +78,7 @@ describe("HomeDashboard", () => {
       {...baseProps}
       today={{ ...baseProps.today, nextWorkHalfLeaveLabel: "1/2 journée posée le matin" }}
     />);
-    expect(html).toContain("Ven 04/09/26 — 1/2 journée posée le matin");
+    expect(html).toContain("Ven 04/09 — 1/2 journée posée le matin");
   });
 
   it("précise une demi-journée posée l’après-midi", () => {
@@ -86,7 +86,7 @@ describe("HomeDashboard", () => {
       {...baseProps}
       today={{ ...baseProps.today, nextWork: new Date(2026, 8, 6, 12), nextWorkHalfLeaveLabel: "1/2 journée posée l’après-midi" }}
     />);
-    expect(html).toContain("Dim 06/09/26 — 1/2 journée posée l’après-midi");
+    expect(html).toContain("Dim 06/09 — 1/2 journée posée l’après-midi");
   });
 
   it("conserve le groupe dans Aujourd’hui quand une demi-journée reste travaillée", () => {

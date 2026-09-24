@@ -173,7 +173,7 @@ describe("finitions d’interface", () => {
     // Un seul bloc décrit désormais ces cartes : les anciennes règles,
     // centrées ou en grille 2 × 2, ne doivent pas revenir.
     expect(styles).not.toContain(".today-overview-grid");
-    expect(refinements).toContain('grid-template-areas: "icon label value chev" "icon note value chev";');
+    expect(refinements).toContain('grid-template-areas: "icon label value" "icon note value";');
     expect(refinements).toContain(".today-overview-grid > .today-status { --row-ink");
     expect(app).toContain("Congés restants");
   });

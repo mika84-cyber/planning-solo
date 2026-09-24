@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   addDays,
   coWorkingGroupsForDate,
-  compactWeekdayDate,
+  nextWorkDayLabel,
   dateKey,
   getDayInfo,
   localDate,
@@ -1250,7 +1250,7 @@ test("une demi-journée reste le prochain jour travaillé et y est précisée", 
 
   const closureLabel = getDayInfo(nextWork, 2).kind === "training" ? " — Formation" : "";
   await expect(page.locator(".today-next-work strong")).toHaveText(
-    `${compactWeekdayDate(nextWork)}${closureLabel} — 1/2 journée posée le matin`,
+    `${nextWorkDayLabel(nextWork)}${closureLabel} — 1/2 journée posée le matin`,
   );
 });
 
@@ -2979,7 +2979,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-width", "2px");
   await expect(page.locator(".today-next-work strong")).toHaveText(
-    /^[a-zà-ÿ]+ \d{2}\/\d{2}\/\d{2}(?: — (?:Formation|Fermeture exceptionnelle))?$/i,
+    /^(?:Demain|[a-zà-ÿ]+ \d{2}\/\d{2})(?: — (?:Formation|Fermeture exceptionnelle))?$/i,
   );
   if ((page.viewportSize()?.width || 0) >= 1200) {
     expect(Math.abs(headerBox!.x - todayOverviewBox!.x)).toBeLessThanOrEqual(1);
@@ -3043,14 +3043,14 @@ test("un congé posé sur une formation retire cette date du prochain jour trava
   const expectedNext = await prepareFutureTrainingAbsenceDemo(page);
   const nextWork = page.locator(".today-next-work strong");
 
-  await expect(nextWork).toHaveText(compactWeekdayDate(expectedNext));
+  await expect(nextWork).toHaveText(nextWorkDayLabel(expectedNext));
 });
 
 test("une formation posée en récupération est retirée du prochain jour travaillé", async ({ page }) => {
   const expectedNext = await prepareFutureTrainingAbsenceDemo(page, "recovery");
 
   await expect(page.locator(".today-next-work strong")).toHaveText(
-    compactWeekdayDate(expectedNext),
+    nextWorkDayLabel(expectedNext),
   );
 });
 

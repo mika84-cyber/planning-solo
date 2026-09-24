@@ -3,7 +3,7 @@ import { dayCountLabel, type NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
 import {
-  compactWeekdayDate,
+  nextWorkDayLabel,
   longDate,
   s,
 } from "./planningLogic";
@@ -105,8 +105,11 @@ export function HomeDashboard({
   const groupActionLabel = hasConfiguredGroup
     ? `Je suis groupe ${group}`
     : "Choisir mon groupe";
+  // « Demain » se lit en toutes lettres ; une date, plus longue, s'écrit un
+  // peu plus petit pour tenir sur la ligne.
+  const nextWorkIsDate = Boolean(today.nextWork) && nextWorkDayLabel(today.nextWork!) !== "Demain";
   const nextWorkLabel = today.nextWork
-    ? `${compactWeekdayDate(today.nextWork)}${
+    ? `${nextWorkDayLabel(today.nextWork)}${
         today.nextWorkExceptionalClosure
           ? " — Fermeture exceptionnelle"
           : today.nextWorkKind === "training"
@@ -165,7 +168,7 @@ export function HomeDashboard({
             </span>
             <span className="today-card-copy">
               <span>Prochain jour travaillé</span>
-              <strong>{nextWorkLabel}</strong>
+              <strong className={nextWorkIsDate ? "is-date" : undefined}>{nextWorkLabel}</strong>
               {today.nextWorkGroupLabel ? <small>{today.nextWorkGroupLabel}</small> : null}
             </span>
           </button>
