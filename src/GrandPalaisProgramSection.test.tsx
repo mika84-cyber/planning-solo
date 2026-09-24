@@ -275,19 +275,6 @@ describe("programmation du Grand Palais", () => {
     expect(otherGrandPalaisVenueKeys(added, "2027-05-02")).not.toContain("other:salon-honneur");
   });
 
-  it("affiche les tarifs relevés d'un événement accepté sans tarifs", () => {
-    const merged = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{
-      id: "saunders",
-      title: "Rebecca Saunders, Ensemble Intercontemporain · Chroma I–XXIV (2003–26)",
-      startDate: "2026-11-21",
-      endDate: "2026-11-21",
-      url: "https://www.grandpalais.fr/fr/programme/rebecca-saunders-ensemble-intercontemporain-chroma-i-xxiv-2003-26",
-      venueKey: "other:galeries-2-2",
-      venueLabel: "Galeries 2.2",
-    }]);
-    expect(merged["other:galeries-2-2"].schedule[2026]?.[0].prices?.map((price) => price.amount)).toEqual([25, 15, 10]);
-  });
-
   it("ajoute une galerie nouvellement détectée dans Autres après validation", () => {
     const added = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{
       id: "gallery-2",

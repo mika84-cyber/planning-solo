@@ -1,9 +1,3 @@
-/* Contraste renforcé sur le libellé de situation du jour. La teinte conserve
-   la hiérarchie discrète du libellé tout en dépassant 4,5:1 sur le fond vert
-   le plus clair de la carte. */
-.today-overview-grid .today-status > .today-card-copy > span {
-  color: var(--muted);
-}
 
 .overtime-balance-summary article.remaining > span {
   color: var(--muted);

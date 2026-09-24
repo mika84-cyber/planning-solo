@@ -305,7 +305,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const planningsRef = useRef(receivedPlannings);
   planningsRef.current = receivedPlannings;
   const [boardOffset, setBoardOffset] = useState(1);
-  const [boardMode, setBoardMode] = useState<"day" | "week">("day");
+  // La semaine s'ouvre d'abord : on y voit d'un coup qui est là les prochains jours.
+  const [boardMode, setBoardMode] = useState<"day" | "week">("week");
   const [weekOffset, setWeekOffset] = useState(0);
   const [tomorrowFailed, setTomorrowFailed] = useState<string[]>([]);
   const [tomorrowAttempt, setTomorrowAttempt] = useState(0);

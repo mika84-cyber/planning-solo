@@ -80,7 +80,6 @@ export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulR
             </span>
             <span className="useful-resource-tab-copy">
               <strong>{tab.title}</strong>
-              {activeTab ? <small>{activeTab === tab.key ? "Ouvert" : "Ouvrir"}</small> : null}
             </span>
           </button>
         ))}

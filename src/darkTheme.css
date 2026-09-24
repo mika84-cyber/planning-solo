@@ -81,3 +81,8 @@ html[data-theme="dark"] .colleague-week-cell.rest { border-color: #8791a6; backg
 html[data-theme="dark"] .colleague-week-cell.absence { border-color: #cf7688; background: #eea3b1; color: #4a1420; }
 html[data-theme="dark"] .colleague-week-cell.partial { border-color: #9a7fcc; background: #c4affa; color: #2c1a4d; }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
+/* Accueil : les repères du jour, fondus dans le fond sombre. */
+html[data-theme="dark"] .today-overview-grid > :is(article, button) + :is(article, button)::before { background: #3a322d; }
+html[data-theme="dark"] .today-overview-grid .today-card-copy > :is(span, strong) { color: #f1e8de; }
+html[data-theme="dark"] .today-overview-grid .today-card-icon { background: color-mix(in srgb, var(--row-ink) 28%, transparent); color: color-mix(in srgb, var(--row-ink) 55%, #fff); }
+html[data-theme="dark"] .today-overview-grid > .today-status .today-card-copy > strong { color: color-mix(in srgb, var(--row-ink) 55%, #fff); }

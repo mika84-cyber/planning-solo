@@ -293,35 +293,20 @@
 .grand-palais-program-summary { display: grid; gap: 10px; margin-top: 12px; }
 .grand-palais-program-summary > article { display: grid; align-content: start; gap: 4px; min-width: 0; border: 1px solid var(--venue-line, var(--border-soft)); border-left: 4px solid var(--venue-accent, var(--accent)); border-radius: 14px; padding: 10px 12px; background: var(--venue-bg, var(--surface-soft)); }
 .grand-palais-program-summary strong { color: var(--text); font-family: var(--font-display); font-size: 1.04rem; font-weight: 600; line-height: 1.25; }
-.grand-palais-summary-none { color: var(--muted); }
-.grand-palais-summary-venues { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
-.grand-palais-summary-venues .useful-expo-venue { margin-bottom: 0; font-size: 0.62rem; }
 
 /* « Ouvert aujourd'hui » : un repère vivant, vert comme l'état « En cours »
-   des cartes, avec le nombre en grand et les salles juste à côté. */
-.grand-palais-program-summary > article.grand-palais-summary-open {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
-  gap: 8px 14px;
-  border: 1px solid #b9dcc6;
-  border-radius: 16px;
-  padding: 12px 14px;
-  background: linear-gradient(135deg, #eef8f1 0%, #e1f1e7 100%);
-  box-shadow: 0 3px 10px rgba(47, 138, 91, .08);
-}
+   des cartes, avec chaque galerie ouverte à sa couleur. */
+.grand-palais-program-summary > article.grand-palais-summary-open { display: grid; gap: 10px; border: 1px solid #b9dcc6; border-radius: 16px; padding: 12px 14px; background: linear-gradient(135deg, #eef8f1 0%, #e1f1e7 100%); box-shadow: 0 3px 10px rgba(47, 138, 91, .08); }
 .grand-palais-summary-open[data-open="false"] { border-color: var(--border-soft); background: var(--surface-soft); box-shadow: none; }
-.grand-palais-summary-live { display: inline-flex; grid-column: 1 / -1; align-items: center; gap: 7px; color: #226946; font-size: .66rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.grand-palais-summary-open > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.grand-palais-summary-live { display: inline-flex; align-items: center; gap: 7px; color: #226946; font-size: .7rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .grand-palais-summary-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--live-dot, #2f8a5b); box-shadow: 0 0 0 3px rgba(47, 138, 91, .2); }
 .grand-palais-summary-open[data-open="false"] .grand-palais-summary-live { color: var(--muted); --live-dot: #a39686; }
-.grand-palais-program-summary .grand-palais-summary-count { display: inline-flex; align-items: baseline; gap: 6px; color: #1d4d35; }
-/* Le nombre dans la police du texte, net et appuyé. */
-.grand-palais-program-summary .grand-palais-summary-count { font-family: system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif; }
-.grand-palais-summary-count b { font-size: 1.9rem; font-weight: 850; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; }
-.grand-palais-summary-count span { font-size: .9rem; font-weight: 750; }
-.grand-palais-summary-open[data-venues="many"] .grand-palais-summary-venues { grid-column: 1 / -1; } /* > 2 espaces : sous le nombre */
-@media (max-width: 380px) {
-  .grand-palais-program-summary > article.grand-palais-summary-open { grid-template-columns: minmax(0, 1fr); }
-}
+.grand-palais-program-summary .grand-palais-summary-count { color: #1d4d35; font-size: .8rem; font-weight: 800; }
+.grand-palais-summary-open[data-open="false"] .grand-palais-summary-count { color: var(--muted); }
+.grand-palais-summary-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.grand-palais-summary-list li { display: grid; gap: 1px; border-radius: 10px; padding: 7px 10px; background: rgba(255, 255, 255, .72); }
+.grand-palais-summary-list strong { color: var(--venue-accent); font-family: system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif; font-size: .9rem; font-weight: 800; line-height: 1.25; }
 
 .useful-expo-timeline article a {
   display: inline-flex;

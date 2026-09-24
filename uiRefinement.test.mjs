@@ -144,8 +144,6 @@ describe("finitions d’interface", () => {
   });
 
   it("organise les cartes et commandes du planning pour le téléphone", () => {
-    expect(styles).toContain('"today next"');
-    expect(styles).toContain('"leave remaining"');
     expect(styles).not.toContain("today-group-card");
     expect(styles).toContain(".controls .worked-days { grid-column: 1");
     expect(styles).toContain(".controls .planning-group-choice { grid-column: 2");
@@ -170,9 +168,13 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("left: 0");
   });
 
-  it("compacte les quatre cartes mobiles sans icônes", () => {
-    expect(styles).toContain("grid-auto-rows: 84px");
-    expect(styles).toContain(".today-overview-grid .today-card-icon { display: none !important; }");
+  it("présente les quatre repères du jour en une fiche de quatre lignes", () => {
+    const refinements = readFileSync(new URL("./src/productRefinements.css", import.meta.url), "utf8");
+    // Un seul bloc décrit désormais ces cartes : les anciennes règles,
+    // centrées ou en grille 2 × 2, ne doivent pas revenir.
+    expect(styles).not.toContain(".today-overview-grid");
+    expect(refinements).toContain('grid-template-areas: "icon label value chev" "icon note value chev";');
+    expect(refinements).toContain(".today-overview-grid > .today-status { --row-ink");
     expect(app).toContain("Congés restants");
   });
 
@@ -726,7 +728,6 @@ describe("finitions d’interface", () => {
     expect(app).toContain("remainingWorkedDaysThisYear");
     expect(app).toContain('className="today-remaining-work"');
     expect(app).toContain("D’ici au 31 décembre");
-    expect(styles).toContain('grid-template-areas: "today next" "leave remaining";');
   });
 
   it("réserve l’œuvre bleue à l’en-tête Congés et récupérations", () => {

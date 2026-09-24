@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "reac
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { matchesSearch } from "./searchMatching";
-import { GRAND_PALAIS_KNOWN_PRICES, GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
+import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 import type {
   GrandPalaisProgramData,
   GrandPalaisProgramEntry,
@@ -109,7 +109,7 @@ export function mergeSharedGrandPalaisProgram(
     const knownPrices = Object.values(merged)
       .flatMap((venue) => Object.values(venue.schedule).flatMap((entries) => entries ?? []))
       .find((entry) => entry.prices?.length && (entry.officialUrl === officialUrl || entry.title.toLowerCase() === shared.title.toLowerCase()))
-      ?.prices ?? GRAND_PALAIS_KNOWN_PRICES[officialUrl.split(/[?#]/)[0].replace(/\/$/, "")];
+      ?.prices;
     for (const venue of Object.values(merged))
       for (const year of Object.keys(venue.schedule))
         venue.schedule[Number(year)] = (venue.schedule[Number(year)] ?? []).filter((entry) =>
@@ -598,8 +598,8 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
     .sort((left, right) =>
       currentVenueRank(left.venueKey) - currentVenueRank(right.venueKey) ||
       (left.entry.endsOn ?? "9999").localeCompare(right.entry.endsOn ?? "9999"));
-  // Un espace ouvert n'apparaît qu'une fois dans l'en-tête, même s'il
-  // accueille plusieurs expositions.
+  // Une galerie n'apparaît qu'une fois dans l'en-tête, même si elle accueille
+  // plusieurs expositions.
   const openVenues = currentEntries.filter((item, index) =>
     currentEntries.findIndex((other) => other.venueKey === item.venueKey) === index);
   const upcomingEntries = allEntries
@@ -685,36 +685,27 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           {/* Deux repères, chacun à la couleur de son espace : ce qui est
               ouvert maintenant, et ce qui ouvre ensuite. */}
           <div className="grand-palais-program-summary">
-            {/* Au-delà de deux espaces, les pastilles passent sous le nombre
-                plutôt que de s'entasser à sa droite. */}
-            <article
-              className="grand-palais-summary-open"
-              data-open={currentEntries.length > 0}
-              data-venues={openVenues.length > 2 ? "many" : "few"}
-            >
-              <span className="grand-palais-summary-live">
-                <i aria-hidden="true" />
-                Ouvert aujourd’hui
-              </span>
+            {/* Les galeries ouvertes aujourd'hui, chacune à sa couleur ; le
+                détail des expositions est juste dessous, dans « En ce moment ». */}
+            <article className="grand-palais-summary-open" data-open={currentEntries.length > 0}>
+              <header>
+                <span className="grand-palais-summary-live">
+                  <i aria-hidden="true" />
+                  Ouvert aujourd’hui
+                </span>
+                <span className="grand-palais-summary-count">
+                  {currentEntries.length ? `${currentEntries.length} exposition${currentEntries.length > 1 ? "s" : ""}` : "Aucune exposition"}
+                </span>
+              </header>
               {currentEntries.length ? (
-                <>
-                  <strong className="grand-palais-summary-count">
-                    <b>{currentEntries.length}</b>
-                    <span>exposition{currentEntries.length > 1 ? "s" : ""}</span>
-                  </strong>
-                  <div className="grand-palais-summary-venues">
-                    {openVenues.map(({ venueKey, venueLabel }) => (
-                      <span
-                        key={venueKey}
-                        className="useful-expo-venue"
-                        style={grandPalaisVenueStyle(venueKey)}
-                      >
-                        {venueLabel}
-                      </span>
-                    ))}
-                  </div>
-                </>
-              ) : <strong className="grand-palais-summary-none">Aucune</strong>}
+                <ul className="grand-palais-summary-list">
+                  {openVenues.map(({ venueKey, venueLabel }) => (
+                    <li key={venueKey} style={grandPalaisVenueStyle(venueKey)}>
+                      <strong>{venueLabel}</strong>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </article>
           </div>
         </div>

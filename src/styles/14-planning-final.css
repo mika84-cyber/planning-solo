@@ -970,11 +970,6 @@
   color: #9fe2ea;
 }
 
-.today-status.tone-exchange {
-  border-color: #5eb6c4;
-  background: linear-gradient(145deg, #effbfc, #c4e9ed);
-}
-
 /* Le repère d'échange se tient dans le coin supérieur droit de la case,
    assez petit pour ne pas concurrencer la date. */
 .exchange-calendar-marker {

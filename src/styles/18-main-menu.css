@@ -43,15 +43,23 @@
   -webkit-backdrop-filter: blur(8px);
 }
 .main-menu-section-label { margin: 10px 10px 7px; color: #f1d3b3; font-size: .64rem; font-weight: 900; letter-spacing: .14em; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); text-transform: uppercase; }
+/* Deux listes, les pages puis les outils : un seul panneau presque opaque
+   par liste, les rubriques séparées par un filet. L'œuvre reste visible
+   autour, sans multiplier les encarts. */
 .main-menu-drawer .main-menu-pages,
 .main-menu-drawer .main-menu-secondary {
   display: grid;
-  gap: 6px;
+  gap: 0;
   justify-items: stretch;
+  overflow: hidden;
   margin: 0;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
   padding: 0;
-  background: none;
+  background: rgba(24, 19, 15, 0.86);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 .main-menu-drawer .main-menu-pages > button,
 .main-menu-drawer .main-menu-secondary > button {
@@ -61,27 +69,23 @@
   gap: 13px;
   width: 100%;
   min-height: 62px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 16px;
-  padding: 9px 11px;
-  /* Chaque rubrique est un encart presque opaque, séparé du suivant par un
-     petit espace : on lit sans effort, et l'œuvre transparaît à peine
-     derrière tout en restant visible entre les encarts. */
-  background: rgba(24, 19, 15, 0.86);
+  border: 0;
+  border-radius: 0;
+  padding: 10px 12px;
+  background: transparent;
   color: #fff;
   text-align: left;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+  box-shadow: none;
   cursor: pointer;
   transition: background .15s ease;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
 }
+.main-menu-drawer :is(.main-menu-pages, .main-menu-secondary) > button + button { border-top: 1px solid rgba(255, 255, 255, 0.09); }
 /* Les outils se détachent nettement des pages. */
-.main-menu-drawer .main-menu-pages + .main-menu-section-label { margin-top: 30px; }
+.main-menu-drawer .main-menu-pages + .main-menu-section-label { margin-top: 22px; }
 .main-menu-drawer .main-menu-pages > button:hover,
-.main-menu-drawer .main-menu-secondary > button:hover { background: rgba(38, 30, 24, 0.9); }
-.main-menu-drawer .main-menu-pages > button.active { border-color: rgba(241, 211, 179, 0.5); background: rgba(58, 44, 35, 0.9); box-shadow: inset 3px 0 0 #f1d3b3, 0 8px 20px rgba(0, 0, 0, 0.24); }
+.main-menu-drawer .main-menu-secondary > button:hover { background: rgba(255, 255, 255, 0.06); }
+.main-menu-drawer .main-menu-pages > button.active { background: rgba(255, 255, 255, 0.09); box-shadow: inset 3px 0 0 #f1d3b3; }
 .main-menu-index { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; background: rgba(255, 255, 255, 0.1); color: #f4d7b8; }
 .main-menu-drawer button.active .main-menu-index { border-color: transparent; background: var(--accent); color: #fff; }
 .main-menu-copy { display: grid; gap: 3px; min-width: 0; }

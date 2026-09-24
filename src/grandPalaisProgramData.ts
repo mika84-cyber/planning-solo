@@ -259,17 +259,3 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
     },
   },
 };
-
-/** Tarifs relevés sur les fiches officielles, par adresse de fiche. Ils
- *  servent tant que l'événement enregistré n'en porte pas : une annonce
- *  acceptée avant la publication de ses tarifs les affiche quand même. */
-export const GRAND_PALAIS_KNOWN_PRICES: Record<string, GrandPalaisPrice[]> = {
-  "https://www.grandpalais.fr/fr/programme/rebecca-saunders-ensemble-intercontemporain-chroma-i-xxiv-2003-26": [
-    { label: "Plein", amount: 25 },
-    { label: "Réduit", amount: 15 },
-    { label: "Réduit jeune", amount: 10 },
-  ],
-  "https://www.grandpalais.fr/fr/programme/fete-de-la-science-2026": [
-    { label: "Accès", amount: 0 },
-  ],
-};

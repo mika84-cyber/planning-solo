@@ -94,18 +94,8 @@
   border: 1px solid var(--border-card);
 }
 .leave-request-archive .request-archive-toggle { width: 100%; }
-
-@media (max-width: 1000px) {
-  .today-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 720px) {
   .main-menu-button { display: grid !important; flex-basis: 42px; border-radius: 13px; }
-  .today-overview-grid .today-leave-balance {
-    text-align: center;
-  }
-  .today-overview-grid .today-leave-balance .today-card-copy {
-    align-items: center;
-  }
   .home-notes-section,
   .home-planning-heading { margin-top: 14px; padding: 17px; border-radius: 20px; }
   .home-content-heading { align-items: flex-start; }
@@ -757,10 +747,6 @@
 /* Ajustements de lisibilité demandés sur la version de contrôle. */
 .auth-splash-image,
 .auth-shell-image { object-position: 50% 50%; }
-
-.today-overview-grid { align-items: stretch; }
-.today-overview-grid > article,
-.today-overview-grid > button { height: 100%; }
 
 .planning-group-choice .choice-picker-trigger,
 .worked-days-trigger {

@@ -137,6 +137,7 @@ export function HomeDashboard({
             {groupActionLabel}
           </button>
         </div>
+        {/* Une fiche de quatre lignes : libellé à gauche, valeur à droite. */}
         <div className="today-overview-grid">
           <article className={`today-status tone-${today.tone}`}>
             <span className="today-card-icon" aria-hidden="true">
@@ -176,14 +177,14 @@ export function HomeDashboard({
           >
             <span className="today-card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
-                <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                <path d="M8 13h8M8 17h5" />
+                {/* Le même soleil sur la mer que la rubrique Congés du dock. */}
+                <path d="M12 3.5v1.5M5.6 6.6l1.1 1.1M18.4 6.6l-1.1 1.1M3 13h2m14 0h2M8 13a4 4 0 0 1 8 0M3 17.5c1.5 0 1.5 1 3 1s1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1" />
               </svg>
             </span>
             <span className="today-card-copy">
-              <span>Congés restants :</span>
-              <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jours à poser</strong>
-              <small>Voir le détail des soldes</small>
+              <span>Congés restants</span>
+              <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jour{Math.abs(totalLeaveRemaining) > 1 ? "s" : ""}</strong>
+              <small>à poser</small>
             </span>
           </button>
           <article className="today-remaining-work">

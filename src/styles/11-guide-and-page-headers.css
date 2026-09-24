@@ -56,32 +56,6 @@
 .allowance-card { overflow: visible; }
 
 @media (max-width: 720px) {
-  .today-overview-grid {
-    grid-auto-rows: 84px;
-  }
-  .today-overview-grid > article,
-  .today-overview-grid > button,
-  .today-overview-grid > .today-status,
-  .today-overview-grid > .today-next-work,
-  .today-overview-grid > .today-leave-balance {
-    min-height: 0 !important;
-    height: 84px;
-    padding: 8px;
-  }
-  .today-overview-grid .today-card-icon { display: none !important; }
-  .today-overview-grid > article,
-  .today-overview-grid > button { grid-template-columns: minmax(0, 1fr); }
-  .today-overview-grid .today-card-copy {
-    place-content: center;
-    justify-items: center;
-    height: 100%;
-    text-align: center;
-  }
-  .today-overview-grid .today-card-copy > span,
-  .today-overview-grid .today-card-copy > strong,
-  .today-overview-grid .today-card-copy > small { text-align: center; }
-  .today-overview-grid strong { white-space: normal; }
-  .today-overview-grid small { font-size: 9px; white-space: normal; }
   .planning-group-choice .choice-picker-trigger,
   .worked-days-trigger {
     justify-content: center;
@@ -916,8 +890,6 @@
 .month-card,
 .request-panel,
 .request-option-group,
-.today-overview-grid > article,
-.today-overview-grid > button,
 .leave-balance-grid button {
   border-width: 1.5px;
   border-color: var(--border-card);

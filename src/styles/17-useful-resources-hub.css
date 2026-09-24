@@ -344,8 +344,6 @@
   border: 1px solid var(--border-card);
 }
 
-.today-overview-grid > article,
-.today-overview-grid > button,
 .allowance-overview-grid > :is(article, button) {
   border-width: 1px;
 }
@@ -365,3 +363,14 @@
   background: #fff;
   box-shadow: none;
 }
+
+/* Rubrique ouverte : les trois onglets deviennent un sélecteur segmenté,
+   comme les vues des expositions. Seul l'onglet choisi est coloré ; plus de
+   mention « Ouvrir / Ouvert », qui redisait la même chose. */
+.has-active-resource .useful-resource-tabs { gap: 3px; border: 1px solid var(--section-outline); border-radius: 16px; padding: 4px; background: #f4ede4; box-shadow: inset 0 1px 2px rgba(44, 38, 33, .06); }
+.has-active-resource .useful-resource-tab { grid-template-rows: 44px; min-height: 44px; border: 0; border-radius: 12px; background: transparent; box-shadow: none; transform: none; }
+.has-active-resource .useful-resource-tab:hover:not([aria-selected="true"]) { background: rgba(255, 255, 255, .7); }
+.has-active-resource .useful-resource-tab-copy { place-content: center; border: 0; border-radius: 12px; padding: 0 4px; background: transparent; }
+.has-active-resource .useful-resource-tab-copy strong { color: var(--muted); font-family: inherit; font-size: clamp(.8rem, 3.4vw, .9rem); font-weight: 700; white-space: nowrap; }
+.has-active-resource .useful-resource-tab[aria-selected="true"] { background: var(--accent); box-shadow: 0 2px 6px rgba(143, 72, 45, .28); }
+.has-active-resource .useful-resource-tab[aria-selected="true"] .useful-resource-tab-copy strong { color: #fff; }

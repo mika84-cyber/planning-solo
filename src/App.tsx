@@ -2710,8 +2710,12 @@ export default function Home() {
           )}
           onChooseGroup={() => setGroupChooserOpen(true)}
           onOpenNextWork={(date) => {
+            // Le prochain jour travaillé s'ouvre directement sur sa fiche,
+            // dans son mois : changer seulement de mois ne montrait rien quand
+            // ce mois était déjà affiché.
             setHomeSection("home");
-                    setView(localDate(date.getFullYear(), date.getMonth(), 1));
+            setView(localDate(date.getFullYear(), date.getMonth(), 1));
+            openDay(date);
           }}
           onOpenLeave={() => setHomeSection("leave")}
           onAddNote={beginQuickNote}

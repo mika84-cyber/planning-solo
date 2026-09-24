@@ -267,14 +267,14 @@ test("les expositions basculent automatiquement à 00h05 heure de Paris", async 
 
 test("les cartes intérieures restent légères avec des bordures visibles et une ombre douce", async ({ page }, testInfo) => {
   await prepareDemo(page);
-  const card = page.locator('.today-next-work');
-  // Les quatre cases de « En un coup d'œil » partagent un blanc cassé chaud
-  // et un liseré sombre très léger qui les détachent de leur carte.
-  await expect(card).toHaveCSS('background-color', 'rgb(251, 246, 239)');
-  await expect(card).toHaveCSS('background-image', 'none');
-  await expect(card).toHaveCSS('border-top-color', await cssToken(page, '--border-control'));
-  await expect(card).toHaveCSS('border-top-width', '1px');
-  await expect(card).not.toHaveCSS('box-shadow', 'none');
+  const card = page.locator('.today-overview-grid');
+  // « En un coup d'œil » : quatre lignes posées dans la carte, sans cadre
+  // supplémentaire, séparées par un filet léger.
+  await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(card).toHaveCSS('border-top-width', '0px');
+  // Le filet entre deux lignes commence après l'icône ; la première n'en a pas.
+  expect(await page.locator('.today-next-work').evaluate((node) => getComputedStyle(node, '::before').backgroundColor)).toBe(await cssTokenRgb(page, '--border-soft'));
+  expect(await page.locator('.today-status').evaluate((node) => getComputedStyle(node, '::before').content)).toBe('none');
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
   await goToSection(page, "pay");
@@ -309,7 +309,6 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   };
 
   await expectWhiteCard(".today-overview", accentSpine(page));
-  await expect(page.locator(".today-overview-grid > article").first()).toHaveCSS("border-top-width", "1px");
   await openMainMenu(page);
   await expect(page.getByRole("heading", { name: "Menu principal" })).toBeVisible();
   // La mise à jour a quitté le menu : elle vit dans l'en-tête. La page
@@ -891,8 +890,9 @@ test("les documents et contacts gardent trois onglets accessibles sur petit écr
   await page.getByRole("tab", { name: "Formulaires" }).click();
   await expect(page.getByRole("tabpanel", { name: "Formulaires" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Toutes les rubriques" })).toBeVisible();
-  const compactTabColors = await cards.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
-  expect(new Set(compactTabColors).size).toBe(3);
+  // Rubrique ouverte : un sélecteur segmenté, seul l'onglet choisi est coloré.
+  await expect(page.getByRole("tab", { name: "Formulaires" })).toHaveCSS("background-color", await cssTokenRgb(page, "--accent"));
+  await expect(page.getByRole("tab", { name: "Contacts" })).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(await page.locator(".has-active-resource .useful-resource-tab-art").evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).display === "none"))).toBe(true);
   await expect(page.locator(".useful-form-folder-grid > button i")).toHaveCount(0);
   await page.getByRole("button", { name: /Formulaire Expo/ }).click();
@@ -975,6 +975,9 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(colleagueIllustration).toHaveCSS("object-fit", "contain");
   // Le panda occupe l'espace libre de l'en-tête, sans décalage qui le ferait chevaucher le titre.
   expect(await colleagueIllustration.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).f)).toBe(0);
+  // La page s'ouvre sur la semaine ; on passe à la vue d'un jour.
+  await expect(page.locator(".colleague-week-table")).toBeVisible();
+  await page.locator(".colleague-board-mode").getByRole("button", { name: "Jour", exact: true }).click();
   const tomorrowPreview = page.locator(".colleague-tomorrow-table");
   await expect(page.locator(".colleague-tomorrow-heading").getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-2 th")).toHaveCSS("background-color", "rgb(255, 243, 227)");
@@ -1053,6 +1056,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
   // « Qui travaille ? » ouvre la page, avant les réglages et l'annuaire.
   const dayBoard = page.locator(".colleague-day-board");
+  await dayBoard.getByRole("button", { name: "Jour", exact: true }).click();
   await expect(dayBoard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(dayBoard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
   expect((await dayBoard.boundingBox())!.y).toBeLessThan((await page.locator(".colleague-how-it-works").boundingBox())!.y);
@@ -2949,11 +2953,11 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(nextWorkBox).not.toBeNull();
     expect(leaveBox).not.toBeNull();
     expect(remainingBox).not.toBeNull();
-    expect(Math.abs(statusBox!.y - nextWorkBox!.y)).toBeLessThanOrEqual(2);
-    expect(Math.abs(leaveBox!.y - remainingBox!.y)).toBeLessThanOrEqual(2);
-    expect(leaveBox!.y).toBeGreaterThan(statusBox!.y + statusBox!.height);
-    expect(Math.abs(statusBox!.width - nextWorkBox!.width)).toBeLessThanOrEqual(2);
-    expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
+    // Une fiche de quatre lignes empilées, toutes de la même largeur.
+    expect(nextWorkBox!.y).toBeGreaterThanOrEqual(statusBox!.y + statusBox!.height - 1);
+    expect(leaveBox!.y).toBeGreaterThanOrEqual(nextWorkBox!.y + nextWorkBox!.height - 1);
+    expect(remainingBox!.y).toBeGreaterThanOrEqual(leaveBox!.y + leaveBox!.height - 1);
+    expect(Math.abs(statusBox!.width - remainingBox!.width)).toBeLessThanOrEqual(2);
   }
   if (viewportWidth <= 720) {
     await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", accentSpine(page));
@@ -3228,10 +3232,9 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   ]);
     // Le mois et l’année forment un couple centré, le mois juste avant l’année.
     expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
-    expect(Math.abs(foldStatusBox!.y - foldNextWorkBox!.y)).toBeLessThanOrEqual(2);
-    expect(Math.abs(foldLeaveBox!.y - foldRemainingBox!.y)).toBeLessThanOrEqual(2);
-    expect(foldLeaveBox!.y).toBeGreaterThan(foldStatusBox!.y + foldStatusBox!.height);
-    expect(Math.abs(foldStatusBox!.width - foldNextWorkBox!.width)).toBeLessThanOrEqual(2);
+    expect(foldNextWorkBox!.y).toBeGreaterThanOrEqual(foldStatusBox!.y + foldStatusBox!.height - 1);
+    expect(foldRemainingBox!.y).toBeGreaterThanOrEqual(foldLeaveBox!.y + foldLeaveBox!.height - 1);
+    expect(Math.abs(foldStatusBox!.width - foldRemainingBox!.width)).toBeLessThanOrEqual(2);
   }).toPass({ timeout: 10_000 });
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");

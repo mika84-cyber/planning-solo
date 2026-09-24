@@ -1004,21 +1004,6 @@
     font-size: 11px;
   }
 
-  .today-overview-grid { gap: 8px; }
-
-  .today-overview-grid > article,
-  .today-overview-grid > button {
-    min-height: 88px;
-    border-radius: 14px;
-    padding: 10px 8px;
-    box-shadow: 0 3px 9px rgba(87, 78, 66, 0.045);
-  }
-
-  .today-overview-grid .today-card-copy { gap: 4px; }
-  .today-overview-grid .today-card-copy > span { font-size: 8.5px; }
-  .today-overview-grid strong { font-size: 12px; }
-  .today-overview-grid .today-card-copy small { font-size: 9px; }
-
   .important-alert {
     grid-template-columns: 25px minmax(0, 1fr);
     gap: 8px;

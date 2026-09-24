@@ -17,9 +17,16 @@ export type PayScreen = "overview" | "allowances" | "payslip";
 
 function NavigationIcon({ section }: { section: MainSection | "more" | "feedback" | "update" | "data" | "install" | "guide" | "holidays" }) {
   const paths: Record<string, string> = {
-    home: "M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z", leave: "M7 3v3m10-3v3M4 9h16M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2z",
-    pay: "M4 7h16v12H4zM7 4h10v3M7 12h5m-5 4h9", pdf: "M6 3h9l4 4v14H6zM14 3v5h5M9 13h6m-6 4h6",
-    forms: "M4 5h7l2 2h7v12H4z", program: "M4 20V8l8-5 8 5v12M8 20v-7h8v7", colleagues: "M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm8-1a3 3 0 1 0 0-6m-14 16c0-4 3-7 6-7s6 3 6 7m1-7c3 0 6 3 6 7",
+    // Chaque rubrique a une image qui se comprend seule : une maison, un
+    // coucher de soleil sur la mer pour les congés, une pièce en euros pour la
+    // paie, une feuille écrite, un musée à colonnes, deux personnes.
+    home: "M3 10.5 12 3l9 7.5M5.5 8.8V21h4.5v-6h4v6h4.5V8.8",
+    leave: "M12 3.5v1.5M5.6 6.6l1.1 1.1M18.4 6.6l-1.1 1.1M3 13h2m14 0h2M8 13a4 4 0 0 1 8 0M3 17.5c1.5 0 1.5 1 3 1s1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1",
+    pay: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM15.5 8.8a4 4 0 1 0 0 6.4M7.5 10.8h6M7.5 13.2h6",
+    pdf: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 12.5h6M9 16.5h6",
+    forms: "M4 5h7l2 2h7v12H4z",
+    program: "M2.5 9.5 12 3.5l9.5 6M4 9.5h16M5.5 12v6.5m4.33-6.5v6.5m4.34-6.5v6.5m4.33-6.5v6.5M3 21h18",
+    colleagues: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2.5 21v-.5a6.5 6.5 0 0 1 13 0v.5M16 3.2a4 4 0 0 1 0 7.6M21.5 21v-.5a6.5 6.5 0 0 0-4-6",
     guide: "M5 4h9l5 5v11H5zM14 4v5h5M8 12h7M8 16h5",
     holidays: "M7 3v3m10-3v3M4 9h16M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2zM8 14h3v3H8z",
     more: "M12 5v14M5 12h14", feedback: "M4 5h16v12H8l-4 4z", update: "M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7", data: "M5 4h14v16H5zM8 8h8M8 12h8M8 16h5", install: "M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3",
