@@ -238,7 +238,7 @@ describe("date helpers", () => {
   });
 
   it("affiche le prochain jour travaillé au format court", () => {
-    expect(compactWeekdayDate(localDate(2026, 7, 26))).toBe("mercredi 26/08/26");
+    expect(compactWeekdayDate(localDate(2026, 7, 26))).toBe("Mer 26/08/26");
   });
 });
 

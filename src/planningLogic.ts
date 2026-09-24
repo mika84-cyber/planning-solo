@@ -361,10 +361,11 @@ export function longDate(date: Date) {
   }).format(date);
 }
 
+const SHORT_WEEKDAYS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+/** « Ven 25/09/26 » : le jour abrégé tient sur une ligne, même sur téléphone. */
 export function compactWeekdayDate(date: Date) {
-  const weekday = new Intl.DateTimeFormat("fr-FR", {
-    weekday: "long",
-  }).format(date);
+  const weekday = SHORT_WEEKDAYS[date.getDay()];
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = String(date.getFullYear()).slice(-2);
