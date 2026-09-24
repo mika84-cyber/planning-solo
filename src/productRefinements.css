@@ -401,4 +401,9 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .today-overview-grid > .today-status.tone-training { --row-ink: #7a5e08; --row-soft: #f8efcb; }
 .today-overview-grid > .today-status:is(.tone-leave, .tone-recovery) { --row-ink: #9a2c40; --row-soft: #fbe3e8; }
 .today-overview-grid > .today-status.tone-exchange { --row-ink: #1f6f7b; --row-soft: #dff4f6; }
-.today-overview-grid > .today-status .today-card-copy > strong { color: var(--row-ink); }
+/* La ligne du jour ressort : un fond léger à sa couleur, qui déborde un peu
+   sur les côtés pour garder icônes et valeurs alignées sur les autres lignes. */
+.today-overview-grid > .today-status { margin: 0 -10px 4px; padding: 9px 12px; background: color-mix(in srgb, var(--row-soft) 70%, #fff); }
+.today-overview-grid > .today-status .today-card-icon { background: #fff; }
+.today-overview-grid > .today-status + :is(article, button)::before { display: none; }
+.today-overview-grid > .today-status .today-card-copy > strong { color: var(--row-ink); font-size: 16px; font-weight: 800; }

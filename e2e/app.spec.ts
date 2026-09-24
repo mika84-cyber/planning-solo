@@ -2957,7 +2957,8 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(nextWorkBox!.y).toBeGreaterThanOrEqual(statusBox!.y + statusBox!.height - 1);
     expect(leaveBox!.y).toBeGreaterThanOrEqual(nextWorkBox!.y + nextWorkBox!.height - 1);
     expect(remainingBox!.y).toBeGreaterThanOrEqual(leaveBox!.y + leaveBox!.height - 1);
-    expect(Math.abs(statusBox!.width - remainingBox!.width)).toBeLessThanOrEqual(2);
+    // La ligne du jour déborde de 10 px de chaque côté pour son fond coloré.
+    expect(Math.abs(statusBox!.width - remainingBox!.width - 20)).toBeLessThanOrEqual(2);
   }
   if (viewportWidth <= 720) {
     await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", accentSpine(page));
@@ -3234,7 +3235,7 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
     expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
     expect(foldNextWorkBox!.y).toBeGreaterThanOrEqual(foldStatusBox!.y + foldStatusBox!.height - 1);
     expect(foldRemainingBox!.y).toBeGreaterThanOrEqual(foldLeaveBox!.y + foldLeaveBox!.height - 1);
-    expect(Math.abs(foldStatusBox!.width - foldRemainingBox!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(foldStatusBox!.width - foldRemainingBox!.width - 20)).toBeLessThanOrEqual(2);
   }).toPass({ timeout: 10_000 });
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
