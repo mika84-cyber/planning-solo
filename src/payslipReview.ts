@@ -28,6 +28,8 @@ const PAYSLIP_GAP_EXPLANATIONS: Record<string, string> = {
   "meal-vouchers": "Le nombre de titres-repas réellement prélevés peut différer selon les absences et le calendrier de traitement.",
   "pas-rate": "Le taux de prélèvement à la source appliqué par l’employeur peut avoir été actualisé par l’administration fiscale.",
   sundays: "Un dimanche peut être payé le mois suivant en raison du délai de traitement.",
+  holidays: "Un férié travaillé est payé le mois suivant, parfois en rappel (« R ») : vérifiez le mois du férié et la compensation choisie (prime seule, ou prime et récupération).",
+  "sunday-flat": "Le forfait mensuel des dimanches est fixe : un écart signale un rappel, une retenue ou un changement de barème.",
   carence: "Un jour de carence apparaît sur le bulletin alors qu’aucun arrêt maladie correspondant n’est enregistré dans l’application.",
 };
 

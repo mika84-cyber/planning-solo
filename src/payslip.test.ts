@@ -188,7 +188,25 @@ describe("lecture d'un bulletin", () => {
       baseSalary: undefined,
       ifse: undefined,
       sundaysBeyondTen: 0,
+      holidayPay: 0,
     });
+  });
+
+  it("lit le férié travaillé, rappels compris, et le forfait des dimanches", () => {
+    // Bulletin de septembre 2026 : férié d'août payé en rappel, montant seul
+    // sur la ligne ; forfait des dimanches avec assiette puis montant.
+    const septembre2026 = [
+      "11.14", "453.07", "Indem trav j férié ac public", "262.05", "8/2026", "R",
+      "1.00", "454.02", "Indem trav dominical régulier", "89.59", "89.59",
+      "1.00", "636.83", "ICHCSG", "17.94", "17.94",
+    ];
+    const reading = readPayslip(septembre2026);
+    expect(reading.holidayPay).toBe(262.05);
+    expect(reading.sundayFlat).toBe(89.59);
+    // Un rappel groupé s'écrit autrement : « FERIES DES 08 ET 24 MAI 2026 ».
+    expect(readPayslip(juin2026).holidayPay).toBe(524.1);
+    // Deux fériés sur le même bulletin s'additionnent.
+    expect(readPayslip([...septembre2026, "453.07", "Indem trav j férié ac public", "131.03"]).holidayPay).toBe(393.08);
   });
 
   it("ignore un libellé suivi d'autre chose qu'un nombre", () => {

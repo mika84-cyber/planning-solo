@@ -391,6 +391,23 @@ export function buildPayContent({
               tolerance: 0.01,
             }]
           : []),
+        // Le férié travaillé le mois précédent, payé sur ce bulletin.
+        ...(monthPay.holidayCount || (payslipCheck.reading.holidayPay ?? 0) > 0
+          ? [{
+              key: "holidays",
+              label: "Jours fériés travaillés",
+              found: payslipCheck.reading.holidayPay,
+              expected: monthPay.holiday,
+            }]
+          : []),
+        ...(payslipCheck.reading.sundayFlat !== undefined
+          ? [{
+              key: "sunday-flat",
+              label: "Forfait des dimanches",
+              found: payslipCheck.reading.sundayFlat,
+              expected: SUNDAY_ALLOWANCE.monthlyFlat,
+            }]
+          : []),
         {
           key: "sundays",
           label: "Dimanches payés",

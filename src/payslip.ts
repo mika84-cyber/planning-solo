@@ -48,6 +48,12 @@ export type PayslipReading = {
    *  premier jour d'un arrêt, et dit donc sur quelle paie cet arrêt a été
    *  retenu. Au format « AAAA-MM-JJ », sans doublon. */
   carenceDates?: string[];
+  /** Lignes « Indem trav j férié ac public » : les jours fériés travaillés
+   *  payés sur ce bulletin, rappels compris (« 8/2026 R »), additionnés. */
+  holidayPay?: number;
+  /** Ligne « Indem trav dominical régulier » : le forfait mensuel des
+   *  dimanches, versé chaque mois. */
+  sundayFlat?: number;
   /** Ligne « PAS - Taux » : le taux lui-même, pas une assiette — une seule
    *  valeur suit le libellé, contrairement aux lignes de cotisation. */
   pasRate?: number;
@@ -286,6 +292,25 @@ function sumAmountsAfterPrefix(
   return Math.round(values.reduce((sum, value) => sum + value, 0) * 100) / 100;
 }
 
+/** Le montant payé d'une ligne : le dernier nombre qui suit son libellé.
+ *  Selon la ligne, le bulletin écrit le montant seul (« 262.05 8/2026 R »)
+ *  ou l'assiette puis le montant (« 89.59 89.59 »). Toutes les lignes qui
+ *  commencent par le même libellé sont additionnées : un rappel en ajoute. */
+function sumLineAmounts(tokens: string[], matches: (label: string) => boolean): number | undefined {
+  const values = tokens.flatMap((token, index) => {
+    if (!matches(token)) return [];
+    const numbers: number[] = [];
+    for (let next = index + 1; next < tokens.length && numbers.length < 2; next++) {
+      const value = parseAmount(tokens[next]);
+      if (value === undefined) break;
+      numbers.push(value);
+    }
+    return numbers.length ? [numbers[numbers.length - 1]] : [];
+  });
+  if (!values.length) return undefined;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) * 100) / 100;
+}
+
 function normalizedLabel(value: string) {
   return value
     .normalize("NFD")
@@ -489,6 +514,12 @@ function readSundaysBeyondTen(tokens: string[]): number {
   return Math.round(amount / SUNDAY_RATE);
 }
 
+/** Le férié travaillé s'écrit « Indem trav j férié ac public » ou, pour un
+ *  rappel groupé, « FERIES DES 08 ET 24 MAI 2026 ». */
+function isHolidayLine(label: string) {
+  return /^(INDEM TRAV J FERIE|FERIES? D)/.test(normalizedLabel(label));
+}
+
 export function readPayslip(tokens: string[]): PayslipReading {
   return {
     gross: amountAfter(tokens, "CUMUL BRUT"),
@@ -507,6 +538,9 @@ export function readPayslip(tokens: string[]): PayslipReading {
       tokens.filter((token) => token.trim().startsWith("Jour de carence")),
     ),
     pasRate: amountAfter(tokens, "PAS - Taux"),
+    // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
+    holidayPay: sumLineAmounts(tokens, isHolidayLine) ?? 0,
+    sundayFlat: sumLineAmounts(tokens, (label) => normalizedLabel(label).startsWith("INDEM TRAV DOMINICAL REGULIER")),
     otherFixed: readOtherFixed(tokens),
     ...readPeriod(tokens),
   };
