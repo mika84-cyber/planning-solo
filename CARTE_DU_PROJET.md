@@ -153,6 +153,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 - `src/useAnnualPdfExport.ts` : chargement différé de l'export PDF.
 - `src/planningPdf.ts` : génération des documents.
+- `src/jspdfUnusedModule.ts` et l'alias de `vite.config.ts` : html2canvas,
+  DOMPurify et canvg, optionnels dans jsPDF, ne sont pas livrés ; les méthodes
+  `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
 - `public/sw.js` : cache hors ligne et activation des mises à jour.
 - `public/manifest.webmanifest` : installation de la PWA.
 - `scripts/check-bundle-budget.mjs` : plafonds CI du JavaScript, du CSS et des

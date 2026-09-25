@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { USEFUL_CONTACTS_DATA } from "./netlify/lib/usefulContactsData.mts";
@@ -17,6 +18,15 @@ export default defineConfig({
       },
     },
   ],
+  resolve: {
+    // Modules optionnels de jsPDF jamais utilisés : voir src/jspdfUnusedModule.ts.
+    alias: Object.fromEntries(
+      ["html2canvas", "dompurify", "canvg"].map((name) => [
+        name,
+        fileURLToPath(new URL("./src/jspdfUnusedModule.ts", import.meta.url)),
+      ]),
+    ),
+  },
   // Uniquement pour les liens de démo Cloudflare créés depuis le PC : Vite
   // refuse sinon le nom d'hôte externe avant même de servir l'application.
   server: { allowedHosts: [".trycloudflare.com"] },

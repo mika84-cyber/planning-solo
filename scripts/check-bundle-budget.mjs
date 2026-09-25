@@ -38,7 +38,13 @@ const budgets = {
   // paie qui les porte, demi-journées de RTT et de fractionnement. Le
   // contrôle du bulletin a quitté le démarrage pour se charger avec Ma paie,
   // ce qui ramène le chargement initial sous son plafond.
-  totalJavaScript: { raw: 2_690 * KIB, gzip: 850 * KIB },
+  // Abaissé le 25 septembre 2026, de 2 690 / 850 Kio à 2 350 / 760 Kio. Le
+  // total gzip dépassait de 0,5 Kio après la programmation GP et l'accueil ;
+  // plutôt que de relever encore, html2canvas, DOMPurify et canvg ne sont
+  // plus livrés (voir src/jspdfUnusedModule.ts) : ces modules optionnels de
+  // jsPDF, jamais téléchargés, pesaient 103 Kio compressés. Mesure validée :
+  // 2 309,5 / 747,7 Kio. Le chargement initial ne change pas.
+  totalJavaScript: { raw: 2_350 * KIB, gzip: 760 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
