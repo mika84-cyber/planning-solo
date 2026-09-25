@@ -9,6 +9,7 @@ import {
   extractGrandPalaisProgramPageLinks,
   isGrandPalaisProposalRelevant,
   isPriceOnlyChange,
+  sendGrandPalaisAlertEmail,
   syncGrandPalaisPrices,
 } from "./grandPalaisMonitor.mts";
 
@@ -124,6 +125,27 @@ describe("surveillance de la programmation du Grand Palais", () => {
     const synced = syncGrandPalaisPrices([accepted], [], [seen]);
     expect(synced.changed).toBe(true);
     expect(synced.approved[0]).toMatchObject({ details: "Étienne Daho", prices: [{ label: "À partir de", amount: 45 }] });
+  });
+
+  it("annonce l’artiste et le tarif dans l’e-mail d’alerte", async () => {
+    let sent = "";
+    const fetcher = async (_url: unknown, init?: RequestInit) => {
+      sent = String(init?.body ?? "");
+      return new Response("{}", { status: 200 });
+    };
+    await sendGrandPalaisAlertEmail([{
+      id: "p",
+      kind: "new",
+      detectedAt: "2026-09-24T22:05:00.000Z",
+      next: {
+        id: "c", title: "COLLECTOR 2027", details: "Étienne Daho", startDate: "2027-01-15", endDate: "2027-01-15",
+        url: "https://www.grandpalais.fr/fr/programme/collector-2027", venueKey: "nef", venueLabel: "Nef",
+        prices: [{ label: "À partir de", amount: 45 }],
+      },
+    }], { RESEND_API_KEY: "k", PROGRAM_ADMIN_EMAIL: "a@example.test", PROGRAM_ALERT_FROM: "b@example.test" }, fetcher as typeof fetch);
+    const html = JSON.parse(sent).html as string;
+    expect(html).toContain("COLLECTOR 2027 · Étienne Daho — Nef");
+    expect(html).toContain("— À partir de 45 €");
   });
 
   it("extrait les dates, le titre et la galerie depuis une fiche", () => {

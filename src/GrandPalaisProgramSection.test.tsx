@@ -17,6 +17,7 @@ import {
   isGrandPalaisEntryVisible,
   mergeSharedGrandPalaisProgram,
   otherGrandPalaisVenueKeys,
+  proposalPricesLabel,
   safeGrandPalaisUrl,
 } from "./GrandPalaisProgramSection";
 
@@ -252,6 +253,30 @@ describe("programmation du Grand Palais", () => {
       startsOn: "2026-08-31",
       endsOn: "2026-09-23",
     }));
+  });
+
+  it("affiche l’artiste et le prix d’appel d’un concert, cas de COLLECTOR 2027", () => {
+    const collector = {
+      id: "collector",
+      title: "COLLECTOR 2027",
+      details: "Étienne Daho",
+      startDate: "2027-01-15",
+      endDate: "2027-01-15",
+      url: "https://www.grandpalais.fr/fr/programme/collector-2027",
+      venueKey: "nef",
+      venueLabel: "Nef",
+      prices: [{ label: "À partir de", amount: 45 }],
+    };
+    const updated = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [collector]);
+    expect(updated.nef.schedule[2027]).toContainEqual(expect.objectContaining({
+      title: "COLLECTOR 2027",
+      details: "Étienne Daho",
+      prices: [{ label: "À partir de", amount: 45 }],
+    }));
+    // La proposition encore en attente annonce aussi son tarif.
+    expect(proposalPricesLabel(collector.prices)).toBe("À partir de 45 €");
+    expect(proposalPricesLabel([{ label: "Plein", amount: 19 }, { label: "Réduit", amount: 16 }])).toBe("Plein 19 € · Réduit 16 €");
+    expect(proposalPricesLabel([{ label: "Accès", amount: 0 }])).toBe("Gratuit");
   });
 
   it("ajoute un nouvel espace accepté dans Autres et respecte un retrait validé", () => {

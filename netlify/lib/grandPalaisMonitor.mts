@@ -590,7 +590,15 @@ export async function sendGrandPalaisAlertEmail(
     const event = proposal.next ?? proposal.previous;
     if (!event) throw new Error("Proposition Grand Palais incomplète");
     const label = event.venueKey === "exceptional-closure" ? "Fermeture complète détectée" : labels[proposal.kind];
-    return `<li><strong>${label} :</strong> ${escapeHtml(event.title)} — ${escapeHtml(event.venueLabel)} (${escapeHtml(event.startDate)} au ${escapeHtml(event.endDate)})</li>`;
+    // L'artiste et le tarif relevés accompagnent le titre : « COLLECTOR 2027
+    // · Étienne Daho », « À partir de 45 € ».
+    const details = event.details ? ` · ${escapeHtml(event.details)}` : "";
+    const prices = event.prices?.length
+      ? ` — ${event.prices.map((price) => price.amount === 0
+        ? "Gratuit"
+        : `${escapeHtml(price.label)} ${price.amount.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`).join(" · ")}`
+      : "";
+    return `<li><strong>${label} :</strong> ${escapeHtml(event.title)}${details} — ${escapeHtml(event.venueLabel)} (${escapeHtml(event.startDate)} au ${escapeHtml(event.endDate)})${prices}</li>`;
   }).join("");
   return sendPlanningEmail(
     `${proposals.length} changement${proposals.length > 1 ? "s" : ""} dans la programmation du Grand Palais`,

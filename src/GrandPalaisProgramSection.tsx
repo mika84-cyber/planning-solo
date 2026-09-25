@@ -11,6 +11,7 @@ import type {
 } from "./grandPalaisProgramData";
 import type {
   BoundaryReport,
+  GrandPalaisPrice,
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
   SharedGrandPalaisEvent,
@@ -403,6 +404,14 @@ export function priceLabel(value: number) {
   return `${value.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`;
 }
 
+/** Les tarifs d'une proposition sur une ligne : « À partir de 45 € »,
+ *  « Plein 19 € · Réduit 16 € », « Gratuit ». */
+export function proposalPricesLabel(prices: GrandPalaisPrice[]) {
+  return prices
+    .map((price) => price.amount === 0 ? "Gratuit" : `${price.label} ${priceLabel(price.amount)}`)
+    .join(" · ");
+}
+
 /** Une exposition : la salle, le titre, la période et le temps restant. Une
  *  exposition ouverte montre en plus où elle en est. */
 function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel }: {
@@ -740,7 +749,9 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                   <strong>{event.title}{event.details ? ` · ${event.details}` : ""}</strong>
                   <span>{event.startDate === event.endDate
                     ? `Date officielle : ${formatFrenchDate(event.startDate)}`
-                    : `Du ${formatFrenchDate(event.startDate)} au ${formatFrenchDate(event.endDate)}`}</span>
+                    : `Du ${formatFrenchDate(event.startDate)} au ${formatFrenchDate(event.endDate)}`}
+                    {/* Le tarif relevé se lit dès la proposition, avant l'accord. */}
+                    {event.prices?.length ? ` · ${proposalPricesLabel(event.prices)}` : ""}</span>
                   <div>
                     <button type="button" disabled={reviewBusy === proposal.id} onClick={() => void reviewProposal(proposal, "accept")}>Accepter</button>
                     <button type="button" disabled={reviewBusy === proposal.id} onClick={() => void reviewProposal(proposal, "ignore")}>Ignorer</button>
@@ -860,7 +871,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
               return (
                 <article key={`${period.startsOn}-${period.endsOn}`} data-status={detail.status}>
                   {/* La durée d'abord, en grand : c'est ce qu'on cherche d'un coup d'œil. */}
-                  <p className="grand-palais-interexpo-duration" aria-label={`${detail.durationDays} jours de fermeture`}>
+                  <p className="grand-palais-interexpo-duration" role="img" aria-label={`${detail.durationDays} jours de fermeture`}>
                     <b aria-hidden="true">{detail.durationDays}</b>
                     <span aria-hidden="true">jours</span>
                   </p>
