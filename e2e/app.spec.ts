@@ -1229,6 +1229,20 @@ test("l’aide au partage reste dépliée, puis les réglages s’ouvrent depuis
   await expect(identity).toContainText("Votre nom dans l’annuaire");
   await expect(identity).toContainText("Mika");
   await expect(identity.locator(".colleague-identity-status")).toHaveText("Visible");
+  // La pastille « Visible » est aussi l'interrupteur : elle masque le nom de
+  // l'annuaire, puis le rend de nouveau visible.
+  page.once("dialog", (dialog) => {
+    expect(dialog.message()).toContain("Masquer votre nom dans l’annuaire");
+    dialog.accept();
+  });
+  await identity.getByRole("button", { name: "Visible dans l’annuaire : masquer mon nom" }).click();
+  await expect(identity.locator(".colleague-identity-status")).toHaveText("Masqué");
+  page.once("dialog", (dialog) => {
+    expect(dialog.message()).toContain("Rendre « Mika » visible dans l’annuaire");
+    dialog.accept();
+  });
+  await identity.getByRole("button", { name: "Masqué dans l’annuaire : afficher mon nom" }).click();
+  await expect(identity.locator(".colleague-identity-status")).toHaveText("Visible");
   await expect(page.locator(".colleague-settings-disclosure")).toHaveCount(0);
   await expect(page.locator(".colleague-profile-card")).toHaveCount(0);
   const edit = page.getByRole("button", { name: "Modifier mon nom dans l’annuaire" });

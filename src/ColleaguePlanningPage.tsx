@@ -609,10 +609,24 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
               <small>Votre nom dans l’annuaire</small>
               <span className="colleague-identity-name">
                 <strong>{directoryName || "Nom à choisir"}</strong>
-                {data ? <span className={`colleague-identity-status${data.self.visible ? " is-visible" : ""}`}>
+                {/* La pastille est aussi l'interrupteur : un clic masque votre nom
+                    de l'annuaire, un autre le rend de nouveau visible. */}
+                {data ? <button
+                  type="button"
+                  className={`colleague-identity-status${data.self.visible ? " is-visible" : ""}`}
+                  disabled={busy || directoryName.length < 2}
+                  aria-label={data.self.visible ? "Visible dans l’annuaire : masquer mon nom" : "Masqué dans l’annuaire : afficher mon nom"}
+                  title={data.self.visible ? "Masquer mon nom dans l’annuaire" : "Afficher mon nom dans l’annuaire"}
+                  onClick={() => confirmMutation(
+                    data.self.visible
+                      ? "Masquer votre nom dans l’annuaire ? Vos collègues ne pourront plus vous trouver."
+                      : `Rendre « ${directoryName} » visible dans l’annuaire ?`,
+                    { action: "set-profile", displayName: directoryName, visible: !data.self.visible },
+                  )}
+                >
                   {data.self.visible ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg> : null}
                   {data.self.visible ? "Visible" : "Masqué"}
-                </span> : null}
+                </button> : null}
               </span>
             </span>
             {/* Une fois inscrit, les réglages s'ouvrent d'ici ; avant, ils sont

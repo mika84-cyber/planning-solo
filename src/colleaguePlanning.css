@@ -457,6 +457,11 @@
 .colleague-identity-status { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 9px; background: #eee7de; color: #5b5044; font-size: .72rem; font-weight: 800; }
 .colleague-identity-status.is-visible { background: #e3f3e9; color: #1d6b45; }
 .colleague-identity-status svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+/* La pastille est un bouton : elle garde sa forme de pastille (sans le style
+   plein des boutons de la page) et se cerne au survol. */
+.colleague-sharing-page button.colleague-identity-status { min-height: 30px; border: 1px solid transparent; padding: 3px 10px; background: #eee7de; color: #5b5044; font: inherit; font-size: .74rem; font-weight: 800; cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+.colleague-sharing-page button.colleague-identity-status.is-visible { background: #e3f3e9; color: #1d6b45; }
+.colleague-sharing-page button.colleague-identity-status:hover:not(:disabled) { border-color: currentColor; }
 .colleague-sharing-page button.colleague-identity-edit { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 14px 0 12px; background: #fff; color: var(--accent-strong); font-size: .82rem; font-weight: 850; }
 .colleague-sharing-page button.colleague-identity-edit:hover { background: var(--accent-soft); }
 .colleague-identity-edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
