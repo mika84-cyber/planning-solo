@@ -3257,12 +3257,12 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   ]);
     // Le mois et l’année forment un couple centré, le mois juste avant l’année.
     expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
-    // Déplié, le Fold prend la disposition d'ordinateur : quatre cartes de
-    // même largeur côte à côte, la journée en premier.
-    expect(foldNextWorkBox!.x).toBeGreaterThanOrEqual(foldStatusBox!.x + foldStatusBox!.width - 1);
-    expect(foldLeaveBox!.x).toBeGreaterThanOrEqual(foldNextWorkBox!.x + foldNextWorkBox!.width - 1);
-    expect(foldRemainingBox!.x).toBeGreaterThanOrEqual(foldLeaveBox!.x + foldLeaveBox!.width - 1);
-    expect(Math.abs(foldNextWorkBox!.width - foldRemainingBox!.width)).toBeLessThanOrEqual(2);
+    // Déplié, le Fold garde les quatre lignes empilées du téléphone, de
+    // même largeur, la journée en premier.
+    expect(foldNextWorkBox!.y).toBeGreaterThanOrEqual(foldStatusBox!.y + foldStatusBox!.height - 1);
+    expect(foldLeaveBox!.y).toBeGreaterThanOrEqual(foldNextWorkBox!.y + foldNextWorkBox!.height - 1);
+    expect(foldRemainingBox!.y).toBeGreaterThanOrEqual(foldLeaveBox!.y + foldLeaveBox!.height - 1);
+    expect(Math.abs(foldStatusBox!.width - foldRemainingBox!.width)).toBeLessThanOrEqual(2);
   }).toPass({ timeout: 10_000 });
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");

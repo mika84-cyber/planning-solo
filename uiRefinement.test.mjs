@@ -176,8 +176,10 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain(".today-overview-grid");
     expect(refinements).not.toContain(".today-overview-grid");
     expect(home).not.toContain("ephemeris");
-    // Quatre lignes sur téléphone, quatre cartes côte à côte sur ordinateur.
+    // Quatre lignes sur téléphone et sur le Z Fold ouvert (tactile, jusqu'à
+    // 1100 px), quatre cartes côte à côte sur grand écran.
     expect(overview).toContain('grid-template-areas: "icon label value go" "icon note value go";');
+    expect(overview).toContain("@media (min-width: 1101px), (min-width: 721px) and (pointer: fine) {");
     expect(overview).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
     // La journée garde le même format que les autres lignes : sa couleur
     // n'est que sur l'icône et le libellé, sans fond coloré ni pastille.
