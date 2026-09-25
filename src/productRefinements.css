@@ -375,5 +375,5 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 
 
 /* Accueil, « En un coup d'œil » : l'encadré rogne ce qui dépasse, pour que
-   le corps de la carte (src/homeEphemeris.css) suive son coin arrondi. */
+   le corps de la carte (src/homeOverview.css) suive son coin arrondi. */
 .app-shell .today-overview { row-gap: 0; overflow: clip; }
