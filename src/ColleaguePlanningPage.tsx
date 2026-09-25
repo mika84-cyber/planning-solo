@@ -592,10 +592,11 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const settingsCards = <>{howItWorksCard}{profileCard}</>;
   // Le nom sous lequel les collègues vous trouvent, lisible dès l'arrivée.
   const directoryName = data?.self.displayName || name.trim();
+  const boardVisible = Boolean(data?.self.visible && received.length);
   const directoryCount = data?.directory.length || 0;
 
   return (
-    <section className="colleague-sharing-page">
+    <section className={`colleague-sharing-page${boardVisible ? " has-board" : ""}`}>
       {error ? <p className="colleague-error" role="alert">{error}</p> : null}
 
       <header className="colleague-sharing-intro colleague-share-disclosure">
@@ -626,7 +627,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
       </header>
 
       {/* Ce qui sert chaque jour vient en premier : qui travaille, jour par jour. */}
-      {data?.self.visible && received.length ? <section className="colleague-card colleague-tomorrow colleague-day-board" aria-labelledby="colleague-tomorrow-title">
+      {boardVisible ? <section className="colleague-card colleague-tomorrow colleague-day-board" aria-labelledby="colleague-tomorrow-title">
         <header className="colleague-tomorrow-heading">
           <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">{boardMode === "day" ? colleagueBoardTitle(boardOffset) : colleagueWeekTitle(weekOffset)}</h4></div>
           <div className="colleague-day-steps">
@@ -642,22 +643,14 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
         {/* Un jour pour savoir qui est là ; une semaine pour préparer un échange.
             À droite, la composition des trois groupes s'ouvre dans une fenêtre. */}
         <div className="colleague-board-toolbar">
-          {/* Une pastille glisse d'un choix à l'autre ; l'icône montre un jour
-              seul ou toute une rangée de la semaine. */}
+          {/* Une pastille glisse d'un choix à l'autre. */}
           <div className="colleague-board-mode" role="group" aria-label="Affichage" data-mode={boardMode}>
-            <button type="button" className={boardMode === "day" ? "active" : ""} aria-pressed={boardMode === "day"} onClick={() => setBoardMode("day")}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 8.5h16M5.5 5h13A1.5 1.5 0 0 1 20 6.5v12a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-12A1.5 1.5 0 0 1 5.5 5Z" /><rect x="10" y="12" width="4" height="4" rx="1" /></svg>
-              Jour
-            </button>
-            <button type="button" className={boardMode === "week" ? "active" : ""} aria-pressed={boardMode === "week"} onClick={() => setBoardMode("week")}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 8.5h16M5.5 5h13A1.5 1.5 0 0 1 20 6.5v12a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-12A1.5 1.5 0 0 1 5.5 5Z" /><rect x="7" y="12" width="10" height="4" rx="1" /></svg>
-              Semaine
-            </button>
+            <button type="button" className={boardMode === "day" ? "active" : ""} aria-pressed={boardMode === "day"} onClick={() => setBoardMode("day")}>Jour</button>
+            <button type="button" className={boardMode === "week" ? "active" : ""} aria-pressed={boardMode === "week"} onClick={() => setBoardMode("week")}>Semaine</button>
           </div>
           <button className="colleague-groups-open" type="button" aria-haspopup="dialog" aria-label="Détails des 3 groupes" onClick={() => setGroupsOpen(true)}>
+            <span>Groupes</span>
             <span className="colleague-groups-open-badges" aria-hidden="true"><b className="group-1">1</b><b className="group-2">2</b><b className="group-3">3</b></span>
-            <span className="colleague-groups-open-long">Détails des 3 groupes</span>
-            <span className="colleague-groups-open-short">Groupes</span>
           </button>
         </div>
         {groupsOpen ? <ColleagueGroupsDialog
@@ -717,6 +710,9 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
 
       {/* À la première visite, ou tant qu'on n'est pas inscrit, l'aide et le
           profil restent dépliés, juste sous ce qui sert chaque jour. */}
+      {/* Sur grand écran, ce qui accompagne le tableau forme une colonne à sa
+          droite ; ailleurs, cette colonne s'efface et tout reste empilé. */}
+      <div className="colleague-side">
       {settingsCollapsed ? null : settingsCards}
 
       <button className="colleague-card colleague-share-open" type="button" aria-haspopup="dialog" onClick={() => setShareOpen(true)}>
@@ -745,11 +741,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
       </section>
 
       {/* Sans le tableau « Qui travaille ? », les groupes restent ici. */}
-      {!demoMode && !(data?.self.visible && received.length) ? <section className="colleague-card colleague-more-list" aria-label="Équipe">
+      {!demoMode && !boardVisible ? <section className="colleague-card colleague-more-list" aria-label="Équipe">
         <ColleagueGroupsDirectory groups={data?.groups} isAdmin={isAdmin} />
       </section> : null}
 
       {data?.blocked.length ? <section className="colleague-card"><p className="eyebrow">Noms bloqués</p><h3>Gérer mes blocages</h3><p>Ces personnes ne peuvent pas vous trouver ni vous envoyer leur planning.</p><div className="colleague-list">{data.blocked.map((person) => <div key={person.userId}><strong>{person.displayName}</strong><button className="secondary" type="button" disabled={busy} onClick={() => confirmMutation(`Débloquer ${person.displayName} ?`, { action: "unblock-person", userId: person.userId })}>Débloquer</button></div>)}</div></section> : null}
+      </div>
 
       {settingsOpen ? <ColleagueDialog id="colleague-settings-title" eyebrow="Partage privé" title="Réglages du partage" className="colleague-settings-dialog" onClose={() => setSettingsOpen(false)}>
         {error ? <p className="colleague-error" role="alert">{error}</p> : null}

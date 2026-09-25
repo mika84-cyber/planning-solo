@@ -1080,7 +1080,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await dayBoard.getByRole("button", { name: "Jour", exact: true }).click();
   await expect(dayBoard.getByRole("heading", { name: /^Qui travaille demain \? \([a-zéû]+ \d{2}\/\d{2}\)$/ })).toBeVisible();
   await expect(dayBoard.locator(".colleague-tomorrow-heading small")).toHaveCount(0);
-  expect((await dayBoard.boundingBox())!.y).toBeLessThan((await page.locator(".colleague-how-it-works").boundingBox())!.y);
+  // Sur grand écran, l'aide ouvre la colonne à droite du tableau, à la même hauteur.
+  expect((await dayBoard.boundingBox())!.y).toBeLessThanOrEqual((await page.locator(".colleague-how-it-works").boundingBox())!.y + 1);
   const tomorrowTable = dayBoard.locator(".colleague-tomorrow-table");
   await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Formation|Repos|Absence|1\/2 journée|Absence partielle)/);
   await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toContainText("Groupe 2");
@@ -1193,7 +1194,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  // « Partager mon planning » puis les plannings reçus s'empilent sur toute la largeur.
+  // « Partager mon planning » puis les plannings reçus s'empilent, de même largeur.
   const [shareWideBox, receivedWideBox] = await Promise.all([
     page.locator(".colleague-share-open").boundingBox(),
     page.locator(".colleague-received-card").boundingBox(),
@@ -1239,12 +1240,18 @@ test("l’aide au partage reste dépliée, puis les réglages s’ouvrent depuis
   await page.keyboard.press("Escape");
   await expect(settings).toHaveCount(0);
   await expect(edit).toBeFocused();
-  // Le tableau précède « Partager mon planning » ; l'ancienne liste repliée a disparu.
+  // Le tableau précède « Partager mon planning » : dessous sur téléphone, à
+  // sa droite sur grand écran ; l'ancienne liste repliée a disparu.
   const [boardBox, shareBox] = await Promise.all([
     page.locator(".colleague-day-board").boundingBox(),
     page.locator(".colleague-share-open").boundingBox(),
   ]);
-  expect(shareBox!.y).toBeGreaterThan(boardBox!.y + boardBox!.height);
+  if ((page.viewportSize()?.width || 0) >= 1100) {
+    expect(shareBox!.x).toBeGreaterThan(boardBox!.x + boardBox!.width);
+    expect(Math.abs(shareBox!.y - boardBox!.y)).toBeLessThanOrEqual(1);
+  } else {
+    expect(shareBox!.y).toBeGreaterThan(boardBox!.y + boardBox!.height);
+  }
   await expect(page.locator(".colleague-more-list")).toHaveCount(0);
 });
 
@@ -4754,8 +4761,10 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
     open.boundingBox(),
     page.locator(".colleague-day-board").boundingBox(),
   ]);
-  // Sur la même ligne que Jour / Semaine, calé à droite du tableau.
-  expect(Math.abs(modeBox!.y - openBox!.y)).toBeLessThanOrEqual(2);
+  // Sur la même ligne que Jour / Semaine (centrés l'un sur l'autre), calé à
+  // droite du tableau : un encadré « Groupes » au-dessus des pastilles 1, 2, 3.
+  expect(Math.abs(modeBox!.y + modeBox!.height / 2 - (openBox!.y + openBox!.height / 2))).toBeLessThanOrEqual(2);
+  await expect(open).toHaveText(/Groupes\s*123/);
   expect(openBox!.x).toBeGreaterThan(modeBox!.x + modeBox!.width);
   expect(boardBox!.x + boardBox!.width - (openBox!.x + openBox!.width)).toBeLessThanOrEqual(24);
   // L'ancien volet dépliable n'est plus en bas de page.

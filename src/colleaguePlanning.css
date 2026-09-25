@@ -352,45 +352,27 @@
 /* Jour/Semaine et aujourd'hui suivent la couleur d'accent des autres sélecteurs ;
    seules les flèches gardent le violet de la navigation, comme dans le planning. */
 .colleague-sharing-page .colleague-board-mode button.active { background: var(--accent); color: #fff; }
-/* Jour / Semaine : sur un rail crème, une pastille terracotta glisse d'un
-   choix à l'autre ; chaque choix porte son icône, un jour seul ou toute une
-   rangée de la semaine. */
+/* Jour / Semaine : une bascule compacte sur un rail crème, dont la pastille
+   terracotta glisse d'un choix à l'autre. */
 .colleague-sharing-page .colleague-board-mode { position: relative; isolation: isolate; background: #f6efe8; }
 .colleague-board-mode::before { position: absolute; z-index: -1; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 10px) / 2); border-radius: 999px; background: var(--accent); box-shadow: 0 2px 7px rgba(131, 69, 44, .28); content: ""; transition: transform .22s ease; }
 .colleague-board-mode[data-mode="week"]::before { transform: translateX(calc(100% + 4px)); }
-.colleague-sharing-page .colleague-board-mode button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: #6f6455; transition: color .2s ease; }
+.colleague-sharing-page .colleague-board-mode button { min-width: 68px; min-height: 30px; padding: 0 12px; color: #6f6455; font-size: .78rem; transition: color .2s ease; }
 .colleague-sharing-page .colleague-board-mode button.active { background: transparent; color: #fff; }
 .colleague-sharing-page .colleague-board-mode button:not(.active):hover { color: var(--text); }
-.colleague-board-mode svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.colleague-board-mode svg rect { fill: currentColor; stroke: none; }
 @media (prefers-reduced-motion: reduce) { .colleague-board-mode::before { transition: none; } }
-/* Sur les téléphones les plus étroits, les icônes s'effacent pour que le
-   bouton des groupes reste sur la même ligne. */
-@media (max-width: 400px) { .colleague-board-mode svg { display: none; } }
-/* Jour / Semaine à gauche, la composition des trois groupes à droite, sur
-   la même ligne. Le bouton porte les trois pastilles numérotées du tableau ;
-   sur téléphone, son texte se raccourcit en « Groupes ». */
+/* Jour / Semaine à gauche ; à droite, un encadré carré : « Groupes » en haut,
+   les trois pastilles numérotées du tableau en dessous. Il ouvre la
+   composition des groupes. */
 .colleague-board-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 12px; }
 .colleague-board-toolbar .colleague-board-mode { margin: 0; }
-.colleague-sharing-page button.colleague-groups-open { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; margin-left: auto; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 16px 0 8px; background: #fff; color: var(--accent-strong); font: inherit; font-size: .82rem; font-weight: 850; box-shadow: none; cursor: pointer; }
+.colleague-sharing-page button.colleague-groups-open { display: grid; justify-items: center; align-content: center; gap: 5px; min-height: 0; margin-left: auto; border: 1px solid var(--border-control); border-radius: 14px; padding: 10px 9px; background: #fff; color: var(--accent-strong); font: inherit; font-size: .76rem; font-weight: 850; line-height: 1.1; box-shadow: none; cursor: pointer; }
 .colleague-sharing-page button.colleague-groups-open:hover { background: var(--accent-soft); }
-.colleague-groups-open-badges { display: inline-flex; }
-.colleague-groups-open-badges b { display: grid; place-items: center; width: 24px; height: 24px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(32, 56, 75, .16); color: #fff; font-size: .7rem; font-weight: 900; line-height: 1; }
-.colleague-groups-open-badges b + b { margin-left: -7px; }
+.colleague-groups-open-badges { display: flex; gap: 2px; }
+.colleague-groups-open-badges b { display: grid; place-items: center; width: 21px; height: 21px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(32, 56, 75, .16); color: #fff; font-size: .64rem; font-weight: 900; line-height: 1; }
 .colleague-groups-open-badges .group-1 { background: #b8644e; }
 .colleague-groups-open-badges .group-2 { background: #c47d3f; }
 .colleague-groups-open-badges .group-3 { background: #5f8f52; }
-.colleague-groups-open-short { display: none; }
-@media (max-width: 520px) {
-  .colleague-groups-open-long { display: none; }
-  .colleague-groups-open-short { display: inline; }
-}
-/* Sur les téléphones, un peu moins de marge pour tenir sur une ligne. */
-@media (max-width: 420px) {
-  .colleague-board-toolbar { gap: 6px; }
-  .colleague-sharing-page button.colleague-groups-open { gap: 6px; padding: 0 12px 0 7px; }
-  .colleague-sharing-page .colleague-board-mode button { min-width: 74px; padding: 0 10px; }
-}
 
 /* Vue semaine : une ligne par personne, sept cases lettrées. Tient sur un
    téléphone sans défiler ; défile au besoin sur les écrans les plus étroits. */
@@ -499,3 +481,21 @@
 .colleague-dialog .colleague-card { margin: 0; box-shadow: none; }
 .colleague-share-dialog .colleague-share-content { margin-top: 0; border-top: 0; padding-top: 0; }
 .colleague-share-dialog .colleague-share-content > h3 { margin-top: 0; }
+
+/* Grand écran : le tableau à gauche, sur l'essentiel de la largeur ; le
+   partage et les plannings reçus forment une colonne à sa droite. Sur
+   téléphone et sur le Z Fold ouvert, cette colonne s'efface et tout reste
+   empilé sous le tableau. */
+.colleague-side { display: contents; }
+.colleague-side > * { min-width: 0; }
+@media (min-width: 1100px) {
+  .colleague-sharing-page.has-board { grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); align-items: start; }
+  .colleague-sharing-page.has-board > * { grid-column: 1 / -1; }
+  .colleague-sharing-page.has-board > .colleague-day-board { grid-column: 1; }
+  .colleague-sharing-page.has-board > .colleague-side { display: grid; grid-column: 2; gap: 18px; align-content: start; }
+  /* Dans cette colonne étroite, un planning reçu garde sa présentation de
+     téléphone : les boutons passent sous le nom. */
+  .colleague-side .colleague-received-card .colleague-list > div.colleague-received-person { grid-template-columns: 38px minmax(0, 1fr); }
+  .colleague-side .colleague-received-person .colleague-inline-actions { grid-column: 1 / -1; width: 100%; }
+  .colleague-side .colleague-received-person .colleague-inline-actions button { flex: 1; min-height: 40px; padding: 8px; font-size: .82rem; white-space: nowrap; }
+}
