@@ -1105,6 +1105,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const weekTable = dayBoard.locator(".colleague-week-table");
   await expect(weekTable.locator("thead th")).toHaveCount(8);
   await expect(weekTable.locator("thead th.is-today")).toHaveCount(1);
+  // Le chiffre du jour reste blanc sur son rond terracotta, même un week-end.
+  await expect(weekTable.locator("thead th.is-today b")).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(weekTable.locator("tbody th[scope=row]")).toHaveText(["Mika", "Agnès"]);
   await expect(weekTable.locator("tbody .colleague-week-cell")).toHaveCount(14);
   expect(await dayBoard.locator(".colleague-week-shell").evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);

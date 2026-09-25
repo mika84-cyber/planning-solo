@@ -352,22 +352,44 @@
 /* Jour/Semaine et aujourd'hui suivent la couleur d'accent des autres sélecteurs ;
    seules les flèches gardent le violet de la navigation, comme dans le planning. */
 .colleague-sharing-page .colleague-board-mode button.active { background: var(--accent); color: #fff; }
+/* Jour / Semaine : sur un rail crème, une pastille terracotta glisse d'un
+   choix à l'autre ; chaque choix porte son icône, un jour seul ou toute une
+   rangée de la semaine. */
+.colleague-sharing-page .colleague-board-mode { position: relative; isolation: isolate; background: #f6efe8; }
+.colleague-board-mode::before { position: absolute; z-index: -1; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 10px) / 2); border-radius: 999px; background: var(--accent); box-shadow: 0 2px 7px rgba(131, 69, 44, .28); content: ""; transition: transform .22s ease; }
+.colleague-board-mode[data-mode="week"]::before { transform: translateX(calc(100% + 4px)); }
+.colleague-sharing-page .colleague-board-mode button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: #6f6455; transition: color .2s ease; }
+.colleague-sharing-page .colleague-board-mode button.active { background: transparent; color: #fff; }
+.colleague-sharing-page .colleague-board-mode button:not(.active):hover { color: var(--text); }
+.colleague-board-mode svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.colleague-board-mode svg rect { fill: currentColor; stroke: none; }
+@media (prefers-reduced-motion: reduce) { .colleague-board-mode::before { transition: none; } }
+/* Sur les téléphones les plus étroits, les icônes s'effacent pour que le
+   bouton des groupes reste sur la même ligne. */
+@media (max-width: 400px) { .colleague-board-mode svg { display: none; } }
 /* Jour / Semaine à gauche, la composition des trois groupes à droite, sur
-   la même ligne. Sur téléphone, le bouton se raccourcit en « 3 groupes ». */
+   la même ligne. Le bouton porte les trois pastilles numérotées du tableau ;
+   sur téléphone, son texte se raccourcit en « Groupes ». */
 .colleague-board-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 12px; }
 .colleague-board-toolbar .colleague-board-mode { margin: 0; }
-.colleague-sharing-page button.colleague-groups-open { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; margin-left: auto; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 16px 0 13px; background: #fff; color: var(--accent-strong); font: inherit; font-size: .82rem; font-weight: 850; box-shadow: none; cursor: pointer; }
+.colleague-sharing-page button.colleague-groups-open { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; margin-left: auto; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 16px 0 8px; background: #fff; color: var(--accent-strong); font: inherit; font-size: .82rem; font-weight: 850; box-shadow: none; cursor: pointer; }
 .colleague-sharing-page button.colleague-groups-open:hover { background: var(--accent-soft); }
-.colleague-groups-open svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.colleague-groups-open-badges { display: inline-flex; }
+.colleague-groups-open-badges b { display: grid; place-items: center; width: 24px; height: 24px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(32, 56, 75, .16); color: #fff; font-size: .7rem; font-weight: 900; line-height: 1; }
+.colleague-groups-open-badges b + b { margin-left: -7px; }
+.colleague-groups-open-badges .group-1 { background: #b8644e; }
+.colleague-groups-open-badges .group-2 { background: #c47d3f; }
+.colleague-groups-open-badges .group-3 { background: #5f8f52; }
 .colleague-groups-open-short { display: none; }
 @media (max-width: 520px) {
   .colleague-groups-open-long { display: none; }
   .colleague-groups-open-short { display: inline; }
 }
-/* Sur les petits téléphones, un peu moins de marge pour tenir sur une ligne. */
-@media (max-width: 380px) {
+/* Sur les téléphones, un peu moins de marge pour tenir sur une ligne. */
+@media (max-width: 420px) {
   .colleague-board-toolbar { gap: 6px; }
-  .colleague-sharing-page button.colleague-groups-open { gap: 5px; padding: 0 12px 0 10px; }
+  .colleague-sharing-page button.colleague-groups-open { gap: 6px; padding: 0 12px 0 7px; }
+  .colleague-sharing-page .colleague-board-mode button { min-width: 74px; padding: 0 10px; }
 }
 
 /* Vue semaine : une ligne par personne, sept cases lettrées. Tient sur un
@@ -408,6 +430,9 @@
 .colleague-week-table :is(thead th, tbody td).is-weekend { background: rgba(44, 38, 33, .035); }
 .colleague-week-table :is(thead th, tbody td).is-today { background: rgba(152, 84, 56, .07); }
 .colleague-week-table thead th.is-today span { color: var(--accent-strong); }
+/* Le chiffre du jour reste blanc sur son rond, même un samedi ou un
+   dimanche : la teinte grisée du week-end ne doit pas l'effacer. */
+.colleague-week-table thead th.is-today b { color: #fff; }
 .colleague-week-table tbody td { padding: 6px 1px; }
 .colleague-week-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; background: var(--surface); }
 .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(152, 84, 56, .045); }

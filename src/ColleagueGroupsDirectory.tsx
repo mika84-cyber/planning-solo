@@ -102,6 +102,7 @@ function ColleagueGroupsPanel({ list, isAdmin }: { list: GroupsList; isAdmin: bo
           return (
             <details className={`colleague-group-card group-${group.number}`} key={group.number}>
               <summary>
+                <b className="colleague-group-badge" aria-hidden="true">{group.number}</b>
                 <span><strong>Groupe {group.number}</strong><small>{group.count} personnes{missing.length ? ` · ${missing.length} sans H/F` : ""}</small></span>
                 <i aria-hidden="true">⌄</i>
               </summary>

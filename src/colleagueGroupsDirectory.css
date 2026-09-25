@@ -181,6 +181,14 @@
   gap: 2px;
 }
 
+/* Chaque groupe porte la même pastille numérotée que dans le tableau et sur
+   le bouton qui ouvre cette liste. */
+.colleague-group-card > summary > span { flex: 1; min-width: 0; }
+.colleague-group-badge { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(32, 56, 75, .16); color: #fff; font-size: .8rem; font-weight: 900; }
+.colleague-group-card.group-1 .colleague-group-badge { background: #b8644e; }
+.colleague-group-card.group-2 .colleague-group-badge { background: #c47d3f; }
+.colleague-group-card.group-3 .colleague-group-badge { background: #5f8f52; }
+
 .colleague-group-card > summary strong {
   color: #3a332c;
 }
