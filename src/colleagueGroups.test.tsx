@@ -1,7 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { COLLEAGUE_GROUPS } from "../netlify/lib/colleagueGroups";
-import { ColleagueGroupsDirectory, searchColleagueGroups } from "./ColleagueGroupsDirectory";
+import { ColleagueGroupsDialog, ColleagueGroupsDirectory, searchColleagueGroups } from "./ColleagueGroupsDirectory";
+
+// Le rendu serveur ne sait pas poser une fenêtre sur document.body : elle est
+// rendue sur place pour être lue.
+vi.mock("react-dom", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-dom")>()),
+  createPortal: (node: unknown) => node,
+}));
 
 describe("détails des trois groupes", () => {
   it("classe uniquement des noms, sans doublon ni adresse e-mail", () => {
@@ -45,6 +52,24 @@ describe("détails des trois groupes", () => {
     expect(html).toContain("Rechercher un collègue");
     expect(html).toContain('placeholder="Prénom ou nom"');
     expect(html).not.toContain("<details open=\"");
+  });
+
+  it("ouvre les trois groupes repliés dans une fenêtre, sous la recherche", () => {
+    vi.stubGlobal("document", { body: null });
+    const html = renderToStaticMarkup(<ColleagueGroupsDialog groups={COLLEAGUE_GROUPS} onClose={() => undefined} />);
+    vi.unstubAllGlobals();
+
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+    expect(html).toContain('aria-labelledby="colleague-groups-dialog-title"');
+    expect(html).toContain("Détails des 3 groupes");
+    expect(html).toContain("105 collègues classés par groupe");
+    expect(html).toContain('aria-label="Fermer"');
+    expect(html).toContain("Rechercher un collègue");
+    expect(html.match(/<details class="colleague-group-card/g)).toHaveLength(3);
+    expect(html).not.toContain("<details open");
+    // La fenêtre n'emboîte pas l'ancien volet dépliable.
+    expect(html).not.toContain("colleague-groups-directory");
   });
 
   it("affiche immédiatement le dossier et ses compteurs avant l’arrivée des noms", () => {

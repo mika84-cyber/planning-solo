@@ -352,6 +352,23 @@
 /* Jour/Semaine et aujourd'hui suivent la couleur d'accent des autres sélecteurs ;
    seules les flèches gardent le violet de la navigation, comme dans le planning. */
 .colleague-sharing-page .colleague-board-mode button.active { background: var(--accent); color: #fff; }
+/* Jour / Semaine à gauche, la composition des trois groupes à droite, sur
+   la même ligne. Sur téléphone, le bouton se raccourcit en « 3 groupes ». */
+.colleague-board-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 12px; }
+.colleague-board-toolbar .colleague-board-mode { margin: 0; }
+.colleague-sharing-page button.colleague-groups-open { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; margin-left: auto; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 16px 0 13px; background: #fff; color: var(--accent-strong); font: inherit; font-size: .82rem; font-weight: 850; box-shadow: none; cursor: pointer; }
+.colleague-sharing-page button.colleague-groups-open:hover { background: var(--accent-soft); }
+.colleague-groups-open svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.colleague-groups-open-short { display: none; }
+@media (max-width: 520px) {
+  .colleague-groups-open-long { display: none; }
+  .colleague-groups-open-short { display: inline; }
+}
+/* Sur les petits téléphones, un peu moins de marge pour tenir sur une ligne. */
+@media (max-width: 380px) {
+  .colleague-board-toolbar { gap: 6px; }
+  .colleague-sharing-page button.colleague-groups-open { gap: 5px; padding: 0 12px 0 10px; }
+}
 
 /* Vue semaine : une ligne par personne, sept cases lettrées. Tient sur un
    téléphone sans défiler ; défile au besoin sur les écrans les plus étroits. */

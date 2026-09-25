@@ -1,7 +1,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDayInfo, MONTHS } from "./planningLogic";
 import type { PersonalPresence } from "./appModel";
-import { ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
+import { ColleagueGroupsDialog, ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
+import type { ColleagueGroup } from "./colleagueGroups";
 import { matchesSearch } from "./searchMatching";
 import {
   getColleagueDirectory,
@@ -28,6 +29,14 @@ const demoDirectory: ColleagueDirectory = {
   outgoing: [{ ownerId: "demo-mika", viewerId: "demo-agnes", ownerName: "Mika", viewerName: "Agnès", status: "accepted", createdAt: "2026-09-01", updatedAt: "2026-09-01" }],
   blocked: [],
 };
+
+/** Les groupes de la démo : des prénoms fictifs, pour ouvrir la fenêtre des
+ *  groupes sans lire les vrais noms sur le serveur. */
+const demoGroups: readonly ColleagueGroup[] = [
+  { number: 1, members: ["Camille", "Hugo Exemple", "Léa Exemple"] },
+  { number: 2, members: ["Agnès", "Mika", "Nina Exemple"] },
+  { number: 3, members: ["Samir", "Jules Exemple", "Zoé Exemple"] },
+];
 const demoPlanning: SharedColleaguePlanning = {
   owner: { userId: "demo-agnes", displayName: "Agnès" },
   group: 2,
@@ -307,6 +316,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const [boardOffset, setBoardOffset] = useState(1);
   // La semaine s'ouvre d'abord : on y voit d'un coup qui est là les prochains jours.
   const [boardMode, setBoardMode] = useState<"day" | "week">("week");
+  const [groupsOpen, setGroupsOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
   const [tomorrowFailed, setTomorrowFailed] = useState<string[]>([]);
   const [tomorrowAttempt, setTomorrowAttempt] = useState(0);
@@ -581,11 +591,24 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
             </>}
           </div>
         </header>
-        {/* Un jour pour savoir qui est là ; une semaine pour préparer un échange. */}
-        <div className="colleague-board-mode" role="group" aria-label="Affichage">
-          <button type="button" className={boardMode === "day" ? "active" : ""} aria-pressed={boardMode === "day"} onClick={() => setBoardMode("day")}>Jour</button>
-          <button type="button" className={boardMode === "week" ? "active" : ""} aria-pressed={boardMode === "week"} onClick={() => setBoardMode("week")}>Semaine</button>
+        {/* Un jour pour savoir qui est là ; une semaine pour préparer un échange.
+            À droite, la composition des trois groupes s'ouvre dans une fenêtre. */}
+        <div className="colleague-board-toolbar">
+          <div className="colleague-board-mode" role="group" aria-label="Affichage">
+            <button type="button" className={boardMode === "day" ? "active" : ""} aria-pressed={boardMode === "day"} onClick={() => setBoardMode("day")}>Jour</button>
+            <button type="button" className={boardMode === "week" ? "active" : ""} aria-pressed={boardMode === "week"} onClick={() => setBoardMode("week")}>Semaine</button>
+          </div>
+          <button className="colleague-groups-open" type="button" aria-haspopup="dialog" aria-label="Détails des 3 groupes" onClick={() => setGroupsOpen(true)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5h6l2-2h9v13h-17z" /></svg>
+            <span className="colleague-groups-open-long">Détails des 3 groupes</span>
+            <span className="colleague-groups-open-short">3 groupes</span>
+          </button>
         </div>
+        {groupsOpen ? <ColleagueGroupsDialog
+          groups={demoMode ? demoGroups : data?.groups}
+          isAdmin={isAdmin && !demoMode}
+          onClose={() => setGroupsOpen(false)}
+        /> : null}
         {received.some((share) => !tomorrowSummaries[share.ownerId] && !tomorrowFailed.includes(share.ownerId)) ? <div className="colleague-tomorrow-pending" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /> Analyse des plannings en cours…</div> : null}
         {boardMode === "week" ? <ColleagueWeekTable
           days={colleagueWeekDays(weekOffset)}
@@ -694,7 +717,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
             </div>
           </div>
         </details>
-        {!demoMode ? <ColleagueGroupsDirectory groups={data?.groups} isAdmin={isAdmin} /> : null}
+        {/* Sans le tableau « Qui travaille ? », les groupes restent ici. */}
+        {!demoMode && !(data?.self.visible && received.length) ? <ColleagueGroupsDirectory groups={data?.groups} isAdmin={isAdmin} /> : null}
         {settingsCollapsed ? (
           <details className="colleague-card colleague-settings-disclosure">
             <summary>

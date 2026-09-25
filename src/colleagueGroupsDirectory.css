@@ -271,3 +271,8 @@
     columns: 1;
   }
 }
+
+/* Dans la fenêtre ouverte depuis Jour / Semaine, les trois groupes
+   s'empilent, repliés, sous la recherche. */
+.colleague-groups-dialog .colleague-groups-panel { padding: 0; }
+.colleague-groups-dialog .colleague-groups-content { grid-template-columns: 1fr; gap: 10px; }

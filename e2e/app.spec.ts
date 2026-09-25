@@ -4717,6 +4717,44 @@ test("la recherche des groupes distingue le chargement, une panne et un résulta
   expect(await directory.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
 
+test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jour / Semaine", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "colleagues");
+  const mode = page.locator(".colleague-board-mode");
+  const open = page.getByRole("button", { name: "Détails des 3 groupes" });
+  await expect(open).toBeVisible();
+  const [modeBox, openBox, boardBox] = await Promise.all([
+    mode.boundingBox(),
+    open.boundingBox(),
+    page.locator(".colleague-day-board").boundingBox(),
+  ]);
+  // Sur la même ligne que Jour / Semaine, calé à droite du tableau.
+  expect(Math.abs(modeBox!.y - openBox!.y)).toBeLessThanOrEqual(2);
+  expect(openBox!.x).toBeGreaterThan(modeBox!.x + modeBox!.width);
+  expect(boardBox!.x + boardBox!.width - (openBox!.x + openBox!.width)).toBeLessThanOrEqual(24);
+  // L'ancien volet dépliable n'est plus en bas de page.
+  await expect(page.locator(".colleague-groups-directory")).toHaveCount(0);
+
+  await open.click();
+  const dialog = page.getByRole("dialog", { name: "Détails des 3 groupes" });
+  await expect(dialog).toBeVisible();
+  // Les trois groupes s'ouvrent repliés ; on en déplie un.
+  const groups = dialog.locator(".colleague-group-card");
+  await expect(groups).toHaveCount(3);
+  await expect(dialog.locator(".colleague-group-card[open]")).toHaveCount(0);
+  await groups.nth(1).locator(":scope > summary").click();
+  await expect(groups.nth(1)).toContainText("Agnès");
+  expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  // Fermer rend la main au bouton ; Échap aussi.
+  await dialog.getByRole("button", { name: "Fermer" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(open).toBeFocused();
+  await open.click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
 test("une paie incomplète conduit directement aux champs à renseigner", async ({ page }) => {
   await prepareDemo(page);
   await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
