@@ -398,8 +398,9 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
 
   await goToSection(page, "colleagues");
   await expect(page.locator(".colleague-sharing-intro")).toHaveCSS("background-color", CHAPTER_TINT);
-  // Sous le titre teinté, la présentation est sur blanc.
-  await expect(page.locator(".colleague-sharing-intro > p").last()).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  // Sous le titre teinté, votre nom dans l'annuaire et la présentation sont sur blanc.
+  await expect(page.locator(".colleague-sharing-intro > .colleague-intro-body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.locator(".colleague-identity")).toContainText("Mika");
   await expectWhiteCard(".colleague-profile-card", accentSpine(page));
   const howItWorks = page.locator(".colleague-how-it-works");
   // Sous l'en-tête teinté, le contenu de « Comment ça marche » est sur blanc.
@@ -1022,11 +1023,13 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await page.locator(".top-header-colleagues").screenshot({ path: `previews/colleague-header-${testInfo.project.name}.png` });
   await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
   await expect(page.locator(".top-header-colleagues .header-update-button")).toBeVisible();
-  const shareMenu = page.locator("summary").filter({ hasText: "Partager mon planning" });
+  const shareMenu = page.getByRole("button", { name: /Partager mon planning/ });
   await expect(shareMenu).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toHaveCount(0);
   await shareMenu.click();
-  const chooseCard = page.getByRole("heading", { name: "Choisir un collègue" }).locator("xpath=..");
+  const shareDialog = page.getByRole("dialog", { name: "Partager mon planning" });
+  await expect(shareDialog).toBeVisible();
+  const chooseCard = shareDialog.getByRole("heading", { name: "Choisir un collègue" }).locator("xpath=..");
   await expect(chooseCard.getByText("Agnès", { exact: true })).toBeVisible();
   await expect(chooseCard.getByText(/Envoyez votre planning au collègue de votre choix/)).toBeVisible();
   await expect(chooseCard.getByText(/Annuaire : 3 collègues/)).toBeVisible();
@@ -1047,9 +1050,15 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   page.once("dialog", async (dialog) => dialog.accept());
   await samirRow.getByRole("button", { name: "Bloquer" }).click();
   await expect(page.getByRole("heading", { name: "Gérer mes blocages" })).toBeVisible();
+  // Les blocages se gèrent dans la page : on referme la fenêtre pour débloquer.
+  await shareDialog.getByRole("button", { name: "Fermer" }).click();
+  await expect(shareDialog).toHaveCount(0);
+  await expect(shareMenu).toBeFocused();
   page.once("dialog", async (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Débloquer" }).click();
   await expect(page.getByRole("button", { name: "Modifier", exact: true })).toBeDisabled();
+  await shareMenu.click();
+  await expect(shareDialog).toBeVisible();
   const camilleRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Camille" });
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain("Envoyer votre planning à Camille");
@@ -1060,6 +1069,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(sharedRow.getByText("Planning partagé", { exact: true })).toBeVisible();
   await expect(sharedRow.getByRole("button", { name: "Arrêter la diffusion" })).toBeVisible();
   await expect(sharedRow.getByRole("button", { name: "Bloquer" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(shareDialog).toHaveCount(0);
 
   const receivedCard = page.locator(".colleague-received-card");
   await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", await cardBorderColor(page));
@@ -1144,6 +1155,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await sharedRow.getByRole("button", { name: "Arrêter la diffusion" }).click();
   await expect(sharedRow.getByRole("button", { name: "Envoyer", exact: true })).toBeVisible();
   await expect(sharedRow.getByText("Planning partagé", { exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(shareDialog).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   await page.setViewportSize({ width: 646, height: 904 });
@@ -1178,13 +1191,13 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  // Les plannings reçus puis la liste des sujets rarement ouverts s'empilent sur toute la largeur.
-  const [receivedWideBox, moreListWideBox] = await Promise.all([
+  // « Partager mon planning » puis les plannings reçus s'empilent sur toute la largeur.
+  const [shareWideBox, receivedWideBox] = await Promise.all([
+    page.locator(".colleague-share-open").boundingBox(),
     page.locator(".colleague-received-card").boundingBox(),
-    page.locator(".colleague-more-list").boundingBox(),
   ]);
-  expect(Math.abs(receivedWideBox!.width - moreListWideBox!.width)).toBeLessThanOrEqual(1);
-  expect(moreListWideBox!.y).toBeGreaterThan(receivedWideBox!.y + receivedWideBox!.height);
+  expect(Math.abs(receivedWideBox!.width - shareWideBox!.width)).toBeLessThanOrEqual(1);
+  expect(receivedWideBox!.y).toBeGreaterThan(shareWideBox!.y + shareWideBox!.height);
   const desktopHeader = await page.locator(".top-header-colleagues").boundingBox();
   const desktopImage = await colleagueIllustration.boundingBox();
   expect(desktopHeader!.height).toBeLessThanOrEqual(240);
@@ -1195,7 +1208,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(Math.abs(desktopHeader!.height - desktopReferenceHeader!.height), JSON.stringify({ desktopReferenceHeight: desktopReferenceHeader!.height, colleagueHeight: desktopHeader!.height })).toBeLessThanOrEqual(1);
 });
 
-test("l’aide au partage reste dépliée et se range dans les réglages une fois inscrit", async ({ page }) => {
+test("l’aide au partage reste dépliée, puis les réglages s’ouvrent depuis le nom en tête de page", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "colleagues");
 
@@ -1207,19 +1220,30 @@ test("l’aide au partage reste dépliée et se range dans les réglages une foi
   await goToSection(page, "home");
   await goToSection(page, "colleagues");
 
-  // Une fois inscrit, l'aide et le profil se replient dans « Réglages du partage ».
-  const settings = page.locator(".colleague-settings-disclosure");
-  await expect(settings.locator("summary")).toContainText("Réglages du partage");
-  await expect(settings.locator("summary")).toContainText("Visible dans l’annuaire sous « Mika »");
-  await expect(page.locator(".colleague-profile-card")).toBeHidden();
-  await settings.locator("summary").click();
-  await expect(page.locator(".colleague-profile-card")).toBeVisible();
-  await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
-  // Les sujets rarement ouverts forment une seule liste, blanche tant qu'ils sont repliés.
-  const moreList = page.locator(".colleague-more-list");
-  await expect(moreList.locator("> details")).toHaveCount(2);
-  await expect(moreList.locator("> .colleague-share-disclosure > summary")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(settings.locator("> summary")).toHaveCSS("background-color", CHAPTER_TINT);
+  // Une fois inscrit, votre nom reste en tête de page, avec sa visibilité ;
+  // l'aide et le profil s'ouvrent dans une fenêtre, depuis « Modifier ».
+  const identity = page.locator(".colleague-identity");
+  await expect(identity).toContainText("Votre nom dans l’annuaire");
+  await expect(identity).toContainText("Mika");
+  await expect(identity.locator(".colleague-identity-status")).toHaveText("Visible");
+  await expect(page.locator(".colleague-settings-disclosure")).toHaveCount(0);
+  await expect(page.locator(".colleague-profile-card")).toHaveCount(0);
+  const edit = page.getByRole("button", { name: "Modifier mon nom dans l’annuaire" });
+  await edit.click();
+  const settings = page.getByRole("dialog", { name: "Réglages du partage" });
+  await expect(settings.locator(".colleague-profile-card")).toBeVisible();
+  await expect(settings.locator(".colleague-profile-field input")).toHaveValue("Mika");
+  await expect(settings.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(settings).toHaveCount(0);
+  await expect(edit).toBeFocused();
+  // Le tableau précède « Partager mon planning » ; l'ancienne liste repliée a disparu.
+  const [boardBox, shareBox] = await Promise.all([
+    page.locator(".colleague-day-board").boundingBox(),
+    page.locator(".colleague-share-open").boundingBox(),
+  ]);
+  expect(shareBox!.y).toBeGreaterThan(boardBox!.y + boardBox!.height);
+  await expect(page.locator(".colleague-more-list")).toHaveCount(0);
 });
 
 test("une invitation acceptée propose le partage en retour", async ({ page }) => {

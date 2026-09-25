@@ -437,3 +437,40 @@
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
 .colleague-sharing-page .colleague-tomorrow-row td { padding-top: 12px; padding-bottom: 12px; }
 .colleague-sharing-page .colleague-week-legend { gap: 10px 16px; margin: 16px 4px 2px; }
+
+/* En-tête : votre nom dans l'annuaire, lisible dès l'arrivée, avec sa
+   visibilité et le bouton qui ouvre les réglages. */
+.colleague-intro-body { display: grid; gap: 10px; }
+.colleague-identity { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+.colleague-identity-avatar { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--accent-strong); color: #fff; font-size: 1.2rem; font-weight: 800; }
+.colleague-identity-copy { display: grid; gap: 1px; min-width: 0; }
+.colleague-identity-copy > small { color: var(--muted); font-size: .74rem; font-weight: 750; }
+.colleague-identity-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.colleague-identity-name strong { color: var(--text); font-size: 1.3rem; font-weight: 850; line-height: 1.2; overflow-wrap: anywhere; }
+.colleague-identity-status { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 9px; background: #eee7de; color: #5b5044; font-size: .72rem; font-weight: 800; }
+.colleague-identity-status.is-visible { background: #e3f3e9; color: #1d6b45; }
+.colleague-identity-status svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.colleague-sharing-page button.colleague-identity-edit { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 14px 0 12px; background: #fff; color: var(--accent-strong); font-size: .82rem; font-weight: 850; }
+.colleague-sharing-page button.colleague-identity-edit:hover { background: var(--accent-soft); }
+.colleague-identity-edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.colleague-sharing-page .colleague-intro-body > p { margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.45; }
+
+/* « Partager mon planning » : une ligne claire sous le tableau, qui ouvre
+   l'annuaire dans une fenêtre. */
+.colleague-sharing-page button.colleague-share-open { display: grid; grid-template-columns: 42px minmax(0, 1fr) 14px; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 14px var(--chapter-pad, 18px); background: #fff; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.colleague-sharing-page button.colleague-share-open:hover { background: color-mix(in srgb, var(--accent-soft) 45%, #fff); }
+.colleague-share-open-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: var(--accent-soft); color: var(--accent-strong); }
+.colleague-share-open-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.colleague-share-open-copy { display: grid; gap: 2px; min-width: 0; }
+.colleague-share-open-copy strong { color: var(--text); font-size: 1rem; font-weight: 850; }
+.colleague-share-open-copy small { color: var(--muted); font-size: .78rem; font-weight: 700; }
+.colleague-share-open-go { width: 14px; height: 14px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Les fenêtres de la page (réglages, annuaire) restent dans la page : leur
+   « × » ne prend pas le style plein des boutons de la page. */
+.colleague-dialog { display: grid; gap: 12px; align-content: start; }
+.colleague-dialog > h2 { margin-bottom: 0; }
+.colleague-sharing-page .colleague-dialog .modal-close { width: 38px; min-width: 38px; height: 38px; min-height: 38px; border: 0; border-radius: 11px; padding: 0; background: var(--surface); color: var(--muted); font-size: 23px; font-weight: 400; }
+.colleague-dialog .colleague-card { margin: 0; box-shadow: none; }
+.colleague-share-dialog .colleague-share-content { margin-top: 0; border-top: 0; padding-top: 0; }
+.colleague-share-dialog .colleague-share-content > h3 { margin-top: 0; }

@@ -235,9 +235,10 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   padding: 12px var(--chapter-pad) 0;
   background: #fff;
 }
-/* L'introduction des collègues : surtitre et titre teintés, présentation sur blanc. */
+/* L'introduction des collègues : surtitre et titre teintés, votre nom dans
+   l'annuaire et la présentation sur blanc. */
 .app-shell.app-shell .colleague-sharing-intro { padding: var(--chapter-pad); background: var(--chapter-tint); }
-.app-shell.app-shell .colleague-sharing-intro > p:last-child {
+.app-shell.app-shell .colleague-sharing-intro > .colleague-intro-body {
   margin: 12px calc(-1 * var(--chapter-pad)) calc(-1 * var(--chapter-pad));
   border-top: 1px solid var(--chapter-tint-line);
   border-radius: inherit;
