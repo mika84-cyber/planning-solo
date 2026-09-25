@@ -168,14 +168,21 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("left: 0");
   });
 
-  it("présente les quatre repères du jour en une fiche de quatre lignes", () => {
+  it("présente la journée en page d’éphéméride et trois compteurs à côté", () => {
     const refinements = readFileSync(new URL("./src/productRefinements.css", import.meta.url), "utf8");
-    // Un seul bloc décrit désormais ces cartes : les anciennes règles,
-    // centrées ou en grille 2 × 2, ne doivent pas revenir.
+    const ephemeris = readFileSync(new URL("./src/homeEphemeris.css", import.meta.url), "utf8");
+    const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
+    // L'ancienne fiche de quatre lignes ne doit pas revenir.
     expect(styles).not.toContain(".today-overview-grid");
-    expect(refinements).toContain('grid-template-areas: "icon label value" "icon note value";');
-    expect(refinements).toContain(".today-overview-grid > .today-status { --row-ink");
-    expect(app).toContain("Congés restants");
+    expect(refinements).not.toContain(".today-overview-grid");
+    // La feuille porte « Aujourd'hui » dans un bandeau rouge fixe, la
+    // situation du jour à sa couleur ; elle finit avec les compteurs.
+    expect(home).toContain('<span className="ephemeris-weekday" aria-hidden="true">Aujourd’hui</span>');
+    expect(ephemeris).toContain("background: #9a2c40;");
+    expect(ephemeris).toContain(".ephemeris-block:is(.tone-leave, .tone-recovery) { --leaf-ink: #9a2c40; }");
+    expect(ephemeris).toContain("align-self: stretch; min-width: 0; margin-top: 18px;");
+    expect(home).toContain("Prochain jour travaillé");
+    expect(home).toContain("Congés restants");
   });
 
   it("mène chaque information manquante à l’endroit exact où elle se saisit", () => {
@@ -725,9 +732,10 @@ describe("finitions d’interface", () => {
   });
 
   it("affiche le travail restant de l’année à côté des congés", () => {
+    const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
     expect(app).toContain("remainingWorkedDaysThisYear");
-    expect(app).toContain('className="today-remaining-work"');
-    expect(app).toContain("D’ici au 31 décembre");
+    expect(home).toContain('className="ephemeris-row is-work today-remaining-work"');
+    expect(home).toContain('d’ici au 31<span className="ephemeris-wide"> décembre</span>');
   });
 
   it("réserve l’œuvre bleue à l’en-tête Congés et récupérations", () => {

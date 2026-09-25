@@ -2,6 +2,7 @@ import { useState, type Dispatch, type ReactNode, type SetStateAction } from "re
 import { dayCountLabel, type NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
+import "./homeEphemeris.css";
 import {
   nextWorkDayLabel,
   longDate,
@@ -118,9 +119,19 @@ export function HomeDashboard({
       }${today.nextWorkHalfLeaveLabel ? ` — ${today.nextWorkHalfLeaveLabel}` : ""}`
     : "Aucun à venir";
 
+  // Sur téléphone, « Avec le groupe 3 » se réduit à « groupe 3 » pour tenir
+  // à côté de la date.
+  const groupNoteParts = today.nextWorkGroupLabel?.match(/^(Avec les? )(.+)$/);
+  const nextWorkGroupNote = groupNoteParts
+    ? <><span className="ephemeris-wide">{groupNoteParts[1]}</span>{groupNoteParts[2]}</>
+    : today.nextWorkGroupLabel;
+  const chevron = (
+    <svg className="ephemeris-row-go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+  );
+
   return (
     <>
-      <section className="today-overview" aria-labelledby="today-title">
+      <section className="today-overview today-ephemeris" aria-labelledby="today-title">
         <div className="today-overview-heading">
           <div>
             <span className="step-label">En un coup d’œil</span>
@@ -140,72 +151,70 @@ export function HomeDashboard({
             {groupActionLabel}
           </button>
         </div>
-        {/* Une fiche de quatre lignes : libellé à gauche, valeur à droite. */}
-        <div className="today-overview-grid">
-          <article className={`today-status tone-${today.tone}`}>
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="8" />
-                <path d="M12 7v5l3 2" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Aujourd’hui</span>
-              <strong>{today.status}</strong>
-              {today.todayGroupLabel ? <small>{today.todayGroupLabel}</small> : null}
-            </span>
-          </article>
-          <button
-            className="today-next-work"
-            type="button"
-            onClick={() => today.nextWork && onOpenNextWork(today.nextWork)}
-          >
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                <path d="m9 14 2 2 4-4" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Prochain jour travaillé</span>
+        <div className="today-ephemeris-body">
+          {/* La page du jour d'un bloc éphéméride, à la couleur de la journée.
+              Ce qui compte, c'est de savoir si l'on travaille : la situation
+              s'écrit en grand sous le bandeau « Aujourd’hui ». */}
+          <div className={`ephemeris-block today-status tone-${today.tone}`}>
+            <span className="ephemeris-binding" aria-hidden="true"><i /><i /></span>
+            <span className="ephemeris-stub" aria-hidden="true" />
+            <span className="ephemeris-under" aria-hidden="true" />
+            <div className="ephemeris-page">
+              <span className="ephemeris-weekday" aria-hidden="true">Aujourd’hui</span>
+              <strong className="ephemeris-status">{today.status}</strong>
+              {today.todayGroupLabel ? <small className="ephemeris-status-note">{today.todayGroupLabel}</small> : null}
+            </div>
+          </div>
+          {/* Les trois compteurs : en lignes sur téléphone, en cartes sur
+              ordinateur. */}
+          <div className="ephemeris-rows">
+            <button
+              className="ephemeris-row is-next today-next-work"
+              type="button"
+              onClick={() => today.nextWork && onOpenNextWork(today.nextWork)}
+            >
+              <span className="ephemeris-row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
+                  <path d="m9 14 2 2 4-4" />
+                </svg>
+              </span>
+              <span className="ephemeris-row-label">Prochain jour travaillé</span>
               <strong className={nextWorkIsDate ? "is-date" : undefined}>{nextWorkLabel}</strong>
-              {today.nextWorkGroupLabel ? <small>{today.nextWorkGroupLabel}</small> : null}
-            </span>
-          </button>
-          <button
-            className="today-leave-balance"
-            type="button"
-            onClick={onOpenLeave}
-            aria-label={`Congés restants : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
-          >
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                {/* Le même soleil sur la mer que la rubrique Congés du dock. */}
-                <path d="M12 3.5v1.5M5.6 6.6l1.1 1.1M18.4 6.6l-1.1 1.1M3 13h2m14 0h2M8 13a4 4 0 0 1 8 0M3 17.5c1.5 0 1.5 1 3 1s1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Congés restants</span>
+              {nextWorkGroupNote ? <small className="ephemeris-row-note">{nextWorkGroupNote}</small> : null}
+              {chevron}
+            </button>
+            <button
+              className="ephemeris-row is-leave today-leave-balance"
+              type="button"
+              onClick={onOpenLeave}
+              aria-label={`Congés restants : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
+            >
+              <span className="ephemeris-row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  {/* Le même soleil sur la mer que la rubrique Congés du dock. */}
+                  <path d="M12 3.5v1.5M5.6 6.6l1.1 1.1M18.4 6.6l-1.1 1.1M3 13h2m14 0h2M8 13a4 4 0 0 1 8 0M3 17.5c1.5 0 1.5 1 3 1s1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1" />
+                </svg>
+              </span>
+              <span className="ephemeris-row-label">Congés restants</span>
               <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jour{Math.abs(totalLeaveRemaining) > 1 ? "s" : ""}</strong>
-              <small>à poser</small>
-            </span>
-          </button>
-          <article className="today-remaining-work">
-            <span className="today-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                <path d="m8 14 2.5 2.5L16 11" />
-              </svg>
-            </span>
-            <span className="today-card-copy">
-              <span>Travail restant</span>
-              <strong>
-                {dayCountLabel(remainingWorkedDaysThisYear)} jour
-                {s(remainingWorkedDaysThisYear)}
-              </strong>
-              <small>D’ici au 31 décembre</small>
-            </span>
-          </article>
+              <small className="ephemeris-row-note">à poser</small>
+              {chevron}
+            </button>
+            <div className="ephemeris-row is-work today-remaining-work">
+              <span className="ephemeris-row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
+                  <path d="m8 14 2.5 2.5L16 11" />
+                </svg>
+              </span>
+              <span className="ephemeris-row-label">Travail restant</span>
+              <strong>{dayCountLabel(remainingWorkedDaysThisYear)} jour{s(remainingWorkedDaysThisYear)}</strong>
+              <small className="ephemeris-row-note">
+                d’ici au 31<span className="ephemeris-wide"> décembre</span><span className="ephemeris-narrow">/12</span>
+              </small>
+            </div>
+          </div>
         </div>
       </section>
 

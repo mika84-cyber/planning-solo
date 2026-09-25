@@ -267,14 +267,15 @@ test("les expositions basculent automatiquement à 00h05 heure de Paris", async 
 
 test("les cartes intérieures restent légères avec des bordures visibles et une ombre douce", async ({ page }, testInfo) => {
   await prepareDemo(page);
-  const card = page.locator('.today-overview-grid');
-  // « En un coup d'œil » : quatre lignes posées dans la carte, sans cadre
-  // supplémentaire, séparées par un filet léger.
-  await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(card).toHaveCSS('border-top-width', '0px');
-  // Le filet entre deux lignes commence après l'icône ; la première n'en a pas.
-  expect(await page.locator('.today-next-work').evaluate((node) => getComputedStyle(node, '::before').backgroundColor)).toBe(await cssTokenRgb(page, '--border-soft'));
-  expect(await page.locator('.today-status').evaluate((node) => getComputedStyle(node, '::before').content)).toBe('none');
+  const card = page.locator('.ephemeris-rows');
+  // « En un coup d'œil » : sur téléphone, les trois compteurs tiennent dans un
+  // encadré blanc, séparés par un filet ; sur ordinateur, chacun a sa carte.
+  const phone = (page.viewportSize()?.width || 0) <= 720;
+  await expect(card).toHaveCSS('background-color', phone ? 'rgb(255, 255, 255)' : 'rgba(0, 0, 0, 0)');
+  await expect(card).toHaveCSS('border-top-width', phone ? '1px' : '0px');
+  await expect(page.locator('.today-next-work')).toHaveCSS('border-top-width', phone ? '0px' : '1px');
+  await expect(page.locator('.today-leave-balance')).toHaveCSS('border-top-width', '1px');
+  await expect(page.locator('.today-leave-balance')).toHaveCSS('background-color', phone ? 'rgba(0, 0, 0, 0)' : 'rgb(255, 255, 255)');
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
   await goToSection(page, "pay");
@@ -2938,7 +2939,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   const remainingWorkCard = page.locator(".today-remaining-work");
   await expect(remainingWorkCard).toBeVisible();
   await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
-  await expect(remainingWorkCard).toContainText("D’ici au 31 décembre");
+  await expect(remainingWorkCard).toContainText("d’ici au 31");
   if (viewportWidth > 720) {
     await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", accentSpine(page));
   }
@@ -2953,11 +2954,13 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(nextWorkBox).not.toBeNull();
     expect(leaveBox).not.toBeNull();
     expect(remainingBox).not.toBeNull();
-    // Une fiche de quatre lignes empilées, toutes de la même largeur.
-    expect(nextWorkBox!.y).toBeGreaterThanOrEqual(statusBox!.y + statusBox!.height - 1);
-    expect(leaveBox!.y).toBeGreaterThanOrEqual(nextWorkBox!.y + nextWorkBox!.height - 1);
-    expect(remainingBox!.y).toBeGreaterThanOrEqual(leaveBox!.y + leaveBox!.height - 1);
-    expect(Math.abs(statusBox!.width - remainingBox!.width)).toBeLessThanOrEqual(2);
+    // La page du jour à gauche, puis trois cartes côte à côte, de même
+    // hauteur, qui finissent avec la page.
+    expect(nextWorkBox!.x).toBeGreaterThanOrEqual(statusBox!.x + statusBox!.width - 1);
+    expect(leaveBox!.x).toBeGreaterThanOrEqual(nextWorkBox!.x + nextWorkBox!.width - 1);
+    expect(remainingBox!.x).toBeGreaterThanOrEqual(leaveBox!.x + leaveBox!.width - 1);
+    expect(Math.abs(nextWorkBox!.y - remainingBox!.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(nextWorkBox!.y + nextWorkBox!.height - (statusBox!.y + statusBox!.height))).toBeLessThanOrEqual(2);
   }
   if (viewportWidth <= 720) {
     await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", accentSpine(page));
@@ -3232,9 +3235,12 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   ]);
     // Le mois et l’année forment un couple centré, le mois juste avant l’année.
     expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
-    expect(foldNextWorkBox!.y).toBeGreaterThanOrEqual(foldStatusBox!.y + foldStatusBox!.height - 1);
-    expect(foldRemainingBox!.y).toBeGreaterThanOrEqual(foldLeaveBox!.y + foldLeaveBox!.height - 1);
-    expect(Math.abs(foldStatusBox!.width - foldRemainingBox!.width)).toBeLessThanOrEqual(2);
+    // Déplié, le Fold prend la disposition d'ordinateur : la page du jour à
+    // gauche, puis trois cartes de même largeur côte à côte.
+    expect(foldNextWorkBox!.x).toBeGreaterThanOrEqual(foldStatusBox!.x + foldStatusBox!.width - 1);
+    expect(foldLeaveBox!.x).toBeGreaterThanOrEqual(foldNextWorkBox!.x + foldNextWorkBox!.width - 1);
+    expect(foldRemainingBox!.x).toBeGreaterThanOrEqual(foldLeaveBox!.x + foldLeaveBox!.width - 1);
+    expect(Math.abs(foldNextWorkBox!.width - foldRemainingBox!.width)).toBeLessThanOrEqual(2);
   }).toPass({ timeout: 10_000 });
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
