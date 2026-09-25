@@ -179,11 +179,13 @@ describe("finitions d’interface", () => {
     // Quatre lignes sur téléphone, quatre cartes côte à côte sur ordinateur.
     expect(overview).toContain('grid-template-areas: "icon label value go" "icon note value go";');
     expect(overview).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
-    // La journée est teintée de sa couleur ; son libellé « Aujourd'hui »
-    // s'écrit comme les autres, sans pastille.
+    // La journée garde le même format que les autres lignes : sa couleur
+    // n'est que sur l'icône et le libellé, sans fond coloré ni pastille.
     expect(overview).toContain(".today-status:is(.tone-leave, .tone-recovery) { --block-ink: #9a2c40;");
-    expect(overview).toContain("background: color-mix(in srgb, var(--block-ink) 8%, #fff);");
+    expect(overview).toContain(".today-status { --block-ink: #1d6b45; --block-soft: #e3f3e9; }");
     expect(overview).not.toContain(".today-status .today-block-label");
+    expect(overview).not.toContain(".today-status > strong");
+    expect(overview).not.toContain("color-mix(in srgb, var(--block-ink) 8%, #fff)");
     expect(home).toContain('<span className="today-block-label">Aujourd’hui</span>');
     expect(home).toContain("Prochain jour travaillé");
     expect(home).toContain("Congés restants");

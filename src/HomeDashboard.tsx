@@ -145,8 +145,7 @@ export function HomeDashboard({
             {groupActionLabel}
           </button>
         </div>
-        {/* Quatre blocs : la journée d'abord, teintée de sa couleur (ce qui
-            compte, c'est de savoir si l'on travaille), puis les trois
+        {/* Quatre blocs au même format : la journée d'abord, puis les trois
             compteurs. En lignes sur téléphone, en cartes sur ordinateur. */}
         <div className="today-blocks">
           <article className={`today-block today-status tone-${today.tone}`}>

@@ -268,18 +268,20 @@ test("les expositions basculent automatiquement à 00h05 heure de Paris", async 
 test("les cartes intérieures restent légères avec des bordures visibles et une ombre douce", async ({ page }, testInfo) => {
   await prepareDemo(page);
   const card = page.locator('.today-blocks');
-  // « En un coup d'œil » : sur téléphone, quatre lignes posées dans la carte,
-  // la journée sur un bandeau teinté, puis des filets qui commencent après
-  // l'icône ; sur ordinateur, quatre cartes blanches côte à côte.
+  // « En un coup d'œil » : sur téléphone, quatre lignes au même format posées
+  // dans la carte, séparées par des filets qui commencent après l'icône ; la
+  // journée n'a pas de fond coloré. Sur ordinateur, quatre cartes blanches
+  // côte à côte.
   const phone = (page.viewportSize()?.width || 0) <= 720;
   await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(page.locator('.today-status')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(page.locator('.today-status')).not.toHaveCSS('background-color', 'rgb(255, 255, 255)');
   if (phone) {
+    await expect(page.locator('.today-status')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(page.locator('.today-leave-balance')).toHaveCSS('border-top-width', '0px');
     expect(await page.locator('.today-leave-balance').evaluate((node) => getComputedStyle(node, '::before').backgroundColor)).toBe('rgb(239, 229, 218)');
-    expect(await page.locator('.today-next-work').evaluate((node) => getComputedStyle(node, '::before').display)).toBe('none');
+    expect(await page.locator('.today-next-work').evaluate((node) => getComputedStyle(node, '::before').backgroundColor)).toBe('rgb(239, 229, 218)');
+    expect(await page.locator('.today-status').evaluate((node) => getComputedStyle(node, '::before').content)).toBe('none');
   } else {
+    await expect(page.locator('.today-status')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
     await expect(page.locator('.today-leave-balance')).toHaveCSS('border-top-width', '1px');
     await expect(page.locator('.today-leave-balance')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   }
