@@ -153,3 +153,21 @@
      ne plus paraître gris à côté du blanc. */
   :root { --bg: #f6f1ea; }
 }
+
+/* Mise à jour en attente, fenêtre fermée : un bouton bien visible au milieu
+   de l'image de l'en-tête. Il disparaît une fois la mise à jour faite. */
+.top-header .header-update-call { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; pointer-events: none; }
+.header-update-call button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: 2px solid #fff; border-radius: 999px; padding: 0 20px; background: var(--accent); color: #fff; font: inherit; font-size: .92rem; font-weight: 850; white-space: nowrap; box-shadow: 0 8px 22px rgba(92, 45, 26, .32); cursor: pointer; pointer-events: auto; transition: transform .15s ease, box-shadow .15s ease; }
+.header-update-call button:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(92, 45, 26, .38); }
+.header-update-call button:disabled { cursor: wait; opacity: .85; }
+.header-update-call svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.header-update-call button:disabled svg { animation: update-button-spin 700ms linear infinite; }
+/* Sur téléphone, il se place sous les boutons ronds de l'en-tête. */
+@media (max-width: 720px) {
+  .top-header .header-update-call { place-items: end center; padding-bottom: 22px; }
+}
+/* Grand écran : plus grand, pour se voir dans la large image de l'en-tête. */
+@media (min-width: 1101px), (min-width: 721px) and (pointer: fine) {
+  .header-update-call button { gap: 14px; min-height: 76px; border-width: 3px; padding: 0 46px; font-size: 24px; box-shadow: 0 14px 34px rgba(92, 45, 26, .45); }
+  .header-update-call svg { width: 28px; height: 28px; }
+}

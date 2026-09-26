@@ -96,6 +96,8 @@ type AppHeaderProps = {
   mainMenuOpen: boolean;
   checkingAppUpdate: boolean;
   appUpdateAvailable: boolean;
+  /** Une mise à jour attend et sa fenêtre a été fermée sans la faire. */
+  updateCallVisible?: boolean;
   demoMode: boolean;
   unreadFeedbackCount: number;
   notify: (text: string) => void;
@@ -117,6 +119,7 @@ export function AppHeader({
   mainMenuOpen,
   checkingAppUpdate,
   appUpdateAvailable,
+  updateCallVisible = false,
   demoMode,
   unreadFeedbackCount,
   notify,
@@ -155,6 +158,19 @@ export function AppHeader({
           aria-hidden="true"
           draggable={false}
         />
+      ) : null}
+      {/* Mise à jour en attente : un bouton bien visible au milieu de l'image
+          de l'en-tête, jusqu'à ce qu'elle soit faite. */}
+      {updateCallVisible ? (
+        <div className="header-update-call">
+          <button type="button" onClick={onCheckForUpdate} disabled={checkingAppUpdate}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+              <path d="M20 4v7h-7" />
+            </svg>
+            {checkingAppUpdate ? "Mise à jour…" : "Faire la mise à jour"}
+          </button>
+        </div>
       ) : null}
       <div className="header-command-area">
         <div className="header-control-cluster">

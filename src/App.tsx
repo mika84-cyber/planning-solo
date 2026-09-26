@@ -392,7 +392,7 @@ export default function Home() {
     feedbackOpen, setFeedbackOpen,
     noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,
-    appUpdateAvailable, setAppUpdateAvailable, setAppUpdatePromptOpen,
+    appUpdateAvailable, setAppUpdateAvailable, appUpdatePromptOpen, setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
     accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize, setViewportSize,
     showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf,
@@ -2569,6 +2569,7 @@ export default function Home() {
         mainMenuOpen={mainMenuOpen}
         checkingAppUpdate={checkingAppUpdate}
         appUpdateAvailable={appUpdateAvailable}
+        updateCallVisible={appUpdateAvailable && !appUpdatePromptOpen}
         demoMode={demoMode}
         unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
         notify={notify}

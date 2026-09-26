@@ -5058,3 +5058,26 @@ test("l’administrateur indique H ou F dans les groupes, puis les choix dispara
   await expect(group).not.toContainText("sans H/F");
   expect(saved).toEqual({ action: "set-genders", genders: { "Auricio Lemos Bomfim": "h", Nikky: "f" } });
 });
+
+test("une mise à jour ignorée laisse un bouton « Faire la mise à jour » dans l’en-tête", async ({ page }) => {
+  await prepareDemo(page);
+  const call = page.locator("header.top-header .header-update-call").getByRole("button", { name: "Faire la mise à jour" });
+  await expect(call).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new Event("planning-app-update-available")));
+  // Tant que la fenêtre de mise à jour est ouverte, le bouton attend.
+  await expect(page.getByRole("heading", { name: "Une mise à jour est disponible" })).toBeVisible();
+  await expect(call).toHaveCount(0);
+  await page.getByRole("button", { name: "Plus tard" }).click();
+  await expect(call).toBeVisible();
+  // Au milieu de l'image, sans chevaucher les boutons ronds.
+  const [header, button, controls] = await Promise.all([
+    page.locator("header.top-header").boundingBox(),
+    call.boundingBox(),
+    page.locator("header.top-header .header-update-button").boundingBox(),
+  ]);
+  expect(Math.abs(button!.x + button!.width / 2 - (header!.x + header!.width / 2))).toBeLessThanOrEqual(2);
+  expect(button!.y >= controls!.y + controls!.height || button!.x + button!.width <= controls!.x).toBe(true);
+  // La mise à jour faite, la page repart sans le bouton.
+  await Promise.all([page.waitForEvent("load"), call.click()]);
+  await expect(call).toHaveCount(0);
+});
