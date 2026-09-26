@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { getStore } from "@netlify/blobs";
-import { admin, getUser } from "@netlify/identity";
+import { admin } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { sendFeedbackAlert, type FeedbackKind } from "../lib/feedbackEmail.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { userDataKey } from "../lib/userScopedStore.mts";
@@ -136,7 +137,7 @@ async function publicMessage(store: ReturnType<typeof getStore>, item: StoredFee
 
 export default async function feedbackHandler(request: Request) {
   if (!isTrustedMutation(request)) return json({ error: "Requête refusée." }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email) return json({ error: "Authentification requise." }, 401);
   const isAdmin = user.email.trim().toLocaleLowerCase("fr") === configuredAdminEmail();
   const store = getStore({ name: "planning-solo", consistency: "strong" });

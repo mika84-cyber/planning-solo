@@ -1,4 +1,4 @@
-import { getUser } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import {
   forwardNotificationRequest,
@@ -9,7 +9,7 @@ import { json } from "../lib/calendarShared.mts";
 export default async function notifications(request: Request) {
   if (!isTrustedMutation(request))
     return json({ error: "Origine de la requête non autorisée" }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.email) return json({ error: "Connexion requise" }, 401);
   if (!(await isMikaSharingAccount(user.email)))
     return json({ error: "Compte non autorisé" }, 403);

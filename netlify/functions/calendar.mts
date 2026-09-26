@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { getUser } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { migrateLegacyData, userDataKey } from "../lib/userScopedStore.mts";
 import { readCalendarBody } from "../lib/calendarValidation.mts";
@@ -14,7 +14,7 @@ import {
 async function calendarHandler(request: Request): Promise<Response> {
   if (!isTrustedMutation(request))
     return json({ error: "Origine de la requête non autorisée" }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email)
     return json({ error: "Connexion requise" }, 401);
   const store = getStore({ name: "planning-solo", consistency: "strong" });

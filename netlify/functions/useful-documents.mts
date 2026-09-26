@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { getStore } from "@netlify/blobs";
-import { admin, getUser } from "@netlify/identity";
+import { admin } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { sendDocumentAnnouncementEmail } from "../lib/documentAnnouncementEmail.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { archive, futureDate, rememberDelivery, receiptKey, type Job, type Delivery, deliveryKey } from '../lib/adminTools.mts';
@@ -122,7 +123,7 @@ async function guestAccounts(adminEmail: string) {
 
 export default async function usefulDocumentsHandler(request: Request) {
   if (!isTrustedMutation(request)) return json({ error: "Requête refusée." }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email) return json({ error: "Authentification requise." }, 401);
   const adminEmail = configuredAdminEmail();
   const isAdmin = Boolean(normalizedEmail(adminEmail) && normalizedEmail(user.email) === normalizedEmail(adminEmail));

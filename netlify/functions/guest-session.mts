@@ -1,4 +1,4 @@
-import { getUser } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { sendGuestLoginAlertOnce } from "../lib/guestLoginAlert.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 
@@ -16,7 +16,7 @@ export default async function guestSessionHandler(request: Request) {
   if (request.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
   if (!isTrustedMutation(request))
     return json({ error: "Origine de la requête non autorisée" }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email) return json({ error: "Connexion requise" }, 401);
 
   try {

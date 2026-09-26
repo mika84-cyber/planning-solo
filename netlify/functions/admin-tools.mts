@@ -1,11 +1,11 @@
-import { getUser } from '@netlify/identity';
+import { currentUser } from '../lib/identityUser.mts';
 import { isTrustedMutation } from '../lib/requestSecurity.mts';
 import { adminStore, archive, isOwner, records, readGroups, groupsKey, readGenders, gendersKey, trashValid, futureDate, receiptKey, deliveryKey, type Trash, type Pin, type Delivery, type Job } from '../lib/adminTools.mts';
 import type { UsefulContactsPayload, UsefulContact } from '../../src/usefulContactsTypes.ts';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'private, no-store' } });
 export default async function handler(request: Request) {
   if (!isTrustedMutation(request)) return json({ error: 'Requête refusée.' }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email) return json({ error: 'Connexion requise.' }, 401);
   const store = adminStore();
   const owner = isOwner(user.email);

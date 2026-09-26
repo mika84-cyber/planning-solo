@@ -1,4 +1,4 @@
-import { getUser } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { getStore } from "@netlify/blobs";
 import { USEFUL_CONTACTS_DATA } from "../lib/usefulContactsData.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
@@ -37,7 +37,7 @@ function json(body: unknown, status = 200) {
 
 async function contactsHandler(request: Request): Promise<Response> {
   if (!isTrustedMutation(request)) return json({ error: "Requête refusée" }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email)
     return json({ error: "Connexion requise" }, 401);
   const store = getStore({ name: "planning-solo", consistency: "strong" });

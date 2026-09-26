@@ -1,4 +1,4 @@
-import { getUser } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { adminStore, readGenders, readGroups } from '../lib/adminTools.mts';
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 
@@ -10,7 +10,7 @@ const headers = {
 export default async (request: Request) => {
   if (!isTrustedMutation(request))
     return new Response(JSON.stringify({ error: "Requête refusée." }), { status: 403, headers });
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id)
     return new Response(JSON.stringify({ error: "Authentification requise." }), { status: 401, headers });
   const store = adminStore();

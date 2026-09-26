@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { getUser } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import type {
   BoundaryReport,
   GrandPalaisDismissal,
@@ -33,7 +33,7 @@ function adminEmail() {
 export default async function grandPalaisProgramHandler(request: Request) {
   if (!isTrustedMutation(request))
     return json({ error: "Origine de la requête non autorisée" }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email) return json({ error: "Connexion requise" }, 401);
 
   const isAdmin = Boolean(

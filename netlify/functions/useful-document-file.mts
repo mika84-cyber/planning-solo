@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { getUser } from '@netlify/identity';
+import { currentUser } from '../lib/identityUser.mts';
 import { adminStore } from '../lib/adminTools.mts';
 import { currentReplacement, versionResponse } from '../lib/documentVersions.mts';
 
@@ -21,7 +21,7 @@ export default async function handler(request: Request) {
       'cache-control': 'public, max-age=0, must-revalidate',
     } });
   }
-  if (!(await getUser())?.id) return new Response('Connexion requise.', { status: 401, headers: { 'cache-control': 'no-store' } });
+  if (!(await currentUser())?.id) return new Response('Connexion requise.', { status: 401, headers: { 'cache-control': 'no-store' } });
   return versionResponse(file);
 }
 

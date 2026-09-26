@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
-import { admin, getUser } from "@netlify/identity";
+import { admin } from "@netlify/identity";
+import { currentUser } from "../lib/identityUser.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { sendColleagueSharingEmail } from "../lib/colleagueSharingEmail.mts";
 import { adminStore, readGroups } from '../lib/adminTools.mts';
@@ -280,7 +281,7 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
 
 export default async (request: Request) => {
   if (!isTrustedMutation(request)) return json({ error: "Requête refusée." }, 403);
-  const user = await getUser();
+  const user = await currentUser();
   if (!user?.id || !user.email) return json({ error: "Authentification requise." }, 401);
   const store = getStore({ name: "planning-solo", consistency: "strong" });
   const url = new URL(request.url);
