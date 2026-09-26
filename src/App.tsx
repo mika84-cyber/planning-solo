@@ -128,6 +128,7 @@ import { parseCalendarSnapshot } from "./calendarPayload";
 import { matchesSearch } from "./searchMatching";
 import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import { AppleInstallNotice } from "./AppleInstallNotice";
+import { InstallAppNotice } from "./InstallAppNotice";
 import { monthGross, strikeDeduction } from "./payMonth";
 import {
   emptyEntry,
@@ -282,6 +283,9 @@ export default function Home() {
   const [adminToolsOpen, setAdminToolsOpen] = useState(false);
   const [adminRevision, setAdminRevision] = useState(0);
   const isProgramAdmin = actualProgramAdmin && !guestPreview;
+  // Le statut d'administrateur arrive avec la programmation GP : tant qu'il
+  // n'est pas connu, rien de réservé aux invités ne s'affiche.
+  const [programAdminKnown, setProgramAdminKnown] = useState(false);
   const installationEnabled = canEnableInstallation(
     authStatus,
     demoMode,
@@ -462,9 +466,12 @@ export default function Home() {
         if (!active) return;
         setApprovedGrandPalaisUpdates(payload.approved ?? []);
         setIsProgramAdmin(import.meta.env.DEV && demoMode ? localDemoAdmin : payload.isAdmin);
+        setProgramAdminKnown(true);
       })
       .catch(() => {
-        if (active) setIsProgramAdmin(import.meta.env.DEV && demoMode && localDemoAdmin);
+        if (!active) return;
+        setIsProgramAdmin(import.meta.env.DEV && demoMode && localDemoAdmin);
+        setProgramAdminKnown(true);
       });
     return () => { active = false; };
   }, [authStatus, demoMode, localDemoAdmin, publicDemoAccess.active]);
@@ -2534,6 +2541,12 @@ export default function Home() {
       {/* Placé après la navigation : la marche à suivre s'affiche quelle que
           soit la rubrique ouverte au lancement. */}
       <AppleInstallNotice enabled={installationEnabled} />
+      {/* Les invités dont le navigateur sait installer l'application, et qui
+          ne l'ont pas encore fait, se la voient proposer d'un geste. */}
+      <InstallAppNotice
+        available={Boolean(installationEnabled && installPrompt && programAdminKnown && !isProgramAdmin)}
+        onInstall={() => void installApp()}
+      />
       <MainMenu
         open={mainMenuOpen}
         onClose={() => setMainMenuOpen(false)}
