@@ -1,5 +1,3 @@
-import { FRACTION_RULES, type FractionCategory } from "./fractionRules";
-
 /** Barème des absences exceptionnelles, d'après la note « Demande de
  *  congé » : accordées sur justificatif, à l'appréciation du chef de
  *  service. */
@@ -13,26 +11,9 @@ export const EXCEPTIONAL_LEAVE_RULES = [
   { nature: "Principales fêtes religieuses des différentes confessions", days: "Selon le calendrier des fêtes" },
 ] as const;
 
-function stepLabel(from: number, grant: number, unit: string) {
-  const grantText = grant === 0.5 ? `½ ${unit}` : `${grant} ${unit}${grant > 1 ? "s" : ""}`;
-  return `${from.toLocaleString("fr-FR")} ${unit}${from > 1 ? "s" : ""} → ${grantText}`;
-}
-
-/** Les catégories aux mêmes seuils sont réunies sur une ligne. */
-function fractionRows() {
-  const rows = new Map<string, { labels: string[]; text: string }>();
-  for (const [category, rule] of Object.entries(FRACTION_RULES) as Array<[FractionCategory, (typeof FRACTION_RULES)[FractionCategory]]>) {
-    const unit = category.startsWith("asi") || category === "security" ? "garde" : "jour";
-    const text = rule.steps.map((step) => stepLabel(step.from, step.grant, unit)).join(" · ");
-    const row = rows.get(text) ?? { labels: [], text };
-    row.labels.push(rule.label);
-    rows.set(text, row);
-  }
-  return [...rows.values()];
-}
-
-/** « Infos congés » : le fonctionnement du fractionnement et le nombre de
- *  jours accordés pour chaque congé exceptionnel. Replié par défaut. */
+/** « Infos congés » : une ligne au-dessus des soldes, qui se déplie sur le
+ *  report des congés annuels, le fractionnement des agents d'accueil et le
+ *  barème des congés exceptionnels. */
 export function LeaveInfoCard() {
   return (
     <details className="leave-info-card">
@@ -42,33 +23,37 @@ export function LeaveInfoCard() {
         </span>
         <span className="leave-info-copy">
           <strong>Infos congés</strong>
-          <small>Fractionnement et congés exceptionnels</small>
+          <small>Report, fractionnement et congés exceptionnels</small>
         </span>
         <b aria-hidden="true">⌄</b>
       </summary>
       <div className="leave-info-content">
+        <section aria-labelledby="leave-info-carry">
+          <h3 id="leave-info-carry">Report des congés annuels</h3>
+          <p>
+            Les congés annuels d’une année peuvent se prendre jusqu’au 30 avril de l’année suivante. De janvier à
+            avril, ce sont eux qui partent en premier. Les RTT, eux, se prennent avant le 31 décembre.
+          </p>
+        </section>
         <section aria-labelledby="leave-info-fraction">
           <h3 id="leave-info-fraction">Jours de fractionnement</h3>
           <p>
-            Ils sont accordés pour les congés annuels pris hors de la période du 1<sup>er</sup> mai au 31 octobre :
-            de janvier à avril, et de novembre au 30 avril suivant. Les RTT n’y comptent pas ; une demi-journée
-            compte pour moitié.
+            Les congés annuels posés entre novembre et avril, c’est-à-dire hors de la période de mai à octobre,
+            vous donnent des jours en plus :
           </p>
           <dl>
-            {fractionRows().map((row) => (
-              <div key={row.text}>
-                <dt>
-                  {row.labels
-                    .map((label, index) => index && label[1] !== label[1].toUpperCase() ? label.charAt(0).toLocaleLowerCase("fr") + label.slice(1) : label)
-                    .join(", ")}
-                </dt>
-                <dd>{row.text}</dd>
-              </div>
-            ))}
+            <div>
+              <dt>4 à 6,5 jours posés</dt>
+              <dd>1 jour de fractionnement</dd>
+            </div>
+            <div>
+              <dt>7 jours ou plus</dt>
+              <dd>2 jours de fractionnement</dd>
+            </div>
           </dl>
           <p className="leave-info-note">
-            Calculés automatiquement dans vos soldes à partir de 2027, selon votre catégorie. À temps partiel, les
-            seuils et les jours accordés sont proratisés.
+            Les RTT ne comptent pas et une demi-journée compte pour moitié. Le calcul se fait tout seul dans vos
+            soldes à partir de 2027.
           </p>
         </section>
         <section aria-labelledby="leave-info-exceptional">

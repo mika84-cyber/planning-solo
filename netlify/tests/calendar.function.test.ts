@@ -554,7 +554,7 @@ describe("API principale du calendrier", () => {
     });
   });
 
-  it("accorde le fractionnement 2027 selon les CA posés hors mai–octobre et la catégorie", async () => {
+  it("accorde le fractionnement 2027 selon les CA posés hors mai–octobre", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const workDays = (from: string, count: number) => {
       const days: string[] = [];
@@ -584,11 +584,8 @@ describe("API principale du calendrier", () => {
         id: `ca-hiver-${index}`, from: date, to: date, leave_type: "annual", group: 2,
       });
     }
-    // Cadre général : 5 jours hors période sont nécessaires.
-    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "general", manual_adjustments: spent2026 });
-    expect((await askFraction("request-fraction-general")).status).toBe(409);
     // Agent d'accueil : 4 jours suffisent pour un jour de fractionnement.
-    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "visitor_service", manual_adjustments: spent2026 });
+    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", manual_adjustments: spent2026 });
     expect((await askFraction("request-fraction-accueil")).status).toBe(200);
     expect(data.get("user/user-a/period/request-fraction-accueil-1")).toMatchObject({ leave_type: "fraction" });
   });
@@ -614,14 +611,6 @@ describe("API principale du calendrier", () => {
     // Le reste 2026 est épuisé, et après le 30 avril il ne vaut plus.
     expect((await askAnnual("request-report-avril", firstWorkDay("2027-04-05"))).status).toBe(409);
     expect((await askAnnual("request-report-mai", firstWorkDay("2027-05-03"))).status).toBe(409);
-  });
-
-  it("garde la catégorie du fractionnement quand un autre réglage du profil change", async () => {
-    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
-    const save = (body: Record<string, unknown>) => calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "", ...body }));
-    expect((await save({ fractionCategory: "gtc_night" })).status).toBe(200);
-    expect((await save({ fractionCategory: "inconnue", workQuota: "half" })).status).toBe(200);
-    expect(data.get("user/user-a/form-profile")).toMatchObject({ fraction_category: "gtc_night", work_quota: "half" });
   });
 
   it("décompte une demi-journée de RTT sur les RTT, et l’enregistre comme telle", async () => {

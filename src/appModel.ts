@@ -1,4 +1,3 @@
-import type { FractionCategory } from "./fractionRules";
 import {
   addDays,
   dateKey,
@@ -135,8 +134,6 @@ export type FormProfile = {
   /** Reprise sans dates des absences antérieures à l'utilisation de l'app. */
   manualAdjustments?: Record<string, ManualYearAdjustments>;
   cetAccount?: CetAccount;
-  /** Catégorie de l'agent pour le calcul du fractionnement (dès 2027). */
-  fractionCategory?: FractionCategory;
   /** Retenues maladie et grève rattachées à un autre mois de paie que celui
    *  de la règle du 10 (voir deductionPayMonth.ts). */
   deductionPayMonths?: Record<string, string>;

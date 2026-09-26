@@ -44,7 +44,7 @@ describe("détails des trois groupes", () => {
   it("affiche les compteurs et conserve le dossier principal fermé par défaut", () => {
     const html = renderToStaticMarkup(<ColleagueGroupsDirectory groups={COLLEAGUE_GROUPS} />);
 
-    expect(html).toContain("Détails des 3 groupes");
+    expect(html).toContain("Liste des 3 groupes");
     expect(html).toContain("105 collègues classés par groupe");
     expect(html).toContain("34 personnes");
     expect(html).toContain("36 personnes");
@@ -62,7 +62,7 @@ describe("détails des trois groupes", () => {
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain('aria-labelledby="colleague-groups-dialog-title"');
-    expect(html).toContain("Détails des 3 groupes");
+    expect(html).toContain("Liste des 3 groupes");
     expect(html).toContain("105 collègues classés par groupe");
     expect(html).toContain('aria-label="Fermer"');
     expect(html).toContain("Rechercher un collègue");
@@ -75,7 +75,7 @@ describe("détails des trois groupes", () => {
   it("affiche immédiatement le dossier et ses compteurs avant l’arrivée des noms", () => {
     const html = renderToStaticMarkup(<ColleagueGroupsDirectory />);
 
-    expect(html).toContain("Détails des 3 groupes");
+    expect(html).toContain("Liste des 3 groupes");
     expect(html).toContain("105 collègues classés par groupe");
     expect(html).toContain("34 personnes");
     expect(html).toContain("36 personnes");

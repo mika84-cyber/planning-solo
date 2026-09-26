@@ -148,7 +148,7 @@ export function ColleagueGroupsDirectory({ groups = EMPTY_GROUPS, isAdmin = fals
         </span>
         <span className="colleague-groups-heading">
           <span className="eyebrow">Organisation de l’équipe</span>
-          <strong>Détails des 3 groupes</strong>
+          <strong>Liste des 3 groupes</strong>
           <small>{list.total} collègues classés par groupe</small>
         </span>
         <span className="colleague-groups-caret" aria-hidden="true">⌄</span>
@@ -168,7 +168,7 @@ export function ColleagueGroupsDialog({ groups = EMPTY_GROUPS, isAdmin = false, 
       <section className="modal-card colleague-groups-dialog" role="dialog" aria-modal="true" aria-labelledby="colleague-groups-dialog-title">
         <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">×</button>
         <span className="step-label">Organisation de l’équipe</span>
-        <h2 id="colleague-groups-dialog-title">Détails des 3 groupes</h2>
+        <h2 id="colleague-groups-dialog-title">Liste des 3 groupes</h2>
         <p>{list.total} collègues classés par groupe</p>
         <ColleagueGroupsPanel list={list} isAdmin={isAdmin} />
       </section>

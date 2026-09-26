@@ -13,7 +13,7 @@ import {
   type LeaveType,
 } from "./planningLogic";
 import type { RecoveryUse } from "./overtime";
-import { fractionAllowance, isOffSeasonDate, type FractionCategory } from "./fractionRules";
+import { fractionAllowance, isOffSeasonDate } from "./fractionRules";
 import type { Entries } from "./appModel";
 import type { PdfExchangeMarker } from "./planningPdf";
 
@@ -135,7 +135,6 @@ export function useAnnualPdfExport(
   entries: Entries,
   isExceptionallyClosed: (date: string) => boolean,
   notify: (text: string) => void,
-  fractionCategory?: FractionCategory,
 ) {
   const [pdfExporting, setPdfExporting] = useState<
     AnnualPdfScope | null
@@ -242,7 +241,6 @@ export function useAnnualPdfExport(
                   LEAVE_ALLOWANCES.rtt +
                   fractionAllowance(
                     view.getFullYear(),
-                    fractionCategory,
                     Array.from(leaveTypes.entries()).reduce(
                       (total, [date, type]) =>
                         !isOffSeasonDate(date)

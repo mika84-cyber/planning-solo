@@ -5,7 +5,7 @@ type LongAbsenceNoticeProps = {
   periods: readonly AbsencePeriod[];
   group: number;
   todayKey: string;
-  sender: { fullName: string; job: string; group: number };
+  sender: { fullName: string };
 };
 
 /** Une absence de 31 jours et plus demande une dérogation : l'application

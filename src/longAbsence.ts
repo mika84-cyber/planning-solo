@@ -9,23 +9,14 @@ import { addDays, dateKey, fromKey, getDayInfo } from "./planningLogic";
 
 export const LONG_ABSENCE_DAYS = 31;
 
-const ABSENCE_LABELS = {
-  annual: ["jour de congés annuels", "jours de congés annuels"],
-  rtt: ["RTT", "RTT"],
-  fraction: ["jour de fractionnement", "jours de fractionnement"],
-  cet: ["jour de CET", "jours de CET"],
-  recovery: ["jour de récupération", "jours de récupération"],
-  other: ["jour divers", "jours divers"],
-  childcare: ["jour de garde d’enfant", "jours de garde d’enfant"],
-  exceptional: ["jour d’absence exceptionnelle", "jours d’absence exceptionnelle"],
-} as const;
-type AbsenceType = keyof typeof ABSENCE_LABELS;
+const ABSENCE_TYPES = ["annual", "rtt", "fraction", "cet", "recovery", "other", "childcare", "exceptional"] as const;
+type AbsenceType = (typeof ABSENCE_TYPES)[number];
 
 export type AbsencePeriod = { from: string; to: string; leaveType?: string; group?: number };
 export type LongAbsence = { from: string; to: string; days: number; byType: Partial<Record<AbsenceType, number>> };
 
 function isAbsence(type: string | undefined): type is AbsenceType {
-  return typeof type === "string" && Object.hasOwn(ABSENCE_LABELS, type);
+  return (ABSENCE_TYPES as readonly string[]).includes(type ?? "");
 }
 
 function daysBetween(from: string, to: string) {
@@ -86,40 +77,29 @@ export function absenceDateLabel(key: string, long = false) {
   return (long ? longDateFormatter : shortDateFormatter).format(fromKey(key)).replace(/(?<!\d)1 (?=\p{L})/u, "1er ");
 }
 
-function breakdown(byType: LongAbsence["byType"]) {
-  const parts = (Object.keys(ABSENCE_LABELS) as AbsenceType[])
-    .filter((type) => byType[type])
-    .map((type) => {
-      const count = byType[type] || 0;
-      return `${count} ${ABSENCE_LABELS[type][count > 1 ? 1 : 0]}`;
-    });
-  if (parts.length <= 1) return parts.join("");
-  return `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}`;
-}
-
-/** Brouillon du courrier de demande de dérogation, à compléter du motif. */
-export function longAbsenceLetter(absence: LongAbsence, sender: { fullName: string; job: string; group: number }, today: Date) {
-  const name = sender.fullName.trim() || "[Votre nom et prénom]";
-  const detail = breakdown(absence.byType);
+/** Brouillon du courrier de demande à la cheffe de service, à compléter du
+ *  motif. */
+export function longAbsenceLetter(absence: LongAbsence, sender: { fullName: string }, today: Date) {
+  const name = sender.fullName.trim() || "[Nom prénom]";
   return [
     name,
-    `${sender.job} — groupe ${sender.group}`,
+    "DPU - SAP",
     "",
-    "À l’attention de Madame la cheffe de service",
+    "À l’attention de Madame Laurence Nida,",
+    "Cheffe de service de l’accueil des publics.",
     "",
-    "Objet : demande de dérogation pour une absence de plus de 31 jours consécutifs",
+    "Objet : Demande de congés supérieurs à 31 jours consécutifs.",
     "",
-    "Madame,",
+    "Madame Nida,",
     "",
-    `Je souhaite m’absenter du ${absenceDateLabel(absence.from, true)} au ${absenceDateLabel(absence.to, true)}, soit ${absence.days} jours consécutifs${detail ? `, en posant ${detail}` : ""}.`,
+    `Je me permets de vous adresser ce message afin de solliciter un congé d’une durée supérieure à 31 jours, pour la période du ${absenceDateLabel(absence.from)} au ${absenceDateLabel(absence.to)} inclus.`,
     "",
-    "La note de service limitant les absences à 31 jours consécutifs, sauf dérogation exceptionnelle, je vous remercie de bien vouloir m’accorder cette dérogation.",
+    "Cette demande est motivée par [indiquer brièvement la raison si nécessaire].",
     "",
-    "[Précisez ici le motif de votre demande.]",
+    "Je vous remercie par avance pour l’attention portée à ma demande et reste à votre disposition pour toute information complémentaire.",
     "",
-    "Je reste à votre disposition pour organiser la continuité du service pendant mon absence.",
+    "Dans l’attente de votre retour, je vous prie d’agréer, Madame Nida, l’expression de mes salutations distinguées.",
     "",
-    "Je vous prie d’agréer, Madame, l’expression de mes salutations respectueuses.",
     "",
     name,
     `Le ${absenceDateLabel(dateKey(today))}`,

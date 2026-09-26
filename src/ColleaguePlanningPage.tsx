@@ -609,32 +609,36 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
               <small>Votre nom dans l’annuaire</small>
               <span className="colleague-identity-name">
                 <strong>{directoryName || "Nom à choisir"}</strong>
-                {/* La pastille est aussi l'interrupteur : un clic masque votre nom
-                    de l'annuaire, un autre le rend de nouveau visible. */}
-                {data ? <button
-                  type="button"
-                  className={`colleague-identity-status${data.self.visible ? " is-visible" : ""}`}
-                  disabled={busy || directoryName.length < 2}
-                  aria-label={data.self.visible ? "Visible dans l’annuaire : masquer mon nom" : "Masqué dans l’annuaire : afficher mon nom"}
-                  title={data.self.visible ? "Masquer mon nom dans l’annuaire" : "Afficher mon nom dans l’annuaire"}
-                  onClick={() => confirmMutation(
-                    data.self.visible
-                      ? "Masquer votre nom dans l’annuaire ? Vos collègues ne pourront plus vous trouver."
-                      : `Rendre « ${directoryName} » visible dans l’annuaire ?`,
-                    { action: "set-profile", displayName: directoryName, visible: !data.self.visible },
-                  )}
-                >
-                  {data.self.visible ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg> : null}
-                  {data.self.visible ? "Visible" : "Masqué"}
-                </button> : null}
               </span>
             </span>
-            {/* Une fois inscrit, les réglages s'ouvrent d'ici ; avant, ils sont
-                affichés dans la page. */}
-            {settingsCollapsed ? <button className="colleague-identity-edit" type="button" aria-haspopup="dialog" aria-label="Modifier mon nom dans l’annuaire" onClick={() => setSettingsOpen(true)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>
-              Modifier
-            </button> : null}
+            {/* Visibilité et réglages, côte à côte : à droite sur grand écran,
+                sur une ligne pleine largeur sous le nom sur téléphone. */}
+            <span className="colleague-identity-actions">
+              {/* La pastille est aussi l'interrupteur : un clic masque votre nom
+                  de l'annuaire, un autre le rend de nouveau visible. */}
+              {data ? <button
+                type="button"
+                className={`colleague-identity-status${data.self.visible ? " is-visible" : ""}`}
+                disabled={busy || directoryName.length < 2}
+                aria-label={data.self.visible ? "Visible dans l’annuaire : masquer mon nom" : "Masqué dans l’annuaire : afficher mon nom"}
+                title={data.self.visible ? "Masquer mon nom dans l’annuaire" : "Afficher mon nom dans l’annuaire"}
+                onClick={() => confirmMutation(
+                  data.self.visible
+                    ? "Masquer votre nom dans l’annuaire ? Vos collègues ne pourront plus vous trouver."
+                    : `Rendre « ${directoryName} » visible dans l’annuaire ?`,
+                  { action: "set-profile", displayName: directoryName, visible: !data.self.visible },
+                )}
+              >
+                {data.self.visible ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg> : null}
+                {data.self.visible ? "Visible" : "Masqué"}
+              </button> : null}
+              {/* Une fois inscrit, les réglages s'ouvrent d'ici ; avant, ils sont
+                  affichés dans la page. */}
+              {settingsCollapsed ? <button className="colleague-identity-edit" type="button" aria-haspopup="dialog" aria-label="Modifier mon nom dans l’annuaire" onClick={() => setSettingsOpen(true)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>
+                Modifier
+              </button> : null}
+            </span>
           </div>
           <p>Vous ne partagez que vos jours de présence et d’absence : vos notes, votre paie et le reste restent privés.</p>
         </div>
@@ -663,7 +667,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
             <button type="button" className={boardMode === "week" ? "active" : ""} aria-pressed={boardMode === "week"} onClick={() => setBoardMode("week")}>Semaine</button>
           </div>
           <button className="colleague-groups-open" type="button" aria-haspopup="dialog" onClick={() => setGroupsOpen(true)}>
-            <span className="colleague-groups-open-label">Détails des <span className="colleague-groups-open-count">3 </span>groupes</span>
+            <span className="colleague-groups-open-label">Liste des 3 groupes</span>
             <span className="colleague-groups-open-badges" aria-hidden="true"><b className="group-1">1</b><b className="group-2">2</b><b className="group-3">3</b></span>
           </button>
         </div>

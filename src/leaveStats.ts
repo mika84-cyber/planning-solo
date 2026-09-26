@@ -1,12 +1,6 @@
 import { EMPTY_MANUAL_ADJUSTMENTS } from "./payAllowances";
 import { annualCharges, CARRY_DEADLINE, FIRST_CARRY_YEAR } from "./annualCarryOver";
-import {
-  type FractionCategory,
-  fractionAllowance,
-  isOffSeasonDate,
-  nextFractionStep,
-  usesFractionRule,
-} from "./fractionRules";
+import { fractionAllowance, isOffSeasonDate } from "./fractionRules";
 import type { BalanceType, LeavePeriod, ManualYearAdjustments } from "./appModel";
 import {
   COUNTED_ONLY_TYPES,
@@ -25,8 +19,6 @@ export type LeaveStatsInput = {
   periods: LeavePeriod[];
   group: number;
   manualAdjustments: Record<string, ManualYearAdjustments> | undefined;
-  /** Catégorie de l'agent, qui fixe les seuils du fractionnement dès 2027. */
-  fractionCategory?: FractionCategory;
 };
 
 /** Soldes de congés d'une année et suivis sans droit à consommer.
@@ -41,7 +33,6 @@ export function computeLeaveStats({
   periods,
   group,
   manualAdjustments,
-  fractionCategory,
 }: LeaveStatsInput) {
   const todayKey = dateKey(today);
   const first = `${year}-01-01`;
@@ -162,13 +153,10 @@ export function computeLeaveStats({
   const allowances: Record<BalanceType, number> = {
     annual: LEAVE_ALLOWANCES.annual,
     rtt: LEAVE_ALLOWANCES.rtt,
-    fraction: fractionAllowance(year, fractionCategory, offSeasonDays),
+    fraction: fractionAllowance(year, offSeasonDays),
   };
   return {
     annualCarry,
-    fractionRule: usesFractionRule(year)
-      ? { offSeasonDays, next: nextFractionStep(year, fractionCategory, offSeasonDays) }
-      : null,
     balances: (["annual", "rtt", "fraction"] as const).map((type) => {
       const manualUsed = manual[`${type}Used` as "annualUsed" | "rttUsed" | "fractionUsed"];
       const sortedDetails = details[type].sort((a, b) => a.date.localeCompare(b.date));

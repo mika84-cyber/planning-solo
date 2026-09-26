@@ -109,15 +109,19 @@ export function HomeDashboard({
   // « Demain » se lit en toutes lettres ; une date, plus longue, s'écrit un
   // peu plus petit pour tenir sur la ligne.
   const nextWorkIsDate = Boolean(today.nextWork) && nextWorkDayLabel(today.nextWork!) !== "Demain";
-  const nextWorkLabel = today.nextWork
-    ? `${nextWorkDayLabel(today.nextWork)}${
+  const nextWorkLabel = today.nextWork ? nextWorkDayLabel(today.nextWork) : "Aucun à venir";
+  // Formation, fermeture ou demi-journée posée : sur une seconde ligne sous la
+  // date, sans tiret qui resterait seul en bout de ligne.
+  const nextWorkDetail = today.nextWork
+    ? [
         today.nextWorkExceptionalClosure
-          ? " — Fermeture exceptionnelle"
+          ? "Fermeture exceptionnelle"
           : today.nextWorkKind === "training"
-            ? " — Formation"
-            : ""
-      }${today.nextWorkHalfLeaveLabel ? ` — ${today.nextWorkHalfLeaveLabel}` : ""}`
-    : "Aucun à venir";
+            ? "Formation"
+            : "",
+        today.nextWorkHalfLeaveLabel || "",
+      ].filter(Boolean).join(" · ")
+    : "";
 
   const chevron = (
     <svg className="today-block-go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
@@ -171,7 +175,10 @@ export function HomeDashboard({
               </svg>
             </span>
             <span className="today-block-label">Prochain jour travaillé</span>
-            <strong className={nextWorkIsDate ? "is-date" : undefined}>{nextWorkLabel}</strong>
+            <strong className={nextWorkIsDate ? "is-date" : undefined}>
+              {nextWorkLabel}
+              {nextWorkDetail ? <span className="today-value-detail">{nextWorkDetail}</span> : null}
+            </strong>
             {today.nextWorkGroupLabel ? <small className="today-block-note">{today.nextWorkGroupLabel}</small> : null}
             {chevron}
           </button>

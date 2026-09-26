@@ -35,13 +35,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   impact juste avant la validation d’une demande.
 - `src/ChoicePicker.tsx` : sélecteur réutilisable.
 - `src/AuthScreen.tsx` : connexion Netlify Identity.
-- `src/fractionRules.ts` : jours de fractionnement dès 2027 (CA posés hors
-  mai–octobre, seuils par catégorie d'agent) ; partagé avec
+- `src/fractionRules.ts` : jours de fractionnement des agents d'accueil dès
+  2027 (CA posés hors mai–octobre : 4 j → 1, 7 j → 2) ; partagé avec
   `netlify/lib/calendar-actions/save-request.mts`.
 - `src/annualCarryOver.ts` : report des CA jusqu'au 30 avril suivant, partagé
   avec la validation serveur des demandes.
-- `src/LeaveInfoCard.tsx` : brique « Infos congés » (fractionnement, congés
-  exceptionnels) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
+- `src/LeaveInfoCard.tsx` : ligne « Infos congés » au-dessus des soldes
+  (report, fractionnement, congés exceptionnels) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
   absences de 31 jours et plus et courrier de dérogation.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
   session, renouvellement du jeton au retour et nouvelle tentative des appels

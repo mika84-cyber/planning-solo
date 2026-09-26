@@ -45,3 +45,6 @@ button.today-block:hover .today-block-go { color: var(--block-ink); }
   .today-block > strong, .today-block > strong.is-date { align-self: end; max-width: none; margin-top: 14px; font-size: 18px; line-height: 1.15; text-align: left; }
   .today-block-go { position: absolute; top: 25px; right: 14px; width: 14px; height: 14px; }
 }
+
+/* Formation, fermeture ou demi-journée : une seconde ligne sous la date. */
+.today-block > strong .today-value-detail { display: block; margin-top: 1px; color: var(--block-ink); font-size: 12px; font-weight: 750; letter-spacing: 0; }

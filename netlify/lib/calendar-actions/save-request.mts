@@ -145,7 +145,7 @@ export async function handleSaveRequest(
         const manual = profile?.manual_adjustments?.[year];
         const manualUsed = type === "rtt" ? manual?.rtt_used || 0 : manual?.fraction_used || 0;
         const allowance = type === "fraction"
-          ? fractionAllowance(Number(year), profile?.fraction_category, offSeasonAnnual(year))
+          ? fractionAllowance(Number(year), offSeasonAnnual(year))
           : LEAVE_ALLOWANCES[type];
         const remaining = allowance - manualUsed - (existingUsage[year]?.[type] || 0);
         if (remaining <= 0) return json({ error: emptyBalanceMessage(type) }, 409);

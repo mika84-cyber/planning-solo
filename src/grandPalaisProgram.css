@@ -290,6 +290,9 @@
 .expo-card-status em { border: 1px solid var(--border-control); border-radius: 999px; padding: 5px 10px; background: var(--surface); color: var(--muted); font-size: 0.72rem; font-style: normal; font-weight: 900; white-space: nowrap; }
 .useful-expo-timeline article[data-status="En cours"] .expo-card-status em::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); content: ""; }
 /* En-tête des expos : deux repères côte à côte, à la couleur de leur espace. */
+/* « Ouvert aujourd'hui » occupe toute la largeur de la rubrique : l'en-tête
+   des expos n'a pas le plafond de 720 px des autres en-têtes. */
+.grand-palais-program-intro .native-screen-heading { max-width: none; }
 .grand-palais-program-summary { display: grid; gap: 10px; margin-top: 12px; }
 .grand-palais-program-summary > article { display: grid; align-content: start; gap: 4px; min-width: 0; border: 1px solid var(--venue-line, var(--border-soft)); border-left: 4px solid var(--venue-accent, var(--accent)); border-radius: 14px; padding: 10px 12px; background: var(--venue-bg, var(--surface-soft)); }
 .grand-palais-program-summary strong { color: var(--text); font-family: var(--font-display); font-size: 1.04rem; font-weight: 600; line-height: 1.25; }

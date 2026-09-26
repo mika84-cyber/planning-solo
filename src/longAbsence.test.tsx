@@ -25,40 +25,49 @@ describe("absences de 31 jours et plus", () => {
     expect(runs).toEqual([]);
   });
 
-  it("prépare un courrier à la cheffe de service avec les dates et le détail", () => {
+  it("prépare le courrier à Madame Nida avec le nom, les dates et la date du jour", () => {
     const letter = longAbsenceLetter(
       { from: "2027-07-01", to: "2027-08-02", days: 33, byType: { annual: 18, rtt: 4 } },
-      { fullName: "Mika Exemple", job: "Agent d’accueil", group: 2 },
+      { fullName: "Mickaël Eliaszewicz" },
       new Date(2027, 4, 3),
     );
-    expect(letter).toContain("Mika Exemple\nAgent d’accueil — groupe 2");
-    expect(letter).toContain("À l’attention de Madame la cheffe de service");
-    expect(letter).toContain("du jeudi 1er juillet 2027 au lundi 2 août 2027, soit 33 jours consécutifs, en posant 18 jours de congés annuels et 4 RTT.");
-    expect(letter).toContain("[Précisez ici le motif de votre demande.]");
-    expect(letter).toContain("Le 3 mai 2027");
+    const lines = letter.split("\n");
+    expect(lines.slice(0, 5)).toEqual([
+      "Mickaël Eliaszewicz",
+      "DPU - SAP",
+      "",
+      "À l’attention de Madame Laurence Nida,",
+      "Cheffe de service de l’accueil des publics.",
+    ]);
+    expect(letter).toContain("Objet : Demande de congés supérieurs à 31 jours consécutifs.");
+    expect(letter).toContain("pour la période du 1er juillet 2027 au 2 août 2027 inclus.");
+    expect(letter).toContain("[indiquer brièvement la raison si nécessaire]");
+    expect(letter).toContain("je vous prie d’agréer, Madame Nida, l’expression de mes salutations distinguées.");
+    expect(lines.slice(-2)).toEqual(["Mickaël Eliaszewicz", "Le 3 mai 2027"]);
+    expect(longAbsenceLetter({ from: "2027-07-01", to: "2027-08-02", days: 33, byType: {} }, { fullName: " " }, new Date(2027, 4, 3))).toContain("[Nom prénom]");
   });
 
   it("signale l'absence et propose de rédiger le courrier", () => {
     const html = renderToStaticMarkup(
-      <LongAbsenceNotice periods={[period("2027-07-01", "2027-08-02", "annual")]} group={2} todayKey="2027-01-01" sender={{ fullName: "", job: "Agent d’accueil", group: 2 }} />,
+      <LongAbsenceNotice periods={[period("2027-07-01", "2027-08-02", "annual")]} group={2} todayKey="2027-01-01" sender={{ fullName: "" }} />,
     );
     expect(html).toContain("Absence de 33 jours consécutifs");
     expect(html).toContain("Rédiger le courrier");
-    expect(renderToStaticMarkup(<LongAbsenceNotice periods={[]} group={2} todayKey="2027-01-01" sender={{ fullName: "", job: "", group: 2 }} />)).toBe("");
+    expect(renderToStaticMarkup(<LongAbsenceNotice periods={[]} group={2} todayKey="2027-01-01" sender={{ fullName: "" }} />)).toBe("");
   });
 });
 
 describe("infos congés", () => {
-  it("explique le fractionnement et le barème des congés exceptionnels", () => {
+  it("explique le report, le fractionnement des agents d'accueil et les congés exceptionnels", () => {
     const html = renderToStaticMarkup(<LeaveInfoCard />);
     expect(html).toContain("<details class=\"leave-info-card\">");
+    expect(html).toContain("Report des congés annuels");
+    expect(html).toContain("jusqu’au 30 avril de l’année suivante");
     expect(html).toContain("Jours de fractionnement");
-    expect(html).toContain("Agent d’accueil, caissier, GTC de jour");
-    expect(html).toContain("4 gardes → 1 garde · 7 gardes → 2 gardes");
-    expect(html).toContain("4 jours → 1 jour · 7 jours → 2 jours");
-    expect(html).toContain("2 gardes → ½ garde · 3 gardes → 1 garde");
+    expect(html).toContain("4 à 6,5 jours posés");
+    expect(html).toContain("7 jours ou plus");
+    expect(html).not.toContain("ASI");
     expect(html).toContain("Mariage ou PACS de l’agent");
-    expect(html).toContain("5 jours");
     expect(html).toContain("Déménagement");
   });
 });

@@ -9,7 +9,6 @@ import type {
   PayProfile,
 } from "./appModel";
 import { cetAccountFromApi } from "./cet";
-import { isFractionCategory } from "./fractionRules";
 import { sanitizeDeductionPayMonths } from "./deductionPayMonth";
 import type { MecenatEntry } from "./mecenat";
 import type { OvertimeEntry, RecoveryUse } from "./overtime";
@@ -137,7 +136,6 @@ function formProfileFromApi(value: unknown): FormProfile | null {
     sundayCarryoverFromMonth: optionalFiniteNumber(raw.sunday_carryover_from_month),
     manualAdjustments: manualAdjustmentsFromApi(raw.manual_adjustments),
     cetAccount: cetAccountFromApi(raw.cet_account),
-    fractionCategory: isFractionCategory(raw.fraction_category) ? raw.fraction_category : undefined,
     deductionPayMonths: sanitizeDeductionPayMonths(raw.deduction_pay_months),
   };
 }

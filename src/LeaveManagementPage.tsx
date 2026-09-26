@@ -1,11 +1,9 @@
-import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES, type MecenatEntry } from "./mecenat";
 import { minutesLabel, nextPayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, fromKey, longDate, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
-
-const LeaveInfoCard = lazy(() => import("./LeaveInfoCard").then((module) => ({ default: module.LeaveInfoCard })));
 
 export type WorkTimeHistoryFilter = "all" | "gains" | "uses" | "paid";
 
@@ -258,9 +256,6 @@ export function LeaveManagementPage({
             {cetContent}
           </details>
         </div>
-        <Suspense fallback={null}>
-          <LeaveInfoCard />
-        </Suspense>
         {isProgramAdmin ? (
           <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
             <button className="request-archive-toggle" type="button" onClick={onToggleArchive} aria-expanded={archiveOpen}>

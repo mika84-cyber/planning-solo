@@ -1305,10 +1305,12 @@ test("une demi-journée reste le prochain jour travaillé et y est précisée", 
   }, nextWorkKey);
   await prepareDemo(page);
 
-  const closureLabel = getDayInfo(nextWork, 2).kind === "training" ? " — Formation" : "";
+  const closureLabel = getDayInfo(nextWork, 2).kind === "training" ? "Formation · " : "";
+  // La date, puis le détail sur sa propre ligne, sans tiret.
   await expect(page.locator(".today-next-work strong")).toHaveText(
-    `${nextWorkDayLabel(nextWork)}${closureLabel} — 1/2 journée posée le matin`,
+    `${nextWorkDayLabel(nextWork)}${closureLabel}1/2 journée posée le matin`,
   );
+  await expect(page.locator(".today-next-work strong .today-value-detail")).toHaveText(`${closureLabel}1/2 journée posée le matin`);
 });
 
 test("Aujourd’hui conserve le groupe pendant la demi-journée travaillée", async ({ page }) => {
@@ -3060,7 +3062,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(page.locator(".calendar-bulk-delete-below")).toHaveCSS("border-top-width", "2px");
   await expect(page.locator(".today-next-work strong")).toHaveText(
-    /^(?:Demain|[a-zà-ÿ]+ \d{2}\/\d{2})(?: — (?:Formation|Fermeture exceptionnelle))?$/i,
+    /^(?:Demain|[a-zà-ÿ]+ \d{2}\/\d{2})(?:Formation|Fermeture exceptionnelle)?$/i,
   );
   if ((page.viewportSize()?.width || 0) >= 1200) {
     expect(Math.abs(headerBox!.x - todayOverviewBox!.x)).toBeLessThanOrEqual(1);
@@ -4778,10 +4780,10 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   await prepareDemo(page);
   await goToSection(page, "colleagues");
   const mode = page.locator(".colleague-board-mode");
-  // Téléphone et Z Fold fermé : « Détails des groupes » sur deux lignes. Dès
-  // 721 px (Z Fold ouvert, ordinateur) : « Détails des 3 groupes » sur une.
+  // Téléphone et Z Fold fermé : « Liste des 3 groupes » sur deux lignes. Dès
+  // 721 px (Z Fold ouvert, ordinateur) : sur une seule.
   const wide = (page.viewportSize()?.width ?? 0) >= 721;
-  const label = wide ? "Détails des 3 groupes" : "Détails des groupes";
+  const label = "Liste des 3 groupes";
   const open = page.getByRole("button", { name: label, exact: true });
   await expect(open).toBeVisible();
   const labelBox = await open.locator(".colleague-groups-open-label").boundingBox();
@@ -4794,7 +4796,6 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   // Sur la même ligne que Jour / Semaine (centrés l'un sur l'autre), calé à
   // droite du tableau : un encadré « Groupes » au-dessus des pastilles 1, 2, 3.
   expect(Math.abs(modeBox!.y + modeBox!.height / 2 - (openBox!.y + openBox!.height / 2))).toBeLessThanOrEqual(2);
-  // Le « 3 » masqué sur téléphone ne compte pas dans le texte affiché.
   await expect(open).toHaveText(new RegExp(`^${label}\\s*1\\s*2\\s*3$`), { useInnerText: true });
   expect(openBox!.x).toBeGreaterThan(modeBox!.x + modeBox!.width);
   expect(boardBox!.x + boardBox!.width - (openBox!.x + openBox!.width)).toBeLessThanOrEqual(24);
@@ -4802,7 +4803,7 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   await expect(page.locator(".colleague-groups-directory")).toHaveCount(0);
 
   await open.click();
-  const dialog = page.getByRole("dialog", { name: "Détails des 3 groupes" });
+  const dialog = page.getByRole("dialog", { name: "Liste des 3 groupes" });
   await expect(dialog).toBeVisible();
   // Les trois groupes s'ouvrent repliés ; on en déplie un.
   const groups = dialog.locator(".colleague-group-card");
@@ -5082,38 +5083,25 @@ test("une mise à jour ignorée laisse un bouton « Faire la mise à jour » dan
   await expect(call).toHaveCount(0);
 });
 
-test("dès 2027, le fractionnement dépend des CA hors mai–octobre et de la catégorie", async ({ page }) => {
+test("les infos congés, au-dessus des soldes, expliquent report, fractionnement et congés exceptionnels", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
-  // Avant 2027 : les 2 jours d'office, sans encadré de calcul.
-  await expect(page.locator(".fraction-rule:not(.annual-carry-rule)")).toHaveCount(0);
-  await page.getByRole("button", { name: "Choisir l’année des absences" }).click();
-  await page.getByRole("option", { name: "2027", exact: true }).click();
-  const rule = page.locator(".fraction-rule:not(.annual-carry-rule)");
-  await expect(rule).toContainText("Fractionnement 2027");
-  await expect(rule).toContainText("hors mai–octobre");
-  await expect(rule).toContainText("4 j → 1 jour de fractionnement · 7 j → 2 jours de fractionnement");
-  await rule.getByRole("button", { name: "Choisir votre catégorie pour le fractionnement" }).click();
-  await page.getByRole("option", { name: "GTC de nuit", exact: true }).click();
-  await expect(rule).toContainText("3 j → 1 jour de fractionnement · 5 j → 2 jours de fractionnement");
-  expect(await rule.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-});
-
-test("les CA se reportent au 30 avril et les infos congés expliquent fractionnement et congés exceptionnels", async ({ page }) => {
-  await prepareDemo(page);
-  await goToSection(page, "leave");
-  const carry = page.locator(".annual-carry-rule");
-  await expect(carry).toContainText("Report des congés annuels");
-  await expect(carry).toContainText("Vos CA 2026 restants se prennent jusqu’au 30 avril 2027");
-  await expect(carry).toContainText("Les RTT se prennent avant le 31 décembre.");
-
   const info = page.locator("details.leave-info-card");
   await expect(info).not.toHaveAttribute("open", "");
+  // Une ligne au-dessus des soldes CA et RTT.
+  const [infoBox, gridBox] = await Promise.all([
+    info.boundingBox(),
+    page.locator(".direct-balances-content > .leave-balance-grid").boundingBox(),
+  ]);
+  expect(infoBox!.y + infoBox!.height).toBeLessThanOrEqual(gridBox!.y);
+  expect(infoBox!.height).toBeLessThan(80);
   await info.locator(":scope > summary").click();
+  await expect(info.getByRole("heading", { name: "Report des congés annuels" })).toBeVisible();
+  await expect(info).toContainText("jusqu’au 30 avril de l’année suivante");
   await expect(info.getByRole("heading", { name: "Jours de fractionnement" })).toBeVisible();
-  await expect(info).toContainText("Agent d’accueil, caissier, GTC de jour");
+  await expect(info).toContainText("4 à 6,5 jours posés");
+  await expect(info).not.toContainText("ASI");
   await expect(info.getByRole("heading", { name: "Congés exceptionnels" })).toBeVisible();
   await expect(info).toContainText("Mariage ou PACS de l’agent");
   expect(await info.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
-

@@ -1,4 +1,3 @@
-import { isFractionCategory } from "../../../src/fractionRules.ts";
 import { json, sanitizeCetAccount, type FormProfile, type ManualYearAdjustments } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
 import { sanitizeDeductionPayMonths } from "../calendarValidation.mts";
@@ -181,10 +180,6 @@ export async function handleSaveFormProfile(
     pay_profiles: previousProfile?.pay_profiles,
     manual_adjustments: previousProfile?.manual_adjustments,
     cet_account: previousProfile?.cet_account,
-    // Un enregistrement qui ne renvoie pas la catégorie la conserve.
-    fraction_category: isFractionCategory(body.fractionCategory)
-      ? body.fractionCategory
-      : previousProfile?.fraction_category,
     deduction_pay_months: previousProfile?.deduction_pay_months,
     updated_at: new Date().toISOString(),
   };
