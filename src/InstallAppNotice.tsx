@@ -32,8 +32,7 @@ export function InstallAppNotice({ available, onInstall }: { available: boolean;
         </svg>
       </span>
       <div>
-        <strong id="app-install-title">Installer Planning Solo</strong>
-        <small>Ajoutez l’application à votre écran d’accueil : elle s’ouvrira en plein écran, sans passer par le navigateur.</small>
+        <strong id="app-install-title">Installer l’application sur votre téléphone ou ordinateur</strong>
       </div>
       <div className="app-install-actions">
         <button type="button" className="app-install-button" onClick={onInstall}>Installer</button>

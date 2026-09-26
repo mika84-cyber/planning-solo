@@ -17,8 +17,7 @@ describe("bandeau d’installation pour les invités", () => {
   it("propose d’installer l’application d’un geste quand le navigateur le permet", () => {
     simuler();
     const html = renderToStaticMarkup(<InstallAppNotice available onInstall={() => undefined} />);
-    expect(html).toContain("Installer Planning Solo");
-    expect(html).toContain("écran d’accueil");
+    expect(html).toContain("Installer l’application sur votre téléphone ou ordinateur");
     expect(html).toContain(">Installer</button>");
     expect(html).toContain("Plus tard");
   });

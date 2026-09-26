@@ -158,10 +158,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
 - `public/sw.js` : cache hors ligne et activation des mises à jour.
 - `public/manifest.webmanifest` : installation de la PWA.
-- `src/InstallAppNotice.tsx` : bandeau « Installer Planning Solo » proposé aux
-  invités dont le navigateur sait installer l’application (Android,
-  ordinateur) ; `src/AppleInstallNotice.tsx` explique la marche à suivre sur
-  iPhone et iPad.
+- `src/InstallAppNotice.tsx` : bandeau « Installer l’application sur votre
+  téléphone ou ordinateur » proposé aux invités dont le navigateur sait
+  installer l’application (Android, ordinateur) ; `src/AppleInstallNotice.tsx`
+  explique la marche à suivre sur iPhone et iPad.
 - `scripts/check-bundle-budget.mjs` : plafonds CI du JavaScript, du CSS et des
   deux animations de contrôle de paie afin d’éviter de réintroduire des médias
   trop lourds.

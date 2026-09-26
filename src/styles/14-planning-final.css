@@ -1427,10 +1427,9 @@ fieldset.leave-choices {
 .apple-install-notice small{white-space:normal;line-height:1.4}
 .apple-install-icon svg{width:20px;height:20px;fill:none}
 .apple-install-dismiss{align-self:center;border:0;background:transparent;color:var(--accent-strong);font-weight:800;white-space:nowrap}
-/* Le bandeau d'installation des invités ajoute un vrai bouton « Installer »
-   à côté de « Plus tard » ; son explication reste lisible sur téléphone. */
-.app-install-notice{cursor:default}
-.app-install-notice small{display:block}
+/* Le bandeau d'installation des invités tient en une phrase, avec un vrai
+   bouton « Installer » à côté de « Plus tard ». */
+.app-install-notice{align-items:center;cursor:default}
 .app-install-notice .app-install-actions{display:flex;align-items:center;gap:6px;align-self:center}
 .app-install-actions .apple-install-dismiss{min-height:34px;padding:0 8px;font-size:.8rem}
 .app-install-button{min-height:34px;border:0;border-radius:999px;padding:0 14px;background:var(--accent);color:#fff;font:inherit;font-size:.8rem;font-weight:850;white-space:nowrap;cursor:pointer}
