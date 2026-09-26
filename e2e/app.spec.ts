@@ -4889,13 +4889,18 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
     has: page.locator(".note-author-mika"),
   });
   await expect(personalNotes).toHaveCount(2);
+  // Les notes sont rangées par mois, dans des volets fermés par défaut.
+  const months = page.locator(".home-notes-content .note-month");
+  await expect(months.first()).toBeVisible();
+  await expect(page.locator(".home-notes-content .note-month[open]")).toHaveCount(0);
   const mikaDeleteButtons = page.getByRole("button", { name: /Supprimer la note de Mika du/ });
   const agnesDeleteButtons = page.getByRole("button", { name: /Supprimer la note d’Agnès du/ });
+  await expect(mikaDeleteButtons).toHaveCount(0);
+  for (const summary of await months.locator(":scope > summary").all()) await summary.click();
+  await expect(page.locator(".home-notes-content .note-month:not([open])")).toHaveCount(0);
   await expect(mikaDeleteButtons).toHaveCount(2);
   await expect(agnesDeleteButtons).toHaveCount(2);
-  if ((page.viewportSize()?.width ?? 1000) > 720) {
-    expect(await page.locator(".home-notes-content .note-column-layout").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(1);
-  }
+  expect(await page.locator(".home-notes-content .note-month-list").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(1);
 
   page.once("dialog", async (dialog) => dialog.accept());
   await personalNotes.first().getByRole("button", { name: /Supprimer la note de Mika du/ }).click();
@@ -4908,6 +4913,11 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
   page.once("dialog", async (dialog) => dialog.accept());
   await agnesDeleteButtons.first().click();
   await expect(agnesDeleteButtons).toHaveCount(1);
+
+  // Une recherche ouvre les mois qui contiennent ses résultats.
+  await page.getByRole("searchbox", { name: "Rechercher dans les notes" }).fill("colis");
+  await expect(page.locator(".home-notes-content .note-month[open]")).toHaveCount(1);
+  await expect(page.locator(".home-notes-content .note-month[open]")).toContainText("Récupérer le colis");
 });
 
 test("la case des dimanches travaillés déplie la liste des dates", async ({ page }) => {

@@ -44,7 +44,7 @@ type HomeDashboardProps = {
   onNoteQueryChange: Dispatch<SetStateAction<string>>;
   noteSearchResults: NoteListItem[];
   upcoming: NoteListItem[];
-  renderNoteItems: (items: NoteListItem[]) => ReactNode;
+  renderNoteItems: (items: NoteListItem[], searching?: boolean) => ReactNode;
   onChooseGroup: () => void;
   onOpenNextWork: (date: Date) => void;
   onOpenLeave: () => void;

@@ -2708,9 +2708,10 @@ export default function Home() {
           onNoteQueryChange={setNoteQuery}
           noteSearchResults={noteSearchResults}
           upcoming={upcoming}
-          renderNoteItems={(items) => (
+          renderNoteItems={(items, searching) => (
             <UpcomingNoteList
               items={items}
+              monthsOpen={searching}
               entries={entries}
               ownNoteAuthorLabel={ownNoteAuthorLabel}
               onOpenDate={(date) => {

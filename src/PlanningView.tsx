@@ -26,7 +26,8 @@ export function NotesPanelContent({
   onQueryChange: (query: string) => void;
   searchResults: NoteListItem[];
   upcoming: NoteListItem[];
-  renderItems: (items: NoteListItem[]) => ReactNode;
+  /** `searching` : les résultats d'une recherche, à montrer dépliés. */
+  renderItems: (items: NoteListItem[], searching?: boolean) => ReactNode;
 }) {
   const normalizedQuery = query.trim();
   return (
@@ -43,7 +44,7 @@ export function NotesPanelContent({
       )}
       {normalizedQuery ? (
         searchResults.length ? (
-          renderItems(searchResults)
+          renderItems(searchResults, true)
         ) : (
           <p className="upcoming-empty">
             Aucune note ne correspond à « {normalizedQuery} ».

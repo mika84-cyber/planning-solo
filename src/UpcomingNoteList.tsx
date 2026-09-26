@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
-import { splitNoteItemsIntoColumns } from "./noteColumns";
 import type { Entries, NoteListItem } from "./appModel";
 import { noteDateLabel } from "./appModel";
 import { fromKey } from "./planningLogic";
 
 const weekdayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
 const monthFormatter = new Intl.DateTimeFormat("fr-FR", { month: "short" });
+const monthTitleFormatter = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
 
 /** Les lignes d'une note, débarrassées de leurs puces, avec une clé stable
  *  même lorsque deux lignes portent le même texte. */
@@ -29,9 +29,12 @@ export type UpcomingNoteListProps = {
   onOpenDate: (date: Date) => void;
   onDeleteOwnNotes: (dates: string[]) => void;
   onDeleteAgnesNote: (date: string) => void;
+  /** Pendant une recherche, les mois s'ouvrent pour montrer les résultats. */
+  monthsOpen?: boolean;
 };
 
-/** Notes et rendez-vous à venir, répartis sur deux colonnes. */
+/** Notes et rendez-vous à venir, rangés par mois dans des volets repliés
+ *  par défaut. */
 export function UpcomingNoteList({
   items,
   entries,
@@ -39,8 +42,8 @@ export function UpcomingNoteList({
   onOpenDate,
   onDeleteOwnNotes,
   onDeleteAgnesNote,
+  monthsOpen = false,
 }: UpcomingNoteListProps) {
-  const [leftItems, rightItems] = splitNoteItemsIntoColumns(items);
   const renderItem = (item: NoteListItem) => {
     const hasOwnNote = item.author === "mika" || item.notes?.some((note) => note.author === "mika");
     const ownEntry = hasOwnNote ? entries[item.date] : undefined;
@@ -161,10 +164,31 @@ export function UpcomingNoteList({
     </article>
     );
   };
+  // Un volet par mois, dans l'ordre du calendrier ; le compte distingue les
+  // notes de Mika et d'Agnès d'un même jour.
+  const months = new Map<string, { label: string; count: number; items: NoteListItem[] }>();
+  for (const item of items) {
+    const key = item.date.slice(0, 7);
+    let month = months.get(key);
+    if (!month) {
+      const label = monthTitleFormatter.format(fromKey(item.date));
+      month = { label: label.charAt(0).toUpperCase() + label.slice(1), count: 0, items: [] };
+      months.set(key, month);
+    }
+    month.items.push(item);
+    month.count += Math.max(1, item.notes?.length ?? 0);
+  }
   return (
-    <div className={`upcoming-list note-column-layout${rightItems.length ? "" : " single"}`}>
-      <div className="upcoming-note-column">{leftItems.map(renderItem)}</div>
-      {rightItems.length ? <div className="upcoming-note-column">{rightItems.map(renderItem)}</div> : null}
+    <div className="upcoming-list note-month-list">
+      {[...months.entries()].sort(([first], [second]) => first.localeCompare(second)).map(([key, month]) => (
+        <details className="note-month" key={`${monthsOpen ? "recherche" : "liste"}-${key}`} open={monthsOpen}>
+          <summary>
+            <span><strong>{month.label}</strong><small>{month.count} note{month.count > 1 ? "s" : ""}</small></span>
+            <i aria-hidden="true">⌄</i>
+          </summary>
+          <div className="upcoming-note-column">{month.items.map(renderItem)}</div>
+        </details>
+      ))}
     </div>
   );
 }
