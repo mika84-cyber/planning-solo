@@ -76,23 +76,6 @@
   justify-content: space-between;
   gap: 10px;
 }
-.add-note-line {
-  flex: 0 0 auto;
-  min-height: 34px;
-  border: 0;
-  border-radius: 10px;
-  padding: 0 14px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(122, 111, 95, 0.22);
-}
-.add-note-line:hover {
-  background: #7a6f5f;
-}
-
 /* « restant » / « pris » accolés au chiffre, dans sa couleur : la mention
    qualifie le nombre, elle n'est pas une ligne d'explication séparée. */
 .leave-balance-grid strong i {

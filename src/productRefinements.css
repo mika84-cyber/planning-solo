@@ -349,7 +349,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .app-shell .planning-calendar-section .calendar-bulk-delete-below { background: #fbf6ef; }
 .app-shell .home-notes-section { background-color: #fdfaea; background-image: linear-gradient(rgba(96, 132, 176, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(96, 132, 176, 0.16) 1px, transparent 1px); background-size: 18px 18px; background-position: -1px -1px; }
 /* Fiche du jour : un seul bouton pour écrire une note, sur toute la largeur. */
-.day-notes-editor .day-add-note-button { justify-self: stretch; min-height: 46px; border-radius: 13px; font-size: 15px; }
 
 /* Contrôle du bulletin : chaque écart dit en une phrase simple, en tête du
    résultat puis en titre de son détail chiffré. */

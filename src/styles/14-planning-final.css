@@ -1538,6 +1538,6 @@ fieldset.leave-choices {
 .work-exchange-suggestion-group.group-3 { background: #eaf3e6; color: #3f6536; }
 
 /* Boutons terracotta : un liseré sombre très léger, comme les cases de l’accueil. */
-:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .pay-inline-action, .payslip-file-drop, .home-setup-list button:not(.home-setup-dismiss), .home-add-note, .add-note-line, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .month-jump-menu button.active, .choice-picker-menu button.active) {
+:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .pay-inline-action, .payslip-file-drop, .home-setup-list button:not(.home-setup-dismiss), .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .month-jump-menu button.active, .choice-picker-menu button.active) {
   border: 1px solid var(--border-control);
 }
