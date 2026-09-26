@@ -3,3 +3,22 @@
 .upcoming-list.note-column-layout{grid-template-columns:minmax(0,1fr);align-items:start}.upcoming-note-column{display:grid;align-content:start;gap:8px;min-width:0}@media (min-width:721px){.upcoming-item.note .shared-note-stack:has(.shared-note-part + .shared-note-part){grid-template-columns:repeat(2,minmax(0,1fr))}.upcoming-item.note .shared-note-stack:has(.shared-note-part + .shared-note-part) .shared-note-part{height:100%}}
 .date-number.agnes-leave-date,.holiday-date.agnes-leave-date{box-sizing:border-box;border:2px solid #e32636;border-radius:6px}@media(max-width:720px){.day.agnes-leave-day .agnes-leave-date{z-index:12}.day.agnes-leave-day .exchange-calendar-marker{top:2px;right:2px;width:14px;height:14px}.day.agnes-leave-day .work-accident-calendar-marker{right:-11px;bottom:-5px;width:24px;height:24px}.day.agnes-leave-day .leave-calendar-marker{z-index:13;right:9px;bottom:7px;font-size:9px}.day.agnes-leave-day .leave-calendar-marker-childcare,.day.agnes-leave-day .leave-calendar-marker-sick,.day.agnes-leave-day .leave-calendar-marker-strike{font-size:11px}.day.agnes-leave-day .other-pin{right:-3px;bottom:-3px;width:15px;height:15px}.day.agnes-leave-day .other-pin svg{width:15px;height:15px}.day.agnes-leave-day .recovery-calendar-label{right:-1px!important;bottom:-1px!important;font-size:7px!important}}
 .agnes-leave-day.leave-day .leave-calendar-marker{right:9px;bottom:7px}.mini-day.agnes-leave-day.leave-day .leave-calendar-marker.compact{right:4px;bottom:4px}
+
+/* Notes de l'accueil : une carte par jour, la date en petit calendrier à
+   gauche, puis chaque note sur sa ligne — l'auteur en petites capitales à sa
+   couleur, le texte lisible en entier, une croix discrète pour supprimer. */
+.upcoming-item.note-card { display: grid; grid-template-columns: 50px minmax(0, 1fr); align-items: start; gap: 12px; border: 1px solid var(--border-soft, #e7e1d9); border-radius: 14px; padding: 10px 8px 10px 10px; background: #fff; }
+.note-card-date { display: grid; justify-items: center; align-content: center; gap: 1px; width: 50px; min-height: 58px; border: 0; border-radius: 11px; padding: 6px 0; background: #f6efe8; color: #6b4a36; font: inherit; cursor: pointer; }
+.note-card-date b { font-size: 1.3rem; font-weight: 850; line-height: 1; }
+.upcoming-item.note-card .note-card-date small { color: #8a6a55; font-size: .62rem; font-weight: 800; letter-spacing: .06em; line-height: 1.2; text-transform: uppercase; }
+.note-card-parts { display: grid; min-width: 0; }
+.upcoming-item.note-card .note-card-part { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; border: 0; border-radius: 0; padding: 3px 0; background: transparent; }
+.upcoming-item.note-card .note-card-part + .note-card-part { margin-top: 5px; border-top: 1px solid #efe5da; padding-top: 8px; }
+.note-card-open { display: grid; gap: 3px; min-width: 0; border: 0; padding: 2px 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.upcoming-item.note-card .note-card-open b { display: inline-flex; align-items: center; gap: 6px; font-size: .66rem; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.upcoming-item.note-card .note-card-open b::before { width: 8px; height: 8px; border-radius: 50%; background: currentColor; content: ""; }
+.upcoming-item.note-card .note-author-mika .note-card-open b { color: #5f7f0a; }
+.upcoming-item.note-card .note-author-agnes .note-card-open b { color: #c2416b; }
+.upcoming-item.note-card .note-card-open strong { display: block; overflow: visible; -webkit-line-clamp: unset; color: var(--text); font-size: .92rem; font-weight: 700; line-height: 1.3; white-space: pre-line; }
+.upcoming-item.note-card .note-delete-button { position: static; width: 30px; height: 30px; border: 0; border-radius: 50%; padding: 0; background: transparent; color: #a99a8c; font-size: 19px; font-weight: 700; transform: none; transition: background-color .15s ease, color .15s ease; }
+.upcoming-item.note-card .note-delete-button:hover { background: #fdeaea; color: #a5283a; }

@@ -4,6 +4,9 @@ import type { Entries, NoteListItem } from "./appModel";
 import { noteDateLabel } from "./appModel";
 import { fromKey } from "./planningLogic";
 
+const weekdayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
+const monthFormatter = new Intl.DateTimeFormat("fr-FR", { month: "short" });
+
 /** Les lignes d'une note, débarrassées de leurs puces, avec une clé stable
  *  même lorsque deux lignes portent le même texte. */
 function keyedNoteLines(value: string) {
@@ -46,6 +49,53 @@ export function UpcomingNoteList({
           .filter(([, entry]) => entry.noteGroupId === ownEntry.noteGroupId && Boolean(entry.noteText))
           .map(([date]) => date)
       : hasOwnNote ? [item.date] : [];
+    // Une carte par jour : la date en petit calendrier à gauche, puis chaque
+    // note sur sa ligne, son auteur à sa couleur et une croix discrète.
+    if (item.kind === "note" && item.notes) {
+      const date = fromKey(item.date);
+      const showYear = date.getFullYear() !== new Date().getFullYear();
+      return (
+        <article className="upcoming-item note note-card" key={item.key}>
+          <button
+            type="button"
+            className="note-card-date"
+            aria-label={`Ouvrir le ${noteDateLabel(item.date)}`}
+            onClick={() => onOpenDate(date)}
+          >
+            <small>{weekdayFormatter.format(date).replace(".", "")}</small>
+            <b>{date.getDate()}</b>
+            <small>{monthFormatter.format(date).replace(".", "")}{showYear ? ` ${date.getFullYear()}` : ""}</small>
+          </button>
+          <div className="note-card-parts">
+            {item.notes.map((note) => {
+              const author = note.author === "mika" ? ownNoteAuthorLabel : "Agnès";
+              const deletable = note.author !== "mika" || noteDates.length > 0;
+              return (
+                <div className={`note-card-part note-author-${note.author}`} key={`${item.key}-${note.author}`}>
+                  <button type="button" className="note-card-open" onClick={() => onOpenDate(date)}>
+                    <b>{author}</b>
+                    <strong>{note.label}</strong>
+                  </button>
+                  {deletable ? (
+                    <button
+                      className="note-delete-button"
+                      type="button"
+                      aria-label={`Supprimer ${note.author === "mika" ? `la note de ${ownNoteAuthorLabel}` : "la note d’Agnès"} du ${noteDateLabel(item.date)}`}
+                      title={`Supprimer ${note.author === "mika" ? `la note de ${ownNoteAuthorLabel}` : "la note d’Agnès"}`}
+                      onClick={() => note.author === "mika"
+                        ? onDeleteOwnNotes(noteDates)
+                        : onDeleteAgnesNote(item.date)}
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </article>
+      );
+    }
     return (
     <article
       className={`upcoming-item ${item.kind}`}
