@@ -37,7 +37,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/AuthScreen.tsx` : connexion Netlify Identity.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
   session, renouvellement du jeton au retour et nouvelle tentative des appels
-  `/api/` refusés pour « connexion requise ».
+  `/api/` refusés pour « connexion requise ». Garde aussi le dernier
+  planning du compte pour l'ouverture immédiate (`e2e/instant-open.spec.ts`).
+- `netlify/lib/identityUser.mts` : utilisateur connecté côté serveur, lu dans
+  le jeton vérifié par Netlify.
 - `src/DataManagementDialog.tsx` et `src/dataManagement.css` : sauvegarde,
   import et suppression des données.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.

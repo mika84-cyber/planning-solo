@@ -12,9 +12,12 @@ import {
   installSessionRenewal,
   keepSessionBackup,
   markSessionLaunch,
+  readCalendarSnapshot,
   rememberSessionEnabled,
   renewSession,
   restoreRememberedSession,
+  saveCalendarSnapshot,
+  saveSnapshotAdmin,
   setRememberSession,
 } from "./rememberedSession";
 
@@ -30,8 +33,8 @@ function storage() {
   } as Storage;
 }
 
-function session(access: string, refresh: string) {
-  return JSON.stringify({ url: "https://planning.test/.netlify/identity", token: { access_token: access, refresh_token: refresh } });
+function session(access: string, refresh: string, id = "u-1") {
+  return JSON.stringify({ id, url: "https://planning.test/.netlify/identity", token: { access_token: access, refresh_token: refresh } });
 }
 
 beforeEach(() => {
@@ -183,5 +186,35 @@ describe("appels refusés pour « connexion requise »", () => {
     const other = await window.fetch("/.netlify/identity/user");
     expect(other.status).toBe(401);
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("ouverture immédiate", () => {
+  it("garde le dernier planning du compte connecté, avec son rôle", () => {
+    expect(readCalendarSnapshot()).toBeNull();
+    saveCalendarSnapshot({ entries: { "2026-09-27": { noteText: "Colis" } } });
+    saveSnapshotAdmin(true);
+    expect(readCalendarSnapshot()).toEqual({ data: { entries: { "2026-09-27": { noteText: "Colis" } } }, isAdmin: true });
+    // Un nouveau planning garde le rôle déjà connu.
+    saveCalendarSnapshot({ entries: {} });
+    expect(readCalendarSnapshot()).toEqual({ data: { entries: {} }, isAdmin: true });
+  });
+
+  it("ne montre jamais le planning d'un autre compte", () => {
+    saveCalendarSnapshot({ entries: {} });
+    localStorage.setItem("gotrue.user", session("x.y.z", "r9", "u-2"));
+    expect(readCalendarSnapshot()).toBeNull();
+  });
+
+  it("n'est rien gardé sans « Rester connecté », et tout s'efface à la déconnexion", () => {
+    saveCalendarSnapshot({ entries: {} });
+    forgetRememberedSession();
+    expect(readCalendarSnapshot()).toBeNull();
+
+    saveCalendarSnapshot({ entries: {} });
+    setRememberSession(false);
+    saveCalendarSnapshot({ entries: {} });
+    setRememberSession(true);
+    expect(readCalendarSnapshot()).toBeNull();
   });
 });

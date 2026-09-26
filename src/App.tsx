@@ -19,8 +19,11 @@ import {
   installSessionRenewal,
   keepSessionBackup,
   markSessionLaunch,
+  readCalendarSnapshot,
   renewSession,
   restoreRememberedSession,
+  saveCalendarSnapshot,
+  saveSnapshotAdmin,
 } from "./rememberedSession";
 import { AuthScreen } from "./AuthScreen";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
@@ -472,11 +475,13 @@ export default function Home() {
         if (!active) return;
         setApprovedGrandPalaisUpdates(payload.approved ?? []);
         setIsProgramAdmin(import.meta.env.DEV && demoMode ? localDemoAdmin : payload.isAdmin);
+        if (!demoMode) saveSnapshotAdmin(payload.isAdmin === true);
         setProgramAdminKnown(true);
       })
       .catch(() => {
         if (!active) return;
-        setIsProgramAdmin(import.meta.env.DEV && demoMode && localDemoAdmin);
+        // Sans réseau, le rôle gardé avec le planning reste en place.
+        setIsProgramAdmin((current) => demoMode ? import.meta.env.DEV && localDemoAdmin : current);
         setProgramAdminKnown(true);
       });
     return () => { active = false; };
@@ -744,6 +749,8 @@ export default function Home() {
       const nettoyerLien = () => {
         if (lienAuthentification) history.replaceState({}, "", location.pathname + location.search);
       };
+      // Planning gardé sur l'appareil, affiché dès l'ouverture.
+      let showingSnapshot = false;
       try {
         // Sans « Rester connecté », une nouvelle ouverture redemande la
         // connexion ; sinon, un jeton expiré pendant la veille est renouvelé
@@ -768,19 +775,44 @@ export default function Home() {
         // « Rester connecté » : le cookie effacé à la fermeture est recréé
         // depuis la session gardée, puis le jeton est renouvelé s'il a expiré.
         restoreRememberedSession();
+        // Ouverture immédiate : le dernier planning gardé s'affiche tout de
+        // suite, pendant que la connexion est vérifiée et le serveur relu.
+        const snapshot = readCalendarSnapshot();
+        if (snapshot) {
+          try {
+            applyCalendarData(parseCalendarSnapshot(snapshot.data));
+            setIsProgramAdmin(snapshot.isAdmin);
+            showingSnapshot = true;
+          } catch {}
+        }
         const user = await getUser();
         if (!user) {
+          if (showingSnapshot) clearCalendarData();
           setAuthStatus("guest");
           return;
         }
         await renewSession();
         setUserEmail(user.email || "Compte connecté");
-        await loadCalendar();
+        // Une saisie faite pendant la relecture peut manquer à sa réponse :
+        // le planning est alors relu une seconde fois.
+        let savedMeanwhile = false;
+        const noteSave = (event: Event) => {
+          if ((event as CustomEvent<{ status?: string }>).detail?.status === "saved") savedMeanwhile = true;
+        };
+        window.addEventListener("calendar-sync", noteSave);
+        try {
+          await loadCalendar();
+          if (savedMeanwhile) await loadCalendar();
+        } finally {
+          window.removeEventListener("calendar-sync", noteSave);
+        }
         if (new URLSearchParams(location.search).get("request") === "saved") {
           confirm("La demande est enregistrée : le planning et les soldes sont à jour.");
           history.replaceState({}, "", location.pathname);
         }
       } catch {
+        // Sans réseau, le planning gardé reste affiché.
+        if (showingSnapshot && !lienAuthentification) return;
         nettoyerLien();
         setAuthStatus("guest");
         setAuthError(
@@ -813,9 +845,9 @@ export default function Home() {
   }, [authStatus, entries]);
 
   async function loadCalendar() {
-    let data;
+    let raw: unknown;
     try {
-      data = parseCalendarSnapshot(await getCalendar<unknown>());
+      raw = await getCalendar<unknown>();
     } catch (error) {
       if (error instanceof CalendarApiError && error.status === 401) {
         setAuthStatus("guest");
@@ -823,7 +855,13 @@ export default function Home() {
       }
       throw error;
     }
+    const data = parseCalendarSnapshot(raw);
     void notifyGuestSession().catch(() => undefined);
+    applyCalendarData(data);
+    saveCalendarSnapshot(raw);
+  }
+  /** Affiche un planning lu sur le serveur ou gardé sur l'appareil. */
+  function applyCalendarData(data: ReturnType<typeof parseCalendarSnapshot>) {
     setUserEmail(data.email);
     const syncedProfile = data.formProfile;
     setFormProfile(syncedProfile);
@@ -839,6 +877,18 @@ export default function Home() {
     setPartnerSharingStatus(data.partnerSharingStatus);
     setAuthStatus("ready");
     setPeriods(data.periods);
+  }
+  function clearCalendarData() {
+    setEntries({});
+    setPeriods([]);
+    setOvertimeEntries([]);
+    setRecoveryUses([]);
+    setMecenatEntries([]);
+    setFormProfile(null);
+    setPayProfiles({});
+    setPartnerEntries({});
+    setPartnerPeriods([]);
+    setPartnerSharingStatus("disabled");
   }
   useEffect(() => {
     if (authStatus !== "ready" || demoMode) return;
@@ -883,18 +933,7 @@ export default function Home() {
     setAuthStatus,
     handoffKey: HANDOFF_KEY,
     loadCalendar,
-    clearCalendarData: () => {
-      setEntries({});
-      setPeriods([]);
-      setOvertimeEntries([]);
-      setRecoveryUses([]);
-      setMecenatEntries([]);
-      setFormProfile(null);
-      setPayProfiles({});
-      setPartnerEntries({});
-      setPartnerPeriods([]);
-      setPartnerSharingStatus("disabled");
-    },
+    clearCalendarData,
     confirmMessage: confirm,
   });
 

@@ -22,6 +22,7 @@ const REMEMBER_KEY = "planning:remember-session";
 const SESSION_KEY = "gotrue.user";
 const BACKUP_KEY = "planning:session-backup";
 const LAUNCH_KEY = "planning:session-launch";
+const SNAPSHOT_KEY = "planning:calendar-snapshot-v1";
 const COOKIE_OPTIONS = "path=/; secure; samesite=lax";
 const EXPIRED = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
@@ -39,7 +40,10 @@ export function rememberSessionEnabled() {
 export function setRememberSession(enabled: boolean) {
   try {
     localStorage.setItem(REMEMBER_KEY, enabled ? "1" : "0");
-    if (!enabled) localStorage.removeItem(BACKUP_KEY);
+    if (!enabled) {
+      localStorage.removeItem(BACKUP_KEY);
+      localStorage.removeItem(SNAPSHOT_KEY);
+    }
   } catch {}
 }
 
@@ -117,6 +121,7 @@ export function keepSessionBackup() {
   try {
     if (!rememberSessionEnabled()) {
       localStorage.removeItem(BACKUP_KEY);
+      localStorage.removeItem(SNAPSHOT_KEY);
       return;
     }
     const session = localStorage.getItem(SESSION_KEY);
@@ -125,9 +130,60 @@ export function keepSessionBackup() {
   } catch {}
 }
 
-/** Déconnexion volontaire : la copie de secours disparaît avec la session. */
+/** Déconnexion volontaire : la copie de secours et le dernier planning
+ *  gardé disparaissent avec la session. */
 export function forgetRememberedSession() {
-  try { localStorage.removeItem(BACKUP_KEY); } catch {}
+  try {
+    localStorage.removeItem(BACKUP_KEY);
+    localStorage.removeItem(SNAPSHOT_KEY);
+  } catch {}
+}
+
+/** L'identifiant du compte de la session gardée. */
+function sessionUserId() {
+  try {
+    const saved = JSON.parse(read(SESSION_KEY) || read(BACKUP_KEY) || "null") as { id?: unknown } | null;
+    return typeof saved?.id === "string" && saved.id ? saved.id : null;
+  } catch {
+    return null;
+  }
+}
+
+type CalendarSnapshot = { userId: string; savedAt: string; data: unknown; isAdmin?: boolean };
+
+function readSnapshot() {
+  try {
+    const snapshot = JSON.parse(read(SNAPSHOT_KEY) || "null") as CalendarSnapshot | null;
+    const userId = sessionUserId();
+    return snapshot && userId && snapshot.userId === userId ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Ouverture immédiate : avec « Rester connecté », le dernier planning lu sur
+ *  le serveur est gardé sur l'appareil pour s'afficher dès l'ouverture,
+ *  pendant que le serveur est relu. Il n'appartient qu'au compte connecté. */
+export function saveCalendarSnapshot(data: unknown) {
+  const userId = sessionUserId();
+  if (!rememberSessionEnabled() || !userId) return;
+  const previous = readSnapshot();
+  const snapshot: CalendarSnapshot = { userId, savedAt: new Date().toISOString(), data, isAdmin: previous?.isAdmin };
+  try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot)); } catch {}
+}
+
+/** Retient aussi si le compte est administrateur, pour ses affichages. */
+export function saveSnapshotAdmin(isAdmin: boolean) {
+  const snapshot = readSnapshot();
+  if (!snapshot || snapshot.isAdmin === isAdmin) return;
+  try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({ ...snapshot, isAdmin })); } catch {}
+}
+
+/** Le dernier planning gardé pour le compte connecté, s'il y en a un. */
+export function readCalendarSnapshot() {
+  if (!rememberSessionEnabled()) return null;
+  const snapshot = readSnapshot();
+  return snapshot ? { data: snapshot.data, isAdmin: snapshot.isAdmin === true } : null;
 }
 
 /** Retient que cette ouverture de l'application est connectée : un
@@ -153,6 +209,7 @@ export function forgetSessionAtNewLaunch() {
   try {
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(BACKUP_KEY);
+    localStorage.removeItem(SNAPSHOT_KEY);
   } catch {}
   return hadSession;
 }
