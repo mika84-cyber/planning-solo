@@ -519,8 +519,13 @@
 .colleague-sharing-page .colleague-identity-actions button.colleague-identity-status { border: 1px solid #cfe6d8; }
 .colleague-sharing-page .colleague-identity-actions button.colleague-identity-status:not(.is-visible) { border-color: var(--border-control); }
 .colleague-sharing-page .colleague-identity-actions button.colleague-identity-status svg { width: 15px; height: 15px; }
+/* Écran étroit : les deux restent à droite du nom, en petit ; « Modifier »
+   se réduit à son crayon (son nom complet reste lu par les lecteurs
+   d'écran). */
 @media (max-width: 600px) {
-  .colleague-identity { grid-template-columns: 46px minmax(0, 1fr); row-gap: 12px; }
-  .colleague-identity-actions { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+  .colleague-identity-actions { gap: 6px; }
+  .colleague-sharing-page .colleague-identity-actions button.colleague-identity-status { min-height: 34px; padding: 0 10px; font-size: .74rem; }
+  .colleague-sharing-page .colleague-identity-actions button.colleague-identity-edit { width: 34px; min-height: 34px; padding: 0; }
+  .colleague-identity-edit-text { display: none; }
 }
 

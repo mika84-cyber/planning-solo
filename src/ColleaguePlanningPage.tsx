@@ -636,7 +636,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
                   affichés dans la page. */}
               {settingsCollapsed ? <button className="colleague-identity-edit" type="button" aria-haspopup="dialog" aria-label="Modifier mon nom dans l’annuaire" onClick={() => setSettingsOpen(true)}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>
-                Modifier
+                <span className="colleague-identity-edit-text">Modifier</span>
               </button> : null}
             </span>
           </div>
