@@ -13,9 +13,15 @@ import {
 import {
   getUser,
   handleAuthCallback,
-  refreshSession,
 } from "@netlify/identity";
-import { restoreRememberedSession } from "./rememberedSession";
+import {
+  forgetSessionAtNewLaunch,
+  installSessionRenewal,
+  keepSessionBackup,
+  markSessionLaunch,
+  renewSession,
+  restoreRememberedSession,
+} from "./rememberedSession";
 import { AuthScreen } from "./AuthScreen";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
@@ -739,6 +745,11 @@ export default function Home() {
         if (lienAuthentification) history.replaceState({}, "", location.pathname + location.search);
       };
       try {
+        // Sans « Rester connecté », une nouvelle ouverture redemande la
+        // connexion ; sinon, un jeton expiré pendant la veille est renouvelé
+        // à la première réponse « connexion requise ».
+        forgetSessionAtNewLaunch();
+        installSessionRenewal();
         const callback = await handleAuthCallback();
         if (callback?.type === "invite" && callback.token) {
           setInviteToken(callback.token);
@@ -762,7 +773,7 @@ export default function Home() {
           setAuthStatus("guest");
           return;
         }
-        await refreshSession();
+        await renewSession();
         setUserEmail(user.email || "Compte connecté");
         await loadCalendar();
         if (new URLSearchParams(location.search).get("request") === "saved") {
@@ -831,11 +842,17 @@ export default function Home() {
   }
   useEffect(() => {
     if (authStatus !== "ready" || demoMode) return;
+    markSessionLaunch();
+    keepSessionBackup();
     let lastRefresh = 0;
+    // Au retour dans l'application, le jeton expiré pendant la veille est
+    // renouvelé avant de relire le planning.
     const refreshSharedData = () => {
       if (document.visibilityState !== "visible" || Date.now() - lastRefresh < 5_000) return;
       lastRefresh = Date.now();
-      void loadCalendar().catch(() => undefined);
+      void renewSession()
+        .then(() => loadCalendar())
+        .catch(() => undefined);
     };
     window.addEventListener("focus", refreshSharedData);
     document.addEventListener("visibilitychange", refreshSharedData);
@@ -2712,6 +2729,7 @@ export default function Home() {
             <UpcomingNoteList
               items={items}
               monthsOpen={searching}
+              authorColors={isProgramAdmin}
               entries={entries}
               ownNoteAuthorLabel={ownNoteAuthorLabel}
               onOpenDate={(date) => {

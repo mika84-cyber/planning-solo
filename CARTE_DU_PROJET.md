@@ -35,6 +35,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   impact juste avant la validation d’une demande.
 - `src/ChoicePicker.tsx` : sélecteur réutilisable.
 - `src/AuthScreen.tsx` : connexion Netlify Identity.
+- `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
+  session, renouvellement du jeton au retour et nouvelle tentative des appels
+  `/api/` refusés pour « connexion requise ».
 - `src/DataManagementDialog.tsx` et `src/dataManagement.css` : sauvegarde,
   import et suppression des données.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.

@@ -8,6 +8,7 @@ import {
 import { calendarErrorMessage } from "./calendarApi";
 import type { AuthStatus } from "./appModel";
 import { requestPasswordRecovery } from "./passwordRecoveryApi";
+import { forgetRememberedSession } from "./rememberedSession";
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -199,6 +200,7 @@ export function useAuthenticationActions({
   }
 
   async function disconnect() {
+    forgetRememberedSession();
     await services.logout();
     localStorage.removeItem(handoffKey);
     clearCalendarData();

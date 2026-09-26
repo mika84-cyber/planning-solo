@@ -31,6 +31,8 @@ export type UpcomingNoteListProps = {
   onDeleteAgnesNote: (date: string) => void;
   /** Pendant une recherche, les mois s'ouvrent pour montrer les résultats. */
   monthsOpen?: boolean;
+  /** Compte principal : chaque note sur le fond de la couleur de son auteur. */
+  authorColors?: boolean;
 };
 
 /** Notes et rendez-vous à venir, rangés par mois dans des volets repliés
@@ -43,6 +45,7 @@ export function UpcomingNoteList({
   onDeleteOwnNotes,
   onDeleteAgnesNote,
   monthsOpen = false,
+  authorColors = false,
 }: UpcomingNoteListProps) {
   const renderItem = (item: NoteListItem) => {
     const hasOwnNote = item.author === "mika" || item.notes?.some((note) => note.author === "mika");
@@ -58,7 +61,7 @@ export function UpcomingNoteList({
       const date = fromKey(item.date);
       const showYear = date.getFullYear() !== new Date().getFullYear();
       return (
-        <article className="upcoming-item note note-card" key={item.key}>
+        <article className={`upcoming-item note note-card${authorColors ? " note-card-colored" : ""}`} key={item.key}>
           <button
             type="button"
             className="note-card-date"

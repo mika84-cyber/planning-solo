@@ -363,12 +363,18 @@
 @media (prefers-reduced-motion: reduce) { .colleague-board-mode::before { transition: none; } }
 /* Jour / Semaine à gauche ; à droite, un encadré carré : « Détails des
    groupes » en haut, sur deux lignes, les trois pastilles numérotées du
-   tableau en dessous. Il ouvre la composition des groupes. */
+   tableau en dessous. Il ouvre la composition des groupes. Dès 721 px (Z Fold
+   ouvert, ordinateur), « Détails des 3 groupes » tient sur une ligne. */
 .colleague-board-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 12px; }
 .colleague-board-toolbar .colleague-board-mode { margin: 0; }
 .colleague-sharing-page button.colleague-groups-open { display: grid; justify-items: center; align-content: center; gap: 5px; min-height: 0; margin-left: auto; border: 1px solid var(--border-control); border-radius: 14px; padding: 10px 9px; background: #fff; color: var(--accent-strong); font: inherit; font-size: .76rem; font-weight: 850; line-height: 1.1; box-shadow: none; cursor: pointer; }
 .colleague-sharing-page button.colleague-groups-open:hover { background: var(--accent-soft); }
 .colleague-groups-open-label { max-width: 78px; line-height: 1.15; text-align: center; }
+.colleague-groups-open-count { display: none; }
+@media (min-width: 721px) {
+  .colleague-groups-open-label { max-width: none; white-space: nowrap; }
+  .colleague-groups-open-count { display: inline; }
+}
 .colleague-groups-open-badges { display: flex; gap: 2px; }
 .colleague-groups-open-badges b { display: grid; place-items: center; width: 21px; height: 21px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(32, 56, 75, .16); color: #fff; font-size: .64rem; font-weight: 900; line-height: 1; }
 .colleague-groups-open-badges .group-1 { background: #b8644e; }

@@ -81,3 +81,7 @@ html[data-theme="dark"] .colleague-week-cell.rest { border-color: #8791a6; backg
 html[data-theme="dark"] .colleague-week-cell.absence { border-color: #cf7688; background: #eea3b1; color: #4a1420; }
 html[data-theme="dark"] .colleague-week-cell.partial { border-color: #9a7fcc; background: #c4affa; color: #2c1a4d; }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
+/* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
+   reconnaissables sur fond sombre. */
+html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }
+html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-agnes { background: #3a2029; }

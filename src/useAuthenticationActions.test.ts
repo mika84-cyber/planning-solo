@@ -112,4 +112,18 @@ describe("useAuthenticationActions", () => {
       "Indiquez d’abord l’adresse e-mail de votre compte.",
     );
   });
+
+  it("efface la copie de secours de la session à la déconnexion", async () => {
+    const values = new Map<string, string>([["planning:session-backup", "{}"]]);
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => void values.set(key, value),
+      removeItem: (key: string) => void values.delete(key),
+    });
+    const { actions, services } = actionFixture();
+    await actions.disconnect();
+    expect(services.logout).toHaveBeenCalled();
+    expect(values.has("planning:session-backup")).toBe(false);
+    vi.unstubAllGlobals();
+  });
 });

@@ -36,3 +36,11 @@
 .note-month > summary i { flex: none; color: var(--muted); font-size: 1.1rem; font-style: normal; transition: transform .2s ease; }
 .note-month[open] > summary { border-color: color-mix(in srgb, var(--accent) 35%, var(--border-soft, #e7e1d9)); background: #fbf5ee; }
 .note-month[open] > summary i { transform: rotate(180deg); }
+
+/* Compte principal : chaque note sur le fond de son auteur, vert pour Mika,
+   rose pour Agnès. Un petit espace remplace le filet entre les deux. */
+.upcoming-item.note-card.note-card-colored .note-card-parts { gap: 6px; }
+.upcoming-item.note-card.note-card-colored .note-card-part { border-radius: 10px; padding: 5px 2px 5px 10px; }
+.upcoming-item.note-card.note-card-colored .note-card-part + .note-card-part { margin-top: 0; border-top: 0; padding-top: 5px; }
+.upcoming-item.note-card.note-card-colored .note-author-mika { background: #f4fadf; }
+.upcoming-item.note-card.note-card-colored .note-author-agnes { background: #fdeff4; }

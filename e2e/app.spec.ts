@@ -4774,12 +4774,18 @@ test("la recherche des groupes distingue le chargement, une panne et un résulta
   expect(await directory.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
 
-test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jour / Semaine", async ({ page }) => {
+test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jour / Semaine, jusque sur Z Fold ouvert", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "colleagues");
   const mode = page.locator(".colleague-board-mode");
-  const open = page.getByRole("button", { name: "Détails des groupes" });
+  // Téléphone et Z Fold fermé : « Détails des groupes » sur deux lignes. Dès
+  // 721 px (Z Fold ouvert, ordinateur) : « Détails des 3 groupes » sur une.
+  const wide = (page.viewportSize()?.width ?? 0) >= 721;
+  const label = wide ? "Détails des 3 groupes" : "Détails des groupes";
+  const open = page.getByRole("button", { name: label, exact: true });
   await expect(open).toBeVisible();
+  const labelBox = await open.locator(".colleague-groups-open-label").boundingBox();
+  expect(labelBox!.height > 20).toBe(!wide);
   const [modeBox, openBox, boardBox] = await Promise.all([
     mode.boundingBox(),
     open.boundingBox(),
@@ -4788,7 +4794,8 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   // Sur la même ligne que Jour / Semaine (centrés l'un sur l'autre), calé à
   // droite du tableau : un encadré « Groupes » au-dessus des pastilles 1, 2, 3.
   expect(Math.abs(modeBox!.y + modeBox!.height / 2 - (openBox!.y + openBox!.height / 2))).toBeLessThanOrEqual(2);
-  await expect(open).toHaveText(/Détails des groupes\s*123/);
+  // Le « 3 » masqué sur téléphone ne compte pas dans le texte affiché.
+  await expect(open).toHaveText(new RegExp(`^${label}\\s*1\\s*2\\s*3$`), { useInnerText: true });
   expect(openBox!.x).toBeGreaterThan(modeBox!.x + modeBox!.width);
   expect(boardBox!.x + boardBox!.width - (openBox!.x + openBox!.width)).toBeLessThanOrEqual(24);
   // L'ancien volet dépliable n'est plus en bas de page.
@@ -4901,6 +4908,11 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
   await expect(mikaDeleteButtons).toHaveCount(2);
   await expect(agnesDeleteButtons).toHaveCount(2);
   expect(await page.locator(".home-notes-content .note-month-list").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(1);
+  // Sur le compte principal, chaque note a le fond de la couleur de son auteur.
+  const background = (author: string) => page.locator(`.home-notes-content .note-card-part.note-author-${author}`).first()
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  expect(await background("mika")).toBe("rgb(244, 250, 223)");
+  expect(await background("agnes")).toBe("rgb(253, 239, 244)");
 
   page.once("dialog", async (dialog) => dialog.accept());
   await personalNotes.first().getByRole("button", { name: /Supprimer la note de Mika du/ }).click();

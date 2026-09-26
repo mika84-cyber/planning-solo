@@ -663,7 +663,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
             <button type="button" className={boardMode === "week" ? "active" : ""} aria-pressed={boardMode === "week"} onClick={() => setBoardMode("week")}>Semaine</button>
           </div>
           <button className="colleague-groups-open" type="button" aria-haspopup="dialog" onClick={() => setGroupsOpen(true)}>
-            <span className="colleague-groups-open-label">Détails des groupes</span>
+            <span className="colleague-groups-open-label">Détails des <span className="colleague-groups-open-count">3 </span>groupes</span>
             <span className="colleague-groups-open-badges" aria-hidden="true"><b className="group-1">1</b><b className="group-2">2</b><b className="group-3">3</b></span>
           </button>
         </div>
