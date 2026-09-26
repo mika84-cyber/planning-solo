@@ -1650,6 +1650,16 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.getByRole("button", { name: /Mon groupe/ })).toContainText("Planning annuel du groupe 2");
   await expect(pdfScreen.getByRole("button", { name: /Les 3 groupes/ })).toBeVisible();
   await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toBeVisible();
+  // Le groupe choisi ici ne sert qu'au PDF : votre groupe, et donc votre
+  // planning avec congés, restent le groupe 2.
+  await pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"]').click();
+  await page.getByRole("listbox", { name: "Sélectionner le groupe du PDF" }).getByRole("option", { name: "Groupe 3" }).click();
+  await expect(pdfScreen.locator(".pdf-action.selected strong")).toHaveText("Groupe 3");
+  await expect(pdfScreen.locator(".pdf-action.selected")).toContainText("Planning annuel du groupe 3");
+  await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toContainText("Groupe 2 · absences enregistrées");
+  await pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"]').click();
+  await page.getByRole("listbox", { name: "Sélectionner le groupe du PDF" }).getByRole("option", { name: "Groupe 2" }).click();
+  await expect(pdfScreen.getByRole("button", { name: /Mon groupe/ })).toContainText("Planning annuel du groupe 2");
   // Six années à partir de l’année en cours.
   const holidayFirstYear = Math.max(2026, new Date().getFullYear());
   await expect(pdfScreen.getByRole("button", { name: new RegExp(`Fériés travaillés ${holidayFirstYear}–${holidayFirstYear + 5}`) })).toContainText("Pour faciliter les échanges entre groupe");
@@ -4768,7 +4778,7 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   await prepareDemo(page);
   await goToSection(page, "colleagues");
   const mode = page.locator(".colleague-board-mode");
-  const open = page.getByRole("button", { name: "Détails des 3 groupes" });
+  const open = page.getByRole("button", { name: "Détails des groupes" });
   await expect(open).toBeVisible();
   const [modeBox, openBox, boardBox] = await Promise.all([
     mode.boundingBox(),
@@ -4778,7 +4788,7 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   // Sur la même ligne que Jour / Semaine (centrés l'un sur l'autre), calé à
   // droite du tableau : un encadré « Groupes » au-dessus des pastilles 1, 2, 3.
   expect(Math.abs(modeBox!.y + modeBox!.height / 2 - (openBox!.y + openBox!.height / 2))).toBeLessThanOrEqual(2);
-  await expect(open).toHaveText(/Groupes\s*123/);
+  await expect(open).toHaveText(/Détails des groupes\s*123/);
   expect(openBox!.x).toBeGreaterThan(modeBox!.x + modeBox!.width);
   expect(boardBox!.x + boardBox!.width - (openBox!.x + openBox!.width)).toBeLessThanOrEqual(24);
   // L'ancien volet dépliable n'est plus en bas de page.

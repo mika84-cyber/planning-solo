@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { GROUP_OPTIONS, YEAR_OPTIONS, workedHolidaysYearRange } from "./planningLogic";
 
@@ -7,13 +7,14 @@ type PdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
 type PdfDownloadPageProps = {
   narrowScreen: boolean;
   year: number;
+  /** Votre groupe : celui du PDF au départ, et celui de « Mon planning avec
+   *  congés ». Le groupe choisi ici ne sert qu'au PDF et ne le change pas. */
   group: number;
   showSchoolVacations: boolean;
   exporting: PdfScope | null;
   onYearChange: (year: number) => void;
-  onGroupChange: (group: number) => void;
   onShowSchoolVacationsChange: Dispatch<SetStateAction<boolean>>;
-  onExport: (scope: PdfScope, includeSchoolVacations: boolean) => void;
+  onExport: (scope: PdfScope, includeSchoolVacations: boolean, pdfGroup: number) => void;
 };
 
 export function PdfDownloadPage({
@@ -23,11 +24,14 @@ export function PdfDownloadPage({
   showSchoolVacations,
   exporting,
   onYearChange,
-  onGroupChange,
   onShowSchoolVacationsChange,
   onExport,
 }: PdfDownloadPageProps) {
   const holidayYears = workedHolidaysYearRange();
+  // Le groupe du PDF part du vôtre et le suit s'il change ailleurs, mais le
+  // choisir ici ne touche pas à votre groupe.
+  const [pdfGroup, setPdfGroup] = useState(group);
+  useEffect(() => setPdfGroup(group), [group]);
   return (
     <section className="pdf-download-screen" id="planning-pdf" aria-labelledby="pdf-download-title">
       <div className="native-screen-heading pdf-download-intro">
@@ -64,12 +68,12 @@ export function PdfDownloadPage({
           <label>
             <span className="pdf-setting-title">
               <i aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.5" /><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M14.5 15.2c.8-.7 1.6-1 2.5-1 2 0 3.4 1.4 3.8 4" /></svg></i>
-              <span><b>Groupe</b><small>Cycle de travail</small></span>
+              <span><b>Groupe</b><small>Pour ce PDF seulement</small></span>
             </span>
             <ChoicePicker
-              value={group}
+              value={pdfGroup}
               options={GROUP_OPTIONS}
-              onChange={onGroupChange}
+              onChange={setPdfGroup}
               ariaLabel="Sélectionner le groupe du PDF"
               className="year-choice-picker"
             />
@@ -104,7 +108,7 @@ export function PdfDownloadPage({
         </div>
         <div className="pdf-download-actions">
           {([
-            ["selected", "Mon groupe", `Planning annuel du groupe ${group}`, "1 page"],
+            ["selected", pdfGroup === group ? "Mon groupe" : `Groupe ${pdfGroup}`, `Planning annuel du groupe ${pdfGroup}`, "1 page"],
             ["all", "Les 3 groupes", "Groupes 1, 2 et 3", "3 pages"],
             ["my-leaves", "Mon planning avec congés", `Groupe ${group} · absences enregistrées`, "1 page"],
             ["worked-holidays", `Fériés travaillés ${holidayYears.firstYear}–${holidayYears.lastYear}`, "Pour faciliter les échanges entre groupe", "1 page"],
@@ -114,7 +118,7 @@ export function PdfDownloadPage({
               type="button"
               className={`pdf-action ${scope}`}
               disabled={exporting !== null}
-              onClick={() => onExport(scope, scope === "worked-holidays" ? false : showSchoolVacations)}
+              onClick={() => onExport(scope, scope === "worked-holidays" ? false : showSchoolVacations, pdfGroup)}
             >
               <span className="pdf-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 15v4h14v-4" /></svg>

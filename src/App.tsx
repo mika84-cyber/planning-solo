@@ -2863,9 +2863,8 @@ export default function Home() {
               showSchoolVacations={showSchoolVacationsOnPdf}
               exporting={pdfExporting}
               onYearChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-              onGroupChange={changeGroup}
               onShowSchoolVacationsChange={setShowSchoolVacationsOnPdf}
-              onExport={(scope, includeSchoolVacations) => void exportAnnualPlanning(scope, includeSchoolVacations)}
+              onExport={(scope, includeSchoolVacations, pdfGroup) => void exportAnnualPlanning(scope, includeSchoolVacations, pdfGroup)}
             />
           )}
           forms={(

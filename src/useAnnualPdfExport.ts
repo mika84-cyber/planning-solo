@@ -150,9 +150,12 @@ export function useAnnualPdfExport(
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
   }, []);
+  /** `selectedGroup` : le groupe choisi sur la page PDF, pour « Mon groupe »
+   *  seulement ; vos congés restent toujours sur votre groupe. */
   async function exportAnnualPlanning(
     scope: AnnualPdfScope,
     includeSchoolVacations = false,
+    selectedGroup = group,
   ) {
     if (pdfExporting) return;
     setPdfExporting(scope);
@@ -217,7 +220,7 @@ export function useAnnualPdfExport(
       );
       const result = createAnnualPlanningPdf({
         year: view.getFullYear(),
-        groups: scope === "all" ? [1, 2, 3] : [group],
+        groups: scope === "all" ? [1, 2, 3] : [scope === "selected" ? selectedGroup : group],
         getDayInfo,
         wasPompidouHolidayWorked,
         leaveTypes: scope === "my-leaves" ? leaveTypes : undefined,
