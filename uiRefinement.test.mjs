@@ -256,9 +256,10 @@ describe("finitions d’interface", () => {
   });
 
   it("indique le groupe réellement présent avec l’utilisatrice aujourd’hui", () => {
-    expect(app).toContain("coWorkingGroups");
+    // Le comportement, échanges compris, est vérifié dans todayOverview.test.ts.
     expect(app).toContain("coWorkingGroupsForDate(today, group)");
-    expect(app).toContain("avec le groupe ${coWorkingGroups[0]}");
+    expect(app).toContain("Avec le groupe ${groups[0]}");
+    expect(app).toContain('entry?.exchangeRole === "return"');
   });
 
   it("conserve uniquement la saisie par horaires pour les heures supplémentaires", () => {

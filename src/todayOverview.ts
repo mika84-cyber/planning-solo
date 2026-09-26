@@ -5,6 +5,7 @@ import type { Entries, LeavePeriod, SelectedDay } from "./appModel";
 import { personalPresenceForDate } from "./appModel";
 import {
   DAY_LABELS,
+  GROUP_OPTIONS,
   coWorkingGroupsForDate,
   dateKey,
   getDayInfo,
@@ -43,13 +44,13 @@ export function computeTodayOverview({
 }: TodayOverviewInput) {
   const key = dateKey(today);
   const info = getDayInfo(today, group);
-  const coWorkingGroups = coWorkingGroupsForDate(today, group);
-  const coWorkingLabel =
-    coWorkingGroups.length === 1
-      ? `avec le groupe ${coWorkingGroups[0]}`
-      : coWorkingGroups.length > 1
-        ? `avec les groupes ${coWorkingGroups.join(" et ")}`
-        : "sans autre groupe programmé";
+  const groupsLabel = (groups: number[]) =>
+    groups.length === 1
+      ? `Avec le groupe ${groups[0]}`
+      : groups.length > 1
+        ? `Avec les groupes ${groups.join(" et ")}`
+        : "Sans autre groupe programmé";
+  const coWorkingLabel = groupsLabel(coWorkingGroupsForDate(today, group));
   const period = visibleAbsencePeriod(periods, key);
   const entry = entries[key];
   const todayExchange = workExchangeForDate(entries, key);
@@ -148,19 +149,30 @@ export function computeTodayOverview({
         : "";
   const isTodayOther =
     period?.leaveType === "other" || Boolean(entry?.leave);
+  // Un jour d'échange où l'on travaille à la place d'un collègue, on précise
+  // aussi avec qui : les groupes présents ce jour-là.
+  const exchangeWorkLabel =
+    todayExchange && entry?.exchangeRole === "return" && !todayExceptionalClosure
+      ? groupsLabel(
+        GROUP_OPTIONS.map((option) => option.value).filter(
+          (candidate) => candidate !== group && getDayInfo(today, candidate).kind === "work",
+        ),
+      )
+      : "";
 
   return {
     status: isTodayOther ? "Je ne travaille pas" : status,
     tone,
     todayGroupLabel:
-      info.kind === "work" &&
+      exchangeWorkLabel ||
+      (info.kind === "work" &&
       !todayExceptionalClosure &&
       !todayExchange &&
       (!period || period.leaveType === "half") &&
       !entry?.leave &&
       todayRecoveryMinutes < workDayMinutes
-        ? coWorkingLabel.charAt(0).toUpperCase() + coWorkingLabel.slice(1)
-        : "",
+        ? coWorkingLabel
+        : ""),
     nextWork,
     nextWorkKind,
     nextWorkExceptionalClosure: Boolean(nextWorkExceptionalClosure),
