@@ -222,3 +222,11 @@
     font-size: .52rem;
   }
 }
+
+/* Fractionnement (dès 2027) : les CA posés hors mai–octobre, le palier
+   suivant et la catégorie qui fixe les seuils. */
+.fraction-rule { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 12px 0 0; border: 1px solid var(--border-control); border-radius: 16px; padding: 12px 14px; background: #fff; }
+.fraction-rule p { display: grid; gap: 3px; min-width: 0; margin: 0; }
+.fraction-rule strong { font-size: .92rem; }
+.fraction-rule span, .fraction-rule small, .fraction-rule label { color: var(--muted); font-size: .78rem; }
+.fraction-rule label { display: grid; gap: 4px; font-weight: 800; }

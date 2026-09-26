@@ -1,4 +1,5 @@
 import { ChoicePicker } from "./ChoicePicker";
+import { FRACTION_CATEGORY_OPTIONS, FRACTION_RULES, type FractionCategory } from "./fractionRules";
 import type { BalanceType, LeavePeriod } from "./appModel";
 import {
   COUNTED_ONLY_TYPES,
@@ -32,12 +33,24 @@ type CountedOnlyBalances = Record<
   { used: number; details: BalanceDetail[] }
 >;
 
+function daysLabel(value: number) {
+  return `${value.toLocaleString("fr-FR")} jour${value > 1 ? "s" : ""}`;
+}
+
+function grantLabel(grant: number) {
+  return grant === 0.5 ? "½ jour de fractionnement" : `${grant} jour${grant > 1 ? "s" : ""} de fractionnement`;
+}
+
 type LeaveBalancesSectionProps = {
   year: number;
   totalRemaining: number;
   balances: LeaveBalance[];
   countedOnly: CountedOnlyBalances;
   manualSundayLeaveTotal: number;
+  /** Dès 2027 : CA posés hors mai–octobre et palier suivant du fractionnement. */
+  fractionRule?: { offSeasonDays: number; next: { missing: number; grant: number } | null } | null;
+  fractionCategory?: FractionCategory;
+  onFractionCategoryChange?: (category: FractionCategory) => void;
   onYearChange: (year: number) => void;
   onSelectBalance: (type: BalanceType | CountedOnlyType) => void;
   onOpenManualAdjustments: () => void;
@@ -49,6 +62,9 @@ export function LeaveBalancesSection({
   balances,
   countedOnly,
   manualSundayLeaveTotal,
+  fractionRule = null,
+  fractionCategory = "visitor_service",
+  onFractionCategoryChange,
   onYearChange,
   onSelectBalance,
   onOpenManualAdjustments,
@@ -134,6 +150,37 @@ export function LeaveBalancesSection({
           ))}
           {countedBalanceButton("sick")}
         </div>
+        {fractionRule ? (
+          <div className="fraction-rule">
+            <p>
+              <strong>Fractionnement {year}</strong>
+              <span>
+                {daysLabel(fractionRule.offSeasonDays)} de congés annuels posé{s(fractionRule.offSeasonDays)} hors mai–octobre
+                {fractionRule.next
+                  ? ` · encore ${daysLabel(fractionRule.next.missing)} pour ${grantLabel(fractionRule.next.grant)}`
+                  : " · droit complet atteint"}
+              </span>
+              <small>
+                {FRACTION_RULES[fractionCategory].steps
+                  .map((step) => `${step.from.toLocaleString("fr-FR")} j → ${grantLabel(step.grant)}`)
+                  .join(" · ")}
+                {" "}(RTT non comptés)
+              </small>
+            </p>
+            {onFractionCategoryChange ? (
+              <label>
+                <span>Votre catégorie</span>
+                <ChoicePicker
+                  value={fractionCategory}
+                  options={FRACTION_CATEGORY_OPTIONS}
+                  onChange={onFractionCategoryChange}
+                  ariaLabel="Choisir votre catégorie pour le fractionnement"
+                  className="fraction-category-picker"
+                />
+              </label>
+            ) : null}
+          </div>
+        ) : null}
         <details className="other-leave-balances">
           <summary>
             <span className="leave-secondary-menu-icon" aria-hidden="true">•••</span>

@@ -57,8 +57,10 @@ const budgets = {
   mainCss: { raw: 375 * KIB, gzip: 70 * KIB },
   // Inclut le CSS autonome de /formulaire ainsi que les pages différées de
   // partage des plannings et de messagerie ; elles n’alourdissent pas le CSS
-  // initial et restent chargées uniquement à leur ouverture.
-  totalCss: { raw: 475 * KIB, gzip: 93 * KIB },
+  // initial et restent chargées uniquement à leur ouverture. Relevé à 480 Kio
+  // le 26 septembre 2026 pour la fiche d'une journée en tuiles et le calcul
+  // du fractionnement, après retrait des styles d'onglets devenus inutiles.
+  totalCss: { raw: 480 * KIB, gzip: 93 * KIB },
   payslipSuccessEffect: 3_500 * KIB,
 };
 

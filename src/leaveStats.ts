@@ -1,4 +1,11 @@
 import { EMPTY_MANUAL_ADJUSTMENTS } from "./payAllowances";
+import {
+  type FractionCategory,
+  fractionAllowance,
+  isOffSeasonDate,
+  nextFractionStep,
+  usesFractionRule,
+} from "./fractionRules";
 import type { BalanceType, LeavePeriod, ManualYearAdjustments } from "./appModel";
 import {
   COUNTED_ONLY_TYPES,
@@ -17,6 +24,8 @@ export type LeaveStatsInput = {
   periods: LeavePeriod[];
   group: number;
   manualAdjustments: Record<string, ManualYearAdjustments> | undefined;
+  /** Catégorie de l'agent, qui fixe les seuils du fractionnement dès 2027. */
+  fractionCategory?: FractionCategory;
 };
 
 /** Soldes de congés d'une année et suivis sans droit à consommer.
@@ -31,6 +40,7 @@ export function computeLeaveStats({
   periods,
   group,
   manualAdjustments,
+  fractionCategory,
 }: LeaveStatsInput) {
   const todayKey = dateKey(today);
   const first = `${year}-01-01`;
@@ -107,18 +117,32 @@ export function computeLeaveStats({
       details[category as BalanceType].push({ date: key, units, period });
     }
   }
+  // Dès 2027, le fractionnement se gagne avec les CA posés hors mai–octobre
+  // (les demi-journées comptent pour moitié) ; les CA saisis sans date n'y
+  // entrent pas, faute de savoir quand ils ont été pris.
+  const offSeasonDays = details.annual
+    .filter((detail) => isOffSeasonDate(detail.date))
+    .reduce((sum, detail) => sum + detail.units, 0);
+  const allowances: Record<BalanceType, number> = {
+    annual: LEAVE_ALLOWANCES.annual,
+    rtt: LEAVE_ALLOWANCES.rtt,
+    fraction: fractionAllowance(year, fractionCategory, offSeasonDays),
+  };
   return {
+    fractionRule: usesFractionRule(year)
+      ? { offSeasonDays, next: nextFractionStep(year, fractionCategory, offSeasonDays) }
+      : null,
     balances: (["annual", "rtt", "fraction"] as const).map((type) => {
       const manualUsed = manual[`${type}Used` as "annualUsed" | "rttUsed" | "fractionUsed"];
       const sortedDetails = details[type].sort((a, b) => a.date.localeCompare(b.date));
       return {
         type,
-        allowance: LEAVE_ALLOWANCES[type],
+        allowance: allowances[type],
         manualUsed,
         used: used[type],
         taken: manualUsed + sortedDetails.filter((detail) => detail.date <= todayKey).reduce((sum, detail) => sum + detail.units, 0),
         upcoming: sortedDetails.filter((detail) => detail.date > todayKey).reduce((sum, detail) => sum + detail.units, 0),
-        remaining: LEAVE_ALLOWANCES[type] - used[type],
+        remaining: allowances[type] - used[type],
         details: sortedDetails,
       };
     }),

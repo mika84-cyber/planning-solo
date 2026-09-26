@@ -1,3 +1,4 @@
+import { isFractionCategory } from "../../src/fractionRules.ts";
 import { isValidDateKey, sanitizeDeductionPayMonths } from "./calendarValidation.mts";
 
 const ID_RE = /^[a-zA-Z0-9-]{8,80}$/;
@@ -359,6 +360,7 @@ export function sanitizeCalendarBackup(value: unknown) {
       pay_profiles: payProfiles,
       manual_adjustments: manualAdjustments,
       cet_account: cetAccount,
+      fraction_category: isFractionCategory(raw.fraction_category) ? raw.fraction_category : undefined,
       deduction_pay_months: sanitizeDeductionPayMonths(raw.deduction_pay_months),
       sunday_carryover: optionalNumber(raw.sunday_carryover, 100),
       sunday_carryover_year: optionalNumber(raw.sunday_carryover_year, 2100),

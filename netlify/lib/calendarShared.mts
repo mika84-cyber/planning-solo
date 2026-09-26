@@ -1,3 +1,4 @@
+import type { FractionCategory } from "../../src/fractionRules.ts";
 import type { getStore } from "@netlify/blobs";
 import { isValidDateKey } from "./calendarValidation.mts";
 
@@ -171,6 +172,8 @@ export type FormProfile = {
   pay_profiles?: Record<string, PayProfileValues>;
   manual_adjustments?: Record<string, ManualYearAdjustments>;
   cet_account?: CetStoredAccount;
+  /** Catégorie de l'agent pour le calcul du fractionnement (dès 2027). */
+  fraction_category?: FractionCategory;
   /** Retenues maladie et grève déplacées sur un autre mois de paie. */
   deduction_pay_months?: Record<string, string>;
   updated_at: string;

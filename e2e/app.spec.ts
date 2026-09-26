@@ -5081,3 +5081,20 @@ test("une mise à jour ignorée laisse un bouton « Faire la mise à jour » dan
   await Promise.all([page.waitForEvent("load"), call.click()]);
   await expect(call).toHaveCount(0);
 });
+
+test("dès 2027, le fractionnement dépend des CA hors mai–octobre et de la catégorie", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  // Avant 2027 : les 2 jours d'office, sans encadré de calcul.
+  await expect(page.locator(".fraction-rule")).toHaveCount(0);
+  await page.getByRole("button", { name: "Choisir l’année des absences" }).click();
+  await page.getByRole("option", { name: "2027", exact: true }).click();
+  const rule = page.locator(".fraction-rule");
+  await expect(rule).toContainText("Fractionnement 2027");
+  await expect(rule).toContainText("hors mai–octobre");
+  await expect(rule).toContainText("4 j → 1 jour de fractionnement · 7 j → 2 jours de fractionnement");
+  await rule.getByRole("button", { name: "Choisir votre catégorie pour le fractionnement" }).click();
+  await page.getByRole("option", { name: "GTC de nuit", exact: true }).click();
+  await expect(rule).toContainText("3 j → 1 jour de fractionnement · 5 j → 2 jours de fractionnement");
+  expect(await rule.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+});

@@ -45,4 +45,28 @@ describe("LeaveBalancesSection", () => {
     expect(html).toContain("Ajouter un historique sans renseigner chaque date");
     expect(html).toContain("Configurer");
   });
+
+  it("explique le fractionnement dès 2027 et propose la catégorie", () => {
+    const html = renderToStaticMarkup(
+      <LeaveBalancesSection
+        year={2027}
+        totalRemaining={45}
+        balances={[
+          { type: "fraction", allowance: 1, manualUsed: 0, used: 0, taken: 0, upcoming: 0, remaining: 1, details: [] },
+        ]}
+        countedOnly={countedOnly}
+        manualSundayLeaveTotal={0}
+        fractionRule={{ offSeasonDays: 5, next: { missing: 2, grant: 2 } }}
+        fractionCategory="visitor_service"
+        onFractionCategoryChange={vi.fn()}
+        onYearChange={vi.fn()}
+        onSelectBalance={vi.fn()}
+        onOpenManualAdjustments={vi.fn()}
+      />,
+    );
+    expect(html).toContain("Fractionnement 2027");
+    expect(html).toContain("5 jours de congés annuels posés hors mai–octobre · encore 2 jours pour 2 jours de fractionnement");
+    expect(html).toContain("4 j → 1 jour de fractionnement · 7 j → 2 jours de fractionnement");
+    expect(html).toContain("Agent d’accueil");
+  });
 });

@@ -36,6 +36,7 @@ import { getUser } from "@netlify/identity";
 import calendarHandler from "../functions/calendar.mts";
 import { CALENDAR_ACTIONS } from "../lib/calendar-actions/index.mts";
 import { WORK_QUOTA_OPTIONS, holidayRecoveryMinutesForQuota } from "../../src/overtime.ts";
+import { addDays, dateKey, fromKey, getDayInfo } from "../../src/planningLogic.ts";
 
 const mockedGetUser = vi.mocked(getUser);
 const request = (body: unknown, headers: Record<string, string> = {}) => new Request(
@@ -551,6 +552,51 @@ describe("API principale du calendrier", () => {
     expect(await halfDay.json()).toEqual({
       error: "Vous n’avez plus de congés annuels disponibles.",
     });
+  });
+
+  it("accorde le fractionnement 2027 selon les CA posés hors mai–octobre et la catégorie", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const workDays = (from: string, count: number) => {
+      const days: string[] = [];
+      for (let date = fromKey(from); days.length < count; date = addDays(date, 1)) {
+        const info = getDayInfo(date, 2);
+        if (!info.holiday && info.kind !== "off") days.push(dateKey(date));
+      }
+      return days;
+    };
+    const [target] = workDays("2027-03-01", 1);
+    const askFraction = (requestId: string) => calendarHandler(request({
+      action: "save-request",
+      requestId,
+      requestKind: "leave",
+      group: 2,
+      periods: [{ from: target, to: target, type: "fraction" }],
+      timed: [],
+    }));
+    const refused = await askFraction("request-fraction-none");
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toEqual({ error: "Vous n’avez plus de jours de fractionnement disponibles." });
+
+    for (const [index, date] of workDays("2027-01-11", 4).entries()) {
+      data.set(`user/user-a/period/ca-hiver-${index}`, {
+        id: `ca-hiver-${index}`, from: date, to: date, leave_type: "annual", group: 2,
+      });
+    }
+    // Cadre général : 5 jours hors période sont nécessaires.
+    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "general" });
+    expect((await askFraction("request-fraction-general")).status).toBe(409);
+    // Agent d'accueil : 4 jours suffisent pour un jour de fractionnement.
+    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "visitor_service" });
+    expect((await askFraction("request-fraction-accueil")).status).toBe(200);
+    expect(data.get("user/user-a/period/request-fraction-accueil-1")).toMatchObject({ leave_type: "fraction" });
+  });
+
+  it("garde la catégorie du fractionnement quand un autre réglage du profil change", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const save = (body: Record<string, unknown>) => calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "", ...body }));
+    expect((await save({ fractionCategory: "gtc_night" })).status).toBe(200);
+    expect((await save({ fractionCategory: "inconnue", workQuota: "half" })).status).toBe(200);
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ fraction_category: "gtc_night", work_quota: "half" });
   });
 
   it("décompte une demi-journée de RTT sur les RTT, et l’enregistre comme telle", async () => {

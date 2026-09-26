@@ -1,6 +1,7 @@
 import { LeaveRequestValidationError, normalizeLeaveRequest } from "../../../src/leaveRequest.ts";
 import { overtimeRecoveryCreditMinutes, recoveryRequestMinutes, storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
 import { addDays, dateKey, fromKey, getDayInfo, LEAVE_ALLOWANCES } from "../../../src/planningLogic.ts";
+import { fractionAllowance, isOffSeasonDate } from "../../../src/fractionRules.ts";
 import { json, listBlobs, type CalendarEntry, type FormProfile, type LeavePeriod, type LeaveType, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
 import { acquireAtomicLock } from "../calendarAtomic.mts";
 import type { CalendarActionContext } from "./context.mts";
@@ -15,8 +16,10 @@ function quotaType(type: string, halfBalance?: string): QuotaLeaveType | null {
   return type === "annual" || type === "rtt" || type === "fraction" ? type : null;
 }
 
+/** Jours pris par solde et par année, et CA posés hors mai–octobre, qui
+ *  ouvrent les jours de fractionnement dès 2027. */
 function quotaUsageByYear(periods: QuotaPeriod[]) {
-  const usage: Record<string, Record<QuotaLeaveType, number>> = {};
+  const usage: Record<string, Record<QuotaLeaveType | "offSeasonAnnual", number>> = {};
   const counted = new Set<string>();
   for (const period of periods) {
     const type = quotaType(period.leaveType, period.halfBalance);
@@ -30,8 +33,9 @@ function quotaUsageByYear(periods: QuotaPeriod[]) {
       if (counted.has(unique)) continue;
       counted.add(unique);
       const year = key.slice(0, 4);
-      usage[year] ||= { annual: 0, rtt: 0, fraction: 0 };
+      usage[year] ||= { annual: 0, rtt: 0, fraction: 0, offSeasonAnnual: 0 };
       usage[year][type] += units;
+      if (type === "annual" && isOffSeasonDate(key)) usage[year].offSeasonAnnual += units;
     }
   }
   return usage;
@@ -125,7 +129,14 @@ export async function handleSaveRequest(
           : type === "rtt"
             ? manual?.rtt_used || 0
             : manual?.fraction_used || 0;
-        const remaining = LEAVE_ALLOWANCES[type] - manualUsed - (existingUsage[year]?.[type] || 0);
+        const allowance = type === "fraction"
+          ? fractionAllowance(
+              Number(year),
+              profile?.fraction_category,
+              (existingUsage[year]?.offSeasonAnnual || 0) + (categories.offSeasonAnnual || 0),
+            )
+          : LEAVE_ALLOWANCES[type];
+        const remaining = allowance - manualUsed - (existingUsage[year]?.[type] || 0);
         if (remaining <= 0) return json({ error: emptyBalanceMessage(type) }, 409);
       }
     }

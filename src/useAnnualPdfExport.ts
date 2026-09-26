@@ -13,6 +13,7 @@ import {
   type LeaveType,
 } from "./planningLogic";
 import type { RecoveryUse } from "./overtime";
+import { fractionAllowance, isOffSeasonDate, type FractionCategory } from "./fractionRules";
 import type { Entries } from "./appModel";
 import type { PdfExchangeMarker } from "./planningPdf";
 
@@ -134,6 +135,7 @@ export function useAnnualPdfExport(
   entries: Entries,
   isExceptionallyClosed: (date: string) => boolean,
   notify: (text: string) => void,
+  fractionCategory?: FractionCategory,
 ) {
   const [pdfExporting, setPdfExporting] = useState<
     AnnualPdfScope | null
@@ -233,10 +235,25 @@ export function useAnnualPdfExport(
                 // sur le planning mais n'entament aucun droit : ils sont
                 // affichés sans entrer dans ce décompte.
                 used: quotaDaysUsed,
+                // Dès 2027, le fractionnement dépend des CA posés hors
+                // mai–octobre, comme dans les soldes.
                 remaining:
-                  Object.values(LEAVE_ALLOWANCES).reduce(
-                    (total, allowance) => total + allowance,
-                    0,
+                  LEAVE_ALLOWANCES.annual +
+                  LEAVE_ALLOWANCES.rtt +
+                  fractionAllowance(
+                    view.getFullYear(),
+                    fractionCategory,
+                    Array.from(leaveTypes.entries()).reduce(
+                      (total, [date, type]) =>
+                        !isOffSeasonDate(date)
+                          ? total
+                          : type === "annual"
+                            ? total + 1
+                            : type === "half" && !halfBalances.has(date)
+                              ? total + 0.5
+                              : total,
+                      0,
+                    ),
                   ) - quotaDaysUsed,
               }
             : undefined,

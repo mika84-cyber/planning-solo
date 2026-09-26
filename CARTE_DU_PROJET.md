@@ -35,6 +35,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   impact juste avant la validation d’une demande.
 - `src/ChoicePicker.tsx` : sélecteur réutilisable.
 - `src/AuthScreen.tsx` : connexion Netlify Identity.
+- `src/fractionRules.ts` : jours de fractionnement dès 2027 (CA posés hors
+  mai–octobre, seuils par catégorie d'agent) ; partagé avec
+  `netlify/lib/calendar-actions/save-request.mts`.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
   session, renouvellement du jeton au retour et nouvelle tentative des appels
   `/api/` refusés pour « connexion requise ». Garde aussi le dernier

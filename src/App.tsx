@@ -87,6 +87,7 @@ import {
   computePayAllowances,
 } from "./payAllowances";
 import { computeLeaveStats } from "./leaveStats";
+import { DEFAULT_FRACTION_CATEGORY, type FractionCategory } from "./fractionRules";
 import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
@@ -584,6 +585,7 @@ export default function Home() {
     entries,
     (key) => Boolean(exceptionalClosureFor(key)),
     notify,
+    formProfile?.fractionCategory,
   );
   useEffect(
     () => () => {
@@ -975,6 +977,7 @@ export default function Home() {
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
+      fractionCategory: formProfile?.fractionCategory,
       deductionPayMonths: formProfile?.deductionPayMonths,
       // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
       // ou le retirent : les autres enregistrements doivent le laisser tel quel.
@@ -1027,6 +1030,7 @@ export default function Home() {
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
+      fractionCategory: formProfile?.fractionCategory,
       deductionPayMonths: formProfile?.deductionPayMonths,
       // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
       // ou le retirent : les autres enregistrements doivent le laisser tel quel.
@@ -1097,6 +1101,7 @@ export default function Home() {
       periods,
       group,
       manualAdjustments: formProfile?.manualAdjustments,
+      fractionCategory: formProfile?.fractionCategory,
     });
     return automaticHalfBalance(
       Object.fromEntries(stats.balances.map((balance) => [balance.type, balance.remaining])),
@@ -1643,8 +1648,9 @@ export default function Home() {
         periods,
         group,
         manualAdjustments: formProfile?.manualAdjustments,
+        fractionCategory: formProfile?.fractionCategory,
       }),
-    [periods, absenceYear, group, formProfile?.manualAdjustments, now],
+    [periods, absenceYear, group, formProfile?.manualAdjustments, formProfile?.fractionCategory, now],
   );
 
   const activeManualAdjustments =
@@ -1955,6 +1961,27 @@ export default function Home() {
     const today = new Date();
     setPayView(localDate(today.getFullYear(), today.getMonth(), 1));
   }
+  /** Catégorie de l'agent pour le fractionnement : seul ce champ change, le
+   *  serveur garde le reste du profil tel quel. */
+  function changeFractionCategory(nextCategory: FractionCategory) {
+    const previousProfile = formProfile;
+    setFormProfile((current) => ({
+      ...(current ?? { fullName: "", group: String(group), signature: "" }),
+      fractionCategory: nextCategory,
+    }));
+    if (demoMode) return;
+    void postCalendar({
+      action: "save-form-profile",
+      fullName: previousProfile?.fullName || "",
+      group: previousProfile?.group || String(group),
+      signature: previousProfile?.signature || "",
+      fractionCategory: nextCategory,
+    }).catch((error) => {
+      setFormProfile(previousProfile);
+      notify(calendarErrorMessage(error, "La catégorie n’a pas pu être enregistrée."));
+    });
+  }
+
   function changeWorkQuota(nextQuota: WorkQuota) {
     const previousProfile = formProfile;
     const nextProfile: FormProfile = {
@@ -1978,6 +2005,7 @@ export default function Home() {
       pasRate: formProfile?.pasRate,
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
+      fractionCategory: formProfile?.fractionCategory,
       deductionPayMonths: formProfile?.deductionPayMonths,
       // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
       // ou le retirent : les autres enregistrements doivent le laisser tel quel.
@@ -2810,6 +2838,9 @@ export default function Home() {
                 totalRemaining={totalLeaveRemaining}
                 balances={leaveStats.balances}
                 countedOnly={leaveStats.countedOnly}
+                fractionRule={leaveStats.fractionRule}
+                fractionCategory={formProfile?.fractionCategory ?? DEFAULT_FRACTION_CATEGORY}
+                onFractionCategoryChange={changeFractionCategory}
                 manualSundayLeaveTotal={manualSundayLeaveTotal}
                 onYearChange={(year) => {
                   setAbsenceYear(year);
