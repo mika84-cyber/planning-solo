@@ -470,9 +470,9 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Vous pouvez mélanger plusieurs types dans une même demande.");
     expect(app).toContain("Étape 2 sur 3 · Choisissez les dates");
     expect(app).toContain("Autres types de congé");
-    expect(app).toContain('role="tablist" aria-label="Contenu de la journée"');
-    expect(app).toContain('role="tabpanel" aria-labelledby="day-leave-tab"');
-    expect(app).toContain('aria-labelledby={quickNoteMode ? undefined : "day-notes-tab"}');
+    expect(app).toContain('<div className="day-action-grid">');
+    expect(app).toContain('className="day-note-tile"');
+    expect(app).not.toContain('role="tablist" aria-label="Contenu de la journée"');
     expect(workTimeDialogs).toContain('[480, "8 h"], [360, "6 h"], [240, "4 h"], [225, "3 h 45"], [120, "2 h"]');
     expect(workTimeDialogs).toContain('defaultRecoveryMinutes(draft.kind, effectiveQuota)');
     expect(workTimeDialogs).toContain('draft.kind === "holiday" ? [] : [[null, "Durée libre"]]');

@@ -2519,8 +2519,7 @@ test("le tampon de fermeture conserve la date lisible sur ordinateur et téléph
   await expect(visibleDate).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await firstClosedDay.click();
   const closedDayDialog = page.getByRole("dialog", { name: /mercredi 9 septembre 2026/i });
-  await closedDayDialog.getByRole("tab", { name: /^Notes/ }).click();
-  // Le champ ne s'ouvre qu'à la demande, par le bouton unique « Ajouter une note ».
+  // Le champ ne s'ouvre qu'à la demande, par la tuile « Notes ».
   await expect(closedDayDialog.locator("textarea")).toHaveCount(0);
   await closedDayDialog.getByRole("button", { name: "Ajouter une note" }).click();
   await closedDayDialog.locator("textarea").fill("Inventaire après fermeture");
@@ -4061,22 +4060,23 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
 
   await page.locator(".month-card .day.work").first().click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
-  const dayTabs = dayDialog.getByRole("tablist", { name: "Contenu de la journée" });
-  const leaveTab = dayTabs.getByRole("tab", { name: /^Congés/ });
-  const notesTab = dayTabs.getByRole("tab", { name: /^Notes/ });
-  await expect(leaveTab).toHaveAttribute("aria-selected", "true");
-  await expect(notesTab).toBeVisible();
-  await expect(leaveTab.locator(".day-tab-icon svg")).toBeVisible();
-  await expect(notesTab.locator(".day-tab-icon svg")).toBeVisible();
-  await expect(leaveTab).toHaveCSS("min-height", "72px");
-  await expect(leaveTab).not.toHaveCSS("box-shadow", "none");
-  await expect(dayDialog.locator("#day-leave-panel")).toBeVisible();
-  await expect(dayDialog.locator("#day-notes-panel")).toBeHidden();
-  await notesTab.click();
-  await expect(notesTab).toHaveAttribute("aria-selected", "true");
-  await expect(dayDialog.locator("#day-leave-panel")).toBeHidden();
-  await expect(dayDialog.locator("#day-notes-panel")).toBeVisible();
-  await leaveTab.click();
+  // Une seule fiche : quatre tuiles de même gabarit, sans onglets.
+  await expect(dayDialog.getByRole("tablist")).toHaveCount(0);
+  const tiles = dayDialog.locator(".day-action-grid .leave-choices-primary > button, .day-action-grid .day-note-tile, .day-action-grid .day-action-other > summary");
+  await expect(tiles).toHaveCount(4);
+  await expect(tiles).toHaveText([/^Congé/, /^Récupération/, /^Notes/, /^Autres/]);
+  const tileBoxes = await tiles.evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ x, y, width, height }) => ({ x, y, width, height })));
+  expect(Math.abs(tileBoxes[0].y - tileBoxes[1].y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(tileBoxes[2].y - tileBoxes[3].y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(tileBoxes[0].width - tileBoxes[3].width)).toBeLessThanOrEqual(1);
+  await expect(tiles.first().locator("i svg")).toBeVisible();
+  // « Notes » ouvre la saisie dans la fiche ; « Annuler » revient aux tuiles.
+  await dayDialog.locator(".day-note-tile").click();
+  await expect(dayDialog.locator("textarea")).toBeFocused();
+  await expect(dayDialog.locator(".day-action-grid")).toHaveCount(0);
+  await dayDialog.getByRole("button", { name: "Annuler", exact: true }).click();
+  await expect(dayDialog.locator("textarea")).toHaveCount(0);
+  await expect(dayDialog.locator(".day-action-grid")).toBeVisible();
   await expect(dayDialog.locator(".leave-choices-primary > button")).toHaveText([
     /Congé/,
     /Récupération/,
