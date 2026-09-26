@@ -38,6 +38,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/fractionRules.ts` : jours de fractionnement dès 2027 (CA posés hors
   mai–octobre, seuils par catégorie d'agent) ; partagé avec
   `netlify/lib/calendar-actions/save-request.mts`.
+- `src/annualCarryOver.ts` : report des CA jusqu'au 30 avril suivant, partagé
+  avec la validation serveur des demandes.
+- `src/LeaveInfoCard.tsx` : brique « Infos congés » (fractionnement, congés
+  exceptionnels) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
+  absences de 31 jours et plus et courrier de dérogation.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
   session, renouvellement du jeton au retour et nouvelle tentative des appels
   `/api/` refusés pour « connexion requise ». Garde aussi le dernier

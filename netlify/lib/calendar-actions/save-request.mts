@@ -2,6 +2,7 @@ import { LeaveRequestValidationError, normalizeLeaveRequest } from "../../../src
 import { overtimeRecoveryCreditMinutes, recoveryRequestMinutes, storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
 import { addDays, dateKey, fromKey, getDayInfo, LEAVE_ALLOWANCES } from "../../../src/planningLogic.ts";
 import { fractionAllowance, isOffSeasonDate } from "../../../src/fractionRules.ts";
+import { annualCharges } from "../../../src/annualCarryOver.ts";
 import { json, listBlobs, type CalendarEntry, type FormProfile, type LeavePeriod, type LeaveType, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
 import { acquireAtomicLock } from "../calendarAtomic.mts";
 import type { CalendarActionContext } from "./context.mts";
@@ -16,10 +17,9 @@ function quotaType(type: string, halfBalance?: string): QuotaLeaveType | null {
   return type === "annual" || type === "rtt" || type === "fraction" ? type : null;
 }
 
-/** Jours pris par solde et par année, et CA posés hors mai–octobre, qui
- *  ouvrent les jours de fractionnement dès 2027. */
+/** Jours pris par solde et par année civile. */
 function quotaUsageByYear(periods: QuotaPeriod[]) {
-  const usage: Record<string, Record<QuotaLeaveType | "offSeasonAnnual", number>> = {};
+  const usage: Record<string, Record<QuotaLeaveType, number>> = {};
   const counted = new Set<string>();
   for (const period of periods) {
     const type = quotaType(period.leaveType, period.halfBalance);
@@ -33,9 +33,8 @@ function quotaUsageByYear(periods: QuotaPeriod[]) {
       if (counted.has(unique)) continue;
       counted.add(unique);
       const year = key.slice(0, 4);
-      usage[year] ||= { annual: 0, rtt: 0, fraction: 0, offSeasonAnnual: 0 };
+      usage[year] ||= { annual: 0, rtt: 0, fraction: 0 };
       usage[year][type] += units;
-      if (type === "annual" && isOffSeasonDate(key)) usage[year].offSeasonAnnual += units;
     }
   }
   return usage;
@@ -102,7 +101,7 @@ export async function handleSaveRequest(
       store.get(blob.key, { type: "json" }) as Promise<LeavePeriod | null>,
     ))).filter((period): period is LeavePeriod => Boolean(period));
     const targetIds = new Set(normalized.periods.map((period) => period.id));
-    const existingUsage = quotaUsageByYear(storedPeriods
+    const existingPeriods = storedPeriods
       .filter((period) => !targetIds.has(period.id))
       .map((period) => ({
         id: period.id,
@@ -111,30 +110,42 @@ export async function handleSaveRequest(
         leaveType: period.leave_type || "",
         halfBalance: period.half_balance,
         group: period.group || normalized.group,
-      })));
-    const requestedUsage = quotaUsageByYear(normalized.periods.map((period) => ({
+      }));
+    const requestedPeriods = normalized.periods.map((period) => ({
       id: period.id,
       from: period.from,
       to: period.to,
       leaveType: period.leaveType,
       halfBalance: period.halfBalance,
       group: period.group,
-    })));
+    }));
+    const existingUsage = quotaUsageByYear(existingPeriods);
+    const requestedUsage = quotaUsageByYear(requestedPeriods);
+    // Congés annuels : les restes d'une année se prennent jusqu'au 30 avril
+    // suivant. Chaque jour est décompté sur l'année dont il consomme le solde,
+    // comme dans l'application ; la demande est refusée si cette année-là
+    // n'a plus rien.
+    const annualAvailable = (year: number) =>
+      LEAVE_ALLOWANCES.annual - (profile?.manual_adjustments?.[String(year)]?.annual_used || 0);
+    const existingAnnual = annualCharges(existingPeriods, annualAvailable);
+    const combinedAnnual = annualCharges([...existingPeriods, ...requestedPeriods], annualAvailable);
+    for (const [year, total] of combinedAnnual.charged) {
+      const before = existingAnnual.charged.get(year) || 0;
+      if (total > before && annualAvailable(year) - before <= 0)
+        return json({ error: emptyBalanceMessage("annual") }, 409);
+    }
+    // Les CA posés hors mai–octobre ouvrent le fractionnement de l'année
+    // dont ils consomment le solde (jusqu'au 30 avril suivant compris).
+    const offSeasonAnnual = (year: string) => combinedAnnual.charges
+      .filter((charge) => String(charge.year) === year && isOffSeasonDate(charge.date))
+      .reduce((sum, charge) => sum + charge.units, 0);
     for (const [year, categories] of Object.entries(requestedUsage)) {
-      for (const type of ["annual", "rtt", "fraction"] as const) {
+      for (const type of ["rtt", "fraction"] as const) {
         if (categories[type] <= 0) continue;
         const manual = profile?.manual_adjustments?.[year];
-        const manualUsed = type === "annual"
-          ? manual?.annual_used || 0
-          : type === "rtt"
-            ? manual?.rtt_used || 0
-            : manual?.fraction_used || 0;
+        const manualUsed = type === "rtt" ? manual?.rtt_used || 0 : manual?.fraction_used || 0;
         const allowance = type === "fraction"
-          ? fractionAllowance(
-              Number(year),
-              profile?.fraction_category,
-              (existingUsage[year]?.offSeasonAnnual || 0) + (categories.offSeasonAnnual || 0),
-            )
+          ? fractionAllowance(Number(year), profile?.fraction_category, offSeasonAnnual(year))
           : LEAVE_ALLOWANCES[type];
         const remaining = allowance - manualUsed - (existingUsage[year]?.[type] || 0);
         if (remaining <= 0) return json({ error: emptyBalanceMessage(type) }, 409);

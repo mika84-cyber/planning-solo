@@ -565,6 +565,8 @@ describe("API principale du calendrier", () => {
       return days;
     };
     const [target] = workDays("2027-03-01", 1);
+    // 2026 soldé : les CA de janvier 2027 ne partent pas sur son reste.
+    const spent2026 = { "2026": { annual_used: 29, rtt_used: 0, fraction_used: 0, sunday_leave_jan_jun: 0, sunday_leave_jul_sep: 0, sunday_leave_oct_nov: 0, sunday_leave_dec: 0 } };
     const askFraction = (requestId: string) => calendarHandler(request({
       action: "save-request",
       requestId,
@@ -583,12 +585,35 @@ describe("API principale du calendrier", () => {
       });
     }
     // Cadre général : 5 jours hors période sont nécessaires.
-    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "general" });
+    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "general", manual_adjustments: spent2026 });
     expect((await askFraction("request-fraction-general")).status).toBe(409);
     // Agent d'accueil : 4 jours suffisent pour un jour de fractionnement.
-    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "visitor_service" });
+    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", fraction_category: "visitor_service", manual_adjustments: spent2026 });
     expect((await askFraction("request-fraction-accueil")).status).toBe(200);
     expect(data.get("user/user-a/period/request-fraction-accueil-1")).toMatchObject({ leave_type: "fraction" });
+  });
+
+  it("prend les CA de janvier à avril sur le reste de l’année précédente", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const firstWorkDay = (from: string) => {
+      for (let date = fromKey(from); ; date = addDays(date, 1)) {
+        const info = getDayInfo(date, 2);
+        if (!info.holiday && info.kind !== "off") return dateKey(date);
+      }
+    };
+    const askAnnual = (requestId: string, date: string) => calendarHandler(request({
+      action: "save-request", requestId, requestKind: "leave", group: 2,
+      periods: [{ from: date, to: date, type: "annual" }], timed: [],
+    }));
+    // 2027 soldé, 2026 non : un CA en mars 2027 passe sur le reste 2026.
+    data.set("user/user-a/form-profile", { full_name: "", group: "2", signature: "", manual_adjustments: {
+      "2026": { annual_used: 28, rtt_used: 0, fraction_used: 0, sunday_leave_jan_jun: 0, sunday_leave_jul_sep: 0, sunday_leave_oct_nov: 0, sunday_leave_dec: 0 },
+      "2027": { annual_used: 29, rtt_used: 0, fraction_used: 0, sunday_leave_jan_jun: 0, sunday_leave_jul_sep: 0, sunday_leave_oct_nov: 0, sunday_leave_dec: 0 },
+    } });
+    expect((await askAnnual("request-report-mars", firstWorkDay("2027-03-01"))).status).toBe(200);
+    // Le reste 2026 est épuisé, et après le 30 avril il ne vaut plus.
+    expect((await askAnnual("request-report-avril", firstWorkDay("2027-04-05"))).status).toBe(409);
+    expect((await askAnnual("request-report-mai", firstWorkDay("2027-05-03"))).status).toBe(409);
   });
 
   it("garde la catégorie du fractionnement quand un autre réglage du profil change", async () => {

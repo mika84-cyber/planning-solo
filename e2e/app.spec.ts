@@ -5086,10 +5086,10 @@ test("dès 2027, le fractionnement dépend des CA hors mai–octobre et de la ca
   await prepareDemo(page);
   await goToSection(page, "leave");
   // Avant 2027 : les 2 jours d'office, sans encadré de calcul.
-  await expect(page.locator(".fraction-rule")).toHaveCount(0);
+  await expect(page.locator(".fraction-rule:not(.annual-carry-rule)")).toHaveCount(0);
   await page.getByRole("button", { name: "Choisir l’année des absences" }).click();
   await page.getByRole("option", { name: "2027", exact: true }).click();
-  const rule = page.locator(".fraction-rule");
+  const rule = page.locator(".fraction-rule:not(.annual-carry-rule)");
   await expect(rule).toContainText("Fractionnement 2027");
   await expect(rule).toContainText("hors mai–octobre");
   await expect(rule).toContainText("4 j → 1 jour de fractionnement · 7 j → 2 jours de fractionnement");
@@ -5098,3 +5098,22 @@ test("dès 2027, le fractionnement dépend des CA hors mai–octobre et de la ca
   await expect(rule).toContainText("3 j → 1 jour de fractionnement · 5 j → 2 jours de fractionnement");
   expect(await rule.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
+
+test("les CA se reportent au 30 avril et les infos congés expliquent fractionnement et congés exceptionnels", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  const carry = page.locator(".annual-carry-rule");
+  await expect(carry).toContainText("Report des congés annuels");
+  await expect(carry).toContainText("Vos CA 2026 restants se prennent jusqu’au 30 avril 2027");
+  await expect(carry).toContainText("Les RTT se prennent avant le 31 décembre.");
+
+  const info = page.locator("details.leave-info-card");
+  await expect(info).not.toHaveAttribute("open", "");
+  await info.locator(":scope > summary").click();
+  await expect(info.getByRole("heading", { name: "Jours de fractionnement" })).toBeVisible();
+  await expect(info).toContainText("Agent d’accueil, caissier, GTC de jour");
+  await expect(info.getByRole("heading", { name: "Congés exceptionnels" })).toBeVisible();
+  await expect(info).toContainText("Mariage ou PACS de l’agent");
+  expect(await info.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+});
+

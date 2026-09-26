@@ -1,4 +1,5 @@
 import { EMPTY_MANUAL_ADJUSTMENTS } from "./payAllowances";
+import { annualCharges, CARRY_DEADLINE, FIRST_CARRY_YEAR } from "./annualCarryOver";
 import {
   type FractionCategory,
   fractionAllowance,
@@ -94,6 +95,8 @@ export function computeLeaveStats({
     // Une demi-journée est prise sur le solde choisi, CA par défaut.
     const category =
       period.leaveType === "half" ? halfBalanceOf(period) : period.leaveType;
+    // Les CA suivent le report jusqu'au 30 avril : décomptés plus bas.
+    if (category === "annual") continue;
     const units = period.leaveType === "half" ? 0.5 : 1;
     const from = period.from < first ? first : period.from;
     const to = period.to > last ? last : period.to;
@@ -117,6 +120,39 @@ export function computeLeaveStats({
       details[category as BalanceType].push({ date: key, units, period });
     }
   }
+  // Congés annuels : les restes d'une année se prennent jusqu'au 30 avril
+  // suivant, avant ceux de l'année en cours. Chaque jour est décompté sur
+  // l'année dont il consomme le solde.
+  const annualAvailable = (target: number) =>
+    LEAVE_ALLOWANCES.annual -
+    (manualAdjustments?.[String(target)] ?? EMPTY_MANUAL_ADJUSTMENTS).annualUsed;
+  const { charges, charged } = annualCharges(
+    periods.map((period) => ({ ...period, group: period.group || group })),
+    annualAvailable,
+  );
+  for (const charge of charges) {
+    if (charge.year !== year) continue;
+    used.annual += charge.units;
+    details.annual.push({ date: charge.date, units: charge.units, period: charge.period });
+  }
+  const unitsOf = (target: number, dateYear: number) =>
+    charges
+      .filter((charge) => charge.year === target && charge.date.startsWith(`${dateYear}-`))
+      .reduce((sum, charge) => sum + charge.units, 0);
+  const annualCarry = {
+    /** Reste des CA de l'année précédente, à prendre avant le 30 avril. */
+    fromPrevious: year - 1 >= FIRST_CARRY_YEAR
+      ? {
+          year: year - 1,
+          used: unitsOf(year - 1, year),
+          remaining: Math.max(0, annualAvailable(year - 1) - (charged.get(year - 1) || 0)),
+          deadline: `${year}-${CARRY_DEADLINE}`,
+        }
+      : null,
+    /** CA de l'année déjà posés du 1er janvier au 30 avril suivant. */
+    intoNext: year >= FIRST_CARRY_YEAR ? unitsOf(year, year + 1) : 0,
+    deadline: `${year + 1}-${CARRY_DEADLINE}`,
+  };
   // Dès 2027, le fractionnement se gagne avec les CA posés hors mai–octobre
   // (les demi-journées comptent pour moitié) ; les CA saisis sans date n'y
   // entrent pas, faute de savoir quand ils ont été pris.
@@ -129,6 +165,7 @@ export function computeLeaveStats({
     fraction: fractionAllowance(year, fractionCategory, offSeasonDays),
   };
   return {
+    annualCarry,
     fractionRule: usesFractionRule(year)
       ? { offSeasonDays, next: nextFractionStep(year, fractionCategory, offSeasonDays) }
       : null,

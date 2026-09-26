@@ -37,6 +37,11 @@ function daysLabel(value: number) {
   return `${value.toLocaleString("fr-FR")} jour${value > 1 ? "s" : ""}`;
 }
 
+function deadlineLabel(key: string) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(new Date(year, month - 1, day));
+}
+
 function grantLabel(grant: number) {
   return grant === 0.5 ? "½ jour de fractionnement" : `${grant} jour${grant > 1 ? "s" : ""} de fractionnement`;
 }
@@ -50,6 +55,13 @@ type LeaveBalancesSectionProps = {
   /** Dès 2027 : CA posés hors mai–octobre et palier suivant du fractionnement. */
   fractionRule?: { offSeasonDays: number; next: { missing: number; grant: number } | null } | null;
   fractionCategory?: FractionCategory;
+  /** Report des CA : reste de l'année précédente et jours déjà posés sur
+   *  le solde de l'année jusqu'au 30 avril suivant. */
+  annualCarry?: {
+    fromPrevious: { year: number; used: number; remaining: number; deadline: string } | null;
+    intoNext: number;
+    deadline: string;
+  };
   onFractionCategoryChange?: (category: FractionCategory) => void;
   onYearChange: (year: number) => void;
   onSelectBalance: (type: BalanceType | CountedOnlyType) => void;
@@ -64,6 +76,7 @@ export function LeaveBalancesSection({
   manualSundayLeaveTotal,
   fractionRule = null,
   fractionCategory = "visitor_service",
+  annualCarry,
   onFractionCategoryChange,
   onYearChange,
   onSelectBalance,
@@ -150,6 +163,24 @@ export function LeaveBalancesSection({
           ))}
           {countedBalanceButton("sick")}
         </div>
+        {annualCarry && year >= 2026 ? (
+          <div className="fraction-rule annual-carry-rule">
+            <p>
+              <strong>Report des congés annuels</strong>
+              {annualCarry.fromPrevious && (annualCarry.fromPrevious.remaining > 0 || annualCarry.fromPrevious.used > 0) ? (
+                <span>
+                  Reste de {annualCarry.fromPrevious.year} : {daysLabel(annualCarry.fromPrevious.remaining)} à prendre d’ici le {deadlineLabel(annualCarry.fromPrevious.deadline)}
+                  {annualCarry.fromPrevious.used > 0 ? ` · ${daysLabel(annualCarry.fromPrevious.used)} déjà posé${s(annualCarry.fromPrevious.used)}` : ""}
+                </span>
+              ) : null}
+              <span>
+                Vos CA {year} restants se prennent jusqu’au {deadlineLabel(annualCarry.deadline)}
+                {annualCarry.intoNext > 0 ? ` · ${daysLabel(annualCarry.intoNext)} déjà posé${s(annualCarry.intoNext)} en ${year + 1}` : ""}
+              </span>
+              <small>Les RTT se prennent avant le 31 décembre.</small>
+            </p>
+          </div>
+        ) : null}
         {fractionRule ? (
           <div className="fraction-rule">
             <p>

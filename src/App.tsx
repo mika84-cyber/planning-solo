@@ -40,6 +40,7 @@ import { effectivePayProfile, usePayActions } from "./usePayActions";
 
 const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
+const LongAbsenceNotice = lazy(() => import("./LongAbsenceNotice").then((module) => ({ default: module.LongAbsenceNotice })));
 const HomeDashboard = lazy(() =>
   homeDashboardModule.then(({ HomeDashboard: Component }) => ({ default: Component })),
 );
@@ -87,7 +88,7 @@ import {
   computePayAllowances,
 } from "./payAllowances";
 import { computeLeaveStats } from "./leaveStats";
-import { DEFAULT_FRACTION_CATEGORY, type FractionCategory } from "./fractionRules";
+import { DEFAULT_FRACTION_CATEGORY, FRACTION_RULES, type FractionCategory } from "./fractionRules";
 import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
@@ -1663,9 +1664,14 @@ export default function Home() {
     activeManualAdjustments.sundayLeaveDec;
 
   // Totaux des seuls congés à quota : la maladie n'y entre pas.
+  // Jusqu'au 30 avril, le reste des CA de l'année précédente s'ajoute.
+  const carriedAnnualRemaining =
+    leaveStats.annualCarry.fromPrevious && dateKey(now) <= leaveStats.annualCarry.fromPrevious.deadline
+      ? leaveStats.annualCarry.fromPrevious.remaining
+      : 0;
   const totalLeaveRemaining = leaveStats.balances.reduce(
     (total, balance) => total + balance.remaining,
-    0,
+    carriedAnnualRemaining,
   );
   const cetLeaveBalances = {
     annual:
@@ -1676,7 +1682,10 @@ export default function Home() {
       leaveStats.balances.find((balance) => balance.type === "fraction")?.remaining || 0,
   };
   const leaveRemainingByType = Object.fromEntries(
-    leaveStats.balances.map((balance) => [balance.type, balance.remaining]),
+    leaveStats.balances.map((balance) => [
+      balance.type,
+      balance.remaining + (balance.type === "annual" ? carriedAnnualRemaining : 0),
+    ]),
   ) as Partial<Record<BalanceType, number>>;
   const leaveSelectionZeroBalance = requestKind === "leave" && Boolean(
     zeroLeaveBalanceType(selectedList, group, leaveRemainingByType),
@@ -2831,6 +2840,20 @@ export default function Home() {
             setHomeSection("pay");
             setPayScreen("allowances");
           }}
+          longAbsenceContent={
+            <Suspense fallback={null}>
+            <LongAbsenceNotice
+              periods={periods}
+              group={group}
+              todayKey={dateKey(now)}
+              sender={{
+                fullName: formProfile?.fullName || "",
+                job: FRACTION_RULES[formProfile?.fractionCategory ?? DEFAULT_FRACTION_CATEGORY].label,
+                group,
+              }}
+            />
+            </Suspense>
+          }
           balancesContent={
             <Suspense fallback={<DeferredSection label="vos soldes" />}>
               <LeaveBalancesSection
@@ -2839,6 +2862,7 @@ export default function Home() {
                 balances={leaveStats.balances}
                 countedOnly={leaveStats.countedOnly}
                 fractionRule={leaveStats.fractionRule}
+                annualCarry={leaveStats.annualCarry}
                 fractionCategory={formProfile?.fractionCategory ?? DEFAULT_FRACTION_CATEGORY}
                 onFractionCategoryChange={changeFractionCategory}
                 manualSundayLeaveTotal={manualSundayLeaveTotal}

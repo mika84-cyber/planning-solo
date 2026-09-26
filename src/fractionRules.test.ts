@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { computeLeaveStats } from "./leaveStats";
 import { dateKey, fromKey, getDayInfo, addDays } from "./planningLogic";
 import { fractionAllowance, isOffSeasonDate, nextFractionStep } from "./fractionRules";
+import { EMPTY_MANUAL_ADJUSTMENTS } from "./payAllowances";
+
+// 2026 soldé : les CA de janvier 2027 ne partent pas sur son reste.
+const spent2026 = { "2026": { ...EMPTY_MANUAL_ADJUSTMENTS, annualUsed: 29 } };
 
 /** Les premiers jours travaillés du groupe 2 à partir d'une date. */
 function workDays(from: string, count: number) {
@@ -45,11 +49,11 @@ describe("jours de fractionnement", () => {
       period("rtt", winter[4], "rtt"),
       ...summer.map((date, index) => period(`ete-${index}`, date, "annual")),
     ];
-    const stats = computeLeaveStats({ year: 2027, today: new Date(2027, 0, 1), periods: periods as never, group: 2, manualAdjustments: undefined });
+    const stats = computeLeaveStats({ year: 2027, today: new Date(2027, 0, 1), periods: periods as never, group: 2, manualAdjustments: spent2026 });
     expect(stats.fractionRule).toEqual({ offSeasonDays: 4, next: { missing: 3, grant: 2 } });
     expect(stats.balances.find((balance) => balance.type === "fraction")?.allowance).toBe(1);
 
-    const general = computeLeaveStats({ year: 2027, today: new Date(2027, 0, 1), periods: periods as never, group: 2, manualAdjustments: undefined, fractionCategory: "general" });
+    const general = computeLeaveStats({ year: 2027, today: new Date(2027, 0, 1), periods: periods as never, group: 2, manualAdjustments: spent2026, fractionCategory: "general" });
     expect(general.balances.find((balance) => balance.type === "fraction")?.allowance).toBe(0);
 
     const before = computeLeaveStats({ year: 2026, today: new Date(2026, 0, 1), periods: [], group: 2, manualAdjustments: undefined });

@@ -1,9 +1,11 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES, type MecenatEntry } from "./mecenat";
 import { minutesLabel, nextPayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, fromKey, longDate, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
+
+const LeaveInfoCard = lazy(() => import("./LeaveInfoCard").then((module) => ({ default: module.LeaveInfoCard })));
 
 export type WorkTimeHistoryFilter = "all" | "gains" | "uses" | "paid";
 
@@ -27,6 +29,8 @@ export function workTimeHistoryItems(
 
 type LeaveManagementPageProps = {
   balancesContent: ReactNode;
+  /** Absences de 31 jours et plus, avec leur courrier de dérogation. */
+  longAbsenceContent?: ReactNode;
   cetContent: ReactNode;
   recoveryBalance: { earned: number; used: number; remaining: number };
   recoveryEarningsCount: number;
@@ -60,6 +64,7 @@ type LeaveManagementPageProps = {
 
 export function LeaveManagementPage({
   balancesContent,
+  longAbsenceContent,
   cetContent,
   recoveryBalance,
   recoveryEarningsCount,
@@ -112,6 +117,7 @@ export function LeaveManagementPage({
           Poser un congé
         </button>
       </div>
+      {longAbsenceContent}
       {balancesContent}
       <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET">
         <div className="leave-secondary-grid">
@@ -252,6 +258,9 @@ export function LeaveManagementPage({
             {cetContent}
           </details>
         </div>
+        <Suspense fallback={null}>
+          <LeaveInfoCard />
+        </Suspense>
         {isProgramAdmin ? (
           <section className="leave-request-archive" aria-labelledby="leave-request-archive-title">
             <button className="request-archive-toggle" type="button" onClick={onToggleArchive} aria-expanded={archiveOpen}>
