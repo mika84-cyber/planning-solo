@@ -75,6 +75,20 @@ export function LeaveInfoCard() {
           </ul>
           <small className="leave-info-note">Sur justificatif joint à la demande, selon l’appréciation du chef de service.</small>
         </section>
+        {/* Même bouton que « Masquer les dates » des dimanches : il referme
+            le volet sans remonter jusqu'à son titre. */}
+        <button
+          className="sunday-dates-close"
+          type="button"
+          style={{ gridColumn: "1 / -1", marginTop: 0 }}
+          onClick={(event) => {
+            const details = event.currentTarget.closest("details");
+            if (details) details.open = false;
+          }}
+        >
+          Masquer les infos
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+        </button>
       </div>
     </details>
   );

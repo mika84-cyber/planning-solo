@@ -5105,6 +5105,9 @@ test("les infos congés, au-dessus des soldes, expliquent report, fractionnement
   await expect(info.getByRole("heading", { name: "Congés exceptionnels" })).toBeVisible();
   await expect(info).toContainText("Mariage ou PACS de l’agent");
   expect(await info.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  // « Masquer les infos » referme le volet.
+  await info.getByRole("button", { name: "Masquer les infos" }).click();
+  await expect(info).not.toHaveAttribute("open", "");
 });
 
 test("Z Fold ouvert : les infos congés restent empilées comme sur Z Fold fermé", async ({ page }, testInfo) => {
