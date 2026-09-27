@@ -61,11 +61,13 @@ describe("infos congés", () => {
   it("explique le report, le fractionnement des agents d'accueil et les congés exceptionnels", () => {
     const html = renderToStaticMarkup(<LeaveInfoCard />);
     expect(html).toContain("<details class=\"leave-info-card\">");
-    expect(html).toContain("Report des congés annuels");
-    expect(html).toContain("jusqu’au 30 avril de l’année suivante");
+    expect(html).toContain("Report des congés");
+    expect(html).toContain("Jusqu’au 30 avril suivant");
+    expect(html).toContain("Avant le 31 décembre");
     expect(html).toContain("Jours de fractionnement");
-    expect(html).toContain("4 à 6,5 jours posés");
-    expect(html).toContain("7 jours ou plus");
+    expect(html).toContain("<strong>4 jours</strong><span>posés</span><b>+1 jour</b>");
+    expect(html).toContain("<strong>7 jours</strong><span>ou plus</span><b>+2 jours</b>");
+    expect(html.match(/<li class="counts">/g)).toHaveLength(6);
     expect(html).not.toContain("ASI");
     expect(html).toContain("Mariage ou PACS de l’agent");
     expect(html).toContain("Déménagement");

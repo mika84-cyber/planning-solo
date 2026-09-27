@@ -5096,10 +5096,11 @@ test("les infos congés, au-dessus des soldes, expliquent report, fractionnement
   expect(infoBox!.y + infoBox!.height).toBeLessThanOrEqual(gridBox!.y);
   expect(infoBox!.height).toBeLessThan(80);
   await info.locator(":scope > summary").click();
-  await expect(info.getByRole("heading", { name: "Report des congés annuels" })).toBeVisible();
-  await expect(info).toContainText("jusqu’au 30 avril de l’année suivante");
+  await expect(info.getByRole("heading", { name: "Report des congés" })).toBeVisible();
+  await expect(info).toContainText("Jusqu’au 30 avril suivant");
   await expect(info.getByRole("heading", { name: "Jours de fractionnement" })).toBeVisible();
-  await expect(info).toContainText("4 à 6,5 jours posés");
+  await expect(info.locator(".leave-info-months li.counts")).toHaveCount(6);
+  await expect(info.locator(".leave-info-steps")).toContainText("+1 jour");
   await expect(info).not.toContainText("ASI");
   await expect(info.getByRole("heading", { name: "Congés exceptionnels" })).toBeVisible();
   await expect(info).toContainText("Mariage ou PACS de l’agent");

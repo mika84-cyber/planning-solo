@@ -2,14 +2,16 @@
  *  congé » : accordées sur justificatif, à l'appréciation du chef de
  *  service. */
 export const EXCEPTIONAL_LEAVE_RULES = [
-  { nature: "Mariage ou PACS de l’agent", days: "5 jours" },
-  { nature: "Mariage ou PACS d’un de ses enfants", days: "3 jours" },
-  { nature: "Décès ou maladie très grave du conjoint, d’un enfant, d’un ascendant ou d’un collatéral", days: "3 jours" },
-  { nature: "Naissance ou adoption", days: "3 jours, de droit" },
-  { nature: "Déménagement", days: "2 jours, sur demande spéciale à la DRH" },
-  { nature: "Autre cas exceptionnel justifié", days: "3 jours au plus, après avis du chef de service et de la DRH" },
-  { nature: "Principales fêtes religieuses des différentes confessions", days: "Selon le calendrier des fêtes" },
+  { nature: "Mariage ou PACS de l’agent", days: "5 j" },
+  { nature: "Mariage ou PACS d’un enfant", days: "3 j" },
+  { nature: "Décès ou maladie très grave d’un proche", days: "3 j", note: "Conjoint, enfant, ascendant ou collatéral" },
+  { nature: "Naissance ou adoption", days: "3 j", note: "Accordés de droit" },
+  { nature: "Déménagement", days: "2 j", note: "Sur demande spéciale à la DRH" },
+  { nature: "Autre cas exceptionnel justifié", days: "3 j max", note: "Après avis du chef de service et de la DRH" },
+  { nature: "Principales fêtes religieuses", days: "Selon la fête", note: "Des différentes confessions" },
 ] as const;
+
+const MONTH_INITIALS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 
 /** « Infos congés » : une ligne au-dessus des soldes, qui se déplie sur le
  *  report des congés annuels, le fractionnement des agents d'accueil et le
@@ -29,44 +31,49 @@ export function LeaveInfoCard() {
       </summary>
       <div className="leave-info-content">
         <section aria-labelledby="leave-info-carry">
-          <h3 id="leave-info-carry">Report des congés annuels</h3>
-          <p>
-            Les congés annuels d’une année peuvent se prendre jusqu’au 30 avril de l’année suivante. De janvier à
-            avril, ce sont eux qui partent en premier. Les RTT, eux, se prennent avant le 31 décembre.
-          </p>
+          <h3 id="leave-info-carry">Report des congés</h3>
+          <ul className="leave-info-rows">
+            <li>
+              <span><strong>Congés annuels</strong><small>De janvier à avril, ceux de l’année précédente partent en premier.</small></span>
+              <b>Jusqu’au 30 avril suivant</b>
+            </li>
+            <li>
+              <span><strong>RTT</strong><small>Sauf versement sur le CET.</small></span>
+              <b>Avant le 31 décembre</b>
+            </li>
+          </ul>
         </section>
         <section aria-labelledby="leave-info-fraction">
           <h3 id="leave-info-fraction">Jours de fractionnement</h3>
-          <p>
-            Les congés annuels posés entre novembre et avril, c’est-à-dire hors de la période de mai à octobre,
-            vous donnent des jours en plus :
-          </p>
-          <dl>
-            <div>
-              <dt>4 à 6,5 jours posés</dt>
-              <dd>1 jour de fractionnement</dd>
-            </div>
-            <div>
-              <dt>7 jours ou plus</dt>
-              <dd>2 jours de fractionnement</dd>
-            </div>
-          </dl>
-          <p className="leave-info-note">
-            Les RTT ne comptent pas et une demi-journée compte pour moitié. Le calcul se fait tout seul dans vos
-            soldes à partir de 2027.
-          </p>
+          <p>Des jours en plus pour les congés annuels posés hors saison :</p>
+          <ol className="leave-info-months" aria-label="Mois qui comptent : janvier à avril et novembre à décembre">
+            {MONTH_INITIALS.map((initial, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: les douze mois ne changent jamais d'ordre.
+              <li key={index} className={index < 4 || index > 9 ? "counts" : undefined}>{initial}</li>
+            ))}
+          </ol>
+          <div className="leave-info-steps">
+            <p><strong>4 jours</strong><span>posés</span><b>+1 jour</b></p>
+            <p><strong>7 jours</strong><span>ou plus</span><b>+2 jours</b></p>
+          </div>
+          <small className="leave-info-note">
+            Les RTT ne comptent pas, une demi-journée compte pour moitié. Calcul automatique dans vos soldes dès 2027.
+          </small>
         </section>
         <section aria-labelledby="leave-info-exceptional">
           <h3 id="leave-info-exceptional">Congés exceptionnels</h3>
-          <p>Accordés sur justificatif joint à la demande, selon l’appréciation du chef de service.</p>
-          <dl>
+          <ul className="leave-info-rows">
             {EXCEPTIONAL_LEAVE_RULES.map((rule) => (
-              <div key={rule.nature}>
-                <dt>{rule.nature}</dt>
-                <dd>{rule.days}</dd>
-              </div>
+              <li key={rule.nature}>
+                <span>
+                  <strong>{rule.nature}</strong>
+                  {"note" in rule ? <small>{rule.note}</small> : null}
+                </span>
+                <b>{rule.days}</b>
+              </li>
             ))}
-          </dl>
+          </ul>
+          <small className="leave-info-note">Sur justificatif joint à la demande, selon l’appréciation du chef de service.</small>
         </section>
       </div>
     </details>
