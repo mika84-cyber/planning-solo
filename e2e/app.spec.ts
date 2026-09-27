@@ -5106,3 +5106,17 @@ test("les infos congés, au-dessus des soldes, expliquent report, fractionnement
   await expect(info).toContainText("Mariage ou PACS de l’agent");
   expect(await info.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
+
+test("Z Fold ouvert : les infos congés restent empilées comme sur Z Fold fermé", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "z-fold", "Scénario réservé au viewport Z Fold ouvert");
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  const info = page.locator("details.leave-info-card");
+  await info.locator(":scope > summary").click();
+  const sections = info.locator(".leave-info-content > section");
+  await expect(sections).toHaveCount(3);
+  const boxes = await sections.evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ x, y }) => ({ x, y })));
+  expect(boxes[1].y).toBeGreaterThan(boxes[0].y);
+  expect(boxes[2].y).toBeGreaterThan(boxes[1].y);
+  expect(Math.abs(boxes[0].x - boxes[2].x)).toBeLessThanOrEqual(1);
+});
