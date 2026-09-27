@@ -60,4 +60,19 @@ describe("report des dimanches manquants", () => {
     expect(exchanged).not.toContain(given);
     expect(exchanged).toContain(returned);
   });
+
+  it("retire du détail tout dimanche couvert par un congé ou une récupération", () => {
+    const base = { year: 2026, today: new Date(2026, 8, 22), entries: {}, group: 2, manualAdjustments: undefined, baseSalary: 2000, sundayCarryover: 0, sundayCarryoverYear: undefined, sundayCarryoverMonth: undefined, sundayCarryoverFromYear: undefined, sundayCarryoverFromMonth: undefined };
+    const scheduled = computePayAllowances({ ...base, periods: [] }).sundays.map((item) => item.key);
+    const [first, second, third] = scheduled;
+    const kept = computePayAllowances({
+      ...base,
+      periods: [{ id: "ca", from: first, to: first, leaveType: "annual", group: 2 }] as never,
+      recoveryUses: [{ date: second }, { date: third }],
+    }).sundays.map((item) => item.key);
+    expect(kept).toHaveLength(scheduled.length - 3);
+    expect(kept).not.toContain(first);
+    expect(kept).not.toContain(second);
+    expect(kept).not.toContain(third);
+  });
 });

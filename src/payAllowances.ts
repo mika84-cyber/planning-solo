@@ -38,9 +38,12 @@ type CalendarContext = {
   periods: LeavePeriod[];
   group: number;
   manualAdjustments: Record<string, ManualYearAdjustments> | undefined;
+  /** Récupérations et formations posées : le jour n'est pas travaillé. */
+  recoveryUses?: ReadonlyArray<{ date: string }>;
 };
 
-/** Dimanches, fériés et fériés compensés d'une année, congés déduits. */
+/** Dimanches, fériés et fériés compensés d'une année, congés et
+ *  récupérations déduits. */
 export function collectWorkedDays({
   year,
   today,
@@ -48,10 +51,15 @@ export function collectWorkedDays({
   periods,
   group,
   manualAdjustments,
+  recoveryUses = [],
 }: CalendarContext & { year: number }) {
   const todayKey = dateKey(today);
+  // Tout congé, récupération ou formation posé sur un jour le retire des
+  // jours travaillés : un dimanche ainsi posé quitte le détail des dimanches.
+  const recoveryDates = new Set(recoveryUses.map((use) => use.date));
   const onLeave = (key: string) =>
     Boolean(entries[key]?.leave) ||
+    recoveryDates.has(key) ||
     periods.some(
       (period) =>
         key >= period.from &&
@@ -184,9 +192,10 @@ export function computePayAllowances({
   sundayCarryoverMonth,
   sundayCarryoverFromYear,
   sundayCarryoverFromMonth,
+  recoveryUses,
 }: PayAllowancesInput) {
-  const current = collectWorkedDays({ year, today, entries, periods, group, manualAdjustments });
-  const previous = collectWorkedDays({ year: year - 1, today, entries, periods, group, manualAdjustments });
+  const current = collectWorkedDays({ year, today, entries, periods, group, manualAdjustments, recoveryUses });
+  const previous = collectWorkedDays({ year: year - 1, today, entries, periods, group, manualAdjustments, recoveryUses });
   // Le versement mensuel du forfait n'entre pas ici : il tombe tous les mois
   // quoi qu'il arrive, ce ne sont pas les primes à suivre de près.
   const monthly = Array.from({ length: 12 }, () => ({

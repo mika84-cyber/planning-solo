@@ -1381,6 +1381,7 @@ export default function Home() {
         sundayCarryoverMonth,
         sundayCarryoverFromYear,
         sundayCarryoverFromMonth,
+        recoveryUses,
       }),
     [
     payView,
@@ -1395,6 +1396,7 @@ export default function Home() {
     sundayCarryoverFromYear,
     sundayCarryoverFromMonth,
     formProfile?.manualAdjustments,
+    recoveryUses,
   ]);
 
   const holidayRecoveryEarnings = useMemo(
