@@ -348,9 +348,23 @@ export function PayAllowancesSection({
             aria-controls="sunday-done-list"
             onClick={() => setSundayListOpen((open) => !open)}
           >
-            <span>Détails des dimanches</span>
+            <span className="sunday-dates-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" /><path d="M9 14h6" /></svg>
+            </span>
+            <span className="sunday-dates-copy">
+              <strong>Détails des dimanches</strong>
+              <small>
+                {allowances.sundays.length
+                  ? `${allowances.sundays.length} dimanche${s(allowances.sundays.length)} · ${sundaysDone.length} fait${s(sundaysDone.length)}${
+                      allowances.sundays.length > sundaysDone.length
+                        ? `, ${allowances.sundays.length - sundaysDone.length} à venir`
+                        : ""
+                    }`
+                  : "Aucun dimanche travaillé"}
+              </small>
+            </span>
             <em>
-              {sundayListOpen ? "Masquer les dates" : "Voir les dates"}
+              <span className="sunday-dates-action">{sundayListOpen ? "Masquer les dates" : "Voir les dates"}</span>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m6 9 6 6 6-6" />
               </svg>

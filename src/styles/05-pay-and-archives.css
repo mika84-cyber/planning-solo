@@ -521,9 +521,16 @@
    qu'il y a quelque chose dessous, sans avoir à cliquer pour le découvrir. */
 /* Le bouton des dates gardait l'apparence par défaut du navigateur : il
    prend le cadre blanc et le mot terracotta des autres commandes. */
-.allowance-overview-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:50px;margin-top:10px;border:1px solid var(--border-soft);border-radius:14px;padding:8px 8px 8px 14px;background:var(--surface-soft);color:var(--text);font-family:inherit;font-size:.92rem;font-weight:800;text-align:left;cursor:pointer}
-.allowance-overview-toggle:hover{border-color:var(--accent)}
-.allowance-overview-toggle em{display:flex;align-items:center;gap:5px;margin-top:0;border-radius:999px;padding:5px 11px;background:var(--accent-soft);color:var(--accent-strong);font-size:12px;font-style:normal;font-weight:800;white-space:nowrap}
+.allowance-overview-toggle{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:56px;margin-top:10px;border:1px solid #c9ddcf;border-radius:16px;padding:8px 10px;background:#f2f7f3;color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
+.sunday-dates-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#dcefe3;color:#1d6b45}
+.sunday-dates-icon svg{width:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sunday-dates-copy{display:grid;gap:1px;min-width:0}
+.sunday-dates-copy strong{font-size:.92rem}
+.sunday-dates-copy small{color:var(--muted);font-size:.74rem;font-weight:700}
+/* Téléphone : la pastille se réduit à sa flèche, le titre tient sur une ligne. */
+@media (max-width:600px){.sunday-dates-action{display:none}.allowance-overview-toggle em{width:34px;height:34px;justify-content:center;padding:0}}
+.allowance-overview-toggle:hover{border-color:#8fbf9f}
+.allowance-overview-toggle em{display:flex;align-items:center;gap:5px;margin-top:0;border-radius:999px;padding:5px 11px;background:#dcefe3;color:#1d6b45;font-size:12px;font-style:normal;font-weight:800;white-space:nowrap}
 .allowance-overview-toggle em svg{width:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .14s ease}
 .allowance-overview-toggle[aria-expanded="true"] em svg{transform:rotate(180deg)}
 .sunday-done-list{margin-top:6px}
