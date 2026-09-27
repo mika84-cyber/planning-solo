@@ -337,7 +337,10 @@ export function PayAllowancesSection({
               : `Plafond à ${SUNDAY_ALLOWANCE.paidUntil}, vous restez en dessous.`}
           </p>
           {/* Le détail des dimanches déjà faits se déplie ici, sous les
-              socles : la carte reste un résumé tant qu'on ne le demande pas. */}
+              socles : la carte reste un résumé tant qu'on ne le demande pas.
+              Ouvert, il forme un panneau teinté qui commence au bouton et
+              finit par « Masquer les dates ». */}
+          <div className={`sunday-dates-panel${sundayListOpen ? " is-open" : ""}`}>
           <button
             type="button"
             className="allowance-overview-toggle sunday-dates-toggle"
@@ -446,8 +449,13 @@ export function PayAllowancesSection({
                   Aucun dimanche travaillé pour le moment.
                 </p>
               )}
+              <button className="sunday-dates-close" type="button" onClick={() => setSundayListOpen(false)}>
+                Masquer les dates
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+              </button>
             </div>
           ) : null}
+          </div>
         </section>
 
         {/* Ancre : l'accueil renvoie ici quand des fériés restent à trancher. */}

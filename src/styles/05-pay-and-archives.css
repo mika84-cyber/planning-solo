@@ -554,3 +554,11 @@
 .sunday-done-legend .paid{color:#207258}
 .sunday-done-legend .flat{color:var(--muted)}
 .sunday-done-legend .unpaid{color:var(--muted);text-decoration:line-through}
+/* Détail des dimanches ouvert : un panneau teinté, bien délimité des cartes
+   voisines, du bouton jusqu'à « Masquer les dates ». */
+.sunday-dates-panel.is-open{margin-top:10px;border:1.5px solid #e2cdb8;border-radius:18px;padding:8px 10px 10px;background:#fbf5ee}
+.sunday-dates-panel.is-open>.sunday-dates-toggle{border-color:transparent;background:none}
+.sunday-dates-panel .sunday-done-group{background:#fff}
+.sunday-dates-close{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:40px;margin-top:10px;border:1px solid #e2cdb8;border-radius:999px;background:#fff;color:var(--accent-strong);font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
+.sunday-dates-close svg{width:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+
