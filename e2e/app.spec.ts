@@ -4963,9 +4963,9 @@ test("la case des dimanches travaillés déplie la liste des dates", async ({ pa
     // La liste montre aussi les dimanches à venir : ceux déjà faits sont
     // exactement ceux qu'annonce la carte.
     await expect(list.locator(".sunday-day:not(.upcoming)")).toHaveCount(done);
-    const listedDates = await list.locator(".sunday-done-table td").evaluateAll((cells) =>
-      cells.reduce((total, cell) => total + cell.textContent!.split(",").length, 0),
-    );
+    // Une pastille par dimanche, ronde, à la couleur de ce qu'il rapporte.
+    const listedDates = await list.locator(".sunday-done-table .sunday-day").count();
+    await expect(list.locator(".sunday-day.paid").first()).toHaveCSS("border-radius", "50%");
     expect(listedDates).toBeGreaterThanOrEqual(done);
     await expect(list.locator(".sunday-done-group-heading small").last()).toContainText(`${listedDates}`);
     await expect(list.locator(".sunday-done-table th").first()).not.toHaveText("");

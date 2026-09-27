@@ -526,39 +526,37 @@
 .allowance-overview-toggle em{display:flex;align-items:center;gap:5px;margin-top:0;border-radius:999px;padding:5px 11px;background:var(--accent-soft);color:var(--accent-strong);font-size:12px;font-style:normal;font-weight:800;white-space:nowrap}
 .allowance-overview-toggle em svg{width:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .14s ease}
 .allowance-overview-toggle[aria-expanded="true"] em svg{transform:rotate(180deg)}
-.sunday-done-list{margin-top:10px;border-top:1px solid var(--line)}
-/* Dimanches faits : un bloc par paie, une ligne par mois. On lit les dates
-   comme sur un bulletin, sans transformer la carte en grille de pastilles. */
-.sunday-done-group{margin-top:10px;border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px 4px;background:var(--surface-soft)}
+.sunday-done-list{margin-top:6px}
+/* Dimanches : un bloc par paie, une ligne par mois, chaque dimanche en
+   pastille à la couleur de ce qu'il rapporte (payé, forfait, non payé) ; en
+   pointillé tant qu'il est à venir. */
+.sunday-done-group{margin-top:10px;border:1px solid #d6e5da;border-radius:14px;padding:10px 12px 6px;background:#fff}
 .sunday-done-group-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0}
 .sunday-done-group-heading strong{color:var(--text);font-family:var(--font-display);font-size:1rem;font-weight:600}
 .sunday-done-group-heading small{color:var(--muted);font-size:.72rem;font-weight:700;white-space:nowrap}
-/* Ce que la paie verse vraiment : seuls les dimanches du 11e au 31e. */
-.sunday-done-group-pay{margin:2px 0 4px;color:#207258;font-size:.76rem;font-weight:800}
-.sunday-done-group-pay.none{color:var(--muted);font-weight:700}
-.sunday-done-table th{text-transform:capitalize}
-.sunday-done-table td{color:var(--text);font-variant-numeric:tabular-nums;font-weight:800;text-align:right}
-/* Dates lues comme sur un bulletin, en texte : la couleur seule dit ce que
-   chaque dimanche rapporte. */
-.sunday-done-table td{color:var(--muted);font-weight:600}
-.sunday-day.paid{color:#207258;font-weight:800}
-.sunday-day.flat{color:var(--muted);font-weight:600}
-.sunday-day.unpaid{color:var(--muted);font-weight:600;text-decoration:line-through}
-/* Un dimanche pas encore passé, que le cycle fait travailler. */
-.sunday-day.upcoming{font-style:italic;opacity:.55}
-.sunday-done-legend .upcoming{color:var(--muted);font-style:italic}
-.sunday-done-legend .upcoming::before{opacity:.55}
-.sunday-done-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:2px 0 0;font-size:.72rem;font-weight:700}
+.sunday-done-group-pay{display:inline-flex;margin:6px 0 4px;border-radius:999px;padding:3px 10px;background:#dcefe3;color:#1d6b45;font-size:.74rem;font-weight:800}
+.sunday-done-group-pay.none{background:#efeae3;color:#6f6455}
+.sunday-done-group-pay.unpaid{background:#fbe4e4;color:#a5283a}
+.sunday-done-table{table-layout:fixed;width:100%}
+.sunday-done-table th{width:92px;padding:5px 0;text-transform:capitalize}
+.sunday-done-table td{padding:5px 0;text-align:left}
+.sunday-chips{display:flex;flex-wrap:wrap;gap:5px}
+.sunday-day{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:50%;font-size:.78rem;font-weight:800;font-variant-numeric:tabular-nums}
+.sunday-day.paid{background:#dcefe3;color:#1d6b45}
+.sunday-day.flat{background:#efeae3;color:#6f6455}
+.sunday-day.unpaid{background:#fbe4e4;color:#a5283a;text-decoration:line-through}
+.sunday-day.upcoming{background:none;outline:1.5px dashed currentColor;outline-offset:-2px}
+.sunday-done-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 0 0;color:#5b5044;font-size:.72rem;font-weight:700}
 .sunday-done-legend span{display:inline-flex;align-items:center;gap:6px}
-.sunday-done-legend span::before{width:8px;height:8px;border-radius:50%;background:currentColor;content:""}
-.sunday-done-legend .paid{color:#207258}
-.sunday-done-legend .flat{color:var(--muted)}
-.sunday-done-legend .unpaid{color:var(--muted);text-decoration:line-through}
+.sunday-done-legend span::before{width:12px;height:12px;border-radius:50%;content:""}
+.sunday-done-legend .paid::before{background:#b7dcc5}
+.sunday-done-legend .flat::before{background:#e2dbd1}
+.sunday-done-legend .unpaid::before{background:#f4c3ca}
+.sunday-done-legend .upcoming::before{outline:1.5px dashed #6f9d80;outline-offset:-1.5px}
 /* Détail des dimanches ouvert : un panneau teinté, bien délimité des cartes
    voisines, du bouton jusqu'à « Masquer les dates ». */
-.sunday-dates-panel.is-open{margin-top:10px;border:1.5px solid #e2cdb8;border-radius:18px;padding:8px 10px 10px;background:#fbf5ee}
+.sunday-dates-panel.is-open{margin-top:10px;border:1.5px solid #c9ddcf;border-radius:18px;padding:8px 10px 10px;background:#f2f7f3}
 .sunday-dates-panel.is-open>.sunday-dates-toggle{border-color:transparent;background:none}
-.sunday-dates-panel .sunday-done-group{background:#fff}
-.sunday-dates-close{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:40px;margin-top:10px;border:1px solid #e2cdb8;border-radius:999px;background:#fff;color:var(--accent-strong);font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
+.sunday-dates-close{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:40px;margin-top:10px;border:1px solid var(--border-control);border-radius:999px;background:#fff;color:var(--accent-strong);font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
 .sunday-dates-close svg{width:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
 

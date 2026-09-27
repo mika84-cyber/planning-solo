@@ -182,7 +182,6 @@
 .colleague-tomorrow-heading { align-items: flex-start; display: flex; gap: 14px; justify-content: space-between; }
 .colleague-tomorrow-heading .eyebrow { margin: 0 0 4px; }
 .colleague-tomorrow-heading h4 { color: var(--text); font-size: clamp(1rem, 2.2vw, 1.3rem); letter-spacing: -.015em; margin: 0; }
-.colleague-tomorrow-count { background: #fdf8f1; border: 1px solid var(--section-outline); border-radius: 999px; color: var(--text); flex: 0 0 auto; font-size: .67rem; font-weight: 900; padding: 6px 9px; white-space: nowrap; }
 .colleague-tomorrow-pending { align-items: center; color: var(--muted); display: flex; font-size: .72rem; gap: 8px; margin: 12px 0 0; }
 .colleague-tomorrow-pending .colleague-loading-spinner { border-width: 2px; height: 14px; width: 14px; }
 .colleague-tomorrow-table-shell { margin-top: 12px; overflow-x: auto; }
@@ -217,7 +216,6 @@
   .colleague-tomorrow { border-radius: 17px; padding: 13px 11px; }
   .colleague-tomorrow-heading { gap: 8px; }
   .colleague-tomorrow-heading h4 { font-size: 1rem; }
-  .colleague-tomorrow-count { font-size: .6rem; padding: 5px 7px; }
   .colleague-tomorrow-table { border-spacing: 0 6px; }
   .colleague-tomorrow-group th { padding: 8px 9px 4px; }
   .colleague-tomorrow-row td { padding: 8px 9px; }
@@ -323,18 +321,6 @@
 .colleague-day-board .colleague-tomorrow-heading { align-items: center; }
 .colleague-day-steps { display: flex; flex: none; gap: 8px; }
 .colleague-day-steps .period-step:disabled { box-shadow: none; cursor: default; opacity: .35; }
-
-/* Une fois inscrit, l'aide et le profil tiennent sur une ligne dépliable. */
-.colleague-settings-disclosure { padding: 0; }
-.colleague-settings-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; padding: 12px 18px; cursor: pointer; list-style: none; }
-.colleague-settings-disclosure > summary::-webkit-details-marker { display: none; }
-.colleague-settings-disclosure > summary > span { display: grid; gap: 2px; min-width: 0; }
-.colleague-settings-disclosure > summary strong { color: var(--text); font-size: 1rem; }
-.colleague-settings-disclosure > summary small { color: var(--muted); font-size: .78rem; font-weight: 700; }
-.colleague-settings-disclosure > summary::after { flex: none; width: 9px; height: 9px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); content: ""; transform: rotate(45deg) translateY(-3px); transition: transform .2s ease; }
-.colleague-settings-disclosure[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
-.colleague-settings-content { display: grid; gap: 12px; padding: 14px 12px 12px; }
-.colleague-settings-content > .colleague-card { box-shadow: none; }
 
 /* Planning d'un collègue : le mois et l'année comme sur votre planning, en
    capitales espacées reliées par un trait violet, entre deux flèches violettes. */

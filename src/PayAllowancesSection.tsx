@@ -398,7 +398,7 @@ export function PayAllowancesSection({
                           <strong>{payslipLabel.charAt(0).toUpperCase() + payslipLabel.slice(1)}</strong>
                           <small>{paid.length} dimanche{s(paid.length)} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
                         </p>
-                        <p className={`sunday-done-group-pay${paidHere ? "" : " none"}`}>
+                        <p className={`sunday-done-group-pay${paidHere ? "" : paid.some((item) => kindOf(rankOf(item)) === "flat") ? " none" : " unpaid"}`}>
                           {paidHere
                             ? `${paidHere} payé${s(paidHere)} sur cette paie · ${euros(paidHere * SUNDAY_ALLOWANCE.perSunday)}${
                                 paidUpcoming
@@ -419,21 +419,23 @@ export function PayAllowancesSection({
                                 <tr key={monthIndex}>
                                   <th scope="row">{MONTHS[monthIndex]}</th>
                                   <td>
-                                    {days.map((item, index) => {
-                                      const rank = rankOf(item);
-                                      const kind = kindOf(rank);
-                                      return (
-                                        <span key={item.key}>
-                                          {index ? ", " : ""}
+                                    {/* Un dimanche, une pastille à la couleur de ce qu'il
+                                        rapporte ; en pointillé tant qu'il est à venir. */}
+                                    <span className="sunday-chips">
+                                      {days.map((item) => {
+                                        const rank = rankOf(item);
+                                        const kind = kindOf(rank);
+                                        return (
                                           <span
+                                            key={item.key}
                                             className={`sunday-day ${kind}${item.past ? "" : " upcoming"}`}
                                             title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}${item.past ? "" : " · à venir"}`}
                                           >
                                             {Number(item.key.slice(8, 10))}
                                           </span>
-                                        </span>
-                                      );
-                                    })}
+                                        );
+                                      })}
+                                    </span>
                                   </td>
                                 </tr>
                               );
