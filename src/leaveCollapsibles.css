@@ -238,7 +238,7 @@
 .leave-info-card[open] > summary > b { transform: rotate(180deg); }
 .leave-info-content { padding: 12px; background: #fff; }
 .leave-info-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 12px; }
-.leave-info-content section { display: grid; align-content: start; gap: 10px; border: 1px solid #e6cf9f; border-radius: 14px; padding: 12px 14px; background: #fbefd8; }
+.leave-info-content section { display: grid; align-content: start; gap: 10px; border: 1px solid #e4d9c8; border-radius: 14px; padding: 12px 14px; background: #f7f2ea; }
 .leave-info-content h3 { margin: 0; color: #5c4214; font-size: .98rem; }
 .leave-info-content p { margin: 0; color: var(--muted); font-size: .84rem; }
 .leave-info-rows { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
