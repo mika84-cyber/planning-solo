@@ -30,57 +30,59 @@ export function LeaveInfoCard() {
         <b aria-hidden="true">⌄</b>
       </summary>
       <div className="leave-info-content">
-        <section aria-labelledby="leave-info-carry">
-          <h3 id="leave-info-carry">Report des congés</h3>
-          <ul className="leave-info-rows">
-            <li>
-              <span><strong>Congés annuels</strong><small>De janvier à avril, ceux de l’année précédente partent en premier.</small></span>
-              <b>Jusqu’au 30 avril suivant</b>
-            </li>
-            <li>
-              <span><strong>RTT</strong><small>Sauf versement sur le CET.</small></span>
-              <b>Avant le 31 décembre</b>
-            </li>
-          </ul>
-        </section>
-        <section aria-labelledby="leave-info-fraction">
-          <h3 id="leave-info-fraction">Jours de fractionnement</h3>
-          <p>Des jours en plus pour les congés annuels posés hors saison :</p>
-          <ol className="leave-info-months" aria-label="Mois qui comptent : janvier à avril et novembre à décembre">
-            {MONTH_INITIALS.map((initial, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: les douze mois ne changent jamais d'ordre.
-              <li key={index} className={index < 4 || index > 9 ? "counts" : undefined}>{initial}</li>
-            ))}
-          </ol>
-          <div className="leave-info-steps">
-            <p><strong>4 jours</strong><span>posés</span><b>+1 jour</b></p>
-            <p><strong>7 jours</strong><span>ou plus</span><b>+2 jours</b></p>
-          </div>
-          <small className="leave-info-note">
-            Les RTT ne comptent pas, une demi-journée compte pour moitié. Calcul automatique dans vos soldes dès 2027.
-          </small>
-        </section>
-        <section aria-labelledby="leave-info-exceptional">
-          <h3 id="leave-info-exceptional">Congés exceptionnels</h3>
-          <ul className="leave-info-rows">
-            {EXCEPTIONAL_LEAVE_RULES.map((rule) => (
-              <li key={rule.nature}>
-                <span>
-                  <strong>{rule.nature}</strong>
-                  {"note" in rule ? <small>{rule.note}</small> : null}
-                </span>
-                <b>{rule.days}</b>
+        <div className="leave-info-sections">
+          <section aria-labelledby="leave-info-carry">
+            <h3 id="leave-info-carry">Report des congés</h3>
+            <ul className="leave-info-rows">
+              <li>
+                <span><strong>Congés annuels</strong><small>De janvier à avril, ceux de l’année précédente partent en premier.</small></span>
+                <b>Jusqu’au 30 avril suivant</b>
               </li>
-            ))}
-          </ul>
-          <small className="leave-info-note">Sur justificatif joint à la demande, selon l’appréciation du chef de service.</small>
-        </section>
+              <li>
+                <span><strong>RTT</strong><small>Sauf versement sur le CET.</small></span>
+                <b>Avant le 31 décembre</b>
+              </li>
+            </ul>
+          </section>
+          <section aria-labelledby="leave-info-fraction">
+            <h3 id="leave-info-fraction">Jours de fractionnement</h3>
+            <p>Des jours en plus pour les congés annuels posés hors saison :</p>
+            <ol className="leave-info-months" aria-label="Mois qui comptent : janvier à avril et novembre à décembre">
+              {MONTH_INITIALS.map((initial, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: les douze mois ne changent jamais d'ordre.
+                <li key={index} className={index < 4 || index > 9 ? "counts" : undefined}>{initial}</li>
+              ))}
+            </ol>
+            <div className="leave-info-steps">
+              <p><strong>4 jours</strong><span>posés</span><b>+1 jour</b></p>
+              <p><strong>7 jours</strong><span>ou plus</span><b>+2 jours</b></p>
+            </div>
+            <small className="leave-info-note">
+              Les RTT ne comptent pas, une demi-journée compte pour moitié. Calcul automatique dans vos soldes dès 2027.
+            </small>
+          </section>
+          <section aria-labelledby="leave-info-exceptional">
+            <h3 id="leave-info-exceptional">Congés exceptionnels</h3>
+            <ul className="leave-info-rows">
+              {EXCEPTIONAL_LEAVE_RULES.map((rule) => (
+                <li key={rule.nature}>
+                  <span>
+                    <strong>{rule.nature}</strong>
+                    {"note" in rule ? <small>{rule.note}</small> : null}
+                  </span>
+                  <b>{rule.days}</b>
+                </li>
+              ))}
+            </ul>
+            <small className="leave-info-note">Sur justificatif joint à la demande, selon l’appréciation du chef de service.</small>
+          </section>
+        </div>
         {/* Même bouton que « Masquer les dates » des dimanches : il referme
             le volet sans remonter jusqu'à son titre. */}
         <button
           className="sunday-dates-close"
           type="button"
-          style={{ gridColumn: "1 / -1", marginTop: 0 }}
+          style={{ marginTop: 12 }}
           onClick={(event) => {
             const details = event.currentTarget.closest("details");
             if (details) details.open = false;

@@ -5116,7 +5116,7 @@ test("Z Fold ouvert : les infos congés restent empilées comme sur Z Fold ferm�
   await goToSection(page, "leave");
   const info = page.locator("details.leave-info-card");
   await info.locator(":scope > summary").click();
-  const sections = info.locator(".leave-info-content > section");
+  const sections = info.locator(".leave-info-sections > section");
   await expect(sections).toHaveCount(3);
   const boxes = await sections.evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ x, y }) => ({ x, y })));
   expect(boxes[1].y).toBeGreaterThan(boxes[0].y);
