@@ -326,15 +326,19 @@
 }
 
 .grand-palais-interexpo-list {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 22px;
   margin-top: -10px;
+  padding-left: 40px;
 }
+/* Frise : un fil relie les périodes numérotées, du vert au terracotta. */
+.grand-palais-interexpo-list::before { position: absolute; top: 18px; bottom: 18px; left: 14px; width: 2px; border-radius: 2px; background: linear-gradient(#a9cdb5, #e3b89c); content: ""; }
 /* Frise : un encadré par programmation, liste resserrée ; la coupure qui
    la termine, en terracotta, met ses dates en avant. */
-.grand-palais-interexpo-open { position: relative; display: grid; overflow: hidden; border: 1.5px solid #8a7e72; border-radius: 16px; background: #fff; box-shadow: 0 6px 18px -14px rgba(40, 70, 50, .45); }
-.grand-palais-interexpo-open header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0 14px; border-bottom: 1px solid #e6ded3; padding: 12px 30px 10px 0; }
+.grand-palais-interexpo-open { position: relative; display: grid; border: 1.5px solid #8a7e72; border-radius: 16px; background: #fff; box-shadow: 0 6px 18px -14px rgba(40, 70, 50, .45); }
+.grand-palais-interexpo-open header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0 14px; border-bottom: 1px solid #e6ded3; padding: 12px 0 10px; }
 .grand-palais-interexpo-open header em { border: 0; padding: 0; background: none; color: #2f7a52; font-size: .66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .grand-palais-interexpo-list .grand-palais-interexpo-open header strong { font-size: .82rem; }
 .grand-palais-interexpo-open ul { display: grid; gap: 7px; margin: 0; padding: 10px 14px 16px; list-style: none; }
@@ -351,9 +355,14 @@
 .grand-palais-interexpo-art circle { fill: #9a5a3a; stroke: none; }
 .grand-palais-interexpo-art-roof { fill: #f2c9ad; }
 .grand-palais-interexpo-art-door { fill: #e9a27d; }
-.grand-palais-interexpo-number { position: absolute; top: 10px; right: 12px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #2f7a52; color: #fff; font-size: .78rem; font-weight: 800; }
-.grand-palais-interexpo-cut > .grand-palais-interexpo-number { background: #b35a36; }
-.grand-palais-interexpo-open .grand-palais-interexpo-cut { border-width: 1.5px 0 0; border-color: #dfae8f; border-radius: 0; }
+.grand-palais-interexpo-number { position: absolute; top: 8px; left: -41px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #2f7a52; box-shadow: 0 0 0 4px #fff; color: #fff; font-size: .82rem; font-weight: 800; }
+.grand-palais-interexpo-open .grand-palais-interexpo-cut { border-width: 1.5px 0 0; border-color: #dfae8f; border-radius: 0 0 14px 14px; }
+/* Grand écran : les expositions à gauche, la fermeture à droite. */
+@media (min-width: 900px) {
+  .grand-palais-interexpo-open { grid-template-columns: minmax(0, 1fr) minmax(300px, 36%); }
+  .grand-palais-interexpo-open :is(header, ul) { grid-column: 1; }
+  .grand-palais-interexpo-open .grand-palais-interexpo-cut { grid-column: 2; grid-row: 1 / span 2; align-content: center; border-width: 0 0 0 1.5px; border-radius: 0 14px 14px 0; }
+}
 .grand-palais-interexpo-kind { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; color: #b35a36; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .grand-palais-interexpo-when { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 0; }
 .grand-palais-interexpo-list .grand-palais-interexpo-when em { border-color: #e8c9b4; padding: 2px 8px; background: #fff; color: #8a4125; letter-spacing: 0; text-transform: none; }
@@ -366,6 +375,9 @@
 .grand-palais-interexpo-progress { display: block; flex: 1; height: 5px; border-radius: 999px; background: #f2dccd; overflow: hidden; }
 .grand-palais-interexpo-progress i { display: block; height: 100%; border-radius: inherit; background: #b35a36; }
 @media (max-width: 600px) {
+  .grand-palais-interexpo-list { padding-left: 34px; }
+  .grand-palais-interexpo-list::before { left: 12px; }
+  .grand-palais-interexpo-number { left: -35px; width: 26px; height: 26px; }
   .grand-palais-interexpo-cut { grid-template-columns: 40px minmax(0, 1fr); gap: 1px 10px; padding: 10px 12px; }
   .grand-palais-interexpo-art { width: 40px; height: 40px; padding: 2px; }
   .grand-palais-interexpo-kind { flex-wrap: nowrap; font-size: min(.68rem, 2.9vw); letter-spacing: .03em; white-space: nowrap; }
