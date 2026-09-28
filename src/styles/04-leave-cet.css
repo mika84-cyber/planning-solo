@@ -210,11 +210,6 @@
   border-radius: 20px;
   background: #fff;
 }
-.leave-section-divider {
-  height: 1px;
-  margin: 8px 8px 22px;
-  background: linear-gradient(90deg, transparent, rgba(58, 51, 44, 0.38), transparent);
-}
 .cet-heading {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -244,8 +239,6 @@
 .cet-heading > span:nth-child(2) { display: grid; gap: 3px; }
 .cet-heading strong { font-size: 1.08rem; }
 .cet-heading small { color: var(--muted); font-size: 0.76rem; font-weight: 650; }
-.cet-caret { font-size: 1.25rem; transform: translateY(-2px); }
-.cet-heading[aria-expanded="true"] .cet-caret { transform: rotate(180deg) translateY(2px); }
 .cet-content { display: grid; gap: 12px; padding: 15px; border-top: 1px solid var(--border-control); font-size: 0.88rem; }
 .cet-callout,
 .cet-deposit-preview {
@@ -257,7 +250,6 @@
 .cet-callout p,
 .cet-deposit-preview p,
 .cet-history > p,
-.cet-legal-note { margin: 5px 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
 .cet-form-grid,
 .cet-operation-form {
   display: grid;

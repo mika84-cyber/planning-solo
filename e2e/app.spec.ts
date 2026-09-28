@@ -4940,6 +4940,19 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
   await expect(page.locator(".home-notes-content .note-month[open]")).toContainText("Récupérer le colis");
 });
 
+test("le détail des dimanches suit le report d'une paie primée à la suivante", async ({ page }) => {
+  // Report d'un dimanche de la paie de juillet sur celle d'octobre 2026.
+  await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
+  await prepareCompletePayDemo(page);
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
+  await page.locator(".allowance-detail-stack .allowance-card").first().locator(".allowance-overview-toggle").click();
+  const list = page.locator("#sunday-done-list");
+  await expect(list.locator(".sunday-done-group-pay").first()).toContainText("1 reporté sur octobre");
+  await expect(list.locator(".sunday-done-group-pay").nth(1)).toContainText("dont 1 reporté de juillet");
+  await expect(list.locator(".sunday-day.carried")).toHaveCount(1);
+});
+
 test("la case des dimanches travaillés déplie la liste des dates", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "pay");

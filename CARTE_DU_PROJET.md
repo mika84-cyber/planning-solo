@@ -75,7 +75,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   récupérations.
 - `src/PayPage.tsx`, `src/PayAllowancesSection.tsx` et
   `src/PayslipCheckSection.tsx` : navigation paie, primes et composition du
-  contrôle du bulletin. Ce dernier délègue les blocs autonomes à
+  contrôle du bulletin ; `src/SundayDetailsList.tsx`, chargé à l’ouverture,
+  détaille les dimanches par paie, reports compris. Le contrôle délègue les blocs autonomes à
   `src/PayslipVerificationCard.tsx`, `src/PayslipCalibrationCard.tsx` et
   `src/PayslipSettingsSections.tsx` (résultat, calibration, arrêts et
   paramètres), sans changer la structure DOM attendue par les styles.

@@ -423,11 +423,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-.leave-request-list {
-  display: grid;
-  gap: 6px;
-  margin-bottom: 9px;
-}
 .leave-request {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 38px;
@@ -552,12 +547,14 @@
 .sunday-day.paid{background:#dcefe3;color:#1d6b45}
 .sunday-day.flat{background:#efeae3;color:#6f6455}
 .sunday-day.unpaid{background:#fbe4e4;color:#a5283a;text-decoration:line-through}
+.sunday-day.carried{background:#fbeadf;color:#a4502f}
 .sunday-day.upcoming{background:none;outline:1.5px dashed currentColor;outline-offset:-2px}
 .sunday-done-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 0 0;color:#5b5044;font-size:.72rem;font-weight:700}
 .sunday-done-legend span{display:inline-flex;align-items:center;gap:6px}
 .sunday-done-legend span::before{width:12px;height:12px;border-radius:50%;content:""}
 .sunday-done-legend .paid::before{background:#b7dcc5}
 .sunday-done-legend .flat::before{background:#e2dbd1}
+.sunday-done-legend .carried::before{background:#f2cdb6}
 .sunday-done-legend .unpaid::before{background:#f4c3ca}
 .sunday-done-legend .upcoming::before{outline:1.5px dashed #8a7c6c;outline-offset:-1.5px}
 /* Détail des dimanches ouvert : un panneau teinté, bien délimité des cartes

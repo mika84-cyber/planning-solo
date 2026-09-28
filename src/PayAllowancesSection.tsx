@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { HOLIDAY_PAY_OPTIONS, euros } from "./appModel";
 import { minutesLabel } from "./overtime";
@@ -11,9 +11,11 @@ import {
   s,
   shortDate,
   sundayAllowance,
-  sundayPayslip,
   type HolidayPay,
 } from "./planningLogic";
+
+// Le détail des dimanches ne se charge qu'à son ouverture.
+const SundayDetailsList = lazy(() => import("./SundayDetailsList").then((module) => ({ default: module.SundayDetailsList })));
 
 type HolidayAllowanceItem = {
   key: string;
@@ -42,6 +44,16 @@ export type PayAllowancesModel = {
   compensated: HolidayAllowanceItem[];
   holidayPending: number;
   monthlyTotal: number;
+  /** Les paies primées de l'année, avec le report d'un dimanche manqué
+   *  (« Vérifier mon bulletin ») : moins sur la paie d'origine, autant sur
+   *  la suivante. */
+  monthly?: Array<{
+    index: number;
+    carryover: number;
+    reported: number;
+    carriedFrom?: { year: number; month: number };
+    reportedTo?: { year: number; month: number };
+  }>;
 };
 
 export type AllowanceMonthPay = {
@@ -371,105 +383,9 @@ export function PayAllowancesSection({
             </em>
           </button>
           {sundayListOpen ? (
-            <div id="sunday-done-list" className="sunday-done-list">
-              {allowances.sundays.length ? (
-                <>
-                  {/* Les dimanches à venir y figurent aussi : la paie
-                      prévisionnelle les compte déjà, la liste doit donner le
-                      même nombre qu'elle. */}
-                  <p className="allowance-note">
-                    Vos {allowances.sundays.length} dimanche{s(allowances.sundays.length)} de {allowances.year}
-                    {allowances.sundays.length > sundaysDone.length
-                      ? ` : ${sundaysDone.length} fait${s(sundaysDone.length)}, ${allowances.sundays.length - sundaysDone.length} à venir selon votre cycle`
-                      : ""}
-                    , dans l’ordre des paies
-                  </p>
-                  {/* Le rang d'un dimanche dit ce qu'il rapporte : les dix
-                      premiers sont dans le forfait mensuel, les suivants sont
-                      payés un par un jusqu'au plafond, au-delà rien. */}
-                  <p className="sunday-done-legend">
-                    <span className="paid">Payé {euros(SUNDAY_ALLOWANCE.perSunday)}</span>
-                    <span className="flat">Dans le forfait</span>
-                    {allowances.sundays.length > SUNDAY_ALLOWANCE.paidUntil ? <span className="unpaid">Non payé</span> : null}
-                    {allowances.sundays.length > sundaysDone.length ? <span className="upcoming">À venir</span> : null}
-                  </p>
-                  {/* Groupés par paie, puis par mois : c'est ainsi qu'on les
-                      retrouve sur un bulletin, et la liste tient en quelques lignes. */}
-                  {[...new Set(allowances.sundays.map((item) => sundayPayslip(item.key).label))].map((payslipLabel) => {
-                    const paid = allowances.sundays.filter((item) => sundayPayslip(item.key).label === payslipLabel);
-                    // Les dimanches de l'année sont dans l'ordre : leur place est leur rang.
-                    const rankOf = (item: (typeof paid)[number]) => allowances.sundays.indexOf(item) + 1;
-                    const firstRank = rankOf(paid[0]);
-                    const lastRank = rankOf(paid[paid.length - 1]);
-                    const kindOf = (rank: number) =>
-                      rank <= SUNDAY_ALLOWANCE.flatUntil ? "flat" : rank <= SUNDAY_ALLOWANCE.paidUntil ? "paid" : "unpaid";
-                    const paidSundays = paid.filter((item) => kindOf(rankOf(item)) === "paid");
-                    const paidHere = paidSundays.length;
-                    const paidUpcoming = paidSundays.filter((item) => !item.past).length;
-                    return (
-                      <section className="sunday-done-group" key={payslipLabel}>
-                        <p className="sunday-done-group-heading">
-                          <strong>{payslipLabel.charAt(0).toUpperCase() + payslipLabel.slice(1)}</strong>
-                          <small>{paid.length} dimanche{s(paid.length)} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
-                        </p>
-                        <p className={`sunday-done-group-pay${paidHere ? "" : paid.some((item) => kindOf(rankOf(item)) === "flat") ? " none" : " unpaid"}`}>
-                          {paidHere
-                            ? `${paidHere} payé${s(paidHere)} sur cette paie · ${euros(paidHere * SUNDAY_ALLOWANCE.perSunday)}${
-                                paidUpcoming
-                                  ? paidUpcoming === paidHere
-                                    ? " · à venir"
-                                    : ` · ${paidHere - paidUpcoming} fait${s(paidHere - paidUpcoming)}, ${paidUpcoming} à venir`
-                                  : ""
-                              }`
-                            : paid.some((item) => kindOf(rankOf(item)) === "flat")
-                              ? "Tous compris dans le forfait mensuel"
-                              : `Au-delà du ${SUNDAY_ALLOWANCE.paidUntil}e dimanche : non payés`}
-                        </p>
-                        <table className="allowance-table sunday-done-table">
-                          <tbody>
-                            {[...new Set(paid.map((item) => Number(item.key.slice(5, 7)) - 1))].map((monthIndex) => {
-                              const days = paid.filter((item) => Number(item.key.slice(5, 7)) - 1 === monthIndex);
-                              return (
-                                <tr key={monthIndex}>
-                                  <th scope="row">{MONTHS[monthIndex]}</th>
-                                  <td>
-                                    {/* Un dimanche, une pastille à la couleur de ce qu'il
-                                        rapporte ; en pointillé tant qu'il est à venir. */}
-                                    <span className="sunday-chips">
-                                      {days.map((item) => {
-                                        const rank = rankOf(item);
-                                        const kind = kindOf(rank);
-                                        return (
-                                          <span
-                                            key={item.key}
-                                            className={`sunday-day ${kind}${item.past ? "" : " upcoming"}`}
-                                            title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}${item.past ? "" : " · à venir"}`}
-                                          >
-                                            {Number(item.key.slice(8, 10))}
-                                          </span>
-                                        );
-                                      })}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </section>
-                    );
-                  })}
-                </>
-              ) : (
-                <p className="allowance-note">
-                  Aucun dimanche travaillé pour le moment.
-                </p>
-              )}
-              <button className="sunday-dates-close" type="button" onClick={() => setSundayListOpen(false)}>
-                Masquer les dates
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
-              </button>
-            </div>
+            <Suspense fallback={null}>
+              <SundayDetailsList allowances={allowances} onClose={() => setSundayListOpen(false)} />
+            </Suspense>
           ) : null}
           </div>
         </section>
