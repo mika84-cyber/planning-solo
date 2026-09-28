@@ -521,23 +521,23 @@
    qu'il y a quelque chose dessous, sans avoir à cliquer pour le découvrir. */
 /* Le bouton des dates gardait l'apparence par défaut du navigateur : il
    prend le cadre blanc et le mot terracotta des autres commandes. */
-.allowance-overview-toggle{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:56px;margin-top:10px;border:1px solid #c9ddcf;border-radius:16px;padding:8px 10px;background:#f2f7f3;color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
-.sunday-dates-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#dcefe3;color:#1d6b45}
+.allowance-overview-toggle{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:56px;margin-top:10px;border:1px solid #e4d9c8;border-radius:16px;padding:8px 10px;background:#f7f2ea;color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
+.sunday-dates-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent-strong)}
 .sunday-dates-icon svg{width:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sunday-dates-copy{display:grid;gap:1px;min-width:0}
 .sunday-dates-copy strong{font-size:.92rem}
 .sunday-dates-copy small{color:var(--muted);font-size:.74rem;font-weight:700}
 /* Téléphone : la pastille se réduit à sa flèche, le titre tient sur une ligne. */
 @media (max-width:600px){.sunday-dates-action{display:none}.allowance-overview-toggle em{width:34px;height:34px;justify-content:center;padding:0}}
-.allowance-overview-toggle:hover{border-color:#8fbf9f}
-.allowance-overview-toggle em{display:flex;align-items:center;gap:5px;margin-top:0;border-radius:999px;padding:5px 11px;background:#dcefe3;color:#1d6b45;font-size:12px;font-style:normal;font-weight:800;white-space:nowrap}
+.allowance-overview-toggle:hover{border-color:var(--accent)}
+.allowance-overview-toggle em{display:flex;align-items:center;gap:5px;margin-top:0;border-radius:999px;padding:5px 11px;background:var(--accent-soft);color:var(--accent-strong);font-size:12px;font-style:normal;font-weight:800;white-space:nowrap}
 .allowance-overview-toggle em svg{width:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .14s ease}
 .allowance-overview-toggle[aria-expanded="true"] em svg{transform:rotate(180deg)}
 .sunday-done-list{margin-top:6px}
 /* Dimanches : un bloc par paie, une ligne par mois, chaque dimanche en
    pastille à la couleur de ce qu'il rapporte (payé, forfait, non payé) ; en
    pointillé tant qu'il est à venir. */
-.sunday-done-group{margin-top:10px;border:1px solid #d6e5da;border-radius:14px;padding:10px 12px 6px;background:#fff}
+.sunday-done-group{margin-top:10px;border:1px solid #e8dfd3;border-radius:14px;padding:10px 12px 6px;background:#fff}
 .sunday-done-group-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0}
 .sunday-done-group-heading strong{color:var(--text);font-family:var(--font-display);font-size:1rem;font-weight:600}
 .sunday-done-group-heading small{color:var(--muted);font-size:.72rem;font-weight:700;white-space:nowrap}
@@ -559,10 +559,10 @@
 .sunday-done-legend .paid::before{background:#b7dcc5}
 .sunday-done-legend .flat::before{background:#e2dbd1}
 .sunday-done-legend .unpaid::before{background:#f4c3ca}
-.sunday-done-legend .upcoming::before{outline:1.5px dashed #6f9d80;outline-offset:-1.5px}
+.sunday-done-legend .upcoming::before{outline:1.5px dashed #8a7c6c;outline-offset:-1.5px}
 /* Détail des dimanches ouvert : un panneau teinté, bien délimité des cartes
    voisines, du bouton jusqu'à « Masquer les dates ». */
-.sunday-dates-panel.is-open{margin-top:10px;border:1.5px solid #c9ddcf;border-radius:18px;padding:8px 10px 10px;background:#f2f7f3}
+.sunday-dates-panel.is-open{margin-top:10px;border:1.5px solid #e4d9c8;border-radius:18px;padding:8px 10px 10px;background:#f7f2ea}
 .sunday-dates-panel.is-open>.sunday-dates-toggle{border-color:transparent;background:none}
 .sunday-dates-close{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:40px;margin-top:10px;border:1px solid var(--border-control);border-radius:999px;background:#fff;color:var(--accent-strong);font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
 .sunday-dates-close svg{width:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
