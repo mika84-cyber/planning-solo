@@ -27,7 +27,11 @@ export function LeaveInfoCard() {
           <strong>Infos congés</strong>
           <small>Report, fractionnement et congés exceptionnels</small>
         </span>
-        <b aria-hidden="true">⌄</b>
+        <em aria-hidden="true">
+          <span className="leave-info-show">Voir les infos</span>
+          <span className="leave-info-hide">Masquer</span>
+          <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+        </em>
       </summary>
       <div className="leave-info-content">
         <div className="leave-info-sections">
