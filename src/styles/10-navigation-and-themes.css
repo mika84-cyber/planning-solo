@@ -452,7 +452,7 @@
 .useful-form-file-copy { display: grid; gap: 3px; }
 .useful-form-file-copy small { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .06em; }
 .useful-form-file-copy strong { color: #2c2621; font-size: 14px; line-height: 1.3; }
-.useful-form-file-copy .useful-form-send-to { font-size: 12px; font-weight: 600; letter-spacing: 0; }
+.useful-form-file-copy .useful-form-send-to { display: grid; justify-items: start; font-size: 12px; font-weight: 600; letter-spacing: 0; }
 .useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
 .useful-form-download-card > a {
   width: 42px;
