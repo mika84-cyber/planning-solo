@@ -5,6 +5,7 @@ import {
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
+  exhibitionsBeforeInterExhibitions,
   currentVenueRank,
   delayLabel,
   shortDelayLabel,
@@ -174,6 +175,30 @@ describe("programmation du Grand Palais", () => {
       const duration = (new Date(period.endsOn).getTime() - new Date(period.startsOn).getTime()) / 86_400_000 + 1;
       return duration >= 3;
     })).toBe(true);
+  });
+
+  it("liste les expositions des trois galeries avant chaque coupure, jusqu’à la suivante", () => {
+    const today = "2026-09-28";
+    const periods = calculateInterExhibitionPeriods(today);
+    const leadIns = exhibitionsBeforeInterExhibitions(periods, today);
+    expect(leadIns).toHaveLength(periods.length);
+    leadIns.forEach((items, index) => {
+      const from = index === 0 ? today : periods[index - 1].endsOn;
+      for (const item of items) {
+        // Ouvertes entre la coupure précédente (ou aujourd'hui) et celle-ci.
+        expect(["galleries34", "gallery8", "gallery7"]).toContain(item.venueKey);
+        expect(item.endsOn >= from).toBe(true);
+        expect(item.startsOn < periods[index].startsOn).toBe(true);
+      }
+    });
+    expect(leadIns.flat().length).toBeGreaterThan(0);
+    // Une exposition ajoutée ensuite entre dans la liste d'elle-même.
+    const added = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{
+      id: "nouvelle", title: "Exposition ajoutée", startDate: periods[0].startsOn, endDate: periods[0].startsOn,
+      url: "https://www.grandpalais.fr/", venueKey: "gallery8", venueLabel: "Galerie 8",
+    }]);
+    const afterUpdate = calculateInterExhibitionPeriods(today, added);
+    expect(exhibitionsBeforeInterExhibitions(afterUpdate, today, added).flat().map((item) => item.title)).toContain("Exposition ajoutée");
   });
 
   it("range « En ce moment » par espace : les quatre grands d'abord, la Nef en dernier", () => {

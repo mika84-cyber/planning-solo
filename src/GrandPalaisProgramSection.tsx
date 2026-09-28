@@ -321,6 +321,53 @@ export function calculateInterExhibitionPeriods(
   });
 }
 
+export type InterExhibitionLeadIn = Array<{ venueKey: string; venueLabel: string; title: string; startsOn: string; endsOn: string }>;
+
+/** Les expositions des trois galeries avant chaque coupure : d'aujourd'hui à
+ *  la veille de la première, puis entre la fin d'une coupure et le début de
+ *  la suivante. Tiré du programme complet, il suit tout seul les expositions
+ *  ajoutées. */
+export function exhibitionsBeforeInterExhibitions(
+  periods: InterExhibitionPeriod[],
+  today: string,
+  program: GrandPalaisProgramData = GRAND_PALAIS_PROGRAM,
+): InterExhibitionLeadIn[] {
+  return periods.map((period, index) => {
+    const from = index === 0 ? today : addIsoDays(periods[index - 1].endsOn, 1);
+    const to = addIsoDays(period.startsOn, -1);
+    if (to < from) return [];
+    const seen = new Set<string>();
+    return INTEREXPO_VENUES.flatMap((venueKey) =>
+      Object.values(program[venueKey].schedule)
+        .flatMap((entries) => entries ?? [])
+        .filter((entry) => entry.startsOn && entry.endsOn && entry.startsOn <= to && entry.endsOn >= from)
+        .map((entry) => ({ venueKey, venueLabel: program[venueKey].label, title: entry.title, startsOn: entry.startsOn!, endsOn: entry.endsOn! })),
+    )
+      .filter((item) => {
+        const key = `${item.venueKey}|${item.title}|${item.startsOn}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((left, right) => left.startsOn.localeCompare(right.startsOn));
+  });
+}
+
+/** « 1er août 2027 » : l'année n'est écrite que lorsqu'elle n'est pas celle
+ *  d'aujourd'hui. */
+function leadInDay(value: string, today: string, withYear = false) {
+  return formatDatePart(value, !withYear && value.slice(0, 4) === today.slice(0, 4)
+    ? { day: "numeric", month: "long" }
+    : { day: "numeric", month: "long", year: "numeric" }).replace(/^1 /, "1er ");
+}
+
+/** « du 23 septembre 2026 au 17 janvier 2027 » : les deux dates, toujours,
+ *  avec l'année de départ dès qu'elle diffère de celle de fin. */
+function leadInDates(item: { startsOn: string; endsOn: string }, today: string) {
+  const acrossYears = item.startsOn.slice(0, 4) !== item.endsOn.slice(0, 4);
+  return `du ${leadInDay(item.startsOn, today, acrossYears)} au ${leadInDay(item.endsOn, today)}`;
+}
+
 function venueYears(
   venueKey: string,
   today = new Date().toISOString().slice(0, 10),
@@ -588,6 +635,10 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
   // Une recherche a son propre panneau : chaque onglet montre tout son contenu.
   const entries = (venue.schedule[selectedYear] ?? []).filter((entry) => isGrandPalaisEntryVisible(entry, today));
   const interExhibitionPeriods = useMemo(() => calculateInterExhibitionPeriods(today, program), [today, program]);
+  const interExhibitionLeadIns = useMemo(
+    () => exhibitionsBeforeInterExhibitions(interExhibitionPeriods, today, program),
+    [interExhibitionPeriods, today, program],
+  );
   const allEntries = useMemo(() => {
     const seen = new Set<string>();
     return Object.entries(program).flatMap(([venueKey, item]) => Object.values(item.schedule).flatMap((scheduled) => scheduled ?? []).map((entry) => ({
@@ -862,32 +913,69 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             </p>
           </div>
           <div className="grand-palais-interexpo-list">
-            {interExhibitionPeriods.length ? interExhibitionPeriods.map((period) => {
+            {interExhibitionPeriods.length ? interExhibitionPeriods.map((period, index) => {
               const detail = describeInterExhibitionPeriod(period, today);
               // Une période en cours montre où on en est, comme une exposition.
               const elapsed = detail.status === "En cours"
                 ? Math.min(detail.durationDays, dayDistance(period.startsOn, today) + 1)
                 : 0;
-              return (
-                <article key={`${period.startsOn}-${period.endsOn}`} data-status={detail.status}>
-                  {/* La durée d'abord, en grand : c'est ce qu'on cherche d'un coup d'œil. */}
-                  <p className="grand-palais-interexpo-duration" role="img" aria-label={`${detail.durationDays} jours de fermeture`}>
-                    <b aria-hidden="true">{detail.durationDays}</b>
-                    <span aria-hidden="true">jours</span>
+              const openFrom = index === 0 ? today : addIsoDays(interExhibitionPeriods[index - 1].endsOn, 1);
+              const openTo = addIsoDays(period.startsOn, -1);
+              const leadIn = interExhibitionLeadIns[index] ?? [];
+              const range = interExhibitionRangeLabel(period);
+              // Pastille numérotée, en haut à droite de l'encadré de la période.
+              const number = <b className="grand-palais-interexpo-number">{index + 1}</b>;
+              // La coupure : « 64 jours de fermeture du 2 août au 4 octobre 2027 ».
+              const cut = (
+                <article className="grand-palais-interexpo-cut" data-status={detail.status}>
+                  {/* Un musée aux portes closes : les galeries sont fermées. */}
+                  <svg className="grand-palais-interexpo-art" viewBox="0 0 48 48" aria-hidden="true">
+                    <path className="grand-palais-interexpo-art-roof" d="M6 18 24 8l18 10Z" />
+                    <circle cx="24" cy="14" r="1.6" />
+                    <path d="M8 18h32M11.5 21v13M17 21v13M31 21v13M36.5 21v13M7 34h34M5 38.5h38" />
+                    <rect className="grand-palais-interexpo-art-door" x="21" y="24" width="6" height="10" rx="3" />
+                  </svg>
+                  {leadIn.length ? null : number}
+                  <p className="grand-palais-interexpo-kind">Inter-expo · {detail.durationDays} jours de fermeture</p>
+                  <strong className="grand-palais-interexpo-cut-range">{range}</strong>
+                  <p className="grand-palais-interexpo-when">
+                    <em>{detail.status}</em> <DelayText long={detail.timing} short={detail.shortTiming} />
                   </p>
-                  <div className="grand-palais-interexpo-body">
-                    <header><em>{detail.status}</em><span><DelayText long={detail.timing} short={detail.shortTiming} /></span></header>
-                    <strong>{interExhibitionRangeLabel(period)}</strong>
-                    {elapsed ? (
-                      <div className="grand-palais-interexpo-progress-row">
-                        <span className="grand-palais-interexpo-progress" aria-hidden="true">
-                          <i style={{ width: `${Math.round((elapsed / detail.durationDays) * 100)}%` }} />
-                        </span>
-                        <small>Jour {elapsed} sur {detail.durationDays}</small>
-                      </div>
-                    ) : null}
-                  </div>
+                  {elapsed ? (
+                    <div className="grand-palais-interexpo-progress-row">
+                      <span className="grand-palais-interexpo-progress" aria-hidden="true">
+                        <i style={{ width: `${Math.round((elapsed / detail.durationDays) * 100)}%` }} />
+                      </span>
+                      <small>Jour {elapsed} sur {detail.durationDays}</small>
+                    </div>
+                  ) : null}
                 </article>
+              );
+              return (
+                <Fragment key={`${period.startsOn}-${period.endsOn}`}>
+                {/* Un encadré par programmation établie dans les trois galeries :
+                    une liste resserrée, puis la coupure qui la termine, mise en
+                    avant. Une coupure déjà commencée reste seule. */}
+                {leadIn.length ? (
+                  <section className="grand-palais-interexpo-open" aria-label={`Programmation ${index === 0 ? `jusqu’au ${leadInDay(openTo, today)}` : `à partir du ${leadInDay(openFrom, today)}`}`}>
+                    {number}
+                    <header>
+                      <em>Programmation</em>
+                      <strong>{index === 0 ? `Jusqu’au ${leadInDay(openTo, today)}` : `À partir du ${leadInDay(openFrom, today)}`}</strong>
+                    </header>
+                    <ul>
+                      {leadIn.map((item) => (
+                        <li key={`${item.venueKey}-${item.title}-${item.startsOn}`} style={grandPalaisVenueStyle(item.venueKey)}>
+                          <span>{item.title}</span>
+                          <b>{item.venueLabel}</b>
+                          <small>{leadInDates(item, today)}</small>
+                        </li>
+                      ))}
+                    </ul>
+                    {cut}
+                  </section>
+                ) : cut}
+                </Fragment>
               );
             }) : <p className="empty-state">Aucune période commune calculable pour le moment.</p>}
           </div>

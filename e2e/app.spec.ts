@@ -936,6 +936,8 @@ async function swipeMainSection(page: Page, fromX: number, toX: number) {
 }
 
 test("le partage de planning reste lisible et privé sur tous les écrans", async ({ page }, testInfo) => {
+  // Les absences de démo d'Agnès sont datées de septembre 2026.
+  await page.clock.setFixedTime(new Date("2026-09-01T12:00:00"));
   await page.setViewportSize(testInfo.project.name === "mobile" ? { width: 344, height: 882 } : { width: 1280, height: 900 });
   await prepareDemo(page);
   const referenceHeaderHeight = (await page.locator('.top-header:visible').boundingBox())!.height;
@@ -2492,15 +2494,20 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await page.getByRole("tab", { name: "Inter-expos" }).click();
   await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();
   await expect(page.locator(".grand-palais-interexpo-panel")).toContainText("où aucune exposition n’est ouverte dans les trois galeries");
-  const firstInterexpo = page.locator(".grand-palais-interexpo-list article").first();
-  await expect(firstInterexpo).toContainText("Du 31 août au 22 septembre 2026");
-  await expect(firstInterexpo.getByLabel("23 jours de fermeture")).toBeVisible();
+  // Chaque programmation établie dans les trois galeries se termine par la
+  // coupure qui la suit, dates en avant.
+  const firstProgramme = page.locator(".grand-palais-interexpo-list > *").first();
+  await expect(firstProgramme).toHaveClass(/grand-palais-interexpo-open/);
+  await expect(firstProgramme).toContainText("Jusqu’au 30 août");
+  await expect(firstProgramme).toContainText("Galerie 8");
+  const firstInterexpo = firstProgramme.locator(".grand-palais-interexpo-cut");
+  await expect(firstInterexpo).toContainText("23 jours de fermeture");
+  await expect(firstInterexpo.locator(".grand-palais-interexpo-cut-range")).toHaveText("Du 31 août au 22 septembre 2026");
   const firstInterexpoStatus = await firstInterexpo.getAttribute("data-status");
   expect(["En cours", "À venir"]).toContain(firstInterexpoStatus);
   await expect(firstInterexpo.locator("em")).toHaveText(firstInterexpoStatus!);
   // La recherche porte sur toute la programmation : elle reste offerte ici.
   await expect(page.getByLabel("Rechercher une exposition")).toHaveCount(1);
-  await expect(page.locator(".grand-palais-interexpo-list")).not.toContainText("Galerie");
   await expect(page.locator(".grand-palais-interexpo-list")).not.toContainText("Nef");
 });
 

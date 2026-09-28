@@ -371,16 +371,6 @@ h1 {
   flex: 1 1 190px;
   gap: 6px;
   min-width: 190px;
-}.year-stepper {
-  display: grid;
-  grid-template-columns: minmax(130px, 1fr);
-  align-items: center;
-  height: 46px;
-  padding: 4px;
-  border: 1px solid var(--section-outline);
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--surface-high) 0%, #fff 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 /* Jours travaillés : même gabarit que le sélecteur d'année, posé à côté de lui
    dans la même rangée. Le panneau s'ouvre par-dessus le calendrier plutôt que
@@ -510,68 +500,6 @@ h1 {
   font-size: 10.5px;
   font-weight: 650;
   line-height: 1.2;
-}
-.group-stepper {
-  height: 46px;
-  padding: 4px;
-  border: 1px solid var(--section-outline);
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--surface-high) 0%, #fff 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-.group-stepper .choice-picker-trigger {
-  height: 38px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 850;
-}
-.year-select-display {
-  position: relative;
-  min-width: 0;
-}
-.year-calendar-mark {
-  position: absolute;
-  z-index: 1;
-  top: 50%;
-  left: 9px;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  color: var(--muted);
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-.year-calendar-mark svg {
-  width: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-.controls .year-select-display .choice-picker-trigger {
-  width: 100%;
-  height: 38px;
-  border: 0;
-  border-radius: 8px;
-  padding: 0 34px;
-  background: transparent;
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 850;
-  text-align: center;
-  cursor: pointer;
-}
-.controls .year-select-display .choice-picker-trigger svg {
-  width: 15px;
-}
-.controls .year-select-display .choice-picker-trigger:focus-visible {
-  outline: 2px solid rgba(122, 111, 95, 0.35);
-  outline-offset: 1px;
 }
 .request-panel {
   scroll-margin-top: 12px;
@@ -885,23 +813,4 @@ h1 {
   background: var(--surface-high);
   color: var(--muted);
   font-size: 12px;
-}
-.calendar-hint {
-  display: flex;
-  flex: 1 0 100%;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 650;
-  line-height: 1.35;
-}
-.calendar-hint i {
-  flex: 0 0 auto;
-  width: 15px;
-  height: 15px;
-  border: 1px solid var(--border-card);
-  border-radius: 4px;
-  background: var(--off);
 }

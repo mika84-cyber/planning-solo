@@ -521,7 +521,7 @@
    qu'il y a quelque chose dessous, sans avoir à cliquer pour le découvrir. */
 /* Le bouton des dates gardait l'apparence par défaut du navigateur : il
    prend le cadre blanc et le mot terracotta des autres commandes. */
-.allowance-overview-toggle{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:56px;margin-top:10px;border:1px solid #e4d9c8;border-radius:16px;padding:8px 10px;background:#f7f2ea;color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
+.allowance-overview-toggle{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:56px;margin-top:10px;border:1.5px solid #5b5044;border-radius:16px;padding:8px 10px;background:#f7f2ea;color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
 .sunday-dates-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent-strong)}
 .sunday-dates-icon svg{width:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sunday-dates-copy{display:grid;gap:1px;min-width:0}
@@ -562,7 +562,7 @@
 .sunday-done-legend .upcoming::before{outline:1.5px dashed #8a7c6c;outline-offset:-1.5px}
 /* Détail des dimanches ouvert : un panneau teinté, bien délimité des cartes
    voisines, du bouton jusqu'à « Masquer les dates ». */
-.sunday-dates-panel.is-open{margin-top:10px;border:1.5px solid #e4d9c8;border-radius:18px;padding:8px 10px 10px;background:#f7f2ea}
+.sunday-dates-panel.is-open{margin-top:10px;border:1.5px solid #5b5044;border-radius:18px;padding:8px 10px 10px;background:#f7f2ea}
 .sunday-dates-panel.is-open>.sunday-dates-toggle{border-color:transparent;background:none}
 .sunday-dates-close{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:40px;margin-top:10px;border:1px solid var(--border-control);border-radius:999px;background:#fff;color:var(--accent-strong);font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
 .sunday-dates-close svg{width:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
