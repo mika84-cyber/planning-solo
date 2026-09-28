@@ -2114,6 +2114,7 @@ export default function Home() {
   const {
     editDayLeavePeriod,
     saveDay,
+    saveWorkPost,
     saveNoteAcrossDates,
     saveSeparateLeaveDates,
     deleteLeavePeriod,
@@ -3236,6 +3237,7 @@ export default function Home() {
             saveOtherDateDirect={saveOtherDateDirect}
             saveStrikeDateDirect={saveStrikeDateDirect}
             saveDay={saveDay}
+            saveWorkPost={saveWorkPost}
             beginMultipleDateSelectionFromDay={beginMultipleDateSelectionFromDay}
             beginNoteDateSelection={beginNoteDateSelection}
             editDayLeavePeriod={editDayLeavePeriod}

@@ -4,7 +4,8 @@ import { emptyEntry, personalPresenceForDate } from "./appModel";
 import { ColleagueWeekTable, dayStatusLabel, sharedPlanningTomorrowSummary, statusWithPost } from "./ColleaguePlanningPage";
 import { PlanningDayCell } from "./PlanningDayCell";
 import { dateKey, getDayInfo } from "./planningLogic";
-import { canChooseWorkPost } from "./workPost";
+import type { Entries } from "./appModel";
+import { canChooseWorkPost, saveWorkPostOptimistically } from "./workPost";
 
 // Premier jour travaillé du groupe 2 à partir du 28 septembre 2026.
 const workDay = (() => {
@@ -63,5 +64,35 @@ describe("poste du jour : salle, accueil ou billetterie", () => {
     );
     expect(html).toContain('title="Travail · Billetterie"><span aria-hidden="true">BI</span>');
     expect(html).toContain('title="Travail"><span aria-hidden="true">EX</span>');
+  });
+
+  it("affiche le poste tout de suite, puis garde la version du serveur sans tout relire", async () => {
+    let state: Entries = { [key]: { ...emptyEntry(), noteText: "Relais", updatedAt: "v1" } };
+    const setEntries = (update: Entries | ((all: Entries) => Entries)) => { state = typeof update === "function" ? update(state) : update; };
+    let seenWhileSaving: Entries = {};
+    const post = vi.fn(async () => { seenWhileSaving = state; return { updatedAt: "v2" }; });
+    const reload = vi.fn(async () => undefined);
+    const closeDay = vi.fn();
+    await saveWorkPostOptimistically({ date: key, workPost: "ticketing", entries: state, setEntries, closeDay, demoMode: false, post, notify: vi.fn(), reload });
+    // La lettre est déjà là pendant l'envoi, et la fiche est refermée.
+    expect(seenWhileSaving[key]?.workPost).toBe("ticketing");
+    expect(closeDay).toHaveBeenCalled();
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ action: "save-entry", date: key, workPost: "ticketing", noteText: "Relais", expectedUpdatedAt: "v1" }));
+    expect(state[key]).toMatchObject({ workPost: "ticketing", updatedAt: "v2" });
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("revient en arrière et prévient si l'enregistrement échoue", async () => {
+    let state: Entries = {};
+    const setEntries = (update: Entries | ((all: Entries) => Entries)) => { state = typeof update === "function" ? update(state) : update; };
+    const notify = vi.fn();
+    const reload = vi.fn(async () => undefined);
+    await saveWorkPostOptimistically({
+      date: key, workPost: "counter", entries: state, setEntries, closeDay: vi.fn(), demoMode: false,
+      post: async () => { throw new Error("réseau"); }, notify, reload,
+    });
+    expect(state[key]).toBeUndefined();
+    expect(notify).toHaveBeenCalled();
+    expect(reload).toHaveBeenCalled();
   });
 });

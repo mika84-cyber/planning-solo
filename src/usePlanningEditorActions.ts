@@ -6,12 +6,14 @@ import {
   postCalendarPeriodsVerified,
 } from "./calendarApi";
 import { createClientId } from "./clientId";
+import { saveWorkPostOptimistically } from "./workPost";
 import {
   emptyEntry,
   rangeKeys,
   type Entries,
   type LeavePeriod,
   type SharedEntry,
+  type WorkPost,
 } from "./appModel";
 import {
   addDays,
@@ -697,9 +699,28 @@ export function usePlanningEditorActions({
     }
   }
 
+  /** Poste du jour : affiché tout de suite, fiche refermée, puis enregistré
+   *  sans relire tout le calendrier. En cas d'échec, la journée revient à son
+   *  état d'avant et un message l'annonce. */
+  async function saveWorkPost(date: string, workPost: WorkPost | "") {
+    await saveWorkPostOptimistically({
+      date,
+      workPost,
+      entries,
+      setEntries,
+      closeDay: () => setDayDate(null),
+      demoMode,
+      post: postCalendar,
+      notify: (error) => notify(calendarErrorMessage(error, "Le poste du jour n’a pas pu être enregistré. Réessayez.")),
+      reload: loadCalendar,
+    });
+  }
+
+
   return {
     editDayLeavePeriod,
     saveDay,
+    saveWorkPost,
     saveNoteAcrossDates,
     saveSeparateLeaveDates,
     deleteLeavePeriod,

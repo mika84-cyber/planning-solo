@@ -117,8 +117,11 @@ describe("API principale du calendrier", () => {
   it("garde le poste du jour (accueil, billetterie) et le retire pour revenir en salle", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const key = "user/user-a/entry/2026-09-29";
-    expect((await calendarHandler(request({ action: "save-entry", date: "2026-09-29", workPost: "counter" }))).status).toBe(200);
+    const saved = await calendarHandler(request({ action: "save-entry", date: "2026-09-29", workPost: "counter" }));
+    expect(saved.status).toBe(200);
     expect(data.get(key)).toMatchObject({ work_post: "counter" });
+    // La réponse donne la nouvelle version : pas besoin de relire le calendrier.
+    expect((await saved.json()).updatedAt).toBe((data.get(key) as { updated_at: string }).updated_at);
     // Une note écrite ensuite, sans poste dans la requête, ne l'efface pas.
     expect((await calendarHandler(request({ action: "save-entry", date: "2026-09-29", noteText: "Relais à midi" }))).status).toBe(200);
     expect(data.get(key)).toMatchObject({ work_post: "counter", note_text: "Relais à midi" });

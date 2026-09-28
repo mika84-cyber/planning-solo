@@ -10,6 +10,7 @@ import type {
   LeavePeriod,
   PartnerCalendarEntries,
   SharedEntry,
+  WorkPost,
   WorkExchange,
   RequestKind,
 } from "./appModel";
@@ -87,6 +88,7 @@ export type DayDetailDialogProps = {
   saveOtherDateDirect: (date: string) => Promise<void>;
   saveStrikeDateDirect: (date: string) => Promise<void>;
   saveDay: (overrides?: Partial<SharedEntry>) => Promise<void>;
+  saveWorkPost: (date: string, workPost: WorkPost | "") => Promise<void>;
   beginMultipleDateSelectionFromDay: () => void;
   beginNoteDateSelection: () => void;
   editDayLeavePeriod: (period: LeavePeriod) => void;
@@ -121,6 +123,7 @@ export function DayDetailDialog({
   saveOtherDateDirect,
   saveStrikeDateDirect,
   saveDay,
+  saveWorkPost,
   beginMultipleDateSelectionFromDay,
   beginNoteDateSelection,
   editDayLeavePeriod,
@@ -225,7 +228,7 @@ export function DayDetailDialog({
                     type="button"
                     className={current ? "active" : undefined}
                     aria-pressed={current}
-                    onClick={() => void saveDay({ workPost: current ? "" : post.value })}
+                    onClick={() => void saveWorkPost(dayDate, current ? "" : post.value)}
                   >
                     <b aria-hidden="true">{post.letter}</b>
                     {post.label}

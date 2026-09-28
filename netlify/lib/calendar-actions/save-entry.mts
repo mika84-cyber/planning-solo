@@ -65,6 +65,7 @@ export async function handleSaveEntry(
       return json({ error: "Cette journée a été modifiée sur un autre appareil" }, 409);
     return json({ ok: true, deleted: true, writeEtag: savedEtag });
   }
+  const updatedAt = new Date().toISOString();
   const savedEtag = await writeAtomic(store, key, {
     date,
     note_text: noteText,
@@ -83,8 +84,10 @@ export async function handleSaveEntry(
     exchange_partner: previous?.exchange_partner,
     exchange_partner_group: previous?.exchange_partner_group,
     exchange_other_date: previous?.exchange_other_date,
-    updated_at: new Date().toISOString(),
+    updated_at: updatedAt,
   } satisfies CalendarEntry, version.etag);
   if (!savedEtag) return json({ error: "Cette journée a été modifiée sur un autre appareil" }, 409);
-  return json({ ok: true, noteUpdatedAt, writeEtag: savedEtag });
+  // La nouvelle version permet au client de garder la journée à jour sans
+  // relire tout le calendrier.
+  return json({ ok: true, noteUpdatedAt, writeEtag: savedEtag, updatedAt });
 }
