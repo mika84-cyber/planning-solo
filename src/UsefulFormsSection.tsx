@@ -286,44 +286,6 @@ export function UsefulFormsSection({
         </header>
 
         {isAdmin && (folder.key === "expo" || folder.key === "sap" || folder.key === "brantome") ? <DocumentUpload key={folder.key} folder={folder.key} demoMode={demoMode} onAdded={document => setSharedDocuments(current => [...current.filter(item => item.id !== document.id), document])} /> : null}
-        {folder.audioguides?.length ? (
-          <section className="useful-audioguide-list" aria-labelledby="useful-audioguides-title">
-            <h3 id="useful-audioguides-title">Audioguides</h3>
-            {folder.audioguides.map((guide) => (
-              <article key={guide.title} className="useful-audioguide-card">
-                <span className="useful-audioguide-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
-                </span>
-                <span className="useful-audioguide-copy">
-                  <small>Audioguide · {guide.languages}</small>
-                  <strong>{guide.title}</strong>
-                  <span>Code d’accès <b>{guide.code}</b></span>
-                </span>
-                {/* Sans scanner le QR code : la page s'ouvre et le code est copié.
-                    Le QR code reste affichable pour le faire flasher. */}
-                <span className="useful-audioguide-actions">
-                  <a
-                    href={guide.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => void navigator.clipboard?.writeText(guide.code).catch(() => undefined)}
-                  >
-                    Ouvrir l’audioguide
-                  </a>
-                  <button type="button" aria-expanded={shownQr === guide.title} onClick={() => setShownQr((current) => (current === guide.title ? "" : guide.title))}>
-                    {shownQr === guide.title ? "Masquer le QR code" : "Afficher le QR code"}
-                  </button>
-                </span>
-                {shownQr === guide.title ? (
-                  <figure className="useful-audioguide-qr">
-                    <img src={guide.qr} alt={`QR code de l’audioguide ${guide.title}`} width="240" height="240" />
-                    <figcaption>Code d’accès <b>{guide.code}</b></figcaption>
-                  </figure>
-                ) : null}
-              </article>
-            ))}
-          </section>
-        ) : null}
         {folder.image ? (
           <figure className="useful-form-information-image">
             <img
@@ -335,7 +297,7 @@ export function UsefulFormsSection({
               decoding="async"
             />
           </figure>
-        ) : folder.documents.length ? (
+        ) : folder.documents.length || folder.audioguides?.length ? (
           <div className="useful-form-download-list">
             {!secureContext ? (
               <p className="useful-form-local-notice">
@@ -380,9 +342,49 @@ export function UsefulFormsSection({
               </article>
               );
             })}
+            {/* Les audioguides suivent les fiches, dans le même format : ouvrir
+                sans scanner (le code d'accès est copié) ou montrer le QR code. */}
+            {folder.audioguides?.map((guide, index) => (
+              <article key={guide.title} className="useful-form-download-card useful-audioguide-card">
+                <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
+                </span>
+                <span className="useful-form-file-copy">
+                  <small>{folder.documents.length + index + 1}. AUDIOGUIDE</small>
+                  <strong>Audioguide {guide.title}</strong>
+                  <small className="useful-audioguide-code">Code d’accès <b>{guide.code}</b> · {guide.languages.toLowerCase()}</small>
+                </span>
+                <a
+                  href={guide.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Ouvrir l’audioguide ${guide.title}`}
+                  title="Ouvrir l’audioguide"
+                  onClick={() => void navigator.clipboard?.writeText(guide.code).catch(() => undefined)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" /></svg>
+                </a>
+                <button
+                  type="button"
+                  className="document-share-button useful-audioguide-qr-button"
+                  aria-expanded={shownQr === guide.title}
+                  aria-label={shownQr === guide.title ? "Masquer le QR code" : "Afficher le QR code"}
+                  title={shownQr === guide.title ? "Masquer le QR code" : "Afficher le QR code"}
+                  onClick={() => setShownQr((current) => (current === guide.title ? "" : guide.title))}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2" /></svg>
+                </button>
+                {shownQr === guide.title ? (
+                  <figure className="useful-audioguide-qr">
+                    <img src={guide.qr} alt={`QR code de l’audioguide ${guide.title}`} width="240" height="240" />
+                    <figcaption>Code d’accès <b>{guide.code}</b></figcaption>
+                  </figure>
+                ) : null}
+              </article>
+            ))}
             {downloadError ? <p className="useful-form-download-error" role="alert">{downloadError}</p> : null}
           </div>
-        ) : folder.audioguides?.length ? null : (
+        ) : (
           <div className="useful-forms-empty">
             <span aria-hidden="true">＋</span>
             <strong>Aucun formulaire pour le moment</strong>
