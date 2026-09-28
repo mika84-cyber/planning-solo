@@ -67,7 +67,7 @@ export type DayDetailDialogProps = {
   dayRecoveryUses: RecoveryUse[];
   dayExceptionalClosure: boolean;
   dayHolidayChoiceVisible: boolean;
-  /** Jour travaillé : on peut y préciser le poste (comptoir, billetterie). */
+  /** Jour travaillé : on peut y préciser le poste (accueil, billetterie). */
   dayWorkPostVisible?: boolean;
   baseSalary: number;
   approvedGrandPalaisUpdates: SharedGrandPalaisEvent[];
@@ -211,11 +211,11 @@ export function DayDetailDialog({
                 </button>
               </div>
             ) : null}
-        {/* Poste du jour : en salle par défaut ; le comptoir d'accueil ou la
+        {/* Poste du jour : en salle par défaut ; l'accueil ou la
             billetterie se cochent, et se décochent pour revenir en salle. */}
         {!quickNoteMode && dayWorkPostVisible ? (
           <fieldset className="day-work-post" disabled={savingDay}>
-            <legend>Poste du jour · en salle par défaut</legend>
+            <legend>Poste du jour <small>En salle par défaut</small></legend>
             <div>
               {WORK_POSTS.filter((post) => post.value).map((post) => {
                 const current = entries[dayDate]?.workPost === post.value;

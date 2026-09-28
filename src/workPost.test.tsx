@@ -16,7 +16,7 @@ const workDay = (() => {
 const key = dateKey(workDay);
 const counterEntries = { [key]: { ...emptyEntry(), workPost: "counter" as const } };
 
-describe("poste du jour : salle, comptoir ou billetterie", () => {
+describe("poste du jour : salle, accueil ou billetterie", () => {
   it("ne se choisit que sur un jour réellement travaillé", () => {
     const base = { date: key, group: 2, entries: {}, periods: [], recoveryUses: [], closed: false };
     expect(canChooseWorkPost(base)).toBe(true);
@@ -32,21 +32,21 @@ describe("poste du jour : salle, comptoir ou billetterie", () => {
       .toEqual({ status: "absence" });
   });
 
-  it("affiche un petit C rouge dans la case, rien pour la salle", () => {
+  it("affiche un petit A rouge dans la case, rien pour la salle", () => {
     const props = {
       date: workDay, group: 2, cleanupSelected: false, today: false, recoveryEntries: [], showLeaves: true, showNotes: true,
       inPendingRange: false, rangeSelecting: false, recoveryRangeSelecting: false, noteSelecting: false, noteColor: "#d3943d", onClick: vi.fn(),
     };
     const counter = renderToStaticMarkup(<PlanningDayCell {...props} entry={counterEntries[key]} />);
-    expect(counter).toContain('<span class="work-post-marker" aria-hidden="true">C</span>');
-    expect(counter).toContain("comptoir d’accueil");
+    expect(counter).toContain('<span class="work-post-marker" aria-hidden="true">A</span>');
+    expect(counter).toContain(", accueil");
     expect(renderToStaticMarkup(<PlanningDayCell {...props} entry={emptyEntry()} />)).not.toContain("work-post-marker");
   });
 
   it("donne EX, AC ou BI dans la semaine partagée et précise le poste dans la liste du jour", () => {
     const planning = { owner: { userId: "a", displayName: "Agnès" }, group: 2, days: [{ date: key, status: "work" as const, workPost: "ticketing" as const }] };
     expect(sharedPlanningTomorrowSummary(planning, workDay)).toMatchObject({ status: "Travail", post: "ticketing" });
-    expect(statusWithPost("Travail", "counter")).toBe("Travail · Comptoir d’accueil");
+    expect(statusWithPost("Travail", "counter")).toBe("Travail · Accueil");
     expect(statusWithPost("Travail", "")).toBe("Travail");
     // Vue jour : le lieu de travail en clair.
     expect(["", "counter", "ticketing"].map((post) => dayStatusLabel("Travail", post as "" | "counter" | "ticketing"))).toEqual(["En salles", "Accueil", "Billetterie"]);

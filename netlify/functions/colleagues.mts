@@ -271,7 +271,7 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
     (entries[date]?.closureOverride !== "open" && automaticClosures.has(date));
   const days = [...candidateDates].sort().map((date) => {
     const presence = personalPresenceForDate(new Date(`${date}T12:00:00`), group, periods, entries, recoveryUses, dailyMinutesForQuota(quota), isClosed);
-    // Le poste (comptoir, billetterie) suit la présence d'une journée travaillée.
+    // Le poste (accueil, billetterie) suit la présence d'une journée travaillée.
     return { date, ...presence };
   });
   return json({

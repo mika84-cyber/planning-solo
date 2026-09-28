@@ -114,7 +114,7 @@ describe("API principale du calendrier", () => {
     expect([...data.keys()].some((key) => key === "entry/2026-08-28")).toBe(false);
   });
 
-  it("garde le poste du jour (comptoir, billetterie) et le retire pour revenir en salle", async () => {
+  it("garde le poste du jour (accueil, billetterie) et le retire pour revenir en salle", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const key = "user/user-a/entry/2026-09-29";
     expect((await calendarHandler(request({ action: "save-entry", date: "2026-09-29", workPost: "counter" }))).status).toBe(200);

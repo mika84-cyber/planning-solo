@@ -167,7 +167,7 @@ export function sharedPlanningDayStatus(planning: SharedColleaguePlanning, date:
   return scheduled === "off" ? "Repos" : scheduled === "training" ? "Formation" : "Travail";
 }
 
-/** Poste d'une journée travaillée partagée : comptoir, billetterie, ou
+/** Poste d'une journée travaillée partagée : accueil, billetterie, ou
  *  vide pour l'expo (les salles), le poste par défaut. */
 export function sharedPlanningWorkPost(planning: SharedColleaguePlanning, date: Date): WorkPost | "" {
   const shared = planning.days.find((day) => day.date === dateKey(date));
@@ -175,7 +175,7 @@ export function sharedPlanningWorkPost(planning: SharedColleaguePlanning, date: 
 }
 
 const workPostEntry = (post: WorkPost | "" | undefined) => WORK_POSTS.find((item) => item.value === (post || "")) ?? WORK_POSTS[0];
-/** « Travail · Comptoir d’accueil » ; l'expo, poste par défaut, reste « Travail ». */
+/** « Travail · Accueil » ; l'expo, poste par défaut, reste « Travail ». */
 export const statusWithPost = (status: TomorrowStatus, post?: WorkPost | "") =>
   status === "Travail" && post ? `Travail · ${workPostEntry(post).label}` : status;
 

@@ -1,7 +1,7 @@
 import type { Entries, LeavePeriod } from "./appModel";
 import { fromKey, getDayInfo } from "./planningLogic";
 
-/** Le poste (salles, comptoir, billetterie) ne se choisit que sur une
+/** Le poste (salles, accueil, billetterie) ne se choisit que sur une
  *  journée réellement travaillée : ni congé, ni récupération, ni fermeture,
  *  ni jour cédé lors d'un échange. Un jour repris par échange compte. */
 export function canChooseWorkPost({

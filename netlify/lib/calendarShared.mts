@@ -38,7 +38,7 @@ export type CalendarEntry = {
     holiday_recovery_minutes?: number;
   closure_override?: "closed" | "open";
   /** Poste de la journée travaillée, quand ce n'est pas les salles :
-   *  le comptoir d'accueil ou la billetterie. */
+   *  l'accueil ou la billetterie. */
   work_post?: "counter" | "ticketing";
   exchange_id?: string;
   exchange_role?: "given" | "return";

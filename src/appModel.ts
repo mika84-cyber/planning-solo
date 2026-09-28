@@ -34,7 +34,7 @@ export type SharedEntry = {
    *  une fermeture automatique du Grand Palais. */
   closureOverride: "closed" | "open" | "";
   /** Poste de la journée travaillée : vide pour les salles (par défaut),
-   *  sinon le comptoir d'accueil ou la billetterie. */
+   *  sinon l'accueil ou la billetterie. */
   workPost?: WorkPost | "";
   /** Un échange validé porte toujours ses deux journées. `given` correspond
    *  au jour de cycle cédé au collègue, `return` au jour rendu. */
@@ -52,7 +52,7 @@ export type WorkPost = "counter" | "ticketing";
  *  semaine partagée des collègues. */
 export const WORK_POSTS: ReadonlyArray<{ value: WorkPost | ""; label: string; letter: string; code: string }> = [
   { value: "", label: "Expo", letter: "E", code: "EX" },
-  { value: "counter", label: "Comptoir d’accueil", letter: "C", code: "AC" },
+  { value: "counter", label: "Accueil", letter: "A", code: "AC" },
   { value: "ticketing", label: "Billetterie", letter: "B", code: "BI" },
 ];
 export function workPostOf(value: unknown): WorkPost | "" {
@@ -288,7 +288,7 @@ export type PersonalPresence = {
   status: "work" | "training" | "rest" | "absence" | "partial";
   halfMoment?: HalfMoment;
   absentMinutes?: number;
-  /** Journée travaillée hors expo : comptoir d'accueil ou billetterie. */
+  /** Journée travaillée hors expo : accueil ou billetterie. */
   workPost?: WorkPost;
 };
 
@@ -315,7 +315,7 @@ export function personalPresenceForDate(
   workDayMinutes = attendanceDayMinutes(date, group, workDayMinutes);
   const entry = entries[key];
   if (isExceptionallyClosed(key)) return { status: "absence" };
-  // Le poste (comptoir, billetterie) accompagne une journée travaillée.
+  // Le poste (accueil, billetterie) accompagne une journée travaillée.
   const work: PersonalPresence = entry?.workPost ? { status: "work", workPost: entry.workPost } : { status: "work" };
   if (entry?.exchangeRole === "return") return work;
   if (entry?.exchangeRole === "given") return { status: "absence" };

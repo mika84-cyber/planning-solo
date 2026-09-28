@@ -92,7 +92,7 @@ export function PlanningDayCell({
   const myHalfMoment = myLeaveType === "half" ? leavePeriod?.halfMoment || "" : "";
   // Une demi-journée de RTT ou de fractionnement prend la couleur de son solde.
   const myHalfBalance = myLeaveType === "half" && leavePeriod ? halfBalanceOf(leavePeriod) : "annual";
-  // Comptoir ou billetterie : une petite lettre rouge dans le coin ; les
+  // Accueil ou billetterie : A ou B, une petite lettre rouge dans le coin ; les
   // salles, poste par défaut, ne se signalent pas.
   const workPost = entry?.workPost && !visibleLeave && !personalDay && !exceptionalClosure && !hasHourlyRecovery
     ? WORK_POSTS.find((post) => post.value === entry.workPost)

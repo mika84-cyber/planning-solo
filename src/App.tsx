@@ -2527,7 +2527,7 @@ export default function Home() {
     ? exceptionalClosureFor(dayDate)
     : undefined;
   const dayExchange = dayDate ? workExchangeForDate(entries, dayDate) : null;
-  // Salles, comptoir ou billetterie : seulement sur un jour travaillé.
+  // Salles, accueil ou billetterie : seulement sur un jour travaillé.
   const dayWorkPostVisible = dayDate
     ? canChooseWorkPost({ date: dayDate, group, entries, periods, recoveryUses, closed: Boolean(dayExceptionalClosure) })
     : false;

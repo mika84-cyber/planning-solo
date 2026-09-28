@@ -2550,13 +2550,13 @@ test("le poste du jour se choisit dans la fiche et se lit dans la semaine des co
   const dialog = page.getByRole("dialog");
   const posts = dialog.locator(".day-work-post");
   await expect(posts).toContainText("en salle par défaut");
-  await expect(posts.getByRole("button")).toHaveText([/Comptoir d’accueil/, /Billetterie/]);
-  await posts.getByRole("button", { name: /Comptoir d’accueil/ }).click();
+  await expect(posts.getByRole("button")).toHaveText([/Accueil/, /Billetterie/]);
+  await posts.getByRole("button", { name: /Accueil/ }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(cell().locator(".work-post-marker")).toHaveText("C");
-  // Décocher le comptoir ramène en salle : plus de lettre.
+  await expect(cell().locator(".work-post-marker")).toHaveText("A");
+  // Décocher l'accueil ramène en salle : plus de lettre.
   await cell().click();
-  await expect(page.getByRole("dialog").locator(".day-work-post button[aria-pressed=\"true\"]")).toHaveText(/Comptoir d’accueil/);
+  await expect(page.getByRole("dialog").locator(".day-work-post button[aria-pressed=\"true\"]")).toHaveText(/Accueil/);
   await page.getByRole("dialog").getByRole("button", { name: /Billetterie/ }).click();
   await expect(cell().locator(".work-post-marker")).toHaveText("B");
 
@@ -2564,7 +2564,7 @@ test("le poste du jour se choisit dans la fiche et se lit dans la semaine des co
   const week = page.locator(".colleague-week-table");
   await expect(week).toBeVisible();
   await expect(week.locator(".is-self .colleague-week-cell[title=\"Travail · Billetterie\"]")).toHaveCount(1);
-  await expect(page.locator(".colleague-week-legend")).toContainText("Comptoir d’accueil");
+  await expect(page.locator(".colleague-week-legend")).toContainText("Accueil");
 });
 
 test("le tampon de fermeture conserve la date lisible sur ordinateur et téléphone", async ({ page }) => {
