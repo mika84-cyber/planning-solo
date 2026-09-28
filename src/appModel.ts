@@ -48,10 +48,12 @@ export type SharedEntry = {
 };
 export type WorkPost = "counter" | "ticketing";
 /** Libellé et lettre de chaque poste ; l'expo (les salles) est le poste par défaut. */
-export const WORK_POSTS: ReadonlyArray<{ value: WorkPost | ""; label: string; letter: string }> = [
-  { value: "", label: "Expo", letter: "E" },
-  { value: "counter", label: "Comptoir d’accueil", letter: "C" },
-  { value: "ticketing", label: "Billetterie", letter: "B" },
+/** `letter` marque la case du planning personnel, `code` celle de la
+ *  semaine partagée des collègues. */
+export const WORK_POSTS: ReadonlyArray<{ value: WorkPost | ""; label: string; letter: string; code: string }> = [
+  { value: "", label: "Expo", letter: "E", code: "EX" },
+  { value: "counter", label: "Comptoir d’accueil", letter: "C", code: "AC" },
+  { value: "ticketing", label: "Billetterie", letter: "B", code: "BI" },
 ];
 export function workPostOf(value: unknown): WorkPost | "" {
   return value === "counter" || value === "ticketing" ? value : "";

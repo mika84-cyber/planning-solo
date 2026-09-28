@@ -273,13 +273,13 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                     <th scope="row">{row.onOpen ? <button type="button" className="colleague-row-open" onClick={row.onOpen} aria-label={`Voir le planning de ${row.name}`}>{row.name}</button> : row.name}</th>
                     {days.map((day, index) => {
                       const status = row.statusFor(day);
-                      // Une journée travaillée dit son poste : E (expo), C ou B.
+                      // Une journée travaillée dit son poste : EX (expo), AC ou BI.
                       const post = status === "Travail" ? row.postFor?.(day) || "" : "";
                       const label = statusWithPost(status, post);
                       return (
                         <td key={dateKey(day)} className={weekCellClass(day, index, todayKey)}>
-                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}`} title={label}>
-                            <span aria-hidden="true">{status === "Travail" ? workPostEntry(post).letter : WEEK_STATUS_LETTERS[status]}</span>
+                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? " two-letters" : ""}`} title={label}>
+                            <span aria-hidden="true">{status === "Travail" ? workPostEntry(post).code : WEEK_STATUS_LETTERS[status]}</span>
                             <span className="colleague-week-sr">{label}</span>
                           </span>
                         </td>
@@ -293,7 +293,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
         </table>
       </div>
       <ul className="colleague-week-legend" aria-label="Légende">
-        {WORK_POSTS.map((post) => <li key={post.letter}><span className="colleague-week-cell work" aria-hidden="true">{post.letter}</span>{post.label}</li>)}
+        {WORK_POSTS.map((post) => <li key={post.code}><span className="colleague-week-cell work two-letters" aria-hidden="true">{post.code}</span>{post.label}</li>)}
         <li><span className="colleague-week-cell training" aria-hidden="true">F</span>Formation</li>
         <li><span className="colleague-week-cell rest" aria-hidden="true">R</span>Repos</li>
         <li><span className="colleague-week-cell absence" aria-hidden="true">A</span>Absence</li>

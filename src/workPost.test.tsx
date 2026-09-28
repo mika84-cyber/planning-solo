@@ -43,7 +43,7 @@ describe("poste du jour : salle, comptoir ou billetterie", () => {
     expect(renderToStaticMarkup(<PlanningDayCell {...props} entry={emptyEntry()} />)).not.toContain("work-post-marker");
   });
 
-  it("donne E, C ou B dans la semaine partagée et précise le poste dans la liste du jour", () => {
+  it("donne EX, AC ou BI dans la semaine partagée et précise le poste dans la liste du jour", () => {
     const planning = { owner: { userId: "a", displayName: "Agnès" }, group: 2, days: [{ date: key, status: "work" as const, workPost: "ticketing" as const }] };
     expect(sharedPlanningTomorrowSummary(planning, workDay)).toMatchObject({ status: "Travail", post: "ticketing" });
     expect(statusWithPost("Travail", "counter")).toBe("Travail · Comptoir d’accueil");
@@ -61,7 +61,7 @@ describe("poste du jour : salle, comptoir ou billetterie", () => {
         ]}
       />,
     );
-    expect(html).toContain('title="Travail · Billetterie"><span aria-hidden="true">B</span>');
-    expect(html).toContain('title="Travail"><span aria-hidden="true">E</span>');
+    expect(html).toContain('title="Travail · Billetterie"><span aria-hidden="true">BI</span>');
+    expect(html).toContain('title="Travail"><span aria-hidden="true">EX</span>');
   });
 });
