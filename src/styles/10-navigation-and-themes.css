@@ -457,14 +457,19 @@
 .useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
 /* Audioguides d'exposition : même carte que les fiches, code d'accès en vue. */
 .useful-audioguide-icon { background: #fbeadf; color: #a4502f; }
+/* Toujours sous les fiches, sur toute la largeur de la liste, et ses deux
+   boutons côte à côte sous le texte. */
+.useful-form-download-list > .useful-audioguide-card { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr); }
+.useful-audioguide-actions { display: flex; grid-column: 1 / -1; gap: 8px; }
+.useful-audioguide-actions > * { flex: 1 1 0; min-width: 0; border: 1px solid #a4502f; border-radius: 12px; padding: 10px 8px; background: #a4502f; color: #fff; font: inherit; font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
+.useful-audioguide-actions button { background: #fff; color: #a4502f; }
+@media (min-width: 721px) { .useful-form-download-list > .useful-audioguide-card { grid-template-columns: auto minmax(0, 1fr) auto; } .useful-audioguide-actions { grid-column: auto; } .useful-audioguide-actions > * { flex: 0 0 auto; padding: 10px 14px; white-space: nowrap; } }
 .useful-form-file-copy .useful-audioguide-code { font-size: 12px; font-weight: 600; letter-spacing: 0; }
 .useful-audioguide-code b { margin-left: 4px; color: var(--text); font-size: 14px; letter-spacing: .18em; }
 .useful-audioguide-qr { display: grid; justify-items: center; gap: 8px; grid-column: 1 / -1; margin: 4px 0 0; border-radius: 14px; padding: 12px; background: #fff; }
 .useful-audioguide-qr img { width: min(240px, 70vw); height: auto; image-rendering: pixelated; }
 .useful-audioguide-qr figcaption { color: var(--muted); font-size: 12.5px; }
 .useful-audioguide-qr b { margin-left: 4px; color: var(--text); font-size: 18px; letter-spacing: .2em; }
-/* Z Fold ouvert : fiches en deux colonnes, boutons en haut à droite. */
-@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) { .useful-form-download-card { align-items: start; } }
 /* Très grand écran : le titre en bandeau, les dossiers en deux colonnes. */
 @media (min-width: 1400px) {
   .app-shell .useful-resource-panel > .useful-forms-screen:not(.useful-forms-folder-screen) { grid-template-areas: "intro" "search" "folders"; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }

@@ -357,8 +357,8 @@
 .grand-palais-interexpo-art-door { fill: #e9a27d; }
 .grand-palais-interexpo-number { position: absolute; top: 8px; left: -41px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #2f7a52; box-shadow: 0 0 0 4px #fff; color: #fff; font-size: .82rem; font-weight: 800; }
 .grand-palais-interexpo-open .grand-palais-interexpo-cut { border-width: 1.5px 0 0; border-color: #dfae8f; border-radius: 0 0 14px 14px; }
-/* Grand écran et Z Fold ouvert : les expositions à gauche, la fermeture à droite. */
-@media (min-width: 721px) {
+/* Grand écran : les expositions à gauche, la fermeture à droite. */
+@media (min-width: 900px) {
   .grand-palais-interexpo-open { grid-template-columns: minmax(0, 1fr) minmax(300px, 36%); grid-template-rows: auto 1fr; }
   .grand-palais-interexpo-list .grand-palais-interexpo-open .grand-palais-interexpo-cut-range { font-size: clamp(.9rem, 1.55vw, 1.05rem); }
   .grand-palais-interexpo-open :is(header, ul) { grid-column: 1; }

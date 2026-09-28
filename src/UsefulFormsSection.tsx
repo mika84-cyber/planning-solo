@@ -352,28 +352,22 @@ export function UsefulFormsSection({
                 <span className="useful-form-file-copy">
                   <small>{folder.documents.length + index + 1}. AUDIOGUIDE</small>
                   <strong>Audioguide {guide.title}</strong>
-                  <small className="useful-audioguide-code">Code d’accès <b>{guide.code}</b> · {guide.languages.toLowerCase()}</small>
+                  <small className="useful-audioguide-code">{guide.languages}</small>
+                  <small className="useful-audioguide-code">Code d’accès <b>{guide.code}</b></small>
                 </span>
-                <a
-                  href={guide.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Ouvrir l’audioguide ${guide.title}`}
-                  title="Ouvrir l’audioguide"
-                  onClick={() => void navigator.clipboard?.writeText(guide.code).catch(() => undefined)}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" /></svg>
-                </a>
-                <button
-                  type="button"
-                  className="document-share-button useful-audioguide-qr-button"
-                  aria-expanded={shownQr === guide.title}
-                  aria-label={shownQr === guide.title ? "Masquer le QR code" : "Afficher le QR code"}
-                  title={shownQr === guide.title ? "Masquer le QR code" : "Afficher le QR code"}
-                  onClick={() => setShownQr((current) => (current === guide.title ? "" : guide.title))}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2" /></svg>
-                </button>
+                <span className="useful-audioguide-actions">
+                  <a
+                    href={guide.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => void navigator.clipboard?.writeText(guide.code).catch(() => undefined)}
+                  >
+                    Ouvrir l’audioguide
+                  </a>
+                  <button type="button" aria-expanded={shownQr === guide.title} onClick={() => setShownQr((current) => (current === guide.title ? "" : guide.title))}>
+                    {shownQr === guide.title ? "Masquer le QR code" : "Afficher le QR code"}
+                  </button>
+                </span>
                 {shownQr === guide.title ? (
                   <figure className="useful-audioguide-qr">
                     <img src={guide.qr} alt={`QR code de l’audioguide ${guide.title}`} width="240" height="240" />
