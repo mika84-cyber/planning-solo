@@ -1085,7 +1085,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   // Sur grand écran, l'aide ouvre la colonne à droite du tableau, à la même hauteur.
   expect((await dayBoard.boundingBox())!.y).toBeLessThanOrEqual((await page.locator(".colleague-how-it-works").boundingBox())!.y + 1);
   const tomorrowTable = dayBoard.locator(".colleague-tomorrow-table");
-  await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(Travail|Formation|Repos|Absence|1\/2 journée|Absence partielle)/);
+  await expect(tomorrowTable).toContainText(/Groupe 2.*Agnès.*(En salles|Accueil|Billetterie|Formation|Repos|Absence|1\/2 journée|Absence partielle)/);
   await expect(tomorrowTable.locator(".colleague-tomorrow-group.group-2")).toContainText("Groupe 2");
   // L'utilisateur figure dans la liste, dans son propre groupe.
   await expect(tomorrowTable.locator(".colleague-tomorrow-status")).toHaveCount(2);

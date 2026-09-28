@@ -179,6 +179,11 @@ const workPostEntry = (post: WorkPost | "" | undefined) => WORK_POSTS.find((item
 export const statusWithPost = (status: TomorrowStatus, post?: WorkPost | "") =>
   status === "Travail" && post ? `Travail · ${workPostEntry(post).label}` : status;
 
+/** Vue jour : où l'on travaille, « En salles », « Accueil » ou « Billetterie ». */
+const DAY_POST_LABELS = { "": "En salles", counter: "Accueil", ticketing: "Billetterie" } as const;
+export const dayStatusLabel = (status: TomorrowStatus, post?: WorkPost | "") =>
+  status === "Travail" ? DAY_POST_LABELS[post || ""] : status;
+
 export function sharedPlanningTomorrowSummary(planning: SharedColleaguePlanning, date: Date) {
   return { status: sharedPlanningDayStatus(planning, date), group: planning.group, post: sharedPlanningWorkPost(planning, date) };
 }
@@ -728,12 +733,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
                 if (!groupCount) return null;
                 return <Fragment key={group}>
                   <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={2}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span><small>{groupCount} collègue{groupCount > 1 ? "s" : ""}</small></th></tr>
-                  {selfHere && selfTomorrow ? <tr className={`colleague-tomorrow-row is-self status-${tomorrowStatusTone(selfTomorrow.status)}`}><td><strong>{selfName}</strong></td><td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(selfTomorrow.status)}`}><i aria-hidden="true" />{statusWithPost(selfTomorrow.status, selfTomorrow.post)}</span></td></tr> : null}
+                  {selfHere && selfTomorrow ? <tr className={`colleague-tomorrow-row is-self status-${tomorrowStatusTone(selfTomorrow.status)}`}><td><strong>{selfName}</strong></td><td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(selfTomorrow.status)}`}><i aria-hidden="true" />{dayStatusLabel(selfTomorrow.status, selfTomorrow.post)}</span></td></tr> : null}
                   {groupShares.map((share) => {
                     const summary = tomorrowSummaries[share.ownerId]!;
                     return <tr className={`colleague-tomorrow-row status-${tomorrowStatusTone(summary.status)}`} key={share.ownerId}>
                       <td><strong><button type="button" className="colleague-row-open" onClick={() => openFromBoard(share.ownerId, boardDate)} aria-label={`Voir le planning de ${share.ownerName}`}>{share.ownerName}</button></strong></td>
-                      <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{statusWithPost(summary.status, summary.post)}</span></td>
+                      <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{dayStatusLabel(summary.status, summary.post)}</span></td>
                     </tr>;
                   })}
                 </Fragment>;

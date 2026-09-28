@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { emptyEntry, personalPresenceForDate } from "./appModel";
-import { ColleagueWeekTable, sharedPlanningTomorrowSummary, statusWithPost } from "./ColleaguePlanningPage";
+import { ColleagueWeekTable, dayStatusLabel, sharedPlanningTomorrowSummary, statusWithPost } from "./ColleaguePlanningPage";
 import { PlanningDayCell } from "./PlanningDayCell";
 import { dateKey, getDayInfo } from "./planningLogic";
 import { canChooseWorkPost } from "./workPost";
@@ -48,6 +48,9 @@ describe("poste du jour : salle, comptoir ou billetterie", () => {
     expect(sharedPlanningTomorrowSummary(planning, workDay)).toMatchObject({ status: "Travail", post: "ticketing" });
     expect(statusWithPost("Travail", "counter")).toBe("Travail · Comptoir d’accueil");
     expect(statusWithPost("Travail", "")).toBe("Travail");
+    // Vue jour : le lieu de travail en clair.
+    expect(["", "counter", "ticketing"].map((post) => dayStatusLabel("Travail", post as "" | "counter" | "ticketing"))).toEqual(["En salles", "Accueil", "Billetterie"]);
+    expect(dayStatusLabel("Repos", "counter")).toBe("Repos");
     const html = renderToStaticMarkup(
       <ColleagueWeekTable
         days={[workDay]}
