@@ -332,9 +332,21 @@ export function exhibitionsBeforeInterExhibitions(
   today: string,
   program: GrandPalaisProgramData = GRAND_PALAIS_PROGRAM,
 ): InterExhibitionLeadIn[] {
-  return periods.map((period, index) => {
-    const from = index === 0 ? today : addIsoDays(periods[index - 1].endsOn, 1);
-    const to = addIsoDays(period.startsOn, -1);
+  return periods.map((period, index) =>
+    exhibitionsBetween(index === 0 ? today : addIsoDays(periods[index - 1].endsOn, 1), addIsoDays(period.startsOn, -1), program));
+}
+
+/** La programmation connue après la dernière coupure : pas encore de
+ *  coupure calculable derrière elle, elle s'y ajoutera d'elle-même quand
+ *  les expositions suivantes seront annoncées dans les trois galeries. */
+export function exhibitionsAfterInterExhibitions(
+  periods: InterExhibitionPeriod[],
+  program: GrandPalaisProgramData = GRAND_PALAIS_PROGRAM,
+) {
+  return periods.length ? exhibitionsBetween(addIsoDays(periods[periods.length - 1].endsOn, 1), "9999-12-31", program) : [];
+}
+
+function exhibitionsBetween(from: string, to: string, program: GrandPalaisProgramData): InterExhibitionLeadIn {
     if (to < from) return [];
     const seen = new Set<string>();
     return INTEREXPO_VENUES.flatMap((venueKey) =>
@@ -350,7 +362,6 @@ export function exhibitionsBeforeInterExhibitions(
         return true;
       })
       .sort((left, right) => left.startsOn.localeCompare(right.startsOn));
-  });
 }
 
 /** « 1er août 2027 » : l'année n'est écrite que lorsqu'elle n'est pas celle
@@ -638,6 +649,10 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
   const interExhibitionLeadIns = useMemo(
     () => exhibitionsBeforeInterExhibitions(interExhibitionPeriods, today, program),
     [interExhibitionPeriods, today, program],
+  );
+  const interExhibitionTail = useMemo(
+    () => exhibitionsAfterInterExhibitions(interExhibitionPeriods, program),
+    [interExhibitionPeriods, program],
   );
   const allEntries = useMemo(() => {
     const seen = new Set<string>();
@@ -978,6 +993,24 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                 </Fragment>
               );
             }) : <p className="empty-state">Aucune période commune calculable pour le moment.</p>}
+            {interExhibitionTail.length ? (
+              <section className="grand-palais-interexpo-open" aria-label={`Programmation à partir du ${leadInDay(addIsoDays(interExhibitionPeriods[interExhibitionPeriods.length - 1].endsOn, 1), today)}`}>
+                <b className="grand-palais-interexpo-number">{interExhibitionPeriods.length + 1}</b>
+                <header>
+                  <em>Programmation</em>
+                  <strong>À partir du {leadInDay(addIsoDays(interExhibitionPeriods[interExhibitionPeriods.length - 1].endsOn, 1), today)}</strong>
+                </header>
+                <ul>
+                  {interExhibitionTail.map((item) => (
+                    <li key={`${item.venueKey}-${item.title}-${item.startsOn}`} style={grandPalaisVenueStyle(item.venueKey)}>
+                      <span>{item.title}</span>
+                      <b>{item.venueLabel}</b>
+                      <small>{leadInDates(item, today)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
         </section>
       ) : programView === "now" || programView === "upcoming" ? (

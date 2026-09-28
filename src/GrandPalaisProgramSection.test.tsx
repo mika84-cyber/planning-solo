@@ -5,6 +5,7 @@ import {
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
+  exhibitionsAfterInterExhibitions,
   exhibitionsBeforeInterExhibitions,
   currentVenueRank,
   delayLabel,
@@ -199,6 +200,15 @@ describe("programmation du Grand Palais", () => {
     }]);
     const afterUpdate = calculateInterExhibitionPeriods(today, added);
     expect(exhibitionsBeforeInterExhibitions(afterUpdate, today, added).flat().map((item) => item.title)).toContain("Exposition ajoutée");
+  });
+
+  it("montre la programmation connue après la dernière coupure, sans coupure derrière", () => {
+    const periods = calculateInterExhibitionPeriods("2026-09-28");
+    const tail = exhibitionsAfterInterExhibitions(periods);
+    const lastEnd = periods[periods.length - 1].endsOn;
+    expect(tail.map((item) => item.title)).toContain("Yves Klein");
+    expect(tail.every((item) => item.endsOn > lastEnd)).toBe(true);
+    expect(exhibitionsAfterInterExhibitions([])).toEqual([]);
   });
 
   it("range « En ce moment » par espace : les quatre grands d'abord, la Nef en dernier", () => {

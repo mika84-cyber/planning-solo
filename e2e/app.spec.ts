@@ -1915,6 +1915,8 @@ test("le planning avec congés se génère avec les catégories d’absence", as
 });
 
 test("les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement", async ({ page }) => {
+  // Pendant l'exposition Cézanne : son audioguide est dans le dossier Expo.
+  await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
   await prepareDemo(page);
   const homeHeaderBox = (await page.locator(".top-header").boundingBox())!;
   await openUsefulResource(page, "Formulaires");
@@ -1955,7 +1957,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const folders = page.locator(".useful-form-folder-grid > button");
   await expect(folders.first()).toHaveCSS("box-shadow", "none");
   await expect(folders).toHaveText([
-    /Formulaire Expo.*Vide pour le moment/,
+    /Formulaire Expo.*1 audioguide/,
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*8 documents/,
     /Horaires tickets resto.*Information pratique/,
@@ -1972,8 +1974,20 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await folders.nth(0).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
   await expect(page.locator(".useful-form-download-list")).toHaveCount(0);
-  await expect(page.locator(".useful-forms-empty")).toContainText("Aucun formulaire pour le moment");
+  await expect(page.locator(".useful-forms-empty")).toHaveCount(0);
   await expect(page.locator(".useful-forms-folder-screen")).not.toContainText("Hilma Af Klint");
+  // L'audioguide Cézanne s'ouvre sans scanner le QR code, code d'accès en vue.
+  const guide = page.locator(".useful-audioguide-card");
+  await expect(guide).toContainText("Cézanne et nous");
+  await expect(guide).toContainText("7268");
+  const guideLink = guide.getByRole("link", { name: "Ouvrir l’audioguide" });
+  await expect(guideLink).toHaveAttribute("href", "https://audioguide.grandpalais.fr/bypass");
+  await expect(guideLink).toHaveAttribute("target", "_blank");
+  // Le QR code d'origine s'affiche pour qu'un visiteur le flashe.
+  await guide.getByRole("button", { name: "Afficher le QR code" }).click();
+  await expect(guide.getByRole("img", { name: /QR code de l’audioguide/ })).toBeVisible();
+  await guide.getByRole("button", { name: "Masquer le QR code" }).click();
+  await expect(guide.locator(".useful-audioguide-qr")).toHaveCount(0);
   const formsBackArea = page.getByRole("button", { name: "Revenir aux dossiers de formulaires" });
   const [formsBackBox, folderHeaderBox] = await Promise.all([
     formsBackArea.boundingBox(),
@@ -2513,6 +2527,10 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   // La recherche porte sur toute la programmation : elle reste offerte ici.
   await expect(page.getByLabel("Rechercher une exposition")).toHaveCount(1);
   await expect(page.locator(".grand-palais-interexpo-list")).not.toContainText("Nef");
+  // Après la dernière coupure, la programmation connue suit, sans coupure.
+  const lastProgramme = page.locator(".grand-palais-interexpo-list > *").last();
+  await expect(lastProgramme).toHaveClass(/grand-palais-interexpo-open/);
+  await expect(lastProgramme.locator(".grand-palais-interexpo-cut")).toHaveCount(0);
 });
 
 test("le tampon de fermeture conserve la date lisible sur ordinateur et téléphone", async ({ page }) => {

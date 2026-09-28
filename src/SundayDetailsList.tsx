@@ -10,16 +10,6 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
     <div id="sunday-done-list" className="sunday-done-list">
       {allowances.sundays.length ? (
         <>
-          {/* Les dimanches à venir y figurent aussi : la paie
-              prévisionnelle les compte déjà, la liste doit donner le
-              même nombre qu'elle. */}
-          <p className="allowance-note">
-            Vos {allowances.sundays.length} dimanche{s(allowances.sundays.length)} de {allowances.year}
-            {allowances.sundays.length > sundaysDone.length
-              ? ` : ${sundaysDone.length} fait${s(sundaysDone.length)}, ${allowances.sundays.length - sundaysDone.length} à venir selon votre cycle`
-              : ""}
-            , dans l’ordre des paies
-          </p>
           {/* Le rang d'un dimanche dit ce qu'il rapporte : les dix
               premiers sont dans le forfait mensuel, les suivants sont
               payés un par un jusqu'au plafond, au-delà rien. */}

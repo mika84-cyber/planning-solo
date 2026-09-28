@@ -33,11 +33,24 @@ type UsefulFormDocument = {
   sendTo?: string;
 };
 
+/** Un audioguide d'exposition : la page que le QR code ouvre, et le code
+ *  d'accès à y saisir. Il disparaît avec l'exposition. */
+type UsefulAudioguide = {
+  title: string;
+  programEntryTitle: string;
+  url: string;
+  code: string;
+  languages: string;
+  /** Le QR code d'origine, à montrer pour qu'un visiteur le flashe. */
+  qr: string;
+};
+
 type UsefulFormsFolder = {
   key: UsefulFormsFolderKey;
   title: string;
   description: string;
   documents: UsefulFormDocument[];
+  audioguides?: UsefulAudioguide[];
   image?: { src: string; alt: string };
 };
 
@@ -56,6 +69,16 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
         file: "hilma-af-klint.pdf",
         format: "PDF",
         programEntryTitle: "Hilma af Klint - Les peintures du Temple (1906-1915)",
+      },
+    ],
+    audioguides: [
+      {
+        title: "Cézanne et nous",
+        programEntryTitle: "Cezanne et nous",
+        url: "https://audioguide.grandpalais.fr/bypass",
+        code: "7268",
+        languages: "Français et anglais",
+        qr: "/useful-forms/audioguide-cezanne-qr.png",
       },
     ],
   },
@@ -103,21 +126,25 @@ export function usefulFormFoldersForDate(
   const programEntries = Object.values(program)
     .flatMap((venue) => Object.values(venue.schedule))
     .flatMap((entries) => entries ?? []);
+  // Une fiche ou un audioguide d'exposition s'efface quand l'exposition se termine.
+  const stillOpen = (item: { programEntryTitle?: string }) => {
+    if (!item.programEntryTitle) return true;
+    const matchingEntries = programEntries.filter((entry) => entry.title === item.programEntryTitle);
+    return !matchingEntries.length || matchingEntries.some((entry) => isGrandPalaisEntryVisible(entry, today));
+  };
   return USEFUL_FORM_FOLDERS.map((folder) => ({
     ...folder,
-    documents: folder.key !== "expo"
-      ? folder.documents
-      : folder.documents.filter((document) => {
-          if (!document.programEntryTitle) return true;
-          const matchingEntries = programEntries.filter((entry) => entry.title === document.programEntryTitle);
-          return !matchingEntries.length || matchingEntries.some((entry) => isGrandPalaisEntryVisible(entry, today));
-        }),
+    documents: folder.key !== "expo" ? folder.documents : folder.documents.filter(stillOpen),
+    audioguides: folder.audioguides?.filter(stillOpen),
   }));
 }
 
-function documentCount(count: number) {
-  if (!count) return "Vide pour le moment";
-  return `${count} document${count > 1 ? "s" : ""}`;
+function documentCount(count: number, audioguides = 0) {
+  const parts = [
+    count ? `${count} document${count > 1 ? "s" : ""}` : "",
+    audioguides ? `${audioguides} audioguide${audioguides > 1 ? "s" : ""}` : "",
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "Vide pour le moment";
 }
 
 type UsefulFormsSectionProps = {
@@ -144,6 +171,7 @@ export function UsefulFormsSection({
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState("");
+  const [shownQr, setShownQr] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState(() => readResourceFavorites(accountId, "documents"));
   const [sharedDocuments, setSharedDocuments] = useState<SharedUsefulDocument[]>([]);
@@ -162,7 +190,8 @@ export function UsefulFormsSection({
   })), [sharedDocuments, today, documentEdits, isAdmin]);
   const normalizedSearch = searchQuery.trim();
   const visibleFolders = useMemo(() => allFolders.filter((item) => matchesSearch(item.title, normalizedSearch)
-    || item.documents.some((document) => matchesSearch(document.title, normalizedSearch))), [allFolders, normalizedSearch]);
+    || item.documents.some((document) => matchesSearch(document.title, normalizedSearch))
+    || Boolean(item.audioguides?.some((guide) => matchesSearch(`Audioguide ${guide.title}`, normalizedSearch)))), [allFolders, normalizedSearch]);
   const favoriteDocuments = allFolders.flatMap((item) => item.documents.map((document) => ({ ...document, folderKey: item.key }))).filter((document) => favorites.includes(document.file));
   const toggleFavorite = (file: string) => setFavorites((current) => {
     const next = current.includes(file) ? current.filter((item) => item !== file) : [...current, file];
@@ -252,11 +281,49 @@ export function UsefulFormsSection({
           <div>
             <span className="step-label">Formulaires utiles</span>
             <h2 id="useful-forms-folder-title">{folder.title}</h2>
-            <small>{folder.image ? "Information pratique" : documentCount(folder.documents.length)}</small>
+            <small>{folder.image ? "Information pratique" : documentCount(folder.documents.length, folder.audioguides?.length)}</small>
           </div>
         </header>
 
         {isAdmin && (folder.key === "expo" || folder.key === "sap" || folder.key === "brantome") ? <DocumentUpload key={folder.key} folder={folder.key} demoMode={demoMode} onAdded={document => setSharedDocuments(current => [...current.filter(item => item.id !== document.id), document])} /> : null}
+        {folder.audioguides?.length ? (
+          <section className="useful-audioguide-list" aria-labelledby="useful-audioguides-title">
+            <h3 id="useful-audioguides-title">Audioguides</h3>
+            {folder.audioguides.map((guide) => (
+              <article key={guide.title} className="useful-audioguide-card">
+                <span className="useful-audioguide-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
+                </span>
+                <span className="useful-audioguide-copy">
+                  <small>Audioguide · {guide.languages}</small>
+                  <strong>{guide.title}</strong>
+                  <span>Code d’accès <b>{guide.code}</b></span>
+                </span>
+                {/* Sans scanner le QR code : la page s'ouvre et le code est copié.
+                    Le QR code reste affichable pour le faire flasher. */}
+                <span className="useful-audioguide-actions">
+                  <a
+                    href={guide.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => void navigator.clipboard?.writeText(guide.code).catch(() => undefined)}
+                  >
+                    Ouvrir l’audioguide
+                  </a>
+                  <button type="button" aria-expanded={shownQr === guide.title} onClick={() => setShownQr((current) => (current === guide.title ? "" : guide.title))}>
+                    {shownQr === guide.title ? "Masquer le QR code" : "Afficher le QR code"}
+                  </button>
+                </span>
+                {shownQr === guide.title ? (
+                  <figure className="useful-audioguide-qr">
+                    <img src={guide.qr} alt={`QR code de l’audioguide ${guide.title}`} width="240" height="240" />
+                    <figcaption>Code d’accès <b>{guide.code}</b></figcaption>
+                  </figure>
+                ) : null}
+              </article>
+            ))}
+          </section>
+        ) : null}
         {folder.image ? (
           <figure className="useful-form-information-image">
             <img
@@ -315,7 +382,7 @@ export function UsefulFormsSection({
             })}
             {downloadError ? <p className="useful-form-download-error" role="alert">{downloadError}</p> : null}
           </div>
-        ) : (
+        ) : folder.audioguides?.length ? null : (
           <div className="useful-forms-empty">
             <span aria-hidden="true">＋</span>
             <strong>Aucun formulaire pour le moment</strong>
@@ -354,7 +421,7 @@ export function UsefulFormsSection({
             </span>
             <span>
               <strong>{item.title}</strong>
-              <small>{item.image ? "Information pratique" : documentCount(item.documents.length)}</small>
+              <small>{item.image ? "Information pratique" : documentCount(item.documents.length, item.audioguides?.length)}</small>
               <em>{item.description}</em>
             </span>
           </button>

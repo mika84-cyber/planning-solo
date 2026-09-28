@@ -41,46 +41,6 @@
   stroke-linejoin: round;
   stroke-width: 2;
 }
-.note-range-toggle {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 11px;
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.note-range-toggle input {
-  width: 17px;
-  height: 17px;
-  accent-color: var(--accent);
-}
-.note-range-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-  margin-top: 10px;
-}
-.note-range-fields label {
-  display: grid;
-  gap: 5px;
-}
-.note-range-fields span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-.note-range-fields input {
-  width: 100%;
-  height: 43px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  padding: 0 9px;
-  background: var(--surface-high);
-  color: var(--text);
-}
 .note-period-hint {
   margin: 8px 0 0 !important;
   color: var(--muted);
@@ -92,9 +52,6 @@
   border-radius: 13px;
   padding: 12px;
   background: var(--surface-high);
-}
-.leave-range-box .note-range-toggle {
-  color: var(--muted);
 }
 .separate-date-button {
   display: grid;
@@ -520,9 +477,6 @@
     grid-column: 1/-1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .month-jump-menu {
-    width: min(286px, calc(100vw - 40px));
-  }
   .today-button {
     width: 100%;
     height: 44px;
@@ -681,8 +635,5 @@
     width: 20px;
     height: 20px;
     font-size: 11px;
-  }
-  .note-range-fields {
-    grid-template-columns: 1fr;
   }
 }

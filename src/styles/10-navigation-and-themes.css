@@ -455,6 +455,25 @@
 .useful-form-file-copy .useful-form-send-to { font-size: 12px; font-weight: 600; letter-spacing: 0; }
 @media (max-width: 600px) { .useful-form-file-copy .useful-form-send-to { display: grid; justify-items: start; } }
 .useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
+/* Audioguides d'exposition : le QR code sans scanner, code d'accès en vue. */
+.useful-audioguide-list { display: grid; gap: 10px; margin-bottom: 16px; }
+.useful-audioguide-list h3 { margin: 0; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.useful-audioguide-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 8px 14px; border: 1px solid #e3c7b4; border-radius: 18px; padding: 14px 16px; background: linear-gradient(135deg, #fff, #fbf1ea); }
+.useful-audioguide-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #b35a36; color: #fff; }
+.useful-audioguide-icon svg { width: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.useful-audioguide-copy { display: grid; gap: 2px; min-width: 0; }
+.useful-audioguide-copy small { color: #a0715a; font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.useful-audioguide-copy strong { color: #2c2621; font-size: 15px; }
+.useful-audioguide-copy span { color: var(--muted); font-size: 12.5px; }
+.useful-audioguide-copy b { margin-left: 4px; color: var(--text); font-size: 15px; letter-spacing: .18em; }
+.useful-audioguide-actions { display: flex; gap: 8px; }
+.useful-audioguide-actions > * { flex: 1 1 auto; border: 1px solid #a4502f; border-radius: 12px; padding: 10px 14px; background: #a4502f; color: #fff; font: inherit; font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.useful-audioguide-actions button { background: #fff; color: #a4502f; }
+.useful-audioguide-qr { display: grid; justify-items: center; gap: 8px; grid-column: 1 / -1; margin: 6px 0 0; border-radius: 14px; padding: 16px; background: #fff; }
+.useful-audioguide-qr img { width: min(240px, 70vw); height: auto; image-rendering: pixelated; }
+.useful-audioguide-qr figcaption { color: var(--muted); font-size: 12.5px; }
+.useful-audioguide-qr b { margin-left: 4px; color: var(--text); font-size: 18px; letter-spacing: .2em; }
+@media (max-width: 600px) { .useful-audioguide-card { grid-template-columns: 44px minmax(0, 1fr); } .useful-audioguide-actions { grid-column: 1 / -1; } }
 .useful-form-download-card > a {
   width: 42px;
   height: 42px;

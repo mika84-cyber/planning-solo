@@ -22,7 +22,8 @@ describe("formulaires utiles", () => {
     expect(html.indexOf("Horaires tickets resto")).toBeLessThan(html.indexOf("Déclarer un accident de travail"));
     expect(html).toContain("useful-forms-root");
     expect(html).toContain("Rechercher un document");
-    expect(html).toContain("Vide pour le moment");
+    // Pendant l'exposition Cézanne, le dossier Expo porte son audioguide.
+    expect(html).toContain("<small>1 audioguide</small>");
     expect(html).not.toContain("Hilma Af Klint");
     expect(html).toContain("Information pratique");
     expect(html).toContain("Déclarer un accident de travail");
@@ -66,6 +67,15 @@ describe("formulaires utiles", () => {
       .toEqual([expect.objectContaining({ file: "hilma-af-klint.pdf" })]);
     expect(usefulFormFoldersForDate("2026-08-31").find((folder) => folder.key === "expo")?.documents)
       .toEqual([]);
+  });
+
+  it("propose l’audioguide Cézanne avec son code d’accès jusqu’à la fin de l’exposition", () => {
+    const expo = (today: string) => usefulFormFoldersForDate(today).find((folder) => folder.key === "expo");
+    expect(expo("2026-09-28")?.audioguides).toEqual([
+      expect.objectContaining({ title: "Cézanne et nous", url: "https://audioguide.grandpalais.fr/bypass", code: "7268" }),
+    ]);
+    expect(expo("2027-01-17")?.audioguides).toHaveLength(1);
+    expect(expo("2027-01-18")?.audioguides).toEqual([]);
   });
 
   it("ouvre les PDF dans le lecteur sur une adresse locale non sécurisée", () => {
