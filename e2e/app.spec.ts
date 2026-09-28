@@ -2549,7 +2549,7 @@ test("le poste du jour se choisit dans la fiche et se lit dans la semaine des co
   await page.getByRole("button", { name: new RegExp(`^${longDate(day)}`, "i") }).first().click();
   const dialog = page.getByRole("dialog");
   const posts = dialog.locator(".day-work-post");
-  await expect(posts).toContainText("en salle par défaut");
+  await expect(posts).toContainText("En salle par défaut");
   await expect(posts.getByRole("button")).toHaveText([/Accueil/, /Billetterie/]);
   await posts.getByRole("button", { name: /Accueil/ }).click();
   await expect(dialog).toHaveCount(0);
