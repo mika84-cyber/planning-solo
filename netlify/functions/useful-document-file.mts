@@ -30,7 +30,8 @@ const originalPaths = [
   '/useful-forms/demande-recuperations.pdf', '/useful-forms/demande-annulation-conges.pdf',
   '/useful-forms/formulaire-changement-coordonnees.pdf', '/useful-forms/changement-coordonnees-bancaires.docx',
   '/useful-forms/demande-carte-restauration-bimpli.pdf', '/useful-forms/procuration-retrait-titres-repas.pdf',
-  '/useful-forms/demande-carte-culture-a.pdf', '/useful-forms/cet-demande-ouverture.pdf',
+  '/useful-forms/demande-carte-culture-a.pdf', '/useful-forms/adhesion-carte-pop.pdf',
+  '/useful-forms/cet-demande-ouverture.pdf',
   '/useful-forms/cet-alimentation-indemnisation.pdf',
 ];
 export const config = { path: '/api/useful-document-file' };

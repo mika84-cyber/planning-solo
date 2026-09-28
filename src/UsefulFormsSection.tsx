@@ -29,6 +29,8 @@ type UsefulFormDocument = {
   programEntryTitle?: string;
   href?: string;
   publishAt?: string;
+  /** Adresse à laquelle renvoyer le formulaire rempli. */
+  sendTo?: string;
 };
 
 type UsefulFormsFolder = {
@@ -77,6 +79,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
       { title: "Demande de carte de restauration BIMPLI", file: "demande-carte-restauration-bimpli.pdf", format: "PDF" },
       { title: "Procuration pour le retrait des titres-restaurant", file: "procuration-retrait-titres-repas.pdf", format: "PDF" },
       { title: "Demande de Carte Culture A", file: "demande-carte-culture-a.pdf", format: "PDF" },
+      { title: "Formulaire d’adhésion carte POP", file: "adhesion-carte-pop.pdf", format: "PDF", sendTo: "collectivites@centrepompidou.fr" },
       { title: "CET - Demande d’ouverture", file: "cet-demande-ouverture.pdf", format: "PDF" },
       { title: "CET - Alimentation et indemnisation", file: "cet-alimentation-indemnisation.pdf", format: "PDF" },
     ],
@@ -285,6 +288,7 @@ export function UsefulFormsSection({
                 <span className="useful-form-file-copy">
                   <small>{index + 1}. {document.format}</small>
                   <strong>{document.title}</strong>
+                  {"sendTo" in document && document.sendTo ? <small className="useful-form-send-to">À envoyer à <a href={`mailto:${document.sendTo}`}>{document.sendTo.split("@")[0]}<wbr />@{document.sendTo.split("@")[1]}</a></small> : null}
                   {isAdmin && document.publishAt && Date.parse(document.publishAt) > Date.now() && <small>{document.publishAt.startsWith('9999') ? 'Brouillon · À reprogrammer' : `Publication le ${new Date(document.publishAt).toLocaleString('fr-FR')}`}</small>}
                   {isAdmin && <button className="document-edit-button" type="button" aria-label={`Modifier ${document.title}`} onClick={() => setEditDocument(document)}>Modifier</button>}
                 </span>

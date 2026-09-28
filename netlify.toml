@@ -64,6 +64,12 @@
   force = true
 
 [[redirects]]
+  from = "/useful-forms/adhesion-carte-pop.pdf"
+  to = "/api/useful-document-file?file=adhesion-carte-pop.pdf"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/useful-forms/cet-demande-ouverture.pdf"
   to = "/api/useful-document-file?file=cet-demande-ouverture.pdf"
   status = 200

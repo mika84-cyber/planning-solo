@@ -33,6 +33,7 @@ const builtInDocuments: Record<string, { title: string; folder: DocumentFolder }
   "demande-carte-restauration-bimpli.pdf": { title: "Demande de carte de restauration BIMPLI", folder: "brantome" },
   "procuration-retrait-titres-repas.pdf": { title: "Procuration pour le retrait des titres-restaurant", folder: "brantome" },
   "demande-carte-culture-a.pdf": { title: "Demande de Carte Culture A", folder: "brantome" },
+  "adhesion-carte-pop.pdf": { title: "Formulaire d’adhésion carte POP", folder: "brantome" },
   "cet-demande-ouverture.pdf": { title: "CET - Demande d’ouverture", folder: "brantome" },
   "cet-alimentation-indemnisation.pdf": { title: "CET - Alimentation et indemnisation", folder: "brantome" },
 };

@@ -52,9 +52,13 @@ describe("formulaires utiles", () => {
       "demande-carte-restauration-bimpli.pdf",
       "procuration-retrait-titres-repas.pdf",
       "demande-carte-culture-a.pdf",
+      "adhesion-carte-pop.pdf",
       "cet-demande-ouverture.pdf",
       "cet-alimentation-indemnisation.pdf",
     ]);
+    // La carte POP se renvoie par courriel au service des collectivités.
+    expect(USEFUL_FORM_FOLDERS.find((folder) => folder.key === "brantome")?.documents.find((item) => item.file === "adhesion-carte-pop.pdf"))
+      .toMatchObject({ title: "Formulaire d’adhésion carte POP", sendTo: "collectivites@centrepompidou.fr" });
   });
 
   it("retire automatiquement une fiche Expo lorsque l’exposition se termine", () => {

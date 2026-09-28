@@ -1957,7 +1957,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(folders).toHaveText([
     /Formulaire Expo.*Vide pour le moment/,
     /Formulaire SAP.*3 documents/,
-    /Formulaire Brantôme.*7 documents/,
+    /Formulaire Brantôme.*8 documents/,
     /Horaires tickets resto.*Information pratique/,
     /Déclarer un accident de travail.*Accident de travail.*Procédure, contacts, documents et ajout au planning/,
   ]);
@@ -2015,16 +2015,20 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
 
   await page.getByRole("button", { name: /Formulaire Brantôme/ }).click();
-  await expect(page.locator(".useful-form-download-list a")).toHaveCount(7);
+  await expect(page.locator(".useful-form-download-list a[download]")).toHaveCount(8);
   await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
     "Formulaire de changement de coordonnées",
     "Changement de coordonnées bancaires",
     "Demande de carte de restauration BIMPLI",
     "Procuration pour le retrait des titres-restaurant",
     "Demande de Carte Culture A",
+    "Formulaire d’adhésion carte POP",
     "CET - Demande d’ouverture",
     "CET - Alimentation et indemnisation",
   ]);
+  // La carte POP indique où renvoyer le formulaire rempli.
+  await expect(page.getByRole("link", { name: "collectivites@centrepompidou.fr" }))
+    .toHaveAttribute("href", "mailto:collectivites@centrepompidou.fr");
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
   await page.getByRole("button", { name: /Horaires tickets resto/ }).click();
   await expect(page.getByRole("heading", { name: "Horaires tickets resto" })).toBeVisible();
