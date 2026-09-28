@@ -226,21 +226,21 @@
 /* Infos congés : une ligne au-dessus des soldes, dans l'esprit du détail
    des dimanches (lin, accents terracotta), qui se déplie sur le report, le
    fractionnement et les congés exceptionnels. */
-.leave-info-card { margin: 0 0 12px; overflow: hidden; border: 1.5px solid #cbbfb1; border-radius: 16px; background: #f7f2ea; }
+.leave-info-card { margin: 0 0 12px; overflow: hidden; border: 1px solid #e3d8ca; border-radius: 16px; background: #fff; box-shadow: 0 10px 24px -18px rgba(90, 60, 30, .55); }
 .leave-info-card[open] { border-color: #8a7e72; }
-.leave-info-card > summary { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 56px; padding: 8px 10px; color: var(--text); cursor: pointer; list-style: none; }
+.leave-info-card > summary { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; color: var(--text); cursor: pointer; list-style: none; }
 .leave-info-card > summary::-webkit-details-marker { display: none; }
-.leave-info-card > summary:hover { background: #f3ece2; }
-.leave-info-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--accent-soft); color: var(--accent-strong); }
+.leave-info-card > summary:hover { background: #fcf9f5; }
+.leave-info-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #b35a36; color: #fff; }
 .leave-info-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .leave-info-copy { display: grid; gap: 1px; min-width: 0; }
-.leave-info-copy strong { font-size: .92rem; }
+.leave-info-copy strong { font-family: var(--font-display); font-size: 1.08rem; font-weight: 600; }
 .leave-info-copy small { color: var(--muted); font-size: .74rem; font-weight: 700; }
-.leave-info-card > summary > em { display: flex; align-items: center; gap: 5px; border-radius: 999px; padding: 5px 11px; background: var(--accent-soft); color: var(--accent-strong); font-size: 12px; font-style: normal; font-weight: 800; white-space: nowrap; }
+.leave-info-card > summary > em { display: flex; align-items: center; gap: 5px; border: 1px solid #e3c7b4; border-radius: 999px; padding: 5px 11px; background: #fff; color: var(--accent-strong); font-size: 12px; font-style: normal; font-weight: 800; white-space: nowrap; }
 .leave-info-card > summary > em svg { width: 13px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform .14s ease; }
 .leave-info-card[open] > summary > em svg { transform: rotate(180deg); }
 .leave-info-card:not([open]) .leave-info-hide, .leave-info-card[open] .leave-info-show { display: none; }
-.leave-info-content { border-top: 1px solid #e3d8ca; padding: 12px; }
+.leave-info-content { border-top: 1px solid #e3d8ca; padding: 12px; background: #f7f2ea; }
 .leave-info-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 12px; }
 .leave-info-content section { display: grid; align-content: start; gap: 10px; border: 1px solid #e6ded3; border-radius: 14px; padding: 14px; background: #fff; }
 .leave-info-content h3 { margin: 0; border-bottom: 1px solid #efe8de; padding-bottom: 8px; color: var(--text); font-size: 1rem; }
