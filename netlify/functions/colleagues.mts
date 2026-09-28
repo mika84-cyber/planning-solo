@@ -249,6 +249,7 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
       noteText: "", noteColor: "", noteUpdatedAt: "", noteGroupId: "",
       leave: raw.leave === true, wish: false, holidayPay: "",
       closureOverride: raw.closure_override === "closed" || raw.closure_override === "open" ? raw.closure_override : "",
+      workPost: raw.work_post === "counter" || raw.work_post === "ticketing" ? raw.work_post : "",
       exchangeRole: raw.exchange_role === "given" || raw.exchange_role === "return" ? raw.exchange_role : undefined,
       updatedAt: "",
     };
@@ -270,6 +271,7 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
     (entries[date]?.closureOverride !== "open" && automaticClosures.has(date));
   const days = [...candidateDates].sort().map((date) => {
     const presence = personalPresenceForDate(new Date(`${date}T12:00:00`), group, periods, entries, recoveryUses, dailyMinutesForQuota(quota), isClosed);
+    // Le poste (comptoir, billetterie) suit la présence d'une journée travaillée.
     return { date, ...presence };
   });
   return json({

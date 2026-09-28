@@ -114,6 +114,24 @@ describe("API principale du calendrier", () => {
     expect([...data.keys()].some((key) => key === "entry/2026-08-28")).toBe(false);
   });
 
+  it("garde le poste du jour (comptoir, billetterie) et le retire pour revenir en salle", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const key = "user/user-a/entry/2026-09-29";
+    expect((await calendarHandler(request({ action: "save-entry", date: "2026-09-29", workPost: "counter" }))).status).toBe(200);
+    expect(data.get(key)).toMatchObject({ work_post: "counter" });
+    // Une note écrite ensuite, sans poste dans la requête, ne l'efface pas.
+    expect((await calendarHandler(request({ action: "save-entry", date: "2026-09-29", noteText: "Relais à midi" }))).status).toBe(200);
+    expect(data.get(key)).toMatchObject({ work_post: "counter", note_text: "Relais à midi" });
+    await calendarHandler(request({ action: "save-entry", date: "2026-09-29", noteText: "Relais à midi", workPost: "ticketing" }));
+    expect(data.get(key)).toMatchObject({ work_post: "ticketing" });
+    // Un poste inconnu est refusé : la journée revient en salle.
+    await calendarHandler(request({ action: "save-entry", date: "2026-09-29", workPost: "vestiaire" }));
+    expect((data.get(key) as { work_post?: string }).work_post).toBeUndefined();
+    // Sans note ni poste, la journée n'a plus rien à garder.
+    await calendarHandler(request({ action: "save-entry", date: "2026-09-29", workPost: "" }));
+    expect((data.get(key) as { work_post?: string } | undefined)?.work_post).toBeUndefined();
+  });
+
   it("enregistre le crédit férié de 4 h d’un mi-temps", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const response = await calendarHandler(request({

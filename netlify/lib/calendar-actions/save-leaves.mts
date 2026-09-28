@@ -36,6 +36,7 @@ export async function handleSaveLeaves(
       ? Number(body.holidayRecoveryMinutes)
       : body.holidayPay === undefined ? previous?.holiday_recovery_minutes : undefined,
     closure_override: previous?.closure_override,
+    work_post: previous?.work_post,
     exchange_id: previous?.exchange_id,
     exchange_role: previous?.exchange_role,
     exchange_partner: previous?.exchange_partner,
@@ -49,6 +50,7 @@ export async function handleSaveLeaves(
     !next.wish &&
     !next.holiday_pay &&
     !next.closure_override &&
+    !next.work_post &&
     !next.exchange_id
   )
     await store.delete(key);

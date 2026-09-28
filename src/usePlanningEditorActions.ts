@@ -279,7 +279,8 @@ export function usePlanningEditorActions({
                   !cleared.leave &&
                   !cleared.wish &&
                   !cleared.holidayPay &&
-                  !cleared.closureOverride
+                  !cleared.closureOverride &&
+                  !cleared.workPost
                 )
                   delete next[key];
                 else next[key] = cleared;
@@ -292,7 +293,8 @@ export function usePlanningEditorActions({
             !nextEntry.leave &&
             !nextEntry.wish &&
             !nextEntry.holidayPay &&
-            !nextEntry.closureOverride
+            !nextEntry.closureOverride &&
+            !nextEntry.workPost
           )
             delete next[dayDate];
           else next[dayDate] = nextEntry;

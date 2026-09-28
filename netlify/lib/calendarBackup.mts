@@ -104,6 +104,10 @@ export function sanitizeCalendarBackup(value: unknown) {
         item.closure_override === "closed" || item.closure_override === "open"
           ? item.closure_override
           : "",
+      work_post:
+        item.work_post === "counter" || item.work_post === "ticketing"
+          ? item.work_post
+          : undefined,
       exchange_id:
         typeof item.exchange_id === "string" && ID_RE.test(item.exchange_id)
           ? item.exchange_id

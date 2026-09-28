@@ -46,13 +46,20 @@ export async function handleSaveEntry(
       : body.closureOverride === ""
         ? ""
         : previous?.closure_override || "";
+  // Le poste suit la fiche du jour ; absent de la requête, il est conservé.
+  const workPost =
+    body.workPost === "counter" || body.workPost === "ticketing"
+      ? body.workPost
+      : body.workPost === undefined
+        ? previous?.work_post || ""
+        : "";
   const noteChanged = (previous?.note_text || "") !== noteText;
   const noteUpdatedAt = noteText
     ? noteChanged
       ? new Date().toISOString()
       : previous?.note_updated_at || new Date().toISOString()
     : "";
-  if (!noteText && !leave && !wish && !holidayPay && !closureOverride && !previous?.exchange_id) {
+  if (!noteText && !leave && !wish && !holidayPay && !closureOverride && !workPost && !previous?.exchange_id) {
     const savedEtag = await writeAtomic(store, key, CALENDAR_TOMBSTONE, version.etag);
     if (!savedEtag)
       return json({ error: "Cette journée a été modifiée sur un autre appareil" }, 409);
@@ -70,6 +77,7 @@ export async function handleSaveEntry(
     holiday_pay: holidayPay,
     holiday_recovery_minutes: holidayRecoveryMinutes,
     closure_override: closureOverride || undefined,
+    work_post: workPost || undefined,
     exchange_id: previous?.exchange_id,
     exchange_role: previous?.exchange_role,
     exchange_partner: previous?.exchange_partner,

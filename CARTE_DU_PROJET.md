@@ -126,6 +126,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/planningLogic.ts` : cycle des groupes, jours, dates, libellés, congés,
   dimanches et primes de jours fériés.
 - `src/appModel.ts` : types principaux et petits utilitaires partagés.
+- `src/workPost.ts` : poste du jour (en salle par défaut, comptoir d’accueil ou
+  billetterie), stocké en `work_post` sur la journée et partagé aux collègues
+  par `personalPresenceForDate` (lettres E, C, B dans la semaine).
 - `src/overtime.ts` : heures supplémentaires et récupérations.
 - `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats.
 - `src/payEstimate.ts` : disponibilité de l'estimation de paie.

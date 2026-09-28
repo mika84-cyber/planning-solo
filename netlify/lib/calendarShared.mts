@@ -37,6 +37,9 @@ export type CalendarEntry = {
     holiday_pay?: HolidayPay;
     holiday_recovery_minutes?: number;
   closure_override?: "closed" | "open";
+  /** Poste de la journée travaillée, quand ce n'est pas les salles :
+   *  le comptoir d'accueil ou la billetterie. */
+  work_post?: "counter" | "ticketing";
   exchange_id?: string;
   exchange_role?: "given" | "return";
   exchange_partner?: string;
@@ -356,7 +359,7 @@ export async function clearNote(
     note_group_id: "",
     updated_at: new Date().toISOString(),
   };
-  if (!next.leave && !next.wish && !next.holiday_pay && !next.closure_override && !next.exchange_id)
+  if (!next.leave && !next.wish && !next.holiday_pay && !next.closure_override && !next.work_post && !next.exchange_id)
     await store.delete(key);
   else await store.setJSON(key, next);
 }

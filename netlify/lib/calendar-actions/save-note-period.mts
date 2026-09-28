@@ -55,6 +55,7 @@ export async function handleSaveNotePeriod(
       holiday_pay: previous?.holiday_pay,
       holiday_recovery_minutes: previous?.holiday_recovery_minutes,
       closure_override: previous?.closure_override,
+      work_post: previous?.work_post,
       exchange_id: previous?.exchange_id,
       exchange_role: previous?.exchange_role,
       exchange_partner: previous?.exchange_partner,

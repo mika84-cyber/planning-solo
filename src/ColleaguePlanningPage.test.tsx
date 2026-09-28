@@ -39,6 +39,7 @@ describe("sharedPlanningDayStatus", () => {
     expect(sharedPlanningTomorrowSummary(planning, new Date(2026, 8, 5, 12))).toEqual({
       status: "Absence",
       group: 1,
+      post: "",
     });
   });
 });
@@ -68,7 +69,8 @@ describe("vue semaine des collègues", () => {
     expect(html).toContain('aria-label="Voir le planning de Agnès"');
     expect(html).not.toContain("Voir le planning de Mika");
     expect(html.indexOf("Groupe 1")).toBeLessThan(html.indexOf("Groupe 2"));
-    expect(html.match(/class="colleague-week-cell /g)).toHaveLength(14 + 5);
+    // Quatorze cases, puis la légende : E, C, B pour le travail, et F, R, A, ½.
+    expect(html.match(/class="colleague-week-cell /g)).toHaveLength(14 + 7);
     expect(html.match(/<th scope="col" class="is-today"/g)).toHaveLength(1);
     expect(html).toContain('class="is-self"');
     expect(html).toContain("Demi-journée");

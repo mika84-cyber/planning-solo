@@ -18,7 +18,7 @@ function emptyEntry(date: string): CalendarEntry {
 function hasContent(entry: CalendarEntry) {
   return Boolean(
     entry.note_text || entry.leave || entry.wish || entry.holiday_pay ||
-    entry.closure_override || entry.exchange_id,
+    entry.closure_override || entry.work_post || entry.exchange_id,
   );
 }
 

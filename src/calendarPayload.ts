@@ -8,6 +8,7 @@ import type {
   PartnerSharingStatus,
   PayProfile,
 } from "./appModel";
+import { workPostOf } from "./appModel";
 import { cetAccountFromApi } from "./cet";
 import { sanitizeDeductionPayMonths } from "./deductionPayMonth";
 import type { MecenatEntry } from "./mecenat";
@@ -161,6 +162,7 @@ function entriesFromApi(value: unknown): Entries {
         raw.closure_override === "closed" || raw.closure_override === "open"
           ? raw.closure_override
           : "",
+      workPost: workPostOf(raw.work_post),
       exchangeId: text(raw.exchange_id) || undefined,
       exchangeRole:
         raw.exchange_role === "given" || raw.exchange_role === "return"

@@ -2534,6 +2534,39 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(lastProgramme.locator(".grand-palais-interexpo-cut")).toHaveCount(0);
 });
 
+test("le poste du jour se choisit dans la fiche et se lit dans la semaine des collègues", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
+  await prepareDemo(page);
+  // Premier jour travaillé du groupe 2 à partir du 29 septembre, hors férié et fermeture.
+  const closures = new Set(GRAND_PALAIS_EXCEPTIONAL_CLOSURES.map((closure) => closure.date));
+  let day = localDate(2026, 8, 29);
+  while (getDayInfo(day, 2).kind !== "work" || getDayInfo(day, 2).holiday || closures.has(dateKey(day))) day = addDays(day, 1);
+  const cell = () => page.locator(".month-card .day").filter({ has: page.locator(".date-number", { hasText: new RegExp(`^${day.getDate()}$`) }) }).first();
+  if (day.getMonth() !== 8) {
+    await page.getByRole("button", { name: "Sélectionner le mois" }).click();
+    await page.getByRole("option", { name: "octobre", exact: true }).click();
+  }
+  await page.getByRole("button", { name: new RegExp(`^${longDate(day)}`, "i") }).first().click();
+  const dialog = page.getByRole("dialog");
+  const posts = dialog.locator(".day-work-post");
+  await expect(posts).toContainText("en salle par défaut");
+  await expect(posts.getByRole("button")).toHaveText([/Comptoir d’accueil/, /Billetterie/]);
+  await posts.getByRole("button", { name: /Comptoir d’accueil/ }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(cell().locator(".work-post-marker")).toHaveText("C");
+  // Décocher le comptoir ramène en salle : plus de lettre.
+  await cell().click();
+  await expect(page.getByRole("dialog").locator(".day-work-post button[aria-pressed=\"true\"]")).toHaveText(/Comptoir d’accueil/);
+  await page.getByRole("dialog").getByRole("button", { name: /Billetterie/ }).click();
+  await expect(cell().locator(".work-post-marker")).toHaveText("B");
+
+  await goToSection(page, "colleagues");
+  const week = page.locator(".colleague-week-table");
+  await expect(week).toBeVisible();
+  await expect(week.locator(".is-self .colleague-week-cell[title=\"Travail · Billetterie\"]")).toHaveCount(1);
+  await expect(page.locator(".colleague-week-legend")).toContainText("Comptoir d’accueil");
+});
+
 test("le tampon de fermeture conserve la date lisible sur ordinateur et téléphone", async ({ page }) => {
   await prepareDemo(page);
   await page.getByRole("button", { name: "Sélectionner le mois" }).click();

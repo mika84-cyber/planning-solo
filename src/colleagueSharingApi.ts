@@ -27,6 +27,8 @@ export type SharedColleaguePlanning = {
     status: "work" | "training" | "rest" | "absence" | "partial";
     halfMoment?: "morning" | "afternoon";
     absentMinutes?: number;
+    /** Journée travaillée au comptoir d'accueil ou à la billetterie. */
+    workPost?: "counter" | "ticketing";
   }>;
 };
 

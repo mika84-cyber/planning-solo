@@ -13,7 +13,7 @@ import type {
   WorkExchange,
   RequestKind,
 } from "./appModel";
-import { HOLIDAY_PAY_OPTIONS, euros, noteDateLabel } from "./appModel";
+import { HOLIDAY_PAY_OPTIONS, WORK_POSTS, euros, noteDateLabel } from "./appModel";
 import { minutesLabel, type RecoveryUse } from "./overtime";
 import {
   HALF_BALANCE_OPTIONS,
@@ -67,6 +67,8 @@ export type DayDetailDialogProps = {
   dayRecoveryUses: RecoveryUse[];
   dayExceptionalClosure: boolean;
   dayHolidayChoiceVisible: boolean;
+  /** Jour travaillé : on peut y préciser le poste (comptoir, billetterie). */
+  dayWorkPostVisible?: boolean;
   baseSalary: number;
   approvedGrandPalaisUpdates: SharedGrandPalaisEvent[];
   noteEditorOpen: boolean;
@@ -104,6 +106,7 @@ export function DayDetailDialog({
   dayRecoveryUses,
   dayExceptionalClosure,
   dayHolidayChoiceVisible,
+  dayWorkPostVisible = false,
   baseSalary,
   approvedGrandPalaisUpdates,
   noteEditorOpen,
@@ -208,6 +211,30 @@ export function DayDetailDialog({
                 </button>
               </div>
             ) : null}
+        {/* Poste du jour : en salle par défaut ; le comptoir d'accueil ou la
+            billetterie se cochent, et se décochent pour revenir en salle. */}
+        {!quickNoteMode && dayWorkPostVisible ? (
+          <fieldset className="day-work-post" disabled={savingDay}>
+            <legend>Poste du jour · en salle par défaut</legend>
+            <div>
+              {WORK_POSTS.filter((post) => post.value).map((post) => {
+                const current = entries[dayDate]?.workPost === post.value;
+                return (
+                  <button
+                    key={post.letter}
+                    type="button"
+                    className={current ? "active" : undefined}
+                    aria-pressed={current}
+                    onClick={() => void saveDay({ workPost: current ? "" : post.value })}
+                  >
+                    <b aria-hidden="true">{post.letter}</b>
+                    {post.label}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : null}
         <div className={`day-notes-editor${!quickNoteMode && !noteEditorOpen ? " day-notes-reading" : ""}`} role="group" aria-label="Notes de la journée">
           {!quickNoteMode && (dayNoteCount > 0 || noteEditorOpen) ? <div className="day-notes-section-heading"><h3>Notes du jour</h3></div> : null}
           {partnerEntries[dayDate]?.noteAuthor === "agnes" && partnerEntries[dayDate].noteText ? (

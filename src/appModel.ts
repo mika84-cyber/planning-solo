@@ -33,6 +33,9 @@ export type SharedEntry = {
   /** Correction locale d'une fermeture : `closed` l'ajoute, `open` masque
    *  une fermeture automatique du Grand Palais. */
   closureOverride: "closed" | "open" | "";
+  /** Poste de la journée travaillée : vide pour les salles (par défaut),
+   *  sinon le comptoir d'accueil ou la billetterie. */
+  workPost?: WorkPost | "";
   /** Un échange validé porte toujours ses deux journées. `given` correspond
    *  au jour de cycle cédé au collègue, `return` au jour rendu. */
   exchangeId?: string;
@@ -43,6 +46,16 @@ export type SharedEntry = {
   /** Version serveur utilisée pour détecter une modification concurrente. */
   updatedAt: string;
 };
+export type WorkPost = "counter" | "ticketing";
+/** Libellé et lettre de chaque poste ; l'expo (les salles) est le poste par défaut. */
+export const WORK_POSTS: ReadonlyArray<{ value: WorkPost | ""; label: string; letter: string }> = [
+  { value: "", label: "Expo", letter: "E" },
+  { value: "counter", label: "Comptoir d’accueil", letter: "C" },
+  { value: "ticketing", label: "Billetterie", letter: "B" },
+];
+export function workPostOf(value: unknown): WorkPost | "" {
+  return value === "counter" || value === "ticketing" ? value : "";
+}
 export type Entries = Record<string, SharedEntry>;
 export type PartnerCalendarEntry = {
   noteText: string;
@@ -273,6 +286,8 @@ export type PersonalPresence = {
   status: "work" | "training" | "rest" | "absence" | "partial";
   halfMoment?: HalfMoment;
   absentMinutes?: number;
+  /** Journée travaillée hors expo : comptoir d'accueil ou billetterie. */
+  workPost?: WorkPost;
 };
 
 /** Durée effective de présence : une formation dure 6 h, ou 3 h à mi-temps. */
@@ -298,7 +313,9 @@ export function personalPresenceForDate(
   workDayMinutes = attendanceDayMinutes(date, group, workDayMinutes);
   const entry = entries[key];
   if (isExceptionallyClosed(key)) return { status: "absence" };
-  if (entry?.exchangeRole === "return") return { status: "work" };
+  // Le poste (comptoir, billetterie) accompagne une journée travaillée.
+  const work: PersonalPresence = entry?.workPost ? { status: "work", workPost: entry.workPost } : { status: "work" };
+  if (entry?.exchangeRole === "return") return work;
   if (entry?.exchangeRole === "given") return { status: "absence" };
   if (scheduled === "off") return { status: "rest" };
   const dayPeriods = periods.filter((item) => key >= item.from && key <= item.to);
@@ -336,7 +353,7 @@ export function personalPresenceForDate(
         : undefined;
     return { status: "partial", halfMoment, absentMinutes };
   }
-  return { status: scheduled === "training" ? "training" : "work" };
+  return scheduled === "training" ? { status: "training" } : work;
 }
 
 export function workedDayCount(

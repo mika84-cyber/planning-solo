@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDayInfo, MONTHS } from "./planningLogic";
-import type { PersonalPresence } from "./appModel";
+import { WORK_POSTS, type PersonalPresence, type WorkPost } from "./appModel";
 import { ColleagueGroupsDialog, ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
 import type { ColleagueGroup } from "./colleagueGroups";
 import { matchesSearch } from "./searchMatching";
@@ -46,6 +46,8 @@ const demoPlanning: SharedColleaguePlanning = {
     { date: "2026-09-09", status: "absence" },
     { date: "2026-09-14", status: "partial", halfMoment: "morning" },
     { date: "2026-09-21", status: "absence" },
+    { date: "2026-09-29", status: "work", workPost: "counter" },
+    { date: "2026-10-01", status: "work", workPost: "ticketing" },
   ],
 };
 
@@ -165,8 +167,20 @@ export function sharedPlanningDayStatus(planning: SharedColleaguePlanning, date:
   return scheduled === "off" ? "Repos" : scheduled === "training" ? "Formation" : "Travail";
 }
 
+/** Poste d'une journée travaillée partagée : comptoir, billetterie, ou
+ *  vide pour l'expo (les salles), le poste par défaut. */
+export function sharedPlanningWorkPost(planning: SharedColleaguePlanning, date: Date): WorkPost | "" {
+  const shared = planning.days.find((day) => day.date === dateKey(date));
+  return shared?.status === "work" ? shared.workPost ?? "" : "";
+}
+
+const workPostEntry = (post: WorkPost | "" | undefined) => WORK_POSTS.find((item) => item.value === (post || "")) ?? WORK_POSTS[0];
+/** « Travail · Comptoir d’accueil » ; l'expo, poste par défaut, reste « Travail ». */
+export const statusWithPost = (status: TomorrowStatus, post?: WorkPost | "") =>
+  status === "Travail" && post ? `Travail · ${workPostEntry(post).label}` : status;
+
 export function sharedPlanningTomorrowSummary(planning: SharedColleaguePlanning, date: Date) {
-  return { status: sharedPlanningDayStatus(planning, date), group: planning.group };
+  return { status: sharedPlanningDayStatus(planning, date), group: planning.group, post: sharedPlanningWorkPost(planning, date) };
 }
 
 export type CommonPresence = "full" | "morning" | "afternoon" | "imprecise" | null;
@@ -220,7 +234,7 @@ function weekCellClass(day: Date, index: number, todayKey: string) {
   return [dateKey(day) === todayKey ? "is-today" : "", index >= 5 ? "is-weekend" : ""].filter(Boolean).join(" ") || undefined;
 }
 
-type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus; onOpen?: () => void };
+type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus; postFor?: (date: Date) => WorkPost | ""; onOpen?: () => void };
 
 /** La semaine en un tableau : une ligne par personne, rangée par groupe, et
  *  une case par jour avec la lettre de son statut. La colonne d'aujourd'hui
@@ -254,11 +268,14 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                     <th scope="row">{row.onOpen ? <button type="button" className="colleague-row-open" onClick={row.onOpen} aria-label={`Voir le planning de ${row.name}`}>{row.name}</button> : row.name}</th>
                     {days.map((day, index) => {
                       const status = row.statusFor(day);
+                      // Une journée travaillée dit son poste : E (expo), C ou B.
+                      const post = status === "Travail" ? row.postFor?.(day) || "" : "";
+                      const label = statusWithPost(status, post);
                       return (
                         <td key={dateKey(day)} className={weekCellClass(day, index, todayKey)}>
-                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}`} title={status}>
-                            <span aria-hidden="true">{WEEK_STATUS_LETTERS[status]}</span>
-                            <span className="colleague-week-sr">{status}</span>
+                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}`} title={label}>
+                            <span aria-hidden="true">{status === "Travail" ? workPostEntry(post).letter : WEEK_STATUS_LETTERS[status]}</span>
+                            <span className="colleague-week-sr">{label}</span>
                           </span>
                         </td>
                       );
@@ -271,7 +288,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
         </table>
       </div>
       <ul className="colleague-week-legend" aria-label="Légende">
-        <li><span className="colleague-week-cell work" aria-hidden="true">T</span>Travail</li>
+        {WORK_POSTS.map((post) => <li key={post.letter}><span className="colleague-week-cell work" aria-hidden="true">{post.letter}</span>{post.label}</li>)}
         <li><span className="colleague-week-cell training" aria-hidden="true">F</span>Formation</li>
         <li><span className="colleague-week-cell rest" aria-hidden="true">R</span>Repos</li>
         <li><span className="colleague-week-cell absence" aria-hidden="true">A</span>Absence</li>
@@ -484,10 +501,11 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const nameChanged = name.trim() !== savedName;
   // L'utilisateur figure aussi dans « Qui travaille demain ? », dans son groupe.
   const boardDate = colleagueBoardDate(boardOffset);
-  const tomorrowSummaries: Record<string, { status: TomorrowStatus; group: number }> = Object.fromEntries(
+  const tomorrowSummaries: Record<string, { status: TomorrowStatus; group: number; post: WorkPost | "" }> = Object.fromEntries(
     Object.entries(receivedPlannings).map(([ownerId, planning]) => [ownerId, sharedPlanningTomorrowSummary(planning, boardDate)]),
   );
-  const selfTomorrow = getOwnPresence && ownGroup ? { status: personalTomorrowStatus(getOwnPresence(boardDate)), group: ownGroup } : null;
+  const selfPresence = getOwnPresence ? getOwnPresence(boardDate) : null;
+  const selfTomorrow = selfPresence && ownGroup ? { status: personalTomorrowStatus(selfPresence), group: ownGroup, post: selfPresence.workPost ?? ("" as const) } : null;
   const selfName = data?.self.displayName || name.trim() || "Vous";
 
   // Les plannings déjà affichés restent en place pendant leur relecture : le
@@ -680,13 +698,14 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
         {boardMode === "week" ? <ColleagueWeekTable
           days={colleagueWeekDays(weekOffset)}
           rows={[
-            ...(getOwnPresence && ownGroup ? [{ id: "self", name: selfName, group: ownGroup, isSelf: true, statusFor: (date: Date) => personalTomorrowStatus(getOwnPresence(date)) }] : []),
+            ...(getOwnPresence && ownGroup ? [{ id: "self", name: selfName, group: ownGroup, isSelf: true, statusFor: (date: Date) => personalTomorrowStatus(getOwnPresence(date)), postFor: (date: Date) => getOwnPresence(date).workPost ?? "" }] : []),
             ...received.filter((share) => receivedPlannings[share.ownerId]).map((share) => ({
               id: share.ownerId,
               name: share.ownerName,
               group: receivedPlannings[share.ownerId].group,
               isSelf: false,
               statusFor: (date: Date) => sharedPlanningDayStatus(receivedPlannings[share.ownerId], date),
+              postFor: (date: Date) => sharedPlanningWorkPost(receivedPlannings[share.ownerId], date),
               onOpen: () => openFromBoard(share.ownerId, colleagueWeekDays(weekOffset)[0]),
             })),
           ]}
@@ -709,12 +728,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
                 if (!groupCount) return null;
                 return <Fragment key={group}>
                   <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={2}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span><small>{groupCount} collègue{groupCount > 1 ? "s" : ""}</small></th></tr>
-                  {selfHere && selfTomorrow ? <tr className={`colleague-tomorrow-row is-self status-${tomorrowStatusTone(selfTomorrow.status)}`}><td><strong>{selfName}</strong></td><td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(selfTomorrow.status)}`}><i aria-hidden="true" />{selfTomorrow.status}</span></td></tr> : null}
+                  {selfHere && selfTomorrow ? <tr className={`colleague-tomorrow-row is-self status-${tomorrowStatusTone(selfTomorrow.status)}`}><td><strong>{selfName}</strong></td><td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(selfTomorrow.status)}`}><i aria-hidden="true" />{statusWithPost(selfTomorrow.status, selfTomorrow.post)}</span></td></tr> : null}
                   {groupShares.map((share) => {
                     const summary = tomorrowSummaries[share.ownerId]!;
                     return <tr className={`colleague-tomorrow-row status-${tomorrowStatusTone(summary.status)}`} key={share.ownerId}>
                       <td><strong><button type="button" className="colleague-row-open" onClick={() => openFromBoard(share.ownerId, boardDate)} aria-label={`Voir le planning de ${share.ownerName}`}>{share.ownerName}</button></strong></td>
-                      <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{summary.status}</span></td>
+                      <td><span className={`colleague-tomorrow-status ${tomorrowStatusTone(summary.status)}`}><i aria-hidden="true" />{statusWithPost(summary.status, summary.post)}</span></td>
                     </tr>;
                   })}
                 </Fragment>;

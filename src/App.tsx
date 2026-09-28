@@ -40,6 +40,7 @@ import { effectivePayProfile, usePayActions } from "./usePayActions";
 
 const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
+const DayDetailDialog = lazy(() => import("./DayDetailDialog").then((module) => ({ default: module.DayDetailDialog })));
 const LongAbsenceNotice = lazy(() => import("./LongAbsenceNotice").then((module) => ({ default: module.LongAbsenceNotice })));
 const HomeDashboard = lazy(() =>
   homeDashboardModule.then(({ HomeDashboard: Component }) => ({ default: Component })),
@@ -91,7 +92,7 @@ import { computeLeaveStats } from "./leaveStats";
 import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
-import { DayDetailDialog } from "./DayDetailDialog";
+import { canChooseWorkPost } from "./workPost";
 import { RequestSelectionPanel } from "./RequestSelectionPanel";
 import {
   AppHeader,
@@ -401,6 +402,10 @@ export default function Home() {
     allowancesSwipeStart,
   } = appShellUi;
   const feedbackMessaging = useFeedbackMessaging(isProgramAdmin, demoMode, authStatus === "ready");
+  // La fiche du jour est chargée à part : on la prépare dès que l'app est prête.
+  useEffect(() => {
+    if (authStatus === "ready") void import("./DayDetailDialog");
+  }, [authStatus]);
 
   useEffect(() => {
     const requestedView = new URLSearchParams(location.search).get("feedback");
@@ -2522,6 +2527,10 @@ export default function Home() {
     ? exceptionalClosureFor(dayDate)
     : undefined;
   const dayExchange = dayDate ? workExchangeForDate(entries, dayDate) : null;
+  // Salles, comptoir ou billetterie : seulement sur un jour travaillé.
+  const dayWorkPostVisible = dayDate
+    ? canChooseWorkPost({ date: dayDate, group, entries, periods, recoveryUses, closed: Boolean(dayExceptionalClosure) })
+    : false;
 
   if (publicDemoAccess.expired) {
     return (
@@ -3198,37 +3207,44 @@ export default function Home() {
         </Suspense>
       ) : null}
 
-      <DayDetailDialog
-        planning={planningUi}
-        quickNoteMode={quickNoteMode}
-        entries={entries}
-        partnerEntries={partnerEntries}
-        dayExchange={dayExchange}
-        dayStoredPeriods={dayStoredPeriods}
-        dayRecoveryUses={dayRecoveryUses}
-        dayExceptionalClosure={Boolean(dayExceptionalClosure)}
-        dayHolidayChoiceVisible={dayHolidayChoiceVisible}
-        baseSalary={baseSalary}
-        approvedGrandPalaisUpdates={approvedGrandPalaisUpdates}
-        noteEditorOpen={noteEditorOpen}
-        setNoteEditorOpen={setNoteEditorOpen}
-        noteFieldRef={noteFieldRef}
-        ownNoteAuthorLabel={ownNoteAuthorLabel}
-        editWorkExchange={editWorkExchange}
-        openRequestChooser={openRequestChooser}
-        openPlanningRequestMethod={openPlanningRequestMethod}
-        saveWishDateDirect={saveWishDateDirect}
-        saveSickDateDirect={saveSickDateDirect}
-        saveOtherDateDirect={saveOtherDateDirect}
-        saveStrikeDateDirect={saveStrikeDateDirect}
-        saveDay={saveDay}
-        beginMultipleDateSelectionFromDay={beginMultipleDateSelectionFromDay}
-        beginNoteDateSelection={beginNoteDateSelection}
-        editDayLeavePeriod={editDayLeavePeriod}
-        deleteRecoveryUse={deleteRecoveryUse}
-        deleteAgnesNote={deleteAgnesNote}
-        appendNoteLine={appendNoteLine}
-      />
+      {/* La fiche du jour se charge à la première ouverture ; elle est
+          préchargée dès que l’application est prête. */}
+      {dayDate ? (
+        <Suspense fallback={null}>
+          <DayDetailDialog
+            planning={planningUi}
+            quickNoteMode={quickNoteMode}
+            entries={entries}
+            partnerEntries={partnerEntries}
+            dayExchange={dayExchange}
+            dayStoredPeriods={dayStoredPeriods}
+            dayRecoveryUses={dayRecoveryUses}
+            dayExceptionalClosure={Boolean(dayExceptionalClosure)}
+            dayHolidayChoiceVisible={dayHolidayChoiceVisible}
+            dayWorkPostVisible={dayWorkPostVisible}
+            baseSalary={baseSalary}
+            approvedGrandPalaisUpdates={approvedGrandPalaisUpdates}
+            noteEditorOpen={noteEditorOpen}
+            setNoteEditorOpen={setNoteEditorOpen}
+            noteFieldRef={noteFieldRef}
+            ownNoteAuthorLabel={ownNoteAuthorLabel}
+            editWorkExchange={editWorkExchange}
+            openRequestChooser={openRequestChooser}
+            openPlanningRequestMethod={openPlanningRequestMethod}
+            saveWishDateDirect={saveWishDateDirect}
+            saveSickDateDirect={saveSickDateDirect}
+            saveOtherDateDirect={saveOtherDateDirect}
+            saveStrikeDateDirect={saveStrikeDateDirect}
+            saveDay={saveDay}
+            beginMultipleDateSelectionFromDay={beginMultipleDateSelectionFromDay}
+            beginNoteDateSelection={beginNoteDateSelection}
+            editDayLeavePeriod={editDayLeavePeriod}
+            deleteRecoveryUse={deleteRecoveryUse}
+            deleteAgnesNote={deleteAgnesNote}
+            appendNoteLine={appendNoteLine}
+          />
+        </Suspense>
+      ) : null}
 
       {balanceDetail ? (
         <Suspense fallback={null}>

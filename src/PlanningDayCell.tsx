@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { LeavePeriod, SelectedDay, SharedEntry, WorkExchange } from "./appModel";
+import { WORK_POSTS } from "./appModel";
 import type { RecoveryUse } from "./overtime";
 import { minutesLabel } from "./overtime";
 import {
@@ -91,6 +92,11 @@ export function PlanningDayCell({
   const myHalfMoment = myLeaveType === "half" ? leavePeriod?.halfMoment || "" : "";
   // Une demi-journée de RTT ou de fractionnement prend la couleur de son solde.
   const myHalfBalance = myLeaveType === "half" && leavePeriod ? halfBalanceOf(leavePeriod) : "annual";
+  // Comptoir ou billetterie : une petite lettre rouge dans le coin ; les
+  // salles, poste par défaut, ne se signalent pas.
+  const workPost = entry?.workPost && !visibleLeave && !personalDay && !exceptionalClosure && !hasHourlyRecovery
+    ? WORK_POSTS.find((post) => post.value === entry.workPost)
+    : undefined;
   const hasMikaNote = Boolean(showNotes && entry?.noteText);
   const hasAgnesNote = Boolean(showNotes && sharedNoteText);
   const visibleNote = hasMikaNote || hasAgnesNote;
@@ -117,6 +123,7 @@ export function PlanningDayCell({
     visibleNote ? "Note enregistrée" : "",
     exceptionalClosure?.label ?? "",
     exchangeLabel,
+    workPost?.label ?? "",
     workAccident ? "Accident de travail" : "",
     agnesLeave ? "Congé d’Agnès" : "",
     sharedNoteText ? "Note d’Agnès" : "",
@@ -140,7 +147,7 @@ export function PlanningDayCell({
       onClick={onClick}
       title={title}
       aria-current={today ? "date" : undefined}
-      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${exchangeLabel || DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}${workAccident ? ", accident de travail" : ""}${agnesLeave ? ", congé d’Agnès" : ""}${sharedNoteText ? ", note d’Agnès" : ""}${schoolVacation ? `, ${schoolVacation.name}, vacances scolaires` : ""}`}
+      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${exchangeLabel || DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}${workPost ? `, ${workPost.label.toLowerCase()}` : ""}${workAccident ? ", accident de travail" : ""}${agnesLeave ? ", congé d’Agnès" : ""}${sharedNoteText ? ", note d’Agnès" : ""}${schoolVacation ? `, ${schoolVacation.name}, vacances scolaires` : ""}`}
     >
       <span className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}${agnesLeave ? " agnes-leave-date" : ""}`}>
         {date.getDate()}
@@ -179,6 +186,7 @@ export function PlanningDayCell({
           <img className={`exchange-calendar-marker${compact ? " compact" : ""}`} src="/exchange-arrows.png" alt="" aria-hidden="true" />
         </>
       ) : null}
+      {workPost ? <span className={`work-post-marker${compact ? " compact" : ""}`} aria-hidden="true">{workPost.letter}</span> : null}
       {workAccident ? <img className={`work-accident-calendar-marker${compact ? " compact" : ""}`} src="/work-accident-icon.png" alt="" aria-hidden="true" /> : null}
     </button>
   );
