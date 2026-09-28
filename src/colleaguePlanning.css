@@ -416,7 +416,7 @@
   .colleague-week-table .colleague-week-cell { width: 23px; height: 23px; }
 }
 /* Deux lettres (EX, AC, BI) tiennent dans la même case. */
-.colleague-week-cell.two-letters { font-size: .6rem; letter-spacing: -.02em; }
+.colleague-week-cell.two-letters { font-size: .7rem; font-weight: 900; letter-spacing: .02em; }
 .colleague-week-legend .colleague-week-cell.two-letters { font-size: .52rem; }
 .colleague-week-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 /* Le nom d'un collègue ouvre son planning : il garde l'allure d'un nom,
