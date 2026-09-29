@@ -982,7 +982,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                       {leadIn.map((item) => (
                         <li key={`${item.venueKey}-${item.title}-${item.startsOn}`} style={grandPalaisVenueStyle(item.venueKey)}>
                           <span>{item.title}</span>
-                          <b>{item.venueLabel}</b>
+                          <b>{item.venueLabel.replace("Galeries 3 et 4", "Galerie 3/4")}</b>
                           <small>{leadInDates(item, today)}</small>
                         </li>
                       ))}
@@ -1004,7 +1004,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                   {interExhibitionTail.map((item) => (
                     <li key={`${item.venueKey}-${item.title}-${item.startsOn}`} style={grandPalaisVenueStyle(item.venueKey)}>
                       <span>{item.title}</span>
-                      <b>{item.venueLabel}</b>
+                      <b>{item.venueLabel.replace("Galeries 3 et 4", "Galerie 3/4")}</b>
                       <small>{leadInDates(item, today)}</small>
                     </li>
                   ))}

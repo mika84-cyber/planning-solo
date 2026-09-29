@@ -1136,12 +1136,6 @@
   white-space: nowrap;
 }
 
-.recovery-type-choice { max-width: 620px; }
-.recovery-type-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-@media (max-width: 720px) {
-  .recovery-type-choice-grid { grid-template-columns: 1fr; }
-}
 
 /* Sur grand écran, les actions Mécénat reprennent strictement l'encombrement
    et l'alignement des actions Heures supplémentaires. Les couleurs propres à
@@ -1760,9 +1754,6 @@
   gap: 9px;
 }
 .overtime-time-grid > small,
-.overtime-duration-grid .period-choice {
-  grid-column: 1 / -1;
-}
 .overtime-destination-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

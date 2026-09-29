@@ -1299,10 +1299,6 @@
   background: #f4ede4;
 }
 
-.leave-choices .exchange-day-choice {
-  --person-color: #5eb6c4;
-  border-color: var(--line);
-}
 
 fieldset.leave-choices {
   min-width: 0;

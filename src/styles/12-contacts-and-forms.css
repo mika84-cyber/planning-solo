@@ -681,17 +681,6 @@
 }
 .cet-section.closed .cet-heading strong { color: #3a332c; font-size: 1.16rem; }
 .cet-section.closed .cet-heading small { color: var(--muted); font-size: 0.8rem; }
-.cet-closed-useful {
-  justify-self: start;
-  margin-top: 4px;
-  border: 0;
-  padding: 2px 0 0;
-  color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 800;
-  line-height: 1.2;
-  background: transparent;
-}
 .cet-section.closed .cet-caret {
   width: 36px;
   height: 36px;

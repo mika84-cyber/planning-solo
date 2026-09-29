@@ -41,11 +41,6 @@
   stroke-linejoin: round;
   stroke-width: 2;
 }
-.note-period-hint {
-  margin: 8px 0 0 !important;
-  color: var(--muted);
-  font-size: 10px !important;
-}
 .leave-range-box {
   margin: -3px 0 17px;
   border: 1px solid var(--bg);
@@ -79,12 +74,6 @@
 }
 .separate-date-button:hover {
   background: color-mix(in srgb, var(--accent) 13%, white);
-}
-.leave-period-hint {
-  margin: 8px 0 0 !important;
-  color: var(--muted);
-  font-size: 10px !important;
-  font-weight: 750;
 }
 .day-stored-periods {
   display: grid;
