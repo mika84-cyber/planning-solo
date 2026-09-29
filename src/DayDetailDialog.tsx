@@ -218,7 +218,7 @@ export function DayDetailDialog({
             billetterie se cochent, et se décochent pour revenir en salle. */}
         {!quickNoteMode && dayWorkPostVisible ? (
           <fieldset className="day-work-post" disabled={savingDay}>
-            <legend>Poste du jour <small>En salle par défaut</small></legend>
+            <legend>Poste du jour <small>· en salle par défaut</small></legend>
             <div>
               {WORK_POSTS.filter((post) => post.value).map((post) => {
                 const current = entries[dayDate]?.workPost === post.value;
