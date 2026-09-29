@@ -144,8 +144,8 @@
   outline: 1.5px solid #000;
   outline-offset: -1.5px;
 }
-/* Fiche du jour : le poste, titré comme « Notes du jour », en deux tuiles. */
-.day-work-post { min-width: 0; margin: 0 0 14px; border: 0; padding: 0; }
+/* Fiche du jour : le poste dans un encadré discret, en deux tuiles. */
+.day-work-post { min-width: 0; margin: 18px 0 14px; border: 1px solid #ece5db; border-radius: 16px; padding: 10px 12px 12px; background: #fbf8f4; }
 .day-work-post legend { float: left; display: flex; align-items: baseline; gap: 8px; width: 100%; margin: 0 0 8px; padding: 0; color: var(--muted); font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .day-work-post legend small { font-size: .74rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .day-work-post > div { display: flex; clear: both; flex-wrap: wrap; gap: 8px; }
