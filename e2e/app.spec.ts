@@ -2653,6 +2653,25 @@ test("le poste du jour se choisit dans la fiche et se lit dans la semaine des co
   await expect(page.locator(".colleague-week-legend")).toContainText("Accueil");
 });
 
+test("l’accueil affiche le poste choisi aujourd’hui et au prochain jour travaillé", async ({ page }) => {
+  // Deux jours travaillés de suite du groupe 2 en octobre, hors férié et fermeture.
+  const closures = new Set(GRAND_PALAIS_EXCEPTIONAL_CLOSURES.map((closure) => closure.date));
+  const plain = (date: Date) => getDayInfo(date, 2).kind === "work" && !getDayInfo(date, 2).holiday && !closures.has(dateKey(date));
+  let day = localDate(2026, 9, 5);
+  while (!plain(day) || !plain(addDays(day, 1))) day = addDays(day, 1);
+  const next = addDays(day, 1);
+  await page.clock.setFixedTime(new Date(`${dateKey(day)}T12:00:00`));
+  await prepareDemo(page);
+  await expect(page.locator(".today-status")).toContainText("Travail");
+  for (const [date, post] of [[day, /Accueil/], [next, /Billetterie/]] as const) {
+    await page.getByRole("button", { name: new RegExp(`^${longDate(date)}`, "i") }).first().click();
+    await page.getByRole("dialog").locator(".day-work-post").getByRole("button", { name: post }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+  await expect(page.locator(".today-status strong")).toHaveText("Accueil");
+  await expect(page.locator(".today-next-work .today-value-detail")).toHaveText("Billetterie");
+});
+
 test("le tampon de fermeture conserve la date lisible sur ordinateur et téléphone", async ({ page }) => {
   await prepareDemo(page);
   await page.getByRole("button", { name: "Sélectionner le mois" }).click();

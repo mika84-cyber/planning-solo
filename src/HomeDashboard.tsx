@@ -18,6 +18,8 @@ export type TodayDashboardData = {
   nextWorkKind?: string | null;
   nextWorkGroupLabel?: string;
   nextWorkHalfLeaveLabel?: string;
+  /** Accueil ou Billetterie, quand un poste est choisi ce jour-là. */
+  nextWorkPostLabel?: string;
 };
 
 export type HomeSetupItem = {
@@ -114,6 +116,7 @@ export function HomeDashboard({
   // date, sans tiret qui resterait seul en bout de ligne.
   const nextWorkDetail = today.nextWork
     ? [
+        today.nextWorkPostLabel || "",
         today.nextWorkExceptionalClosure
           ? "Fermeture exceptionnelle"
           : today.nextWorkKind === "training"

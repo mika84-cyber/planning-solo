@@ -67,4 +67,21 @@ describe("la ligne « Aujourd’hui » de l’accueil", () => {
     expect(result.status).toBe("Repos · remplacé par Agnès");
     expect(result.todayGroupLabel).toBe("");
   });
+
+  it("affiche Accueil ou Billetterie au lieu de Travail, Travail en salles", () => {
+    const day = firstDay((date) => getDayInfo(date, GROUP).kind === "work");
+    const key = dateKey(day);
+    expect(overview(day, { [key]: { workPost: "counter" } as Entries[string] }).status).toBe("Accueil");
+    expect(overview(day, { [key]: { workPost: "ticketing" } as Entries[string] }).status).toBe("Billetterie");
+    expect(overview(day, { [key]: { workPost: "" } as Entries[string] }).status).toBe("Travail");
+  });
+});
+
+describe("le prochain jour travaillé de l’accueil", () => {
+  it("précise le poste choisi, rien en salles", () => {
+    const today = firstDay((date) => getDayInfo(date, GROUP).kind === "work");
+    const next = overview(today).nextWork!;
+    expect(overview(today).nextWorkPostLabel).toBe("");
+    expect(overview(today, { [dateKey(next)]: { workPost: "ticketing" } as Entries[string] }).nextWorkPostLabel).toBe("Billetterie");
+  });
 });

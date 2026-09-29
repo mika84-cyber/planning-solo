@@ -2,7 +2,7 @@ import { visibleAbsencePeriod } from "./absenceReplacement";
 import { workExchangeForDate } from "./workExchange";
 import { minutesLabel, type RecoveryUse } from "./overtime";
 import type { Entries, LeavePeriod, SelectedDay } from "./appModel";
-import { personalPresenceForDate } from "./appModel";
+import { WORK_POSTS, personalPresenceForDate, workPostOf } from "./appModel";
 import {
   DAY_LABELS,
   GROUP_OPTIONS,
@@ -17,6 +17,12 @@ import {
 
 /** Ce que la carte d'accueil ajoute à « 1/2 journée » selon le solde. */
 const HALF_BALANCE_SHORT = { annual: "", rtt: " de RTT", fraction: " de fractionnement", exceptional: " de jour exceptionnel", other: " Divers" } as const;
+
+/** Accueil ou Billetterie quand un poste est choisi ; rien en salles. */
+function workPostLabel(entries: Entries, key: string) {
+  const post = workPostOf(entries[key]?.workPost);
+  return post ? WORK_POSTS.find((item) => item.value === post)?.label ?? "" : "";
+}
 
 export type TodayOverviewInput = {
   today: Date;
@@ -58,9 +64,11 @@ export function computeTodayOverview({
     .filter((item) => item.date === key)
     .reduce((total, item) => total + item.minutes, 0);
   const todayExceptionalClosure = isExceptionallyClosed(key);
+  // Un jour à l'accueil ou en billetterie se lit ainsi, « Travail » en salles.
+  const todayPost = workPostLabel(entries, key);
   const scheduledStatus =
     info.kind === "work"
-      ? DAY_LABELS[info.kind]
+      ? todayPost || DAY_LABELS[info.kind]
       : DAY_LABELS[info.kind];
   let status = scheduledStatus;
   let tone: string = info.kind;
@@ -70,7 +78,7 @@ export function computeTodayOverview({
   } else if (todayExchange) {
     status = entry?.exchangeRole === "given"
       ? `Repos · remplacé par ${todayExchange.partnerName}`
-      : `Travail · remplacement de ${todayExchange.partnerName}`;
+      : `${todayPost || "Travail"} · remplacement de ${todayExchange.partnerName}`;
     tone = "exchange";
   } else if (todayRecoveryMinutes) {
     status =
@@ -131,6 +139,9 @@ export function computeTodayOverview({
   const nextWorkHalfLeaveLabel = nextWorkHalfLeave
     ? `1/2 journée posée ${nextWorkHalfLeave.halfMoment === "afternoon" ? "l’après-midi" : "le matin"}`
     : "";
+  const nextWorkPostLabel = nextWork && !nextWorkExceptionalClosure
+    ? workPostLabel(entries, dateKey(nextWork))
+    : "";
   const nextWorkGroups = nextWork
     ? coWorkingGroupsForDate(nextWork, group)
     : [];
@@ -178,5 +189,6 @@ export function computeTodayOverview({
     nextWorkExceptionalClosure: Boolean(nextWorkExceptionalClosure),
     nextWorkGroupLabel,
     nextWorkHalfLeaveLabel,
+    nextWorkPostLabel,
   };
 }

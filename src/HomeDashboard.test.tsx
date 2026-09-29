@@ -81,6 +81,14 @@ describe("HomeDashboard", () => {
     expect(html).toContain('Ven 04/09<span class="today-value-detail">1/2 journée posée le matin</span>');
   });
 
+  it("précise le poste du prochain jour travaillé", () => {
+    const html = renderToStaticMarkup(<HomeDashboard
+      {...baseProps}
+      today={{ ...baseProps.today, nextWorkPostLabel: "Accueil", nextWorkHalfLeaveLabel: "1/2 journée posée le matin" }}
+    />);
+    expect(html).toContain('Ven 04/09<span class="today-value-detail">Accueil · 1/2 journée posée le matin</span>');
+  });
+
   it("précise une demi-journée posée l’après-midi", () => {
     const html = renderToStaticMarkup(<HomeDashboard
       {...baseProps}
