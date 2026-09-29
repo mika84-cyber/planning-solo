@@ -413,9 +413,9 @@
 /* Deux lettres (EX, AC, BI) tiennent dans la même case. */
 .colleague-week-cell.two-letters { font-size: .7rem; letter-spacing: .02em; }
 .colleague-week-legend .colleague-week-cell.two-letters { font-size: .52rem; }
-/* Accueil et billetterie ressortent parmi les EX : case verte pleine, lettres
-   blanches, sans ressembler au A rose de l'absence. */
-.colleague-week-cell.on-post { background: #2f7a52; border-color: #2f7a52; color: #fff; }
+/* Accueil et billetterie ressortent parmi les EX : même vert pâle, cerclé d'un
+   contour vert appuyé, sans ressembler au A rose de l'absence. */
+.colleague-week-cell.on-post { border: 2px solid #2f7a52; color: #174f33; }
 .colleague-week-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 /* Le nom d'un collègue ouvre son planning : il garde l'allure d'un nom,
    souligné en pointillé pour dire qu'on peut le toucher. */
