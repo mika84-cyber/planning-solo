@@ -12,8 +12,9 @@
 /* Le liseré recouvre la bordure de la case : il épouse son bord extérieur. */
 .day:is(.half-morning, .half-afternoon),
 .mini-day:is(.half-morning, .half-afternoon) { overflow: visible; }
+/* Le ruban de note passe au-dessus du liseré, jusqu'au bord de la case. */
 .day:is(.half-morning, .half-afternoon) > .note-band,
-.mini-day:is(.half-morning, .half-afternoon) > .note-band { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.mini-day:is(.half-morning, .half-afternoon) > .note-band { z-index: 7; top: -1px; right: -1px; left: -1px; border-top-left-radius: inherit; border-top-right-radius: inherit; }
 .day.half-morning::after,
 .day.half-afternoon::after,
 .mini-day.half-morning::after,
