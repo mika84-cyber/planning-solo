@@ -1067,7 +1067,8 @@ export default function Home() {
     () =>
       selectedList.reduce(
         (acc, item) => {
-          acc[item.type] = (acc[item.type] || 0) + 1;
+          const type = item.type === "half" && (item.halfBalance === "exceptional" || item.halfBalance === "other") ? item.halfBalance : item.type;
+          acc[type] = (acc[type] || 0) + 1;
           return acc;
         },
         {} as Record<string, number>,

@@ -153,7 +153,7 @@ describe("finitions d’interface", () => {
   });
 
   it("affiche ASA, garde d’enfant, maladie et les deux moitiés de congé", () => {
-    expect(app).toContain('myLeaveType === "exceptional"');
+    expect(app).toContain('markerType === "exceptional"');
     expect(app).toContain('myLeaveType === "childcare"');
     expect(app).toContain('myLeaveType === "sick"');
     expect(app).toContain('myLeaveType === "sick" ? "🤒"');

@@ -73,14 +73,25 @@ export function halfMomentFromStart(start: string): HalfMoment {
  *  les demi-journées vont dans la même case « Congés en 1/2 journées » : seule
  *  l'application sait de quel solde elle est déduite. Une demi-journée
  *  enregistrée avant ce choix reste prise sur les congés annuels. */
-export type HalfBalance = "annual" | "rtt" | "fraction";
+export type HalfBalance = "annual" | "rtt" | "fraction" | "exceptional" | "other";
+/** Soldes écrits sur une demi-journée : tous sauf les congés annuels, valeur
+ *  par défaut. Jour exceptionnel (ASA) et Divers sont comptés à part, sans
+ *  quota, comme leurs journées entières. */
+export type StoredHalfBalance = Exclude<HalfBalance, "annual">;
+export function isStoredHalfBalance(value: unknown): value is StoredHalfBalance {
+  return value === "rtt" || value === "fraction" || value === "exceptional" || value === "other";
+}
+/** Demi-journée d'ASA ou de Divers : hors des soldes de congés. */
+export function isCountedOnlyHalfBalance(value: unknown): value is "exceptional" | "other" {
+  return value === "exceptional" || value === "other";
+}
 export const HALF_BALANCE_OPTIONS: Array<{ value: HalfBalance; label: string }> = [
   { value: "annual", label: "Congés annuels" },
   { value: "rtt", label: "RTT" },
   { value: "fraction", label: "Fractionnement" },
 ];
 export function isHalfBalance(value: unknown): value is HalfBalance {
-  return value === "annual" || value === "rtt" || value === "fraction";
+  return value === "annual" || isStoredHalfBalance(value);
 }
 /** Le solde proposé pour une nouvelle demi-journée : les congés annuels
  *  d'abord, les RTT quand il n'en reste plus, le fractionnement ensuite.
@@ -96,13 +107,13 @@ export function automaticHalfBalance(
 }
 /** Le solde d'une demi-journée : celui enregistré, sinon les congés annuels. */
 export function halfBalanceOf(item: { halfBalance?: string }): HalfBalance {
-  return item.halfBalance === "rtt" || item.halfBalance === "fraction" ? item.halfBalance : "annual";
+  return isStoredHalfBalance(item.halfBalance) ? item.halfBalance : "annual";
 }
 /** Le solde d'une demi-journée renvoyée par le serveur, à recopier sur la
  *  période locale. Les congés annuels, valeur par défaut, ne s'écrivent pas. */
 export function halfBalanceFromApi(period: { leave_type?: string; half_balance?: unknown }) {
-  return period.leave_type === "half" && (period.half_balance === "rtt" || period.half_balance === "fraction")
-    ? { halfBalance: period.half_balance as "rtt" | "fraction" }
+  return period.leave_type === "half" && isStoredHalfBalance(period.half_balance)
+    ? { halfBalance: period.half_balance }
     : {};
 }
 /** Le solde d'une demi-journée à ranger sur une période locale : rien pour
@@ -114,6 +125,8 @@ const HALF_BALANCE_LABELS: Record<HalfBalance, string> = {
   annual: "Congés en demi-journée",
   rtt: "RTT en demi-journée",
   fraction: "Fractionnement en demi-journée",
+  exceptional: "Jour exceptionnel en demi-journée",
+  other: "Divers en demi-journée",
 };
 /** Le libellé d'une absence enregistrée, demi-journées de RTT et de
  *  fractionnement comprises. */

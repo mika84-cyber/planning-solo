@@ -55,7 +55,7 @@ export type LeavePeriod = {
   /** Renseigné seulement quand `leave_type` vaut « half ». */
   half_moment?: HalfMoment;
   /** Solde d'une demi-journée ; absent, ce sont les congés annuels. */
-  half_balance?: "rtt" | "fraction";
+  half_balance?: "rtt" | "fraction" | "exceptional" | "other";
   group?: number;
   updated_at: string;
 };

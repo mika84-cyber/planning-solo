@@ -10,6 +10,7 @@ import {
   dateKey,
   getDayInfo,
   halfBalanceOf,
+  isCountedOnlyHalfBalance,
   leaveTypeLabel,
   longDate,
   type LeaveType,
@@ -97,6 +98,7 @@ export function PlanningDayCell({
   const workPost = entry?.workPost && !visibleLeave && !personalDay && !exceptionalClosure && !hasHourlyRecovery
     ? WORK_POSTS.find((post) => post.value === entry.workPost)
     : undefined;
+  const markerType = myLeaveType === "half" && isCountedOnlyHalfBalance(myHalfBalance) ? myHalfBalance : myLeaveType;
   const hasMikaNote = Boolean(showNotes && entry?.noteText);
   const hasAgnesNote = Boolean(showNotes && sharedNoteText);
   const visibleNote = hasMikaNote || hasAgnesNote;
@@ -105,7 +107,7 @@ export function PlanningDayCell({
       ? myRecovery
         ? "Récupération"
         : myHalfMoment
-          ? `Demi-journée ${myHalfMoment === "morning" ? "matin" : "après-midi"}${myHalfBalance === "rtt" ? " · RTT" : myHalfBalance === "fraction" ? " · fractionnement" : ""}`
+          ? `Demi-journée ${myHalfMoment === "morning" ? "matin" : "après-midi"}${myHalfBalance === "rtt" ? " · RTT" : myHalfBalance === "fraction" ? " · fractionnement" : myHalfBalance === "exceptional" ? " · jour exceptionnel" : myHalfBalance === "other" ? " · Divers" : ""}`
           : leaveTypeLabel(myLeaveType as LeaveType)
       : "",
     personalDay ? "Divers" : "",
@@ -129,8 +131,10 @@ export function PlanningDayCell({
     sharedNoteText ? "Note d’Agnès" : "",
     schoolVacation ? `${schoolVacation.name} · vacances scolaires` : "",
   ].filter(Boolean).join(" — ");
-  const selectionStyle = selected
-    ? ({ "--selection-color": TYPE_COLORS[selected.type] } as CSSProperties)
+  // Une demi-journée d'ASA ou de Divers se montre sous leur couleur.
+  const selectedKind = selected?.type === "half" && isCountedOnlyHalfBalance(selected.halfBalance) ? selected.halfBalance : selected?.type;
+  const selectionStyle = selected && selectedKind
+    ? ({ "--selection-color": TYPE_COLORS[selectedKind] } as CSSProperties)
     : cleanupSelected
       ? ({ "--selection-color": "#c43d43" } as CSSProperties)
       : rangeSelecting || recoveryRangeSelecting
@@ -153,12 +157,12 @@ export function PlanningDayCell({
         {date.getDate()}
       </span>
       {hasHourlyRecovery && !compact ? <span className={`recovery-calendar-label ${hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}`}>REC</span> : null}
-      {visibleLeave && ((!compact && ["annual", "rtt", "fraction"].includes(myLeaveType)) || ["exceptional", "childcare", "sick", "cet", "strike"].includes(myLeaveType)) ? (
-        <span className={`leave-calendar-marker leave-calendar-marker-${myLeaveType}${compact ? " compact" : ""}`} aria-hidden="true">
-          {myLeaveType === "annual" ? "CA" : myLeaveType === "rtt" ? "RTT" : myLeaveType === "fraction" ? "FRA" : myLeaveType === "exceptional" ? "ASA" : myLeaveType === "childcare" ? "👶" : myLeaveType === "sick" ? "🤒" : myLeaveType === "cet" ? "CET" : myLeaveType === "strike" ? "✊" : ""}
+      {visibleLeave && ((!compact && ["annual", "rtt", "fraction"].includes(myLeaveType)) || ["exceptional", "childcare", "sick", "cet", "strike"].includes(markerType)) ? (
+        <span className={`leave-calendar-marker leave-calendar-marker-${markerType}${compact ? " compact" : ""}`} aria-hidden="true">
+          {myLeaveType === "annual" ? "CA" : myLeaveType === "rtt" ? "RTT" : myLeaveType === "fraction" ? "FRA" : markerType === "exceptional" ? "ASA" : myLeaveType === "childcare" ? "👶" : myLeaveType === "sick" ? "🤒" : myLeaveType === "cet" ? "CET" : myLeaveType === "strike" ? "✊" : ""}
         </span>
       ) : null}
-      {(myLeaveType === "other" || personalDay) ? (
+      {(markerType === "other" || personalDay) ? (
         <span className={`other-pin${compact ? " compact" : ""}`} aria-hidden="true">
           <svg viewBox="0 0 30 30">
             <path className="other-pin-needle" d="m13.5 18.2-2.2 10.3 5.3-10.9Z" />
@@ -169,7 +173,7 @@ export function PlanningDayCell({
         </span>
       ) : null}
       {(selected || cleanupSelected) ? <span className="selection-corner" aria-hidden="true" /> : null}
-      {selected && !compact ? <span className="selection-label">{TYPE_LABELS[selected.type]}{selected.start ? ` · ${selected.start}–${selected.end}` : ""}</span> : null}
+      {selected && selectedKind && !compact ? <span className="selection-label">{selectedKind !== selected.type ? `½ ${TYPE_LABELS[selectedKind]}` : TYPE_LABELS[selected.type]}{selected.start && selectedKind === selected.type ? ` · ${selected.start}–${selected.end}` : ""}</span> : null}
       {visibleNote ? (
         <span className={`note-band${hasMikaNote && hasAgnesNote ? " dual-note-band" : hasAgnesNote ? " agnes-note-band" : " mika-note-band"}${myHalfMoment ? ` note-band-half-${myHalfMoment}` : ""}`} aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="m6 18 1.2-4.3L16.4 4.5l3.1 3.1-9.2 9.2L6 18Z" /><path d="m14.8 6.1 3.1 3.1" /></svg>

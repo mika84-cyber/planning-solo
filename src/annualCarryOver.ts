@@ -9,7 +9,7 @@
  *  l'application : avant, les restes sont inconnus.
  *
  *  Partagé par l'application et le serveur. */
-import { addDays, dateKey, fromKey, getDayInfo } from "./planningLogic";
+import { addDays, dateKey, fromKey, getDayInfo, isStoredHalfBalance } from "./planningLogic";
 
 export const FIRST_CARRY_YEAR = 2026;
 /** Dernier jour (mois-jour) où les CA de l'année précédente se prennent. */
@@ -33,7 +33,7 @@ export type AnnualCharge<P extends CarryPeriod = CarryPeriod> = {
 
 function chargesAnnual(period: CarryPeriod) {
   if (period.leaveType === "annual") return true;
-  return period.leaveType === "half" && period.halfBalance !== "rtt" && period.halfBalance !== "fraction";
+  return period.leaveType === "half" && !isStoredHalfBalance(period.halfBalance);
 }
 
 /** Rattache chaque jour de CA à son année de solde. `available(year)` donne

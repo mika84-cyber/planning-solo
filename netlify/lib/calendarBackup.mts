@@ -174,7 +174,7 @@ export function sanitizeCalendarBackup(value: unknown) {
           ? item.half_moment
           : "",
       ...(item.leave_type === "half" &&
-      (item.half_balance === "rtt" || item.half_balance === "fraction")
+      (item.half_balance === "rtt" || item.half_balance === "fraction" || item.half_balance === "exceptional" || item.half_balance === "other")
         ? { half_balance: item.half_balance }
         : {}),
       group: [1, 2, 3].includes(Number(item.group)) ? Number(item.group) : undefined,

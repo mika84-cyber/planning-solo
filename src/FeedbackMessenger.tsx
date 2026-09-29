@@ -55,15 +55,6 @@ const DEMO_BROADCASTS: FeedbackBroadcastRecord[] = [{
     { id: "demo-agnes", name: "Agnès", seen: true, seenAt: "2026-09-29T09:12:00.000Z" },
     { id: "demo-camille", name: "Camille Dupont", seen: true, seenAt: "2026-09-29T14:40:00.000Z" },
   ],
-}, {
-  id: "66666666-6666-6666-6666-666666666666",
-  message: "Une information importante vient d’être publiée dans Planning Solo.",
-  createdAt: "2026-09-12T07:00:00.000Z",
-  legacy: true,
-  seenCount: 0,
-  recipients: [
-    { id: "demo-camille", name: "Camille Dupont", seen: false },
-  ],
 }];
 
 const seenDate = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });

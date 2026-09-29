@@ -365,6 +365,12 @@ export function usePlanningInteractionActions({
       setTimeDate(key);
       return;
     }
+    if (activeType === "exceptional" || activeType === "other") {
+      setTimeStart("");
+      setTimeEnd("");
+      setTimeDate(key);
+      return;
+    }
     if (
       activeType === "half"
     ) {
@@ -453,6 +459,17 @@ export function usePlanningInteractionActions({
     if (!timeDate) return;
     const start = timeStart;
     const end = timeEnd;
+    if (activeType === "exceptional" || activeType === "other") {
+      const date = timeDate;
+      setSelections((current) => ({
+        ...current,
+        [date]: start && end
+          ? { date, type: "half", start, end, halfBalance: activeType }
+          : { date, type: activeType },
+      }));
+      setTimeDate(null);
+      return;
+    }
     if (!start || !end || !splitOvertimeRange(start, end)) {
       notify("Choisissez une heure de début et une heure de fin différentes.");
       return;

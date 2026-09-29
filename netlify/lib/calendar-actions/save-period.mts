@@ -33,7 +33,8 @@ export async function handleSavePeriod(
   // Un solde absent de la requête garde celui déjà enregistré ; « annual »
   // le ramène aux congés annuels, qui n'ont pas besoin d'être écrits.
   const halfBalance =
-    body.halfBalance === "rtt" || body.halfBalance === "fraction" || body.halfBalance === "annual"
+    body.halfBalance === "rtt" || body.halfBalance === "fraction" || body.halfBalance === "exceptional" ||
+    body.halfBalance === "other" || body.halfBalance === "annual"
       ? body.halfBalance
       : undefined;
   const periodGroup = [1, 2, 3].includes(Number(body.group))

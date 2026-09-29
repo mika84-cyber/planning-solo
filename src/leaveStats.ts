@@ -78,14 +78,13 @@ export function computeLeaveStats({
     // et elle n'alimente aucun compteur non plus.
     if (period.leaveType === "recovery")
       continue;
-    const countedType = COUNTED_ONLY_TYPES.includes(
-      period.leaveType as CountedOnlyType,
-    )
-      ? (period.leaveType as CountedOnlyType)
-      : null;
-    // Une demi-journée est prise sur le solde choisi, CA par défaut.
+    // Une demi-journée est prise sur le solde choisi, CA par défaut ; une
+    // demi-journée d'ASA ou de Divers rejoint leur compteur, sans quota.
     const category =
       period.leaveType === "half" ? halfBalanceOf(period) : period.leaveType;
+    const countedType = COUNTED_ONLY_TYPES.includes(category as CountedOnlyType)
+      ? (category as CountedOnlyType)
+      : null;
     // Les CA suivent le report jusqu'au 30 avril : décomptés plus bas.
     if (category === "annual") continue;
     const units = period.leaveType === "half" ? 0.5 : 1;

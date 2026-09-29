@@ -19,6 +19,7 @@ import {
 } from "./overtime";
 import {
   groupConsecutive,
+  halfMomentFromStart,
   fromKey,
   halfBalanceFromApi,
   leaveTypeLabel,
@@ -192,14 +193,26 @@ export function usePlanningRequestActions({
           : requestKind === "strike"
             ? "strike"
             : "sick";
-      const grouped = groupConsecutive(selectedList.map((item) => item.date));
-      const inputs = grouped.map((period) => ({
-        id: createClientId("period"),
-        from: period.from,
-        to: period.to,
-        leaveType,
-        group,
-      }));
+      const grouped = groupConsecutive(selectedList.filter((item) => item.type !== "half").map((item) => item.date));
+      const inputs: Array<{ id: string; from: string; to: string; leaveType: LeaveType; group: number; halfMoment?: HalfMoment; halfBalance?: "other" }> = [
+        ...grouped.map((period) => ({
+          id: createClientId("period"),
+          from: period.from,
+          to: period.to,
+          leaveType,
+          group,
+        })),
+        // Divers en demi-journée : une demi-journée prise sur Divers.
+        ...selectedList.filter((item) => item.type === "half").map((item) => ({
+          id: createClientId("period"),
+          from: item.date,
+          to: item.date,
+          leaveType: "half" as const,
+          halfMoment: halfMomentFromStart(item.start || ""),
+          halfBalance: "other" as const,
+          group,
+        })),
+      ];
       const sickReplacement = leaveType === "sick"
         ? prepareAbsenceReplacement({
             periods,
@@ -226,7 +239,7 @@ export function usePlanningRequestActions({
         } else if (demoMode) {
           saved = inputs.map((period) => ({
             ...period,
-            halfMoment: "",
+            halfMoment: period.halfMoment || "",
             updatedAt: new Date().toISOString(),
           }));
         } else {
@@ -313,7 +326,7 @@ export function usePlanningRequestActions({
         groups.childcare.length > 2
           ? "Le formulaire ne prévoit que deux périodes de congé garde d’enfant."
           : "",
-        groups.exceptional.length > 1
+        groups.exceptional.length + selectedList.filter((item) => item.type === "half" && item.halfBalance === "exceptional").length > 1
           ? "Le formulaire ne prévoit qu’une seule période de jour exceptionnel."
           : "",
       ].filter(Boolean);
@@ -330,7 +343,7 @@ export function usePlanningRequestActions({
             Math.ceil(groups.rtt.length / 4),
             Math.ceil(groups.fraction.length / 2),
             Math.ceil(
-              selectedList.filter((item) => item.type === "half").length / 4,
+              selectedList.filter((item) => item.type === "half" && item.halfBalance !== "exceptional").length / 4,
             ),
           ]
         : [

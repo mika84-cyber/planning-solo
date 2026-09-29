@@ -42,6 +42,9 @@ export function TimeSelectionDialog({
   if (!date) return null;
   const recovery = activeType.startsWith("recovery_");
   const halfDay = activeType === "half";
+  // Jour exceptionnel et Divers : journée entière par défaut, ou une
+  // demi-journée. Sans horaires, c'est la journée entière.
+  const duration = activeType === "exceptional" || activeType === "other";
   const usualMorning = workScheduleHalfTimes(workSchedule, "morning");
   const usualAfternoon = workScheduleHalfTimes(workSchedule, "afternoon");
   const selectedHalf = start === usualAfternoon.start && end === usualAfternoon.end
@@ -64,9 +67,39 @@ export function TimeSelectionDialog({
           ×
         </button>
         <span className="step-label">{TYPE_LABELS[activeType]}</span>
-        <h2 id="time-title">{recovery ? "Choisissez les horaires" : halfDay ? "Matin ou après-midi ?" : "Indiquez les horaires"}</h2>
+        <h2 id="time-title">{recovery ? "Choisissez les horaires" : duration ? "Journée ou demi-journée ?" : halfDay ? "Matin ou après-midi ?" : "Indiquez les horaires"}</h2>
         <p>{longDate(fromKey(date))}</p>
-        {halfDay ? (
+        {duration ? (
+          <div className="half-day-moment-picker duration-choice" role="radiogroup" aria-label="Choisir la durée">
+            <p>Quelle durée souhaitez-vous poser ?</p>
+            <div>
+              {([
+                ["whole", "●", "Journée entière"],
+                ["morning", "☀", "Le matin"],
+                ["afternoon", "◐", "L’après-midi"],
+              ] as const).map(([choice, icon, label]) => {
+                const checked = choice === "whole" ? !start : Boolean(start) && selectedHalf === choice;
+                return (
+                  <button
+                    key={choice}
+                    type="button"
+                    role="radio"
+                    aria-checked={checked}
+                    className={checked ? "active" : ""}
+                    onClick={() => {
+                      if (choice !== "whole") return chooseHalf(choice);
+                      onStartChange("");
+                      onEndChange("");
+                    }}
+                  >
+                    <span className="half-day-icon" aria-hidden="true">{icon}</span>
+                    <strong>{label}</strong>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : halfDay ? (
           <div className="half-day-moment-picker" role="radiogroup" aria-label="Choisir la demi-journée">
             <p>Quelle moitié de journée souhaitez-vous poser ?</p>
             <div>
@@ -107,7 +140,7 @@ export function TimeSelectionDialog({
             Annuler
           </button>
           <button className="save-button" type="button" onClick={onConfirm}>
-            {halfDay ? "Valider la demi-journée" : "Valider les horaires"}
+            {duration ? "Valider" : halfDay ? "Valider la demi-journée" : "Valider les horaires"}
           </button>
         </div>
       </section>

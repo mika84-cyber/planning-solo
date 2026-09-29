@@ -16,7 +16,7 @@ import {
 } from "./planningLogic";
 
 /** Ce que la carte d'accueil ajoute à « 1/2 journée » selon le solde. */
-const HALF_BALANCE_SHORT = { annual: "", rtt: " de RTT", fraction: " de fractionnement" } as const;
+const HALF_BALANCE_SHORT = { annual: "", rtt: " de RTT", fraction: " de fractionnement", exceptional: " de jour exceptionnel", other: " Divers" } as const;
 
 export type TodayOverviewInput = {
   today: Date;

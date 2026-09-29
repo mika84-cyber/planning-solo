@@ -10,7 +10,7 @@ type DemoRequestBase = {
 type DemoLeaveRequest = DemoRequestBase & {
   requestKind: "leave";
   periods: Array<{ from: string; to: string; type: LeaveType }>;
-  timed: Array<{ date: string; type: "half"; start: string; end: string; halfBalance?: "rtt" | "fraction" }>;
+  timed: Array<{ date: string; type: "half"; start: string; end: string; halfBalance?: "rtt" | "fraction" | "exceptional" | "other" }>;
 };
 
 type DemoRecoveryRequest = DemoRequestBase & {
@@ -123,7 +123,7 @@ export function parseDemoCompletedRequestJson(rawJson: string | null): DemoCompl
       type: "half",
       start: text(item.start),
       end: text(item.end),
-      ...(item.halfBalance === "rtt" || item.halfBalance === "fraction"
+      ...((item.halfBalance === "rtt" || item.halfBalance === "fraction" || item.halfBalance === "exceptional" || item.halfBalance === "other")
         ? { halfBalance: item.halfBalance }
         : {}),
     });

@@ -33,7 +33,7 @@ export type NormalizedBulkPeriod = {
     | "exceptional"
     | "work_accident";
   half_moment: "morning" | "afternoon" | "";
-  half_balance?: "rtt" | "fraction";
+  half_balance?: "rtt" | "fraction" | "exceptional" | "other";
   group?: number;
   updated_at: string;
 };
@@ -116,7 +116,7 @@ export function normalizeBulkPeriods(
       to,
       leave_type: leaveType as NormalizedBulkPeriod["leave_type"],
       half_moment: leaveType === "half" ? halfMoment : "",
-      ...(leaveType === "half" && (item.halfBalance === "rtt" || item.halfBalance === "fraction")
+      ...(leaveType === "half" && (item.halfBalance === "rtt" || item.halfBalance === "fraction" || item.halfBalance === "exceptional" || item.halfBalance === "other")
         ? { half_balance: item.halfBalance }
         : {}),
       group,

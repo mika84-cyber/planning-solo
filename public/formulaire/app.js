@@ -1837,6 +1837,7 @@ async function applyPlanningImport(data){
     buckets[prefix].push(period);
   });
   (data.timed||[]).forEach(function(item){
+    if(item.halfBalance==='exceptional'){ buckets.exc.push({from:item.date,to:item.date,half:1}); return; }
     var prefix=item.type==='half'?'half':(item.type==='recovery_day'?'rjour':(item.type==='recovery_half'?'rdemi':((item.type==='recovery_hours'||item.type==='recovery_training')?'rheur':(item.type==='recovery_holiday'?'rferi':''))));
     if(!prefix) return;
     buckets[prefix].push(item);
@@ -1864,6 +1865,7 @@ async function applyPlanningImport(data){
       });
     });
     recalcAll();
+    buckets.exc.slice(page,page+1).forEach(function(item){ var si=byName.exc0_soit; if(item.half && si!==undefined){ setVal(si,'0,5',true); inputs[si].dataset.manual='1'; } });
     var snapshot=capturePage();
     snapshot.s=base.s;
     built.push(snapshot);

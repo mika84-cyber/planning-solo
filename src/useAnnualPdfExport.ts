@@ -11,6 +11,10 @@ import {
   workedHolidaysYearRange,
   type HalfMoment,
   type LeaveType,
+  isCountedOnlyHalfBalance,
+  isStoredHalfBalance,
+  type HalfBalance,
+  type StoredHalfBalance,
 } from "./planningLogic";
 import type { RecoveryUse } from "./overtime";
 import { fractionAllowance, isOffSeasonDate } from "./fractionRules";
@@ -22,7 +26,7 @@ type PdfExportPeriod = {
   to: string;
   leaveType?: LeaveType | "";
   halfMoment?: HalfMoment | "";
-  halfBalance?: "annual" | "rtt" | "fraction";
+  halfBalance?: HalfBalance;
 };
 
 export type AnnualPdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
@@ -41,9 +45,9 @@ export function buildAnnualPdfAbsences(
 ) {
   const leaveTypes = new Map<string, LeaveType>();
   const halfMoments = new Map<string, HalfMoment>();
-  // Seules les demi-journées de RTT et de fractionnement y figurent : les
-  // autres restent des demi-journées de congés annuels.
-  const halfBalances = new Map<string, "rtt" | "fraction">();
+  // Seules les demi-journées hors congés annuels y figurent : RTT,
+  // fractionnement, jour exceptionnel ou Divers.
+  const halfBalances = new Map<string, StoredHalfBalance>();
   const first = `${year}-01-01`;
   const last = `${year}-12-31`;
 
@@ -62,7 +66,7 @@ export function buildAnnualPdfAbsences(
       leaveTypes.set(key, leaveType);
       if (leaveType === "half" && period.halfMoment)
         halfMoments.set(key, period.halfMoment);
-      if (leaveType === "half" && (period.halfBalance === "rtt" || period.halfBalance === "fraction"))
+      if (leaveType === "half" && isStoredHalfBalance(period.halfBalance))
         halfBalances.set(key, period.halfBalance);
     }
   }
@@ -169,7 +173,7 @@ export function useAnnualPdfExport(
       }
       let leaveTypes = new Map<string, LeaveType>();
       let halfMoments = new Map<string, HalfMoment>();
-      let halfBalances = new Map<string, "rtt" | "fraction">();
+      let halfBalances = new Map<string, StoredHalfBalance>();
       // Bornée à l'année affichée, comme le reste du PDF : une case déborde
       // volontairement de part et d'autre pour qu'une période à cheval sur
       // le 1er janvier affiche quand même son vrai repère de début ou de fin.
@@ -209,12 +213,13 @@ export function useAnnualPdfExport(
         ? buildAnnualPdfOverlays(view.getFullYear(), entries, isExceptionallyClosed)
         : undefined;
       const assets = scope === "my-leaves" ? await loadPlanningPdfAssets() : undefined;
-      const quotaDaysUsed = Array.from(leaveTypes.values()).reduce(
-        (total, type) =>
+      const quotaDaysUsed = Array.from(leaveTypes.entries()).reduce(
+        (total, [date, type]) =>
           // Une récupération ne consomme aucun droit, comme les types
-          // seulement comptés : elle reste hors du total.
+          // seulement comptés et leurs demi-journées : elle reste hors du total.
           type === "recovery" || type === "work_accident" ||
-          COUNTED_ONLY_TYPES.includes(type as (typeof COUNTED_ONLY_TYPES)[number])
+          COUNTED_ONLY_TYPES.includes(type as (typeof COUNTED_ONLY_TYPES)[number]) ||
+          (type === "half" && isCountedOnlyHalfBalance(halfBalances.get(date)))
             ? total
             : total + (type === "half" ? 0.5 : 1),
         0,

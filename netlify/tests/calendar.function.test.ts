@@ -303,6 +303,17 @@ describe("API principale du calendrier", () => {
     });
   });
 
+  it("enregistre une demi-journée d’ASA ou de Divers avec son solde", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    for (const [id, halfBalance] of [["asa-half", "exceptional"], ["divers-half", "other"]] as const) {
+      const response = await calendarHandler(request({
+        action: "save-period", id, from: "2026-10-01", to: "2026-10-01", leaveType: "half", halfMoment: "morning", halfBalance, group: 2,
+      }));
+      expect(response.status).toBe(200);
+      expect(data.get(`user/user-a/period/${id}`)).toMatchObject({ leave_type: "half", half_moment: "morning", half_balance: halfBalance });
+    }
+  });
+
   it("conserve un accident de travail comme catégorie distincte de la maladie", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const response = await calendarHandler(request({

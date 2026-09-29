@@ -54,7 +54,7 @@ type PlanningPdfOptions = {
   halfMoments?: ReadonlyMap<string, PdfHalfMoment>;
   /** Solde des demi-journées de RTT et de fractionnement ; les autres sont
    *  des demi-journées de congés annuels. */
-  halfBalances?: ReadonlyMap<string, "rtt" | "fraction">;
+  halfBalances?: ReadonlyMap<string, "rtt" | "fraction" | "exceptional" | "other">;
   leaveSummary?: { used: number; remaining: number };
   schoolVacationDates?: ReadonlySet<string>;
   /** Congés souhaités, pas encore validés : leur case est verte. */
@@ -436,7 +436,7 @@ function drawGroupPage(
   wasPompidouHolidayWorked: PlanningPdfOptions["wasPompidouHolidayWorked"],
   leaveTypes?: ReadonlyMap<string, PdfLeaveType>,
   halfMoments?: ReadonlyMap<string, PdfHalfMoment>,
-  halfBalances?: ReadonlyMap<string, "rtt" | "fraction">,
+  halfBalances?: ReadonlyMap<string, "rtt" | "fraction" | "exceptional" | "other">,
   schoolVacationDates?: ReadonlySet<string>,
   wishDates?: ReadonlySet<string>,
   schoolVacationsByZone?: PlanningPdfOptions["schoolVacationsByZone"],
@@ -660,7 +660,7 @@ function drawGroupPage(
           // La couleur du solde ne couvre que la moitié posée : à gauche le
           // matin, à droite l'après-midi.
           const [red, green, blue] =
-            halfBalance === "rtt" ? COLORS.rtt : halfBalance === "fraction" ? COLORS.fraction : COLORS.leave;
+            halfBalance === "rtt" ? COLORS.rtt : halfBalance === "fraction" ? COLORS.fraction : halfBalance === "other" ? leaveFill("other") : COLORS.leave;
           doc.setFillColor(red, green, blue);
           doc.rect(
             halfMoment === "afternoon" ? x + monthWidth / 2 : x,
@@ -712,7 +712,7 @@ function drawGroupPage(
           continue;
         }
         const code = leaveType === "half"
-          ? halfBalance === "rtt" ? "½ RTT" : halfBalance === "fraction" ? "½ Frac." : "½ CA"
+          ? halfBalance === "rtt" ? "½ RTT" : halfBalance === "fraction" ? "½ Frac." : halfBalance === "exceptional" ? "½ ASA" : halfBalance === "other" ? "½ Div." : "½ CA"
           : LEAVE_CODES[leaveType];
         doc.setTextColor(...COLORS.black);
         doc.setFont("helvetica", "bold");

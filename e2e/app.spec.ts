@@ -2555,6 +2555,42 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(lastProgramme.locator(".grand-palais-interexpo-cut")).toHaveCount(0);
 });
 
+test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
+  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  const day = (label: RegExp) => page.getByRole("button", { name: label }).first();
+
+  // ASA le matin : la durée se choisit en touchant la date.
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  const panel = page.locator("#request-panel");
+  await panel.locator(".request-advanced-types > summary").click();
+  await panel.getByRole("button", { name: /Jour exceptionnel/ }).click();
+  await day(/^jeudi 1 octobre 2026/i).click();
+  const duration = page.locator(".time-modal");
+  await expect(duration.getByRole("heading", { name: "Journée ou demi-journée ?" })).toBeVisible();
+  await expect(duration.getByRole("radio")).toHaveText(["●Journée entière", "☀Le matin", "◐L’après-midi"]);
+  await expect(duration.getByRole("radio", { name: /Journée entière/ })).toHaveAttribute("aria-checked", "true");
+  await duration.getByRole("radio", { name: /Le matin/ }).click();
+  await duration.getByRole("button", { name: "Valider" }).click();
+  await expect(panel.locator(".request-validation-dates")).toContainText("Jour exceptionnel en demi-journée");
+  await panel.getByRole("button", { name: "Enregistrer uniquement" }).click();
+  await expect(day(/^jeudi 1 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée matin · jour exceptionnel/);
+
+  // Divers l'après-midi.
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  const chooser = page.getByRole("dialog", { name: "Poser un congé" });
+  await chooser.locator(".request-other-choices > summary").click();
+  await chooser.getByRole("button", { name: /^Divers/ }).click();
+  await day(/^vendredi 2 octobre 2026/i).click();
+  await duration.getByRole("radio", { name: /L’après-midi/ }).click();
+  await duration.getByRole("button", { name: "Valider" }).click();
+  await page.locator("#request-panel").getByRole("button", { name: "Enregistrer Divers" }).click();
+  await expect(day(/^vendredi 2 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée après-midi · Divers/);
+});
+
 test("le poste du jour se choisit dans la fiche et se lit dans la semaine des collègues", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
   await prepareDemo(page);
@@ -3788,6 +3824,8 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
 
   await expect(page.getByRole("heading", { name: "Sélectionnez vos dates Divers" })).toBeVisible();
   await page.locator(".month-card .day.work").first().click();
+  // La durée se choisit à la date : journée entière par défaut.
+  await page.locator(".time-modal").getByRole("button", { name: "Valider" }).click();
   const summary = page.getByLabel("Résumé avant validation");
   await expect(summary).toBeVisible();
   await expect(summary).toContainText("1 date");

@@ -13,7 +13,7 @@ export type NormalizedRequestPeriod = {
     | "exceptional";
   halfMoment?: "morning" | "afternoon";
   /** Solde d'une demi-journée ; absent, ce sont les congés annuels. */
-  halfBalance?: "rtt" | "fraction";
+  halfBalance?: "rtt" | "fraction" | "exceptional" | "other";
   group: number;
 };
 
@@ -138,7 +138,7 @@ export function normalizeLeaveRequest(body: Record<string, unknown>) {
         halfMoment: start < "13:30" ? "morning" : "afternoon",
         // Le formulaire renvoie la demi-journée telle que l'application la lui
         // a confiée : le solde choisi y est resté.
-        ...(item.halfBalance === "rtt" || item.halfBalance === "fraction"
+        ...((item.halfBalance === "rtt" || item.halfBalance === "fraction" || item.halfBalance === "exceptional" || item.halfBalance === "other")
           ? { halfBalance: item.halfBalance }
           : {}),
       });

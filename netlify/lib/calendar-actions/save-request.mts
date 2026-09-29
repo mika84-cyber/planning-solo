@@ -13,7 +13,10 @@ type QuotaPeriod = { id: string; from: string; to: string; leaveType: string; ha
 /** Solde consommé : une demi-journée est prise sur le solde choisi, CA par
  *  défaut. */
 function quotaType(type: string, halfBalance?: string): QuotaLeaveType | null {
-  if (type === "half") return halfBalance === "rtt" || halfBalance === "fraction" ? halfBalance : "annual";
+  // Une demi-journée d'ASA ou de Divers ne consomme aucun quota.
+  if (type === "half")
+    return halfBalance === "exceptional" || halfBalance === "other" ? null
+      : halfBalance === "rtt" || halfBalance === "fraction" ? halfBalance : "annual";
   return type === "annual" || type === "rtt" || type === "fraction" ? type : null;
 }
 

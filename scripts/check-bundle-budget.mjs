@@ -44,7 +44,10 @@ const budgets = {
   // plus livrés (voir src/jspdfUnusedModule.ts) : ces modules optionnels de
   // jsPDF, jamais téléchargés, pesaient 103 Kio compressés. Mesure validée :
   // 2 309,5 / 747,7 Kio. Le chargement initial ne change pas.
-  totalJavaScript: { raw: 2_350 * KIB, gzip: 760 * KIB },
+  // Relevé le 30 septembre 2026 de 2 350 / 760 à 2 360 / 763 Kio : historique
+  // de la messagerie, poste du jour et demi-journées d'ASA et de Divers
+  // (760,1 Kio mesurés). Le chargement initial reste à 178,5 / 181 Kio.
+  totalJavaScript: { raw: 2_360 * KIB, gzip: 763 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
