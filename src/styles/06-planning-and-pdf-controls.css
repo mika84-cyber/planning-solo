@@ -475,9 +475,6 @@
 .mini-day.half-morning::after,
 .mini-day.half-afternoon::after {
   --half-frame-width: 2px;
-  /* Même rayon que `.day` (12px) : un rayon plus petit dessinait un liseré
-     resserré à l'intérieur du coin arrondi de la case au lieu de le suivre. */
-  --half-frame-radius: 12px;
   content: "";
   position: absolute;
   /* Au-dessus du ruban de note (z-index: 5) : sinon le ruban, plaqué sur
@@ -493,8 +490,6 @@
 .mini-day.half-morning::after,
 .mini-day.half-afternoon::after {
   --half-frame-width: 1.5px;
-  /* Même rayon que `.mini-day` (7px). */
-  --half-frame-radius: 7px;
 }
 .day.half-morning::after,
 .mini-day.half-morning::after {

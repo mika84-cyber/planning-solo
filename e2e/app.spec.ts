@@ -2593,6 +2593,13 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   await expect(day(/^vendredi 2 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée après-midi · Divers/);
   // « ASA » s'écrit à la verticale, dans la moitié posée.
   await expect(day(/^jeudi 1 octobre 2026/i).locator(".leave-calendar-marker-exceptional")).toHaveCSS("writing-mode", "vertical-rl");
+  // Le liseré de la demi-journée épouse le bord extérieur de la case.
+  const halfFrame = await day(/^jeudi 1 octobre 2026/i).evaluate((cell) => {
+    const frame = getComputedStyle(cell, "::after");
+    return { cellRadius: getComputedStyle(cell).borderTopLeftRadius, frameRadius: frame.borderTopLeftRadius, top: frame.top, left: frame.left };
+  });
+  expect(halfFrame.frameRadius).toBe(halfFrame.cellRadius);
+  expect(halfFrame.top).toBe("-1px");
 
   // Depuis une case : la fiche du jour mène au même choix de durée, et la
   // validation enregistre aussitôt, sans autre bouton.
