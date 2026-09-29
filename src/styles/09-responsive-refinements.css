@@ -684,9 +684,6 @@
   .controls [aria-label="Choix du groupe"] {
     text-align: center;
   }
-  .controls [aria-label="Choix du groupe"] .year-calendar-mark {
-    display: none;
-  }
   .controls [aria-label="Choix du groupe"] .choice-picker-trigger {
     justify-content: center;
     padding-right: 34px;
@@ -1122,7 +1119,6 @@
 
 /* Les deux commandes ont exactement la même métrique typographique. La
    spécificité volontaire neutralise l'ancien style plus grand du sélecteur. */
-.controls .planning-group-choice .year-select-display .choice-picker-trigger,
 .controls .worked-days .worked-days-trigger {
   font-family: inherit !important;
   font-size: 13px !important;
@@ -1130,7 +1126,6 @@
   line-height: 1.2 !important;
   letter-spacing: 0 !important;
 }
-.controls .planning-group-choice .year-select-display .choice-picker-trigger > span,
 .controls .worked-days .worked-days-trigger > span {
   font: inherit !important;
   white-space: nowrap;
@@ -1203,9 +1198,7 @@
   .controls > .planning-leave-mobile {
     min-height: 48px;
   }
-  .controls .year-choice,
   .controls .worked-days { min-width: 0; }
-  .controls .year-stepper,
   .controls .worked-days-stepper { min-width: 0; }
   .controls .worked-days-trigger { padding: 0 7px; font-size: 11px; }
   .variable-pay-total > small { max-width: 120px; text-align: right; }

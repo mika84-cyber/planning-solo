@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import {
   deleteFeedback,
   broadcastFeedback,
+  editFeedbackBroadcast,
   getFeedbackBroadcasts,
   getFeedbackGuests,
   type FeedbackBroadcastRecord,
@@ -59,10 +60,8 @@ const DEMO_BROADCASTS: FeedbackBroadcastRecord[] = [{
   message: "Une information importante vient d’être publiée dans Planning Solo.",
   createdAt: "2026-09-12T07:00:00.000Z",
   legacy: true,
-  seenCount: 2,
+  seenCount: 0,
   recipients: [
-    { id: "demo-agnes", name: "Agnès", seen: true, inferred: true },
-    { id: "demo-samir", name: "Samir", seen: true, inferred: true },
     { id: "demo-camille", name: "Camille Dupont", seen: false },
   ],
 }];
@@ -118,6 +117,11 @@ export function FeedbackMessenger({
   /** Historique des messages collectifs, lu à l'ouverture de son volet. */
   const [broadcasts, setBroadcasts] = useState<FeedbackBroadcastRecord[] | null>(null);
   const [broadcastsError, setBroadcastsError] = useState("");
+  /** Correction d'un message déjà envoyé. */
+  const [editingBroadcast, setEditingBroadcast] = useState("");
+  const [editText, setEditText] = useState("");
+  const [editResend, setEditResend] = useState(false);
+  const [editStatus, setEditStatus] = useState<{ id: string; text: string } | null>(null);
   const [photo, setPhoto] = useState<FeedbackPhotoPayload | undefined>();
   const [photoPreview, setPhotoPreview] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -284,6 +288,36 @@ export function FeedbackMessenger({
     }
   }
 
+  function startEditing(item: FeedbackBroadcastRecord) {
+    setEditingBroadcast(item.id);
+    setEditText(item.message);
+    setEditResend(false);
+    setEditStatus(null);
+  }
+
+  async function saveBroadcastEdit(event: FormEvent, item: FeedbackBroadcastRecord) {
+    event.preventDefault();
+    const text = editText.trim();
+    if (text.length < 5 || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      if (demoMode) {
+        setBroadcasts((current) => current?.map((entry) => entry.id === item.id ? { ...entry, message: text, editedAt: new Date().toISOString() } : entry) ?? null);
+        setEditStatus({ id: item.id, text: "Aperçu local : le message n’a été modifié chez personne." });
+      } else {
+        const result = await editFeedbackBroadcast(item.id, text, editResend);
+        await loadBroadcasts();
+        setEditStatus({ id: item.id, text: `Message modifié${result.reshown ? ` et réaffiché à ${result.reshown} compte${result.reshown > 1 ? "s" : ""}` : ""}.` });
+      }
+      setEditingBroadcast("");
+    } catch (editError) {
+      setError(editError instanceof Error ? editError.message : "Le message n’a pas pu être modifié.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function toggleGuest(id: string) {
     setChosenGuests((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   }
@@ -389,7 +423,23 @@ export function FeedbackMessenger({
                       <b>Vu par {item.seenCount}/{item.recipients.length}</b>
                       <em>{item.message}</em>
                     </summary>
-                    {item.legacy ? <p className="feedback-history-note">Envoyé avant l’historique : la liste est reconstituée d’après les comptes existants à cette date.</p> : null}
+                    {/* Le message en entier, que l'on peut corriger. */}
+                    {editingBroadcast === item.id ? (
+                      <form className="feedback-history-edit" onSubmit={(event) => void saveBroadcastEdit(event, item)}>
+                        <label><span>Modifier le message</span><textarea required minLength={5} maxLength={800} rows={4} value={editText} onChange={(event) => setEditText(event.target.value.slice(0, 800))} /><small>{editText.length} / 800</small></label>
+                        <label className="feedback-history-resend"><input type="checkbox" checked={editResend} onChange={(event) => setEditResend(event.target.checked)} /><span>Le réafficher aussi à ceux qui l’ont déjà vu</span></label>
+                        <p>Ceux qui ne l’ont pas encore vu liront directement la nouvelle version.</p>
+                        <div><button type="button" className="feedback-history-cancel" onClick={() => setEditingBroadcast("")}>Annuler</button><button type="submit" disabled={busy || editText.trim().length < 5}>{busy ? "Enregistrement…" : "Enregistrer"}</button></div>
+                      </form>
+                    ) : (
+                      <div className="feedback-history-full">
+                        <p>{item.message}</p>
+                        {item.editedAt ? <small>Modifié le {seenDate.format(new Date(item.editedAt))}</small> : null}
+                        <button type="button" onClick={() => startEditing(item)}>Modifier</button>
+                      </div>
+                    )}
+                    {editStatus?.id === item.id && editingBroadcast !== item.id ? <p className="feedback-history-note" role="status">{editStatus.text}</p> : null}
+                    {item.legacy ? <p className="feedback-history-note">Envoyé avant l’historique : seuls figurent les comptes dont on sait qu’ils l’ont reçu.</p> : null}
                     <ul>
                       {item.recipients.map((recipient) => (
                         <li key={recipient.id} className={recipient.seen ? "seen" : "pending"}>

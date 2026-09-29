@@ -821,9 +821,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
   }
-  .planning-workspace-shell.framed .controls > .year-choice,
   .planning-workspace-shell.framed .controls > .worked-days,
-  .planning-workspace-shell.framed .controls .year-stepper,
   .planning-workspace-shell.framed .controls .worked-days-stepper {
     width: 100%;
     min-width: 0;

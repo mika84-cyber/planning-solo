@@ -675,21 +675,6 @@
   font-size: 14px;
   text-transform: capitalize;
 }
-.mini-month-open {
-  width: 100%;
-  border: 0;
-  border-radius: 9px;
-  padding: 3px 6px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-transform: inherit;
-  cursor: pointer;
-}
-.mini-month-open:hover {
-  background: #fff;
-  color: var(--accent);
-}
 .mini-weekdays,
 .mini-grid {
   display: grid;

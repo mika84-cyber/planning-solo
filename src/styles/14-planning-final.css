@@ -31,7 +31,6 @@
   box-shadow: none;
 }
 
-.planning-workspace-shell.framed .controls .year-choice,
 .planning-workspace-shell.framed .controls .worked-days {
   gap: 6px;
 }
@@ -383,8 +382,6 @@
 }
 
 .planning-workspace-shell.framed .controls .worked-days-stepper,
-.planning-workspace-shell.framed .controls .year-stepper,
-.planning-workspace-shell.framed .controls .year-select-display,
 .planning-workspace-shell.framed .controls .planning-group-action-row {
   border: 0;
   border-radius: 0;
@@ -591,8 +588,6 @@
 
 .planning-workspace-shell.framed .controls .worked-days-stepper,
 .planning-workspace-shell.framed .controls .planning-group-action-row,
-.planning-workspace-shell.framed .controls .planning-group-choice .year-stepper,
-.planning-workspace-shell.framed .controls .planning-group-choice .year-select-display,
 .planning-workspace-shell.framed .controls .planning-group-choice .choice-picker,
 .planning-workspace-shell.framed .controls .worked-days-trigger,
 .planning-workspace-shell.framed .controls .planning-group-choice .choice-picker-trigger {

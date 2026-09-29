@@ -63,7 +63,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   administrateur, réponses personnalisées, suppression, pastille de messages
   non lus et alertes privées centrées. Historique des messages collectifs
   (`feedback/broadcasts/`, repères `feedback/broadcast-seen/`) : qui les a vus
-  et quand, anciens envois reconstitués ; invités nommés, jamais par adresse.
+  et quand, anciens envois reconstitués (seuls les destinataires connus) ;
+  texte relu en entier et corrigé (`edit-broadcast`, réaffichage possible) ;
+  invités nommés, jamais par adresse.
 - `src/AppDialogLayer.tsx` : assemblage des dialogues, messages, confirmations
   et panneaux de gestion qui restent pilotés par l’orchestrateur.
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».

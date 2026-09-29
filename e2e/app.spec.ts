@@ -2161,6 +2161,15 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   await expect(firstSent.locator("li.pending")).toContainText("Pas encore vu");
   await expect(firstSent).toContainText(/Vu le \d/);
   await expect(history).not.toContainText("@");
+  // Le message se relit en entier et se corrige.
+  await expect(firstSent.locator(".feedback-history-full p")).toContainText("accueil ou à la billetterie");
+  await firstSent.getByRole("button", { name: "Modifier" }).click();
+  await firstSent.getByRole("textbox").fill("Nouveauté corrigée : indiquez votre poste du jour.");
+  await expect(firstSent.getByRole("checkbox", { name: "Le réafficher aussi à ceux qui l’ont déjà vu" })).not.toBeChecked();
+  await firstSent.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(firstSent.locator(".feedback-history-full p")).toHaveText("Nouveauté corrigée : indiquez votre poste du jour.");
+  await expect(firstSent).toContainText("Modifié le");
+  await expect(history.locator("[role=status]")).toHaveCount(1);
 
   await page.goto("/?local-test=1&preview-feedback-role=user&demo-feedback-broadcast=1");
   const popup = page.getByRole("alertdialog", { name: "Message de Mika" });

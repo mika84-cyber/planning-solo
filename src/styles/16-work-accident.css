@@ -1,26 +1,6 @@
 /* Accident de travail : parcours autonome depuis Formulaires utiles. */
-.useful-form-work-accident {
-  display: grid;
-  grid-template-columns: 62px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  margin-top: 18px;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-card);
-  padding: 14px 18px;
-  color: #2c2621;
-  text-align: left;
-  background: linear-gradient(120deg, var(--surface), var(--surface-high) 52%, #fff0ef);
-  box-shadow: var(--shadow-card);
-}
-.useful-form-work-accident:hover { transform: translateY(-1px); box-shadow: 0 12px 27px rgba(58, 51, 44, 0.15); }
 .work-accident-symbol { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid #bcb0a0; border-radius: var(--radius-control); color: var(--muted); background: var(--surface); }
 .work-accident-symbol img { display: block; width: 44px; height: 44px; object-fit: contain; }
-.useful-form-work-accident span { display: grid; gap: 4px; }
-.useful-form-work-accident strong { font-size: clamp(15px, 2vw, 18px); }
-.useful-form-work-accident small { color: var(--muted); font-size: 12px; }
-.useful-form-work-accident i { font-size: 28px; font-style: normal; }
 .useful-form-content-stack { display: grid; grid-area: folders; gap: 18px; width: 100%; }
 .useful-form-folder .work-accident-symbol.useful-form-folder-icon{width:50px;height:50px}.useful-form-folder .work-accident-symbol.useful-form-folder-icon img{width:46px;height:46px}
 
@@ -225,8 +205,6 @@
     justify-self: auto;
   }
   .leave-balances-direct .leave-balance-grid button.strike > em { margin-top: 7px; }
-  .useful-form-work-accident { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 11px; padding: 12px; }
-  .useful-form-work-accident .work-accident-symbol { width: 42px; height: 42px; }
   .useful-form-folder .work-accident-symbol.useful-form-folder-icon{width:38px;height:38px}.useful-form-folder .work-accident-symbol.useful-form-folder-icon img{width:35px;height:35px}
   .work-accident-screen { border-radius: 18px; padding: 13px; }
   .work-accident-header { grid-template-columns: minmax(0, 1fr); padding-left: 49px; }

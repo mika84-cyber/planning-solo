@@ -220,14 +220,45 @@ describe("messagerie privée des idées et signalements", () => {
     });
     mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
     const { broadcasts } = await (await feedbackHandler(new Request("https://example.test/api/feedback?broadcasts=1"))).json();
-    expect(broadcasts[0]).toMatchObject({ id: legacyId, message: "Ancien message à tous.", legacy: true, seenCount: 1 });
-    // guest-1 existait et n'a plus le message : vu, par déduction. guest-3,
-    // arrivé après l'envoi, n'est pas compté.
-    expect(broadcasts[0].recipients).toEqual([
-      { id: "guest-2", name: "Invite2", seen: false },
-      { id: "guest-1", name: "Invite1", seen: true, inferred: true },
-    ]);
+    expect(broadcasts[0]).toMatchObject({ id: legacyId, message: "Ancien message à tous.", legacy: true, seenCount: 0 });
+    // Seuls les comptes dont on sait qu'ils l'ont reçu figurent : les autres,
+    // qui n'ont plus rien, ne sont pas ajoutés par déduction.
+    expect(broadcasts[0].recipients).toEqual([{ id: "guest-2", name: "Invite2", seen: false }]);
     // Le message est désormais conservé, même quand tout le monde l'aura fermé.
     expect(data.get(`feedback/broadcasts/${legacyId}`)).toMatchObject({ legacy: true, message: "Ancien message à tous." });
+  });
+
+  it("corrige un message envoyé et peut le réafficher à ceux qui l’ont déjà vu", async () => {
+    mockedListUsers.mockResolvedValue([
+      { id: "admin", email: "ADMIN@example.test" },
+      { id: "guest-1", email: "invite1@example.test" },
+      { id: "guest-2", email: "invite2@example.test" },
+      { id: "guest-3", email: "invite3@example.test" },
+    ] as never);
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    await feedbackHandler(post({ action: "broadcast", message: "Premier jet du message.", recipients: ["guest-1", "guest-2"] }));
+    const id = [...data.keys()].find((key) => key.startsWith("feedback/broadcasts/"))!.split("/")[2];
+    mockedGetUser.mockResolvedValue({ id: "guest-1", email: "invite1@example.test" } as never);
+    await feedbackHandler(post({ action: "dismiss-resolution", id }));
+
+    // Réservé à l'administrateur.
+    expect((await feedbackHandler(post({ action: "edit-broadcast", id, message: "Version corrigée du message." }))).status).toBe(403);
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    const edited = await (await feedbackHandler(post({ action: "edit-broadcast", id, message: "Version corrigée du message." }))).json();
+    expect(edited).toMatchObject({ edited: true, reshown: 0 });
+    // guest-2, qui ne l'a pas encore vu, lira la version corrigée ; guest-1 non.
+    expect(data.get(`feedback/resolutions/guest-2/${id}`)).toMatchObject({ message: "Version corrigée du message." });
+    expect(data.has(`feedback/resolutions/guest-1/${id}`)).toBe(false);
+    let { broadcasts } = await (await feedbackHandler(new Request("https://example.test/api/feedback?broadcasts=1"))).json();
+    expect(broadcasts[0]).toMatchObject({ message: "Version corrigée du message.", editedAt: expect.any(String), seenCount: 1 });
+
+    // Réaffichée sur demande à guest-1, jamais à guest-3 qui ne l'a pas reçue.
+    const reshown = await (await feedbackHandler(post({ action: "edit-broadcast", id, message: "Version finale du message.", resend: true }))).json();
+    expect(reshown).toMatchObject({ reshown: 1 });
+    expect(data.get(`feedback/resolutions/guest-1/${id}`)).toMatchObject({ message: "Version finale du message." });
+    expect(data.has(`feedback/resolutions/guest-3/${id}`)).toBe(false);
+    ({ broadcasts } = await (await feedbackHandler(new Request("https://example.test/api/feedback?broadcasts=1"))).json());
+    expect(broadcasts[0].recipients.map((recipient: { id: string }) => recipient.id).sort()).toEqual(["guest-1", "guest-2"]);
+    expect(broadcasts[0].seenCount).toBe(0);
   });
 });

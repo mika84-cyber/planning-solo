@@ -145,10 +145,19 @@ export type FeedbackBroadcastRecord = {
   id: string;
   message: string;
   createdAt: string;
+  editedAt?: string;
   legacy: boolean;
   seenCount: number;
-  recipients: Array<{ id: string; name: string; seen: boolean; seenAt?: string; inferred?: boolean }>;
+  recipients: Array<{ id: string; name: string; seen: boolean; seenAt?: string }>;
 };
+
+/** Corrige un message déjà envoyé ; `resend` le réaffiche à ceux qui l'ont vu. */
+export const editFeedbackBroadcast = async (id: string, message: string, resend: boolean) => parse<{ edited: true; editedAt: string; reshown: number }>(await fetch("/api/feedback", {
+  method: "POST",
+  credentials: "same-origin",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ action: "edit-broadcast", id, message, resend }),
+}));
 
 export const getFeedbackBroadcasts = async () => parse<{ broadcasts: FeedbackBroadcastRecord[] }>(await fetch("/api/feedback?broadcasts=1", { cache: "no-store", credentials: "same-origin" }));
 

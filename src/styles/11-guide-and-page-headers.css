@@ -1,22 +1,8 @@
 
-.guide-number {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 13px;
-  background: var(--bg);
-  color: var(--muted);
-  font-weight: 900;
-}
 .main-menu-secondary {
   display: grid;
   justify-items: start;
   gap: 5px;
-}
-
-@media (max-width: 720px) {
-  .guide-number { width: 32px; height: 32px; border-radius: 11px; }
 }
 
 .leave-choices button.recovery { --person-color: #e08a1e; }

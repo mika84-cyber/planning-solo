@@ -362,12 +362,6 @@ h1 {
   background: var(--surface);
   color: var(--text);
 }
-.year-choice {
-  display: grid;
-  flex: 1 1 190px;
-  gap: 6px;
-  min-width: 190px;
-}
 /* Jours travaillés : même gabarit que le sélecteur d'année, posé à côté de lui
    dans la même rangée. Le panneau s'ouvre par-dessus le calendrier plutôt que
    de pousser la rangée, qui est en flex. */

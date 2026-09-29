@@ -50,6 +50,8 @@ type StoredBroadcast = {
   id: string;
   message: string;
   createdAt: string;
+  /** Dernière correction du texte par l'administrateur. */
+  editedAt?: string;
   recipients: BroadcastRecipient[];
   /** Message envoyé avant la tenue de l'historique : la liste des
    *  destinataires est reconstituée, sans garantie d'être complète. */
@@ -155,8 +157,8 @@ async function guestAccounts(adminEmail: string) {
  *
  *  Les messages envoyés avant la tenue de l'historique n'ont laissé de
  *  trace que chez les comptes qui ne les ont pas encore fermés : ils sont
- *  reconstitués à partir de ces traces, puis conservés. Pour eux, un compte
- *  qui existait déjà et n'a plus le message est compté comme l'ayant vu. */
+ *  reconstitués à partir de ces traces, puis conservés. Seuls les comptes
+ *  dont on sait qu'ils l'ont reçu y figurent, jamais les autres. */
 async function broadcastHistory(store: ReturnType<typeof getStore>) {
   const [recordKeys, noticeKeys, seenKeys, guests] = await Promise.all([
     listKeys(store, "feedback/broadcasts/"),
@@ -197,11 +199,7 @@ async function broadcastHistory(store: ReturnType<typeof getStore>) {
       const waiting = pending.get(record.id) ?? new Set<string>();
       const seenBy = seen.get(record.id) ?? new Map<string, string>();
       const ids = new Set(record.recipients.map((recipient) => recipient.id));
-      if (record.legacy) {
-        for (const id of [...waiting, ...seenBy.keys()]) ids.add(id);
-        for (const guest of guests)
-          if (guest.createdAt && record.createdAt && guest.createdAt <= record.createdAt) ids.add(guest.id);
-      }
+      if (record.legacy) for (const id of [...waiting, ...seenBy.keys()]) ids.add(id);
       const recipients = [...ids].map((id) => {
         const stored = record.recipients.find((recipient) => recipient.id === id);
         const seenAt = seenBy.get(id);
@@ -210,13 +208,13 @@ async function broadcastHistory(store: ReturnType<typeof getStore>) {
           ...label(id, stored),
           seen: !waiting.has(id),
           ...(seenAt ? { seenAt } : {}),
-          ...(record.legacy && !waiting.has(id) && seenAt === undefined ? { inferred: true } : {}),
         };
       }).sort((a, b) => Number(a.seen) - Number(b.seen) || a.name.localeCompare(b.name, "fr"));
       return {
         id: record.id,
         message: record.message,
         createdAt: record.createdAt,
+        ...(record.editedAt ? { editedAt: record.editedAt } : {}),
         legacy: Boolean(record.legacy),
         recipients,
         seenCount: recipients.filter((recipient) => recipient.seen).length,
@@ -325,6 +323,41 @@ export default async function feedbackHandler(request: Request) {
       recipients: deliveredTo.map((guest) => ({ id: guest.id, name: guest.name || "" })),
     } satisfies StoredBroadcast).catch((error) => console.error("Historique du message collectif non enregistré", error));
     return json({ broadcast: true, accounts: chosen.length, delivered, failed: chosen.length - delivered });
+  }
+
+  // Corriger un message collectif déjà envoyé : l'historique garde le
+  // nouveau texte, et les comptes qui ne l'ont pas encore vu le lisent
+  // corrigé. Sur demande, il réapparaît aussi chez ceux qui l'ont vu.
+  if (body.action === "edit-broadcast") {
+    if (!isAdmin) return json({ error: "Accès réservé." }, 403);
+    if (!validId(body.id)) return json({ error: "Message invalide." }, 400);
+    const message = typeof body.message === "string" ? body.message.replace(/\r\n?/g, "\n").trim() : "";
+    if (message.length < 5 || message.length > 800)
+      return json({ error: "Le message collectif doit contenir entre 5 et 800 caractères." }, 400);
+    const record = await store.get(broadcastKey(body.id), { type: "json" }) as StoredBroadcast | null;
+    if (!record) return json({ error: "Message introuvable." }, 404);
+    const editedAt = new Date().toISOString();
+    await store.setJSON(broadcastKey(body.id), { ...record, message, editedAt } satisfies StoredBroadcast);
+    const noticeKeys = (await listKeys(store, "feedback/resolutions/")).filter((key) => key.endsWith(`/${body.id}`));
+    const waiting = new Set(noticeKeys.map((key) => decodeURIComponent(key.split("/")[2] || "")));
+    await Promise.all(noticeKeys.map(async (key) => {
+      const notice = await store.get(key, { type: "json" }) as ResolutionNotice | null;
+      if (notice) await store.setJSON(key, { ...notice, message });
+    }));
+    let reshown = 0;
+    if (body.resend === true) {
+      const seenKeys = await listKeys(store, `feedback/broadcast-seen/${body.id}/`);
+      const seenIds = seenKeys.map((key) => decodeURIComponent(key.split("/")[3] || ""));
+      const recipients = new Set([...record.recipients.map((recipient) => recipient.id), ...seenIds]);
+      const notice: ResolutionNotice = { id: body.id, kind: "suggestion", type: "broadcast", message, createdAt: editedAt };
+      for (const userId of recipients) {
+        if (waiting.has(userId)) continue;
+        await store.setJSON(noticeKey(userId, body.id), notice);
+        await store.delete(broadcastSeenKey(body.id, userId));
+        reshown += 1;
+      }
+    }
+    return json({ edited: true, editedAt, reshown });
   }
 
   if (body.action === "dismiss-resolution") {

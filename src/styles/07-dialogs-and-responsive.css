@@ -5,9 +5,6 @@
 .cia-month-picker .choice-picker-menu {
   width: min(150px, calc(100vw - 40px));
 }
-.profile-card {
-  width: min(460px, 100%);
-}
 .note-meta {
   margin: 8px 0 0 !important;
   color: var(--muted) !important;
@@ -313,7 +310,6 @@
   .controls label {
     min-width: 0;
   }
-  .year-choice,
   .worked-days {
     min-width: 0;
   }
@@ -321,9 +317,6 @@
      l'année prend toute la largeur au lieu de laisser une moitié vide. Avec
      les jours travaillés à côté, les deux se partagent la rangée : sur un
      écran plié, c'est la seule façon de ne pas gaspiller une ligne. */
-.year-choice:only-child {
-    grid-column: 1/-1;
-  }
   /* Année affichée et Jours travaillés partagent la rangée du haut ; le
      Groupe descend seul sur toute la largeur, plutôt que de suivre l'ordre
      du DOM (Année, Groupe, Jours travaillés) qui laisserait une case vide. */
@@ -580,9 +573,6 @@
   }
   .leave-choices {
     grid-template-columns: 1fr;
-  }
-  .profile-card {
-    align-self: center;
   }
 }
 @media (min-width: 640px) and (max-width: 1000px) {
