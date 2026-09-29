@@ -137,7 +137,20 @@ export const markFeedbackRead = (id: string) => feedbackAction<{ read: true }>("
 export const resolveFeedback = (id: string) => feedbackAction<{ resolved: true }>("resolve", id);
 export const deleteFeedback = (id: string) => feedbackAction<{ deleted: true }>("delete", id);
 export const replyToFeedback = (id: string, message: string) => feedbackMessageAction<{ replied: true; reply: { id: string; message: string; sentAt: string } }>("reply", id, message);
-export type FeedbackGuest = { id: string; email: string; name: string };
+/** Un compte invité, par ses prénom et nom : l'adresse n'est jamais montrée. */
+export type FeedbackGuest = { id: string; name: string };
+/** Un message collectif envoyé, avec qui l'a vu et quand. `legacy` : envoyé
+ *  avant la tenue de l'historique, destinataires reconstitués. */
+export type FeedbackBroadcastRecord = {
+  id: string;
+  message: string;
+  createdAt: string;
+  legacy: boolean;
+  seenCount: number;
+  recipients: Array<{ id: string; name: string; seen: boolean; seenAt?: string; inferred?: boolean }>;
+};
+
+export const getFeedbackBroadcasts = async () => parse<{ broadcasts: FeedbackBroadcastRecord[] }>(await fetch("/api/feedback?broadcasts=1", { cache: "no-store", credentials: "same-origin" }));
 
 export const getFeedbackGuests = async () => parse<{ guests: FeedbackGuest[] }>(await fetch("/api/feedback?guests=1", { credentials: "same-origin" }));
 

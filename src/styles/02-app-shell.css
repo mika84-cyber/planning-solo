@@ -220,10 +220,6 @@ h1 {
   gap: 6px;
   min-width: 130px;
 }
-.group-control {
-  flex-basis: 190px;
-  min-width: 190px;
-}
 .controls label span {
   color: var(--muted);
   font-size: 11px;

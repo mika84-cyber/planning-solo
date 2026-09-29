@@ -162,7 +162,8 @@ describe("messagerie privée des idées et signalements", () => {
       { id: "guest-2", email: "invite2@example.test" },
     ] as never);
     const listed = await (await feedbackHandler(new Request("https://example.test/api/feedback?guests=1"))).json();
-    expect(listed).toMatchObject({ guests: [{ id: "guest-1", email: "invite1@example.test", name: "Agnès" }, { id: "guest-2", email: "invite2@example.test", name: "" }] });
+    // Les invités sont listés par leurs prénom et nom, jamais par leur adresse.
+    expect(listed).toEqual({ guests: [{ id: "guest-1", name: "Agnès" }, { id: "guest-2", name: "Invite2" }] });
 
     const response = await feedbackHandler(post({ action: "broadcast", message: "Message pour une seule personne.", recipients: ["guest-2"] }));
     expect(await response.json()).toMatchObject({ broadcast: true, accounts: 1, delivered: 1, failed: 0 });
@@ -173,5 +174,60 @@ describe("messagerie privée des idées et signalements", () => {
     // Une liste vide, ou des comptes inconnus, ne doit écrire à personne.
     const refused = await feedbackHandler(post({ action: "broadcast", message: "Message sans destinataire.", recipients: ["inconnu"] }));
     expect(refused.status).toBe(400);
+  });
+
+  it("garde l’historique des messages collectifs et note qui les a vus", async () => {
+    const guests = [
+      { id: "admin", email: "ADMIN@example.test" },
+      { id: "guest-1", email: "invite1@example.test", user_metadata: { full_name: "Agnès" } },
+      { id: "guest-2", email: "invite2@example.test" },
+    ];
+    mockedListUsers.mockResolvedValue(guests as never);
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    await feedbackHandler(post({ action: "broadcast", message: "Nouveauté : le poste du jour." }));
+    const noticeId = [...data.keys()].find((key) => key.startsWith("feedback/broadcasts/"))!.split("/")[2];
+
+    // Agnès ferme le message : il compte comme vu, avec sa date.
+    mockedGetUser.mockResolvedValue({ id: "guest-1", email: "invite1@example.test" } as never);
+    await feedbackHandler(post({ action: "dismiss-resolution", id: noticeId }));
+    expect(data.has(`feedback/resolutions/guest-1/${noticeId}`)).toBe(false);
+
+    // Seul l'administrateur consulte l'historique.
+    expect((await feedbackHandler(new Request("https://example.test/api/feedback?broadcasts=1"))).status).toBe(403);
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    const history = await (await feedbackHandler(new Request("https://example.test/api/feedback?broadcasts=1"))).json();
+    expect(JSON.stringify(history)).not.toContain("@");
+    const { broadcasts } = history;
+    expect(broadcasts).toHaveLength(1);
+    expect(broadcasts[0]).toMatchObject({ id: noticeId, message: "Nouveauté : le poste du jour.", legacy: false, seenCount: 1 });
+    expect(broadcasts[0].recipients).toEqual([
+      { id: "guest-2", name: "Invite2", seen: false },
+      { id: "guest-1", name: "Agnès", seen: true, seenAt: expect.any(String) },
+    ]);
+  });
+
+  it("retrouve un message collectif envoyé avant l’historique et le conserve", async () => {
+    const legacyId = "44444444-4444-4444-4444-444444444444";
+    mockedListUsers.mockResolvedValue([
+      { id: "admin", email: "ADMIN@example.test" },
+      { id: "guest-1", email: "invite1@example.test", createdAt: "2026-01-01T00:00:00.000Z" },
+      { id: "guest-2", email: "invite2@example.test", createdAt: "2026-01-01T00:00:00.000Z" },
+      { id: "guest-3", email: "invite3@example.test", createdAt: "2026-10-01T00:00:00.000Z" },
+    ] as never);
+    // Seule Camille (guest-2) n'a pas encore fermé l'ancien message.
+    data.set(`feedback/resolutions/guest-2/${legacyId}`, {
+      id: legacyId, kind: "suggestion", type: "broadcast", message: "Ancien message à tous.", createdAt: "2026-09-10T08:00:00.000Z",
+    });
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    const { broadcasts } = await (await feedbackHandler(new Request("https://example.test/api/feedback?broadcasts=1"))).json();
+    expect(broadcasts[0]).toMatchObject({ id: legacyId, message: "Ancien message à tous.", legacy: true, seenCount: 1 });
+    // guest-1 existait et n'a plus le message : vu, par déduction. guest-3,
+    // arrivé après l'envoi, n'est pas compté.
+    expect(broadcasts[0].recipients).toEqual([
+      { id: "guest-2", name: "Invite2", seen: false },
+      { id: "guest-1", name: "Invite1", seen: true, inferred: true },
+    ]);
+    // Le message est désormais conservé, même quand tout le monde l'aura fermé.
+    expect(data.get(`feedback/broadcasts/${legacyId}`)).toMatchObject({ legacy: true, message: "Ancien message à tous." });
   });
 });

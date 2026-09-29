@@ -2134,7 +2134,7 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   await prepareDemo(page);
   await openMainMenu(page);
   await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Messagerie interne/ }).click();
-  const broadcast = page.locator(".feedback-broadcast");
+  const broadcast = page.locator(".feedback-broadcast:not(.feedback-broadcast-history)");
   await expect(broadcast.getByText("Popup dans l’application uniquement · aucun e-mail")).toBeVisible();
   await broadcast.locator("summary").click();
   await broadcast.getByLabel("Message collectif").fill("Le nouveau planning est disponible.");
@@ -2149,6 +2149,18 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   await everyone.check();
   await broadcast.getByRole("button", { name: "Afficher le message à tous" }).click();
   await expect(broadcast.getByText("Aperçu local : le message n’a été envoyé à aucun compte.")).toBeVisible();
+  // Les invités apparaissent par leurs prénom et nom, jamais par leur adresse.
+  await expect(broadcast.locator(".feedback-recipients")).not.toContainText("@");
+  // L'historique des envois : qui a vu chaque message, et quand.
+  const history = page.locator(".feedback-broadcast-history");
+  await history.locator(":scope > summary").click();
+  const firstSent = history.locator(".feedback-history-item").first();
+  await expect(firstSent).toContainText("Vu par 2/3");
+  await firstSent.locator("summary").click();
+  await expect(firstSent.locator("li.seen")).toHaveCount(2);
+  await expect(firstSent.locator("li.pending")).toContainText("Pas encore vu");
+  await expect(firstSent).toContainText(/Vu le \d/);
+  await expect(history).not.toContainText("@");
 
   await page.goto("/?local-test=1&preview-feedback-role=user&demo-feedback-broadcast=1");
   const popup = page.getByRole("alertdialog", { name: "Message de Mika" });

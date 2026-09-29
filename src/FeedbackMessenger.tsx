@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import {
   deleteFeedback,
   broadcastFeedback,
+  getFeedbackBroadcasts,
   getFeedbackGuests,
+  type FeedbackBroadcastRecord,
   type FeedbackGuest,
   FEEDBACK_PHOTO_ACCEPT,
   feedbackPhotoUrl,
@@ -36,10 +38,37 @@ const DEMO_MESSAGES: FeedbackMessage[] = [{
 }];
 
 const DEMO_GUESTS: FeedbackGuest[] = [
-  { id: "demo-agnes", email: "agnes@demo.local", name: "Agnès" },
-  { id: "demo-camille", email: "camille@demo.local", name: "Camille Dupont" },
-  { id: "demo-samir", email: "samir@demo.local", name: "Samir" },
+  { id: "demo-agnes", name: "Agnès" },
+  { id: "demo-camille", name: "Camille Dupont" },
+  { id: "demo-samir", name: "Samir" },
 ];
+
+const DEMO_BROADCASTS: FeedbackBroadcastRecord[] = [{
+  id: "55555555-5555-5555-5555-555555555555",
+  message: "Nouveauté dans Planning Solo : vous pouvez indiquer si vous êtes à l’accueil ou à la billetterie.",
+  createdAt: "2026-09-29T08:30:00.000Z",
+  legacy: false,
+  seenCount: 2,
+  recipients: [
+    { id: "demo-samir", name: "Samir", seen: false },
+    { id: "demo-agnes", name: "Agnès", seen: true, seenAt: "2026-09-29T09:12:00.000Z" },
+    { id: "demo-camille", name: "Camille Dupont", seen: true, seenAt: "2026-09-29T14:40:00.000Z" },
+  ],
+}, {
+  id: "66666666-6666-6666-6666-666666666666",
+  message: "Une information importante vient d’être publiée dans Planning Solo.",
+  createdAt: "2026-09-12T07:00:00.000Z",
+  legacy: true,
+  seenCount: 2,
+  recipients: [
+    { id: "demo-agnes", name: "Agnès", seen: true, inferred: true },
+    { id: "demo-samir", name: "Samir", seen: true, inferred: true },
+    { id: "demo-camille", name: "Camille Dupont", seen: false },
+  ],
+}];
+
+const seenDate = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const sentDate = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 export function FeedbackResolutionAlert({ notice, onDismiss }: {
   notice: FeedbackResolutionNotice;
@@ -86,6 +115,9 @@ export function FeedbackMessenger({
   const [guestsError, setGuestsError] = useState("");
   const [everyone, setEveryone] = useState(true);
   const [chosenGuests, setChosenGuests] = useState<string[]>([]);
+  /** Historique des messages collectifs, lu à l'ouverture de son volet. */
+  const [broadcasts, setBroadcasts] = useState<FeedbackBroadcastRecord[] | null>(null);
+  const [broadcastsError, setBroadcastsError] = useState("");
   const [photo, setPhoto] = useState<FeedbackPhotoPayload | undefined>();
   const [photoPreview, setPhotoPreview] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -242,6 +274,16 @@ export function FeedbackMessenger({
     }
   }
 
+  async function loadBroadcasts() {
+    if (!isAdmin) return;
+    setBroadcastsError("");
+    try {
+      setBroadcasts(demoMode ? DEMO_BROADCASTS : (await getFeedbackBroadcasts()).broadcasts);
+    } catch (error) {
+      setBroadcastsError(error instanceof Error ? error.message : "L’historique est momentanément indisponible.");
+    }
+  }
+
   function toggleGuest(id: string) {
     setChosenGuests((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   }
@@ -261,6 +303,8 @@ export function FeedbackMessenger({
         ? { accounts: everyone ? Math.max(guests.length, 2) : chosenGuests.length, delivered: everyone ? Math.max(guests.length, 2) : chosenGuests.length, failed: 0 }
         : await broadcastFeedback(broadcastMessage, everyone ? undefined : chosenGuests);
       setBroadcastMessage("");
+      // L'historique, s'il est déjà affiché, montre aussitôt le nouvel envoi.
+      if (broadcasts) void loadBroadcasts();
       setBroadcastStatus(demoMode
         ? "Aperçu local : le message n’a été envoyé à aucun compte."
         : `Message affiché pour ${result.delivered}/${result.accounts} compte${result.accounts > 1 ? "s" : ""} invité${result.accounts > 1 ? "s" : ""}${result.failed ? ` · ${result.failed} échec${result.failed > 1 ? "s" : ""}` : ""}. Aucun e-mail envoyé.`);
@@ -319,7 +363,7 @@ export function FeedbackMessenger({
                     {guests.map((guest) => (
                       <label key={guest.id}>
                         <input type="checkbox" checked={chosenGuests.includes(guest.id)} onChange={() => toggleGuest(guest.id)} />
-                        <span><strong>{guest.name || guest.email}</strong>{guest.name ? <small>{guest.email}</small> : null}</span>
+                        <span><strong>{guest.name}</strong></span>
                       </label>
                     ))}
                   </div>
@@ -330,6 +374,33 @@ export function FeedbackMessenger({
               </button>
               {broadcastStatus ? <p role="status">{broadcastStatus}</p> : null}
             </form>
+          </details>
+          {/* Les messages déjà envoyés aux invités : qui les a vus, et quand. */}
+          <details className="feedback-broadcast feedback-broadcast-history" onToggle={(event) => { if ((event.currentTarget as HTMLDetailsElement).open) void loadBroadcasts(); }}>
+            <summary><span aria-hidden="true">✓</span><strong>Messages envoyés aux invités</strong><small>Qui les a vus, et quand</small></summary>
+            <div className="feedback-history">
+              {broadcastsError ? <p className="feedback-error" role="alert">{broadcastsError}</p>
+                : !broadcasts ? <p className="feedback-empty">Chargement…</p>
+                : !broadcasts.length ? <p className="feedback-empty">Aucun message envoyé pour le moment.</p>
+                : broadcasts.map((item) => (
+                  <details key={item.id} className="feedback-history-item">
+                    <summary>
+                      <time dateTime={item.createdAt}>{item.createdAt ? sentDate.format(new Date(item.createdAt)) : "Date inconnue"}</time>
+                      <b>Vu par {item.seenCount}/{item.recipients.length}</b>
+                      <em>{item.message}</em>
+                    </summary>
+                    {item.legacy ? <p className="feedback-history-note">Envoyé avant l’historique : la liste est reconstituée d’après les comptes existants à cette date.</p> : null}
+                    <ul>
+                      {item.recipients.map((recipient) => (
+                        <li key={recipient.id} className={recipient.seen ? "seen" : "pending"}>
+                          <span>{recipient.name}</span>
+                          <small>{recipient.seen ? recipient.seenAt ? `Vu le ${seenDate.format(new Date(recipient.seenAt))}` : "Vu" : "Pas encore vu"}</small>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ))}
+            </div>
           </details>
           <div className="feedback-inbox-layout">
             <div className="feedback-message-list" role="list" aria-label="Messages reçus">

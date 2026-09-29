@@ -41,6 +41,20 @@ const allowedPhotoTypes = new Set<FeedbackPhoto["contentType"]>(["image/jpeg", "
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 const messageKey = (id: string) => `feedback/messages/${id}`;
 const noticeKey = (userId: string, id: string) => `feedback/resolutions/${encodeURIComponent(userId)}/${id}`;
+/** Historique des messages collectifs : l'envoi, avec ses destinataires, et
+ *  un repère par compte le jour où il ferme le message à l'écran. */
+const broadcastKey = (id: string) => `feedback/broadcasts/${id}`;
+const broadcastSeenKey = (id: string, userId: string) => `feedback/broadcast-seen/${id}/${encodeURIComponent(userId)}`;
+type BroadcastRecipient = { id: string; name: string };
+type StoredBroadcast = {
+  id: string;
+  message: string;
+  createdAt: string;
+  recipients: BroadcastRecipient[];
+  /** Message envoyé avant la tenue de l'historique : la liste des
+   *  destinataires est reconstituée, sans garantie d'être complète. */
+  legacy?: boolean;
+};
 const colleagueProfileKey = (userId: string) => `colleagues/profile/${encodeURIComponent(userId)}`;
 const validId = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9-]{36}$/.test(value);
 
@@ -72,6 +86,15 @@ async function automaticSenderName(store: ReturnType<typeof getStore>, userId: s
   } catch {
     return "Collègue";
   }
+}
+
+/** Les comptes invités par leurs prénom et nom, jamais par leur adresse :
+ *  le nom du compte, sinon celui du profil, sinon celui tiré de l'adresse. */
+async function namedGuests(store: ReturnType<typeof getStore>, guests: Awaited<ReturnType<typeof guestAccounts>>) {
+  return Promise.all(guests.map(async (guest) => ({
+    ...guest,
+    name: cleanName(guest.name) || await automaticSenderName(store, guest.id, guest.email),
+  })));
 }
 
 function validSignature(bytes: Buffer, contentType: FeedbackPhoto["contentType"]) {
@@ -111,7 +134,7 @@ async function listKeys(store: ReturnType<typeof getStore>, prefix: string) {
 }
 
 async function guestAccounts(adminEmail: string) {
-  const guests: Array<{ id: string; email: string; name?: string }> = [];
+  const guests: Array<{ id: string; email: string; name?: string; createdAt?: string }> = [];
   for (let page = 1; page <= 20; page += 1) {
     const users = await admin.listUsers({ page, perPage: 100 });
     guests.push(...users
@@ -120,11 +143,85 @@ async function guestAccounts(adminEmail: string) {
       .map((identityUser) => ({
         id: identityUser.id,
         email: identityUser.email as string,
-        name: (identityUser as { user_metadata?: { full_name?: string } }).user_metadata?.full_name,
+        name: (identityUser as { user_metadata?: { full_name?: string } }).user_metadata?.full_name || identityUser.name,
+        createdAt: identityUser.createdAt,
       })));
     if (users.length < 100) break;
   }
   return guests;
+}
+
+/** Historique des messages collectifs, avec qui les a vus et quand.
+ *
+ *  Les messages envoyés avant la tenue de l'historique n'ont laissé de
+ *  trace que chez les comptes qui ne les ont pas encore fermés : ils sont
+ *  reconstitués à partir de ces traces, puis conservés. Pour eux, un compte
+ *  qui existait déjà et n'a plus le message est compté comme l'ayant vu. */
+async function broadcastHistory(store: ReturnType<typeof getStore>) {
+  const [recordKeys, noticeKeys, seenKeys, guests] = await Promise.all([
+    listKeys(store, "feedback/broadcasts/"),
+    listKeys(store, "feedback/resolutions/"),
+    listKeys(store, "feedback/broadcast-seen/"),
+    guestAccounts(configuredAdminEmail()).then((list) => namedGuests(store, list)).catch(() => [] as Awaited<ReturnType<typeof guestAccounts>>),
+  ]);
+  const records = new Map<string, StoredBroadcast>();
+  for (const record of await Promise.all(recordKeys.map((key) => store.get(key, { type: "json" }) as Promise<StoredBroadcast | null>)))
+    if (record?.id) records.set(record.id, record);
+  // Qui a encore le message à l'écran, et les anciens messages à retrouver.
+  const pending = new Map<string, Set<string>>();
+  const notices = await Promise.all(noticeKeys.map(async (key) => ({ key, notice: await store.get(key, { type: "json" }) as ResolutionNotice | null })));
+  for (const { key, notice } of notices) {
+    if (notice?.type !== "broadcast" || !notice.message) continue;
+    const userId = decodeURIComponent(key.split("/")[2] || "");
+    if (!pending.has(notice.id)) pending.set(notice.id, new Set());
+    pending.get(notice.id)?.add(userId);
+    if (!records.has(notice.id)) {
+      const legacy: StoredBroadcast = { id: notice.id, message: notice.message, createdAt: notice.createdAt || "", recipients: [], legacy: true };
+      records.set(notice.id, legacy);
+      await store.setJSON(broadcastKey(notice.id), legacy);
+    }
+  }
+  const seen = new Map<string, Map<string, string>>();
+  for (const key of seenKeys) {
+    const [, , id, user] = key.split("/");
+    const marker = await store.get(key, { type: "json" }) as { seenAt?: string } | null;
+    if (!seen.has(id)) seen.set(id, new Map());
+    seen.get(id)?.set(decodeURIComponent(user || ""), marker?.seenAt || "");
+  }
+  const directory = new Map(guests.map((guest) => [guest.id, guest]));
+  const label = (id: string, fallback?: BroadcastRecipient) =>
+    ({ name: directory.get(id)?.name || fallback?.name || "Compte supprimé" });
+  return [...records.values()]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((record) => {
+      const waiting = pending.get(record.id) ?? new Set<string>();
+      const seenBy = seen.get(record.id) ?? new Map<string, string>();
+      const ids = new Set(record.recipients.map((recipient) => recipient.id));
+      if (record.legacy) {
+        for (const id of [...waiting, ...seenBy.keys()]) ids.add(id);
+        for (const guest of guests)
+          if (guest.createdAt && record.createdAt && guest.createdAt <= record.createdAt) ids.add(guest.id);
+      }
+      const recipients = [...ids].map((id) => {
+        const stored = record.recipients.find((recipient) => recipient.id === id);
+        const seenAt = seenBy.get(id);
+        return {
+          id,
+          ...label(id, stored),
+          seen: !waiting.has(id),
+          ...(seenAt ? { seenAt } : {}),
+          ...(record.legacy && !waiting.has(id) && seenAt === undefined ? { inferred: true } : {}),
+        };
+      }).sort((a, b) => Number(a.seen) - Number(b.seen) || a.name.localeCompare(b.name, "fr"));
+      return {
+        id: record.id,
+        message: record.message,
+        createdAt: record.createdAt,
+        legacy: Boolean(record.legacy),
+        recipients,
+        seenCount: recipients.filter((recipient) => recipient.seen).length,
+      };
+    });
 }
 
 async function publicMessage(store: ReturnType<typeof getStore>, item: StoredFeedback) {
@@ -156,13 +253,14 @@ export default async function feedbackHandler(request: Request) {
     // Les destinataires possibles d'un message collectif, pour l'administrateur.
     if (url.searchParams.get("guests") === "1") {
       try {
-        const guests = await guestAccounts(configuredAdminEmail());
-        return json({ guests: guests.map(({ id, email, name }) => ({ id, email, name: name || "" })) });
+        const guests = await namedGuests(store, await guestAccounts(configuredAdminEmail()));
+        return json({ guests: guests.map(({ id, name }) => ({ id, name })) });
       } catch (error) {
         console.error("Annuaire des comptes invités indisponible", error);
         return json({ error: "Les comptes invités sont momentanément indisponibles." }, 503);
       }
     }
+    if (url.searchParams.get("broadcasts") === "1") return json({ broadcasts: await broadcastHistory(store) });
     const photoId = url.searchParams.get("photo");
     if (photoId) {
       if (!validId(photoId)) return json({ error: "Message invalide." }, 400);
@@ -196,9 +294,9 @@ export default async function feedbackHandler(request: Request) {
     const message = typeof body.message === "string" ? body.message.replace(/\r\n?/g, "\n").trim() : "";
     if (message.length < 5 || message.length > 800)
       return json({ error: "Le message collectif doit contenir entre 5 et 800 caractères." }, 400);
-    let guests: Array<{ id: string; email: string }>;
+    let guests: Awaited<ReturnType<typeof guestAccounts>>;
     try {
-      guests = await guestAccounts(configuredAdminEmail());
+      guests = await namedGuests(store, await guestAccounts(configuredAdminEmail()));
     } catch (error) {
       console.error("Annuaire des comptes invités indisponible", error);
       return json({ error: "Les comptes invités sont momentanément indisponibles." }, 503);
@@ -217,12 +315,24 @@ export default async function feedbackHandler(request: Request) {
       : guests;
     if (!chosen.length) return json({ error: "Choisissez au moins un compte invité." }, 400);
     const results = await Promise.allSettled(chosen.map((guest) => store.setJSON(noticeKey(guest.id, notice.id), notice)));
-    const delivered = results.filter((result) => result.status === "fulfilled").length;
+    const deliveredTo = chosen.filter((_, index) => results[index].status === "fulfilled");
+    const delivered = deliveredTo.length;
+    // L'envoi entre dans l'historique, avec les comptes qui l'ont bien reçu.
+    await store.setJSON(broadcastKey(notice.id), {
+      id: notice.id,
+      message,
+      createdAt: notice.createdAt as string,
+      recipients: deliveredTo.map((guest) => ({ id: guest.id, name: guest.name || "" })),
+    } satisfies StoredBroadcast).catch((error) => console.error("Historique du message collectif non enregistré", error));
     return json({ broadcast: true, accounts: chosen.length, delivered, failed: chosen.length - delivered });
   }
 
   if (body.action === "dismiss-resolution") {
     if (!validId(body.id)) return json({ error: "Notification invalide." }, 400);
+    const notice = await store.get(noticeKey(user.id, body.id), { type: "json" }) as ResolutionNotice | null;
+    // Fermer un message collectif, c'est l'avoir vu : l'historique le note.
+    if (notice?.type === "broadcast")
+      await store.setJSON(broadcastSeenKey(body.id, user.id), { seenAt: new Date().toISOString() });
     await store.delete(noticeKey(user.id, body.id));
     return json({ dismissed: true });
   }

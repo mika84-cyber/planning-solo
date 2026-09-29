@@ -34,7 +34,7 @@ html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: 
 
 /* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
 html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }
-html[data-theme="dark"] :is(.section-dock > button.active, .main-menu-theme-options button.active) { background: #f1e8df; color: #83452c; }
+html[data-theme="dark"] .section-dock > button.active { background: #f1e8df; color: #83452c; }
 
 /* Échanges : le jour cédé garde le noir des repos, le jour repris le beige
    des jours travaillés ; le filet turquoise reste celui du mode clair. */
