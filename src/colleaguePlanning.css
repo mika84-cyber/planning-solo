@@ -377,21 +377,20 @@
 .colleague-week-table thead th.is-today b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; }
 .colleague-week-table tbody th[scope="row"] { overflow: hidden; padding: 7px 4px 7px 12px; color: var(--text); font-size: .8rem; font-weight: 800; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-table tbody tr.is-self th[scope="row"] { color: var(--accent-strong); }
-.colleague-week-table tbody td { padding: 4px 1px; text-align: center; }
-.colleague-week-table tbody td.is-today { background: rgba(152, 84, 56, .06); }
+.colleague-week-table tbody td { text-align: center; }
 .colleague-week-table tbody tr + tr > * { border-top: 1px solid var(--border-soft); }
-.colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 1px solid var(--border-soft); }
-.colleague-week-cell { display: inline-grid; place-items: center; width: 26px; height: 26px; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
+.colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 0; }
+.colleague-week-cell { display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
 .colleague-week-cell.work { background: #e2f3e8; border-color: #9fd1b2; color: #1f6641; }
 .colleague-week-cell.training { background: #fbf3c1; border-color: #dcc54f; color: #6b5605; }
 .colleague-week-cell.rest { background: #e7eaf1; border-color: #b8c0cf; color: #3e4859; }
 .colleague-week-cell.absence { background: #fde6e9; border-color: #efb4bf; color: #96384a; }
 .colleague-week-cell.partial { background: #efe6fa; border-color: #c6b0e6; color: #5a3b8c; }
-.colleague-week-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 10px 2px 0; padding: 0; color: var(--muted); font-size: .72rem; font-weight: 700; list-style: none; }
+.colleague-week-legend { display: flex; flex-wrap: wrap; margin: 10px 2px 0; padding: 0; color: var(--muted); font-size: .72rem; font-weight: 700; list-style: none; }
 .colleague-week-legend li { display: inline-flex; align-items: center; gap: 5px; }
 .colleague-week-legend .colleague-week-cell { width: 20px; height: 20px; border-radius: 6px; font-size: .64rem; }
 @media (max-width: 370px) {
-  .colleague-week-cell { width: 22px; height: 22px; font-size: .68rem; }
+  .colleague-week-cell { font-size: .68rem; }
   .colleague-week-table thead th:first-child { width: 30%; }
 }
 /* Lecture de la semaine : le week-end en en-tête plus discret, la colonne du jour
@@ -409,15 +408,17 @@
 .colleague-week-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; background: var(--surface); }
 .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(152, 84, 56, .045); }
 .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > th[scope="row"] { background: #fbf4ef; }
-.colleague-week-table .colleague-tomorrow-group th { border-top: 0; }
 .colleague-week-cell { width: 28px; height: 28px; box-shadow: 0 1px 2px rgba(44, 38, 33, .08); }
 .colleague-week-legend { gap: 8px 14px; }
 @media (max-width: 370px) {
   .colleague-week-table .colleague-week-cell { width: 23px; height: 23px; }
 }
 /* Deux lettres (EX, AC, BI) tiennent dans la même case. */
-.colleague-week-cell.two-letters { font-size: .7rem; font-weight: 900; letter-spacing: .02em; }
+.colleague-week-cell.two-letters { font-size: .7rem; letter-spacing: .02em; }
 .colleague-week-legend .colleague-week-cell.two-letters { font-size: .52rem; }
+/* Accueil et billetterie ressortent parmi les EX : pastille rosée cerclée de
+   rouge, comme la lettre A ou B du planning personnel. */
+.colleague-week-cell.on-post { background: #fbe9e9; border-color: #c62828; color: #b71c1c; }
 .colleague-week-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 /* Le nom d'un collègue ouvre son planning : il garde l'allure d'un nom,
    souligné en pointillé pour dire qu'on peut le toucher. */

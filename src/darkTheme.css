@@ -78,6 +78,7 @@ html[data-theme="dark"] .colleague-week-cell.work { border-color: #5fb483; backg
 html[data-theme="dark"] .colleague-week-cell.training { border-color: #c9ad2f; background: #e6cf62; color: #3a2f02; }
 html[data-theme="dark"] .colleague-week-cell.rest { border-color: #8791a6; background: #aeb7c9; color: #1f2633; }
 html[data-theme="dark"] .colleague-week-cell.absence { border-color: #cf7688; background: #eea3b1; color: #4a1420; }
+html[data-theme="dark"] .colleague-week-cell.on-post { border-color: #e06666; background: #f6d4d4; color: #8e1b1b; }
 html[data-theme="dark"] .colleague-week-cell.partial { border-color: #9a7fcc; background: #c4affa; color: #2c1a4d; }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent

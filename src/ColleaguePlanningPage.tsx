@@ -278,7 +278,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                       const label = statusWithPost(status, post);
                       return (
                         <td key={dateKey(day)} className={weekCellClass(day, index, todayKey)}>
-                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? " two-letters" : ""}`} title={label}>
+                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? ` two-letters${post ? " on-post" : ""}` : ""}`} title={label}>
                             <span aria-hidden="true">{status === "Travail" ? workPostEntry(post).code : WEEK_STATUS_LETTERS[status]}</span>
                             <span className="colleague-week-sr">{label}</span>
                           </span>
@@ -293,7 +293,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
         </table>
       </div>
       <ul className="colleague-week-legend" aria-label="Légende">
-        {WORK_POSTS.map((post) => <li key={post.code}><span className="colleague-week-cell work two-letters" aria-hidden="true">{post.code}</span>{post.label}</li>)}
+        {WORK_POSTS.map((post) => <li key={post.code}><span className={`colleague-week-cell work two-letters${post.value ? " on-post" : ""}`} aria-hidden="true">{post.code}</span>{post.label}</li>)}
         <li><span className="colleague-week-cell training" aria-hidden="true">F</span>Formation</li>
         <li><span className="colleague-week-cell rest" aria-hidden="true">R</span>Repos</li>
         <li><span className="colleague-week-cell absence" aria-hidden="true">A</span>Absence</li>
