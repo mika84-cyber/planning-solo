@@ -307,8 +307,10 @@
 .grand-palais-summary-open[data-open="false"] .grand-palais-summary-live { color: var(--muted); --live-dot: #a39686; }
 .grand-palais-program-summary .grand-palais-summary-count { color: #1d4d35; font-size: .8rem; font-weight: 800; }
 .grand-palais-summary-open[data-open="false"] .grand-palais-summary-count { color: var(--muted); }
-.grand-palais-summary-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.grand-palais-summary-list li { display: grid; gap: 1px; border-radius: 10px; padding: 7px 10px; background: rgba(255, 255, 255, .72); }
+/* Les espaces ouverts en pastilles, point et contour à leur couleur. */
+.grand-palais-summary-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.grand-palais-summary-list li { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--venue-line); border-radius: 999px; padding: 7px 14px 7px 10px; background: #fff; }
+.grand-palais-summary-list li::before { width: 9px; height: 9px; border-radius: 50%; background: var(--venue-accent); content: ""; }
 .grand-palais-summary-list strong { color: var(--venue-accent); font-family: system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif; font-size: .9rem; font-weight: 800; line-height: 1.25; }
 
 .useful-expo-timeline article a {
