@@ -15,6 +15,10 @@
 /* Le ruban de note passe au-dessus du liseré, jusqu'au bord de la case. */
 .day:is(.half-morning, .half-afternoon) > .note-band,
 .mini-day:is(.half-morning, .half-afternoon) > .note-band { z-index: 7; top: -1px; right: -1px; left: -1px; border-top-left-radius: inherit; border-top-right-radius: inherit; }
+/* Sur la moitié posée, le ruban reprend le liseré : le contour fait le tour. */
+.half-morning > .note-band::before,
+.half-afternoon > .note-band::before { position: absolute; top: 0; bottom: 0; left: 0; right: 50%; border-top-left-radius: inherit; box-shadow: inset 2px 2px 0 #000, inset -2px 0 0 #000; content: ""; }
+.half-afternoon > .note-band::before { right: 0; left: 50%; border-radius: 0; border-top-right-radius: inherit; box-shadow: inset -2px 2px 0 #000, inset 2px 0 0 #000; }
 .day.half-morning::after,
 .day.half-afternoon::after,
 .mini-day.half-morning::after,
