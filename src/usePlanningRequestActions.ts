@@ -208,7 +208,7 @@ export function usePlanningRequestActions({
           from: item.date,
           to: item.date,
           leaveType: "half" as const,
-          halfMoment: halfMomentFromStart(item.start || ""),
+          halfMoment: item.halfMoment || halfMomentFromStart(item.start || ""),
           halfBalance: "other" as const,
           group,
         })),

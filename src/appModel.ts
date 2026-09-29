@@ -161,6 +161,9 @@ export type SelectedDay = {
   /** Solde d'une demi-journée demandée, transmis tel quel au formulaire et
    *  relu à son retour. */
   halfBalance?: HalfBalance;
+  /** Demi-journée sans horaires de travail renseignés : seul le moment est
+   *  gardé, aucune heure n'est inventée. */
+  halfMoment?: HalfMoment;
 };
 export type NoteListItem = {
   key: string;

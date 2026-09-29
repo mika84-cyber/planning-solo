@@ -156,6 +156,8 @@ export function RequestValidationSummary({
             </span>
             {item.type.startsWith("recovery_") ? (
               <em>{minutesLabel(recoveryRequestMinutes(item.type as RecoveryRequestType, workQuota, item.start, item.end))}</em>
+            ) : item.halfMoment ? (
+              <em>{item.halfMoment === "morning" ? "Matin" : "Après-midi"}</em>
             ) : item.start || item.end ? (
               <em>
                 {item.start || "—"} → {item.end || "—"}

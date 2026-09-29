@@ -11,6 +11,7 @@ import {
   fromKey,
   getDayInfo,
   halfBalanceOf,
+  halfMomentFromStart,
   localDate,
   type HalfBalance,
   type LeaveType,
@@ -157,6 +158,7 @@ export function usePlanningInteractionActions({
     setEditingLegacyPeriod,
     setRequestChooser,
     setRequestSeedDate,
+    setDirectDurationSave,
     requestKind,
     setRequestKind,
     setSickRequest,
@@ -339,6 +341,7 @@ export function usePlanningInteractionActions({
     const nextSelections = (kind === "recovery" || askDuration) && seedDate
       ? {}
       : start.selections;
+    setDirectDurationSave(askDuration);
     if (askDuration && seedDate) {
       setTimeStart("");
       setTimeEnd("");
@@ -463,6 +466,11 @@ export function usePlanningInteractionActions({
     setWarningDate(null);
     recordSelection(key);
   }
+  /** Horaires d'une demi-journée : ceux de l'utilisateur, ou, s'il ne les a
+   *  pas renseignés, le seul moment de la journée. */
+  function halfTiming(start: string, end: string) {
+    return workSchedule ? { start, end } : { halfMoment: halfMomentFromStart(start) };
+  }
   function commitTime() {
     if (!timeDate) return;
     const start = timeStart;
@@ -472,7 +480,7 @@ export function usePlanningInteractionActions({
       setSelections((current) => ({
         ...current,
         [date]: start && end
-          ? { date, type: "half", start, end, halfBalance: activeType }
+          ? { date, type: "half", ...halfTiming(start, end), halfBalance: activeType }
           : { date, type: activeType },
       }));
       setTimeDate(null);
@@ -487,8 +495,7 @@ export function usePlanningInteractionActions({
       [timeDate]: {
         date: timeDate,
         type: activeType,
-        start,
-        end,
+        ...(activeType === "half" ? halfTiming(start, end) : { start, end }),
         ...(activeType === "half" && timeHalfBalance !== "annual" ? { halfBalance: timeHalfBalance } : {}),
       },
     }));

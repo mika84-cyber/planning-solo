@@ -118,8 +118,10 @@ export function normalizeLeaveRequest(body: Record<string, unknown>) {
       throw new LeaveRequestValidationError("Une date de la demande est invalide");
     const start = typeof item.start === "string" ? item.start : "";
     const end = typeof item.end === "string" ? item.end : "";
+    // Sans horaires renseignés, une demi-journée ne porte que son moment.
+    const halfMoment = item.halfMoment === "morning" || item.halfMoment === "afternoon" ? item.halfMoment : undefined;
     if (
-      !validTime(start) ||
+      (!validTime(start) && !(requestKind === "leave" && halfMoment)) ||
       (requestKind === "recovery" && (!validTime(end) || start === end))
     )
       throw new LeaveRequestValidationError("Les horaires de la récupération sont invalides");
@@ -135,7 +137,7 @@ export function normalizeLeaveRequest(body: Record<string, unknown>) {
         from: item.date,
         to: item.date,
         leaveType: "half",
-        halfMoment: start < "13:30" ? "morning" : "afternoon",
+        halfMoment: halfMoment ?? (start < "13:30" ? "morning" : "afternoon"),
         // Le formulaire renvoie la demi-journée telle que l'application la lui
         // a confiée : le solde choisi y est resté.
         ...((item.halfBalance === "rtt" || item.halfBalance === "fraction" || item.halfBalance === "exceptional" || item.halfBalance === "other")

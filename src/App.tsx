@@ -333,7 +333,7 @@ export default function Home() {
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople,
-    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, requestSeedDate,
+    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, requestSeedDate, directDurationSave, setDirectDurationSave, timeDate,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
     activeType, setActiveType, selections, setSelections, setTimeDate, setTimeStart, setTimeEnd, setTimeHalfBalance,
     setWarningDate,
@@ -726,7 +726,7 @@ export default function Home() {
                     from: item.date,
                     to: item.date,
                     leaveType: "half" as const,
-                    halfMoment: halfMomentFromStart(item.start || "13:30"),
+                    halfMoment: item.halfMoment || halfMomentFromStart(item.start || "13:30"),
                     ...(item.halfBalance ? { halfBalance: item.halfBalance } : {}),
                     group: completed.group,
                     updatedAt: new Date().toISOString(),
@@ -1121,12 +1121,15 @@ export default function Home() {
       usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
       "morning",
     );
+    const hasSchedule = Boolean(usableWorkSchedule(formProfile?.workSchedule));
     setSelections((current) => {
       if (!current[requestSeedDate]) return current;
       return {
         ...current,
         [requestSeedDate]: type === "half"
-          ? { date: requestSeedDate, type, start: halfTimes.start, end: halfTimes.end }
+          ? hasSchedule
+            ? { date: requestSeedDate, type, start: halfTimes.start, end: halfTimes.end }
+            : { date: requestSeedDate, type, halfMoment: "morning" }
           : { date: requestSeedDate, type },
       };
     });
@@ -2142,6 +2145,7 @@ export default function Home() {
     showSuccess: confirm,
   });
   function cancelRequest() {
+    setDirectDurationSave(false);
     setRequestKind(null);
     setSickRequest(false);
     setSelections({});
@@ -2206,6 +2210,16 @@ export default function Home() {
       return;
     slideAllowancesMonth(deltaX < 0 ? 1 : -1);
   }
+  // ASA ou Divers posé depuis une case : la durée validée l'enregistre
+  // aussitôt (sans formulaire pour l'ASA) ; fermer la fenêtre annule tout.
+  const saveDirectDuration = useEffectEvent(() => {
+    if (!directDurationSave || timeDate) return;
+    setDirectDurationSave(false);
+    if (!selectedList.length) cancelRequest();
+    else if (requestKind === "other") void validateAndOpenForm();
+    else void saveRequestToPlanning();
+  });
+  useEffect(() => saveDirectDuration(), [directDurationSave, timeDate, selectedList.length]);
   const {
     validateAndOpenForm,
     saveRequestToPlanning,

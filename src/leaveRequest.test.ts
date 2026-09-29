@@ -19,6 +19,25 @@ describe("validation atomique d'une demande de congé", () => {
     ]);
   });
 
+  it("accepte une demi-journée sans horaires quand seul le moment est connu", () => {
+    const result = normalizeLeaveRequest({
+      requestId: "request-2026-0003",
+      requestKind: "leave",
+      group: 2,
+      timed: [
+        { type: "half", date: "2026-10-01", halfMoment: "afternoon" },
+        { type: "half", date: "2026-10-02", halfMoment: "morning", halfBalance: "exceptional" },
+      ],
+    });
+    expect(result.periods).toMatchObject([
+      { leaveType: "half", from: "2026-10-01", halfMoment: "afternoon" },
+      { leaveType: "half", from: "2026-10-02", halfMoment: "morning", halfBalance: "exceptional" },
+    ]);
+    // Ni heure ni moment : la demande reste refusée.
+    expect(() => normalizeLeaveRequest({ requestId: "request-2026-0004", requestKind: "leave", group: 2, timed: [{ type: "half", date: "2026-10-01" }] }))
+      .toThrow(LeaveRequestValidationError);
+  });
+
   it("convertit une récupération en catégorie séparée", () => {
     const result = normalizeLeaveRequest({
       requestId: "request-2026-0002",

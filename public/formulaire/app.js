@@ -100,7 +100,7 @@ function recalcRow(r){
   /* Une ligne horaire n'est complete qu'avec sa date ET ses deux heures. */
   var h1 = r.de ? minutes(inputs[byName[r.de]].value) : null;
   var h2 = r.ar ? minutes(inputs[byName[r.ar]].value) : null;
-  var heuresCompletes = !r.de || !r.ar || (h1 !== null && h2 !== null);
+  var heuresCompletes = !r.de || !r.ar || (h1 !== null && h2 !== null) || (r.k === 'half' && !inputs[byName[r.de]].value && !inputs[byName[r.ar]].value);
   if(r.k === 'half'){ setVal(si, (a && heuresCompletes) ? '0,5' : '', true); return; }
   if(r.k === 'dur'){
     var m1 = r.de !== null ? minutes(inputs[byName[r.de]].value) : null;

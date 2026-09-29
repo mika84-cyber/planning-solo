@@ -2576,6 +2576,8 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   await duration.getByRole("radio", { name: /Le matin/ }).click();
   await duration.getByRole("button", { name: "Valider" }).click();
   await expect(panel.locator(".request-validation-dates")).toContainText("Jour exceptionnel en demi-journée");
+  // Sans horaires renseignés, aucune heure n'est inventée : le moment seul.
+  await expect(panel.locator(".request-validation-dates em")).toHaveText("Matin");
   await panel.getByRole("button", { name: "Enregistrer uniquement" }).click();
   await expect(day(/^jeudi 1 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée matin · jour exceptionnel/);
 
@@ -2592,15 +2594,23 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   // « ASA » s'écrit à la verticale, dans la moitié posée.
   await expect(day(/^jeudi 1 octobre 2026/i).locator(".leave-calendar-marker-exceptional")).toHaveCSS("writing-mode", "vertical-rl");
 
-  // Depuis une case : la fiche du jour mène au même choix de durée.
+  // Depuis une case : la fiche du jour mène au même choix de durée, et la
+  // validation enregistre aussitôt, sans autre bouton.
   await day(/^mardi 6 octobre 2026/i).click();
   await page.getByRole("dialog").locator(".day-action-other > summary").click();
   await page.getByRole("dialog").getByRole("button", { name: /^Divers/ }).click();
   await expect(duration.getByRole("heading", { name: "Journée ou demi-journée ?" })).toBeVisible();
   await duration.getByRole("radio", { name: /Le matin/ }).click();
   await duration.getByRole("button", { name: "Valider" }).click();
-  await page.locator("#request-panel").getByRole("button", { name: "Enregistrer Divers" }).click();
+  await expect(page.locator("#request-panel")).toHaveCount(0);
   await expect(day(/^mardi 6 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée matin · Divers/);
+  // Fermer la fenêtre de durée n'enregistre rien.
+  await day(/^mercredi 7 octobre 2026/i).click();
+  await page.getByRole("dialog").locator(".day-action-other > summary").click();
+  await page.getByRole("dialog").getByRole("button", { name: /^Divers/ }).click();
+  await duration.getByRole("button", { name: "Annuler" }).click();
+  await expect(page.locator("#request-panel")).toHaveCount(0);
+  await expect(day(/^mercredi 7 octobre 2026/i)).not.toHaveAttribute("aria-label", /Divers/);
 });
 
 test("le poste du jour se choisit dans la fiche et se lit dans la semaine des collègues", async ({ page }) => {

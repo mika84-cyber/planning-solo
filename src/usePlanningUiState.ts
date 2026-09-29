@@ -48,6 +48,8 @@ export function usePlanningUiState() {
   const [requestChooser, setRequestChooser] = useState(false);
   const [requestChooserDate, setRequestChooserDate] = useState<string | null>(null);
   const [requestSeedDate, setRequestSeedDate] = useState<string | null>(null);
+  /** ASA ou Divers posé depuis une case : enregistré dès la durée validée. */
+  const [directDurationSave, setDirectDurationSave] = useState(false);
   const [requestKind, setRequestKind] = useState<RequestKind | null>(null);
   const [sickRequest, setSickRequest] = useState(false);
   const [savingRequest, setSavingRequest] = useState(false);
@@ -76,7 +78,7 @@ export function usePlanningUiState() {
     separatePeople, setSeparatePeople, editingPeriodId, setEditingPeriodId,
     editingLegacyPeriod, setEditingLegacyPeriod, deletingPeriod, setDeletingPeriod,
     savingRange, setSavingRange, requestChooser, setRequestChooser,
-    requestChooserDate, setRequestChooserDate, requestSeedDate, setRequestSeedDate,
+    requestChooserDate, setRequestChooserDate, requestSeedDate, setRequestSeedDate, directDurationSave, setDirectDurationSave,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
     activeType, setActiveType, selections, setSelections, timeDate, setTimeDate,
     timeStart, setTimeStart, timeEnd, setTimeEnd, timeHalfBalance, setTimeHalfBalance, warningDate, setWarningDate,
