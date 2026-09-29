@@ -951,8 +951,13 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                     <rect className="grand-palais-interexpo-art-door" x="21" y="24" width="6" height="10" rx="3" />
                   </svg>
                   {leadIn.length ? null : number}
-                  <p className="grand-palais-interexpo-kind">Inter-expo · {detail.durationDays} jours de fermeture</p>
-                  <strong className="grand-palais-interexpo-cut-range">{range}</strong>
+                  {/* La durée, en chiffre, à droite de l'encadré. */}
+                  <p className="grand-palais-interexpo-length"><b>{detail.durationDays}</b> <small>jours de fermeture</small></p>
+                  <p className="grand-palais-interexpo-kind">Inter-expo</p>
+                  {/* À la ligne, « au … » reste d'un seul tenant. */}
+                  <strong className="grand-palais-interexpo-cut-range">
+                    {range.includes(" au ") ? <>{range.slice(0, range.indexOf(" au "))} <span style={{ whiteSpace: "nowrap" }}>{range.slice(range.indexOf(" au ") + 1)}</span></> : range}
+                  </strong>
                   <p className="grand-palais-interexpo-when">
                     <em>{detail.status}</em> <DelayText long={detail.timing} short={detail.shortTiming} />
                   </p>

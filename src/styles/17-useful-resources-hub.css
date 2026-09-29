@@ -245,8 +245,7 @@
 .useful-resource-panel :is(.useful-form-content-stack, .useful-contact-directory-grid) { width: calc(100% - clamp(12px, 2vw, 22px)); margin: 18px auto 0; gap: 14px; }
 .useful-forms-root .useful-form-folder,
 .useful-contacts-root .useful-contact-directory-grid > button {
-  border-color: var(--border-card); background: linear-gradient(145deg, var(--border-card), #fff);
-  box-shadow: none; transition: transform 160ms ease;
+  border-color: var(--border-card); transition: transform 160ms ease;
 }
 .useful-forms-root .useful-form-folder { grid-template-columns:auto minmax(0,1fr);border-left-color:var(--folder-accent);box-shadow:none; }
 .useful-forms-root .useful-form-work-accident-entry{--folder-accent:#7a6f5f}

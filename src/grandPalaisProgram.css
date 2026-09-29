@@ -59,7 +59,6 @@
   border-left: 8px solid var(--border-card);
   border-radius: 27px;
   padding: clamp(18px, 2.4vw, 26px);
-  background: radial-gradient(circle at 100% 0, rgba(224, 184, 193, 0.62), transparent 38%), linear-gradient(145deg, #fff3f3, #fff 58%, #fff);
   box-shadow: var(--shadow-card);
 }
 
@@ -236,7 +235,6 @@
 .grand-palais-program-screen .grand-palais-program-panel {
   border: 2px solid var(--section-outline);
   border-radius: 22px;
-  background: radial-gradient(circle at 100% 0, rgba(225, 240, 204, 0.58), transparent 31%), linear-gradient(145deg, #fff, #fff 58%, #fffaf1);
   box-shadow: var(--shadow-card);
 }
 
@@ -351,9 +349,9 @@
 .grand-palais-interexpo-open li b { color: var(--venue-accent); }
 .grand-palais-interexpo-open li b::after { margin: 0 5px; color: var(--muted); content: "·"; }
 .grand-palais-interexpo-open li small { color: #4a423b; font-weight: 600; }
-.grand-palais-interexpo-cut { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 1px 12px; min-width: 0; border: 1.5px solid #8a7e72; border-radius: 16px; padding: 10px 14px; background: #fbf1ea; }
+.grand-palais-interexpo-cut { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 1px 12px; min-width: 0; border: 1.5px solid #8a7e72; border-radius: 16px; padding: 10px 14px; background: #fbf1ea; }
 .grand-palais-interexpo-cut > :not(svg) { grid-column: 2; }
-.grand-palais-interexpo-art { grid-row: span 2; width: 44px; height: 44px; border: 1px solid #efd6c4; border-radius: 12px; padding: 3px; background: #fff; fill: none; stroke: #9a5a3a; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.grand-palais-interexpo-art { grid-row: 1 / span 3; align-self: center; width: 44px; height: 44px; border: 1px solid #efd6c4; border-radius: 12px; padding: 3px; background: #fff; fill: none; stroke: #9a5a3a; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .grand-palais-interexpo-art circle { fill: #9a5a3a; stroke: none; }
 .grand-palais-interexpo-art-roof { fill: #f2c9ad; }
 .grand-palais-interexpo-art-door { fill: #e9a27d; }
@@ -365,6 +363,7 @@
   .grand-palais-interexpo-list .grand-palais-interexpo-open .grand-palais-interexpo-cut-range { font-size: clamp(.9rem, 1.55vw, 1.05rem); }
   .grand-palais-interexpo-open :is(header, ul) { grid-column: 1; }
   .grand-palais-interexpo-open .grand-palais-interexpo-cut { grid-column: 2; grid-row: 2; margin: 0 0 8px 12px; }
+  .grand-palais-interexpo-open .grand-palais-interexpo-cut::after { display: none; }
 }
 .grand-palais-interexpo-kind { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; color: #b35a36; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .grand-palais-interexpo-when { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 0; }
@@ -377,14 +376,21 @@
 .grand-palais-interexpo-progress-row { display: flex; align-items: center; gap: 10px; margin-top: 2px; color: #9b7a68; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 .grand-palais-interexpo-progress { display: block; flex: 1; height: 5px; border-radius: 999px; background: #f2dccd; overflow: hidden; }
 .grand-palais-interexpo-progress i { display: block; height: 100%; border-radius: inherit; background: #b35a36; }
+/* La durée en chiffre, à droite, séparée par un filet. */
+.grand-palais-interexpo-cut > .grand-palais-interexpo-length { display: grid; grid-column: 3; grid-row: 1 / span 3; justify-items: center; align-content: center; margin: 0 0 0 4px; padding-left: 12px; border-left: 1px solid #efcdb8; color: #b35a36; text-align: center; }
+.grand-palais-interexpo-length b { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.grand-palais-interexpo-length small { max-width: 62px; margin-top: 3px; color: #9b7a68; font-size: .58rem; font-weight: 700; letter-spacing: .04em; line-height: 1.2; text-transform: uppercase; }
+/* Sur la frise, la fermeture se marque d'un point creux. */
+.grand-palais-interexpo-cut::after { position: absolute; top: calc(50% - 6px); left: -30px; width: 12px; height: 12px; box-sizing: border-box; border: 2px solid #c8764f; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px #fff; content: ""; }
 @media (max-width: 600px) {
   .grand-palais-interexpo-list { padding-left: 34px; }
   .grand-palais-interexpo-list::before { left: 12px; }
   .grand-palais-interexpo-number { left: -35px; width: 26px; height: 26px; }
-  .grand-palais-interexpo-cut { grid-template-columns: 40px minmax(0, 1fr); gap: 1px 10px; padding: 10px 12px; }
+  .grand-palais-interexpo-cut { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 1px 10px; padding: 10px 12px; }
+  .grand-palais-interexpo-cut::after { left: -26px; }
   .grand-palais-interexpo-art { width: 40px; height: 40px; padding: 2px; }
   .grand-palais-interexpo-kind { flex-wrap: nowrap; font-size: min(.68rem, 2.9vw); letter-spacing: .03em; white-space: nowrap; }
-  .grand-palais-interexpo-list .grand-palais-interexpo-cut-range { font-size: min(1.05rem, 3.9vw); white-space: nowrap; }
+  .grand-palais-interexpo-list .grand-palais-interexpo-cut-range { font-size: min(1.05rem, 3.9vw); }
 }
 
 /* Durée complète sur grand écran, arrondie sur téléphone (« Dans ~2 mois »). */
