@@ -860,17 +860,11 @@
 }
 
 .other-leave-choice,
-.leave-choices .other-day,
-.other-request-options .request-option-group,
-.other-request-options .type-tabs button {
+.leave-choices .other-day {
   --choice-accent: #d9ab2b;
   --person-color: #d9ab2b;
   border-color: #dcbc5e !important;
   background: #fff8e2 !important;
-}
-
-.other-request-options .type-tabs button {
-  color: #6b5208;
 }
 
 /* Dans la fiche d'une date, Divers et CET gardent des encadrés neutres : la

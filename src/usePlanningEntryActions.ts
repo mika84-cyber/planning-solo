@@ -336,26 +336,6 @@ export function usePlanningEntryActions({
     }
   }
 
-  async function saveOtherDateDirect(date: string) {
-    if (periods.some((period) =>
-      period.leaveType === "other" && date >= period.from && date <= period.to
-    )) {
-      showSuccess("Ce repère Divers est déjà enregistré dans le planning.");
-      closeDay();
-      return;
-    }
-    setSavingDay(true);
-    closeDay();
-    try {
-      appendPeriod(await persistSingleDayPeriod(date, "other"));
-      showSuccess("Divers est ajouté directement au planning.");
-    } catch (error) {
-      notify(calendarErrorMessage(error, "Divers n’a pas pu être enregistré."));
-    } finally {
-      setSavingDay(false);
-    }
-  }
-
   async function deleteMultiplePlanningDates(
     dates: string[],
     target: CalendarCleanupTarget,
@@ -436,7 +416,6 @@ export function usePlanningEntryActions({
 
   return {
     deleteMultiplePlanningDates,
-    saveOtherDateDirect,
     saveSickDateDirect,
     saveStrikeDateDirect,
     saveWishDateDirect,

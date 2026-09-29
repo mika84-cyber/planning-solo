@@ -333,9 +333,17 @@ export function usePlanningInteractionActions({
     setActiveType(start.initialType);
     setSickRequest(start.sickRequest);
     const seedDate = Object.keys(start.selections)[0] || null;
-    const nextSelections = kind === "recovery" && seedDate
+    // Jour exceptionnel et Divers : la date touchée ouvre d'abord le choix
+    // journée entière, matin ou après-midi, comme dans la demande.
+    const askDuration = Boolean(seedDate) && (start.initialType === "exceptional" || start.initialType === "other");
+    const nextSelections = (kind === "recovery" || askDuration) && seedDate
       ? {}
       : start.selections;
+    if (askDuration && seedDate) {
+      setTimeStart("");
+      setTimeEnd("");
+      setTimeDate(seedDate);
+    }
     setSelections(nextSelections);
     setRequestSeedDate(seedDate);
     setWarningDate(start.warningDate);

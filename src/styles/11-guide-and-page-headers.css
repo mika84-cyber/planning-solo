@@ -574,6 +574,9 @@
   height: 11px;
 }
 .other-pin.compact svg { width: 10px; height: 10px; }
+/* Divers le matin : la punaise passe du côté bleu, à gauche. */
+.half-morning .other-pin { right: auto; left: 3px; }
+.half-morning .other-pin.compact { left: 1px; }
 
 .calendar-bulk-delete-button,
 .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
@@ -829,8 +832,7 @@
   background: #fff5f8;
   white-space: nowrap;
 }
-.request-option-groups.sick-request-options,
-.request-option-groups.other-request-options {
+.request-option-groups.sick-request-options {
   grid-template-columns: minmax(0, 1fr);
 }
 .sick-request-options .request-option-group {

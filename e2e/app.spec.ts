@@ -2589,6 +2589,18 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   await duration.getByRole("button", { name: "Valider" }).click();
   await page.locator("#request-panel").getByRole("button", { name: "Enregistrer Divers" }).click();
   await expect(day(/^vendredi 2 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée après-midi · Divers/);
+  // « ASA » s'écrit à la verticale, dans la moitié posée.
+  await expect(day(/^jeudi 1 octobre 2026/i).locator(".leave-calendar-marker-exceptional")).toHaveCSS("writing-mode", "vertical-rl");
+
+  // Depuis une case : la fiche du jour mène au même choix de durée.
+  await day(/^mardi 6 octobre 2026/i).click();
+  await page.getByRole("dialog").locator(".day-action-other > summary").click();
+  await page.getByRole("dialog").getByRole("button", { name: /^Divers/ }).click();
+  await expect(duration.getByRole("heading", { name: "Journée ou demi-journée ?" })).toBeVisible();
+  await duration.getByRole("radio", { name: /Le matin/ }).click();
+  await duration.getByRole("button", { name: "Valider" }).click();
+  await page.locator("#request-panel").getByRole("button", { name: "Enregistrer Divers" }).click();
+  await expect(day(/^mardi 6 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée matin · Divers/);
 });
 
 test("le poste du jour se choisit dans la fiche et se lit dans la semaine des collègues", async ({ page }) => {

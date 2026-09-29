@@ -85,7 +85,6 @@ export type DayDetailDialogProps = {
   ) => void;
   saveWishDateDirect: (date: string, desired?: boolean) => Promise<void>;
   saveSickDateDirect: (date: string) => Promise<void>;
-  saveOtherDateDirect: (date: string) => Promise<void>;
   saveStrikeDateDirect: (date: string) => Promise<void>;
   saveDay: (overrides?: Partial<SharedEntry>) => Promise<void>;
   saveWorkPost: (date: string, workPost: WorkPost | "") => Promise<void>;
@@ -120,7 +119,6 @@ export function DayDetailDialog({
   openPlanningRequestMethod,
   saveWishDateDirect,
   saveSickDateDirect,
-  saveOtherDateDirect,
   saveStrikeDateDirect,
   saveDay,
   saveWorkPost,
@@ -427,7 +425,7 @@ export function DayDetailDialog({
                         ? "other-day active"
                         : "other-day"
                     }
-                    onClick={() => void saveOtherDateDirect(dayDate)}
+                    onClick={() => openPlanningRequestMethod("other", dayDate)}
                   >
                     <i />
                     Divers

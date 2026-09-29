@@ -1335,6 +1335,10 @@
 }
 .leave-calendar-marker-strike { color: #241b08; }
 .leave-calendar-marker.compact { right: 2px; bottom: 2px; font-size: 7px; }
+/* Demi-journée d'ASA : « ASA » à la verticale, dans la moitié posée. */
+.half-morning .leave-calendar-marker-exceptional,
+.half-afternoon .leave-calendar-marker-exceptional { top: 50%; right: auto; bottom: auto; left: 25%; max-width: none; writing-mode: vertical-rl; transform: translate(-50%, -50%) rotate(180deg); }
+.half-afternoon .leave-calendar-marker-exceptional { left: 75%; }
 
 /* Demi-journée : aplat sur la moitié posée et séparation noire centrale. */
 .day.half-morning::after,

@@ -333,11 +333,10 @@ describe("finitions d’interface", () => {
     expect(app).toContain('className="holiday-pay-amount"');
   });
 
-  it("ajoute Divers directement au planning avec une punaise inclinée", () => {
+  it("pose Divers depuis la fiche du jour par le choix de durée, avec une punaise inclinée", () => {
     expect(app).toContain('onChoose("other", "other")');
-    expect(app).toContain("saveOtherDateDirect(dayDate)");
-    expect(app).toContain('persistSingleDayPeriod(date, "other")');
-    expect(app).not.toContain('openPlanningRequestMethod("other"');
+    expect(app).toContain('openPlanningRequestMethod("other", dayDate)');
+    expect(app).not.toContain("saveOtherDateDirect");
     expect(styles).toContain("transform: rotate(24deg)");
     expect(styles).toContain(".other-pin-head");
     expect(styles).toContain(".other-pin-needle");

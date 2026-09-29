@@ -91,26 +91,7 @@ export function RequestSelectionPanel({
           Choisissez un type, touchez ses dates dans le planning, puis changez de type si nécessaire.
         </p>
       ) : null}
-      {requestKind === "other" ? (
-        <div className="request-option-groups other-request-options">
-          <section className="request-option-group">
-            <h3>Divers</h3>
-            <div className="type-tabs" role="group" aria-label="Divers">
-              <button
-                type="button"
-                className="active"
-                style={{ "--type-color": TYPE_COLORS.other } as CSSProperties}
-              >
-                {TYPE_LABELS.other}
-                {selectedCounts.other ? <b>{selectedCounts.other}</b> : null}
-              </button>
-            </div>
-            <p className="request-help">
-              Ces dates seront visibles dans le planning et déduites des jours travaillés, sans effet sur la paie ni sur les soldes de congés.
-            </p>
-          </section>
-        </div>
-      ) : requestKind === "strike" ? (
+      {requestKind === "other" ? null : requestKind === "strike" ? (
         <div className="request-option-groups strike-request-options">
           <section className="request-option-group">
             <h3>Grève</h3>

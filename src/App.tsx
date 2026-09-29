@@ -434,7 +434,6 @@ export default function Home() {
   );
   const {
     deleteMultiplePlanningDates,
-    saveOtherDateDirect,
     saveSickDateDirect,
     saveStrikeDateDirect,
     saveWishDateDirect,
@@ -3235,7 +3234,6 @@ export default function Home() {
             openPlanningRequestMethod={openPlanningRequestMethod}
             saveWishDateDirect={saveWishDateDirect}
             saveSickDateDirect={saveSickDateDirect}
-            saveOtherDateDirect={saveOtherDateDirect}
             saveStrikeDateDirect={saveStrikeDateDirect}
             saveDay={saveDay}
             saveWorkPost={saveWorkPost}
