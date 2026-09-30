@@ -405,22 +405,21 @@
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
 .colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th { padding-left: 6px; white-space: nowrap; }
 .colleague-week-table .colleague-tomorrow-group th:first-child { width: 25%; }
-/* Les jours sur la ligne de chaque groupe, en terracotta ; aujourd'hui prend
-   la teinte de la bande qui descend sur sa colonne. */
-.colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: var(--accent-strong); text-align: center; }
+/* Les jours sur la ligne de chaque groupe, en noir ; aujourd'hui prend la
+   teinte de la bande qui descend sur sa colonne. */
+.colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: var(--text); text-align: center; }
 .colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 900; letter-spacing: 0; }
 .colleague-week-day b { margin-left: 3px; font-size: .8rem; }
-.colleague-week-table .colleague-tomorrow-group th.is-today { background: rgba(152, 84, 56, .15); color: var(--accent-strong); }
-/* Petit écran : prénoms alignés sur « Groupe », lettre et date à la même taille. */
+.colleague-week-table .colleague-tomorrow-group th.is-today { background: rgba(152, 84, 56, .15); }
+/* Petit écran : prénoms alignés sur « Groupe », numéro sous l'initiale du jour. */
 @media (max-width: 480px) {
   .colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding-left: 8px; }
   .colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th:first-child { padding-left: 8px; }
-  .colleague-week-table .colleague-week-day :is(span, b) { font-size: .74rem; }
+  .colleague-week-table .colleague-week-day :is(span, b) { display: block; margin: 0; font-size: .76rem; line-height: 1.25; }
 }
 @media (max-width: 380px) {
   .colleague-week-table .colleague-tomorrow-group th:first-child { width: 24%; }
-  .colleague-week-table .colleague-week-day :is(span, b) { font-size: .68rem; }
-  .colleague-week-day b { margin-left: 2px; }
+  .colleague-week-table .colleague-week-day :is(span, b) { font-size: .7rem; }
   .colleague-week-table .colleague-tomorrow-group-label { letter-spacing: .02em; }
 }
 .colleague-sharing-page .colleague-tomorrow-row td { padding-top: 12px; padding-bottom: 12px; }
