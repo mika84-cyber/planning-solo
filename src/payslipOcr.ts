@@ -219,13 +219,13 @@ const OCR_MONTHS = [
   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE",
 ];
 
+/** Le mois du bulletin : le premier « Mois Année » du texte, celui de
+ *  l'en-tête. Un rappel plus bas (« FERIES DES 08 ET 24 MAI 2026 » sur le
+ *  bulletin de juin) ne doit pas le remplacer. */
 function readOcrPeriod(text: string) {
   const plain = normalized(text);
-  for (let month = 0; month < OCR_MONTHS.length; month++) {
-    const match = new RegExp(`\\b${OCR_MONTHS[month]}\\s+(20\\d{2})\\b`).exec(plain);
-    if (match) return { month, year: Number(match[1]) };
-  }
-  return {};
+  const match = new RegExp(`\\b(${OCR_MONTHS.join("|")})\\s+(20\\d{2})\\b`).exec(plain);
+  return match ? { month: OCR_MONTHS.indexOf(match[1]), year: Number(match[2]) } : {};
 }
 
 /** Lecture prudente des lignes produites par l’OCR d’une photo de bulletin.
@@ -239,6 +239,7 @@ export function readPayslipOcrText(text: string): PayslipReading {
     lastAmountNear(lines, ["Indemnité comp. au SMIC"]),
     lastAmountNear(lines, ["ICHCSG"]),
     lastAmountNear(lines, ["Aide employeur options MGEN"]),
+    lastAmountNear(lines, ["Indemnité de caisse"]),
     lastAmountNear(lines, ["Transfert primes/points"]),
   ].filter((amount): amount is number => amount !== undefined);
   const carence = matchingLineIndexes(lines, ["Jour de carence"])
@@ -287,16 +288,26 @@ export function readPayslipOcrText(text: string): PayslipReading {
     // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
     holidayPay: sumLast(holidayLines) ?? 0,
     sundayFlat: sumLast(matchingLineIndexes(lines, ["Indem trav dominical regulier"])),
-    navigo: lastAmountNear(lines, ["Forfait Navigo TZ mensuel"]),
+    // « mensuel » ou « annuel » selon le bulletin.
+    navigo: lastAmountNear(lines, ["Forfait Navigo"]),
     mealVoucherDeduction: (() => {
-      const value = lastAmountNear(lines, ["Titres repas carte"]);
+      // La première ligne « Titres repas » est la retenue, pas la part patronale.
+      const value = lastAmountNear(lines, ["Titres repas"]);
       return value === undefined ? undefined : Math.abs(value);
     })(),
     carenceDay: carence > 0 ? Math.round(carence * 100) / 100 : undefined,
     carenceDates: carenceDatesFromLabels(
       matchingLineIndexes(lines, ["Jour de carence"]).map((index) => lines[index]),
     ),
-    pasRate: lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]),
+    pasRate: lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]) ?? (() => {
+      // « PAS prélèvement à la source » : assiette, taux, montant.
+      const index = matchingLineIndexes(lines, ["PAS prélèvement à la source"])[0];
+      const amounts = index === undefined ? [] : amountsIn(lines[index]);
+      const [base, rate, paid] = amounts.slice(-3);
+      if (amounts.length >= 3 && base >= 100 && Math.abs((base * rate) / 100 - paid) < 0.1) return rate;
+      const [lineBase, linePaid] = amounts.slice(-2);
+      return amounts.length >= 2 && lineBase >= 100 ? Math.round((Math.abs(linePaid) / lineBase) * 10000) / 100 : undefined;
+    })(),
     otherFixed: fixedParts.length
       ? Math.round(fixedParts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
       : undefined,

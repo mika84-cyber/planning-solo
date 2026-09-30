@@ -86,6 +86,41 @@ describe("lecture locale d’une photo de bulletin", () => {
     });
   });
 
+  it("lit le bulletin d’une contractuelle, lignes propres à son contrat comprises", () => {
+    // Bulletin réel d'une contractuelle (juin 2026), montants seuls.
+    const reading = readPayslipOcrText(`
+      Bulletin de paie Juin 2026
+      300.00 Traitement de Base 2141.41 1.00 2141.41
+      308.00 Indemnité de Résidence 2141.41 3.00 64.24
+      5/2026 R 453.09 FERIES DES 08 ET 24 MAI 2026 436.30
+      454.02 Indem trav dominical régulier 89.59 1.00 89.59
+      454.04 Indemnité de caisse 57.00 1.00 57.00
+      639.54 Aide employeur options MGEN 5.00 1.00 5.00
+      CUMUL BRUT 2793.54
+      823.20 Forfait Navigo TZ annuel 62.42 1.00 62.42
+      870.01 Titres repas 4.95 20.00 -99.00
+      884.70 PAS prélèvement à la source 2322.05 3.20 74.31
+      977.01 Titres repas 4.95 99.00
+      NET A PAYER AVANT IMPOT
+      EN EUROS 2171.39
+    `);
+    expect(reading).toMatchObject({
+      month: 5,
+      year: 2026,
+      baseSalary: 2141.41,
+      residenceAllowance: 64.24,
+      holidayPay: 436.3,
+      sundayFlat: 89.59,
+      // Résidence, indemnité de caisse et aide MGEN.
+      otherFixed: 126.24,
+      gross: 2793.54,
+      navigo: 62.42,
+      mealVoucherDeduction: 99,
+      pasRate: 3.2,
+      netBeforeTax: 2171.39,
+    });
+  });
+
   it("additionne les fériés lus sur deux pages d’un même bulletin", () => {
     const merged = mergePayslipPageReadings([
       { month: 5, year: 2026, sundaysBeyondTen: 0, holidayPay: 262.05 },

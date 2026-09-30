@@ -87,16 +87,21 @@ export const PRE_PSC_NET_RATIO_FIXED = 81.39;
 export const PRE_PSC_NET_RATIO_VARIABLE = 90.49;
 
 /** Contractuel : les cotisations salariales portent sur tout le brut, primes
- * comprises — CSG et CRDS (9,7 % de 98,25 % du brut), assurance vieillesse
- * plafonnée et déplafonnée (6,90 % + 0,40 %), IRCANTEC tranche A (2,80 %),
- * soit 19,63 % : il garde 80,37 % de son brut, traitement comme primes. Il
- * n'a ni pension civile sur le traitement ni RAFP sur les primes, d'où deux
- * taux presque égaux. La protection sociale complémentaire Culture/MGEN
- * retire ensuite, comme pour un fonctionnaire, 1,98 point sur la part fixe
- * et 0,57 point sur la part variable. Une calibration sur ses propres
- * bulletins remplace ces valeurs dès qu'elle est possible. */
-export const CONTRACTUEL_NET_RATIO_FIXED = 78.39;
-export const CONTRACTUEL_NET_RATIO_VARIABLE = 79.8;
+ * comprises — assurance vieillesse (6,90 % + 0,40 %), IRCANTEC tranche A
+ * (2,80 %), CSG et CRDS (9,7 % de 98,25 % du brut) —, soit 19,63 % avant la
+ * protection sociale complémentaire : 80,37 % du brut restent, traitement
+ * comme primes, faute de pension civile et de RAFP.
+ *
+ * Depuis le contrat Culture/MGEN, un bulletin réel de contractuelle (juin
+ * 2026, CDI) ajoute 0,70 % du brut (part solidaire) et ses fonds (2,65 % et
+ * 0,44 % de ces parts), plus un forfait d'environ 17 € (part forfaitaire et
+ * CSG sur la part employeur) : 20,35 % du brut et 17 € fixes, soit 585,57 €
+ * pour 2 793,54 € de brut. Le forfait, porté par la part fixe, la ramène à
+ * 78,87 % ; les primes gardent 79,65 %. Recalculé sur ce bulletin, le net
+ * tombe à 0,60 € près. Une calibration sur ses propres bulletins remplace
+ * ces valeurs dès qu'elle est possible. */
+export const CONTRACTUEL_NET_RATIO_FIXED = 78.87;
+export const CONTRACTUEL_NET_RATIO_VARIABLE = 79.65;
 export const CONTRACTUEL_PRE_PSC_NET_RATIO = 80.37;
 
 export function payCalibrationRegime(
@@ -279,6 +284,32 @@ function amountAfter(
   return parseAmount(tokens[index + offset]);
 }
 
+/** Comme `amountAfter`, pour le premier libellé qui commence ainsi : le
+ *  forfait Navigo est « mensuel » ou « annuel », les titres repas « carte »
+ *  ou non, selon le bulletin. */
+function amountAfterPrefix(tokens: string[], prefix: string, offset: number) {
+  const expected = normalizedLabel(prefix);
+  const index = tokens.findIndex((token) => normalizedLabel(token).startsWith(expected));
+  return index === -1 ? undefined : parseAmount(tokens[index + offset]);
+}
+
+/** Le taux de prélèvement à la source. Certains bulletins l'écrivent seul
+ *  (« PAS - Taux 1.90 »), d'autres sur la ligne du prélèvement avec son
+ *  assiette et son montant (« PAS prélèvement à la source 2322.05 74.31 ») :
+ *  le taux s'en déduit, ou se lit s'il est écrit entre les deux. */
+function readPasRate(tokens: string[]) {
+  const written = amountAfter(tokens, "PAS - Taux");
+  if (written !== undefined) return written;
+  const expected = normalizedLabel("PAS prélèvement à la source");
+  const index = tokens.findIndex((token) => normalizedLabel(token).startsWith(expected));
+  if (index === -1) return undefined;
+  const [base, second, third] = [1, 2, 3].map((offset) => parseAmount(tokens[index + offset]));
+  if (base === undefined || second === undefined || base < 100) return undefined;
+  if (third !== undefined && Math.abs((base * second) / 100 - third) < 0.05) return second;
+  const rate = Math.round((Math.abs(second) / base) * 10000) / 100;
+  return rate > 0 && rate < 50 ? rate : undefined;
+}
+
 /** La date d'un « Jour de carence », telle que son libellé la porte :
  *  « 20/3/2024 » dans les PDF, « 2026/03/02 » après lecture d'une photo. */
 export function carenceDateFromLabel(label: string): string | undefined {
@@ -398,6 +429,7 @@ function readOtherFixed(tokens: string[]): number | undefined {
     amountAfter(tokens, "Indemnité comp. au SMIC", 1),
     amountAfter(tokens, "ICHCSG", 2),
     amountAfter(tokens, "Aide employeur options MGEN", 2),
+    amountAfter(tokens, "Indemnité de caisse", 2),
     amountAfter(tokens, "Transfert primes/points", 2),
   ];
   const present = parts.filter((part): part is number => part !== undefined);
@@ -554,15 +586,15 @@ export function readPayslip(tokens: string[]): PayslipReading {
     ifse: amountAfter(tokens, "IFSE"),
     sundaysBeyondTen: readSundaysBeyondTen(tokens),
     cia: amountAfter(tokens, "CIA", 2),
-    navigo: amountAfter(tokens, "Forfait  Navigo TZ mensuel", 2),
-    mealVoucherDeduction: magnitude(
-      amountAfter(tokens, "Titres repas carte", 2),
-    ),
+    navigo: amountAfterPrefix(tokens, "Forfait Navigo", 2),
+    // La première ligne « Titres repas » est la retenue ; celle de la part
+    // patronale, plus bas, ne compte pas.
+    mealVoucherDeduction: magnitude(amountAfterPrefix(tokens, "Titres repas", 2)),
     carenceDay: sumAmountsAfterPrefix(tokens, "Jour de carence", 2),
     carenceDates: carenceDatesFromLabels(
       tokens.filter((token) => normalizedLabel(token).startsWith("JOUR DE CARENCE")),
     ),
-    pasRate: amountAfter(tokens, "PAS - Taux"),
+    pasRate: readPasRate(tokens),
     // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
     holidayPay: sumLineAmounts(tokens, isHolidayLine) ?? 0,
     sundayFlat: sumLineAmounts(tokens, (label) => normalizedLabel(label).startsWith("INDEM TRAV DOMINICAL REGULIER")),

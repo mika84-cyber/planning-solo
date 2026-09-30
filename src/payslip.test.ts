@@ -255,6 +255,16 @@ describe("lecture du nombre de dimanches", () => {
     ).toBe(0);
   });
 
+  it("lit le Navigo annuel, les titres repas et le taux du prélèvement à la source", () => {
+    const reading = readPayslip([
+      "1.00", "823.20", "Forfait  Navigo TZ annuel", "62.42", "62.42",
+      "20.00", "870.01", "Titres repas", "4.95", "-99.00",
+      "3.20", "884.70", "PAS prélèvement à la source", "2322.05", "74.31",
+      "1.00", "977.01", "Titres repas", "4.95", "99.00",
+    ]);
+    expect(reading).toMatchObject({ navigo: 62.42, mealVoucherDeduction: 99, pasRate: 3.2 });
+  });
+
   it("trouve les lignes malgré un accent, une casse ou une espace différents", () => {
     const reading = readPayslip([
       "TRAITEMENT DE BASE", "1855.88", "1855.88",
@@ -475,9 +485,14 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
       netRatioVariable: 80.37,
     });
     expect(defaultNetRatiosForPeriod(2026, 6, true)).toEqual({
-      netRatioFixed: 78.39,
-      netRatioVariable: 79.8,
+      netRatioFixed: 78.87,
+      netRatioVariable: 79.65,
     });
+    // Bulletin réel d'une contractuelle (juin 2026) : 2 267,65 € de part fixe
+    // (traitement, résidence, caisse, aide MGEN), 525,89 € de primes
+    // (fériés, forfait dominical), 2 207,97 € de net hors Navigo et titres.
+    const { netRatioFixed, netRatioVariable } = defaultNetRatiosForPeriod(2026, 5, true);
+    expect(Math.abs(2267.65 * netRatioFixed / 100 + 525.89 * netRatioVariable / 100 - 2207.97)).toBeLessThan(1);
     expect(
       readingsForCalibrationRegime(
         [

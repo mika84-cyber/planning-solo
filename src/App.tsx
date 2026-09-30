@@ -1316,7 +1316,12 @@ export default function Home() {
    *  jamais détaillée sur le bulletin. Facteur correcteur calibré sur 3
    *  bulletins réels (2026), stable à ± 0,7 point près sur les trois : sans
    *  lui, appliquer le taux affiché tel quel sous-estime l'impôt retenu. */
-  const PAS_BASE_ADJUSTMENT = 1.057;
+  const PAS_BASE_ADJUSTMENT = confirmedContractuel
+    // Contractuel : net imposable 2 322,05 € pour 2 171,39 € de net avant
+    // impôt sur un bulletin réel (juin 2026), la part employeur de la
+    // mutuelle et la CSG non déductible s'y ajoutant.
+    ? 1.069
+    : 1.057;
   const sundayCarryover = formProfile?.sundayCarryover || 0;
   const sundayCarryoverYear = formProfile?.sundayCarryoverYear;
   const sundayCarryoverMonth = formProfile?.sundayCarryoverMonth;
