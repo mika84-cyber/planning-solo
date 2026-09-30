@@ -9,8 +9,8 @@
 .colleague-profile-actions{display: flex;gap: 8px}.colleague-profile-actions button{white-space: nowrap}
 .colleague-person-row{align-items: stretch!important;flex-direction: column}.colleague-directory-actions{display: grid;gap: 8px;grid-template-columns: repeat(2,minmax(0,1fr));width: 100%}.colleague-directory-actions.has-shared-planning{grid-template-columns: repeat(3,minmax(0,1fr))}.colleague-directory-actions>*{align-items: center;display: flex;justify-content: center;min-height: 44px}.colleague-shared-status{background:#fff;border:1px solid #80c49e;border-radius:13px;color:#236746;font-size:.75rem;font-weight:850;text-align:center}.colleague-sharing-page button.colleague-stop-sharing{background: #fff4df;border-color: #dda24b;color: #815016}.colleague-sharing-page button.colleague-block{background: #fff0f1;border-color: #dc8792;color: #982c39}.colleague-registration-note{border-left: 4px solid #d3943d;padding: 9px 11px}
 .colleague-share-disclosure>summary{cursor: pointer;list-style: none}.colleague-share-disclosure>summary::-webkit-details-marker{display: none}.colleague-share-disclosure>summary>span{display: grid;gap: 3px}.colleague-share-disclosure>summary strong{font-size: 1.15rem}.colleague-share-disclosure>summary small{color: var(--muted)}.colleague-share-disclosure>summary:after{color: var(--text);content: '⌄';float: right;font-size: 1.5rem;font-weight: 900;margin-top: -32px}.colleague-share-disclosure[open]>summary:after{content: '⌃'}.colleague-share-content{border-top: 1px solid var(--section-outline);margin-top: 14px;padding-top: 16px}
-.colleague-share-content .colleague-person-row,.colleague-received-card .colleague-list>div{border-color:var(--border-soft);border-width:1px}
-@media(max-width:700px){.colleague-profile-row{align-items: stretch;flex-direction: column}.colleague-profile-actions{flex-direction: column}.colleague-profile-actions button{white-space: normal;width: 100%}.colleague-list>div{align-items: stretch;flex-direction: column}.colleague-list button{width: 100%}.colleague-directory-actions button{font-size: .7rem;line-height: 1.05;padding: 7px 4px;width: auto}.colleague-shared-status{font-size:.68rem;padding:4px}.colleague-inline-actions{width: 100%}.colleague-inline-actions button{flex: 1}.colleague-calendar{gap: 2px}.colleague-day{aspect-ratio:auto;min-height:54px;padding:5px 3px}.colleague-day small{font-size:.58rem}.colleague-weekday{font-size: .64rem;padding-inline: 0}.colleague-sharing-intro,.colleague-card{border-radius: 19px;padding: 16px}}
+.colleague-share-content .colleague-person-row,.colleague-received-card .colleague-list>div{border-width:1px}
+@media(max-width:700px){.colleague-profile-row{flex-direction: column}.colleague-profile-actions{flex-direction: column}.colleague-profile-actions button{white-space: normal}.colleague-list>div{align-items: stretch;flex-direction: column}.colleague-list button{width: 100%}.colleague-directory-actions button{font-size: .7rem;line-height: 1.05;padding: 7px 4px;width: auto}.colleague-shared-status{font-size:.68rem;padding:4px}.colleague-inline-actions{width: 100%}.colleague-inline-actions button{flex: 1}.colleague-calendar{gap: 2px}.colleague-day{aspect-ratio:auto;min-height:54px;padding:5px 3px}.colleague-day small{font-size:.58rem}.colleague-weekday{font-size: .64rem;padding-inline: 0}.colleague-sharing-intro,.colleague-card{border-radius: 19px;padding: 16px}}
 
 .colleague-sharing-intro {
   border-color: var(--section-outline);
@@ -20,7 +20,6 @@
 
 .colleague-tomorrow-table-shell {
   overflow: hidden;
-  margin-top: 10px;
 }
 
 .colleague-tomorrow-table th,
@@ -60,16 +59,6 @@
 .colleague-share-disclosure,
 .colleague-received-card {
   border-left-width: 5px;
-  border-left-color: var(--accent);
-}
-.colleague-share-content .colleague-person-row,
-.colleague-received-card .colleague-list > div.colleague-received-person,
-.colleague-profile-row,
-.colleague-tomorrow,
-.colleague-planning-tools,
-.colleague-how-it-works li {
-  border-width: 1px;
-  background: #fff;
 }
 
 /* La rubrique collègues suit le même contrat visuel que les autres pages. */
