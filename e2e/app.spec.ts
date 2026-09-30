@@ -1106,10 +1106,11 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await dayBoard.getByRole("button", { name: "Semaine", exact: true }).click();
   await expect(dayBoard.getByRole("heading", { name: /^Semaine du \d+( [a-zéû]+)? au \d+ [a-zéû]+$/ })).toBeVisible();
   const weekTable = dayBoard.locator(".colleague-week-table");
-  await expect(weekTable.locator("thead th")).toHaveCount(8);
-  await expect(weekTable.locator("thead th.is-today")).toHaveCount(1);
-  // Le chiffre du jour reste blanc sur son rond terracotta, même un week-end.
-  await expect(weekTable.locator("thead th.is-today b")).toHaveCSS("color", "rgb(255, 255, 255)");
+  // Les jours s'affichent sur la ligne du groupe : sept en-têtes par groupe présent.
+  await expect(weekTable.locator(".colleague-tomorrow-group th.colleague-week-day")).toHaveCount(7);
+  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).toHaveCount(1);
+  // Le jour s'écrit en blanc sur sa bande terracotta, même un week-end.
+  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today b")).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(weekTable.locator("tbody th[scope=row]")).toHaveText(["Mika", "Agnès"]);
   await expect(weekTable.locator("tbody .colleague-week-cell")).toHaveCount(14);
   expect(await dayBoard.locator(".colleague-week-shell").evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
@@ -1117,7 +1118,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const firstWeekTitle = await dayBoard.locator("#colleague-tomorrow-title").innerText();
   await dayBoard.getByRole("button", { name: "Semaine suivante" }).click();
   await expect(dayBoard.locator("#colleague-tomorrow-title")).not.toHaveText(firstWeekTitle);
-  await expect(weekTable.locator("thead th.is-today")).toHaveCount(0);
+  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).toHaveCount(0);
   // Le nom d'un collègue ouvre son planning du mois ; le retour ramène au tableau.
   await weekTable.getByRole("button", { name: "Voir le planning de Agnès" }).click();
   await expect(page.getByRole("heading", { name: "Agnès", exact: true })).toBeVisible();

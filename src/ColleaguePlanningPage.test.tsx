@@ -71,7 +71,8 @@ describe("vue semaine des collègues", () => {
     expect(html.indexOf("Groupe 1")).toBeLessThan(html.indexOf("Groupe 2"));
     // Quatorze cases, puis la légende : E, C, B pour le travail, et F, R, A, ½.
     expect(html.match(/class="colleague-week-cell /g)).toHaveLength(14 + 7);
-    expect(html.match(/<th scope="col" class="is-today"/g)).toHaveLength(1);
+    // Les jours se lisent sur la ligne de chaque groupe : aujourd'hui y revient deux fois.
+    expect(html.match(/<th scope="col" class="colleague-week-day is-today"/g)).toHaveLength(2);
     expect(html).toContain('class="is-self"');
     expect(html).toContain("Demi-journée");
   });

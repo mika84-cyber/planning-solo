@@ -260,23 +260,21 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
       <div className="colleague-week-shell" role="region" aria-label="Disponibilités de la semaine" tabIndex={0}>
         <table className="colleague-week-table">
           <caption className="colleague-tomorrow-caption">Disponibilités de la semaine, par groupe</caption>
-          <thead>
-            <tr>
-              <th scope="col">Collègue</th>
-              {days.map((day, index) => (
-                <th scope="col" key={dateKey(day)} className={weekCellClass(day, index, todayKey)} aria-label={tomorrowDateFormatter.format(day)}>
-                  <span aria-hidden="true">{WEEKDAY_INITIALS[index]}</span>
-                  <b aria-hidden="true">{day.getDate()}</b>
-                </th>
-              ))}
-            </tr>
-          </thead>
           <tbody>
             {([1, 2, 3] as const).map((group) => {
               const groupRows = rows.filter((row) => row.group === group);
               if (!groupRows.length) return null;
               return <Fragment key={group}>
-                <tr className={`colleague-tomorrow-group group-${group}`}><th scope="rowgroup" colSpan={8}><span className="colleague-tomorrow-group-label"><b aria-hidden="true">{group}</b>Groupe {group}</span></th></tr>
+                {/* Les jours se lisent sur la ligne de chaque groupe présent. */}
+                <tr className={`colleague-tomorrow-group group-${group}`}>
+                  <th scope="rowgroup"><span className="colleague-tomorrow-group-label">Groupe {group}</span></th>
+                  {days.map((day, index) => (
+                    <th scope="col" key={dateKey(day)} className={["colleague-week-day", weekCellClass(day, index, todayKey)].filter(Boolean).join(" ")} aria-label={tomorrowDateFormatter.format(day)}>
+                      <span aria-hidden="true">{WEEKDAY_INITIALS[index]}</span>
+                      <b aria-hidden="true">{day.getDate()}</b>
+                    </th>
+                  ))}
+                </tr>
                 {groupRows.map((row) => (
                   <tr key={row.id} className={row.isSelf ? "is-self" : ""}>
                     <th scope="row">{row.onOpen ? <button type="button" className="colleague-row-open" onClick={row.onOpen} aria-label={`Voir le planning de ${row.name}`}>{row.name}</button> : row.name}</th>

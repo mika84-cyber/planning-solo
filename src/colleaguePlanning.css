@@ -339,23 +339,12 @@
    téléphone sans défiler ; défile au besoin sur les écrans les plus étroits. */
 .colleague-week-shell { overflow-x: auto; border: 1px solid var(--section-outline); border-radius: 14px; background: #fff; }
 .colleague-week-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.colleague-week-table thead th { padding: 8px 2px 6px; color: var(--muted); font-size: .66rem; font-weight: 900; text-align: center; }
-.colleague-week-table thead th:first-child { width: 25%; padding-left: 12px; text-align: left; text-transform: uppercase; letter-spacing: .06em; }
-/* Jour et date sur une même ligne, en terracotta. */
-.colleague-week-table thead th:not(:first-child) { color: var(--accent-strong); white-space: nowrap; }
-.colleague-week-table thead th:not(:first-child) span { font-size: .78rem; }
-.colleague-week-table thead th b { margin-left: 3px; color: inherit; font-size: .82rem; }
-@media (max-width: 380px) {
-  .colleague-week-table thead th:first-child { letter-spacing: 0; }
-  .colleague-week-table thead th:not(:first-child) :is(span, b) { font-size: .68rem; }
-  .colleague-week-table thead th b { margin-left: 2px; }
-}
 .colleague-week-table tbody th[scope="row"] { overflow: hidden; padding: 7px 4px 7px 12px; color: var(--text); font-size: .8rem; font-weight: 800; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-table tbody tr.is-self th[scope="row"] { color: var(--accent-strong); }
 .colleague-week-table tbody td { text-align: center; }
 .colleague-week-table tbody tr + tr > * { border-top: 1px solid var(--border-soft); }
 /* Filets verticaux très pâles entre les jours : on suit une colonne sans grille. */
-.colleague-week-table :is(thead th, tbody td):not(:first-child) { border-left: 1px solid rgba(44, 38, 33, .07); }
+.colleague-week-table :is(th, td):not(:first-child) { border-left: 1px solid rgba(44, 38, 33, .07); }
 .colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 0; }
 .colleague-week-cell { display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
 .colleague-week-cell.work { background: #e2f3e8; border-color: #9fd1b2; color: #1f6641; }
@@ -380,18 +369,11 @@
   .colleague-week-legend .legend-short { display: inline; }
 }
 @media (max-width: 380px) { .colleague-week-legend { margin-inline: 0; font-size: .6rem; letter-spacing: -.01em; } }
-@media (max-width: 370px) {
-  .colleague-week-cell { font-size: .68rem; }
-  .colleague-week-table thead th:first-child { width: 24%; }
-}
-/* Lecture de la semaine : le week-end en en-tête plus discret, la colonne du jour
-   teintée de violet d'un bout à l'autre, la ligne survolée éclairée et les
-   prénoms figés à gauche quand le tableau défile sur un écran étroit. */
-.colleague-week-table thead th { border-bottom: 1px solid var(--border-soft); }
-.colleague-week-table thead th.is-weekend { color: #b07a62; }
-/* Aujourd'hui : une bande terracotta sur toute la colonne, en-tête plein. */
-.colleague-week-table :is(thead th, tbody td).is-today { background: rgba(152, 84, 56, .15); }
-.colleague-week-table thead th.is-today { background: var(--accent); color: #fff; }
+@media (max-width: 370px) { .colleague-week-cell { font-size: .68rem; } }
+/* Lecture de la semaine : la colonne du jour teintée d'un bout à l'autre, la
+   ligne survolée éclairée et les prénoms figés à gauche quand le tableau
+   défile sur un écran étroit. */
+.colleague-week-table td.is-today { background: rgba(152, 84, 56, .15); }
 .colleague-week-table tbody td { padding: 6px 1px; }
 .colleague-week-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; background: var(--surface); }
 .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(152, 84, 56, .045); }
@@ -412,18 +394,36 @@
 .colleague-sharing-page .colleague-row-open { appearance: none; min-height: 0; border: 0; border-radius: 0; padding: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px; cursor: pointer; }
 .colleague-sharing-page .colleague-row-open:hover { background: none; text-decoration-color: currentColor; }
 /* Lisibilité : pas de texte à lire sous 11 px dans les tableaux. */
-.colleague-sharing-page :is(.colleague-tomorrow-table th, .colleague-tomorrow-group small, .colleague-tomorrow-caption, .colleague-tomorrow-status, .colleague-week-table thead th:first-child) { font-size: 11px; }
+.colleague-sharing-page :is(.colleague-tomorrow-table th, .colleague-tomorrow-group small, .colleague-tomorrow-caption, .colleague-tomorrow-status) { font-size: 11px; }
 /* Le tableau garde son conteneur (il défile sur téléphone), avec un trait léger. */
 .colleague-sharing-page :is(.colleague-tomorrow-table-shell, .colleague-week-shell) { border-color: var(--border-soft); }
 /* Tableaux plus aérés : le texte ne touche plus les traits, et la légende
    prend du recul sous le tableau. */
 .colleague-sharing-page .colleague-tomorrow-caption { padding: 10px 14px 6px; }
-.colleague-sharing-page .colleague-week-table thead th { padding: 10px 2px 9px; }
-.colleague-sharing-page .colleague-week-table thead th:first-child { padding-left: 14px; }
 .colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 12px 6px 12px 14px; }
 .colleague-sharing-page .colleague-week-table tbody td { padding: 10px 2px; }
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
-.colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th { padding-left: 6px; }
+.colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th { padding-left: 6px; white-space: nowrap; }
+.colleague-week-table .colleague-tomorrow-group th:first-child { width: 25%; }
+/* Les jours sur la ligne de chaque groupe, en terracotta ; aujourd'hui en
+   plein, en tête de la bande qui descend sur sa colonne. */
+.colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: var(--accent-strong); text-align: center; }
+.colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 900; letter-spacing: 0; }
+.colleague-week-day b { margin-left: 3px; font-size: .8rem; }
+.colleague-week-table .colleague-tomorrow-group th.is-weekend { color: #b07a62; }
+.colleague-week-table .colleague-tomorrow-group th.is-today { background: var(--accent); color: #fff; }
+/* Petit écran : prénoms alignés sur « Groupe », lettre et date à la même taille. */
+@media (max-width: 480px) {
+  .colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding-left: 8px; }
+  .colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th:first-child { padding-left: 8px; }
+  .colleague-week-table .colleague-week-day :is(span, b) { font-size: .74rem; }
+}
+@media (max-width: 380px) {
+  .colleague-week-table .colleague-tomorrow-group th:first-child { width: 24%; }
+  .colleague-week-table .colleague-week-day :is(span, b) { font-size: .68rem; }
+  .colleague-week-day b { margin-left: 2px; }
+  .colleague-week-table .colleague-tomorrow-group-label { letter-spacing: .02em; }
+}
 .colleague-sharing-page .colleague-tomorrow-row td { padding-top: 12px; padding-bottom: 12px; }
 
 /* En-tête : votre nom dans l'annuaire, lisible dès l'arrivée, avec sa
