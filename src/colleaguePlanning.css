@@ -356,7 +356,7 @@
 .colleague-week-shell { overflow-x: auto; border: 1px solid var(--section-outline); border-radius: 14px; background: #fff; }
 .colleague-week-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .colleague-week-table thead th { padding: 8px 2px 6px; color: var(--muted); font-size: .66rem; font-weight: 900; text-align: center; }
-.colleague-week-table thead th:first-child { width: 34%; padding-left: 12px; text-align: left; text-transform: uppercase; letter-spacing: .06em; }
+.colleague-week-table thead th:first-child { width: 25%; padding-left: 12px; text-align: left; text-transform: uppercase; letter-spacing: .06em; }
 .colleague-week-table thead th span,
 .colleague-week-table thead th b { display: block; line-height: 1.2; }
 .colleague-week-table thead th b { color: var(--text); font-size: .82rem; }
@@ -391,7 +391,7 @@
 @media (max-width: 380px) { .colleague-week-legend { margin-inline: 0; font-size: .6rem; letter-spacing: -.01em; } }
 @media (max-width: 370px) {
   .colleague-week-cell { font-size: .68rem; }
-  .colleague-week-table thead th:first-child { width: 30%; }
+  .colleague-week-table thead th:first-child { width: 24%; }
 }
 /* Lecture de la semaine : le week-end en en-tête plus discret, la colonne du jour
    teintée de violet d'un bout à l'autre, la ligne survolée éclairée et les
@@ -432,8 +432,8 @@
 .colleague-sharing-page .colleague-tomorrow-caption { padding: 10px 14px 6px; }
 .colleague-sharing-page .colleague-week-table thead th { padding: 10px 2px 9px; }
 .colleague-sharing-page .colleague-week-table thead th:first-child { padding-left: 14px; }
-.colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 12px 6px 12px 14px; }
-.colleague-sharing-page .colleague-week-table tbody td { padding: 10px 2px; }
+.colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 14px 6px 14px 14px; }
+.colleague-sharing-page .colleague-week-table tbody td { padding: 12px 2px; }
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
 .colleague-sharing-page .colleague-tomorrow-row td { padding-top: 12px; padding-bottom: 12px; }
 
