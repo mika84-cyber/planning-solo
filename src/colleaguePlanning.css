@@ -396,11 +396,11 @@
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
 .colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th { padding-left: 6px; white-space: nowrap; }
 .colleague-week-table .colleague-tomorrow-group th:first-child { width: 25%; }
-/* Les jours sur la ligne de chaque groupe, en noir ; aujourd'hui prend la
-   teinte de la bande qui descend sur sa colonne. */
-.colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: var(--text); text-align: center; }
-.colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 900; letter-spacing: 0; }
-.colleague-week-day b { margin-left: 3px; font-size: .8rem; }
+/* Les jours sur la ligne de chaque groupe, dans un gris doux qui ne prend
+   pas le pas sur les cases ; aujourd'hui prend la teinte de sa colonne. */
+.colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: #6d635a; text-align: center; }
+.colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 700; letter-spacing: 0; }
+.colleague-week-day b { margin-left: 3px; font-size: .8rem; font-weight: 700; }
 .colleague-week-table .colleague-tomorrow-group th.is-today { background: rgba(152, 84, 56, .15); }
 /* Petit écran : prénoms alignés sur « Groupe », numéro sous l'initiale du jour. */
 @media (max-width: 480px) {
