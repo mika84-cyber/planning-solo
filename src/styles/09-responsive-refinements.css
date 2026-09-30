@@ -2,9 +2,6 @@
    au lieu du mode "tablette étroite" hérité des breakpoints ci-dessus,
    on profite de la largeur réelle disponible. */
 @media (min-width: 900px) and (max-width: 1180px) and (min-aspect-ratio: 4/5) and (max-aspect-ratio: 6/5) {
-  .year-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .leave-balance-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

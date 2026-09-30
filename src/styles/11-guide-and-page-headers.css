@@ -206,16 +206,6 @@
   align-items: center;
   gap: 8px;
 }
-.other-choice-dot {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 34px;
-  border: 0;
-  border-radius: 8px;
-  background: #d9ab2b;
-  opacity: 0.35;
-  box-shadow: none;
-}
 
 /* Les actions d'une absence sont immédiatement visibles dans la fiche du jour. */
 .day-stored-periods article {

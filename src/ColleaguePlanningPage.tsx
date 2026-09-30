@@ -370,6 +370,9 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const [boardOffset, setBoardOffset] = useState(1);
   // La semaine s'ouvre d'abord : on y voit d'un coup qui est là les prochains jours.
   const [boardMode, setBoardMode] = useState<"day" | "week">("week");
+  // « Plannings reçus » se replie par défaut ; son état survit à l'ouverture
+  // d'un planning puis au retour à la liste.
+  const [receivedOpen, setReceivedOpen] = useState(false);
   const [groupsOpen, setGroupsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -784,11 +787,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
         <svg className="colleague-share-open-go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
       </button>
 
-      <section className="colleague-card colleague-received-card" aria-busy={directoryLoading}>
-        <header className="colleague-received-heading">
+      <details className="colleague-card colleague-received-card" aria-busy={directoryLoading} open={receivedOpen} onToggle={(event) => setReceivedOpen(event.currentTarget.open)}>
+        <summary className="colleague-received-heading">
           <div><p className="eyebrow">Accès reçus</p><h3>Plannings reçus</h3></div>
           <span title={`${received.length} planning${received.length > 1 ? "s" : ""} reçu${received.length > 1 ? "s" : ""}`}>{directoryLoading ? "…" : received.length}</span>
-        </header>
+          <svg className="colleague-received-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </summary>
         <p className="colleague-received-intro">Ouvrez le planning complet d’un collègue.</p>
         {directoryLoading ? <div className="colleague-received-loading" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /><span>Actualisation de vos plannings partagés…</span></div> : data?.self.visible ? <>
           <div className="colleague-list">
@@ -796,7 +800,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
             {!received.length ? <p>Aucun planning partagé pour le moment.</p> : null}
           </div>
         </> : <p>Inscrivez-vous dans l’annuaire pour consulter les plannings reçus.</p>}
-      </section>
+      </details>
 
       {/* Sans le tableau « Qui travaille ? », les groupes restent ici. */}
       {!demoMode && !boardVisible ? <section className="colleague-card colleague-more-list" aria-label="Équipe">

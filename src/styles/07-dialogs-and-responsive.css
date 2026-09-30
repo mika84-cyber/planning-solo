@@ -216,11 +216,6 @@
 .message-modal .modal-actions {
   justify-content: flex-end;
 }
-@media (min-width: 1280px) {
-  .year-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
 @media (min-width: 1001px) {
   .calendar-toolbar {
     display: grid;
@@ -234,9 +229,6 @@
   }
 }
 @media (max-width: 1000px) {
-  .year-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .calendar-toolbar {
     flex-wrap: wrap;
   }
@@ -534,14 +526,6 @@
   .selection-corner {
     width: 22px;
     height: 22px;
-  }
-  .year-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-  .mini-month {
-    padding: 10px;
-    border-radius: 14px;
   }
   .mini-day {
     font-size: 9px;

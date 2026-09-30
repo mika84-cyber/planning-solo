@@ -725,11 +725,6 @@
   outline-offset: -2px;
 }
 
-.year-grid .mini-grid .mini-day.hourly-recovery-day {
-  outline: 1.5px solid #000;
-  outline-offset: -1.5px;
-}
-
 .month-card .calendar-grid .day .recovery-calendar-label {
   position: absolute;
   right: 5px;
@@ -903,10 +898,6 @@
   outline: 2px solid #000 !important;
   outline-offset: -2px !important;
 }
-.year-grid .mini-grid .mini-day.leave-day.leave-strike {
-  outline: 1.5px solid #000 !important;
-  outline-offset: -1.5px !important;
-}
 .month-card .calendar-grid .day.request-selected-strike,
 .year-grid .mini-grid .mini-day.request-selected-strike {
   border: 2px solid #000 !important;
@@ -917,10 +908,6 @@
 .month-card .calendar-grid .day.request-selected-strike {
   outline: 2px solid #000 !important;
   outline-offset: -2px !important;
-}
-.year-grid .mini-grid .mini-day.request-selected-strike {
-  outline: 1.5px solid #000 !important;
-  outline-offset: -1.5px !important;
 }
 .leave-calendar-marker-strike {
   right: 3px;
@@ -1331,11 +1318,6 @@
 .month-card .calendar-grid .day.training-recovery-day {
   outline: 2px solid #000;
   outline-offset: -2px;
-}
-
-.year-grid .mini-grid .mini-day.training-recovery-day {
-  outline: 1.5px solid #000;
-  outline-offset: -1.5px;
 }
 
 .training-recovery-label {

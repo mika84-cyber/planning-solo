@@ -129,45 +129,8 @@
   text-align: left;
   cursor: pointer;
 }
-.notification-button {
-  position: relative;
-  display: grid;
-  flex: 0 0 38px;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-.notification-button:hover:not(:disabled) {
-  background: var(--surface);
-  color: var(--accent);
-}
-.notification-button svg {
-  width: 19px;
-  height: 19px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 /* La pastille reste dans le carré blanc du bouton actif : un débord
    sur le gris de la pastille grise se lirait comme une salissure. */
-.notification-button.on {
-  background: var(--surface);
-  color: #08773b;
-}
-.notification-button.blocked {
-  color: #b33545;
-}
-.notification-button:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
 .eyebrow,
 .step-label {
   display: block;

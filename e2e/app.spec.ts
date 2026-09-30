@@ -1041,7 +1041,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const agnesSharedRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Agnès" });
   await expect(agnesSharedRow.getByText("Planning partagé", { exact: true })).toBeVisible();
   await expect(agnesSharedRow).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-soft"));
-  await expect(page.getByRole("button", { name: "Voir", exact: true })).toHaveCount(1);
+  // « Voir » vit dans « Plannings reçus », replié par défaut.
+  await expect(page.getByRole("button", { name: "Voir", exact: true, includeHidden: true })).toHaveCount(1);
   const samirRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Samir" });
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain("Bloquer Samir");
@@ -1075,6 +1076,9 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(shareDialog).toHaveCount(0);
 
   const receivedCard = page.locator(".colleague-received-card");
+  // « Plannings reçus » est replié par défaut : on l'ouvre pour voir la liste.
+  await expect(receivedCard).not.toHaveAttribute("open", "");
+  await receivedCard.locator("summary").click();
   await expect(receivedCard.locator(".colleague-received-person").first()).toHaveCSS("border-left-color", await cardBorderColor(page));
   await expect(receivedCard.locator(".colleague-received-avatar").first()).toBeVisible();
   // « Qui travaille ? » ouvre la page, avant les réglages et l'annuaire.
@@ -1109,8 +1113,9 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   // Les jours s'affichent sur la ligne du groupe : sept en-têtes par groupe présent.
   await expect(weekTable.locator(".colleague-tomorrow-group th.colleague-week-day")).toHaveCount(7);
   await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).toHaveCount(1);
-  // Le jour prend la teinte de sa colonne, sans fond terracotta plein.
-  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).not.toHaveCSS("background-color", "rgb(152, 84, 56)");
+  // La colonne du jour n'est teintée que sur les affectations, pas sur la date.
+  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today").first()).not.toHaveCSS("background-color", "rgb(152, 84, 56)");
+  await expect(weekTable.locator("td.is-today").first()).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(weekTable.locator("tbody th[scope=row]")).toHaveText(["Mika", "Agnès"]);
   await expect(weekTable.locator("tbody .colleague-week-cell")).toHaveCount(14);
   expect(await dayBoard.locator(".colleague-week-shell").evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
