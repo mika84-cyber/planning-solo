@@ -292,13 +292,24 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
           </tbody>
         </table>
       </div>
-      <ul className="colleague-week-legend" aria-label="Légende">
-        {WORK_POSTS.map((post) => <li key={post.code}><span className={`colleague-week-cell work two-letters${post.value ? " on-post" : ""}`} aria-hidden="true">{post.code}</span>{post.label}</li>)}
-        <li><span className="colleague-week-cell training" aria-hidden="true">F</span>Formation</li>
-        <li><span className="colleague-week-cell rest" aria-hidden="true">R</span>Repos</li>
-        <li><span className="colleague-week-cell absence" aria-hidden="true">A</span>Absence</li>
-        <li><span className="colleague-week-cell partial" aria-hidden="true">½</span>Demi-journée</li>
-      </ul>
+      {/* Légende en deux familles : les postes de travail, puis le reste. */}
+      <div className="colleague-week-legend" role="group" aria-label="Légende">
+        <div className="colleague-week-legend-row">
+          <span>Travail</span>
+          <ul aria-label="Travail">
+            {WORK_POSTS.map((post) => <li key={post.code}><span className={`colleague-week-cell work two-letters${post.value ? " on-post" : ""}`} aria-hidden="true">{post.code}</span>{post.label}</li>)}
+          </ul>
+        </div>
+        <div className="colleague-week-legend-row">
+          <span>Autres</span>
+          <ul aria-label="Autres">
+            <li><span className="colleague-week-cell training" aria-hidden="true">F</span>Formation</li>
+            <li><span className="colleague-week-cell rest" aria-hidden="true">R</span>Repos</li>
+            <li><span className="colleague-week-cell absence" aria-hidden="true">A</span>Absence</li>
+            <li><span className="colleague-week-cell partial" aria-hidden="true">½</span>Demi-journée</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
