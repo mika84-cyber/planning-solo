@@ -63,7 +63,54 @@ export type PayslipReading = {
    *  éléments fixes » décrit déjà. Les lignes absentes valent zéro pour le
    *  mois du bulletin. */
   otherFixed?: number;
+  /** Lignes de rémunération que l'application ne connaît pas encore. Elles
+   *  sont prises en compte plutôt qu'ignorées : une ligne régulière rejoint
+   *  « Autres éléments fixes », un rappel (« R ») ne vaut que pour ce mois. */
+  extraLines?: PayslipExtraLine[];
 };
+
+export type PayslipExtraLine = { label: string; amount: number; recall: boolean };
+
+/** Les lignes de rémunération que l'application sait déjà lire. */
+const KNOWN_EARNING_LABELS = [
+  "Traitement de Base", "Indemnité de Résidence", "IFSE", "CIA",
+  "Indemnité trav. dom > 10 dim", "Indem trav j férié", "Feries des", "Ferie du",
+  "Indem trav dominical régulier", "Indemnité comp. au SMIC", "ICHCSG",
+  "Aide employeur options MGEN", "Indemnité de caisse", "Transfert primes/points",
+  "Jour de carence", "CUMUL BRUT",
+];
+
+/** Libellé réduit à ses lettres et chiffres, pour comparer un PDF et une photo. */
+export function plainPayslipLabel(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+const KNOWN_PLAIN_LABELS = KNOWN_EARNING_LABELS.map(plainPayslipLabel);
+
+export function isKnownEarningLabel(label: string) {
+  const plain = plainPayslipLabel(label);
+  return KNOWN_PLAIN_LABELS.some((known) => plain.startsWith(known));
+}
+
+/** Heures supplémentaires et mécénats : l'application les calcule déjà, ils
+ *  ne deviennent jamais des éléments fixes. */
+export function isComputedVariableLabel(label: string) {
+  return /HEURE|H SUP|IHTS|MECENAT|VACATION/.test(plainPayslipLabel(label));
+}
+
+/** Les lignes inconnues qui s'ajoutent aux éléments fixes : régulières, et
+ *  ni heures supplémentaires ni mécénats. */
+export function fixedExtraTotal(lines: PayslipExtraLine[] | undefined) {
+  const total = (lines || [])
+    .filter((line) => !line.recall && !isComputedVariableLabel(line.label))
+    .reduce((sum, line) => sum + line.amount, 0);
+  return Math.round(total * 100) / 100;
+}
 
 export type NetRatioCalibration = {
   rates?: { netRatioFixed: number; netRatioVariable: number };
@@ -416,6 +463,37 @@ function magnitude(value: number | undefined): number | undefined {
   return value === undefined ? undefined : Math.abs(value);
 }
 
+const PAYSLIP_CODE = /^\d{3}\.\d{2}$/;
+const hasWords = (token: string) => /[A-Za-zÀ-ÿ]{3,}/.test(token);
+
+/** Les lignes de rémunération, avant « CUMUL BRUT », que l'application ne
+ *  connaît pas. Chaque ligne s'écrit [taux, code, libellé, base, montant] ;
+ *  les deux nombres qui suivent le montant sont le taux et le code de la
+ *  ligne suivante. Un rappel porte « R » et son mois avant le code. */
+function readExtraLines(tokens: string[]): PayslipExtraLine[] | undefined {
+  const cumul = tokens.findIndex((token) => normalizedLabel(token) === "CUMUL BRUT");
+  if (cumul === -1) return undefined;
+  const lines: PayslipExtraLine[] = [];
+  for (let index = 1; index < cumul; index++) {
+    const label = tokens[index].trim();
+    if (!hasWords(label) || !PAYSLIP_CODE.test(tokens[index - 1]?.trim() || "")) continue;
+    const run: number[] = [];
+    let next = index + 1;
+    for (; next < cumul + 1 && run.length < 6; next++) {
+      const value = parseAmount(tokens[next]);
+      if (value === undefined) break;
+      run.push(value);
+    }
+    const followedByLine = next <= cumul && hasWords(tokens[next] || "");
+    const own = followedByLine && run.length >= 3 && PAYSLIP_CODE.test(tokens[next - 1].trim()) ? run.slice(0, -2) : run;
+    const amount = own.at(-1);
+    if (amount === undefined || isKnownEarningLabel(label)) continue;
+    const recall = [tokens[index - 2], tokens[index - 3]].some((token) => token?.trim() === "R");
+    lines.push({ label, amount, recall });
+  }
+  return lines.length ? lines : undefined;
+}
+
 /** Les lignes qui composent « Autres éléments fixes », dans le même
  *  ordre que l'infobulle du champ (résidence + SMIC comp. + ICHCSG + MGEN −
  *  transfert). Deux d'entre elles (indemnité comp. au SMIC, aide employeur
@@ -598,7 +676,16 @@ export function readPayslip(tokens: string[]): PayslipReading {
     // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
     holidayPay: sumLineAmounts(tokens, isHolidayLine) ?? 0,
     sundayFlat: sumLineAmounts(tokens, (label) => normalizedLabel(label).startsWith("INDEM TRAV DOMINICAL REGULIER")),
-    otherFixed: readOtherFixed(tokens),
+    ...withExtraLines(readOtherFixed(tokens), readExtraLines(tokens)),
     ...readPeriod(tokens),
+  };
+}
+
+/** Ajoute aux éléments fixes lus les lignes inconnues régulières. */
+export function withExtraLines(otherFixed: number | undefined, extraLines: PayslipExtraLine[] | undefined) {
+  const extra = fixedExtraTotal(extraLines);
+  return {
+    otherFixed: otherFixed === undefined && !extra ? otherFixed : Math.round(((otherFixed || 0) + extra) * 100) / 100,
+    ...(extraLines?.length ? { extraLines } : {}),
   };
 }

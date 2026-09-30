@@ -1,5 +1,5 @@
-import type { PayslipReading } from "./payslip";
-import { carenceDatesFromLabels, isPlausibleSundayRate, extractPayslipTokens, readPayslip } from "./payslip";
+import type { PayslipExtraLine, PayslipReading } from "./payslip";
+import { carenceDatesFromLabels, isKnownEarningLabel, isPlausibleSundayRate, withExtraLines, extractPayslipTokens, readPayslip } from "./payslip";
 
 export const PAYSLIP_FILE_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
@@ -228,6 +228,21 @@ function readOcrPeriod(text: string) {
   return match ? { month: OCR_MONTHS.indexOf(match[1]), year: Number(match[2]) } : {};
 }
 
+/** Les lignes de rémunération d'une photo, avant « CUMUL BRUT », que
+ *  l'application ne connaît pas : « 454.04 Indemnité X 57,00 1,00 57,00 ».
+ *  Un rappel commence par son mois et « R » (« 5/2026 R 453.09 … »). */
+function ocrExtraLines(lines: string[]): PayslipExtraLine[] | undefined {
+  const cumul = matchingLineIndexes(lines, ["CUMUL BRUT", "ICUMUL BRUT"])[0];
+  if (cumul === undefined) return undefined;
+  const found = lines.slice(0, cumul).flatMap((line) => {
+    const match = /^(?:(\d{1,2}\/\d{4})\s+R\s+)?\d{3}[.,]\d{2}\s+([^\d−–—-][^\d]*?)\s+[-−–—]?\d/.exec(line);
+    if (!match || isKnownEarningLabel(match[2])) return [];
+    const amount = amountsIn(line.replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1);
+    return amount === undefined ? [] : [{ label: match[2].trim(), amount, recall: Boolean(match[1]) }];
+  });
+  return found.length ? found : undefined;
+}
+
 /** Lecture prudente des lignes produites par l’OCR d’une photo de bulletin.
  * Les montants sont pris dans la dernière colonne de chaque ligne reconnue ;
  * un libellé incertain est ignoré plutôt que transformé en valeur trompeuse. */
@@ -308,9 +323,12 @@ export function readPayslipOcrText(text: string): PayslipReading {
       const [lineBase, linePaid] = amounts.slice(-2);
       return amounts.length >= 2 && lineBase >= 100 ? Math.round((Math.abs(linePaid) / lineBase) * 10000) / 100 : undefined;
     })(),
-    otherFixed: fixedParts.length
-      ? Math.round(fixedParts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
-      : undefined,
+    ...withExtraLines(
+      fixedParts.length
+        ? Math.round(fixedParts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
+        : undefined,
+      ocrExtraLines(lines),
+    ),
     ...readOcrPeriod(text),
   };
 }
@@ -425,6 +443,8 @@ export function mergePayslipPageReadings(
       if (value === undefined || key === "sundaysBeyondTen") continue;
       if (key === "carenceDay" || key === "holidayPay") {
         merged[key] = Math.round(((merged[key] || 0) + (value as number)) * 100) / 100;
+      } else if (key === "extraLines") {
+        merged.extraLines = [...(merged.extraLines || []), ...(value as PayslipExtraLine[])];
       } else if (key === "carenceDates") {
         // Chaque photo peut porter des arrêts différents : on les réunit.
         merged.carenceDates = [...new Set([...(merged.carenceDates || []), ...(value as string[])])].sort();

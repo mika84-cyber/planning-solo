@@ -10,6 +10,7 @@ import {
   PAYSLIP_FILE_ACCEPT,
 } from "./payslipOcr";
 import { describePayslipGap, explainPayslipGap, type PayslipReviewCheck } from "./payslipReview";
+import { isComputedVariableLabel } from "./payslip";
 import {
   createPayslipAnomalyPdf,
   loadPayslipVerification,
@@ -407,6 +408,20 @@ export function PayslipVerificationCard({
               {unplannedPayslipCarence ? (
                 <p className="allowance-note warn">
                   Jour de carence de {euros(payslipCheck.reading.carenceDay as number)} présent sur le bulletin, mais aucun arrêt maladie n’était prévu dans l’application pour ce mois.
+                </p>
+              ) : null}
+              {/* Une ligne que l'application ne connaissait pas est prise en
+                  compte, et dite : où elle a été rangée. */}
+              {payslipCheck.reading.extraLines?.length ? (
+                <p className="allowance-note">
+                  Lignes que l’application ne connaissait pas, prises en compte :{" "}
+                  {payslipCheck.reading.extraLines.map((line) => `${line.label} (${euros(line.amount)}, ${
+                    line.recall
+                      ? "rappel compté pour ce mois seulement"
+                      : isComputedVariableLabel(line.label)
+                        ? "déjà calculé par l’application"
+                        : "ajouté aux autres éléments fixes"
+                  })`).join(" ; ")}.
                 </p>
               ) : null}
               {payslipReview?.issues.length ? (

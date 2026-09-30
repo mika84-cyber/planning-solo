@@ -312,13 +312,17 @@ export function buildPayContent({
         (slot) => slot.index === payslipMonth,
       )?.sundayCount || 0
     : 0;
+  // Un rappel inconnu du bulletin s'ajoute au brut attendu de ce seul mois.
+  const payslipRecallExtras = comparablePayslip
+    ? (payslipCheck.reading.extraLines || []).filter((line) => line.recall).reduce((sum, line) => sum + line.amount, 0)
+    : 0;
   const payslipReview = comparablePayslip
     ? summarizePayslipReview([
         {
           key: "gross",
           label: "Cumul brut",
           found: payslipCheck.reading.gross,
-          expected: grossForMonth(payslipMonth),
+          expected: Math.round((grossForMonth(payslipMonth) + payslipRecallExtras) * 100) / 100,
         },
         ...(netCalculation?.netBeforeTax !== undefined
           ? [{

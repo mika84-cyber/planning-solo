@@ -265,6 +265,29 @@ describe("lecture du nombre de dimanches", () => {
     expect(reading).toMatchObject({ navigo: 62.42, mealVoucherDeduction: 99, pasRate: 3.2 });
   });
 
+  it("ne prend aucune ligne connue des bulletins réels pour une ligne inconnue", () => {
+    for (const bulletin of [juin2026, juillet2026, janvier2026, mars2024])
+      expect(readPayslip(bulletin).extraLines).toBeUndefined();
+  });
+
+  it("prend en compte une ligne inconnue : régulière dans les éléments fixes, rappel à part", () => {
+    const reading = readPayslip([
+      "1.00", "300.00", "Traitement de Base", "2141.41", "2141.41",
+      "3.00", "308.00", "Indemnité de Résidence", "2141.41", "64.24",
+      "1.00", "455.10", "Prime nouvelle", "40.00", "40.00",
+      "5/2026", "R", "455.20", "Rappel prime ancienne", "12.50",
+      "1.00", "460.00", "IHTS 25%", "30.00", "30.00",
+      "CUMUL BRUT", "2288.15",
+    ]);
+    expect(reading.extraLines).toEqual([
+      { label: "Prime nouvelle", amount: 40, recall: false },
+      { label: "Rappel prime ancienne", amount: 12.5, recall: true },
+      { label: "IHTS 25%", amount: 30, recall: false },
+    ]);
+    // Résidence + prime nouvelle ; ni le rappel ni les heures supplémentaires.
+    expect(reading.otherFixed).toBe(104.24);
+  });
+
   it("trouve les lignes malgré un accent, une casse ou une espace différents", () => {
     const reading = readPayslip([
       "TRAITEMENT DE BASE", "1855.88", "1855.88",

@@ -121,6 +121,21 @@ describe("lecture locale d’une photo de bulletin", () => {
     });
   });
 
+  it("relève sur une photo les lignes de rémunération inconnues", () => {
+    const reading = readPayslipOcrText(`
+      Bulletin de paie Juin 2026
+      300.00 Traitement de Base 2141.41 1.00 2141.41
+      455.10 Prime nouvelle 40,00 1,00 40,00
+      5/2026 R 455.20 Rappel prime ancienne 12,50
+      CUMUL BRUT 2193.91
+    `);
+    expect(reading.extraLines).toEqual([
+      { label: "Prime nouvelle", amount: 40, recall: false },
+      { label: "Rappel prime ancienne", amount: 12.5, recall: true },
+    ]);
+    expect(reading.otherFixed).toBe(40);
+  });
+
   it("additionne les fériés lus sur deux pages d’un même bulletin", () => {
     const merged = mergePayslipPageReadings([
       { month: 5, year: 2026, sundaysBeyondTen: 0, holidayPay: 262.05 },
