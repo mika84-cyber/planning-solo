@@ -42,7 +42,8 @@ export type PayslipCheckSectionProps = {
   importMode: "verify" | "calibrate" | null;
   importError: string;
   importResult: PayslipImportResult | null;
-  onImport: (files: File[], mode: "verify" | "calibrate") => void;
+  /** « add-page » ajoute une page au bulletin qui vient d'être vérifié. */
+  onImport: (files: File[], mode: "verify" | "calibrate" | "add-page") => void;
   check: PayslipCheck | null;
   checkError: string;
   needsPeriod: boolean;

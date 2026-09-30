@@ -1414,6 +1414,22 @@ test("une ligne inconnue du bulletin demande si elle est fixe ou ponctuelle", as
   await expect(page.getByText(/Prime nouvelle \(40,00\s€, ajoutée aux autres éléments fixes\)/)).toBeVisible();
 });
 
+test("une page s'ajoute après coup au bulletin déjà vérifié", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  const pdf = (tokens: string[]) => Buffer.from(["%PDF-1.4", "stream", ...tokens.map((token) => `(${token}) Tj`), "endstream", "%%EOF"].join("\n"), "latin1");
+  page.on("dialog", (dialog) => void dialog.dismiss());
+  // Première page : le traitement et le cumul brut.
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "page-1.pdf", mimeType: "application/pdf", buffer: pdf(["Juin 2026", "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88", "CUMUL BRUT", "1855.88"]) });
+  const addPage = page.locator(".payslip-add-page");
+  await expect(addPage).toContainText("Ajouter une page");
+  await expect(page.locator(".payslip-actual-values")).not.toContainText("Net avant impôt");
+  // Seconde page, ajoutée après coup : le net rejoint la même lecture.
+  await addPage.locator("input").setInputFiles({ name: "page-2.pdf", mimeType: "application/pdf", buffer: pdf(["Juin 2026", "NET A PAYER AVANT IMPOT", "1500.00"]) });
+  await expect(page.locator(".payslip-actual-values")).toContainText("1 500,00");
+  await expect(page.locator(".payslip-actual-values")).toContainText("1 855,88");
+});
+
 test("une photo de bulletin est reconnue localement", async ({ page }) => {
   test.setTimeout(120_000);
   await prepareDemo(page);

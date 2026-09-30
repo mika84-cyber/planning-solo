@@ -172,6 +172,7 @@ export function buildPayContent({
   } = payUi;
   const {
     importPayslips,
+    addPayslipPages,
     applyPayslipFallbackPeriod,
     grossForMonth,
     reportMissingSundays,
@@ -604,7 +605,7 @@ export function buildPayContent({
     importMode: payslipImportMode,
     importError: payslipImportError,
     importResult: payslipImportResult,
-    onImport: (files, importMode) => void importPayslips(files, importMode),
+    onImport: (files, importMode) => void (importMode === "add-page" ? addPayslipPages(files) : importPayslips(files, importMode)),
     check: payslipCheck,
     checkError: payslipError,
     needsPeriod: payslipNeedsPeriod,

@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   Entries,
   FormProfile,
@@ -622,16 +622,23 @@ export function usePayActions(options: PayActionsOptions) {
     }).gross;
   }
 
+  /** Les pages lues du dernier bulletin vérifié, telles quelles : une page
+   *  ajoutée ensuite s'y joint sans relire ni redemander les premières. */
+  const payslipPagesRef = useRef<PayslipReading[]>([]);
+
   async function importPayslips(
     files: File[],
     mode: "verify" | "calibrate" = "verify",
+    previousPages: PayslipReading[] = [],
   ) {
     setPayslipImportMode(mode);
     setPayslipImportError("");
     setPayslipImportResult(null);
     setPayslipError("");
     setPayslipNeedsPeriod(false);
-    if (mode === "verify") {
+    // Une page ajoutée garde le résultat affiché tant que la lecture n'a pas
+    // abouti : un échec ne fait pas perdre la vérification déjà faite.
+    if (mode === "verify" && !previousPages.length) {
       setPayslipCheck(null);
       setPayslipResultDetailsOpen(false);
     }
@@ -679,13 +686,12 @@ export function usePayActions(options: PayActionsOptions) {
         );
         return;
       }
-      if (mode === "verify" && items.length > 1) {
+      const pages = mode === "verify" ? [...previousPages, ...items.map((item) => item.reading)] : [];
+      if (mode === "verify" && pages.length > 1) {
         try {
           items = [{
-            name: `Bulletin (${items.length} pages)`,
-            reading: mergePayslipPageReadings(
-              items.map((item) => item.reading),
-            ),
+            name: `Bulletin (${pages.length} pages)`,
+            reading: mergePayslipPageReadings(pages),
           }];
         } catch (error) {
           setPayslipImportError(
@@ -696,6 +702,7 @@ export function usePayActions(options: PayActionsOptions) {
           return;
         }
       }
+      if (mode === "verify") payslipPagesRef.current = pages;
       // Une ligne de rémunération inconnue : l'utilisateur dit si elle revient
       // chaque mois (elle rejoint les éléments fixes) ou si elle est ponctuelle.
       for (const item of items) {
@@ -1114,6 +1121,8 @@ export function usePayActions(options: PayActionsOptions) {
     moveDeduction,
     chooseHolidayPay,
     importPayslips,
+    /** Ajoute une ou plusieurs pages au bulletin qui vient d'être vérifié. */
+    addPayslipPages: (files: File[]) => importPayslips(files, "verify", payslipPagesRef.current),
     applyPayslipFallbackPeriod,
     grossForMonth,
   };

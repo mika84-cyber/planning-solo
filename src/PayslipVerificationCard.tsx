@@ -396,6 +396,26 @@ export function PayslipVerificationCard({
                   )}
                 </div>
               ) : null}
+              {/* Une autre photo ou page du même bulletin, prise après coup :
+                  elle s'ajoute à la lecture déjà faite. */}
+              <label className="payslip-add-page">
+                <input
+                  type="file"
+                  accept={PAYSLIP_FILE_ACCEPT}
+                  multiple
+                  disabled={payslipImportBusy}
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files || []);
+                    event.target.value = "";
+                    if (!files.length) return;
+                    setActiveImportSource(isPayslipImage(files[0]) ? "photo" : "file");
+                    void importPayslips(files, "add-page");
+                  }}
+                />
+                <span aria-hidden="true">＋</span>
+                <strong>{payslipImportBusy ? "Lecture de la page…" : "Ajouter une page"}</strong>
+                <small>Une autre photo ou page du même bulletin</small>
+              </label>
               {payslipReview ? (
                 <section className="payslip-review-decision" aria-label="Conclusion de la vérification">
                   <div><span>Votre conclusion</span><strong>Valider le contrôle du bulletin</strong></div>

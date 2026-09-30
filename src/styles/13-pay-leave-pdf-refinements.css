@@ -1136,6 +1136,14 @@
   }
 }
 
+/* « Ajouter une page » : une ligne discrète en pointillés sous le résultat. */
+.payslip-add-page { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; margin-top: 10px; border: 1px dashed var(--border-control); border-radius: 12px; padding: 9px 12px; background: var(--surface); cursor: pointer; }
+.payslip-add-page input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.payslip-add-page > span { display: grid; grid-row: span 2; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #fbeadf; color: #a4502f; font-weight: 800; }
+.payslip-add-page strong { color: var(--text); font-size: .88rem; }
+.payslip-add-page small { color: var(--muted); font-size: .76rem; }
+.payslip-add-page:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* Import local des bulletins papier : un seul sélecteur accepte PDF et photos. */
 .payslip-import-actions {
   display: grid;
