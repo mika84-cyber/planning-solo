@@ -2591,6 +2591,8 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   await duration.getByRole("button", { name: "Valider" }).click();
   await page.locator("#request-panel").getByRole("button", { name: "Enregistrer Divers" }).click();
   await expect(day(/^vendredi 2 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée après-midi · Divers/);
+  // La moitié posée garde le jaune de Divers en journée entière.
+  expect(await day(/^vendredi 2 octobre 2026/i).evaluate((cell) => getComputedStyle(cell, "::after").backgroundColor)).toBe("rgb(243, 216, 132)");
   // « ASA » s'écrit à la verticale, dans la moitié posée.
   await expect(day(/^jeudi 1 octobre 2026/i).locator(".leave-calendar-marker-exceptional")).toHaveCSS("writing-mode", "vertical-rl");
   // Le liseré de la demi-journée épouse le bord extérieur de la case.

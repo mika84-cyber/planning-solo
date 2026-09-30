@@ -508,6 +508,11 @@
 .mini-day.half-fraction {
   --leave: var(--leave-fraction);
 }
+/* Divers en demi-journée : le même jaune que Divers en journée entière. */
+.day.half-other,
+.mini-day.half-other {
+  --leave: #f3d884;
+}
 .day:hover {
   transform: translateY(-1px);
   border-color: var(--border-control);
