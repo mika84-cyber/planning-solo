@@ -3,7 +3,6 @@
 .pdf-download-screen,
 .useful-forms-screen,
 .useful-contacts-screen {
-  --secondary-copy: #574e42;
   --secondary-muted: #7a6f5f;
 }
 .pdf-download-screen .native-screen-heading p,

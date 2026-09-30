@@ -52,8 +52,6 @@
   cursor: pointer;
   transition: 160ms ease;
 }
-.main-menu-copy { display: grid; }
-.main-menu-copy strong { font-size: 1rem; }
 .main-menu-secondary button {
   min-height: 44px;
   border: 0;
@@ -107,7 +105,7 @@
 /* Où l'on se trouve doit se voir d'un coup d'œil : la couleur seule ne
    suffisait pas — les deux teintes étaient presque identiques. La rubrique
    courante change donc aussi de graisse et son trait d'icône s'épaissit. */
-.mobile-bottom-navigation svg,.desktop-side-navigation svg,.main-menu-index svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.main-menu-index svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 @media (min-width: 721px) {
   .main-menu-button { display: grid; }.app-shell{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 }
@@ -260,7 +258,6 @@
 }
 @media (max-width: 720px) {
   .top-header {
-    top: max(4px, env(safe-area-inset-top));
     padding-top: 11px;
     padding-bottom: 11px;
   }
@@ -698,10 +695,6 @@
   .pay-profile-settings-grid { grid-template-columns: 1fr; gap: 8px; }
   .pay-profile-settings-grid > label { grid-template-rows: auto minmax(46px, auto); gap: 4px; }
   .pay-work-schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pay-profile-save{justify-self:stretch;width:100%}
-  .leave-request-archive .request-archive-toggle {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 11px;
-  }
   .request-archive-summary {
     grid-column: 1 / -1;
     justify-content: space-between;
@@ -800,11 +793,6 @@
 }
 
 @media (min-width: 721px) {
-  .planning-workspace-shell.framed .controls {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: stretch;
-  }
   .planning-workspace-shell.framed .controls > .worked-days,
   .planning-workspace-shell.framed .controls .worked-days-stepper {
     width: 100%;

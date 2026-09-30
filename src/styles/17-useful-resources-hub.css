@@ -270,21 +270,14 @@
   .useful-resource-tab-copy strong { font-size: 13px; }
   .has-active-resource .useful-resource-tabs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
     width: 100%;
   }
   .has-active-resource .useful-resource-tab {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 52px;
-    min-height: 52px;
   }
 
   .has-active-resource .useful-resource-tab-art {
     display: none;
-  }
-
-  .has-active-resource .useful-resource-tab-copy {
-    padding: 8px;
   }
 
   .has-active-resource .useful-resource-tab-copy strong { font-size: 12px; }
@@ -313,7 +306,6 @@
 .pay-dashboard-verification,
 .pay-dashboard-settings,
 .pay-dashboard-profile-slot .pay-profile-settings,
-.pay-allowances-shortcut,
 .pay-missing-guidance,
 .grand-palais-program-intro,
 .pdf-download-screen,

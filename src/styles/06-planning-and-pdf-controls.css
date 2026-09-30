@@ -358,8 +358,6 @@
   text-transform: uppercase;
 }
 .day {
-  --corner-inset: 7px;
-  --corner-size: 19px;
   position: relative;
   min-height: 88px;
   overflow: hidden;
@@ -480,9 +478,6 @@
   /* Au-dessus du ruban de note (z-index: 5) : sinon le ruban, plaqué sur
      toute la largeur du haut de la case, masque le bord supérieur du
      liseré (et l'arrondi du coin qu'il traverse) sur cette portion. */
-  z-index: 6;
-  top: 0;
-  bottom: 0;
   border-top: var(--half-frame-width) solid var(--leave);
   border-bottom: var(--half-frame-width) solid var(--leave);
   pointer-events: none;
@@ -669,8 +664,6 @@
   font-weight: 800;
 }
 .mini-day {
-  --corner-inset: 1px;
-  --corner-size: 9px;
   position: relative;
   display: grid;
   place-items: center;

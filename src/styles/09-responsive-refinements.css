@@ -718,9 +718,6 @@
   .pay-function-card > header {
     align-items: flex-start;
   }
-  .mecenat-rate-summary {
-    grid-template-columns: 1fr;
-  }
   .request-option-groups {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
@@ -898,13 +895,7 @@
     background: var(--surface);
     color: var(--muted);
     font: inherit;
-    font-size: 0.76rem;
     font-weight: 800;
-  }
-
-  .calendar-delete-actions {
-    display: grid;
-    min-width: 0;
   }
 
   .calendar-delete-actions .delete-notes-button,
@@ -1156,8 +1147,7 @@
 }
 .planning-workspace-shell.framed .controls,
 .planning-workspace-shell.framed .calendar-toolbar,
-.planning-workspace-shell.framed .month-card,
-.planning-workspace-shell.framed .year-grid { margin-bottom: 0; }
+.planning-workspace-shell.framed .month-card { margin-bottom: 0; }
 
 .variable-pay-card > header[role="button"] {
   border-radius: 14px;
@@ -1367,9 +1357,6 @@
   }
   .controls .worked-days { width: 100%; min-width: 0; }
   .controls .planning-group-choice { width: 100%; min-width: 0; }
-  .planning-group-action-row {
-    align-items: stretch;
-  }
   .planning-group-leave-action,
   .planning-leave-mobile { min-height: 46px; }
   .calendar-toolbar.month-toolbar .period-navigation,
@@ -1817,9 +1804,7 @@
     padding-left: 0;
   }
   .overtime-balance-card {
-    gap: 11px;
     border-radius: 15px;
-    padding: 12px;
   }
   .overtime-balance-heading {
     align-items: flex-start;

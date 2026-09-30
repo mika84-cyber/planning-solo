@@ -179,7 +179,6 @@
 @media (min-width: 721px) {
   .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
     gap: 10px;
     width: 100%;
@@ -188,7 +187,6 @@
   .planning-workspace-shell.framed .month-toolbar .period-navigation {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-column: 1 / 3;
     gap: 10px;
     width: 100%;
   }
@@ -300,7 +298,6 @@
 @media (max-width: 720px) {
 
   .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     border: 0;
     border-radius: 0;
     padding: 0;
@@ -311,7 +308,6 @@
   .planning-workspace-shell.framed .month-toolbar .period-navigation {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-column: 1 / -1;
     gap: 8px;
     width: 100%;
   }
@@ -391,8 +387,7 @@
 }
 
 .planning-workspace-shell.framed .planning-calendar-section .planning-leave-panel,
-.planning-workspace-shell.framed .planning-calendar-section .month-card,
-.planning-workspace-shell.framed .planning-calendar-section .year-grid {
+.planning-workspace-shell.framed .planning-calendar-section .month-card {
   width: 100%;
   margin-right: 0;
   margin-left: 0;
@@ -1397,7 +1392,6 @@ fieldset.leave-choices {
 
 @media (min-width: 1100px) {
   .useful-resources-screen {
-    grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.8fr);
     align-items: start;
   }
 

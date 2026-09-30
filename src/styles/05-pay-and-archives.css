@@ -523,7 +523,7 @@
 .sunday-dates-copy strong{font-size:.92rem}
 .sunday-dates-copy small{color:var(--muted);font-size:.74rem;font-weight:700}
 /* Téléphone : la pastille se réduit à sa flèche, le titre tient sur une ligne. */
-@media (max-width:600px){.sunday-dates-action{display:none}.allowance-overview-toggle em{width:34px;height:34px;justify-content:center;padding:0}}
+@media (max-width:600px){.sunday-dates-action{display:none}.allowance-overview-toggle em{width:34px;height:34px;justify-content:center}}
 /* Carte étroite (Z Fold ouvert, colonnes de la paie) : la flèche seule. */
 .sunday-dates-panel{container-type:inline-size}
 @container (max-width:420px){.sunday-dates-action{display:none}.sunday-dates-toggle em{width:34px;height:34px;justify-content:center;padding:0}}

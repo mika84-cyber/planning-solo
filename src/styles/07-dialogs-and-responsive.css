@@ -483,8 +483,6 @@
     padding: 4px 0;
   }
   .day {
-    --corner-inset: 2px;
-    --corner-size: 12px;
     min-height: 0;
     aspect-ratio: 1;
     border-radius: 8px;
