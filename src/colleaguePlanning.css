@@ -401,7 +401,7 @@
 .colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: #6d635a; text-align: center; }
 .colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 700; letter-spacing: 0; }
 .colleague-week-day b { margin-left: 3px; font-size: .8rem; font-weight: 700; }
-.colleague-week-table .colleague-tomorrow-group th.is-today { background: rgba(152, 84, 56, .15); }
+.colleague-week-table .colleague-tomorrow-group th.is-today { background: rgba(152, 84, 56, .15); color: #463c35; }
 /* Petit écran : prénoms alignés sur « Groupe », numéro sous l'initiale du jour. */
 @media (max-width: 480px) {
   .colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding-left: 8px; }
