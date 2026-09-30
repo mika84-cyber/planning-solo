@@ -174,6 +174,14 @@ export function sharedPlanningWorkPost(planning: SharedColleaguePlanning, date: 
   return shared?.status === "work" ? shared.workPost ?? "" : "";
 }
 
+/** Nuancier de la vue semaine : code, teinte, nom, nom abrégé. */
+const WEEK_LEGEND = [
+  ...WORK_POSTS.map((post) => [post.code, `work two-letters${post.value ? " on-post" : ""}`, post.label, post.value === "ticketing" ? "Billet." : post.label] as const),
+  ["F", "training", "Formation", "Form."],
+  ["R", "rest", "Repos", "Repos"],
+  ["A", "absence", "Absence", "Absence"],
+  ["½", "partial", "Demi-journée", "Demi-j."],
+] as const;
 const workPostEntry = (post: WorkPost | "" | undefined) => WORK_POSTS.find((item) => item.value === (post || "")) ?? WORK_POSTS[0];
 /** « Travail · Accueil » ; l'expo, poste par défaut, reste « Travail ». */
 export const statusWithPost = (status: TomorrowStatus, post?: WorkPost | "") =>
@@ -292,24 +300,16 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
           </tbody>
         </table>
       </div>
-      {/* Légende en deux familles : les postes de travail, puis le reste. */}
-      <div className="colleague-week-legend" role="group" aria-label="Légende">
-        <div className="colleague-week-legend-row">
-          <span>Travail</span>
-          <ul aria-label="Travail">
-            {WORK_POSTS.map((post) => <li key={post.code}><span className={`colleague-week-cell work two-letters${post.value ? " on-post" : ""}`} aria-hidden="true">{post.code}</span>{post.label}</li>)}
-          </ul>
-        </div>
-        <div className="colleague-week-legend-row">
-          <span>Autres</span>
-          <ul aria-label="Autres">
-            <li><span className="colleague-week-cell training" aria-hidden="true">F</span>Formation</li>
-            <li><span className="colleague-week-cell rest" aria-hidden="true">R</span>Repos</li>
-            <li><span className="colleague-week-cell absence" aria-hidden="true">A</span>Absence</li>
-            <li><span className="colleague-week-cell partial" aria-hidden="true">½</span>Demi-journée</li>
-          </ul>
-        </div>
-      </div>
+      {/* Légende en nuancier : les sept couleurs accolées sur une seule ligne,
+          leur nom en dessous, abrégé sur les écrans étroits. */}
+      <ul className="colleague-week-legend" aria-label="Légende">
+        {WEEK_LEGEND.map(([code, tone, label, short]) => (
+          <li key={code}>
+            <span className={`colleague-week-cell ${tone}`} aria-hidden="true">{code}</span>
+            <small><span className="legend-full">{label}</span><span className="legend-short" aria-hidden="true">{short}</span></small>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

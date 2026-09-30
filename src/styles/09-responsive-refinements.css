@@ -1198,7 +1198,6 @@
   .controls > .planning-leave-mobile {
     min-height: 48px;
   }
-  .controls .worked-days { min-width: 0; }
   .controls .worked-days-stepper { min-width: 0; }
   .controls .worked-days-trigger { padding: 0 7px; font-size: 11px; }
   .variable-pay-total > small { max-width: 120px; text-align: right; }
