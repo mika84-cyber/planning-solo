@@ -21,20 +21,12 @@
 .colleague-tomorrow-table-shell {
   overflow: hidden;
   margin-top: 10px;
-  background: transparent;
-}
-
-.colleague-tomorrow-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 7px;
 }
 
 .colleague-tomorrow-table th,
 .colleague-tomorrow-table td {
   padding: 9px 13px;
   text-align: left;
-  background: var(--surface);
 }
 
 .colleague-tomorrow-table td:last-child {
@@ -47,21 +39,15 @@
 .colleague-tomorrow-table td:last-child { border: 1px solid var(--section-outline); border-left: 0; border-radius: 0 12px 12px 0; }
 
 .colleague-tomorrow-group th {
-  border-radius: 11px;
   font-size: .72rem;
   letter-spacing: .05em;
   text-transform: uppercase;
 }
 
-.colleague-tomorrow-group.group-1 th { background: var(--surface); color: var(--muted); }
-.colleague-tomorrow-group.group-2 th { background: var(--surface); color: var(--muted); }
-.colleague-tomorrow-group.group-3 th { background: #fff; color: #4e702f; }
-
 @media (max-width: 520px) {
   .colleague-tomorrow-table th,
   .colleague-tomorrow-table td { padding: 8px 10px; }
   .colleague-tomorrow-table td { font-size: .8rem; }
-  .colleague-tomorrow-status { font-size: .65rem; padding: 4px 7px; }
 }
 
 /* Les cartes de partage reprennent le cadre commun. Les états de présence et
@@ -206,8 +192,6 @@
   .colleague-tomorrow-heading { gap: 8px; }
   .colleague-tomorrow-heading h4 { font-size: 1rem; }
   .colleague-tomorrow-table { border-spacing: 0 6px; }
-  .colleague-tomorrow-group th { padding: 8px 9px 4px; }
-  .colleague-tomorrow-row td { padding: 8px 9px; }
   .colleague-tomorrow-row td:first-child > strong { font-size: .78rem; }
   .colleague-tomorrow-status { font-size: .64rem; min-width: 74px; padding: 4px 6px; }
 }
@@ -360,11 +344,13 @@
 .colleague-week-table thead th span,
 .colleague-week-table thead th b { display: block; line-height: 1.2; }
 .colleague-week-table thead th b { color: var(--text); font-size: .82rem; }
-.colleague-week-table thead th.is-today b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; }
+.colleague-week-table thead th.is-today b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); }
 .colleague-week-table tbody th[scope="row"] { overflow: hidden; padding: 7px 4px 7px 12px; color: var(--text); font-size: .8rem; font-weight: 800; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-table tbody tr.is-self th[scope="row"] { color: var(--accent-strong); }
 .colleague-week-table tbody td { text-align: center; }
 .colleague-week-table tbody tr + tr > * { border-top: 1px solid var(--border-soft); }
+/* Filets verticaux très pâles entre les jours : on suit une colonne sans grille. */
+.colleague-week-table :is(thead th, tbody td):not(:first-child) { border-left: 1px solid rgba(44, 38, 33, .07); }
 .colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 0; }
 .colleague-week-cell { display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
 .colleague-week-cell.work { background: #e2f3e8; border-color: #9fd1b2; color: #1f6641; }

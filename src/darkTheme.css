@@ -67,6 +67,7 @@ html[data-theme="dark"] .colleague-week-table :is(thead th, tbody td).is-today {
 html[data-theme="dark"] .colleague-week-table tbody th[scope="row"] { background: #1b1715; color: #f1e8de; }
 html[data-theme="dark"] .colleague-week-table tbody tr.is-self th[scope="row"] { color: #f0a988; }
 html[data-theme="dark"] .colleague-week-table tbody tr + tr > * { border-top-color: #332c28; }
+html[data-theme="dark"] .colleague-week-table :is(thead th, tbody td):not(:first-child) { border-left-color: rgba(255, 255, 255, .07); }
 html[data-theme="dark"] .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(255, 255, 255, .04); }
 html[data-theme="dark"] .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > th[scope="row"] { background: #25201d; }
 html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group.group-1 th { background: #3a241e; color: #f0b3a1; }
