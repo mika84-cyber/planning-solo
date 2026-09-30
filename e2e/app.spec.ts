@@ -1109,8 +1109,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   // Les jours s'affichent sur la ligne du groupe : sept en-têtes par groupe présent.
   await expect(weekTable.locator(".colleague-tomorrow-group th.colleague-week-day")).toHaveCount(7);
   await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).toHaveCount(1);
-  // Le jour s'écrit en blanc sur sa bande terracotta, même un week-end.
-  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today b")).toHaveCSS("color", "rgb(255, 255, 255)");
+  // Le jour prend la teinte de sa colonne, sans fond terracotta plein.
+  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).not.toHaveCSS("background-color", "rgb(152, 84, 56)");
   await expect(weekTable.locator("tbody th[scope=row]")).toHaveText(["Mika", "Agnès"]);
   await expect(weekTable.locator("tbody .colleague-week-cell")).toHaveCount(14);
   expect(await dayBoard.locator(".colleague-week-shell").evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
