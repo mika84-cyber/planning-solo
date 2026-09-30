@@ -30,6 +30,7 @@ const PAYSLIP_GAP_EXPLANATIONS: Record<string, string> = {
   sundays: "Un dimanche peut être payé le mois suivant en raison du délai de traitement.",
   holidays: "Un férié travaillé est payé le mois suivant, parfois en rappel (« R ») : vérifiez le mois du férié et la compensation choisie (prime seule, ou prime et récupération).",
   "sunday-flat": "Le forfait mensuel des dimanches est fixe : un écart signale un rappel, une retenue ou un changement de barème.",
+  status: "Un contractuel ne perçoit ni IFSE ni CIA. Si ce bulletin en porte, votre statut est sans doute « Fonctionnaire » : corrigez-le dans le profil de paie pour que l’estimation en tienne compte.",
   carence: "Un jour de carence apparaît sur le bulletin alors qu’aucun arrêt maladie correspondant n’est enregistré dans l’application.",
 };
 
@@ -49,6 +50,9 @@ export function describePayslipGap(check: PayslipReviewCheck) {
     return difference < 0
       ? `${plural(count, "dimanche")} non payé${count > 1 ? "s" : ""}`
       : `${plural(count, "dimanche")} payé${count > 1 ? "s" : ""} en plus`;
+  }
+  if (check.key === "status") {
+    return `IFSE ou CIA sur le bulletin (${euros(check.found)}) alors que votre statut est « Contractuel »`;
   }
   if (check.key === "carence") {
     return `Jour de carence retenu (${euros(check.found)}) sans arrêt maladie enregistré`;

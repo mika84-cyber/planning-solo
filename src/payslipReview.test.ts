@@ -27,6 +27,12 @@ describe("écart expliqué en une phrase", () => {
     expect(plain(describePayslipGap({ key: "carence", label: "Jour de carence", found: 45.5, expected: 0 }))).toBe("Jour de carence retenu (45,50 €) sans arrêt maladie enregistré");
   });
 
+  it("signale une IFSE ou un CIA sur le bulletin d’un contractuel", () => {
+    const check = { key: "status", label: "IFSE ou CIA", found: 415, expected: 0 };
+    expect(describePayslipGap(check)).toContain("« Contractuel »");
+    expect(explainPayslipGap(check)).toContain("Fonctionnaire");
+  });
+
   it("ne dit rien d’une ligne absente du bulletin", () => {
     expect(describePayslipGap({ key: "ifse", label: "IFSE", found: undefined, expected: 500 })).toBe("");
   });

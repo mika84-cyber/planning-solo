@@ -109,7 +109,6 @@ export function PayAllowancesSection({
   overtimeForPayMonth,
   mecenatForPayMonth,
   strikeForPayMonth,
-  isContractuel,
   baseSalary,
   month,
   year,
@@ -157,7 +156,7 @@ export function PayAllowancesSection({
         ? `${monthPay?.strikeDeductedDays || 0} journée${s(monthPay?.strikeDeductedDays || 0)} retenue${s(monthPay?.strikeDeductedDays || 0)}${monthPay?.strikeAutomaticDays ? ` dont ${monthPay.strikeAutomaticDays} repos noir${s(monthPay.strikeAutomaticDays)}` : ""}${monthPay?.strikePotentialDays ? ` · ${monthPay.strikePotentialDays} jour${s(monthPay.strikePotentialDays)} à vérifier` : ""}`
         : "Aucune journée de grève",
       amount: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
-        ? monthPay?.strikeDeductedDays && !isContractuel && strikeForPayMonth.totalDeduction !== null
+        ? monthPay?.strikeDeductedDays && strikeForPayMonth.totalDeduction !== null
           ? -strikeForPayMonth.totalDeduction
           : null
         : 0,

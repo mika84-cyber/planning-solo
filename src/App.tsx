@@ -1226,6 +1226,10 @@ export default function Home() {
   // qu'un choix est enregistré, la valeur persistée reprend naturellement la
   // priorité lors des ouvertures suivantes.
   const isContractuel = formProfile?.status !== "fonctionnaire";
+  // Seul un statut réellement choisi écarte l'IFSE et le CIA : tant que le
+  // statut n'est qu'une valeur de repli, une IFSE lue sur un bulletin reste
+  // comptée, au cas où la personne serait fonctionnaire.
+  const confirmedContractuel = formProfile?.status === "contractuel";
   const workQuota: WorkQuota = formProfile?.workQuota || "full";
   const workDayMinutes = dailyMinutesForQuota(workQuota);
   const mecenatDraftCalculation = useMemo(
@@ -1250,7 +1254,8 @@ export default function Home() {
   const hasPayValue = (field: keyof PayProfile) =>
     activePayProfile[field] !== undefined;
   const baseSalary = activePayProfile.baseSalary ?? 0;
-  const ifse = activePayProfile.ifse ?? 0;
+  // Un contractuel n'a ni IFSE ni CIA.
+  const ifse = confirmedContractuel ? 0 : activePayProfile.ifse ?? 0;
   const carenceDay = activePayProfile.carenceDay ?? 0;
   // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
   // résidence (3 % du traitement) : calculée toute seule plutôt que saisie,
@@ -1261,7 +1266,7 @@ export default function Home() {
   const otherFixed =
     activePayProfile.otherFixed ??
     (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
-  const cia = activePayProfile.cia ?? 0;
+  const cia = confirmedContractuel ? 0 : activePayProfile.cia ?? 0;
   const ciaMonth = activePayProfile.ciaMonth;
   const residenceAllowance =
     activePayProfile.residenceAllowance ??
@@ -1273,6 +1278,7 @@ export default function Home() {
   const defaultNetRatios = defaultNetRatiosForPeriod(
     payView.getFullYear(),
     payView.getMonth(),
+    confirmedContractuel,
   );
   // Les profils antérieurs à ce champ ont tous été calibrés sous le régime
   // collectif actuel : on les traite comme tels pour ne pas changer les
@@ -2448,6 +2454,7 @@ export default function Home() {
           viewedPayRegime,
           payslipRateCalibration,
           isContractuel,
+          confirmedContractuel,
           workQuota,
           baseSalary,
           residenceAllowance,

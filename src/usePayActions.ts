@@ -699,7 +699,7 @@ export function usePayActions(options: PayActionsOptions) {
       );
       const importFields = payslipImportFields(
         isContractuel,
-        fonctionnaireAmountsDetected,
+        fonctionnaireAmountsDetected && formProfile?.status !== "contractuel",
       );
       items.sort((a, b) => {
         const rank = (reading: PayslipReading) =>

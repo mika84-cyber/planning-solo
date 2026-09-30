@@ -233,16 +233,44 @@ describe("lecture du nombre de dimanches", () => {
     expect(readPayslip(juin2026).sundaysBeyondTen).toBe(0);
   });
 
-  it("se méfie d'un taux qui ne vaut pas 54,93 €", () => {
-    // Si le taux a changé ou que ce n'est pas la bonne ligne, mieux vaut 0
-    // qu'un compte inventé.
+  it("suit un taux revalorisé lu sur la ligne", () => {
+    // 4 dimanches à 60,00 € : le compte se déduit du taux du bulletin.
     expect(
       readPayslip([
         "Indemnité trav. dom > 10 dim",
         "60.00",
         "240.00",
       ]).sundaysBeyondTen,
+    ).toBe(4);
+  });
+
+  it("se méfie d'un nombre qui n'a rien d'un taux", () => {
+    // Si ce n'est pas la bonne ligne, mieux vaut 0 qu'un compte inventé.
+    expect(
+      readPayslip([
+        "Indemnité trav. dom > 10 dim",
+        "4.00",
+        "219.72",
+      ]).sundaysBeyondTen,
     ).toBe(0);
+  });
+
+  it("trouve les lignes malgré un accent, une casse ou une espace différents", () => {
+    const reading = readPayslip([
+      "TRAITEMENT DE BASE", "1855.88", "1855.88",
+      "Indemnite de residence", "1855.88", "55.68",
+      "Forfait Navigo TZ mensuel", "44.40", "44.40",
+      "INDEMNITÉ TRAV. DOM > 10 DIM", "54.93", "109.86",
+      "JOUR DE CARENCE 16/09/2025", "78.17", "-78.17",
+    ]);
+    expect(reading).toMatchObject({
+      baseSalary: 1855.88,
+      residenceAllowance: 55.68,
+      navigo: 44.4,
+      sundaysBeyondTen: 2,
+      carenceDay: 78.17,
+      carenceDates: ["2025-09-16"],
+    });
   });
 });
 
@@ -440,6 +468,15 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
     expect(defaultNetRatiosForPeriod(2026, 6)).toEqual({
       netRatioFixed: 79.41,
       netRatioVariable: 89.92,
+    });
+    // Contractuel : mêmes cotisations sur le traitement et les primes.
+    expect(defaultNetRatiosForPeriod(2024, 6, true)).toEqual({
+      netRatioFixed: 80.37,
+      netRatioVariable: 80.37,
+    });
+    expect(defaultNetRatiosForPeriod(2026, 6, true)).toEqual({
+      netRatioFixed: 78.39,
+      netRatioVariable: 79.8,
     });
     expect(
       readingsForCalibrationRegime(

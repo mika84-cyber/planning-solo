@@ -80,6 +80,8 @@ export type PayContentInput = {
   viewedPayRegime: PayCalibrationRegime;
   payslipRateCalibration: ReturnType<typeof inspectNetRatioCalibration>;
   isContractuel: boolean;
+  /** Statut « Contractuel » réellement choisi, et non valeur de repli. */
+  confirmedContractuel: boolean;
   workQuota: WorkQuota;
   baseSalary: number;
   residenceAllowance: number | undefined;
@@ -104,6 +106,7 @@ export type PayContentInput = {
 
 /** Assemble l'écran de paie du mois : estimation, vérification, réglages. */
 export function buildPayContent({
+  confirmedContractuel,
   payUi,
   payActions,
   allowances,
@@ -358,7 +361,18 @@ export function buildPayContent({
               expected: otherFixed,
             }]
           : []),
-        ...(monthPay.cia || payslipCheck.reading.cia !== undefined
+        // Un contractuel n'a ni IFSE ni CIA : leur présence sur son bulletin
+        // signale plutôt un statut à corriger.
+        ...(confirmedContractuel &&
+        (payslipCheck.reading.ifse !== undefined || payslipCheck.reading.cia !== undefined)
+          ? [{
+              key: "status",
+              label: "IFSE ou CIA",
+              found: (payslipCheck.reading.ifse || 0) + (payslipCheck.reading.cia || 0),
+              expected: 0,
+            }]
+          : []),
+        ...(!confirmedContractuel && (monthPay.cia || payslipCheck.reading.cia !== undefined)
           ? [{
               key: "cia",
               label: "CIA",

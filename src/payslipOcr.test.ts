@@ -71,6 +71,29 @@ describe("lecture locale d’une photo de bulletin", () => {
     });
   });
 
+  it("lit aussi les fériés, le forfait des dimanches et un taux revalorisé", () => {
+    const reading = readPayslipOcrText(`
+      Bulletin de paie Juin 2026
+      Indem trav dominical régulier 89,59 89,59
+      Indem trav j férié ac public 262,05 5/2026 R
+      FERIES DES 08 ET 24 MAI 2026 131,02
+      Indemnité trav. dom > 10 dim 60,00 180,00
+    `);
+    expect(reading).toMatchObject({
+      sundayFlat: 89.59,
+      holidayPay: 393.07,
+      sundaysBeyondTen: 3,
+    });
+  });
+
+  it("additionne les fériés lus sur deux pages d’un même bulletin", () => {
+    const merged = mergePayslipPageReadings([
+      { month: 5, year: 2026, sundaysBeyondTen: 0, holidayPay: 262.05 },
+      { month: 5, year: 2026, sundaysBeyondTen: 0, holidayPay: 131.02 },
+    ]);
+    expect(merged.holidayPay).toBe(393.07);
+  });
+
   it("accepte les formats d’image réellement lisibles par le navigateur", () => {
     expect(isPayslipImage(new File(["x"], "photo.JPG", { type: "image/jpeg" }))).toBe(true);
     expect(isPayslipImage(new File(["x"], "scan.webp", { type: "" }))).toBe(true);

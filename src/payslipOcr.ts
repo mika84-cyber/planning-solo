@@ -1,5 +1,5 @@
 import type { PayslipReading } from "./payslip";
-import { carenceDatesFromLabels, extractPayslipTokens, readPayslip } from "./payslip";
+import { carenceDatesFromLabels, isPlausibleSundayRate, extractPayslipTokens, readPayslip } from "./payslip";
 
 export const PAYSLIP_FILE_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
@@ -245,8 +245,29 @@ export function readPayslipOcrText(text: string): PayslipReading {
     .map((index) => amountsIn(lines[index]).at(-1))
     .filter((amount): amount is number => amount !== undefined)
     .reduce((sum, amount) => sum + Math.abs(amount), 0);
-  const sundayAmount = lastAmountNear(lines, ["Indemnité trav. dom > 10 dim"]);
-  const sundayRate = 54.93;
+  // Taux puis montant sur la même ligne : le compte suit le taux lu, pour
+  // rester juste après une revalorisation (54,93 € à défaut).
+  const sundayIndex = matchingLineIndexes(lines, ["Indemnité trav. dom > 10 dim"])[0];
+  const sundayAmounts = sundayIndex === undefined ? [] : amountsIn(lines[sundayIndex]);
+  const sundayAmount = sundayAmounts.at(-1) ?? lastAmountNear(lines, ["Indemnité trav. dom > 10 dim"]);
+  const sundayRate = sundayAmounts.length >= 2 && isPlausibleSundayRate(Math.abs(sundayAmounts[0]))
+    ? Math.abs(sundayAmounts[0])
+    : 54.93;
+  // Fériés travaillés (rappels compris) et forfait des dimanches : chaque
+  // ligne présente compte, comme sur un PDF.
+  const holidayLines = lines.flatMap((line, index) =>
+    /(?:^| )(?:INDEM TRAV J FERIE|FERIES? D(?:ES|U) )/.test(normalized(line)) ? [index] : [],
+  );
+  // Une année (« MAI 2026 », « 5/2026 R ») se collerait au montant qui la
+  // suit, lu alors comme « 2 026 131,02 » : on l'écarte avant la lecture.
+  const sumLast = (indexes: number[]) => {
+    const amounts = indexes
+      .map((index) => amountsIn(lines[index].replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1))
+      .filter((amount): amount is number => amount !== undefined);
+    return amounts.length
+      ? Math.round(amounts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
+      : undefined;
+  };
 
   return {
     gross: lastAmountNear(lines, ["CUMUL BRUT", "ICUMUL BRUT"]),
@@ -263,6 +284,9 @@ export function readPayslipOcrText(text: string): PayslipReading {
         ? Math.max(0, Math.round(Math.abs(sundayAmount) / sundayRate))
         : 0,
     cia: lastAmountNear(lines, ["CIA"]),
+    // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
+    holidayPay: sumLast(holidayLines) ?? 0,
+    sundayFlat: sumLast(matchingLineIndexes(lines, ["Indem trav dominical regulier"])),
     navigo: lastAmountNear(lines, ["Forfait Navigo TZ mensuel"]),
     mealVoucherDeduction: (() => {
       const value = lastAmountNear(lines, ["Titres repas carte"]);
@@ -388,8 +412,8 @@ export function mergePayslipPageReadings(
     );
     for (const [key, value] of Object.entries(reading)) {
       if (value === undefined || key === "sundaysBeyondTen") continue;
-      if (key === "carenceDay") {
-        merged.carenceDay = Math.round(((merged.carenceDay || 0) + (value as number)) * 100) / 100;
+      if (key === "carenceDay" || key === "holidayPay") {
+        merged[key] = Math.round(((merged[key] || 0) + (value as number)) * 100) / 100;
       } else if (key === "carenceDates") {
         // Chaque photo peut porter des arrêts différents : on les réunit.
         merged.carenceDates = [...new Set([...(merged.carenceDates || []), ...(value as string[])])].sort();

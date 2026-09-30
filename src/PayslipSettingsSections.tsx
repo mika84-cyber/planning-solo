@@ -39,10 +39,10 @@ export function PayslipSettingsSections({
 }: Props) {
   return (
     <>
-        {/* La retenue (un jour de carence puis 10 %/jour) est une règle de
-            fonctionnaire ; le régime d'une contractuelle (IJSS, subrogation)
-            est différent et n'est pas vérifié ici. */}
-        {!isContractuel && sickLeaves.arrets.length > 0 && (
+        {/* La retenue (un jour de carence puis 10 %/jour) vaut pour les deux
+            statuts : un bulletin réel de contractuel porte bien la ligne
+            « Jour de carence », et le brut n'y tombe juste qu'en la retenant. */}
+        {sickLeaves.arrets.length > 0 && (
           <section className="allowance-card">
             <header>
               <span>Arrêts maladie {allowances.year}</span>

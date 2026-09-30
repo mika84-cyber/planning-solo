@@ -86,6 +86,19 @@ export const DEFAULT_NET_RATIO_VARIABLE = 89.92;
 export const PRE_PSC_NET_RATIO_FIXED = 81.39;
 export const PRE_PSC_NET_RATIO_VARIABLE = 90.49;
 
+/** Contractuel : les cotisations salariales portent sur tout le brut, primes
+ * comprises — CSG et CRDS (9,7 % de 98,25 % du brut), assurance vieillesse
+ * plafonnée et déplafonnée (6,90 % + 0,40 %), IRCANTEC tranche A (2,80 %),
+ * soit 19,63 % : il garde 80,37 % de son brut, traitement comme primes. Il
+ * n'a ni pension civile sur le traitement ni RAFP sur les primes, d'où deux
+ * taux presque égaux. La protection sociale complémentaire Culture/MGEN
+ * retire ensuite, comme pour un fonctionnaire, 1,98 point sur la part fixe
+ * et 0,57 point sur la part variable. Une calibration sur ses propres
+ * bulletins remplace ces valeurs dès qu'elle est possible. */
+export const CONTRACTUEL_NET_RATIO_FIXED = 78.39;
+export const CONTRACTUEL_NET_RATIO_VARIABLE = 79.8;
+export const CONTRACTUEL_PRE_PSC_NET_RATIO = 80.37;
+
 export function payCalibrationRegime(
   year: number | undefined,
   month: number | undefined,
@@ -96,7 +109,17 @@ export function payCalibrationRegime(
     : "pre-culture-psc";
 }
 
-export function defaultNetRatiosForPeriod(year: number, month: number) {
+export function defaultNetRatiosForPeriod(year: number, month: number, contractuel = false) {
+  if (contractuel)
+    return payCalibrationRegime(year, month) === "culture-psc"
+      ? {
+          netRatioFixed: CONTRACTUEL_NET_RATIO_FIXED,
+          netRatioVariable: CONTRACTUEL_NET_RATIO_VARIABLE,
+        }
+      : {
+          netRatioFixed: CONTRACTUEL_PRE_PSC_NET_RATIO,
+          netRatioVariable: CONTRACTUEL_PRE_PSC_NET_RATIO,
+        };
   return payCalibrationRegime(year, month) === "culture-psc"
     ? {
         netRatioFixed: DEFAULT_NET_RATIO_FIXED,
@@ -248,7 +271,10 @@ function amountAfter(
   label: string,
   offset = 1,
 ): number | undefined {
-  const index = tokens.findIndex((token) => token.trim() === label);
+  // Un accent, une majuscule ou une espace de plus d'un logiciel de paie à
+  // l'autre ne doit pas rendre une ligne introuvable.
+  const expected = normalizedLabel(label);
+  const index = tokens.findIndex((token) => normalizedLabel(token) === expected);
   if (index === -1) return undefined;
   return parseAmount(tokens[index + offset]);
 }
@@ -283,8 +309,9 @@ function sumAmountsAfterPrefix(
   prefix: string,
   offset: number,
 ): number | undefined {
+  const expected = normalizedLabel(prefix);
   const values = tokens.flatMap((token, index) => {
-    if (!token.trim().startsWith(prefix)) return [];
+    if (!normalizedLabel(token).startsWith(expected)) return [];
     const value = parseAmount(tokens[index + offset]);
     return value === undefined ? [] : [Math.abs(value)];
   });
@@ -488,30 +515,28 @@ export function inspectNetRatioCalibration(
   };
 }
 
-/** Le taux qui suit la ligne « Indemnité trav. dom > 10 dim » : fixe depuis
- *  au moins 2024, sur tous les bulletins vus. Il sert d'ancre pour repérer la
- *  ligne sans dépendre de sa position — contrairement au traitement ou à
- *  l'IFSE, cette ligne porte deux nombres (taux puis montant), et confondre
- *  les deux donnerait un compte de dimanches faux. */
-const SUNDAY_RATE = 54.93;
+/** Un taux de dimanche plausible : 54,93 € depuis au moins 2024. Une
+ *  revalorisation reste lue telle quelle ; un nombre hors de cette plage
+ *  n'est pas un taux, et le compte reste à 0 plutôt que d'être inventé. */
+export function isPlausibleSundayRate(rate: number) {
+  return Number.isFinite(rate) && rate >= 20 && rate <= 200;
+}
 
 /** Le nombre de dimanches de la ligne « Indemnité trav. dom > 10 dim ».
  *
- *  Le premier nombre après le libellé est le taux, toujours 54,93 € ; le
- *  second est le montant, dont le compte se déduit. Si le taux ne vaut pas
- *  54,93 €, la ligne n'est pas celle attendue et le compte reste à 0 plutôt
- *  que de risquer un chiffre faux.
+ *  Le premier nombre après le libellé est le taux, le second le montant :
+ *  confondre les deux donnerait un compte faux. Le compte se déduit du taux
+ *  lu sur la ligne même, pour suivre une revalorisation.
  */
 function readSundaysBeyondTen(tokens: string[]): number {
-  const index = tokens.findIndex(
-    (token) => token.trim() === "Indemnité trav. dom > 10 dim",
-  );
+  const expected = normalizedLabel("Indemnité trav. dom > 10 dim");
+  const index = tokens.findIndex((token) => normalizedLabel(token) === expected);
   if (index === -1) return 0;
-  const rate = Number(tokens[index + 1]?.trim().replace(",", "."));
-  const amount = Number(tokens[index + 2]?.trim().replace(",", "."));
-  if (!Number.isFinite(rate) || Math.abs(rate - SUNDAY_RATE) > 0.02) return 0;
-  if (!Number.isFinite(amount)) return 0;
-  return Math.round(amount / SUNDAY_RATE);
+  const rate = parseAmount(tokens[index + 1]);
+  const amount = parseAmount(tokens[index + 2]);
+  if (rate === undefined || !isPlausibleSundayRate(rate)) return 0;
+  if (amount === undefined) return 0;
+  return Math.round(Math.abs(amount) / rate);
 }
 
 /** Le férié travaillé s'écrit « Indem trav j férié ac public » ou, pour un
@@ -535,7 +560,7 @@ export function readPayslip(tokens: string[]): PayslipReading {
     ),
     carenceDay: sumAmountsAfterPrefix(tokens, "Jour de carence", 2),
     carenceDates: carenceDatesFromLabels(
-      tokens.filter((token) => token.trim().startsWith("Jour de carence")),
+      tokens.filter((token) => normalizedLabel(token).startsWith("JOUR DE CARENCE")),
     ),
     pasRate: amountAfter(tokens, "PAS - Taux"),
     // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
