@@ -258,8 +258,8 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
   return (
     <div className="colleague-week">
       <div className="colleague-week-shell" role="region" aria-label="Disponibilités de la semaine" tabIndex={0}>
-        <table className="colleague-week-table">
-          <caption className="colleague-tomorrow-caption">Disponibilités de la semaine, par groupe</caption>
+        {/* Le titre du tableau reste lu par les lecteurs d'écran, sans s'afficher. */}
+        <table className="colleague-week-table" aria-label="Disponibilités de la semaine, par groupe">
           <tbody>
             {([1, 2, 3] as const).map((group) => {
               const groupRows = rows.filter((row) => row.group === group);
