@@ -410,7 +410,6 @@
 .colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: var(--accent-strong); text-align: center; }
 .colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 900; letter-spacing: 0; }
 .colleague-week-day b { margin-left: 3px; font-size: .8rem; }
-.colleague-week-table .colleague-tomorrow-group th.is-weekend { color: #b07a62; }
 .colleague-week-table .colleague-tomorrow-group th.is-today { background: rgba(152, 84, 56, .15); color: var(--accent-strong); }
 /* Petit écran : prénoms alignés sur « Groupe », lettre et date à la même taille. */
 @media (max-width: 480px) {
