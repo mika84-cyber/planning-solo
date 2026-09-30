@@ -44,12 +44,17 @@ export async function handleSaveFormProfile(
     body.workQuota === "half"
       ? body.workQuota
       : previousProfile?.work_quota || "full";
+  // Toute la plage du sélecteur d'heures pour une journée habituelle : de
+  // 7 h à 23 h 45, au quart d'heure.
   const timeValue = (value: unknown) =>
-    typeof value === "string" && /^(?:09|1\d):(?:00|15|30|45)$/.test(value) && value <= "19:45"
+    typeof value === "string" && /^(?:0[7-9]|1\d|2[0-3]):(?:00|15|30|45)$/.test(value)
       ? value
       : null;
   let workSchedule = previousProfile?.work_schedule;
-  if (body.workSchedule !== undefined) {
+  if (body.workSchedule === null) {
+    // Deux champs vidés : les horaires habituels sont effacés.
+    workSchedule = undefined;
+  } else if (body.workSchedule !== undefined) {
     if (!body.workSchedule || typeof body.workSchedule !== "object" || Array.isArray(body.workSchedule))
       return json({ error: "Horaires habituels invalides" }, 400);
     const rawSchedule = body.workSchedule as Record<string, unknown>;

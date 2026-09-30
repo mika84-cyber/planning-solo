@@ -4158,7 +4158,7 @@ test("une absence qui déborde après le 10 est retenue sur la paie suivante, et
 });
 
 test("des CA validés entre deux grèves restent exclus de la retenue", async ({ page }) => {
-  await prepareStrikeContinuityDemo(page, "annual");
+  const scenario = await prepareStrikeContinuityDemo(page, "annual");
   await goToSection(page, "leave");
   await (await openOtherLeaveBalances(page)).locator("button.strike").click();
   const strikeDialog = page.getByRole("dialog", { name: "Grève" });
@@ -4168,7 +4168,11 @@ test("des CA validés entre deux grèves restent exclus de la retenue", async ({
   await expect(month.locator(".strike-continuity-warning")).toHaveCount(0);
   await expect(month.locator(".strike-continuity-details footer")).toContainText("Total retenue estimée sur 2 journées");
   await expect(month.locator(".strike-continuity-details footer")).toContainText("123,72 € brut");
-  await expect(page.locator(".leave-balance-grid button.annual")).toContainText(/[1-9]\d* déjà pris/);
+  // Les CA sont déjà pris ou à venir selon le jour du mois où le test tourne :
+  // le 1er, toute la période est encore devant.
+  await expect(page.locator(".leave-balance-grid button.annual")).toContainText(
+    scenario.last < dateKey(new Date()) ? /[1-9]\d* déjà pris/ : /[1-9]\d* à venir/,
+  );
 });
 
 test("des repos noirs entre deux grèves sont inclus automatiquement dans la retenue", async ({ page }) => {
@@ -4689,6 +4693,8 @@ test("la signature enregistrée sur téléphone est synchronisée avec le profil
 });
 
 test("les détails des soldes séparent les congés pris et à venir", async ({ page }) => {
+  // Date fixe : le 1er du mois tombait sur un cas limite des données de test.
+  await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
   await page.addInitScript(() => {
     localStorage.setItem(
       "planning:demo-completed-request-v1",
@@ -4819,6 +4825,8 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
 });
 
 test("le mois de paie reste indépendant du planning", async ({ page }) => {
+  // Date fixe : le 1er du mois tombait sur un cas limite des données de test.
+  await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
   await prepareCompletePayDemo(page);
   const planningMonth = page.getByRole("button", { name: "Sélectionner le mois" });
   const initialPlanningMonth = (await planningMonth.textContent())?.trim();

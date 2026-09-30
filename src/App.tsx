@@ -2040,9 +2040,12 @@ export default function Home() {
   }
 
   /** Le profil garde la saisie telle quelle, même à moitié faite : sans cela
-   *  on ne pourrait jamais choisir l'heure de début avant celle de fin. Ce
-   *  sont les lectures qui écartent une plage incomplète. */
-  async function changeWorkSchedule(nextSchedule: WorkSchedule | undefined) {
+   *  on ne pourrait jamais choisir l'heure de début avant celle de fin. Seule
+   *  une plage complète et cohérente part au serveur — il refuse une plage à
+   *  moitié remplie, et la saisie s'effaçait alors aussitôt. Deux champs vides
+   *  effacent les horaires. `announce` signale une plage à compléter, lors
+   *  de l'enregistrement explicite. */
+  async function changeWorkSchedule(nextSchedule: WorkSchedule | undefined, announce = false) {
     const schedule = nextSchedule;
     const previousProfile = formProfile;
     const nextProfile: FormProfile = {
@@ -2051,13 +2054,22 @@ export default function Home() {
     };
     setFormProfile(nextProfile);
     if (demoMode) return true;
+    const cleared = !schedule?.start && !schedule?.end;
+    const complete = Boolean(schedule?.start && schedule?.end && schedule.start < schedule.end);
+    if (!cleared && !complete) {
+      if (announce)
+        notify(schedule?.start && schedule?.end
+          ? "L’heure de fin doit suivre l’heure de début."
+          : "Indiquez l’heure de début et l’heure de fin.");
+      return !announce;
+    }
     try {
       await postCalendar({
         action: "save-form-profile",
         fullName: nextProfile.fullName,
         group: nextProfile.group,
         signature: nextProfile.signature,
-        workSchedule: schedule,
+        workSchedule: cleared ? null : schedule,
       });
       return true;
     } catch (error) {
@@ -2068,7 +2080,7 @@ export default function Home() {
   }
 
   async function saveCalculationProfile() {
-    const saved = await changeWorkSchedule(formProfile?.workSchedule);
+    const saved = await changeWorkSchedule(formProfile?.workSchedule, true);
     if (!saved) return;
     setPayProfileOpen(false);
   }

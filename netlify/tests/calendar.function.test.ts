@@ -1200,6 +1200,27 @@ describe("API principale du calendrier", () => {
     });
   });
 
+  it("accepte les horaires habituels de 7 h à 23 h 45 et les efface sur demande", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const save = (workSchedule: unknown) => calendarHandler(request({
+      action: "save-form-profile",
+      fullName: "Agent",
+      group: "2",
+      signature: "",
+      workSchedule,
+    }));
+    // 8 h 30 – 20 h 15 : hors de l'ancienne plage de 9 h à 19 h 45.
+    expect((await save({ start: "08:30", end: "20:15" })).status).toBe(200);
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ work_schedule: { start: "08:30", end: "20:15" } });
+    // Une plage incomplète ou à l'envers reste refusée.
+    expect((await save({ start: "08:30", end: "" })).status).toBe(400);
+    expect((await save({ start: "17:00", end: "09:00" })).status).toBe(400);
+    expect((await save({ start: "01:00", end: "02:00" })).status).toBe(400);
+    // Deux champs vidés : les horaires sont effacés.
+    expect((await save(null)).status).toBe(200);
+    expect((data.get("user/user-a/form-profile") as { work_schedule?: unknown }).work_schedule).toBeUndefined();
+  });
+
   it("conserve les montants des mois précédents lors d’un changement de paie daté", async () => {
     data.set("user/user-a/form-profile", {
       full_name: "Agent",
