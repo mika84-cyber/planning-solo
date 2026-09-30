@@ -127,13 +127,16 @@ describe("lecture locale d’une photo de bulletin", () => {
       300.00 Traitement de Base 2141.41 1.00 2141.41
       455.10 Prime nouvelle 40,00 1,00 40,00
       5/2026 R 455.20 Rappel prime ancienne 12,50
-      CUMUL BRUT 2193.91
+      3/2026 C 470.00 Retenue maladie 10% -8,50
+      CUMUL BRUT 2185.41
     `);
     expect(reading.extraLines).toEqual([
       { label: "Prime nouvelle", amount: 40, recall: false },
       { label: "Rappel prime ancienne", amount: 12.5, recall: true },
+      { label: "Retenue maladie", amount: -8.5, recall: false, sick: true },
     ]);
-    expect(reading.otherFixed).toBe(40);
+    // Rien ne rejoint les éléments fixes avant la réponse de l'utilisateur.
+    expect(reading.otherFixed).toBeUndefined();
   });
 
   it("additionne les fériés lus sur deux pages d’un même bulletin", () => {

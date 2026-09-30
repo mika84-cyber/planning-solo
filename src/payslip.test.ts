@@ -3,7 +3,10 @@ import {
   calculateNetRatios,
   carenceDateFromLabel,
   defaultNetRatiosForPeriod,
+  fixedExtraTotal,
   inspectNetRatioCalibration,
+  isAutomaticExtraLine,
+  oneOffExtraTotal,
   payCalibrationRegime,
   readPayslip,
   readingsForCalibrationRegime,
@@ -270,22 +273,39 @@ describe("lecture du nombre de dimanches", () => {
       expect(readPayslip(bulletin).extraLines).toBeUndefined();
   });
 
-  it("prend en compte une ligne inconnue : régulière dans les éléments fixes, rappel à part", () => {
+  it("relève les lignes inconnues, rappel et arrêt maladie à part", () => {
     const reading = readPayslip([
       "1.00", "300.00", "Traitement de Base", "2141.41", "2141.41",
       "3.00", "308.00", "Indemnité de Résidence", "2141.41", "64.24",
       "1.00", "455.10", "Prime nouvelle", "40.00", "40.00",
       "5/2026", "R", "455.20", "Rappel prime ancienne", "12.50",
       "1.00", "460.00", "IHTS 25%", "30.00", "30.00",
-      "CUMUL BRUT", "2288.15",
+      "3/2026", "C", "470.00", "Retenue maladie 10%", "-8.50",
+      "CUMUL BRUT", "2279.65",
     ]);
     expect(reading.extraLines).toEqual([
       { label: "Prime nouvelle", amount: 40, recall: false },
       { label: "Rappel prime ancienne", amount: 12.5, recall: true },
       { label: "IHTS 25%", amount: 30, recall: false },
+      { label: "Retenue maladie 10%", amount: -8.5, recall: false, sick: true },
     ]);
-    // Résidence + prime nouvelle ; ni le rappel ni les heures supplémentaires.
-    expect(reading.otherFixed).toBe(104.24);
+    // Rien ne rejoint les éléments fixes avant la réponse de l'utilisateur.
+    expect(reading.otherFixed).toBe(64.24);
+    // Seule la prime nouvelle est à demander : le rappel, les heures sup et
+    // l'arrêt maladie se rangent d'eux-mêmes.
+    expect(reading.extraLines!.filter((line) => !isAutomaticExtraLine(line)).map((line) => line.label)).toEqual(["Prime nouvelle"]);
+  });
+
+  it("range une ligne inconnue selon la réponse : fixe ou ponctuelle", () => {
+    const lines = [
+      { label: "Prime nouvelle", amount: 40, recall: false, fixed: true },
+      { label: "Prime unique", amount: 25, recall: false, fixed: false },
+      { label: "Rappel prime", amount: 12.5, recall: true },
+      { label: "Retenue maladie", amount: -8.5, recall: false, sick: true },
+    ];
+    expect(fixedExtraTotal(lines)).toBe(40);
+    // Ponctuelle et rappel pour ce mois ; l'arrêt maladie est déjà calculé.
+    expect(oneOffExtraTotal(lines)).toBe(37.5);
   });
 
   it("trouve les lignes malgré un accent, une casse ou une espace différents", () => {

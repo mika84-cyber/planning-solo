@@ -230,15 +230,21 @@ function readOcrPeriod(text: string) {
 
 /** Les lignes de rémunération d'une photo, avant « CUMUL BRUT », que
  *  l'application ne connaît pas : « 454.04 Indemnité X 57,00 1,00 57,00 ».
- *  Un rappel commence par son mois et « R » (« 5/2026 R 453.09 … »). */
+ *  Un rappel commence par son mois et « R » (« 5/2026 R 453.09 … ») ; une
+ *  carence ou un arrêt maladie, par son mois et « C ». */
 function ocrExtraLines(lines: string[]): PayslipExtraLine[] | undefined {
   const cumul = matchingLineIndexes(lines, ["CUMUL BRUT", "ICUMUL BRUT"])[0];
   if (cumul === undefined) return undefined;
   const found = lines.slice(0, cumul).flatMap((line) => {
-    const match = /^(?:(\d{1,2}\/\d{4})\s+R\s+)?\d{3}[.,]\d{2}\s+([^\d−–—-][^\d]*?)\s+[-−–—]?\d/.exec(line);
+    const match = /^(?:\d{1,2}\/\d{4}\s+([RC])\s+)?\d{3}[.,]\d{2}\s+([^\d−–—-][^\d]*?)\s+[-−–—]?\d/.exec(line);
     if (!match || isKnownEarningLabel(match[2])) return [];
     const amount = amountsIn(line.replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1);
-    return amount === undefined ? [] : [{ label: match[2].trim(), amount, recall: Boolean(match[1]) }];
+    return amount === undefined ? [] : [{
+      label: match[2].trim(),
+      amount,
+      recall: match[1] === "R",
+      ...(match[1] === "C" ? { sick: true } : {}),
+    }];
   });
   return found.length ? found : undefined;
 }

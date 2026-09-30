@@ -12,6 +12,8 @@ import type { RecoveryUse } from "./overtime";
 import { holidayRecoveryMinutesForQuota } from "./overtime";
 import {
   calculateNetRatios,
+  fixedExtraTotal,
+  isAutomaticExtraLine,
   payCalibrationRegime,
   readingsForCalibrationRegime,
   type PayCalibrationRegime,
@@ -692,6 +694,24 @@ export function usePayActions(options: PayActionsOptions) {
               : "Impossible de réunir ces pages.",
           );
           return;
+        }
+      }
+      // Une ligne de rémunération inconnue : l'utilisateur dit si elle revient
+      // chaque mois (elle rejoint les éléments fixes) ou si elle est ponctuelle.
+      for (const item of items) {
+        const lines = item.reading.extraLines || [];
+        for (const line of lines) {
+          if (isAutomaticExtraLine(line) || line.fixed !== undefined) continue;
+          line.fixed = window.confirm(
+            `Le bulletin porte une ligne que l’application ne connaît pas :\n\n« ${line.label} » : ${euros(line.amount)}\n\nOK : c’est un élément fixe, versé chaque mois. Il s’ajoute aux autres éléments fixes.\nAnnuler : c’est ponctuel, compté pour ce mois seulement.`,
+          );
+        }
+        const fixedExtra = fixedExtraTotal(lines);
+        if (fixedExtra) {
+          item.reading = {
+            ...item.reading,
+            otherFixed: Math.round(((item.reading.otherFixed || 0) + fixedExtra) * 100) / 100,
+          };
         }
       }
       const fonctionnaireAmountsDetected = items.some(

@@ -64,12 +64,22 @@ export type PayslipReading = {
    *  mois du bulletin. */
   otherFixed?: number;
   /** Lignes de rémunération que l'application ne connaît pas encore. Elles
-   *  sont prises en compte plutôt qu'ignorées : une ligne régulière rejoint
-   *  « Autres éléments fixes », un rappel (« R ») ne vaut que pour ce mois. */
+   *  sont prises en compte plutôt qu'ignorées : l'utilisateur dit si chacune
+   *  est un élément fixe ou ponctuelle ; un rappel (« R ») ne vaut que pour ce
+   *  mois ; une ligne d'arrêt maladie (« C ») est déjà calculée. */
   extraLines?: PayslipExtraLine[];
 };
 
-export type PayslipExtraLine = { label: string; amount: number; recall: boolean };
+export type PayslipExtraLine = {
+  label: string;
+  amount: number;
+  /** Rappel d'un mois précédent (« R »). */
+  recall: boolean;
+  /** Carence ou arrêt maladie (« C ») : la retenue est déjà calculée. */
+  sick?: boolean;
+  /** Réponse de l'utilisateur : élément fixe (true) ou ponctuel (false). */
+  fixed?: boolean;
+};
 
 /** Les lignes de rémunération que l'application sait déjà lire. */
 const KNOWN_EARNING_LABELS = [
@@ -103,11 +113,25 @@ export function isComputedVariableLabel(label: string) {
   return /HEURE|H SUP|IHTS|MECENAT|VACATION/.test(plainPayslipLabel(label));
 }
 
-/** Les lignes inconnues qui s'ajoutent aux éléments fixes : régulières, et
- *  ni heures supplémentaires ni mécénats. */
+/** Rappel, arrêt maladie, heures supplémentaires ou mécénat : la ligne se
+ *  range d'elle-même, sans rien demander. */
+export function isAutomaticExtraLine(line: PayslipExtraLine) {
+  return line.recall || Boolean(line.sick) || isComputedVariableLabel(line.label);
+}
+
+/** Les lignes inconnues que l'utilisateur a rangées dans les éléments fixes. */
 export function fixedExtraTotal(lines: PayslipExtraLine[] | undefined) {
   const total = (lines || [])
-    .filter((line) => !line.recall && !isComputedVariableLabel(line.label))
+    .filter((line) => line.fixed === true && !isAutomaticExtraLine(line))
+    .reduce((sum, line) => sum + line.amount, 0);
+  return Math.round(total * 100) / 100;
+}
+
+/** Les lignes inconnues qui ne valent que pour le mois du bulletin : les
+ *  rappels et celles que l'utilisateur a dites ponctuelles. */
+export function oneOffExtraTotal(lines: PayslipExtraLine[] | undefined) {
+  const total = (lines || [])
+    .filter((line) => line.recall || (line.fixed === false && !isAutomaticExtraLine(line)))
     .reduce((sum, line) => sum + line.amount, 0);
   return Math.round(total * 100) / 100;
 }
@@ -464,6 +488,8 @@ function magnitude(value: number | undefined): number | undefined {
 }
 
 const PAYSLIP_CODE = /^\d{3}\.\d{2}$/;
+/* Une ligne peut porter son origine avant le code : « R » pour un rappel,
+   « C » pour une carence ou un arrêt maladie. */
 const hasWords = (token: string) => /[A-Za-zÀ-ÿ]{3,}/.test(token);
 
 /** Les lignes de rémunération, avant « CUMUL BRUT », que l'application ne
@@ -488,8 +514,10 @@ function readExtraLines(tokens: string[]): PayslipExtraLine[] | undefined {
     const own = followedByLine && run.length >= 3 && PAYSLIP_CODE.test(tokens[next - 1].trim()) ? run.slice(0, -2) : run;
     const amount = own.at(-1);
     if (amount === undefined || isKnownEarningLabel(label)) continue;
-    const recall = [tokens[index - 2], tokens[index - 3]].some((token) => token?.trim() === "R");
-    lines.push({ label, amount, recall });
+    const origin = [tokens[index - 2], tokens[index - 3]].map((token) => token?.trim());
+    const recall = origin.includes("R");
+    const sick = origin.includes("C");
+    lines.push({ label, amount, recall, ...(sick ? { sick } : {}) });
   }
   return lines.length ? lines : undefined;
 }

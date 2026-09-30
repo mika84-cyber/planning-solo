@@ -1387,6 +1387,33 @@ test("sans horaires enregistrés, les heures d’une récupération restent à s
   await expect(hours.getByLabel("Heure de fin — heures")).toHaveValue("");
 });
 
+test("une ligne inconnue du bulletin demande si elle est fixe ou ponctuelle", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  // Un bulletin PDF minimal : ses fragments de texte, ligne par ligne.
+  const tokens = [
+    "Juin 2026",
+    "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88",
+    "1.00", "455.10", "Prime nouvelle", "40.00", "40.00",
+    "CUMUL BRUT", "1895.88",
+  ];
+  const pdf = ["%PDF-1.4", "stream", ...tokens.map((token) => `(${token}) Tj`), "endstream", "%%EOF"].join("\n");
+  const question = new Promise<string>((resolve) => {
+    page.on("dialog", async (dialog) => {
+      const message = dialog.message();
+      if (message.includes("ne connaît pas")) {
+        await dialog.accept();
+        resolve(message);
+      } else {
+        await dialog.dismiss();
+      }
+    });
+  });
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-juin.pdf", mimeType: "application/pdf", buffer: Buffer.from(pdf, "latin1") });
+  expect(await question).toContain("« Prime nouvelle » : 40,00");
+  await expect(page.getByText(/Prime nouvelle \(40,00\s€, ajoutée aux autres éléments fixes\)/)).toBeVisible();
+});
+
 test("une photo de bulletin est reconnue localement", async ({ page }) => {
   test.setTimeout(120_000);
   await prepareDemo(page);

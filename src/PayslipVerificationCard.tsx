@@ -10,7 +10,7 @@ import {
   PAYSLIP_FILE_ACCEPT,
 } from "./payslipOcr";
 import { describePayslipGap, explainPayslipGap, type PayslipReviewCheck } from "./payslipReview";
-import { isComputedVariableLabel } from "./payslip";
+
 import {
   createPayslipAnomalyPdf,
   loadPayslipVerification,
@@ -418,9 +418,13 @@ export function PayslipVerificationCard({
                   {payslipCheck.reading.extraLines.map((line) => `${line.label} (${euros(line.amount)}, ${
                     line.recall
                       ? "rappel compté pour ce mois seulement"
-                      : isComputedVariableLabel(line.label)
-                        ? "déjà calculé par l’application"
-                        : "ajouté aux autres éléments fixes"
+                      : line.sick
+                        ? "arrêt maladie, déjà calculé par l’application"
+                        : line.fixed === true
+                          ? "ajoutée aux autres éléments fixes"
+                          : line.fixed === false
+                            ? "ponctuelle, comptée pour ce mois seulement"
+                            : "déjà calculée par l’application"
                   })`).join(" ; ")}.
                 </p>
               ) : null}

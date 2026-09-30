@@ -14,7 +14,7 @@ import type { StrikePayEstimate } from "./strike";
 import { DeductionSources, type DeductionSourceLine } from "./DeductionSources";
 import { ofPayMonth, payMonthKey } from "./deductionPayMonth";
 import type { sickLeaveSummaryForYear } from "./sickLeaveSummary";
-import type { inspectNetRatioCalibration } from "./payslip";
+import { oneOffExtraTotal, type inspectNetRatioCalibration } from "./payslip";
 import type { computePayAllowances } from "./payAllowances";
 import {
   isUnplannedPayslipCarence,
@@ -312,10 +312,9 @@ export function buildPayContent({
         (slot) => slot.index === payslipMonth,
       )?.sundayCount || 0
     : 0;
-  // Un rappel inconnu du bulletin s'ajoute au brut attendu de ce seul mois.
-  const payslipRecallExtras = comparablePayslip
-    ? (payslipCheck.reading.extraLines || []).filter((line) => line.recall).reduce((sum, line) => sum + line.amount, 0)
-    : 0;
+  // Une ligne inconnue ponctuelle (ou un rappel) s'ajoute au brut attendu
+  // de ce seul mois.
+  const payslipRecallExtras = comparablePayslip ? oneOffExtraTotal(payslipCheck.reading.extraLines) : 0;
   const payslipReview = comparablePayslip
     ? summarizePayslipReview([
         {
