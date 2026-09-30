@@ -432,8 +432,8 @@
 .colleague-sharing-page .colleague-tomorrow-caption { padding: 10px 14px 6px; }
 .colleague-sharing-page .colleague-week-table thead th { padding: 10px 2px 9px; }
 .colleague-sharing-page .colleague-week-table thead th:first-child { padding-left: 14px; }
-.colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 14px 6px 14px 14px; }
-.colleague-sharing-page .colleague-week-table tbody td { padding: 12px 2px; }
+.colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 12px 6px 12px 14px; }
+.colleague-sharing-page .colleague-week-table tbody td { padding: 10px 2px; }
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
 .colleague-sharing-page .colleague-tomorrow-row td { padding-top: 12px; padding-bottom: 12px; }
 
