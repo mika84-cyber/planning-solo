@@ -341,10 +341,15 @@
 .colleague-week-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .colleague-week-table thead th { padding: 8px 2px 6px; color: var(--muted); font-size: .66rem; font-weight: 900; text-align: center; }
 .colleague-week-table thead th:first-child { width: 25%; padding-left: 12px; text-align: left; text-transform: uppercase; letter-spacing: .06em; }
-.colleague-week-table thead th span,
-.colleague-week-table thead th b { display: block; line-height: 1.2; }
-.colleague-week-table thead th b { color: var(--text); font-size: .82rem; }
-.colleague-week-table thead th.is-today b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); }
+/* Jour et date sur une même ligne, en terracotta. */
+.colleague-week-table thead th:not(:first-child) { color: var(--accent-strong); white-space: nowrap; }
+.colleague-week-table thead th:not(:first-child) span { font-size: .78rem; }
+.colleague-week-table thead th b { margin-left: 3px; color: inherit; font-size: .82rem; }
+@media (max-width: 380px) {
+  .colleague-week-table thead th:first-child { letter-spacing: 0; }
+  .colleague-week-table thead th:not(:first-child) :is(span, b) { font-size: .68rem; }
+  .colleague-week-table thead th b { margin-left: 2px; }
+}
 .colleague-week-table tbody th[scope="row"] { overflow: hidden; padding: 7px 4px 7px 12px; color: var(--text); font-size: .8rem; font-weight: 800; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-table tbody tr.is-self th[scope="row"] { color: var(--accent-strong); }
 .colleague-week-table tbody td { text-align: center; }
@@ -383,13 +388,10 @@
    teintée de violet d'un bout à l'autre, la ligne survolée éclairée et les
    prénoms figés à gauche quand le tableau défile sur un écran étroit. */
 .colleague-week-table thead th { border-bottom: 1px solid var(--border-soft); }
-.colleague-week-table thead th.is-weekend span,
-.colleague-week-table thead th.is-weekend b { color: var(--muted); }
-.colleague-week-table :is(thead th, tbody td).is-today { background: rgba(152, 84, 56, .07); }
-.colleague-week-table thead th.is-today span { color: var(--accent-strong); }
-/* Le chiffre du jour reste blanc sur son rond, même un samedi ou un
-   dimanche : la teinte grisée du week-end ne doit pas l'effacer. */
-.colleague-week-table thead th.is-today b { color: #fff; }
+.colleague-week-table thead th.is-weekend { color: #b07a62; }
+/* Aujourd'hui : une bande terracotta sur toute la colonne, en-tête plein. */
+.colleague-week-table :is(thead th, tbody td).is-today { background: rgba(152, 84, 56, .15); }
+.colleague-week-table thead th.is-today { background: var(--accent); color: #fff; }
 .colleague-week-table tbody td { padding: 6px 1px; }
 .colleague-week-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; background: var(--surface); }
 .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(152, 84, 56, .045); }
@@ -421,6 +423,7 @@
 .colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 12px 6px 12px 14px; }
 .colleague-sharing-page .colleague-week-table tbody td { padding: 10px 2px; }
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
+.colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th { padding-left: 6px; }
 .colleague-sharing-page .colleague-tomorrow-row td { padding-top: 12px; padding-bottom: 12px; }
 
 /* En-tête : votre nom dans l'annuaire, lisible dès l'arrivée, avec sa
