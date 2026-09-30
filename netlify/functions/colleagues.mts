@@ -195,8 +195,13 @@ async function directoryResponse(store: Store, userId: string, email: string) {
     ...blockedByMe.map((block) => block.blockedId),
     ...blockedMe.map((block) => block.blockerId),
   ]);
-  const approvalShare = (share: Share): Share =>
-    share.status === "automatic" ? { ...share, status: "pending" } : share;
+  const currentNames = new Map(profiles.map((profile) => [profile.userId, profile.displayName]));
+  const approvalShare = (share: Share): Share => ({
+    ...share,
+    status: share.status === "automatic" ? "pending" : share.status,
+    ownerName: currentNames.get(share.ownerId) || share.ownerName,
+    viewerName: currentNames.get(share.viewerId) || share.viewerName,
+  });
   return json({
     self: self
       ? { userId: self.userId, displayName: self.displayName, visible: self.visible }
