@@ -457,6 +457,10 @@
 .useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
 /* Audioguides d'exposition : même carte que les fiches, code d'accès en vue. */
 .useful-audioguide-icon { background: #fbeadf; color: #a4502f; }
+/* Dossier d'une exposition : la fiche prend aussi une pastille colorée, et
+   occupe toute la largeur comme l'audioguide qui la suit. */
+.useful-form-download-list:has(> .useful-audioguide-card) > .useful-form-download-card { grid-column: 1 / -1; }
+.useful-form-download-list:has(> .useful-audioguide-card) .useful-form-file-icon:not(.useful-audioguide-icon) { background: #e4eef8; color: #2f5f8f; }
 /* Toujours sous les fiches, sur toute la largeur de la liste, et ses deux
    boutons côte à côte sous le texte. */
 .useful-form-download-list > .useful-audioguide-card { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr); }
