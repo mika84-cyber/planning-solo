@@ -134,12 +134,13 @@
 .day-work-post button.active { border-color: #c62828; background: #fdf1f0; color: #9f1f1f; }
 .day-work-post button.active b { background: #c62828; color: #fff; }
 /* Poste du jour hors salles : A (accueil) ou B (billetterie) dans une petite
-   pastille ronde cerclée de rouge. Ses couleurs sont rattachées à la case pour
-   rester rouges en thème sombre, comme les autres marqueurs de jour. */
-.work-post-marker { position: absolute; right: 2px; bottom: 2px; z-index: 6; display: grid; place-items: center; width: 15px; height: 15px; border: 1px solid; border-radius: 50%; font-size: 9px; font-weight: 600; line-height: 1; pointer-events: none; }
-:is(.day, .mini-day) .work-post-marker { border-color: #c62828bf; background: #c628281a; color: #b71c1c; }
+   pastille ronde, aux couleurs de AC et BI dans la semaine des collègues :
+   vert pâle cerclé de vert. Ses couleurs sont rattachées à la case pour rester
+   les mêmes en thème sombre, comme les autres marqueurs de jour. */
+.work-post-marker { position: absolute; right: 2px; bottom: 2px; z-index: 6; display: grid; place-items: center; width: 15px; height: 15px; border: 1.5px solid; border-radius: 50%; font-size: 9px; font-weight: 600; line-height: 1; pointer-events: none; }
+:is(.day, .mini-day) .work-post-marker { border-color: #2f7a52; background: #e2f3e8; color: #174f33; }
 @media (min-width: 900px) { .day .work-post-marker { right: 6px; bottom: 6px; width: 22px; height: 22px; font-size: 12px; } }
-.mini-day .work-post-marker { width: 9px; height: 9px; font-size: 6px; }
+.mini-day .work-post-marker { width: 9px; height: 9px; border-width: 1px; font-size: 6px; }
 .day .work-accident-calendar-marker {
   position: absolute;
   right: -12px;
