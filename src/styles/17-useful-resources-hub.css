@@ -376,3 +376,8 @@
    documents, description —, l'accident de travail sur toute la largeur dessous. */
 .useful-forms-root .useful-form-folder:not(.useful-form-work-accident-entry) { grid-template-columns: minmax(0, 1fr); align-content: start; row-gap: 10px; }
 .useful-forms-root .useful-form-work-accident-entry { grid-column: 1 / -1; }
+
+/* Contacts : les deux annuaires côte à côte, pastille en haut, comme la
+   mosaïque des formulaires. */
+.useful-contacts-root .useful-contact-directory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.useful-contacts-root .useful-contact-directory-grid > button { grid-template-columns: minmax(0, 1fr); align-content: start; row-gap: 10px; }
