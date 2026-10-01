@@ -57,7 +57,7 @@ html[data-theme="dark"] .work-exchange-list li.exchange-given b { background: #0
 /* Semaine des collègues : des pastilles de teinte moyenne, lettres foncées,
    qui gardent leur couleur sans éblouir ; bandeaux de groupe, week-end et
    colonne du jour repris dans des tons sombres. */
-html[data-theme="dark"] .colleague-week-shell { border-color: #4a403a; background: #1b1715; }
+html[data-theme="dark"] .colleague-week-shell { border-color: rgba(255, 255, 255, .32); background: #1b1715; }
 html[data-theme="dark"] .colleague-week-table td.is-today { background: rgba(240, 169, 136, .16); }
 html[data-theme="dark"] .colleague-week-table tbody th[scope="row"] { background: #1b1715; color: #f1e8de; }
 html[data-theme="dark"] .colleague-week-table tbody tr.is-self th[scope="row"] { color: #f0a988; }

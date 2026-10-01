@@ -343,8 +343,8 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-week-table :is(th, td):not(:first-child) { border-left: 1px solid rgba(44, 38, 33, .07); }
 /* Bande « Groupe + jours » : resserrée et cernée d'un léger liseré noir. */
 .colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 1px solid rgba(44, 38, 33, .45); border-bottom: 1px solid rgba(44, 38, 33, .45); }
-.colleague-week-table .colleague-tomorrow-group th:first-child { border-left: 1px solid rgba(44, 38, 33, .45); }
-.colleague-week-table .colleague-tomorrow-group th:last-child { border-right: 1px solid rgba(44, 38, 33, .45); }
+/* Contre le bord du tableau, le contour suffit : pas de double trait. */
+.colleague-week-table tbody tr:first-child > th { border-top: 0; }
 .colleague-week-cell { display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
 .colleague-week-cell.work { background: #e2f3e8; border-color: #9fd1b2; color: #1f6641; }
 .colleague-week-cell.training { background: #fbf3c1; border-color: #dcc54f; color: #6b5605; }
@@ -397,7 +397,9 @@ summary.colleague-received-heading > div { flex: 1; }
 /* Lisibilité : pas de texte à lire sous 11 px dans les tableaux. */
 .colleague-sharing-page :is(.colleague-tomorrow-table th, .colleague-tomorrow-group small, .colleague-tomorrow-caption, .colleague-tomorrow-status) { font-size: 11px; }
 /* Le tableau garde son conteneur (il défile sur téléphone), avec un trait léger. */
-.colleague-sharing-page :is(.colleague-tomorrow-table-shell, .colleague-week-shell) { border-color: var(--border-soft); }
+.colleague-sharing-page .colleague-tomorrow-table-shell { border-color: var(--border-soft); }
+/* La semaine : le même léger liseré noir que la bande des groupes, tout autour. */
+.colleague-sharing-page .colleague-week-shell { border-color: rgba(44, 38, 33, .45); }
 /* Tableaux plus aérés : le texte ne touche plus les traits, et la légende
    prend du recul sous le tableau. */
 .colleague-sharing-page .colleague-tomorrow-caption { padding: 10px 14px 6px; }
