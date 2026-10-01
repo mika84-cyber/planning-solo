@@ -86,6 +86,14 @@ html[data-theme="dark"] .colleague-week-cell.on-post { border-color: #8fd1a8; ba
 html[data-theme="dark"] .colleague-week-cell.partial { border-color: #9a7fcc; background: #c4affa; color: #2c1a4d; }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
 html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620; --tile-ink: #f0a988; }
+html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder,
+html[data-theme="dark"] .useful-contacts-root .useful-contact-directory-grid > button { background: color-mix(in srgb, var(--folder-accent) 22%, #1d1917); }
+html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder:hover,
+html[data-theme="dark"] .useful-contacts-root .useful-contact-directory-grid > button:hover { background: color-mix(in srgb, var(--folder-accent) 30%, #1d1917); }
+html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder em,
+html[data-theme="dark"] .useful-contacts-root .useful-contact-directory-grid > button small { color: #c9bcb0; }
+html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder:not(.useful-form-work-accident-entry) > .useful-form-folder-icon,
+html[data-theme="dark"] .useful-contacts-root .useful-contact-directory-grid > button > span:first-child { opacity: .3; }
 html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
 html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
