@@ -1877,10 +1877,9 @@ test("le mode sombre s’applique à toute l’application et se mémorise", asy
   expect(luminance(leaveBackground)).toBeGreaterThan(0.4);
   await goToSection(page, "colleagues");
   await page.locator(".colleague-board-mode").getByRole("button", { name: "Semaine", exact: true }).click();
-  // Grille épurée : un jour travaillé est un point vert lisible sur le fond sombre.
-  const workDot = await page.locator(".colleague-week-table .colleague-week-cell.work:not(.on-post)").first()
-    .evaluate((node) => getComputedStyle(node, "::before").backgroundColor);
-  expect(luminance(workDot)).toBeGreaterThan(0.15);
+  const weekCell = await colorsOf(".colleague-week-cell.work");
+  expect(luminance(weekCell.background)).toBeGreaterThan(0.4);
+  expect(luminance(weekCell.color)).toBeLessThan(0.4);
   await goToSection(page, "home");
   for (const section of ["leave", "pay", "program", "colleagues"] as const) {
     await goToSection(page, section);

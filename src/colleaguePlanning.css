@@ -339,27 +339,34 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-week-table tbody tr.is-self th[scope="row"] { color: var(--accent-strong); }
 .colleague-week-table tbody td { text-align: center; }
 .colleague-week-table tbody tr + tr > * { border-top: 1px solid var(--border-soft); }
-.colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 0; border-bottom: 1px solid var(--border-soft); background: transparent; }
-/* Grille épurée : plus de cases. Un point discret dit « au travail », une
-   lettre colorée dit tout le reste ; AC et BI gardent un fin cadre vert. */
-.colleague-week-cell { display: inline-grid; place-items: center; font-size: .74rem; font-weight: 900; }
-.colleague-week-cell.work:not(.on-post) { font-size: 0; }
-.colleague-week-cell.work:not(.on-post)::before { width: 7px; height: 7px; border-radius: 50%; background: #9ccfb0; content: ""; }
-.colleague-week-cell.training { color: #8a6a08; }
-.colleague-week-cell.rest { color: #666f82; }
-.colleague-week-cell.absence { color: #b83a52; }
-.colleague-week-cell.partial { color: #6a4aa8; }
-/* Légende : les mêmes symboles sur une ligne, leur nom dessous. */
-.colleague-week-legend { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); max-width: 640px; margin: 22px auto 0; border-top: 1px solid var(--border-soft); padding: 14px 0 0; color: #766a5f; font-size: .7rem; font-weight: 700; list-style: none; text-align: center; }
-.colleague-week-legend li { display: grid; grid-template-rows: 28px auto; place-items: center; gap: 4px; min-width: 0; }
-.colleague-week-legend small { overflow: hidden; max-width: 100%; font-size: inherit; text-overflow: ellipsis; white-space: nowrap; }
+/* Filets verticaux très pâles entre les jours : on suit une colonne sans grille. */
+.colleague-week-table :is(th, td):not(:first-child) { border-left: 1px solid rgba(44, 38, 33, .07); }
+.colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 0; }
+.colleague-week-cell { display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
+.colleague-week-cell.work { background: #e2f3e8; border-color: #9fd1b2; color: #1f6641; }
+.colleague-week-cell.training { background: #fbf3c1; border-color: #dcc54f; color: #6b5605; }
+.colleague-week-cell.rest { background: #e7eaf1; border-color: #b8c0cf; color: #3e4859; }
+.colleague-week-cell.absence { background: #fde6e9; border-color: #efb4bf; color: #96384a; }
+.colleague-week-cell.partial { background: #efe6fa; border-color: #c6b0e6; color: #5a3b8c; }
+/* Légende en nuancier : sept teintes accolées sur une ligne, nom dessous. */
+.colleague-week-legend { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; max-width: 640px; margin: 28px auto 0; padding: 0; color: #766a5f; font-size: .7rem; font-weight: 700; list-style: none; text-align: center; }
+.colleague-week-legend li { display: grid; gap: 6px; min-width: 0; }
+.colleague-week-legend .colleague-week-cell { width: auto; height: 30px; border-width: 1px 0; border-radius: 0; box-shadow: none; font-size: .72rem; }
+.colleague-week-legend li:first-child .colleague-week-cell { border-left-width: 1px; border-radius: 10px 0 0 10px; }
+.colleague-week-legend li:last-child .colleague-week-cell { border-right-width: 1px; border-radius: 0 10px 10px 0; }
+.colleague-week-legend li + li .colleague-week-cell { border-left: 1px solid rgba(44, 38, 33, .16); }
+/* AC et BI : le nuancier garde ses bords réguliers ; un anneau vert arrondi,
+   comme dans le tableau, marque chacune des deux cases. */
+.colleague-week-legend .colleague-week-cell.on-post { position: relative; border-width: 1px 0 1px 1px; border-color: #9fd1b2 #9fd1b2 #9fd1b2 rgba(44, 38, 33, .16); }
+.colleague-week-legend .on-post::after { position: absolute; top: 50%; left: 50%; width: min(28px, calc(100% - 8px)); height: 20px; border: 1.5px solid #2f7a52; border-radius: 6px; transform: translate(-50%, -50%); content: ""; }
+.colleague-week-legend small { overflow: hidden; font-size: inherit; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-legend .legend-short { display: none; }
 @media (max-width: 600px) {
   .colleague-week-legend { font-size: .66rem; }
   .colleague-week-legend .legend-full { display: none; }
   .colleague-week-legend .legend-short { display: inline; }
 }
-@media (max-width: 380px) { .colleague-week-legend { font-size: .6rem; letter-spacing: -.01em; } }
+@media (max-width: 380px) { .colleague-week-legend { margin-inline: 0; font-size: .6rem; letter-spacing: -.01em; } }
 @media (max-width: 370px) { .colleague-week-cell { font-size: .68rem; } }
 /* Lecture de la semaine : la colonne du jour teintée d'un bout à l'autre, la
    ligne survolée éclairée et les prénoms figés à gauche quand le tableau
@@ -369,16 +376,16 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-week-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; background: var(--surface); }
 .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > * { background-color: rgba(152, 84, 56, .045); }
 .colleague-week-table tbody tr:not(.colleague-tomorrow-group):hover > th[scope="row"] { background: #fbf4ef; }
-.colleague-week-cell { width: 28px; height: 28px; }
+.colleague-week-cell { width: 28px; height: 28px; box-shadow: 0 1px 2px rgba(44, 38, 33, .08); }
 @media (max-width: 370px) {
   .colleague-week-table .colleague-week-cell { width: 23px; height: 23px; }
 }
 /* Deux lettres (EX, AC, BI) tiennent dans la même case. */
 .colleague-week-cell.two-letters { font-size: .7rem; letter-spacing: .02em; }
-/* Accueil et billetterie : un fin cadre vert, sans fond. */
-.colleague-week-cell.on-post { width: auto; min-width: 28px; height: 22px; padding: 0 5px; border: 1.5px solid #2f7a52; border-radius: 6px; color: #24653f; }
-/* Les prénoms ouvrent le planning sans soulignement dans la grille épurée. */
-.colleague-sharing-page .colleague-week-table .colleague-row-open { text-decoration: none; }
+.colleague-week-legend .colleague-week-cell.two-letters { font-size: .72rem; }
+/* Accueil et billetterie ressortent parmi les EX : même vert pâle, cerclé d'un
+   contour vert appuyé, sans ressembler au A rose de l'absence. */
+.colleague-week-cell.on-post { border: 2px solid #2f7a52; color: #174f33; }
 .colleague-week-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 /* Le nom d'un collègue ouvre son planning : il garde l'allure d'un nom,
    souligné en pointillé pour dire qu'on peut le toucher. */
