@@ -302,6 +302,24 @@ export function attendanceDayMinutes(date: Date, group: number, workDayMinutes =
     : workDayMinutes;
 }
 
+/** Durée de récupération qui libère toute la journée : celle de la
+ *  quotité, ou celle des horaires habituels quand ils sont plus courts — une
+ *  collègue qui travaille de 10 h à 17 h 45 et pose ces heures-là est en
+ *  repos toute la journée. Une formation garde sa propre durée. */
+export function fullDayRecoveryMinutes(
+  date: Date,
+  group: number,
+  workDayMinutes = 8 * 60,
+  workSchedule?: { start?: string; end?: string },
+) {
+  const attendance = attendanceDayMinutes(date, group, workDayMinutes);
+  if (getDayInfo(date, group).kind === "training") return attendance;
+  const [startHour, startMinute] = (workSchedule?.start || "").split(":").map(Number);
+  const [endHour, endMinute] = (workSchedule?.end || "").split(":").map(Number);
+  const span = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+  return Number.isFinite(span) && span > 0 ? Math.min(attendance, span) : attendance;
+}
+
 /** Règle commune de présence utilisée par le planning personnel, ses
  * compteurs et le partage anonymisé. Aucun motif d'absence n'en sort. */
 export function personalPresenceForDate(
@@ -312,9 +330,11 @@ export function personalPresenceForDate(
   recoveryUses: Array<{ date: string; minutes: number; start?: string; end?: string }> = [],
   workDayMinutes = 8 * 60,
   isExceptionallyClosed: (date: string) => boolean = () => false,
+  workSchedule?: { start?: string; end?: string },
 ): PersonalPresence {
   const key = dateKey(date);
   const scheduled = getDayInfo(date, group).kind;
+  const fullDayMinutes = fullDayRecoveryMinutes(date, group, workDayMinutes, workSchedule);
   workDayMinutes = attendanceDayMinutes(date, group, workDayMinutes);
   const entry = entries[key];
   if (isExceptionallyClosed(key)) return { status: "absence" };
@@ -337,7 +357,7 @@ export function personalPresenceForDate(
       ? workDayMinutes / 2
       : 0;
   const absentMinutes = Math.min(workDayMinutes, halfLeaveMinutes + recoveredMinutes);
-  if (absentMinutes >= workDayMinutes) return { status: "absence" };
+  if (halfLeaveMinutes + recoveredMinutes >= fullDayMinutes) return { status: "absence" };
   if (absentMinutes > 0) {
     const recoveryMoments = new Set<HalfMoment>();
     let allRecoveryTimesAreLocated = dayRecovery.length > 0;

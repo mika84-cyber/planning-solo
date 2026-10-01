@@ -229,7 +229,7 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
 
   const [owner, formProfile, rawPeriods, rawEntries, rawRecoveryUses] = await Promise.all([
     readProfile(store, ownerId),
-    store.get(userDataKey(ownerId, "form-profile"), { type: "json" }) as Promise<{ group?: unknown; work_quota?: unknown } | null>,
+    store.get(userDataKey(ownerId, "form-profile"), { type: "json" }) as Promise<{ group?: unknown; work_quota?: unknown; work_schedule?: { start?: string; end?: string } } | null>,
     readMany<{ from?: unknown; to?: unknown; leave_type?: unknown; half_moment?: unknown }>(store, userDataKey(ownerId, "period/")),
     readMany<Record<string, unknown>>(store, userDataKey(ownerId, "entry/")),
     readMany<Record<string, unknown>>(store, userDataKey(ownerId, "recovery-use/")),
@@ -275,7 +275,8 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
   const isClosed = (date: string) => entries[date]?.closureOverride === "closed" ||
     (entries[date]?.closureOverride !== "open" && automaticClosures.has(date));
   const days = [...candidateDates].sort().map((date) => {
-    const presence = personalPresenceForDate(new Date(`${date}T12:00:00`), group, periods, entries, recoveryUses, dailyMinutesForQuota(quota), isClosed);
+    // Une récupération qui couvre les horaires habituels libère toute la journée.
+    const presence = personalPresenceForDate(new Date(`${date}T12:00:00`), group, periods, entries, recoveryUses, dailyMinutesForQuota(quota), isClosed, formProfile?.work_schedule);
     // Le poste (accueil, billetterie) suit la présence d'une journée travaillée.
     return { date, ...presence };
   });

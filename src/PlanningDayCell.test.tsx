@@ -19,6 +19,16 @@ const baseProps = {
 };
 
 describe("PlanningDayCell", () => {
+  it("montre en repos une journée entière posée en heures de récupération", () => {
+    const recoveryEntries = [{ id: "rec", date: "2026-09-09", minutes: 465, start: "10:00", end: "17:45", updatedAt: "" }];
+    const full = renderToStaticMarkup(<PlanningDayCell {...baseProps} recoveryEntries={recoveryEntries} fullDayRecoveryMinutes={465} />);
+    expect(full).toContain(" recovery-day");
+    expect(full).toContain("journée entière");
+    const part = renderToStaticMarkup(<PlanningDayCell {...baseProps} recoveryEntries={[{ ...recoveryEntries[0], minutes: 120, end: "12:00" }]} fullDayRecoveryMinutes={465} />);
+    expect(part).not.toContain(" recovery-day");
+    expect(part).toContain("hourly-recovery-day");
+  });
+
   it("ajoute les vacances scolaires sans remplacer les autres marqueurs", () => {
     const html = renderToStaticMarkup(
       <PlanningDayCell

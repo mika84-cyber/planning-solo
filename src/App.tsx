@@ -146,6 +146,7 @@ import {
   groupNoteItemsByDate,
   noteDateLabel,
   notePeriodFor,
+  fullDayRecoveryMinutes,
   personalPresenceForDate,
   rangeKeys,
   roundCurrency,
@@ -1918,8 +1919,9 @@ export default function Home() {
         selections,
         workDayMinutes,
         isExceptionallyClosed: (key) => Boolean(exceptionalClosureFor(key)),
+        workSchedule: usableWorkSchedule(formProfile?.workSchedule),
       }),
-    [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates],
+    [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates, formProfile?.workSchedule],
   );
 
   /* Ce qui manque encore à l'estimation de paie. Ces trois manques étaient
@@ -2290,6 +2292,7 @@ export default function Home() {
         cleanupSelected={calendarDeleteMode && calendarDeleteDates.includes(key)}
         today={sameDate(date, now)}
         recoveryEntries={recoveryUses.filter((item) => item.date === key)}
+        fullDayRecoveryMinutes={fullDayRecoveryMinutes(date, group, workDayMinutes, usableWorkSchedule(formProfile?.workSchedule))}
         leavePeriod={visibleAbsencePeriod(periods, key)}
         showLeaves={showLeaves}
         showNotes={showNotes}
@@ -3031,7 +3034,7 @@ export default function Home() {
             accountId={userEmail}
             ownGroup={group}
             isAdmin={isProgramAdmin}
-            getOwnPresence={(date) => personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)))}
+            getOwnPresence={(date) => personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)), usableWorkSchedule(formProfile?.workSchedule))}
           />
         </Suspense>
       ) : null}

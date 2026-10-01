@@ -43,6 +43,16 @@ describe("personalPresenceForDate", () => {
   const offDate = Array.from({ length: 31 }, (_, index) => new Date(2026, 8, index + 1, 12)).find((date) => getDayInfo(date, 2).kind === "off")!;
   const entry = (overrides: Partial<Entries[string]>): Entries[string] => ({ noteText: "", noteColor: "", noteUpdatedAt: "", noteGroupId: "", leave: false, wish: false, holidayPay: "", closureOverride: "", updatedAt: "", ...overrides });
 
+  it("libère la journée quand la récupération en heures couvre les horaires habituels", () => {
+    const key = dateKey(workDate);
+    // 10 h – 17 h 45 : 7 h 45, moins que les 8 h d'un temps plein.
+    const recovery = [{ date: key, minutes: 465, start: "10:00", end: "17:45" }];
+    expect(personalPresenceForDate(workDate, 2, [], {}, recovery, 480).status).toBe("partial");
+    expect(personalPresenceForDate(workDate, 2, [], {}, recovery, 480, () => false, { start: "10:00", end: "17:45" }).status).toBe("absence");
+    // Quelques heures seulement restent une présence partielle.
+    expect(personalPresenceForDate(workDate, 2, [], {}, [{ date: key, minutes: 120, start: "10:00", end: "12:00" }], 480, () => false, { start: "10:00", end: "17:45" }).status).toBe("partial");
+  });
+
   it("réutilise les mêmes priorités pour échange, absence directe et fermeture", () => {
     expect(personalPresenceForDate(offDate, 2, [], { [dateKey(offDate)]: entry({ exchangeRole: "return" }) }).status).toBe("work");
     expect(personalPresenceForDate(workDate, 2, [], { [dateKey(workDate)]: entry({ exchangeRole: "given" }) }).status).toBe("absence");

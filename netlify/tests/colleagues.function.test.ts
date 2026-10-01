@@ -208,6 +208,23 @@ describe("partage des plannings entre collègues", () => {
     ]) });
   });
 
+  it("montre en absence une journée entière posée en heures de récupération", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît");
+    data.set("colleagues/share/viewer/user-b/user-a", {
+      ownerId: "user-a", viewerId: "user-b", ownerName: "Alice", viewerName: "Benoît",
+      status: "accepted", createdAt: "2026-09-01", updatedAt: "2026-09-01",
+    });
+    const { getDayInfo } = await import("../../src/planningLogic");
+    const day = Array.from({ length: 30 }, (_, index) => `2026-09-${String(index + 1).padStart(2, "0")}`)
+      .find((date) => getDayInfo(new Date(`${date}T12:00:00`), 3).kind === "work")!;
+    // Horaires de 10 h à 17 h 45 : toute la journée posée en heures.
+    data.set("user/user-a/form-profile", { group: "3", work_schedule: { start: "10:00", end: "17:45" } });
+    data.set("user/user-a/recovery-use/rec-1", { date: day, minutes: 465, start: "10:00", end: "17:45" });
+    mockedGetUser.mockResolvedValue({ id: "user-b", email: "b@example.test" } as never);
+    const payload = await (await colleaguesHandler(new Request("https://example.test/api/colleagues?ownerId=user-a"))).json() as { days: Array<{ date: string; status: string }> };
+    expect(payload.days).toEqual(expect.arrayContaining([expect.objectContaining({ date: day, status: "absence" })]));
+  });
+
   it("refuse la lecture avant acceptation puis l’autorise", async () => {
     profile("user-a", "Alice"); profile("user-b", "Benoît");
     const invitation = {

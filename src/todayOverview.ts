@@ -2,7 +2,7 @@ import { visibleAbsencePeriod } from "./absenceReplacement";
 import { workExchangeForDate } from "./workExchange";
 import { minutesLabel, type RecoveryUse } from "./overtime";
 import type { Entries, LeavePeriod, SelectedDay } from "./appModel";
-import { WORK_POSTS, personalPresenceForDate, workPostOf } from "./appModel";
+import { WORK_POSTS, fullDayRecoveryMinutes, personalPresenceForDate, workPostOf } from "./appModel";
 import {
   DAY_LABELS,
   GROUP_OPTIONS,
@@ -34,6 +34,8 @@ export type TodayOverviewInput = {
   /** Durée d'une journée de travail selon la quotité, en minutes. */
   workDayMinutes: number;
   isExceptionallyClosed: (key: string) => boolean;
+  /** Horaires habituels : une récupération qui les couvre libère la journée. */
+  workSchedule?: { start?: string; end?: string };
 };
 
 /** Ce que dit la carte d'accueil : la journée en cours et la prochaine
@@ -47,6 +49,7 @@ export function computeTodayOverview({
   selections,
   workDayMinutes,
   isExceptionallyClosed,
+  workSchedule,
 }: TodayOverviewInput) {
   const key = dateKey(today);
   const info = getDayInfo(today, group);
@@ -82,7 +85,7 @@ export function computeTodayOverview({
     tone = "exchange";
   } else if (todayRecoveryMinutes) {
     status =
-      todayRecoveryMinutes >= workDayMinutes
+      todayRecoveryMinutes >= fullDayRecoveryMinutes(today, group, workDayMinutes, workSchedule)
         ? `Récupération · ${minutesLabel(todayRecoveryMinutes)}`
         : `${scheduledStatus} + récup. ${minutesLabel(todayRecoveryMinutes)}`;
     tone = "recovery";
@@ -120,7 +123,7 @@ export function computeTodayOverview({
           candidateKey >= item.from &&
           candidateKey <= item.to,
       ) ||
-      personalPresenceForDate(new Date(`${candidateKey}T12:00:00`), group, periods, entries, recoveryUses, workDayMinutes).status === "absence";
+      personalPresenceForDate(new Date(`${candidateKey}T12:00:00`), group, periods, entries, recoveryUses, workDayMinutes, undefined, workSchedule).status === "absence";
   }, 366, (candidateKey) => entries[candidateKey]?.exchangeRole === "return");
   const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
   const nextWorkExceptionalClosure = nextWork
@@ -181,7 +184,7 @@ export function computeTodayOverview({
       !todayExchange &&
       (!period || period.leaveType === "half") &&
       !entry?.leave &&
-      todayRecoveryMinutes < workDayMinutes
+      todayRecoveryMinutes < fullDayRecoveryMinutes(today, group, workDayMinutes, workSchedule)
         ? coWorkingLabel
         : ""),
     nextWork,
