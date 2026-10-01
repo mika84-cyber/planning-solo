@@ -358,7 +358,7 @@ summary.colleague-received-heading > div { flex: 1; }
 /* AC et BI : le nuancier garde ses bords réguliers ; un anneau vert arrondi,
    comme dans le tableau, marque chacune des deux cases. */
 .colleague-week-legend .colleague-week-cell.on-post { position: relative; border-width: 1px 0 1px 1px; border-color: #9fd1b2 #9fd1b2 #9fd1b2 rgba(44, 38, 33, .16); }
-.colleague-week-legend .on-post::after { position: absolute; top: 4px; bottom: 4px; left: 50%; width: min(36px, calc(100% - 8px)); border: 2px solid #2f7a52; border-radius: 7px; transform: translateX(-50%); content: ""; }
+.colleague-week-legend .on-post::after { position: absolute; top: 50%; left: 50%; width: min(28px, calc(100% - 8px)); height: 20px; border: 1.5px solid #2f7a52; border-radius: 6px; transform: translate(-50%, -50%); content: ""; }
 .colleague-week-legend small { overflow: hidden; font-size: inherit; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-legend .legend-short { display: none; }
 @media (max-width: 600px) {
