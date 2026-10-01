@@ -9,30 +9,31 @@ type UsefulResourcesHubProps = {
   initialTab?: ResourceTab;
 };
 
-/** Chaque rubrique dit en une ligne ce qu'on y trouve. */
+/** Chaque rubrique dit en une ligne ce qu'on y trouve, sous une icône au
+ *  trait posée sur un fond teinté. */
 const RESOURCE_TABS: ReadonlyArray<{
   key: ResourceTab;
   title: string;
   description: string;
-  image: string;
+  icon: ReactNode;
 }> = [
   {
     key: "pdf",
     title: "Plannings PDF",
     description: "Planning annuel, les 3 groupes, vos congés, fériés travaillés",
-    image: "/resource-pdf-brancusi-v5.png",
+    icon: <svg viewBox="0 0 48 48"><path d="M14 6h14l8 8v28H14z" /><path d="M28 6v8h8" /><path d="M19 24h12M19 30h12M19 36h7" /></svg>,
   },
   {
     key: "forms",
     title: "Formulaires",
     description: "Expo, SAP, Brantôme, accident de travail…",
-    image: "/resource-forms-brancusi-v2.png",
+    icon: <svg viewBox="0 0 48 48"><path d="M6 14h13l4 4h19v22H6z" /><path d="M6 22h36" /><path d="M15 9h12" /></svg>,
   },
   {
     key: "contacts",
     title: "Contacts",
     description: "Numéros utiles et services du musée",
-    image: "/resource-contacts-brancusi-v4.png",
+    icon: <svg viewBox="0 0 48 48"><path d="M14 8h7l3 9-4.5 3a22 22 0 0 0 9.5 9.5l3-4.5 9 3v7a3 3 0 0 1-3 3C21 38 10 27 10 11a3 3 0 0 1 4-3z" /></svg>,
   },
 ];
 
@@ -85,7 +86,7 @@ export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulR
             onClick={() => selectTab(tab.key)}
           >
             <span className="useful-resource-tab-art" aria-hidden="true">
-              <img src={tab.image} alt="" draggable={false} decoding="async" />
+              {tab.icon}
             </span>
             <span className="useful-resource-tab-copy">
               <strong>{tab.title}</strong>

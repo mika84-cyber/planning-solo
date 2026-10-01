@@ -85,6 +85,9 @@ html[data-theme="dark"] .colleague-week-cell.absence { border-color: #cf7688; ba
 html[data-theme="dark"] .colleague-week-cell.on-post { border-color: #8fd1a8; background: #1f4d35; color: #d8f5e3; }
 html[data-theme="dark"] .colleague-week-cell.partial { border-color: #9a7fcc; background: #c4affa; color: #2c1a4d; }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
+html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620; --tile-ink: #f0a988; }
+html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
+html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
    reconnaissables sur fond sombre. */
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }

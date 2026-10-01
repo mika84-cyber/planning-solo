@@ -886,7 +886,7 @@ test("les documents et contacts gardent trois onglets accessibles sur petit écr
   const boxes = await cards.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   // Une liste : chaque rubrique a sa vignette de même taille, son titre et ce
   // qu'on y trouve.
-  const arts = await page.locator(".useful-resource-tab-art img").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  const arts = await page.locator(".useful-resource-tab-art svg").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(arts).toHaveLength(3);
   for (const art of arts.slice(1)) expect(Math.abs(art.height - arts[0].height)).toBeLessThan(2);
   await expect(cards.locator(".useful-resource-tab-copy small")).toHaveCount(3);

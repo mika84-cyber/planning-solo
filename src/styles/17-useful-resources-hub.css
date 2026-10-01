@@ -381,3 +381,12 @@
    mosaïque des formulaires. */
 .useful-contacts-root .useful-contact-directory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .useful-contacts-root .useful-contact-directory-grid > button { grid-template-columns: minmax(0, 1fr); align-content: start; row-gap: 10px; }
+
+/* Icônes au trait sur fond teinté : terracotta pour les PDF, vert pour les
+   formulaires, bleu pour les contacts. */
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art { display: grid; place-items: center; padding: 18px; background: var(--tile-tint); }
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art::after { display: none; }
+.useful-resource-tab-art svg { width: 100%; height: 100%; fill: none; stroke: var(--tile-ink); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.2; }
+.useful-resource-tab.resource-pdf { --tile-tint: #f6e3dc; --tile-ink: #a4502f; }
+.useful-resource-tab.resource-forms { --tile-tint: #e3efe7; --tile-ink: #2f7a52; }
+.useful-resource-tab.resource-contacts { --tile-tint: #e4ebf5; --tile-ink: #3a5f8f; }
