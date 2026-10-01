@@ -26,7 +26,7 @@ const RESOURCE_TABS: ReadonlyArray<{
   {
     key: "forms",
     title: "Formulaires",
-    description: "Expo, SAP, Brantôme, accident de travail…",
+    description: "Expo, SAP, Brantôme et accident de travail",
     icon: <svg viewBox="0 0 48 48"><path d="M6 14h13l4 4h19v22H6z" /><path d="M6 22h36" /><path d="M15 9h12" /></svg>,
   },
   {
