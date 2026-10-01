@@ -461,22 +461,8 @@
   }
 
   .useful-form-folder-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: stretch;
-    gap: 14px;
     margin: 0;
-  }
-
-  .useful-form-folder {
-    min-height: 150px;
-    border-radius: 20px;
-    padding: 18px;
-    transition: transform 160ms ease, box-shadow 160ms ease;
-  }
-
-  .useful-form-folder:hover {
-    transform: translateY(-3px);
-    box-shadow: inset 5px 0 var(--folder-accent), 0 13px 25px rgba(58, 51, 44, 0.11);
   }
 
   .useful-forms-folder-screen .useful-form-download-list {
@@ -1208,13 +1194,6 @@
     font-size: 36px;
     white-space: nowrap;
   }
-  .useful-form-folder-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-  .useful-form-folder {
-    min-height: 145px;
-  }
 }
 
 /* Tous les grands bandeaux gagnent en hauteur et ancrent leur titre dans le
@@ -1376,32 +1355,38 @@
   color: color-mix(in srgb, var(--contact-category-text, var(--muted)) 72%, #7a6f5f);
 }
 
-.useful-contact-category-grid > button:nth-child(1) {
+.useful-contact-category-grid > button:nth-child(1),
+.useful-form-download-list > article:nth-of-type(6n + 1) {
   --contact-category-accent: var(--sage);
   --contact-category-text: #2f5f59;
   --contact-category-background: linear-gradient(135deg, #e8f3f1, #f8fcfb);
 }
-.useful-contact-category-grid > button:nth-child(2) {
+.useful-contact-category-grid > button:nth-child(2),
+.useful-form-download-list > article:nth-of-type(6n + 2) {
   --contact-category-accent: #d48b3c;
   --contact-category-text: #8a4b12;
   --contact-category-background: linear-gradient(135deg, #fff0dd, #fffaf3);
 }
-.useful-contact-category-grid > button:nth-child(3) {
+.useful-contact-category-grid > button:nth-child(3),
+.useful-form-download-list > article:nth-of-type(6n + 3) {
   --contact-category-accent: #c45f87;
   --contact-category-text: #843657;
   --contact-category-background: linear-gradient(135deg, #ffe8f1, #fff8fb);
 }
-.useful-contact-category-grid > button:nth-child(4) {
+.useful-contact-category-grid > button:nth-child(4),
+.useful-form-download-list > article:nth-of-type(6n + 4) {
   --contact-category-accent: #4c9b79;
   --contact-category-text: #21694d;
   --contact-category-background: linear-gradient(135deg, #e4f7ee, #f8fdfa);
 }
-.useful-contact-category-grid > button:nth-child(5) {
+.useful-contact-category-grid > button:nth-child(5),
+.useful-form-download-list > article:nth-of-type(6n + 5) {
   --contact-category-accent: #8a6a43;
   --contact-category-text: #6b5128;
   --contact-category-background: linear-gradient(135deg, #f7efe1, #fdfaf4);
 }
-.useful-contact-category-grid > button:nth-child(6) {
+.useful-contact-category-grid > button:nth-child(6),
+.useful-form-download-list > article:nth-of-type(6n + 6) {
   --contact-category-accent: #d56f52;
   --contact-category-text: #91412b;
   --contact-category-background: linear-gradient(135deg, #ffebe4, #fff9f6);

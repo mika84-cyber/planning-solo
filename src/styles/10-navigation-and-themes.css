@@ -321,39 +321,14 @@
 }
 .useful-form-folder {
   --folder-accent: #9b8e7c;
-  min-height: 170px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  border: 1.5px solid color-mix(in srgb, var(--folder-accent) 62%, #fff);
-  border-radius: 18px;
-  padding: 18px;
-  background: color-mix(in srgb, var(--folder-accent) 9%, #fff);
   color: #2c2621;
   font: inherit;
-  text-align: left;
   cursor: pointer;
-  box-shadow: inset 5px 0 var(--folder-accent), 0 8px 18px rgba(58, 51, 44, 0.07);
 }
 .useful-form-folder.tone-expo { --folder-accent: #2f7f74; }
 .useful-form-folder.tone-sap { --folder-accent: #5368a8; }
 .useful-form-folder.tone-brantome { --folder-accent: #b9781e; }
-.useful-form-folder:hover { transform: translateY(-1px); }
-.useful-form-folder > span:nth-child(2) { display: grid; gap: 5px; }
-.useful-form-folder strong { font-size: 17px; }
-.useful-form-folder small { color: var(--folder-accent); font-size: 12px; font-weight: 900; }
-.useful-form-folder em { color: var(--muted); font-size: 11px; font-style: normal; line-height: 1.4; }
-.useful-form-folder > i { color: var(--folder-accent); font-size: 28px; font-style: normal; }
-.useful-form-folder-icon {
-  width: 50px;
-  height: 50px;
-  display: grid;
-  place-items: center;
-  border-radius: 15px;
-  background: color-mix(in srgb, var(--folder-accent) 18%, #fff);
-  color: var(--folder-accent);
-}
+.useful-form-folder-icon { display: grid; place-items: center; }
 .useful-form-folder-icon svg { width: 29px; fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.8; }
 
 .useful-forms-folder-screen { padding-top: 0; overflow: hidden; }

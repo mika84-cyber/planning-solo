@@ -2,7 +2,6 @@
 .work-accident-symbol { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid #bcb0a0; border-radius: var(--radius-control); color: var(--muted); background: var(--surface); }
 .work-accident-symbol img { display: block; width: 44px; height: 44px; object-fit: contain; }
 .useful-form-content-stack { display: grid; grid-area: folders; gap: 18px; width: 100%; }
-.useful-form-folder .work-accident-symbol.useful-form-folder-icon{width:50px;height:50px}.useful-form-folder .work-accident-symbol.useful-form-folder-icon img{width:46px;height:46px}
 
 .work-accident-screen {
   width: min(100%, 1180px);
@@ -210,7 +209,6 @@
     justify-self: auto;
   }
   .leave-balances-direct .leave-balance-grid button.strike > em { margin-top: 7px; }
-  .useful-form-folder .work-accident-symbol.useful-form-folder-icon{width:38px;height:38px}.useful-form-folder .work-accident-symbol.useful-form-folder-icon img{width:35px;height:35px}
   .work-accident-screen { border-radius: 18px; padding: 13px; }
   .work-accident-header { grid-template-columns: minmax(0, 1fr); padding-left: 49px; }
   .work-accident-header h2 { font-size: 23px; }

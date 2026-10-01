@@ -543,14 +543,6 @@
     width: 100%;
   }
 
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-folder-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .useful-forms-screen:not(.useful-forms-folder-screen) .useful-form-folder:hover {
-    transform: none;
-  }
-
 }
 
 @media (min-width: 721px) and (max-width: 900px) {

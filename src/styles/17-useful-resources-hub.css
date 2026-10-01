@@ -400,3 +400,12 @@
 .useful-resource-tab.resource-pdf { --tile-tint: #f6e3dc; --tile-ink: #a4502f; }
 .useful-resource-tab.resource-forms { --tile-tint: #e3efe7; --tile-ink: #2f7a52; }
 .useful-resource-tab.resource-contacts { --tile-tint: #e4ebf5; --tile-ink: #3a5f8f; }
+
+/* Documents d'un dossier de formulaires : même présentation que les
+   rubriques de Contacts Pompidou — liseré de couleur à gauche, fond pastel,
+   titre et bouton à la couleur du liseré, six teintes en boucle. */
+.useful-form-download-list > .useful-form-download-card { border: 1px solid var(--border-card); border-left: 6px solid var(--contact-category-accent); background: var(--contact-category-background); box-shadow: 0 8px 20px color-mix(in srgb, var(--contact-category-accent) 14%, transparent); }
+.useful-form-download-list > .useful-form-download-card .useful-form-file-copy strong { color: var(--contact-category-text); }
+.useful-form-download-list > .useful-form-download-card .useful-form-file-copy > small:first-child { color: color-mix(in srgb, var(--contact-category-text) 72%, #7a6f5f); }
+.useful-form-download-list > .useful-form-download-card > .useful-form-file-icon:not(.useful-audioguide-icon) { background: rgba(255, 255, 255, .7); color: var(--contact-category-text); }
+.useful-form-download-list > .useful-form-download-card > a { border-color: transparent; background: var(--contact-category-text); }
