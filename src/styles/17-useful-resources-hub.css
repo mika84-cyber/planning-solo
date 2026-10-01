@@ -239,7 +239,7 @@
 }
 .useful-forms-root .useful-form-folder { grid-template-columns:auto minmax(0,1fr);border-left-color:var(--folder-accent);box-shadow:none; }
 .useful-forms-root .useful-form-work-accident-entry{--folder-accent:#7a6f5f}
-.useful-forms-root .useful-form-folder-grid{grid-template-columns:minmax(0,1fr);gap:10px}.useful-forms-root .useful-form-folder{min-height:92px;padding:13px 16px}.useful-forms-root .useful-form-folder>i{bottom:auto;position:static;right:auto}
+.useful-forms-root .useful-form-folder-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.useful-forms-root .useful-form-folder{min-height:92px;padding:13px 16px}.useful-forms-root .useful-form-folder>i{bottom:auto;position:static;right:auto}
 .useful-contacts-root .useful-contact-directory-grid > button { grid-template-columns:auto minmax(0,1fr); }
 .useful-contacts-root .useful-contact-directory-grid > button:first-child { border-left-color:var(--border-card);box-shadow:none; }
 .useful-contacts-root .useful-contact-directory-grid > button:last-child { border-left-color:#aa773c;box-shadow:none; }
@@ -371,3 +371,8 @@
 @media (min-width: 900px) {
   .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* Formulaires : les dossiers en mosaïque — icône en haut, titre, nombre de
+   documents, description —, l'accident de travail sur toute la largeur dessous. */
+.useful-forms-root .useful-form-folder:not(.useful-form-work-accident-entry) { grid-template-columns: minmax(0, 1fr); align-content: start; row-gap: 10px; }
+.useful-forms-root .useful-form-work-accident-entry { grid-column: 1 / -1; }

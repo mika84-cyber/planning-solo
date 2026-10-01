@@ -1986,10 +1986,13 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tÃ©lÃ
   await expect(page.locator(".useful-forms-screen .useful-resource-search")).toHaveCount(0);
   const folderBoxes = await page.locator(".useful-form-folder").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(folderBoxes.length).toBeGreaterThan(2);
-  expect(folderBoxes[1].y).toBeGreaterThan(folderBoxes[0].y + folderBoxes[0].height);
+  // MosaÃ¯que : deux dossiers par ligne, l'accident de travail sur toute la largeur dessous.
+  expect(Math.abs(folderBoxes[1].y - folderBoxes[0].y)).toBeLessThan(2);
+  expect(folderBoxes[2].y).toBeGreaterThan(folderBoxes[0].y + folderBoxes[0].height);
   expect(Math.abs(folderBoxes[0].width - folderBoxes[1].width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(folderBoxes[3].width - folderBoxes[4].width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(folderBoxes[3].height - folderBoxes[4].height)).toBeLessThanOrEqual(1);
+  expect(Math.abs(folderBoxes[2].height - folderBoxes[3].height)).toBeLessThanOrEqual(1);
+  expect(folderBoxes[4].width).toBeGreaterThan(folderBoxes[0].width * 1.8);
+  expect(folderBoxes[4].y).toBeGreaterThan(folderBoxes[2].y + folderBoxes[2].height);
   expect(Math.abs(resourcesScreenBox.x - formsHeaderBox.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(resourcesScreenBox.width - formsHeaderBox.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(formsScreenBox.width - resourcesScreenBox.width)).toBeLessThanOrEqual(1);
@@ -2019,8 +2022,6 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tÃ©lÃ
     folders.nth(4).evaluate((node) => ({ background: getComputedStyle(node).backgroundImage, legend: getComputedStyle(node.querySelector("em")!).fontSize })),
   ]);
   expect(accidentStyle).toEqual(ticketStyle);
-  for (let index = 1; index < folderBoxes.length; index += 1)
-    expect(folderBoxes[index].y).toBeGreaterThan(folderBoxes[index - 1].y + folderBoxes[index - 1].height);
 
   await folders.nth(0).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
