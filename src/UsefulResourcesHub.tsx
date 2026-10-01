@@ -9,20 +9,29 @@ type UsefulResourcesHubProps = {
   initialTab?: ResourceTab;
 };
 
+/** Chaque rubrique dit en une ligne ce qu'on y trouve. */
 const RESOURCE_TABS: ReadonlyArray<{
   key: ResourceTab;
   title: string;
+  description: string;
   image: string;
 }> = [
-  { key: "pdf", title: "Plannings PDF", image: "/resource-pdf-brancusi-v5.png" },
+  {
+    key: "pdf",
+    title: "Plannings PDF",
+    description: "Planning annuel, les 3 groupes, vos congés, fériés travaillés",
+    image: "/resource-pdf-brancusi-v5.png",
+  },
   {
     key: "forms",
     title: "Formulaires",
+    description: "Expo, SAP, Brantôme, accident de travail…",
     image: "/resource-forms-brancusi-v2.png",
   },
   {
     key: "contacts",
     title: "Contacts",
+    description: "Numéros utiles et services du musée",
     image: "/resource-contacts-brancusi-v4.png",
   },
 ];
@@ -80,7 +89,9 @@ export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulR
             </span>
             <span className="useful-resource-tab-copy">
               <strong>{tab.title}</strong>
+              <small>{tab.description}</small>
             </span>
+            <span className="useful-resource-tab-go" aria-hidden="true">›</span>
           </button>
         ))}
       </div>

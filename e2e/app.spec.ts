@@ -884,19 +884,21 @@ test("les documents et contacts gardent trois onglets accessibles sur petit écr
   await goToSection(page, "documents");
   const cards = page.locator(".useful-resource-tab");
   const boxes = await cards.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
-  // Les trois illustrations sont rognées au ras de leur objet : même cadre,
-  // même ligne de sol, quelle que soit la rubrique.
+  // Une liste : chaque rubrique a sa vignette de même taille, son titre et ce
+  // qu'on y trouve.
   const arts = await page.locator(".useful-resource-tab-art img").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(arts).toHaveLength(3);
-  for (const art of arts.slice(1)) {
-    expect(Math.abs(art.height - arts[0].height)).toBeLessThan(2);
-    expect(Math.abs(art.bottom - arts[0].bottom)).toBeLessThan(2);
-  }
+  for (const art of arts.slice(1)) expect(Math.abs(art.height - arts[0].height)).toBeLessThan(2);
+  await expect(cards.locator(".useful-resource-tab-copy small")).toHaveCount(3);
   if (page.viewportSize()!.width <= 720) {
-    expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(3);
-    expect(Math.abs(boxes[1].y - boxes[2].y)).toBeLessThan(3);
-    expect(boxes[2].x + boxes[2].width - boxes[0].x).toBeGreaterThan(page.viewportSize()!.width * 0.92);
-    expect(boxes[1].x - boxes[0].x - boxes[0].width).toBeLessThanOrEqual(10);
+    // Sur téléphone, les rubriques s'empilent, chacune sur toute la largeur.
+    expect(boxes[1].y).toBeGreaterThan(boxes[0].y + boxes[0].height);
+    expect(boxes[2].y).toBeGreaterThan(boxes[1].y + boxes[1].height);
+    expect(Math.abs(boxes[0].width - boxes[2].width)).toBeLessThan(2);
+    expect(boxes[0].width).toBeGreaterThan(page.viewportSize()!.width * 0.85);
+  } else if (page.viewportSize()!.width >= 900) {
+    // Sur grand écran, les trois tiennent sur une ligne.
+    expect(Math.abs(boxes[0].y - boxes[2].y)).toBeLessThan(3);
   }
   await page.getByRole("tab", { name: "Formulaires" }).click();
   await expect(page.getByRole("tabpanel", { name: "Formulaires" })).toBeVisible();

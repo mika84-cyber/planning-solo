@@ -355,3 +355,19 @@
 .has-active-resource .useful-resource-tab-copy strong { color: var(--muted); font-family: inherit; font-size: clamp(.8rem, 3.4vw, .9rem); font-weight: 700; white-space: nowrap; }
 .has-active-resource .useful-resource-tab[aria-selected="true"] { background: var(--accent); box-shadow: 0 2px 6px rgba(143, 72, 45, .28); }
 .has-active-resource .useful-resource-tab[aria-selected="true"] .useful-resource-tab-copy strong { color: #fff; }
+
+/* Accueil des documents : une liste, une ligne par rubrique — vignette, titre,
+   ce qu'on y trouve et une flèche. Une fois une rubrique ouverte, les onglets
+   reprennent leur sélecteur compact. */
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tabs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab { grid-template-columns: 84px minmax(0, 1fr) auto; grid-template-rows: auto; align-items: center; column-gap: 14px; min-height: 0; border-radius: 18px; padding: 10px 16px 10px 10px; background: #fff; box-shadow: 0 6px 18px rgba(58, 51, 44, .07); }
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art { width: 84px; height: 84px; border-radius: 14px; padding: 6px 6px 9px; }
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy { place-items: start; gap: 4px; border-top: 0; padding: 0; background: none; text-align: left; }
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy strong { justify-items: start; font-size: 1.12rem; }
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy strong::before { display: none; }
+.useful-resource-tab-copy small { color: var(--muted); font-size: .82rem; line-height: 1.35; }
+.useful-resource-tab-go { color: #a4502f; font-size: 1.6rem; line-height: 1; }
+.has-active-resource :is(.useful-resource-tab-copy small, .useful-resource-tab-go) { display: none; }
+@media (min-width: 900px) {
+  .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
