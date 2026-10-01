@@ -275,12 +275,14 @@ export function UsefulContactsSection({ initialData, accountId = "", isAdmin = f
         return query || favorites.length ? <ContactCards contacts={matches.filter((contact) => query || favorites.includes(usefulContactId(contact)))} favorites={favorites} onToggleFavorite={toggleFavorite} isAdmin={isAdmin} onEdit={setEditingContact} /> : null;
       })()}
       <div className="useful-contact-directory-grid">
-          <button type="button" onClick={() => setDirectory("pompidou")}>
-            <span aria-hidden="true">P</span><span><strong>Contacts Pompidou</strong><small>RAS, administration, RH, médical, informatique et tickets restaurants</small></span>
-          </button>
-          <button type="button" onClick={() => setDirectory("gprmn")}>
-            <span aria-hidden="true">G</span><span><strong>Contact GP‑RMN</strong><small>Accident, secourisme et supervision Expo</small></span>
-          </button>
+          {([
+            ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, tickets resto"],
+            ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Accident, secourisme, supervision Expo"],
+          ] as const).map(([key, title, count, description]) => (
+            <button key={key} type="button" onClick={() => setDirectory(key)}>
+              <span aria-hidden="true">{key === "pompidou" ? "P" : "G"}</span><span><strong>{title}</strong>{count ? <small>{count} contact{count > 1 ? "s" : ""}</small> : null}<em>{description}</em></span>
+            </button>
+          ))}
       </div>
     </section>
   );
