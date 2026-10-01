@@ -412,8 +412,8 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 5px 0; color: #6d635a; text-align: center; }
 .colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 700; letter-spacing: 0; }
 .colleague-week-day b { margin-left: 3px; font-size: .8rem; font-weight: 700; }
-/* Le jour même : un trait terracotta sous sa date, sur chaque ligne de groupe. */
-.colleague-week-table .colleague-tomorrow-group th.is-today { color: #463c35; box-shadow: inset 0 -3px 0 #a4502f; }
+/* Le jour même : sa lettre et sa date en rouge, sur chaque ligne de groupe. */
+.colleague-week-table .colleague-tomorrow-group th.is-today { color: #c0261d; }
 /* Petit écran : prénoms alignés sur « Groupe », numéro sous l'initiale du jour. */
 @media (max-width: 480px) {
   .colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding-left: 8px; }
