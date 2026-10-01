@@ -70,6 +70,7 @@ html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group.group-2 
 html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group.group-3 th { background: #22321d; color: #b4dca5; }
 html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group th .colleague-tomorrow-group-label b { border-color: #1b1715; }
 html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group th.colleague-week-day { color: #bfb1a4; }
+html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group th { border-color: rgba(255, 255, 255, .32); }
 html[data-theme="dark"] .colleague-week-legend .colleague-week-cell.on-post { border-color: #5fb483 #5fb483 #5fb483 rgba(44, 38, 33, .16); background: #1f4d35; color: #d8f5e3; }
 html[data-theme="dark"] .colleague-week-legend .on-post::after { border-color: #8fd1a8; }
 html[data-theme="dark"] .colleague-week-table .colleague-tomorrow-group th.is-today { color: #e4d8cc; box-shadow: inset 0 -3px 0 #e08a63; }

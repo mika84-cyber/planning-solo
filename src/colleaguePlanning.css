@@ -341,7 +341,10 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-week-table tbody tr + tr > * { border-top: 1px solid var(--border-soft); }
 /* Filets verticaux très pâles entre les jours : on suit une colonne sans grille. */
 .colleague-week-table :is(th, td):not(:first-child) { border-left: 1px solid rgba(44, 38, 33, .07); }
-.colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 0; }
+/* Bande « Groupe + jours » : resserrée et cernée d'un léger liseré noir. */
+.colleague-week-table .colleague-tomorrow-group th { padding: 7px 12px; border-top: 1px solid rgba(44, 38, 33, .45); border-bottom: 1px solid rgba(44, 38, 33, .45); }
+.colleague-week-table .colleague-tomorrow-group th:first-child { border-left: 1px solid rgba(44, 38, 33, .45); }
+.colleague-week-table .colleague-tomorrow-group th:last-child { border-right: 1px solid rgba(44, 38, 33, .45); }
 .colleague-week-cell { display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 8px; font-size: .74rem; font-weight: 900; }
 .colleague-week-cell.work { background: #e2f3e8; border-color: #9fd1b2; color: #1f6641; }
 .colleague-week-cell.training { background: #fbf3c1; border-color: #dcc54f; color: #6b5605; }
@@ -401,12 +404,12 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-sharing-page .colleague-week-table tbody th[scope="row"] { padding: 12px 6px 12px 14px; }
 .colleague-sharing-page .colleague-week-table tbody td { padding: 10px 2px; }
 .colleague-sharing-page :is(.colleague-week-table, .colleague-tomorrow-table) .colleague-tomorrow-group th { padding: 10px 14px; }
-.colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th { padding-left: 6px; white-space: nowrap; }
+.colleague-sharing-page .colleague-week-table .colleague-tomorrow-group th { padding-top: 5px; padding-bottom: 5px; padding-left: 6px; white-space: nowrap; }
 .colleague-week-table .colleague-tomorrow-group th:first-child { width: 25%; }
 /* Les jours sur la ligne de chaque groupe, dans un gris doux qui ne prend
    pas le pas sur les cases ; aujourd'hui un peu plus foncé, sa colonne
    n'étant teintée que sur les affectations. */
-.colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 10px 0; color: #6d635a; text-align: center; }
+.colleague-week-table .colleague-tomorrow-group th.colleague-week-day { padding: 5px 0; color: #6d635a; text-align: center; }
 .colleague-week-table .colleague-week-day span { font-size: .8rem; font-weight: 700; letter-spacing: 0; }
 .colleague-week-day b { margin-left: 3px; font-size: .8rem; font-weight: 700; }
 /* Le jour même : un trait terracotta sous sa date, sur chaque ligne de groupe. */
