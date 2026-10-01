@@ -104,7 +104,7 @@ html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-fo
 html[data-theme="dark"] .useful-form-download-list > .useful-form-download-card > a { background: color-mix(in srgb, var(--contact-category-accent) 72%, #000); color: #fff; }
 html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
 html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
-html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .useful-resource-tab { background: #29231f; }
+html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .useful-resource-tab { border-color: color-mix(in srgb, var(--tile-ink) 40%, rgba(0, 0, 0, .5)); background: color-mix(in srgb, var(--tile-tint) 45%, #29231f); }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
    reconnaissables sur fond sombre. */
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }

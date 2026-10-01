@@ -339,10 +339,10 @@
 .has-active-resource .useful-resource-tab[aria-selected="true"] .useful-resource-tab-copy strong { color: #fff; }
 
 /* Accueil des documents : une liste, une ligne par rubrique — vignette, titre,
-   ce qu'on y trouve et une flèche discrète ; sans contour, une ombre légère. Une fois une rubrique ouverte, les onglets
+   ce qu'on y trouve et une flèche discrète ; un liseré foncé teinté de la couleur de la rubrique, un fond à peine coloré et une ombre légère. Une fois une rubrique ouverte, les onglets
    reprennent leur sélecteur compact. */
 .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-.useful-resources-screen:not(.has-active-resource) .useful-resource-tab { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-rows: auto; align-items: center; column-gap: 14px; min-height: 0; border: 0; border-radius: 16px; padding: 10px 14px 10px 10px; background: #fff; box-shadow: 0 1px 2px rgba(58, 51, 44, .06), 0 6px 16px rgba(58, 51, 44, .06); }
+.useful-resources-screen:not(.has-active-resource) .useful-resource-tab { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-rows: auto; align-items: center; column-gap: 14px; min-height: 0; border: 1px solid color-mix(in srgb, var(--tile-ink) 45%, rgba(0, 0, 0, .25)); border-radius: 16px; padding: 10px 14px 10px 10px; background: color-mix(in srgb, var(--tile-tint) 35%, #fff); box-shadow: 0 1px 2px rgba(58, 51, 44, .06), 0 6px 16px rgba(58, 51, 44, .06); }
 .useful-resources-screen:not(.has-active-resource) .useful-resource-tab:hover { transform: none; box-shadow: 0 1px 2px rgba(58, 51, 44, .08), 0 10px 22px rgba(58, 51, 44, .1); }
 .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art { width: 56px; height: 56px; border-radius: 14px; }
 .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy { place-items: start; gap: 4px; border-top: 0; padding: 0; background: none; text-align: left; }
