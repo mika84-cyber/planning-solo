@@ -12,7 +12,7 @@ type Props = {
   /** L'administrateur indique ici le genre de chaque collègue. */
   isAdmin?: boolean;
 };
-const GROUP_COUNTS = [34, 36, 35] as const;
+const GROUP_COUNTS = [36, 36, 35] as const;
 const EMPTY_GROUPS: readonly ColleagueGroup[] = [];
 export function searchColleagueGroups(groups: readonly ColleagueGroup[], query: string) {
   if (!query.trim()) return [];

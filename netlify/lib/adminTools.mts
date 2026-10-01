@@ -1,5 +1,5 @@
 import { getStore } from '@netlify/blobs';
-import { COLLEAGUE_GROUPS, type ColleagueGroup } from './colleagueGroups.ts';
+import { COLLEAGUE_GROUP_ADDITIONS, COLLEAGUE_GROUPS, type ColleagueGroup } from './colleagueGroups.ts';
 import { sendDocumentAnnouncementEmail } from './documentAnnouncementEmail.mts';
 
 export type Store = ReturnType<typeof getStore>;
@@ -14,8 +14,26 @@ export async function records<T>(store: Store, prefix: string): Promise<T[]> {
   return (await Promise.all(keys.map(key => store.get(key, { type: 'json' })))).filter(item => item !== null) as T[];
 }
 export const groupsKey = 'admin-tools/groups';
+const groupAdditionsKey = 'admin-tools/group-additions';
 export async function readGroups(store: Store): Promise<readonly ColleagueGroup[]> {
-  return await store.get(groupsKey, { type: 'json' }) as ColleagueGroup[] | null || COLLEAGUE_GROUPS;
+  const stored = await store.get(groupsKey, { type: 'json' }) as ColleagueGroup[] | null;
+  if (!stored) return COLLEAGUE_GROUPS;
+  // Une liste déjà enregistrée reçoit une seule fois les collègues ajoutés
+  // depuis : ni doublon, ni retour d'un collègue retiré ensuite.
+  const applied = await store.get(groupAdditionsKey, { type: 'json' }) as string[] | null ?? [];
+  const pending = COLLEAGUE_GROUP_ADDITIONS.filter(addition => !applied.includes(addition.id));
+  if (!pending.length) return stored;
+  let next = stored;
+  for (const addition of pending) {
+    const known = new Set(next.flatMap(group => group.members));
+    const fresh = addition.members.filter(member => !known.has(member));
+    next = next.map(group => group.number === addition.group
+      ? { ...group, members: [...group.members, ...fresh].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })) }
+      : group);
+  }
+  await store.setJSON(groupsKey, next);
+  await store.setJSON(groupAdditionsKey, [...applied, ...pending.map(addition => addition.id)]);
+  return next;
 }
 /** Genre de chaque collègue, renseigné par l'administrateur : il accorde
  *  « vous le remplacez » ou « vous la remplacez » dans les échanges. */

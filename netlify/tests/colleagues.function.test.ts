@@ -60,7 +60,7 @@ describe("partage des plannings entre collègues", () => {
     const payload = await response.json() as { groups: Array<{ members: string[] }> };
 
     expect(response.status).toBe(200);
-    expect(payload.groups.map((group) => group.members.length)).toEqual([34, 36, 35]);
+    expect(payload.groups.map((group) => group.members.length)).toEqual([36, 36, 35]);
   });
 
   it("fournit les trois groupes uniquement après authentification, sans les destinataires en copie", async () => {
@@ -69,7 +69,7 @@ describe("partage des plannings entre collègues", () => {
     const payload = await response.json() as { groups: Array<{ number: number; members: string[] }> };
     const members = payload.groups.flatMap((group) => group.members);
 
-    expect(payload.groups.map((group) => group.members.length)).toEqual([34, 36, 35]);
+    expect(payload.groups.map((group) => group.members.length)).toEqual([36, 36, 35]);
     expect(members).toContain("Mickaël Eliaszewicz");
     expect(members).not.toEqual(expect.arrayContaining([
       "Maarten Averink",

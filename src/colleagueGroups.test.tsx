@@ -15,7 +15,7 @@ describe("détails des trois groupes", () => {
     const members = COLLEAGUE_GROUPS.flatMap((group) => group.members);
     const normalized = members.map((member) => member.normalize("NFKD").toLocaleLowerCase("fr"));
 
-    expect(COLLEAGUE_GROUPS.map((group) => group.members.length)).toEqual([34, 36, 35]);
+    expect(COLLEAGUE_GROUPS.map((group) => group.members.length)).toEqual([36, 36, 35]);
     expect(new Set(normalized).size).toBe(members.length);
     expect(members.every((member) => !member.includes("@"))).toBe(true);
     expect(COLLEAGUE_GROUPS[1].members).toContain("Mickaël Eliaszewicz");
@@ -45,8 +45,8 @@ describe("détails des trois groupes", () => {
     const html = renderToStaticMarkup(<ColleagueGroupsDirectory groups={COLLEAGUE_GROUPS} />);
 
     expect(html).toContain("Liste des 3 groupes");
-    expect(html).toContain("105 collègues classés par groupe");
-    expect(html).toContain("34 personnes");
+    expect(html).toContain("107 collègues classés par groupe");
+    expect(html).toContain("36 personnes");
     expect(html).toContain("36 personnes");
     expect(html).toContain("35 personnes");
     expect(html).toContain("Rechercher un collègue");
@@ -63,7 +63,7 @@ describe("détails des trois groupes", () => {
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain('aria-labelledby="colleague-groups-dialog-title"');
     expect(html).toContain("Liste des 3 groupes");
-    expect(html).toContain("105 collègues classés par groupe");
+    expect(html).toContain("107 collègues classés par groupe");
     expect(html).toContain('aria-label="Fermer"');
     expect(html).toContain("Rechercher un collègue");
     expect(html.match(/<details class="colleague-group-card/g)).toHaveLength(3);
@@ -76,8 +76,8 @@ describe("détails des trois groupes", () => {
     const html = renderToStaticMarkup(<ColleagueGroupsDirectory />);
 
     expect(html).toContain("Liste des 3 groupes");
-    expect(html).toContain("105 collègues classés par groupe");
-    expect(html).toContain("34 personnes");
+    expect(html).toContain("107 collègues classés par groupe");
+    expect(html).toContain("36 personnes");
     expect(html).toContain("36 personnes");
     expect(html).toContain("35 personnes");
     expect(html).toContain("Chargement des noms…");

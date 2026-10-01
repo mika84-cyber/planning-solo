@@ -58,6 +58,22 @@ describe('outils administrateur', () => {
     expect(after.groups.flatMap((group: { members: string[] }) => group.members).filter((name: string) => name === member)).toHaveLength(1);
     expect(after.groups.flatMap((group: { members: string[] }) => group.members)).toHaveLength(before.flatMap((group: { members: string[] }) => group.members).length);
   });
+  it('ajoute une seule fois les nouveaux collègues à une liste déjà enregistrée', async () => {
+    // Une liste enregistrée avant leur arrivée, sans eux.
+    const before = (await overview()).groups as Array<{ number: number; members: string[] }>;
+    data.set('admin-tools/groups', before.map(group => ({ ...group, members: group.members.filter(name => !['Katayoun Rouhi-Outil', 'Zackarielle Vasseront'].includes(name)) })));
+    guest();
+    const added = await (await groupsHandler(get('colleague-groups'))).json();
+    expect(added.groups[0].members).toEqual(expect.arrayContaining(['Katayoun Rouhi-Outil', 'Zackarielle Vasseront']));
+    // Retirée ensuite par l'administrateur, elle ne revient pas.
+    owner();
+    expect((await handler(post({ action: 'remove-member', member: 'Katayoun Rouhi-Outil' }))).status).toBe(200);
+    guest();
+    const after = await (await groupsHandler(get('colleague-groups'))).json();
+    expect(after.groups[0].members).not.toContain('Katayoun Rouhi-Outil');
+    expect(after.groups[0].members).toContain('Zackarielle Vasseront');
+  });
+
   it('retient le genre choisi par l’administrateur et le donne à tous les comptes', async () => {
     const [first, second] = (await overview()).groups[0].members;
     expect((await handler(post({ action: 'set-genders', genders: { [first]: 'f' } }))).status).toBe(200);

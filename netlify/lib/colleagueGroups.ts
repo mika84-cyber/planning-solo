@@ -6,6 +6,13 @@ export type ColleagueGroup = {
 const byFirstName = (first: string, second: string) =>
   first.localeCompare(second, "fr", { sensitivity: "base" });
 
+/** Collègues ajoutés après la mise en ligne de la liste. Une liste déjà
+ *  modifiée par l'administrateur (et donc enregistrée) les reçoit une seule
+ *  fois : un retrait ultérieur n'est pas annulé. */
+export const COLLEAGUE_GROUP_ADDITIONS: ReadonlyArray<{ id: string; group: 1 | 2 | 3; members: readonly string[] }> = [
+  { id: "2026-10-groupe-1", group: 1, members: ["Katayoun Rouhi-Outil", "Zackarielle Vasseront"] },
+];
+
 export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
   {
     number: 1,
@@ -44,6 +51,8 @@ export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
       "Andréa Soares Ghilardi",
       "Christophe Stezowski",
       "Sivasankari Verdy",
+      "Katayoun Rouhi-Outil",
+      "Zackarielle Vasseront",
     ].sort(byFirstName),
   },
   {
