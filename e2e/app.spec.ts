@@ -369,11 +369,14 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
 
   await openUsefulResource(page, "Formulaires");
   await expectWhiteCard(".useful-forms-screen.useful-forms-root", accentSpine(page));
-  await expectWhiteCard(".useful-form-folder");
+  // Les dossiers sont des tuiles teintées en forme de dossier ; l'accident
+  // de travail reste une carte blanche à contour fin.
+  await expect(page.locator(".useful-form-folder").first()).toHaveCSS("background-image", "none");
   await expect(page.locator(".useful-form-folder").first()).toHaveCSS("box-shadow", "none");
+  await expectWhiteCard(".useful-form-work-accident-entry");
   await openUsefulResource(page, "Contacts");
   await expectWhiteCard(".useful-contacts-screen.useful-contacts-root", accentSpine(page));
-  await expectWhiteCard(".useful-contact-directory-grid > button");
+  await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("background-image", "none");
   await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("box-shadow", "none");
 
   await goToSection(page, "program");
@@ -2015,13 +2018,14 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*8 documents/,
     /Horaires tickets resto.*Information pratique/,
-    /Déclarer un accident de travail.*Accident de travail.*Procédure, contacts, documents et ajout au planning/,
+    /Déclarer un accident de travail.*Procédure, contacts, documents et ajout au planning/,
   ]);
-  const [ticketStyle, accidentStyle] = await Promise.all([
-    folders.nth(3).evaluate((node) => ({ background: getComputedStyle(node).backgroundImage, legend: getComputedStyle(node.querySelector("em")!).fontSize })),
-    folders.nth(4).evaluate((node) => ({ background: getComputedStyle(node).backgroundImage, legend: getComputedStyle(node.querySelector("em")!).fontSize })),
-  ]);
-  expect(accidentStyle).toEqual(ticketStyle);
+  // Les dossiers ne montrent que leur titre et leur nombre ; l'accident de
+  // travail, carte à part, garde sa phrase d'explication et son logo.
+  await expect(folders.nth(3)).toHaveCSS("background-image", "none");
+  await expect(folders.nth(3).locator("em")).toHaveCount(0);
+  await expect(folders.nth(4).locator("em")).toBeVisible();
+  await expect(folders.nth(4).locator(".work-accident-symbol img")).toBeVisible();
 
   await folders.nth(0).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();

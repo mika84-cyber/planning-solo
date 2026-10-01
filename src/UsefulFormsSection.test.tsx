@@ -23,7 +23,7 @@ describe("formulaires utiles", () => {
     expect(html).toContain("useful-forms-root");
     expect(html).toContain("Rechercher un document");
     // Pendant l'exposition Cézanne, le dossier Expo porte son audioguide.
-    expect(html).toContain("<small>1 audioguide</small>");
+    expect(html).toContain("<small>+ 1 audioguide</small>");
     expect(html).not.toContain("Hilma Af Klint");
     expect(html).toContain("Information pratique");
     expect(html).toContain("Déclarer un accident de travail");

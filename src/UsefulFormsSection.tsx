@@ -48,7 +48,6 @@ type UsefulAudioguide = {
 type UsefulFormsFolder = {
   key: UsefulFormsFolderKey;
   title: string;
-  description: string;
   documents: UsefulFormDocument[];
   audioguides?: UsefulAudioguide[];
   image?: { src: string; alt: string };
@@ -62,7 +61,6 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "expo",
     title: "Formulaire Expo",
-    description: "Consignes et documents d’exposition.",
     documents: [
       {
         title: "Hilma Af Klint",
@@ -85,7 +83,6 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "sap",
     title: "Formulaire SAP",
-    description: "Congés, récupérations et annulations.",
     documents: [
       { title: "Demande de congés", file: "demande-conges.pdf", format: "PDF" },
       { title: "Demande de récupérations", file: "demande-recuperations.pdf", format: "PDF" },
@@ -95,7 +92,6 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "brantome",
     title: "Formulaire Brantôme",
-    description: "Coordonnées, cartes, restauration et CET.",
     documents: [
       { title: "Formulaire de changement de coordonnées", file: "formulaire-changement-coordonnees.pdf", format: "PDF" },
       { title: "Changement de coordonnées bancaires", file: "changement-coordonnees-bancaires.docx", format: "DOCX" },
@@ -110,7 +106,6 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "tickets",
     title: "Horaires tickets resto",
-    description: "Horaires de retrait des titres au guichet.",
     documents: [],
     image: {
       src: "/useful-forms/horaires-tickets-repas-fast.webp",
@@ -142,9 +137,9 @@ export function usefulFormFoldersForDate(
 function documentCount(count: number, audioguides = 0) {
   const parts = [
     count ? `${count} document${count > 1 ? "s" : ""}` : "",
-    audioguides ? `${audioguides} audioguide${audioguides > 1 ? "s" : ""}` : "",
+    audioguides ? `+ ${audioguides} audioguide${audioguides > 1 ? "s" : ""}` : "",
   ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Vide pour le moment";
+  return parts.length ? parts.join(" ") : "Vide pour le moment";
 }
 
 type UsefulFormsSectionProps = {
@@ -418,7 +413,6 @@ export function UsefulFormsSection({
             <span>
               <strong>{item.title}</strong>
               <small>{item.image ? "Information pratique" : documentCount(item.documents.length, item.audioguides?.length)}</small>
-              <em>{item.description}</em>
             </span>
           </button>
         ))}
@@ -426,7 +420,6 @@ export function UsefulFormsSection({
           <WorkAccidentIcon className="useful-form-folder-icon" />
           <span>
             <strong>Déclarer un accident de travail</strong>
-            <small>Accident de travail</small>
             <em>Procédure, contacts, documents et ajout au planning.</em>
           </span>
         </button>
