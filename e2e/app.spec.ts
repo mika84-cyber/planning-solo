@@ -2020,10 +2020,10 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     /Horaires tickets resto.*Information pratique/,
     /Déclarer un accident de travail.*Procédure, contacts, documents et ajout au planning/,
   ]);
-  // Les dossiers ne montrent que leur titre et leur nombre ; l'accident de
-  // travail, carte à part, garde sa phrase d'explication et son logo.
+  // Comme les annuaires de contacts, chaque dossier montre son titre, son
+  // nombre et une courte description ; l'accident de travail garde son logo.
   await expect(folders.nth(3)).toHaveCSS("background-image", "none");
-  await expect(folders.nth(3).locator("em")).toHaveCount(0);
+  await expect(folders.nth(3).locator("em")).toHaveText("Retrait des titres au guichet");
   await expect(folders.nth(4).locator("em")).toBeVisible();
   await expect(folders.nth(4).locator(".work-accident-symbol img")).toBeVisible();
 

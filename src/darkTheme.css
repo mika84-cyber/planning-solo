@@ -92,6 +92,7 @@ html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-fo
 html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder:not(.useful-form-work-accident-entry):hover,
 html[data-theme="dark"] .useful-contacts-root .useful-contact-directory-grid > button:hover,
 html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-work-accident-entry:hover { --tile: color-mix(in srgb, var(--folder-accent) 31%, #1d1917); }
+html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder:not(.useful-form-work-accident-entry) em,
 html[data-theme="dark"] .useful-contacts-root .useful-contact-directory-grid > button em,
 html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-work-accident-entry em { color: #c9bcb0; }
 html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder:not(.useful-form-work-accident-entry) small,

@@ -336,9 +336,9 @@
   cursor: pointer;
   box-shadow: inset 5px 0 var(--folder-accent), 0 8px 18px rgba(58, 51, 44, 0.07);
 }
-.useful-form-folder.tone-expo { --folder-accent: #4e8b80; }
-.useful-form-folder.tone-sap { --folder-accent: #9b8e7c; }
-.useful-form-folder.tone-brantome { --folder-accent: #c07737; }
+.useful-form-folder.tone-expo { --folder-accent: #2f7f74; }
+.useful-form-folder.tone-sap { --folder-accent: #5368a8; }
+.useful-form-folder.tone-brantome { --folder-accent: #b9781e; }
 .useful-form-folder:hover { transform: translateY(-1px); }
 .useful-form-folder > span:nth-child(2) { display: grid; gap: 5px; }
 .useful-form-folder strong { font-size: 17px; }
@@ -376,9 +376,9 @@
   left: 22px;
   background: var(--surface);
 }
-.useful-forms-folder-header.tone-expo { --folder-accent: #4e8b80; }
-.useful-forms-folder-header.tone-sap { --folder-accent: #9b8e7c; }
-.useful-forms-folder-header.tone-brantome { --folder-accent: #c07737; }
+.useful-forms-folder-header.tone-expo { --folder-accent: #2f7f74; }
+.useful-forms-folder-header.tone-sap { --folder-accent: #5368a8; }
+.useful-forms-folder-header.tone-brantome { --folder-accent: #b9781e; }
 .useful-forms-folder-header h2 { margin: 3px 0; color: #2c2621; font-size: 24px; }
 .useful-forms-folder-header small { color: var(--folder-accent); font-weight: 850; }
 .useful-form-download-list { display: grid; gap: 11px; }

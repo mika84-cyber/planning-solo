@@ -93,8 +93,8 @@
 
 /* Rubriques pratiques : quatrième dossier équilibré, image lisible et
    annuaire tactile sans surcharger les écrans étroits. */
-.useful-form-folder.tone-tickets { --folder-accent: #a45f2d; }
-.useful-forms-folder-header.tone-tickets { --folder-accent: #a45f2d; }
+.useful-form-folder.tone-tickets { --folder-accent: #9a5a86; }
+.useful-forms-folder-header.tone-tickets { --folder-accent: #9a5a86; }
 .useful-form-information-image {
   display: grid;
   place-items: center;

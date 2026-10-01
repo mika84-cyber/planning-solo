@@ -1801,15 +1801,17 @@ export default function Home() {
       ([key]) => key >= todayKey && key <= lastKey,
     );
     const items: NoteListItem[] = [];
+    /** Une note posée sur plusieurs jours d'affilée n'apparaît qu'une fois, à
+     *  son premier jour à venir. Chaque autre date du planning qui porte une
+     *  note a sa ligne : la liste montre les mêmes notes que le calendrier,
+     *  quel que soit l'ordre dans lequel le serveur les renvoie. */
+    const continuesPreviousDay = (source: Record<string, { noteText: string; noteGroupId: string }>, key: string) => {
+      const previous = source[dateKey(addDays(fromKey(key), -1))];
+      return key > todayKey && previous?.noteText === source[key].noteText && previous.noteGroupId === source[key].noteGroupId;
+    };
     if (showNotes) {
-      const seenGroups = new Set<string>();
       for (const [key, entry] of datedEntries) {
-        if (
-          !entry.noteText ||
-          (entry.noteGroupId && seenGroups.has(entry.noteGroupId))
-        )
-          continue;
-        if (entry.noteGroupId) seenGroups.add(entry.noteGroupId);
+        if (!entry.noteText || continuesPreviousDay(entries, key)) continue;
         const notePeriod = notePeriodFor(entries, key, entry);
         items.push({
           key: `note-${entry.noteGroupId || key}`,
@@ -1821,16 +1823,14 @@ export default function Home() {
           author: "mika",
         });
       }
-      const seenPartnerGroups = new Set<string>();
       for (const [key, entry] of Object.entries(partnerEntries)) {
         if (
           key < todayKey ||
           key > lastKey ||
           entry.noteAuthor !== "agnes" ||
           !entry.noteText ||
-          (entry.noteGroupId && seenPartnerGroups.has(entry.noteGroupId))
+          continuesPreviousDay(partnerEntries, key)
         ) continue;
-        if (entry.noteGroupId) seenPartnerGroups.add(entry.noteGroupId);
         items.push({
           key: `agnes-note-${entry.noteGroupId || key}`,
           date: key,

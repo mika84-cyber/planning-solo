@@ -47,7 +47,11 @@ const budgets = {
   // Relevé le 30 septembre 2026 de 2 350 / 760 à 2 360 / 763 Kio : historique
   // de la messagerie, poste du jour et demi-journées d'ASA et de Divers
   // (760,1 Kio mesurés). Le chargement initial reste à 178,5 / 181 Kio.
-  totalJavaScript: { raw: 2_360 * KIB, gzip: 763 * KIB },
+  // Relevé le 1er octobre 2026 de 763 à 765 Kio compressés : page d'ajout de
+  // lignes de paie, prénoms des plannings partagés, nombre et description des
+  // dossiers de formulaires et des annuaires de contacts, notes d'Agnès
+  // listées jour par jour (763,04 Kio mesurés).
+  totalJavaScript: { raw: 2_360 * KIB, gzip: 765 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

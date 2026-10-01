@@ -50,6 +50,7 @@ type UsefulFormsFolder = {
   title: string;
   documents: UsefulFormDocument[];
   audioguides?: UsefulAudioguide[];
+  description: string;
   image?: { src: string; alt: string };
 };
 
@@ -61,6 +62,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "expo",
     title: "Formulaire Expo",
+    description: "Consignes et documents d’exposition",
     documents: [
       {
         title: "Hilma Af Klint",
@@ -83,6 +85,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "sap",
     title: "Formulaire SAP",
+    description: "Congés, récupérations, annulations",
     documents: [
       { title: "Demande de congés", file: "demande-conges.pdf", format: "PDF" },
       { title: "Demande de récupérations", file: "demande-recuperations.pdf", format: "PDF" },
@@ -92,6 +95,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "brantome",
     title: "Formulaire Brantôme",
+    description: "Coordonnées, cartes, restauration, CET",
     documents: [
       { title: "Formulaire de changement de coordonnées", file: "formulaire-changement-coordonnees.pdf", format: "PDF" },
       { title: "Changement de coordonnées bancaires", file: "changement-coordonnees-bancaires.docx", format: "DOCX" },
@@ -106,6 +110,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   {
     key: "tickets",
     title: "Horaires tickets resto",
+    description: "Retrait des titres au guichet",
     documents: [],
     image: {
       src: "/useful-forms/horaires-tickets-repas-fast.webp",
@@ -413,6 +418,7 @@ export function UsefulFormsSection({
             <span>
               <strong>{item.title}</strong>
               <small>{item.image ? "Information pratique" : documentCount(item.documents.length, item.audioguides?.length)}</small>
+              <em>{item.description}</em>
             </span>
           </button>
         ))}
