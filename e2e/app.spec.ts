@@ -369,11 +369,11 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
 
   await openUsefulResource(page, "Formulaires");
   await expectWhiteCard(".useful-forms-screen.useful-forms-root", accentSpine(page));
-  // Les dossiers sont des tuiles teintées en forme de dossier ; l'accident
-  // de travail reste une carte blanche à contour fin.
+  // Les dossiers, accident de travail compris, sont des tuiles teintées en
+  // forme de dossier, sans dégradé ni ombre.
   await expect(page.locator(".useful-form-folder").first()).toHaveCSS("background-image", "none");
   await expect(page.locator(".useful-form-folder").first()).toHaveCSS("box-shadow", "none");
-  await expectWhiteCard(".useful-form-work-accident-entry");
+  await expect(page.locator(".useful-form-work-accident-entry")).toHaveCSS("box-shadow", "none");
   await openUsefulResource(page, "Contacts");
   await expectWhiteCard(".useful-contacts-screen.useful-contacts-root", accentSpine(page));
   await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("background-image", "none");
