@@ -500,7 +500,7 @@
      barre d'outils sans cadre par bouton (Vider, Ajouter une feuille, Outlook
      sur appareil tactile, Imprimer) et le PDF, seul bouton plein. Sur grand
      écran tout tient sur une ligne ; sur écran étroit, la barre devient une
-     rangée d'icônes légendées et le PDF passe dessous, en pleine largeur.
+     PDF en pleine largeur et rangée d'icônes légendées en dessous.
      :is(html.device-…) et les identifiants l'emportent sur les anciennes
      grilles des boutons, plus haut dans ce fichier. */
   .tool-icon{width:18px;height:18px;flex:none}
@@ -530,7 +530,9 @@
     .form-tools > .btn + .btn::before{top:15px;bottom:15px}
     .tool-long{display:none}
     .tool-short{display:inline}
-    :is(html.device-desktop,html.device-touch) .bar-actions #btnPdf{width:100%;height:48px;min-height:48px;font-size:14px}
+    :is(html.device-desktop,html.device-touch) .bar-actions #btnPdf{order:1;width:100%;height:48px;min-height:48px;font-size:14px}
+    /* Le PDF d'abord, les quatre outils en dessous. */
+    .form-tools{order:2}
   }
 
   /* Pièces jointes, messages et observation */

@@ -20,7 +20,7 @@ test("le formulaire modulaire charge ses données et ses commandes", async ({ pa
   expect(runtimeErrors).toEqual([]);
 });
 
-test("la barre du formulaire tient sur une ligne sur grand écran et devient une rangée d’outils sur téléphone", async ({ page }, testInfo) => {
+test("la barre du formulaire tient sur une ligne sur grand écran et met le PDF au-dessus des outils sur téléphone", async ({ page }, testInfo) => {
   await page.goto("/formulaire/index.html");
   const back = page.getByRole("link", { name: "Revenir à l’application" });
   const tools = page.getByRole("group", { name: "Outils du formulaire" });
@@ -33,9 +33,9 @@ test("la barre du formulaire tient sur une ligne sur grand écran et devient une
     expect(Math.abs((backBox!.y + backBox!.height / 2) - (pdfBox!.y + pdfBox!.height / 2))).toBeLessThan(3);
     expect(pdfBox!.x).toBeGreaterThan(toolsBox!.x + toolsBox!.width);
   } else {
-    // Retour, puis la rangée d’outils, puis le PDF en pleine largeur.
-    expect(toolsBox!.y).toBeGreaterThan(backBox!.y + backBox!.height - 1);
-    expect(pdfBox!.y).toBeGreaterThan(toolsBox!.y + toolsBox!.height - 1);
+    // Retour, puis le PDF en pleine largeur, puis la rangée d’outils.
+    expect(pdfBox!.y).toBeGreaterThan(backBox!.y + backBox!.height - 1);
+    expect(toolsBox!.y).toBeGreaterThan(pdfBox!.y + pdfBox!.height - 1);
     expect(Math.abs(pdfBox!.width - toolsBox!.width)).toBeLessThan(2);
     await expect(tools.locator("#btnSecond")).toHaveAccessibleName("Feuille");
   }
