@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { RequestValidationSummary } from "./RequestValidationSummary";
 import type { RequestKind, SelectedDay } from "./appModel";
 import type { WorkQuota } from "./overtime";
@@ -49,6 +50,36 @@ export function RequestSelectionPanel({
   onValidateAndOpenForm,
   onSaveToPlanning,
 }: RequestSelectionPanelProps) {
+  // Le panneau précède le calendrier : pendant qu'on touche les dates, ses
+  // boutons d'enregistrement sont souvent hors de l'écran. On le détecte pour
+  // proposer une barre fixe qui y ramène.
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const reviewRef = useRef<HTMLDivElement>(null);
+  const [actionsOffscreen, setActionsOffscreen] = useState<"above" | "below" | null>(null);
+  const hasActions = Boolean(requestKind) && requestKind !== "strike";
+  useEffect(() => {
+    const node = actionsRef.current;
+    if (!hasActions || !node || typeof IntersectionObserver === "undefined") return;
+    // La barre de navigation du bas masque environ 90 px : on les retire de
+    // la zone considérée comme visible. Des boutons à peine entrevus au bord
+    // de l'écran ne comptent pas : il faut qu'ils soient presque entiers.
+    const observer = new IntersectionObserver(([entry]) => {
+      setActionsOffscreen(entry.intersectionRatio >= 0.9 ? null : entry.boundingClientRect.top < 0 ? "above" : "below");
+    }, { rootMargin: "0px 0px -90px 0px", threshold: [0, 0.9, 1] });
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      setActionsOffscreen(null);
+    };
+  }, [hasActions]);
+  const goToReview = () => {
+    const target = reviewRef.current || actionsRef.current;
+    if (!target) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    target.focus({ preventScroll: true });
+  };
+
   if (!requestKind) return null;
 
   return (
@@ -175,7 +206,7 @@ export function RequestSelectionPanel({
       )}
       {requestKind !== "strike" ? (
         <>
-      {selectedList.length ? <div className="request-review-heading"><span className="step-label">Étape 3 sur 3</span><strong>Vérifiez avant d’enregistrer</strong></div> : null}
+      {selectedList.length ? <div className="request-review-heading" ref={reviewRef} tabIndex={-1}><span className="step-label">Étape 3 sur 3</span><strong>Vérifiez avant d’enregistrer</strong></div> : null}
       <RequestValidationSummary
         items={selectedList}
         requestKind={requestKind}
@@ -191,7 +222,7 @@ export function RequestSelectionPanel({
         ) : (
           <p><strong>Aucune date sélectionnée.</strong> Touchez une date dans le planning pour commencer.</p>
         )}
-        <div className="request-actions">
+        <div className="request-actions" ref={actionsRef}>
           <button
             className="validate-button"
             type="button"
@@ -230,6 +261,22 @@ export function RequestSelectionPanel({
       </div>
         </>
       ) : null}
+      {hasActions && selectedList.length && actionsOffscreen && typeof document !== "undefined"
+        ? createPortal(
+            <div className="request-floating-review" role="region" aria-label="Demande en cours">
+              <span>
+                <strong>{selectedList.length}</strong> {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}
+              </span>
+              <button type="button" onClick={goToReview}>
+                Vérifier et enregistrer
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d={actionsOffscreen === "above" ? "M12 19V5m-6 6 6-6 6 6" : "M12 5v14m-6-6 6 6 6-6"} />
+                </svg>
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
     </section>
   );
 }

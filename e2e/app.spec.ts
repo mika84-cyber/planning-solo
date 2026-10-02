@@ -2613,6 +2613,40 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(lastProgramme.locator(".grand-palais-interexpo-cut")).toHaveCount(0);
 });
 
+test("pendant le choix des dates, une barre ramène à l’enregistrement resté hors de l’écran", async ({ page }) => {
+  // Écran peu haut, comme un petit téléphone : boutons et calendrier n’y tiennent pas ensemble.
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: 640 });
+  await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
+  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  const floating = page.getByRole("region", { name: "Demande en cours" });
+  const actions = page.locator("#request-panel .request-actions");
+  // Les dates se touchent dans le calendrier, sous le panneau de la demande :
+  // un jour travaillé de fin de mois laisse les boutons loin au-dessus.
+  const workDays = page.locator(".calendar-grid .day.work");
+  const pick = async (day: Locator) => {
+    await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
+    await day.click();
+  };
+  await expect(floating).toHaveCount(0);
+  await pick(workDays.last());
+  // On redescend dans le calendrier pour une deuxième date, puis jusqu’en bas.
+  await pick(workDays.nth(-2));
+  await page.locator(".calendar-grid").evaluate((grid) => grid.scrollIntoView({ block: "end" }));
+  await expect(actions).not.toBeInViewport();
+  await expect(floating).toBeVisible();
+  await expect(floating).toContainText("2 dates sélectionnées");
+  // Elle reste au-dessus de la navigation du bas.
+  const [floatingBox, dockBox] = await Promise.all([floating.boundingBox(), page.locator(".section-dock").boundingBox()]);
+  expect(floatingBox!.y + floatingBox!.height).toBeLessThanOrEqual(dockBox!.y);
+  await floating.getByRole("button", { name: "Vérifier et enregistrer" }).click();
+  await expect(page.locator(".request-review-heading")).toBeInViewport();
+  await expect(floating).toHaveCount(0);
+});
+
 test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
