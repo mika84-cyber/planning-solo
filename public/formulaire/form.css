@@ -463,5 +463,113 @@
   #observationBox textarea{width:100%;min-height:96px;resize:vertical;box-sizing:border-box;border:1px solid rgba(64,120,220,.35);border-radius:9px;padding:11px 12px;font:inherit;line-height:1.4;background:var(--field-bg);color:var(--text);outline:none}
   #observationBox textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(64,120,220,.13)}
   #observationBox .obsHint{margin-top:6px;color:var(--muted);font-size:.86rem}
+  /* ================= Couleurs de l'application =================
+     Le formulaire reprend la palette de Planning solo : neutres chauds pour
+     les fonds et les cadres, terracotta pour l'action. --accent reste le bleu
+     de l'encre : il doit correspondre au PDF et ne colore que la feuille. */
+  @font-face{font-family:"Fraunces";src:url("/fonts/fraunces-latin-wght-normal.woff2") format("woff2");font-weight:300 800;font-display:swap;font-style:normal}
+  :root{
+    --ui:#985438; --ui-strong:#83452c; --ui-soft:#f4e4d6; --ui-border:rgba(152,84,56,.35); --ui-ring:rgba(152,84,56,.16);
+    --bg:#f3f2f0; --panel:#fff; --text:#2c2621; --muted:#6f6455; --line:#ddd5cb; --soft:#f8f7f5;
+    --control-border:rgba(44,38,33,.24); --display:"Fraunces","Iowan Old Style",Georgia,serif;
+  }
+  body{font-family:system-ui,-apple-system,"Segoe UI Variable","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  /* « font: … inherit » est invalide : les boutons retombaient sur la police du navigateur. */
+  button,select,textarea,.btn{font-family:inherit}
+
+  /* En-tête : un panneau blanc, le choix du formulaire sur fond neutre. */
+  .bar{background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 6px 18px rgba(74,48,28,.07)}
+  .form-choice{border:1px solid var(--line);border-radius:16px;background:var(--soft)}
+  .sheet-label{font-weight:800;color:var(--ui)}
+  @media(max-width:760px){ .sheet-label{white-space:normal} }
+  #sheet{border-color:var(--control-border);border-radius:13px;color:var(--text);font-weight:700}
+  #sheet:hover{border-color:var(--ui);background:var(--panel)}
+  #sheet:focus{border-color:var(--ui);box-shadow:0 0 0 4px var(--ui-ring)}
+
+  /* Boutons des fenêtres : terracotta plein pour valider, terracotta doux
+     pour les choix secondaires, neutre pour effacer ou annuler. */
+  .btn{border-color:var(--ui);background:var(--ui);color:#fff;border-radius:12px;font-weight:700;box-shadow:none}
+  .btn:hover{background:var(--ui-strong);border-color:var(--ui-strong)}
+  .btn.ghost,.btn.secondary{background:var(--ui-soft);color:var(--ui-strong);border-color:var(--ui-border)}
+  .btn.ghost:hover,.btn.secondary:hover{background:#efd9c6;border-color:var(--ui)}
+  .btn.neutral,.btn.print{background:var(--panel);color:var(--text);border-color:var(--control-border)}
+  .btn.neutral:hover,.btn.print:hover{background:var(--soft);border-color:var(--ui)}
+  .btn:focus-visible,#sheet:focus-visible{outline:2px solid var(--ui);outline-offset:2px}
+
+  /* En-tête du formulaire : le retour à l'application en lien discret, une
+     barre d'outils sans cadre par bouton (Vider, Ajouter une feuille, Outlook
+     sur appareil tactile, Imprimer) et le PDF, seul bouton plein. Sur grand
+     écran tout tient sur une ligne ; sur écran étroit, la barre devient une
+     rangée d'icônes légendées et le PDF passe dessous, en pleine largeur.
+     :is(html.device-…) et les identifiants l'emportent sur les anciennes
+     grilles des boutons, plus haut dans ce fichier. */
+  .tool-icon{width:18px;height:18px;flex:none}
+  .tool-short{display:none}
+  :is(html.device-desktop,html.device-touch) .bar-actions{display:flex;align-items:center;gap:12px;width:100%;padding:0}
+  :is(html.device-desktop,html.device-touch) .bar-actions #btnBackApp{flex:0 1 auto;justify-content:flex-start;gap:6px;width:auto;min-width:0;height:auto;min-height:32px;margin:0 auto 0 0;padding:4px 0;border:0;background:none;box-shadow:none;color:var(--ui);font-size:13px;font-weight:700;white-space:nowrap}
+  :is(html.device-desktop,html.device-touch) .bar-actions #btnBackApp:hover{color:var(--ui-strong);text-decoration:underline;text-underline-offset:3px}
+  #btnBackApp .tool-icon{width:16px;height:16px}
+  .form-tools{display:flex;align-items:center;padding:3px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint){position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;min-width:0;height:36px;min-height:36px;margin:0;padding:0 12px;border:0;border-radius:9px;background:transparent;box-shadow:none;color:var(--text);font-size:13px;font-weight:600;white-space:nowrap;grid-column:auto;grid-row:auto}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):hover{background:#ece6df}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):disabled{background:transparent;opacity:.45}
+  html.device-desktop .bar-actions .form-tools #btnOutlook{display:none}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools #btnPrint{padding:0 10px}
+  :is(html.device-desktop,html.device-touch) .bar-actions #btnPrint svg{width:18px;height:18px}
+  :is(html.device-desktop,html.device-touch) .bar-actions #btnPrint .btn-label{display:none}
+  .form-tools > .btn + .btn::before{content:"";position:absolute;left:-1px;top:10px;bottom:10px;width:1px;background:var(--line)}
+  :is(html.device-desktop,html.device-touch) .bar-actions #btnPdf{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;width:auto;min-width:0;height:44px;min-height:44px;margin:0;padding:0 18px;border:1px solid var(--ui);border-radius:12px;background:var(--ui);color:#fff;font-size:13.5px;font-weight:700;white-space:nowrap;box-shadow:0 4px 12px rgba(131,69,44,.18);filter:none;grid-column:auto;grid-row:auto}
+  :is(html.device-desktop,html.device-touch) .bar-actions #btnPdf:hover{background:var(--ui-strong);border-color:var(--ui-strong)}
+  @media(max-width:760px){
+    :is(html.device-desktop,html.device-touch) .bar-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+    :is(html.device-desktop,html.device-touch) .bar-actions #btnBackApp{justify-self:start}
+    .form-tools{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:4px 2px;border-radius:14px}
+    :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint){flex-direction:column;gap:3px;width:100%;height:56px;min-height:56px;padding:0 2px;color:var(--muted);font-size:11.5px;white-space:normal}
+    :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint) svg{width:21px;height:21px;color:var(--text)}
+    :is(html.device-desktop,html.device-touch) .bar-actions #btnPrint .btn-label{display:inline}
+    .form-tools > .btn + .btn::before{top:15px;bottom:15px}
+    .tool-long{display:none}
+    .tool-short{display:inline}
+    :is(html.device-desktop,html.device-touch) .bar-actions #btnPdf{width:100%;height:48px;min-height:48px;font-size:14px}
+  }
+
+  /* Pièces jointes, messages et observation */
+  .att-btn{border-color:var(--ui);background:var(--ui);border-radius:11px}
+  .att-btn.ghost{background:var(--ui-soft);color:var(--ui-strong);border-color:var(--ui-border)}
+  .att-row{border-radius:12px}
+  #actionToast{background:rgba(44,38,33,.95);border-radius:14px}
+  #observationBox{border:1px solid var(--line);border-radius:18px;box-shadow:0 6px 18px rgba(74,48,28,.07)}
+  #observationBox label{font-family:var(--display);font-size:17px;font-weight:600;color:var(--text)}
+  #observationBox textarea{border-color:var(--control-border);border-radius:13px}
+  #observationBox textarea:focus{border-color:var(--ui);box-shadow:0 0 0 4px var(--ui-ring)}
+  .sub select{border-color:var(--control-border)}
+  .edit input{color:var(--text);border-color:var(--control-border);border-radius:11px}
+  .edit input:focus{outline-color:var(--ui)}
+  .nav{border-color:var(--control-border);border-radius:11px}
+  .nav.done{background:var(--ui);border-color:var(--ui)}
+
+  /* Fenêtres : signature, calendrier, heures */
+  #sigPanel,#calPanel,#timePanel,#sigSavePromptBox,#calRangeHelpBox{border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 48px rgba(44,38,33,.28)}
+  #sigModal,#calModal,#timeModal{background:rgba(44,38,33,.55)}
+  #sigSavePrompt,#calRangeHelp{background:rgba(44,38,33,.6)}
+  #sigSavePromptTitle,#calRangeHelpTitle{font-family:var(--display);font-weight:600;color:var(--text)}
+  .modalZoom button,.strokeControl button,.timePick select{border-color:var(--control-border);border-radius:11px}
+  .timePick select{color:var(--text)}
+  #calHead select{border-color:var(--control-border);background:var(--panel)}
+  #calPrev,#calNext{border-color:var(--line);background:var(--soft);color:var(--ui)}
+  #calPrev:hover,#calNext:hover{background:var(--ui-soft);border-color:var(--ui-border)}
+  .calday{border-color:rgba(44,38,33,.18)}
+  .calday:hover{background:var(--ui-soft);border-color:var(--ui-border)}
+  .calday.today:not(.sel){box-shadow:0 0 0 2px var(--ui) inset}
+  .calday.sel,.calday.range-edge{background:var(--ui);border-color:var(--ui);color:#fff;box-shadow:0 6px 12px rgba(131,69,44,.22)}
+  .calday.in-range{background:var(--ui-soft);border-color:var(--ui-border);color:var(--ui-strong)}
+  #calRangeHint{background:var(--ui-soft);border-color:var(--ui-border);color:var(--ui-strong)}
+  #calRangeHint.awaiting{background:var(--ui-soft);border-color:var(--ui);box-shadow:0 5px 16px rgba(131,69,44,.14)}
+  #calRangeHint.awaiting .rangeInstruction{color:var(--ui-strong)}
+  #calCycleInfo{background:var(--soft);border-color:var(--line)}
+  #calLegend{background:var(--soft);border-color:var(--line)}
+  #calLegend .lg-work i{border-color:rgba(44,38,33,.18)}
+  #calSameBox{border-color:var(--ui);background:var(--ui-soft)}
+  @media screen{ .paper{box-shadow:0 10px 30px rgba(74,48,28,.18)} }
   @media print{ body{background:#fff;padding-bottom:0} .bar,.sub,.msg,.att,.att-note,#observationBox,#pageNav,.edit,#sigclear,#sigSaveManual,#sigSavedDelete,#sigModal,#sigSavePrompt,#calModal,#timeModal{display:none!important}
                 .stage{padding:0} .paper{box-shadow:none} }

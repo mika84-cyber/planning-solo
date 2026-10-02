@@ -1136,7 +1136,9 @@ function blankPageFrom(first){
 function updatePageUI(){
   var nav=document.getElementById('pageNav'), b=document.getElementById('btnSecond');
   nav.classList.toggle('on',pageCount>1);
-  b.textContent=pageCount>=5?'5 feuilles maximum':'Ajouter une feuille';
+  /* Seuls les libellés changent : l'icône du bouton reste en place. */
+  b.querySelector('.tool-long').textContent=pageCount>=5?'5 feuilles maximum':'Ajouter une feuille';
+  b.querySelector('.tool-short').textContent=pageCount>=5?'5 max':'Feuille';
   b.disabled=pageCount>=5;
   document.getElementById('pageStatus').textContent='Feuille '+(pageIndex+1)+' / '+pageCount;
   document.getElementById('pagePrev').disabled=pageIndex===0;
