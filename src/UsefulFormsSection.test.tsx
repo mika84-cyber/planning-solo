@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  folderListHeadings,
   getUsefulFormAction,
   USEFUL_FORM_FOLDERS,
   UsefulFormsSection,
@@ -30,6 +31,13 @@ describe("formulaires utiles", () => {
     expect(html).toContain("useful-form-work-accident-entry");
     expect(html).toContain("/work-accident-icon.png");
     expect(html).not.toContain("›");
+  });
+
+  it("sépare documents et audioguides d’un même dossier, au singulier ou au pluriel", () => {
+    expect(folderListHeadings(1, 1)).toEqual({ documents: "Document", audioguides: "Audioguide" });
+    expect(folderListHeadings(3, 2)).toEqual({ documents: "Documents", audioguides: "Audioguides" });
+    expect(folderListHeadings(2, 0)).toBeNull();
+    expect(folderListHeadings(0, 1)).toBeNull();
   });
 
   it("réserve la rubrique tickets repas à l’image fournie", () => {

@@ -407,6 +407,11 @@
 .useful-form-file-copy .useful-form-send-to { font-size: 12px; font-weight: 600; letter-spacing: 0; }
 @media (max-width: 600px) { .useful-form-file-copy .useful-form-send-to { display: grid; justify-items: start; } }
 .useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
+/* Intitulés « Document(s) » et « Audioguide(s) » d'un dossier qui réunit les
+   deux : petites capitales discrètes suivies d'un filet. */
+.useful-form-list-heading { display: flex; grid-column: 1 / -1; align-items: center; gap: 10px; margin: 6px 2px 0; color: var(--muted); font-family: inherit; font-size: .74rem; line-height: 1.2; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.useful-form-list-heading::after { flex: 1; height: 1px; background: var(--border-soft); content: ""; }
+.useful-form-list-heading:first-child, .useful-form-local-notice + .useful-form-list-heading { margin-top: 0; }
 /* Audioguides d'exposition : même carte que les fiches, code d'accès en vue. */
 .useful-audioguide-icon { background: #fbeadf; color: #a4502f; }
 /* Dossier d'une exposition : la fiche prend aussi une pastille colorée, et

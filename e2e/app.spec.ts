@@ -2031,6 +2031,8 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
   // L'audioguide prend la forme des fiches, à la suite de la liste.
   await expect(page.locator(".useful-form-download-list .useful-form-download-card")).toHaveCount(1);
+  // Sans document à côté, l’audioguide n’a pas besoin d’intitulé de séparation.
+  await expect(page.locator(".useful-form-list-heading")).toHaveCount(0);
   await expect(page.locator(".useful-forms-empty")).toHaveCount(0);
   await expect(page.locator(".useful-forms-folder-screen")).not.toContainText("Hilma Af Klint");
   // L'audioguide Cézanne s'ouvre sans scanner le QR code, code d'accès en vue.

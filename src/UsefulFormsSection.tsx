@@ -158,6 +158,16 @@ type UsefulFormsSectionProps = {
   demoMode?: boolean;
 };
 
+/** Quand un dossier réunit des documents et des audioguides, un intitulé
+ *  sépare les deux, au singulier ou au pluriel ; sinon, aucun intitulé. */
+export function folderListHeadings(documents: number, audioguides: number) {
+  if (!documents || !audioguides) return null;
+  return {
+    documents: documents > 1 ? "Documents" : "Document",
+    audioguides: audioguides > 1 ? "Audioguides" : "Audioguide",
+  };
+}
+
 export function UsefulFormsSection({
   today = new Date().toISOString().slice(0, 10),
   status = "contractuel",
@@ -212,6 +222,7 @@ export function UsefulFormsSection({
     return () => { active = false; window.clearInterval(timer); };
   }, [demoMode]);
   const folder = visibleFolders.find((item) => item.key === activeFolder);
+  const headings = folder ? folderListHeadings(folder.documents.length, folder.audioguides?.length ?? 0) : null;
   const secureContext = typeof window === "undefined" || window.isSecureContext;
   const downloadForm = async (
     event: MouseEvent<HTMLAnchorElement>,
@@ -304,6 +315,7 @@ export function UsefulFormsSection({
                 Mode de test local : les PDF s’ouvrent dans le lecteur du navigateur. Utilisez ensuite son bouton Enregistrer. Le téléchargement direct sans alerte sera disponible sur la version sécurisée.
               </p>
             ) : null}
+            {headings ? <h3 className="useful-form-list-heading">{headings.documents}</h3> : null}
             {folder.documents.map((document, index) => {
               const action = getUsefulFormAction(document.format, secureContext);
               return (
@@ -344,13 +356,14 @@ export function UsefulFormsSection({
             })}
             {/* Les audioguides suivent les fiches, dans le même format : ouvrir
                 sans scanner (le code d'accès est copié) ou montrer le QR code. */}
+            {headings ? <h3 className="useful-form-list-heading">{headings.audioguides}</h3> : null}
             {folder.audioguides?.map((guide, index) => (
               <article key={guide.title} className="useful-form-download-card useful-audioguide-card">
                 <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
                 </span>
                 <span className="useful-form-file-copy">
-                  <small>{folder.documents.length + index + 1}. AUDIOGUIDE</small>
+                  <small>{index + 1}. AUDIOGUIDE</small>
                   <strong>Audioguide {guide.title}</strong>
                   <small className="useful-audioguide-code">{guide.languages}</small>
                   <small className="useful-audioguide-code">Code d’accès <b>{guide.code}</b></small>
