@@ -2246,6 +2246,7 @@ export default function Home() {
   });
   useEffect(() => saveDirectDuration(), [directDurationSave, timeDate, selectedList.length]);
   const {
+    openBlankForm,
     validateAndOpenForm,
     saveRequestToPlanning,
   } = usePlanningRequestActions({
@@ -2866,6 +2867,7 @@ export default function Home() {
         <Suspense fallback={<DeferredSection label="vos congés et récupérations" />}>
         <LeaveManagementPage
           onRequestLeave={() => openRequestChooser("general")}
+          onOpenBlankForm={openBlankForm}
           onOpenHolidayAllowances={() => {
             setHomeSection("pay");
             setPayScreen("allowances");

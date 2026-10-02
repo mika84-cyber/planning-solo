@@ -3449,6 +3449,24 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
   await assertVisibleMenus();
 });
 
+test("le formulaire de demande s’ouvre directement depuis Congés et récupérations", async ({ page }, testInfo) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  const actions = page.locator(".leave-primary-action-bar");
+  const leaveButton = actions.getByRole("button", { name: "Poser un congé" });
+  const formButton = actions.getByRole("button", { name: "Ouvrir le formulaire" });
+  await expect(formButton).toBeVisible();
+  const [leaveBox, formBox] = await Promise.all([leaveButton.boundingBox(), formButton.boundingBox()]);
+  // Sous « Poser un congé » sur téléphone, à côté et de même largeur sur grand écran.
+  if (testInfo.project.name === "mobile") expect(formBox!.y).toBeGreaterThan(leaveBox!.y + leaveBox!.height);
+  else {
+    expect(Math.abs(formBox!.y - leaveBox!.y)).toBeLessThan(1);
+    expect(Math.abs(formBox!.width - leaveBox!.width)).toBeLessThan(1);
+  }
+  await formButton.click();
+  await expect(page).toHaveURL(/\/formulaire\/index\.html$/);
+});
+
 test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "Le geste tactile est réservé au téléphone");
   await prepareDemo(page);

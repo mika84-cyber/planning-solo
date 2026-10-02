@@ -45,6 +45,8 @@ type LeaveManagementPageProps = {
   archivedRequests: ArchivedRequest[];
   onOpenOvertime: () => void;
   onRequestLeave: () => void;
+  /** Ouvre le formulaire de demande vierge, sans passer par le choix des dates. */
+  onOpenBlankForm: () => void;
   onOpenSolidarity: () => void;
   /** Conduit à l’écran où ces crédits se confirment, plutôt que de nommer le
    *  chemin et de laisser chercher. */
@@ -79,6 +81,7 @@ export function LeaveManagementPage({
   archivedRequests,
   onOpenOvertime,
   onRequestLeave,
+  onOpenBlankForm,
   onOpenSolidarity,
   onOpenHolidayAllowances,
   onToggleOvertimeHistory,
@@ -113,6 +116,9 @@ export function LeaveManagementPage({
       <div className="planning-leave-panel leave-primary-action-bar">
         <button type="button" className="primary-action planning-leave-action" onClick={onRequestLeave}>
           Poser un congé
+        </button>
+        <button type="button" className="secondary-button leave-open-form-action" onClick={onOpenBlankForm}>
+          Ouvrir le formulaire
         </button>
       </div>
       {longAbsenceContent}
