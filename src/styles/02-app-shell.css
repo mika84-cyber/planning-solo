@@ -679,6 +679,25 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .request-floating-review { animation: none; }
 }
+
+/* Bas d'une demande, en pile sobre : le nombre de dates et la consigne,
+   l'enregistrement avec formulaire (seule action pleine), l'enregistrement
+   sans formulaire au trait fin, puis « Annuler la demande » en simple lien.
+   L'identifiant du panneau l'emporte sur les réglages plus anciens de ces
+   boutons, répartis dans plusieurs feuilles. */
+#request-panel .request-bottom-stack { display: block; }
+#request-panel .request-selection-count { display: grid; gap: 2px; margin: 0 0 14px; }
+#request-panel .request-selection-count strong { color: var(--text); font-size: 1rem; font-weight: 800; }
+#request-panel .request-selection-count small { color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
+#request-panel .request-bottom-stack .request-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; width: 100%; margin: 0; }
+#request-panel .request-bottom-stack .request-actions .validate-button { width: 100%; min-height: 50px; margin: 0; border-radius: 12px; font-size: 0.95rem; text-wrap: balance; }
+#request-panel .request-bottom-stack .request-planning-choice { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin: 0; padding: 0 16px; border: 1px solid var(--border-control); border-radius: 12px; background: var(--surface); box-shadow: none; color: var(--text); font: inherit; font-size: 0.95rem; font-weight: 750; cursor: pointer; }
+#request-panel .request-bottom-stack .request-planning-choice:hover:not(:disabled) { border-color: var(--accent); background: var(--surface-soft); }
+#request-panel .request-bottom-stack .request-planning-choice:disabled { cursor: not-allowed; opacity: 0.5; }
+#request-panel .request-bottom-stack .request-planning-choice svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#request-panel .request-cancel-link { justify-self: center; min-height: 40px; padding: 0 12px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.9rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+#request-panel .request-cancel-link:hover:not(:disabled) { color: var(--text); }
+#request-panel .request-bottom-stack .request-action-clarification { display: block; margin-top: 4px; color: var(--muted); font-size: 0.8rem; text-align: center; }
 .leave-balance-grid span,
 .leave-balance-grid small {
   display: block;

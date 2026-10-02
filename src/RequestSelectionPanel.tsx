@@ -216,12 +216,20 @@ export function RequestSelectionPanel({
         recoveryBalanceRemaining={recoveryBalanceRemaining}
         leaveRemaining={leaveRemainingByType}
       />
-      <div className="request-bottom">
+      <div className="request-bottom request-bottom-stack">
         {selectedList.length ? (
-          <p><strong>{selectedList.length}</strong> {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}. Touchez une date colorée pour la retirer.</p>
+          <p className="request-selection-count">
+            <strong>{selectedList.length} {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}</strong>
+            <small>Touchez une date colorée dans le planning pour la retirer.</small>
+          </p>
         ) : (
-          <p><strong>Aucune date sélectionnée.</strong> Touchez une date dans le planning pour commencer.</p>
+          <p className="request-selection-count">
+            <strong>Aucune date sélectionnée</strong>
+            <small>Touchez une date dans le planning pour commencer.</small>
+          </p>
         )}
+        {/* Une seule action pleine ; l'enregistrement sans formulaire en
+            second, puis l'abandon de la demande en simple lien. */}
         <div className="request-actions" ref={actionsRef}>
           <button
             className="validate-button"
@@ -243,15 +251,16 @@ export function RequestSelectionPanel({
             <button
               className="request-planning-choice"
               type="button"
-              aria-label="Enregistrer uniquement"
               onClick={onSaveToPlanning}
               disabled={!selectedList.length || savingRequest || selectionBlocked}
             >
-              <span aria-hidden="true">✓</span>
-              <strong>Enregistrer uniquement</strong>
-              <small>Sans formulaire</small>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>
+              Enregistrer sans formulaire
             </button>
           ) : null}
+          <button className="request-cancel-link" type="button" onClick={onCancel} disabled={savingRequest}>
+            Annuler la demande
+          </button>
         </div>
         {requestKind !== "other" && !sickRequest ? (
           <small className="request-action-clarification">

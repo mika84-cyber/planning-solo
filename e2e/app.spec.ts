@@ -2670,7 +2670,7 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   await expect(panel.locator(".request-validation-dates")).toContainText("Jour exceptionnel en demi-journée");
   // Sans horaires renseignés, aucune heure n'est inventée : le moment seul.
   await expect(panel.locator(".request-validation-dates em")).toHaveText("Matin");
-  await panel.getByRole("button", { name: "Enregistrer uniquement" }).click();
+  await panel.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
   await expect(day(/^jeudi 1 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée matin · jour exceptionnel/);
 
   // Divers l'après-midi.
@@ -3886,7 +3886,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   await setClockTime(trainingHours, "Heure de début", "10:00");
   await setClockTime(trainingHours, "Heure de fin", "16:00");
   await trainingHours.getByRole("button", { name: "Valider les horaires" }).click();
-  await recoveryPanel.getByRole("button", { name: "Enregistrer uniquement" }).click();
+  await recoveryPanel.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
 
   const recoveryDay = page.getByRole("button", { name: /formation en récupération de 6 h/i });
   await expect(recoveryDay).toHaveCSS("background-color", "rgb(243, 179, 166)");
@@ -4321,7 +4321,7 @@ test("le congé CET est proposé depuis les demandes et depuis une case", async 
   await chooser.getByText("Autres", { exact: true }).click();
   await chooser.getByRole("button", { name: /^CET/ }).click();
   await expect(page.getByRole("button", { name: /Congé CET/ })).toBeVisible();
-  await page.getByRole("button", { name: "Annuler la demande" }).click();
+  await page.getByRole("button", { name: "Annuler la demande" }).first().click();
 
   await page.locator(".month-card .day").first().click();
   const cetDayDialog = page.getByRole("dialog", { name: /2026/ });
@@ -4462,7 +4462,7 @@ test("une demi-journée de RTT est décomptée des RTT, pas des congés annuels"
   await expect(summary).toContainText("14,5 RTT restants");
   await expect(summary).not.toContainText("CA restants");
 
-  await request.getByRole("button", { name: "Enregistrer uniquement" }).click();
+  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
   await expect(day).toHaveAttribute("aria-label", /Demi-journée matin · RTT/);
   await expect(day).toHaveClass(/half-rtt/);
 
@@ -4532,7 +4532,7 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
   await setClockTime(timeDialog, "Heure de fin", "12:30");
   await timeDialog.getByRole("button", { name: "Valider les horaires" }).click();
   await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("2 h 30 déduites");
-  await recoveryPanel.getByRole("button", { name: "Enregistrer uniquement" }).click();
+  await recoveryPanel.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
 
   const recoveryDay = page.locator(".month-card .day.hourly-recovery-day").last();
   await expect(recoveryDay).toHaveCSS("background-color", "rgb(243, 179, 166)");
@@ -4573,12 +4573,15 @@ test("une récupération lancée depuis une case suit aussi le calendrier", asyn
   await durationDialog.getByRole("button", { name: "Valider les horaires" }).click();
   await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("4 h déduites");
   await expect(recoveryPanel.getByRole("button", { name: "Enregistrer et préparer le formulaire" })).toBeDisabled();
-  const directPlanningChoice = recoveryPanel.getByRole("button", { name: "Enregistrer uniquement" });
+  const directPlanningChoice = recoveryPanel.getByRole("button", { name: "Enregistrer sans formulaire" });
   await expect(directPlanningChoice).toBeVisible();
   await expect(directPlanningChoice).toBeDisabled();
   await expect(directPlanningChoice).toHaveClass(/request-planning-choice/);
-  await expect(directPlanningChoice.getByText("Sans formulaire")).toBeVisible();
-  await expect(directPlanningChoice).toHaveCSS("border-radius", "14px");
+  await expect(directPlanningChoice).toHaveCSS("border-radius", "12px");
+  // Sous les deux enregistrements, l'abandon de la demande reste un simple lien.
+  const cancel = recoveryPanel.getByRole("button", { name: "Annuler la demande" }).last();
+  await expect(cancel).toHaveClass(/request-cancel-link/);
+  await expect(cancel).toBeEnabled();
 });
 
 test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page }) => {
@@ -4599,7 +4602,7 @@ test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page 
     }).click();
     const request = page.locator("#request-panel");
     await day.click();
-    await request.getByRole("button", { name: "Enregistrer uniquement" }).click();
+    await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
     await expect(day.getByText(choices[index].marker, { exact: true })).toBeVisible();
   }
 });
@@ -4671,7 +4674,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
   await expect(page.getByRole("heading", { name: "Sélectionnez vos congés" })).toBeVisible();
   await page.locator(".month-card .day").first().click();
   await expect(page.getByLabel("Résumé avant validation")).toBeVisible();
-  await page.getByRole("button", { name: "Annuler la demande" }).click();
+  await page.getByRole("button", { name: "Annuler la demande" }).first().click();
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
@@ -4680,7 +4683,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
   const recovery = page.locator("#request-panel");
   await expect(recovery.locator(".type-tabs > button")).toHaveCount(5);
   await expect(recovery.getByRole("button", { name: /formation/i })).toBeVisible();
-  await recovery.getByRole("button", { name: "Annuler la demande" }).click();
+  await recovery.getByRole("button", { name: "Annuler la demande" }).first().click();
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const sickChooser = page.getByRole("dialog", { name: "Poser un congé" });
@@ -4698,7 +4701,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
     );
   });
   expect(sickElementsOverlap).toBe(false);
-  await page.getByRole("button", { name: "Annuler la demande" }).click();
+  await page.getByRole("button", { name: "Annuler la demande" }).first().click();
 });
 
 test("les dates choisies sont préremplies dans le formulaire de congé", async ({ page }) => {
