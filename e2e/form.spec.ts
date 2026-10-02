@@ -38,6 +38,18 @@ test("la barre du formulaire tient sur une ligne sur grand écran et met le PDF 
     expect(toolsBox!.y).toBeGreaterThan(pdfBox!.y + pdfBox!.height - 1);
     expect(Math.abs(pdfBox!.width - toolsBox!.width)).toBeLessThan(2);
     await expect(tools.locator("#btnSecond")).toHaveAccessibleName("Feuille");
+    // Le retour devient une flèche sur la ligne du choix du formulaire.
+    const choiceBox = await page.locator(".form-choice").boundingBox();
+    expect(backBox!.y).toBeLessThan(choiceBox!.y + choiceBox!.height);
+    expect(backBox!.width).toBeLessThan(60);
+    // En faisant défiler la feuille, le PDF reste accessible en haut de l’écran.
+    const floating = page.locator(".pdf-floating");
+    await expect(floating).toBeHidden();
+    await page.evaluate(() => window.scrollTo(0, 500));
+    await expect(floating).toBeVisible();
+    expect((await floating.boundingBox())!.y).toBeLessThan(20);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(floating).toBeHidden();
   }
   if (testInfo.project.name === "ordinateur") await expect(page.locator("#btnOutlook")).toBeHidden();
   else await expect(page.locator("#btnOutlook")).toBeVisible();

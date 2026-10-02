@@ -2031,3 +2031,23 @@ afterFirstPaint(function(){
   }).catch(function(){});
 });
 })();
+
+/* ================= bouton PDF flottant (telephone) =================
+   Sur ecran etroit, l'en-tete defile avec la feuille. Des que le bouton
+   « Telecharger le PDF » sort de l'ecran, une copie fixee en haut prend le
+   relais : elle declenche le vrai bouton et reprend son etat desactive. */
+(function(){
+  var pdf=document.getElementById('btnPdf');
+  if(!pdf || !window.IntersectionObserver) return;
+  var floating=document.createElement('button');
+  floating.type='button';
+  floating.className='btn pdf-floating';
+  floating.innerHTML=pdf.innerHTML;
+  floating.addEventListener('click',function(){ pdf.click(); });
+  document.body.appendChild(floating);
+  new MutationObserver(function(){ floating.disabled=pdf.disabled; })
+    .observe(pdf,{attributes:true,attributeFilter:['disabled']});
+  new IntersectionObserver(function(entries){
+    document.documentElement.classList.toggle('pdf-out-of-view', !entries[0].isIntersecting);
+  }).observe(pdf);
+})();
