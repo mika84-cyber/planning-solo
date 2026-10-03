@@ -1796,7 +1796,7 @@ test("la messagerie interne reste privée, compacte et utilisable avec une photo
   await page.getByRole("button", { name: "Terminer" }).click();
   await openMainMenu(page);
   const userMenu = page.getByRole("complementary", { name: "Menu principal" });
-  await expect(userMenu.getByRole("button", { name: /Écrire à l’administrateur/ })).toBeVisible();
+  await expect(userMenu.getByRole("button", { name: /Écrire à l’administrateur/ })).toHaveCount(0);
   await expect(userMenu.getByRole("button", { name: /Messagerie interne/ })).toHaveCount(0);
   await expect(userMenu.getByText("Aide rapide", { exact: true })).toHaveCount(0);
 

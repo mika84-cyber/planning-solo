@@ -78,7 +78,9 @@ describe("navigation principale", () => {
     expect(html).toContain("Documents et contacts");
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("Installer l’application");
-    expect(html).toContain("Écrire à l’administrateur");
+    // Les comptes non administrateurs n’ont plus d’entrée pour écrire à l’administrateur.
+    expect(html).not.toContain("Écrire à l’administrateur");
+    expect(html).not.toContain("Messagerie interne");
     expect(html).not.toContain("Mode d’emploi");
     expect(html).not.toContain("Compte et réglages");
     expect(html).toContain("Mes données");

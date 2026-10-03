@@ -321,11 +321,15 @@ export function MainMenu({
               <span className="main-menu-chevron" aria-hidden="true">›</span>
             </button>
           ) : null}
-          <button type="button" className="guide-menu-entry feedback-menu-entry" onClick={() => onOpenFeedback(isAdmin ? "inbox" : "compose")}>
-            <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="feedback" /></span>
-            <span className="main-menu-copy"><strong>{isAdmin ? "Messagerie interne" : "Écrire à l’administrateur"}</strong><small>{isAdmin ? `${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}` : "Une idée, une suggestion ou un bug"}</small></span>
-            <span className="main-menu-chevron" aria-hidden="true">›</span>
-          </button>
+          {/* Seul l'administrateur garde la messagerie dans le menu : les
+              autres comptes n'ont plus d'entrée pour lui écrire. */}
+          {isAdmin ? (
+            <button type="button" className="guide-menu-entry feedback-menu-entry" onClick={() => onOpenFeedback("inbox")}>
+              <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="feedback" /></span>
+              <span className="main-menu-copy"><strong>Messagerie interne</strong><small>{`${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}`}</small></span>
+              <span className="main-menu-chevron" aria-hidden="true">›</span>
+            </button>
+          ) : null}
         </div>
       </aside>
     </div>
