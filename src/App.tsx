@@ -562,14 +562,20 @@ export default function Home() {
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, [viewportDebugEnabled]);
+  // Un souhait couvert ensuite par un congé posé est réalisé : il ne
+  // s'affiche plus comme souhait, ni dans le PDF ni dans les choix.
   const wishDates = useMemo(
     () =>
       new Set(
         Object.entries(entries)
-          .filter(([, entry]) => entry.wish)
+          .filter(([key, entry]) => entry.wish && !periods.some((period) => period.from <= key && key <= period.to))
           .map(([key]) => key),
       ),
-    [entries],
+    [entries, periods],
+  );
+  const pendingWishDates = useMemo(
+    () => [...wishDates].filter((key) => key >= dateKey(now)).sort(),
+    [wishDates, now],
   );
   const legacyOtherDates = useMemo(
     () =>
@@ -1954,6 +1960,8 @@ export default function Home() {
     beginRangeSelection,
     cancelRangeSelection,
     beginMultipleDateSelectionFromDay,
+    beginWishSelection,
+    beginWishConversion,
     beginRequest,
     handleDay,
     confirmWarning,
@@ -2299,6 +2307,7 @@ export default function Home() {
         showNotes={showNotes}
         inPendingRange={inPendingRange}
         rangeSelecting={rangeSelecting}
+        rangePreviewColor={separatePeople.length === 1 && separatePeople[0] === "wish" ? "var(--wish)" : undefined}
         recoveryRangeSelecting={recoveryRangeSelecting}
         noteSelecting={noteSelecting}
         noteColor={noteColor}
@@ -3231,8 +3240,14 @@ export default function Home() {
         <RequestChooserDialog
           open={requestChooser}
           requestChooserDate={requestChooserDate}
+          pendingWishCount={pendingWishDates.length}
           onClose={() => setRequestChooser(false)}
           onChoose={beginChosenRequest}
+          onChooseWish={beginWishSelection}
+          onConvertWishes={() => {
+            setRequestChooser(false);
+            beginWishConversion(pendingWishDates);
+          }}
         />
         </Suspense>
       ) : null}

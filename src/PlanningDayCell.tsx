@@ -33,6 +33,9 @@ type PlanningDayCellProps = {
   showNotes: boolean;
   inPendingRange: boolean;
   rangeSelecting: boolean;
+  /** Couleur des dates choisies dans une sélection de plusieurs dates :
+   *  le vert des souhaits, sinon la couleur des congés. */
+  rangePreviewColor?: string;
   recoveryRangeSelecting: boolean;
   noteSelecting: boolean;
   noteColor: string;
@@ -60,6 +63,7 @@ export function PlanningDayCell({
   showNotes,
   inPendingRange,
   rangeSelecting,
+  rangePreviewColor,
   recoveryRangeSelecting,
   noteSelecting,
   noteColor,
@@ -145,7 +149,7 @@ export function PlanningDayCell({
     : cleanupSelected
       ? ({ "--selection-color": "#c43d43" } as CSSProperties)
       : rangeSelecting || recoveryRangeSelecting
-        ? ({ "--range-preview": recoveryRangeSelecting ? "#f3b3a6" : "var(--leave)" } as CSSProperties)
+        ? ({ "--range-preview": recoveryRangeSelecting ? "#f3b3a6" : rangePreviewColor || "var(--leave)" } as CSSProperties)
         : noteSelecting
           ? ({ "--range-preview": noteColor } as CSSProperties)
           : undefined;

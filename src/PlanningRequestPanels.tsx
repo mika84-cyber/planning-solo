@@ -90,13 +90,20 @@ export function RecoveryDatePickingPanel({
 export function RequestChooserDialog({
   open,
   requestChooserDate,
+  pendingWishCount = 0,
   onClose,
   onChoose,
+  onChooseWish,
+  onConvertWishes,
 }: {
   open: boolean;
   requestChooserDate: string | null;
+  /** Congés souhaités à venir, pas encore transformés en congé. */
+  pendingWishCount?: number;
   onClose: () => void;
   onChoose: (kind: RequestKind, requestedType: SelectionType) => void;
+  onChooseWish?: () => void;
+  onConvertWishes?: () => void;
 }) {
   if (!open) return null;
 
@@ -144,6 +151,20 @@ export function RequestChooserDialog({
             <span>À déduire de votre solde d’heures</span>
           </button>
         </div>
+        {onChooseWish && !requestChooserDate ? (
+          <section className="request-wish-choices" aria-label="Congés souhaités">
+            <button type="button" className="request-wish-choice" onClick={onChooseWish}>
+              <strong>Congés souhaités</strong>
+              <span>Plusieurs dates d’un coup, sans formulaire ni solde</span>
+            </button>
+            {pendingWishCount && onConvertWishes ? (
+              <button type="button" className="request-wish-choice request-wish-convert" onClick={onConvertWishes}>
+                <strong>Transformer mes souhaits <b>{pendingWishCount}</b></strong>
+                <span>En CA, RTT ou autre congé, au choix pour chaque date</span>
+              </button>
+            ) : null}
+          </section>
+        ) : null}
         <details className="request-other-choices">
           <summary>Autres</summary>
           <div className="choice-grid">
@@ -191,19 +212,19 @@ export function GroupChooserDialog({
         </button>
         <span className="step-label">Cycle de travail</span>
         <h2 id="group-choice-title">Choisir mon groupe</h2>
-        <p>Le planning est recalculé immédiatement avec le groupe choisi.</p>
+        <p>Le planning se met à jour dès que vous choisissez.</p>
         <div className="group-choice-grid">
           {GROUP_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
-              className={group === option.value ? "active" : ""}
+              className={`group-choice-${option.value}${group === option.value ? " active" : ""}`}
               aria-pressed={group === option.value}
               onClick={() => onChange(option.value)}
             >
               <span>Groupe</span>
               <strong>{option.value}</strong>
-              {group === option.value ? <small>Actuel</small> : null}
+              {group === option.value ? <small className="group-choice-current">Actuel</small> : null}
             </button>
           ))}
         </div>

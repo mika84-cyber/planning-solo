@@ -143,29 +143,58 @@
   white-space: nowrap;
 }
 .group-choice-modal { max-width: 480px; }
+/* Choix du groupe : trois tuiles identiques, le numéro dans la police des
+   titres, chacune dans la couleur de son groupe sur le planning PDF (bleu,
+   vert, orange), en version douce. Le groupe actuel est cerclé de sa
+   couleur, sa pastille « Actuel » posée sur le bord pour ne rien décaler. */
+.group-choice-grid .group-choice-1 { --group-tone: #3069b4; --group-ink: #24518c; }
+.group-choice-grid .group-choice-2 { --group-tone: #298b69; --group-ink: #1f6b51; }
+.group-choice-grid .group-choice-3 { --group-tone: #ca772b; --group-ink: #9a5a1f; }
 .group-choice-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
 }
 .group-choice-grid button {
-  min-height: 108px;
+  position: relative;
   display: grid;
   place-items: center;
-  gap: 2px;
-  border: 1px solid var(--bg);
+  align-content: center;
+  gap: 6px;
+  min-height: 112px;
+  padding: 14px 8px;
+  border: 1px solid color-mix(in srgb, var(--group-tone) 30%, transparent);
   border-radius: 18px;
-  background: var(--surface-high);
+  background: color-mix(in srgb, var(--group-tone) 7%, var(--surface));
   color: var(--muted);
   cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
-.group-choice-grid button strong { color: var(--muted); font-size: 2rem; }
-.group-choice-grid button small { color: #9b8e7c; font-weight: 800; }
+.group-choice-grid button:hover { border-color: var(--group-tone); transform: translateY(-1px); }
+.group-choice-grid button span { color: color-mix(in srgb, var(--group-ink) 75%, var(--muted)); font-size: 0.74rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.group-choice-grid button strong { color: var(--group-ink); font-family: var(--font-display); font-size: 2.4rem; font-weight: 600; line-height: 1; }
 .group-choice-grid button.active {
-  border-color: var(--border-card);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 2px rgba(122, 111, 95, 0.12);
+  border: 2px solid var(--group-tone);
+  padding: 13px 7px;
+  background: color-mix(in srgb, var(--group-tone) 15%, var(--surface));
+  box-shadow: none;
+}
+.group-choice-grid .group-choice-current {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--group-tone);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .group-choice-grid button, .group-choice-grid button:hover { transform: none; transition: none; }
 }
 .pay-app-screen,
 .pdf-download-screen {
@@ -269,8 +298,8 @@
     padding: 18px 14px calc(22px + env(safe-area-inset-bottom));
   }
   .planning-group-leave-action { width: 100%; }
-  .group-choice-grid { gap: 7px; }
-  .group-choice-grid button { min-height: 92px; }
+  .group-choice-grid { gap: 8px; }
+  .group-choice-grid button { min-height: 96px; }
 }
 
 /* Tête dorée de taille modérée, loin du liseré, sans toucher titre ni boutons ;

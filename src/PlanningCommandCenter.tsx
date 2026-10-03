@@ -123,6 +123,8 @@ export function PlanningCommandCenter({
   onExportPdf,
   exportingPdf = false,
 }: PlanningCommandCenterProps) {
+  // Sélection de plusieurs congés souhaités, lancée depuis « Poser un congé ».
+  const wishOnly = separatePeople.length === 1 && separatePeople[0] === "wish";
   const [workedDaysOpen, setWorkedDaysOpen] = useState(false);
   const workedDaysRef = useRef<HTMLDivElement | null>(null);
 
@@ -366,14 +368,24 @@ export function PlanningCommandCenter({
       ) : null}
 
       {rangeSelecting ? (
-        <section className="range-selection-panel leave" id="range-selection-panel">
+        <section className={`range-selection-panel leave${wishOnly ? " wish-selection" : ""}`} id="range-selection-panel">
           <div>
             <span className="step-label">
-              Choix des dates · {separatePeople.map(multiDatePersonLabel).join(" et ")}
-              {separatePeople.includes("leave") && ` · ${leaveTypeLabel(rangeLeaveType)}`}
+              {wishOnly ? "Congés souhaités · plusieurs dates" : <>
+                Choix des dates · {separatePeople.map(multiDatePersonLabel).join(" et ")}
+                {separatePeople.includes("leave") && ` · ${leaveTypeLabel(rangeLeaveType)}`}
+              </>}
             </span>
-            <h2>{separateDates.length} {separateDates.length > 1 ? "dates sélectionnées" : "date sélectionnée"}</h2>
-            <p>Changez de mois si nécessaire et touchez chaque date pour l’ajouter ou la retirer.</p>
+            <h2>
+              {wishOnly
+                ? `${separateDates.length} ${separateDates.length > 1 ? "souhaits sélectionnés" : "souhait sélectionné"}`
+                : `${separateDates.length} ${separateDates.length > 1 ? "dates sélectionnées" : "date sélectionnée"}`}
+            </h2>
+            <p>
+              {wishOnly
+                ? "Touchez chaque date souhaitée, en changeant de mois si besoin. Les souhaits ne comptent pas dans vos soldes : vous pourrez les transformer en congés plus tard."
+                : "Changez de mois si nécessaire et touchez chaque date pour l’ajouter ou la retirer."}
+            </p>
           </div>
           <div className="range-selection-actions">
             <button className="secondary-button" type="button" onClick={onCancelRange}>Annuler</button>
@@ -383,7 +395,7 @@ export function PlanningCommandCenter({
               onClick={onSaveRange}
               disabled={!separateDates.length || savingRange}
             >
-              {savingRange ? "Synchronisation…" : "Enregistrer toutes les dates"}
+              {savingRange ? "Synchronisation…" : wishOnly ? "Enregistrer les souhaits" : "Enregistrer toutes les dates"}
             </button>
           </div>
         </section>

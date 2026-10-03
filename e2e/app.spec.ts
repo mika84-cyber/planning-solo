@@ -2643,8 +2643,52 @@ test("pendant le choix des dates, une barre ramène à l’enregistrement resté
   const [floatingBox, dockBox] = await Promise.all([floating.boundingBox(), page.locator(".section-dock").boundingBox()]);
   expect(floatingBox!.y + floatingBox!.height).toBeLessThanOrEqual(dockBox!.y);
   await floating.getByRole("button", { name: "Vérifier et enregistrer" }).click();
-  await expect(page.locator(".request-review-heading")).toBeInViewport();
+  // Les boutons d’enregistrement arrivent entiers à l’écran, le récapitulatif au-dessus.
+  await expect(actions).toBeInViewport({ ratio: 0.9 });
+  await expect(page.locator(".request-validation-dates, #request-panel [aria-label='Résumé avant validation']").first()).toBeInViewport();
   await expect(floating).toHaveCount(0);
+});
+
+test("plusieurs congés souhaités se posent d’un coup puis se transforment en congés au choix", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
+  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  const chooser = page.getByRole("dialog", { name: "Poser un congé" });
+  const workDays = page.locator(".calendar-grid .day.work");
+  const pick = async (index: number) => {
+    const day = workDays.nth(index);
+    await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
+    await day.click();
+  };
+
+  // Sans souhait en attente, seule la pose est proposée.
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await expect(chooser.getByRole("button", { name: /Transformer mes souhaits/ })).toHaveCount(0);
+  await chooser.getByRole("button", { name: /Congés souhaités/ }).click();
+  const panel = page.locator("#range-selection-panel");
+  for (const index of [-1, -2, -3]) await pick(index);
+  await expect(panel.getByRole("heading")).toHaveText("3 souhaits sélectionnés");
+  await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
+  await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(3);
+
+  // Les souhaits deviennent une demande en CA ; une date passe en RTT.
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await chooser.getByRole("button", { name: /Transformer mes souhaits\s*3/ }).click();
+  const request = page.locator("#request-panel");
+  await expect(request.locator(".request-selection-count strong")).toHaveText("3 dates sélectionnées");
+  await request.getByRole("button", { name: /^RTT/ }).click();
+  await pick(-1);
+  await expect(request.locator(".request-selection-count strong")).toHaveText("3 dates sélectionnées");
+  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
+  await expect(request.getByLabel("Résumé avant validation")).toContainText("Congés annuels");
+  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+
+  // Posés, les souhaits ne s’affichent plus comme tels et ne sont plus proposés.
+  await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(0);
+  await expect(page.locator(".calendar-grid .day.leave-day")).toHaveCount(3);
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await expect(chooser.getByRole("button", { name: /Transformer mes souhaits/ })).toHaveCount(0);
 });
 
 test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async ({ page }) => {

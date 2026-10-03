@@ -290,6 +290,41 @@ export function usePlanningInteractionActions({
       80,
     );
   }
+  /** Plusieurs congés souhaités d'un coup : les dates se touchent dans le
+   *  calendrier puis s'enregistrent ensemble, sans formulaire ni solde. */
+  function beginWishSelection() {
+    if (requestKind) {
+      notify("Terminez ou annulez d’abord la demande en cours.");
+      return;
+    }
+    setRequestChooser(false);
+    setDayDate(null);
+    setEditingPeriodId(null);
+    setEditingLegacyPeriod(null);
+    setSeparatePeople(["wish"]);
+    setSeparateDates([]);
+    setHomeSection("home");
+    setRangeSelecting(true);
+    setTimeout(
+      () =>
+        document
+          .getElementById("range-selection-panel")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      80,
+    );
+  }
+  /** Les souhaits à venir deviennent une demande de congé, en CA par défaut :
+   *  chaque date peut ensuite changer de nature avant l'enregistrement. */
+  function beginWishConversion(dates: string[]) {
+    setDayDate(null);
+    beginRequest("leave", undefined, "annual");
+    const convertible = dates.filter(
+      (date) => getDayInfo(fromKey(date), group).selectable && !isExchangeDate(date),
+    );
+    setSelections(
+      Object.fromEntries(convertible.map((date) => [date, { date, type: "annual" as SelectionType }])),
+    );
+  }
   function cancelRangeSelection() {
     setRangeSelecting(false);
     setSeparateDates([]);
@@ -445,6 +480,12 @@ export function usePlanningInteractionActions({
       void saveStrikeDateDirect(key);
       return;
     }
+    // Une date déjà choisie avec un autre type prend le type actif : c'est
+    // ainsi qu'on change la nature d'un souhait transformé, date par date.
+    if (selections[key] && selections[key].type !== activeType) {
+      recordSelection(key);
+      return;
+    }
     if (selections[key]) {
       setSelections((current) => {
         const next = { ...current };
@@ -563,6 +604,8 @@ export function usePlanningInteractionActions({
     beginRangeSelection,
     cancelRangeSelection,
     beginMultipleDateSelectionFromDay,
+    beginWishSelection,
+    beginWishConversion,
     beginRequest,
     handleDay,
     confirmWarning,

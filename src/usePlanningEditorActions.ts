@@ -630,12 +630,16 @@ export function usePlanningEditorActions({
           ...saved,
         ].sort((a, b) => a.from.localeCompare(b.from)),
       );
-      if (demo && separatePeople.includes("personal")) {
+      if (demo && (separatePeople.includes("personal") || separatePeople.includes("wish"))) {
         setEntries((current) => {
           const next = { ...current };
           for (const date of separateDates) {
             const previous = next[date] || emptyEntry();
-            next[date] = { ...previous, leave: true };
+            next[date] = {
+              ...previous,
+              leave: separatePeople.includes("personal") || previous.leave,
+              wish: separatePeople.includes("wish") || previous.wish,
+            };
           }
           return next;
         });
@@ -656,6 +660,12 @@ export function usePlanningEditorActions({
         const replacements = [...saved];
         offerUndo("L’absence a été modifiée.", () =>
           restoreLeavePeriod(previousPeriod, replacements),
+        );
+      } else if (separatePeople.length === 1 && separatePeople[0] === "wish") {
+        confirm(
+          separateDates.length > 1
+            ? `Les ${separateDates.length} congés souhaités sont ajoutés au planning.`
+            : "Le congé souhaité est ajouté au planning.",
         );
       } else {
         confirm(

@@ -27,6 +27,8 @@
   box-shadow: var(--shadow);
   scroll-margin-top: 12px;
 }
+/* Sélection de plusieurs congés souhaités : le vert des souhaits du planning. */
+.range-selection-panel.wish-selection { --range-color: var(--wish); }
 .range-selection-panel h2 {
   margin: 0 0 4px;
   font-size: 20px;

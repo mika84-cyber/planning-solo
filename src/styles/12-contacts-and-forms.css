@@ -801,6 +801,25 @@
   .recovery-date-picking-panel .text-button { justify-self: stretch; }
 }
 
+/* Congés souhaités dans « Poser un congé » : même tuile que les autres
+   choix, dans le vert des souhaits du planning. « Transformer mes souhaits »
+   n'apparaît que s'il en reste à venir, avec leur nombre. */
+.request-choice .request-wish-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
+.request-choice .request-wish-choice {
+  --wish-tone: #2f8a57;
+  display: grid; justify-items: start; gap: 4px; min-height: 0; padding: 13px 15px;
+  border: 1px solid color-mix(in srgb, var(--wish) 70%, var(--border-control));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--wish) 14%, #fff);
+  box-shadow: inset 3px 0 0 var(--wish), 0 4px 10px #243b5410;
+  color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.request-choice .request-wish-choice:hover { border-color: var(--wish-tone); }
+.request-choice .request-wish-choice strong { display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 800; }
+.request-choice .request-wish-choice span { color: var(--muted); font-size: 0.84rem; line-height: 1.35; }
+.request-choice .request-wish-choice b { min-width: 22px; padding: 0 7px; border-radius: 999px; background: var(--wish-tone); color: #fff; font-size: 0.75rem; line-height: 20px; text-align: center; }
+.request-choice .request-wish-convert { background: #fff; }
+
 /* Dans le premier choix « Poser un congé », Divers reprend exactement le
    traitement neutre des autres options. Sa couleur rose reste réservée au
    planning et aux rubriques de suivi. */

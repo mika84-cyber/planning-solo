@@ -73,11 +73,22 @@ export function RequestSelectionPanel({
     };
   }, [hasActions]);
   const goToReview = () => {
-    const target = reviewRef.current || actionsRef.current;
-    if (!target) return;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-    target.focus({ preventScroll: true });
+    const heading = reviewRef.current;
+    const actions = actionsRef.current;
+    if (!actions) return;
+    const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    // Le récapitulatif et les boutons ensemble si l'écran les contient ;
+    // sinon, les boutons entiers au-dessus de la navigation du bas, le
+    // récapitulatif restant juste au-dessus.
+    const visibleHeight = window.innerHeight - 96;
+    const actionsBox = actions.getBoundingClientRect();
+    const headingTop = heading?.getBoundingClientRect().top ?? actionsBox.top;
+    if (actionsBox.bottom - headingTop <= visibleHeight - 12) {
+      window.scrollBy({ top: headingTop - 12, behavior });
+    } else {
+      window.scrollBy({ top: actionsBox.bottom - visibleHeight, behavior });
+    }
+    heading?.focus({ preventScroll: true });
   };
 
   if (!requestKind) return null;
@@ -220,7 +231,7 @@ export function RequestSelectionPanel({
         {selectedList.length ? (
           <p className="request-selection-count">
             <strong>{selectedList.length} {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}</strong>
-            <small>Touchez une date colorée dans le planning pour la retirer.</small>
+            <small>Touchez une date colorée dans le planning pour la retirer, ou choisissez un autre type puis touchez-la pour changer sa nature.</small>
           </p>
         ) : (
           <p className="request-selection-count">
