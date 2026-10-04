@@ -92,6 +92,10 @@ export function sanitizeCalendarBackup(value: unknown) {
           : "",
       leave: item.leave === true,
       wish: item.wish === true,
+      wish_moment:
+        item.wish === true && (item.wish_moment === "morning" || item.wish_moment === "afternoon")
+          ? item.wish_moment
+          : undefined,
       holiday_pay:
         item.holiday_pay === "prime" || item.holiday_pay === "recovery"
           ? item.holiday_pay

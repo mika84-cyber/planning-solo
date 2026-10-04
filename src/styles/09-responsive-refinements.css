@@ -51,6 +51,15 @@
   min-height: 40px;
   font-size: 13px;
 }
+/* Trois choix sur un souhait, comme le bas d'une demande : la
+   transformation de ce jour en plein, celle de tous les souhaits au trait
+   fin, l'annulation en simple lien. */
+.wish-decision div { display: grid; grid-template-columns: minmax(0, 1fr); }
+.wish-decision .save-button { width: 100%; min-height: 44px; }
+.wish-decision .wish-convert-all { width: 100%; min-height: 44px; border: 1px solid var(--border-control); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; }
+.wish-decision .wish-convert-all:hover { border-color: var(--accent); }
+.wish-decision .wish-cancel-link { justify-self: center; min-height: 34px; padding: 0 10px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.wish-decision .wish-cancel-link:hover { color: var(--text); }
 
 /* Notes multiples sur une même journée : une puce par ligne, pour que deux
    ajouts ne se lisent pas comme une seule phrase. */
@@ -1321,10 +1330,20 @@
 }
 .leave-calendar-marker-strike { color: #241b08; }
 .leave-calendar-marker.compact { right: 2px; bottom: 2px; font-size: 7px; }
-/* Demi-journée d'ASA : « ASA » à la verticale, dans la moitié posée. */
+/* Demi-journée : la nature à la verticale, dans la moitié posée (ASA, CA,
+   RTT, FRA) ; le numéro du jour occupe l'autre moitié. */
 .half-morning .leave-calendar-marker-exceptional,
-.half-afternoon .leave-calendar-marker-exceptional { top: 50%; right: auto; bottom: auto; left: 25%; max-width: none; writing-mode: vertical-rl; transform: translate(-50%, -50%) rotate(180deg); }
-.half-afternoon .leave-calendar-marker-exceptional { left: 75%; }
+.half-afternoon .leave-calendar-marker-exceptional,
+.half-morning .leave-calendar-marker-half,
+.half-afternoon .leave-calendar-marker-half { top: 50%; right: auto; bottom: auto; left: 25%; max-width: none; writing-mode: vertical-rl; transform: translate(-50%, -50%) rotate(180deg); }
+.half-afternoon .leave-calendar-marker-exceptional,
+.half-afternoon .leave-calendar-marker-half { left: 75%; }
+/* Souhait d'une demi-journée : la moitié verte reste sans mention, le
+   numéro du jour occupe l'autre moitié, séparée d'un trait noir. */
+.day.wish-morning .date-number,
+.day.wish-morning .holiday-date { left: 74%; }
+.day.wish-afternoon .date-number,
+.day.wish-afternoon .holiday-date { left: 26%; }
 
 /* Demi-journée : aplat sur la moitié posée et séparation noire centrale. */
 .day.half-morning::after,

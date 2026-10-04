@@ -1,5 +1,5 @@
 import { isValidDateKey } from "../calendarValidation.mts";
-import { holidayPayFrom, json, type CalendarEntry } from "../calendarShared.mts";
+import { holidayPayFrom, json, wishMomentFrom, type CalendarEntry } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
 export async function handleSaveLeaves(
   context: CalendarActionContext,
@@ -31,6 +31,7 @@ export async function handleSaveLeaves(
     note_group_id: previous?.note_group_id || "",
     leave: body.leave === true,
     wish: body.wish === true,
+    wish_moment: wishMomentFrom(body, body.wish === true, previous?.wish_moment),
     holiday_pay: holidayPayFrom(body, previous?.holiday_pay),
     holiday_recovery_minutes: body.holidayPay === "recovery" && [495, 375, 390, 240, 225].includes(Number(body.holidayRecoveryMinutes))
       ? Number(body.holidayRecoveryMinutes)

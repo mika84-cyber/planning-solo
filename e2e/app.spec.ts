@@ -2655,6 +2655,7 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
   await page.getByRole("button", { name: "Sélectionner le mois" }).click();
   await page.getByRole("option", { name: "octobre", exact: true }).click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
+  const dayDialog = page.locator(".day-modal, [role=dialog]").filter({ hasText: "Que souhaitez-vous faire pour cette journée" });
   const workDays = page.locator(".calendar-grid .day.work");
   const pick = async (index: number) => {
     const day = workDays.nth(index);
@@ -2662,43 +2663,161 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
     await day.click();
   };
 
-  // Sans souhait en attente, seule la pose est proposée.
+  // « Poser un congé » ne propose pas les souhaits : ils partent d’une case.
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await expect(chooser.getByRole("button", { name: /Congés souhaités|Transformer mes souhaits/ })).toHaveCount(0);
+  await chooser.getByRole("button", { name: "Fermer" }).click();
+
+  await pick(-1);
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
   await expect(chooser.getByRole("button", { name: /Transformer mes souhaits/ })).toHaveCount(0);
   await chooser.getByRole("button", { name: /Congés souhaités/ }).click();
   const panel = page.locator("#range-selection-panel");
-  for (const index of [-1, -2, -3]) await pick(index);
+  for (const index of [-2, -3]) await pick(index);
   await expect(panel.getByRole("heading")).toHaveText("3 souhaits sélectionnés");
   await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(3);
 
-  // Les souhaits deviennent une demande en CA ; une date passe en RTT.
-  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  // Chaque souhait reçoit sa nature dans une liste. Les lignes partent vides :
+  // une ligne laissée vide reste un souhait. « Tout en » règle tout d’un geste.
+  await pick(-4);
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
   await chooser.getByRole("button", { name: /Transformer mes souhaits\s*3/ }).click();
+  const conversion = page.getByRole("dialog", { name: "Transformer 3 souhaits" });
+  const rows = conversion.locator(".wish-conversion-list li");
+  const summary = conversion.locator(".wish-conversion-summary");
+  await expect(rows).toHaveCount(3);
+  await expect(summary).toHaveText("Aucune nature choisie : tout reste en souhait.");
+  await expect(conversion.getByRole("button", { name: "Choisissez au moins une nature" })).toBeDisabled();
+  await conversion.getByRole("button", { name: "Tout en RTT" }).click();
+  await expect(summary).toHaveText("3 RTT");
+  await conversion.getByRole("button", { name: "Tout en CA" }).click();
+  await expect(summary).toHaveText("3 CA");
+  // Retoucher la nature choisie vide la ligne : la date reste un souhait.
+  await rows.first().getByRole("button", { name: /^CA/ }).click();
+  await rows.last().getByRole("button", { name: /^RTT/ }).click();
+  await expect(summary).toHaveText("1 CA · 1 RTT · 1 gardé en souhait");
+  await conversion.getByRole("button", { name: "Continuer avec 2 congés" }).click();
   const request = page.locator("#request-panel");
-  await expect(request.locator(".request-selection-count strong")).toHaveText("3 dates sélectionnées");
-  await request.getByRole("button", { name: /^RTT/ }).click();
-  await pick(-1);
-  await expect(request.locator(".request-selection-count strong")).toHaveText("3 dates sélectionnées");
+  await expect(request.locator(".request-selection-count strong")).toHaveText("2 dates sélectionnées");
   await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
   await expect(request.getByLabel("Résumé avant validation")).toContainText("Congés annuels");
   await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
 
-  // Posés, les souhaits ne s’affichent plus comme tels et ne sont plus proposés.
-  await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(0);
-  await expect(page.locator(".calendar-grid .day.leave-day")).toHaveCount(3);
-  await page.getByRole("button", { name: "Poser un congé" }).first().click();
-  await expect(chooser.getByRole("button", { name: /Transformer mes souhaits/ })).toHaveCount(0);
+  // Ces deux souhaits deviennent des congés ; le troisième reste souhaité.
+  await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(1);
+  await expect(page.locator(".calendar-grid .day.leave-day")).toHaveCount(2);
+  await pick(-4);
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  await expect(chooser.getByRole("button", { name: /Transformer mes souhaits\s*1/ })).toBeVisible();
 });
 
-test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async ({ page }) => {
+test("depuis une case du planning, les souhaits se posent et se transforment par le même parcours", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
+  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  const workDays = page.locator(".calendar-grid .day.work");
+  const openDay = async (index: number) => {
+    const day = workDays.nth(index);
+    await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
+    await day.click();
+  };
+  const dayDialog = page.locator(".day-modal, [role=dialog]").filter({ hasText: "Que souhaitez-vous faire pour cette journée" });
+  const chooser = page.getByRole("dialog", { name: "Poser un congé" });
+
+  // La case touchée ouvre la fiche, puis « Congé » : les souhaits y sont proposés.
+  await openDay(-1);
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  await chooser.getByRole("button", { name: /Congés souhaités/ }).click();
+  const panel = page.locator("#range-selection-panel");
+  await expect(panel.getByRole("heading")).toHaveText("1 souhait sélectionné");
+  await openDay(-2);
+  await expect(panel.getByRole("heading")).toHaveText("2 souhaits sélectionnés");
+  await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
+  await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(2);
+
+  // La fiche d’un jour souhaité le transforme en congé, nature au choix ;
+  // elle propose aussi de transformer tous les souhaits d’un coup.
+  await openDay(-1);
+  await expect(page.getByRole("button", { name: "Transformer mes 2 souhaits" })).toBeVisible();
+  await page.getByRole("button", { name: "Transformer en congé" }).click();
+  const conversion = page.getByRole("dialog", { name: "Transformer ce souhait" });
+  await conversion.locator(".wish-conversion-list li").getByRole("button", { name: /^RTT/ }).click();
+  await conversion.getByRole("button", { name: "Continuer" }).click();
+  const request = page.locator("#request-panel");
+  await expect(request.locator(".request-selection-count strong")).toHaveText("1 date sélectionnée");
+  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
+  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+  await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(1);
+
+  // Depuis une case, « Transformer mes souhaits » reprend ceux qui restent.
+  await openDay(-3);
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  await expect(chooser.getByRole("button", { name: /Transformer mes souhaits\s*1/ })).toBeVisible();
+});
+
+test("un congé souhaité se pose aussi le matin ou l’après-midi et se transforme en demi-journée", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
+  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  const workDays = page.locator(".calendar-grid .day.work");
+  const pick = async (index: number) => {
+    const day = workDays.nth(index);
+    await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
+    await day.click();
+  };
+  const dayDialog = page.locator(".day-modal, [role=dialog]").filter({ hasText: "Que souhaitez-vous faire pour cette journée" });
+
+  // Depuis une case : le jour touché est choisi en journée, puis « Matin »
+  // s'applique aux dates touchées ensuite.
+  await pick(-1);
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /Congés souhaités/ }).click();
+  const panel = page.locator("#range-selection-panel");
+  const moments = panel.getByRole("group", { name: "Durée des souhaits" });
+  await expect(moments.getByRole("button", { name: "Journée" })).toHaveAttribute("aria-pressed", "true");
+  // « Matin » s’applique aussi à la date de départ, déjà choisie.
+  await moments.getByRole("button", { name: "Matin" }).click();
+  await expect(workDays.nth(-1)).toHaveClass(/range-wish-morning/);
+  await pick(-2);
+  await expect(workDays.nth(-2)).toHaveClass(/range-wish-morning/);
+  // Une date déjà choisie, touchée avec un autre moment, en change.
+  await moments.getByRole("button", { name: "Après-midi" }).click();
+  await pick(-1);
+  await expect(workDays.nth(-1)).toHaveClass(/range-wish-afternoon/);
+  await expect(panel.getByRole("heading")).toHaveText("2 souhaits sélectionnés");
+  await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
+  await expect(workDays.nth(-2)).toHaveClass(/wish-day wish-morning/);
+  await expect(workDays.nth(-1)).toHaveClass(/wish-day wish-afternoon/);
+  await expect(workDays.nth(-1)).toHaveAttribute("aria-label", /congé souhaité l’après-midi/);
+
+  // Transformé, le souhait du matin devient une demi-journée de RTT le matin.
+  await pick(-2);
+  await expect(page.locator(".wish-decision")).toContainText("Congé souhaité le matin");
+  await page.getByRole("button", { name: "Transformer en congé" }).click();
+  const conversion = page.getByRole("dialog", { name: "Transformer ce souhait" });
+  await expect(conversion.locator(".wish-conversion-date small")).toHaveText("matin");
+  await expect(conversion.getByRole("combobox")).toHaveCount(0);
+  await conversion.locator(".wish-conversion-list li").getByRole("button", { name: /^RTT/ }).click();
+  await expect(conversion.locator(".wish-conversion-summary")).toHaveText("1 demi-journée RTT");
+  await conversion.getByRole("button", { name: "Continuer" }).click();
+  const request = page.locator("#request-panel");
+  await expect(request.getByLabel("Résumé avant validation")).toContainText(/demi-journée/i);
+  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+  await expect(workDays.nth(-2)).toHaveAttribute("aria-label", /Demi-journée matin · RTT/);
+  await expect(workDays.nth(-2)).not.toHaveClass(/wish-day/);
+});
+
+test("un jour exceptionnel se pose en journée entière, un Divers aussi en demi-journée", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
   await page.getByRole("button", { name: "Sélectionner le mois" }).click();
   await page.getByRole("option", { name: "octobre", exact: true }).click();
   const day = (label: RegExp) => page.getByRole("button", { name: label }).first();
 
-  // ASA le matin : la durée se choisit en touchant la date.
+  // ASA : toujours en journée entière, la date se choisit sans demander de durée.
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const panel = page.locator("#request-panel");
@@ -2706,16 +2825,11 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   await panel.getByRole("button", { name: /Jour exceptionnel/ }).click();
   await day(/^jeudi 1 octobre 2026/i).click();
   const duration = page.locator(".time-modal");
-  await expect(duration.getByRole("heading", { name: "Journée ou demi-journée ?" })).toBeVisible();
-  await expect(duration.getByRole("radio")).toHaveText(["●Journée entière", "☀Le matin", "◐L’après-midi"]);
-  await expect(duration.getByRole("radio", { name: /Journée entière/ })).toHaveAttribute("aria-checked", "true");
-  await duration.getByRole("radio", { name: /Le matin/ }).click();
-  await duration.getByRole("button", { name: "Valider" }).click();
-  await expect(panel.locator(".request-validation-dates")).toContainText("Jour exceptionnel en demi-journée");
-  // Sans horaires renseignés, aucune heure n'est inventée : le moment seul.
-  await expect(panel.locator(".request-validation-dates em")).toHaveText("Matin");
+  await expect(duration).toHaveCount(0);
+  await expect(panel.locator(".request-validation-dates")).toContainText("Jour exceptionnel");
+  await expect(panel.locator(".request-validation-dates")).not.toContainText("demi-journée");
   await panel.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
-  await expect(day(/^jeudi 1 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée matin · jour exceptionnel/);
+  await expect(day(/^jeudi 1 octobre 2026/i)).not.toHaveAttribute("aria-label", /Demi-journée/);
 
   // Divers l'après-midi.
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
@@ -2729,15 +2843,6 @@ test("un jour exceptionnel et un Divers se posent aussi en demi-journée", async
   await expect(day(/^vendredi 2 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée après-midi · Divers/);
   // La moitié posée garde le jaune de Divers en journée entière.
   expect(await day(/^vendredi 2 octobre 2026/i).evaluate((cell) => getComputedStyle(cell, "::after").backgroundColor)).toBe("rgb(243, 216, 132)");
-  // « ASA » s'écrit à la verticale, dans la moitié posée.
-  await expect(day(/^jeudi 1 octobre 2026/i).locator(".leave-calendar-marker-exceptional")).toHaveCSS("writing-mode", "vertical-rl");
-  // Le liseré de la demi-journée épouse le bord extérieur de la case.
-  const halfFrame = await day(/^jeudi 1 octobre 2026/i).evaluate((cell) => {
-    const frame = getComputedStyle(cell, "::after");
-    return { cellRadius: getComputedStyle(cell).borderTopLeftRadius, frameRadius: frame.borderTopLeftRadius, top: frame.top, left: frame.left };
-  });
-  expect(halfFrame.frameRadius).toBe(halfFrame.cellRadius);
-  expect(halfFrame.top).toBe("-1px");
 
   // Depuis une case : la fiche du jour mène au même choix de durée, et la
   // validation enregistre aussitôt, sans autre bouton.
@@ -4348,6 +4453,17 @@ test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ pa
   await openDayOtherActions(dayDialog);
   await dayDialog.getByRole("button", { name: /^Congé souhaité/ }).click();
   await expect(dayDialog).toHaveCount(0);
+  // Le jour touché est déjà choisi : d’autres dates peuvent s’ajouter, même
+  // le mois suivant, avant d’enregistrer.
+  const panel = page.locator("#range-selection-panel");
+  await expect(panel.getByRole("heading")).toHaveText("1 souhait sélectionné");
+  await page.getByRole("button", { name: "Mois suivant" }).click();
+  const nextMonthDay = page.locator(".month-card .day.work").last();
+  await nextMonthDay.click();
+  await expect(panel.getByRole("heading")).toHaveText("2 souhaits sélectionnés");
+  await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
+  await expect(nextMonthDay).toHaveClass(/wish-day/);
+  await page.getByRole("button", { name: "Mois précédent" }).click();
   await expect(workDay).toHaveClass(/wish-day/);
 
   await workDay.click();
@@ -4415,7 +4531,7 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   ]);
   await dayDialog.locator(".day-action-other > summary").click();
   await expect(dayDialog.locator(".leave-choices-other > button")).toHaveText([
-    /Congé souhaitéHors période d’ouverture/,
+    "Congé souhaitéUne ou plusieurs dates",
     /Maladie/,
     /Divers/,
     /Grève/,

@@ -4,7 +4,8 @@ import type {
   SetStateAction,
   TouchEvent,
 } from "react";
-import type { Entries, RequestKind, SelectedDay } from "./appModel";
+import type { Entries, RequestKind, SelectedDay, WishMoment } from "./appModel";
+import type { WishChoice } from "./PlanningRequestPanels";
 import { DEFAULT_WORK_SCHEDULE, splitOvertimeRange, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
 import {
   dateKey,
@@ -152,7 +153,15 @@ export function usePlanningInteractionActions({
     setRangeHalfMoment,
     setRangeHalfBalance,
     setRangeSelecting,
+    separateDates,
     setSeparateDates,
+    separatePeople,
+    wishMoment,
+    setWishMoment,
+    separateWishMoments,
+    setSeparateWishMoments,
+    lastWishDate,
+    setLastWishDate,
     setSeparatePeople,
     setEditingPeriodId,
     setEditingLegacyPeriod,
@@ -292,7 +301,7 @@ export function usePlanningInteractionActions({
   }
   /** Plusieurs congés souhaités d'un coup : les dates se touchent dans le
    *  calendrier puis s'enregistrent ensemble, sans formulaire ni solde. */
-  function beginWishSelection() {
+  function beginWishSelection(initialDate?: string) {
     if (requestKind) {
       notify("Terminez ou annulez d’abord la demande en cours.");
       return;
@@ -302,7 +311,12 @@ export function usePlanningInteractionActions({
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
     setSeparatePeople(["wish"]);
-    setSeparateDates([]);
+    // Depuis une case du planning, la date touchée est déjà choisie, en
+    // journée entière tant qu'un autre moment n'est pas choisi.
+    setSeparateDates(initialDate ? [initialDate] : []);
+    setWishMoment("");
+    setSeparateWishMoments(initialDate ? { [initialDate]: "" } : {});
+    setLastWishDate(initialDate || null);
     setHomeSection("home");
     setRangeSelecting(true);
     setTimeout(
@@ -315,19 +329,52 @@ export function usePlanningInteractionActions({
   }
   /** Les souhaits à venir deviennent une demande de congé, en CA par défaut :
    *  chaque date peut ensuite changer de nature avant l'enregistrement. */
-  function beginWishConversion(dates: string[]) {
+  /** La sélection d'une date transformée : une journée de la nature
+   *  choisie, ou une demi-journée aux horaires habituels du matin ou de
+   *  l'après-midi (solde proposé comme ailleurs : CA, puis RTT, puis FRA). */
+  function wishConversionSelection(date: string, choice: WishChoice, wishMoment?: WishMoment): SelectedDay {
+    const [type, choiceMoment] = choice.split(":") as [SelectionType, WishMoment | undefined];
+    // Un souhait du matin ou de l'après-midi devient une demi-journée de la
+    // nature choisie (CA, RTT ou FRA), au même moment.
+    if (wishMoment && !choiceMoment && (type === "annual" || type === "rtt" || type === "fraction")) {
+      const times = workScheduleHalfTimes(workSchedule ?? DEFAULT_WORK_SCHEDULE, wishMoment);
+      return { date, type: "half", ...halfTiming(times.start, times.end), ...(type !== "annual" ? { halfBalance: type } : {}) };
+    }
+    const moment = choiceMoment;
+    if (!moment) return { date, type };
+    const times = workScheduleHalfTimes(workSchedule ?? DEFAULT_WORK_SCHEDULE, moment);
+    const timing = halfTiming(times.start, times.end);
+    const balance = proposeHalfBalance(date);
+    return { date, type: "half", ...timing, ...(balance !== "annual" ? { halfBalance: balance } : {}) };
+  }
+  function beginWishConversion(
+    dates: string[],
+    choices: Record<string, WishChoice> = {},
+    moments: Record<string, WishMoment | undefined> = {},
+  ) {
     setDayDate(null);
     beginRequest("leave", undefined, "annual");
     const convertible = dates.filter(
       (date) => getDayInfo(fromKey(date), group).selectable && !isExchangeDate(date),
     );
     setSelections(
-      Object.fromEntries(convertible.map((date) => [date, { date, type: "annual" as SelectionType }])),
+      Object.fromEntries(convertible.map((date) => [date, wishConversionSelection(date, choices[date] || "annual", moments[date])])),
     );
+  }
+  /** Journée, matin ou après-midi : pour les dates touchées ensuite, et pour
+   *  la date déjà choisie tant qu'elle est seule (la case d'où l'on vient).
+   *  Avec plusieurs dates, rien ne change en arrière : on peut mélanger. */
+  function chooseWishMoment(moment: WishMoment | "") {
+    setWishMoment(moment);
+    if (lastWishDate && separateDates.length === 1 && separateDates[0] === lastWishDate)
+      setSeparateWishMoments((current) => ({ ...current, [lastWishDate]: moment }));
   }
   function cancelRangeSelection() {
     setRangeSelecting(false);
     setSeparateDates([]);
+    setSeparateWishMoments({});
+    setWishMoment("");
+    setLastWishDate(null);
     setSeparatePeople([]);
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
@@ -370,9 +417,10 @@ export function usePlanningInteractionActions({
     setActiveType(start.initialType);
     setSickRequest(start.sickRequest);
     const seedDate = Object.keys(start.selections)[0] || null;
-    // Jour exceptionnel et Divers : la date touchée ouvre d'abord le choix
-    // journée entière, matin ou après-midi, comme dans la demande.
-    const askDuration = Boolean(seedDate) && (start.initialType === "exceptional" || start.initialType === "other");
+    // Divers : la date touchée ouvre d'abord le choix journée entière, matin
+    // ou après-midi, comme dans la demande. Un jour exceptionnel se pose
+    // toujours en journée entière.
+    const askDuration = Boolean(seedDate) && start.initialType === "other";
     const nextSelections = (kind === "recovery" || askDuration) && seedDate
       ? {}
       : start.selections;
@@ -411,7 +459,7 @@ export function usePlanningInteractionActions({
       setTimeDate(key);
       return;
     }
-    if (activeType === "exceptional" || activeType === "other") {
+    if (activeType === "other") {
       setTimeStart("");
       setTimeEnd("");
       setTimeDate(key);
@@ -465,6 +513,23 @@ export function usePlanningInteractionActions({
       return;
     }
     if (rangeSelecting) {
+      const wishOnly = separatePeople.length === 1 && separatePeople[0] === "wish";
+      const chosen = separateDates.includes(key);
+      // Une date déjà choisie avec un autre moment prend le moment actif ;
+      // touchée avec le même moment, elle est retirée.
+      if (wishOnly && chosen && (separateWishMoments[key] || "") !== wishMoment) {
+        setSeparateWishMoments((current) => ({ ...current, [key]: wishMoment }));
+        setLastWishDate(key);
+        return;
+      }
+      if (wishOnly) setLastWishDate(chosen ? null : key);
+      if (wishOnly)
+        setSeparateWishMoments((current) => {
+          const next = { ...current };
+          if (chosen) delete next[key];
+          else next[key] = wishMoment;
+          return next;
+        });
       setSeparateDates((current) => toggleSortedDate(current, key));
       return;
     }
@@ -516,7 +581,7 @@ export function usePlanningInteractionActions({
     if (!timeDate) return;
     const start = timeStart;
     const end = timeEnd;
-    if (activeType === "exceptional" || activeType === "other") {
+    if (activeType === "other") {
       const date = timeDate;
       setSelections((current) => ({
         ...current,
@@ -606,6 +671,7 @@ export function usePlanningInteractionActions({
     beginMultipleDateSelectionFromDay,
     beginWishSelection,
     beginWishConversion,
+    chooseWishMoment,
     beginRequest,
     handleDay,
     confirmWarning,

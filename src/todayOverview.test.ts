@@ -65,6 +65,9 @@ describe("la ligne « Aujourd’hui » de l’accueil", () => {
     const day = firstDay((date) => getDayInfo(date, GROUP).kind === "work");
     const result = overview(day, { [dateKey(day)]: exchange("given", 1) });
     expect(result.status).toBe("Repos · remplacé par Agnès");
+    // Un nom complet ne garde que le prénom, pour tenir sur une ligne.
+    const full = overview(day, { [dateKey(day)]: { ...exchange("given", 1), exchangePartner: "Auricio Lemos Bomfim" } });
+    expect(full.status).toBe("Repos · remplacé par Auricio");
     expect(result.todayGroupLabel).toBe("");
   });
 

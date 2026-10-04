@@ -31,6 +31,9 @@ export type CalendarEntry = {
   /** Congé souhaité, pas encore validé par l'administration : visible sur le
    *  planning, sans effet sur le solde. */
   wish?: boolean;
+  /** Souhait d'une demi-journée seulement : le matin ou l'après-midi.
+   *  Absent, le souhait porte sur la journée entière. */
+  wish_moment?: "morning" | "afternoon";
   /** Sur un jour férié travaillé : la prime seule, ou la prime minorée
    *  assortie d'un jour de récupération. Vide tant que le choix n'est pas
    *  fait — le férié est alors signalé comme en attente. */
@@ -301,6 +304,17 @@ export type MecenatEntry = {
  *  doivent pas effacer un choix déjà fait. Présent mais non reconnu, il repasse
  *  en attente.
  */
+/** Le moment d'un congé souhaité : celui demandé (« » pour la journée
+ *  entière), sinon celui déjà enregistré. Sans souhait, aucun moment. */
+export function wishMomentFrom(
+  body: Record<string, unknown>,
+  wish: boolean,
+  previous: CalendarEntry["wish_moment"],
+): CalendarEntry["wish_moment"] {
+  if (!wish) return undefined;
+  if (body.wishMoment === "morning" || body.wishMoment === "afternoon") return body.wishMoment;
+  return body.wishMoment === undefined ? previous : undefined;
+}
 export function holidayPayFrom(
   body: Record<string, unknown>,
   previous: HolidayPay | undefined,

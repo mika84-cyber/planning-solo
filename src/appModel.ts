@@ -19,6 +19,9 @@ export type RequestKind = "leave" | "recovery" | "other" | "strike";
 export type BalanceType = "annual" | "rtt" | "fraction";
 export type AuthStatus = "loading" | "guest" | "invite" | "recovery" | "ready";
 
+/** Moment d'un congé souhaité en demi-journée ; absent pour la journée. */
+export type WishMoment = "morning" | "afternoon";
+
 export type SharedEntry = {
   noteText: string;
   noteColor: string;
@@ -26,6 +29,8 @@ export type SharedEntry = {
   noteGroupId: string;
   leave: boolean;
   wish: boolean;
+  /** Souhait du matin ou de l'après-midi seulement. */
+  wishMoment?: WishMoment;
   holidayPay: HolidayPay | "";
   /** Durée acquise au moment du choix, figée pour éviter tout recalcul
    * rétroactif lors d'un changement de quotité. */

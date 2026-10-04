@@ -820,6 +820,41 @@
 .request-choice .request-wish-choice b { min-width: 22px; padding: 0 7px; border-radius: 999px; background: var(--wish-tone); color: #fff; font-size: 0.75rem; line-height: 20px; text-align: center; }
 .request-choice .request-wish-convert { background: #fff; }
 
+/* Transformer des congés souhaités : une ligne par souhait, la date puis
+   ses natures en puces. La puce choisie prend la couleur de la nature dans
+   le planning (bleu CA, vert d'eau RTT, mauve FRA…). */
+.wish-conversion { max-width: 520px; }
+.wish-conversion-all { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 16px 0 6px; padding: 10px 12px; border-radius: 14px; background: var(--surface-soft); color: var(--muted); font-size: 0.86rem; font-weight: 800; }
+.wish-conversion-list { display: grid; margin: 4px 0 0; padding: 0; list-style: none; }
+.wish-conversion-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--border-soft); }
+.wish-conversion-date { color: var(--text); font-size: 0.92rem; font-weight: 800; white-space: nowrap; }
+.wish-conversion-date small { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--wish) 35%, var(--surface)); color: #10402a; font-size: 0.72rem; font-weight: 800; }
+.wish-conversion-chips { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.wish-conversion-chips > button,
+.wish-conversion-chips > select {
+  min-height: 34px; padding: 0 10px; border: 1px solid var(--border-control); border-radius: 10px;
+  background: var(--surface); color: var(--muted); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer;
+}
+.wish-conversion-chips > select { max-width: 112px; padding-right: 6px; }
+.wish-conversion-chips > .active {
+  border-color: var(--type-color);
+  background: color-mix(in srgb, var(--type-color) 20%, var(--surface));
+  color: color-mix(in srgb, var(--type-color) 60%, #1d1a17);
+  box-shadow: inset 0 0 0 1px var(--type-color);
+}
+.wish-conversion-list li.kept .wish-conversion-date { color: var(--muted); font-weight: 700; }
+.wish-conversion .wish-conversion-continue:disabled { cursor: not-allowed; opacity: 0.55; }
+.wish-conversion-summary { margin: 12px 0 0; color: var(--muted); font-size: 0.86rem; font-weight: 800; text-align: center; }
+.wish-conversion .wish-conversion-continue { width: 100%; min-height: 48px; margin-top: 10px; border-radius: 12px; }
+@media (max-width: 420px) {
+  .wish-conversion-list li { flex-wrap: wrap; gap: 6px; padding: 8px 2px; }
+  .wish-conversion-chips { flex: 1 1 100%; justify-content: flex-start; }
+  .wish-conversion-chips { flex-wrap: nowrap; gap: 4px; }
+  .wish-conversion-chips > button, .wish-conversion-chips > select { min-height: 32px; padding: 0 7px; font-size: 0.78rem; }
+  .wish-conversion-chips > select { flex: 1 1 auto; min-width: 0; max-width: 92px; padding-right: 2px; }
+  .wish-conversion-all { margin-top: 12px; }
+}
+
 /* Dans le premier choix « Poser un congé », Divers reprend exactement le
    traitement neutre des autres options. Sa couleur rose reste réservée au
    planning et aux rubriques de suivi. */

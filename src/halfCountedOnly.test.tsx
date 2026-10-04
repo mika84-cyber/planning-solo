@@ -33,9 +33,9 @@ describe("ASA et Divers en demi-journée", () => {
     expect(annualCharges([half()], () => 25).charges).toHaveLength(1);
   });
 
-  it("proposent journée entière, matin ou après-midi, sans sous-titres", () => {
+  it("proposent journée entière, matin ou après-midi pour un Divers, sans sous-titres", () => {
     const html = renderToStaticMarkup(
-      <TimeSelectionDialog date={workDay} activeType="exceptional" start="" end="" onStartChange={vi.fn()} onEndChange={vi.fn()} onClose={vi.fn()} onConfirm={vi.fn()} />,
+      <TimeSelectionDialog date={workDay} activeType="other" start="" end="" onStartChange={vi.fn()} onEndChange={vi.fn()} onClose={vi.fn()} onConfirm={vi.fn()} />,
     );
     expect(html).toContain("Journée ou demi-journée ?");
     expect(html.match(/role="radio"/g)).toHaveLength(3);

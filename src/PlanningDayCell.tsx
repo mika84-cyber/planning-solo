@@ -36,6 +36,8 @@ type PlanningDayCellProps = {
   /** Couleur des dates choisies dans une sélection de plusieurs dates :
    *  le vert des souhaits, sinon la couleur des congés. */
   rangePreviewColor?: string;
+  /** Souhait en cours de sélection, en demi-journée. */
+  pendingWishMoment?: "morning" | "afternoon";
   recoveryRangeSelecting: boolean;
   noteSelecting: boolean;
   noteColor: string;
@@ -64,6 +66,7 @@ export function PlanningDayCell({
   inPendingRange,
   rangeSelecting,
   rangePreviewColor,
+  pendingWishMoment,
   recoveryRangeSelecting,
   noteSelecting,
   noteColor,
@@ -123,11 +126,17 @@ export function PlanningDayCell({
       : "",
     personalDay ? "Divers" : "",
   ].filter(Boolean).join(" · ");
+  const wishLabel = wishOutline
+    ? entry?.wishMoment
+      ? `Congé souhaité ${entry.wishMoment === "morning" ? "le matin" : "l’après-midi"}`
+      : "Congé souhaité"
+    : "";
   const title = [
     info.holiday,
     DAY_LABELS[info.kind],
     selected ? TYPE_LABELS[selected.type] : "",
     leaveLabel,
+    wishLabel,
     hasHourlyRecovery
       ? hasTrainingRecovery
         ? `Formation en récupération (${minutesLabel(trainingMinutesOnDay)})`
@@ -157,12 +166,12 @@ export function PlanningDayCell({
   return (
     <button
       type="button"
-      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery || fullHourlyRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}${myHalfBalance === "annual" ? "" : ` half-${myHalfBalance}`}` : ""}${wishOutline ? " wish-day" : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? " range-selected range-edge" : ""}`}
+      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery || fullHourlyRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}${myHalfBalance === "annual" ? "" : ` half-${myHalfBalance}`}` : ""}${wishOutline ? ` wish-day${entry?.wishMoment ? ` wish-${entry.wishMoment}` : ""}` : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? ` range-selected range-edge${pendingWishMoment ? ` range-wish-${pendingWishMoment}` : ""}` : ""}`}
       style={selectionStyle}
       onClick={onClick}
       title={title}
       aria-current={today ? "date" : undefined}
-      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${exchangeLabel || DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}${fullHourlyRecovery ? ", journée entière" : ""}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}${workPost ? `, ${workPost.label.toLowerCase()}` : ""}${workAccident ? ", accident de travail" : ""}${agnesLeave ? ", congé d’Agnès" : ""}${sharedNoteText ? ", note d’Agnès" : ""}${schoolVacation ? `, ${schoolVacation.name}, vacances scolaires` : ""}`}
+      aria-label={`${longDate(date)}, ${info.holiday ? `${info.holiday}, ` : ""}${exchangeLabel || DAY_LABELS[info.kind]}${selected ? `, ${TYPE_LABELS[selected.type]} sélectionné` : ""}${leaveLabel ? `, ${leaveLabel}` : ""}${wishLabel ? `, ${wishLabel.toLowerCase()}` : ""}${hasHourlyRecovery ? hasTrainingRecovery ? `, formation en récupération de ${minutesLabel(trainingMinutesOnDay)}` : `, récupération de ${minutesLabel(hourlyRecoveryMinutes)}${fullHourlyRecovery ? ", journée entière" : ""}` : ""}${visibleNote ? ", note enregistrée" : ""}${exceptionalClosure ? `, ${exceptionalClosure.label}` : ""}${workPost ? `, ${workPost.label.toLowerCase()}` : ""}${workAccident ? ", accident de travail" : ""}${agnesLeave ? ", congé d’Agnès" : ""}${sharedNoteText ? ", note d’Agnès" : ""}${schoolVacation ? `, ${schoolVacation.name}, vacances scolaires` : ""}`}
     >
       <span className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}${agnesLeave ? " agnes-leave-date" : ""}`}>
         {date.getDate()}
@@ -171,6 +180,13 @@ export function PlanningDayCell({
       {visibleLeave && ((!compact && ["annual", "rtt", "fraction"].includes(myLeaveType)) || ["exceptional", "childcare", "sick", "cet", "strike"].includes(markerType)) ? (
         <span className={`leave-calendar-marker leave-calendar-marker-${markerType}${compact ? " compact" : ""}`} aria-hidden="true">
           {myLeaveType === "annual" ? "CA" : myLeaveType === "rtt" ? "RTT" : myLeaveType === "fraction" ? "FRA" : markerType === "exceptional" ? "ASA" : myLeaveType === "childcare" ? "👶" : myLeaveType === "sick" ? "🤒" : myLeaveType === "cet" ? "CET" : myLeaveType === "strike" ? "✊" : ""}
+        </span>
+      ) : null}
+      {/* Demi-journée de CA, RTT ou FRA : sa nature à la verticale, dans la
+          moitié posée, comme l'ASA ; le numéro du jour occupe l'autre moitié. */}
+      {visibleLeave && myHalfMoment && !compact && !isCountedOnlyHalfBalance(myHalfBalance) ? (
+        <span className="leave-calendar-marker leave-calendar-marker-half" aria-hidden="true">
+          {myHalfBalance === "rtt" ? "RTT" : myHalfBalance === "fraction" ? "FRA" : "CA"}
         </span>
       ) : null}
       {(markerType === "other" || personalDay) ? (

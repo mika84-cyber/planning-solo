@@ -303,7 +303,7 @@ export function usePlanningEntryActions({
   async function saveWishDateDirect(date: string, desired?: boolean) {
     const current = entries[date] || emptyEntry();
     const wish = desired ?? !current.wish;
-    const nextEntry: SharedEntry = { ...current, wish };
+    const nextEntry: SharedEntry = { ...current, wish, wishMoment: wish ? current.wishMoment : undefined };
     setSavingDay(true);
     closeDay();
     try {

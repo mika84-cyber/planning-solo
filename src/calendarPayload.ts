@@ -156,6 +156,10 @@ function entriesFromApi(value: unknown): Entries {
       noteGroupId: text(raw.note_group_id),
       leave: raw.leave === true,
       wish: raw.wish === true,
+      wishMoment:
+        raw.wish === true && (raw.wish_moment === "morning" || raw.wish_moment === "afternoon")
+          ? raw.wish_moment
+          : undefined,
       holidayPay,
       holidayRecoveryMinutes: optionalFiniteNumber(raw.holiday_recovery_minutes),
       closureOverride:

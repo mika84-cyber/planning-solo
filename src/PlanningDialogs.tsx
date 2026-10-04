@@ -42,9 +42,9 @@ export function TimeSelectionDialog({
   if (!date) return null;
   const recovery = activeType.startsWith("recovery_");
   const halfDay = activeType === "half";
-  // Jour exceptionnel et Divers : journée entière par défaut, ou une
-  // demi-journée. Sans horaires, c'est la journée entière.
-  const duration = activeType === "exceptional" || activeType === "other";
+  // Divers : journée entière par défaut, ou une demi-journée. Sans horaires,
+  // c'est la journée entière. Un jour exceptionnel ne se prend qu'en journée.
+  const duration = activeType === "other";
   const usualMorning = workScheduleHalfTimes(workSchedule, "morning");
   const usualAfternoon = workScheduleHalfTimes(workSchedule, "afternoon");
   const selectedHalf = start === usualAfternoon.start && end === usualAfternoon.end

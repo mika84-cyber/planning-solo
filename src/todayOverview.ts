@@ -79,9 +79,11 @@ export function computeTodayOverview({
     status = "Fermeture exceptionnelle";
     tone = "off";
   } else if (todayExchange) {
+    // Le prénom seul : la ligne tient sur une seule ligne.
+    const partnerFirstName = todayExchange.partnerName.trim().split(/\s+/)[0] || todayExchange.partnerName;
     status = entry?.exchangeRole === "given"
-      ? `Repos · remplacé par ${todayExchange.partnerName}`
-      : `${todayPost || "Travail"} · remplacement de ${todayExchange.partnerName}`;
+      ? `Repos · remplacé par ${partnerFirstName}`
+      : `${todayPost || "Travail"} · remplacement de ${partnerFirstName}`;
     tone = "exchange";
   } else if (todayRecoveryMinutes) {
     status =

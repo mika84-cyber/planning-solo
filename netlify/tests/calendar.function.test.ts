@@ -405,8 +405,18 @@ describe("API principale du calendrier", () => {
           noteColor: "#D3943D",
         },
         { action: "save-leaves", date: "2026-09-04", wish: true },
+        { action: "save-leaves", date: "2026-09-05", wish: true, wishMoment: "afternoon" },
       ],
     });
+    // Un souhait d'après-midi garde son moment, y compris quand une note
+    // s'écrit ensuite sur la journée ; sans souhait, aucun moment ne reste.
+    expect(data.get("user/user-a/entry/2026-09-05")).toMatchObject({ wish: true, wish_moment: "afternoon" });
+    await post({ action: "save-entry", date: "2026-09-05", noteText: "Rappel", noteColor: "#D3943D", wish: true });
+    expect(data.get("user/user-a/entry/2026-09-05")).toMatchObject({ note_text: "Rappel", wish_moment: "afternoon" });
+    await post({ action: "save-entry", date: "2026-09-05", noteText: "Rappel", noteColor: "#D3943D", wish: true, wishMoment: "" });
+    expect((data.get("user/user-a/entry/2026-09-05") as { wish_moment?: string }).wish_moment).toBeUndefined();
+    await post({ action: "save-leaves", date: "2026-09-04", wish: false, wishMoment: "morning" });
+    expect((data.get("user/user-a/entry/2026-09-04") as { wish_moment?: string } | undefined)?.wish_moment).toBeUndefined();
 
     expect(data.get("user/user-a/form-profile")).toMatchObject({ group: "2" });
     expect(data.get("user/user-a/recovery-use/recovery-20260829")).toMatchObject({ minutes: 60 });

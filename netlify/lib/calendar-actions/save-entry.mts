@@ -1,5 +1,5 @@
 import { isValidDateKey } from "../calendarValidation.mts";
-import { COLORS, holidayPayFrom, json, type CalendarEntry } from "../calendarShared.mts";
+import { COLORS, holidayPayFrom, json, wishMomentFrom, type CalendarEntry } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
 import { CALENDAR_TOMBSTONE, readAtomic, writeAtomic } from "../calendarAtomic.mts";
 export async function handleSaveEntry(
@@ -75,6 +75,7 @@ export async function handleSaveEntry(
     leave,
     // Écrire une note ne doit pas effacer un congé souhaité posé sur le jour.
     wish,
+    wish_moment: wishMomentFrom(body, wish, previous?.wish_moment),
     holiday_pay: holidayPay,
     holiday_recovery_minutes: holidayRecoveryMinutes,
     closure_override: closureOverride || undefined,

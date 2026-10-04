@@ -1,7 +1,8 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import type { RequestKind } from "./appModel";
 import {
   GROUP_OPTIONS,
+  TYPE_COLORS,
   fromKey,
   longDate,
   type SelectionType,
@@ -151,11 +152,13 @@ export function RequestChooserDialog({
             <span>À déduire de votre solde d’heures</span>
           </button>
         </div>
-        {onChooseWish && !requestChooserDate ? (
+        {/* Les souhaits ne se posent et ne se transforment qu'en partant
+            d'une case du planning, jamais depuis « Poser un congé ». */}
+        {onChooseWish && requestChooserDate ? (
           <section className="request-wish-choices" aria-label="Congés souhaités">
             <button type="button" className="request-wish-choice" onClick={onChooseWish}>
               <strong>Congés souhaités</strong>
-              <span>Plusieurs dates d’un coup, sans formulaire ni solde</span>
+              <span>Ce jour et d’autres dates si besoin, sans formulaire ni solde</span>
             </button>
             {pendingWishCount && onConvertWishes ? (
               <button type="button" className="request-wish-choice request-wish-convert" onClick={onConvertWishes}>
@@ -228,6 +231,199 @@ export function GroupChooserDialog({
             </button>
           ))}
         </div>
+      </section>
+    </div>
+  );
+}
+
+/** Nature choisie pour transformer un souhait. Une demi-journée porte son
+ *  moment après « : ». Une ligne sans nature reste un souhait. */
+export type WishChoice =
+  | "annual"
+  | "rtt"
+  | "fraction"
+  | "cet"
+  | "childcare"
+  | "exceptional"
+  | "half:morning"
+  | "half:afternoon";
+
+/** Les trois natures courantes en boutons ; toutes les autres qu'accepte une
+ *  demande de congé dans le menu « Autre ». Maladie, Divers et récupération
+ *  ont leurs propres parcours et ne se mélangent pas à une demande de congé. */
+const WISH_MAIN_CHOICES: ReadonlyArray<{ choice: WishChoice; label: string; short: string }> = [
+  { choice: "annual", label: "CA", short: "CA" },
+  { choice: "rtt", label: "RTT", short: "RTT" },
+  { choice: "fraction", label: "FRA", short: "FRA" },
+];
+const WISH_OTHER_CHOICES: ReadonlyArray<{ choice: WishChoice; label: string; short: string }> = [
+  { choice: "half:morning", label: "Demi-journée · matin", short: "demi-journée" },
+  { choice: "half:afternoon", label: "Demi-journée · après-midi", short: "demi-journée" },
+  { choice: "exceptional", label: "Jour exceptionnel", short: "jour exceptionnel" },
+  { choice: "childcare", label: "Garde d’enfant", short: "garde d’enfant" },
+  { choice: "cet", label: "CET", short: "CET" },
+];
+const WISH_CHOICES = [...WISH_MAIN_CHOICES, ...WISH_OTHER_CHOICES];
+
+/** Type de sélection d'une nature choisie, pour sa couleur. */
+export function wishChoiceType(choice: WishChoice): SelectionType {
+  return choice.split(":")[0] as SelectionType;
+}
+
+function wishDateLabel(key: string) {
+  return fromKey(key).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+}
+
+/** Décompte lisible : « 3 CA · 1 RTT · 2 gardés en souhait ». Un souhait
+ *  du matin ou de l'après-midi compte comme une demi-journée de sa nature. */
+export function wishConversionSummary(
+  choices: Record<string, WishChoice | undefined>,
+  total = Object.keys(choices).length,
+  moments: Record<string, "morning" | "afternoon" | undefined> = {},
+) {
+  const counts = new Map<string, number>();
+  let chosen = 0;
+  for (const [date, choice] of Object.entries(choices)) {
+    if (!choice) continue;
+    chosen += 1;
+    const short = WISH_CHOICES.find((item) => item.choice === choice)?.short || choice;
+    const key = moments[date] ? `demi-journée ${short}` : short;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const order = [
+    ...new Set([
+      ...WISH_CHOICES.map((item) => item.short),
+      ...WISH_MAIN_CHOICES.map((item) => `demi-journée ${item.short}`),
+    ]),
+  ];
+  const kept = total - chosen;
+  return [
+    ...order.filter((short) => counts.get(short)).map((short) => `${counts.get(short)} ${short}`),
+    ...(kept ? [`${kept} ${kept > 1 ? "gardés" : "gardé"} en souhait`] : []),
+  ].join(" · ");
+}
+
+/** Transformer des congés souhaités : une ligne par souhait. On choisit la
+ *  nature des souhaits à transformer ; une ligne laissée vide reste un
+ *  souhait. « Tout en » règle toutes les lignes d'un geste. Les soldes sont
+ *  contrôlés ensuite, à l'étape de vérification de la demande. */
+export function WishConversionDialog({
+  dates,
+  moments = {},
+  onClose,
+  onContinue,
+}: {
+  dates: string[];
+  /** Souhaits du matin ou de l'après-midi : ils deviennent une demi-journée
+   *  de CA, RTT ou FRA au même moment. */
+  moments?: Record<string, "morning" | "afternoon" | undefined>;
+  onClose: () => void;
+  onContinue: (choices: Record<string, WishChoice>) => void;
+}) {
+  const [choices, setChoices] = useState<Record<string, WishChoice | undefined>>({});
+  const toConvert = dates.filter((date) => choices[date]);
+  const allSame = (choice: WishChoice) => dates.every((date) => choices[date] === choice);
+  const setChoice = (date: string, choice: WishChoice | undefined) =>
+    setChoices((previous) => ({ ...previous, [date]: choice }));
+  const setAll = (choice: WishChoice) =>
+    setChoices(allSame(choice) ? {} : Object.fromEntries(dates.map((date) => [date, choice])));
+  const chip = (choice: WishChoice, label: string, active: boolean, onClick: () => void, name: string) => (
+    <button
+      key={choice}
+      type="button"
+      className={active ? "active" : ""}
+      aria-pressed={active}
+      aria-label={name}
+      style={{ "--type-color": TYPE_COLORS[wishChoiceType(choice)] } as CSSProperties}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        className="modal-card wish-conversion"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wish-conversion-title"
+      >
+        <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">
+          ×
+        </button>
+        <span className="step-label">Congés souhaités</span>
+        <h2 id="wish-conversion-title">
+          {dates.length > 1 ? `Transformer ${dates.length} souhaits` : "Transformer ce souhait"}
+        </h2>
+        <p>Choisissez la nature des souhaits à transformer. Une ligne laissée vide reste un souhait. Vos soldes seront vérifiés à l’étape suivante.</p>
+        {dates.length > 1 ? (
+          <div className="wish-conversion-all">
+            <span>Tout en :</span>
+            <div className="wish-conversion-chips" role="group" aria-label="Appliquer une nature à tous les souhaits">
+              {WISH_MAIN_CHOICES.map(({ choice, label }) =>
+                chip(choice, label, allSame(choice), () => setAll(choice), `Tout en ${label}`),
+              )}
+            </div>
+          </div>
+        ) : null}
+        <ul className="wish-conversion-list">
+          {dates.map((date) => {
+            const current = choices[date];
+            const longLabel = longDate(fromKey(date));
+            const otherSelected = WISH_OTHER_CHOICES.some(({ choice }) => choice === current);
+            const moment = moments[date];
+            return (
+              <li key={date} className={current ? undefined : "kept"}>
+                <span className="wish-conversion-date">
+                  {wishDateLabel(date)}
+                  {moment ? <small>{moment === "morning" ? "matin" : "après-midi"}</small> : null}
+                </span>
+                <div className="wish-conversion-chips" role="group" aria-label={`Nature du ${longLabel}`}>
+                  {WISH_MAIN_CHOICES.map(({ choice, label }) =>
+                    chip(
+                      choice,
+                      label,
+                      current === choice,
+                      () => setChoice(date, current === choice ? undefined : choice),
+                      `${label} le ${longLabel}`,
+                    ),
+                  )}
+                  {moment ? null : <select
+                    className={otherSelected ? "active" : ""}
+                    style={otherSelected && current ? ({ "--type-color": TYPE_COLORS[wishChoiceType(current)] } as CSSProperties) : undefined}
+                    aria-label={`Autre nature le ${longLabel}`}
+                    value={otherSelected ? current : ""}
+                    onChange={(event) => setChoice(date, (event.target.value || undefined) as WishChoice | undefined)}
+                  >
+                    <option value="">Autre</option>
+                    {WISH_OTHER_CHOICES.map(({ choice, label }) => (
+                      <option key={choice} value={choice}>{label}</option>
+                    ))}
+                  </select>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="wish-conversion-summary" aria-live="polite">
+          {toConvert.length ? wishConversionSummary(choices, dates.length, moments) : "Aucune nature choisie : tout reste en souhait."}
+        </p>
+        <button
+          className="validate-button wish-conversion-continue"
+          type="button"
+          disabled={!toConvert.length}
+          onClick={() => onContinue(Object.fromEntries(toConvert.map((date) => [date, choices[date] as WishChoice])))}
+        >
+          {!toConvert.length
+            ? "Choisissez au moins une nature"
+            : toConvert.length === dates.length
+              ? "Continuer"
+              : `Continuer avec ${toConvert.length} ${toConvert.length > 1 ? "congés" : "congé"}`}
+        </button>
       </section>
     </div>
   );

@@ -52,6 +52,7 @@ export async function handleSaveNotePeriod(
       note_group_id: groupId,
       leave: previous?.leave || false,
       wish: previous?.wish || false,
+      wish_moment: previous?.wish ? previous.wish_moment : undefined,
       holiday_pay: previous?.holiday_pay,
       holiday_recovery_minutes: previous?.holiday_recovery_minutes,
       closure_override: previous?.closure_override,

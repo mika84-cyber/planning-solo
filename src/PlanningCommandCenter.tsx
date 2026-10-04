@@ -1,3 +1,4 @@
+import type { WishMoment } from "./appModel";
 import { lazy, Suspense, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { CalendarCleanupPanel } from "./CalendarCleanup";
 import { ChoicePicker } from "./ChoicePicker";
@@ -59,6 +60,9 @@ type PlanningCommandCenterProps = {
   onSaveRecoveryRange: () => void;
   rangeSelecting: boolean;
   separatePeople: MultiDatePerson[];
+  /** Moment des souhaits touchés ensuite : journée, matin ou après-midi. */
+  wishMoment?: WishMoment | "";
+  onWishMomentChange?: (moment: WishMoment | "") => void;
   rangeLeaveType: LeaveType;
   separateDates: string[];
   savingRange: boolean;
@@ -108,6 +112,8 @@ export function PlanningCommandCenter({
   onSaveRecoveryRange,
   rangeSelecting,
   separatePeople,
+  wishMoment = "",
+  onWishMomentChange = () => {},
   rangeLeaveType,
   separateDates,
   savingRange,
@@ -386,6 +392,22 @@ export function PlanningCommandCenter({
                 ? "Touchez chaque date souhaitée, en changeant de mois si besoin. Les souhaits ne comptent pas dans vos soldes : vous pourrez les transformer en congés plus tard."
                 : "Changez de mois si nécessaire et touchez chaque date pour l’ajouter ou la retirer."}
             </p>
+            {wishOnly ? (
+              <div className="wish-moment-choice" role="group" aria-label="Durée des souhaits">
+                {([["", "Journée"], ["morning", "Matin"], ["afternoon", "Après-midi"]] as const).map(([value, label]) => (
+                  <button
+                    key={value || "day"}
+                    type="button"
+                    className={wishMoment === value ? "active" : ""}
+                    aria-pressed={wishMoment === value}
+                    onClick={() => onWishMomentChange(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <small>S’applique aux prochaines dates touchées, et à la date déjà choisie tant qu’elle est seule ; touchez une date déjà choisie pour lui donner ce moment.</small>
+              </div>
+            ) : null}
           </div>
           <div className="range-selection-actions">
             <button className="secondary-button" type="button" onClick={onCancelRange}>Annuler</button>

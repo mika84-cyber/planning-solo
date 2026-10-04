@@ -36,10 +36,8 @@ type DayPlanningState = Pick<
   | "dayDate"
   | "setDayDate"
   | "dayLeave"
-  | "setDayLeave"
   | "dayPersonalLeave"
   | "dayWish"
-  | "setDayWish"
   | "dayLeaveType"
   | "setDayLeaveType"
   | "dayHalfMoment"
@@ -48,7 +46,6 @@ type DayPlanningState = Pick<
   | "setDayHalfBalance"
   | "dayHolidayPay"
   | "setDayHolidayPay"
-  | "setLeaveRangeEnabled"
   | "setLeaveRangeFrom"
   | "setLeaveRangeTo"
   | "savingDay"
@@ -84,6 +81,13 @@ export type DayDetailDialogProps = {
     requestedType?: SelectionType,
   ) => void;
   saveWishDateDirect: (date: string, desired?: boolean) => Promise<void>;
+  /** Plusieurs souhaits, ce jour déjà choisi, sur un ou plusieurs mois. */
+  beginWishSelection: (initialDate?: string) => void;
+  /** Transforme le souhait de ce jour en demande de congé, nature au choix. */
+  convertWishDate: (date: string) => void;
+  /** Souhaits à venir : au-delà d'un, tous se transforment d'un coup. */
+  pendingWishCount: number;
+  convertAllWishes: () => void;
   saveSickDateDirect: (date: string) => Promise<void>;
   saveStrikeDateDirect: (date: string) => Promise<void>;
   saveDay: (overrides?: Partial<SharedEntry>) => Promise<void>;
@@ -118,6 +122,10 @@ export function DayDetailDialog({
   openRequestChooser,
   openPlanningRequestMethod,
   saveWishDateDirect,
+  beginWishSelection,
+  convertWishDate,
+  pendingWishCount,
+  convertAllWishes,
   saveSickDateDirect,
   saveStrikeDateDirect,
   saveDay,
@@ -133,10 +141,8 @@ export function DayDetailDialog({
     dayDate,
     setDayDate,
     dayLeave,
-    setDayLeave,
     dayPersonalLeave,
     dayWish,
-    setDayWish,
     dayLeaveType,
     setDayLeaveType,
     dayHalfMoment,
@@ -145,7 +151,6 @@ export function DayDetailDialog({
     setDayHalfBalance,
     dayHolidayPay,
     setDayHolidayPay,
-    setLeaveRangeEnabled,
     setLeaveRangeFrom,
     setLeaveRangeTo,
     savingDay,
@@ -393,12 +398,12 @@ export function DayDetailDialog({
                   <button
                     type="button"
                     className={dayWish ? "wish active" : "wish"}
-                    onClick={() => void saveWishDateDirect(dayDate)}
+                    onClick={() => dayWish ? void saveWishDateDirect(dayDate, false) : beginWishSelection(dayDate)}
                     disabled={savingDay}
                   >
                     <i />
                     Congé souhaité
-                    <span>{dayWish ? "Ajouté" : "Hors période d’ouverture"}</span>
+                    <span>{dayWish ? "Ajouté · toucher pour retirer" : "Une ou plusieurs dates"}</span>
                   </button>
                   <button
                     type="button"
@@ -490,26 +495,32 @@ export function DayDetailDialog({
               !dayLeave && (
                 <div className="wish-decision">
                   <p>
-                    Congé souhaité, en attente de validation. Il ne compte
-                    pas dans votre solde.
+                    {entries[dayDate]?.wishMoment
+                      ? `Congé souhaité ${entries[dayDate]?.wishMoment === "morning" ? "le matin" : "l’après-midi"}`
+                      : "Congé souhaité"}
+                    , en attente de validation. Il ne compte pas dans votre
+                    solde.
                   </p>
                   <div>
                     <button
                       type="button"
                       className="save-button"
-                      onClick={() => {
-                        setDayWish(false);
-                        setDayLeave(true);
-                        setLeaveRangeEnabled(true);
-                        setLeaveRangeFrom(dayDate);
-                        setLeaveRangeTo(dayDate);
-                      }}
+                      onClick={() => convertWishDate(dayDate)}
                     >
-                      Valider ce congé
+                      Transformer en congé
                     </button>
+                    {pendingWishCount > 1 ? (
+                      <button
+                        type="button"
+                        className="wish-convert-all"
+                        onClick={convertAllWishes}
+                      >
+                        Transformer mes {pendingWishCount} souhaits
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      className="warning-button"
+                      className="wish-cancel-link"
                       onClick={() => void saveWishDateDirect(dayDate, false)}
                     >
                       Annuler le souhait

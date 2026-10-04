@@ -61,6 +61,9 @@ const NoteSelectionPanel = lazy(() =>
 const RecoveryDatePickingPanel = lazy(() =>
   planningRequestPanelsModule().then(({ RecoveryDatePickingPanel: Component }) => ({ default: Component })),
 );
+const WishConversionDialog = lazy(() =>
+  planningRequestPanelsModule().then(({ WishConversionDialog: Component }) => ({ default: Component })),
+);
 const RequestChooserDialog = lazy(() =>
   planningRequestPanelsModule().then(({ RequestChooserDialog: Component }) => ({ default: Component })),
 );
@@ -330,7 +333,7 @@ export default function Home() {
     dayPersonalLeave,
     savingDay, setSavingDay,
     rangeLeaveType,
-    rangeSelecting, separateDates,
+    rangeSelecting, separateDates, wishMoment, separateWishMoments,
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople,
@@ -573,6 +576,8 @@ export default function Home() {
       ),
     [entries, periods],
   );
+  // Souhaits en cours de transformation : la fenêtre choisit leur nature.
+  const [wishConversionDates, setWishConversionDates] = useState<string[] | null>(null);
   const pendingWishDates = useMemo(
     () => [...wishDates].filter((key) => key >= dateKey(now)).sort(),
     [wishDates, now],
@@ -1962,6 +1967,7 @@ export default function Home() {
     beginMultipleDateSelectionFromDay,
     beginWishSelection,
     beginWishConversion,
+    chooseWishMoment,
     beginRequest,
     handleDay,
     confirmWarning,
@@ -2243,8 +2249,8 @@ export default function Home() {
       return;
     slideAllowancesMonth(deltaX < 0 ? 1 : -1);
   }
-  // ASA ou Divers posé depuis une case : la durée validée l'enregistre
-  // aussitôt (sans formulaire pour l'ASA) ; fermer la fenêtre annule tout.
+  // Divers posé depuis une case : la durée validée l'enregistre aussitôt ;
+  // fermer la fenêtre annule tout.
   const saveDirectDuration = useEffectEvent(() => {
     if (!directDurationSave || timeDate) return;
     setDirectDurationSave(false);
@@ -2308,6 +2314,7 @@ export default function Home() {
         inPendingRange={inPendingRange}
         rangeSelecting={rangeSelecting}
         rangePreviewColor={separatePeople.length === 1 && separatePeople[0] === "wish" ? "var(--wish)" : undefined}
+        pendingWishMoment={rangeSelecting && separateDates.includes(key) ? separateWishMoments[key] || undefined : undefined}
         recoveryRangeSelecting={recoveryRangeSelecting}
         noteSelecting={noteSelecting}
         noteColor={noteColor}
@@ -3068,6 +3075,8 @@ export default function Home() {
         onSaveRecoveryRange={() => void saveRecoveryRangeDates()}
         rangeSelecting={rangeSelecting}
         separatePeople={separatePeople}
+        wishMoment={wishMoment}
+        onWishMomentChange={chooseWishMoment}
         rangeLeaveType={rangeLeaveType}
         separateDates={separateDates}
         savingRange={savingRange}
@@ -3243,10 +3252,33 @@ export default function Home() {
           pendingWishCount={pendingWishDates.length}
           onClose={() => setRequestChooser(false)}
           onChoose={beginChosenRequest}
-          onChooseWish={beginWishSelection}
+          onChooseWish={() => {
+            const initialDate = requestChooserDate || undefined;
+            setRequestChooserDate(null);
+            beginWishSelection(initialDate);
+          }}
           onConvertWishes={() => {
             setRequestChooser(false);
-            beginWishConversion(pendingWishDates);
+            setRequestChooserDate(null);
+            setWishConversionDates(pendingWishDates);
+          }}
+        />
+        </Suspense>
+      ) : null}
+
+      {wishConversionDates?.length ? (
+        <Suspense fallback={null}>
+        <WishConversionDialog
+          dates={wishConversionDates}
+          moments={Object.fromEntries(wishConversionDates.map((date) => [date, entries[date]?.wishMoment]))}
+          onClose={() => setWishConversionDates(null)}
+          onContinue={(types) => {
+            setWishConversionDates(null);
+            beginWishConversion(
+              Object.keys(types).sort(),
+              types,
+              Object.fromEntries(Object.keys(types).map((date) => [date, entries[date]?.wishMoment])),
+            );
           }}
         />
         </Suspense>
@@ -3291,6 +3323,16 @@ export default function Home() {
             openRequestChooser={openRequestChooser}
             openPlanningRequestMethod={openPlanningRequestMethod}
             saveWishDateDirect={saveWishDateDirect}
+            beginWishSelection={beginWishSelection}
+            convertWishDate={(date) => {
+              setDayDate(null);
+              setWishConversionDates([date]);
+            }}
+            pendingWishCount={pendingWishDates.length}
+            convertAllWishes={() => {
+              setDayDate(null);
+              setWishConversionDates(pendingWishDates);
+            }}
             saveSickDateDirect={saveSickDateDirect}
             saveStrikeDateDirect={saveStrikeDateDirect}
             saveDay={saveDay}

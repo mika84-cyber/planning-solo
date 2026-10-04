@@ -195,6 +195,7 @@ export function usePlanningEditorActions({
     rangeHalfBalance,
     separateDates,
     separatePeople,
+    separateWishMoments,
     editingPeriodId,
     setEditingPeriodId,
     editingLegacyPeriod,
@@ -519,6 +520,8 @@ export function usePlanningEditorActions({
                 leave:
                   person === "personal" ? true : Boolean(current?.leave),
                 wish: person === "wish" ? true : Boolean(current?.wish),
+                // « » : journée entière ; un moment : la demi-journée souhaitée.
+                ...(person === "wish" ? { wishMoment: separateWishMoments[date] || "" } : {}),
                 expectedUpdatedAt: current?.updatedAt || "",
               });
             }
@@ -639,6 +642,7 @@ export function usePlanningEditorActions({
               ...previous,
               leave: separatePeople.includes("personal") || previous.leave,
               wish: separatePeople.includes("wish") || previous.wish,
+              wishMoment: separatePeople.includes("wish") ? separateWishMoments[date] || undefined : previous.wishMoment,
             };
           }
           return next;

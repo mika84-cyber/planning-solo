@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { LeavePeriod, RequestKind, SelectedDay } from "./appModel";
+import type { WishMoment, LeavePeriod, RequestKind, SelectedDay } from "./appModel";
 import type {
   HalfBalance,
   HalfMoment,
@@ -36,6 +36,12 @@ export function usePlanningUiState() {
   const [rangeHalfBalance, setRangeHalfBalance] = useState<HalfBalance>("annual");
   const [rangeSelecting, setRangeSelecting] = useState(false);
   const [separateDates, setSeparateDates] = useState<string[]>([]);
+  // Souhaits en demi-journée : le moment choisi dans le panneau, appliqué aux
+  // dates touchées ensuite, et celui retenu pour chaque date.
+  const [wishMoment, setWishMoment] = useState<WishMoment | "">("");
+  const [separateWishMoments, setSeparateWishMoments] = useState<Record<string, WishMoment | "">>({});
+  // Dernière date touchée : le moment choisi ensuite s'y applique aussi.
+  const [lastWishDate, setLastWishDate] = useState<string | null>(null);
   const [recoveryRangeOpen, setRecoveryRangeOpen] = useState(false);
   const [recoveryRangeSelecting, setRecoveryRangeSelecting] = useState(false);
   const [recoveryRangePrefillDate, setRecoveryRangePrefillDate] = useState<string | null>(null);
@@ -73,6 +79,7 @@ export function usePlanningUiState() {
     rangeOpen, setRangeOpen, rangePrefillDate, setRangePrefillDate,
     rangeLeaveType, setRangeLeaveType, rangeHalfMoment, setRangeHalfMoment, rangeHalfBalance, setRangeHalfBalance,
     rangeSelecting, setRangeSelecting, separateDates, setSeparateDates,
+    wishMoment, setWishMoment, separateWishMoments, setSeparateWishMoments, lastWishDate, setLastWishDate,
     recoveryRangeOpen, setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople, setSeparatePeople, editingPeriodId, setEditingPeriodId,
