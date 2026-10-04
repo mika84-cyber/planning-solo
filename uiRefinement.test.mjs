@@ -240,8 +240,8 @@ describe("finitions d’interface", () => {
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {
     expect(app).toContain("Maladie");
     expect(app).toContain('onChoose("leave", "sick")');
-    expect(app).toContain('dayLeaveType === "sick"');
-    expect(app).toContain("saveSickDateDirect(date)");
+    // Depuis une case, la maladie passe aussi par « Congé » puis ce choix.
+    expect(app).not.toContain("saveSickDateDirect={saveSickDateDirect}");
     expect(app).toContain("prepareAbsenceReplacement");
     expect(planningRequestActions).toContain("prepareAbsenceReplacement");
     expect(absenceReplacement).toMatch(
@@ -335,7 +335,9 @@ describe("finitions d’interface", () => {
 
   it("pose Divers depuis la fiche du jour par le choix de durée, avec une punaise inclinée", () => {
     expect(app).toContain('onChoose("other", "other")');
-    expect(app).toContain('openPlanningRequestMethod("other", dayDate)');
+    // La fiche du jour n'a plus de rubrique « Autres » : Divers se choisit
+    // après « Congé », comme tous les types.
+    expect(app).not.toContain("day-action-other");
     expect(app).not.toContain("saveOtherDateDirect");
     expect(styles).toContain("transform: rotate(24deg)");
     expect(styles).toContain(".other-pin-head");
@@ -457,7 +459,9 @@ describe("finitions d’interface", () => {
 
   it("réunit la préparation puis propose formulaire ou enregistrement direct", () => {
     expect(app).toContain('openRequestChooser("planning", date)');
-    expect(app).toContain('openPlanningRequestMethod("recovery", dayDate)');
+    // La fiche du jour : « Congé » et « Notes », puis un lien de fermeture.
+    expect(app).not.toContain("openPlanningRequestMethod");
+    expect(app).toContain('className="day-closure-link"');
     expect(planningLogic).toContain('"recovery_day",');
     expect(planningLogic).toContain('"recovery_half",');
     expect(planningLogic).toContain('"recovery_hours",');

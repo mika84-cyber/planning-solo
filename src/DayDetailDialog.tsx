@@ -12,7 +12,6 @@ import type {
   SharedEntry,
   WorkPost,
   WorkExchange,
-  RequestKind,
 } from "./appModel";
 import { HOLIDAY_PAY_OPTIONS, WORK_POSTS, euros, noteDateLabel } from "./appModel";
 import { minutesLabel, type RecoveryUse } from "./overtime";
@@ -27,7 +26,6 @@ import {
   longDate,
   periodLabel,
   type LeaveType,
-  type SelectionType,
 } from "./planningLogic";
 
 /** État de la fiche jour, repris tel quel du magasin de l'écran planning. */
@@ -75,21 +73,12 @@ export type DayDetailDialogProps = {
   ownNoteAuthorLabel: string;
   editWorkExchange: (exchange: WorkExchange) => void;
   openRequestChooser: (origin?: "general" | "planning", initialDate?: string) => void;
-  openPlanningRequestMethod: (
-    kind: RequestKind,
-    date?: string,
-    requestedType?: SelectionType,
-  ) => void;
   saveWishDateDirect: (date: string, desired?: boolean) => Promise<void>;
-  /** Plusieurs souhaits, ce jour déjà choisi, sur un ou plusieurs mois. */
-  beginWishSelection: (initialDate?: string) => void;
   /** Transforme le souhait de ce jour en demande de congé, nature au choix. */
   convertWishDate: (date: string) => void;
   /** Souhaits à venir : au-delà d'un, tous se transforment d'un coup. */
   pendingWishCount: number;
   convertAllWishes: () => void;
-  saveSickDateDirect: (date: string) => Promise<void>;
-  saveStrikeDateDirect: (date: string) => Promise<void>;
   saveDay: (overrides?: Partial<SharedEntry>) => Promise<void>;
   saveWorkPost: (date: string, workPost: WorkPost | "") => Promise<void>;
   beginMultipleDateSelectionFromDay: () => void;
@@ -120,14 +109,10 @@ export function DayDetailDialog({
   ownNoteAuthorLabel,
   editWorkExchange,
   openRequestChooser,
-  openPlanningRequestMethod,
   saveWishDateDirect,
-  beginWishSelection,
   convertWishDate,
   pendingWishCount,
   convertAllWishes,
-  saveSickDateDirect,
-  saveStrikeDateDirect,
   saveDay,
   saveWorkPost,
   beginMultipleDateSelectionFromDay,
@@ -217,11 +202,11 @@ export function DayDetailDialog({
                 </button>
               </div>
             ) : null}
-        {/* Poste du jour : en salle par défaut ; l'accueil ou la
+        {/* Poste du jour : en salles par défaut ; l'accueil ou la
             billetterie se cochent, et se décochent pour revenir en salle. */}
         {!quickNoteMode && dayWorkPostVisible ? (
           <fieldset className="day-work-post" disabled={savingDay}>
-            <legend>Poste du jour <small>· en salle par défaut</small></legend>
+            <legend>Poste du jour <small>· en salles par défaut</small></legend>
             <div>
               {WORK_POSTS.filter((post) => post.value).map((post) => {
                 const current = entries[dayDate]?.workPost === post.value;
@@ -342,15 +327,16 @@ export function DayDetailDialog({
           Vert pour votre note, rose pour une note d’Agnès.
         </p>
         ) : null}
-        {/* Une seule fiche : les notes du jour en haut, puis quatre grandes
-            tuiles — Congé, Récupération, Notes et Autres. */}
+        {/* Une seule fiche : les notes du jour en haut, puis deux grandes
+            tuiles — Congé et Notes. Tous les types, récupération comprise,
+            se choisissent après « Congé ». */}
         {!quickNoteMode && !noteEditorOpen ? (
           <>
             <p className="day-modal-prompt">
               Que souhaitez-vous faire pour cette journée&nbsp;?
             </p>
             <div className="day-action-grid">
-              <fieldset className="leave-choices leave-choices-primary" disabled={Boolean(dayExchange)} aria-label="Congé et récupération">
+              <fieldset className="leave-choices leave-choices-primary" disabled={Boolean(dayExchange)} aria-label="Congé">
               <button
                     type="button"
                     className={dayLeave ? "leave active" : "leave"}
@@ -363,17 +349,6 @@ export function DayDetailDialog({
                     <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="m8 14 2.2 2.2L16 11"/></svg></i>
                     Congé
                     <span>{dayLeave ? "Modifier" : "Choisir"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="recovery"
-                    onClick={() =>
-                      openPlanningRequestMethod("recovery", dayDate)
-                    }
-                  >
-                    <i aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.6 2.6"/></svg></i>
-                    Récupération
-                    <span>Choisir</span>
                   </button>
               </fieldset>
               <button
@@ -392,105 +367,29 @@ export function DayDetailDialog({
                 Notes
                 <span>Ajouter une note</span>
               </button>
-            <details className="day-action-section day-action-other">
-              <summary><i aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/></svg></i><span><strong>Autres</strong><small>Maladie, CET…</small></span><b aria-hidden="true">⌄</b></summary>
-              <fieldset className="leave-choices leave-choices-other" disabled={Boolean(dayExchange)} aria-label="Autres actions de la journée">
-                  <button
-                    type="button"
-                    className={dayWish ? "wish active" : "wish"}
-                    onClick={() => dayWish ? void saveWishDateDirect(dayDate, false) : beginWishSelection(dayDate)}
-                    disabled={savingDay}
-                  >
-                    <i />
-                    Congé souhaité
-                    <span>{dayWish ? "Ajouté · toucher pour retirer" : "Une ou plusieurs dates"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      dayLeave && dayLeaveType === "sick"
-                        ? "sick-day active"
-                        : "sick-day"
-                    }
-                    onClick={() => {
-                      const date = dayDate;
-                      void saveSickDateDirect(date);
-                    }}
-                  >
-                    <i />
-                    Maladie
-                    <span>
-                      {dayLeave && dayLeaveType === "sick" ? "Sélectionné" : "Ajouter"}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      dayLeave && dayLeaveType === "other"
-                        ? "other-day active"
-                        : "other-day"
-                    }
-                    onClick={() => openPlanningRequestMethod("other", dayDate)}
-                  >
-                    <i />
-                    Divers
-                    <span>Jour non travaillé</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      dayLeave && dayLeaveType === "strike"
-                        ? "strike-day active"
-                        : "strike-day"
-                    }
-                    onClick={() => void saveStrikeDateDirect(dayDate)}
-                    disabled={savingDay}
-                  >
-                    <i />
-                    Grève
-                    <span>Retenue estimée</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={dayLeave && dayLeaveType === "cet" ? "cet-day active" : "cet-day"}
-                    onClick={() => openPlanningRequestMethod("leave", dayDate, "cet")}
-                  >
-                    <i />
-                    CET
-                    <span>{dayLeave && dayLeaveType === "cet" ? "Sélectionné" : "Choisir"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      dayExceptionalClosure
-                        ? "closure-day active"
-                        : "closure-day"
-                    }
-                    onClick={() => {
-                      if (!dayDate) return;
-                      const automaticClosure = grandPalaisExceptionalClosure(
-                        dayDate,
-                        approvedGrandPalaisUpdates,
-                      );
-                      void saveDay({
-                        closureOverride: dayExceptionalClosure
-                          ? automaticClosure
-                            ? "open"
-                            : ""
-                          : "closed",
-                      });
-                    }}
-                    disabled={savingDay}
-                  >
-                    <i />
-                    Fermeture exceptionnelle
-                    <span>
-                      {dayExceptionalClosure ? "Retirer CLOSED" : "Ajouter CLOSED"}
-                    </span>
-                  </button>
-              </fieldset>
-            </details>
             </div>
+            {/* Seule action hors congé : marquer la journée CLOSED à la main. */}
+            <button
+              type="button"
+              className="day-closure-link"
+              onClick={() => {
+                if (!dayDate) return;
+                const automaticClosure = grandPalaisExceptionalClosure(
+                  dayDate,
+                  approvedGrandPalaisUpdates,
+                );
+                void saveDay({
+                  closureOverride: dayExceptionalClosure
+                    ? automaticClosure
+                      ? "open"
+                      : ""
+                    : "closed",
+                });
+              }}
+              disabled={savingDay}
+            >
+              Fermeture exceptionnelle&nbsp;: {dayExceptionalClosure ? "retirer CLOSED" : "ajouter CLOSED"}
+            </button>
             {entries[dayDate]?.wish &&
               !dayLeave && (
                 <div className="wish-decision">

@@ -99,7 +99,8 @@ export function RequestChooserDialog({
 }: {
   open: boolean;
   requestChooserDate: string | null;
-  /** Congés souhaités à venir, pas encore transformés en congé. */
+  /** Congés souhaités à venir, pas encore transformés en congé. Zéro
+   *  lorsque la case touchée n'est pas elle-même un souhait. */
   pendingWishCount?: number;
   onClose: () => void;
   onChoose: (kind: RequestKind, requestedType: SelectionType) => void;
@@ -128,7 +129,7 @@ export function RequestChooserDialog({
         <p>
           {requestChooserDate
             ? `Choisissez le type à appliquer au ${longDate(fromKey(requestChooserDate))}. Vous pourrez encore le modifier ensuite.`
-            : "Commencez par un choix courant. Les choix moins fréquents restent disponibles juste en dessous."}
+            : "Choisissez le type à poser, puis les dates dans le planning."}
         </p>
         <div className="choice-grid request-primary-choice-grid">
           <button type="button" onClick={() => onChoose("leave", "annual")}>
@@ -151,6 +152,12 @@ export function RequestChooserDialog({
             <strong>Récupération</strong>
             <span>À déduire de votre solde d’heures</span>
           </button>
+          <button type="button" className="cet-leave-choice" onClick={() => onChoose("leave", "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
+          <button type="button" className="sick-leave-choice" onClick={() => onChoose("leave", "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
+          <button type="button" onClick={() => onChoose("leave", "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
+          <button type="button" onClick={() => onChoose("leave", "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
+          <button type="button" className="other-leave-choice" onClick={() => onChoose("other", "other")}><strong>Divers</strong><span>Jour non travaillé dans le planning</span></button>
+          <button type="button" className="strike-leave-choice" onClick={() => onChoose("strike", "strike")}><strong>Grève</strong><span>Avec retenue de paie estimée</span></button>
         </div>
         {/* Les souhaits ne se posent et ne se transforment qu'en partant
             d'une case du planning, jamais depuis « Poser un congé ». */}
@@ -168,17 +175,6 @@ export function RequestChooserDialog({
             ) : null}
           </section>
         ) : null}
-        <details className="request-other-choices">
-          <summary>Autres</summary>
-          <div className="choice-grid">
-            <button type="button" className="cet-leave-choice" onClick={() => onChoose("leave", "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
-            <button type="button" className="sick-leave-choice" onClick={() => onChoose("leave", "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
-            <button type="button" onClick={() => onChoose("leave", "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
-            <button type="button" onClick={() => onChoose("leave", "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
-            <button type="button" className="other-leave-choice" onClick={() => onChoose("other", "other")}><strong>Divers</strong><span>Jour non travaillé dans le planning</span></button>
-            <button type="button" className="strike-leave-choice" onClick={() => onChoose("strike", "strike")}><strong>Grève</strong><span>Avec retenue de paie estimée</span></button>
-          </div>
-        </details>
       </section>
     </div>
   );

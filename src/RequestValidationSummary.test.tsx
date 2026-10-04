@@ -183,6 +183,57 @@ describe("résumé avant validation", () => {
     )).toBeUndefined();
   });
 
+  it("décompte une date de l’année suivante sur le solde de cette année-là", () => {
+    // En 2026, plus aucun CA ; en 2027, le solde est revenu au maximum.
+    const byYear = { "2026": { annual: 0 }, "2027": { annual: 25 } };
+    expect(zeroLeaveBalanceType(
+      [{ date: "2027-01-05", type: "annual" }],
+      2,
+      { annual: 0 },
+      byYear,
+    )).toBeUndefined();
+    expect(zeroLeaveBalanceType(
+      [{ date: "2026-12-30", type: "annual" }, { date: "2027-01-05", type: "annual" }],
+      2,
+      { annual: 0 },
+      byYear,
+    )).toBe("annual");
+
+    const future = renderToStaticMarkup(
+      <RequestValidationSummary
+        items={[{ date: "2027-01-05", type: "annual" }, { date: "2027-01-06", type: "annual" }]}
+        requestKind="leave"
+        sickRequest={false}
+        group={2}
+        leaveRemaining={{ annual: 0 }}
+        leaveRemainingByYear={byYear}
+        currentYear={2026}
+      />,
+    );
+    expect(future).toContain("2027 · 23 CA restants");
+    expect(future).not.toContain("Vous n’avez plus de congés annuels disponibles.");
+
+    // À cheval sur deux années : une ligne par année, chacune sur son solde.
+    const spanning = renderToStaticMarkup(
+      <RequestValidationSummary
+        items={[
+          { date: "2026-12-29", type: "annual" },
+          { date: "2026-12-30", type: "annual" },
+          { date: "2027-01-05", type: "annual" },
+        ]}
+        requestKind="leave"
+        sickRequest={false}
+        group={2}
+        leaveRemaining={{ annual: 2 }}
+        leaveRemainingByYear={{ "2026": { annual: 2 }, "2027": { annual: 25 } }}
+        currentYear={2026}
+      />,
+    );
+    expect(spanning).toContain("3 jours déduits");
+    expect(spanning).toContain("2026 · 0 CA restant");
+    expect(spanning).toContain("2027 · 24 CA restants");
+  });
+
   it("détaille séparément une sélection mixte CA et RTT", () => {
     const html = renderToStaticMarkup(
       <RequestValidationSummary

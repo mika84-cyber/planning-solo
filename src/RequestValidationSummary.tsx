@@ -17,13 +17,36 @@ export function requestLeaveBalanceUsage(items: SelectedDay[], group: number) {
   ])) as Record<BalanceType, number>;
 }
 
+export type LeaveRemaining = Partial<Record<BalanceType, number>>;
+/** Soldes restants par année (« 2027 ») : le solde repart au 1er janvier,
+ *  donc une date de 2027 posée dès 2026 compte sur le solde de 2027. */
+export type LeaveRemainingByYear = Record<string, LeaveRemaining>;
+
+/** Dates regroupées par année, dans l'ordre. */
+function itemsByYear(items: SelectedDay[]) {
+  const groups = new Map<string, SelectedDay[]>();
+  [...items].sort((a, b) => a.date.localeCompare(b.date)).forEach((item) => {
+    const year = item.date.slice(0, 4);
+    groups.set(year, [...(groups.get(year) || []), item]);
+  });
+  return [...groups.entries()];
+}
+
 export function zeroLeaveBalanceType(
   items: SelectedDay[],
   group: number,
-  remaining: Partial<Record<BalanceType, number>>,
+  remaining: LeaveRemaining,
+  remainingByYear?: LeaveRemainingByYear,
 ) {
-  const usage = requestLeaveBalanceUsage(items, group);
-  return QUOTA_BALANCE_TYPES.find((type) => usage[type] > 0 && (remaining[type] ?? Number.POSITIVE_INFINITY) <= 0);
+  for (const [year, yearItems] of itemsByYear(items)) {
+    const usage = requestLeaveBalanceUsage(yearItems, group);
+    const yearRemaining = remainingByYear?.[year] ?? remaining;
+    const type = QUOTA_BALANCE_TYPES.find((balanceType) =>
+      usage[balanceType] > 0 && (yearRemaining[balanceType] ?? Number.POSITIVE_INFINITY) <= 0,
+    );
+    if (type) return type;
+  }
+  return undefined;
 }
 
 function leaveBalanceLabel(type: BalanceType) {
@@ -108,6 +131,8 @@ export function RequestValidationSummary({
   workQuota = "full",
   recoveryBalanceRemaining = 0,
   leaveRemaining = {},
+  leaveRemainingByYear,
+  currentYear,
 }: {
   items: SelectedDay[];
   requestKind: RequestKind;
@@ -115,7 +140,11 @@ export function RequestValidationSummary({
   group?: number;
   workQuota?: WorkQuota;
   recoveryBalanceRemaining?: number;
-  leaveRemaining?: Partial<Record<BalanceType, number>>;
+  leaveRemaining?: LeaveRemaining;
+  /** Prioritaire sur `leaveRemaining` pour les années qu'il contient. */
+  leaveRemainingByYear?: LeaveRemainingByYear;
+  /** Année en cours : une autre année est nommée devant son solde. */
+  currentYear?: number;
 }) {
   if (!items.length) return null;
   const recoveryMinutes = requestKind === "recovery"
@@ -128,11 +157,19 @@ export function RequestValidationSummary({
   const requestedBalanceTypes = new Set(
     leaveItems.map((item) => item.type === "half" ? halfBalanceOf(item) : item.type),
   );
-  const balanceUsage = requestLeaveBalanceUsage(items, group);
-  const leaveUsage = QUOTA_BALANCE_TYPES.map((type) => ({
-    type,
-    units: balanceUsage[type],
-  })).filter(({ type }) => requestedBalanceTypes.has(type));
+  // Chaque année a son propre solde : les dates sont décomptées année par
+  // année, et l'année est nommée dès qu'elle n'est pas l'année en cours.
+  const yearGroups = itemsByYear(items);
+  const nameYears = yearGroups.length > 1 ||
+    (currentYear !== undefined && yearGroups.some(([year]) => year !== String(currentYear)));
+  const leaveUsage = yearGroups.flatMap(([year, yearItems]) => {
+    const balanceUsage = requestLeaveBalanceUsage(yearItems, group);
+    return QUOTA_BALANCE_TYPES.map((type) => ({
+      year,
+      type,
+      units: balanceUsage[type],
+    })).filter(({ type, units }) => requestedBalanceTypes.has(type) && (units > 0 || yearGroups.length === 1));
+  });
   const deductedDays = leaveUsage.reduce((total, usage) => total + usage.units, 0);
   const skippedDays = leaveItems.filter((item) => {
     const info = getDayInfo(fromKey(item.date), group);
@@ -180,11 +217,12 @@ export function RequestValidationSummary({
       ) : leaveItems.length ? (
         <div className="request-validation-impact" aria-live="polite">
           <strong>{items.length} date{s(items.length)} sélectionnée{s(items.length)} · {deductedDays.toLocaleString("fr-FR")} jour{s(deductedDays)} déduit{s(deductedDays)}</strong>
-          {leaveUsage.map(({ type, units }) => {
-            const remaining = leaveRemaining[type];
+          {leaveUsage.map(({ year, type, units }) => {
+            const remaining = (leaveRemainingByYear?.[year] ?? leaveRemaining)[type];
             const shortage = remaining === undefined ? "" : leaveBalanceShortageMessage(type, remaining, units);
             return (
-              <span key={type} className={shortage ? "request-validation-warning" : undefined}>
+              <span key={`${year}-${type}`} className={shortage ? "request-validation-warning" : undefined}>
+                {nameYears ? `${year} · ` : ""}
                 {remaining === undefined
                   ? `${leaveBalanceLabel(type)} : ${dayAmount(units)} déduit${s(units)}`
                   : shortage

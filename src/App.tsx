@@ -112,7 +112,7 @@ import { WorkExchangeDialog } from "./WorkExchangeDialog";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { workExchangeForDate } from "./workExchange";
-import { requestLeaveBalanceUsage, requestRecoveryMinutes, zeroLeaveBalanceType } from "./RequestValidationSummary";
+import { requestLeaveBalanceUsage, requestRecoveryMinutes, zeroLeaveBalanceType, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -438,7 +438,6 @@ export default function Home() {
   );
   const {
     deleteMultiplePlanningDates,
-    saveSickDateDirect,
     saveStrikeDateDirect,
     saveWishDateDirect,
   } = usePlanningEntryActions({
@@ -1719,8 +1718,30 @@ export default function Home() {
       balance.remaining + (balance.type === "annual" ? carriedAnnualRemaining : 0),
     ]),
   ) as Partial<Record<BalanceType, number>>;
+  // Le solde repart au 1er janvier : chaque date compte sur le solde de son
+  // année, même posée à l'avance (une date de 2027 choisie en 2026).
+  const selectedYears = [...new Set(selectedList.map((item) => item.date.slice(0, 4)))].sort().join(",");
+  const leaveRemainingByYear = useMemo(() => {
+    const todayKey = dateKey(now);
+    return Object.fromEntries(selectedYears.split(",").filter(Boolean).map((yearKey) => {
+      const year = Number(yearKey);
+      const stats = computeLeaveStats({
+        year,
+        today: now,
+        periods,
+        group,
+        manualAdjustments: formProfile?.manualAdjustments,
+      });
+      const carry = stats.annualCarry.fromPrevious;
+      const carried = carry && todayKey >= `${year}-01-01` && todayKey <= carry.deadline ? carry.remaining : 0;
+      return [yearKey, Object.fromEntries(stats.balances.map((balance) => [
+        balance.type,
+        balance.remaining + (balance.type === "annual" ? carried : 0),
+      ]))];
+    })) as LeaveRemainingByYear;
+  }, [selectedYears, now, periods, group, formProfile?.manualAdjustments]);
   const leaveSelectionZeroBalance = requestKind === "leave" && Boolean(
-    zeroLeaveBalanceType(selectedList, group, leaveRemainingByType),
+    zeroLeaveBalanceType(selectedList, group, leaveRemainingByType, leaveRemainingByYear),
   );
   const cetAnnualDaysTaken =
     leaveStats.balances.find((balance) => balance.type === "annual")?.used || 0;
@@ -2274,6 +2295,7 @@ export default function Home() {
     workQuota,
     recoveryBalanceRemaining: recoveryBalance.remaining,
     leaveRemaining: leaveRemainingByType,
+    leaveRemainingByYear,
     periods,
     recoveryUses,
     setPeriods,
@@ -2425,27 +2447,14 @@ export default function Home() {
   function beginChosenRequest(kind: RequestKind, requestedType: SelectionType) {
     const initialDate = requestChooserDate || undefined;
     setRequestChooserDate(null);
+    // La grève s'ajoute d'un toucher : depuis une case, elle est enregistrée
+    // aussitôt sur cette date.
+    if (kind === "strike" && initialDate) {
+      setRequestChooser(false);
+      void saveStrikeDateDirect(initialDate);
+      return;
+    }
     beginRequest(kind, initialDate, requestedType);
-  }
-
-  function openPlanningRequestMethod(
-    kind: RequestKind,
-    date?: string,
-    requestedType?: SelectionType,
-  ) {
-    setDayDate(null);
-    beginRequest(
-      kind,
-      date,
-      requestedType ||
-        (kind === "recovery"
-          ? "recovery_day"
-          : kind === "other"
-            ? "other"
-            : kind === "strike"
-              ? "strike"
-              : "annual"),
-    );
   }
 
   /** Le volet de vérification d'un bulletin, séparé des primes : on y va pour
@@ -3147,6 +3156,8 @@ export default function Home() {
         workQuota={workQuota}
         recoveryBalanceRemaining={recoveryBalance.remaining}
         leaveRemainingByType={leaveRemainingByType}
+        leaveRemainingByYear={leaveRemainingByYear}
+        currentYear={now.getFullYear()}
         savingRequest={savingRequest}
         selectionBlocked={
           recoverySelectionInsufficient ||
@@ -3249,7 +3260,8 @@ export default function Home() {
         <RequestChooserDialog
           open={requestChooser}
           requestChooserDate={requestChooserDate}
-          pendingWishCount={pendingWishDates.length}
+          // « Transformer mes souhaits » ne s'offre que depuis une case souhaitée.
+          pendingWishCount={requestChooserDate && wishDates.has(requestChooserDate) ? pendingWishDates.length : 0}
           onClose={() => setRequestChooser(false)}
           onChoose={beginChosenRequest}
           onChooseWish={() => {
@@ -3321,9 +3333,7 @@ export default function Home() {
             ownNoteAuthorLabel={ownNoteAuthorLabel}
             editWorkExchange={editWorkExchange}
             openRequestChooser={openRequestChooser}
-            openPlanningRequestMethod={openPlanningRequestMethod}
             saveWishDateDirect={saveWishDateDirect}
-            beginWishSelection={beginWishSelection}
             convertWishDate={(date) => {
               setDayDate(null);
               setWishConversionDates([date]);
@@ -3333,8 +3343,6 @@ export default function Home() {
               setDayDate(null);
               setWishConversionDates(pendingWishDates);
             }}
-            saveSickDateDirect={saveSickDateDirect}
-            saveStrikeDateDirect={saveStrikeDateDirect}
             saveDay={saveDay}
             saveWorkPost={saveWorkPost}
             beginMultipleDateSelectionFromDay={beginMultipleDateSelectionFromDay}

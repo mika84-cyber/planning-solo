@@ -834,9 +834,6 @@
   line-height: 1.4;
 }
 .request-primary-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.request-other-choices { margin-top: 12px; border: 1px solid var(--border-control); border-radius: 15px; padding: 4px 12px 12px; background: var(--surface-high); }
-.request-other-choices > summary { padding: 11px 2px 7px; color: var(--muted); font-size: 13px; font-weight: 850; cursor: pointer; }
-.request-other-choices .choice-grid { margin-top: 6px; }
 .field-label {
   display: block;
   margin: 14px 0 7px;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { RequestValidationSummary } from "./RequestValidationSummary";
+import { RequestValidationSummary, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import type { RequestKind, SelectedDay } from "./appModel";
 import type { WorkQuota } from "./overtime";
 import {
@@ -20,6 +20,9 @@ export type RequestSelectionPanelProps = {
   workQuota: WorkQuota;
   recoveryBalanceRemaining: number;
   leaveRemainingByType: Record<string, number>;
+  /** Solde de chaque année touchée par la sélection. */
+  leaveRemainingByYear?: LeaveRemainingByYear;
+  currentYear?: number;
   savingRequest: boolean;
   /** Sélection incomplète ou solde à zéro : l'enregistrement reste fermé. */
   selectionBlocked: boolean;
@@ -42,6 +45,8 @@ export function RequestSelectionPanel({
   workQuota,
   recoveryBalanceRemaining,
   leaveRemainingByType,
+  leaveRemainingByYear,
+  currentYear,
   savingRequest,
   selectionBlocked,
   onCancel,
@@ -226,6 +231,8 @@ export function RequestSelectionPanel({
         workQuota={workQuota}
         recoveryBalanceRemaining={recoveryBalanceRemaining}
         leaveRemaining={leaveRemainingByType}
+        leaveRemainingByYear={leaveRemainingByYear}
+        currentYear={currentYear}
       />
       <div className="request-bottom request-bottom-stack">
         {selectedList.length ? (

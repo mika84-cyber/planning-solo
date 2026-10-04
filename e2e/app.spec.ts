@@ -240,11 +240,12 @@ async function cardBorderColor(page: Page) {
   return cssTokenRgb(page, "--border-card");
 }
 
-async function openDayOtherActions(dialog: Locator) {
-  const other = dialog.locator("details.day-action-other");
-  await expect(other).toHaveCount(1);
-  const alreadyOpen = await other.evaluate((node) => (node as HTMLDetailsElement).open);
-  if (!alreadyOpen) await other.locator("summary").click();
+/** Depuis la fiche d'une case, « Congé » ouvre le choix de tous les types. */
+async function openDayLeaveChooser(dialog: Locator) {
+  await dialog.locator(".leave-choices-primary > .leave").click();
+  const chooser = dialog.page().getByRole("dialog", { name: "Poser un congé" });
+  await expect(chooser).toBeVisible();
+  return chooser;
 }
 
 async function openOtherLeaveBalances(page: Page) {
@@ -2678,10 +2679,21 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
   await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(3);
 
-  // Chaque souhait reçoit sa nature dans une liste. Les lignes partent vides :
-  // une ligne laissée vide reste un souhait. « Tout en » règle tout d’un geste.
+  // Une case qui n’est pas souhaitée ne propose pas de transformer les souhaits.
   await pick(-4);
   await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  await expect(chooser.getByRole("button", { name: /Transformer mes souhaits/ })).toHaveCount(0);
+  await chooser.getByRole("button", { name: "Fermer" }).click();
+
+  // Chaque souhait reçoit sa nature dans une liste. Les lignes partent vides :
+  // une ligne laissée vide reste un souhait. « Tout en » règle tout d’un geste.
+  const openWishDay = async () => {
+    const day = page.locator(".calendar-grid .day.wish-day").first();
+    await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
+    await day.click();
+    await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  };
+  await openWishDay();
   await chooser.getByRole("button", { name: /Transformer mes souhaits\s*3/ }).click();
   const conversion = page.getByRole("dialog", { name: "Transformer 3 souhaits" });
   const rows = conversion.locator(".wish-conversion-list li");
@@ -2707,9 +2719,24 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
   // Ces deux souhaits deviennent des congés ; le troisième reste souhaité.
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(1);
   await expect(page.locator(".calendar-grid .day.leave-day")).toHaveCount(2);
-  await pick(-4);
-  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  await openWishDay();
   await expect(chooser.getByRole("button", { name: /Transformer mes souhaits\s*1/ })).toBeVisible();
+});
+
+test("un congé de l’année suivante se pose à l’avance sur le solde de cette année-là", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-04T12:00:00"));
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Mois suivant" }).click();
+  const day = page.locator(".calendar-grid .day.work").first();
+  await expect(day).toHaveAttribute("aria-label", /janvier 2027/);
+  await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
+  await day.click();
+  const summary = page.locator("#request-panel").getByLabel("Résumé avant validation");
+  // Le solde repart au 1er janvier : la date compte sur le solde de 2027.
+  await expect(summary).toContainText(/2027 · \d+ CA restants?/);
+  await expect(summary).not.toContainText("Vous n’avez plus de congés annuels disponibles.");
 });
 
 test("depuis une case du planning, les souhaits se posent et se transforment par le même parcours", async ({ page }) => {
@@ -2751,8 +2778,15 @@ test("depuis une case du planning, les souhaits se posent et se transforment par
   await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(1);
 
-  // Depuis une case, « Transformer mes souhaits » reprend ceux qui restent.
+  // Depuis une case souhaitée, « Transformer mes souhaits » reprend ceux qui
+  // restent ; une case ordinaire ne le propose pas.
   await openDay(-3);
+  await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
+  await expect(chooser.getByRole("button", { name: /Transformer mes souhaits/ })).toHaveCount(0);
+  await chooser.getByRole("button", { name: "Fermer" }).click();
+  const wishDay = page.locator(".calendar-grid .day.wish-day").first();
+  await wishDay.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
+  await wishDay.click();
   await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
   await expect(chooser.getByRole("button", { name: /Transformer mes souhaits\s*1/ })).toBeVisible();
 });
@@ -2834,7 +2868,6 @@ test("un jour exceptionnel se pose en journée entière, un Divers aussi en demi
   // Divers l'après-midi.
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
-  await chooser.locator(".request-other-choices > summary").click();
   await chooser.getByRole("button", { name: /^Divers/ }).click();
   await day(/^vendredi 2 octobre 2026/i).click();
   await duration.getByRole("radio", { name: /L’après-midi/ }).click();
@@ -2847,8 +2880,7 @@ test("un jour exceptionnel se pose en journée entière, un Divers aussi en demi
   // Depuis une case : la fiche du jour mène au même choix de durée, et la
   // validation enregistre aussitôt, sans autre bouton.
   await day(/^mardi 6 octobre 2026/i).click();
-  await page.getByRole("dialog").locator(".day-action-other > summary").click();
-  await page.getByRole("dialog").getByRole("button", { name: /^Divers/ }).click();
+  await (await openDayLeaveChooser(page.getByRole("dialog"))).getByRole("button", { name: /^Divers/ }).click();
   await expect(duration.getByRole("heading", { name: "Journée ou demi-journée ?" })).toBeVisible();
   await duration.getByRole("radio", { name: /Le matin/ }).click();
   await duration.getByRole("button", { name: "Valider" }).click();
@@ -2856,8 +2888,7 @@ test("un jour exceptionnel se pose en journée entière, un Divers aussi en demi
   await expect(day(/^mardi 6 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée matin · Divers/);
   // Fermer la fenêtre de durée n'enregistre rien.
   await day(/^mercredi 7 octobre 2026/i).click();
-  await page.getByRole("dialog").locator(".day-action-other > summary").click();
-  await page.getByRole("dialog").getByRole("button", { name: /^Divers/ }).click();
+  await (await openDayLeaveChooser(page.getByRole("dialog"))).getByRole("button", { name: /^Divers/ }).click();
   await duration.getByRole("button", { name: "Annuler" }).click();
   await expect(page.locator("#request-panel")).toHaveCount(0);
   await expect(day(/^mercredi 7 octobre 2026/i)).not.toHaveAttribute("aria-label", /Divers/);
@@ -2878,7 +2909,7 @@ test("le poste du jour se choisit dans la fiche et se lit dans la semaine des co
   await page.getByRole("button", { name: new RegExp(`^${longDate(day)}`, "i") }).first().click();
   const dialog = page.getByRole("dialog");
   const posts = dialog.locator(".day-work-post");
-  await expect(posts).toContainText("en salle par défaut");
+  await expect(posts).toContainText("en salles par défaut");
   await expect(posts.getByRole("button")).toHaveText([/Accueil/, /Billetterie/]);
   await posts.getByRole("button", { name: /Accueil/ }).click();
   await expect(dialog).toHaveCount(0);
@@ -2981,7 +3012,6 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   const vacationDay = page.getByRole("button", { name: /mardi 20 octobre 2026.*vacances scolaires/i });
   await vacationDay.click();
   const vacationDialog = page.getByRole("dialog", { name: /mardi 20 octobre 2026/i });
-  await openDayOtherActions(vacationDialog);
   await vacationDialog.getByRole("button", { name: /Fermeture exceptionnelle.*Ajouter CLOSED/i }).click();
   const closedVacationDay = page.getByRole("button", {
     name: /mardi 20 octobre 2026.*Fermeture exceptionnelle ajoutée manuellement.*vacances scolaires/i,
@@ -3044,7 +3074,6 @@ test("une fermeture exceptionnelle peut être ajoutée puis retirée manuellemen
   const day = page.getByRole("button", { name: /vendredi 11 septembre 2026/i });
   await day.click();
   const dialog = page.getByRole("dialog", { name: /vendredi 11 septembre 2026/i });
-  await openDayOtherActions(dialog);
   await dialog.getByRole("button", { name: /Fermeture exceptionnelle.*Ajouter CLOSED/i }).click();
 
   const manuallyClosed = page.getByRole("button", {
@@ -3055,7 +3084,6 @@ test("une fermeture exceptionnelle peut être ajoutée puis retirée manuellemen
 
   await manuallyClosed.click();
   const reopenedDialog = page.getByRole("dialog", { name: /vendredi 11 septembre 2026/i });
-  await openDayOtherActions(reopenedDialog);
   await reopenedDialog.getByRole("button", { name: /Fermeture exceptionnelle.*Retirer CLOSED/i }).click();
   await expect(day.locator(".exceptional-closure-marker")).toHaveCount(0);
 });
@@ -4125,7 +4153,6 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
 
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
-  await chooser.getByText("Autres", { exact: true }).click();
   const other = chooser.getByRole("button", { name: /Divers/ });
   await expect(other).not.toContainText("Grève, décharge syndicale, fermeture exceptionnelle");
   await expect(other.locator(".other-choice-dot")).toHaveCount(0);
@@ -4206,7 +4233,6 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
-  await chooser.getByText("Autres", { exact: true }).click();
   await chooser.getByRole("button", { name: /^Grève/ }).click();
   await expect(page.getByRole("heading", { name: "Ajoutez une journée de grève" })).toBeVisible();
   await expect(page.getByText("Ajout direct au planning", { exact: true })).toBeVisible();
@@ -4321,13 +4347,13 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await expect(page.getByRole("row").filter({ hasText: /^Grève/ })).toHaveCount(0);
 });
 
-test("une grève peut être posée directement depuis une case", async ({ page }) => {
+test("une grève se pose depuis une case par « Congé »", async ({ page }) => {
   await prepareStrikeDemo(page);
   await page.locator(".month-card .day.work").first().click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
-  await openDayOtherActions(dayDialog);
-  await dayDialog.getByRole("button", { name: /^Grève/ }).click();
-  await expect(dayDialog).toHaveCount(0);
+  await (await openDayLeaveChooser(dayDialog)).getByRole("button", { name: /^Grève/ }).click();
+  await expect(page.getByRole("dialog", { name: "Poser un congé" })).toHaveCount(0);
+  await expect(page.locator("#request-panel")).toHaveCount(0);
   const savedStrike = page.locator(".month-card .day.leave-strike");
   await expect(savedStrike).toHaveCount(1);
   await expect(savedStrike).toHaveCSS("background-color", "rgb(242, 139, 130)");
@@ -4450,8 +4476,7 @@ test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ pa
   const workDay = page.locator(".month-card .day.work").first();
   await workDay.click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
-  await openDayOtherActions(dayDialog);
-  await dayDialog.getByRole("button", { name: /^Congé souhaité/ }).click();
+  await (await openDayLeaveChooser(dayDialog)).getByRole("button", { name: /^Congés souhaités/ }).click();
   await expect(dayDialog).toHaveCount(0);
   // Le jour touché est déjà choisi : d’autres dates peuvent s’ajouter, même
   // le mois suivant, avant d’enregistrer.
@@ -4468,8 +4493,7 @@ test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ pa
 
   await workDay.click();
   const savedWishDialog = page.getByRole("dialog", { name: /2026/ });
-  await openDayOtherActions(savedWishDialog);
-  await savedWishDialog.getByRole("button", { name: /^Congé souhaité/ }).click();
+  await savedWishDialog.getByRole("button", { name: "Annuler le souhait" }).click();
   await expect(savedWishDialog).toHaveCount(0);
   await expect(workDay).not.toHaveClass(/wish-day/);
 });
@@ -4478,46 +4502,48 @@ test("le congé CET est proposé depuis les demandes et depuis une case", async 
   await prepareDemo(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
-  await chooser.getByText("Autres", { exact: true }).click();
   await chooser.getByRole("button", { name: /^CET/ }).click();
   await expect(page.getByRole("button", { name: /Congé CET/ })).toBeVisible();
   await page.getByRole("button", { name: "Annuler la demande" }).first().click();
 
   await page.locator(".month-card .day").first().click();
   const cetDayDialog = page.getByRole("dialog", { name: /2026/ });
-  await openDayOtherActions(cetDayDialog);
-  await expect(cetDayDialog.getByRole("button", { name: /^CET/ })).toBeVisible();
+  await expect((await openDayLeaveChooser(cetDayDialog)).getByRole("button", { name: /^CET/ })).toBeVisible();
 });
 
 test("les choix principaux et ceux d’une date suivent l’ordre demandé", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
+  // Tous les types sont visibles d’emblée, sans rubrique « Autres ».
+  await expect(chooser.locator("details")).toHaveCount(0);
   await expect(chooser.locator(".request-primary-choice-grid > button > strong")).toHaveText([
     "CA", "RTT", "Fractionnement", "Récupération",
-  ]);
-  const primaryColors = await chooser.locator(".request-primary-choice-grid > button")
-    .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
-  expect(new Set(primaryColors).size).toBe(4);
-  await chooser.getByText("Autres", { exact: true }).click();
-  await expect(chooser.locator(".request-other-choices")).toHaveCSS("border-left-width", "5px");
-  await expect(chooser.locator(".request-other-choices .choice-grid > button > strong")).toHaveText([
     "CET", "Maladie", "Garde d’enfant", "Jour exceptionnel", "Divers", "Grève",
   ]);
+  for (const button of await chooser.locator(".request-primary-choice-grid > button").all()) {
+    await expect(button).toBeInViewport();
+  }
+  const primaryColors = await chooser.locator(".request-primary-choice-grid > button")
+    .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
+  expect(new Set(primaryColors).size).toBe(10);
   await chooser.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".month-card .day.work").first().click();
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
-  // Une seule fiche : quatre tuiles de même gabarit, sans onglets.
+  // Une seule fiche : deux tuiles de même gabarit côte à côte, sans onglets
+  // ni rubrique « Autres » ; la récupération se choisit après « Congé ».
   await expect(dayDialog.getByRole("tablist")).toHaveCount(0);
-  const tiles = dayDialog.locator(".day-action-grid .leave-choices-primary > button, .day-action-grid .day-note-tile, .day-action-grid .day-action-other > summary");
-  await expect(tiles).toHaveCount(4);
-  await expect(tiles).toHaveText([/^Congé/, /^Récupération/, /^Notes/, /^Autres/]);
+  await expect(dayDialog.locator("details")).toHaveCount(0);
+  const tiles = dayDialog.locator(".day-action-grid .leave-choices-primary > button, .day-action-grid .day-note-tile");
+  await expect(tiles).toHaveCount(2);
+  await expect(tiles).toHaveText([/^Congé/, /^Notes/]);
+  await expect(dayDialog.getByRole("button", { name: /^Récupération/ })).toHaveCount(0);
   const tileBoxes = await tiles.evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ x, y, width, height }) => ({ x, y, width, height })));
   expect(Math.abs(tileBoxes[0].y - tileBoxes[1].y)).toBeLessThanOrEqual(1);
-  expect(Math.abs(tileBoxes[2].y - tileBoxes[3].y)).toBeLessThanOrEqual(1);
-  expect(Math.abs(tileBoxes[0].width - tileBoxes[3].width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(tileBoxes[0].width - tileBoxes[1].width)).toBeLessThanOrEqual(1);
   await expect(tiles.first().locator("i svg")).toBeVisible();
+  await expect(dayDialog.getByRole("button", { name: "Fermeture exceptionnelle : ajouter CLOSED" })).toBeVisible();
   // « Notes » ouvre la saisie dans la fiche ; « Annuler » revient aux tuiles.
   await dayDialog.locator(".day-note-tile").click();
   await expect(dayDialog.locator("textarea")).toBeFocused();
@@ -4525,31 +4551,7 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   await dayDialog.getByRole("button", { name: "Annuler", exact: true }).click();
   await expect(dayDialog.locator("textarea")).toHaveCount(0);
   await expect(dayDialog.locator(".day-action-grid")).toBeVisible();
-  await expect(dayDialog.locator(".leave-choices-primary > button")).toHaveText([
-    /Congé/,
-    /Récupération/,
-  ]);
-  await dayDialog.locator(".day-action-other > summary").click();
-  await expect(dayDialog.locator(".leave-choices-other > button")).toHaveText([
-    "Congé souhaitéUne ou plusieurs dates",
-    /Maladie/,
-    /Divers/,
-    /Grève/,
-    /CET/,
-    /Fermeture exceptionnelleAjouter CLOSED/,
-  ]);
   await expect(dayDialog.getByRole("button", { name: /^Échange/ })).toHaveCount(0);
-  await expect(dayDialog.locator(".leave-choices .other-day")).toHaveCSS(
-    "background-color",
-    "rgb(255, 255, 255)",
-  );
-  await expect(dayDialog.locator(".leave-choices .cet-day")).toHaveCSS(
-    "background-color",
-    "rgb(255, 255, 255)",
-  );
-  const choiceBorders = await dayDialog.locator(".leave-choices .other-day, .leave-choices .cet-day")
-    .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).borderColor));
-  expect(choiceBorders[1]).toBe(choiceBorders[0]);
 
   await dayDialog.getByRole("button", { name: /^Congé/ }).first().click();
   const datedChooser = page.getByRole("dialog", { name: "Poser un congé" });
@@ -4673,7 +4675,7 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
   await balanceDialog.getByRole("button", { name: "Ajouter au solde" }).click();
   await goToSection(page, "home");
   await page.locator(".month-card .day").first().click();
-  await page.getByRole("dialog", { name: /2026/ })
+  await (await openDayLeaveChooser(page.getByRole("dialog", { name: /2026/ })))
     .getByRole("button", { name: /^Récupération/ })
     .click();
   const recoveryPanel = page.locator("#request-panel");
@@ -4704,7 +4706,7 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
 test("une récupération lancée depuis une case suit aussi le calendrier", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".month-card .day").first().click();
-  await page.getByRole("dialog", { name: /2026/ })
+  await (await openDayLeaveChooser(page.getByRole("dialog", { name: /2026/ })))
     .getByRole("button", { name: /^Récupération/ })
     .click();
   const recoveryPanel = page.locator("#request-panel");
@@ -4847,7 +4849,6 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const sickChooser = page.getByRole("dialog", { name: "Poser un congé" });
-  await sickChooser.getByText("Autres", { exact: true }).click();
   await sickChooser.getByRole("button", { name: /^Maladie/ }).click();
   await expect(page.getByRole("heading", { name: "Sélectionnez votre arrêt maladie" })).toBeVisible();
   const sickElementsOverlap = await page.locator(".sick-request-options").evaluate((panel) => {

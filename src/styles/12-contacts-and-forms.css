@@ -1253,7 +1253,7 @@
 /* Tous les grands bandeaux gagnent en hauteur et ancrent leur titre dans le
    coin supérieur gauche. Les œuvres Contacts et Formulaires sont recentrées
    dans l'espace ainsi libéré sans concurrencer les commandes. */
-@media (min-width: 721px) { .request-choice{width:min(760px,100%)}.request-choice .request-other-choices .choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.calendar-request-panel .request-bottom{display:grid;grid-template-columns:minmax(170px,1fr) minmax(420px,1.6fr);align-items:center;column-gap:20px;row-gap:7px}.calendar-request-panel .request-actions{grid-column:2}.calendar-request-panel .request-action-clarification{grid-column:2;margin:0;text-align:center}
+@media (min-width: 721px) { .request-choice{width:min(760px,100%)}.calendar-request-panel .request-bottom{display:grid;grid-template-columns:minmax(170px,1fr) minmax(420px,1.6fr);align-items:center;column-gap:20px;row-gap:7px}.calendar-request-panel .request-actions{grid-column:2}.calendar-request-panel .request-action-clarification{grid-column:2;margin:0;text-align:center}
   [data-section="pdf"] .header-section-title h1 { font-size: clamp(1.35rem, 2.7vw, 2rem); line-height: 1.04; }
   .top-header {
     align-items: flex-start;

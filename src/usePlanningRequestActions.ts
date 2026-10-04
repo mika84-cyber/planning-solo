@@ -28,7 +28,7 @@ import {
   type LeaveType,
 } from "./planningLogic";
 import type { usePlanningUiState } from "./usePlanningUiState";
-import { leaveBalanceShortageMessage, requestLeaveBalanceUsage, zeroLeaveBalanceType } from "./RequestValidationSummary";
+import { leaveBalanceShortageMessage, requestLeaveBalanceUsage, zeroLeaveBalanceType, type LeaveRemainingByYear } from "./RequestValidationSummary";
 
 type PlanningUiState = ReturnType<typeof usePlanningUiState>;
 
@@ -96,6 +96,8 @@ type PlanningRequestActionsOptions = {
   workQuota: WorkQuota;
   recoveryBalanceRemaining: number;
   leaveRemaining: Partial<Record<BalanceType, number>>;
+  /** Solde de chaque année touchée par la demande. */
+  leaveRemainingByYear?: LeaveRemainingByYear;
   periods: LeavePeriod[];
   recoveryUses: RecoveryUse[];
   setPeriods: Dispatch<SetStateAction<LeavePeriod[]>>;
@@ -118,6 +120,7 @@ export function usePlanningRequestActions({
   workQuota,
   recoveryBalanceRemaining,
   leaveRemaining,
+  leaveRemainingByYear,
   periods,
   recoveryUses,
   setPeriods,
@@ -165,7 +168,7 @@ export function usePlanningRequestActions({
       }
     }
     if (requestKind === "leave" && !sickRequest) {
-      const emptyType = zeroLeaveBalanceType(selectedList, group, leaveRemaining);
+      const emptyType = zeroLeaveBalanceType(selectedList, group, leaveRemaining, leaveRemainingByYear);
       if (emptyType) {
         const usage = requestLeaveBalanceUsage(selectedList, group);
         notify(leaveBalanceShortageMessage(emptyType, 0, usage[emptyType]));
