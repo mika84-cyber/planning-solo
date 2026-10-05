@@ -2994,7 +2994,7 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   await expect(page.locator(".school-vacation-month-summary")).toContainText("Vacances de la Toussaint");
   await expect(page.locator(".month-card .school-vacation-day")).toHaveCount(15);
   // Un liseré violet en pied de case, de la couleur de l’interrupteur.
-  expect(await page.locator(".month-card .school-vacation-day.work").first().evaluate((cell) => getComputedStyle(cell, "::before").backgroundColor)).toBe("rgb(140, 112, 196)");
+  expect(await page.locator(".month-card .school-vacation-day.work").first().evaluate((cell) => getComputedStyle(cell, "::before").backgroundColor)).toBe("rgb(116, 70, 214)");
   const vacationDay = page.getByRole("button", { name: /mardi 20 octobre 2026.*vacances scolaires/i });
   await vacationDay.click();
   const vacationDialog = page.getByRole("dialog", { name: /mardi 20 octobre 2026/i });
@@ -3033,18 +3033,21 @@ test("les sigles de congé restent lisibles à côté de l’encadré d’Agnès
   const marker = day.locator(".leave-calendar-marker-annual");
   const date = day.locator(".agnes-leave-date");
   await expect(marker).toBeVisible();
-  await expect(marker).toHaveCSS("font-size", "8px");
+  // Le sigle garde sa taille habituelle ; c'est le numéro encadré de rouge qui
+  // remonte pour lui laisser la place, sans chevauchement.
+  await expect(marker).toHaveCSS("font-size", "10px");
   const [markerBox, dateBox, dayBox] = await Promise.all([marker.boundingBox(), date.boundingBox(), day.boundingBox()]);
   expect(markerBox).not.toBeNull();
   expect(dateBox).not.toBeNull();
   expect(dayBox).not.toBeNull();
-  expect(markerBox!.y).toBeGreaterThanOrEqual(dateBox!.y + dateBox!.height);
+  expect(markerBox!.y).toBeGreaterThanOrEqual(dateBox!.y + dateBox!.height + 2);
+  expect(dateBox!.y).toBeGreaterThanOrEqual(dayBox!.y);
   const closedRightGap = dayBox!.x + dayBox!.width - markerBox!.x - markerBox!.width;
   const closedBottomGap = dayBox!.y + dayBox!.height - markerBox!.y - markerBox!.height;
   expect(closedRightGap).toBeGreaterThanOrEqual(3);
-  expect(closedRightGap).toBeLessThanOrEqual(5);
-  expect(closedBottomGap).toBeGreaterThanOrEqual(1);
-  expect(closedBottomGap).toBeLessThanOrEqual(3);
+  expect(closedRightGap).toBeLessThanOrEqual(7);
+  expect(closedBottomGap).toBeGreaterThanOrEqual(3);
+  expect(closedBottomGap).toBeLessThanOrEqual(7);
 
   await page.setViewportSize({ width: 900, height: 1000 });
   const [wideMarkerBox, wideDayBox] = await Promise.all([marker.boundingBox(), day.boundingBox()]);

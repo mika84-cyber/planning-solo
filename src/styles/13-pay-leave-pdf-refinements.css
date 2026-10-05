@@ -1082,14 +1082,6 @@
     width: 100%;
     min-width: 0;
   }
-
-  /* Sur un téléphone étroit, le sigle du congé personnel reste dans son
-     propre coin lorsque la date porte aussi l’encadré rouge d’Agnès. */
-  .month-card .calendar-grid .day.agnes-leave-day .leave-calendar-marker {
-    right: 4px;
-    bottom: 2px;
-    font-size: 8px;
-  }
 }
 
 /* « Ajouter une page » : une ligne discrète en pointillés sous le résultat. */
