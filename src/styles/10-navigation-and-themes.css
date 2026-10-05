@@ -266,25 +266,6 @@
 .variable-pay-list small { color: #9b8e7c; }
 .variable-pay-list b { color: #286d57; white-space: nowrap; }
 .variable-pay-list b.pending { color: #9c6b2e; }
-.pdf-download-settings {
-  display: grid;
-}
-.pdf-download-settings > label,
-.pdf-download-settings > .school-vacation-choice {
-  display: grid;
-}
-.pdf-download-settings > label > span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 850;
-}
-.pdf-download-settings .school-vacation-choice { grid-column: 1 / -1; }
-.pdf-download-actions {
-  display: grid;
-}
-.pdf-download-actions .pdf-action {
-  width: 100%;
-}
 @media (max-width: 720px) {
   .top-header {
     padding-top: 11px;
@@ -749,7 +730,6 @@
   .controls .planning-group-choice { grid-column: 2; grid-row: 1; order: initial; }
   .controls > .planning-leave-mobile { grid-column: 1 / -1; grid-row: 2; }
   .planning-group-action-row { grid-template-columns: minmax(0, 1fr); }
-  .pdf-download-settings .school-vacation-choice { grid-column: 1 / -1; }
   .leave-request-archive + .overtime-balance-card { margin-top: 18px; }
   .overtime-balance-card { gap: 16px; padding: 17px 14px; }
   .overtime-balance-card + .overtime-balance-card { margin-top: 16px; }
