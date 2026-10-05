@@ -93,6 +93,7 @@ import {
 } from "./payAllowances";
 import { computeLeaveStats } from "./leaveStats";
 import { cetBalance } from "./cet";
+import { warmUpScreens } from "./warmUpScreens";
 import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
@@ -422,9 +423,10 @@ export default function Home() {
     allowancesSwipeStart,
   } = appShellUi;
   const feedbackMessaging = useFeedbackMessaging(isProgramAdmin, demoMode, authStatus === "ready");
-  // La fiche du jour est chargée à part : on la prépare dès que l'app est prête.
+  // Les écrans secondaires (fiche du jour, demandes, paie, formulaires…) sont
+  // chargés à part : on les prépare dès que l'app est prête et au repos.
   useEffect(() => {
-    if (authStatus === "ready") void import("./DayDetailDialog");
+    if (authStatus === "ready") warmUpScreens();
   }, [authStatus]);
 
   useEffect(() => {

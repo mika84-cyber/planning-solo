@@ -455,7 +455,8 @@ describe("finitions d’interface", () => {
 
   it("donne le même liseré aux tableaux Planning et Couleurs des deux PDF", () => {
     expect(planningPdf).toContain("const panelBorderWidth = 0.42");
-    expect((planningPdf.match(/setLineWidth\(panelBorderWidth\)/g) || []).length).toBe(4);
+    // Pied de page : le résumé et la légende ont chacun leur cadre au même trait.
+    expect((planningPdf.match(/setLineWidth\(panelBorderWidth\)/g) || []).length).toBe(2);
   });
 
   it("réunit la préparation puis propose formulaire ou enregistrement direct", () => {

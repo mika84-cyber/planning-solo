@@ -1,26 +1,25 @@
-/* Plannings PDF : une ligne de réglages en trois tuiles, puis quatre cartes
-   de documents. Chaque carte porte sa couleur (--doc-tone) ; celle de
-   « Mon groupe » suit le groupe choisi, comme dans le choix du groupe. */
+/* Plannings PDF : une ligne de réglages en trois tuiles de même largeur,
+   puis la liste des documents. Chaque document porte sa couleur
+   (--doc-tone) ; celui du planning sans congés suit le groupe choisi. */
 .pdf-download-screen .pdf-quick-settings {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin: 2px 0 14px;
 }
-/* Chaque réglage est une seule commande : la tuile colorée entière se
-   touche, libellé en petites capitales en haut, valeur en grand dessous,
+/* Chaque réglage : libellé en petites capitales en haut, commande dessous,
    sans seconde boîte à l'intérieur. */
 .pdf-quick-setting {
   --setting-tone: #3b78b8;
   position: relative;
   display: grid;
   align-content: space-between;
-  gap: 3px;
+  gap: 5px;
   min-width: 0;
   min-height: 66px;
   border: 1px solid color-mix(in srgb, var(--setting-tone) 30%, var(--border-control));
   border-radius: 16px;
-  padding: 9px 12px 7px;
+  padding: 9px 10px 8px;
   background: color-mix(in srgb, var(--setting-tone) 9%, var(--surface-high));
   transition: border-color .15s ease, background .15s ease;
 }
@@ -29,17 +28,34 @@
   border-color: color-mix(in srgb, var(--setting-tone) 65%, var(--border-control));
   background: color-mix(in srgb, var(--setting-tone) 13%, var(--surface-high));
 }
+.pdf-quick-group { --setting-tone: #6f6455; }
 .pdf-quick-vacation { --setting-tone: #d39b16; }
 .pdf-quick-setting > span {
+  padding-left: 2px;
   color: color-mix(in srgb, var(--setting-tone) 75%, var(--text));
   font-size: .66rem;
   font-weight: 850;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-/* Le sélecteur s'efface dans la tuile, et sa zone de toucher la recouvre. */
-.pdf-quick-setting .pdf-quick-picker { position: static; min-width: 0; }
-.pdf-quick-setting .pdf-quick-picker .choice-picker-trigger,
+.pdf-quick-setting:has(:focus-visible) { outline: 2px solid var(--setting-tone); outline-offset: 2px; }
+.pdf-quick-setting :focus-visible { outline: none; }
+
+/* Année : deux flèches rondes autour de l'année, à la couleur de la tuile. */
+.pdf-year-stepper { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; min-height: 30px; }
+.pdf-year-stepper strong { color: var(--text); font-size: 1.02rem; font-weight: 850; text-align: center; font-variant-numeric: tabular-nums; }
+.pdf-year-stepper button { display: grid; width: 26px; height: 26px; place-items: center; border: 0; border-radius: 50%; padding: 0; background: color-mix(in srgb, var(--setting-tone) 14%, var(--surface-high)); color: var(--setting-tone); cursor: pointer; transition: background .15s ease, color .15s ease; }
+.pdf-year-stepper button:hover:not(:disabled) { background: var(--setting-tone); color: #fff; }
+.pdf-year-stepper button:disabled { opacity: .35; cursor: default; }
+.pdf-year-stepper svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Groupe : trois pastilles, chacune à la couleur de son groupe ; la choisie est pleine. */
+.pdf-group-pills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; min-height: 30px; }
+.pdf-group-pills button { min-width: 0; height: 30px; border: 1.5px solid var(--pill-tone); border-radius: 10px; padding: 0; background: var(--surface-high); color: var(--pill-tone); font: inherit; font-size: .95rem; font-weight: 850; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.pdf-group-pills button:hover:not(.active) { background: color-mix(in srgb, var(--pill-tone) 12%, var(--surface-high)); }
+.pdf-group-pills button.active { background: var(--pill-tone); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--pill-tone) 35%, transparent); }
+
+/* Vacances : un interrupteur dont la zone de toucher couvre toute la tuile. */
 .pdf-quick-switch {
   display: flex;
   align-items: center;
@@ -50,28 +66,16 @@
   min-height: 30px;
   border: 0;
   border-radius: 0;
-  padding: 0;
+  padding: 0 2px;
   background: transparent;
   color: var(--text);
   font: inherit;
   font-size: 1.02rem;
   font-weight: 850;
-  letter-spacing: -.01em;
   box-shadow: none;
   cursor: pointer;
 }
-.pdf-quick-setting .pdf-quick-picker .choice-picker-trigger::before,
-.pdf-quick-switch::before {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  content: "";
-}
-.pdf-quick-setting .pdf-quick-picker .choice-picker-trigger:focus-visible,
-.pdf-quick-switch:focus-visible { outline: none; }
-.pdf-quick-setting:has(:focus-visible) { outline: 2px solid var(--setting-tone); outline-offset: 2px; }
-.pdf-quick-setting .pdf-quick-picker .choice-picker-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pdf-quick-setting .pdf-quick-picker .choice-picker-trigger svg { width: 16px; stroke: var(--setting-tone); stroke-width: 2.2; }
+.pdf-quick-switch::before { position: absolute; inset: 0; border-radius: 16px; content: ""; }
 .pdf-quick-switch > i {
   position: relative;
   flex: 0 0 auto;
@@ -95,6 +99,15 @@
 }
 .pdf-quick-switch.active > i { background: var(--setting-tone); }
 .pdf-quick-switch.active > i::after { transform: translateX(14px); }
+
+/* Séparation : un filet noir très léger, effilé aux deux bouts, avec
+   « Documents » en petites capitales au milieu. */
+.pdf-download-screen .pdf-section-divider { display: flex; align-items: center; gap: 10px; margin: 2px 4px 12px; }
+.pdf-section-divider::before,
+.pdf-section-divider::after { flex: 1; height: 1px; content: ""; }
+.pdf-section-divider::before { background: linear-gradient(90deg, transparent, rgba(44, 38, 33, .38)); }
+.pdf-section-divider::after { background: linear-gradient(90deg, rgba(44, 38, 33, .38), transparent); }
+.pdf-section-divider span { color: rgba(44, 38, 33, .62); font-size: .62rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
 
 .pdf-download-screen .pdf-doc-grid {
   display: grid;
@@ -167,15 +180,17 @@
   white-space: nowrap;
 }
 
-@media (max-width: 720px) {
-  /* Le groupe (« Groupe 2 ») a besoin d'un peu plus de place. */
-  .pdf-download-screen .pdf-quick-settings { grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr) minmax(0, .95fr); }
-}
 @media (min-width: 721px) {
   .pdf-download-screen .pdf-quick-settings { grid-template-columns: repeat(3, minmax(0, 220px)); }
   .pdf-download-screen .pdf-doc-grid { max-width: 720px; gap: 10px; }
+  .pdf-download-screen .pdf-section-divider { max-width: 712px; }
 }
 @media (max-width: 380px) {
-  .pdf-quick-setting { padding-inline: 10px; }
-  .pdf-quick-setting .pdf-quick-picker .choice-picker-trigger, .pdf-quick-switch { font-size: .94rem; }
+  .pdf-quick-setting { padding-inline: 8px; }
+  .pdf-quick-switch { font-size: .9rem; }
+  .pdf-year-stepper { gap: 0; }
+  .pdf-year-stepper strong { font-size: .86rem; }
+  .pdf-year-stepper button { width: 20px; height: 20px; }
+  .pdf-year-stepper svg { width: 13px; height: 13px; }
+  .pdf-group-pills { gap: 3px; }
 }

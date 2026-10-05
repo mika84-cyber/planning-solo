@@ -596,3 +596,18 @@
   @media screen{ .paper{box-shadow:0 10px 30px rgba(74,48,28,.18)} }
   @media print{ body{background:#fff;padding-bottom:0} .bar,.sub,.msg,.att,.att-note,#observationBox,#pageNav,.edit,#sigclear,#sigSaveManual,#sigSavedDelete,#sigModal,#sigSavePrompt,#calModal,#timeModal{display:none!important}
                 .stage{padding:0} .paper{box-shadow:none} }
+
+  /* Ambiance « plan de travail » : sous la barre claire, la feuille se
+     détache sur un fond ardoise, comme éclairée par une lampe. Les boutons
+     et le PDF ne changent pas ; l'impression garde son fond blanc. */
+  @media screen{
+    body{background:#27313e}
+    .bar{border-bottom:0;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+    .stage{padding-top:24px;padding-bottom:28px;background:radial-gradient(ellipse at 50% 20%,#34404f 0,#27313e 65%)}
+    .paper{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 22px 50px rgba(0,0,0,.55)}
+    .msg,.att-note{color:#c9d3df}
+    #pageNav #pageStatus{color:#e9eef5}
+    #observationBox{background:#313c4a;border-color:#44505f;box-shadow:0 10px 26px rgba(0,0,0,.3)}
+    #observationBox label{color:#e9eef5}
+    #observationBox .obsHint{color:#c9d3df}
+  }

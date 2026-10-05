@@ -1712,32 +1712,47 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.locator(".pdf-doc")).toHaveCount(4);
   await expect(pdfScreen.getByRole("switch", { name: "Ajouter les vacances scolaires au planning" })).toHaveAttribute("aria-checked", "false");
   await expect(pdfScreen).not.toContainText("Pour faciliter les échanges sur jours fériés");
-  await expect(pdfScreen.getByRole("button", { name: /Mon groupe/ })).toContainText("Planning annuel du groupe 2");
-  await expect(pdfScreen.getByRole("button", { name: /Planning des 3 groupes/ })).toBeVisible();
-  await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toBeVisible();
-  // Le groupe choisi ici ne sert qu'au PDF : votre groupe, et donc votre
-  // planning avec congés, restent le groupe 2.
-  await pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"]').click();
-  await page.getByRole("listbox", { name: "Sélectionner le groupe du PDF" }).getByRole("option", { name: "Groupe 3" }).click();
-  await expect(pdfScreen.locator(".pdf-doc-selected strong")).toHaveText("Groupe 3");
-  await expect(pdfScreen.locator(".pdf-doc-selected")).toContainText("Planning annuel du groupe 3");
+  // Du plus personnel au plus général, avec des intitulés explicites.
+  await expect(pdfScreen.locator(".pdf-doc strong")).toHaveText([
+    "Mon planning avec mes congés",
+    "Mon planning sans congés",
+    "Planning des 3 groupes",
+    "Fériés travaillés par groupe",
+  ]);
+  await expect(pdfScreen.getByRole("button", { name: /^Mon planning sans congés/ })).toContainText("Groupe 2 · le cycle de travail seul");
+  // Le groupe se choisit d'un toucher parmi trois pastilles. Il ne sert qu'au
+  // PDF : votre planning avec congés reste celui du groupe 2.
+  const groupPills = pdfScreen.getByRole("group", { name: "Groupe du PDF" });
+  await expect(groupPills.getByRole("button")).toHaveText(["1", "2", "3"]);
+  await expect(groupPills.getByRole("button", { name: "Groupe 2" })).toHaveAttribute("aria-pressed", "true");
+  await groupPills.getByRole("button", { name: "Groupe 3" }).click();
+  await expect(groupPills.getByRole("button", { name: "Groupe 3" })).toHaveAttribute("aria-pressed", "true");
+  await expect(pdfScreen.locator(".pdf-doc-selected strong")).toHaveText("Planning du groupe 3, sans congés");
+  await expect(pdfScreen.locator(".pdf-doc-selected")).toContainText("Groupe 3 · le cycle de travail seul");
   // La ligne du groupe prend la couleur du groupe choisi (orange pour le 3).
   await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-download")).toHaveCSS("background-color", "rgb(202, 119, 43)");
-  await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toContainText("Groupe 2 · absences enregistrées");
-  await pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"]').click();
-  await page.getByRole("listbox", { name: "Sélectionner le groupe du PDF" }).getByRole("option", { name: "Groupe 2" }).click();
-  await expect(pdfScreen.getByRole("button", { name: /Mon groupe/ })).toContainText("Planning annuel du groupe 2");
+  await expect(pdfScreen.getByRole("button", { name: /^Mon planning avec mes congés/ })).toContainText("Groupe 2 · vos congés et absences");
+  await groupPills.getByRole("button", { name: "Groupe 2" }).click();
+  await expect(pdfScreen.getByRole("button", { name: /^Mon planning sans congés/ })).toBeVisible();
+  // L'année avance et recule d'un toucher ; pas d'année avant 2026.
+  const years = pdfScreen.getByRole("group", { name: "Année du PDF" });
+  await expect(years.locator("strong")).toHaveText("2026");
+  await expect(years.getByRole("button", { name: "Année précédente" })).toBeDisabled();
+  await years.getByRole("button", { name: "Année suivante" }).click();
+  await expect(years.locator("strong")).toHaveText("2027");
+  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-settings")).toHaveText(/^2027/);
+  await years.getByRole("button", { name: "Année précédente" }).click();
+  await expect(years.locator("strong")).toHaveText("2026");
   // Six années à partir de l’année en cours.
   const holidayFirstYear = Math.max(2026, new Date().getFullYear());
-  await expect(pdfScreen.getByRole("button", { name: new RegExp(`Fériés travaillés ${holidayFirstYear}–${holidayFirstYear + 5}`) })).toContainText("Pour faciliter les échanges entre groupe");
+  await expect(pdfScreen.getByRole("button", { name: /^Fériés travaillés par groupe/ })).toContainText(`${holidayFirstYear}–${holidayFirstYear + 5} · pour échanger un férié entre groupes`);
   // Une ligne par document, empilées, sans débordement ; les trois réglages
-  // tiennent sur une seule ligne, « Groupe 2 » compris.
+  // tiennent sur une seule ligne, à la même largeur.
   const docBoxes = await pdfScreen.locator(".pdf-doc").evaluateAll((docs) => docs.map((doc) => doc.getBoundingClientRect().toJSON()));
   for (let index = 1; index < docBoxes.length; index += 1) expect(docBoxes[index].y).toBeGreaterThan(docBoxes[index - 1].y + docBoxes[index - 1].height - 1);
   const settingBoxes = await pdfScreen.locator(".pdf-quick-setting").evaluateAll((tiles) => tiles.map((tile) => tile.getBoundingClientRect().toJSON()));
   expect(Math.abs(settingBoxes[0].y - settingBoxes[2].y)).toBeLessThanOrEqual(1);
-  const groupTrigger = pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"] span');
-  expect(await groupTrigger.evaluate((label) => label.scrollWidth <= label.clientWidth + 1)).toBe(true);
+  expect(Math.max(...settingBoxes.map(({ width }) => width)) - Math.min(...settingBoxes.map(({ width }) => width))).toBeLessThanOrEqual(1);
   expect(await pdfScreen.evaluate((screen) => screen.scrollWidth <= screen.clientWidth + 1)).toBe(true);
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 });
@@ -1946,7 +1961,7 @@ test("le planning avec congés se génère avec les catégories d’absence", as
   await page.getByRole("tab", { name: "Plannings PDF" }).click();
 
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: /Mon planning avec congés/ }).click();
+  await page.getByRole("button", { name: /^Mon planning avec mes congés/ }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe(
     "planning-2026-groupe-2-avec-conges.pdf",
@@ -1954,7 +1969,7 @@ test("le planning avec congés se génère avec les catégories d’absence", as
   await expect(page.getByRole("dialog", { name: "Que souhaitez-vous faire ?" })).toHaveCount(0);
   const holidaysDownloadPromise = page.waitForEvent("download");
   const firstHolidayYear = Math.max(2026, new Date().getFullYear());
-  await page.getByRole("button", { name: /Fériés travaillés \d{4}–\d{4}/ }).click();
+  await page.getByRole("button", { name: /^Fériés travaillés par groupe/ }).click();
   const holidaysDownload = await holidaysDownloadPromise;
   expect(holidaysDownload.suggestedFilename()).toBe(`feries-travailles-${firstHolidayYear}-${firstHolidayYear + 5}.pdf`);
 });
@@ -3647,9 +3662,11 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
 
   await assertVisibleMenus();
 
+  // La page des PDF n'a plus de menu déroulant : année et groupe se règlent
+  // d'un toucher, sans liste à ouvrir.
   await goToSection(page, "documents");
   await page.getByRole("tab", { name: "Plannings PDF" }).click();
-  await assertVisibleMenus();
+  await expect(page.locator(".pdf-download-screen .choice-picker-trigger")).toHaveCount(0);
 
   await goToSection(page, "leave");
   await assertVisibleMenus();
@@ -5197,7 +5214,7 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
 });
 
 test("la recherche des groupes distingue le chargement, une panne et un résultat", async ({ page }) => {
-  await page.setViewportSize({ width: 900, height: 1000 });
+  await page.setViewportSize({ width: 1000, height: 1000 });
   let respond: (() => void) | undefined;
   let failed = true;
   await page.route("**/api/colleague-groups", async (route) => {
@@ -5216,7 +5233,9 @@ test("la recherche des groupes distingue le chargement, une panne et un résulta
     const [React, dom, component] = await Promise.all([import(reactPath), import(domPath), import(componentPath)]);
     const host = document.createElement("div");
     document.getElementById("root")!.style.display = "none";
-    host.style.cssText = "max-width:700px;margin:20px auto;padding:16px";
+    // Assez large pour deux colonnes de noms (260 px chacune au minimum),
+    // y compris quand les styles de la page Collègues sont déjà chargés.
+    host.style.cssText = "max-width:880px;margin:20px auto;padding:16px";
     document.body.append(host);
     (dom.default || dom).createRoot(host).render((React.default || React).createElement(component.ColleagueGroupsDirectory));
   });

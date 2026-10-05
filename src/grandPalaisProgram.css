@@ -301,7 +301,10 @@
 .grand-palais-summary-open[data-open="false"] { border-color: var(--border-soft); background: var(--surface-soft); box-shadow: none; }
 .grand-palais-summary-open > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
 .grand-palais-summary-live { display: inline-flex; align-items: center; gap: 7px; color: #226946; font-size: .7rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
-.grand-palais-summary-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--live-dot, #2f8a5b); box-shadow: 0 0 0 3px rgba(47, 138, 91, .2); }
+.grand-palais-summary-live i { width: 9px; height: 9px; border-radius: 50%; background: var(--live-dot, #2f8a5b); box-shadow: 0 0 0 3px rgba(47, 138, 91, .2); }
+/* Le point vert s'aligne sur ceux des pastilles dessous (contour 1 px +
+   marge 10 px), et son libellé sur leur texte. */
+.grand-palais-summary-open > header .grand-palais-summary-live { gap: 8px; padding-left: 11px; }
 .grand-palais-summary-open[data-open="false"] .grand-palais-summary-live { color: var(--muted); --live-dot: #a39686; }
 .grand-palais-program-summary .grand-palais-summary-count { color: #1d4d35; font-size: .8rem; font-weight: 800; }
 .grand-palais-summary-open[data-open="false"] .grand-palais-summary-count { color: var(--muted); }

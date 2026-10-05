@@ -225,13 +225,34 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(text).toContain("Zone A");
     expect(text).toContain("Zone B");
     expect(text).toContain("Zone C");
-    // « 14 février 26 » et « 01 mars 26 », pas « 14/02/2026 ».
-    expect(text).toContain("14 février 26");
-    expect(text).toContain("01 mars 26");
-    expect(text).toContain("21 février 26");
-    expect(text).toContain("07 février 26");
+    // Une ligne par période, une colonne par zone, en dates courtes :
+    // « 14 févr. – 1er mars », jamais « 14/02/2026 ».
+    expect(text).toContain("Hiver");
+    // (L'extracteur de texte ne restitue pas le tiret « – » du PDF.)
+    expect(text).toMatch(/14 févr\.\s+\S?\s*1er mars/);
+    expect(text).toMatch(/21 févr\.\s+\S?\s*8 mars/);
+    expect(text).toMatch(/7\s+\S?\s*22 févr\./);
     expect(text).not.toContain("14/02/2026");
     expect(text).not.toContain("/");
+  });
+
+  it("regroupe sur une ligne une période commune aux trois zones", async () => {
+    const toussaint = { name: "Vacances de la Toussaint", from: "2026-10-17", to: "2026-11-01" };
+    const result = createAnnualPlanningPdf({
+      year: 2026,
+      groups: [2],
+      getDayInfo,
+      wasPompidouHolidayWorked,
+      leaveSummary: { used: 0, remaining: 29 },
+      schoolVacationsByZone: { A: [toussaint], B: [toussaint], C: [toussaint] },
+      filenameLabel: "test-tableau-commun",
+    });
+    const text = await extractPdfText(await result.blob.arrayBuffer());
+    expect(text).toContain("Toussaint");
+    expect(text).toContain("toutes zones");
+    // Une seule plage pour les trois zones.
+    expect(text.split("17 oct.").length - 1).toBe(1);
+    expect(text).toContain("1er nov.");
   });
 });
 

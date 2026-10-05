@@ -1,5 +1,4 @@
 import { type CSSProperties, type Dispatch, type ReactNode, type SetStateAction, useEffect, useState } from "react";
-import { ChoicePicker } from "./ChoicePicker";
 import { GROUP_OPTIONS, YEAR_OPTIONS, workedHolidaysYearRange } from "./planningLogic";
 import "./pdfDownloadPage.css";
 
@@ -45,6 +44,8 @@ export function PdfDownloadPage({
   onExport,
 }: PdfDownloadPageProps) {
   const holidayYears = workedHolidaysYearRange();
+  const firstYear = YEAR_OPTIONS[0].value;
+  const lastYear = YEAR_OPTIONS[YEAR_OPTIONS.length - 1].value;
   // Le groupe du PDF part du vôtre et le suit s'il change ailleurs, mais le
   // choisir ici ne touche pas à votre groupe.
   const [pdfGroup, setPdfGroup] = useState(group);
@@ -65,24 +66,35 @@ export function PdfDownloadPage({
       <section className="pdf-quick-settings" aria-label="Réglages du PDF">
         <div className="pdf-quick-setting pdf-quick-year">
           <span>Année</span>
-          <ChoicePicker
-            value={year}
-            options={YEAR_OPTIONS}
-            onChange={onYearChange}
-            ariaLabel="Sélectionner l’année du PDF"
-            className="pdf-quick-picker"
-          />
+          {/* Une année de plus ou de moins d'un toucher. */}
+          <div className="pdf-year-stepper" role="group" aria-label="Année du PDF">
+            <button type="button" aria-label="Année précédente" disabled={year <= firstYear} onClick={() => onYearChange(year - 1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6" /></svg>
+            </button>
+            <strong aria-live="polite">{year}</strong>
+            <button type="button" aria-label="Année suivante" disabled={year >= lastYear} onClick={() => onYearChange(year + 1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6" /></svg>
+            </button>
+          </div>
         </div>
         <div className="pdf-quick-setting pdf-quick-group" style={{ "--setting-tone": GROUP_TONES[pdfGroup] } as CSSProperties}>
           <span>Groupe</span>
-          <ChoicePicker
-            value={pdfGroup}
-            options={GROUP_OPTIONS}
-            onChange={setPdfGroup}
-            ariaLabel="Sélectionner le groupe du PDF"
-            layout="list"
-            className="pdf-quick-picker"
-          />
+          {/* Les trois groupes d'un coup d'œil, chacun à sa couleur. */}
+          <div className="pdf-group-pills" role="group" aria-label="Groupe du PDF">
+            {GROUP_OPTIONS.map(({ value }) => (
+              <button
+                key={value}
+                type="button"
+                className={pdfGroup === value ? "active" : undefined}
+                style={{ "--pill-tone": GROUP_TONES[value] } as CSSProperties}
+                aria-pressed={pdfGroup === value}
+                aria-label={`Groupe ${value}`}
+                onClick={() => setPdfGroup(value)}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="pdf-quick-setting pdf-quick-vacation">
           <span>Vacances</span>
@@ -99,12 +111,16 @@ export function PdfDownloadPage({
           </button>
         </div>
       </section>
+      {/* Un filet discret sépare les réglages des documents. */}
+      <div className="pdf-section-divider" aria-hidden="true"><span>Documents</span></div>
       <section className="pdf-doc-grid" aria-label="Documents à créer">
         {([
-          ["selected", pdfGroup === group ? "Mon groupe" : `Groupe ${pdfGroup}`, `Planning annuel du groupe ${pdfGroup}`, "1 page", GROUP_TONES[pdfGroup]],
-          ["all", "Planning des 3 groupes", "Groupes 1, 2 et 3", "3 pages", "#4a5a78"],
-          ["my-leaves", "Mon planning avec congés", `Groupe ${group} · absences enregistrées`, "1 page", "#a4532f"],
-          ["worked-holidays", `Fériés travaillés ${holidayYears.firstYear}–${holidayYears.lastYear}`, "Pour faciliter les échanges entre groupes", "1 page", "#8a4f9e"],
+          // Du plus personnel au plus général : votre planning avec vos congés,
+          // le même sans congés, les trois groupes, puis les fériés travaillés.
+          ["my-leaves", "Mon planning avec mes congés", `Groupe ${group} · vos congés et absences de l’année`, "1 page", "#a4532f"],
+          ["selected", pdfGroup === group ? "Mon planning sans congés" : `Planning du groupe ${pdfGroup}, sans congés`, `Groupe ${pdfGroup} · le cycle de travail seul`, "1 page", GROUP_TONES[pdfGroup]],
+          ["all", "Planning des 3 groupes", "Groupes 1, 2 et 3 · une page par groupe", "3 pages", "#4a5a78"],
+          ["worked-holidays", "Fériés travaillés par groupe", `${holidayYears.firstYear}–${holidayYears.lastYear} · pour échanger un férié entre groupes`, "1 page", "#8a4f9e"],
         ] as const).map(([scope, title, detail, pageCount, tone]) => {
           const settings = scope === "worked-holidays"
             ? "Sans vacances scolaires"

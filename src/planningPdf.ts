@@ -408,12 +408,6 @@ function daysInMonth(year: number, month: number) {
 
 /** « 02 mai 26 » plutôt que « 02/05/2026 » : le tableau des vacances
  *  scolaires se lit sans avoir à décoder trois groupes de chiffres. */
-function frenchDate(key: string) {
-  const [year, month, day] = key.split("-");
-  const monthName = MONTHS[Number(month) - 1].toLowerCase();
-  return `${day} ${monthName} ${year.slice(2)}`;
-}
-
 function drawCenteredText(
   doc: jsPDF,
   text: string,
@@ -446,17 +440,22 @@ function drawGroupPage(
   showColorLegend = true,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  // La grille occupe toute la largeur ; le résumé, la légende et les
+  // vacances se rangent dans un pied de page sous elle.
   const sidebarX = 7;
-  const sidebarWidth = schoolVacationsByZone ? 28 : 34;
-  const marginX = sidebarX + sidebarWidth + 4;
+  const marginX = sidebarX;
   const rightMargin = 8;
   const tableY = 8;
   const tableWidth = pageWidth - marginX - rightMargin;
   const monthWidth = tableWidth / 12;
   const headerHeight = 9;
-  // Sans le tableau des vacances, la grille utilise la hauteur disponible au
-  // lieu de laisser une grande bande blanche au bas de la feuille.
-  const dayHeight = schoolVacationsByZone ? 4.75 : 5.9;
+  const footerGap = 4;
+  const bottomMargin = 6;
+  const vacationRows = schoolVacationsByZone ? schoolVacationTableRows(schoolVacationsByZone).length : 0;
+  const footerHeight = vacationRows ? 6.8 + vacationRows * 5.3 : 24;
+  // La grille prend toute la hauteur que le pied de page lui laisse.
+  const dayHeight = (pageHeight - tableY - headerHeight - footerGap - footerHeight - bottomMargin) / 31;
   const tableHeight = headerHeight + 31 * dayHeight;
   const blackOutlineWidth = 0.35;
   const redLineWidth = 0.55;
@@ -786,312 +785,351 @@ function drawGroupPage(
     doc.line(x, tableY, x, bottom);
   });
 
-  // Colonne d'identification, puis légende des couleurs dans son prolongement.
-  const sidebarHeight = 9 + 4 * 14;
+  // Pied de page en trois cases sous la grille : le résumé du planning, la
+  // légende des couleurs avec ses logos, puis les vacances scolaires. La
+  // grille garde ainsi toute la largeur de la feuille.
+  const footerY = tableY + tableHeight + footerGap;
+  const footerRight = pageWidth - rightMargin;
   const panelBorderWidth = 0.42;
-  doc.setFillColor(248, 250, 253);
-  doc.setDrawColor(...COLORS.black);
-  doc.setLineWidth(panelBorderWidth);
-  doc.roundedRect(sidebarX, tableY, sidebarWidth, sidebarHeight, 1.6, 1.6, "FD");
-  doc.setFillColor(...COLORS.slate);
-  doc.roundedRect(sidebarX, tableY, sidebarWidth, 9, 1.6, 1.6, "F");
-  doc.rect(sidebarX, tableY + 7.4, sidebarWidth, 1.6, "F");
-  doc.setTextColor(...COLORS.white);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(5.8);
-  drawCenteredText(doc, "PLANNING", sidebarX, tableY, sidebarWidth, 9);
+  // Avec les vacances, le résumé se range en carré 2 × 2 ; sans elles, sur
+  // une ligne de quatre cases, plus lisible dans un pied de page bas.
+  const statsColumns = schoolVacationsByZone ? 2 : 4;
+  const statsWidth = schoolVacationsByZone ? 46 : 96;
+  const legendColumns = schoolVacationsByZone ? 3 : 5;
+  const legendWidth = showColorLegend
+    ? schoolVacationsByZone ? 96 : footerRight - sidebarX - statsWidth - 4
+    : 0;
 
-  const sidebarFacts = [
-    ["Année", String(year), COLORS.yearValue],
-    ["Groupe", String(group), COLORS.groupValue],
-    ["Fériés travaillés", String(workedHolidayCount), COLORS.holidaysValue],
-    ["Fériés compensés", String(offeredHolidayCount), [255, 239, 216] as const],
-  ] as const;
-  let sidebarY = tableY + 9;
-  for (const [label, value, color] of sidebarFacts) {
-    doc.setFillColor(color[0], color[1], color[2]);
-    doc.setDrawColor(181, 193, 208);
-    doc.setLineWidth(0.2);
-    doc.rect(sidebarX, sidebarY, sidebarWidth, 14, "FD");
-    doc.setTextColor(...COLORS.black);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(schoolVacationsByZone ? 4.8 : 5.5);
-    doc.text(label, sidebarX + sidebarWidth / 2, sidebarY + 4.2, {
-      align: "center",
-      baseline: "middle",
-    });
-    if (label === "Fériés compensés") {
-      const badgeCenterX = sidebarX + sidebarWidth / 2 - 2.2;
-      const badgeCenterY = sidebarY + 9.7;
-      doc.setFillColor(...COLORS.money);
-      doc.circle(
-        badgeCenterX,
-        badgeCenterY,
-        schoolVacationsByZone ? 1.7 : 1.85,
-        "F",
-      );
-      doc.setTextColor(...COLORS.black);
-      doc.setFontSize(schoolVacationsByZone ? 5.9 : 6.3);
-      doc.text("€", badgeCenterX, badgeCenterY, {
-        align: "center",
-        baseline: "middle",
-      });
-      doc.setFontSize(schoolVacationsByZone ? 8.8 : 10.2);
-      doc.text(value, badgeCenterX + 3.4, badgeCenterY, {
-        baseline: "middle",
-      });
-    } else {
-      doc.setFontSize(schoolVacationsByZone ? 8.8 : 10.2);
-      doc.text(value, sidebarX + sidebarWidth / 2, sidebarY + 9.7, {
-        align: "center",
-        baseline: "middle",
-      });
-    }
-    sidebarY += 14;
-  }
-  // Le bloc d'identification doit rester un repère plus affirmé que la
-  // légende des couleurs. Son contour est redessiné après les aplats afin que
-  // ceux-ci ne viennent pas l'atténuer.
-  doc.setDrawColor(...COLORS.black);
-  doc.setLineWidth(panelBorderWidth);
-  doc.roundedRect(sidebarX, tableY, sidebarWidth, sidebarHeight, 1.6, 1.6, "S");
-  doc.line(sidebarX, tableY + 9, sidebarX + sidebarWidth, tableY + 9);
-
-  if (showColorLegend) {
-  const colorLegendItems: Array<{
-    label: string;
-    color: readonly [number, number, number];
-    moneyBadge?: boolean;
-    emojiType?: PdfLeaveType;
-    assetType?: keyof PlanningPdfAssets;
-    closedBadge?: boolean;
-  }> = [
-    { label: "Travail", color: COLORS.white },
-    { label: "Repos", color: COLORS.black },
-    { label: "Formation", color: COLORS.training },
-    { label: "Férié travaillé", color: COLORS.holiday },
-    { label: "Congé validé", color: COLORS.leave },
-    { label: "Congé souhaité", color: COLORS.wish },
-    { label: "Récupération", color: COLORS.recovery },
-    { label: "Échange n°", color: COLORS.white, assetType: "exchange" },
-    { label: "Maladie", color: COLORS.leave, emojiType: "sick" },
-    {
-      label: "Garde d'enfant",
-      color: COLORS.leave,
-      emojiType: "childcare",
-    },
-    { label: "Grève", color: leaveFill("strike"), emojiType: "strike" },
-    { label: "Divers", color: leaveFill("other"), emojiType: "other" },
-    { label: "Accident de travail", color: COLORS.workAccident, assetType: "workAccident" },
-    { label: "Fermeture exceptionnelle", color: COLORS.white, closedBadge: true },
-    { label: "Férié compensé", color: COLORS.money, moneyBadge: true },
-  ];
-
+  // Résumé : quatre cases sous un bandeau « PLANNING ».
   {
-    const legendGap = 5;
-    const legendX = sidebarX;
-    const legendY = tableY + sidebarHeight + legendGap;
-    const legendWidth = sidebarWidth;
-    const legendBottom = schoolVacationsByZone
-      ? tableY + tableHeight
-      : doc.internal.pageSize.getHeight() - 7;
-    const legendHeight = legendBottom - legendY;
-    const legendHeaderHeight = schoolVacationsByZone ? 8 : 9;
-    const legendRowHeight =
-      (legendHeight - legendHeaderHeight) / colorLegendItems.length;
-
+    const x = sidebarX;
+    const bandHeight = 6;
+    const cellWidth = statsWidth / statsColumns;
+    const cellHeight = (footerHeight - bandHeight) / (4 / statsColumns);
+    const facts = [
+      ["Année", String(year), COLORS.yearValue],
+      ["Groupe", String(group), COLORS.groupValue],
+      ["Fériés travaillés", String(workedHolidayCount), COLORS.holidaysValue],
+      ["Fériés compensés", String(offeredHolidayCount), [255, 239, 216] as const],
+    ] as const;
     doc.setFillColor(248, 250, 253);
-    doc.setDrawColor(125, 139, 157);
-    doc.setLineWidth(0.2);
-    doc.roundedRect(
-      legendX,
-      legendY,
-      legendWidth,
-      legendHeight,
-      1.5,
-      1.5,
-      "FD",
-    );
-    doc.setFillColor(224, 231, 240);
-    doc.roundedRect(
-      legendX,
-      legendY,
-      legendWidth,
-      legendHeaderHeight,
-      1.5,
-      1.5,
-      "F",
-    );
-    // Dans les deux variantes, l'en-tête reste visuellement attaché à la
-    // légende tout en étant séparé par un trait fin et net.
+    doc.roundedRect(x, footerY, statsWidth, footerHeight, 1.6, 1.6, "F");
+    doc.setFillColor(...COLORS.slate);
+    doc.roundedRect(x, footerY, statsWidth, bandHeight, 1.6, 1.6, "F");
+    doc.rect(x, footerY + bandHeight - 1.6, statsWidth, 1.6, "F");
+    doc.setTextColor(...COLORS.white);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(5.8);
+    drawCenteredText(doc, "PLANNING", x, footerY, statsWidth, bandHeight);
+    facts.forEach(([label, value, color], index) => {
+      const cellX = x + (index % statsColumns) * cellWidth;
+      const cellY = footerY + bandHeight + Math.floor(index / statsColumns) * cellHeight;
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.setDrawColor(181, 193, 208);
+      doc.setLineWidth(0.2);
+      doc.rect(cellX, cellY, cellWidth, cellHeight, "FD");
+      doc.setTextColor(...COLORS.black);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(4.6);
+      doc.text(label, cellX + cellWidth / 2, cellY + cellHeight * 0.28, { align: "center", baseline: "middle" });
+      const valueY = cellY + cellHeight * 0.66;
+      if (label === "Fériés compensés") {
+        const badgeX = cellX + cellWidth / 2 - 2.2;
+        doc.setFillColor(...COLORS.money);
+        doc.circle(badgeX, valueY, 1.7, "F");
+        doc.setFontSize(5.9);
+        doc.text("€", badgeX, valueY, { align: "center", baseline: "middle" });
+        doc.setFontSize(9.4);
+        doc.text(value, badgeX + 3.3, valueY, { baseline: "middle" });
+      } else {
+        doc.setFontSize(9.4);
+        doc.text(value, cellX + cellWidth / 2, valueY, { align: "center", baseline: "middle" });
+      }
+    });
     doc.setDrawColor(...COLORS.black);
     doc.setLineWidth(panelBorderWidth);
-    doc.rect(legendX, legendY, legendWidth, legendHeaderHeight, "S");
+    doc.roundedRect(x, footerY, statsWidth, footerHeight, 1.6, 1.6, "S");
+    doc.line(x, footerY + bandHeight, x + statsWidth, footerY + bandHeight);
+  }
+
+  if (showColorLegend) {
+    const colorLegendItems: Array<{
+      label: string;
+      color: readonly [number, number, number];
+      moneyBadge?: boolean;
+      emojiType?: PdfLeaveType;
+      assetType?: keyof PlanningPdfAssets;
+      closedBadge?: boolean;
+    }> = [
+      { label: "Travail", color: COLORS.white },
+      { label: "Repos", color: COLORS.black },
+      { label: "Formation", color: COLORS.training },
+      { label: "Férié travaillé", color: COLORS.holiday },
+      { label: "Congé validé", color: COLORS.leave },
+      { label: "Congé souhaité", color: COLORS.wish },
+      { label: "Récupération", color: COLORS.recovery },
+      { label: "Échange n°", color: COLORS.white, assetType: "exchange" },
+      { label: "Maladie", color: COLORS.leave, emojiType: "sick" },
+      { label: "Garde d'enfant", color: COLORS.leave, emojiType: "childcare" },
+      { label: "Grève", color: leaveFill("strike"), emojiType: "strike" },
+      { label: "Divers", color: leaveFill("other"), emojiType: "other" },
+      { label: "Accident de travail", color: COLORS.workAccident, assetType: "workAccident" },
+      { label: "Fermeture exceptionnelle", color: COLORS.white, closedBadge: true },
+      { label: "Férié compensé", color: COLORS.money, moneyBadge: true },
+    ];
+    const x = sidebarX + statsWidth + 4;
+    const bandHeight = 6;
+    const rows = Math.ceil(colorLegendItems.length / legendColumns);
+    const columnWidth = legendWidth / legendColumns;
+    const rowHeight = (footerHeight - bandHeight - 1.5) / rows;
+
+    doc.setFillColor(248, 250, 253);
+    doc.roundedRect(x, footerY, legendWidth, footerHeight, 1.5, 1.5, "F");
+    doc.setFillColor(224, 231, 240);
+    doc.roundedRect(x, footerY, legendWidth, bandHeight, 1.5, 1.5, "F");
+    doc.rect(x, footerY + bandHeight - 1.5, legendWidth, 1.5, "F");
     doc.setTextColor(...COLORS.black);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(schoolVacationsByZone ? 5.8 : 6.2);
-    drawCenteredText(
-      doc,
-      "COULEURS",
-      legendX,
-      legendY,
-      legendWidth,
-      legendHeaderHeight,
-    );
+    doc.setFontSize(5.8);
+    drawCenteredText(doc, "COULEURS", x, footerY, legendWidth, bandHeight);
 
     colorLegendItems.forEach((item, index) => {
-      const centerY =
-        legendY + legendHeaderHeight + (index + 0.5) * legendRowHeight;
-      const symbolX = legendX + (schoolVacationsByZone ? 3.9 : 7);
+      // Colonne par colonne, de haut en bas.
+      const column = Math.floor(index / rows);
+      const row = index % rows;
+      const symbolX = x + column * columnWidth + 6;
+      const centerY = footerY + bandHeight + 0.75 + (row + 0.5) * rowHeight;
       if (item.moneyBadge) {
         doc.setFillColor(...COLORS.money);
-        doc.circle(symbolX, centerY, schoolVacationsByZone ? 1.6 : 2.05, "F");
+        doc.circle(symbolX, centerY, 1.75, "F");
         doc.setTextColor(...COLORS.black);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(schoolVacationsByZone ? 5.8 : 6.4);
-        doc.text("€", symbolX, centerY, {
-          align: "center",
-          baseline: "middle",
-        });
+        doc.setFontSize(6);
+        doc.text("€", symbolX, centerY, { align: "center", baseline: "middle" });
       } else {
         doc.setFillColor(item.color[0], item.color[1], item.color[2]);
         doc.setDrawColor(...COLORS.black);
         doc.setLineWidth(0.2);
-        const symbolWidth = item.closedBadge && schoolVacationsByZone
-          ? 6.2
-          : schoolVacationsByZone
-            ? 4.1
-            : 9.5;
-        const symbolHeight = item.closedBadge && schoolVacationsByZone
-          ? 3.5
-          : schoolVacationsByZone
-            ? 4.1
-            : 4.6;
+        const symbolWidth = item.closedBadge ? 7.6 : 7;
+        const symbolHeight = item.closedBadge ? 3.6 : 4.2;
         // L'étiquette d'échange a son propre contour : pas de case derrière.
         if (item.assetType !== "exchange")
           doc.rect(symbolX - symbolWidth / 2, centerY - symbolHeight / 2, symbolWidth, symbolHeight, "FD");
-        if (item.emojiType)
-          drawLeaveEmoji(doc, item.emojiType, symbolX, centerY);
-        else if (item.assetType === "workAccident")
-          drawWorkAccidentMarker(doc, assets?.workAccident, symbolX, centerY);
-        else if (item.assetType === "exchange")
-          // Légende étroite (avec vacances scolaires) : l'étiquette réduite
-          // tient dans sa colonne sans mordre sur le texte.
-          drawExchangeMarker(doc, assets?.exchange, schoolVacationsByZone ? legendX + 3.7 : symbolX, centerY, 1, schoolVacationsByZone ? 0.7 : 1);
+        if (item.emojiType) drawLeaveEmoji(doc, item.emojiType, symbolX, centerY);
+        else if (item.assetType === "workAccident") drawWorkAccidentMarker(doc, assets?.workAccident, symbolX, centerY);
+        else if (item.assetType === "exchange") drawExchangeMarker(doc, assets?.exchange, symbolX, centerY, 1, 0.85);
         else if (item.closedBadge) {
           doc.setTextColor(225, 28, 35);
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(schoolVacationsByZone ? 2.4 : 4.1);
+          doc.setFontSize(3.6);
           doc.text("CLOSED", symbolX, centerY, { align: "center", baseline: "middle" });
         }
       }
       doc.setTextColor(...COLORS.black);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(schoolVacationsByZone ? 4.25 : 5.15);
-      doc.text(item.label, legendX + (schoolVacationsByZone ? 7.4 : 13), centerY, {
-        baseline: "middle",
-      });
+      doc.setFontSize(5);
+      // Sur trois colonnes, l'intitulé le plus long se raccourcit pour tenir.
+      const label = legendColumns === 3 && item.closedBadge ? "Fermeture except." : item.label;
+      doc.text(label, symbolX + 5.2, centerY, { baseline: "middle" });
     });
     doc.setDrawColor(...COLORS.black);
     doc.setLineWidth(panelBorderWidth);
-    doc.roundedRect(
-      legendX,
-      legendY,
-      legendWidth,
-      legendHeight,
-      1.5,
-      1.5,
-      "S",
-    );
+    doc.roundedRect(x, footerY, legendWidth, footerHeight, 1.5, 1.5, "S");
+    doc.line(x, footerY + bandHeight, x + legendWidth, footerY + bandHeight);
   }
-  }
-
-  // Le tableau se pose juste sous la grille plutôt que de dériver vers le bas
-  // de page : avec six périodes de vacances il déborderait de la feuille.
-  const extraLegendY = tableY + tableHeight + 7;
 
   if (schoolVacationsByZone) {
-    const zones = ["A", "B", "C"] as const;
-    const maximumRows = Math.max(
-      0,
-      ...zones.map((zone) => schoolVacationsByZone[zone].length),
-    );
-    const tableX = sidebarX;
-    const tableW = pageWidth - sidebarX - rightMargin;
-    const zoneWidth = tableW / zones.length;
-    const tableTop = extraLegendY - 2;
-    const headerHeightRow = 6.6;
-    const rowHeight = 5.2;
-    const tableHeightSchool = headerHeightRow + maximumRows * rowHeight;
-    const radius = 1.6;
-    const zoneHeaderColors = {
-      A: [67, 119, 176] as const,
-      B: [73, 142, 112] as const,
-      C: [190, 124, 62] as const,
-    };
-    const zoneRowColors = {
-      A: [[235, 244, 253], [224, 237, 250]] as const,
-      B: [[235, 248, 241], [224, 241, 233]] as const,
-      C: [[253, 243, 232], [248, 232, 214]] as const,
-    };
-
-    doc.setFillColor(...COLORS.white);
-    doc.roundedRect(tableX, tableTop, tableW, tableHeightSchool, radius, radius, "F");
-    zones.forEach((zone, zoneIndex) => {
-      const zoneX = tableX + zoneIndex * zoneWidth;
-      const headerColor = zoneHeaderColors[zone];
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(zoneX, tableTop, zoneWidth, headerHeightRow, "F");
-      doc.setTextColor(...COLORS.white);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(6.7);
-      doc.text(`Vacances scolaires · Zone ${zone}`, zoneX + zoneWidth / 2, tableTop + headerHeightRow / 2, {
-        align: "center",
-        baseline: "middle",
-      });
-
-      schoolVacationsByZone[zone].forEach((vacation, rowIndex) => {
-        const rowY = tableTop + headerHeightRow + rowIndex * rowHeight;
-        const middle = rowY + rowHeight / 2;
-        const rowColor = zoneRowColors[zone][rowIndex % 2];
-        doc.setFillColor(rowColor[0], rowColor[1], rowColor[2]);
-        doc.rect(zoneX, rowY, zoneWidth, rowHeight, "F");
-        if (rowIndex > 0) {
-          doc.setDrawColor(125, 139, 157);
-          doc.setLineWidth(0.28);
-          doc.line(zoneX, rowY, zoneX + zoneWidth, rowY);
-        }
-        const shortName = vacation.name
-          .replace("Vacances de la ", "")
-          .replace("Vacances de ", "")
-          .replace("Vacances d’", "")
-          .replace("Vacances ", "");
-        doc.setTextColor(...COLORS.black);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(5.6);
-        doc.text(shortName, zoneX + 2.2, middle, { baseline: "middle" });
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(5.2);
-        doc.text(
-          `${frenchDate(vacation.from)} – ${frenchDate(vacation.to)}`,
-          zoneX + zoneWidth - 2.2,
-          middle,
-          { align: "right", baseline: "middle" },
-        );
-      });
-
-      if (zoneIndex > 0) {
-        doc.setDrawColor(...COLORS.black);
-        doc.setLineWidth(0.45);
-        doc.line(zoneX, tableTop, zoneX, tableTop + tableHeightSchool);
-      }
+    const x = sidebarX + statsWidth + 4 + (showColorLegend ? legendWidth + 4 : 0);
+    drawSchoolVacationTable(doc, schoolVacationsByZone, {
+      x,
+      y: footerY,
+      width: footerRight - x,
+      height: footerHeight,
     });
-
-    doc.setDrawColor(...COLORS.black);
-    doc.setLineWidth(0.45);
-    doc.roundedRect(tableX, tableTop, tableW, tableHeightSchool, radius, radius, "S");
   }
 
+}
+
+const SHORT_MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+
+/** « 1er », « 7 », puis le mois abrégé ; l'année seulement si la période
+ *  passe d'une année à l'autre. */
+function shortVacationRange(from: string, to: string) {
+  const [fromYear, fromMonth, fromDay] = from.split("-").map(Number);
+  const [toYear, toMonth, toDay] = to.split("-").map(Number);
+  const day = (value: number) => (value === 1 ? "1er" : String(value));
+  if (fromYear !== toYear) {
+    return `${day(fromDay)} ${SHORT_MONTHS[fromMonth - 1]} ${fromYear} – ${day(toDay)} ${SHORT_MONTHS[toMonth - 1]} ${toYear}`;
+  }
+  if (fromMonth === toMonth) return `${day(fromDay)} – ${day(toDay)} ${SHORT_MONTHS[toMonth - 1]}`;
+  return `${day(fromDay)} ${SHORT_MONTHS[fromMonth - 1]} – ${day(toDay)} ${SHORT_MONTHS[toMonth - 1]}`;
+}
+
+function vacationShortName(name: string) {
+  const short = name
+    .replace("Vacances de la ", "")
+    .replace("Vacances de ", "")
+    .replace("Vacances d’", "")
+    .replace("Vacances d'", "")
+    .replace("Vacances ", "")
+    .trim();
+  return short.charAt(0).toLocaleUpperCase("fr-FR") + short.slice(1);
+}
+
+type ZoneVacation = { name: string; from: string; to: string };
+
+/** Lignes du tableau des vacances : même période (nom et rang) dans chaque
+ *  zone, dans l'ordre de l'année. */
+function schoolVacationTableRows(byZone: Record<"A" | "B" | "C", ZoneVacation[]>) {
+  const zones = ["A", "B", "C"] as const;
+  const rows = new Map<string, { name: string; first: string; cells: Partial<Record<"A" | "B" | "C", ZoneVacation>> }>();
+  zones.forEach((zone) => {
+    const seen = new Map<string, number>();
+    byZone[zone].forEach((vacation) => {
+      const name = vacationShortName(vacation.name);
+      const rank = (seen.get(name) ?? 0) + 1;
+      seen.set(name, rank);
+      const key = `${name}#${rank}`;
+      const row = rows.get(key) ?? { name, first: vacation.from, cells: {} };
+      row.cells[zone] = vacation;
+      if (vacation.from < row.first) row.first = vacation.from;
+      rows.set(key, row);
+    });
+  });
+  return [...rows.values()].sort((left, right) => left.first.localeCompare(right.first));
+}
+
+/** Vacances scolaires des trois zones : une ligne par période, une colonne
+ *  par zone. Les périodes communes aux trois zones (Noël, été, Toussaint)
+ *  tiennent sur une seule ligne, marquée des trois pastilles de zone. */
+function drawSchoolVacationTable(
+  doc: jsPDF,
+  byZone: Record<"A" | "B" | "C", ZoneVacation[]>,
+  box: { x: number; y: number; width: number; height?: number },
+) {
+  const zones = ["A", "B", "C"] as const;
+  const zoneInk = { A: [52, 104, 166], B: [46, 122, 92], C: [178, 104, 44] } as const;
+  // Fonds des dates propres à chaque zone : assez soutenus pour se repérer
+  // d'un coup d'œil, assez clairs pour garder le texte lisible.
+  const zoneTint = { A: [212, 229, 247], B: [210, 237, 223], C: [249, 223, 198] } as const;
+  const paper = [251, 248, 244] as const;
+  const line = [221, 212, 200] as const;
+  const ink = [44, 38, 33] as const;
+  const muted = [120, 108, 94] as const;
+
+  const ordered = schoolVacationTableRows(byZone);
+  if (!ordered.length) return;
+
+  const { x, y, width } = box;
+  const nameWidth = width * 0.19;
+  const zoneWidth = (width - nameWidth) / zones.length;
+  const headerHeight = 6.8;
+  const rowHeight = box.height ? (box.height - headerHeight) / ordered.length : 5.3;
+  const height = headerHeight + ordered.length * rowHeight;
+  const radius = 2;
+
+  // Fond, colonne des périodes teintée de violet (la couleur des vacances
+  // dans l'application), puis chaque zone dans sa couleur.
+  const violet = [116, 70, 214] as const;
+  const violetTint = [240, 235, 251] as const;
+  doc.setFillColor(...paper);
+  doc.roundedRect(x, y, width, height, radius, radius, "F");
+  doc.setFillColor(...violetTint);
+  doc.roundedRect(x, y, nameWidth, height, radius, radius, "F");
+  doc.rect(x + nameWidth - radius, y, radius, height, "F");
+  doc.setFillColor(...violet);
+  doc.roundedRect(x, y, nameWidth, headerHeight, radius, radius, "F");
+  doc.rect(x + nameWidth - radius, y, radius, headerHeight, "F");
+  doc.rect(x, y + headerHeight - radius, nameWidth, radius, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.4);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Vacances scolaires", x + 2.6, y + headerHeight / 2, { baseline: "middle" });
+  zones.forEach((zone, index) => {
+    const zoneX = x + nameWidth + index * zoneWidth;
+    const color = zoneInk[zone];
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.rect(zoneX, y, zoneWidth, headerHeight, "F");
+    if (index === zones.length - 1) {
+      // Coin arrondi en haut à droite, comme le cadre.
+      doc.setFillColor(...paper);
+      doc.rect(zoneX + zoneWidth - radius, y, radius, radius, "F");
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.roundedRect(zoneX, y, zoneWidth, headerHeight, radius, radius, "F");
+      doc.rect(zoneX, y + radius, zoneWidth, headerHeight - radius, "F");
+      doc.rect(zoneX, y, zoneWidth - radius, headerHeight, "F");
+    }
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(6.9);
+    doc.text(`Zone ${zone}`, zoneX + zoneWidth / 2, y + headerHeight / 2, { align: "center", baseline: "middle" });
+  });
+
+  // Chaque date tient dans une pastille de même hauteur, alignée sur la
+  // grille des zones : une large pour une période commune, une par zone sinon.
+  const pillInsetX = 1.4;
+  const pillInsetY = Math.min(1, rowHeight * 0.16);
+  const pillHeight = rowHeight - 2 * pillInsetY;
+  ordered.forEach((row, rowIndex) => {
+    const rowY = y + headerHeight + rowIndex * rowHeight;
+    const middle = rowY + rowHeight / 2;
+    const cells = zones.map((zone) => row.cells[zone]);
+    const shared = cells.every((cell) => cell && cell.from === cells[0]!.from && cell.to === cells[0]!.to);
+
+    if (rowIndex > 0) {
+      doc.setLineWidth(0.25);
+      doc.setDrawColor(214, 203, 240);
+      doc.line(x + 1.5, rowY, x + nameWidth, rowY);
+      doc.setDrawColor(...line);
+      doc.line(x + nameWidth, rowY, x + width - 1.5, rowY);
+    }
+    // Nom de la période, sur le fond violet clair.
+    doc.setTextColor(68, 42, 130);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6);
+    doc.text(row.name, x + 2.6, middle, { baseline: "middle" });
+
+    const datesX = x + nameWidth;
+    if (shared) {
+      // Une pastille sur les trois zones, marquée à gauche de leurs trois
+      // couleurs ; la plage au centre, « toutes zones » à droite.
+      const pillX = datesX + pillInsetX;
+      const pillW = width - nameWidth - 2 * pillInsetX;
+      const pillY = rowY + pillInsetY;
+      doc.setFillColor(243, 238, 231);
+      doc.roundedRect(pillX, pillY, pillW, pillHeight, 1.2, 1.2, "F");
+      zones.forEach((zone, index) => {
+        const color = zoneInk[zone];
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.rect(pillX + 1.6 + index * 1.5, pillY + pillHeight * 0.22, 1.1, pillHeight * 0.56, "F");
+      });
+      doc.setTextColor(...ink);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(5.8);
+      doc.text(shortVacationRange(cells[0]!.from, cells[0]!.to), pillX + pillW / 2, middle, { align: "center", baseline: "middle" });
+      doc.setTextColor(...muted);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(4.8);
+      doc.text("toutes zones", pillX + pillW - 2, middle, { align: "right", baseline: "middle" });
+      return;
+    }
+    zones.forEach((zone, index) => {
+      const cell = row.cells[zone];
+      const cellX = datesX + index * zoneWidth;
+      const tint = zoneTint[zone];
+      doc.setFillColor(tint[0], tint[1], tint[2]);
+      doc.roundedRect(cellX + pillInsetX, rowY + pillInsetY, zoneWidth - 2 * pillInsetX, pillHeight, 1.2, 1.2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(5.8);
+      const color = zoneInk[zone];
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(cell ? shortVacationRange(cell.from, cell.to) : "—", cellX + zoneWidth / 2, middle, { align: "center", baseline: "middle" });
+    });
+  });
+
+  // Cadre fin, à l'encre de la grille.
+  doc.setDrawColor(...ink);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(x, y, width, height, radius, radius, "S");
 }
 
 export function createAnnualPlanningPdf({
