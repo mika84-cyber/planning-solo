@@ -1,47 +1,36 @@
-/* Vacances scolaires dans le planning : un liseré violet, de la couleur de
-   l'interrupteur, en pied de chaque jour de vacances. D'un jour à l'autre il
-   trace la période comme un trait continu, sans toucher aux couleurs des
-   cases ni aux repères posés en haut (notes) ou dans la case. */
+/* Vacances scolaires dans le planning : une barre violette, de la couleur de
+   l'interrupteur, sur le bord gauche de chaque jour de vacances, sur toute sa
+   hauteur (sous le bandeau d'une note). Les couleurs des cases ne changent
+   pas, et les repères posés en bas de case gardent leur place. */
 .day.school-vacation-day,
-.mini-day.school-vacation-day { --vacation-tone: #7446d6; --vacation-ribbon: 7px; }
+.mini-day.school-vacation-day { --vacation-tone: #7446d6; --vacation-bar: 6px; }
 .day.school-vacation-day::before,
 .mini-day.school-vacation-day::before {
   position: absolute;
   z-index: 5;
-  right: 0;
+  top: 0;
   bottom: 0;
   left: 0;
-  height: var(--vacation-ribbon);
+  width: var(--vacation-bar);
   background: var(--vacation-tone);
   content: "";
   pointer-events: none;
 }
-.mini-day.school-vacation-day { --vacation-ribbon: 4px; }
-/* Sur un jour sombre (repos), le liseré s'éclaircit pour rester lisible. */
+.day.school-vacation-day.has-note::before { top: 9px; }
+.mini-day.school-vacation-day { --vacation-bar: 3px; }
+/* Sur un jour sombre (repos), la barre s'éclaircit pour rester lisible. */
 .day.school-vacation-day.off,
 .mini-day.school-vacation-day.off { --vacation-tone: #c5abff; }
-/* Les repères posés en bas de case (CA, RTT, icônes, punaise de Divers,
-   poste du jour, REC, échange) remontent juste au-dessus du liseré, qui ne
-   les recouvre jamais. Les demi-journées gardent leur sigle vertical. */
-.month-card .calendar-grid .day.school-vacation-day .leave-calendar-marker:not(.leave-calendar-marker-half),
-.month-card .calendar-grid .day.school-vacation-day .work-post-marker,
-.month-card .calendar-grid .day.school-vacation-day .exchange-calendar-label {
-  bottom: calc(var(--vacation-ribbon) + 3px);
-}
-.month-card .calendar-grid .day.school-vacation-day:not(.half-morning, .half-afternoon) .other-pin {
-  bottom: calc(var(--vacation-ribbon) + 1px);
-}
-.month-card .calendar-grid .day.school-vacation-day .recovery-calendar-label {
-  bottom: calc(var(--vacation-ribbon) + 2px) !important;
-}
-.mini-day.school-vacation-day .leave-calendar-marker.compact { bottom: calc(var(--vacation-ribbon) + 2px); }
-
-/* La fermeture exceptionnelle laisse voir le liseré dessous. */
+/* Ce qui se pose contre le bord gauche se décale d'autant : l'étiquette
+   d'échange, la fermeture, et le numéro d'une demi-journée d'après-midi
+   (posé dans la moitié gauche). */
+.day.school-vacation-day.half-afternoon :is(.date-number, .holiday-date) { translate: calc(var(--vacation-bar) / 2) 0; }
+.day.school-vacation-day .exchange-calendar-label { left: calc(var(--vacation-bar) + 5px); }
 .day.school-vacation-day .exceptional-closure-marker,
 .mini-day.school-vacation-day .exceptional-closure-marker {
-  inset: 2px 2px 9px 2px;
-  width: calc(100% - 4px);
-  height: calc(100% - 11px);
+  inset: 2px 2px 2px calc(var(--vacation-bar) + 2px);
+  width: calc(100% - var(--vacation-bar) - 4px);
+  height: calc(100% - 4px);
 }
 
 .school-vacation-settings {
@@ -143,15 +132,6 @@
 }
 
 @media (max-width: 720px) {
-  .day.school-vacation-day { --vacation-ribbon: 6px; }
-  .day.school-vacation-day .exceptional-closure-marker {
-    inset: 2px 1px 8px 1px;
-    width: calc(100% - 2px);
-    height: calc(100% - 10px);
-  }
-  .mini-day.school-vacation-day .exceptional-closure-marker {
-    inset: 1px 1px 4px 1px;
-    width: calc(100% - 2px);
-    height: calc(100% - 5px);
-  }
+  .day.school-vacation-day { --vacation-bar: 5px; }
 }
+

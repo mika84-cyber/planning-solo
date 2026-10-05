@@ -135,11 +135,14 @@ export function RequestChooserDialog({
   const annualHint = daysRemainingLabel(balances?.leave.annual, inYear) || "Congés annuels";
   const rttHint = daysRemainingLabel(balances?.leave.rtt, inYear) || "Journée ou période";
   const fractionHint = daysRemainingLabel(balances?.leave.fraction, inYear) || "Jour de fractionnement";
-  const cetHint = balances && balances.cetDays !== null
-    ? balances.cetDays > 0
-      ? `${balances.cetDays.toLocaleString("fr-FR")} jour${balances.cetDays > 1 ? "s" : ""} sur le CET`
-      : "CET vide"
-    : "Compte épargne-temps";
+  // Sans compte ouvert, le CET le dit simplement.
+  const cetHint = !balances
+    ? "Compte épargne-temps"
+    : balances.cetDays === null
+      ? "Pas de CET disponible"
+      : balances.cetDays > 0
+        ? `${balances.cetDays.toLocaleString("fr-FR")} jour${balances.cetDays > 1 ? "s" : ""} sur le CET`
+        : "CET vide";
   const recoveryHint = balances
     ? balances.recoveryMinutes > 0
       ? `${minutesLabel(balances.recoveryMinutes)} disponible${balances.recoveryMinutes >= 120 ? "s" : ""}`
@@ -168,38 +171,33 @@ export function RequestChooserDialog({
             ? `Choisissez le type à appliquer au ${longDate(fromKey(requestChooserDate))}. Vous pourrez encore le modifier ensuite.`
             : "Choisissez le type à poser, puis les dates dans le planning."}
         </p>
-        {/* Tous les types visibles, rangés par familles : ce qui puise dans
-            un solde (avec ce qu'il en reste), les absences, puis les simples
-            repères du planning. */}
+        {/* Tous les types visibles, en liste : une ligne par type, de même
+            hauteur, avec ce qui puise dans un solde (et ce qu'il en reste)
+            d'un côté, les absences et repères du planning de l'autre. */}
         <div className="request-choice-families">
           <section className="request-choice-family request-family-balance" aria-labelledby="request-family-balance">
             <h3 id="request-family-balance">Avec solde</h3>
-            <div className="choice-grid request-family-grid">
-              <button type="button" className="leave-choice-annual" onClick={() => onChoose("leave", "annual")}><strong>CA</strong><span>{annualHint}</span></button>
-              <button type="button" className="leave-choice-rtt" onClick={() => onChoose("leave", "rtt")}><strong>RTT</strong><span>{rttHint}</span></button>
-              <button type="button" className="leave-choice-fraction" onClick={() => onChoose("leave", "fraction")}><strong>Fractionnement</strong><span>{fractionHint}</span></button>
-              <button type="button" className="cet-leave-choice leave-choice-cet" onClick={() => onChoose("leave", "cet")}><strong>CET</strong><span>{cetHint}</span></button>
-              <button type="button" className="recovery-request-choice leave-choice-recovery wide" onClick={() => onChoose("recovery", "recovery_day")}><strong>Récupération</strong><span>{recoveryHint}</span></button>
+            <div className="request-family-list">
+              <button type="button" className="request-choice-row leave-choice-annual" onClick={() => onChoose("leave", "annual")}><i aria-hidden="true" /><strong>CA</strong><span>{annualHint}</span></button>
+              <button type="button" className="request-choice-row leave-choice-rtt" onClick={() => onChoose("leave", "rtt")}><i aria-hidden="true" /><strong>RTT</strong><span>{rttHint}</span></button>
+              <button type="button" className="request-choice-row leave-choice-fraction" onClick={() => onChoose("leave", "fraction")}><i aria-hidden="true" /><strong>Fractionnement</strong><span>{fractionHint}</span></button>
+              <button type="button" className="request-choice-row leave-choice-cet" onClick={() => onChoose("leave", "cet")}><i aria-hidden="true" /><strong>CET</strong><span>{cetHint}</span></button>
+              <button type="button" className="request-choice-row leave-choice-recovery" onClick={() => onChoose("recovery", "recovery_day")}><i aria-hidden="true" /><strong>Récupération</strong><span>{recoveryHint}</span></button>
             </div>
           </section>
           <section className="request-choice-family request-family-absence" aria-labelledby="request-family-absence">
-            <h3 id="request-family-absence">Absences</h3>
-            <div className="choice-grid request-family-grid">
-              <button type="button" className="sick-leave-choice leave-choice-sick wide" onClick={() => onChoose("leave", "sick")}><strong>Maladie</strong><span>Arrêt suivi</span></button>
-              <button type="button" className="leave-choice-childcare" onClick={() => onChoose("leave", "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
-              <button type="button" className="leave-choice-exceptional" onClick={() => onChoose("leave", "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
-            </div>
-          </section>
-          <section className="request-choice-family request-family-marks" aria-labelledby="request-family-marks">
-            <h3 id="request-family-marks">Repères du planning</h3>
-            <div className="choice-grid request-family-grid">
-              <button type="button" className="other-leave-choice leave-choice-other" onClick={() => onChoose("other", "other")}><strong>Divers</strong><span>Jour non travaillé</span></button>
-              <button type="button" className="strike-leave-choice leave-choice-strike" onClick={() => onChoose("strike", "strike")}><strong>Grève</strong><span>Retenue estimée</span></button>
+            <h3 id="request-family-absence">Absences et repères</h3>
+            <div className="request-family-list">
+              <button type="button" className="request-choice-row leave-choice-sick" onClick={() => onChoose("leave", "sick")}><i aria-hidden="true" /><strong>Maladie</strong><span>Arrêt suivi</span></button>
+              <button type="button" className="request-choice-row leave-choice-childcare" onClick={() => onChoose("leave", "childcare")}><i aria-hidden="true" /><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
+              <button type="button" className="request-choice-row leave-choice-exceptional" onClick={() => onChoose("leave", "exceptional")}><i aria-hidden="true" /><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
+              <button type="button" className="request-choice-row leave-choice-other" onClick={() => onChoose("other", "other")}><i aria-hidden="true" /><strong>Divers</strong><span>Jour non travaillé</span></button>
+              <button type="button" className="request-choice-row leave-choice-strike" onClick={() => onChoose("strike", "strike")}><i aria-hidden="true" /><strong>Grève</strong><span>Retenue estimée</span></button>
             </div>
           </section>
           {/* Les souhaits ne se posent et ne se transforment qu'en partant
               d'une case du planning, jamais depuis « Poser un congé ». Sur grand
-              écran, ils se rangent sous les repères du planning. */}
+              écran, ils se rangent sous les absences et repères. */}
           {onChooseWish && requestChooserDate ? (
             <section className="request-wish-choices" aria-label="Congés souhaités">
               <button type="button" className="request-wish-choice" onClick={onChooseWish}>

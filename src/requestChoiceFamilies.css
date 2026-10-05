@@ -1,34 +1,96 @@
-/* « Que voulez-vous poser ? » : les dix types rangés en trois familles,
-   chacune sous un petit titre. Tuiles basses sur deux colonnes ; sur grand
-   écran, les familles se répartissent elles-mêmes en deux colonnes. Chaque
-   type garde sa couleur, portée par --leave-choice-accent. */
+/* « Que voulez-vous poser ? » : les dix types en deux listes, « Avec solde »
+   et « Absences et repères ». Une ligne par type, toutes de même hauteur :
+   pastille de couleur, nom, puis à droite le solde restant ou une courte
+   précision. Sur grand écran, les deux listes sont côte à côte et les
+   souhaits se rangent sous la seconde. Chaque type garde sa couleur, portée
+   par --leave-choice-accent. */
 .request-choice .request-choice-families { display: grid; gap: 14px; margin-top: 16px; }
 .request-choice .request-choice-family { min-width: 0; }
 .request-choice .request-choice-family h3 { margin: 0 0 7px; color: var(--muted); font-family: inherit; font-size: .7rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
-.request-choice .request-family-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 0; }
-.request-choice .request-family-grid > button { align-content: center; gap: 2px; min-height: 0; padding: 10px 13px; }
-.request-choice .request-family-grid > button.wide { grid-column: 1 / -1; }
-.request-choice .request-family-grid > button strong { font-size: 15px; line-height: 1.2; }
-.request-choice .request-family-grid > button span { font-size: 12px; line-height: 1.3; }
-.request-choice .choice-grid > button.leave-choice-annual { --leave-choice-accent: var(--leave-annual); }
-.request-choice .choice-grid > button.leave-choice-rtt { --leave-choice-accent: var(--leave-rtt); }
-.request-choice .choice-grid > button.leave-choice-fraction { --leave-choice-accent: var(--leave-fraction); }
-.request-choice .choice-grid > button.leave-choice-cet { --leave-choice-accent: #2f5fb3; }
-.request-choice .choice-grid > button.leave-choice-recovery { --leave-choice-accent: #e08a1e; }
-.request-choice .choice-grid > button.leave-choice-sick { --leave-choice-accent: #c2557a; }
-.request-choice .choice-grid > button.leave-choice-childcare { --leave-choice-accent: #3f9a4a; }
-.request-choice .choice-grid > button.leave-choice-exceptional { --leave-choice-accent: #854d0e; }
-.request-choice .choice-grid > button.leave-choice-other { --leave-choice-accent: #d9ab2b; }
-.request-choice .choice-grid > button.leave-choice-strike { --leave-choice-accent: #f28b82; }
-/* Les souhaits, sous les familles, reprennent le gabarit des tuiles. */
-.request-choice .request-choice-families .request-wish-choices { gap: 8px; margin-top: 0; }
-.request-choice .request-choice-families .request-wish-choice { gap: 2px; border-radius: 15px; padding: 10px 13px; }
-.request-choice .request-choice-families .request-wish-choice strong { font-size: 15px; }
-.request-choice .request-choice-families .request-wish-choice span { font-size: 12px; line-height: 1.3; }
+
+.request-choice .request-family-list,
+.request-choice .request-choice-families .request-wish-choices {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--border-control);
+  border-radius: 15px;
+  background: var(--surface-high);
+}
+.request-choice .request-choice-row {
+  --leave-choice-accent: #9b8e7c;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0 14px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.request-choice .request-choice-row + .request-choice-row { border-top: 1px solid color-mix(in srgb, var(--border-control) 55%, transparent); }
+.request-choice .request-choice-row:hover { background: color-mix(in srgb, var(--leave-choice-accent) 10%, var(--surface-high)); }
+.request-choice .request-choice-row:focus-visible { outline: 2px solid var(--leave-choice-accent); outline-offset: -2px; }
+.request-choice .request-choice-row > i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--leave-choice-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--leave-choice-accent) 20%, transparent);
+}
+.request-choice .request-choice-row > strong { font-size: .95rem; font-weight: 850; line-height: 1.2; }
+.request-choice .request-choice-row > span {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 650;
+  text-align: right;
+  white-space: nowrap;
+}
+.request-choice .request-choice-row.leave-choice-annual { --leave-choice-accent: var(--leave-annual); }
+.request-choice .request-choice-row.leave-choice-rtt { --leave-choice-accent: var(--leave-rtt); }
+.request-choice .request-choice-row.leave-choice-fraction { --leave-choice-accent: var(--leave-fraction); }
+.request-choice .request-choice-row.leave-choice-cet { --leave-choice-accent: #2f5fb3; }
+.request-choice .request-choice-row.leave-choice-recovery { --leave-choice-accent: #e08a1e; }
+.request-choice .request-choice-row.leave-choice-sick { --leave-choice-accent: #c2557a; }
+.request-choice .request-choice-row.leave-choice-childcare { --leave-choice-accent: #3f9a4a; }
+.request-choice .request-choice-row.leave-choice-exceptional { --leave-choice-accent: #854d0e; }
+.request-choice .request-choice-row.leave-choice-other { --leave-choice-accent: #d9ab2b; }
+.request-choice .request-choice-row.leave-choice-strike { --leave-choice-accent: #f28b82; }
+/* Les soldes se lisent à la couleur du type. */
+.request-choice .request-family-balance .request-choice-row > span { color: color-mix(in srgb, var(--leave-choice-accent) 70%, var(--text)); font-weight: 800; }
+
+/* Les souhaits : la même liste, dans le vert des souhaits du planning. */
+.request-choice .request-choice-families .request-wish-choices {
+  gap: 0;
+  margin-top: 0;
+  border-color: color-mix(in srgb, var(--wish, #2f8a57) 55%, var(--border-control));
+  background: color-mix(in srgb, var(--wish, #2f8a57) 9%, var(--surface-high));
+}
+.request-choice .request-choice-families .request-wish-choice {
+  display: grid;
+  gap: 2px;
+  min-height: 52px;
+  border: 0;
+  border-radius: 0;
+  padding: 8px 14px;
+  background: transparent;
+  box-shadow: inset 4px 0 0 var(--wish, #2f8a57);
+}
+.request-choice .request-choice-families .request-wish-choice + .request-wish-choice { border-top: 1px solid color-mix(in srgb, var(--wish, #2f8a57) 30%, transparent); }
+.request-choice .request-choice-families .request-wish-choice strong { font-size: .95rem; }
+.request-choice .request-choice-families .request-wish-choice span { font-size: .76rem; line-height: 1.3; }
+
 @media (min-width: 721px) {
-  .request-choice .request-choice-families { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "balance absence" "balance marks" "balance wish"; grid-template-rows: auto auto 1fr; column-gap: 18px; }
+  .request-choice .request-choice-families { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "balance absence" "balance wish"; grid-template-rows: auto 1fr; column-gap: 18px; }
   .request-choice .request-family-balance { grid-area: balance; }
   .request-choice .request-family-absence { grid-area: absence; }
-  .request-choice .request-family-marks { grid-area: marks; }
-  .request-choice .request-choice-families .request-wish-choices { grid-area: wish; align-self: start; grid-template-columns: minmax(0, 1fr); }
+  .request-choice .request-choice-families .request-wish-choices { grid-area: wish; align-self: start; }
 }

@@ -11,9 +11,6 @@
 @media (max-width: 720px) {
   .day.agnes-leave-day:is(.leave-day, .recovery-day, .personal-day):not(.half-morning, .half-afternoon) .agnes-leave-date { translate: 0 -7px; }
   .day.agnes-leave-day:is(.half-morning, .half-afternoon) .agnes-leave-date { scale: .84; }
-  /* Pendant les vacances, le repère est remonté au-dessus du liseré violet :
-     le numéro encadré remonte d'autant. */
-  .day.agnes-leave-day.school-vacation-day:is(.leave-day, .recovery-day, .personal-day):not(.half-morning, .half-afternoon) .agnes-leave-date { translate: 0 -11px; }
 }
 
 /* Notes de l'accueil : une carte par jour, la date en petit calendrier à

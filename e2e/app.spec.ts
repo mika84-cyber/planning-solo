@@ -2993,7 +2993,7 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   await page.getByRole("option", { name: "octobre", exact: true }).click();
   await expect(page.locator(".school-vacation-month-summary")).toContainText("Vacances de la Toussaint");
   await expect(page.locator(".month-card .school-vacation-day")).toHaveCount(15);
-  // Un liseré violet en pied de case, de la couleur de l’interrupteur.
+  // Une barre violette à gauche de la case, de la couleur de l’interrupteur.
   expect(await page.locator(".month-card .school-vacation-day.work").first().evaluate((cell) => getComputedStyle(cell, "::before").backgroundColor)).toBe("rgb(116, 70, 214)");
   const vacationDay = page.getByRole("button", { name: /mardi 20 octobre 2026.*vacances scolaires/i });
   await vacationDay.click();
@@ -3008,9 +3008,9 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   ]);
   expect(closedDayBox).not.toBeNull();
   expect(closedMarkerBox).not.toBeNull();
-  // La fermeture laisse voir, dessous, le liseré violet des vacances.
-  expect(closedMarkerBox!.height).toBeLessThan(closedDayBox!.height - 3);
-  expect(await closedVacationDay.evaluate((cell) => getComputedStyle(cell, "::before").bottom)).toBe("0px");
+  // La fermeture laisse voir, à gauche, la barre violette des vacances.
+  expect(closedMarkerBox!.x).toBeGreaterThan(closedDayBox!.x + 4);
+  expect(await closedVacationDay.evaluate((cell) => getComputedStyle(cell, "::before").left)).toBe("0px");
   await page.getByRole("button", { name: "Zone A" }).click();
   await expect(page.getByRole("button", { name: "Zone A" })).toHaveAttribute("aria-pressed", "true");
   await vacationSwitch.click();
@@ -4505,33 +4505,37 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   await prepareDemo(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
-  // Tous les types sont visibles d’emblée, sans rubrique « Autres », rangés
-  // en trois familles ; chacun garde sa couleur.
+  // Tous les types sont visibles d’emblée, sans rubrique « Autres », en deux
+  // listes ; chacun garde sa couleur.
   await expect(chooser.locator("details")).toHaveCount(0);
   await expect(chooser.locator(".request-choice-family > h3")).toHaveText([
-    "Avec solde", "Absences", "Repères du planning",
+    "Avec solde", "Absences et repères",
   ]);
   // Les types à solde montrent ce qu’il en reste.
   await expect(chooser.getByRole("button", { name: /^CA/ })).toContainText(/(\d+(,5)? jours? restants?|Aucun jour restant)/);
   await expect(chooser.getByRole("button", { name: /^RTT/ })).toContainText(/(\d+(,5)? jours? restants?|Aucun jour restant)/);
   await expect(chooser.getByRole("button", { name: /^Récupération/ })).toContainText(/disponibles?$/);
-  const choiceButtons = chooser.locator(".request-choice-families button");
+  // Sans compte épargne-temps ouvert, le CET le dit.
+  await expect(chooser.getByRole("button", { name: /^CET/ })).toContainText("Pas de CET disponible");
+  const choiceButtons = chooser.locator(".request-choice-families .request-choice-row");
   await expect(choiceButtons.locator("strong")).toHaveText([
-    "CA", "RTT", "Fractionnement", "CET",
-    "Récupération",
-    "Maladie", "Garde d’enfant", "Jour exceptionnel",
-    "Divers", "Grève",
+    "CA", "RTT", "Fractionnement", "CET", "Récupération",
+    "Maladie", "Garde d’enfant", "Jour exceptionnel", "Divers", "Grève",
   ]);
+  // Une pastille de couleur différente par type.
+  const dotColors = await choiceButtons.locator("i")
+    .evaluateAll((dots) => dots.map((dot) => getComputedStyle(dot).backgroundColor));
+  expect(new Set(dotColors).size).toBe(10);
+  // Toutes les lignes ont la même hauteur, et les deux listes autant de lignes.
+  const rowHeights = await choiceButtons
+    .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height));
+  expect(Math.max(...rowHeights) - Math.min(...rowHeights)).toBeLessThanOrEqual(1);
+  await expect(chooser.locator(".request-family-balance .request-choice-row")).toHaveCount(5);
+  await expect(chooser.locator(".request-family-absence .request-choice-row")).toHaveCount(5);
   for (const button of await choiceButtons.all()) {
+    await button.scrollIntoViewIfNeeded();
     await expect(button).toBeInViewport();
   }
-  const primaryColors = await choiceButtons
-    .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
-  expect(new Set(primaryColors).size).toBe(10);
-  // Deux tuiles d’une même rangée ont la même hauteur.
-  const balanceBoxes = await chooser.locator(".request-family-balance button")
-    .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height));
-  expect(Math.abs(balanceBoxes[0] - balanceBoxes[1])).toBeLessThanOrEqual(1);
   await chooser.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".month-card .day.work").first().click();
