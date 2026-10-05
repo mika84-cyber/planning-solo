@@ -834,9 +834,15 @@ function currentMonthStrikeScenario(kind: "annual" | "rest") {
     if (getDayInfo(date, group).kind !== "work" || getDayInfo(end, group).kind !== "work")
       return false;
     const between = Array.from({ length: gap - 1 }, (_, index) => addDays(date, index + 1));
+    // Des CA posés uniquement sur des repos ne sont pas décomptés : il faut au
+    // moins un jour travaillé entre les grèves pour qu’ils apparaissent au solde.
     return kind === "rest"
       ? between.every((day) => getDayInfo(day, group).kind === "off")
-      : gap >= 5;
+      : gap >= 5 &&
+          between.some((day) => {
+            const info = getDayInfo(day, group);
+            return !info.holiday && info.kind !== "off";
+          });
   });
   if (!match) throw new Error(`Aucun couple de grèves du même côté d’aujourd’hui ce mois-ci (${kind})`);
   const first = dateKey(match.date);
