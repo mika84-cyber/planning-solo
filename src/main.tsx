@@ -7,6 +7,7 @@ import "./dataManagement.css";
 import "./leaveCollapsibles.css";
 import "./leaveMenus.css";
 import "./productRefinements.css";
+import "./planningCalendarRefinement.css";
 import "./darkTheme.css";
 import { initTheme } from "./theme";
 

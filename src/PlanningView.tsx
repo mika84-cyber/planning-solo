@@ -72,7 +72,8 @@ export function MonthCalendar({
 }) {
   const offset = (localDate(year, month, 1).getDay() + 6) % 7;
   const days = monthDays(year, month);
-  const trailingDays = 42 - offset - days;
+  // Seulement les semaines du mois : pas de rangée vide en bas.
+  const trailingDays = (7 - ((offset + days) % 7)) % 7;
   return (
     <>
       <div className={compact ? "mini-weekdays" : "weekdays"}>

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import "./usefulResourcesHub.css";
 
 type ResourceTab = "pdf" | "forms" | "contacts";
 
@@ -9,8 +10,8 @@ type UsefulResourcesHubProps = {
   initialTab?: ResourceTab;
 };
 
-/** Chaque rubrique dit en une ligne ce qu'on y trouve, sous une icône au
- *  trait posée sur un fond teinté. */
+/** Chaque rubrique dit en une ligne ce qu'on y trouve, à côté de son icône
+ *  sur une pastille à sa couleur. */
 const RESOURCE_TABS: ReadonlyArray<{
   key: ResourceTab;
   title: string;
@@ -20,7 +21,7 @@ const RESOURCE_TABS: ReadonlyArray<{
   {
     key: "pdf",
     title: "Plannings PDF",
-    description: "Planning annuel, les 3 groupes, vos congés, fériés travaillés",
+    description: "Votre groupe, les 3 groupes, vos congés et les fériés travaillés",
     icon: <svg viewBox="0 0 48 48"><path d="M14 6h14l8 8v28H14z" /><path d="M28 6v8h8" /><path d="M19 24h12M19 30h12M19 36h7" /></svg>,
   },
   {
@@ -32,7 +33,7 @@ const RESOURCE_TABS: ReadonlyArray<{
   {
     key: "contacts",
     title: "Contacts",
-    description: "Numéros utiles et services du musée",
+    description: "Numéros utiles et services du musée, à appeler d’un toucher",
     icon: <svg viewBox="0 0 48 48"><path d="M14 8h7l3 9-4.5 3a22 22 0 0 0 9.5 9.5l3-4.5 9 3v7a3 3 0 0 1-3 3C21 38 10 27 10 11a3 3 0 0 1 4-3z" /></svg>,
   },
 ];
@@ -62,8 +63,9 @@ export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulR
       aria-labelledby="useful-resources-title"
     >
       <div className="useful-resource-intro">
+        <span className="step-label">Documents et contacts</span>
         <h2 id="useful-resources-title">Choisir une rubrique</h2>
-        <p>Retrouvez rapidement vos documents et vos contacts utiles.</p>
+        <p>Vos plannings à télécharger, les formulaires et les numéros utiles.</p>
       </div>
 
       {activeTab ? (
@@ -92,7 +94,9 @@ export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulR
               <strong>{tab.title}</strong>
               <small>{tab.description}</small>
             </span>
-            <span className="useful-resource-tab-go" aria-hidden="true">›</span>
+            <span className="useful-resource-tab-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" /></svg>
+            </span>
           </button>
         ))}
       </div>

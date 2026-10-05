@@ -204,7 +204,8 @@ export function DayDetailDialog({
             ) : null}
         {/* Poste du jour : en salles par défaut ; l'accueil ou la
             billetterie se cochent, et se décochent pour revenir en salle. */}
-        {!quickNoteMode && dayWorkPostVisible ? (
+        {/* Pendant la saisie d'une note, le poste du jour s'efface. */}
+        {!quickNoteMode && !noteEditorOpen && dayWorkPostVisible ? (
           <fieldset className="day-work-post" disabled={savingDay}>
             <legend>Poste du jour <small>· en salles par défaut</small></legend>
             <div>

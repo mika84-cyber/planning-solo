@@ -362,11 +362,11 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
 
   await goToSection(page, "documents");
   await page.getByRole("tab", { name: /^Plannings PDF/ }).click();
-  await expect(page.locator(".pdf-download-settings > label").nth(0)).toHaveCSS("background-color", "rgb(245, 248, 252)");
-  await expect(page.locator(".pdf-download-settings > label").nth(1)).toHaveCSS("background-color", "rgb(242, 250, 246)");
-  await expect(page.locator(".pdf-download-settings > .school-vacation-choice")).toHaveCSS("background-color", "rgb(255, 249, 239)");
-  await expect(page.locator(".pdf-action.selected")).toHaveCSS("background-color", "rgb(251, 243, 237)");
-  await expect(page.locator(".pdf-action.my-leaves")).toHaveCSS("background-color", "rgb(243, 250, 246)");
+  // Réglages et documents colorés : chaque tuile et chaque ligne a sa teinte.
+  const settingTints = await page.locator(".pdf-quick-setting").evaluateAll((tiles) => tiles.map((tile) => getComputedStyle(tile).backgroundColor));
+  expect(new Set(settingTints).size).toBe(3);
+  const docTones = await page.locator(".pdf-doc-download").evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
+  expect(new Set(docTones).size).toBe(4);
 
   await openUsefulResource(page, "Formulaires");
   await expectWhiteCard(".useful-forms-screen.useful-forms-root", accentSpine(page));
@@ -1700,21 +1700,23 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
   await expect(pdfScreen).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
   await expect(pdfScreen.locator("> .native-screen-heading")).toHaveCSS("background-color", CHAPTER_TINT);
-  await expect(page.getByRole("heading", { name: "Préparer le planning" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Choisir le document" })).toBeVisible();
-  await expect(pdfScreen.locator(".pdf-download-settings > label").first()).toHaveCSS("border-top-width", "1px");
-  await expect(pdfScreen.locator(".pdf-download-actions .pdf-action")).toHaveCount(4);
+  // Plus d’étapes numérotées : une ligne de réglages, puis la liste des documents.
+  await expect(pdfScreen.locator(".pdf-step-number")).toHaveCount(0);
+  await expect(pdfScreen.locator(".pdf-quick-setting")).toHaveCount(3);
+  await expect(pdfScreen.locator(".pdf-doc")).toHaveCount(4);
   await expect(pdfScreen.getByRole("switch", { name: "Ajouter les vacances scolaires au planning" })).toHaveAttribute("aria-checked", "false");
   await expect(pdfScreen).not.toContainText("Pour faciliter les échanges sur jours fériés");
   await expect(pdfScreen.getByRole("button", { name: /Mon groupe/ })).toContainText("Planning annuel du groupe 2");
-  await expect(pdfScreen.getByRole("button", { name: /Les 3 groupes/ })).toBeVisible();
+  await expect(pdfScreen.getByRole("button", { name: /Planning des 3 groupes/ })).toBeVisible();
   await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toBeVisible();
   // Le groupe choisi ici ne sert qu'au PDF : votre groupe, et donc votre
   // planning avec congés, restent le groupe 2.
   await pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"]').click();
   await page.getByRole("listbox", { name: "Sélectionner le groupe du PDF" }).getByRole("option", { name: "Groupe 3" }).click();
-  await expect(pdfScreen.locator(".pdf-action.selected strong")).toHaveText("Groupe 3");
-  await expect(pdfScreen.locator(".pdf-action.selected")).toContainText("Planning annuel du groupe 3");
+  await expect(pdfScreen.locator(".pdf-doc-selected strong")).toHaveText("Groupe 3");
+  await expect(pdfScreen.locator(".pdf-doc-selected")).toContainText("Planning annuel du groupe 3");
+  // La ligne du groupe prend la couleur du groupe choisi (orange pour le 3).
+  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-download")).toHaveCSS("background-color", "rgb(202, 119, 43)");
   await expect(pdfScreen.getByRole("button", { name: /Mon planning avec congés/ })).toContainText("Groupe 2 · absences enregistrées");
   await pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"]').click();
   await page.getByRole("listbox", { name: "Sélectionner le groupe du PDF" }).getByRole("option", { name: "Groupe 2" }).click();
@@ -1722,33 +1724,15 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   // Six années à partir de l’année en cours.
   const holidayFirstYear = Math.max(2026, new Date().getFullYear());
   await expect(pdfScreen.getByRole("button", { name: new RegExp(`Fériés travaillés ${holidayFirstYear}–${holidayFirstYear + 5}`) })).toContainText("Pour faciliter les échanges entre groupe");
-  await expect(pdfScreen.locator(".pdf-download-actions .pdf-action").first()).toHaveCSS("border-top-color", "rgb(220, 188, 169)");
-  const pdfViewportWidth = page.viewportSize()?.width ?? 1000;
-  if (pdfViewportWidth <= 720) {
-    const mobileSettingBoxes = await pdfScreen.locator(".pdf-download-settings > label").evaluateAll((labels) =>
-      labels.map((label) => label.getBoundingClientRect().toJSON()),
-    );
-    expect(Math.abs(mobileSettingBoxes[0].y - mobileSettingBoxes[1].y)).toBeLessThanOrEqual(1);
-    const mobilePdfActions = await pdfScreen.locator(".pdf-download-actions .pdf-action").evaluateAll((actions) =>
-      actions.map((action) => action.getBoundingClientRect().toJSON()),
-    );
-    expect(Math.abs(mobilePdfActions[0].y - mobilePdfActions[1].y)).toBeLessThanOrEqual(1);
-    expect(mobilePdfActions[2].y).toBeGreaterThan(mobilePdfActions[0].y);
-    expect(Math.abs(mobilePdfActions[2].y - mobilePdfActions[3].y)).toBeLessThanOrEqual(1);
-    expect(Math.max(...mobilePdfActions.map(({ width }) => width)) - Math.min(...mobilePdfActions.map(({ width }) => width))).toBeLessThanOrEqual(1);
-  } else if (pdfViewportWidth <= 1100) {
-    await expect(pdfScreen.locator(".pdf-action-page-count").first()).toHaveCSS("position", "static");
-    const titleHeights = await pdfScreen.locator(".pdf-action-copy strong").evaluateAll((titles) =>
-      titles.map((title) => title.getBoundingClientRect().height),
-    );
-    expect(Math.max(...titleHeights)).toBeLessThan(54);
-    const actionTops = await pdfScreen.locator(".pdf-action-cta").evaluateAll((actions) =>
-      actions.map((action) => action.getBoundingClientRect().top),
-    );
-    expect(Math.max(...actionTops) - Math.min(...actionTops)).toBeLessThan(1);
-    const noHorizontalOverflow = await pdfScreen.evaluate((screen) => screen.scrollWidth <= screen.clientWidth + 1);
-    expect(noHorizontalOverflow).toBe(true);
-  }
+  // Une ligne par document, empilées, sans débordement ; les trois réglages
+  // tiennent sur une seule ligne, « Groupe 2 » compris.
+  const docBoxes = await pdfScreen.locator(".pdf-doc").evaluateAll((docs) => docs.map((doc) => doc.getBoundingClientRect().toJSON()));
+  for (let index = 1; index < docBoxes.length; index += 1) expect(docBoxes[index].y).toBeGreaterThan(docBoxes[index - 1].y + docBoxes[index - 1].height - 1);
+  const settingBoxes = await pdfScreen.locator(".pdf-quick-setting").evaluateAll((tiles) => tiles.map((tile) => tile.getBoundingClientRect().toJSON()));
+  expect(Math.abs(settingBoxes[0].y - settingBoxes[2].y)).toBeLessThanOrEqual(1);
+  const groupTrigger = pdfScreen.locator('button[aria-label="Sélectionner le groupe du PDF"] span');
+  expect(await groupTrigger.evaluate((label) => label.scrollWidth <= label.clientWidth + 1)).toBe(true);
+  expect(await pdfScreen.evaluate((screen) => screen.scrollWidth <= screen.clientWidth + 1)).toBe(true);
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 });
 
@@ -2616,7 +2600,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
 
 test("pendant le choix des dates, une barre ramène à l’enregistrement resté hors de l’écran", async ({ page }) => {
   // Écran peu haut, comme un petit téléphone : boutons et calendrier n’y tiennent pas ensemble.
-  await page.setViewportSize({ width: page.viewportSize()!.width, height: 640 });
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: 560 });
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
   await page.getByRole("button", { name: "Sélectionner le mois" }).click();
@@ -3009,6 +2993,8 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   await page.getByRole("option", { name: "octobre", exact: true }).click();
   await expect(page.locator(".school-vacation-month-summary")).toContainText("Vacances de la Toussaint");
   await expect(page.locator(".month-card .school-vacation-day")).toHaveCount(15);
+  // Un liseré violet en pied de case, de la couleur de l’interrupteur.
+  expect(await page.locator(".month-card .school-vacation-day.work").first().evaluate((cell) => getComputedStyle(cell, "::before").backgroundColor)).toBe("rgb(140, 112, 196)");
   const vacationDay = page.getByRole("button", { name: /mardi 20 octobre 2026.*vacances scolaires/i });
   await vacationDay.click();
   const vacationDialog = page.getByRole("dialog", { name: /mardi 20 octobre 2026/i });
@@ -3022,7 +3008,9 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   ]);
   expect(closedDayBox).not.toBeNull();
   expect(closedMarkerBox).not.toBeNull();
-  expect(closedMarkerBox!.width).toBeLessThan(closedDayBox!.width - 5);
+  // La fermeture laisse voir, dessous, le liseré violet des vacances.
+  expect(closedMarkerBox!.height).toBeLessThan(closedDayBox!.height - 3);
+  expect(await closedVacationDay.evaluate((cell) => getComputedStyle(cell, "::before").bottom)).toBe("0px");
   await page.getByRole("button", { name: "Zone A" }).click();
   await expect(page.getByRole("button", { name: "Zone A" })).toHaveAttribute("aria-pressed", "true");
   await vacationSwitch.click();
@@ -3662,20 +3650,19 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
   await assertVisibleMenus();
 });
 
-test("le formulaire de demande s’ouvre directement depuis Congés et récupérations", async ({ page }, testInfo) => {
+test("le formulaire de demande s’ouvre directement depuis Congés et récupérations", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
   const actions = page.locator(".leave-primary-action-bar");
   const leaveButton = actions.getByRole("button", { name: "Poser un congé" });
-  const formButton = actions.getByRole("button", { name: "Ouvrir le formulaire" });
+  const formButton = actions.getByRole("button", { name: "Formulaire vierge" });
   await expect(formButton).toBeVisible();
   const [leaveBox, formBox] = await Promise.all([leaveButton.boundingBox(), formButton.boundingBox()]);
-  // Sous « Poser un congé » sur téléphone, à côté et de même largeur sur grand écran.
-  if (testInfo.project.name === "mobile") expect(formBox!.y).toBeGreaterThan(leaveBox!.y + leaveBox!.height);
-  else {
-    expect(Math.abs(formBox!.y - leaveBox!.y)).toBeLessThan(1);
-    expect(Math.abs(formBox!.width - leaveBox!.width)).toBeLessThan(1);
-  }
+  // À côté de « Poser un congé », de même largeur et sur une seule ligne,
+  // sur téléphone comme sur grand écran.
+  expect(Math.abs(formBox!.y - leaveBox!.y)).toBeLessThan(1);
+  expect(Math.abs(formBox!.width - leaveBox!.width)).toBeLessThan(1);
+  expect(Math.abs(formBox!.height - leaveBox!.height)).toBeLessThan(1);
   await formButton.click();
   await expect(page).toHaveURL(/\/formulaire\/index\.html$/);
 });
@@ -4515,18 +4502,33 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   await prepareDemo(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
-  // Tous les types sont visibles d’emblée, sans rubrique « Autres ».
+  // Tous les types sont visibles d’emblée, sans rubrique « Autres », rangés
+  // en trois familles ; chacun garde sa couleur.
   await expect(chooser.locator("details")).toHaveCount(0);
-  await expect(chooser.locator(".request-primary-choice-grid > button > strong")).toHaveText([
-    "CA", "RTT", "Fractionnement", "Récupération",
-    "CET", "Maladie", "Garde d’enfant", "Jour exceptionnel", "Divers", "Grève",
+  await expect(chooser.locator(".request-choice-family > h3")).toHaveText([
+    "Avec solde", "Absences", "Repères du planning",
   ]);
-  for (const button of await chooser.locator(".request-primary-choice-grid > button").all()) {
+  // Les types à solde montrent ce qu’il en reste.
+  await expect(chooser.getByRole("button", { name: /^CA/ })).toContainText(/(\d+(,5)? jours? restants?|Aucun jour restant)/);
+  await expect(chooser.getByRole("button", { name: /^RTT/ })).toContainText(/(\d+(,5)? jours? restants?|Aucun jour restant)/);
+  await expect(chooser.getByRole("button", { name: /^Récupération/ })).toContainText(/disponibles?$/);
+  const choiceButtons = chooser.locator(".request-choice-families button");
+  await expect(choiceButtons.locator("strong")).toHaveText([
+    "CA", "RTT", "Fractionnement", "CET",
+    "Récupération",
+    "Maladie", "Garde d’enfant", "Jour exceptionnel",
+    "Divers", "Grève",
+  ]);
+  for (const button of await choiceButtons.all()) {
     await expect(button).toBeInViewport();
   }
-  const primaryColors = await chooser.locator(".request-primary-choice-grid > button")
+  const primaryColors = await choiceButtons
     .evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
   expect(new Set(primaryColors).size).toBe(10);
+  // Deux tuiles d’une même rangée ont la même hauteur.
+  const balanceBoxes = await chooser.locator(".request-family-balance button")
+    .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height));
+  expect(Math.abs(balanceBoxes[0] - balanceBoxes[1])).toBeLessThanOrEqual(1);
   await chooser.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".month-card .day.work").first().click();
@@ -4760,7 +4762,7 @@ test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page 
     await page.locator(".planning-leave-panel .planning-leave-action").click();
     const chooser = page.getByRole("dialog", { name: "Poser un congé" });
     await chooser.getByRole("button", {
-      name: index === 0 ? /^CA Congés annuels/ : index === 1 ? /^RTT/ : /^Fractionnement/,
+      name: index === 0 ? /^CA / : index === 1 ? /^RTT/ : /^Fractionnement/,
     }).click();
     const request = page.locator("#request-panel");
     await day.click();
@@ -4774,7 +4776,7 @@ test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
   const workDays = page.locator(".month-card .day.work");
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
-    .getByRole("button", { name: /^CA Congés annuels/ })
+    .getByRole("button", { name: /^CA / })
     .click();
   const request = page.locator("#request-panel");
   await expect(request).toContainText("Vous pouvez mélanger plusieurs types dans une même demande.");
@@ -4831,7 +4833,7 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
-    .getByRole("button", { name: /^CA Congés annuels/ })
+    .getByRole("button", { name: /^CA / })
     .click();
   await expect(page.getByRole("heading", { name: "Sélectionnez vos congés" })).toBeVisible();
   await page.locator(".month-card .day").first().click();
@@ -4870,7 +4872,7 @@ test("les dates choisies sont préremplies dans le formulaire de congé", async 
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
-    .getByRole("button", { name: /^CA Congés annuels/ })
+    .getByRole("button", { name: /^CA / })
     .click();
 
   await page.locator(".month-card .day.work").first().click();

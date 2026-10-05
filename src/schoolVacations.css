@@ -1,28 +1,32 @@
+/* Vacances scolaires dans le planning : un liseré violet, de la couleur de
+   l'interrupteur, en pied de chaque jour de vacances. D'un jour à l'autre il
+   trace la période comme un trait continu, sans toucher aux couleurs des
+   cases ni aux repères posés en haut (notes) ou dans la case. */
+.day.school-vacation-day,
+.mini-day.school-vacation-day { --vacation-tone: #8c70c4; }
 .day.school-vacation-day::before,
 .mini-day.school-vacation-day::before {
   position: absolute;
-  z-index: 8;
-  top: 3px;
-  bottom: 3px;
-  left: 2px;
-  width: 4px;
-  border-radius: 999px;
-  background: #9b8e7c;
-  box-shadow: 1px 0 #fff;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  background: var(--vacation-tone);
   content: "";
   pointer-events: none;
 }
-
-.day.school-vacation-day.has-note::before,
-.mini-day.school-vacation-day.has-note::before { top: 11px; }
-.mini-day.school-vacation-day::before { top: 2px; bottom: 2px; width: 3px; }
+.mini-day.school-vacation-day::before { height: 3px; }
+/* Sur un jour sombre (repos), le liseré s'éclaircit pour rester lisible. */
+.day.school-vacation-day.off,
+.mini-day.school-vacation-day.off { --vacation-tone: #b9a5e6; }
+/* La fermeture exceptionnelle laisse voir le liseré dessous. */
 .day.school-vacation-day .exceptional-closure-marker,
 .mini-day.school-vacation-day .exceptional-closure-marker {
-  inset: 2px 2px 2px 9px;
-  width: calc(100% - 11px);
-  height: calc(100% - 4px);
+  inset: 2px 2px 7px 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 9px);
 }
-.day.school-vacation-day .exchange-calendar-label { left: 11px; }
 
 .school-vacation-settings {
   display: flex;
@@ -109,24 +113,29 @@
 .school-vacation-month-summary > div { display: grid; gap: 2px; min-width: 0; }
 .school-vacation-month-summary strong { font-size: .78rem; }
 .school-vacation-month-summary small { color: var(--muted); font-size: .69rem; }
+/* Le résumé du mois reprend le liseré : un trait violet sous l'intitulé. */
+.school-vacation-month-summary {
+  border-color: color-mix(in srgb, #8c70c4 32%, var(--border-control));
+  background: color-mix(in srgb, #8c70c4 7%, var(--surface-high));
+}
 .school-vacation-swatch {
   flex: 0 0 5px;
   align-self: stretch;
   min-height: 34px;
   border-radius: 999px;
-  background: #9b8e7c;
+  background: #8c70c4;
 }
 
 @media (max-width: 720px) {
+  .day.school-vacation-day::before { height: 4px; }
   .day.school-vacation-day .exceptional-closure-marker {
-    inset: 2px 1px 2px 7px;
-    width: calc(100% - 8px);
-    height: calc(100% - 4px);
+    inset: 2px 1px 6px 1px;
+    width: calc(100% - 2px);
+    height: calc(100% - 8px);
   }
-  .day.school-vacation-day .exchange-calendar-label { left: 8px; }
   .mini-day.school-vacation-day .exceptional-closure-marker {
-    inset: 1px 1px 1px 6px;
-    width: calc(100% - 7px);
-    height: calc(100% - 2px);
+    inset: 1px 1px 4px 1px;
+    width: calc(100% - 2px);
+    height: calc(100% - 5px);
   }
 }

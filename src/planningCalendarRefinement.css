@@ -1,0 +1,18 @@
+/* Planning : un seul cadre, celui de la rubrique. Les boutons « Poser un
+   congé » et « Faire un échange », puis le mois, s'y posent sans second ni
+   troisième cadre ; le mois gagne ainsi toute la largeur. Les couleurs des
+   cases ne changent pas. */
+.planning-workspace-shell.framed .planning-calendar-section .planning-leave-panel {
+  border: 0;
+  border-radius: 0;
+  padding: 2px 0 6px;
+  background: transparent;
+  box-shadow: none;
+}
+.planning-workspace-shell.framed .planning-calendar-section .month-card {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}

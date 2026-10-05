@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
+import "./usefulFolders.css";
 import type { LeavePeriod, PayStatus } from "./appModel";
 import { WorkAccidentIcon } from "./WorkAccidentIcon";
 import {

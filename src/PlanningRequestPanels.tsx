@@ -1,4 +1,6 @@
 import { useState, type CSSProperties } from "react";
+import "./requestChoiceFamilies.css";
+import { minutesLabel } from "./overtime";
 import type { RequestKind } from "./appModel";
 import {
   GROUP_OPTIONS,
@@ -87,10 +89,29 @@ export function RecoveryDatePickingPanel({
   );
 }
 
+/** Soldes montrés sous les types qui en ont un. */
+export type RequestChooserBalances = {
+  year: number;
+  /** L'année n'est pas l'année en cours : elle est nommée. */
+  otherYear: boolean;
+  leave: Partial<Record<"annual" | "rtt" | "fraction", number>>;
+  recoveryMinutes: number;
+  /** Jours CET disponibles ; null sans compte ouvert. */
+  cetDays: number | null;
+};
+
+function daysRemainingLabel(days: number | undefined, year: string) {
+  if (days === undefined) return null;
+  if (days <= 0) return `Aucun jour restant${year}`;
+  const plural = days > 1 ? "s" : "";
+  return `${days.toLocaleString("fr-FR")} jour${plural} restant${plural}${year}`;
+}
+
 /** Première étape d'une demande : ce que l'on pose avant de choisir les dates. */
 export function RequestChooserDialog({
   open,
   requestChooserDate,
+  balances,
   pendingWishCount = 0,
   onClose,
   onChoose,
@@ -99,6 +120,8 @@ export function RequestChooserDialog({
 }: {
   open: boolean;
   requestChooserDate: string | null;
+  /** Soldes restants, affichés à la place de la description. */
+  balances?: RequestChooserBalances;
   /** Congés souhaités à venir, pas encore transformés en congé. Zéro
    *  lorsque la case touchée n'est pas elle-même un souhait. */
   pendingWishCount?: number;
@@ -108,6 +131,20 @@ export function RequestChooserDialog({
   onConvertWishes?: () => void;
 }) {
   if (!open) return null;
+  const inYear = balances?.otherYear ? ` en ${balances.year}` : "";
+  const annualHint = daysRemainingLabel(balances?.leave.annual, inYear) || "Congés annuels";
+  const rttHint = daysRemainingLabel(balances?.leave.rtt, inYear) || "Journée ou période";
+  const fractionHint = daysRemainingLabel(balances?.leave.fraction, inYear) || "Jour de fractionnement";
+  const cetHint = balances && balances.cetDays !== null
+    ? balances.cetDays > 0
+      ? `${balances.cetDays.toLocaleString("fr-FR")} jour${balances.cetDays > 1 ? "s" : ""} sur le CET`
+      : "CET vide"
+    : "Compte épargne-temps";
+  const recoveryHint = balances
+    ? balances.recoveryMinutes > 0
+      ? `${minutesLabel(balances.recoveryMinutes)} disponible${balances.recoveryMinutes >= 120 ? "s" : ""}`
+      : "Aucune heure disponible"
+    : "À déduire de votre solde d’heures";
 
   return (
     <div
@@ -131,50 +168,53 @@ export function RequestChooserDialog({
             ? `Choisissez le type à appliquer au ${longDate(fromKey(requestChooserDate))}. Vous pourrez encore le modifier ensuite.`
             : "Choisissez le type à poser, puis les dates dans le planning."}
         </p>
-        <div className="choice-grid request-primary-choice-grid">
-          <button type="button" onClick={() => onChoose("leave", "annual")}>
-            <strong>CA</strong>
-            <span>Congés annuels</span>
-          </button>
-          <button type="button" onClick={() => onChoose("leave", "rtt")}>
-            <strong>RTT</strong>
-            <span>Journée ou période</span>
-          </button>
-          <button type="button" onClick={() => onChoose("leave", "fraction")}>
-            <strong>Fractionnement</strong>
-            <span>Jour de fractionnement</span>
-          </button>
-          <button
-            type="button"
-            className="recovery-request-choice"
-            onClick={() => onChoose("recovery", "recovery_day")}
-          >
-            <strong>Récupération</strong>
-            <span>À déduire de votre solde d’heures</span>
-          </button>
-          <button type="button" className="cet-leave-choice" onClick={() => onChoose("leave", "cet")}><strong>CET</strong><span>Congé pris sur le compte épargne-temps</span></button>
-          <button type="button" className="sick-leave-choice" onClick={() => onChoose("leave", "sick")}><strong>Maladie</strong><span>Arrêt enregistré dans le suivi</span></button>
-          <button type="button" onClick={() => onChoose("leave", "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
-          <button type="button" onClick={() => onChoose("leave", "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
-          <button type="button" className="other-leave-choice" onClick={() => onChoose("other", "other")}><strong>Divers</strong><span>Jour non travaillé dans le planning</span></button>
-          <button type="button" className="strike-leave-choice" onClick={() => onChoose("strike", "strike")}><strong>Grève</strong><span>Avec retenue de paie estimée</span></button>
-        </div>
-        {/* Les souhaits ne se posent et ne se transforment qu'en partant
-            d'une case du planning, jamais depuis « Poser un congé ». */}
-        {onChooseWish && requestChooserDate ? (
-          <section className="request-wish-choices" aria-label="Congés souhaités">
-            <button type="button" className="request-wish-choice" onClick={onChooseWish}>
-              <strong>Congés souhaités</strong>
-              <span>Ce jour et d’autres dates si besoin, sans formulaire ni solde</span>
-            </button>
-            {pendingWishCount && onConvertWishes ? (
-              <button type="button" className="request-wish-choice request-wish-convert" onClick={onConvertWishes}>
-                <strong>Transformer mes souhaits <b>{pendingWishCount}</b></strong>
-                <span>En CA, RTT ou autre congé, au choix pour chaque date</span>
-              </button>
-            ) : null}
+        {/* Tous les types visibles, rangés par familles : ce qui puise dans
+            un solde (avec ce qu'il en reste), les absences, puis les simples
+            repères du planning. */}
+        <div className="request-choice-families">
+          <section className="request-choice-family request-family-balance" aria-labelledby="request-family-balance">
+            <h3 id="request-family-balance">Avec solde</h3>
+            <div className="choice-grid request-family-grid">
+              <button type="button" className="leave-choice-annual" onClick={() => onChoose("leave", "annual")}><strong>CA</strong><span>{annualHint}</span></button>
+              <button type="button" className="leave-choice-rtt" onClick={() => onChoose("leave", "rtt")}><strong>RTT</strong><span>{rttHint}</span></button>
+              <button type="button" className="leave-choice-fraction" onClick={() => onChoose("leave", "fraction")}><strong>Fractionnement</strong><span>{fractionHint}</span></button>
+              <button type="button" className="cet-leave-choice leave-choice-cet" onClick={() => onChoose("leave", "cet")}><strong>CET</strong><span>{cetHint}</span></button>
+              <button type="button" className="recovery-request-choice leave-choice-recovery wide" onClick={() => onChoose("recovery", "recovery_day")}><strong>Récupération</strong><span>{recoveryHint}</span></button>
+            </div>
           </section>
-        ) : null}
+          <section className="request-choice-family request-family-absence" aria-labelledby="request-family-absence">
+            <h3 id="request-family-absence">Absences</h3>
+            <div className="choice-grid request-family-grid">
+              <button type="button" className="sick-leave-choice leave-choice-sick wide" onClick={() => onChoose("leave", "sick")}><strong>Maladie</strong><span>Arrêt suivi</span></button>
+              <button type="button" className="leave-choice-childcare" onClick={() => onChoose("leave", "childcare")}><strong>Garde d’enfant</strong><span>Absence exceptionnelle</span></button>
+              <button type="button" className="leave-choice-exceptional" onClick={() => onChoose("leave", "exceptional")}><strong>Jour exceptionnel</strong><span>Selon votre situation</span></button>
+            </div>
+          </section>
+          <section className="request-choice-family request-family-marks" aria-labelledby="request-family-marks">
+            <h3 id="request-family-marks">Repères du planning</h3>
+            <div className="choice-grid request-family-grid">
+              <button type="button" className="other-leave-choice leave-choice-other" onClick={() => onChoose("other", "other")}><strong>Divers</strong><span>Jour non travaillé</span></button>
+              <button type="button" className="strike-leave-choice leave-choice-strike" onClick={() => onChoose("strike", "strike")}><strong>Grève</strong><span>Retenue estimée</span></button>
+            </div>
+          </section>
+          {/* Les souhaits ne se posent et ne se transforment qu'en partant
+              d'une case du planning, jamais depuis « Poser un congé ». Sur grand
+              écran, ils se rangent sous les repères du planning. */}
+          {onChooseWish && requestChooserDate ? (
+            <section className="request-wish-choices" aria-label="Congés souhaités">
+              <button type="button" className="request-wish-choice" onClick={onChooseWish}>
+                <strong>Congés souhaités</strong>
+                <span>Ce jour et d’autres dates si besoin, sans formulaire ni solde</span>
+              </button>
+              {pendingWishCount && onConvertWishes ? (
+                <button type="button" className="request-wish-choice request-wish-convert" onClick={onConvertWishes}>
+                  <strong>Transformer mes souhaits <b>{pendingWishCount}</b></strong>
+                  <span>En CA, RTT ou autre congé, au choix pour chaque date</span>
+                </button>
+              ) : null}
+            </section>
+          ) : null}
+        </div>
       </section>
     </div>
   );

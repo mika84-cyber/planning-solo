@@ -92,6 +92,7 @@ import {
   computePayAllowances,
 } from "./payAllowances";
 import { computeLeaveStats } from "./leaveStats";
+import { cetBalance } from "./cet";
 import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
@@ -253,6 +254,26 @@ const PAY_SETUP_INTRO =
   "Pour estimer votre paie, l’application a besoin de connaître le nombre de dimanches travaillés, le choix de la prime des jours fériés et les valeurs de votre bulletin de salaire.";
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
+
+/** Soldes restants d'une année (CA, RTT, fractionnement). Le solde repart au
+ *  1er janvier ; du 1er janvier au 30 avril, le reste des CA de l'année
+ *  précédente s'ajoute aux CA. */
+function remainingLeaveForYear(
+  year: number,
+  today: Date,
+  periods: Parameters<typeof computeLeaveStats>[0]["periods"],
+  group: number,
+  manualAdjustments: Parameters<typeof computeLeaveStats>[0]["manualAdjustments"],
+) {
+  const stats = computeLeaveStats({ year, today, periods, group, manualAdjustments });
+  const todayKey = dateKey(today);
+  const carry = stats.annualCarry.fromPrevious;
+  const carried = carry && todayKey >= `${year}-01-01` && todayKey <= carry.deadline ? carry.remaining : 0;
+  return Object.fromEntries(stats.balances.map((balance) => [
+    balance.type,
+    balance.remaining + (balance.type === "annual" ? carried : 0),
+  ])) as LeaveRemainingByYear[string];
+}
 
 
 export default function Home() {
@@ -1721,25 +1742,13 @@ export default function Home() {
   // Le solde repart au 1er janvier : chaque date compte sur le solde de son
   // année, même posée à l'avance (une date de 2027 choisie en 2026).
   const selectedYears = [...new Set(selectedList.map((item) => item.date.slice(0, 4)))].sort().join(",");
-  const leaveRemainingByYear = useMemo(() => {
-    const todayKey = dateKey(now);
-    return Object.fromEntries(selectedYears.split(",").filter(Boolean).map((yearKey) => {
-      const year = Number(yearKey);
-      const stats = computeLeaveStats({
-        year,
-        today: now,
-        periods,
-        group,
-        manualAdjustments: formProfile?.manualAdjustments,
-      });
-      const carry = stats.annualCarry.fromPrevious;
-      const carried = carry && todayKey >= `${year}-01-01` && todayKey <= carry.deadline ? carry.remaining : 0;
-      return [yearKey, Object.fromEntries(stats.balances.map((balance) => [
-        balance.type,
-        balance.remaining + (balance.type === "annual" ? carried : 0),
-      ]))];
-    })) as LeaveRemainingByYear;
-  }, [selectedYears, now, periods, group, formProfile?.manualAdjustments]);
+  const leaveRemainingByYear = useMemo(
+    () => Object.fromEntries(selectedYears.split(",").filter(Boolean).map((yearKey) => [
+      yearKey,
+      remainingLeaveForYear(Number(yearKey), now, periods, group, formProfile?.manualAdjustments),
+    ])) as LeaveRemainingByYear,
+    [selectedYears, now, periods, group, formProfile?.manualAdjustments],
+  );
   const leaveSelectionZeroBalance = requestKind === "leave" && Boolean(
     zeroLeaveBalanceType(selectedList, group, leaveRemainingByType, leaveRemainingByYear),
   );
@@ -3260,6 +3269,19 @@ export default function Home() {
         <RequestChooserDialog
           open={requestChooser}
           requestChooserDate={requestChooserDate}
+          balances={(() => {
+            // Soldes de l'année de la case touchée, ou de l'année en cours.
+            const year = Number((requestChooserDate || dateKey(now)).slice(0, 4));
+            return {
+              year,
+              otherYear: year !== now.getFullYear(),
+              leave: remainingLeaveForYear(year, now, periods, group, formProfile?.manualAdjustments),
+              recoveryMinutes: recoveryBalance.remaining,
+              cetDays: formProfile?.cetAccount?.enabled
+                ? Math.max(0, cetBalance(formProfile.cetAccount) - cetPlannedLeaveDays)
+                : null,
+            };
+          })()}
           // « Transformer mes souhaits » ne s'offre que depuis une case souhaitée.
           pendingWishCount={requestChooserDate && wishDates.has(requestChooserDate) ? pendingWishDates.length : 0}
           onClose={() => setRequestChooser(false)}

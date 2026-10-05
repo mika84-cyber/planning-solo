@@ -327,7 +327,8 @@ describe("finitions d’interface", () => {
   });
 
   it("compte Divers comme jour non travaillé et permet les suppressions multiples", () => {
-    expect(app).toContain("Jour non travaillé dans le planning");
+    // Rangé sous « Repères du planning », Divers se dit en trois mots.
+    expect(app).toContain("<strong>Divers</strong><span>Jour non travaillé</span>");
     expect(app).toContain('period.leaveType === "recovery"');
     expect(calendarCleanup).toContain("Effacer plusieurs dates ou notes");
     expect(app).toContain('className="holiday-pay-amount"');
@@ -774,18 +775,13 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".pay-dashboard-settings");
   });
 
-  it("présente les téléchargements PDF comme un parcours clair en deux étapes", () => {
-    expect(app).toContain('className="pdf-preparation-panel"');
-    expect(app).toContain('id="pdf-preparation-title">Préparer le planning');
-    expect(app).toContain('className="pdf-format-panel"');
-    expect(app).toContain('id="pdf-format-title">Choisir le document');
-    expect(app).toContain('className="pdf-action-page-count"');
-    expect(app).toContain('className="pdf-action-cta"');
-    expect(styles).toContain(".pdf-preparation-panel,");
-    expect(styles).toContain(".pdf-download-actions .pdf-action.all {");
-    expect(styles).toContain(".pdf-download-actions .pdf-action.my-leaves {");
-    expect(styles).toContain("@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse)");
-    expect(styles).toContain(".pdf-download-actions .pdf-action-page-count {\n    position: static;");
+  it("présente les téléchargements PDF en une ligne de réglages puis une liste de documents", () => {
+    expect(app).toContain('className="pdf-quick-settings"');
+    expect(app).toContain('className="pdf-doc-grid"');
+    expect(app).toContain('className="pdf-doc-download"');
+    expect(app).toContain('className="pdf-doc-pages"');
+    expect(app).not.toContain('className="pdf-preparation-panel"');
+    expect(app).not.toContain('className="pdf-step-number"');
   });
 
   it("réserve le dessin aux lignes noires à l’en-tête Ma paie", () => {

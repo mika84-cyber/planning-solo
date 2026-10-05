@@ -118,7 +118,7 @@ export function LeaveManagementPage({
           Poser un congé
         </button>
         <button type="button" className="secondary-button leave-open-form-action" onClick={onOpenBlankForm}>
-          Ouvrir le formulaire
+          Formulaire vierge
         </button>
       </div>
       {longAbsenceContent}

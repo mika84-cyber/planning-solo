@@ -1,0 +1,131 @@
+/* Documents et contacts, accueil des rubriques : une carte au même gabarit
+   que les autres pages (en-tête teinté, corps blanc), puis une ligne par
+   rubrique, chacune à sa couleur (--resource-tone) : liseré à gauche, icône
+   pleine, titre, ce qu'on y trouve, et une flèche ronde. Quand une rubrique
+   est ouverte, ces lignes redeviennent le sélecteur segmenté habituel. */
+.app-shell .useful-resources-screen:not(.has-active-resource) {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-card);
+  border-radius: 22px;
+  padding: 0 0 var(--chapter-pad, 18px);
+  box-shadow: 0 10px 26px rgba(67, 52, 40, 0.07);
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) > .useful-resource-intro {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--chapter-tint-line, #efd9c8);
+  padding: 16px var(--chapter-pad, 18px) 15px;
+  background: var(--chapter-tint, #f8ebe0);
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) > .useful-resource-intro h2 {
+  color: var(--text);
+  font-size: clamp(22px, 2.6vw, 28px);
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) > .useful-resource-intro > p:last-child {
+  margin-top: 2px;
+  font-size: .86rem;
+}
+
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  width: auto;
+  margin: 0 var(--chapter-pad, 18px);
+}
+.useful-resource-tab.resource-pdf { --resource-tone: #a4532f; }
+.useful-resource-tab.resource-forms { --resource-tone: #2f7a52; }
+.useful-resource-tab.resource-contacts { --resource-tone: #3a5f8f; }
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs > .useful-resource-tab {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 34px;
+  grid-template-rows: auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 82px;
+  border: 1px solid color-mix(in srgb, var(--resource-tone) 26%, var(--border-control));
+  border-radius: 18px;
+  padding: 14px 14px 14px 16px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--resource-tone) 10%, var(--surface-high)), var(--surface-high) 78%);
+  box-shadow: inset 4px 0 0 var(--resource-tone);
+  text-align: left;
+  transform: none;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs > .useful-resource-tab:hover {
+  border-color: color-mix(in srgb, var(--resource-tone) 60%, var(--border-control));
+  box-shadow: inset 4px 0 0 var(--resource-tone), 0 8px 18px color-mix(in srgb, var(--resource-tone) 14%, transparent);
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 15px;
+  padding: 11px;
+  background: var(--resource-tone);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--resource-tone) 28%, transparent);
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art::after { display: none; }
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art svg { stroke: #fff; stroke-width: 2.6; }
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy strong {
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.08rem;
+  font-weight: 850;
+  letter-spacing: -.01em;
+  line-height: 1.2;
+}
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy strong::before { display: none; }
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy small { color: var(--muted); font-size: .8rem; line-height: 1.35; }
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-go {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--resource-tone) 13%, var(--surface-high));
+  color: var(--resource-tone);
+  transition: transform .16s ease, background .16s ease, color .16s ease;
+}
+.app-shell .useful-resource-tab-go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab:hover .useful-resource-tab-go {
+  background: var(--resource-tone);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+/* Grand écran : les trois rubriques côte à côte, en cartes verticales. */
+@media (min-width: 900px) {
+  .app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs > .useful-resource-tab {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    row-gap: 14px;
+    min-height: 168px;
+    padding: 18px;
+    background: linear-gradient(170deg, color-mix(in srgb, var(--resource-tone) 11%, var(--surface-high)), var(--surface-high) 75%);
+    box-shadow: inset 0 4px 0 var(--resource-tone);
+  }
+  .app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tabs > .useful-resource-tab:hover {
+    box-shadow: inset 0 4px 0 var(--resource-tone), 0 10px 22px color-mix(in srgb, var(--resource-tone) 14%, transparent);
+  }
+  .app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art { grid-column: 1; grid-row: 1; }
+  .app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-go { grid-column: 2; grid-row: 1; }
+  .app-shell .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-copy { grid-column: 1 / -1; grid-row: 2; }
+}
+
+html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .useful-resource-tab-art svg { stroke: #fff; }

@@ -15,8 +15,8 @@ describe("choix des documents et contacts", () => {
     expect(html).toContain("Formulaires");
     expect(html).toContain("Contacts");
     expect(html).toContain("Plannings PDF");
-    expect(html).toContain("Retrouvez rapidement vos documents et vos contacts utiles.");
-    // Une icône au trait par rubrique, avec ce qu'on y trouve.
+    expect(html).toContain("Vos plannings à télécharger, les formulaires et les numéros utiles.");
+    // Une icône par rubrique, avec ce qu'on y trouve et une flèche.
     expect(html.match(/useful-resource-tab-art[^>]*><svg/g)).toHaveLength(3);
     expect(html).toContain("Numéros utiles et services du musée");
     expect(html).not.toContain("Toutes les rubriques");

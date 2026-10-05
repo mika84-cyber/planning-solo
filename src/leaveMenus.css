@@ -2,7 +2,7 @@
 
 .leave-primary-action-bar {
   box-sizing: border-box;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
   margin: 0 0 clamp(14px, 2vw, 20px);
 }
@@ -14,16 +14,13 @@
   text-align: center;
 }
 
-/* Le formulaire vierge, pour une demande sans le parcours guidé : sous
-   « Poser un congé » sur téléphone, à côté et de même largeur sur grand écran,
-   toujours en second plan. */
+/* Le formulaire vierge, pour une demande sans le parcours guidé : à côté de
+   « Poser un congé » et de même largeur, comme « Faire un échange » sur
+   l'accueil, toujours en second plan. */
 .leave-primary-action-bar { display: grid; gap: 10px; }
-@media (min-width: 700px) {
-  .leave-primary-action-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 /* Le bouton du formulaire prend la teinte terracotta de l'application, en
    version douce, à côté de l'action principale pleine. */
-.leave-primary-action-bar > .leave-open-form-action { border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); background: var(--accent-soft); color: var(--accent-strong); font-weight: 800; }
+.leave-primary-action-bar > .leave-open-form-action { border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 14px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 800; }
 
 .leave-balances-direct .other-leave-balances[open] {
   display: flex;

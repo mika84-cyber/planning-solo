@@ -833,7 +833,6 @@
   font-size: 12px;
   line-height: 1.4;
 }
-.request-primary-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .field-label {
   display: block;
   margin: 14px 0 7px;

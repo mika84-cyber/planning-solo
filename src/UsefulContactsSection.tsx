@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./usefulFolders.css";
 import { changeUsefulContact, getUsefulContacts } from "./contactsApi";
 import { ContactEditDialog } from "./ContactEditDialog";
 import type {
