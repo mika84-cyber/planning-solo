@@ -1,6 +1,5 @@
 import { ChoicePicker } from "./ChoicePicker";
 import { useEffect, useState } from "react";
-import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
 import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s } from "./planningLogic";
 import { minutesLabel } from "./overtime";
@@ -357,11 +356,6 @@ export function PayslipVerificationCard({
             ) : null}
             {checkMatchesDisplayedPeriod && payslipCheck ? (
             <>
-              {payslipReview?.tone === "ok" ? (
-                <PayslipSuccessCelebration
-                  key={`${payslipCheck.name}-${payslipCheck.reading.year}-${payslipCheck.reading.month}`}
-                />
-              ) : null}
               {payslipReview ? (
                 <div className={`payslip-result-summary ${payslipReview.tone}`}>
                   <span className="payslip-result-icon" aria-hidden="true">

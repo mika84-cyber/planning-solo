@@ -475,37 +475,6 @@
   margin-top: 0;
 }
 
-/* Bulletin conforme : l’animation détourée couvre le viewport sans modifier
-   la page ni intercepter les gestes. `cover` remplit aussi les écrans très verticaux. */
-.payslip-success-celebration {
-  position: fixed;
-  z-index: 12000;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  background: transparent;
-  animation: payslip-success-appear 180ms ease-out both;
-}
-
-.payslip-success-celebration img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-@keyframes payslip-success-appear {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .payslip-success-celebration {
-    display: none;
-  }
-}
-
 /* Corrections finales des trois compositions signalées : les dossiers
    utilisent bien la grande colonne, les outils partagent un liseré latéral
    et les deux sélecteurs du planning ont exactement la même géométrie. */

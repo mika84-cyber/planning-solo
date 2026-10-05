@@ -68,7 +68,6 @@ const budgets = {
   // le 26 septembre 2026 pour la fiche d'une journée en tuiles et le calcul
   // du fractionnement, après retrait des styles d'onglets devenus inutiles.
   totalCss: { raw: 480 * KIB, gzip: 93 * KIB },
-  payslipSuccessEffect: 3_500 * KIB,
 };
 
 async function filesUnder(directory) {
@@ -131,7 +130,6 @@ const largestLazy = lazyJs.sort((left, right) => right.raw - left.raw)[0] ?? { r
 const totalJs = appJsMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
 const totalOcr = ocrMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
 const totalCss = cssMeasures.reduce((sum, file) => ({ raw: sum.raw + file.raw, gzip: sum.gzip + file.gzip }), { raw: 0, gzip: 0 });
-const payslipSuccessEffect = await stat(join(DIST_PATH, "payslip-success-money-fast.webp"));
 const failures = [];
 
 console.log(`Entrée JS : ${relative(DIST_PATH, entryPath)}`);
@@ -148,12 +146,6 @@ check("CSS principal brut", mainCss.raw, budgets.mainCss.raw, failures);
 check("CSS principal gzip", mainCss.gzip, budgets.mainCss.gzip, failures);
 check("Total CSS brut", totalCss.raw, budgets.totalCss.raw, failures);
 check("Total CSS gzip", totalCss.gzip, budgets.totalCss.gzip, failures);
-check(
-  "Animation paie conforme",
-  payslipSuccessEffect.size,
-  budgets.payslipSuccessEffect,
-  failures,
-);
 if (failures.length > 0) {
   console.error("\nBudget de production dépassé :");
   failures.forEach((failure) => {

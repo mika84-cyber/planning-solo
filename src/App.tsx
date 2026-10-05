@@ -181,7 +181,6 @@ import {
   payCalibrationRegime,
   readingsForCalibrationRegime,
 } from "./payslip";
-import { PayslipSuccessCelebration } from "./PayslipSuccessCelebration";
 import { strikeEstimateForCalendarMonth, strikePayEstimate } from "./strike";
 import {
   payEstimateReadiness,
@@ -301,10 +300,6 @@ export default function Home() {
     ? new URLSearchParams(location.search).get("preview-feedback-role")
     : null;
   const localDemoAdmin = feedbackPreviewRole !== "user";
-  const previewPayEffect =
-    import.meta.env.DEV && localTestHost
-      ? new URLSearchParams(location.search).get("preview-pay-effect")
-      : null;
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
@@ -2658,9 +2653,6 @@ export default function Home() {
       onTouchStart={startSectionSwipe}
       onTouchEnd={finishSectionSwipe}
     >
-      {previewPayEffect === "money" ? (
-        <PayslipSuccessCelebration durationMs={15_000} />
-      ) : null}
       <AppHeader
         onOpenAdminTools={isProgramAdmin ? () => { setAccountMenuOpen(false); setAdminToolsOpen(true); } : undefined}
         homeSection={homeSection}
