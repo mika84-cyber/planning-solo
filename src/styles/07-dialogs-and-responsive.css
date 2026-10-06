@@ -528,9 +528,10 @@
   .mini-day {
     font-size: 9px;
   }
+  /* Les fenêtres s'ouvrent au milieu de l'écran, comme sur ordinateur. */
   .modal-backdrop {
-    align-items: end;
-    padding: 8px;
+    align-items: center;
+    padding: 12px;
   }
   .modal-card {
     width: 100%;
