@@ -111,10 +111,11 @@ describe("vue semaine des collègues", () => {
     expect(html.match(/partial half-afternoon base-work on-post half-marked"/g)).toHaveLength(7);
     expect(html.match(/partial half-morning base-training half-marked"/g)).toHaveLength(7);
     // Les initiales, à l'endroit et l'une sous l'autre, occupent la moitié
-    // travaillée : à droite le matin, à gauche l'après-midi.
-    expect(html.match(/<i><\/i><i class="half-code"><b>E<\/b><b>X<\/b><\/i>/g)).toHaveLength(7);
-    expect(html.match(/<i class="half-code"><b>A<\/b><b>C<\/b><\/i><i><\/i>/g)).toHaveLength(7);
-    expect(html.match(/<i><\/i><i class="half-code"><b>F<\/b><\/i>/g)).toHaveLength(7);
+    // travaillée : à droite le matin, à gauche l'après-midi ; « ½ » dans la
+    // moitié posée.
+    expect(html.match(/<i class="half-mark">½<\/i><i class="half-code"><b>E<\/b><b>X<\/b><\/i>/g)).toHaveLength(7);
+    expect(html.match(/<i class="half-code"><b>A<\/b><b>C<\/b><\/i><i class="half-mark">½<\/i>/g)).toHaveLength(7);
+    expect(html.match(/<i class="half-mark">½<\/i><i class="half-code"><b>F<\/b><\/i>/g)).toHaveLength(7);
   });
 
   it("retrouve la moitié travaillée d'une demi-journée partagée : poste transmis, formation selon le cycle", () => {

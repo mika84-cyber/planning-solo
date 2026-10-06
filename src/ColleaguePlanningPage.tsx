@@ -156,11 +156,12 @@ export function sharedPlanningHalfBase(planning: SharedColleaguePlanning, date: 
 const halfBaseClass = (status: TomorrowStatus, base?: HalfBase) =>
   !base || !halfMomentClass(status) ? "" : ` base-${base.tone}${base.tone === "work" && base.post ? " on-post" : ""}`;
 /** Initiales de la moitié travaillée (EX, AC, BI ou F), à l'endroit, l'une
- *  sous l'autre ; la moitié posée reste vide, simplement violette. */
+ *  sous l'autre ; la moitié posée, violette, porte « ½ ». */
 const halfBaseCode = (base: HalfBase) => (base.tone === "training" ? "F" : workPostEntry(base.post).code);
 function HalfDayMarks({ status, base }: { status: TomorrowStatus; base: HalfBase }) {
   const worked = <i className="half-code">{[...halfBaseCode(base)].map((letter, index) => <b key={index}>{letter}</b>)}</i>;
-  return status === "1/2 journée · matin" ? <><i />{worked}</> : <>{worked}<i /></>;
+  const posed = <i className="half-mark">½</i>;
+  return status === "1/2 journée · matin" ? <>{posed}{worked}</> : <>{worked}{posed}</>;
 }
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "1/2 journée · matin" | "1/2 journée · après-midi" | "Absence partielle";

@@ -368,10 +368,11 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-week-cell.half-marked > span[aria-hidden] { display: grid; grid-template-columns: 1fr 1fr; align-self: stretch; justify-self: stretch; }
 .colleague-week-cell.half-marked i { display: flex; flex-direction: column; align-items: center; justify-content: center; font-style: normal; }
 .colleague-week-cell.half-marked .half-code { gap: 1px; font-size: .6rem; font-weight: 900; line-height: .95; }
+.colleague-week-cell.half-marked .half-mark { font-size: .6rem; font-weight: 900; }
 .colleague-week-cell.half-marked.base-work .half-code { color: #1f6641; }
 .colleague-week-cell.half-marked.base-work.on-post .half-code { color: #174f33; }
 .colleague-week-cell.half-marked.base-training .half-code { color: #6b5605; }
-@media (max-width: 370px) { .colleague-week-cell.half-marked .half-code { gap: 0; font-size: .54rem; line-height: .9; } }
+@media (max-width: 370px) { .colleague-week-cell.half-marked .half-code { gap: 0; font-size: .54rem; line-height: .9; } .colleague-week-cell.half-marked .half-mark { font-size: .54rem; } }
 /* Légende en nuancier : sept teintes accolées sur une ligne, nom dessous. */
 .colleague-week-legend { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; max-width: 640px; margin: 28px auto 0; padding: 0; color: #766a5f; font-size: .7rem; font-weight: 700; list-style: none; text-align: center; }
 .colleague-week-legend li { display: grid; gap: 6px; min-width: 0; }
