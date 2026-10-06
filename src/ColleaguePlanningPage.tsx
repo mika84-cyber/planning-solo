@@ -135,8 +135,8 @@ const WEEK_STATUS_LETTERS: Record<TomorrowStatus, string> = {
   "Absence partielle": "½",
 };
 const WEEKDAY_INITIALS = ["L", "M", "M", "J", "V", "S", "D"];
-/** Demi-journée : la case est coupée en deux, la moitié absente en violet
- *  (à gauche le matin, à droite l'après-midi), l'autre en vert. */
+/** Demi-journée : la case est coupée en deux, la partie posée en violet
+ *  (à gauche le matin, à droite l'après-midi), la partie travaillée en blanc. */
 const halfMomentClass = (status: TomorrowStatus) =>
   status === "1/2 journée · matin" ? " half-morning" : status === "1/2 journée · après-midi" ? " half-afternoon" : "";
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
