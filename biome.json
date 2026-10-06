@@ -7,7 +7,8 @@
       "scripts/**/*.{js,mjs}",
       "*.test.mjs",
       "!public/**",
-      "!dist/**"
+      "!dist/**",
+      "!.claude/**"
     ]
   },
   "formatter": {
