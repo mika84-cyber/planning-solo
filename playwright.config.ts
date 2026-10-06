@@ -6,6 +6,13 @@ const testBaseUrl = `http://127.0.0.1:${testPort}`;
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  // Les plus longs parcours (accessibilité sur six écrans, outils
+  // administrateur…) prennent 15 à 20 s seuls, sur un serveur de développement
+  // qui compile les écrans à la demande : sous la charge d'une suite complète
+  // en parallèle, 30 s par test et 5 s par vérification faisaient échouer au
+  // hasard des parcours pourtant justes.
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI

@@ -29,5 +29,10 @@ export default defineConfig({
   },
   // Uniquement pour les liens de démo Cloudflare créés depuis le PC : Vite
   // refuse sinon le nom d'hôte externe avant même de servir l'application.
-  server: { allowedHosts: [".trycloudflare.com"] },
+  server: {
+    allowedHosts: [".trycloudflare.com"],
+    // Les écrans sont compilés dès le démarrage plutôt qu'au premier clic :
+    // le premier passage sur un écran n'attend plus sa compilation.
+    warmup: { clientFiles: ["./src/main.tsx", "./src/App.tsx", "./src/*Page.tsx", "./src/*Section.tsx"] },
+  },
 });
