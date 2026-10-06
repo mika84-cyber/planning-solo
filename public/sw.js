@@ -61,10 +61,14 @@ self.addEventListener("fetch", (event) => {
       (cached) =>
         cached ||
         fetch(event.request).then((response) => {
-          if (response.ok)
-            caches
-              .open(CACHE)
-              .then((cache) => cache.put(event.request, response.clone()));
+          // La copie se fait tout de suite : une fois la réponse rendue à la
+          // page, son contenu est lu et ne peut plus être copié. Copiée trop
+          // tard, elle n'entrait jamais dans le cache et l'application
+          // s'ouvrait sur une page blanche hors ligne.
+          if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE).then((cache) => cache.put(event.request, copy)));
+          }
           return response;
         }),
     ),

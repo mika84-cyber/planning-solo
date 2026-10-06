@@ -16,6 +16,7 @@ coverage/
 demo-dist-*/
 demo-release-*/
 qa-pdf-dist/
+dist-pwa-e2e/
 tmp/
 previews/
 video-frames/

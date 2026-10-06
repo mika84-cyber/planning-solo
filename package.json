@@ -17,6 +17,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:accessibility": "playwright test e2e/accessibility.spec.ts",
+    "test:pwa": "playwright test --config playwright.pwa.config.ts",
+    "build:pwa-e2e": "vite build --outDir dist-pwa-e2e --emptyOutDir && node scripts/stamp-sw.mjs dist-pwa-e2e",
     "test:pdf:visual": "vite build --config vite.pdf-qa.config.ts && node scripts/generate-pdf-qa.mjs",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "check:css": "node scripts/check-css-complexity.mjs",

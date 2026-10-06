@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
-const distDir = join(process.cwd(), "dist");
+// Le dossier construit : « dist » pour la publication, un autre pour les tests PWA.
+const distDir = join(process.cwd(), process.argv[2] || "dist");
 const swPath = join(distDir, "sw.js");
 const formSwPath = join(distDir, "formulaire", "sw.js");
 

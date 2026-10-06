@@ -189,7 +189,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/jspdfUnusedModule.ts` et l'alias de `vite.config.ts` : html2canvas,
   DOMPurify et canvg, optionnels dans jsPDF, ne sont pas livrés ; les méthodes
   `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
-- `public/sw.js` : cache hors ligne et activation des mises à jour.
+- `public/sw.js` : cache hors ligne et activation des mises à jour ; son nom de
+  cache reçoit l’empreinte de la version par `scripts/stamp-sw.mjs`.
+- `e2e-pwa/pwa.spec.ts` (`npm run test:pwa`) : la version de production,
+  construite dans `dist-pwa-e2e` et servie par `scripts/serve-dist.mjs`, avec
+  le service worker actif — mise en cache, réouverture hors ligne, annonce et
+  activation d’une nouvelle version. À lancer dès qu’on touche `public/sw.js`,
+  `src/main.tsx` ou `scripts/stamp-sw.mjs`.
 - `public/manifest.webmanifest` : installation de la PWA.
 - `src/InstallAppNotice.tsx` : bandeau « Installer l’application sur votre
   téléphone ou ordinateur » proposé aux invités dont le navigateur sait
@@ -232,7 +238,8 @@ npm run check:css
 ```
 
 Avant une publication : `npm test`, `npm run lint`, `npm run check`,
-`npm run build`, puis `npm run test:e2e`. Le contrôle des dépendances des
+`npm run build`, puis `npm run test:e2e` (et `npm run test:pwa` si le service
+worker ou son enregistrement change). Le contrôle des dépendances des
 hooks est actif partout, `App.tsx` compris.
 
 `test:pdf:visual` produit deux PDF locaux ignorés par Git, avec et sans

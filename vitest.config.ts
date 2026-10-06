@@ -3,7 +3,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     // Les copies de travail des sessions (.claude/worktrees) ne font pas partie du projet.
-    exclude: [...configDefaults.exclude, "e2e/**", ".claude/**"],
+    exclude: [...configDefaults.exclude, "e2e/**", "e2e-pwa/**", ".claude/**"],
     coverage: {
       provider: "v8",
       reportsDirectory: "coverage",
