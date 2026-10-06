@@ -155,6 +155,13 @@ export function sharedPlanningHalfBase(planning: SharedColleaguePlanning, date: 
  *  formation ; la moitié posée reste violette. */
 const halfBaseClass = (status: TomorrowStatus, base?: HalfBase) =>
   !base || !halfMomentClass(status) ? "" : ` base-${base.tone}${base.tone === "work" && base.post ? " on-post" : ""}`;
+/** Initiales de la moitié travaillée (EX, AC, BI ou F), à l'endroit, l'une
+ *  sous l'autre ; la moitié posée reste vide, simplement violette. */
+const halfBaseCode = (base: HalfBase) => (base.tone === "training" ? "F" : workPostEntry(base.post).code);
+function HalfDayMarks({ status, base }: { status: TomorrowStatus; base: HalfBase }) {
+  const worked = <i className="half-code">{[...halfBaseCode(base)].map((letter, index) => <b key={index}>{letter}</b>)}</i>;
+  return status === "1/2 journée · matin" ? <><i />{worked}</> : <>{worked}<i /></>;
+}
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "1/2 journée · matin" | "1/2 journée · après-midi" | "Absence partielle";
 
@@ -303,10 +310,11 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                       // Une journée travaillée dit son poste : EX (expo), AC ou BI.
                       const post = status === "Travail" ? row.postFor?.(day) || "" : "";
                       const label = statusWithPost(status, post);
+                      const halfBase = halfMomentClass(status) ? row.halfBaseFor?.(day) : undefined;
                       return (
                         <td key={dateKey(day)} className={weekCellClass(day, index, todayKey)}>
-                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? ` two-letters${post ? " on-post" : ""}` : ""}${halfMomentClass(status)}${halfBaseClass(status, row.halfBaseFor?.(day))}`} title={label}>
-                            <span aria-hidden="true">{status === "Travail" ? workPostEntry(post).code : WEEK_STATUS_LETTERS[status]}</span>
+                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? ` two-letters${post ? " on-post" : ""}` : ""}${halfMomentClass(status)}${halfBaseClass(status, halfBase)}${halfBase ? " half-marked" : ""}`} title={label}>
+                            <span aria-hidden="true">{halfBase ? <HalfDayMarks status={status} base={halfBase} /> : status === "Travail" ? workPostEntry(post).code : WEEK_STATUS_LETTERS[status]}</span>
                             <span className="colleague-week-sr">{label}</span>
                           </span>
                         </td>

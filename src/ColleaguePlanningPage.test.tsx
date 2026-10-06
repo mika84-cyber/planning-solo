@@ -106,9 +106,15 @@ describe("vue semaine des collègues", () => {
         { id: "formation", name: "Formation", group: 3, isSelf: false, statusFor: () => "1/2 journée · matin", halfBaseFor: () => ({ tone: "training", post: "" }) },
       ]}
     />);
-    expect(html.match(/partial half-morning base-work"/g)).toHaveLength(7 + 1);
-    expect(html.match(/partial half-afternoon base-work on-post"/g)).toHaveLength(7);
-    expect(html.match(/partial half-morning base-training"/g)).toHaveLength(7);
+    expect(html.match(/partial half-morning base-work half-marked"/g)).toHaveLength(7);
+    expect(html).toContain('partial half-morning base-work"');
+    expect(html.match(/partial half-afternoon base-work on-post half-marked"/g)).toHaveLength(7);
+    expect(html.match(/partial half-morning base-training half-marked"/g)).toHaveLength(7);
+    // Les initiales, à l'endroit et l'une sous l'autre, occupent la moitié
+    // travaillée : à droite le matin, à gauche l'après-midi.
+    expect(html.match(/<i><\/i><i class="half-code"><b>E<\/b><b>X<\/b><\/i>/g)).toHaveLength(7);
+    expect(html.match(/<i class="half-code"><b>A<\/b><b>C<\/b><\/i><i><\/i>/g)).toHaveLength(7);
+    expect(html.match(/<i><\/i><i class="half-code"><b>F<\/b><\/i>/g)).toHaveLength(7);
   });
 
   it("retrouve la moitié travaillée d'une demi-journée partagée : poste transmis, formation selon le cycle", () => {
