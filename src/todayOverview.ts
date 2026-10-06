@@ -108,7 +108,7 @@ export function computeTodayOverview({
     status = `${scheduledStatus} · ${info.holiday}`;
   }
 
-  const nextWork = nextAttendanceDay(today, group, (candidateKey) => {
+  const isUnavailable = (candidateKey: string) => {
     if (isExceptionallyClosed(candidateKey)) {
       return true;
     }
@@ -126,7 +126,23 @@ export function computeTodayOverview({
           candidateKey <= item.to,
       ) ||
       personalPresenceForDate(new Date(`${candidateKey}T12:00:00`), group, periods, entries, recoveryUses, workDayMinutes, undefined, workSchedule).status === "absence";
-  }, 366, (candidateKey) => entries[candidateKey]?.exchangeRole === "return");
+  };
+  const isExtraAttendance = (candidateKey: string) => entries[candidateKey]?.exchangeRole === "return";
+  const nextWork = nextAttendanceDay(today, group, isUnavailable, 366, isExtraAttendance);
+  // Le prochain férié réellement travaillé, même s'il tombe l'année suivante :
+  // un férié du cycle que l'on n'a ni posé ni cédé, ou repris par échange.
+  let nextWorkedHoliday: { date: Date; name: string } | null = null;
+  for (let offset = 1; offset <= 400 && !nextWorkedHoliday; offset++) {
+    const candidate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset, 12);
+    const candidateInfo = getDayInfo(candidate, group);
+    const candidateKey = dateKey(candidate);
+    if (
+      candidateInfo.holiday &&
+      (isExtraAttendance(candidateKey) || candidateInfo.kind === "work") &&
+      !isUnavailable(candidateKey)
+    )
+      nextWorkedHoliday = { date: candidate, name: candidateInfo.holiday };
+  }
   const nextWorkKind = nextWork ? getDayInfo(nextWork, group).kind : null;
   const nextWorkExceptionalClosure = nextWork
     ? isExceptionallyClosed(dateKey(nextWork))
@@ -195,5 +211,6 @@ export function computeTodayOverview({
     nextWorkGroupLabel,
     nextWorkHalfLeaveLabel,
     nextWorkPostLabel,
+    nextWorkedHoliday,
   };
 }

@@ -11,6 +11,7 @@
 .today-block + .today-block::before { position: absolute; top: 0; right: var(--chapter-pad, 18px); left: calc(var(--chapter-pad, 18px) + 46px); height: 1px; background: #efe5da; content: ""; }
 .today-next-work { --block-ink: #2f5f94; --block-soft: #e6eef9; }
 .today-leave-balance { --block-ink: #9a4a2e; --block-soft: #f7e4d6; }
+.today-next-holiday { --block-ink: #7b3f6e; --block-soft: #f3e4ef; }
 button.today-block { cursor: pointer; transition: background-color .15s ease; }
 button.today-block:hover { background: color-mix(in srgb, var(--block-soft) 40%, #fff); }
 button.today-block:hover .today-block-go { color: var(--block-ink); }
@@ -41,11 +42,11 @@ button.today-block:hover .today-block-go { color: var(--block-ink); }
 .today-block > strong.is-date { font-size: 14px; }
 .today-block-go { grid-area: go; width: 12px; height: 12px; color: #c7b6a5; transition: color .15s ease; }
 
-/* Grand écran : quatre cartes côte à côte, la journée en premier. Le grand
+/* Grand écran : les cartes côte à côte (cinq avec le prochain férié), la journée en premier. Le grand
    écran tactile d'un téléphone pliable (Z Fold ouvert, de 721 à 1100 px)
    garde les quatre lignes empilées du téléphone. */
 @media (min-width: 1101px), (min-width: 721px) and (pointer: fine) {
-  .today-blocks { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 4px 0 0; }
+  .today-blocks { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 12px; margin: 4px 0 0; }
   .today-block, .today-block:last-child { grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: auto auto 1fr; grid-template-areas: "icon label" "icon note" "value value"; align-content: stretch; row-gap: 2px; border: 1px solid #eadbcb; border-radius: 16px; padding: 14px 16px 15px; background: #fff; }
   .today-block + .today-block::before { display: none; }
   button.today-block:hover { border-color: color-mix(in srgb, var(--block-ink) 35%, #eadbcb); }

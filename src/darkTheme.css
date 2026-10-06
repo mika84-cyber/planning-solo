@@ -89,8 +89,8 @@ html[data-theme="dark"] .colleague-week-cell.partial.half-afternoon { background
 html[data-theme="dark"] .colleague-week-cell.partial.base-work { --half-worked: #8fd1a8; border-color: #5fb483; }
 html[data-theme="dark"] .colleague-week-cell.partial.base-training { --half-worked: #e6cf62; border-color: #c9ad2f; }
 html[data-theme="dark"] .colleague-week-cell.partial.base-work.on-post { border-color: #8fd1a8; }
-html[data-theme="dark"] .colleague-week-cell.partial.half-morning:is(.base-work, .base-training) { background: linear-gradient(90deg, #b296f0 0 50%, var(--half-worked) 50% 100%); color: #2c1a4d; }
-html[data-theme="dark"] .colleague-week-cell.partial.half-afternoon:is(.base-work, .base-training) { background: linear-gradient(90deg, var(--half-worked) 0 50%, #b296f0 50% 100%); color: #2c1a4d; }
+html[data-theme="dark"] .colleague-week-cell.partial.half-morning:is(.base-work, .base-training) { background: linear-gradient(90deg, #b296f0 0 calc(50% - .5px), var(--half-seam) calc(50% - .5px) calc(50% + .5px), var(--half-worked) calc(50% + .5px) 100%); color: #2c1a4d; }
+html[data-theme="dark"] .colleague-week-cell.partial.half-afternoon:is(.base-work, .base-training) { background: linear-gradient(90deg, var(--half-worked) 0 calc(50% - .5px), var(--half-seam) calc(50% - .5px) calc(50% + .5px), #b296f0 calc(50% + .5px) 100%); color: #2c1a4d; }
 html[data-theme="dark"] .colleague-week-cell.half-marked.base-work .half-code { color: #0f3d25; }
 html[data-theme="dark"] .colleague-week-cell.half-marked.base-training .half-code { color: #4a3a02; }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
@@ -118,3 +118,4 @@ html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .usef
    reconnaissables sur fond sombre. */
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-agnes { background: #3a2029; }
+html[data-theme="dark"] .mecenat-rule-alert { border-color: #7a5d1c; border-left-color: #e0a63a; background: #33291a; color: #f3dca0; }

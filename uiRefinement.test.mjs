@@ -168,7 +168,7 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("left: 0");
   });
 
-  it("présente les quatre repères du jour en quatre blocs, la journée en tête", () => {
+  it("présente les repères du jour en blocs, la journée en tête et le prochain férié travaillé", () => {
     const refinements = readFileSync(new URL("./src/productRefinements.css", import.meta.url), "utf8");
     const overview = readFileSync(new URL("./src/homeOverview.css", import.meta.url), "utf8");
     const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
@@ -176,11 +176,12 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain(".today-overview-grid");
     expect(refinements).not.toContain(".today-overview-grid");
     expect(home).not.toContain("ephemeris");
-    // Quatre lignes sur téléphone et sur le Z Fold ouvert (tactile, jusqu'à
-    // 1100 px), quatre cartes côte à côte sur grand écran.
+    // Des lignes sur téléphone et sur le Z Fold ouvert (tactile, jusqu'à
+    // 1100 px), des cartes côte à côte sur grand écran, cinq avec le férié.
     expect(overview).toContain('grid-template-areas: "icon label value go" "icon note value go";');
     expect(overview).toContain("@media (min-width: 1101px), (min-width: 721px) and (pointer: fine) {");
-    expect(overview).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+    expect(overview).toContain("grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);");
+    expect(home).toContain("Prochain férié travaillé");
     // La journée garde le même format que les autres lignes : sa couleur
     // n'est que sur l'icône et le libellé, sans fond coloré ni pastille.
     expect(overview).toContain(".today-status:is(.tone-leave, .tone-recovery) { --block-ink: #9a2c40;");

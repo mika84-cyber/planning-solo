@@ -8,6 +8,25 @@ import {
 } from "./WorkTimeDialogs";
 
 describe("fenêtres de temps de travail", () => {
+  it("signale un mécénat hors des règles sans bloquer l’enregistrement", () => {
+    const html = renderToStaticMarkup(
+      <MecenatDialog
+        open
+        draft={{ date: "2026-08-21", start: "19:00", end: "23:00" }}
+        setDraft={vi.fn()}
+        calculation={{ dayMinutes: 180, nightMinutes: 60, grossAmountCents: 10370 }}
+        warnings={["Amplitude de 13 h 45", "Repos insuffisant"]}
+        saving={false}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+    expect(html).toContain("Ce mécénat ne respecte pas le temps de travail");
+    expect(html).toContain("<li>Amplitude de 13 h 45</li><li>Repos insuffisant</li>");
+    expect(html).toContain("Vous pouvez tout de même vous inscrire.");
+    expect(html).not.toMatch(/<button[^>]*disabled[^>]*>Enregistrer le mécénat/);
+  });
+
   it("ne rend rien quand une fenêtre est fermée", () => {
     const html = renderToStaticMarkup(
       <OvertimeDialog

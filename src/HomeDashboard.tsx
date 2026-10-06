@@ -4,6 +4,7 @@ import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
 import "./homeOverview.css";
 import {
+  compactWeekdayDate,
   nextWorkDayLabel,
   longDate,
   s,
@@ -20,7 +21,15 @@ export type TodayDashboardData = {
   nextWorkHalfLeaveLabel?: string;
   /** Accueil ou Billetterie, quand un poste est choisi ce jour-là. */
   nextWorkPostLabel?: string;
+  /** Prochain férié travaillé, même l'année suivante. */
+  nextWorkedHoliday?: { date: Date; name: string } | null;
 };
+
+/** « Ven 25/12 », et l'année quand le férié tombe l'année suivante. */
+export function holidayDateLabel(date: Date, now: Date) {
+  const label = compactWeekdayDate(date);
+  return date.getFullYear() === now.getFullYear() ? label : `${label}/${date.getFullYear()}`;
+}
 
 export type HomeSetupItem = {
   id: string;
@@ -202,6 +211,24 @@ export function HomeDashboard({
             <small className="today-block-note">à poser</small>
             {chevron}
           </button>
+          {today.nextWorkedHoliday ? (
+            <button
+              className="today-block today-next-holiday"
+              type="button"
+              onClick={() => today.nextWorkedHoliday && onOpenNextWork(today.nextWorkedHoliday.date)}
+            >
+              <span className="today-block-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  {/* Une étoile : le jour férié sort de l'ordinaire. */}
+                  <path d="m12 4 2.3 4.9 5.2.6-3.9 3.6 1.1 5.2L12 15.7l-4.7 2.6 1.1-5.2-3.9-3.6 5.2-.6Z" />
+                </svg>
+              </span>
+              <span className="today-block-label">Prochain férié travaillé</span>
+              <strong className="is-date">{holidayDateLabel(today.nextWorkedHoliday.date, now)}</strong>
+              <small className="today-block-note">{today.nextWorkedHoliday.name}</small>
+              {chevron}
+            </button>
+          ) : null}
           <article className="today-block today-remaining-work">
             <span className="today-block-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">

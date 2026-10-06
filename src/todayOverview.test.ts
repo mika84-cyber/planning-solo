@@ -87,4 +87,24 @@ describe("le prochain jour travaillé de l’accueil", () => {
     expect(overview(today).nextWorkPostLabel).toBe("");
     expect(overview(today, { [dateKey(next)]: { workPost: "ticketing" } as Entries[string] }).nextWorkPostLabel).toBe("Billetterie");
   });
+
+  it("donne le prochain férié travaillé, même l’année suivante, et saute un férié en congé", () => {
+    const today = new Date(2026, 11, 26, 12);
+    const holiday = overview(today).nextWorkedHoliday!;
+    expect(holiday.date.getFullYear()).toBe(2027);
+    expect(holiday.name).toBe(getDayInfo(holiday.date, GROUP).holiday);
+    expect(getDayInfo(holiday.date, GROUP).kind).toBe("work");
+    // Aucun férié travaillé entre aujourd'hui et lui.
+    for (let date = new Date(2026, 11, 27, 12); date < holiday.date; date = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 12)) {
+      const info = getDayInfo(date, GROUP);
+      expect(Boolean(info.holiday) && info.kind === "work").toBe(false);
+    }
+    // Posé en congé, il laisse la place au suivant.
+    const key = dateKey(holiday.date);
+    const onLeave = computeTodayOverview({
+      today, group: GROUP, entries: {}, recoveryUses: [], selections: {}, workDayMinutes: 7 * 60, isExceptionallyClosed: () => false,
+      periods: [{ id: "conge", from: key, to: key, leaveType: "annual" } as Parameters<typeof computeTodayOverview>[0]["periods"][number]],
+    }).nextWorkedHoliday!;
+    expect(onLeave.date.getTime()).toBeGreaterThan(holiday.date.getTime());
+  });
 });

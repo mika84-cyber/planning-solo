@@ -661,6 +661,7 @@
   font-size: 12px;
   line-height: 1.45;
 }
+.mecenat-rule-alert { display: grid; gap: 6px; border: 1px solid #ecd28a; border-left: 4px solid #c98a12; border-radius: 12px; padding: 11px 13px; background: #fdf6e3; color: #6b4a06; font-size: 12.5px; line-height: 1.45; } .mecenat-rule-alert ul { display: grid; gap: 5px; margin: 0; padding-left: 18px; } .mecenat-rule-alert small { font-weight: 700; }
 .holiday-recovery-history { background: #fff !important; }
 
 /* Palette plus chaleureuse et moins de rectangles fermés. */

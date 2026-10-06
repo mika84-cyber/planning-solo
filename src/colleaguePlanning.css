@@ -358,21 +358,24 @@ summary.colleague-received-heading > div { flex: 1; }
 /* La moitié travaillée prend la couleur de sa case habituelle : vert pour
    l'expo, contour foncé en plus pour l'accueil et la billetterie, jaune pour
    la formation. */
+/* Un léger liseré noir sépare les deux moitiés. */
+.colleague-week-cell.partial { --half-seam: rgba(30, 24, 20, .55); }
 .colleague-week-cell.partial.base-work { --half-worked: #e2f3e8; border-color: #9fd1b2; }
 .colleague-week-cell.partial.base-training { --half-worked: #fbf3c1; border-color: #dcc54f; }
 .colleague-week-cell.partial.base-work.on-post { border: 2px solid #2f7a52; }
-.colleague-week-cell.partial.half-morning:is(.base-work, .base-training) { background: linear-gradient(90deg, #c9b0ef 0 50%, var(--half-worked) 50% 100%); color: #4b2f7a; }
-.colleague-week-cell.partial.half-afternoon:is(.base-work, .base-training) { background: linear-gradient(90deg, var(--half-worked) 0 50%, #c9b0ef 50% 100%); color: #4b2f7a; }
+.colleague-week-cell.partial.half-morning:is(.base-work, .base-training) { background: linear-gradient(90deg, #c9b0ef 0 calc(50% - .5px), var(--half-seam) calc(50% - .5px) calc(50% + .5px), var(--half-worked) calc(50% + .5px) 100%); color: #4b2f7a; }
+.colleague-week-cell.partial.half-afternoon:is(.base-work, .base-training) { background: linear-gradient(90deg, var(--half-worked) 0 calc(50% - .5px), var(--half-seam) calc(50% - .5px) calc(50% + .5px), #c9b0ef calc(50% + .5px) 100%); color: #4b2f7a; }
 /* Initiales de la moitié travaillée, à l'endroit, l'une sous l'autre. */
 .colleague-week-cell.half-marked { vertical-align: middle; }
 .colleague-week-cell.half-marked > span[aria-hidden] { display: grid; grid-template-columns: 1fr 1fr; align-self: stretch; justify-self: stretch; }
 .colleague-week-cell.half-marked i { display: flex; flex-direction: column; align-items: center; justify-content: center; font-style: normal; }
-.colleague-week-cell.half-marked .half-code { gap: 1px; font-size: .6rem; font-weight: 900; line-height: .95; }
-.colleague-week-cell.half-marked .half-mark { font-size: .6rem; font-weight: 900; }
+.colleague-week-cell.half-marked .half-code { gap: 1px; font-size: .5rem; font-weight: 900; line-height: .95; }
+.colleague-week-cell.half-marked .half-mark { gap: 2px; font-size: .6rem; font-weight: 900; line-height: .85; }
+.colleague-week-cell.half-marked .half-bar { width: 8px; height: 1.5px; border-radius: 1px; background: currentColor; }
 .colleague-week-cell.half-marked.base-work .half-code { color: #1f6641; }
 .colleague-week-cell.half-marked.base-work.on-post .half-code { color: #174f33; }
 .colleague-week-cell.half-marked.base-training .half-code { color: #6b5605; }
-@media (max-width: 370px) { .colleague-week-cell.half-marked .half-code { gap: 0; font-size: .54rem; line-height: .9; } .colleague-week-cell.half-marked .half-mark { font-size: .54rem; } }
+@media (max-width: 370px) { .colleague-week-cell.half-marked .half-code { gap: 0; font-size: .46rem; line-height: .9; } .colleague-week-cell.half-marked .half-mark { gap: 1px; font-size: .52rem; } .colleague-week-cell.half-marked .half-bar { width: 7px; } }
 /* Légende en nuancier : sept teintes accolées sur une ligne, nom dessous. */
 .colleague-week-legend { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; max-width: 640px; margin: 28px auto 0; padding: 0; color: #766a5f; font-size: .7rem; font-weight: 700; list-style: none; text-align: center; }
 .colleague-week-legend li { display: grid; gap: 6px; min-width: 0; }

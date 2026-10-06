@@ -17,6 +17,7 @@ export function MecenatDialog({
   draft,
   setDraft,
   calculation,
+  warnings = [],
   saving,
   onClose,
   onSave,
@@ -25,6 +26,9 @@ export function MecenatDialog({
   draft: MecenatDraft;
   setDraft: Dispatch<SetStateAction<MecenatDraft>>;
   calculation: MecenatCalculation | null;
+  /** Amplitude, repos de 11 h ou lundis non respectés ; l’inscription reste
+   *  possible. */
+  warnings?: string[];
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
@@ -73,6 +77,15 @@ export function MecenatDialog({
           <p className="mecenat-next-month-note">
             Le paiement sera automatiquement intégré à la paie du mois suivant.
           </p>
+          {warnings.length ? (
+            <section className="mecenat-rule-alert" role="note" aria-live="polite">
+              <strong>Ce mécénat ne respecte pas le temps de travail</strong>
+              <ul>
+                {warnings.map((reason) => <li key={reason}>{reason}</li>)}
+              </ul>
+              <small>Vous pouvez tout de même vous inscrire.</small>
+            </section>
+          ) : null}
           {calculation ? (
             <section className="mecenat-preview" aria-live="polite">
               <div>

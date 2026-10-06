@@ -104,6 +104,8 @@ type Props = {
   workQuota?: WorkQuota;
   workSchedule?: WorkSchedule;
   mecenatCalculation: ComponentProps<typeof MecenatDialog>["calculation"];
+  /** Règles du temps de travail que ce mécénat ne respecte pas. */
+  mecenatWarnings?: string[];
   recoveryRemainingMinutes: number;
   onStartRangeSelection: () => void;
   onSaveMecenat: () => void;
@@ -139,6 +141,7 @@ export function AppDialogLayer({
   workQuota = "full",
   workSchedule = DEFAULT_WORK_SCHEDULE,
   mecenatCalculation,
+  mecenatWarnings = [],
   recoveryRemainingMinutes,
   onStartRangeSelection,
   onSaveMecenat,
@@ -178,6 +181,7 @@ export function AppDialogLayer({
         draft={workTime.mecenatDraft}
         setDraft={workTime.setMecenatDraft}
         calculation={mecenatCalculation}
+        warnings={mecenatWarnings}
         saving={workTime.savingMecenat}
         onClose={() => workTime.setMecenatDialogOpen(false)}
         onSave={onSaveMecenat}

@@ -266,6 +266,19 @@ test("les expositions basculent automatiquement à 00h05 heure de Paris", async 
   await expect(starting.first()).toHaveAttribute('data-status', 'En cours');
 });
 
+test("le coup d’œil donne le prochain férié travaillé, même l’année suivante, et l’ouvre", async ({ page }) => {
+  // En fin d'année, le groupe 2 ne travaille aucun férié avant le printemps.
+  await page.clock.setFixedTime(new Date("2026-12-28T10:00:00"));
+  await prepareDemo(page);
+  const holiday = page.locator(".today-next-holiday");
+  await expect(holiday).toContainText("Prochain férié travaillé");
+  await expect(holiday).toContainText("Dim 16/05/2027");
+  await expect(holiday).toContainText("Dimanche de Pentecôte");
+  await holiday.click();
+  await expect(page.getByRole("dialog")).toContainText("16 mai 2027");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("les cartes intérieures restent légères avec des bordures visibles et une ombre douce", async ({ page }, testInfo) => {
   await prepareDemo(page);
   const card = page.locator('.today-blocks');
@@ -5526,6 +5539,34 @@ test("la reprise du solde laisse le choix entre valeur nette et heures à majore
   await dialog.getByRole("button", { name: "Ajouter au solde" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText("25 h ajoutées au solde de récupération")).toBeVisible();
+});
+
+test("un mécénat hors des règles du temps de travail est signalé sans empêcher l’inscription", async ({ page }) => {
+  // Un jour travaillé du groupe de démonstration, suivi d'un autre jour travaillé.
+  let day = addDays(new Date(), 1);
+  while (getDayInfo(day, 2).kind !== "work" || getDayInfo(addDays(day, 1), 2).kind !== "work") day = addDays(day, 1);
+
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  await page.locator(".mecenat-action").click();
+  const dialog = page.getByRole("dialog", { name: "Déclarer un mécénat" });
+  await dialog.locator('input[type="date"]').fill(dateKey(day));
+  const [startHour, , endHour] = await dialog.getByRole("combobox").all();
+  await startHour.selectOption("19");
+  await endHour.selectOption("23");
+
+  const warning = dialog.locator(".mecenat-rule-alert");
+  await expect(warning).toContainText("Ce mécénat ne respecte pas le temps de travail");
+  await expect(warning).toContainText("12 heures au maximum");
+  await expect(warning).toContainText("au moins 11 heures de repos");
+  await expect(warning).toContainText("Vous pouvez tout de même vous inscrire");
+  await expect(dialog.getByRole("button", { name: "Enregistrer le mécénat" })).toBeEnabled();
+
+  // Une soirée plus courte respecte l'amplitude et le repos : plus d'avertissement.
+  await startHour.selectOption("18");
+  await endHour.selectOption("21");
+  await expect(warning).toBeHidden();
 });
 
 test("l’administrateur indique H ou F dans les groupes, puis les choix disparaissent", async ({ page }) => {

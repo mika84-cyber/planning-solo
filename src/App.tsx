@@ -232,6 +232,7 @@ import {
   type SelectionType,
   type SchoolVacation,
 } from "./planningLogic";
+import { mecenatRuleViolations } from "./mecenatRules";
 
 // Conservé prêt à être réactivé lorsque le parcours d’accompagnement sera finalisé.
 const HOME_SETUP_GUIDANCE_ENABLED = false;
@@ -1270,6 +1271,13 @@ export default function Home() {
       ),
     [mecenatDraft.start, mecenatDraft.end, workQuota],
   );
+  // Amplitude de 12 h, repos de 11 h et lundis : ce que ce mécénat ne respecte pas,
+  // signalé dans la fenêtre sans empêcher l'inscription.
+  const mecenatWarnings = mecenatRuleViolations(mecenatDraft, {
+    presenceFor: (key) => personalPresenceForDate(fromKey(key), group, periods, entries, recoveryUses, workDayMinutes, (closed) => Boolean(exceptionalClosureFor(closed))),
+    schedule: usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
+    mecenats: mecenatEntries,
+  });
   const payYear = String(payView.getFullYear());
   // Les réglages généraux restent disponibles pour tous les mois. Les valeurs
   // annuelles ou datées ne remplacent que les champs propres à leur période ;
@@ -3420,6 +3428,7 @@ export default function Home() {
         workQuota={workQuota}
         workSchedule={usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE}
         mecenatCalculation={mecenatDraftCalculation}
+        mecenatWarnings={mecenatWarnings}
         recoveryRemainingMinutes={recoveryBalance.remaining}
         onStartRangeSelection={beginRangeSelection}
         onSaveMecenat={() => void saveMecenatEntry()}
