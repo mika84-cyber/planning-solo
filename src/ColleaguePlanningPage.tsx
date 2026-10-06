@@ -139,6 +139,22 @@ const WEEKDAY_INITIALS = ["L", "M", "M", "J", "V", "S", "D"];
  *  (à gauche le matin, à droite l'après-midi), la partie travaillée en blanc. */
 const halfMomentClass = (status: TomorrowStatus) =>
   status === "1/2 journée · matin" ? " half-morning" : status === "1/2 journée · après-midi" ? " half-afternoon" : "";
+/** Ce que l'on fait la moitié travaillée d'une demi-journée : une formation
+ *  (selon le cycle du groupe) ou du travail, à son poste. */
+export type HalfBase = { tone: "work" | "training"; post: WorkPost | "" };
+export function halfDayBase(group: number, date: Date, post?: WorkPost | ""): HalfBase {
+  return { tone: getDayInfo(date, group).kind === "training" ? "training" : "work", post: post || "" };
+}
+/** Moitié travaillée d'une demi-journée partagée. */
+export function sharedPlanningHalfBase(planning: SharedColleaguePlanning, date: Date): HalfBase {
+  const shared = planning.days.find((day) => day.date === dateKey(date));
+  return halfDayBase(planning.group, date, shared?.status === "partial" ? shared.workPost : "");
+}
+/** La moitié travaillée prend la couleur de la case habituelle : vert pour
+ *  l'expo, contour foncé pour l'accueil et la billetterie, jaune pour la
+ *  formation ; la moitié posée reste violette. */
+const halfBaseClass = (status: TomorrowStatus, base?: HalfBase) =>
+  !base || !halfMomentClass(status) ? "" : ` base-${base.tone}${base.tone === "work" && base.post ? " on-post" : ""}`;
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "1/2 journée · matin" | "1/2 journée · après-midi" | "Absence partielle";
 
@@ -252,7 +268,7 @@ function weekCellClass(day: Date, index: number, todayKey: string) {
   return [dateKey(day) === todayKey ? "is-today" : "", index >= 5 ? "is-weekend" : ""].filter(Boolean).join(" ") || undefined;
 }
 
-type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus; postFor?: (date: Date) => WorkPost | ""; onOpen?: () => void };
+type WeekRow = { id: string; name: string; group: number; isSelf: boolean; statusFor: (date: Date) => TomorrowStatus; postFor?: (date: Date) => WorkPost | ""; halfBaseFor?: (date: Date) => HalfBase; onOpen?: () => void };
 
 /** La semaine en un tableau : une ligne par personne, rangée par groupe, et
  *  une case par jour avec la lettre de son statut. La colonne d'aujourd'hui
@@ -289,7 +305,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                       const label = statusWithPost(status, post);
                       return (
                         <td key={dateKey(day)} className={weekCellClass(day, index, todayKey)}>
-                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? ` two-letters${post ? " on-post" : ""}` : ""}${halfMomentClass(status)}`} title={label}>
+                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? ` two-letters${post ? " on-post" : ""}` : ""}${halfMomentClass(status)}${halfBaseClass(status, row.halfBaseFor?.(day))}`} title={label}>
                             <span aria-hidden="true">{status === "Travail" ? workPostEntry(post).code : WEEK_STATUS_LETTERS[status]}</span>
                             <span className="colleague-week-sr">{label}</span>
                           </span>
@@ -308,7 +324,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
       <ul className="colleague-week-legend" aria-label="Légende">
         {WEEK_LEGEND.map(([code, tone, label, short]) => (
           <li key={code}>
-            <span className={`colleague-week-cell ${tone}${tone === "partial" ? " half-morning" : ""}`} aria-hidden="true">{code}</span>
+            <span className={`colleague-week-cell ${tone}${tone === "partial" ? " half-morning base-work" : ""}`} aria-hidden="true">{code}</span>
             <small><span className="legend-full">{label}</span><span className="legend-short" aria-hidden="true">{short}</span></small>
           </li>
         ))}
@@ -726,7 +742,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
         {boardMode === "week" ? <ColleagueWeekTable
           days={colleagueWeekDays(weekOffset)}
           rows={[
-            ...(getOwnPresence && ownGroup ? [{ id: "self", name: shortNames.self, group: ownGroup, isSelf: true, statusFor: (date: Date) => personalTomorrowStatus(getOwnPresence(date)), postFor: (date: Date) => getOwnPresence(date).workPost ?? "" }] : []),
+            ...(getOwnPresence && ownGroup ? [{ id: "self", name: shortNames.self, group: ownGroup, isSelf: true, statusFor: (date: Date) => personalTomorrowStatus(getOwnPresence(date)), postFor: (date: Date) => getOwnPresence(date).workPost ?? "", halfBaseFor: (date: Date) => halfDayBase(ownGroup, date, getOwnPresence(date).workPost) }] : []),
             ...received.filter((share) => receivedPlannings[share.ownerId]).map((share) => ({
               id: share.ownerId,
               name: shortNames[share.ownerId],
@@ -734,6 +750,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
               isSelf: false,
               statusFor: (date: Date) => sharedPlanningDayStatus(receivedPlannings[share.ownerId], date),
               postFor: (date: Date) => sharedPlanningWorkPost(receivedPlannings[share.ownerId], date),
+              halfBaseFor: (date: Date) => sharedPlanningHalfBase(receivedPlannings[share.ownerId], date),
               onOpen: () => openFromBoard(share.ownerId, colleagueWeekDays(weekOffset)[0]),
             })),
           ]}

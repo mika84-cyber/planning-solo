@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { colleagueBoardTitle, colleagueWeekDays, colleagueWeekTitle, ColleagueWeekTable, CommonDaysPanel, compareCommonPresence, sharedPlanningDayStatus, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
+import { colleagueBoardTitle, colleagueWeekDays, colleagueWeekTitle, ColleagueWeekTable, CommonDaysPanel, compareCommonPresence, halfDayBase, sharedPlanningDayStatus, sharedPlanningHalfBase, sharedPlanningTomorrowSummary } from "./ColleaguePlanningPage";
 import type { SharedColleaguePlanning } from "./colleagueSharingApi";
 import { dateKey, getDayInfo } from "./planningLogic";
 
@@ -87,11 +87,38 @@ describe("vue semaine des collègues", () => {
         { id: "flou", name: "Sans moment", group: 3, isSelf: false, statusFor: () => "Absence partielle" },
       ]}
     />);
-    expect(html.match(/colleague-week-cell partial half-morning"/g)).toHaveLength(7 + 1);
+    expect(html.match(/colleague-week-cell partial half-morning"/g)).toHaveLength(7);
     expect(html.match(/colleague-week-cell partial half-afternoon"/g)).toHaveLength(7);
     // Sans moment connu, la case reste entière.
     expect(html.match(/colleague-week-cell partial"/g)).toHaveLength(7);
     expect(html).toContain('title="1/2 journée · après-midi"');
+    // La légende montre une demi-journée du matin, moitié travaillée à l'expo.
+    expect(html).toContain('colleague-week-cell partial half-morning base-work"');
+  });
+
+  it("colore la moitié travaillée comme sa case habituelle : expo, accueil encadré, formation", () => {
+    const html = renderToStaticMarkup(<ColleagueWeekTable
+      days={colleagueWeekDays(0, reference)}
+      referenceDate={reference}
+      rows={[
+        { id: "expo", name: "Expo", group: 1, isSelf: false, statusFor: () => "1/2 journée · matin", halfBaseFor: () => ({ tone: "work", post: "" }) },
+        { id: "accueil", name: "Accueil", group: 2, isSelf: false, statusFor: () => "1/2 journée · après-midi", halfBaseFor: () => ({ tone: "work", post: "counter" }) },
+        { id: "formation", name: "Formation", group: 3, isSelf: false, statusFor: () => "1/2 journée · matin", halfBaseFor: () => ({ tone: "training", post: "" }) },
+      ]}
+    />);
+    expect(html.match(/partial half-morning base-work"/g)).toHaveLength(7 + 1);
+    expect(html.match(/partial half-afternoon base-work on-post"/g)).toHaveLength(7);
+    expect(html.match(/partial half-morning base-training"/g)).toHaveLength(7);
+  });
+
+  it("retrouve la moitié travaillée d'une demi-journée partagée : poste transmis, formation selon le cycle", () => {
+    const day = new Date(2026, 8, 14, 12);
+    const shared = { ...planning, group: 2, days: [{ date: dateKey(day), status: "partial" as const, halfMoment: "morning" as const, workPost: "ticketing" as const }] };
+    expect(sharedPlanningHalfBase(shared, day)).toEqual({ tone: getDayInfo(day, 2).kind === "training" ? "training" : "work", post: "ticketing" });
+    // Un jour de formation du cycle donne une moitié jaune.
+    let training = new Date(2026, 0, 1, 12);
+    while (getDayInfo(training, 1).kind !== "training") training = new Date(training.getFullYear(), training.getMonth(), training.getDate() + 1, 12);
+    expect(halfDayBase(1, training)).toEqual({ tone: "training", post: "" });
   });
 });
 

@@ -31,6 +31,9 @@ describe("poste du jour : salle, accueil ou billetterie", () => {
     expect(personalPresenceForDate(workDay, 2, [], counterEntries)).toEqual({ status: "work", workPost: "counter" });
     expect(personalPresenceForDate(workDay, 2, [{ id: "p", from: key, to: key, leaveType: "annual", updatedAt: "" }], counterEntries))
       .toEqual({ status: "absence" });
+    // Une demi-journée garde le poste de sa moitié travaillée.
+    expect(personalPresenceForDate(workDay, 2, [{ id: "h", from: key, to: key, leaveType: "half", halfMoment: "morning", updatedAt: "" }], counterEntries))
+      .toMatchObject({ status: "partial", halfMoment: "morning", workPost: "counter" });
   });
 
   it("affiche un petit A rouge dans la case, rien pour la salle", () => {

@@ -381,7 +381,9 @@ export function personalPresenceForDate(
       : halfLeaveMinutes === 0
         ? recoveryMoment
         : undefined;
-    return { status: "partial", halfMoment, absentMinutes };
+    // La moitié travaillée garde son poste (accueil, billetterie), comme une
+    // journée entière : le planning partagé la colore en conséquence.
+    return { status: "partial", halfMoment, absentMinutes, ...(entry?.workPost ? { workPost: entry.workPost } : {}) };
   }
   return scheduled === "training" ? { status: "training" } : work;
 }

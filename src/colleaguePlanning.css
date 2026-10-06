@@ -355,6 +355,14 @@ summary.colleague-received-heading > div { flex: 1; }
    après-midi), la partie travaillée en blanc. */
 .colleague-week-cell.partial.half-morning { border-color: #a98bd8; background: linear-gradient(90deg, #c9b0ef 0 50%, #fff 50% 100%); color: #4b2f7a; }
 .colleague-week-cell.partial.half-afternoon { border-color: #a98bd8; background: linear-gradient(90deg, #fff 0 50%, #c9b0ef 50% 100%); color: #4b2f7a; }
+/* La moitié travaillée prend la couleur de sa case habituelle : vert pour
+   l'expo, contour foncé en plus pour l'accueil et la billetterie, jaune pour
+   la formation. */
+.colleague-week-cell.partial.base-work { --half-worked: #e2f3e8; border-color: #9fd1b2; }
+.colleague-week-cell.partial.base-training { --half-worked: #fbf3c1; border-color: #dcc54f; }
+.colleague-week-cell.partial.base-work.on-post { border: 2px solid #2f7a52; }
+.colleague-week-cell.partial.half-morning:is(.base-work, .base-training) { background: linear-gradient(90deg, #c9b0ef 0 50%, var(--half-worked) 50% 100%); color: #4b2f7a; }
+.colleague-week-cell.partial.half-afternoon:is(.base-work, .base-training) { background: linear-gradient(90deg, var(--half-worked) 0 50%, #c9b0ef 50% 100%); color: #4b2f7a; }
 /* Légende en nuancier : sept teintes accolées sur une ligne, nom dessous. */
 .colleague-week-legend { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; max-width: 640px; margin: 28px auto 0; padding: 0; color: #766a5f; font-size: .7rem; font-weight: 700; list-style: none; text-align: center; }
 .colleague-week-legend li { display: grid; gap: 6px; min-width: 0; }
