@@ -335,7 +335,14 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
       <ul className="colleague-week-legend" aria-label="Légende">
         {WEEK_LEGEND.map(([code, tone, label, short]) => (
           <li key={code}>
-            <span className={`colleague-week-cell ${tone}${tone === "partial" ? " half-morning base-work" : ""}`} aria-hidden="true">{code}</span>
+            {tone === "partial" ? (
+              // La lavande des demi-journées, avec « 1/2 » en fraction comme dans le tableau.
+              <span className="colleague-week-cell partial half-marked legend-half" aria-hidden="true">
+                <span aria-hidden="true"><i className="half-mark"><b>1</b><span className="half-bar" /><b>2</b></i></span>
+              </span>
+            ) : (
+              <span className={`colleague-week-cell ${tone}`} aria-hidden="true">{code}</span>
+            )}
             <small><span className="legend-full">{label}</span><span className="legend-short" aria-hidden="true">{short}</span></small>
           </li>
         ))}

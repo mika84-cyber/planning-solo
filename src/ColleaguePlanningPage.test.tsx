@@ -92,8 +92,9 @@ describe("vue semaine des collègues", () => {
     // Sans moment connu, la case reste entière.
     expect(html.match(/colleague-week-cell partial"/g)).toHaveLength(7);
     expect(html).toContain('title="1/2 journée · après-midi"');
-    // La légende montre une demi-journée du matin, moitié travaillée à l'expo.
-    expect(html).toContain('colleague-week-cell partial half-morning base-work"');
+    // La légende montre une demi-journée : la lavande et « 1/2 » en fraction.
+    expect(html).toContain('colleague-week-cell partial half-marked legend-half"');
+    expect(html).toContain('<span aria-hidden="true"><i class="half-mark"><b>1</b><span class="half-bar"></span><b>2</b></i></span>');
   });
 
   it("colore la moitié travaillée comme sa case habituelle : expo, accueil encadré, formation", () => {
@@ -107,7 +108,6 @@ describe("vue semaine des collègues", () => {
       ]}
     />);
     expect(html.match(/partial half-morning base-work half-marked"/g)).toHaveLength(7);
-    expect(html).toContain('partial half-morning base-work"');
     expect(html.match(/partial half-afternoon base-work on-post half-marked"/g)).toHaveLength(7);
     expect(html.match(/partial half-morning base-training half-marked"/g)).toHaveLength(7);
     // Les initiales, à l'endroit et l'une sous l'autre, occupent la moitié

@@ -390,6 +390,11 @@ summary.colleague-received-heading > div { flex: 1; }
    comme dans le tableau, marque chacune des deux cases. */
 .colleague-week-legend .colleague-week-cell.on-post { position: relative; border-width: 1px 0 1px 1px; border-color: #9fd1b2 #9fd1b2 #9fd1b2 rgba(44, 38, 33, .16); }
 .colleague-week-legend .on-post::after { position: absolute; top: 50%; left: 50%; width: min(28px, calc(100% - 8px)); height: 20px; border: 1.5px solid #2f7a52; border-radius: 6px; transform: translate(-50%, -50%); content: ""; }
+/* Demi-journée : toute la case en lavande, « 1/2 » en fraction au centre. */
+.colleague-week-legend .colleague-week-cell.partial.legend-half { vertical-align: top; border-color: #c9b6ec; background: #e3d6f7; }
+.colleague-week-legend .legend-half > span[aria-hidden] { grid-template-columns: 1fr; }
+.colleague-week-legend .legend-half .half-mark { font-size: .58rem; gap: 1.5px; }
+.colleague-week-legend .legend-half .half-bar { width: 8px; }
 .colleague-week-legend small { overflow: hidden; font-size: inherit; text-overflow: ellipsis; white-space: nowrap; }
 .colleague-week-legend .legend-short { display: none; }
 @media (max-width: 600px) {
