@@ -76,6 +76,23 @@ describe("vue semaine des collègues", () => {
     expect(html).toContain('class="is-self"');
     expect(html).toContain("Demi-journée");
   });
+
+  it("coupe la case d’une demi-journée du côté de l’absence : à gauche le matin, à droite l’après-midi", () => {
+    const html = renderToStaticMarkup(<ColleagueWeekTable
+      days={colleagueWeekDays(0, reference)}
+      referenceDate={reference}
+      rows={[
+        { id: "matin", name: "Matin", group: 1, isSelf: false, statusFor: () => "1/2 journée · matin" },
+        { id: "aprem", name: "Après-midi", group: 2, isSelf: false, statusFor: () => "1/2 journée · après-midi" },
+        { id: "flou", name: "Sans moment", group: 3, isSelf: false, statusFor: () => "Absence partielle" },
+      ]}
+    />);
+    expect(html.match(/colleague-week-cell partial half-morning"/g)).toHaveLength(7 + 1);
+    expect(html.match(/colleague-week-cell partial half-afternoon"/g)).toHaveLength(7);
+    // Sans moment connu, la case reste entière.
+    expect(html.match(/colleague-week-cell partial"/g)).toHaveLength(7);
+    expect(html).toContain('title="1/2 journée · après-midi"');
+  });
 });
 
 describe("colleagueBoardTitle", () => {

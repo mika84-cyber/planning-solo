@@ -351,6 +351,10 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-week-cell.rest { background: #e7eaf1; border-color: #b8c0cf; color: #3e4859; }
 .colleague-week-cell.absence { background: #fde6e9; border-color: #efb4bf; color: #96384a; }
 .colleague-week-cell.partial { background: #efe6fa; border-color: #c6b0e6; color: #5a3b8c; }
+/* Demi-journée : moitié absente en violet (gauche = matin, droite =
+   après-midi), moitié présente dans le vert du travail. */
+.colleague-week-cell.partial.half-morning { border-color: #a98bd8; background: linear-gradient(90deg, #c9b0ef 0 50%, #e2f3e8 50% 100%); color: #4b2f7a; }
+.colleague-week-cell.partial.half-afternoon { border-color: #a98bd8; background: linear-gradient(90deg, #e2f3e8 0 50%, #c9b0ef 50% 100%); color: #4b2f7a; }
 /* Légende en nuancier : sept teintes accolées sur une ligne, nom dessous. */
 .colleague-week-legend { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; max-width: 640px; margin: 28px auto 0; padding: 0; color: #766a5f; font-size: .7rem; font-weight: 700; list-style: none; text-align: center; }
 .colleague-week-legend li { display: grid; gap: 6px; min-width: 0; }

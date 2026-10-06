@@ -135,6 +135,10 @@ const WEEK_STATUS_LETTERS: Record<TomorrowStatus, string> = {
   "Absence partielle": "½",
 };
 const WEEKDAY_INITIALS = ["L", "M", "M", "J", "V", "S", "D"];
+/** Demi-journée : la case est coupée en deux, la moitié absente en violet
+ *  (à gauche le matin, à droite l'après-midi), l'autre en vert. */
+const halfMomentClass = (status: TomorrowStatus) =>
+  status === "1/2 journée · matin" ? " half-morning" : status === "1/2 journée · après-midi" ? " half-afternoon" : "";
 const isReadableShare = (share: ColleagueShare) => share.status === "accepted";
 type TomorrowStatus = "Travail" | "Formation" | "Repos" | "Absence" | "1/2 journée · matin" | "1/2 journée · après-midi" | "Absence partielle";
 
@@ -285,7 +289,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
                       const label = statusWithPost(status, post);
                       return (
                         <td key={dateKey(day)} className={weekCellClass(day, index, todayKey)}>
-                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? ` two-letters${post ? " on-post" : ""}` : ""}`} title={label}>
+                          <span className={`colleague-week-cell ${tomorrowStatusTone(status)}${status === "Travail" ? ` two-letters${post ? " on-post" : ""}` : ""}${halfMomentClass(status)}`} title={label}>
                             <span aria-hidden="true">{status === "Travail" ? workPostEntry(post).code : WEEK_STATUS_LETTERS[status]}</span>
                             <span className="colleague-week-sr">{label}</span>
                           </span>
@@ -304,7 +308,7 @@ export function ColleagueWeekTable({ days, rows, referenceDate = new Date() }: {
       <ul className="colleague-week-legend" aria-label="Légende">
         {WEEK_LEGEND.map(([code, tone, label, short]) => (
           <li key={code}>
-            <span className={`colleague-week-cell ${tone}`} aria-hidden="true">{code}</span>
+            <span className={`colleague-week-cell ${tone}${tone === "partial" ? " half-morning" : ""}`} aria-hidden="true">{code}</span>
             <small><span className="legend-full">{label}</span><span className="legend-short" aria-hidden="true">{short}</span></small>
           </li>
         ))}

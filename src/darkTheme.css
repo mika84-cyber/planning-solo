@@ -84,6 +84,8 @@ html[data-theme="dark"] .colleague-week-cell.absence { border-color: #cf7688; ba
    les EX vert pâle. */
 html[data-theme="dark"] .colleague-week-cell.on-post { border-color: #8fd1a8; background: #1f4d35; color: #d8f5e3; }
 html[data-theme="dark"] .colleague-week-cell.partial { border-color: #9a7fcc; background: #c4affa; color: #2c1a4d; }
+html[data-theme="dark"] .colleague-week-cell.partial.half-morning { background: linear-gradient(90deg, #b296f0 0 50%, #8fd1a8 50% 100%); }
+html[data-theme="dark"] .colleague-week-cell.partial.half-afternoon { background: linear-gradient(90deg, #8fd1a8 0 50%, #b296f0 50% 100%); }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
 html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620; --tile-ink: #f0a988; }
 html[data-theme="dark"] .useful-forms-root .useful-form-folder-grid > .useful-form-folder:not(.useful-form-work-accident-entry),
