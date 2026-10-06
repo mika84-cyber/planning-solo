@@ -106,6 +106,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   données synchronisées ; `App.tsx` conserve leur orchestration commune.
 - `src/useWorkTimeActions.ts` : validations, écritures et suppressions des
   heures supplémentaires, récupérations et mécénats.
+- `src/useOvertimePay.ts` : paiement des heures supplémentaires — montant du
+  bulletin, aperçu « À payer » pendant la saisie, heures payées en avance.
 - `src/usePayActions.ts` : saisie du profil de paie, import et vérification des
   bulletins, reports de dimanches et calcul du brut mensuel.
 - `src/useAuthenticationActions.ts` : connexion, invitation, réinitialisation
@@ -140,6 +142,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   par `personalPresenceForDate` (lettres E, C, B dans la semaine).
 - `src/overtime.ts` : heures supplémentaires et récupérations.
 - `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats.
+- `src/mecenatRules.ts` : amplitude de 12 h, repos de 11 h et lundis, signalés
+  sans bloquer l’inscription d’un mécénat.
+- `src/earlyPayment.ts` : mécénats et heures « à payer » qu’un bulletin vérifié
+  a réglés dès le mois même.
 - `src/payEstimate.ts` : disponibilité de l'estimation de paie.
 - `src/payslip.ts` / `src/payslipReview.ts` : lecture et contrôle du bulletin.
 - `src/payslipOcr.ts` : reconnaissance locale des photos de bulletins avec le
@@ -200,8 +206,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - Formulaires CET : `src/cetFormsPdf.test.ts`.
 - Paie : `src/payEstimate.test.ts`, `src/payslip.test.ts`,
   `src/payslipReview.test.ts`.
-- Heures : `src/overtime.test.ts`.
-- Mécénats : `src/mecenat.test.ts`.
+- Heures : `src/overtime.test.ts`, `src/useOvertimePay.test.tsx`.
+- Mécénats : `src/mecenat.test.ts`, `src/mecenatRules.test.ts`,
+  `src/earlyMecenatPayment.test.tsx`.
 - API et stockage : `src/calendarApi.test.ts`, `netlify/lib/*.test.ts`.
 - PDF : `src/pdfSmoke.test.ts`.
 - Sécurité du formulaire : `formSecurity.test.mjs`.
@@ -223,6 +230,10 @@ npm run build
 npm run check:bundle
 npm run check:css
 ```
+
+Avant une publication : `npm test`, `npm run lint`, `npm run check`,
+`npm run build`, puis `npm run test:e2e`. Le contrôle des dépendances des
+hooks est actif partout, `App.tsx` compris.
 
 `test:pdf:visual` produit deux PDF locaux ignorés par Git, avec et sans
 vacances scolaires, afin de contrôler visuellement les exports annuels après

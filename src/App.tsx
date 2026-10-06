@@ -3,6 +3,7 @@ import { clearColleagueGroupsCache } from './colleagueSharingApi';
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useEffectEvent,
   useMemo,
@@ -37,6 +38,7 @@ import { ConnectionStatus } from "./ConnectionStatus";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
 import { effectivePayProfile, usePayActions } from "./usePayActions";
+import { useOvertimePay } from "./useOvertimePay";
 
 const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
@@ -193,11 +195,6 @@ import {
 } from "./mecenat";
 import {
   allocateRecoveryUses,
-  calculatePaidOvertime,
-  paidOvertimeOnPayslip,
-  splitOvertimeRange,
-  nextPayPeriod,
-  type OvertimeEntry,
   DEFAULT_WORK_SCHEDULE,
   usableWorkSchedule,
   defaultRecoveryMinutes,
@@ -427,6 +424,19 @@ export default function Home() {
     showSchoolVacations, setShowSchoolVacations, schoolZone, setSchoolZone, calendarSlide,
     allowancesSwipeStart,
   } = appShellUi;
+  // Fermeture exceptionnelle d'un jour : celle ajoutée ou retirée à la main,
+  // sinon celle annoncée par le Grand Palais. Stable tant que ni l'une ni
+  // l'autre ne change, pour servir de dépendance aux calculs qui l'utilisent.
+  const exceptionalClosureFor = useCallback(
+    (key: string) => {
+      const override = entries[key]?.closureOverride;
+      if (override === "open") return undefined;
+      if (override === "closed")
+        return { date: key, label: "Fermeture exceptionnelle ajoutée manuellement" };
+      return grandPalaisExceptionalClosure(key, approvedGrandPalaisUpdates);
+    },
+    [entries, approvedGrandPalaisUpdates],
+  );
   const feedbackMessaging = useFeedbackMessaging(isProgramAdmin, demoMode, authStatus === "ready");
   // Les écrans secondaires (fiche du jour, demandes, paie, formulaires…) sont
   // chargés à part : on les prépare dès que l'app est prête et au repos.
@@ -516,7 +526,7 @@ export default function Home() {
         setProgramAdminKnown(true);
       });
     return () => { active = false; };
-  }, [authStatus, demoMode, localDemoAdmin, publicDemoAccess.active]);
+  }, [authStatus, demoMode, localDemoAdmin, publicDemoAccess.active, setApprovedGrandPalaisUpdates, setIsProgramAdmin]);
 
   useEffect(() => {
     const expiresAt = import.meta.env.VITE_PUBLIC_DEMO_UNTIL;
@@ -529,7 +539,7 @@ export default function Home() {
     const update = () => setNarrowScreen(query.matches);
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
-  }, []);
+  }, [setNarrowScreen]);
   useEffect(() => {
     if (authStatus !== "ready" || publicDemoAccess.active) return;
     let active = true;
@@ -541,7 +551,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [authStatus, publicDemoAccess.active]);
+  }, [authStatus, publicDemoAccess.active, setPrefetchedContacts]);
   useEffect(() => {
     if (authStatus !== "ready" || publicDemoAccess.active) return;
     void getColleagueGroups().catch(() => undefined);
@@ -553,7 +563,7 @@ export default function Home() {
     };
     window.addEventListener("planning-app-update-available", showUpdateAlert);
     return () => window.removeEventListener("planning-app-update-available", showUpdateAlert);
-  }, []);
+  }, [setAppUpdateAvailable, setAppUpdatePromptOpen]);
   useEffect(() => {
     if (!mainMenuOpen) return;
     const close = (event: KeyboardEvent) => {
@@ -561,7 +571,7 @@ export default function Home() {
     };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
-  }, [mainMenuOpen]);
+  }, [mainMenuOpen, setMainMenuOpen]);
   useEffect(() => {
     if (!accountMenuOpen) return;
     const close = (event: MouseEvent) => {
@@ -579,14 +589,14 @@ export default function Home() {
       document.removeEventListener("pointerdown", close);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [accountMenuOpen]);
+  }, [accountMenuOpen, accountMenuRef, accountButtonRef, setAccountMenuOpen]);
   useEffect(() => {
     if (!viewportDebugEnabled) return;
     const update = () =>
       setViewportSize({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [viewportDebugEnabled]);
+  }, [viewportDebugEnabled, setViewportSize]);
   // Un souhait couvert ensuite par un congé posé est réalisé : il ne
   // s'affiche plus comme souhait, ni dans le PDF ni dans les choix.
   const wishDates = useMemo(
@@ -624,6 +634,7 @@ export default function Home() {
     (key) => Boolean(exceptionalClosureFor(key)),
     notify,
   );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: au démontage, on annule le dernier minuteur en cours, lu à ce moment-là.
   useEffect(
     () => () => {
       if (payMonthSlideTimer.current)
@@ -871,15 +882,18 @@ export default function Home() {
     };
   }, []);
 
+  const openNotificationDay = useEffectEvent((date: Date) => {
+    setView(localDate(date.getFullYear(), date.getMonth(), 1));
+    openDay(date);
+  });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: le planning (entries) n'est pas lu ici, il redéclenche l'ouverture une fois chargé.
   useEffect(() => {
     if (authStatus !== "ready") return;
     const key = new URLSearchParams(location.search).get("date") || "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || openedNotificationDate.current)
       return;
     openedNotificationDate.current = key;
-    const date = fromKey(key);
-    setView(localDate(date.getFullYear(), date.getMonth(), 1));
-    openDay(date);
+    openNotificationDay(fromKey(key));
     history.replaceState({}, "", location.pathname);
   }, [authStatus, entries]);
 
@@ -929,6 +943,7 @@ export default function Home() {
     setPartnerPeriods([]);
     setPartnerSharingStatus("disabled");
   }
+  const reloadCalendar = useEffectEvent(() => loadCalendar());
   useEffect(() => {
     if (authStatus !== "ready" || demoMode) return;
     markSessionLaunch();
@@ -940,7 +955,7 @@ export default function Home() {
       if (document.visibilityState !== "visible" || Date.now() - lastRefresh < 5_000) return;
       lastRefresh = Date.now();
       void renewSession()
-        .then(() => loadCalendar())
+        .then(() => reloadCalendar())
         .catch(() => undefined);
     };
     window.addEventListener("focus", refreshSharedData);
@@ -1173,13 +1188,6 @@ export default function Home() {
     setTimeHalfBalance(proposeHalfBalance(requestSeedDate, selectedList));
     setTimeDate(requestSeedDate);
   }
-  function exceptionalClosureFor(key: string) {
-    const override = entries[key]?.closureOverride;
-    if (override === "open") return undefined;
-    if (override === "closed")
-      return { date: key, label: "Fermeture exceptionnelle ajoutée manuellement" };
-    return grandPalaisExceptionalClosure(key, approvedGrandPalaisUpdates);
-  }
 
   const workExchangeUi = useWorkExchangeActions({
     group,
@@ -1238,7 +1246,7 @@ export default function Home() {
         ),
       })),
     };
-  }, [view, group, periods, entries, recoveryUses, formProfile?.workQuota, now, approvedGrandPalaisUpdates]);
+  }, [view, group, periods, entries, recoveryUses, formProfile?.workQuota, now, exceptionalClosureFor]);
 
   const remainingWorkedDaysThisYear = useMemo(
     () =>
@@ -1253,7 +1261,7 @@ export default function Home() {
         (key) => Boolean(exceptionalClosureFor(key)),
         (key) => entries[key]?.exchangeRole || "",
       ).worked,
-    [now, group, periods, entries, recoveryUses, formProfile?.workQuota, approvedGrandPalaisUpdates],
+    [now, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
   );
 
   // Au premier usage, le statut demandé est désormais « contractuel ». Dès
@@ -1506,34 +1514,11 @@ export default function Home() {
     [recoveryEarnings, recoveryUses, group],
   );
 
-  /** Traitement et indemnité de résidence de l'année où les heures sont faites. */
-  function overtimeSalaryFor(year: number) {
-    const profile = payProfiles[String(year)];
-    const base = profile?.baseSalary ?? formProfile?.baseSalary ?? 0;
-    const residence = profile?.residenceAllowance ?? formProfile?.residenceAllowance ?? base * RESIDENCE_ALLOWANCE_RATE;
-    return { base, residence };
-  }
-  const overtimeSundayOrHoliday = (key: string) => {
-    const date = fromKey(key);
-    return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
-  };
-
-  function paidOvertimeForPayPeriod(payYear: number, payMonth: number, entries: OvertimeEntry[] = overtimeEntries) {
-    return paidOvertimeOnPayslip(entries, payYear, payMonth, workQuota, overtimeSalaryFor, overtimeSundayOrHoliday);
-  }
-
-  /** Les heures à payer du mois de ce bulletin que la paie suivante attend
-   *  encore, avec ce qu'elles rapporteront : un bulletin qui en paie plus que
-   *  prévu les a peut-être réglées en avance. */
-  function overtimeEarlyCandidates(year: number, month: number) {
-    const usual = overtimeEntries.filter((entry) => !entry.paidEarly);
-    const salary = overtimeSalaryFor(year);
-    const computed = calculatePaidOvertime(usual, year, month, workQuota, salary.base, salary.residence, overtimeSundayOrHoliday);
-    return computed.lines.map((line) => ({
-      entry: usual.find((entry) => entry.id === line.entryId)!,
-      cents: Math.round(line.amount * 100),
-    })).filter((item) => item.entry);
-  }
+  // Le paiement des heures supplémentaires vit dans son propre hook, avec
+  // ses dépendances déclarées (voir src/useOvertimePay.ts).
+  const { paidOvertimeForPayPeriod, overtimeEarlyCandidates, overtimeForPayMonth, overtimePayPreview } = useOvertimePay({
+    overtimeEntries, payProfiles, formProfile, workQuota, group, payView, overtimeDraft,
+  });
 
   async function checkForAppUpdate() {
     if (checkingAppUpdate) return;
@@ -1556,32 +1541,6 @@ export default function Home() {
     }
   }
 
-  const overtimeForPayMonth = useMemo(() => {
-    return paidOvertimeForPayPeriod(payView.getFullYear(), payView.getMonth());
-  }, [payView, payProfiles, formProfile, overtimeEntries, workQuota]);
-  // « À payer » : ce que ces heures rapporteront, avant de les enregistrer.
-  // L'écart avec et sans elles tient compte du seuil des 14 h et du plafond.
-  const overtimePayPreview = (() => {
-    if (overtimeDraft.disposition !== "paid" || !/^\d{4}-\d{2}-\d{2}$/.test(overtimeDraft.date)) return null;
-    const split = splitOvertimeRange(overtimeDraft.start, overtimeDraft.end);
-    if (!split) return null;
-    const pay = nextPayPeriod(overtimeDraft.date);
-    const draftEntry: OvertimeEntry = {
-      id: "apercu", date: overtimeDraft.date, ...split, disposition: "paid", inputMode: "range",
-      start: overtimeDraft.start, end: overtimeDraft.end, updatedAt: "",
-    };
-    const before = paidOvertimeForPayPeriod(pay.year, pay.month);
-    const after = paidOvertimeForPayPeriod(pay.year, pay.month, [...overtimeEntries, draftEntry]);
-    return {
-      ready: after.ready,
-      amount: after.amount - before.amount,
-      payYear: pay.year,
-      payMonth: pay.month,
-      highRateMinutes: after.lines.find((line) => line.entryId === "apercu")?.highRateMinutes ?? 0,
-      cappedMinutes: after.cappedMinutes - before.cappedMinutes,
-      partTime: workQuota !== "full",
-    };
-  })();
   const mecenatForCurrentPayMonth = useMemo(
     () => mecenatForPayMonth(mecenatEntries, payView.getFullYear(), payView.getMonth()),
     [mecenatEntries, payView],
@@ -1663,7 +1622,6 @@ export default function Home() {
     otherFixed,
     cia,
     ciaMonth,
-    isContractuel,
     overtimeForPayMonth,
     mecenatForCurrentPayMonth,
     strikeForCurrentPayMonth,
@@ -1997,7 +1955,7 @@ export default function Home() {
         isExceptionallyClosed: (key) => Boolean(exceptionalClosureFor(key)),
         workSchedule: usableWorkSchedule(formProfile?.workSchedule),
       }),
-    [now, group, periods, entries, recoveryUses, selections, workDayMinutes, approvedGrandPalaisUpdates, formProfile?.workSchedule],
+    [now, group, periods, entries, recoveryUses, selections, workDayMinutes, exceptionalClosureFor, formProfile?.workSchedule],
   );
 
   /* Ce qui manque encore à l'estimation de paie. Ces trois manques étaient
@@ -2325,6 +2283,7 @@ export default function Home() {
     else if (requestKind === "other") void validateAndOpenForm();
     else void saveRequestToPlanning();
   });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ces trois valeurs déclenchent l'enregistrement, lu par saveDirectDuration.
   useEffect(() => saveDirectDuration(), [directDurationSave, timeDate, selectedList.length]);
   const {
     openBlankForm,
@@ -2603,6 +2562,7 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  const navigateBackTo = useEffectEvent((section: MainSection) => navigateFromShell(section, false));
   useEffect(() => {
     if (!MAIN_SECTION_ORDER.includes(history.state?.planningSection))
       history.replaceState({ ...(history.state || {}), planningSection: homeSection }, "", location.href);
@@ -2611,11 +2571,11 @@ export default function Home() {
       if (accountMenuOpen) { setAccountMenuOpen(false); return; }
       if (feedbackOpen) { setFeedbackOpen(false); return; }
       const section = event.state?.planningSection;
-      if (MAIN_SECTION_ORDER.includes(section)) navigateFromShell(section, false);
+      if (MAIN_SECTION_ORDER.includes(section)) navigateBackTo(section);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [accountMenuOpen, feedbackOpen, homeSection, mainMenuOpen]);
+  }, [accountMenuOpen, feedbackOpen, homeSection, mainMenuOpen, setMainMenuOpen, setAccountMenuOpen, setFeedbackOpen]);
 
   function finishSectionSwipe(event: TouchEvent<HTMLElement>) {
     const start = sectionSwipeStartRef.current;

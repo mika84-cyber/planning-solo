@@ -40,16 +40,6 @@
   },
   "overrides": [
     {
-      "includes": ["src/App.tsx"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "useExhaustiveDependencies": "off"
-          }
-        }
-      }
-    },
-    {
       "includes": ["src/**/*.test.{ts,tsx}"],
       "linter": {
         "rules": {
