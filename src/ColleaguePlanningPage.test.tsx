@@ -115,7 +115,7 @@ describe("vue semaine des collègues", () => {
     // fraction dans la moitié posée.
     expect(html.match(/<i class="half-mark"><b>1<\/b><span class="half-bar"><\/span><b>2<\/b><\/i><i class="half-code"><b>E<\/b><b>X<\/b><\/i>/g)).toHaveLength(7);
     expect(html.match(/<i class="half-code"><b>A<\/b><b>C<\/b><\/i><i class="half-mark"><b>1<\/b><span class="half-bar"><\/span><b>2<\/b><\/i>/g)).toHaveLength(7);
-    expect(html.match(/<i class="half-mark"><b>1<\/b><span class="half-bar"><\/span><b>2<\/b><\/i><i class="half-code"><b>F<\/b><\/i>/g)).toHaveLength(7);
+    expect(html.match(/<i class="half-mark"><b>1<\/b><span class="half-bar"><\/span><b>2<\/b><\/i><i class="half-code single"><b>F<\/b><\/i>/g)).toHaveLength(7);
   });
 
   it("retrouve la moitié travaillée d'une demi-journée partagée : poste transmis, formation selon le cycle", () => {

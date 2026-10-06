@@ -159,7 +159,8 @@ const halfBaseClass = (status: TomorrowStatus, base?: HalfBase) =>
  *  sous l'autre ; la moitié posée, violette, porte « 1/2 » en fraction. */
 const halfBaseCode = (base: HalfBase) => (base.tone === "training" ? "F" : workPostEntry(base.post).code);
 function HalfDayMarks({ status, base }: { status: TomorrowStatus; base: HalfBase }) {
-  const worked = <i className="half-code">{[...halfBaseCode(base)].map((letter, index) => <b key={index}>{letter}</b>)}</i>;
+  const code = halfBaseCode(base);
+  const worked = <i className={`half-code${code.length === 1 ? " single" : ""}`}>{[...code].map((letter, index) => <b key={index}>{letter}</b>)}</i>;
   // « 1/2 » en fraction posée debout, sur toute la hauteur de la moitié.
   const posed = <i className="half-mark"><b>1</b><span className="half-bar" /><b>2</b></i>;
   return status === "1/2 journée · matin" ? <>{posed}{worked}</> : <>{worked}{posed}</>;
