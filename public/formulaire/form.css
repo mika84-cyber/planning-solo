@@ -611,3 +611,35 @@
     #observationBox label{color:#e9eef5}
     #observationBox .obsHint{color:#c9d3df}
   }
+
+  /* Outils du formulaire : quatre boutons séparés, chacun teinté de la
+     couleur de son action (vider, ajouter une feuille, Outlook, imprimer). */
+  #btnReset{--tool:#c0443a}
+  #btnSecond{--tool:#2f8a5b}
+  #btnOutlook{--tool:#0a64c8}
+  #btnPrint{--tool:#4a5a78}
+  .form-tools{gap:6px;padding:0;border:0;background:transparent}
+  .form-tools > .btn + .btn::before{display:none}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint){border:1px solid color-mix(in srgb,var(--tool) 35%,#fff);border-radius:12px;background:color-mix(in srgb,var(--tool) 11%,#fff);color:var(--tool);font-weight:700}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):hover{border-color:color-mix(in srgb,var(--tool) 60%,#fff);background:color-mix(in srgb,var(--tool) 18%,#fff)}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):disabled{background:color-mix(in srgb,var(--tool) 6%,#fff);opacity:.5}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint) svg{color:var(--tool)}
+
+  /* En-tête sur téléphone : fond crème, sans cadre. Un sur-titre « Choisir le
+     formulaire » en petites capitales, le nom du formulaire en Fraunces dans
+     un sélecteur blanc arrondi, et la flèche de retour dans une pastille ronde. */
+  @media(max-width:760px){
+    .bar{background:linear-gradient(180deg,#fbf6ef 0%,#f6eee4 100%);border-bottom:1px solid #e6d8c7}
+    .form-choice{padding:0 0 0 54px;border:0;border-radius:0;background:none;box-shadow:none}
+    .sheet-block{gap:0}
+    .sheet-label{position:static;width:auto;height:auto;overflow:visible;clip:auto;margin:0 0 5px 4px;color:#9a5236;font-size:10px;line-height:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+    #sheet{min-height:48px;padding:10px 40px 10px 16px;border:1px solid #dccbb8;border-radius:14px;background:#fff;color:#2c2621;font-family:"Fraunces",Georgia,serif;font-size:17px;font-weight:700;letter-spacing:-.01em;box-shadow:0 3px 10px rgba(92,64,40,.08)}
+    #sheet:hover{border-color:#b9886a;background:#fff}
+    .sheet-wrap:before{display:none}
+    .sheet-wrap:after{display:block;right:17px;width:8px;height:8px;border-right:2px solid #9a5236;border-bottom:2px solid #9a5236}
+    :is(html.device-desktop,html.device-touch) .bar-actions #btnBackApp{top:var(--back-top,19px);left:0;width:44px;height:44px;border:1px solid #e3cdbb;border-radius:50%;background:#fff;box-shadow:0 3px 10px rgba(92,64,40,.08)}
+    :is(html.device-desktop,html.device-touch) .bar-actions #btnBackApp:hover{background:#fbf0e8}
+    #btnBackApp .tool-icon{width:19px;height:19px}
+    /* La pastille de retour se centre sur le sélecteur, sous le sur-titre. */
+    .bar-in{--back-top:19px}
+  }
