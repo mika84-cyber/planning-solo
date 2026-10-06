@@ -46,6 +46,8 @@ export async function handleSaveOvertime(
     input_mode: inputMode,
     start: typeof body.start === "string" ? body.start.slice(0, 5) : "",
     end: typeof body.end === "string" ? body.end.slice(0, 5) : "",
+    // Payées dès le mois même, quand un bulletin vérifié le montre.
+    ...(disposition === "paid" && body.paidEarly === true ? { paid_early: true } : {}),
     updated_at: new Date().toISOString(),
   };
   await store.setJSON(scopedKey(`overtime/${id}`), entry);

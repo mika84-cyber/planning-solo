@@ -194,6 +194,10 @@ import {
 import {
   allocateRecoveryUses,
   calculatePaidOvertime,
+  paidOvertimeOnPayslip,
+  splitOvertimeRange,
+  nextPayPeriod,
+  type OvertimeEntry,
   DEFAULT_WORK_SCHEDULE,
   usableWorkSchedule,
   defaultRecoveryMinutes,
@@ -339,7 +343,7 @@ export default function Home() {
     recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode,
     overtimeHistoryOpen, setOvertimeHistoryOpen, setMecenatDialogOpen,
     mecenatHistoryOpen, setMecenatHistoryOpen, setSavingMecenat,
-    savingOvertime, setSavingOvertime, overtimeDraft,
+    savingOvertime, setSavingOvertime, overtimeDraft, setOvertimeDraft,
     solidarityDraft, setSolidarityDraft, recoveryDraft, setRecoveryDraft,
     mecenatDraft, setMecenatDraft, overtimeSaveInFlightRef, mecenatSaveInFlightRef,
     lastOvertimeSubmissionRef, lastRecoverySubmissionRef, lastMecenatSubmissionRef,
@@ -1273,7 +1277,9 @@ export default function Home() {
   );
   // Amplitude de 12 h, repos de 11 h et lundis : ce que ce mécénat ne respecte pas,
   // signalé dans la fenêtre sans empêcher l'inscription.
-  const mecenatWarnings = mecenatRuleViolations(mecenatDraft, {
+  // Aucun avertissement tant que la date et la plage horaire ne sont pas saisies.
+  const mecenatDraftComplete = Boolean(mecenatDraft.date && mecenatDraft.start && mecenatDraft.end);
+  const mecenatWarnings = !mecenatDraftComplete ? [] : mecenatRuleViolations(mecenatDraft, {
     presenceFor: (key) => personalPresenceForDate(fromKey(key), group, periods, entries, recoveryUses, workDayMinutes, (closed) => Boolean(exceptionalClosureFor(closed))),
     schedule: usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
     mecenats: mecenatEntries,
@@ -1500,32 +1506,33 @@ export default function Home() {
     [recoveryEarnings, recoveryUses, group],
   );
 
-  function paidOvertimeForPayPeriod(payYear: number, payMonth: number) {
-    const performedMonth = (payMonth + 11) % 12;
-    const performedYear = payYear - (payMonth === 0 ? 1 : 0);
-    const performedProfile = payProfiles[String(performedYear)];
-    const performedBase =
-      performedProfile?.baseSalary ?? formProfile?.baseSalary ?? 0;
-    const performedResidence =
-      performedProfile?.residenceAllowance ??
-      formProfile?.residenceAllowance ??
-      performedBase * RESIDENCE_ALLOWANCE_RATE;
-    return {
-      performedMonth,
-      performedYear,
-      ...calculatePaidOvertime(
-        overtimeEntries,
-        performedYear,
-        performedMonth,
-        workQuota,
-        performedBase,
-        performedResidence,
-        (key) => {
-          const date = fromKey(key);
-          return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
-        },
-      ),
-    };
+  /** Traitement et indemnité de résidence de l'année où les heures sont faites. */
+  function overtimeSalaryFor(year: number) {
+    const profile = payProfiles[String(year)];
+    const base = profile?.baseSalary ?? formProfile?.baseSalary ?? 0;
+    const residence = profile?.residenceAllowance ?? formProfile?.residenceAllowance ?? base * RESIDENCE_ALLOWANCE_RATE;
+    return { base, residence };
+  }
+  const overtimeSundayOrHoliday = (key: string) => {
+    const date = fromKey(key);
+    return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
+  };
+
+  function paidOvertimeForPayPeriod(payYear: number, payMonth: number, entries: OvertimeEntry[] = overtimeEntries) {
+    return paidOvertimeOnPayslip(entries, payYear, payMonth, workQuota, overtimeSalaryFor, overtimeSundayOrHoliday);
+  }
+
+  /** Les heures à payer du mois de ce bulletin que la paie suivante attend
+   *  encore, avec ce qu'elles rapporteront : un bulletin qui en paie plus que
+   *  prévu les a peut-être réglées en avance. */
+  function overtimeEarlyCandidates(year: number, month: number) {
+    const usual = overtimeEntries.filter((entry) => !entry.paidEarly);
+    const salary = overtimeSalaryFor(year);
+    const computed = calculatePaidOvertime(usual, year, month, workQuota, salary.base, salary.residence, overtimeSundayOrHoliday);
+    return computed.lines.map((line) => ({
+      entry: usual.find((entry) => entry.id === line.entryId)!,
+      cents: Math.round(line.amount * 100),
+    })).filter((item) => item.entry);
   }
 
   async function checkForAppUpdate() {
@@ -1552,6 +1559,29 @@ export default function Home() {
   const overtimeForPayMonth = useMemo(() => {
     return paidOvertimeForPayPeriod(payView.getFullYear(), payView.getMonth());
   }, [payView, payProfiles, formProfile, overtimeEntries, workQuota]);
+  // « À payer » : ce que ces heures rapporteront, avant de les enregistrer.
+  // L'écart avec et sans elles tient compte du seuil des 14 h et du plafond.
+  const overtimePayPreview = (() => {
+    if (overtimeDraft.disposition !== "paid" || !/^\d{4}-\d{2}-\d{2}$/.test(overtimeDraft.date)) return null;
+    const split = splitOvertimeRange(overtimeDraft.start, overtimeDraft.end);
+    if (!split) return null;
+    const pay = nextPayPeriod(overtimeDraft.date);
+    const draftEntry: OvertimeEntry = {
+      id: "apercu", date: overtimeDraft.date, ...split, disposition: "paid", inputMode: "range",
+      start: overtimeDraft.start, end: overtimeDraft.end, updatedAt: "",
+    };
+    const before = paidOvertimeForPayPeriod(pay.year, pay.month);
+    const after = paidOvertimeForPayPeriod(pay.year, pay.month, [...overtimeEntries, draftEntry]);
+    return {
+      ready: after.ready,
+      amount: after.amount - before.amount,
+      payYear: pay.year,
+      payMonth: pay.month,
+      highRateMinutes: after.lines.find((line) => line.entryId === "apercu")?.highRateMinutes ?? 0,
+      cappedMinutes: after.cappedMinutes - before.cappedMinutes,
+      partTime: workQuota !== "full",
+    };
+  })();
   const mecenatForCurrentPayMonth = useMemo(
     () => mecenatForPayMonth(mecenatEntries, payView.getFullYear(), payView.getMonth()),
     [mecenatEntries, payView],
@@ -2147,6 +2177,8 @@ export default function Home() {
     deleteRecoveryUse,
     saveMecenatEntry,
     deleteMecenatEntry,
+    markMecenatsPaidEarly,
+    markOvertimePaidEarly,
   } = useWorkTimeActions({
     demoMode,
     userEmail,
@@ -2503,6 +2535,10 @@ export default function Home() {
           sickLeaves,
           overtimeForPayMonth,
           mecenatForCurrentPayMonth,
+          mecenatEntries,
+          onMarkMecenatsPaidEarly: (entries, year, month) => void markMecenatsPaidEarly(entries, year, month),
+          overtimeEarlyCandidates,
+          onMarkOvertimePaidEarly: (entries) => void markOvertimePaidEarly(entries),
           strikeForCurrentPayMonth,
           netCalculation,
           monthNet,
@@ -2952,6 +2988,7 @@ export default function Home() {
             </Suspense>
           }
           recoveryBalance={recoveryBalance}
+          paidOvertimeEstimate={(year, month) => paidOvertimeForPayPeriod(year, month)}
           recoveryEarningsCount={recoveryEarnings.length}
           unresolvedHolidayRecoveryCount={unresolvedHolidayRecoveryCount}
           overtimeEntries={overtimeEntries}
@@ -2964,13 +3001,18 @@ export default function Home() {
           isProgramAdmin={isProgramAdmin}
           archiveOpen={archiveOpen}
           archivedRequests={archivedRequests}
-          onOpenOvertime={() => setOvertimeDialogOpen(true)}
+          onOpenOvertime={() => {
+            // La fenêtre s'ouvre vide, comme celle du mécénat.
+            setOvertimeDraft({ date: "", start: "", end: "", disposition: "" });
+            setOvertimeDialogOpen(true);
+          }}
           onOpenSolidarity={() => setSolidarityDialogOpen(true)}
           onToggleOvertimeHistory={() => setOvertimeHistoryOpen((current) => !current)}
           onDeleteOvertime={(entry) => void deleteOvertimeEntry(entry)}
           onDeleteRecoveryUse={(entry) => void deleteRecoveryUse(entry)}
           onOpenMecenat={() => {
-            setMecenatDraft((current) => ({ ...current, date: dateKey(now) }));
+            // La fenêtre s'ouvre vide : ni date ni horaires préremplis.
+            setMecenatDraft({ date: "", start: "", end: "" });
             setMecenatDialogOpen(true);
           }}
           onToggleMecenatHistory={() => setMecenatHistoryOpen((current) => !current)}
@@ -3429,6 +3471,7 @@ export default function Home() {
         workSchedule={usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE}
         mecenatCalculation={mecenatDraftCalculation}
         mecenatWarnings={mecenatWarnings}
+        overtimePayPreview={overtimePayPreview}
         recoveryRemainingMinutes={recoveryBalance.remaining}
         onStartRangeSelection={beginRangeSelection}
         onSaveMecenat={() => void saveMecenatEntry()}

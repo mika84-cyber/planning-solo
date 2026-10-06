@@ -16,9 +16,14 @@ export async function handleSaveMecenat(
   const date = typeof body.date === "string" ? body.date : "";
   const start = typeof body.start === "string" ? body.start.slice(0, 5) : "";
   const end = typeof body.end === "string" ? body.end.slice(0, 5) : "";
+  // Un mécénat se paie le mois suivant ; il peut aussi l'être dès le mois où
+  // il a été fait, lorsqu'un bulletin vérifié le montre. Aucun autre mois.
   const payPeriod = nextPayPeriod(date);
-  const payYear = payPeriod.year;
-  const payMonth = payPeriod.month;
+  const performedYear = Number(date.slice(0, 4));
+  const performedMonth = Number(date.slice(5, 7)) - 1;
+  const paidEarly = body.payYear === performedYear && body.payMonth === performedMonth;
+  const payYear = paidEarly ? performedYear : payPeriod.year;
+  const payMonth = paidEarly ? performedMonth : payPeriod.month;
   const calculation = calculateRegulatoryMecenatVacation(start, end);
   if (
     !validId(id) ||

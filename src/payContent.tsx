@@ -9,7 +9,7 @@ import type { usePayActions } from "./usePayActions";
 import type { monthGross } from "./payMonth";
 import type { calculatePaidOvertime, WorkQuota } from "./overtime";
 import { minutesLabel } from "./overtime";
-import type { mecenatForPayMonth } from "./mecenat";
+import type { MecenatEntry, mecenatForPayMonth } from "./mecenat";
 import type { StrikePayEstimate } from "./strike";
 import { DeductionSources, type DeductionSourceLine } from "./DeductionSources";
 import { ofPayMonth, payMonthKey } from "./deductionPayMonth";
@@ -69,6 +69,10 @@ export type PayContentInput = {
   sickLeaves: ReturnType<typeof sickLeaveSummaryForYear> | null;
   overtimeForPayMonth: PaidOvertimeSummary;
   mecenatForCurrentPayMonth: ReturnType<typeof mecenatForPayMonth>;
+  mecenatEntries: MecenatEntry[];
+  onMarkMecenatsPaidEarly: (entries: MecenatEntry[], year: number, month: number) => void;
+  overtimeEarlyCandidates: PayslipCheckSectionProps["overtimeEarlyCandidates"];
+  onMarkOvertimePaidEarly: PayslipCheckSectionProps["onMarkOvertimePaidEarly"];
   strikeForCurrentPayMonth: StrikePayEstimate;
   netCalculation: NetCalculation | null;
   monthNet: number | null;
@@ -114,6 +118,10 @@ export function buildPayContent({
   sickLeaves,
   overtimeForPayMonth,
   mecenatForCurrentPayMonth,
+  mecenatEntries,
+  onMarkMecenatsPaidEarly,
+  overtimeEarlyCandidates,
+  onMarkOvertimePaidEarly,
   strikeForCurrentPayMonth,
   netCalculation,
   monthNet,
@@ -625,6 +633,10 @@ export function buildPayContent({
     ifse,
     overtime: overtimeForPayMonth,
     mecenat: mecenatForCurrentPayMonth,
+    mecenatEntries,
+    onMarkMecenatsPaidEarly,
+    overtimeEarlyCandidates,
+    onMarkOvertimePaidEarly,
     onReportMissingSundays: (year, month, missingSundays) =>
       void reportMissingSundays(year, month, missingSundays),
     nextSundayPayout: nextSundayPayoutSlot,

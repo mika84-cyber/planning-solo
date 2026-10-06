@@ -662,6 +662,18 @@
   line-height: 1.45;
 }
 .mecenat-rule-alert { display: grid; gap: 6px; border: 1px solid #ecd28a; border-left: 4px solid #c98a12; border-radius: 12px; padding: 11px 13px; background: #fdf6e3; color: #6b4a06; font-size: 12.5px; line-height: 1.45; } .mecenat-rule-alert ul { display: grid; gap: 5px; margin: 0; padding-left: 18px; } .mecenat-rule-alert small { font-weight: 700; }
+.overtime-capped-note { display: block; margin-top: 2px; color: #9a5b12; font-weight: 700; }
+/* Bulletin : un mécénat ou des heures sup attendus le mois suivant, déjà payés. */
+.mecenat-early-payment { display: grid; gap: 10px; margin: 12px 0; border: 1px solid #cfe3d6; border-left: 4px solid #2f8a5b; border-radius: 12px; padding: 12px 14px; background: #f3faf5; color: #2c2621; font-size: 12.5px; line-height: 1.45; }
+.mecenat-early-payment p { margin: 0; }
+.mecenat-early-payment p strong { display: block; margin-bottom: 2px; color: #1d6b45; font-size: 13px; }
+.mecenat-early-payment ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.mecenat-early-payment li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; border: 1px solid #e3ece6; border-radius: 10px; padding: 8px 10px; background: #fff; }
+.mecenat-early-payment li > span { flex: 1 1 auto; min-width: 0; }
+.mecenat-early-payment li > strong { font-variant-numeric: tabular-nums; }
+.mecenat-early-payment li.matched { border-color: #9fd1b2; }
+.mecenat-early-payment li button { min-height: 34px; padding: 6px 12px; }
+.mecenat-early-payment > button { justify-self: start; }
 .holiday-recovery-history { background: #fff !important; }
 
 /* Palette plus chaleureuse et moins de rectangles fermés. */

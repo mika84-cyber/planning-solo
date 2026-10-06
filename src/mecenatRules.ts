@@ -108,9 +108,18 @@ export function mecenatRuleViolations(
   const first = Math.min(...today.map((item) => item.from));
   const last = Math.max(...today.map((item) => item.to));
   if (last - first > MECENAT_MAX_AMPLITUDE_MINUTES) {
-    const shift = today.find((item) => item.label === "poste");
+    // D'où viennent l'arrivée et le départ : le poste, ce mécénat ou un
+    // mécénat déjà déclaré ce jour-là.
+    const opening = today.find((item) => item.from === first)!;
+    const closing = today.find((item) => item.to === last)!;
+    const origin = (item: Interval, edge: "start" | "end") =>
+      item.label === "poste"
+        ? edge === "start" ? "prise de poste" : "fin de poste"
+        : item.label === "ce mécénat"
+          ? edge === "start" ? "début de ce mécénat" : "fin de ce mécénat"
+          : `${edge === "start" ? "début" : "fin"} du mécénat déjà déclaré de ${clockLabel(item.from)} à ${clockLabel(item.to)}`;
     reasons.push(
-      `Amplitude de ${durationLabel(last - first)} : votre journée irait de ${clockLabel(first)}${shift && shift.from === first ? " (prise de poste)" : ""} à ${clockLabel(last)}${last >= DAY ? " le lendemain" : ""}, alors que 12 heures au maximum sont autorisées entre l’arrivée et le départ, pauses comprises.`,
+      `Amplitude de ${durationLabel(last - first)} : votre journée irait de ${clockLabel(first)} (${origin(opening, "start")}) à ${clockLabel(last)}${last >= DAY ? " le lendemain" : ""} (${origin(closing, "end")}), alors que 12 heures au maximum sont autorisées entre l’arrivée et le départ, pauses comprises.`,
     );
   }
 

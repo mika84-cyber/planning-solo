@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES, type MecenatEntry } from "./mecenat";
-import { minutesLabel, nextPayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
+import { minutesLabel, nextPayPeriod, overtimePayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, fromKey, longDate, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
 
@@ -38,6 +38,8 @@ type LeaveManagementPageProps = {
   recoveryUses: RecoveryUse[];
   recoveryEarningStates: Map<string, { earnedMinutes: number; remainingMinutes: number }>;
   overtimeHistoryOpen: boolean;
+  /** Montant brut estimé des heures à payer d'une paie, et ce qui dépasse le plafond. */
+  paidOvertimeEstimate?: (year: number, month: number) => { ready: boolean; amount: number; cappedMinutes: number };
   mecenatEntries: MecenatEntry[];
   mecenatHistoryOpen: boolean;
   isProgramAdmin: boolean;
@@ -79,6 +81,7 @@ export function LeaveManagementPage({
   isProgramAdmin,
   archiveOpen,
   archivedRequests,
+  paidOvertimeEstimate,
   onOpenOvertime,
   onRequestLeave,
   onOpenBlankForm,
@@ -105,12 +108,13 @@ export function LeaveManagementPage({
     || (historyFilter === "paid" && item.kind === "paid"));
   const paidPeriods = overtimeEntries
     .filter((entry) => entry.disposition === "paid")
-    .map((entry) => ({ ...nextPayPeriod(entry.date), minutes: entry.minutes }));
+    .map((entry) => ({ ...overtimePayPeriod(entry), minutes: entry.minutes }));
   const currentPayKey = new Date().getFullYear() * 12 + new Date().getMonth();
   const nextPaidPeriod = paidPeriods.filter((period) => period.year * 12 + period.month >= currentPayKey).sort((a, b) => a.year - b.year || a.month - b.month)[0];
   const nextPaidMinutes = nextPaidPeriod
     ? paidPeriods.filter((period) => period.year === nextPaidPeriod.year && period.month === nextPaidPeriod.month).reduce((sum, period) => sum + period.minutes, 0)
     : 0;
+  const nextPaidEstimate = nextPaidPeriod ? paidOvertimeEstimate?.(nextPaidPeriod.year, nextPaidPeriod.month) : undefined;
   return (
     <>
       <div className="planning-leave-panel leave-primary-action-bar">
@@ -141,7 +145,7 @@ export function LeaveManagementPage({
             </div>
             <div className="overtime-balance-summary overtime-balance-summary-primary">
               <article className="remaining"><span>À récupérer</span><strong>{minutesLabel(recoveryBalance.remaining)}</strong><small>Solde disponible</small></article>
-              <article><span>À payer</span><strong>{minutesLabel(nextPaidMinutes)}</strong><small>{nextPaidPeriod ? `${MONTHS[nextPaidPeriod.month]} ${nextPaidPeriod.year}` : "Aucune heure prévue"}</small></article>
+              <article><span>À payer</span><strong>{minutesLabel(nextPaidMinutes)}</strong><small>{nextPaidPeriod ? `${MONTHS[nextPaidPeriod.month]} ${nextPaidPeriod.year}${nextPaidEstimate?.ready && nextPaidEstimate.amount ? ` · ≈ ${euros(nextPaidEstimate.amount)} brut` : ""}` : "Aucune heure prévue"}</small>{nextPaidEstimate?.cappedMinutes ? <small className="overtime-capped-note">{minutesLabel(nextPaidEstimate.cappedMinutes)} au-delà du plafond de 25 h : non payées</small> : null}</article>
             </div>
             <div className="overtime-actions">
               <button type="button" className="primary-action" onClick={onOpenOvertime}>Déclarer des heures sup</button>

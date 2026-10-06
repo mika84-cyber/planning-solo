@@ -14,6 +14,8 @@ import {
   overtimeRecoveryCreditMinutes,
   overtimeRangeRecoveryPreview,
   overtimeFromDuration,
+  overtimePayPeriod,
+  paidOvertimeOnPayslip,
   recoveryRequestMinutes,
   splitOvertimeRange,
   splitOvertimeRangeByCalendar,
@@ -588,5 +590,30 @@ describe("majoration du dimanche", () => {
       end: "16:30",
     };
     expect(overtimeRecoveryCreditMinutes(plage, dimanche)).toBe(650);
+  });
+});
+
+describe("heures payées en avance", () => {
+  const paid = (id: string, date: string, paidEarly = false): OvertimeEntry => ({
+    id, date, minutes: 120, dayMinutes: 120, nightMinutes: 0, disposition: "paid", inputMode: "range",
+    start: "18:00", end: "20:00", updatedAt: "", ...(paidEarly ? { paidEarly: true } : {}),
+  });
+  const salary = () => ({ base: 2_000, residence: 60 });
+  const weekday = () => false;
+
+  it("règle normalement le mois suivant, ou le mois même une fois payées en avance", () => {
+    expect(overtimePayPeriod(paid("a", "2026-10-12"))).toEqual({ year: 2026, month: 10 });
+    expect(overtimePayPeriod(paid("a", "2026-10-12", true))).toEqual({ year: 2026, month: 9 });
+    expect(overtimePayPeriod(paid("a", "2026-12-12"))).toEqual({ year: 2027, month: 0 });
+  });
+
+  it("compte les heures d'octobre payées en avance sur le bulletin d'octobre, plus sur celui de novembre", () => {
+    const entries = [paid("sept", "2026-09-20"), paid("oct", "2026-10-12", true)];
+    const october = paidOvertimeOnPayslip(entries, 2026, 9, "full", salary, weekday);
+    expect(october.lines.map((line) => line.entryId)).toEqual(["sept", "oct"]);
+    expect(october.totalMinutes).toBe(240);
+    const november = paidOvertimeOnPayslip(entries, 2026, 10, "full", salary, weekday);
+    expect(november.lines).toEqual([]);
+    expect(november.amount).toBe(0);
   });
 });

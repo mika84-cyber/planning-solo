@@ -332,6 +332,35 @@ describe("API principale du calendrier", () => {
     });
   });
 
+  it("paie un mécénat le mois suivant, ou dès son mois quand le bulletin le montre, jamais un autre mois", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const save = async (payYear?: number, payMonth?: number) => {
+      const response = await calendarHandler(request({
+        action: "save-mecenat", id: "mecenat-early", date: "2026-10-12", start: "19:00", end: "23:00",
+        ...(payYear === undefined ? {} : { payYear, payMonth }),
+      }));
+      expect(response.status).toBe(200);
+      return data.get("user/user-a/mecenat/mecenat-early") as { pay_year: number; pay_month: number };
+    };
+    expect(await save()).toMatchObject({ pay_year: 2026, pay_month: 10 });
+    expect(await save(2026, 9)).toMatchObject({ pay_year: 2026, pay_month: 9 });
+    expect(await save(2027, 3)).toMatchObject({ pay_year: 2026, pay_month: 10 });
+  });
+
+  it("ne garde « payées en avance » que pour des heures à payer", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const save = async (id: string, disposition: "paid" | "recovery") => {
+      const response = await calendarHandler(request({
+        action: "save-overtime", id, date: "2026-10-12", minutes: 120, dayMinutes: 120, nightMinutes: 0,
+        disposition, inputMode: "range", start: "18:00", end: "20:00", paidEarly: true,
+      }));
+      expect(response.status).toBe(200);
+      return data.get(`user/user-a/overtime/${id}`) as Record<string, unknown>;
+    };
+    expect(await save("overtime-paid", "paid")).toMatchObject({ paid_early: true });
+    expect(await save("overtime-recovery", "recovery")).not.toHaveProperty("paid_early");
+  });
+
   it("conserve les parcours CRUD après la séparation des gestionnaires", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const post = async (body: Record<string, unknown>) => {

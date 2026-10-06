@@ -106,6 +106,8 @@ type Props = {
   mecenatCalculation: ComponentProps<typeof MecenatDialog>["calculation"];
   /** Règles du temps de travail que ce mécénat ne respecte pas. */
   mecenatWarnings?: string[];
+  /** Ce que les heures « à payer » en cours de saisie rapporteront. */
+  overtimePayPreview?: ComponentProps<typeof OvertimeDialog>["payPreview"];
   recoveryRemainingMinutes: number;
   onStartRangeSelection: () => void;
   onSaveMecenat: () => void;
@@ -142,6 +144,7 @@ export function AppDialogLayer({
   workSchedule = DEFAULT_WORK_SCHEDULE,
   mecenatCalculation,
   mecenatWarnings = [],
+  overtimePayPreview = null,
   recoveryRemainingMinutes,
   onStartRangeSelection,
   onSaveMecenat,
@@ -193,6 +196,7 @@ export function AppDialogLayer({
         setDraft={workTime.setOvertimeDraft}
         saving={workTime.savingOvertime}
         group={group}
+        payPreview={overtimePayPreview}
         onClose={() => workTime.setOvertimeDialogOpen(false)}
         onSave={onSaveOvertime}
       />

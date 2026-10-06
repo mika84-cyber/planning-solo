@@ -274,6 +274,8 @@ export type OvertimeEntry = {
   input_mode: "range" | "duration";
   start?: string;
   end?: string;
+  /** Heures « à payer » qu'un bulletin vérifié a payées dès le mois même. */
+  paid_early?: boolean;
   updated_at: string;
 };
 export type RecoveryUse = {

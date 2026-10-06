@@ -1,5 +1,7 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { NetRatioCalibration } from "./payslip";
+import type { MecenatEntry } from "./mecenat";
+import type { OvertimeEntry } from "./overtime";
 import type { PayslipReviewSummary } from "./payslipReview";
 import type {
   PayDraftKey,
@@ -63,6 +65,13 @@ export type PayslipCheckSectionProps = {
   ifse: number;
   overtime: OvertimeSummary;
   mecenat: MecenatSummary;
+  /** Tous les mécénats, pour retrouver ceux qu'un bulletin a payés en avance. */
+  mecenatEntries?: MecenatEntry[];
+  onMarkMecenatsPaidEarly?: (entries: MecenatEntry[], year: number, month: number) => void;
+  /** Heures « à payer » d'un mois que la paie suivante attend encore, avec
+   *  leur montant : un bulletin qui en paie plus a pu les régler en avance. */
+  overtimeEarlyCandidates?: (year: number, month: number) => Array<{ entry: OvertimeEntry; cents: number }>;
+  onMarkOvertimePaidEarly?: (entries: OvertimeEntry[]) => void;
   onReportMissingSundays: (year: number, month: number, missing: number) => void;
   nextSundayPayout: (year: number, month: number) => { year: number; month: number } | null;
   sundayCarryover: number;
@@ -125,6 +134,10 @@ export function PayslipCheckSection({
   ifse,
   overtime: overtimeForPayMonth,
   mecenat: mecenatForCurrentPayMonth,
+  mecenatEntries,
+  onMarkMecenatsPaidEarly,
+  overtimeEarlyCandidates,
+  onMarkOvertimePaidEarly,
   onReportMissingSundays: reportMissingSundays,
   nextSundayPayout: nextSundayPayoutSlot,
   sundayCarryover,
@@ -187,6 +200,10 @@ export function PayslipCheckSection({
       grossForMonth={grossForMonth}
       overtime={overtimeForPayMonth}
       mecenat={mecenatForCurrentPayMonth}
+      mecenatEntries={mecenatEntries}
+      onMarkMecenatsPaidEarly={onMarkMecenatsPaidEarly}
+      overtimeEarlyCandidates={overtimeEarlyCandidates}
+      onMarkOvertimePaidEarly={onMarkOvertimePaidEarly}
       onReportMissingSundays={reportMissingSundays}
       nextSundayPayout={nextSundayPayoutSlot}
       sundayCarryover={sundayCarryover}

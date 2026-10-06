@@ -6,7 +6,8 @@ export type OvertimeDraft = {
   date: string;
   start: string;
   end: string;
-  disposition: OvertimeDisposition;
+  /** Vide tant que « À payer » ou « À récupérer » n'est pas choisi. */
+  disposition: OvertimeDisposition | "";
 };
 
 /** Le champ basis dit ce que contient la saisie : « credited », un solde déjà
@@ -44,10 +45,8 @@ export function useWorkTimeUiState() {
   const [mecenatHistoryOpen, setMecenatHistoryOpen] = useState(false);
   const [savingMecenat, setSavingMecenat] = useState(false);
   const [savingOvertime, setSavingOvertime] = useState(false);
-  const [overtimeDraft, setOvertimeDraft] = useState<OvertimeDraft>({
-    date: dateKey(new Date()), start: "09:00", end: "10:00",
-    disposition: "paid" as OvertimeDisposition,
-  });
+  // Rien n'est prérempli : date, horaires et destination se choisissent.
+  const [overtimeDraft, setOvertimeDraft] = useState<OvertimeDraft>({ date: "", start: "", end: "", disposition: "" });
   const [solidarityDraft, setSolidarityDraft] = useState<SolidarityDraft>({ hours: "", minutes: "0", basis: "credited" });
   const [recoveryDraft, setRecoveryDraft] = useState<RecoveryDraft>({
     date: dateKey(new Date()),
@@ -56,9 +55,8 @@ export function useWorkTimeUiState() {
     trainingMinutes: 360 as 180 | 360,
     trainingMoment: "morning" as "morning" | "afternoon",
   });
-  const [mecenatDraft, setMecenatDraft] = useState<MecenatDraft>({
-    date: dateKey(new Date()), start: "09:00", end: "10:00",
-  });
+  // Rien n'est prérempli : date et horaires se saisissent à chaque mécénat.
+  const [mecenatDraft, setMecenatDraft] = useState<MecenatDraft>({ date: "", start: "", end: "" });
   const overtimeSaveInFlightRef = useRef(false);
   const mecenatSaveInFlightRef = useRef(false);
   const lastOvertimeSubmissionRef = useRef({ key: "", at: 0 });

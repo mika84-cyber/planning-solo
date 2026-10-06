@@ -1,5 +1,6 @@
 import type { WorkQuota } from "./overtime";
 import { calculateRegulatoryMecenatVacation } from "./mecenatRegulation";
+import { matchEarlyPayment } from "./earlyPayment";
 export { MECENAT_REGULATORY_RATES } from "./mecenatRegulation";
 
 export type MecenatEntry = {
@@ -44,4 +45,28 @@ export function mecenatForPayMonth(
       0,
     ),
   };
+}
+
+/**
+ * Mécénats prévus sur la paie suivante qu'un bulletin a déjà payés.
+ *
+ * Un mécénat se paie normalement le mois d'après ; s'il tombe finalement sur
+ * le bulletin du mois où il a été fait, la part de mécénat de ce bulletin
+ * dépasse ce qui était attendu. On cherche alors, du plus ancien au plus
+ * récent, les mécénats du mois qui expliquent ce surplus.
+ */
+export function mecenatsPaidEarly(
+  entries: MecenatEntry[],
+  year: number,
+  month: number,
+  bulletinCents: number,
+) {
+  const expectedCents = mecenatForPayMonth(entries, year, month).grossAmountCents;
+  const surplusCents = bulletinCents - expectedCents;
+  const next = month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 };
+  const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const candidates = entries
+    .filter((entry) => entry.payYear === next.year && entry.payMonth === next.month && entry.date.slice(0, 7) <= monthKey)
+    .sort((a, b) => `${a.date}-${a.start}-${a.id}`.localeCompare(`${b.date}-${b.start}-${b.id}`));
+  return { surplusCents, ...matchEarlyPayment(candidates, (entry) => entry.grossAmountCents, surplusCents) };
 }

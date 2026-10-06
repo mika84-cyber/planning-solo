@@ -2,7 +2,10 @@ import { ChoicePicker } from "./ChoicePicker";
 import { useEffect, useState } from "react";
 import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s } from "./planningLogic";
-import { minutesLabel } from "./overtime";
+import { minutesLabel, type OvertimeEntry } from "./overtime";
+import { matchEarlyPayment } from "./earlyPayment";
+import { mecenatsPaidEarly, type MecenatEntry } from "./mecenat";
+import { isMecenatLabel, isOvertimeLabel } from "./payslip";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 import {
   isPayslipImage,
@@ -57,9 +60,117 @@ type Props = Pick<
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "unplannedCarence" | "resultDetailsOpen" |
   "setResultDetailsOpen" | "grossForMonth" | "overtime" |
-  "mecenat" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
+  "mecenat" | "mecenatEntries" | "onMarkMecenatsPaidEarly" | "overtimeEarlyCandidates" |
+  "onMarkOvertimePaidEarly" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
   "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover"
 >;
+
+/** « 19:00 » devient « 19 h », « 09:30 » devient « 9 h 30 ». */
+function clockText(value = "") {
+  return value.replace(/^0/, "").replace(":00", " h").replace(":", " h ");
+}
+function dayText(date: string) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "long" });
+}
+/** Vacation d'un mécénat : « lun. 12 octobre · 19 h – 23 h ». */
+function mecenatSlotLabel(entry: MecenatEntry) {
+  return `${dayText(entry.date)} · ${clockText(entry.start)} – ${clockText(entry.end)}`;
+}
+/** Heures sup : « lun. 12 octobre · 18 h – 20 h · 2 h ». */
+function overtimeSlotLabel(entry: OvertimeEntry) {
+  const range = entry.start && entry.end ? ` · ${clockText(entry.start)} – ${clockText(entry.end)}` : "";
+  return `${dayText(entry.date)}${range} · ${minutesLabel(entry.minutes)}`;
+}
+
+const EARLY_WORDING = {
+  mecenat: {
+    title: "Mécénat payé en avance",
+    what: "de mécénat",
+    matchedOne: "au mécénat suivant, prévu", matchedMany: "aux mécénats suivants, prévus",
+    pickOne: "Indiquez si ce mécénat, prévu", pickMany: "Indiquez lesquels de ces mécénats, prévus",
+    paidOne: "payé", paidMany: "payés", removedOne: "retiré", removedMany: "retirés",
+  },
+  overtime: {
+    title: "Heures supplémentaires payées en avance",
+    what: "d’heures supplémentaires",
+    matchedOne: "à la déclaration suivante, prévue", matchedMany: "aux déclarations suivantes, prévues",
+    pickOne: "Indiquez si cette déclaration, prévue", pickMany: "Indiquez lesquelles de ces déclarations, prévues",
+    paidOne: "payée", paidMany: "payées", removedOne: "retirée", removedMany: "retirées",
+  },
+} as const;
+
+/** Un bulletin qui paie plus que prévu : on propose de confirmer que les
+ *  éléments attendus le mois suivant sont déjà payés. */
+export function EarlyPaymentNotice({
+  kind,
+  surplusCents,
+  items,
+  matchedIds,
+  nextMonthLabel,
+  onConfirm,
+}: {
+  kind: keyof typeof EARLY_WORDING;
+  surplusCents: number;
+  items: Array<{ id: string; label: string; cents: number }>;
+  matchedIds: string[];
+  nextMonthLabel: string;
+  onConfirm: (ids: string[]) => void;
+}) {
+  const words = EARLY_WORDING[kind];
+  const matched = matchedIds.length > 0;
+  const several = (matched ? matchedIds.length : items.length) > 1;
+  return (
+    <section className="mecenat-early-payment" aria-label={words.title}>
+      <p>
+        <strong>{words.title}</strong>
+        Ce bulletin paie {euros(surplusCents / 100)} {words.what} de plus que prévu.{" "}
+        {matched
+          ? `Cela correspond ${several ? words.matchedMany : words.matchedOne} sur la paie de ${nextMonthLabel}.`
+          : `${several ? words.pickMany : words.pickOne} sur la paie de ${nextMonthLabel}, ${several ? "sont" : "est"} déjà ${several ? words.paidMany : words.paidOne}.`}
+      </p>
+      <ul>
+        {items.map((item) => (
+          <li key={item.id} className={matchedIds.includes(item.id) ? "matched" : undefined}>
+            <span>{item.label}</span>
+            <strong>{euros(item.cents / 100)}</strong>
+            {matched ? null : (
+              <button type="button" className="secondary-button" onClick={() => onConfirm([item.id])}>
+                Déjà {words.paidOne}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {matched ? (
+        <button type="button" className="primary-action" onClick={() => onConfirm(matchedIds)}>
+          Confirmer : déjà {several ? words.paidMany : words.paidOne}, {several ? words.removedMany : words.removedOne} de {nextMonthLabel}
+        </button>
+      ) : null}
+    </section>
+  );
+}
+
+/** Le cas du mécénat, d'après le calcul de mecenatsPaidEarly. */
+export function EarlyMecenatPayment({
+  early,
+  nextMonthLabel,
+  onConfirm,
+}: {
+  early: ReturnType<typeof mecenatsPaidEarly>;
+  nextMonthLabel: string;
+  onConfirm: (entries: MecenatEntry[]) => void;
+}) {
+  return (
+    <EarlyPaymentNotice
+      kind="mecenat"
+      surplusCents={early.surplusCents}
+      items={early.candidates.map((entry) => ({ id: entry.id, label: mecenatSlotLabel(entry), cents: entry.grossAmountCents }))}
+      matchedIds={early.matched.map((entry) => entry.id)}
+      nextMonthLabel={nextMonthLabel}
+      onConfirm={(ids) => onConfirm(early.candidates.filter((entry) => ids.includes(entry.id)))}
+    />
+  );
+}
 
 function downloadPdf(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
@@ -94,6 +205,10 @@ export function PayslipVerificationCard({
   grossForMonth,
   overtime: overtimeForPayMonth,
   mecenat: mecenatForCurrentPayMonth,
+  mecenatEntries = [],
+  onMarkMecenatsPaidEarly,
+  overtimeEarlyCandidates,
+  onMarkOvertimePaidEarly,
   onReportMissingSundays: reportMissingSundays,
   nextSundayPayout: nextSundayPayoutSlot,
   sundayCarryover,
@@ -113,6 +228,24 @@ export function PayslipVerificationCard({
   }, [accountId, allowances.year, displayedMonth]);
   const checkMatchesDisplayedPeriod = payslipCheck?.reading.month === displayedMonth
     && payslipCheck.reading.year === allowances.year;
+  // Un mécénat attendu sur la paie suivante, déjà payé par ce bulletin.
+  const bulletinMecenatCents = checkMatchesDisplayedPeriod && payslipCheck
+    ? Math.round((payslipCheck.reading.extraLines || []).filter((line) => isMecenatLabel(line.label)).reduce((sum, line) => sum + line.amount, 0) * 100)
+    : 0;
+  const earlyMecenat = bulletinMecenatCents
+    ? mecenatsPaidEarly(mecenatEntries, allowances.year, displayedMonth, bulletinMecenatCents)
+    : null;
+  const nextMonthLabel = MONTHS[(displayedMonth + 1) % 12];
+  // Les heures supplémentaires lues sur le bulletin, comparées à l'estimation,
+  // et celles du mois que la paie suivante attendait encore.
+  const bulletinOvertimeCents = checkMatchesDisplayedPeriod && payslipCheck
+    ? Math.round((payslipCheck.reading.extraLines || []).filter((line) => isOvertimeLabel(line.label)).reduce((sum, line) => sum + line.amount, 0) * 100)
+    : 0;
+  const expectedOvertimeCents = Math.round(overtimeForPayMonth.amount * 100);
+  const overtimeSurplusCents = bulletinOvertimeCents - expectedOvertimeCents;
+  const earlyOvertime = bulletinOvertimeCents && overtimeEarlyCandidates
+    ? matchEarlyPayment(overtimeEarlyCandidates(allowances.year, displayedMonth), (item) => item.cents, overtimeSurplusCents)
+    : null;
   const comparableGross =
     checkMatchesDisplayedPeriod && payslipCheck &&
     payslipCheck.reading.gross !== undefined
@@ -442,6 +575,23 @@ export function PayslipVerificationCard({
                   })`).join(" ; ")}.
                 </p>
               ) : null}
+              {earlyOvertime?.candidates.length && onMarkOvertimePaidEarly ? (
+                <EarlyPaymentNotice
+                  kind="overtime"
+                  surplusCents={overtimeSurplusCents}
+                  items={earlyOvertime.candidates.map((item) => ({ id: item.entry.id, label: overtimeSlotLabel(item.entry), cents: item.cents }))}
+                  matchedIds={earlyOvertime.matched.map((item) => item.entry.id)}
+                  nextMonthLabel={nextMonthLabel}
+                  onConfirm={(ids) => onMarkOvertimePaidEarly(earlyOvertime.candidates.filter((item) => ids.includes(item.entry.id)).map((item) => item.entry))}
+                />
+              ) : null}
+              {earlyMecenat?.candidates.length && onMarkMecenatsPaidEarly ? (
+                <EarlyMecenatPayment
+                  early={earlyMecenat}
+                  nextMonthLabel={nextMonthLabel}
+                  onConfirm={(entries) => onMarkMecenatsPaidEarly(entries, allowances.year, displayedMonth)}
+                />
+              ) : null}
               {payslipReview?.issues.length ? (
                 <PayslipIssueList issues={payslipReview.issues} title="Tous les points qui ne coïncident pas" />
               ) : null}
@@ -487,13 +637,11 @@ export function PayslipVerificationCard({
                   }) : null}
                 </tbody>
               </table>
-              {overtimeForPayMonth.totalMinutes ? (
+              {overtimeForPayMonth.totalMinutes || bulletinOvertimeCents ? (
                 <p className="allowance-note">
-                  {minutesLabel(overtimeForPayMonth.totalMinutes)} sont attendues
-                  sur ce bulletin pour un montant brut estimé de {euros(
-                    overtimeForPayMonth.amount,
-                  )}. La ligne du PDF n’est pas encore reconnue de façon assez
-                  fiable : vérifiez-la visuellement sur le bulletin.
+                  {bulletinOvertimeCents
+                    ? `Heures supplémentaires lues sur ce bulletin : ${euros(bulletinOvertimeCents / 100)}, pour ${euros(overtimeForPayMonth.amount)} attendus${overtimeForPayMonth.totalMinutes ? ` (${minutesLabel(overtimeForPayMonth.totalMinutes)})` : ""}${Math.abs(overtimeSurplusCents) <= 100 ? " : cela concorde." : "."}`
+                    : `${minutesLabel(overtimeForPayMonth.totalMinutes)} sont attendues sur ce bulletin pour un montant brut estimé de ${euros(overtimeForPayMonth.amount)}, mais aucune ligne d’heures supplémentaires n’y a été trouvée : vérifiez-la sur le bulletin.`}
                 </p>
               ) : null}
               {mecenatForCurrentPayMonth.totalMinutes ? (

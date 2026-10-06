@@ -53,6 +53,8 @@ export type OvertimeEntry = {
   inputMode: OvertimeInputMode;
   start?: string;
   end?: string;
+  /** Heures « à payer » qu'un bulletin vérifié a payées dès le mois même. */
+  paidEarly?: boolean;
   updatedAt: string;
 };
 
@@ -535,3 +537,51 @@ export function calculatePaidOvertime(
     lines,
   };
 }
+
+/** Mois de la paie qui règle ces heures : le mois suivant, ou le mois même
+ *  quand un bulletin les a payées en avance. */
+export function overtimePayPeriod(entry: Pick<OvertimeEntry, "date" | "paidEarly">) {
+  return entry.paidEarly
+    ? { year: Number(entry.date.slice(0, 4)), month: Number(entry.date.slice(5, 7)) - 1 }
+    : nextPayPeriod(entry.date);
+}
+
+/**
+ * Les heures « à payer » d'un bulletin : celles du mois précédent, plus celles
+ * du mois même qu'un bulletin a déjà payées en avance.
+ */
+export function paidOvertimeOnPayslip(
+  entries: OvertimeEntry[],
+  payYear: number,
+  payMonth: number,
+  quota: WorkQuota,
+  salaryFor: (year: number) => { base: number; residence: number },
+  isSundayOrHoliday: (date: string) => boolean,
+) {
+  const performedMonth = (payMonth + 11) % 12;
+  const performedYear = payYear - (payMonth === 0 ? 1 : 0);
+  const previous = salaryFor(performedYear);
+  const usual = calculatePaidOvertime(
+    entries.filter((entry) => !entry.paidEarly),
+    performedYear, performedMonth, quota, previous.base, previous.residence, isSundayOrHoliday,
+  );
+  const ahead = entries.filter((entry) => entry.paidEarly);
+  const current = salaryFor(payYear);
+  const early = ahead.length
+    ? calculatePaidOvertime(ahead, payYear, payMonth, quota, current.base, current.residence, isSundayOrHoliday)
+    : null;
+  if (!early || !early.totalMinutes) return { performedMonth, performedYear, ...usual };
+  return {
+    performedMonth,
+    performedYear,
+    ...({
+      ready: usual.ready && early.ready,
+      hourlyBase: usual.hourlyBase || early.hourlyBase,
+      totalMinutes: usual.totalMinutes + early.totalMinutes,
+      cappedMinutes: usual.cappedMinutes + early.cappedMinutes,
+      amount: usual.amount + early.amount,
+      lines: [...usual.lines, ...early.lines],
+    } as ReturnType<typeof calculatePaidOvertime>),
+  };
+}
+

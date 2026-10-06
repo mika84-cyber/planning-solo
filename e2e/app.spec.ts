@@ -4031,10 +4031,17 @@ test("les heures supplémentaires du dimanche sont acceptées et reconnues", asy
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
   const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
+  // Rien n'est prérempli : ni date, ni horaires, ni destination.
+  await expect(dialog.getByLabel("Date")).toHaveValue("");
+  await expect(dialog.getByLabel("Heure de début — heures")).toHaveValue("");
+  await expect(dialog.locator(".overtime-destination-grid .active")).toHaveCount(0);
   await dialog.getByLabel("Date").fill("2026-05-10");
   await expect(dialog).toContainText("Tarif dimanche/jour férié reconnu automatiquement");
   await setClockTime(dialog, "Heure de début", "10:00");
   await setClockTime(dialog, "Heure de fin", "12:30");
+  await dialog.getByRole("button", { name: "À payer" }).click();
+  // « À payer » annonce le mois de paie avant l'enregistrement.
+  await expect(dialog.locator(".overtime-pay-preview")).toContainText("paie de juin 2026");
   await dialog.getByRole("button", { name: "Enregistrer les heures" }).click();
 
   await expect(dialog).toBeHidden();
@@ -5551,12 +5558,20 @@ test("un mécénat hors des règles du temps de travail est signalé sans empêc
   await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
   await page.locator(".mecenat-action").click();
   const dialog = page.getByRole("dialog", { name: "Déclarer un mécénat" });
-  await dialog.locator('input[type="date"]').fill(dateKey(day));
+  // La fenêtre s'ouvre vide : ni date ni horaires, donc ni avertissement ni calcul.
+  await expect(dialog.locator('input[type="date"]')).toHaveValue("");
   const [startHour, , endHour] = await dialog.getByRole("combobox").all();
+  await expect(startHour).toHaveValue("");
+  await expect(endHour).toHaveValue("");
+  const warning = dialog.locator(".mecenat-rule-alert");
+  await expect(warning).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Enregistrer le mécénat" })).toBeDisabled();
+  // Tant que la plage n'est pas complète, toujours rien.
+  await dialog.locator('input[type="date"]').fill(dateKey(day));
   await startHour.selectOption("19");
+  await expect(warning).toHaveCount(0);
   await endHour.selectOption("23");
 
-  const warning = dialog.locator(".mecenat-rule-alert");
   await expect(warning).toContainText("Ce mécénat ne respecte pas le temps de travail");
   await expect(warning).toContainText("12 heures au maximum");
   await expect(warning).toContainText("au moins 11 heures de repos");

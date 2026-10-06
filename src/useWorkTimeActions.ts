@@ -119,6 +119,7 @@ export function overtimeSavePayload(entry: OvertimeEntry) {
     inputMode: entry.inputMode,
     start: entry.start,
     end: entry.end,
+    ...(entry.paidEarly ? { paidEarly: true } : {}),
   } satisfies Record<string, unknown>;
 }
 
@@ -175,6 +176,11 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
       notify("Indiquez des heures de début et de fin valides et différentes. Une plage peut passer minuit.");
       return;
     }
+    const disposition = overtimeDraft.disposition;
+    if (!disposition) {
+      notify("Choisissez ce que deviennent ces heures : à payer ou à récupérer.");
+      return;
+    }
     const submissionKey = [
       overtimeDraft.date, duration.minutes, duration.dayMinutes,
       duration.nightMinutes, overtimeDraft.disposition,
@@ -189,7 +195,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     try {
       const localEntry: OvertimeEntry = {
         id: createClientId("overtime"), date: overtimeDraft.date, ...duration,
-        disposition: overtimeDraft.disposition, inputMode: "range",
+        disposition, inputMode: "range",
         start: overtimeDraft.start, end: overtimeDraft.end,
         updatedAt: new Date().toISOString(),
       };
@@ -437,9 +443,42 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     }
   }
 
+  /** Un bulletin vérifié montre que ces mécénats, prévus sur la paie
+   *  suivante, ont déjà été payés : ils passent sur le mois du bulletin et
+   *  quittent l'estimation du mois d'après. */
+  async function markMecenatsPaidEarly(entries: MecenatEntry[], payYear: number, payMonth: number) {
+    if (!entries.length) return;
+    try {
+      const moved = entries.map((entry) => ({ ...entry, payYear, payMonth, updatedAt: new Date().toISOString() }));
+      if (!demoMode) for (const entry of moved) await post<MecenatResponse>(mecenatSavePayload(entry));
+      const byId = new Map(moved.map((entry) => [entry.id, entry]));
+      setMecenatEntries((current) => current.map((item) => byId.get(item.id) ?? item));
+      const plural = moved.length > 1;
+      confirmMessage(`${plural ? `${moved.length} mécénats confirmés payés` : "Mécénat confirmé payé"} sur ce bulletin : retiré${plural ? "s" : ""} de la paie du mois suivant.`);
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être mis à jour."));
+    }
+  }
+
+  /** Un bulletin vérifié montre que ces heures « à payer » sont déjà réglées :
+   *  elles comptent sur ce bulletin et quittent la paie suivante. */
+  async function markOvertimePaidEarly(entries: OvertimeEntry[]) {
+    if (!entries.length) return;
+    try {
+      const moved = entries.map((entry) => ({ ...entry, paidEarly: true, updatedAt: new Date().toISOString() }));
+      if (!demoMode) for (const entry of moved) await post<OvertimeResponse>(overtimeSavePayload(entry));
+      const byId = new Map(moved.map((entry) => [entry.id, entry]));
+      setOvertimeEntries((current) => current.map((item) => byId.get(item.id) ?? item));
+      confirmMessage("Heures supplémentaires confirmées payées sur ce bulletin : retirées de la paie du mois suivant.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "Les heures n’ont pas pu être mises à jour."));
+    }
+  }
+
   return {
     saveOvertimeEntry, saveSolidarityHours, deleteOvertimeEntry,
     saveRecoveryUse, beginRecoveryRangeSelection, cancelRecoveryRangeSelection,
     saveRecoveryRangeDates, deleteRecoveryUse, saveMecenatEntry, deleteMecenatEntry,
+    markMecenatsPaidEarly, markOvertimePaidEarly,
   };
 }

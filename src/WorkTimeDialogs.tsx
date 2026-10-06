@@ -3,7 +3,7 @@ import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
 import { defaultRecoveryMinutes, minutesLabel, OVERTIME_RECOVERY_FACTORS, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
-import { DAY_LABELS, getDayInfo } from "./planningLogic";
+import { DAY_LABELS, MONTHS, getDayInfo } from "./planningLogic";
 
 type MecenatDraft = { date: string; start: string; end: string };
 type MecenatCalculation = {
@@ -67,12 +67,8 @@ export function MecenatDialog({
             />
           </label>
           <div className="overtime-time-grid">
-            <ClockTimePicker label="Heure de début" value={draft.start} onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
-            <ClockTimePicker label="Heure de fin" value={draft.end} onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
-            <small>
-              Si l’heure de fin est antérieure au début, la vacation se termine le
-              lendemain.
-            </small>
+            <ClockTimePicker label="Heure de début" value={draft.start} allowEmpty onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
+            <ClockTimePicker label="Heure de fin" value={draft.end} allowEmpty onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
           </div>
           <p className="mecenat-next-month-note">
             Le paiement sera automatiquement intégré à la paie du mois suivant.
@@ -133,7 +129,18 @@ type OvertimeDraft = {
   date: string;
   start: string;
   end: string;
-  disposition: OvertimeDisposition;
+  disposition: OvertimeDisposition | "";
+};
+
+/** Ce que des heures « à payer » rapporteront, annoncé avant l'enregistrement. */
+export type OvertimePayPreview = {
+  ready: boolean;
+  amount: number;
+  payYear: number;
+  payMonth: number;
+  highRateMinutes: number;
+  cappedMinutes: number;
+  partTime: boolean;
 };
 
 export function OvertimeDialog({
@@ -142,6 +149,7 @@ export function OvertimeDialog({
   setDraft,
   saving,
   group,
+  payPreview = null,
   onClose,
   onSave,
 }: {
@@ -150,6 +158,7 @@ export function OvertimeDialog({
   setDraft: Dispatch<SetStateAction<OvertimeDraft>>;
   saving: boolean;
   group: number;
+  payPreview?: OvertimePayPreview | null;
   onClose: () => void;
   onSave: () => void;
 }) {
@@ -211,8 +220,8 @@ export function OvertimeDialog({
           </label>
           <div className="overtime-time-grid overtime-range-card">
             <strong className="overtime-time-title">Horaires effectués</strong>
-            <ClockTimePicker label="Heure de début" value={draft.start} onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
-            <ClockTimePicker label="Heure de fin" value={draft.end} onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
+            <ClockTimePicker label="Heure de début" value={draft.start} allowEmpty onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
+            <ClockTimePicker label="Heure de fin" value={draft.end} allowEmpty onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
             <small>
               Nuit reconnue de 22 h à 7 h. Les horaires peuvent passer minuit.
             </small>
@@ -243,6 +252,26 @@ export function OvertimeDialog({
                 <span>1 h travaillée = 1 h 15 · dimanche et férié 1 h 40 · nuit 2 h</span>
               </button>
             </div>
+            {draft.disposition === "paid" && payPreview ? (
+              <p className="overtime-recovery-preview overtime-pay-preview">
+                <strong>
+                  {payPreview.ready ? <b>≈ {euros(payPreview.amount)} brut</b> : <b>Montant à estimer</b>}
+                  <span> · paie de {MONTHS[payPreview.payMonth]} {payPreview.payYear}</span>
+                </strong>
+                <small>
+                  {!payPreview.ready
+                    ? "Renseignez votre traitement dans Ma paie pour estimer le montant."
+                    : payPreview.partTime
+                      ? "Temps partiel : payées au taux horaire, sans majoration."
+                      : payPreview.highRateMinutes
+                        ? `${minutesLabel(payPreview.highRateMinutes)} au-delà des 14 premières heures du mois : majorées à 1,27 au lieu de 1,25.`
+                        : "Majorées à 1,25 jusqu’à 14 h dans le mois, puis à 1,27 ; dimanche, férié et nuit en plus."}
+                  {payPreview.cappedMinutes
+                    ? ` ${minutesLabel(payPreview.cappedMinutes)} au-delà du plafond de 25 h du mois : déclarées mais non payées.`
+                    : ""}
+                </small>
+              </p>
+            ) : null}
             {draft.disposition === "recovery" && recoveryPreview ? (
               <p className="overtime-recovery-preview">
                 {/* Même formulation que l'historique : c'est le gain qu'on
@@ -326,14 +355,7 @@ export function SolidarityHoursDialog({
         <fieldset className="overtime-choice-field">
           <legend>Que contient ce total ?</legend>
           <div className="overtime-destination-grid">
-            <button
-              type="button"
-              className={draft.basis === "worked" ? "active recovery" : "recovery"}
-              onClick={() => setDraft((current) => ({ ...current, basis: "worked" }))}
-            >
-              <strong>Des heures travaillées</strong>
-              <span>1 h travaillée = 1 h 15 de récup</span>
-            </button>
+            {/* Le cas le plus courant d'abord : un solde déjà calculé. */}
             <button
               type="button"
               className={draft.basis === "credited" ? "active recovery" : "recovery"}
@@ -341,6 +363,14 @@ export function SolidarityHoursDialog({
             >
               <strong>Un solde déjà calculé</strong>
               <span>Ajouté tel quel</span>
+            </button>
+            <button
+              type="button"
+              className={draft.basis === "worked" ? "active recovery" : "recovery"}
+              onClick={() => setDraft((current) => ({ ...current, basis: "worked" }))}
+            >
+              <strong>Des heures travaillées</strong>
+              <span>1 h travaillée = 1 h 15 de récup</span>
             </button>
           </div>
         </fieldset>

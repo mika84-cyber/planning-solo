@@ -258,6 +258,7 @@ function overtimeFromApi(value: unknown): OvertimeEntry[] {
       inputMode: raw.input_mode === "range" ? "range" : "duration",
       start: text(raw.start) || undefined,
       end: text(raw.end) || undefined,
+      ...(raw.disposition === "paid" && raw.paid_early === true ? { paidEarly: true } : {}),
       updatedAt: text(raw.updated_at),
     }];
   });

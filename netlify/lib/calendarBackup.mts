@@ -224,6 +224,7 @@ export function sanitizeCalendarBackup(value: unknown) {
       input_mode: item.input_mode,
       start: typeof item.start === "string" ? item.start : "",
       end: typeof item.end === "string" ? item.end : "",
+      ...(item.disposition === "paid" && item.paid_early === true ? { paid_early: true } : {}),
       updated_at: typeof item.updated_at === "string" ? item.updated_at : new Date().toISOString(),
     });
   }

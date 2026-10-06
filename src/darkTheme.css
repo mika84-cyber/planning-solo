@@ -120,3 +120,6 @@ html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .usef
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-agnes { background: #3a2029; }
 html[data-theme="dark"] .mecenat-rule-alert { border-color: #7a5d1c; border-left-color: #e0a63a; background: #33291a; color: #f3dca0; }
+html[data-theme="dark"] .mecenat-early-payment { border-color: #2f5a42; border-left-color: #5fb483; background: #1f2a23; color: #e8e2d8; }
+html[data-theme="dark"] .mecenat-early-payment p strong { color: #8fd1a8; }
+html[data-theme="dark"] .mecenat-early-payment li { border-color: #33443a; background: #262f29; }

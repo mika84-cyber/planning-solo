@@ -265,6 +265,8 @@ describe("reprise du solde de récupération", () => {
     const html = solde("credited");
     expect(html).toContain("Un solde déjà calculé");
     expect(html).toContain("Des heures travaillées");
+    // Le solde déjà calculé, cas le plus courant, est proposé en premier.
+    expect(html.indexOf("Un solde déjà calculé")).toBeLessThan(html.indexOf("Des heures travaillées"));
   });
 
   it("ne majore rien pour un solde déjà calculé", () => {

@@ -30,7 +30,7 @@ describe("règles du mécénat", () => {
       context({ "2026-09-23": "work" }),
     );
     expect(reason).toContain("Amplitude de 13 h 45");
-    expect(reason).toContain("de 9 h 15 (prise de poste) à 23 h");
+    expect(reason).toContain("de 9 h 15 (prise de poste) à 23 h (fin de ce mécénat)");
     expect(reason).toContain("12 heures au maximum");
   });
 
@@ -105,5 +105,14 @@ describe("règles du mécénat", () => {
         "2026-09-20": "work", "2026-09-21": "work", "2026-09-23": "work",
       }),
     )).toEqual([]);
+  });
+
+  it("dit quel mécénat déjà déclaré allonge la journée", () => {
+    const [reason] = mecenatRuleViolations(
+      { date: "2026-10-06", start: "09:00", end: "11:00" },
+      context({}, [{ date: "2026-10-06", start: "19:00", end: "00:00" }]),
+    );
+    expect(reason).toContain("Amplitude de 15 h");
+    expect(reason).toContain("de 9 h (début de ce mécénat) à 0 h le lendemain (fin du mécénat déjà déclaré de 19 h à 0 h)");
   });
 });

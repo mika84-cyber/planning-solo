@@ -107,6 +107,16 @@ export function isKnownEarningLabel(label: string) {
   return KNOWN_PLAIN_LABELS.some((known) => plain.startsWith(known));
 }
 
+/** Une ligne de mécénat (ou de vacation) sur le bulletin. */
+export function isMecenatLabel(label: string) {
+  return /MECENAT|VACATION/.test(plainPayslipLabel(label));
+}
+
+/** Une ligne d'heures supplémentaires (IHTS) sur le bulletin. */
+export function isOvertimeLabel(label: string) {
+  return isComputedVariableLabel(label) && !isMecenatLabel(label);
+}
+
 /** Heures supplémentaires et mécénats : l'application les calcule déjà, ils
  *  ne deviennent jamais des éléments fixes. */
 export function isComputedVariableLabel(label: string) {

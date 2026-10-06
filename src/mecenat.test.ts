@@ -3,6 +3,7 @@ import {
   MECENAT_REGULATORY_RATES,
   calculateMecenatVacation,
   mecenatForPayMonth,
+  mecenatsPaidEarly,
   type MecenatEntry,
 } from "./mecenat";
 import type { WorkQuota } from "./overtime";
@@ -63,3 +64,37 @@ describe("rattachement à la paie", () => {
     expect(result.grossAmountCents).toBe(13870);
   });
 });
+
+describe("mécénat payé en avance", () => {
+  const entry = (id: string, date: string, grossAmountCents: number, payMonth: number) => ({
+    id, date, start: "19:00", end: "23:00", dayMinutes: 180, nightMinutes: 60,
+    grossAmountCents, payYear: 2026, payMonth, updatedAt: "",
+  });
+
+  it("retrouve le mécénat d'octobre prévu en novembre qu'un bulletin d'octobre a déjà payé", () => {
+    const entries = [entry("sept", "2026-09-20", 8_000, 9), entry("oct-1", "2026-10-05", 10_370, 10), entry("oct-2", "2026-10-25", 5_000, 10)];
+    // Bulletin d'octobre : 80 € attendus (septembre) + 103,70 € payés en avance.
+    const early = mecenatsPaidEarly(entries, 2026, 9, 18_370);
+    expect(early.surplusCents).toBe(10_370);
+    expect(early.candidates.map((item) => item.id)).toEqual(["oct-1", "oct-2"]);
+    expect(early.matched.map((item) => item.id)).toEqual(["oct-1"]);
+  });
+
+  it("ne propose rien quand le bulletin paie exactement ce qui était prévu", () => {
+    const entries = [entry("sept", "2026-09-20", 8_000, 9), entry("oct-1", "2026-10-05", 10_370, 10)];
+    expect(mecenatsPaidEarly(entries, 2026, 9, 8_010).candidates).toEqual([]);
+  });
+
+  it("laisse choisir mécénat par mécénat quand le surplus ne s'explique pas entièrement", () => {
+    const entries = [entry("oct-1", "2026-10-05", 10_370, 10), entry("oct-2", "2026-10-25", 5_000, 10)];
+    const early = mecenatsPaidEarly(entries, 2026, 9, 7_000);
+    expect(early.candidates).toHaveLength(2);
+    expect(early.matched).toEqual([]);
+  });
+
+  it("passe à janvier pour un bulletin de décembre", () => {
+    const entries = [{ ...entry("dec", "2026-12-12", 6_000, 0), payYear: 2027 }];
+    expect(mecenatsPaidEarly(entries, 2026, 11, 6_000).matched.map((item) => item.id)).toEqual(["dec"]);
+  });
+});
+
