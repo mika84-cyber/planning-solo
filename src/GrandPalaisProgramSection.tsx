@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { matchesSearch } from "./searchMatching";
@@ -272,6 +272,16 @@ function formatFrenchDate(value: string) {
 function formatDatePart(value: string, options: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat("fr-FR", { ...options, timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`));
 }
+
+/* Les quatre vues de la programmation, chacune avec son dessin : un tableau
+   (ce qui est accroché en ce moment), un calendrier qui avance, la nef du
+   Grand Palais, et deux cadres reliés (le passage d'une expo à l'autre). */
+const VIEW_ICONS = {
+  now: <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="1.5" /><path d="m6.5 16 3.5-4.5 2.5 3 2-2 3 3.5" /><circle className="view-icon-dot" cx="17.5" cy="8.5" r="1.6" /></svg>,
+  upcoming: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5v3m10-3v3M4 9h16" /><rect x="4" y="5.5" width="16" height="15" rx="2" /><path d="M10 15h5m-2-2 2 2-2 2" /></svg>,
+  space: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10a7 7 0 0 1 14 0" /><path d="M3.5 10h17M5.5 10v8.5m4.3-8.5v8.5m4.4-8.5v8.5m4.3-8.5v8.5M3.5 20.5h17M12 3v-.5" /></svg>,
+  interexpo: <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="9" rx="1" /><rect x="14.5" y="7" width="7" height="9" rx="1" /><path d="M10.5 11.5h3m-1.2-1.6 1.6 1.6-1.6 1.6" /></svg>,
+} as const;
 
 /** Intitulé d'un regroupement mensuel : « Septembre 2026 ». */
 function monthHeading(value: string) {
@@ -639,12 +649,24 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
   const otherVenueKeys = useMemo(() => otherGrandPalaisVenueKeys(program, today), [program, today]);
   const activeOtherVenue = otherVenueKeys.includes(otherVenue) ? otherVenue : otherVenueKeys[0] ?? "nef";
   const selectedVenueKey = primaryChoice === "other" ? activeOtherVenue : primaryChoice;
-  const [selectedYear, setSelectedYear] = useState<GrandPalaisProgramYear>(2026);
   const venue = program[selectedVenueKey] ?? program.nef;
   const years = useMemo(() => venueYears(selectedVenueKey, today, program), [selectedVenueKey, today, program]);
   const normalizedSearch = searchQuery.trim();
   // Une recherche a son propre panneau : chaque onglet montre tout son contenu.
-  const entries = (venue.schedule[selectedYear] ?? []).filter((entry) => isGrandPalaisEntryVisible(entry, today));
+  // Un espace se lit année par année : chaque année en liste, ses expositions dessous.
+  const yearGroups = years
+    .map((year) => ({ year, entries: (venue.schedule[year] ?? []).filter((entry) => isGrandPalaisEntryVisible(entry, today)) }))
+    .filter((group) => group.entries.length);
+  // Une exposition à cheval sur deux années figure dans les deux listes, mais
+  // ne compte qu'une fois, comme dans le badge du choix de l'espace.
+  const venueTotal = new Set(yearGroups.flatMap((group) => group.entries.map((entry) => entry.title))).size;
+  // Choisir un espace mène directement à ses expositions, sans descendre soi-même.
+  const venuePanelRef = useRef<HTMLElement | null>(null);
+  const [venueScrollRequest, setVenueScrollRequest] = useState(0);
+  useEffect(() => {
+    if (!venueScrollRequest) return;
+    venuePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [venueScrollRequest]);
   const interExhibitionPeriods = useMemo(() => calculateInterExhibitionPeriods(today, program), [today, program]);
   const interExhibitionLeadIns = useMemo(
     () => exhibitionsBeforeInterExhibitions(interExhibitionPeriods, today, program),
@@ -743,13 +765,13 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
 
   const selectVenue = (venueKey: PrimaryChoice) => {
     setPrimaryChoice(venueKey);
-    const resolvedVenue = venueKey === "other" ? activeOtherVenue : venueKey;
-    setSelectedYear(venueYears(resolvedVenue, today, program)[0] ?? 2026);
+    // « Autres » ouvre d'abord le choix de l'espace : on reste dessus.
+    if (venueKey !== "other") setVenueScrollRequest((count) => count + 1);
   };
 
   const selectOtherVenue = (venueKey: string) => {
     setOtherVenue(venueKey);
-    setSelectedYear(venueYears(venueKey, today, program)[0] ?? 2026);
+    setVenueScrollRequest((count) => count + 1);
   };
 
   return (
@@ -765,10 +787,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
                 détail des expositions est juste dessous, dans « En ce moment ». */}
             <article className="grand-palais-summary-open" data-open={currentEntries.length > 0}>
               <header>
-                <span className="grand-palais-summary-live">
-                  <i aria-hidden="true" />
-                  Ouvert aujourd’hui
-                </span>
+                <span className="grand-palais-summary-live">Ouvert aujourd’hui</span>
                 <span className="grand-palais-summary-count">
                   {currentEntries.length ? `${currentEntries.length} exposition${currentEntries.length > 1 ? "s" : ""}` : "Aucune exposition"}
                 </span>
@@ -831,9 +850,13 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
       ) : null}
 
       <div className="grand-palais-view-tools">
+        <span className="grand-palais-view-label" aria-hidden="true">Afficher</span>
         <div className="grand-palais-view-picker" role="tablist" aria-label="Vue de la programmation">
           {([["now", "En ce moment"], ["upcoming", "À venir"], ["space", "Par espace"], ["interexpo", "Inter-expos"]] as const).map(([value, label]) => (
-            <button key={value} type="button" role="tab" aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>{label}</button>
+            <button key={value} type="button" role="tab" aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>
+              {VIEW_ICONS[value]}
+              <span>{label}</span>
+            </button>
           ))}
         </div>
         <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label>
@@ -843,7 +866,6 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         <div className="grand-palais-venue-navigation-heading">
           <span className="step-label">Les galeries</span>
           <h3 id="grand-palais-spaces-title">Choisir un espace</h3>
-          <p>Sélectionnez une galerie pour consulter sa programmation.</p>
         </div>
         <div className="grand-palais-primary-picker" role="tablist" aria-label="Espace principal du Grand Palais">
         {PRIMARY_VENUES.map((venueKey) => (
@@ -857,7 +879,8 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
             onClick={() => selectVenue(venueKey)}
             aria-label={`${program[venueKey].label}, ${venueCountLabel(venueEntryCount(venueKey))}`}
           >
-            {/* Le nombre ressort à droite, en grand : on compare les espaces d'un coup d'œil. */}
+            {/* Une ligne par espace : sa couleur, son nom, le nombre d'expositions
+                en grand à droite pour comparer d'un coup d'œil. */}
             <span>{program[venueKey].label}<small>{venueEntryCount(venueKey)
               ? `exposition${venueEntryCount(venueKey) > 1 ? "s" : ""} au programme`
               : "Rien d’annoncé pour l’instant"}</small></span>
@@ -1039,45 +1062,39 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           </div>
         </section>
       ) : (
-      <section className="useful-expo-schedule grand-palais-program-panel" aria-label={`Programmation ${venue.label}`}>
+      <section ref={venuePanelRef} className="useful-expo-schedule grand-palais-program-panel grand-palais-venue-panel" aria-label={`Programmation ${venue.label}`}>
         <div className="useful-expo-schedule-heading">
           <span className="step-label">{venue.heading}</span>
           <h3>{venue.label}</h3>
-          <p>{entries.length
-            ? `${entries.length} exposition${entries.length > 1 ? "s" : ""} au programme en ${selectedYear}.`
-            : `Rien à afficher pour ${selectedYear}.`}</p>
+          <p>{venueTotal
+            ? `${venueTotal} exposition${venueTotal > 1 ? "s" : ""} au programme, année par année.`
+            : "Rien d’annoncé pour l’instant."}</p>
         </div>
 
-        <div className="useful-expo-year-picker" role="tablist" aria-label="Année de programmation">
-          {years.map((year) => (
-            <button
-              key={year}
-              type="button"
-              role="tab"
-              aria-selected={selectedYear === year}
-              className={selectedYear === year ? "active" : ""}
-              onClick={() => setSelectedYear(year)}
-            >
-              {year}
-            </button>
-          ))}
-        </div>
-
-        <div className="useful-expo-timeline" role="tabpanel" aria-label={`${venue.label} - ${selectedYear}`}>
-          {entries.length ? null : (
+        {yearGroups.length ? yearGroups.map((group) => (
+          <section key={group.year} className="expo-year-group" aria-label={`${venue.label} - ${group.year}`}>
+            <h4 className="expo-year-heading">
+              <span>{group.year}</span>
+              <small>{group.entries.length} exposition{group.entries.length > 1 ? "s" : ""}</small>
+            </h4>
+            <div className="useful-expo-timeline">
+              {group.entries.map((entry) => (
+                <ExpoCard
+                  key={`${entry.title}-${entry.period}`}
+                  entry={entry}
+                  venueKey={selectedVenueKey}
+                  today={today}
+                  openingReady={openingReady}
+                  linkLabel="Voir sur le site du Grand Palais"
+                />
+              ))}
+            </div>
+          </section>
+        )) : (
+          <div className="useful-expo-timeline">
             <p className="empty-state">Aucune exposition ne correspond à cette vue.</p>
-          )}
-          {entries.map((entry) => (
-            <ExpoCard
-              key={`${entry.title}-${entry.period}`}
-              entry={entry}
-              venueKey={selectedVenueKey}
-              today={today}
-              openingReady={openingReady}
-              linkLabel="Voir sur le site du Grand Palais"
-            />
-          ))}
-        </div>
+          </div>
+        )}
 
       </section>
       )}

@@ -2503,8 +2503,10 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.getByText(/Programmation prévisionnelle/)).toHaveCount(0);
   await expect(page.locator(".grand-palais-program-panel .useful-expo-timeline-mark").first()).toBeHidden();
   const choices = page.locator(".grand-palais-primary-picker > button");
-  await expect(choices.first()).toHaveCSS('background-color', 'rgb(220, 236, 255)');
-  expect(new Set(await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
+  // Une liste : chaque espace a son badge à sa couleur ; celui de l'espace
+  // choisi est plein (bleu des Galeries 3 et 4).
+  await expect(choices.first().locator("b")).toHaveCSS("background-color", "rgb(50, 111, 168)");
+  expect(new Set(await choices.locator("b").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).color))).size).toBeGreaterThanOrEqual(4);
   await expect(choices).toHaveText([
     /Galeries 3 et 4.*au programme/,
     /Galerie 8.*au programme/,
@@ -2515,10 +2517,9 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   const choiceBoxes = await choices.evaluateAll((buttons) =>
     buttons.map((button) => button.getBoundingClientRect().toJSON()),
   );
-  // Les quatre galeries sur une ligne (deux sur téléphone), « Autres » en bandeau dessous.
-  const expectedColumns = (page.viewportSize()?.width ?? 1000) <= 720 ? 2 : 4;
-  expect(new Set(choiceBoxes.slice(0, expectedColumns).map((box) => Math.round(box.y))).size).toBe(1);
-  expect(choiceBoxes[expectedColumns].y).toBeGreaterThan(choiceBoxes[0].y + choiceBoxes[0].height);
+  // Une ligne par espace, l'une sous l'autre, sur tous les écrans.
+  for (let index = 1; index < choiceBoxes.length; index++)
+    expect(choiceBoxes[index].y).toBeGreaterThanOrEqual(choiceBoxes[index - 1].y + choiceBoxes[index - 1].height - 1);
   await page.mouse.move(0, 0);
   await page.locator('.grand-palais-venue-navigation').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/coherent-expos-${testInfo.project.name}.png` });
@@ -2527,7 +2528,11 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.locator(".useful-expo-timeline article").first().locator(".expo-card-status em")).toHaveText(/^Dans [0-9]+ jours$|^Demain$/);
 
   await page.getByRole("tab", { name: /Galerie 8/ }).click();
-  await expect(page.locator('.useful-expo-timeline article[data-status="En cours"]')).toHaveCount(1);
+  // Choisir un espace mène directement à ses expositions, en haut de l'écran.
+  // (Jusqu'en haut, sauf si la page est trop courte pour défiler davantage.)
+  await expect.poll(() => page.locator(".grand-palais-venue-panel").evaluate((node) =>
+    node.getBoundingClientRect().top < 80 || Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight - 2)).toBe(true);
+  await expect(page.locator('.useful-expo-timeline article[data-status="En cours"]').first()).toBeVisible();
   const gallery8CardColors = await page.locator(".useful-expo-timeline article").evaluateAll((nodes) => nodes.map((node) => {
     const style = getComputedStyle(node);
     return `${style.backgroundColor}|${style.borderTopColor}|${style.borderLeftColor}`;
@@ -2554,12 +2559,12 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(officialLink).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(officialLink).toHaveCSS("text-decoration-line", "underline");
   await expect(page.locator('.useful-expo-timeline article[data-status="En cours"] .expo-card-status em')).toHaveText("En cours");
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Girls - Adolescence, mode et rébellion");
-  await expect(page.locator(".useful-expo-timeline")).not.toContainText("Programmé");
+  await expect(page.locator(".grand-palais-venue-panel")).toContainText("Girls - Adolescence, mode et rébellion");
+  await expect(page.locator(".grand-palais-venue-panel")).not.toContainText("Programmé");
   await page.getByRole("tab", { name: /Galerie 7/ }).click();
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Le Musée Imaginaire d’Oli");
+  await expect(page.locator(".grand-palais-venue-panel")).toContainText("Le Musée Imaginaire d’Oli");
   await page.getByRole("tab", { name: /Palais des enfants/ }).click();
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Transparence");
+  await expect(page.locator(".grand-palais-venue-panel")).toContainText("Transparence");
 
   await page.getByRole("tab", { name: /Autres/ }).click();
   await expect(page.getByRole("tab", { name: "Nef", exact: true })).toBeVisible();
@@ -2594,19 +2599,19 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   // de l'application ; les teintes propres à chaque espace, elles, subsistent.
   await expect(page.getByRole("tab", { name: "Nef", exact: true }))
     .toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
-  await expect(page.locator(".useful-expo-timeline article")).toHaveCount(8);
-  await expect(page.locator(".useful-expo-timeline")).not.toContainText("Grand Palais d’été");
-  await page.getByRole("tab", { name: "2028", exact: true }).click();
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Art Basel Paris");
-  await expect(page.locator(".useful-expo-timeline")).not.toContainText(/montage/i);
-  await page.getByRole("tab", { name: "2029", exact: true }).click();
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Du 17 au 21 octobre 2029");
+  // Les années se suivent en liste, chacune avec ses expositions.
+  const nefYear = (year: number) => page.getByRole("region", { name: `Nef - ${year}` });
+  await expect(nefYear(2026).locator("article")).toHaveCount(8);
+  await expect(page.locator(".grand-palais-venue-panel")).not.toContainText("Grand Palais d’été");
+  await expect(nefYear(2028)).toContainText("Art Basel Paris");
+  await expect(nefYear(2028)).not.toContainText(/montage/i);
+  await expect(nefYear(2029)).toContainText("Du 17 au 21 octobre 2029");
+  await expect(page.locator(".expo-year-heading").first()).toContainText("2026");
 
   await page.getByRole("tab", { name: "Galeries 9 et 10", exact: true }).click();
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Leandro Erlich");
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Mika Ninagawa");
-  await page.getByRole("tab", { name: "2029", exact: true }).click();
-  await expect(page.locator(".useful-expo-timeline")).toContainText("Peter Doig");
+  await expect(page.locator(".grand-palais-venue-panel")).toContainText("Leandro Erlich");
+  await expect(page.locator(".grand-palais-venue-panel")).toContainText("Mika Ninagawa");
+  await expect(page.getByRole("region", { name: "Galeries 9 et 10 - 2029" })).toContainText("Peter Doig");
 
   await page.getByRole("tab", { name: "Inter-expos" }).click();
   await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();

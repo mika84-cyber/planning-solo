@@ -85,7 +85,11 @@ describe("programmation du Grand Palais", () => {
     expect(html).toContain("À venir");
     expect(html).toContain("Par espace");
     expect(html).toContain("Inter-expos");
-    expect(html).toContain('aria-selected="true" class="active">En ce moment');
+    // La vue choisie : une tuile active, avec son dessin et son libellé.
+    expect(html).toMatch(/aria-selected="true" class="active"><svg[^]*?<span>En ce moment<\/span>/);
+    expect(html).toContain('<span class="grand-palais-view-label" aria-hidden="true">Afficher</span>');
+    // « Ouvert aujourd'hui » sans pastille verte.
+    expect(html).toContain('<span class="grand-palais-summary-live">Ouvert aujourd’hui</span>');
     expect(html).toContain("Rechercher une exposition");
     expect(html).toMatch(/data-venue="(?:galleries34|gallery8|gallery7|nef|gallery910|childrenPalace)"/);
   });
