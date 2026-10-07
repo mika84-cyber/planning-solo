@@ -2,7 +2,7 @@ import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
-import { defaultRecoveryMinutes, minutesLabel, OVERTIME_RECOVERY_FACTORS, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
+import { defaultRecoveryMinutes, minutesLabel, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
 import { DAY_LABELS, MONTHS, getDayInfo } from "./planningLogic";
 
 type MecenatDraft = { date: string; start: string; end: string };
@@ -328,12 +328,6 @@ export function SolidarityHoursDialog({
   onSave: () => void;
 }) {
   if (!open) return null;
-  const solidarityTyped = Math.round(
-    Number(draft.hours.replace(",", ".")) * 60 + Number(draft.minutes),
-  ) || 0;
-  const solidarityCredited = Math.round(
-    solidarityTyped * OVERTIME_RECOVERY_FACTORS.day,
-  );
   return (
     <div
       className="modal-backdrop"
@@ -352,28 +346,13 @@ export function SolidarityHoursDialog({
         <span className="step-label">Solde de récupération</span>
         <h2 id="solidarity-hours-title">Ajouter des heures manuellement</h2>
         <p>Le total accumulé au fil des années, ajouté à votre solde.</p>
-        <fieldset className="overtime-choice-field">
-          <legend>Que contient ce total ?</legend>
-          <div className="overtime-destination-grid">
-            {/* Le cas le plus courant d'abord : un solde déjà calculé. */}
-            <button
-              type="button"
-              className={draft.basis === "credited" ? "active recovery" : "recovery"}
-              onClick={() => setDraft((current) => ({ ...current, basis: "credited" }))}
-            >
-              <strong>Un solde déjà calculé</strong>
-              <span>Ajouté tel quel</span>
-            </button>
-            <button
-              type="button"
-              className={draft.basis === "worked" ? "active recovery" : "recovery"}
-              onClick={() => setDraft((current) => ({ ...current, basis: "worked" }))}
-            >
-              <strong>Des heures travaillées</strong>
-              <span>1 h travaillée = 1 h 15 de récup</span>
-            </button>
-          </div>
-        </fieldset>
+        {/* Un seul cas : le solde déjà calculé, majoration comprise. Le
+            saisir en heures brutes le ferait compter sans sa majoration. */}
+        <p className="solidarity-hours-explain">
+          Indiquez le nombre d’heures <b>déjà calculé, majoration comprise</b> : par
+          exemple, 3 h faites en journée comptent pour 3 h 45. Il est ajouté
+          tel quel à votre solde.
+        </p>
         <div className="overtime-duration-grid solidarity-duration-grid">
           <label>
             <span>Heures</span>
@@ -405,37 +384,8 @@ export function SolidarityHoursDialog({
             />
           </label>
         </div>
-        {/* Un solde repris des compteurs tenus avant l'application est déjà
-            majoré : le remajorer le gonflerait. Mais quelqu'un qui a noté ses
-            heures brutes attend l'inverse. Le choix tranche, et le total
-            annoncé enlève le doute dans les deux cas. */}
-        {draft.basis === "worked" ? (
-          <p className="overtime-recovery-preview">
-            <strong>
-              {solidarityTyped > 0 ? (
-                <>
-                  {minutesLabel(solidarityTyped)} travaillées
-                  <span aria-hidden="true"> → </span>
-                  <b>
-                    {minutesLabel(solidarityCredited - solidarityTyped)} gagnées
-                    ({minutesLabel(solidarityCredited)})
-                  </b>
-                </>
-              ) : (
-                <b>1 h travaillée = 1 h 15 de récup</b>
-              )}
-            </strong>
-            <small>
-              1 h travaillée = 1 h 15 de récup, tarif de jour sur tout le total.
-            </small>
-          </p>
-        ) : (
-          <p className="solidarity-hours-note">
-            <b>Ajouté tel quel</b>, sans majoration.
-          </p>
-        )}
         <p className="solidarity-hours-note">
-          Supprimable ensuite dans l’historique.
+          Ajouté tel quel, sans nouvelle majoration. Supprimable ensuite dans l’historique.
         </p>
         <div className="modal-actions">
           <button className="secondary-button" type="button" onClick={onClose}>

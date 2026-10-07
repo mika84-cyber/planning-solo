@@ -1,5 +1,5 @@
 import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { dayCountLabel, type NoteListItem } from "./appModel";
+import type { NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
 import "./homeOverview.css";
@@ -7,7 +7,6 @@ import {
   compactWeekdayDate,
   nextWorkDayLabel,
   longDate,
-  s,
 } from "./planningLogic";
 
 export type TodayDashboardData = {
@@ -31,6 +30,21 @@ export function holidayDateLabel(date: Date, now: Date) {
   return date.getFullYear() === now.getFullYear() ? label : `${label}/${date.getFullYear()}`;
 }
 
+/** « Aujourd’hui », « Demain » ou « Jeu 15/10 ». */
+function extraWorkDate(key: string, now: Date) {
+  const date = new Date(`${key}T12:00:00`);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  const days = Math.round((date.getTime() - today.getTime()) / 86_400_000);
+  if (days === 0) return "Aujourd’hui";
+  return days === 1 ? "Demain" : holidayDateLabel(date, now);
+}
+
+/** « 19 h – 23 h », « 18 h 30 – 21 h ». */
+function extraWorkHours(item: { start: string; end: string }) {
+  const clock = (value: string) => value.replace(/^0(?=\d)/, "").replace(":00", " h").replace(":", " h ");
+  return `${clock(item.start)} – ${clock(item.end)}`;
+}
+
 export type HomeSetupItem = {
   id: string;
   title: string;
@@ -47,7 +61,8 @@ type HomeDashboardProps = {
   hasConfiguredGroup: boolean;
   today: TodayDashboardData;
   totalLeaveRemaining: number;
-  remainingWorkedDaysThisYear: number;
+  /** Le prochain mécénat ou les prochaines heures sup, à partir d'aujourd'hui. */
+  nextExtraWork: { kind: "mecenat" | "overtime"; date: string; start: string; end: string } | null;
   setupItems: HomeSetupItem[];
   setupDismissKey: string;
   hasAnyNote: boolean;
@@ -68,7 +83,7 @@ export function HomeDashboard({
   hasConfiguredGroup,
   today,
   totalLeaveRemaining,
-  remainingWorkedDaysThisYear,
+  nextExtraWork,
   setupItems,
   setupDismissKey,
   hasAnyNote,
@@ -229,17 +244,30 @@ export function HomeDashboard({
               {chevron}
             </button>
           ) : null}
-          <article className="today-block today-remaining-work">
+          <button
+            className="today-block today-next-extra"
+            type="button"
+            onClick={onOpenLeave}
+            aria-label={nextExtraWork
+              ? `${nextExtraWork.kind === "overtime" ? "Prochaine heure sup" : "Prochain mécénat"} : ${extraWorkDate(nextExtraWork.date, now)}, ${extraWorkHours(nextExtraWork)}. Afficher les heures et mécénats.`
+              : "Aucun mécénat ni heure sup à venir. Afficher les heures et mécénats."}
+          >
             <span className="today-block-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
-                <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z" />
-                <path d="m8 14 2.5 2.5L16 11" />
+                {/* Une horloge et un plus : du temps en plus du planning. */}
+                <circle cx="11" cy="12" r="7.5" />
+                <path d="M11 8v4l2.5 1.5M18.5 3.5v5m-2.5-2.5h5" />
               </svg>
             </span>
-            <span className="today-block-label">Travail restant</span>
-            <strong>{dayCountLabel(remainingWorkedDaysThisYear)} jour{s(remainingWorkedDaysThisYear)}</strong>
-            <small className="today-block-note">d’ici au 31 décembre</small>
-          </article>
+            <span className="today-block-label">{nextExtraWork?.kind === "overtime" ? "Prochaine heure sup" : nextExtraWork ? "Prochain mécénat" : "Mécénat ou heure sup"}</span>
+            <strong className={nextExtraWork ? "is-date" : undefined}>
+              {nextExtraWork ? extraWorkDate(nextExtraWork.date, now) : "Rien de prévu"}
+            </strong>
+            <small className="today-block-note">
+              {nextExtraWork ? extraWorkHours(nextExtraWork) : "ni mécénat ni heure sup à venir"}
+            </small>
+            {chevron}
+          </button>
         </div>
       </section>
 

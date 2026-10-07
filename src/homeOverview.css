@@ -12,6 +12,7 @@
 .today-next-work { --block-ink: #2f5f94; --block-soft: #e6eef9; }
 .today-leave-balance { --block-ink: #9a4a2e; --block-soft: #f7e4d6; }
 .today-next-holiday { --block-ink: #7b3f6e; --block-soft: #f3e4ef; }
+.today-next-extra { --block-ink: #2f6b5e; --block-soft: #e0f0eb; }
 button.today-block { cursor: pointer; transition: background-color .15s ease; }
 button.today-block:hover { background: color-mix(in srgb, var(--block-soft) 40%, #fff); }
 button.today-block:hover .today-block-go { color: var(--block-ink); }

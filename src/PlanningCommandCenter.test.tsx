@@ -11,17 +11,10 @@ const baseProps = {
       worked: 16, scheduled: 18, onLeave: 1, exceptionallyClosed: 1,
       exchangedGiven: 1, exchangedReturned: 1,
     },
-    thirds: [{
-      label: "3e tiers",
-      range: "septembre à décembre",
-      current: true,
-      worked: 42,
-      scheduled: 45,
-      onLeave: 2,
-      exceptionallyClosed: 1,
-      exchangedGiven: 1,
-      exchangedReturned: 1,
-    }],
+    remaining: {
+      worked: 51, scheduled: 56, onLeave: 4, exceptionallyClosed: 1,
+      exchangedGiven: 1, exchangedReturned: 1,
+    },
   },
   recoveryRangeSelecting: false,
   recoveryDraft: {
@@ -70,7 +63,7 @@ describe("PlanningCommandCenter", () => {
     expect(html).toContain("Sélectionner l’année");
     expect(html).toContain("Aujourd’hui");
     expect(html).toContain("16 jours travaillés ce mois-ci");
-    expect(html).toContain("Détail des jours travaillés");
+    expect(html).toContain("Jours restant à travailler d’ici au 31 décembre");
     // Plus de volet à déplier, ni de bascule vers une vue annuelle retirée.
     expect(html).not.toContain("Modifier");
     expect(html).not.toContain("Année affichée");
@@ -91,4 +84,12 @@ describe("PlanningCommandCenter", () => {
     expect(html).not.toContain("planning-settings-disclosure");
     expect(html).not.toContain("Mode d’affichage");
   });
+
+  it("ouvre sur ce qu’il reste d’ici au 31 décembre, en trois chiffres", () => {
+    const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} />);
+    // Le volet est fermé au départ : la case garde le compte du mois affiché.
+    expect(html).toContain("16 jours travaillés ce mois-ci");
+    expect(html).not.toContain("worked-days-remaining");
+  });
 });
+

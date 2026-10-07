@@ -8,7 +8,7 @@ const baseProps = {
   hasConfiguredGroup: false,
   today: { tone: "work", status: "Travail", nextWork: new Date(2026, 8, 4) },
   totalLeaveRemaining: 20,
-  remainingWorkedDaysThisYear: 50,
+  nextExtraWork: { kind: "mecenat" as const, date: "2026-09-12", start: "19:00", end: "23:00" },
   importantAlert: "",
   setupItems: [{
     id: "planning-group",
@@ -103,5 +103,18 @@ describe("HomeDashboard", () => {
       today={{ ...baseProps.today, status: "1/2 journée posée l’après-midi", todayGroupLabel: "Avec le groupe 3" }}
     />);
     expect(html).toContain("Avec le groupe 3");
+  });
+
+  it("annonce le prochain mécénat ou les prochaines heures sup à la place du travail restant", () => {
+    const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
+    expect(html).toContain("Prochain mécénat");
+    expect(html).toContain("19 h – 23 h");
+    expect(html).not.toContain("Travail restant");
+    const empty = renderToStaticMarkup(<HomeDashboard {...baseProps} nextExtraWork={null} />);
+    expect(empty).toContain("Rien de prévu");
+    expect(empty).toContain("ni mécénat ni heure sup à venir");
+    const overtime = renderToStaticMarkup(<HomeDashboard {...baseProps} nextExtraWork={{ kind: "overtime", date: "2026-09-05", start: "18:00", end: "20:30" }} />);
+    expect(overtime).toContain("Prochaine heure sup");
+    expect(overtime).toContain("18 h – 20 h 30");
   });
 });

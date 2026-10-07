@@ -8,7 +8,6 @@ const SchoolVacationSettings = lazy(() =>
 );
 import { dayCountLabel } from "./appModel";
 import {
-  MONTHS,
   MONTH_OPTIONS,
   type SchoolZone,
   YEAR_OPTIONS,
@@ -32,13 +31,11 @@ type WorkedDaySummary = {
   exchangedReturned: number;
 };
 
+/** Le mois affiché sur la case, et ce qu'il reste d'ici au 31 décembre dans
+ *  son volet. */
 type WorkedDaysData = {
   month: WorkedDaySummary;
-  thirds: Array<WorkedDaySummary & {
-    label: string;
-    range: string;
-    current: boolean;
-  }>;
+  remaining: WorkedDaySummary;
 };
 
 type PlanningCommandCenterProps = {
@@ -78,12 +75,6 @@ type PlanningCommandCenterProps = {
   onExportPdf?: () => void;
   exportingPdf?: boolean;
 };
-
-function closureDetail(count: number) {
-  return count
-    ? `, ${dayCountLabel(count)} fermeture${s(count)} exceptionnelle${s(count)}`
-    : "";
-}
 
 function exchangeDetail(given: number, returned: number) {
   const details = [
@@ -214,7 +205,7 @@ export function PlanningCommandCenter({
                     className="worked-days-trigger"
                     onClick={() => setWorkedDaysOpen((current) => !current)}
                     aria-expanded={workedDaysOpen}
-                    aria-label="Détail des jours travaillés"
+                    aria-label="Jours restant à travailler d’ici au 31 décembre"
                   >
                     <span>{dayCountLabel(workedDays.month.worked)} jour{s(workedDays.month.worked)} travaillé{s(workedDays.month.worked)} ce mois-ci</span>
                     <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -223,37 +214,28 @@ export function PlanningCommandCenter({
                   </button>
                   {workedDaysOpen ? (
                     <div className="worked-days-panel">
-                      <article>
-                        <span className="worked-days-scope">
-                          {MONTHS[view.getMonth()]} {view.getFullYear()}
-                        </span>
-                        <strong>{dayCountLabel(workedDays.month.worked)} jour{s(workedDays.month.worked)}</strong>
-                        <small>
-                          {dayCountLabel(workedDays.month.scheduled)} au cycle
-                          {workedDays.month.onLeave
-                            ? `, ${dayCountLabel(workedDays.month.onLeave)} de congé`
-                            : ", aucun congé"}
-                          {closureDetail(workedDays.month.exceptionallyClosed)}
-                          {exchangeDetail(workedDays.month.exchangedGiven, workedDays.month.exchangedReturned)}
-                        </small>
-                      </article>
-                      {workedDays.thirds.map((third) => (
-                        <article key={third.label} className={third.current ? "current" : ""}>
-                          <span className="worked-days-scope">
-                            {third.label}
-                            {third.current ? <em>en cours</em> : null}
-                          </span>
-                          <strong>{dayCountLabel(third.worked)} jour{s(third.worked)}</strong>
-                          <small>
-                            {third.range} · {dayCountLabel(third.scheduled)} au cycle
-                            {third.onLeave
-                              ? `, ${dayCountLabel(third.onLeave)} de congé`
-                              : ", aucun congé"}
-                            {closureDetail(third.exceptionallyClosed)}
-                            {exchangeDetail(third.exchangedGiven, third.exchangedReturned)}
-                          </small>
-                        </article>
-                      ))}
+                      {/* Le volet : ce qu'il reste d'ici à la fin de l'année, en
+                          trois chiffres — jours à travailler, congés, fermetures. */}
+                      <section className="worked-days-remaining" aria-label="D’ici au 31 décembre">
+                        <h5>D’ici au 31 décembre</h5>
+                        <ul>
+                          <li className="worked-days-remaining-main">
+                            <b>{dayCountLabel(workedDays.remaining.worked)}</b>
+                            <small>jour{s(workedDays.remaining.worked)} à travailler</small>
+                          </li>
+                          <li>
+                            <b>{dayCountLabel(workedDays.remaining.onLeave)}</b>
+                            <small>jour{s(workedDays.remaining.onLeave)} de congé</small>
+                          </li>
+                          <li>
+                            <b>{dayCountLabel(workedDays.remaining.exceptionallyClosed)}</b>
+                            <small>fermeture{s(workedDays.remaining.exceptionallyClosed)}</small>
+                          </li>
+                        </ul>
+                        {workedDays.remaining.exchangedGiven || workedDays.remaining.exchangedReturned ? (
+                          <p>{exchangeDetail(workedDays.remaining.exchangedGiven, workedDays.remaining.exchangedReturned).replace(/^, /, "")}</p>
+                        ) : null}
+                      </section>
                     </div>
                   ) : null}
                 </div>

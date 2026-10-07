@@ -214,9 +214,6 @@ import { useToast } from "./useToast";
 import {
   RESIDENCE_ALLOWANCE_RATE,
   SUNDAY_ALLOWANCE,
-  yearThirdFor,
-  yearThirdRange,
-  YEAR_THIRDS,
   TYPE_LABELS,
   addDays,
   dateKey,
@@ -1212,20 +1209,14 @@ export default function Home() {
   } = workExchangeUi;
 
 
-  /* Le mois affiché, puis les trois tiers de l'année affichée — tous calculés
-     par la même fonction, donc jamais en contradiction entre eux. Le tiers
-     « en cours » suit la date du jour, pas le mois affiché : on peut consulter
-     un autre mois sans perdre de vue où en est le cycle actuel. */
-  const workedDays = useMemo(() => {
-    const year = view.getFullYear();
-    const month = view.getMonth();
-    const currentThird =
-      now.getFullYear() === year ? yearThirdFor(now.getMonth()) : null;
-    return {
-      month: workedDayCount(
-        year,
-        month,
-        month,
+  // Les jours réellement travaillés du mois affiché : c'est le compte de la
+  // case du calendrier.
+  const monthWorkedDays = useMemo(
+    () =>
+      workedDayCount(
+        view.getFullYear(),
+        view.getMonth(),
+        view.getMonth(),
         group,
         periods,
         entries,
@@ -1234,27 +1225,11 @@ export default function Home() {
         (key) => Boolean(exceptionalClosureFor(key)),
         (key) => entries[key]?.exchangeRole || "",
       ),
-      thirds: YEAR_THIRDS.map((third) => ({
-        label: third.label,
-        range: yearThirdRange(third),
-        current: currentThird?.label === third.label,
-        ...workedDayCount(
-          year,
-          third.firstMonth,
-          third.lastMonth,
-          group,
-          periods,
-          entries,
-          recoveryUses,
-          dailyMinutesForQuota(formProfile?.workQuota || "full"),
-          (key) => Boolean(exceptionalClosureFor(key)),
-          (key) => entries[key]?.exchangeRole || "",
-        ),
-      })),
-    };
-  }, [view, group, periods, entries, recoveryUses, formProfile?.workQuota, now, exceptionalClosureFor]);
-
-  const remainingWorkedDaysThisYear = useMemo(
+    [view, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
+  );
+  // Les jours réellement travaillés d'ici au 31 décembre : congés, fermetures
+  // et échanges déduits. Le volet de la case les annonce.
+  const remainingWorkedDays = useMemo(
     () =>
       workedDayCountBetween(
         now,
@@ -1266,9 +1241,23 @@ export default function Home() {
         dailyMinutesForQuota(formProfile?.workQuota || "full"),
         (key) => Boolean(exceptionalClosureFor(key)),
         (key) => entries[key]?.exchangeRole || "",
-      ).worked,
+      ),
     [now, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
   );
+  // Le prochain mécénat ou les prochaines heures sup déclarées, à partir
+  // d'aujourd'hui : ce qui vient s'ajouter au planning habituel.
+  const nextExtraWork = useMemo(() => {
+    const todayKey = dateKey(now);
+    const upcoming = [
+      ...mecenatEntries.map((entry) => ({ kind: "mecenat" as const, date: entry.date, start: entry.start, end: entry.end })),
+      ...overtimeEntries
+        .filter((entry) => entry.inputMode === "range" && entry.start && entry.end)
+        .map((entry) => ({ kind: "overtime" as const, date: entry.date, start: entry.start ?? "", end: entry.end ?? "" })),
+    ]
+      .filter((item) => item.date >= todayKey)
+      .sort((left, right) => `${left.date}-${left.start}`.localeCompare(`${right.date}-${right.start}`));
+    return upcoming[0] ?? null;
+  }, [now, mecenatEntries, overtimeEntries]);
 
   // Au premier usage, le statut demandé est désormais « contractuel ». Dès
   // qu'un choix est enregistré, la valeur persistée reprend naturellement la
@@ -2776,7 +2765,7 @@ export default function Home() {
           hasConfiguredGroup={Boolean(formProfile?.group)}
           today={todayOverview}
           totalLeaveRemaining={totalLeaveRemaining}
-          remainingWorkedDaysThisYear={remainingWorkedDaysThisYear}
+          nextExtraWork={nextExtraWork}
           setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
           setupItems={[
             ...(missingCalculationProfile ? [{
@@ -2972,7 +2961,11 @@ export default function Home() {
             setOvertimeDraft({ date: "", start: "", end: "", disposition: "" });
             setOvertimeDialogOpen(true);
           }}
-          onOpenSolidarity={() => setSolidarityDialogOpen(true)}
+          onOpenSolidarity={() => {
+            // Toujours un solde déjà calculé, majoration comprise.
+            setSolidarityDraft((current) => ({ ...current, basis: "credited" }));
+            setSolidarityDialogOpen(true);
+          }}
           onToggleOvertimeHistory={() => setOvertimeHistoryOpen((current) => !current)}
           onDeleteOvertime={(entry) => void deleteOvertimeEntry(entry)}
           onDeleteRecoveryUse={(entry) => void deleteRecoveryUse(entry)}
@@ -3093,7 +3086,7 @@ export default function Home() {
         view={view}
         setView={setView}
         workQuota={workQuota}
-        workedDays={workedDays}
+        workedDays={{ month: monthWorkedDays, remaining: remainingWorkedDays }}
         recoveryRangeSelecting={recoveryRangeSelecting}
         recoveryDraft={recoveryDraft}
         setRecoveryDraft={setRecoveryDraft}

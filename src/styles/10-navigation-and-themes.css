@@ -834,3 +834,17 @@
     width: 100%;
   }
 }
+
+/* Calendrier : le volet de la case des jours travaillés s'ouvre sous elle, sur
+   toute sa largeur, et donne en trois chiffres ce qu'il reste d'ici au
+   31 décembre. */
+.app-shell .controls .worked-days .worked-days-panel { top: calc(100% + 8px); bottom: auto; left: 0; right: 0; display: block; width: auto; border: 1px solid #e3d6c8; border-radius: 14px; padding: 12px 14px 14px; background: #fff; box-shadow: 0 12px 28px rgba(58, 51, 44, .16); }
+.worked-days-remaining h5 { margin: 0 0 10px; color: #9a4a2e; font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.worked-days-remaining ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.worked-days-remaining li { display: grid; justify-items: center; gap: 2px; padding: 0 4px; }
+.worked-days-remaining li + li { border-left: 1px solid #efe6db; }
+.worked-days-remaining li b { color: var(--text); font-family: var(--font-display); font-size: 1.7rem; font-weight: 600; line-height: 1; }
+.worked-days-remaining li.worked-days-remaining-main b { color: #9a4a2e; }
+.worked-days-remaining li small { color: #6b5d50; font-size: .7rem; font-weight: 700; text-align: center; }
+.worked-days-remaining p { margin: 10px 0 0; color: #6b5d50; font-size: .72rem; font-weight: 600; text-align: center; }
+

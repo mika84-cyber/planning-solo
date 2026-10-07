@@ -1,18 +1,13 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES, type MecenatEntry } from "./mecenat";
-import { minutesLabel, nextPayPeriod, overtimePayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
-import { MONTHS, fromKey, longDate, s } from "./planningLogic";
+import { minutesLabel, overtimePayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
+import { MONTHS, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
+import { MecenatHistoryList, WorkTimeHistoryList } from "./WorkTimeHistory";
 
-export type WorkTimeHistoryFilter = "all" | "gains" | "uses" | "paid";
 
 /** La date en tête de ligne, avec sa majuscule : « Mardi 12 mai 2026 ». */
-function historyDate(key: string) {
-  const label = longDate(fromKey(key));
-  return `${label.charAt(0).toLocaleUpperCase("fr")}${label.slice(1)}`;
-}
-
 export function workTimeHistoryItems(
   overtimeEntries: OvertimeEntry[],
   holidayRecoveryEarnings: OvertimeEntry[],
@@ -97,15 +92,10 @@ export function LeaveManagementPage({
   onOpenArchivedRequest,
   onDeleteArchivedRequest,
 }: LeaveManagementPageProps) {
-  const [historyFilter, setHistoryFilter] = useState<WorkTimeHistoryFilter>("all");
   const historyItems = useMemo(
     () => workTimeHistoryItems(overtimeEntries, holidayRecoveryEarnings, recoveryUses),
     [overtimeEntries, holidayRecoveryEarnings, recoveryUses],
   );
-  const filteredHistory = historyItems.filter((item) => historyFilter === "all"
-    || (historyFilter === "gains" && (item.kind === "gain" || item.kind === "holiday"))
-    || (historyFilter === "uses" && item.kind === "use")
-    || (historyFilter === "paid" && item.kind === "paid"));
   const paidPeriods = overtimeEntries
     .filter((entry) => entry.disposition === "paid")
     .map((entry) => ({ ...overtimePayPeriod(entry), minutes: entry.minutes }));
@@ -165,53 +155,13 @@ export function LeaveManagementPage({
             </button>
             {overtimeHistoryOpen ? (
               <div className="overtime-history">
-                <div className="overtime-history-filters" role="group" aria-label="Filtrer l’historique">
-                  {([["all", "Tout"], ["gains", "Gains"], ["uses", "Récupérations posées"], ["paid", "Heures à payer"]] as const).map(([value, label]) => (
-                    <button key={value} type="button" className={historyFilter === value ? "active" : ""} aria-pressed={historyFilter === value} onClick={() => setHistoryFilter(value)}>{label}</button>
-                  ))}
-                </div>
                 {!recoveryEarningsCount && !recoveryUses.length ? <p className="empty-state">Aucune heure supplémentaire enregistrée.</p> : null}
-                {!filteredHistory.length && historyItems.length ? <p className="empty-state">Aucun élément pour ce filtre.</p> : null}
-                {filteredHistory.map((item) => {
-                  if (item.kind === "use") {
-                    const entry = item.entry as RecoveryUse;
-                    return (
-                      <article key={entry.id} className="recovery-use-history">
-                        <span className="overtime-kind used" aria-hidden="true" />
-                        <div><strong>{historyDate(entry.date)}</strong><span className="overtime-history-detail">− {minutesLabel(entry.minutes)} · {entry.kind === "training" ? "Formation" : "Récupération consommée"}</span><small>{entry.kind === "training" ? "Formation déduite du solde" : "Récupération posée"}</small></div>
-                        <button type="button" onClick={() => onDeleteRecoveryUse(entry)}>Annuler</button>
-                      </article>
-                    );
-                  }
-                  const entry = item.entry as OvertimeEntry;
-                  if (item.kind === "holiday") {
-                    const state = recoveryEarningStates.get(entry.id);
-                    return <article key={entry.id} className="holiday-recovery-history"><span className="overtime-kind recovery" aria-hidden="true" /><div><strong>{historyDate(entry.date)}</strong><span className="overtime-history-detail">Férié · +{minutesLabel(entry.minutes)}</span><small className={state?.remainingMinutes ? "overtime-history-left" : undefined}>{state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles` : "Gain utilisé"}</small></div></article>;
-                  }
-                  const payPeriod = nextPayPeriod(entry.date);
-                  const state = recoveryEarningStates.get(entry.id);
-                  /* Le gain se lit mieux que le total : « 3 h → 3 h 45 »
-                     laissait chercher l'écart, « 45 min gagnées » le donne. */
-                  const creditedMinutes = state?.earnedMinutes ?? entry.minutes;
-                  const gainedMinutes = creditedMinutes - entry.minutes;
-                  return (
-                    <article key={entry.id}>
-                      <span className={`overtime-kind ${entry.disposition}`} aria-hidden="true" />
-                      <div>
-                        <strong>{historyDate(entry.date)}</strong>
-                        <span className="overtime-history-detail">{entry.id.startsWith("solidarity-") ? `Ajout manuel · +${minutesLabel(entry.minutes)}` : entry.disposition === "paid" ? `Heures sup · ${minutesLabel(entry.minutes)} · À payer` : gainedMinutes > 0 ? `${minutesLabel(entry.minutes)} travaillées → ${minutesLabel(gainedMinutes)} gagnées (${minutesLabel(creditedMinutes)})` : `${minutesLabel(entry.minutes)} travaillées → ${minutesLabel(creditedMinutes)} de récup`}</span>
-                        <small className={entry.disposition !== "paid" && state?.remainingMinutes ? "overtime-history-left" : undefined}>
-                          {entry.id.startsWith("solidarity-")
-                            ? state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles` : "Ajout manuel entièrement utilisé"
-                            : entry.disposition === "paid"
-                              ? `Paiement prévu en ${MONTHS[payPeriod.month]} ${payPeriod.year}`
-                              : state?.remainingMinutes ? `${minutesLabel(state.remainingMinutes)} encore disponibles` : "Gain entièrement utilisé"}
-                        </small>
-                      </div>
-                      <button type="button" onClick={() => onDeleteOvertime(entry)}>Supprimer</button>
-                    </article>
-                  );
-                })}
+                <WorkTimeHistoryList
+                  items={historyItems}
+                  earningStates={recoveryEarningStates}
+                  onDeleteOvertime={onDeleteOvertime}
+                  onDeleteRecoveryUse={onDeleteRecoveryUse}
+                />
               </div>
             ) : null}
           </section>
@@ -242,17 +192,7 @@ export function LeaveManagementPage({
             {mecenatHistoryOpen ? (
               <div className="overtime-history mecenat-history">
                 {!mecenatEntries.length ? <p className="empty-state">Aucun mécénat enregistré.</p> : null}
-                {[...mecenatEntries].sort((a, b) => b.date.localeCompare(a.date)).map((entry) => (
-                  <article key={entry.id}>
-                    <span className="overtime-kind mecenat" aria-hidden="true" />
-                    <div>
-                      <strong>{entry.start} → {entry.end} · {euros(entry.grossAmountCents / 100)} brut</strong>
-                      <span>{longDate(fromKey(entry.date))} · {minutesLabel(entry.dayMinutes + entry.nightMinutes)}</span>
-                      <small>Intégré automatiquement à la paie du mois suivant</small>
-                    </div>
-                    <button type="button" onClick={() => onDeleteMecenat(entry)}>Supprimer</button>
-                  </article>
-                ))}
+                <MecenatHistoryList entries={mecenatEntries} onDelete={onDeleteMecenat} />
               </div>
             ) : null}
           </section>

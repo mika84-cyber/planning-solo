@@ -475,6 +475,12 @@
   margin-top: 0;
 }
 
+/* Le texte d'introduction du CET occupe toute la largeur de l'encart. */
+.cet-content .cet-callout p {
+  display: block;
+  max-width: none;
+}
+
 /* Corrections finales des trois compositions signalées : les dossiers
    utilisent bien la grande colonne, les outils partagent un liseré latéral
    et les deux sélecteurs du planning ont exactement la même géométrie. */

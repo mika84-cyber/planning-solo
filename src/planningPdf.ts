@@ -72,8 +72,13 @@ type PlanningPdfOptions = {
   >;
   /** La légende détaillée n'est utile que dans le planning avec congés. */
   showColorLegend?: boolean;
+  /** Pied de page du planning sans congés : l'ancien résumé en carte, ou un
+   *  bandeau fin sur toute la largeur (par défaut). */
+  footerStyle?: PlainFooterStyle;
   filenameLabel?: string;
 };
+
+export type PlainFooterStyle = "summary" | "band";
 
 const MONTHS = [
   "Janvier",
@@ -438,6 +443,7 @@ function drawGroupPage(
   exchangeMarkers?: ReadonlyMap<string, PdfExchangeMarker>,
   assets?: PlanningPdfAssets,
   showColorLegend = true,
+  footerStyle: PlainFooterStyle = "band",
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -453,7 +459,11 @@ function drawGroupPage(
   const footerGap = 4;
   const bottomMargin = 6;
   const vacationRows = schoolVacationsByZone ? schoolVacationTableRows(schoolVacationsByZone).length : 0;
-  const footerHeight = vacationRows ? 6.8 + vacationRows * 5.3 : 24;
+  // Sans congés ni vacances, le pied de page peut se faire plus discret.
+  const plainFooter = !showColorLegend && !schoolVacationsByZone ? footerStyle : "summary";
+  const footerHeight = vacationRows
+    ? 6.8 + vacationRows * 5.3
+    : plainFooter === "band" ? 11 : 24;
   // La grille prend toute la hauteur que le pied de page lui laisse.
   const dayHeight = (pageHeight - tableY - headerHeight - footerGap - footerHeight - bottomMargin) / 31;
   const tableHeight = headerHeight + 31 * dayHeight;
@@ -800,8 +810,21 @@ function drawGroupPage(
     ? schoolVacationsByZone ? 96 : footerRight - sidebarX - statsWidth - 4
     : 0;
 
+  if (plainFooter !== "summary") {
+    drawPlainFooter(doc, {
+      x: sidebarX,
+      y: footerY,
+      width: footerRight - sidebarX,
+      height: footerHeight,
+      year,
+      group,
+      workedHolidayCount,
+      offeredHolidayCount,
+    });
+  }
+
   // Résumé : quatre cases sous un bandeau « PLANNING ».
-  {
+  if (plainFooter === "summary") {
     const x = sidebarX;
     const bandHeight = 6;
     const cellWidth = statsWidth / statsColumns;
@@ -948,6 +971,52 @@ function drawGroupPage(
     });
   }
 
+}
+
+/** Pied de page du planning d'un groupe, sans congés ni vacances : un bandeau
+ *  fin sur toute la largeur, en quatre cases égales — l'année, le groupe, les
+ *  fériés travaillés et les fériés compensés. Pas de légende. */
+function drawPlainFooter(
+  doc: jsPDF,
+  box: { x: number; y: number; width: number; height: number; year: number; group: number; workedHolidayCount: number; offeredHolidayCount: number },
+) {
+  const { x, y, width, height } = box;
+  const facts = [
+    { label: "Année", value: String(box.year), tint: COLORS.yearValue, accent: COLORS.yearHeader },
+    { label: "Groupe", value: String(box.group), tint: COLORS.groupValue, accent: COLORS.groupHeader },
+    { label: "Fériés travaillés", value: String(box.workedHolidayCount), tint: COLORS.holidaysValue, accent: COLORS.holiday },
+    { label: "Fériés compensés", value: String(box.offeredHolidayCount), tint: [255, 239, 216] as const, accent: COLORS.money, money: true },
+  ];
+  const gap = 3;
+  const cellWidth = (width - gap * (facts.length - 1)) / facts.length;
+  doc.setLineJoin("round");
+  facts.forEach((fact, index) => {
+    const cellX = x + index * (cellWidth + gap);
+    // Une case teintée, un liseré de sa couleur à gauche, le libellé puis
+    // le chiffre sur la même ligne.
+    doc.setFillColor(fact.tint[0], fact.tint[1], fact.tint[2]);
+    doc.setDrawColor(...COLORS.slateLine);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(cellX, y, cellWidth, height, 1.8, 1.8, "FD");
+    doc.setFillColor(fact.accent[0], fact.accent[1], fact.accent[2]);
+    doc.rect(cellX + 0.15, y + 1.4, 1.4, height - 2.8, "F");
+    const centerY = y + height / 2;
+    doc.setTextColor(...COLORS.black);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.4);
+    doc.text(fact.label.toUpperCase(), cellX + 6, centerY, { baseline: "middle" });
+    const valueX = cellX + cellWidth - 6;
+    doc.setFontSize(13);
+    doc.text(fact.value, valueX, centerY, { align: "right", baseline: "middle" });
+    if (fact.money) {
+      const valueWidth = doc.getTextWidth(fact.value);
+      const badgeX = valueX - valueWidth - 3.6;
+      doc.setFillColor(...COLORS.money);
+      doc.circle(badgeX, centerY, 2, "F");
+      doc.setFontSize(6.6);
+      doc.text("€", badgeX, centerY, { align: "center", baseline: "middle" });
+    }
+  });
 }
 
 const SHORT_MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -1147,6 +1216,7 @@ export function createAnnualPlanningPdf({
   exchangeMarkers,
   assets,
   showColorLegend = true,
+  footerStyle = "band",
   filenameLabel,
 }: PlanningPdfOptions) {
   const doc = new jsPDF({
@@ -1174,6 +1244,7 @@ export function createAnnualPlanningPdf({
       exchangeMarkers,
       assets,
       showColorLegend,
+      footerStyle,
     );
   });
 

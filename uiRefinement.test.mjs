@@ -285,7 +285,6 @@ describe("finitions d’interface", () => {
   it("rend toute la zone de titre refermable et garde le mois dans la barre sticky", () => {
     expect(app).toContain('className="pay-detail-title-button"');
     expect(app).toContain('aria-label="Fermer cette page et revenir à Ma paie"');
-    expect(app).toContain("MONTHS[view.getMonth()]");
     expect(styles).toContain(".pay-detail-title-button");
   });
 
@@ -747,11 +746,16 @@ describe("finitions d’interface", () => {
     );
   });
 
-  it("affiche le travail restant de l’année à côté des congés", () => {
+  it("compte les jours travaillés jusqu’au 31 décembre dans le calendrier et annonce le prochain mécénat ou heures sup", () => {
     const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
-    expect(app).toContain("remainingWorkedDaysThisYear");
-    expect(home).toContain('className="today-block today-remaining-work"');
-    expect(home).toContain("d’ici au 31 décembre");
+    // La case garde le mois affiché ; son volet donne le reste de l'année.
+    expect(planningCommandCenter).toContain("travaillé{s(workedDays.month.worked)} ce mois-ci");
+    expect(planningCommandCenter).toContain("D’ici au 31 décembre");
+    expect(planningCommandCenter).not.toContain("workedDays.thirds");
+    // L'accueil remplace « Travail restant » par le prochain mécénat ou heures sup.
+    expect(home).not.toContain("today-remaining-work");
+    expect(home).toContain('className="today-block today-next-extra"');
+    expect(app).toContain("nextExtraWork");
   });
 
   it("réserve l’œuvre bleue à l’en-tête Congés et récupérations", () => {

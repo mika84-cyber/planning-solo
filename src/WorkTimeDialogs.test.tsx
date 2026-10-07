@@ -261,52 +261,19 @@ describe("reprise du solde de récupération", () => {
       />,
     );
 
-  it("laisse le choix entre un solde déjà calculé et des heures à majorer", () => {
+  it("demande un solde déjà calculé, majoration comprise, sans autre choix", () => {
     const html = solde("credited");
-    expect(html).toContain("Un solde déjà calculé");
-    expect(html).toContain("Des heures travaillées");
-    // Le solde déjà calculé, cas le plus courant, est proposé en premier.
-    expect(html.indexOf("Un solde déjà calculé")).toBeLessThan(html.indexOf("Des heures travaillées"));
+    expect(html).not.toContain("Des heures travaillées");
+    expect(html).not.toContain("Que contient ce total ?");
+    expect(html).toContain("déjà calculé, majoration comprise");
+    expect(html).toContain("3 h faites en journée comptent pour 3 h 45");
   });
 
-  it("ne majore rien pour un solde déjà calculé", () => {
-    // Ce solde vient des compteurs tenus avant l'application : il est déjà
-    // majoré. Le remajorer le gonflerait.
+  it("ne majore rien : le solde est ajouté tel quel", () => {
+    // Ce solde est déjà majoré : le remajorer le gonflerait.
     const html = solde("credited");
-    expect(html).toContain("<b>Ajouté tel quel</b>");
-    expect(html).not.toContain("ajoutées au solde</b>");
-  });
-
-  it("annonce les deux durées quand on saisit des heures travaillées", () => {
-    const html = solde("worked");
-    expect(html).toContain("20 h travaillées");
-    expect(html).toContain("5 h gagnées (25 h)");
-    expect(html).not.toContain("<b>Ajouté tel quel</b>");
+    expect(html).toContain("Ajouté tel quel, sans nouvelle majoration");
+    expect(html).not.toContain("gagnées");
   });
 });
 
-describe("le message suit le choix, même avant la saisie", () => {
-  const solde = (basis: "credited" | "worked", hours: string) =>
-    renderToStaticMarkup(
-      <SolidarityHoursDialog
-        open
-        draft={{ hours, minutes: "0", basis }}
-        setDraft={vi.fn()}
-        saving={false}
-        onClose={vi.fn()}
-        onSave={vi.fn()}
-      />,
-    );
-
-  it("ne dit plus « aucune majoration » quand on a choisi des heures à majorer", () => {
-    // Le défaut vécu : la phrase s'affichait sur les deux choix tant qu'aucune
-    // durée n'était saisie, ce qui contredisait le choix fait juste au-dessus.
-    expect(solde("worked", "")).not.toContain("Aucune majoration");
-    expect(solde("worked", "")).toContain("1 h travaillée = 1 h 15 de récup");
-  });
-
-  it("garde la phrase pour un solde déjà calculé, saisi ou non", () => {
-    expect(solde("credited", "")).toContain("<b>Ajouté tel quel</b>");
-    expect(solde("credited", "20")).toContain("<b>Ajouté tel quel</b>");
-  });
-});

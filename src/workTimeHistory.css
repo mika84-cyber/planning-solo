@@ -1,0 +1,36 @@
+/* Historique des heures sup, récupérations et mécénats : par mois, une ligne
+   par élément, la date en colonne à gauche et la valeur alignée à droite. */
+.history-month { display: grid; gap: 6px; }
+.history-month + .history-month { margin-top: 12px; }
+.history-month h4 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; border-bottom: 1px solid #ece4d9; padding: 0 2px 5px; color: var(--text); font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; }
+.history-month h4 small { color: #6b5d50; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: .74rem; font-weight: 700; }
+
+.app-shell .history-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; grid-template-areas: "date main value" "date main delete"; align-items: center; gap: 2px 12px; margin: 0; border: 1px solid #efe6db; border-left: 3px solid var(--history-accent, #c9b6a4); border-radius: 12px; padding: 10px 12px; background: #fff; box-shadow: none; }
+.history-row.tone-gain { --history-accent: #2f8a5b; }
+.history-row.tone-use { --history-accent: #b5485a; }
+.history-row.tone-paid { --history-accent: #9a4a2e; }
+.history-row.tone-mecenat { --history-accent: #7358d8; }
+
+.history-date { grid-area: date; display: grid; justify-items: center; line-height: 1; }
+.history-date b { color: var(--text); font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; }
+.history-date small { margin-top: 3px; color: #6b5d50; font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+
+.history-main { grid-area: main; display: grid; gap: 1px; min-width: 0; }
+.history-main strong { color: var(--text); font-size: .86rem; font-weight: 800; }
+.history-main .overtime-history-detail { color: #4f4439; font-size: .78rem; font-weight: 600; }
+.history-main small { color: #6b5d50; font-size: .72rem; font-weight: 600; }
+.history-main small.overtime-history-left { color: #1d6b45; font-weight: 800; }
+
+.history-value { grid-area: value; justify-self: end; font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
+.history-row.tone-gain .history-value { color: #1d6b45; }
+.history-row.tone-use .history-value { color: #9a2c40; }
+
+.app-shell .history-row .history-delete { grid-area: delete; justify-self: end; min-height: 0; border: 0; padding: 2px 0; background: none; box-shadow: none; color: #8a7d6e; font-size: .7rem; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.app-shell .history-row .history-delete:hover { color: #9a2c40; }
+
+/* Payées ou récupérées : une étiquette de couleur à côté du titre. */
+.history-main strong { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.history-badge { border-radius: 999px; padding: 2px 8px; font-size: .66rem; font-style: normal; font-weight: 800; letter-spacing: .02em; }
+.history-badge.paid { background: #f7e4d6; color: #8a3d22; }
+.history-badge.recovery { background: #e3f3e9; color: #1d6b45; }
+

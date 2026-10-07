@@ -1514,20 +1514,28 @@ async function buildPdfBytes(){
     var boxY = (M.id === 'conges') ? 36.9 : 46;
     obsPage.drawRectangle({
       x:boxX, y:boxY, width:boxW, height:boxH,
-      borderWidth:.86,
-      borderColor:PDFLib.rgb(.12,.12,.12),
+      /* Même trait que les cadres de signature voisins, plus appuyé. */
+      borderWidth:1.3,
+      borderColor:PDFLib.rgb(.08,.08,.08),
       color:PDFLib.rgb(1,1,1), opacity:.97
     });
     /* Ligne de séparation du titre, alignée sur celles des cadres voisins. */
     var obsHeaderY = (M.id === 'conges') ? 94.3 : boxY + boxH - 15;
     obsPage.drawLine({
       start:{x:boxX,y:obsHeaderY}, end:{x:boxX+boxW,y:obsHeaderY},
-      thickness:.86, color:PDFLib.rgb(.12,.12,.12)
+      thickness:1.1, color:PDFLib.rgb(.08,.08,.08)
     });
-    obsPage.drawText('OBSERVATION', {
-      x:boxX+5, y:(M.id === 'conges') ? 104.1 : boxY+boxH-9,
-      size:6.1, font:obsBold,
-      color:PDFLib.rgb(.12,.12,.12)
+    /* Le titre suit ceux des cadres voisins (« SIGNATURE DE L'AGENT : ») :
+       même graisse, même taille, centré dans sa bande, avec ses deux-points. */
+    var obsTitle = 'OBSERVATION :';
+    var obsTitleSize = 8.2;
+    var obsTitleWidth = obsBold.widthOfTextAtSize(obsTitle, obsTitleSize);
+    var obsBandTop = boxY + boxH;
+    obsPage.drawText(obsTitle, {
+      x:boxX + (boxW - obsTitleWidth) / 2,
+      y:(obsHeaderY + obsBandTop) / 2 - obsTitleSize * .35,
+      size:obsTitleSize, font:obsBold,
+      color:PDFLib.rgb(.08,.08,.08)
     });
     var clean=obsText.replace(/\s+/g,' ').trim();
     var words=clean.split(' '), lines=[], line='', fontSize=5.9, usable=boxW-10;

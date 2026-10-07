@@ -1456,9 +1456,6 @@
 .overtime-actions .secondary-button:disabled { opacity: .5; cursor: not-allowed; }
 .overtime-history-toggle { justify-self: start; }
 .overtime-history { display: grid; gap: 7px; border-top: 1px solid var(--border-card); padding-top: 12px; }
-.overtime-history-filters { display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px 4px; scrollbar-width: none; }
-.overtime-history-filters button { flex: 0 0 auto; border: 1px solid var(--border-control); border-radius: 999px; padding: 7px 10px; background: var(--surface); color: var(--muted); font-size: 11px; font-weight: 800; }
-.overtime-history-filters button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
 .overtime-history article {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;

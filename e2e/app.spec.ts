@@ -3472,10 +3472,11 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     viewportWidth <= 720 ? 12 : 1,
   );
   await expect(groupAction).toContainText(/Choisir mon groupe|Je suis groupe [123]/);
-  const remainingWorkCard = page.locator(".today-remaining-work");
-  await expect(remainingWorkCard).toBeVisible();
-  await expect(remainingWorkCard).toContainText(/Travail restant[\s\S]*\d+[\s\S]*jour/);
-  await expect(remainingWorkCard).toContainText("d’ici au 31");
+  // « Travail restant » a laissé la place au prochain mécénat ou heures sup.
+  await expect(page.locator(".today-remaining-work")).toHaveCount(0);
+  const nextExtraCard = page.locator(".today-next-extra");
+  await expect(nextExtraCard).toBeVisible();
+  await expect(nextExtraCard).toContainText(/Mécénat ou heure sup|Prochain mécénat|Prochaine heure sup/i);
   if (viewportWidth > 720) {
     await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", accentSpine(page));
   }
@@ -3484,7 +3485,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
       page.locator(".today-status").boundingBox(),
       page.locator(".today-next-work").boundingBox(),
       page.locator(".today-leave-balance").boundingBox(),
-      remainingWorkCard.boundingBox(),
+      nextExtraCard.boundingBox(),
     ]);
     expect(statusBox).not.toBeNull();
     expect(nextWorkBox).not.toBeNull();
@@ -3503,7 +3504,7 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
       page.locator(".today-status").boundingBox(),
       page.locator(".today-next-work").boundingBox(),
       page.locator(".today-leave-balance").boundingBox(),
-      remainingWorkCard.boundingBox(),
+      nextExtraCard.boundingBox(),
     ]);
     // Sur téléphone, quatre lignes empilées, toutes de la même largeur.
     expect(nextWorkBox!.y).toBeGreaterThanOrEqual(statusBox!.y + statusBox!.height - 1);
@@ -3645,8 +3646,8 @@ test("une fermeture exceptionnelle retire la présence et le prochain jour reste
     (key) => GRAND_PALAIS_EXCEPTIONAL_CLOSURES.some((item) => item.date === key),
   );
   expect(monthCount.exceptionallyClosed).toBe(3);
-  // Les fermetures exceptionnelles sont déduites du compte annoncé par le
-  // résumé du volet : le menu détaillé a quitté l'accueil.
+  // Les fermetures exceptionnelles sont déduites du compte du mois affiché
+  // sur la case du calendrier.
   expect(await workedDaysOnHome(page)).toBe(monthCount.worked);
 });
 
@@ -3799,7 +3800,7 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
         page.locator(".today-status").boundingBox(),
         page.locator(".today-next-work").boundingBox(),
         page.locator(".today-leave-balance").boundingBox(),
-        page.locator(".today-remaining-work").boundingBox(),
+        page.locator(".today-next-extra").boundingBox(),
   ]);
     // Le mois et l’année forment un couple centré, le mois juste avant l’année.
     expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
@@ -4025,9 +4026,9 @@ test("un solde manuel supérieur à 24 heures est bien enregistré", async ({ pa
   await page.getByLabel("Heures supplémentaires et récupérations")
     .getByRole("button", { name: "Voir l’historique" })
     .click();
-  await expect(page.locator(".overtime-history")).toContainText(
-    "Ajout manuel · +72 h",
-  );
+  const manualRow = page.locator(".overtime-history .history-row").filter({ hasText: "Ajout manuel" });
+  await expect(manualRow).toContainText("Solde repris, majoration comprise");
+  await expect(manualRow.locator(".history-value")).toHaveText("+ 72 h");
 });
 
 test("les heures supplémentaires du dimanche sont acceptées et reconnues", async ({ page }) => {
@@ -4054,7 +4055,10 @@ test("les heures supplémentaires du dimanche sont acceptées et reconnues", asy
   await page.getByLabel("Heures supplémentaires et récupérations")
     .getByRole("button", { name: "Voir l’historique" })
     .click();
-  await expect(page.locator(".overtime-history")).toContainText("2 h 30 · À payer");
+  const paidRow = page.locator(".overtime-history .history-row.tone-paid");
+  // Payées ou récupérées se distinguent par leur étiquette.
+  await expect(paidRow.locator(".history-badge.paid")).toHaveText(/À payer|Payées/);
+  await expect(paidRow.locator(".history-value")).toHaveText("2 h 30");
 });
 
 test("avec un profil de paie, « À payer » annonce le montant brut et le reporte sur la carte des heures", async ({ page }) => {
@@ -4226,7 +4230,7 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   await other.click();
 
   await expect(page.getByRole("heading", { name: "Sélectionnez vos dates Divers" })).toBeVisible();
-  await page.locator(".month-card .day.work").first().click();
+  await page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work)").first().click();
   // La durée se choisit à la date : journée entière par défaut.
   await page.locator(".time-modal").getByRole("button", { name: "Valider" }).click();
   const summary = page.getByLabel("Résumé avant validation");
@@ -4315,7 +4319,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
     );
   });
   expect(strikeElementsOverlap).toBe(false);
-  const strikeDay = page.locator(".month-card .day.work").first();
+  const strikeDay = page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work)").first();
   const strikeDate = await strikeDay.getAttribute("aria-label");
   await strikeDay.click();
   await expect(page.getByRole("heading", { name: "Ajoutez une journée de grève" })).toHaveCount(0);
@@ -4391,6 +4395,11 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await goToSection(page, "pay");
   await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({ hasText: "Grève (1 journée retenue)" });
+  // La règle du 10 peut renvoyer la retenue sur la paie suivante selon le jour.
+  await expect(async () => {
+    if (!(await strikePayRow.count())) await page.getByRole("button", { name: "Mois suivant" }).click();
+    await expect(strikePayRow).toHaveCount(1, { timeout: 1500 });
+  }).toPass({ timeout: 10_000 });
   await expect(strikePayRow).toContainText("-61,86");
   await expect(strikePayRow).toContainText("retenue au 1/30");
 
@@ -5561,25 +5570,20 @@ test("la saisie annonce les heures faites et le crédit obtenu", async ({ page }
   await expect(history).toContainText("3 h travaillées → 45 min gagnées (3 h 45)");
 });
 
-test("la reprise du solde laisse le choix entre valeur nette et heures à majorer", async ({ page }) => {
+test("l’ajout manuel reprend un solde déjà calculé, majoration comprise, tel quel", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByRole("button", { name: "Ajouter des heures manuellement" }).click();
   const dialog = page.getByRole("dialog", { name: "Ajouter des heures manuellement" });
-  // Par défaut, un solde déjà tenu ailleurs : rien n'est remajoré. Le message
-  // doit suivre le choix dès le clic, avant même qu'une durée soit saisie.
-  await expect(dialog).toContainText("Ajouté tel quel, sans majoration");
-  await dialog.getByRole("button", { name: "Des heures travaillées" }).click();
-  await expect(dialog).not.toContainText("Ajouté tel quel, sans majoration");
+  // Plus de choix « Des heures travaillées » : le solde saisi est déjà majoré.
+  await expect(dialog.getByRole("button", { name: "Des heures travaillées" })).toHaveCount(0);
+  await expect(dialog).toContainText("déjà calculé, majoration comprise");
 
   await dialog.getByLabel("Heures").fill("20");
-  await expect(dialog).toContainText("20 h travaillées");
-  await expect(dialog).toContainText("5 h gagnées (25 h)");
-
   await dialog.getByRole("button", { name: "Ajouter au solde" }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText("25 h ajoutées au solde de récupération")).toBeVisible();
+  await expect(page.getByText("20 h ajoutées au solde de récupération")).toBeVisible();
 });
 
 test("un mécénat hors des règles du temps de travail est signalé sans empêcher l’inscription", async ({ page }) => {
