@@ -106,6 +106,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   données synchronisées ; `App.tsx` conserve leur orchestration commune.
 - `src/useWorkTimeActions.ts` : validations, écritures et suppressions des
   heures supplémentaires, récupérations et mécénats.
+- `src/demoPayProfile.ts` : profil de paie fictif de la démo de
+  prévisualisation (`VITE_DEMO_PAY_PROFILE=true`, posé par
+  `.claude/dev-demo.cmd`) ; les tests gardent une démo sans profil.
 - `src/useOvertimePay.ts` : paiement des heures supplémentaires — montant du
   bulletin, aperçu « À payer » pendant la saisie, heures payées en avance.
 - `src/usePayActions.ts` : saisie du profil de paie, import et vérification des
@@ -189,8 +192,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/jspdfUnusedModule.ts` et l'alias de `vite.config.ts` : html2canvas,
   DOMPurify et canvg, optionnels dans jsPDF, ne sont pas livrés ; les méthodes
   `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
-- `public/sw.js` : cache hors ligne et activation des mises à jour ; son nom de
-  cache reçoit l’empreinte de la version par `scripts/stamp-sw.mjs`.
+- `public/sw.js` : cache hors ligne et activation des mises à jour. À la
+  construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
+  version et remplit `PRECACHE` : code, styles, polices et images légères
+  (≈ 3,7 Mo), téléchargés dès l’installation pour que l’application soit
+  complète hors ligne dès la première visite.
 - `e2e-pwa/pwa.spec.ts` (`npm run test:pwa`) : la version de production,
   construite dans `dist-pwa-e2e` et servie par `scripts/serve-dist.mjs`, avec
   le service worker actif — mise en cache, réouverture hors ligne, annonce et

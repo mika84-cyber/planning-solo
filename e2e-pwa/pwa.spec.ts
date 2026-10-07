@@ -23,18 +23,35 @@ async function openControlled(page: Page) {
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
 }
 
-test("le service worker garde les fichiers de l’application et la rouvre hors ligne", async ({ page, context }) => {
-  await openControlled(page);
-  // Les fichiers chargés sous son contrôle entrent dans le cache : avant
-  // correction, seuls les six fichiers de départ y étaient, et l'application
-  // s'ouvrait sur une page blanche sans réseau.
-  await page.reload();
-  await expect(shell(page)).toBeVisible();
-  await expect.poll(() => page.evaluate(async () => {
+/** Les fichiers que le service worker télécharge dès son installation. */
+function precacheList() {
+  const match = /const PRECACHE = (\[[^\]]*\]);/.exec(readFileSync(SW_FILE, "utf8"));
+  return JSON.parse(match?.[1] ?? "[]") as string[];
+}
+
+async function cachedPaths(page: Page) {
+  return page.evaluate(async () => {
     const name = (await caches.keys()).find((key) => key.startsWith("planning-solo-"));
     const requests = name ? await (await caches.open(name)).keys() : [];
-    return requests.filter((request) => /\/assets\/.+\.js$/.test(request.url)).length;
-  })).toBeGreaterThan(2);
+    return requests.map((request) => new URL(request.url).pathname);
+  });
+}
+
+test("dès la première visite, toute l’application est en cache et s’ouvre hors ligne", async ({ page, context }) => {
+  const expected = precacheList();
+  // Le code de chaque écran, ses styles et ses polices : pas seulement l'accueil.
+  expect(expected.filter((path) => path.startsWith("/assets/") && path.endsWith(".js")).length).toBeGreaterThan(20);
+  expect(expected.some((path) => path.endsWith(".css"))).toBe(true);
+  expect(expected.some((path) => path.startsWith("/fonts/"))).toBe(true);
+
+  // Une seule visite, sans rien rouvrir : l'installation suffit.
+  await page.goto("/");
+  await expect(shell(page)).toBeVisible();
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(async () => {
+    const cached = new Set(await cachedPaths(page));
+    return expected.filter((path) => !cached.has(path));
+  }).toEqual([]);
 
   // Le cache porte l'empreinte de la version construite, pas le nom de départ.
   const cacheNames = await page.evaluate(() => caches.keys());
@@ -46,6 +63,16 @@ test("le service worker garde les fichiers de l’application et la rouvre hors 
   await expect(shell(page)).toBeVisible();
   await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
   await context.setOffline(false);
+});
+
+test("un fichier non préchargé entre dans le cache dès sa première utilisation", async ({ page }) => {
+  await openControlled(page);
+  // Une grande photo d'en-tête n'est pas téléchargée d'avance : elle doit être
+  // gardée dès qu'elle sert. Avant correction, la copie arrivait trop tard et
+  // rien n'entrait dans le cache.
+  expect(precacheList()).not.toContain("/header-art.jpg");
+  await page.evaluate(() => fetch("/header-art.jpg").then((response) => response.blob()));
+  await expect.poll(() => cachedPaths(page)).toContain("/header-art.jpg");
 });
 
 test("une nouvelle version publiée est signalée, puis remplace l’ancienne et son cache", async ({ page }) => {

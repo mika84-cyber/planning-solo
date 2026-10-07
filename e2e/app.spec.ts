@@ -4052,6 +4052,35 @@ test("les heures supplémentaires du dimanche sont acceptées et reconnues", asy
   await expect(page.locator(".overtime-history")).toContainText("2 h 30 · À payer");
 });
 
+test("avec un profil de paie, « À payer » annonce le montant brut et le reporte sur la carte des heures", async ({ page }) => {
+  // Un jour de semaine ordinaire à venir : tarif de jour, payé le mois suivant.
+  let day = addDays(new Date(), 1);
+  while (day.getDay() === 0 || day.getDay() === 6 || getDayInfo(day, 2).holiday) day = addDays(day, 1);
+  const payMonth = new Date(day.getFullYear(), day.getMonth() + 1, 1).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  await prepareCompletePayDemo(page, false);
+  await goToSection(page, "leave");
+  await openLeaveTool(page, "Heures supplémentaires et récupérations");
+  await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
+  const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
+  await dialog.getByLabel("Date").fill(dateKey(day));
+  await setClockTime(dialog, "Heure de début", "18:00");
+  await setClockTime(dialog, "Heure de fin", "20:00");
+  await dialog.getByRole("button", { name: "À payer" }).click();
+
+  // (1 801,73 + 54,05) × 12 / 1 820 = 12,24 €/h ; 2 h majorées à 1,25 = 30,59 €.
+  const preview = dialog.locator(".overtime-pay-preview");
+  await expect(preview).toContainText(/≈ 30,59\s€ brut/);
+  await expect(preview).toContainText(`paie de ${payMonth}`);
+  await expect(preview).toContainText("Majorées à 1,25 jusqu’à 14 h dans le mois");
+  await dialog.getByRole("button", { name: "Enregistrer les heures" }).click();
+  await expect(dialog).toBeHidden();
+
+  await openLeaveTool(page, "Heures supplémentaires et récupérations");
+  const card = page.getByRole("region", { name: /Heures supplémentaires et récupérations/ });
+  await expect(card.locator(".overtime-balance-summary-primary")).toContainText(/2 h[\s\S]*≈ 30,59\s€ brut/);
+});
+
 test("une heure supplémentaire de jour crédite 1 h 15 en récupération", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");

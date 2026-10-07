@@ -39,6 +39,7 @@ import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
 import { effectivePayProfile, usePayActions } from "./usePayActions";
 import { useOvertimePay } from "./useOvertimePay";
+import { DEMO_PAY_PROFILE, demoPayProfiles } from "./demoPayProfile";
 
 const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
@@ -703,8 +704,13 @@ export default function Home() {
           const seededPayProfiles = JSON.parse(
             localStorage.getItem("planning:e2e-pay-profiles") || "null",
           ) as Record<string, PayProfile> | null;
+          // La démo de prévisualisation reçoit un profil de paie fictif, pour
+          // montrer de vrais montants ; les tests gardent une démo sans profil.
+          const demoProfileWanted = import.meta.env.DEV && import.meta.env.VITE_DEMO_PAY_PROFILE === "true";
           if (seededProfile) setFormProfile(seededProfile);
+          else if (demoProfileWanted) setFormProfile(DEMO_PAY_PROFILE);
           if (seededPayProfiles) setPayProfiles(seededPayProfiles);
+          else if (demoProfileWanted) setPayProfiles(demoPayProfiles(actualToday.getFullYear()));
           const completed = parseDemoCompletedRequestJson(
             localStorage.getItem("planning:demo-completed-request-v1"),
           );

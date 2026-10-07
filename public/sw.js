@@ -7,9 +7,21 @@ const SHELL = [
   "/planning-icon-v3-512.png",
   "/planning-icon-v3-apple.png",
 ];
+/* Les fichiers de l'application (code, styles, polices, images légères),
+   listés à la construction par scripts/stamp-sw.mjs : téléchargés dès
+   l'installation, ils rendent l'application complète hors ligne, tous écrans
+   compris, sans attendre qu'on les ait ouverts une première fois. */
+const PRECACHE = [];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
+  event.waitUntil(
+    caches.open(CACHE).then(async (cache) => {
+      await cache.addAll(SHELL);
+      // Un fichier introuvable ne bloque pas l'installation : il sera mis en
+      // cache à sa première utilisation, comme avant.
+      await Promise.allSettled(PRECACHE.map((url) => cache.add(url)));
+    }),
+  );
 });
 
 self.addEventListener("activate", (event) => {
