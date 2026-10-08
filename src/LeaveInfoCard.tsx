@@ -20,11 +20,13 @@ export function LeaveInfoCard() {
   return (
     <details className="leave-info-card">
       <summary>
+        {/* Un mémo à part, en bleu ardoise : des règles, pas un solde. */}
         <span className="leave-info-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5v.5" /></svg>
+          <svg viewBox="0 0 24 24"><path d="M5 4.5h9.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3Z" /><path d="M5 17a3 3 0 0 1 3-3h9.5M9 8.5h5" /></svg>
         </span>
         <span className="leave-info-copy">
-          <strong>Infos congés</strong>
+          <em className="leave-info-kicker">À savoir</em>
+          <strong>Règles des congés</strong>
           <small>Report, fractionnement et congés exceptionnels</small>
         </span>
         <em aria-hidden="true">
@@ -35,20 +37,31 @@ export function LeaveInfoCard() {
       </summary>
       <div className="leave-info-content">
         <div className="leave-info-sections">
-          <section aria-labelledby="leave-info-carry">
+          {/* Report : deux échéances, chacune avec sa date en éphéméride et les
+              congés qu'elle concerne. */}
+          <section className="leave-info-carry" aria-labelledby="leave-info-carry">
             <h3 id="leave-info-carry">Report des congés</h3>
-            <ul className="leave-info-rows">
-              <li>
-                <span><strong>Congés annuels</strong><small>De janvier à avril, ceux de l’année précédente partent en premier.</small></span>
-                <b>Jusqu’au 30 avril suivant</b>
-              </li>
-              <li>
-                <span><strong>RTT</strong><small>Sauf versement sur le CET.</small></span>
-                <b>Avant le 31 décembre</b>
-              </li>
-            </ul>
+            <div className="leave-info-deadline">
+              <span className="leave-info-date" aria-hidden="true"><b>30</b><small>avril</small></span>
+              <span>
+                <strong>Jusqu’au 30 avril suivant</strong>
+                <ul className="leave-info-tags" aria-label="Congés reportables">
+                  <li>Congés annuels</li>
+                  <li>Jours de fractionnement</li>
+                  <li>Fériés en récupération</li>
+                </ul>
+                <small>De janvier à avril, ceux de l’année précédente partent en premier.</small>
+              </span>
+            </div>
+            <div className="leave-info-deadline">
+              <span className="leave-info-date" aria-hidden="true"><b>31</b><small>déc.</small></span>
+              <span>
+                <strong>RTT : avant le 31 décembre</strong>
+                <small>Sauf versement sur le CET.</small>
+              </span>
+            </div>
           </section>
-          <section aria-labelledby="leave-info-fraction">
+          <section className="leave-info-fraction" aria-labelledby="leave-info-fraction">
             <h3 id="leave-info-fraction">Jours de fractionnement</h3>
             <p>Des jours en plus pour les congés annuels posés hors saison :</p>
             <ol className="leave-info-months" aria-label="Mois qui comptent : janvier à avril et novembre à décembre">
@@ -65,7 +78,7 @@ export function LeaveInfoCard() {
               Les RTT ne comptent pas, une demi-journée compte pour moitié. Calcul automatique dans vos soldes dès 2027.
             </small>
           </section>
-          <section aria-labelledby="leave-info-exceptional">
+          <section className="leave-info-exceptional" aria-labelledby="leave-info-exceptional">
             <h3 id="leave-info-exceptional">Congés exceptionnels</h3>
             <ul className="leave-info-rows">
               {EXCEPTIONAL_LEAVE_RULES.map((rule) => (

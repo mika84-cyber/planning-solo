@@ -59,3 +59,23 @@ test("la barre du formulaire tient sur une ligne sur grand écran et met le PDF 
   await expect(page.locator("#pageStatus")).toHaveText("Feuille 2 / 2");
   await expect(page.locator("#btnSecond svg")).toHaveCount(1);
 });
+
+test("la signature enregistrée sur le téléphone revient d’elle-même sur le formulaire vierge de l’ordinateur", async ({ page }) => {
+  // Un petit PNG bleu, comme une signature enregistrée sur le compte.
+  const signature = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 40; canvas.height = 20;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#0b3baf"; context.fillRect(5, 5, 30, 10);
+    return canvas.toDataURL("image/png");
+  });
+  await page.route("**/api/calendar", (route) =>
+    route.fulfill({ json: { form_profile: { full_name: "Mika", group: "2", signature } } }));
+  await page.goto("/formulaire/index.html");
+  await expect(page.locator("#sig")).toHaveClass(/has/);
+  expect(await page.locator("#sig").evaluate((canvas: HTMLCanvasElement) => {
+    const { data } = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
+    for (let index = 3; index < data.length; index += 4) if (data[index]) return true;
+    return false;
+  })).toBe(true);
+});

@@ -1086,6 +1086,20 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/form-profile")).toMatchObject({ deduction_pay_months: {} });
   });
 
+  it("garde la signature du téléphone quand un autre écran enregistre le profil", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const signature = "data:image/png;base64,AAAA";
+    // Le formulaire du téléphone l'enregistre en l'annonçant.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature, signatureUpdate: true }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ signature, full_name: "Mika" });
+    // L'ordinateur, chargé avant, change le groupe avec une copie sans signature.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "3", signature: "" }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ signature, group: "3" });
+    // Sans nom envoyé, le nom enregistré reste.
+    await calendarHandler(request({ action: "save-form-profile", signature: "", signatureUpdate: true }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ signature: "", full_name: "Mika", group: "3" });
+  });
+
   it("accepte la durée de récupération de jour férié de chaque quotité", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     for (const { value: quota } of WORK_QUOTA_OPTIONS) {
@@ -1299,7 +1313,7 @@ describe("API principale du calendrier", () => {
   it("refuse les signatures, CET et rattrapages invalides sans modifier le profil", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     for (const body of [
-      { action: "save-form-profile", signature: "data:image/jpeg;base64,abc" },
+      { action: "save-form-profile", signature: "data:image/jpeg;base64,abc", signatureUpdate: true },
       { action: "save-form-profile", signature: "", cetAccount: { employer: "invalid" } },
       { action: "save-form-profile", signature: "", manualYear: 1999 },
       { action: "save-form-profile", signature: "", deductionPayMonths: ["sick:2024-03-20"] },

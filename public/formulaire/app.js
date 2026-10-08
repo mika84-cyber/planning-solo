@@ -755,7 +755,10 @@ var signatureController = createSignatureController({
 });
 function mobileSignaturePersistence(){ return signatureController.mobilePersistence(); }
 function updateSignaturePersistenceUI(){ signatureController.updatePersistenceUI(); }
-function restoreSavedSignature(){ return signatureController.restoreSaved(); }
+function restoreSavedSignature(){
+  /* D'abord la signature gardée sur cet appareil, sinon celle du compte. */
+  return signatureController.restoreSaved().then(function(){ return signatureController.restoreFromAccount(); });
+}
 function updateClr(){ signatureController.updateClearButton(); }
 function sizeSig(scale){ signatureController.size(scale); }
 function clearSig(){ signatureController.clear(); }

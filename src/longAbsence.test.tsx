@@ -62,8 +62,14 @@ describe("infos congés", () => {
     const html = renderToStaticMarkup(<LeaveInfoCard />);
     expect(html).toContain("<details class=\"leave-info-card\">");
     expect(html).toContain("Report des congés");
+    // Un mémo à part, qui annonce des règles et non un solde.
+    expect(html).toContain("<strong>Règles des congés</strong>");
+    expect(html).toContain("À savoir");
     expect(html).toContain("Jusqu’au 30 avril suivant");
-    expect(html).toContain("Avant le 31 décembre");
+    expect(html).toContain("RTT : avant le 31 décembre");
+    // Trois sortes de jours se reportent jusqu'au 30 avril suivant.
+    for (const kind of ["Congés annuels", "Jours de fractionnement", "Fériés en récupération"])
+      expect(html).toContain(`<li>${kind}</li>`);
     expect(html).toContain("Jours de fractionnement");
     expect(html).toContain("<strong>4 jours</strong><span>posés</span><b>+1 jour</b>");
     expect(html).toContain("<strong>7 jours</strong><span>ou plus</span><b>+2 jours</b>");

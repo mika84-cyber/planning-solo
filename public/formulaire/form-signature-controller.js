@@ -161,9 +161,10 @@ export function createSignatureController(options) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           action: 'save-form-profile',
-          fullName,
-          group,
+          ...(fullName ? { fullName } : {}),
+          ...(group ? { group } : {}),
           signature: data,
+          signatureUpdate: true,
         }),
       })
       .then((response) => {
@@ -228,6 +229,49 @@ export function createSignatureController(options) {
       image.onerror = () => resolve(false);
       image.src = data;
     });
+  }
+
+  /* La signature enregistrée sur le compte (depuis le téléphone) : reprise
+     sur tout appareil connecté dont le cadre est encore vide, y compris sur
+     ordinateur et avec un formulaire vierge. */
+  let accountSignature = null;
+  function restoreFromAccount() {
+    // Sur un téléphone où l'on a refusé de garder la signature, on respecte ce choix.
+    if (!canSyncWithPlanning() || getHasInk() || (mobilePersistence() && signatureChoice() === 'declined'))
+      return Promise.resolve(false);
+    // Une seule lecture du compte par ouverture du formulaire.
+    if (!accountSignature)
+      accountSignature = win
+        .fetch('/api/calendar', { cache: 'no-store', credentials: 'same-origin' })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((payload) => (payload && payload.form_profile && payload.form_profile.signature) || '')
+        .catch(() => '');
+    return accountSignature
+      .then((data) => {
+        if (typeof data !== 'string' || !data.startsWith('data:image/png;base64,') || getHasInk())
+          return false;
+        if (mobilePersistence()) {
+          setSignatureData(data);
+          setSignatureChoice('saved');
+        }
+        return new Promise((resolve) => {
+          const image = new Image();
+          image.onload = () => {
+            if (getHasInk()) { resolve(false); return; }
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            setHasInk(true);
+            canvas.classList.add('has');
+            hint.style.display = 'none';
+            setPdfDone(false);
+            updateClearButton();
+            resolve(true);
+          };
+          image.onerror = () => resolve(false);
+          image.src = data;
+        });
+      })
+      .catch(() => false);
   }
 
   function fitSavePromptToVisualViewport() {
@@ -592,6 +636,7 @@ export function createSignatureController(options) {
     closeSavePrompt,
     mobilePersistence,
     openModal,
+    restoreFromAccount,
     restoreSaved,
     size,
     sizeBig,

@@ -269,3 +269,56 @@
 .long-absence-notice p { display: grid; gap: 3px; min-width: 0; margin: 0; }
 .long-absence-notice span { color: var(--muted); font-size: .84rem; }
 .long-absence-letter textarea { width: 100%; min-height: 320px; box-sizing: border-box; font: inherit; font-size: .9rem; line-height: 1.45; }
+
+/* Infos congés, retravaillées : chaque rubrique a sa couleur (report en
+   terracotta, fractionnement en vert, congés exceptionnels en violet), un
+   filet de cette couleur en tête et des pastilles assorties. Sur grand écran,
+   le report et le fractionnement s'empilent à gauche, les congés
+   exceptionnels occupent la colonne de droite. */
+.leave-info-content section { --info-accent: #b35a36; --info-soft: #f7e3d8; --info-ink: #8a3d22; border-top: 3px solid var(--info-accent); }
+.leave-info-content section.leave-info-fraction { --info-accent: #2f7a5e; --info-soft: #dff0e8; --info-ink: #1f5c45; }
+.leave-info-content section.leave-info-exceptional { --info-accent: #6a4fa3; --info-soft: #ebe5f6; --info-ink: #4d3780; }
+.leave-info-content h3 { border-bottom: 0; padding-bottom: 0; color: var(--info-ink); font-family: var(--font-display); font-size: 1.08rem; font-weight: 600; }
+.leave-info-content section .leave-info-rows b,
+.leave-info-content section .leave-info-steps b { background: var(--info-soft); color: var(--info-ink); }
+.leave-info-content section .leave-info-months li.counts { background: var(--info-soft); color: var(--info-ink); }
+.leave-info-content section .leave-info-steps p { border-color: color-mix(in srgb, var(--info-accent) 18%, #fff); background: color-mix(in srgb, var(--info-soft) 35%, #fff); }
+
+/* Report : une échéance par bloc, la date en éphéméride à gauche. */
+.leave-info-deadline { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: start; gap: 12px; }
+.leave-info-deadline + .leave-info-deadline { border-top: 1px dashed #e6ded3; padding-top: 10px; }
+.leave-info-date { display: grid; justify-items: center; overflow: hidden; border: 1px solid color-mix(in srgb, var(--info-accent) 30%, #fff); border-radius: 10px; background: #fff; line-height: 1; }
+.leave-info-date b { padding: 6px 0 3px; color: var(--info-ink); font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; }
+.leave-info-deadline .leave-info-date small { width: 100%; padding: 3px 0; background: var(--info-accent); color: #fff; font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-align: center; text-transform: uppercase; }
+.leave-info-deadline > span:last-child { display: grid; gap: 6px; min-width: 0; }
+.leave-info-deadline strong { color: var(--text); font-size: .9rem; line-height: 1.25; }
+.leave-info-deadline small { color: var(--muted); font-size: .74rem; line-height: 1.35; }
+.leave-info-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.leave-info-tags li { border-radius: 999px; padding: 3px 9px; background: var(--info-soft); color: var(--info-ink); font-size: .74rem; font-weight: 800; }
+
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
+  .leave-info-sections { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); grid-template-areas: "carry exceptional" "fraction exceptional"; align-items: start; }
+  .leave-info-sections > .leave-info-carry { grid-area: carry; }
+  .leave-info-sections > .leave-info-fraction { grid-area: fraction; }
+  .leave-info-sections > .leave-info-exceptional { grid-area: exceptional; }
+}
+@media (max-width: 600px) {
+  .leave-info-content { padding: 10px; }
+  .leave-info-content section { padding: 12px; }
+  .leave-info-deadline { grid-template-columns: 42px minmax(0, 1fr); gap: 10px; }
+}
+
+/* Le mémo « Règles des congés » : un bleu ardoise froid, distinct des tuiles
+   de soldes, pour dire qu'il s'agit de règles et non d'un décompte. */
+.leave-info-card { border-color: #cfd8e3; background: #eef2f6; box-shadow: none; }
+.leave-info-card[open] { border-color: #9fb0c3; }
+.leave-info-card > summary:hover { background: #e6ecf2; }
+.leave-info-icon { border-radius: 11px; background: #3f5670; }
+.leave-info-icon svg { stroke-width: 1.8; stroke-linejoin: round; }
+.leave-info-kicker { color: #3f5670; font-size: .64rem; font-style: normal; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.leave-info-copy strong { color: #2c3e52; }
+.leave-info-copy small { color: #56677a; }
+.leave-info-card > summary > em { border-color: #cfd8e3; color: #3f5670; }
+.leave-info-content { border-top-color: #cfd8e3; background: #f3f6f9; }
+.leave-info-content .sunday-dates-close { border-color: #cfd8e3; color: #3f5670; }
+@media (max-width: 600px) { .leave-info-copy small { display: none; } }

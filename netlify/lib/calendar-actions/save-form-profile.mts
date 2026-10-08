@@ -10,22 +10,29 @@ export async function handleSaveFormProfile(
     store,
     scopedKey,
   } = context;
+  // Le traitement n'est envoyé que par l'écran qui le modifie : les autres
+  // appels (changement de groupe, formulaire) l'ignorent et doivent le
+  // laisser intact plutôt que de l'effacer.
+  const profileVersion = await readAtomic<FormProfile>(store, scopedKey("form-profile"));
+  const previousProfile = profileVersion.value;
   const fullName =
     typeof body.fullName === "string"
       ? body.fullName.trim().slice(0, 120)
-      : "";
-  const signature = typeof body.signature === "string" ? body.signature : "";
+      : previousProfile?.full_name || "";
+  // La signature n'est remplacée que par le formulaire, qui l'annonce
+  // (`signatureUpdate`). Les réglages du planning renvoient la copie qu'ils
+  // ont chargée, parfois plus ancienne : elle effaçait la signature
+  // enregistrée entre-temps sur le téléphone.
+  const signature =
+    body.signatureUpdate === true
+      ? typeof body.signature === "string" ? body.signature : ""
+      : previousProfile?.signature || "";
   if (
     signature &&
     (!signature.startsWith("data:image/png;base64,") ||
       signature.length > 600000)
   )
     return json({ error: "Signature invalide" }, 400);
-  // Le traitement n'est envoyé que par l'écran qui le modifie : les autres
-  // appels (changement de groupe, formulaire) l'ignorent et doivent le
-  // laisser intact plutôt que de l'effacer.
-  const profileVersion = await readAtomic<FormProfile>(store, scopedKey("form-profile"));
-  const previousProfile = profileVersion.value;
   // Même règle pour le groupe : un appel qui ne le renvoie pas ne doit pas
   // effacer le cycle enregistré, qui fausserait ensuite tous les décomptes
   // de dimanches et fériés sans qu'on ait touché au planning.
