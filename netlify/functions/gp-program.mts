@@ -3,13 +3,14 @@ import { currentUser } from "../lib/identityUser.mts";
 import type {
   BoundaryReport,
   GrandPalaisDismissal,
+  GrandPalaisSitePrices,
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
   SharedGrandPalaisEvent,
 } from "../../src/grandPalaisProgramTypes.ts";
 import type { GrandPalaisMonitorState } from "../lib/grandPalaisMonitor.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
-import { CHECK_REQUEST_KEY } from "../lib/grandPalaisCheck.mts";
+import { CHECK_REQUEST_KEY, SITE_PRICES_KEY } from "../lib/grandPalaisCheck.mts";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -42,11 +43,12 @@ export default async function grandPalaisProgramHandler(request: Request) {
     && normalizedEmail(user.email) === normalizedEmail(adminEmail()),
   );
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
-  const [approvedValue, pendingValue, state, health] = await Promise.all([
+  const [approvedValue, pendingValue, state, health, sitePrices] = await Promise.all([
     store.get("approved", { type: "json" }) as Promise<SharedGrandPalaisEvent[] | null>,
     store.get("pending", { type: "json" }) as Promise<GrandPalaisProgramProposal[] | null>,
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
     store.get("health", { type: "json" }) as Promise<BoundaryReport | null>,
+    store.get(SITE_PRICES_KEY, { type: "json" }) as Promise<GrandPalaisSitePrices[] | null>,
   ]);
   const approved = approvedValue ?? [];
   const pending = pendingValue ?? [];
@@ -59,6 +61,7 @@ export default async function grandPalaisProgramHandler(request: Request) {
     // Le contrôle des frontières ne regarde que l'administrateur : c'est
     // elle qui peut agir, et le détail nomme des variables de configuration.
     health: isAdmin ? (health ?? undefined) : undefined,
+    sitePrices: sitePrices ?? [],
   });
 
   if (request.method === "GET") return json(payload());

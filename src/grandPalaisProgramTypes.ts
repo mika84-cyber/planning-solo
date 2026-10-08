@@ -47,10 +47,21 @@ export type BoundaryReport = {
   deliveryDetail?: string;
 };
 
+/** Les tarifs lus sur une fiche officielle au dernier passage de la veille,
+ *  validée ou non : ils s'appliquent aussi au programme intégré. */
+export type GrandPalaisSitePrices = {
+  title: string;
+  url: string;
+  startDate: string;
+  endDate: string;
+  prices: GrandPalaisPrice[];
+};
+
 export type GrandPalaisProgramPayload = {
   approved: SharedGrandPalaisEvent[];
   pending: GrandPalaisProgramProposal[];
   isAdmin: boolean;
   lastCheckedAt?: string;
   health?: BoundaryReport;
+  sitePrices?: GrandPalaisSitePrices[];
 };

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  applyGrandPalaisSitePrices,
   BoundaryReportPanel,
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
@@ -383,5 +384,33 @@ describe("programmation du Grand Palais", () => {
       venueLabel: "Galerie 8",
     }]);
     expect(JSON.stringify(merged)).not.toContain("Lien extérieur");
+  });
+
+  it("reprend à chaque passage les tarifs du site, même pour un événement du programme intégré au titre différent", () => {
+    const prices = [
+      { label: "Semaine", amount: 36 },
+      { label: "Week-end", amount: 41 },
+      { label: "Soirée", amount: 26 },
+      { label: "Réduit étudiant", amount: 26 },
+    ];
+    const program = applyGrandPalaisSitePrices(GRAND_PALAIS_PROGRAM, [{
+      title: "Paris Photo 2026",
+      url: "https://www.grandpalais.fr/fr/programme/paris-photo-2026",
+      startDate: "2026-11-12",
+      endDate: "2026-11-15",
+      prices,
+    }]);
+    const entries = Object.values(program).flatMap((venue) => Object.values(venue.schedule).flatMap((list) => list ?? []));
+    const parisPhoto = entries.find((entry) => entry.title.startsWith("Paris Photo"));
+    expect(parisPhoto?.prices).toEqual(prices);
+    expect(parisPhoto?.officialUrl).toBe("https://www.grandpalais.fr/fr/programme/paris-photo-2026");
+    // Un autre événement aux dates différentes ne reçoit rien.
+    expect(entries.filter((entry) => entry.prices === prices)).toHaveLength(1);
+    // Mêmes mots mais dates sans rapport : aucun tarif.
+    const elsewhere = applyGrandPalaisSitePrices(GRAND_PALAIS_PROGRAM, [{
+      title: "Paris Photo 2027", url: "", startDate: "2027-11-11", endDate: "2027-11-14", prices,
+    }]);
+    expect(Object.values(elsewhere).flatMap((venue) => Object.values(venue.schedule).flatMap((list) => list ?? []))
+      .some((entry) => entry.prices === prices)).toBe(false);
   });
 });

@@ -12,8 +12,12 @@ import { sendSharedPlanningNotification } from "./sharedCalendarBridge.mts";
 import type {
   GrandPalaisDismissal,
   GrandPalaisProgramProposal,
+  GrandPalaisSitePrices,
   SharedGrandPalaisEvent,
 } from "../../src/grandPalaisProgramTypes.ts";
+
+/** Clé des tarifs relevés sur toutes les fiches au dernier passage. */
+export const SITE_PRICES_KEY = "site-prices";
 
 /** Clé de la demande de contrôle déposée par l'administrateur. */
 export const CHECK_REQUEST_KEY = "check-request";
@@ -45,8 +49,16 @@ export async function runGrandPalaisCheck() {
     return !(proposal.kind === "new" && dismissedIds.has(event.id));
   });
 
+  // Les tarifs de chaque fiche, validée ou non, sont gardés à chaque passage :
+  // le programme intégré à l'application (titres parfois différents du site,
+  // jamais « validés ») les reprend aussi. Une lecture vide ne les efface pas.
+  const sitePrices: GrandPalaisSitePrices[] = events
+    .filter((event) => event.prices?.length && event.venueKey !== "exceptional-closure")
+    .map((event) => ({ title: event.title, url: event.url, startDate: event.startDate, endDate: event.endDate, prices: event.prices! }));
+
   await Promise.all([
     store.setJSON("monitor-state", detected.state),
+    sitePrices.length ? store.setJSON(SITE_PRICES_KEY, sitePrices) : Promise.resolve(),
     fresh.length || prices.changed ? store.setJSON("pending", [...pending, ...fresh]) : Promise.resolve(),
     prices.changed ? store.setJSON("approved", prices.approved) : Promise.resolve(),
   ]);

@@ -49,6 +49,14 @@ describe("API partagée de la programmation GP", () => {
     expect(await response.json()).toMatchObject({ isAdmin: false, pending: [] });
   });
 
+  it("donne à tous les tarifs relevés sur le site au dernier passage", async () => {
+    const sitePrices = [{ title: "Paris Photo 2026", url: "https://www.grandpalais.fr/fr/programme/paris-photo-2026", startDate: "2026-11-12", endDate: "2026-11-15", prices: [{ label: "Semaine", amount: 36 }] }];
+    data.set("site-prices", sitePrices);
+    mockedGetUser.mockResolvedValue({ id: "guest", email: "guest@example.test" } as never);
+    const response = await grandPalaisProgramHandler(new Request("https://example.test/api/gp-program"));
+    expect(await response.json()).toMatchObject({ sitePrices });
+  });
+
   it("réserve les décisions au compte administrateur", async () => {
     mockedGetUser.mockResolvedValue({ id: "guest", email: "guest@example.test" } as never);
     const response = await grandPalaisProgramHandler(new Request("https://example.test/api/gp-program", {

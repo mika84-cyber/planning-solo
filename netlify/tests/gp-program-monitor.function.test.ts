@@ -249,4 +249,14 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     expect(mockedDetect).not.toHaveBeenCalled();
     expect(store.setJSON).not.toHaveBeenCalled();
   });
+
+  it("garde à chaque passage les tarifs lus sur toutes les fiches", async () => {
+    const priced = { ...event, prices: [{ label: "Plein", amount: 18 }] };
+    mockedCollect.mockResolvedValue([priced] as never);
+    mockedDetect.mockReturnValue({ state: nextState, proposals: [] } as never);
+    await monitorGrandPalaisProgram();
+    expect(stored.get("site-prices")).toEqual([{
+      title: event.title, url: event.url, startDate: event.startDate, endDate: event.endDate, prices: priced.prices,
+    }]);
+  });
 });

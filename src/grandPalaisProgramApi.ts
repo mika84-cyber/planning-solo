@@ -55,7 +55,8 @@ function isProgramPayload(value: unknown): value is GrandPalaisProgramPayload {
     Array.isArray(value.pending) &&
     value.pending.every(isProposal) &&
     typeof value.isAdmin === "boolean" &&
-    isOptionalString(value.lastCheckedAt)
+    isOptionalString(value.lastCheckedAt) &&
+    (value.sitePrices === undefined || Array.isArray(value.sitePrices))
   );
 }
 

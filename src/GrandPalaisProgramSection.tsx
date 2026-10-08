@@ -13,6 +13,7 @@ import type {
 import type {
   BoundaryReport,
   GrandPalaisPrice,
+  GrandPalaisSitePrices,
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
   SharedGrandPalaisEvent,
@@ -143,6 +144,45 @@ export function mergeSharedGrandPalaisProgram(
     }
   }
   return merged;
+}
+
+/** Un titre réduit à ses mots : sans accents, chiffres ni ponctuation. */
+function titleWords(title: string) {
+  return title
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z]+/g, " ").trim();
+}
+
+/** Les tarifs relevés sur le site à chaque passage de la veille, appliqués
+ *  aux événements du programme qui n'ont pas été validés depuis la veille :
+ *  « Paris Photo World Supreme » reprend ceux de la fiche « Paris Photo
+ *  2026 ». Une fiche correspond si l'un des titres contient l'autre et si
+ *  leurs dates se chevauchent ; elle remplace les tarifs connus. */
+export function applyGrandPalaisSitePrices(
+  program: GrandPalaisProgramData,
+  sitePrices: GrandPalaisSitePrices[],
+): GrandPalaisProgramData {
+  if (!sitePrices.length) return program;
+  const sites = sitePrices
+    .map((site) => ({ ...site, words: titleWords(site.title), url: safeGrandPalaisUrl(site.url) }))
+    // Un titre trop court (« Fête ») correspondrait à n'importe quoi.
+    .filter((site) => site.words.length >= 6 && site.prices.length);
+  const matching = (entry: GrandPalaisProgramEntry) => {
+    if (!entry.startsOn || !entry.endsOn) return undefined;
+    const words = titleWords(entry.title);
+    return sites.find((site) =>
+      (site.url && entry.officialUrl === site.url) ||
+      (words && (words.includes(site.words) || site.words.includes(words)) &&
+        site.startDate <= entry.endsOn! && entry.startsOn! <= site.endDate));
+  };
+  return Object.fromEntries(Object.entries(program).map(([key, venue]) => [key, {
+    ...venue,
+    schedule: Object.fromEntries(Object.entries(venue.schedule).map(([year, entries]) => [year, (entries ?? []).map((entry) => {
+      const site = matching(entry);
+      if (!site) return entry;
+      return { ...entry, prices: site.prices, ...(entry.officialUrl || !site.url ? {} : { officialUrl: site.url }) };
+    })])),
+  }])) as GrandPalaisProgramData;
 }
 
 const PRIMARY_VENUES = ["galleries34", "gallery8", "gallery7", "childrenPalace"] as const;
@@ -642,8 +682,11 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
   const [programView, setProgramView] = useState<ProgramView>("now");
   const [searchQuery, setSearchQuery] = useState("");
   const program = useMemo(
-    () => mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, sharedPayload?.approved ?? []),
-    [sharedPayload?.approved],
+    () => applyGrandPalaisSitePrices(
+      mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, sharedPayload?.approved ?? []),
+      sharedPayload?.sitePrices ?? [],
+    ),
+    [sharedPayload?.approved, sharedPayload?.sitePrices],
   );
   const [primaryChoice, setPrimaryChoice] = useState<PrimaryChoice>("galleries34");
   const [otherVenue, setOtherVenue] = useState<string>("nef");
