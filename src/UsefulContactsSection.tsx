@@ -10,6 +10,7 @@ import type {
 import { readResourceFavorites, writeResourceFavorites } from "./resourceFavorites";
 import { matchesSearch } from "./searchMatching";
 import "./usefulDocumentAdmin.css";
+import { VISITOR_QR_LINKS, VisitorQrLinks } from "./VisitorQrLinks";
 
 function formatPhone(number: string) {
   return number.replace(/\D/g, "").replace(/(\d{2})(?=\d)/g, "$1 ").trim();
@@ -118,7 +119,7 @@ type UsefulContactsSectionProps = {
 };
 
 export function UsefulContactsSection({ initialData, accountId = "", isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
-  const [directory, setDirectory] = useState<"pompidou" | "gprmn" | null>(null);
+  const [directory, setDirectory] = useState<"pompidou" | "gprmn" | "visitors" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
   const [contacts, setContacts] = useState<UsefulContactsPayload | null>(initialData || null);
   const [loadError, setLoadError] = useState("");
@@ -248,6 +249,20 @@ export function UsefulContactsSection({ initialData, accountId = "", isAdmin = f
     );
   }
 
+  // Pour les visiteurs : les QR codes de réclamation et d'objet perdu, à
+  // ouvrir ou à faire flasher.
+  if (directory === "visitors") {
+    return (
+      <section className="useful-contacts-screen" aria-labelledby="visitor-contacts-title">
+        <header className="useful-contacts-subheader">
+          <button className="section-back-hit-area" type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
+          <div><span className="step-label">Contacts utiles</span><h2 id="visitor-contacts-title">Pour les visiteurs</h2></div>
+        </header>
+        <VisitorQrLinks />
+      </section>
+    );
+  }
+
   if (directory === "gprmn") {
     return (
       <section className="useful-contacts-screen" aria-labelledby="gprmn-contacts-title">
@@ -279,9 +294,10 @@ export function UsefulContactsSection({ initialData, accountId = "", isAdmin = f
           {([
             ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, tickets resto"],
             ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Accident, secourisme, supervision Expo"],
+            ["visitors", "Pour les visiteurs", VISITOR_QR_LINKS.length, "Réclamation et objet perdu, en QR code"],
           ] as const).map(([key, title, count, description]) => (
-            <button key={key} type="button" onClick={() => setDirectory(key)}>
-              <span aria-hidden="true">{key === "pompidou" ? "P" : "G"}</span><span><strong>{title}</strong>{count ? <small>{count} contact{count > 1 ? "s" : ""}</small> : null}<em>{description}</em></span>
+            <button key={key} type="button" className={`directory-${key}`} onClick={() => setDirectory(key)}>
+              <span aria-hidden="true">{key === "pompidou" ? "P" : key === "gprmn" ? "G" : "V"}</span><span><strong>{title}</strong>{count ? <small>{count} {key === "visitors" ? `QR code${count > 1 ? "s" : ""}` : `contact${count > 1 ? "s" : ""}`}</small> : null}<em>{description}</em></span>
             </button>
           ))}
       </div>

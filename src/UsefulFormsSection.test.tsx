@@ -24,7 +24,7 @@ describe("formulaires utiles", () => {
     expect(html).toContain("useful-forms-root");
     expect(html).toContain("Rechercher un document");
     // Pendant l'exposition Cézanne, le dossier Expo porte son audioguide.
-    expect(html).toContain("<small>+ 1 audioguide + 2 QR codes</small>");
+    expect(html).toContain("<small>+ 1 audioguide</small>");
     expect(html).not.toContain("Hilma Af Klint");
     expect(html).toContain("Information pratique");
     expect(html).toContain("Déclarer un accident de travail");
@@ -34,10 +34,8 @@ describe("formulaires utiles", () => {
   });
 
   it("sépare documents et audioguides d’un même dossier, au singulier ou au pluriel", () => {
-    expect(folderListHeadings(1, 1)).toEqual({ documents: "Document", audioguides: "Audioguide", qrLinks: "QR code" });
-    expect(folderListHeadings(3, 2)).toEqual({ documents: "Documents", audioguides: "Audioguides", qrLinks: "QR code" });
-    expect(folderListHeadings(0, 1, 1)?.qrLinks).toBe("QR code");
-    expect(folderListHeadings(0, 0, 2)).toBeNull();
+    expect(folderListHeadings(1, 1)).toEqual({ documents: "Document", audioguides: "Audioguide" });
+    expect(folderListHeadings(3, 2)).toEqual({ documents: "Documents", audioguides: "Audioguides" });
     expect(folderListHeadings(2, 0)).toBeNull();
     expect(folderListHeadings(0, 1)).toBeNull();
   });
@@ -86,14 +84,6 @@ describe("formulaires utiles", () => {
     ]);
     expect(expo("2027-01-17")?.audioguides).toHaveLength(1);
     expect(expo("2027-01-18")?.audioguides).toEqual([]);
-  });
-
-  it("garde les QR codes du service client et des objets perdus dans le dossier Expo", () => {
-    const expo = usefulFormFoldersForDate("2027-06-01").find((folder) => folder.key === "expo");
-    expect(expo?.qrLinks).toEqual([
-      expect.objectContaining({ title: "Réclamation service client", url: "https://l.ead.me/bg72nl", qr: "/useful-forms/reclamation-service-client-qr.png" }),
-      expect.objectContaining({ title: "Objet perdu", url: "https://l.ead.me/bg72lH", qr: "/useful-forms/objet-perdu-qr.png" }),
-    ]);
   });
 
   it("ouvre les PDF dans le lecteur sur une adresse locale non sécurisée", () => {

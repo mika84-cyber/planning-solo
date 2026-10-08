@@ -2033,7 +2033,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const folders = page.locator(".useful-form-folder-grid > button");
   await expect(folders.first()).toHaveCSS("box-shadow", "none");
   await expect(folders).toHaveText([
-    /Formulaire Expo.*1 audioguide \+ 2 QR codes/,
+    /Formulaire Expo.*1 audioguide/,
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*8 documents/,
     /Horaires tickets resto.*Information pratique/,
@@ -2048,14 +2048,14 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
 
   await folders.nth(0).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
-  // L'audioguide et le QR code prennent la forme des fiches, à la suite de la liste.
-  await expect(page.locator(".useful-form-download-list .useful-form-download-card")).toHaveCount(3);
-  // Deux sortes d'éléments : chacune a son intitulé.
-  await expect(page.locator(".useful-form-list-heading")).toHaveText(["Audioguide", "QR codes"]);
+  // L'audioguide prend la forme des fiches, à la suite de la liste.
+  await expect(page.locator(".useful-form-download-list .useful-form-download-card")).toHaveCount(1);
+  // Sans document à côté, l’audioguide n’a pas besoin d’intitulé de séparation.
+  await expect(page.locator(".useful-form-list-heading")).toHaveCount(0);
   await expect(page.locator(".useful-forms-empty")).toHaveCount(0);
   await expect(page.locator(".useful-forms-folder-screen")).not.toContainText("Hilma Af Klint");
   // L'audioguide Cézanne s'ouvre sans scanner le QR code, code d'accès en vue.
-  const guide = page.locator(".useful-audioguide-card:not(.useful-qr-link-card)");
+  const guide = page.locator(".useful-audioguide-card");
   await expect(guide).toContainText("Cézanne et nous");
   await expect(guide).toContainText("7268");
   const guideLink = guide.getByRole("link", { name: "Ouvrir l’audioguide" });
@@ -2066,14 +2066,6 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(guide.getByRole("img", { name: /QR code de l’audioguide/ })).toBeVisible();
   await guide.getByRole("button", { name: "Masquer le QR code" }).click();
   await expect(guide.locator(".useful-audioguide-qr")).toHaveCount(0);
-  // Le formulaire de réclamation du service client : lien direct et QR code.
-  const claim = page.locator(".useful-qr-link-card").filter({ hasText: "Réclamation service client" });
-  await expect(claim).toContainText("Réclamation service client");
-  await expect(claim.getByRole("link", { name: "Ouvrir le formulaire" })).toHaveAttribute("href", "https://l.ead.me/bg72nl");
-  await claim.getByRole("button", { name: "Afficher le QR code" }).click();
-  await expect(claim.getByRole("img", { name: "QR code : Réclamation service client" })).toBeVisible();
-  const lost = page.locator(".useful-qr-link-card").filter({ hasText: "Objet perdu" });
-  await expect(lost.getByRole("link", { name: "Ouvrir le formulaire" })).toHaveAttribute("href", "https://l.ead.me/bg72lH");
   const formsBackArea = page.getByRole("button", { name: "Revenir aux dossiers de formulaires" });
   const [formsBackBox, folderHeaderBox] = await Promise.all([
     formsBackArea.boundingBox(),
@@ -3340,6 +3332,16 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await page.getByRole("button", { name: /Contact GP‑RMN/ }).click();
   await expect(page.getByText("Accident · secourisme")).toBeVisible();
   await expect(page.getByText("Superviseur Expo")).toBeVisible();
+  // Pour les visiteurs : les QR codes de réclamation et d'objet perdu.
+  await page.getByRole("button", { name: "Revenir aux contacts utiles" }).click();
+  await page.getByRole("button", { name: /Pour les visiteurs/ }).click();
+  await expect(page.getByRole("heading", { name: "Pour les visiteurs" })).toBeVisible();
+  const claim = page.locator(".useful-qr-link-card").filter({ hasText: "Réclamation service client" });
+  await expect(claim.getByRole("link", { name: "Ouvrir le formulaire" })).toHaveAttribute("href", "https://l.ead.me/bg72nl");
+  await claim.getByRole("button", { name: "Afficher le QR code" }).click();
+  await expect(claim.getByRole("img", { name: "QR code : Réclamation service client" })).toBeVisible();
+  const lost = page.locator(".useful-qr-link-card").filter({ hasText: "Objet perdu" });
+  await expect(lost.getByRole("link", { name: "Ouvrir le formulaire" })).toHaveAttribute("href", "https://l.ead.me/bg72lH");
 });
 
 test("un échange exige et modifie toujours ses deux journées ensemble", async ({ page }) => {
