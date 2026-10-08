@@ -27,6 +27,16 @@ describe("PlanningDayCell", () => {
     const part = renderToStaticMarkup(<PlanningDayCell {...baseProps} recoveryEntries={[{ ...recoveryEntries[0], minutes: 120, end: "12:00" }]} fullDayRecoveryMinutes={465} />);
     expect(part).not.toContain(" recovery-day");
     expect(part).toContain("hourly-recovery-day");
+    // Deux heures le matin : la case se coupe en deux, à gauche, avec « 2h ».
+    expect(part).toContain("half-morning half-hours");
+    expect(part).toContain('hourly-half-label" aria-hidden="true">2h</span>');
+    // Une durée longue peut passer à la verticale sur téléphone.
+    const long = renderToStaticMarkup(<PlanningDayCell {...baseProps} recoveryEntries={[{ ...recoveryEntries[0], minutes: 150, end: "12:30" }]} fullDayRecoveryMinutes={465} />);
+    expect(long).toContain('hourly-half-label is-long" aria-hidden="true">2h30</span>');
+    expect(part).not.toContain(">REC<");
+    const afternoon = renderToStaticMarkup(<PlanningDayCell {...baseProps} recoveryEntries={[{ ...recoveryEntries[0], minutes: 180, start: "14:00", end: "17:00" }]} fullDayRecoveryMinutes={465} />);
+    expect(afternoon).toContain("half-afternoon half-hours");
+    expect(afternoon).toContain(">3h</span>");
   });
 
   it("ajoute les vacances scolaires sans remplacer les autres marqueurs", () => {

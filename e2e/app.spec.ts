@@ -4796,10 +4796,13 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
   await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("2 h 30 déduites");
   await recoveryPanel.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
 
+  // 10 h – 12 h 30 : la case se coupe en deux, la moitié du matin (à gauche)
+  // en corail avec « 2h30 ».
   const recoveryDay = page.locator(".month-card .day.hourly-recovery-day").last();
-  await expect(recoveryDay).toHaveCSS("background-color", "rgb(243, 179, 166)");
-  await expect(recoveryDay).toHaveCSS("border-color", "rgb(0, 0, 0)");
-  await expect(recoveryDay.getByText("REC", { exact: true })).toBeVisible();
+  await expect(recoveryDay).toHaveClass(/half-morning half-hours/);
+  expect(await recoveryDay.evaluate((node) => getComputedStyle(node, "::after").backgroundColor)).toBe("rgb(243, 179, 166)");
+  await expect(recoveryDay.locator(".hourly-half-label")).toHaveText("2h30");
+  await expect(recoveryDay.getByText("REC", { exact: true })).toHaveCount(0);
   await expect(recoveryDay).not.toContainText("Récup.");
 });
 

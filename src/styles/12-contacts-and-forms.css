@@ -1455,3 +1455,29 @@
   }
 }
 .useful-contacts-subheader{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:14px;margin:2px 0 20px;padding:14px 16px}.useful-contacts-subheader .section-back-hit-area{position:static;inset:auto;display:grid;place-items:center;width:48px;height:48px;border:1px solid var(--border-control);border-radius:14px;background:linear-gradient(145deg,var(--surface-high),var(--surface));box-shadow:0 5px 13px rgba(87, 78, 66,.1)}.useful-contacts-subheader .section-back-arrow{position:static;width:auto;height:auto;transform:none;background:transparent;color:var(--muted);font-size:22px}.useful-contact-card{grid-template-columns:minmax(190px,.55fr) minmax(0,1.45fr);align-items:start}.useful-contact-card>.useful-contact-identity{grid-column:1;grid-row:1;padding-right:0}.useful-contact-card>.useful-contact-actions{grid-column:2;grid-row:1/span 2}.useful-contact-card-tools{display:flex;grid-column:1;grid-row:2;align-items:center;align-self:end;gap:7px;margin-top:12px}.useful-contact-card-tools .contact-admin-edit,.useful-contact-card-tools .resource-favorite-button{position:static;display:grid;place-items:center;width:42px;height:42px;margin:0;border:1px solid var(--border-control);border-radius:12px;padding:0;background:linear-gradient(145deg,#fff,var(--surface-high));box-shadow:0 4px 11px rgba(87, 78, 66,.09);color: var(--muted);font-size:18px;line-height:1;cursor:pointer}.useful-contact-card-tools .resource-favorite-button[aria-pressed=true]{border-color:#e0bd69;background:#fff5d9;color:#c17a00}
+
+/* Quelques heures de récupération : la case reste celle d'une journée
+   travaillée, coupée en deux comme une demi-journée ; la moitié du moment
+   (matin à gauche, après-midi à droite) prend le corail des récupérations et
+   porte le nombre d'heures, à l'horizontale. */
+.month-card .calendar-grid .day.hourly-recovery-day.half-hours,
+.mini-day.hourly-recovery-day.half-hours {
+  --leave: #f3b3a6;
+  background-color: var(--surface, #fff) !important;
+  color: inherit !important;
+  outline: none;
+}
+.half-hours .hourly-half-label {
+  z-index: 2;
+  color: #3d1712;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  writing-mode: horizontal-tb;
+  transform: translate(-50%, -50%);
+}
+/* Sur téléphone, une durée longue (« 2h30 ») ne tient pas en travers d'une
+   demi-case : elle s'écrit à la verticale, comme CA ou RTT. */
+@media (max-width: 720px) {
+  .half-hours .hourly-half-label.is-long { writing-mode: vertical-rl; transform: translate(-50%, -50%) rotate(180deg); }
+}

@@ -50,6 +50,15 @@ type PlanningDayCellProps = {
   onClick: () => void;
 };
 
+/** Le moment des heures posées : l'après-midi si elles commencent à 13 h ou
+ *  plus tard, sinon le matin. */
+function hourlyRecoveryMoment(entries: Array<{ start?: string; end?: string }>) {
+  const located = entries.find((item) => item.start || item.end);
+  if (!located) return "morning";
+  if (located.start) return located.start >= "13:00" ? "afternoon" : "morning";
+  return (located.end || "") > "13:30" ? "afternoon" : "morning";
+}
+
 export function PlanningDayCell({
   date,
   group,
@@ -98,6 +107,13 @@ export function PlanningDayCell({
   const fullHourlyRecovery = hasHourlyRecovery && !hasTrainingRecovery && info.kind !== "off"
     && hourlyRecoveryMinutes >= fullDayRecoveryMinutes;
   const hasLeavePeriod = Boolean(leavePeriod);
+  // Quelques heures posées sur une journée travaillée : la case se coupe en
+  // deux comme une demi-journée, la moitié colorée du côté du moment (matin à
+  // gauche, après-midi à droite), avec le nombre d'heures.
+  const hourlyMoment = hasHourlyRecovery && !hasTrainingRecovery && !fullHourlyRecovery && info.kind !== "off"
+    && !(showLeaves && hasLeavePeriod)
+    ? hourlyRecoveryMoment(recoveryEntries)
+    : "";
   const personalDay = Boolean(showLeaves && entry?.leave);
   const wishDay = Boolean(showLeaves && entry?.wish);
   const visibleLeave = Boolean(showLeaves && hasLeavePeriod && info.kind !== "off");
@@ -166,7 +182,7 @@ export function PlanningDayCell({
   return (
     <button
       type="button"
-      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery || fullHourlyRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}${myHalfBalance === "annual" ? "" : ` half-${myHalfBalance}`}` : ""}${wishOutline ? ` wish-day${entry?.wishMoment ? ` wish-${entry.wishMoment}` : ""}` : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? ` range-selected range-edge${pendingWishMoment ? ` range-wish-${pendingWishMoment}` : ""}` : ""}`}
+      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery || fullHourlyRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hourlyMoment ? ` half-${hourlyMoment} half-hours` : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}${myHalfBalance === "annual" ? "" : ` half-${myHalfBalance}`}` : ""}${wishOutline ? ` wish-day${entry?.wishMoment ? ` wish-${entry.wishMoment}` : ""}` : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? ` range-selected range-edge${pendingWishMoment ? ` range-wish-${pendingWishMoment}` : ""}` : ""}`}
       style={selectionStyle}
       onClick={onClick}
       title={title}
@@ -176,7 +192,12 @@ export function PlanningDayCell({
       <span className={`${info.holiday ? "holiday-date" : "date-number"}${exceptionalClosure ? " exceptional-closure-date" : ""}${agnesLeave ? " agnes-leave-date" : ""}`}>
         {date.getDate()}
       </span>
-      {hasHourlyRecovery && !compact ? <span className={`recovery-calendar-label ${hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}`}>REC</span> : null}
+      {hourlyMoment && !compact ? (
+        <span className={`leave-calendar-marker leave-calendar-marker-half hourly-half-label${minutesLabel(hourlyRecoveryMinutes).replace(/ /g, "").length > 3 ? " is-long" : ""}`} aria-hidden="true">
+          {minutesLabel(hourlyRecoveryMinutes).replace(/ /g, "")}
+        </span>
+      ) : null}
+      {hasHourlyRecovery && !hourlyMoment && !compact ? <span className={`recovery-calendar-label ${hasTrainingRecovery ? "training-recovery-label" : "hourly-recovery-label"}`}>REC</span> : null}
       {visibleLeave && ((!compact && ["annual", "rtt", "fraction"].includes(myLeaveType)) || ["exceptional", "childcare", "sick", "cet", "strike"].includes(markerType)) ? (
         <span className={`leave-calendar-marker leave-calendar-marker-${markerType}${compact ? " compact" : ""}`} aria-hidden="true">
           {myLeaveType === "annual" ? "CA" : myLeaveType === "rtt" ? "RTT" : myLeaveType === "fraction" ? "FRA" : markerType === "exceptional" ? "ASA" : myLeaveType === "childcare" ? "👶" : myLeaveType === "sick" ? "🤒" : myLeaveType === "cet" ? "CET" : myLeaveType === "strike" ? "✊" : ""}

@@ -225,6 +225,28 @@ describe("partage des plannings entre collègues", () => {
     expect(payload.days).toEqual(expect.arrayContaining([expect.objectContaining({ date: day, status: "absence" })]));
   });
 
+  it("montre en journée travaillée quelques heures de récupération", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît");
+    data.set("colleagues/share/viewer/user-b/user-a", {
+      ownerId: "user-a", viewerId: "user-b", ownerName: "Alice", viewerName: "Benoît",
+      status: "accepted", createdAt: "2026-09-01", updatedAt: "2026-09-01",
+    });
+    const { getDayInfo } = await import("../../src/planningLogic");
+    const day = Array.from({ length: 30 }, (_, index) => `2026-09-${String(index + 1).padStart(2, "0")}`)
+      .find((date) => getDayInfo(new Date(`${date}T12:00:00`), 3).kind === "work")!;
+    data.set("user/user-a/form-profile", { group: "3" });
+    // Deux heures posées le matin : rien ne se voit côté collègues.
+    data.set("user/user-a/recovery-use/rec-1", { date: day, minutes: 120, start: "10:00", end: "12:00" });
+    mockedGetUser.mockResolvedValue({ id: "user-b", email: "b@example.test" } as never);
+    const payload = await (await colleaguesHandler(new Request("https://example.test/api/colleagues?ownerId=user-a"))).json() as { days: Array<{ date: string; status: string }> };
+    expect(payload.days).toEqual(expect.arrayContaining([expect.objectContaining({ date: day, status: "work" })]));
+
+    // Une demi-journée posée en récupération reste signalée « 1/2 ».
+    data.set("user/user-a/recovery-use/rec-1", { date: day, minutes: 240, start: "10:00", end: "14:00" });
+    const half = await (await colleaguesHandler(new Request("https://example.test/api/colleagues?ownerId=user-a"))).json() as { days: Array<{ date: string; status: string }> };
+    expect(half.days).toEqual(expect.arrayContaining([expect.objectContaining({ date: day, status: "partial" })]));
+  });
+
   it("refuse la lecture avant acceptation puis l’autorise", async () => {
     profile("user-a", "Alice"); profile("user-b", "Benoît");
     const invitation = {
