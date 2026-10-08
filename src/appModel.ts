@@ -388,6 +388,31 @@ export function personalPresenceForDate(
   return scheduled === "training" ? { status: "training" } : work;
 }
 
+/** La présence montrée aux collègues dans le planning partagé : quelques
+ *  heures de récupération (moins d'une demi-journée) n'y apparaissent pas, la
+ *  journée reste travaillée. Une demi-journée, de congé ou de récupération,
+ *  reste « 1/2 » et une journée entière une absence. Même règle pour votre
+ *  propre ligne (calculée ici) et pour celle que voient les collègues
+ *  (calculée par le serveur). */
+export function presenceShownToColleagues(
+  date: Date,
+  group: number,
+  periods: LeavePeriod[],
+  entries: Entries,
+  recoveryUses: Array<{ date: string; minutes: number; start?: string; end?: string }> = [],
+  workDayMinutes = 8 * 60,
+  isExceptionallyClosed: (date: string) => boolean = () => false,
+  workSchedule?: { start?: string; end?: string },
+): PersonalPresence {
+  const presence = personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, isExceptionallyClosed, workSchedule);
+  if (presence.status !== "partial") return presence;
+  const key = dateKey(date);
+  const halfLeave = periods.some((period) => period.leaveType === "half" && key >= period.from && key <= period.to);
+  const recovered = recoveryUses.filter((item) => item.date === key).reduce((total, item) => total + item.minutes, 0);
+  if (halfLeave || recovered >= workDayMinutes / 2) return presence;
+  return personalPresenceForDate(date, group, periods, entries, [], workDayMinutes, isExceptionallyClosed, workSchedule);
+}
+
 export function workedDayCount(
   year: number,
   firstMonth: number,

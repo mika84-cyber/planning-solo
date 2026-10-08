@@ -156,6 +156,7 @@ import {
   notePeriodFor,
   fullDayRecoveryMinutes,
   personalPresenceForDate,
+  presenceShownToColleagues,
   rangeKeys,
   roundCurrency,
   workedDayCount,
@@ -3073,7 +3074,7 @@ export default function Home() {
             accountId={userEmail}
             ownGroup={group}
             isAdmin={isProgramAdmin}
-            getOwnPresence={(date) => personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)), usableWorkSchedule(formProfile?.workSchedule))}
+            getOwnPresence={(date) => presenceShownToColleagues(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)), usableWorkSchedule(formProfile?.workSchedule))}
           />
         </Suspense>
       ) : null}

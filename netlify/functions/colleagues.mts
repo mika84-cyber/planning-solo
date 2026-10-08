@@ -6,7 +6,7 @@ import { sendColleagueSharingEmail } from "../lib/colleagueSharingEmail.mts";
 import { adminStore, readGroups } from '../lib/adminTools.mts';
 import { isMikaSharingAccount } from "../lib/sharedCalendarBridge.mts";
 import { userDataKey } from "../lib/userScopedStore.mts";
-import { personalPresenceForDate, type Entries, type LeavePeriod } from "../../src/appModel.ts";
+import { presenceShownToColleagues, type Entries, type LeavePeriod } from "../../src/appModel.ts";
 import { dailyMinutesForQuota, type WorkQuota } from "../../src/overtime.ts";
 import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES } from "../../src/grandPalaisClosures.ts";
 
@@ -276,17 +276,8 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
     (entries[date]?.closureOverride !== "open" && automaticClosures.has(date));
   const days = [...candidateDates].sort().map((date) => {
     // Une récupération qui couvre les horaires habituels libère toute la journée.
-    const day = new Date(`${date}T12:00:00`);
-    const fullPresence = personalPresenceForDate(day, group, periods, entries, recoveryUses, dailyMinutesForQuota(quota), isClosed, formProfile?.work_schedule);
-    // Quelques heures de récupération (moins d'une demi-journée) ne se
-    // signalent pas aux collègues : la journée reste travaillée. Une
-    // demi-journée, de congé ou de récupération, s'affiche « 1/2 » ; une
-    // journée entière reste une absence.
-    const halfLeave = periods.some((period) => period.leaveType === "half" && date >= period.from && date <= period.to);
-    const recoveredMinutes = recoveryUses.filter((item) => item.date === date).reduce((total, item) => total + item.minutes, 0);
-    const presence = fullPresence.status === "partial" && !halfLeave && recoveredMinutes < dailyMinutesForQuota(quota) / 2
-      ? personalPresenceForDate(day, group, periods, entries, [], dailyMinutesForQuota(quota), isClosed, formProfile?.work_schedule)
-      : fullPresence;
+    // Quelques heures de récupération ne se signalent pas aux collègues.
+    const presence = presenceShownToColleagues(new Date(`${date}T12:00:00`), group, periods, entries, recoveryUses, dailyMinutesForQuota(quota), isClosed, formProfile?.work_schedule);
     // Le poste (accueil, billetterie) suit la présence d'une journée travaillée.
     return { date, ...presence };
   });

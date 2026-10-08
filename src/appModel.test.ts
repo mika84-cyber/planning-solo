@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupNoteItemsByDate, noteDateLabel, personalPresenceForDate, roundCurrency, workedDayCount, type Entries, type NoteListItem } from "./appModel";
+import { groupNoteItemsByDate, noteDateLabel, personalPresenceForDate, roundCurrency, presenceShownToColleagues, workedDayCount, type Entries, type NoteListItem } from "./appModel";
 import { dateKey, getDayInfo } from "./planningLogic";
 
 describe("groupNoteItemsByDate", () => {
@@ -35,6 +35,17 @@ describe("groupNoteItemsByDate", () => {
 
   it("affiche une date courte sans zéro ni point", () => {
     expect(noteDateLabel("2026-09-02")).toBe("2 sept 2026");
+  });
+});
+
+describe("presenceShownToColleagues", () => {
+  it("cache aux collègues quelques heures de récupération, pas une demi-journée", () => {
+    const workDate = Array.from({ length: 28 }, (_, index) => new Date(2026, 8, index + 1)).find((date) => getDayInfo(date, 2).kind === "work")!;
+    const key = dateKey(workDate);
+    expect(presenceShownToColleagues(workDate, 2, [], {}, [{ date: key, minutes: 120, start: "10:00", end: "12:00" }], 465).status).toBe("work");
+    expect(presenceShownToColleagues(workDate, 2, [], {}, [{ date: key, minutes: 240, start: "10:00", end: "14:00" }], 465).status).toBe("partial");
+    expect(presenceShownToColleagues(workDate, 2, [{ id: "half", from: key, to: key, leaveType: "half", halfMoment: "morning", updatedAt: "" }], {}, [], 465).status).toBe("partial");
+    expect(presenceShownToColleagues(workDate, 2, [], {}, [{ date: key, minutes: 465, start: "10:00", end: "17:45" }], 465).status).toBe("absence");
   });
 });
 
