@@ -15,10 +15,18 @@ import type {
   SharedGrandPalaisEvent,
 } from "../../src/grandPalaisProgramTypes.ts";
 
+/** Jours où la veille passe aussi en dehors de minuit, à la demande de
+ *  l'administrateur (date de Paris). Le créneau de 14 h UTC du planning ne sert
+ *  qu'à ces jours-là ; tous les autres jours, seul le passage de minuit agit. */
+export const EXCEPTIONAL_RUN_DAYS = ["2026-10-08"];
+
 export default async function monitorGrandPalaisProgram() {
   // Netlify schedules in UTC: only one of the two daily slots is midnight in Paris.
-  const parisHour = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).find(part => part.type === "hour")?.value;
-  if (parisHour !== "00") return new Response(JSON.stringify({ ok: true, skipped: true }), { headers: { "content-type": "application/json; charset=utf-8" } });
+  const parts = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+  const part = (type: string) => parts.find((item) => item.type === type)?.value;
+  const parisHour = part("hour");
+  const parisDay = `${part("year")}-${part("month")}-${part("day")}`;
+  if (parisHour !== "00" && !EXCEPTIONAL_RUN_DAYS.includes(parisDay)) return new Response(JSON.stringify({ ok: true, skipped: true }), { headers: { "content-type": "application/json; charset=utf-8" } });
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
   const [state, storedPending, dismissed, storedApproved] = await Promise.all([
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
@@ -94,4 +102,4 @@ export default async function monitorGrandPalaisProgram() {
   }), { headers: { "content-type": "application/json; charset=utf-8" } });
 }
 
-export const config = { schedule: "5 22,23 * * *" };
+export const config = { schedule: "5 14,22,23 * * *" };

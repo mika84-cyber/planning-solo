@@ -50,3 +50,16 @@
 .app-shell .mecenat-history-delete { display: grid; place-items: center; width: 32px; height: 32px; min-height: 0; border: 0; border-radius: 50%; padding: 0; background: none; box-shadow: none; color: #9a8b7b; cursor: pointer; }
 .app-shell .mecenat-history-delete:hover { background: #f8e9ec; color: #9a2c40; }
 .mecenat-history-delete svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Un mécénat passé : la case en rouge clair, la date en rouge. */
+.mecenat-history-row.is-past { background: #fbe9e9; }
+.mecenat-history-list > .mecenat-history-row.is-past:first-child { border-radius: 13px 13px 0 0; }
+.mecenat-history-list > .mecenat-history-row.is-past:last-child { border-radius: 0 0 13px 13px; }
+.mecenat-history-list > .mecenat-history-row.is-past:only-child { border-radius: 13px; }
+.mecenat-history-row.is-past + .mecenat-history-row { border-top-color: #f3d3d3; }
+.mecenat-history-row.is-past .mecenat-history-date { border-right-color: #efcaca; }
+.mecenat-history-row.is-past .mecenat-history-date small,
+.mecenat-history-row.is-past .mecenat-history-date b { color: #a32d2d; }
+/* La pastille « Fait » à côté de l'horaire d'un mécénat passé. */
+.mecenat-history-main strong { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.mecenat-done { border-radius: 999px; padding: 2px 8px; background: #a32d2d; color: #fff; font-size: .64rem; font-style: normal; font-weight: 800; letter-spacing: .02em; }

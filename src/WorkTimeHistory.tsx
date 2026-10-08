@@ -61,10 +61,14 @@ function fullDate(key: string) {
   return fromKey(key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-/** Les éléments regroupés par mois, du plus récent au plus ancien. */
-export function groupByMonth<T extends { date: string }>(items: T[]) {
+/** Les éléments regroupés par mois, du plus récent au plus ancien, ou dans
+ *  l'ordre que donne `compare` (les mois suivent leur premier élément). */
+export function groupByMonth<T extends { date: string }>(
+  items: T[],
+  compare: (a: T, b: T) => number = (a, b) => b.date.localeCompare(a.date),
+) {
   const groups: Array<{ key: string; label: string; items: T[] }> = [];
-  for (const item of [...items].sort((a, b) => b.date.localeCompare(a.date))) {
+  for (const item of [...items].sort(compare)) {
     const key = item.date.slice(0, 7);
     let group = groups.find((candidate) => candidate.key === key);
     if (!group) {
@@ -218,6 +222,16 @@ export function WorkTimeHistoryList({
   );
 }
 
+/** « 2026-10-08 » pour la date du jour. */
+function dayKeyOf(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+
+/** Dans l'ordre des dates : les mécénats passés restent au-dessus, en
+ *  rouge, puis ceux à venir, du plus proche au plus éloigné. */
+const inDateOrder = (a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date);
+
 /** « paie de novembre », « paie d’octobre ». */
 function payOf(month: string) {
   return /^[aeiouâéèêîôû]/i.test(month) ? `paie d’${month}` : `paie de ${month}`;
@@ -225,10 +239,10 @@ function payOf(month: string) {
 
 /** Mécénats : un bloc par mois, une ligne par soirée, séparées d'un trait.
  *  Le mois de paie, commun d'ordinaire, se lit une fois dans l'en-tête. */
-export function MecenatHistoryList({ entries, onDelete }: { entries: MecenatEntry[]; onDelete: (entry: MecenatEntry) => void }) {
+export function MecenatHistoryList({ entries, onDelete, today = new Date() }: { entries: MecenatEntry[]; onDelete: (entry: MecenatEntry) => void; today?: Date }) {
   return (
     <>
-      {groupByMonth(entries).map((group) => {
+      {groupByMonth(entries, inDateOrder).map((group) => {
         const payMonths = new Set(group.items.map((entry) => `${entry.payYear}-${entry.payMonth}`));
         const sharedPay = payMonths.size === 1 ? group.items[0] : null;
         const total = euros(group.items.reduce((sum, entry) => sum + entry.grossAmountCents, 0) / 100);
@@ -242,14 +256,18 @@ export function MecenatHistoryList({ entries, onDelete }: { entries: MecenatEntr
               {group.items.map((entry) => {
                 const day = fromKey(entry.date);
                 const weekday = day.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "");
+                const past = entry.date < dayKeyOf(today);
                 return (
-                  <li key={entry.id} className="mecenat-history-row">
+                  <li key={entry.id} className={`mecenat-history-row${past ? " is-past" : ""}`}>
                     <time className="mecenat-history-date" dateTime={entry.date}>
                       <small>{weekday}</small>
                       <b>{day.getDate()}</b>
                     </time>
                     <span className="mecenat-history-main">
-                      <strong>{rangeLabel(entry.start, entry.end)}</strong>
+                      <strong>
+                        {rangeLabel(entry.start, entry.end)}
+                        {past ? <em className="mecenat-done">✓ Fait</em> : null}
+                      </strong>
                       <small>
                         {minutesLabel(entry.dayMinutes + entry.nightMinutes)}
                         {entry.nightMinutes ? ` · dont ${minutesLabel(entry.nightMinutes)} de nuit` : ""}

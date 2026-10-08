@@ -76,14 +76,6 @@ type PlanningCommandCenterProps = {
   exportingPdf?: boolean;
 };
 
-function exchangeDetail(given: number, returned: number) {
-  const details = [
-    given ? `${dayCountLabel(given)} cédé${given > 1 ? "s" : ""}` : "",
-    returned ? `${dayCountLabel(returned)} rendu${returned > 1 ? "s" : ""}` : "",
-  ].filter(Boolean);
-  return details.length ? `, échanges : ${details.join(" et ")}` : "";
-}
-
 export function PlanningCommandCenter({
   isHome,
   view,
@@ -232,9 +224,6 @@ export function PlanningCommandCenter({
                             <small>fermeture{s(workedDays.remaining.exceptionallyClosed)}</small>
                           </li>
                         </ul>
-                        {workedDays.remaining.exchangedGiven || workedDays.remaining.exchangedReturned ? (
-                          <p>{exchangeDetail(workedDays.remaining.exchangedGiven, workedDays.remaining.exchangedReturned).replace(/^, /, "")}</p>
-                        ) : null}
                       </section>
                     </div>
                   ) : null}
