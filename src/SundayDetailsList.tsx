@@ -45,24 +45,32 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
             const moves = `${reported && slot?.reportedTo ? ` · ${reported} reporté${s(reported)} sur ${MONTHS[slot.reportedTo.month]}` : ""}${
               carried && slot?.carriedFrom ? ` · dont ${carried} reporté${s(carried)} ${/^[aeio]/.test(MONTHS[slot.carriedFrom.month]) ? "d’" : "de "}${MONTHS[slot.carriedFrom.month]}` : ""
             }`;
+            const hasFlat = paid.some((item) => kindOf(rankOf(item)) === "flat");
+            // Le montant de la paie, en pastille à droite du titre : vert s'il
+            // est acquis, en pointillé s'il reste à venir.
+            const amountTone = paidHere ? (paidUpcoming === paidHere ? "upcoming" : "paid") : hasFlat ? "flat" : "unpaid";
+            const amountLabel = paidHere ? euros(paidHere * SUNDAY_ALLOWANCE.perSunday) : hasFlat ? "Forfait" : "0 €";
             return (
               <section className="sunday-done-group" key={payslipLabel}>
-                <p className="sunday-done-group-heading">
-                  <strong>{payslipLabel.charAt(0).toUpperCase() + payslipLabel.slice(1)}</strong>
-                  <small>{paid.length} dimanche{s(paid.length)} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
-                </p>
-                <p className={`sunday-done-group-pay${paidHere ? "" : paid.some((item) => kindOf(rankOf(item)) === "flat") ? " none" : " unpaid"}`}>
+                <div className="sunday-done-group-heading">
+                  <span>
+                    <strong>{payslipLabel.charAt(0).toUpperCase() + payslipLabel.slice(1)}</strong>
+                    <small>{paid.length} dimanche{s(paid.length)} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
+                  </span>
+                  <b className={`sunday-done-group-amount ${amountTone}`}>{amountLabel}</b>
+                </div>
+                <p className={`sunday-done-group-pay${paidHere ? "" : hasFlat ? " none" : " unpaid"}`}>
                   {reported && !paidHere
                     ? `Aucun payé sur cette paie${moves}`
                     : paidHere
-                    ? `${paidHere} payé${s(paidHere)} sur cette paie · ${euros(paidHere * SUNDAY_ALLOWANCE.perSunday)}${
+                    ? `${paidHere} payé${s(paidHere)} sur cette paie${
                         paidUpcoming
                           ? paidUpcoming === paidHere
                             ? " · à venir"
                             : ` · ${paidHere - paidUpcoming} fait${s(paidHere - paidUpcoming)}, ${paidUpcoming} à venir`
                           : ""
                       }${moves}`
-                    : paid.some((item) => kindOf(rankOf(item)) === "flat")
+                    : hasFlat
                       ? "Tous compris dans le forfait mensuel"
                       : `Au-delà du ${SUNDAY_ALLOWANCE.paidUntil}e dimanche : non payés`}
                 </p>

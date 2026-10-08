@@ -406,6 +406,9 @@ export function presenceShownToColleagues(
 ): PersonalPresence {
   const presence = personalPresenceForDate(date, group, periods, entries, recoveryUses, workDayMinutes, isExceptionallyClosed, workSchedule);
   if (presence.status !== "partial") return presence;
+  // Un jour de formation garde la règle d'avant : quelques heures de
+  // récupération s'y affichent « 1/2 ».
+  if (getDayInfo(date, group).kind === "training") return presence;
   const key = dateKey(date);
   const halfLeave = periods.some((period) => period.leaveType === "half" && key >= period.from && key <= period.to);
   const recovered = recoveryUses.filter((item) => item.date === key).reduce((total, item) => total + item.minutes, 0);

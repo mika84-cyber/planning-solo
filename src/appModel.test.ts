@@ -46,6 +46,9 @@ describe("presenceShownToColleagues", () => {
     expect(presenceShownToColleagues(workDate, 2, [], {}, [{ date: key, minutes: 240, start: "10:00", end: "14:00" }], 465).status).toBe("partial");
     expect(presenceShownToColleagues(workDate, 2, [{ id: "half", from: key, to: key, leaveType: "half", halfMoment: "morning", updatedAt: "" }], {}, [], 465).status).toBe("partial");
     expect(presenceShownToColleagues(workDate, 2, [], {}, [{ date: key, minutes: 465, start: "10:00", end: "17:45" }], 465).status).toBe("absence");
+    // Sur un jour de formation, 3 h de récupération restent « 1/2 ».
+    const trainingDate = Array.from({ length: 365 }, (_, index) => new Date(2026, 0, index + 1, 12)).find((date) => getDayInfo(date, 2).kind === "training")!;
+    expect(presenceShownToColleagues(trainingDate, 2, [], {}, [{ date: dateKey(trainingDate), minutes: 180, start: "10:00", end: "13:00" }], 465).status).toBe("partial");
   });
 });
 
