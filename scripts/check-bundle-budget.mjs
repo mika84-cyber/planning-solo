@@ -51,7 +51,14 @@ const budgets = {
   // lignes de paie, prénoms des plannings partagés, nombre et description des
   // dossiers de formulaires et des annuaires de contacts, notes d'Agnès
   // listées jour par jour (763,04 Kio mesurés).
-  totalJavaScript: { raw: 2_360 * KIB, gzip: 765 * KIB },
+  // Relevé le 8 octobre 2026 de 765 à 771 Kio compressés, avec l'accord de
+  // l'administrateur, après un allègement : la programmation GP et le CET
+  // sont sortis du chargement initial (588,7 / 176 Kio, de nouveau sous leurs
+  // plafonds) et le formulaire autonome est compacté à la construction
+  // (scripts/minify-standalone.mjs, 240 → 170 Kio). Le reste (768,9 Kio
+  // mesurés) tient aux rubriques ajoutées depuis le 1er octobre : historique
+  // des mécénats, règles des congés, veille du site, signature partagée.
+  totalJavaScript: { raw: 2_360 * KIB, gzip: 771 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -67,7 +74,12 @@ const budgets = {
   // initial et restent chargées uniquement à leur ouverture. Relevé à 480 Kio
   // le 26 septembre 2026 pour la fiche d'une journée en tuiles et le calcul
   // du fractionnement, après retrait des styles d'onglets devenus inutiles.
-  totalCss: { raw: 480 * KIB, gzip: 93 * KIB },
+  // Relevé le 8 octobre 2026 à 525 / 97 Kio (519,5 / 95,7 mesurés), avec
+  // l'accord de l'administrateur : le CSS du formulaire est désormais
+  // compacté, mais les retouches successives ont empilé des règles. Un
+  // nettoyage des surcharges est prévu à part ; il devra ramener ce total
+  // sous 480 Kio plutôt que justifier un nouveau relèvement.
+  totalCss: { raw: 525 * KIB, gzip: 97 * KIB },
 };
 
 async function filesUnder(directory) {

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
+import { GrandPalaisCheckPanel } from "./GrandPalaisCheckPanel";
 import { matchesSearch } from "./searchMatching";
 import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 import type {
@@ -805,6 +806,10 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           </div>
         </div>
       </div>
+
+      {!guestPreview && sharedPayload?.isAdmin ? (
+        <GrandPalaisCheckPanel lastCheckedAt={sharedPayload.lastCheckedAt} onPayload={setSharedPayload} />
+      ) : null}
 
       {!guestPreview && sharedPayload?.isAdmin && sharedPayload.health ? (
         <BoundaryReportPanel

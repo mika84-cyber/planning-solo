@@ -81,20 +81,6 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     expect(mockedCollect).not.toHaveBeenCalled();
   });
 
-  it("ignore le créneau de l'après-midi hors des jours de passage exceptionnel", async () => {
-    vi.setSystemTime(new Date("2026-10-09T14:05:00Z"));
-    expect(await (await monitorGrandPalaisProgram()).json()).toMatchObject({ skipped: true });
-    expect(store.get).not.toHaveBeenCalled();
-  });
-
-  it("passe exceptionnellement un jour demandé par l'administrateur", async () => {
-    vi.setSystemTime(new Date("2026-10-08T14:05:00Z"));
-    mockedCollect.mockResolvedValue([]);
-    mockedDetect.mockReturnValue({ state: nextState, proposals: [] } as never);
-    await monitorGrandPalaisProgram();
-    expect(mockedCollect).toHaveBeenCalledTimes(1);
-  });
-
   it.each(["2026-01-28T23:05:00Z", "2026-08-28T22:05:00Z", "2026-03-29T22:05:00Z", "2026-10-25T23:05:00Z"])("collecte à 00h05 heure de Paris : %s", async (date) => {
     vi.setSystemTime(new Date(date));
     mockedCollect.mockResolvedValue([]);
@@ -112,7 +98,7 @@ describe("surveillance planifiée du programme Grand Palais", () => {
 
     const response = await monitorGrandPalaisProgram();
 
-    expect(config).toEqual({ schedule: "5 14,22,23 * * *" });
+    expect(config).toEqual({ schedule: "5 22,23 * * *" });
     expect(store.get).toHaveBeenCalledWith("monitor-state", { type: "json" });
     expect(store.get).toHaveBeenCalledWith("pending", { type: "json" });
     expect(stored.get("monitor-state")).toEqual(nextState);

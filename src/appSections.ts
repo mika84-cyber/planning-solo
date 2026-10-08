@@ -1,13 +1,19 @@
 import { lazy } from "react";
 
-export { CetSection } from "./CetSection";
+// Le CET et la programmation GP ne servent qu'à l'ouverture de leur rubrique :
+// chargés à part, ils sont préparés au repos (src/warmUpScreens.ts).
+export const CetSection = lazy(() =>
+  import("./CetSection").then(({ CetSection: Component }) => ({ default: Component })),
+);
 export const ColleaguePlanningPage = lazy(() =>
   import("./ColleaguePlanningPage").then(({ ColleaguePlanningPage: Component }) => ({ default: Component })),
 );
 export const ColleagueRequestNotice = lazy(() =>
   import("./ColleagueRequestNotice").then(({ ColleagueRequestNotice: Component }) => ({ default: Component })),
 );
-export { GrandPalaisProgramSection } from "./GrandPalaisProgramSection";
+export const GrandPalaisProgramSection = lazy(() =>
+  import("./GrandPalaisProgramSection").then(({ GrandPalaisProgramSection: Component }) => ({ default: Component })),
+);
 export const FeedbackMessenger = lazy(() =>
   import("./FeedbackMessenger").then(({ FeedbackMessenger: Component }) => ({ default: Component })),
 );

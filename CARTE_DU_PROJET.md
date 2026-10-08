@@ -97,10 +97,20 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   retirés et recrédités automatiquement, les autres congés restant modifiables.
 - `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
-  programmation GP chargée à la demande, navigation par espace et périodes
-  d’inter expos.
-- `src/appSections.ts` : point d’entrée statique des grandes pages afin que
-  chaque rubrique soit prête dès l’affichage de l’application.
+  programmation GP chargée à la demande (préparée au repos par
+  `src/warmUpScreens.ts`), navigation par espace et périodes d’inter expos.
+- `src/GrandPalaisCheckPanel.tsx` : « Veille du site », réservée à
+  l’administrateur — date du dernier contrôle et contrôle lancé à la main.
+  Côté serveur : `netlify/lib/grandPalaisCheck.mts` (un passage de veille),
+  `netlify/functions/gp-program-monitor.mts` (chaque nuit à minuit) et
+  `netlify/functions/gp-program-check-background.mts` (à la demande, déposée
+  par `/api/gp-program`).
+- `src/VisitorQrLinks.tsx` : QR codes de réclamation et d’objet perdu, dans
+  Contacts → « Pour les visiteurs ».
+- `src/WorkTimeHistory.tsx` : historiques des heures sup et des mécénats.
+- `src/appSections.ts` : point d’entrée des grandes pages ; les plus lourdes
+  et les moins ouvertes (CET, programmation GP, paie, formulaires…) y sont
+  différées.
 - `src/use*UiState.ts` et `src/useCalendarDataState.ts` : états spécialisés de
   l’authentification, du planning, de la paie, des heures, de la coque et des
   données synchronisées ; `App.tsx` conserve leur orchestration commune.
@@ -192,6 +202,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/jspdfUnusedModule.ts` et l'alias de `vite.config.ts` : html2canvas,
   DOMPurify et canvg, optionnels dans jsPDF, ne sont pas livrés ; les méthodes
   `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
+- `scripts/minify-standalone.mjs` : compacte à la construction le formulaire
+  autonome (`public/formulaire`), copié tel quel par Vite.
 - `public/sw.js` : cache hors ligne et activation des mises à jour. À la
   construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
   version et remplit `PRECACHE` : code, styles, polices et images légères

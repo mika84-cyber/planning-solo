@@ -22,6 +22,8 @@ const SCREEN_MODULES: ReadonlyArray<() => Promise<unknown>> = [
   () => import("./UsefulContactsSection"),
   () => import("./WorkAccidentSection"),
   () => import("./ColleaguePlanningPage"),
+  () => import("./GrandPalaisProgramSection"),
+  () => import("./CetSection"),
 ];
 
 /** Fichiers gardés par le navigateur pour un affichage immédiat. */

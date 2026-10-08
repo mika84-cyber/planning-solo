@@ -59,6 +59,27 @@ describe("API partagée de la programmation GP", () => {
     expect(response.status).toBe(403);
   });
 
+  it("laisse l’administrateur, et lui seul, lancer un contrôle du site", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 202 }));
+    const run = () => grandPalaisProgramHandler(new Request("https://example.test/api/gp-program", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "run-check" }),
+    }));
+
+    mockedGetUser.mockResolvedValue({ id: "guest", email: "guest@example.test" } as never);
+    expect((await run()).status).toBe(403);
+    expect(data.has("check-request")).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    mockedGetUser.mockResolvedValue({ id: "owner", email: "admin@example.test" } as never);
+    const response = await run();
+    expect(response.status).toBe(200);
+    expect(data.get("check-request")).toMatchObject({ at: expect.any(String) });
+    expect(String(fetchMock.mock.calls[0][0])).toBe("https://example.test/.netlify/functions/gp-program-check-background");
+    fetchMock.mockRestore();
+  });
+
   it("rend une exposition acceptée visible dans les données partagées", async () => {
     mockedGetUser.mockResolvedValue({ id: "owner", email: "ADMIN@example.test" } as never);
     const response = await grandPalaisProgramHandler(new Request("https://example.test/api/gp-program", {

@@ -83,6 +83,18 @@ export async function getSharedGrandPalaisProgram() {
   }));
 }
 
+/** Lance un contrôle du site du Grand Palais (compte administrateur
+ *  seulement). Le contrôle se poursuit en arrière-plan : son résultat se lit
+ *  dans `lastCheckedAt` au chargement suivant. */
+export async function runGrandPalaisCheckNow() {
+  return parse(await fetch("/api/gp-program", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "run-check" }),
+  }));
+}
+
 /** Efface le dernier contrôle des alertes (compte administrateur seulement). */
 export async function clearBoundaryReport() {
   return parse(await fetch("/api/gp-program", {

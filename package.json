@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/stamp-sw.mjs",
+    "build": "tsc -b && vite build && node scripts/minify-standalone.mjs && node scripts/stamp-sw.mjs",
     "check": "tsc -b",
     "lint": "biome lint",
     "context:ai": "node scripts/build-ai-context.mjs",
@@ -18,7 +18,7 @@
     "test:e2e": "playwright test",
     "test:e2e:accessibility": "playwright test e2e/accessibility.spec.ts",
     "test:pwa": "playwright test --config playwright.pwa.config.ts",
-    "build:pwa-e2e": "vite build --outDir dist-pwa-e2e --emptyOutDir && node scripts/stamp-sw.mjs dist-pwa-e2e",
+    "build:pwa-e2e": "vite build --outDir dist-pwa-e2e --emptyOutDir && node scripts/minify-standalone.mjs dist-pwa-e2e && node scripts/stamp-sw.mjs dist-pwa-e2e",
     "test:pdf:visual": "vite build --config vite.pdf-qa.config.ts && node scripts/generate-pdf-qa.mjs",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "check:css": "node scripts/check-css-complexity.mjs",

@@ -3153,7 +3153,7 @@ test("le compte administrateur peut valider seul une mise à jour du Grand Palai
   await prepareDemo(page);
   await goToSection(page, "program");
   await expect(page.getByRole("heading", { name: "Mises à jour détectées" })).toBeVisible();
-  await expect(page.locator(".grand-palais-admin-alerts")).toContainText("Exposition du Salon");
+  await expect(page.locator(".grand-palais-admin-alerts:not(.grand-palais-check-panel)")).toContainText("Exposition du Salon");
   await page.getByRole("button", { name: "Accepter", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Mises à jour détectées" })).toHaveCount(0);
   await page.getByRole("tab", { name: "Par espace" }).click();
@@ -5722,4 +5722,31 @@ test("Z Fold ouvert : les infos congés restent empilées comme sur Z Fold ferm�
   expect(boxes[1].y).toBeGreaterThan(boxes[0].y);
   expect(boxes[2].y).toBeGreaterThan(boxes[1].y);
   expect(Math.abs(boxes[0].x - boxes[2].x)).toBeLessThanOrEqual(1);
+});
+
+test("l’administrateur voit la date du dernier contrôle du site et peut en lancer un", async ({ page }) => {
+  let checkRequested = false;
+  await page.route("**/api/gp-program", async (route) => {
+    if (route.request().method() === "POST") checkRequested = true;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        approved: [],
+        pending: [],
+        isAdmin: true,
+        lastCheckedAt: checkRequested && route.request().method() === "GET" ? "2026-10-08T14:30:00.000Z" : "2026-10-07T22:05:00.000Z",
+      }),
+    });
+  });
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  const panel = page.locator(".grand-palais-check-panel");
+  await expect(panel.getByRole("heading", { name: "Veille du site" })).toBeVisible();
+  await expect(panel).toContainText("jeudi 8 octobre 2026 à 0 h 05");
+  await panel.getByRole("button", { name: "Lancer un contrôle maintenant" }).click();
+  await expect(panel.getByRole("button", { name: "Contrôle en cours…" })).toBeDisabled();
+  await expect(panel).toContainText("Contrôle terminé : rien de nouveau à valider.", { timeout: 20_000 });
+  await expect(panel).toContainText("jeudi 8 octobre 2026 à 16 h 30");
+  expect(checkRequested).toBe(true);
 });

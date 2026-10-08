@@ -9,6 +9,7 @@ import type {
 } from "../../src/grandPalaisProgramTypes.ts";
 import type { GrandPalaisMonitorState } from "../lib/grandPalaisMonitor.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
+import { CHECK_REQUEST_KEY } from "../lib/grandPalaisCheck.mts";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -72,9 +73,25 @@ export default async function grandPalaisProgramHandler(request: Request) {
   if (!isAdmin) return json({ error: "Cette validation est réservée au compte administrateur" }, 403);
 
   const body = await request.json().catch(() => null) as {
+    action?: "run-check";
     proposalId?: string;
     decision?: "accept" | "ignore";
   } | null;
+  // Contrôle du site lancé à la main : la demande est notée, puis la
+  // fonction d'arrière-plan, qui ne fait rien sans elle, est réveillée. Le
+  // résultat se lit ensuite dans `lastCheckedAt`.
+  if (body?.action === "run-check") {
+    const requestedAt = new Date().toISOString();
+    await store.setJSON(CHECK_REQUEST_KEY, { at: requestedAt });
+    try {
+      const started = await fetch(new URL("/.netlify/functions/gp-program-check-background", request.url), { method: "POST" });
+      if (!started.ok && started.status !== 202) throw new Error(`Statut ${started.status}`);
+    } catch (error) {
+      console.warn("Contrôle manuel du Grand Palais non lancé", error instanceof Error ? error.message : error);
+      return json({ error: "Le contrôle n’a pas pu être lancé. Réessayez dans un instant." }, 502);
+    }
+    return json({ ...payload(), checkRequestedAt: requestedAt });
+  }
   if (!body?.proposalId || !["accept", "ignore"].includes(body.decision || ""))
     return json({ error: "Décision invalide" }, 400);
   const proposal = pending.find((item) => item.id === body.proposalId);
