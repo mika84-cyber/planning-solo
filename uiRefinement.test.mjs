@@ -331,7 +331,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain("<strong>Divers</strong><span>Jour non travaillé</span>");
     expect(app).toContain('period.leaveType === "recovery"');
     expect(calendarCleanup).toContain("Effacer plusieurs dates ou notes");
-    expect(app).toContain('className="holiday-pay-amount"');
+    expect(app).toContain('className={`holiday-pay-amount');
   });
 
   it("pose Divers depuis la fiche du jour par le choix de durée, avec une punaise inclinée", () => {
@@ -445,7 +445,10 @@ describe("finitions d’interface", () => {
   });
 
   it("compacte le montant des fériés choisis et espace la navigation de paie", () => {
-    expect(payAllowancesSection).toContain('className="holiday-pay-amount"');
+    expect(payAllowancesSection).toContain('className={`holiday-pay-amount');
+    // Un clic sur le montant ouvre directement les choix, Échanger compris.
+    expect(payAllowancesSection).toContain("holiday-pay-options");
+    expect(payAllowancesSection).toContain("<span>Échanger</span>");
     expect((payAllowancesSection.match(/holidayChoice\(item\)/g) || []).length).toBe(2);
     expect(payEstimateDetails).toContain('className="pay-month-nav compact pay-detail-month-nav"');
     expect(styles).toContain(".holiday-pay-amount {\n  width: fit-content;");

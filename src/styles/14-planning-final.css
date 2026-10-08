@@ -1493,3 +1493,15 @@ fieldset.leave-choices {
 :root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .pay-inline-action, .payslip-file-drop, .home-setup-list button:not(.home-setup-dismiss), .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .month-jump-menu button.active, .choice-picker-menu button.active) {
   border: 1px solid var(--border-control);
 }
+/* Férié échangé : flèches et dollar sur une pastille blanche, lisible sur
+   une case sombre (jour cédé) comme claire. */
+.exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
+/* Férié rendu : la liste des fériés possibles, un bouton par férié. */
+.work-exchange-holiday-list { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
+.app-shell .work-exchange-holiday-list button { display: grid; gap: 1px; min-height: 0; margin: 0; border: 1px solid #d8cdbf; border-radius: 10px; padding: 8px 10px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.work-exchange-holiday-list button strong { font-size: 0.86rem; }
+.work-exchange-holiday-list button small { color: var(--muted); font-size: 0.74rem; font-weight: 700; }
+.app-shell .work-exchange-holiday-list button.selected { border: 2px solid #5eb6c4; background: #eef8fa; }
+.calendar-grid .day .exchange-calendar-marker.holiday-exchange,
+.mini-grid .mini-day .exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
+.work-exchange-list article.holiday-exchange header img { box-sizing: border-box; border-radius: 50%; padding: 2px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }

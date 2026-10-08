@@ -180,6 +180,28 @@ describe("PlanningDayCell", () => {
     expect(html).toContain("remplacement de Camille");
   });
 
+  it("marque un férié échangé de flèches autour d’un dollar", () => {
+    const html = renderToStaticMarkup(
+      <PlanningDayCell
+        {...baseProps}
+        date={new Date(2026, 11, 25)}
+        entry={{
+          noteText: "", noteColor: "#D3943D", noteUpdatedAt: "", noteGroupId: "",
+          leave: false, wish: false, holidayPay: "", closureOverride: "", updatedAt: "v2",
+          exchangeId: "exchange-noel", exchangeRole: "given",
+          exchangePartner: "Camille", exchangePartnerGroup: 1,
+          exchangeOtherDate: "2026-12-28",
+        }}
+        exchange={{
+          id: "exchange-noel", partnerName: "Camille", partnerGroup: 1,
+          agreementDate: "2026-12-25", returnDate: "2026-12-28", updatedAt: "v2",
+        }}
+      />,
+    );
+    expect(html).toContain("exchange-calendar-marker holiday-exchange");
+    expect(html).toContain("/holiday-exchange.png");
+  });
+
   it("place le pictogramme accident de travail en bas à droite", () => {
     const html = renderToStaticMarkup(
       <PlanningDayCell

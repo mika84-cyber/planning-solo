@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { workedDayCount, type Entries } from "./appModel";
 import {
   emptyWorkExchangeDraft,
+  holidaysForExchangeReturn,
   validateWorkExchange,
   workExchangeForDate,
 } from "./workExchange";
@@ -47,6 +48,26 @@ describe("échanges de journées", () => {
     expect(valid.returnDate < valid.agreementDate).toBe(true);
     expect(validateWorkExchange({ ...valid, returnDate: valid.agreementDate }, context))
       .toContain("deux journées différentes");
+  });
+
+  it("rend un férié cédé par un autre férié", () => {
+    const days = Array.from({ length: 730 }, (_, index) => addDays(localDate(2026, 0, 1), index));
+    // Un férié travaillé par le groupe 2 et en repos pour un autre groupe.
+    for (const partnerGroup of [1, 3]) {
+      const agreement = days.find((date) => getDayInfo(date, 2).holiday && getDayInfo(date, 2).kind === "work" && getDayInfo(date, partnerGroup).kind === "off");
+      const holidayReturn = days.find((date) => agreement && date.getFullYear() === agreement.getFullYear() && getDayInfo(date, partnerGroup).holiday && getDayInfo(date, partnerGroup).kind === "work" && getDayInfo(date, 2).kind === "off");
+      const plainReturn = days.find((date) => !getDayInfo(date, partnerGroup).holiday && getDayInfo(date, partnerGroup).kind === "work" && getDayInfo(date, 2).kind === "off");
+      if (!agreement || !holidayReturn || !plainReturn) continue;
+      const draft = { ...emptyWorkExchangeDraft(2), partnerName: "Camille", partnerGroup, agreementDate: dateKey(agreement) };
+      expect(validateWorkExchange({ ...draft, returnDate: dateKey(plainReturn) }, context)).toContain("un autre jour férié");
+      expect(validateWorkExchange({ ...draft, returnDate: dateKey(holidayReturn) }, context)).toBe("");
+      // La liste proposée : les fériés possibles de la même année seulement.
+      const list = holidaysForExchangeReturn(draft.agreementDate, 2, partnerGroup);
+      expect(list.map((item) => item.key)).toContain(dateKey(holidayReturn));
+      expect(list.every((item) => item.key.slice(0, 4) === draft.agreementDate.slice(0, 4))).toBe(true);
+      return;
+    }
+    throw new Error("Aucun férié échangeable trouvé");
   });
 
   it("reconstitue le même échange depuis chacune de ses deux cases", () => {

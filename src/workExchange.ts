@@ -1,5 +1,5 @@
 import type { Entries, WorkExchange } from "./appModel";
-import { fromKey, getDayInfo } from "./planningLogic";
+import { addDays, dateKey, fromKey, getDayInfo } from "./planningLogic";
 
 export const WORK_EXCHANGE_COLOR = "#5EB6C4";
 
@@ -80,6 +80,13 @@ export function validateWorkExchange(
   const returnPartner = getDayInfo(fromKey(draft.returnDate), draft.partnerGroup).kind;
   if (returnMine !== "off" || returnPartner !== "work")
     return "Pour la journée du cycle du collègue, vous devez être en repos et votre collègue doit travailler.";
+  // Un férié cédé se rend par un autre férié.
+  if (getDayInfo(fromKey(draft.agreementDate), group).holiday) {
+    if (!getDayInfo(fromKey(draft.returnDate), draft.partnerGroup).holiday)
+      return "Un jour férié s’échange contre un autre jour férié : choisissez un férié où votre collègue travaille.";
+    if (draft.returnDate.slice(0, 4) !== draft.agreementDate.slice(0, 4))
+      return "Un jour férié s’échange contre un férié de la même année.";
+  }
 
   for (const date of [draft.agreementDate, draft.returnDate]) {
     if (isExceptionallyClosed(date))
@@ -91,6 +98,23 @@ export function validateWorkExchange(
       return "Une des dates comporte déjà un congé ou une récupération.";
   }
   return "";
+}
+
+/** Les fériés qu'un collègue du groupe donné travaille et où vous êtes en
+ *  repos, dans la même année que le férié cédé : ceux qu'il peut vous rendre. */
+export function holidaysForExchangeReturn(agreementDate: string, group: number, partnerGroup: number) {
+  if (!agreementDate || partnerGroup === group) return [];
+  const year = fromKey(agreementDate).getFullYear();
+  const start = new Date(year, 0, 1, 12);
+  const holidays: Array<{ key: string; name: string }> = [];
+  for (let offset = 0; offset < 366; offset++) {
+    const date = addDays(start, offset);
+    if (date.getFullYear() !== year) break;
+    const partner = getDayInfo(date, partnerGroup);
+    if (partner.holiday && partner.kind === "work" && getDayInfo(date, group).kind === "off")
+      holidays.push({ key: dateKey(date), name: partner.holiday });
+  }
+  return holidays;
 }
 
 export function exchangeDraftFromExchange(exchange: WorkExchange): WorkExchangeDraft {

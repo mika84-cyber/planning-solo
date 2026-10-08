@@ -5753,3 +5753,32 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
   await expect(panel).toContainText("jeudi 8 octobre 2026 à 16 h 30");
   expect(checkRequested).toBe(true);
 });
+
+test("un férié travaillé propose prime seule, prime + récup ou un échange avec le bon groupe", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
+  const holidayCard = page.locator(".allowance-card").filter({ hasText: /Jours fériés 20\d\d/ });
+  const options = holidayCard.locator(".holiday-pay-options").first();
+  // Un férié encore à décider montre les trois choix ; sinon, un clic sur le
+  // montant les ouvre directement.
+  if (!(await options.isVisible())) await holidayCard.locator(".holiday-pay-amount").first().click();
+  await expect(options.getByRole("button")).toHaveText([/Prime seule/, /Prime \+ récup/, /Échanger/]);
+  const givenName = (await holidayCard.locator("tr:not(.holiday-pay-options-row) th").first().evaluate((node) => node.firstChild?.textContent || "")).trim();
+  await options.getByRole("button", { name: /Échanger/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Enregistrer un échange" });
+  await expect(dialog.locator(".work-exchange-group-hint")).toContainText(/Échangez avec un collègue (du groupe [13]|de l’un de ces groupes)/);
+  // En retour, la liste des fériés de l'année que le collègue travaille.
+  await expect(dialog.locator(".work-exchange-date-card.return")).toContainText("un jour férié");
+  const returnList = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" });
+  const firstReturn = returnList.getByRole("radio").first();
+  const returnedName = (await firstReturn.locator("strong").textContent())!.trim();
+  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
+  await firstReturn.click();
+  await expect(firstReturn).toHaveAttribute("aria-checked", "true");
+  await dialog.getByRole("button", { name: "Valider les deux dates" }).click();
+  await expect(dialog).toHaveCount(0);
+  // La paie : le férié cédé disparaît, le férié repris apparaît.
+  await expect(holidayCard.locator("tr").filter({ hasText: returnedName })).toHaveCount(1);
+  await expect(holidayCard.locator("tr").filter({ hasText: givenName })).toHaveCount(0);
+});

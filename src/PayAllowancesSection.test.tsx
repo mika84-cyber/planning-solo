@@ -49,6 +49,24 @@ const props = {
 };
 
 describe("PayAllowancesSection", () => {
+  it("propose directement prime seule, prime + récup et l’échange pour un férié", () => {
+    const pending = renderToStaticMarkup(<PayAllowancesSection {...props}
+      allowances={{ ...props.allowances, holidays: [{ key: "2026-07-14", name: "Fête nationale", choice: "" as const }] }}
+      onExchangeHoliday={vi.fn()} />);
+    expect(pending).toContain("À décider");
+    expect(pending).toContain("<span>Prime seule</span>");
+    expect(pending).toContain("<span>Prime + récup</span>");
+    expect(pending).toContain("<span>Échanger</span>");
+    // Un choix déjà fait : les boutons n'apparaissent qu'au clic sur le montant.
+    const decided = renderToStaticMarkup(<PayAllowancesSection {...props} onExchangeHoliday={vi.fn()} />);
+    expect(decided).not.toContain("<span>Échanger</span>");
+    const editing = renderToStaticMarkup(<PayAllowancesSection {...props} holidayChoiceEditing="2026-07-14" onExchangeHoliday={vi.fn()} />);
+    expect(editing).toContain("<span>Échanger</span>");
+    expect(editing).toContain('class="selected" aria-pressed="true"><span>Prime seule</span>');
+    // Un férié compensé (non travaillé) ne s'échange pas.
+    expect((pending.match(/<span>Échanger<\/span>/g) || []).length).toBe(1);
+  });
+
   it("rend le mois, toutes les primes variables et les fériés sans changer les libellés", () => {
     const html = renderToStaticMarkup(<PayAllowancesSection {...props} />);
 

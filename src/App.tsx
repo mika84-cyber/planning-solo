@@ -2478,6 +2478,7 @@ export default function Home() {
       onGoToday={goPayToday}
       onEditHolidayChoice={setHolidayChoiceEditing}
       onChooseHolidayPay={chooseHolidayPay}
+      onExchangeHoliday={(key) => openWorkExchange(key)}
     />
   ) : null;
   const payContent =

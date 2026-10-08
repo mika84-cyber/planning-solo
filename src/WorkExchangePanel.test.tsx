@@ -25,4 +25,12 @@ describe("WorkExchangePanel", () => {
     expect(html.indexOf("Vous la remplacez le mardi 15 septembre 2026"))
       .toBeLessThan(html.indexOf("Adriana vous remplace le vendredi 18 septembre 2026"));
   });
+
+  it("nomme les fériés d’un échange de fériés et prend le logo au dollar", () => {
+    const html = renderToStaticMarkup(<WorkExchangePanel
+      exchanges={[{ id: "noel", partnerName: "Camille", partnerGroup: 3, agreementDate: "2026-01-01", returnDate: "2026-04-05", updatedAt: "" }]}
+      onEdit={() => undefined} />);
+    expect(html).toContain("Camille vous remplace : Jour de l’an");
+    expect(html).toContain("/holiday-exchange.png");
+  });
 });

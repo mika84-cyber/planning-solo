@@ -93,6 +93,7 @@ export function collectWorkedDays({
       const exchangeRole = entries[key]?.exchangeRole;
       if (exchangeRole && (info.holiday || date.getDay() === 0)) {
         if (!info.holiday && info.kind === "work" && key <= todayKey) sundaysScheduledPast++;
+        // Un férié cédé sort de la liste ; celui repris y entre.
         if (exchangeRole !== "return") continue;
         if (info.holiday) {
           if (onLeave(key)) cancelledHolidays.push({ key, name: info.holiday });

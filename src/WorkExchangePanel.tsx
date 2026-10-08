@@ -1,6 +1,14 @@
 import type { WorkExchange } from "./appModel";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
-import { fromKey, longDate } from "./planningLogic";
+import { fromKey, getDayInfo, longDate } from "./planningLogic";
+
+/** « : Jour de l’an · jeudi 1 janvier 2026 » pour un férié, « le mardi
+ *  15 septembre 2026 » sinon. */
+function dayLabel(key: string) {
+  const date = fromKey(key);
+  const holiday = getDayInfo(date, 1).holiday;
+  return holiday ? `: ${holiday} · ${longDate(date)}` : `le ${longDate(date)}`;
+}
 
 /** Les deux journées de l'échange, dans l'ordre du calendrier : chacune dit
  *  ce qu'elle devient pour vous (repos ou travail) et qui remplace qui. */
@@ -11,13 +19,13 @@ function chronologicalDetails(exchange: WorkExchange) {
       date: exchange.returnDate,
       role: "return" as const,
       tag: "Travail",
-      label: `Vous ${pronoun} remplacez le ${longDate(fromKey(exchange.returnDate))}`,
+      label: `Vous ${pronoun} remplacez ${dayLabel(exchange.returnDate)}`,
     },
     {
       date: exchange.agreementDate,
       role: "given" as const,
       tag: "Off",
-      label: `${exchange.partnerName} vous remplace le ${longDate(fromKey(exchange.agreementDate))}`,
+      label: `${exchange.partnerName} vous remplace ${dayLabel(exchange.agreementDate)}`,
     },
   ].sort((first, second) => first.date.localeCompare(second.date));
 }
@@ -40,10 +48,13 @@ export function WorkExchangePanel({
         <strong>{exchanges.length}</strong>
       </div>
       <div className="work-exchange-list">
-        {exchanges.map((exchange) => (
-          <article key={exchange.id}>
+        {exchanges.map((exchange) => {
+          // Un échange de fériés : les flèches entourent un dollar.
+          const holidayExchange = Boolean(getDayInfo(fromKey(exchange.agreementDate), 1).holiday);
+          return (
+          <article key={exchange.id} className={holidayExchange ? "holiday-exchange" : undefined}>
             <header>
-              <img src="/exchange-arrows.png" alt="" aria-hidden="true" />
+              <img src={holidayExchange ? "/holiday-exchange.png" : "/exchange-arrows.png"} alt="" aria-hidden="true" />
               <div>
                 <strong>{exchange.partnerName}</strong>
                 <small className={`work-exchange-group group-${exchange.partnerGroup}`}>Groupe {exchange.partnerGroup}</small>
@@ -59,7 +70,8 @@ export function WorkExchangePanel({
               ))}
             </ol>
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

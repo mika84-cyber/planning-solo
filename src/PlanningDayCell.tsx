@@ -235,7 +235,8 @@ export function PlanningDayCell({
               {exchangeRole === "given" ? "OFF" : "TRAVAIL"}
             </span>
           ) : null}
-          <img className={`exchange-calendar-marker${compact ? " compact" : ""}`} src="/exchange-arrows.png" alt="" aria-hidden="true" />
+          {/* Un férié échangé : les flèches de l'échange entourent un dollar. */}
+          <img className={`exchange-calendar-marker${compact ? " compact" : ""}${info.holiday ? " holiday-exchange" : ""}`} src={info.holiday ? "/holiday-exchange.png" : "/exchange-arrows.png"} alt="" aria-hidden="true" />
         </>
       ) : null}
       {workPost ? <span className={`work-post-marker${compact ? " compact" : ""}`} aria-hidden="true">{workPost.letter}</span> : null}

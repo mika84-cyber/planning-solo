@@ -35,4 +35,18 @@ describe("WorkExchangeDialog", () => {
     expect(html).not.toContain("Cycle du collègue, groupe 1");
     expect((html.match(/type=\"date\"/g) || []).length).toBe(0);
   });
+
+  it("dit avec quel groupe échanger un jour cédé", async () => {
+    const { getDayInfo, dateKey } = await import("./planningLogic");
+    const day = Array.from({ length: 31 }, (_, index) => new Date(2026, 11, index + 1, 12))
+      .find((date) => getDayInfo(date, 2).kind === "work" && [1, 3].some((other) => getDayInfo(date, other).kind === "off"))!;
+    const offGroup = [1, 3].find((other) => getDayInfo(day, other).kind === "off");
+    const html = renderToStaticMarkup(
+      <WorkExchangeDialog open group={2}
+        draft={{ id: "", partnerName: "", partnerGroup: offGroup!, agreementDate: dateKey(day), returnDate: "" }}
+        setDraft={vi.fn()} error="" saving={false} onClose={vi.fn()} onSave={vi.fn()} onDelete={vi.fn()} />,
+    );
+    expect(html).toContain("work-exchange-group-hint");
+    expect(html).toContain(`du groupe ${offGroup}`);
+  });
 });

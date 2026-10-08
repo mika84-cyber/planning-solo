@@ -28,6 +28,8 @@ export type PdfExchangeMarker = {
 };
 type PlanningPdfAssets = {
   exchange?: string;
+  /** Flèches et dollar : l'échange d'un jour férié. */
+  holidayExchange?: string;
   workAccident?: string;
 };
 const LEAVE_CODES: Record<Exclude<PdfLeaveType, "half">, string> = {
@@ -174,11 +176,12 @@ async function loadPdfAsset(path: string) {
 
 /** Charge une seule fois les pictogrammes réellement employés dans le planning. */
 export async function loadPlanningPdfAssets(): Promise<PlanningPdfAssets> {
-  const [exchange, workAccident] = await Promise.all([
+  const [exchange, holidayExchange, workAccident] = await Promise.all([
     loadPdfAsset("/exchange-arrows.png"),
+    loadPdfAsset("/holiday-exchange.png"),
     loadPdfAsset("/work-accident-icon.png"),
   ]);
-  return { exchange, workAccident };
+  return { exchange, holidayExchange, workAccident };
 }
 
 function drawAsset(
@@ -222,6 +225,7 @@ function drawExchangeMarker(
   centerY: number,
   number: number,
   scale = 1,
+  alias = "exchange-marker",
 ) {
   const k = scale;
   // Une étiquette blanche cerclée de turquoise : la pastille des flèches, puis
@@ -230,7 +234,7 @@ function drawExchangeMarker(
   doc.setDrawColor(94, 182, 196);
   doc.setLineWidth(0.3 * k);
   doc.roundedRect(centerX - 4.1 * k, centerY - 2.05 * k, 8.2 * k, 4.1 * k, 2.05 * k, 2.05 * k, "FD");
-  if (!drawAsset(doc, image, centerX - 3.65 * k, centerY - 1.6 * k, 3.2 * k, 3.2 * k, "exchange-marker")) {
+  if (!drawAsset(doc, image, centerX - 3.65 * k, centerY - 1.6 * k, 3.2 * k, 3.2 * k, alias)) {
     doc.setFillColor(43, 133, 147);
     doc.circle(centerX - 2.05 * k, centerY, 1.55 * k, "F");
   }
@@ -496,17 +500,20 @@ function drawGroupPage(
       const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const exchange = exchangeMarkers?.get(key);
       const isOff = exchange ? exchange.role === "given" : info.kind === "off";
-      const isWorkedHoliday = Boolean(info.holiday) && info.kind === "work";
+      // Un férié échangé : celui qu'on cède n'est plus travaillé (case noire),
+      // celui qu'on reprend l'est (case blanche, sans la couleur du férié).
+      const isWorkedHoliday = Boolean(info.holiday) && (exchange ? exchange.role === "return" : info.kind === "work");
+      const holidayColored = isWorkedHoliday && !exchange;
       const baseFill = isOff
         ? COLORS.black
-        : isWorkedHoliday
+        : holidayColored
           ? COLORS.holiday
           : info.kind === "training"
             ? COLORS.training
             : COLORS.white;
       const workAccidentFill = isOff
         ? COLORS.black
-        : isWorkedHoliday
+        : holidayColored
           ? COLORS.holiday
           : COLORS.workAccident;
       // Une absence enregistrée reste visible même si elle tombe sur un repos
@@ -540,6 +547,7 @@ function drawGroupPage(
         info,
         isOff,
         isWorkedHoliday,
+        holidayColored,
         baseFill,
         workAccidentFill,
         exchange,
@@ -562,6 +570,7 @@ function drawGroupPage(
         info,
         isOff,
         isWorkedHoliday,
+        holidayColored,
         baseFill,
         workAccidentFill,
         exchange,
@@ -577,6 +586,7 @@ function drawGroupPage(
       const isOfferedHoliday =
         Boolean(info.holiday) &&
         info.kind !== "work" &&
+        !exchange &&
         wasPompidouHolidayWorked(date, group);
       // Le congé souhaité prime sur la couleur du jour : c'est l'information
       // qu'on cherche en parcourant la colonne.
@@ -592,7 +602,7 @@ function drawGroupPage(
               ? COLORS.white
             : isOff
               ? COLORS.black
-              : isWorkedHoliday
+              : holidayColored
                 ? COLORS.holiday
                 : info.kind === "training"
                   ? COLORS.training
@@ -746,10 +756,15 @@ function drawGroupPage(
       if (exchange) {
         drawExchangeMarker(
           doc,
-          assets?.exchange,
-          x + monthWidth - 5.7,
+          // Un férié échangé : les flèches entourent un dollar.
+          info.holiday ? assets?.holidayExchange ?? assets?.exchange : assets?.exchange,
+          // Plus petite et calée contre le bord droit : la pastille laisse de
+          // l'air au texte de la case (« Ve 25  Férié »).
+          x + monthWidth - 3.9,
           y + dayHeight / 2,
           exchange.number,
+          0.78,
+          info.holiday && assets?.holidayExchange ? "holiday-exchange-marker" : "exchange-marker",
         );
       }
     }

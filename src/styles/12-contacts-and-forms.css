@@ -1481,3 +1481,16 @@
 @media (max-width: 720px) {
   .half-hours .hourly-half-label.is-long { writing-mode: vertical-rl; transform: translate(-50%, -50%) rotate(180deg); }
 }
+
+/* Fériés : les choix de compensation en boutons, sous la ligne du férié —
+   ouverts tant que rien n'est décidé, et d'un clic sur le montant ensuite. */
+.holiday-pay-pending { display: inline-block; border: 1px dashed #c9a796; border-radius: 0.8rem; padding: 6px 10px; color: #9a4a2e; font-size: 0.78rem; font-weight: 800; }
+.holiday-pay-amount.editing { outline: 2px solid rgba(23, 104, 79, 0.35); outline-offset: 2px; }
+.allowance-table tr.holiday-pay-options-row > td { padding-top: 0; text-align: left; }
+.holiday-pay-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
+.app-shell .holiday-pay-options button { display: grid; gap: 1px; min-height: 0; margin: 0; border: 1px solid #d8cdbf; border-radius: 10px; padding: 7px 8px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: center; cursor: pointer; }
+.holiday-pay-options button span { font-size: 0.8rem; font-weight: 800; }
+.holiday-pay-options button small { color: #6b5d50; font-size: 0.7rem; font-weight: 700; }
+.app-shell .holiday-pay-options button.selected { border-color: #17684f; background: #eaf5f0; color: #17684f; }
+.app-shell .holiday-pay-options button.exchange { border-color: #5eb6c4; background: #eef8fa; color: #1f5f69; }
+.work-exchange-group-hint { margin: 0 0 10px; border-left: 3px solid #5eb6c4; border-radius: 0 8px 8px 0; padding: 8px 10px; background: #eef8fa; color: #1f4f57; font-size: 0.84rem; font-weight: 700; }

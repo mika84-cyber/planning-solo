@@ -16,6 +16,8 @@ type Props = {
   otherGroup: number;
   ariaLabel: string;
   onChange: (date: string) => void;
+  /** Un férié s'échange contre un férié : seuls ceux-là sont proposés. */
+  holidaysOnly?: boolean;
 };
 
 function initialView(value: string) {
@@ -29,6 +31,7 @@ export function WorkExchangeDatePicker({
   otherGroup,
   ariaLabel,
   onChange,
+  holidaysOnly = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => initialView(value));
@@ -78,7 +81,7 @@ export function WorkExchangeDatePicker({
               const ownerInfo = getDayInfo(date, ownerGroup);
               const otherInfo = getDayInfo(date, otherGroup);
               const key = dateKey(date);
-              const selectable = ownerInfo.kind === "work" && otherInfo.kind === "off";
+              const selectable = ownerInfo.kind === "work" && otherInfo.kind === "off" && (!holidaysOnly || Boolean(ownerInfo.holiday));
               const incompatibleWorkDay = ownerInfo.kind === "work" && !selectable;
               return (
                 <button

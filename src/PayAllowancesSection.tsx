@@ -1,5 +1,4 @@
-import { Suspense, lazy, useState } from "react";
-import { ChoicePicker } from "./ChoicePicker";
+import { Fragment, Suspense, lazy, useState } from "react";
 import { HOLIDAY_PAY_OPTIONS, euros } from "./appModel";
 import { minutesLabel } from "./overtime";
 import {
@@ -101,6 +100,8 @@ type PayAllowancesSectionProps = {
   onGoToday: () => void;
   onEditHolidayChoice: (key: string | null) => void;
   onChooseHolidayPay: (key: string, choice: HolidayPay) => void | Promise<void>;
+  /** « Échanger » un férié travaillé : ouvre l'échange, ce jour déjà rempli. */
+  onExchangeHoliday?: (key: string) => void;
 };
 
 export function PayAllowancesSection({
@@ -119,6 +120,7 @@ export function PayAllowancesSection({
   onGoToday,
   onEditHolidayChoice,
   onChooseHolidayPay,
+  onExchangeHoliday,
 }: PayAllowancesSectionProps) {
   const { sundayTotal } = allowances;
   /* La liste des dimanches faits est repliée par défaut : la carte reste un
@@ -167,33 +169,59 @@ export function PayAllowancesSection({
     0,
   );
 
-  const holidayChoice = (item: HolidayAllowanceItem) => (
-    item.choice && holidayChoiceEditing !== item.key ? (
+  /* Le montant choisi ; un clic ouvre directement les choix, sous la ligne. */
+  const holidayChoice = (item: HolidayAllowanceItem) => {
+    const editing = holidayChoiceEditing === item.key;
+    if (!item.choice)
+      return <span className="holiday-pay-pending">À décider</span>;
+    return (
       <button
         type="button"
-        className="holiday-pay-amount"
-        onClick={() => onEditHolidayChoice(item.key)}
-        aria-label={`${euros(holidayAllowance(baseSalary, item.choice))}. Modifier le choix de compensation du ${shortDate(item.key)}`}
-        title="Cliquer pour modifier le choix"
+        className={`holiday-pay-amount${editing ? " editing" : ""}`}
+        onClick={() => onEditHolidayChoice(editing ? null : item.key)}
+        aria-expanded={editing}
+        aria-label={`${euros(holidayAllowance(baseSalary, item.choice))}. ${editing ? "Garder" : "Modifier"} le choix de compensation du ${shortDate(item.key)}`}
+        title={editing ? "Garder ce choix" : "Cliquer pour modifier le choix"}
       >
         {euros(holidayAllowance(baseSalary, item.choice))}
       </button>
-    ) : (
-      <ChoicePicker
-        value={item.choice || ""}
-        options={HOLIDAY_PAY_OPTIONS}
-        onChange={(choice) => {
-          if (!choice) return;
-          onEditHolidayChoice(null);
-          void onChooseHolidayPay(item.key, choice);
-        }}
-        ariaLabel={`Choisir la compensation du ${shortDate(item.key)}`}
-        className="holiday-pay-picker"
-        layout="list"
-        placeholder="À décider"
-      />
-    )
-  );
+    );
+  };
+  /* Les choix, en boutons : prime seule, prime + récup et, pour un férié
+     travaillé, l'échange avec un collègue. Toujours visibles tant que rien
+     n'est décidé, et à la demande ensuite. */
+  const holidayOptions = (item: HolidayAllowanceItem, canExchange: boolean) => {
+    if (item.choice && holidayChoiceEditing !== item.key) return null;
+    return (
+      <tr className="holiday-pay-options-row">
+        <td colSpan={2}>
+          <div className="holiday-pay-options" role="group" aria-label={`Compensation du ${shortDate(item.key)}`}>
+            {HOLIDAY_PAY_OPTIONS.map((option) => option.value ? (
+              <button
+                key={option.value}
+                type="button"
+                className={item.choice === option.value ? "selected" : undefined}
+                aria-pressed={item.choice === option.value}
+                onClick={() => {
+                  onEditHolidayChoice(null);
+                  void onChooseHolidayPay(item.key, option.value as HolidayPay);
+                }}
+              >
+                <span>{option.label}</span>
+                {holidayAllowance(baseSalary, option.value as HolidayPay) > 0 ? <small>{euros(holidayAllowance(baseSalary, option.value as HolidayPay))}</small> : null}
+              </button>
+            ) : null)}
+            {canExchange && onExchangeHoliday ? (
+              <button type="button" className="exchange" onClick={() => { onEditHolidayChoice(null); onExchangeHoliday(item.key); }}>
+                <span>Échanger</span>
+                <small>avec un collègue</small>
+              </button>
+            ) : null}
+          </div>
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <>
@@ -399,15 +427,18 @@ export function PayAllowancesSection({
             <table className="allowance-table">
               <tbody>
                 {allowances.holidays.map((item) => (
-                  <tr key={item.key}>
-                    <th scope="row">
-                      {item.name}
-                      <small>{shortDate(item.key)} · {holidayPayslip(item.key).label}</small>
-                    </th>
-                    <td className={item.choice ? "" : "pending"}>
-                      <div className="holiday-pay-cell">{holidayChoice(item)}</div>
-                    </td>
-                  </tr>
+                  <Fragment key={item.key}>
+                    <tr>
+                      <th scope="row">
+                        {item.name}
+                        <small>{shortDate(item.key)} · {holidayPayslip(item.key).label}</small>
+                      </th>
+                      <td className={item.choice ? "" : "pending"}>
+                        <div className="holiday-pay-cell">{holidayChoice(item)}</div>
+                      </td>
+                    </tr>
+                    {holidayOptions(item, true)}
+                  </Fragment>
                 ))}
                 {allowances.cancelledHolidays.map((item) => (
                   <tr key={`cancelled-${item.key}`} className="holiday-cancelled">
@@ -426,7 +457,7 @@ export function PayAllowancesSection({
           {allowances.holidayPending ? (
             <p className="allowance-note warn">
               {allowances.holidayPending} férié{s(allowances.holidayPending)} sans compensation choisie :
-              cliquez sur « À décider » pour trancher.
+              choisissez la compensation sous chacun.
             </p>
           ) : null}
         </section>
@@ -440,15 +471,18 @@ export function PayAllowancesSection({
             <table className="allowance-table">
               <tbody>
                 {allowances.compensated.map((item) => (
-                  <tr key={item.key}>
-                    <th scope="row">
-                      {item.name}
-                      <small>{shortDate(item.key)} · paie de février {allowances.year + 1}</small>
-                    </th>
-                    <td className={item.choice ? "" : "pending"}>
-                      <div className="holiday-pay-cell">{holidayChoice(item)}</div>
-                    </td>
-                  </tr>
+                  <Fragment key={item.key}>
+                    <tr>
+                      <th scope="row">
+                        {item.name}
+                        <small>{shortDate(item.key)} · paie de février {allowances.year + 1}</small>
+                      </th>
+                      <td className={item.choice ? "" : "pending"}>
+                        <div className="holiday-pay-cell">{holidayChoice(item)}</div>
+                      </td>
+                    </tr>
+                    {holidayOptions(item, false)}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
