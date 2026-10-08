@@ -222,9 +222,6 @@ export function OvertimeDialog({
             <strong className="overtime-time-title">Horaires effectués</strong>
             <ClockTimePicker label="Heure de début" value={draft.start} allowEmpty onChange={(value) => setDraft((current) => ({ ...current, start: value }))} />
             <ClockTimePicker label="Heure de fin" value={draft.end} allowEmpty onChange={(value) => setDraft((current) => ({ ...current, end: value }))} />
-            <small>
-              Nuit reconnue de 22 h à 7 h. Les horaires peuvent passer minuit.
-            </small>
           </div>
           <fieldset className="overtime-choice-field disposition-choice">
             <legend>Que faire de ces heures ?</legend>

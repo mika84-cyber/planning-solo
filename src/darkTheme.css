@@ -28,6 +28,9 @@ html[data-theme="dark"] .grand-palais-primary-picker > button {
   border-color: color-mix(in srgb, var(--venue-line) 45%, #1d1916);
   background: color-mix(in srgb, var(--venue-bg) 16%, #1d1916);
 }
+/* Choisir un espace : la teinte de chaque espace, sur fond sombre. */
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 18%, #1d1916); }
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 45%, #fff); }
 
 /* Les illustrations dessinées sur fond clair gardent leur fond, sans éblouir. */
 html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: brightness(.88); }

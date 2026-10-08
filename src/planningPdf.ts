@@ -914,7 +914,7 @@ function drawGroupPage(
     doc.setTextColor(...COLORS.black);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(5.8);
-    drawCenteredText(doc, "COULEURS", x, footerY, legendWidth, bandHeight);
+    drawCenteredText(doc, "LÉGENDE", x, footerY, legendWidth, bandHeight);
 
     colorLegendItems.forEach((item, index) => {
       // Colonne par colonne, de haut en bas.
@@ -973,51 +973,60 @@ function drawGroupPage(
 
 }
 
-/** Pied de page du planning d'un groupe, sans congés ni vacances : un bandeau
- *  fin sur toute la largeur, en quatre cases égales — l'année, le groupe, les
- *  fériés travaillés et les fériés compensés. Pas de légende. */
+/** Pied de page du planning d'un groupe, sans congés ni vacances : sous un
+ *  filet noir, « Planning 2026 · Groupe 2 » à gauche et les fériés à droite,
+ *  comme la légende d'un tableau. Pas de cadre ni de légende des couleurs. */
 function drawPlainFooter(
   doc: jsPDF,
   box: { x: number; y: number; width: number; height: number; year: number; group: number; workedHolidayCount: number; offeredHolidayCount: number },
 ) {
   const { x, y, width, height } = box;
-  const facts = [
-    { label: "Année", value: String(box.year), tint: COLORS.yearValue, accent: COLORS.yearHeader },
-    { label: "Groupe", value: String(box.group), tint: COLORS.groupValue, accent: COLORS.groupHeader },
-    { label: "Fériés travaillés", value: String(box.workedHolidayCount), tint: COLORS.holidaysValue, accent: COLORS.holiday },
-    { label: "Fériés compensés", value: String(box.offeredHolidayCount), tint: [255, 239, 216] as const, accent: COLORS.money, money: true },
-  ];
-  const gap = 3;
-  const cellWidth = (width - gap * (facts.length - 1)) / facts.length;
-  doc.setLineJoin("round");
-  facts.forEach((fact, index) => {
-    const cellX = x + index * (cellWidth + gap);
-    // Une case teintée, un liseré de sa couleur à gauche, le libellé puis
-    // le chiffre sur la même ligne.
-    doc.setFillColor(fact.tint[0], fact.tint[1], fact.tint[2]);
-    doc.setDrawColor(...COLORS.slateLine);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(cellX, y, cellWidth, height, 1.8, 1.8, "FD");
-    doc.setFillColor(fact.accent[0], fact.accent[1], fact.accent[2]);
-    doc.rect(cellX + 0.15, y + 1.4, 1.4, height - 2.8, "F");
-    const centerY = y + height / 2;
-    doc.setTextColor(...COLORS.black);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.4);
-    doc.text(fact.label.toUpperCase(), cellX + 6, centerY, { baseline: "middle" });
-    const valueX = cellX + cellWidth - 6;
-    doc.setFontSize(13);
-    doc.text(fact.value, valueX, centerY, { align: "right", baseline: "middle" });
-    if (fact.money) {
-      const valueWidth = doc.getTextWidth(fact.value);
-      const badgeX = valueX - valueWidth - 3.6;
-      doc.setFillColor(...COLORS.money);
-      doc.circle(badgeX, centerY, 2, "F");
-      doc.setFontSize(6.6);
-      doc.text("€", badgeX, centerY, { align: "center", baseline: "middle" });
-    }
-  });
+  const centerY = y + height / 2;
+  // Légende de tableau : un filet noir, l'identité à gauche, les fériés à
+  // droite, sans cadre.
+  doc.setDrawColor(...COLORS.black);
+  doc.setLineWidth(0.5);
+  doc.line(x, y + 0.6, x + width, y + 0.6);
+  doc.setTextColor(...COLORS.black);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  const title = `Planning ${box.year}`;
+  doc.text(title, x, centerY + 0.8, { baseline: "middle" });
+  const titleWidth = doc.getTextWidth(title);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`·  Groupe ${box.group}`, x + titleWidth + 3, centerY + 0.8, { baseline: "middle" });
+  const right = x + width;
+  doc.setFontSize(9.5);
+  doc.setTextColor(...COLORS.black);
+  const compText = `${box.offeredHolidayCount} férié${box.offeredHolidayCount > 1 ? "s" : ""} compensé${box.offeredHolidayCount > 1 ? "s" : ""}`;
+  const workText = `${box.workedHolidayCount} férié${box.workedHolidayCount > 1 ? "s" : ""} travaillé${box.workedHolidayCount > 1 ? "s" : ""}`;
+  doc.setFont("helvetica", "bold");
+  const compWidth = doc.getTextWidth(compText);
+  doc.text(compText, right, centerY + 0.8, { align: "right", baseline: "middle" });
+  drawEuroBadge(doc, right - compWidth - 3.6, centerY + 0.8, 1.9);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  const workRight = right - compWidth - 12;
+  const workWidth = doc.getTextWidth(workText);
+  doc.text(workText, workRight, centerY + 0.8, { align: "right", baseline: "middle" });
+  doc.setFillColor(...COLORS.holiday);
+  doc.setDrawColor(...COLORS.black);
+  doc.setLineWidth(0.2);
+  doc.rect(workRight - workWidth - 9.5, centerY + 0.8 - 2.2, 7, 4.4, "FD");
 }
+
+/** La pastille « € » des fériés compensés, comme dans le calendrier. */
+function drawEuroBadge(doc: jsPDF, cx: number, cy: number, r = 2) {
+  doc.setFillColor(...COLORS.money);
+  doc.circle(cx, cy, r, "F");
+  doc.setTextColor(...COLORS.black);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(r * 3.3);
+  doc.text("€", cx, cy, { align: "center", baseline: "middle" });
+}
+
 
 const SHORT_MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 

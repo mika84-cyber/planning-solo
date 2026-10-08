@@ -46,11 +46,21 @@ type UsefulAudioguide = {
   qr: string;
 };
 
+/** Un formulaire en ligne à flasher : le QR code d'origine et l'adresse
+ *  qu'il ouvre, pour l'ouvrir aussi sans scanner. */
+type UsefulQrLink = {
+  title: string;
+  detail: string;
+  url: string;
+  qr: string;
+};
+
 type UsefulFormsFolder = {
   key: UsefulFormsFolderKey;
   title: string;
   documents: UsefulFormDocument[];
   audioguides?: UsefulAudioguide[];
+  qrLinks?: UsefulQrLink[];
   description: string;
   image?: { src: string; alt: string };
 };
@@ -80,6 +90,20 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
         code: "7268",
         languages: "Français et anglais",
         qr: "/useful-forms/audioguide-cezanne-qr.png",
+      },
+    ],
+    qrLinks: [
+      {
+        title: "Réclamation service client",
+        detail: "Formulaire en ligne du Grand Palais Rmn",
+        url: "https://l.ead.me/bg72nl",
+        qr: "/useful-forms/reclamation-service-client-qr.png",
+      },
+      {
+        title: "Objet perdu",
+        detail: "Déclaration en ligne sur Troov",
+        url: "https://l.ead.me/bg72lH",
+        qr: "/useful-forms/objet-perdu-qr.png",
       },
     ],
   },
@@ -140,10 +164,11 @@ export function usefulFormFoldersForDate(
   }));
 }
 
-function documentCount(count: number, audioguides = 0) {
+function documentCount(count: number, audioguides = 0, qrLinks = 0) {
   const parts = [
     count ? `${count} document${count > 1 ? "s" : ""}` : "",
     audioguides ? `+ ${audioguides} audioguide${audioguides > 1 ? "s" : ""}` : "",
+    qrLinks ? `+ ${qrLinks} QR code${qrLinks > 1 ? "s" : ""}` : "",
   ].filter(Boolean);
   return parts.length ? parts.join(" ") : "Vide pour le moment";
 }
@@ -159,13 +184,15 @@ type UsefulFormsSectionProps = {
   demoMode?: boolean;
 };
 
-/** Quand un dossier réunit des documents et des audioguides, un intitulé
- *  sépare les deux, au singulier ou au pluriel ; sinon, aucun intitulé. */
-export function folderListHeadings(documents: number, audioguides: number) {
-  if (!documents || !audioguides) return null;
+/** Quand un dossier réunit plusieurs sortes d'éléments (documents,
+ *  audioguides, QR codes), un intitulé sépare chaque sorte, au singulier ou au
+ *  pluriel ; une seule sorte n'a besoin d'aucun intitulé. */
+export function folderListHeadings(documents: number, audioguides: number, qrLinks = 0) {
+  if ([documents, audioguides, qrLinks].filter(Boolean).length < 2) return null;
   return {
     documents: documents > 1 ? "Documents" : "Document",
     audioguides: audioguides > 1 ? "Audioguides" : "Audioguide",
+    qrLinks: qrLinks > 1 ? "QR codes" : "QR code",
   };
 }
 
@@ -202,7 +229,8 @@ export function UsefulFormsSection({
   const normalizedSearch = searchQuery.trim();
   const visibleFolders = useMemo(() => allFolders.filter((item) => matchesSearch(item.title, normalizedSearch)
     || item.documents.some((document) => matchesSearch(document.title, normalizedSearch))
-    || Boolean(item.audioguides?.some((guide) => matchesSearch(`Audioguide ${guide.title}`, normalizedSearch)))), [allFolders, normalizedSearch]);
+    || Boolean(item.audioguides?.some((guide) => matchesSearch(`Audioguide ${guide.title}`, normalizedSearch)))
+    || Boolean(item.qrLinks?.some((link) => matchesSearch(`${link.title} ${link.detail}`, normalizedSearch)))), [allFolders, normalizedSearch]);
   const favoriteDocuments = allFolders.flatMap((item) => item.documents.map((document) => ({ ...document, folderKey: item.key }))).filter((document) => favorites.includes(document.file));
   const toggleFavorite = (file: string) => setFavorites((current) => {
     const next = current.includes(file) ? current.filter((item) => item !== file) : [...current, file];
@@ -223,7 +251,7 @@ export function UsefulFormsSection({
     return () => { active = false; window.clearInterval(timer); };
   }, [demoMode]);
   const folder = visibleFolders.find((item) => item.key === activeFolder);
-  const headings = folder ? folderListHeadings(folder.documents.length, folder.audioguides?.length ?? 0) : null;
+  const headings = folder ? folderListHeadings(folder.documents.length, folder.audioguides?.length ?? 0, folder.qrLinks?.length ?? 0) : null;
   const secureContext = typeof window === "undefined" || window.isSecureContext;
   const downloadForm = async (
     event: MouseEvent<HTMLAnchorElement>,
@@ -293,7 +321,7 @@ export function UsefulFormsSection({
           <div>
             <span className="step-label">Formulaires utiles</span>
             <h2 id="useful-forms-folder-title">{folder.title}</h2>
-            <small>{folder.image ? "Information pratique" : documentCount(folder.documents.length, folder.audioguides?.length)}</small>
+            <small>{folder.image ? "Information pratique" : documentCount(folder.documents.length, folder.audioguides?.length, folder.qrLinks?.length)}</small>
           </div>
         </header>
 
@@ -309,14 +337,14 @@ export function UsefulFormsSection({
               decoding="async"
             />
           </figure>
-        ) : folder.documents.length || folder.audioguides?.length ? (
+        ) : folder.documents.length || folder.audioguides?.length || folder.qrLinks?.length ? (
           <div className="useful-form-download-list">
             {!secureContext ? (
               <p className="useful-form-local-notice">
                 Mode de test local : les PDF s’ouvrent dans le lecteur du navigateur. Utilisez ensuite son bouton Enregistrer. Le téléchargement direct sans alerte sera disponible sur la version sécurisée.
               </p>
             ) : null}
-            {headings ? <h3 className="useful-form-list-heading">{headings.documents}</h3> : null}
+            {headings && folder.documents.length ? <h3 className="useful-form-list-heading">{headings.documents}</h3> : null}
             {folder.documents.map((document, index) => {
               const action = getUsefulFormAction(document.format, secureContext);
               return (
@@ -357,7 +385,7 @@ export function UsefulFormsSection({
             })}
             {/* Les audioguides suivent les fiches, dans le même format : ouvrir
                 sans scanner (le code d'accès est copié) ou montrer le QR code. */}
-            {headings ? <h3 className="useful-form-list-heading">{headings.audioguides}</h3> : null}
+            {headings && folder.audioguides?.length ? <h3 className="useful-form-list-heading">{headings.audioguides}</h3> : null}
             {folder.audioguides?.map((guide, index) => (
               <article key={guide.title} className="useful-form-download-card useful-audioguide-card">
                 <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
@@ -386,6 +414,31 @@ export function UsefulFormsSection({
                   <figure className="useful-audioguide-qr">
                     <img src={guide.qr} alt={`QR code de l’audioguide ${guide.title}`} width="240" height="240" />
                     <figcaption>Code d’accès <b>{guide.code}</b></figcaption>
+                  </figure>
+                ) : null}
+              </article>
+            ))}
+            {headings && folder.qrLinks?.length ? <h3 className="useful-form-list-heading">{headings.qrLinks}</h3> : null}
+            {folder.qrLinks?.map((link, index) => (
+              <article key={link.title} className="useful-form-download-card useful-audioguide-card useful-qr-link-card">
+                <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" /></svg>
+                </span>
+                <span className="useful-form-file-copy">
+                  <small>{index + 1}. QR CODE</small>
+                  <strong>{link.title}</strong>
+                  <small className="useful-audioguide-code">{link.detail}</small>
+                </span>
+                <span className="useful-audioguide-actions">
+                  <a href={link.url} target="_blank" rel="noopener noreferrer">Ouvrir le formulaire</a>
+                  <button type="button" aria-expanded={shownQr === link.title} onClick={() => setShownQr((current) => (current === link.title ? "" : link.title))}>
+                    {shownQr === link.title ? "Masquer le QR code" : "Afficher le QR code"}
+                  </button>
+                </span>
+                {shownQr === link.title ? (
+                  <figure className="useful-audioguide-qr">
+                    <img src={link.qr} alt={`QR code : ${link.title}`} width="240" height="240" />
+                    <figcaption>À flasher par le visiteur</figcaption>
                   </figure>
                 ) : null}
               </article>
@@ -431,7 +484,7 @@ export function UsefulFormsSection({
             </span>
             <span>
               <strong>{item.title}</strong>
-              <small>{item.image ? "Information pratique" : documentCount(item.documents.length, item.audioguides?.length)}</small>
+              <small>{item.image ? "Information pratique" : documentCount(item.documents.length, item.audioguides?.length, item.qrLinks?.length)}</small>
               <em>{item.description}</em>
             </span>
           </button>

@@ -110,11 +110,33 @@ describe("HomeDashboard", () => {
     expect(html).toContain("Prochain mécénat");
     expect(html).toContain("19 h – 23 h");
     expect(html).not.toContain("Travail restant");
+    // Rien de prévu : la ligne disparaît.
     const empty = renderToStaticMarkup(<HomeDashboard {...baseProps} nextExtraWork={null} />);
-    expect(empty).toContain("Rien de prévu");
-    expect(empty).toContain("ni mécénat ni heure sup à venir");
+    expect(empty).not.toContain("today-next-extra");
+    expect(empty).not.toContain("Prochain mécénat");
     const overtime = renderToStaticMarkup(<HomeDashboard {...baseProps} nextExtraWork={{ kind: "overtime", date: "2026-09-05", start: "18:00", end: "20:30" }} />);
     expect(overtime).toContain("Prochaine heure sup");
     expect(overtime).toContain("18 h – 20 h 30");
+  });
+
+  it("annonce la prochaine note quand il y en a une", () => {
+    const none = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
+    expect(none).not.toContain("Prochaine note");
+    const html = renderToStaticMarkup(<HomeDashboard
+      {...baseProps}
+      upcoming={[
+        { key: "leave-1", date: "2026-09-04", label: "CA", detail: "", kind: "leave" },
+        { key: "note-1", date: "2026-09-10", label: "Réunion d’équipe", detail: "", kind: "note", author: "mika", notes: [{ author: "mika", label: "Réunion d’équipe" }] },
+      ]}
+    />);
+    expect(html).toContain("Prochaine note");
+    expect(html).toContain("Jeu 10/09");
+    expect(html).toContain("Réunion d’équipe");
+    // Au-delà de dix jours, la ligne n'apparaît pas.
+    const later = renderToStaticMarkup(<HomeDashboard
+      {...baseProps}
+      upcoming={[{ key: "note-2", date: "2026-09-14", label: "Plus tard", detail: "", kind: "note", author: "mika" }]}
+    />);
+    expect(later).not.toContain("Prochaine note");
   });
 });

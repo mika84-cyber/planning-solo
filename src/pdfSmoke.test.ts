@@ -196,13 +196,14 @@ describe("createAnnualPlanningPdf (fumée)", () => {
       filenameLabel: "test-sans-conges",
     });
     const text = await extractPdfText(await result.blob.arrayBuffer());
-    // Pied de page en bandeau : année, groupe et fériés, sans légende.
-    expect(text).toContain("ANNÉE");
-    expect(text).toContain("GROUPE");
-    expect(text).toContain("FÉRIÉS TRAVAILLÉS");
-    expect(text).toContain("FÉRIÉS COMPENSÉS");
+    // Pied de page en légende de tableau : année, groupe et fériés.
+    expect(text).toContain("Planning 2026");
+    expect(text).toMatch(/Groupe \d/);
+    expect(text).toMatch(/fériés? travaillés?/);
+    expect(text).toMatch(/fériés? compensés?/);
     expect(text).not.toContain("PLANNING");
     expect(text).not.toContain("COULEURS");
+    expect(text).not.toContain("LÉGENDE");
     expect(text).not.toContain("Congé validé");
     expect(text).not.toContain("Récupération");
   });

@@ -218,31 +218,55 @@ export function WorkTimeHistoryList({
   );
 }
 
+/** « paie de novembre », « paie d’octobre ». */
+function payOf(month: string) {
+  return /^[aeiouâéèêîôû]/i.test(month) ? `paie d’${month}` : `paie de ${month}`;
+}
+
+/** Mécénats : un bloc par mois, une ligne par soirée, séparées d'un trait.
+ *  Le mois de paie, commun d'ordinaire, se lit une fois dans l'en-tête. */
 export function MecenatHistoryList({ entries, onDelete }: { entries: MecenatEntry[]; onDelete: (entry: MecenatEntry) => void }) {
   return (
     <>
-      {groupByMonth(entries).map((group) => (
-        <section key={group.key} className="history-month" aria-label={group.label}>
-          <h4>
-            {group.label}
-            <small>{euros(group.items.reduce((total, entry) => total + entry.grossAmountCents, 0) / 100)} brut</small>
-          </h4>
-          {group.items.map((entry) => (
-            <HistoryRow
-              key={entry.id}
-              date={entry.date}
-              tone="mecenat"
-              title="Mécénat"
-              detail={`${rangeLabel(entry.start, entry.end)} · ${minutesLabel(entry.dayMinutes + entry.nightMinutes)}`}
-              status={`Paie de ${MONTHS[entry.payMonth]} ${entry.payYear}`}
-              value={euros(entry.grossAmountCents / 100)}
-              deleteText="Supprimer"
-              deleteLabel={fullDate(entry.date)}
-              onDelete={() => onDelete(entry)}
-            />
-          ))}
-        </section>
-      ))}
+      {groupByMonth(entries).map((group) => {
+        const payMonths = new Set(group.items.map((entry) => `${entry.payYear}-${entry.payMonth}`));
+        const sharedPay = payMonths.size === 1 ? group.items[0] : null;
+        const total = euros(group.items.reduce((sum, entry) => sum + entry.grossAmountCents, 0) / 100);
+        return (
+          <section key={group.key} className="history-month" aria-label={group.label}>
+            <h4>
+              {group.label}
+              <small>{sharedPay ? `${total} brut · ${payOf(MONTHS[sharedPay.payMonth])}` : `${total} brut`}</small>
+            </h4>
+            <ul className="mecenat-history-list">
+              {group.items.map((entry) => {
+                const day = fromKey(entry.date);
+                const weekday = day.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "");
+                return (
+                  <li key={entry.id} className="mecenat-history-row">
+                    <time className="mecenat-history-date" dateTime={entry.date}>
+                      <small>{weekday}</small>
+                      <b>{day.getDate()}</b>
+                    </time>
+                    <span className="mecenat-history-main">
+                      <strong>{rangeLabel(entry.start, entry.end)}</strong>
+                      <small>
+                        {minutesLabel(entry.dayMinutes + entry.nightMinutes)}
+                        {entry.nightMinutes ? ` · dont ${minutesLabel(entry.nightMinutes)} de nuit` : ""}
+                        {sharedPay ? "" : ` · ${payOf(MONTHS[entry.payMonth])} ${entry.payYear}`}
+                      </small>
+                    </span>
+                    <span className="mecenat-history-value">{euros(entry.grossAmountCents / 100)}</span>
+                    <button type="button" className="mecenat-history-delete" onClick={() => onDelete(entry)} aria-label={`Supprimer : ${fullDate(entry.date)}`}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10.5 10.5v6M13.5 10.5v6" /></svg>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
     </>
   );
 }

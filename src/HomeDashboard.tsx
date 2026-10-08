@@ -98,6 +98,11 @@ export function HomeDashboard({
   onAddNote,
 }: HomeDashboardProps) {
   const [notesOpen, setNotesOpen] = useState(false);
+  /** La première note des dix prochains jours, la mienne ou celle d’Agnès. */
+  const noteLimit = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 10);
+  const noteLimitKey = `${noteLimit.getFullYear()}-${String(noteLimit.getMonth() + 1).padStart(2, "0")}-${String(noteLimit.getDate()).padStart(2, "0")}`;
+  const nextNote = upcoming.find((item) => item.kind === "note" && item.date <= noteLimitKey) ?? null;
+  const nextNoteText = nextNote ? (nextNote.notes?.map((note) => note.label).join(" · ") ?? nextNote.label) : "";
   const [dismissedSetupItems, setDismissedSetupItems] = useState<string[]>(() => {
     try {
       if (typeof localStorage === "undefined") return [];
@@ -244,13 +249,12 @@ export function HomeDashboard({
               {chevron}
             </button>
           ) : null}
+          {nextExtraWork ? (
           <button
             className="today-block today-next-extra"
             type="button"
             onClick={onOpenLeave}
-            aria-label={nextExtraWork
-              ? `${nextExtraWork.kind === "overtime" ? "Prochaine heure sup" : "Prochain mécénat"} : ${extraWorkDate(nextExtraWork.date, now)}, ${extraWorkHours(nextExtraWork)}. Afficher les heures et mécénats.`
-              : "Aucun mécénat ni heure sup à venir. Afficher les heures et mécénats."}
+            aria-label={`${nextExtraWork.kind === "overtime" ? "Prochaine heure sup" : "Prochain mécénat"} : ${extraWorkDate(nextExtraWork.date, now)}, ${extraWorkHours(nextExtraWork)}. Afficher les heures et mécénats.`}
           >
             <span className="today-block-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -259,15 +263,32 @@ export function HomeDashboard({
                 <path d="M11 8v4l2.5 1.5M18.5 3.5v5m-2.5-2.5h5" />
               </svg>
             </span>
-            <span className="today-block-label">{nextExtraWork?.kind === "overtime" ? "Prochaine heure sup" : nextExtraWork ? "Prochain mécénat" : "Mécénat ou heure sup"}</span>
-            <strong className={nextExtraWork ? "is-date" : undefined}>
-              {nextExtraWork ? extraWorkDate(nextExtraWork.date, now) : "Rien de prévu"}
-            </strong>
-            <small className="today-block-note">
-              {nextExtraWork ? extraWorkHours(nextExtraWork) : "ni mécénat ni heure sup à venir"}
-            </small>
+            <span className="today-block-label">{nextExtraWork.kind === "overtime" ? "Prochaine heure sup" : "Prochain mécénat"}</span>
+            <strong className="is-date">{extraWorkDate(nextExtraWork.date, now)}</strong>
+            <small className="today-block-note">{extraWorkHours(nextExtraWork)}</small>
             {chevron}
           </button>
+          ) : null}
+          {nextNote ? (
+            <button
+              className="today-block today-next-note"
+              type="button"
+              onClick={() => onOpenNextWork(new Date(`${nextNote.date}T12:00:00`))}
+              aria-label={`Prochaine note : ${extraWorkDate(nextNote.date, now)}, ${nextNoteText}. Afficher ce jour.`}
+            >
+              <span className="today-block-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  {/* Une feuille au coin corné : la note du planning. */}
+                  <path d="M6 3.5h8.5L19 8v12.5H6Z" />
+                  <path d="M14.5 3.5V8H19M9 12.5h6.5M9 16h4.5" />
+                </svg>
+              </span>
+              <span className="today-block-label">Prochaine note</span>
+              <strong className="is-date">{extraWorkDate(nextNote.date, now)}</strong>
+              <small className="today-block-note today-note-text">{nextNoteText}</small>
+              {chevron}
+            </button>
+          ) : null}
         </div>
       </section>
 

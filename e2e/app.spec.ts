@@ -2033,7 +2033,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const folders = page.locator(".useful-form-folder-grid > button");
   await expect(folders.first()).toHaveCSS("box-shadow", "none");
   await expect(folders).toHaveText([
-    /Formulaire Expo.*1 audioguide/,
+    /Formulaire Expo.*1 audioguide \+ 2 QR codes/,
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*8 documents/,
     /Horaires tickets resto.*Information pratique/,
@@ -2048,14 +2048,14 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
 
   await folders.nth(0).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
-  // L'audioguide prend la forme des fiches, à la suite de la liste.
-  await expect(page.locator(".useful-form-download-list .useful-form-download-card")).toHaveCount(1);
-  // Sans document à côté, l’audioguide n’a pas besoin d’intitulé de séparation.
-  await expect(page.locator(".useful-form-list-heading")).toHaveCount(0);
+  // L'audioguide et le QR code prennent la forme des fiches, à la suite de la liste.
+  await expect(page.locator(".useful-form-download-list .useful-form-download-card")).toHaveCount(3);
+  // Deux sortes d'éléments : chacune a son intitulé.
+  await expect(page.locator(".useful-form-list-heading")).toHaveText(["Audioguide", "QR codes"]);
   await expect(page.locator(".useful-forms-empty")).toHaveCount(0);
   await expect(page.locator(".useful-forms-folder-screen")).not.toContainText("Hilma Af Klint");
   // L'audioguide Cézanne s'ouvre sans scanner le QR code, code d'accès en vue.
-  const guide = page.locator(".useful-audioguide-card");
+  const guide = page.locator(".useful-audioguide-card:not(.useful-qr-link-card)");
   await expect(guide).toContainText("Cézanne et nous");
   await expect(guide).toContainText("7268");
   const guideLink = guide.getByRole("link", { name: "Ouvrir l’audioguide" });
@@ -2066,6 +2066,14 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(guide.getByRole("img", { name: /QR code de l’audioguide/ })).toBeVisible();
   await guide.getByRole("button", { name: "Masquer le QR code" }).click();
   await expect(guide.locator(".useful-audioguide-qr")).toHaveCount(0);
+  // Le formulaire de réclamation du service client : lien direct et QR code.
+  const claim = page.locator(".useful-qr-link-card").filter({ hasText: "Réclamation service client" });
+  await expect(claim).toContainText("Réclamation service client");
+  await expect(claim.getByRole("link", { name: "Ouvrir le formulaire" })).toHaveAttribute("href", "https://l.ead.me/bg72nl");
+  await claim.getByRole("button", { name: "Afficher le QR code" }).click();
+  await expect(claim.getByRole("img", { name: "QR code : Réclamation service client" })).toBeVisible();
+  const lost = page.locator(".useful-qr-link-card").filter({ hasText: "Objet perdu" });
+  await expect(lost.getByRole("link", { name: "Ouvrir le formulaire" })).toHaveAttribute("href", "https://l.ead.me/bg72lH");
   const formsBackArea = page.getByRole("button", { name: "Revenir aux dossiers de formulaires" });
   const [formsBackBox, folderHeaderBox] = await Promise.all([
     formsBackArea.boundingBox(),
@@ -2503,10 +2511,12 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.getByText(/Programmation prévisionnelle/)).toHaveCount(0);
   await expect(page.locator(".grand-palais-program-panel .useful-expo-timeline-mark").first()).toBeHidden();
   const choices = page.locator(".grand-palais-primary-picker > button");
-  // Une liste : chaque espace a son badge à sa couleur ; celui de l'espace
-  // choisi est plein (bleu des Galeries 3 et 4).
+  // Une liste en couleur : chaque espace a sa teinte, son liseré et son
+  // badge plein (bleu des Galeries 3 et 4).
   await expect(choices.first().locator("b")).toHaveCSS("background-color", "rgb(50, 111, 168)");
-  expect(new Set(await choices.locator("b").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).color))).size).toBeGreaterThanOrEqual(4);
+  await expect(choices.first()).toHaveCSS("border-left-color", "rgb(50, 111, 168)");
+  expect(new Set(await choices.locator("b").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
+  expect(new Set(await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
   await expect(choices).toHaveText([
     /Galeries 3 et 4.*au programme/,
     /Galerie 8.*au programme/,
@@ -2615,7 +2625,8 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
 
   await page.getByRole("tab", { name: "Inter-expos" }).click();
   await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();
-  await expect(page.locator(".grand-palais-interexpo-panel")).toContainText("où aucune exposition n’est ouverte dans les trois galeries");
+  // Plus de phrase de décompte sous le titre : la liste parle d'elle-même.
+  await expect(page.locator(".grand-palais-interexpo-panel")).not.toContainText("où aucune exposition n’est ouverte");
   // Chaque programmation établie dans les trois galeries se termine par la
   // coupure qui la suit, dates en avant.
   const firstProgramme = page.locator(".grand-palais-interexpo-list > *").first();
@@ -3474,43 +3485,38 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   await expect(groupAction).toContainText(/Choisir mon groupe|Je suis groupe [123]/);
   // « Travail restant » a laissé la place au prochain mécénat ou heures sup.
   await expect(page.locator(".today-remaining-work")).toHaveCount(0);
+  // La ligne n'apparaît que si un mécénat ou des heures sup sont prévus.
   const nextExtraCard = page.locator(".today-next-extra");
-  await expect(nextExtraCard).toBeVisible();
-  await expect(nextExtraCard).toContainText(/Mécénat ou heure sup|Prochain mécénat|Prochaine heure sup/i);
+  if (await nextExtraCard.count()) await expect(nextExtraCard).toContainText(/Prochain mécénat|Prochaine heure sup/i);
   if (viewportWidth > 720) {
     await expect(page.locator(".home-notes-section")).toHaveCSS("border-left-width", accentSpine(page));
   }
   if (viewportWidth > 720) {
-    const [statusBox, nextWorkBox, leaveBox, remainingBox] = await Promise.all([
+    const [statusBox, nextWorkBox, leaveBox] = await Promise.all([
       page.locator(".today-status").boundingBox(),
       page.locator(".today-next-work").boundingBox(),
       page.locator(".today-leave-balance").boundingBox(),
-      nextExtraCard.boundingBox(),
     ]);
     expect(statusBox).not.toBeNull();
     expect(nextWorkBox).not.toBeNull();
     expect(leaveBox).not.toBeNull();
-    expect(remainingBox).not.toBeNull();
-    // Quatre cartes côte à côte, de même largeur et de même hauteur, la
+    // Les cartes côte à côte, de même largeur et de même hauteur, la
     // journée en premier.
     expect(nextWorkBox!.x).toBeGreaterThanOrEqual(statusBox!.x + statusBox!.width - 1);
     expect(leaveBox!.x).toBeGreaterThanOrEqual(nextWorkBox!.x + nextWorkBox!.width - 1);
-    expect(remainingBox!.x).toBeGreaterThanOrEqual(leaveBox!.x + leaveBox!.width - 1);
-    expect(Math.abs(statusBox!.y - remainingBox!.y)).toBeLessThanOrEqual(1);
-    expect(Math.abs(statusBox!.height - remainingBox!.height)).toBeLessThanOrEqual(1);
-    expect(Math.abs(statusBox!.width - remainingBox!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(statusBox!.y - leaveBox!.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(statusBox!.height - leaveBox!.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
   } else {
-    const [statusBox, nextWorkBox, leaveBox, remainingBox] = await Promise.all([
+    const [statusBox, nextWorkBox, leaveBox] = await Promise.all([
       page.locator(".today-status").boundingBox(),
       page.locator(".today-next-work").boundingBox(),
       page.locator(".today-leave-balance").boundingBox(),
-      nextExtraCard.boundingBox(),
     ]);
-    // Sur téléphone, quatre lignes empilées, toutes de la même largeur.
+    // Sur téléphone, des lignes empilées, toutes de la même largeur.
     expect(nextWorkBox!.y).toBeGreaterThanOrEqual(statusBox!.y + statusBox!.height - 1);
     expect(leaveBox!.y).toBeGreaterThanOrEqual(nextWorkBox!.y + nextWorkBox!.height - 1);
-    expect(remainingBox!.y).toBeGreaterThanOrEqual(leaveBox!.y + leaveBox!.height - 1);
-    expect(Math.abs(statusBox!.width - remainingBox!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
   }
   if (viewportWidth <= 720) {
     await expect(page.locator(".today-overview")).toHaveCSS("border-left-width", accentSpine(page));
@@ -3792,7 +3798,6 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
       foldStatusBox,
       foldNextWorkBox,
       foldLeaveBox,
-      foldRemainingBox,
     ] = await Promise.all([
         page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
         page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
@@ -3800,7 +3805,6 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
         page.locator(".today-status").boundingBox(),
         page.locator(".today-next-work").boundingBox(),
         page.locator(".today-leave-balance").boundingBox(),
-        page.locator(".today-next-extra").boundingBox(),
   ]);
     // Le mois et l’année forment un couple centré, le mois juste avant l’année.
     expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
@@ -3808,8 +3812,7 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
     // même largeur, la journée en premier.
     expect(foldNextWorkBox!.y).toBeGreaterThanOrEqual(foldStatusBox!.y + foldStatusBox!.height - 1);
     expect(foldLeaveBox!.y).toBeGreaterThanOrEqual(foldNextWorkBox!.y + foldNextWorkBox!.height - 1);
-    expect(foldRemainingBox!.y).toBeGreaterThanOrEqual(foldLeaveBox!.y + foldLeaveBox!.height - 1);
-    expect(Math.abs(foldStatusBox!.width - foldRemainingBox!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(foldStatusBox!.width - foldLeaveBox!.width)).toBeLessThanOrEqual(2);
   }).toPass({ timeout: 10_000 });
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");

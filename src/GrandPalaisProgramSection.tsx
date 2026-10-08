@@ -944,11 +944,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
           <div className="useful-expo-schedule-heading">
             <span className="step-label">Galeries 3–4 · 8 · 7</span>
             <h3 id="grand-palais-interexpo-title">Périodes d’inter expos</h3>
-            <p>
-              {interExhibitionPeriods.length
-                ? `${interExhibitionPeriods.length} période${interExhibitionPeriods.length > 1 ? "s" : ""}, en cours ou à venir, où aucune exposition n’est ouverte dans les trois galeries.`
-                : "Aucune période sans exposition ouverte dans les trois galeries."}
-            </p>
+            {interExhibitionPeriods.length ? null : <p>Aucune période sans exposition ouverte dans les trois galeries.</p>}
           </div>
           <div className="grand-palais-interexpo-list">
             {interExhibitionPeriods.length ? interExhibitionPeriods.map((period, index) => {
@@ -1066,9 +1062,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         <div className="useful-expo-schedule-heading">
           <span className="step-label">{venue.heading}</span>
           <h3>{venue.label}</h3>
-          <p>{venueTotal
-            ? `${venueTotal} exposition${venueTotal > 1 ? "s" : ""} au programme, année par année.`
-            : "Rien d’annoncé pour l’instant."}</p>
+          {venueTotal ? null : <p>Rien d’annoncé pour l’instant.</p>}
         </div>
 
         {yearGroups.length ? yearGroups.map((group) => (

@@ -48,12 +48,12 @@ test("Rester connecté : le dernier planning s’affiche avant la réponse du se
   await expect(page.locator(".auth-shell, .auth-screen")).toHaveCount(0);
   await page.locator(".home-notes-toggle h2").click();
   await page.locator(".home-notes-content .note-month > summary").first().click();
-  await expect(page.getByText("Note gardée sur l’appareil")).toBeVisible();
+  await expect(page.locator(".home-notes-content").getByText("Note gardée sur l’appareil")).toBeVisible();
 
   // La réponse du serveur remplace la copie.
   answerCalendar();
-  await expect(page.getByText("Note lue sur le serveur")).toBeVisible();
-  await expect(page.getByText("Note gardée sur l’appareil")).toHaveCount(0);
+  await expect(page.locator(".home-notes-content").getByText("Note lue sur le serveur")).toBeVisible();
+  await expect(page.locator(".home-notes-content").getByText("Note gardée sur l’appareil")).toHaveCount(0);
   const saved = await page.evaluate(() => localStorage.getItem("planning:calendar-snapshot-v1") || "");
   expect(saved).toContain("Note lue sur le serveur");
 });
@@ -64,8 +64,8 @@ test("Rester connecté : sans réseau, le planning gardé reste affiché", async
   await page.goto("/");
   await page.locator(".home-notes-toggle h2").click();
   await page.locator(".home-notes-content .note-month > summary").first().click();
-  await expect(page.getByText("Note gardée sur l’appareil")).toBeVisible();
+  await expect(page.locator(".home-notes-content").getByText("Note gardée sur l’appareil")).toBeVisible();
   await page.waitForTimeout(1_000);
-  await expect(page.getByText("Note gardée sur l’appareil")).toBeVisible();
+  await expect(page.locator(".home-notes-content").getByText("Note gardée sur l’appareil")).toBeVisible();
   await expect(page.getByRole("button", { name: "Se connecter" })).toHaveCount(0);
 });

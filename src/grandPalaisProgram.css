@@ -580,3 +580,13 @@
 .expo-year-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; border-bottom: 1px solid #ece4d9; padding: 0 2px 6px; color: var(--text); font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; }
 .expo-year-heading small { color: #6b5d50; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: .74rem; font-weight: 700; }
 
+/* Choisir un espace, en couleur : chaque ligne prend la teinte claire de son
+   espace, avec un liseré à gauche, le nom dans la couleur foncée et le nombre
+   d'expositions dans un badge plein. */
+:root .grand-palais-venue-navigation .grand-palais-primary-picker { gap: 6px; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button { grid-template-columns: minmax(0, 1fr) auto 10px; border: 0; border-left: 4px solid var(--venue-accent, #8a7d6e); border-radius: 0 12px 12px 0; padding: 10px 8px 10px 14px; background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 9%, #fff); }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button::before { display: none; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 72%, #1a1410); }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button > b { background: var(--venue-accent, #8a7d6e); color: #fff; box-shadow: none; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button:hover:not(.active) { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 14%, #fff); }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button.active { border-radius: 0 12px 12px 0; background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 17%, #fff); }
