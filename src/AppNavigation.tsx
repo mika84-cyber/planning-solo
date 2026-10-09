@@ -143,6 +143,8 @@ export function AppHeader({
         <h1>
           {homeSection === "colleagues" ? (
             <><span>Planning</span>{" "}<span>partagé</span></>
+          ) : homeSection === "program" ? (
+            <><span>Programme</span>{" "}<span>GP</span></>
           ) : homeSection === "forms" ? (
             <><span className="header-title-line">Contacts et</span>{" "}<span className="header-title-line">formulaires</span></>
           ) : homeSection === "pdf" ? (

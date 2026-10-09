@@ -107,11 +107,11 @@ describe("PayDashboard", () => {
     expect(html).toContain("Fixe");
     expect(html).toContain("Primes du mois");
     expect(html).toContain("Retenues");
-    // La frise dit où va le brut : le net, les cotisations, l'impôt.
-    expect(html).toContain("Brut en détail");
-    expect(html).toMatch(/<li class="net"><span>Net<\/span><b>2\s080,00<\/b>/);
-    expect(html).toMatch(/<li class="contributions"><span>Cotisations<\/span><b>571,43<\/b>/);
-    expect(html).toMatch(/<li class="tax"><span>Impôt<\/span><b>41,06<\/b>/);
+    // La frise dit la part du brut qui va au net, aux cotisations, à l'impôt.
+    expect(html).toMatch(/de brut<\/p>/);
+    expect(html).toMatch(/<li class="net"><span>Net<\/span><b>\d+\s%<\/b>/);
+    expect(html).toMatch(/<li class="contributions"><span>Cotisations<\/span><b>\d+\s%<\/b>/);
+    expect(html).toMatch(/<li class="tax"><span>Impôt<\/span><b>(&lt; )?\d+\s%<\/b>/);
   });
 
   it("dit sous le net si l’estimation a été vérifiée avec le bulletin", () => {

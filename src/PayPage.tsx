@@ -111,9 +111,12 @@ export function PayPage({
           <strong id="pay-profile-settings-title">Mon profil de paie</strong>
           <small>{profileRecap}</small>
         </span>
-        <span className={`pay-profile-open-copy${netEstimateComplete ? " complete" : " missing"}`}>
-          {profileOpen ? "Replier" : netEstimateComplete ? "Profil complet" : "À compléter"}
-        </span>
+        {/* Ouvert, la flèche suffit pour replier : pas de second bouton. */}
+        {profileOpen ? null : (
+          <span className={`pay-profile-open-copy${netEstimateComplete ? " complete" : " missing"}`}>
+            {netEstimateComplete ? "Profil complet" : "À compléter"}
+          </span>
+        )}
         <i aria-hidden="true">⌄</i>
       </button>
       {profileOpen ? (
@@ -129,7 +132,7 @@ export function PayPage({
           </label>
           <fieldset className="pay-work-schedule">
             <legend>Sur quelle plage horaire travaillez-vous ?</legend>
-            {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <ClockTimePicker key={key} className="pay-work-time-field" pickerClassName="pay-work-time-picker" label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule?.[key] ?? ""} allowEmpty onChange={(value) => onWorkScheduleChange({ start: workSchedule?.start ?? "", end: workSchedule?.end ?? "", [key]: value })} />)}
+            {(["start", "end"] as Array<keyof WorkSchedule>).map((key) => <ClockTimePicker key={key} className="pay-work-time-field" pickerClassName="pay-work-time-picker" label={key === "start" ? "Heure de début" : "Heure de fin"} value={workSchedule?.[key] ?? ""} allowEmpty emptyLabel="Non renseignée" onChange={(value) => onWorkScheduleChange({ start: workSchedule?.start ?? "", end: workSchedule?.end ?? "", [key]: value })} />)}
             <small>Calculs adaptés à vos horaires</small>
           </fieldset>
           <button type="button" className="primary-action pay-profile-save" onClick={onSaveProfile}>Enregistrer le profil</button>

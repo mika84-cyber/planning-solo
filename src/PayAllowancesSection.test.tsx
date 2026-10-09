@@ -73,7 +73,13 @@ describe("PayAllowancesSection", () => {
     expect(html).toContain("Heures sup");
     expect(html).toContain("Mécénats");
     // Le détail d’une prime s’affiche à l’appui sur sa pastille.
-    expect(html).toMatch(/variable-pay-pill negative"[^>]*><span>Grève<\/span>/);
+    // Maladie et grève sont des retenues : elles n'ont pas leur place ici.
+    expect(html).not.toContain("<span>Grève</span>");
+    expect(html).not.toContain("<span>Maladie</span>");
+    // Le CIA, pour un fonctionnaire seulement.
+    expect(html).toMatch(/variable-pay-pill zero"[^>]*><span>CIA<\/span>/);
+    const contractuel = renderToStaticMarkup(<PayAllowancesSection {...props} isContractuel />);
+    expect(contractuel).not.toContain("<span>CIA</span>");
     expect(html).not.toContain("Mes primes en un coup d’œil");
     expect(html).toContain("12 dimanches effectués sur 13 à ce jour");
     expect(html).toContain("Fête nationale");

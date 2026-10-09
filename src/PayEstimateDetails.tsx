@@ -141,7 +141,9 @@ export function PayEstimateDetails({
                   className={
                     row.amount !== null && row.amount < 0
                       ? "negative"
-                      : row.amount !== null && row.amount > 0
+                      // Le vert pour les primes seulement, comme sur la page
+                      // principale : le fixe reste en noir.
+                      : row.amount !== null && row.amount > 0 && VARIABLE_KEYS.includes(row.key)
                         ? "positive"
                         : ""
                   }
@@ -153,7 +155,7 @@ export function PayEstimateDetails({
           </tbody>
         </table>
         <p className="pay-calculation-gross-before">
-          Brut avant retenues liées au calendrier : <strong>{euros(calculation.grossBeforeDeductions)}</strong>
+          Brut du mois : <strong>{euros(calculation.grossBeforeDeductions)}</strong>
         </p>
         {calculation.grossDeductions.length ? (
           <>
@@ -177,7 +179,7 @@ export function PayEstimateDetails({
         <table className="allowance-table pay-calculation-table">
           <tbody>
             <tr>
-              <th scope="row">Cotisations estimées<small>Part fixe conservée à {calculation.netRatioFixed.toLocaleString("fr-FR")} % · part variable à {calculation.netRatioVariable.toLocaleString("fr-FR")} %</small></th>
+              <th scope="row">Cotisations estimées<small>retraite, CSG et CRDS</small></th>
               <td className="negative">{calculation.estimatedContributions === null ? "À compléter" : `−${euros(calculation.estimatedContributions)}`}</td>
             </tr>
             {calculation.navigo ? <tr><th scope="row">Remboursement Navigo<small>ajouté après cotisations</small></th><td className="positive">+{euros(calculation.navigo)}</td></tr> : null}

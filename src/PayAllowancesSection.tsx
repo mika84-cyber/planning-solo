@@ -63,6 +63,8 @@ export type AllowanceMonthPay = {
   strikeDeductedDays: number;
   strikeAutomaticDays: number;
   strikePotentialDays: number;
+  /** Le CIA versé sur cette paie : zéro hors de son mois de versement. */
+  cia?: number;
   /** Jours d'arrêt maladie retenus sur cette paie, et leur montant brut. */
   sickDays?: number;
   sick?: number;
@@ -110,7 +112,7 @@ export function PayAllowancesSection({
   monthPay,
   overtimeForPayMonth,
   mecenatForPayMonth,
-  strikeForPayMonth,
+  isContractuel,
   baseSalary,
   month,
   year,
@@ -127,7 +129,14 @@ export function PayAllowancesSection({
   const [sundayListOpen, setSundayListOpen] = useState(false);
   const [openedPrime, setOpenedPrime] = useState("");
   const sundaysDone = allowances.sundays.filter((item) => item.past);
-  const variableRows = [
+  /* Les fériés payés sur cette paie dont la compensation reste à choisir. */
+  const holidaysToDecide = [...allowances.holidays, ...allowances.compensated].filter((item) => {
+    if (item.choice) return false;
+    const paid = holidayPayslip(item.key).monthIndex;
+    const payYear = Number(item.key.slice(0, 4)) + (paid < Number(item.key.slice(5, 7)) - 1 ? 1 : 0);
+    return paid === month && payYear === year;
+  }).length;
+  const variableRows: Array<{ label: string; quantity: string; amount: number | null; pendingLabel?: string }> = [
     {
       label: "Dimanches",
       quantity: monthPay?.sundayCount
@@ -144,8 +153,12 @@ export function PayAllowancesSection({
     },
     {
       label: "Jours fériés",
-      quantity: `${monthPay?.holidayCount || 0} concerné${s(monthPay?.holidayCount || 0)}`,
-      amount: monthPay?.holiday || 0,
+      quantity: holidaysToDecide
+        ? `${holidaysToDecide} férié${s(holidaysToDecide)} à décider sur cette paie`
+        : `${monthPay?.holidayCount || 0} concerné${s(monthPay?.holidayCount || 0)}`,
+      // Un férié encore à décider ne vaut pas zéro : la pastille l'attend.
+      amount: holidaysToDecide && !monthPay?.holiday ? null : monthPay?.holiday || 0,
+      pendingLabel: "à décider",
     },
     {
       label: "Heures supplémentaires payées",
@@ -159,24 +172,15 @@ export function PayAllowancesSection({
       quantity: minutesLabel(mecenatForPayMonth.totalMinutes),
       amount: mecenatForPayMonth.grossAmountCents / 100,
     },
-    {
-      label: "Maladie",
-      quantity: monthPay?.sickDays
-        ? `${monthPay.sickDays} jour${s(monthPay.sickDays)} d’arrêt · carence et retenue de 10 %`
-        : "Aucun arrêt maladie",
-      amount: monthPay?.sickDays ? -(monthPay.sick || 0) : 0,
-    },
-    {
-      label: "Grève",
-      quantity: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
-        ? `${monthPay?.strikeDeductedDays || 0} journée${s(monthPay?.strikeDeductedDays || 0)} retenue${s(monthPay?.strikeDeductedDays || 0)}${monthPay?.strikeAutomaticDays ? ` dont ${monthPay.strikeAutomaticDays} repos noir${s(monthPay.strikeAutomaticDays)}` : ""}${monthPay?.strikePotentialDays ? ` · ${monthPay.strikePotentialDays} jour${s(monthPay.strikePotentialDays)} à vérifier` : ""}`
-        : "Aucune journée de grève",
-      amount: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
-        ? monthPay?.strikeDeductedDays && strikeForPayMonth.totalDeduction !== null
-          ? -strikeForPayMonth.totalDeduction
-          : null
-        : 0,
-    },
+    // Le CIA n'existe que pour un fonctionnaire : un contractuel n'a pas
+    // cette pastille.
+    ...(isContractuel ? [] : [{
+      label: "CIA",
+      quantity: monthPay?.cia
+        ? "versé une fois par an, sur cette paie"
+        : "versé une fois par an, sur une autre paie",
+      amount: monthPay?.cia || 0,
+    }]),
   ];
   const variableTotal = variableRows.reduce(
     (total, row) => total + (row.amount || 0),
@@ -271,7 +275,7 @@ export function PayAllowancesSection({
               onClick={() => setOpenedPrime((current) => (current === row.label ? "" : row.label))}
             >
               <span>{row.label === "Heures supplémentaires payées" ? "Heures sup" : row.label === "Forfait dimanches" ? "Forfait" : row.label}</span>
-              <b>{row.amount === null ? "à calculer" : euros(row.amount)}</b>
+              <b>{row.amount === null ? row.pendingLabel ?? "à calculer" : euros(row.amount)}</b>
             </button>
           ))}
         </div>
@@ -292,7 +296,7 @@ export function PayAllowancesSection({
         <div className="allowance-summary-alert">
           <span aria-hidden="true">!</span>
           <strong>
-            {allowances.holidayPending} jour{s(allowances.holidayPending)} férié{s(allowances.holidayPending)} à préciser
+            {allowances.holidayPending} jour{s(allowances.holidayPending)} férié{s(allowances.holidayPending)} à décider
           </strong>
           <small>Choisissez la compensation dans le détail ci-dessous.</small>
         </div>

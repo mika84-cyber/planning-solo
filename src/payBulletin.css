@@ -17,13 +17,18 @@
 .pay-bulletin .pay-bulletin-kicker { display: block; margin: 0 0 6px; color: #9a4a2e; font-family: inherit; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 
 /* Le net. */
-.pay-bulletin .pay-bulletin-net { margin: 0; color: #8a3d22; font-size: clamp(2rem, 8vw, 2.5rem); font-weight: 850; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.pay-bulletin .pay-bulletin-net { margin: 0; color: var(--text); font-size: clamp(1.75rem, 7vw, 2rem); font-weight: 750; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .pay-bulletin .pay-bulletin-net.is-missing { color: var(--muted); font-size: 1.5rem; }
 /* « Votre estimation commence ici » : sur blanc, sous un filet fin. */
 .app-shell.app-shell .pay-bulletin-hero .pay-missing-guidance { margin: 12px 0 0; border: 1px solid var(--border-card); background: #fff; box-shadow: none; }
 .pay-bulletin .pay-bulletin-gross { margin: 4px 0 0; color: #6b5d50; font-size: 0.82rem; font-weight: 650; }
+/* Le net au centre, sous le mois ; « sur … de brut » dessous. */
+.pay-bulletin .pay-bulletin-hero > .pay-bulletin-kicker,
+.pay-bulletin .pay-bulletin-net,
+.pay-bulletin .pay-bulletin-gross { text-align: center; }
+.pay-bulletin .pay-bulletin-hero .pay-bulletin-status { justify-content: center; }
 /* La frise : où va le brut (net, cotisations, titres repas, impôt). */
-.pay-bulletin .pay-bulletin-mix { margin-top: 12px; }
+.pay-bulletin .pay-bulletin-mix { margin-top: 14px; }
 .pay-bulletin .pay-bulletin-mix-title { margin: 0 0 5px; color: #6b5d50; font-size: 0.72rem; font-weight: 750; }
 .pay-bulletin .pay-bulletin-bar { display: flex; gap: 2px; overflow: hidden; height: 12px; border-radius: 999px; background: #f1ebe2; }
 .pay-bulletin .pay-bulletin-bar span { height: 100%; }
@@ -34,10 +39,10 @@
 /* Une seule rangée : pour chaque part, sa couleur et son nom, le montant
    dessous ; les parts se répartissent sur toute la largeur. */
 .pay-bulletin .pay-bulletin-legend { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 8px; margin: 7px 0 0; padding: 0; list-style: none; white-space: nowrap; }
-.pay-bulletin .pay-bulletin-legend li { display: grid; grid-template-columns: 8px auto; align-items: center; gap: 1px 4px; min-width: 0; }
+.pay-bulletin .pay-bulletin-legend li { display: grid; grid-template-columns: 8px auto auto; align-items: center; gap: 4px; min-width: 0; }
 .pay-bulletin .pay-bulletin-legend li::before { grid-column: 1; grid-row: 1; width: 8px; height: 8px; border-radius: 2px; content: ""; }
 .pay-bulletin .pay-bulletin-legend span { grid-column: 2; color: #5b4c3f; font-size: 0.68rem; font-weight: 700; }
-.pay-bulletin .pay-bulletin-legend b { grid-column: 2; color: var(--text); font-size: 0.82rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.pay-bulletin .pay-bulletin-legend b { grid-column: 3; color: var(--text); font-size: 0.72rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .pay-bulletin .pay-bulletin-legend .net::before { background: #8a3d22; }
 .pay-bulletin .pay-bulletin-legend .contributions::before { background: #e88aa0; }
 .pay-bulletin .pay-bulletin-legend .meal::before { background: #e9b48f; }
@@ -123,8 +128,8 @@
 @media (max-width: 560px) {
   .pay-bulletin .pay-bulletin-links { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 }
-.app-shell .pay-bulletin .pay-bulletin-shortcut { display: grid; grid-template-columns: minmax(0, 1fr) 10px; align-items: center; gap: 8px; width: 100%; min-height: 0; margin: 0; border: 1px solid #e3d6c8; border-radius: 12px; padding: 10px 12px; background: #fbf7f2; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
-.app-shell .pay-bulletin .pay-bulletin-shortcut:hover { border-color: #c9a796; }
+.app-shell .pay-bulletin .pay-bulletin-shortcut { display: grid; grid-template-columns: minmax(0, 1fr) 10px; align-items: center; gap: 8px; width: 100%; min-height: 0; margin: 0; border: 1px solid #2c2621; border-radius: 12px; padding: 10px 12px; background: #fbf7f2; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.app-shell .pay-bulletin .pay-bulletin-shortcut:hover { border-color: #000; }
 .pay-bulletin .pay-bulletin-shortcut > span { display: grid; justify-items: start; gap: 2px; min-width: 0; }
 .pay-bulletin .pay-bulletin-shortcut strong { overflow: hidden; max-width: 100%; color: #8a3d22; font-size: 0.86rem; font-weight: 850; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .pay-bulletin .pay-bulletin-shortcut small { color: #6b5d50; font-size: 0.72rem; font-weight: 600; line-height: 1.3; }
@@ -154,3 +159,7 @@
 .app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header em { color: #3f7a5c; font-size: 0.72rem; font-style: normal; font-weight: 700; }
 .app-shell .pay-dedicated-content.allowances .allowance-summary-alert { border: 1px solid #e6cbbd; border-radius: 12px; background: #fbf5f1; box-shadow: none; color: #9a4a2e; }
 .app-shell .pay-dedicated-content.allowances .allowance-summary-alert > span { background: #9a4a2e; color: #fff; }
+
+/* Plage horaire non renseignée : une seule liste, sur toute la largeur. */
+.pay-work-time-picker.is-empty { grid-template-columns: minmax(0, 1fr); }
+.pay-work-time-picker.is-empty select { color: var(--muted); }

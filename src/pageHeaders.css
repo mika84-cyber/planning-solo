@@ -30,13 +30,15 @@
 :root .app-shell .top-header .top-header-title .eyebrow { margin: 0 0 3px !important; color: rgba(255, 255, 255, 0.82) !important; text-shadow: none !important; font-size: 0.62rem !important; letter-spacing: 0.14em !important; }
 :root .app-shell .top-header .top-header-title h1 { display: -webkit-box !important; overflow: hidden !important; padding-bottom: 0.14em !important; color: #fff !important; font-size: clamp(1.7rem, 7vw, 2.3rem) !important; line-height: 1.08 !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.25) !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 :root .app-shell .top-header .top-header-title h1 span { display: inline !important; }
+/* « Programme / GP » : toujours sur deux lignes. */
+:root .app-shell .top-header-program .top-header-title h1 span { display: block !important; }
 /* « Planning / partagé » : sur deux lignes, sur téléphone seulement. */
 @media (max-width: 600px) {
   :root .app-shell .top-header-colleagues .top-header-title h1 span { display: block !important; }
 }
 
 /* Les couleurs de chaque page, tirées de l'œuvre qui l'illustrait. */
-:root .app-shell .top-header-home { --header-a: #164e55; --header-b: #2f5f68; --header-c: #a0702a; }
+:root .app-shell .top-header-home { --header-a: #5a2232; --header-b: #7d3a4b; --header-c: #c4958a; }
 :root .app-shell .top-header-leave { --header-a: #0e2e41; --header-b: #0a5a82; --header-c: #0b6a96; }
 :root .app-shell .top-header-pay { --header-a: #1c2a50; --header-b: #542526; --header-c: #39626f; }
 :root .app-shell :is(.top-header-pdf, .top-header-forms) { --header-a: #39260b; --header-b: #6b4b1a; --header-c: #907632; }

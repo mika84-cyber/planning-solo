@@ -277,7 +277,8 @@ describe("finitions d’interface", () => {
     expect(app).toContain('className="pay-detail-sticky-header"');
     expect(app).toContain('aria-label="Fermer cette page"');
     expect(app).toContain('className={`pay-profile-open-copy');
-    expect(app).toContain('profileOpen ? "Replier" : netEstimateComplete ? "Profil complet" : "À compléter"');
+    expect(app).toContain('{netEstimateComplete ? "Profil complet" : "À compléter"}');
+    expect(app).not.toContain('profileOpen ? "Replier"');
     expect((payDashboard.match(/className="pay-bulletin-today"/g) || []).length).toBe(1);
     expect((payEstimateDetails.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect(app).toContain("Aucun dimanche versé sur cette paie");
@@ -781,7 +782,7 @@ describe("finitions d’interface", () => {
     expect(appRoot).not.toContain('actionLabel: "Choisir le PDF"');
     expect(payDashboard).toContain("Primes et jours fériés");
     expect(payDashboard).toContain("Vérifier mon bulletin");
-    expect(payDashboard).toContain("Réglages et explications");
+    expect(payDashboard).toContain("Affiner les valeurs manuellement si besoin");
     expect(styles).toContain(".pay-bulletin .pay-bulletin-layout");
     expect(styles).toContain(".pay-dashboard-settings");
   });

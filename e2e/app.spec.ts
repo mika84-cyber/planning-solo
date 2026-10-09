@@ -1673,7 +1673,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await profileSummary.click();
   await expect(profileSummary).toHaveAttribute("aria-expanded", "false");
   await expect(payScreen.locator(".pay-profile-open-copy")).toHaveText(/Profil complet|À compléter/);
-  const paySettings = page.getByRole("button", { name: /Réglages et explications/ });
+  const paySettings = page.getByRole("button", { name: /Affiner les valeurs manuellement/ });
   await expect(paySettings).toHaveAttribute("aria-expanded", "false");
   await expect(payScreen.getByRole("button", { name: /déclarer.*heures supplémentaires/i })).toHaveCount(0);
   await paySettings.click();
@@ -4184,12 +4184,11 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
   });
   expect(new Set(profileTypography.labels.map((item) => item.join("|"))).size).toBe(1);
   expect(new Set(profileTypography.values.map((item) => item.join("|"))).size).toBe(1);
-  // Le tiret ouvre la liste : tant qu'aucune heure n'est prise, le profil
-  // n'en affiche aucune plutôt que d'en proposer une que personne n'a choisie.
-  await expect(startHour.locator("option")).toHaveText(["—", "7 h", "8 h", "9 h", "10 h", "11 h", "12 h", "13 h", "14 h", "15 h", "16 h", "17 h", "18 h", "19 h", "20 h", "21 h", "22 h", "23 h", "0 h", "1 h", "2 h"]);
+  // « Non renseignée » ouvre la liste : tant qu'aucune heure n'est prise, le
+  // profil n'en affiche aucune, et les minutes n'apparaissent pas encore.
+  await expect(startHour.locator("option")).toHaveText(["Non renseignée", "7 h", "8 h", "9 h", "10 h", "11 h", "12 h", "13 h", "14 h", "15 h", "16 h", "17 h", "18 h", "19 h", "20 h", "21 h", "22 h", "23 h", "0 h", "1 h", "2 h"]);
   await expect(startHour).toHaveValue("");
-  await expect(startMinute).toBeDisabled();
-  await expect(startMinute.locator("option")).toHaveText(["—", "00", "15", "30", "45"]);
+  await expect(startMinute).toHaveCount(0);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     const profileFields = page.locator(".pay-profile-settings-grid > label");
     const [quotaBox, statusBox] = await Promise.all([
@@ -5106,7 +5105,7 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await payDashboard.getByRole("button", { name: "Profil · réglages" }).click();
   await expect(payDashboard.getByText("Profil utilisé pour les calculs", { exact: true })).toBeVisible();
 
-  const settingsToggle = payDashboard.getByRole("button", { name: /Réglages et explications/ });
+  const settingsToggle = payDashboard.getByRole("button", { name: /Affiner les valeurs manuellement/ });
   await settingsToggle.click();
   await expect(settingsToggle).toHaveAttribute("aria-expanded", "true");
   await expect(payDashboard.getByText("Mon profil de paie", { exact: true })).toBeVisible();
@@ -5201,7 +5200,7 @@ test("le profil de paie d’une nouvelle année peut être confirmé sans modifi
   for (let month = 0; month < 5; month += 1) await nextMonth.click();
   await expect(dashboard.locator(".pay-bulletin-month h2")).toHaveText("Janvier 2027");
   await dashboard.getByRole("button", { name: "Profil · réglages" }).click();
-  const settingsToggle = dashboard.getByRole("button", { name: /Réglages et explications/ });
+  const settingsToggle = dashboard.getByRole("button", { name: /Affiner les valeurs manuellement/ });
   await settingsToggle.click();
   await expect(settingsToggle).toHaveAttribute("aria-expanded", "true");
   const confirm = dashboard.getByRole("button", { name: "Utiliser ces valeurs pour 2027" });
@@ -5236,7 +5235,7 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   await page.getByRole("button", { name: /^Primes et jours fériés/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");
   await expect(page.locator(".allowance-summary-alert")).toHaveCSS("border-top-width", "1px");
-  // Primes pour le mois : le mois en titre, les deux flèches à sa droite,
+  // Primes pour le mois : le mois au centre, une flèche de chaque côté,
   // une pastille par prime ; un appui sur une pastille en montre le détail.
   const card = page.locator(".variable-pay-card");
   const previous = card.getByRole("button", { name: "Mois précédent", exact: true });
@@ -5248,8 +5247,9 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
     next.boundingBox(),
     month.boundingBox(),
   ]);
-  expect(previousBox!.x).toBeGreaterThan(monthBox!.x + monthBox!.width);
-  expect(nextBox!.x).toBeGreaterThan(previousBox!.x + previousBox!.width);
+  expect(previousBox!.x + previousBox!.width).toBeLessThanOrEqual(monthBox!.x);
+  expect(nextBox!.x).toBeGreaterThanOrEqual(monthBox!.x + monthBox!.width);
+  expect(previousBox!.x - cardBox!.x).toBeLessThan(36);
   expect(cardBox!.x + cardBox!.width - (nextBox!.x + nextBox!.width)).toBeLessThan(36);
   expect(Math.abs(
     previousBox!.y + previousBox!.height / 2 - (monthBox!.y + monthBox!.height / 2),

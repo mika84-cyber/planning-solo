@@ -24,7 +24,7 @@ describe("navigation principale", () => {
       onOpenMainMenu={vi.fn()}
       onCheckForUpdate={vi.fn()}
     />);
-    expect(html).toContain("Programme GP");
+    expect(html).toContain("<h1><span>Programme</span> <span>GP</span></h1>");
     expect(html).toContain('aria-label="Ouvrir le menu principal"');
     expect(html.match(/main-menu-button/g)).toHaveLength(1);
     expect(html).toContain("2 messages non lus");

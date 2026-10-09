@@ -80,7 +80,9 @@
 .pay-detail-sticky-header {
   position: sticky;
   z-index: 80;
-  top: 100px;
+  /* Collé en haut de l'écran : l'en-tête de page ne suit plus le défilement,
+     un décalage le faisait flotter au milieu du contenu. */
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) 44px;
   align-items: center;
@@ -168,7 +170,6 @@
 
 @media (max-width: 720px) {
   .pay-detail-sticky-header {
-    top: 84px;
     grid-template-columns: 42px minmax(0, 1fr) 40px;
     gap: 8px;
     margin-bottom: 16px;
@@ -1032,6 +1033,12 @@
 .variable-pay-head-c .variable-pay-month { justify-content: space-between; gap: 10px; }
 .variable-pay-head-c .variable-pay-month h3 { font-size: 1.2rem; text-align: left; }
 .variable-pay-head-c .variable-pay-arrows { display: inline-flex; gap: 8px; }
+/* Les flèches de part et d'autre du mois, le mois au centre, comme sur la
+   page principale de Ma paie. */
+.variable-pay-head-c .variable-pay-month { flex-wrap: nowrap; }
+.variable-pay-head-c .variable-pay-month .variable-pay-arrows { display: contents; }
+.variable-pay-head-c .variable-pay-month h3 { order: 1; flex: 1 1 auto; text-align: center; }
+.variable-pay-head-c .variable-pay-month .pay-nav-arrow:last-child { order: 2; }
 .app-shell .variable-pay-head-c .variable-pay-today { justify-self: start; }
 .variable-pay-card .variable-pay-pills { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 4px; }
 .app-shell .variable-pay-card .variable-pay-pill { display: inline-flex; align-items: baseline; gap: 6px; min-height: 0; margin: 0; border: 1px solid transparent; border-radius: 999px; padding: 6px 12px; box-shadow: none; font: inherit; font-size: 0.8rem; cursor: pointer; }

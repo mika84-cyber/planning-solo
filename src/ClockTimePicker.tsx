@@ -29,6 +29,7 @@ export function ClockTimePicker({
   className = "",
   pickerClassName = "",
   allowEmpty = false,
+  emptyLabel,
 }: {
   label: string;
   value: string;
@@ -39,6 +40,9 @@ export function ClockTimePicker({
    *  sur 9 h. Une liste déroulante affiche toujours une option : sans cette
    *  option vide, une heure serait proposée que personne n'a choisie. */
   allowEmpty?: boolean;
+  /** Texte du choix vide (« Non renseignée ») : les minutes n'apparaissent
+   *  qu'une fois l'heure choisie, au lieu de deux tirets. */
+  emptyLabel?: string;
 }) {
   const id = useId();
   const { hour, minute } = clockParts(value);
@@ -46,7 +50,7 @@ export function ClockTimePicker({
   return (
     <div className={`clock-time-field${className ? ` ${className}` : ""}`}>
       <span id={id}>{label}</span>
-      <span className={`clock-time-picker${pickerClassName ? ` ${pickerClassName}` : ""}`} role="group" aria-labelledby={id}>
+      <span className={`clock-time-picker${pickerClassName ? ` ${pickerClassName}` : ""}${empty && emptyLabel ? " is-empty" : ""}`} role="group" aria-labelledby={id}>
         <select
           aria-label={`${label} — heures`}
           value={empty ? "" : hour}
@@ -54,9 +58,10 @@ export function ClockTimePicker({
             event.target.value === "" ? "" : clockValue(Number(event.target.value), empty ? 0 : minute),
           )}
         >
-          {allowEmpty ? <option value="">—</option> : null}
+          {allowEmpty ? <option value="">{emptyLabel ?? "—"}</option> : null}
           {CLOCK_HOURS.map((option) => <option key={option} value={option}>{option} h</option>)}
         </select>
+        {empty && emptyLabel ? null : <>
         <b aria-hidden="true">:</b>
         {/* Tant qu'aucune heure n'est choisie, les minutes seules ne veulent
             rien dire : le choix reste fermé plutôt que d'inventer une heure. */}
@@ -69,6 +74,7 @@ export function ClockTimePicker({
           {allowEmpty ? <option value="">—</option> : null}
           {CLOCK_MINUTES.map((option) => <option key={option} value={option}>{String(option).padStart(2, "0")}</option>)}
         </select>
+        </>}
       </span>
     </div>
   );

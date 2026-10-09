@@ -108,6 +108,12 @@ type BulletinGroup = {
 const signed = (amount: number, sign: Sign) =>
   `${sign === "minus" ? "− " : sign === "plus" ? "+ " : ""}${number.format(Math.abs(amount))}`;
 
+// La part de chaque élément dans le brut, arrondie ; une part infime reste visible.
+function shareOfGross(width: number, total: number) {
+  const percent = Math.round((width / total) * 100);
+  return `${percent === 0 && width > 0 ? "< 1" : percent} %`;
+}
+
 /**
  * Ma paie en bulletin simplifié : le mois, le net en grand avec l'état de
  * l'estimation, puis les lignes de la paie rangées comme sur un bulletin
@@ -362,7 +368,7 @@ export function PayDashboard({
           </div>
           <span className="pay-bulletin-kicker">Net estimé</span>
           <p className={`pay-bulletin-net${net === null ? " is-missing" : ""}`}>{net === null ? "À compléter" : euros(net)}</p>
-          <p className="pay-bulletin-gross">Brut {grossComplete ? euros(gross) : "à compléter"}</p>
+          <p className="pay-bulletin-gross">{grossComplete ? `sur ${euros(gross)} de brut` : "Brut à compléter"}</p>
           {/* Une simple estimation ne s'annonce pas : la pastille ne paraît que
               s'il y a quelque chose à savoir (bulletin, données, attente). */}
           {status || pendingCount ? (
@@ -377,7 +383,6 @@ export function PayDashboard({
           ) : null}
           {split && splitTotal > 0 ? (
             <div className="pay-bulletin-mix">
-              <p className="pay-bulletin-mix-title">Brut en détail</p>
               <div
                 className="pay-bulletin-bar"
                 role="img"
@@ -389,7 +394,7 @@ export function PayDashboard({
               </div>
               <ul className="pay-bulletin-legend" aria-hidden="true">
                 {split.map((part) => (
-                  <li key={part.key} className={part.key}><span>{part.label}</span><b>{number.format(part.amount)}</b></li>
+                  <li key={part.key} className={part.key}><span>{part.label}</span><b>{shareOfGross(part.width, splitTotal)}</b></li>
                 ))}
               </ul>
             </div>
@@ -452,21 +457,21 @@ export function PayDashboard({
             </p>
           ) : null}
           {deductionContent}
-          {/* Le détail du calcul et celui des primes de l'année, côte à côte
+          {/* Les primes de l'année, puis le détail du calcul, côte à côte
               sous les lignes qu'ils expliquent. */}
           <div className="pay-bulletin-links">
-            <button type="button" className="pay-bulletin-shortcut" onClick={onOpenEstimateDetails}>
-              <span>
-                <strong>Détail du calcul</strong>
-                <small>Brut, cotisations, impôt</small>
-              </span>
-              <i aria-hidden="true">›</i>
-            </button>
             <button type="button" className="pay-bulletin-shortcut" onClick={onOpenAllowances}>
               <span>
                 <strong>Primes et jours fériés</strong>
                 <small>Dimanches, fériés, heures sup</small>
                 {allowancesPending ? <em>{allowancesPending} férié{s(allowancesPending)} à décider</em> : null}
+              </span>
+              <i aria-hidden="true">›</i>
+            </button>
+            <button type="button" className="pay-bulletin-shortcut" onClick={onOpenEstimateDetails}>
+              <span>
+                <strong>Détail du calcul</strong>
+                <small>Brut, cotisations, impôt</small>
               </span>
               <i aria-hidden="true">›</i>
             </button>
@@ -520,7 +525,7 @@ export function PayDashboard({
               aria-expanded={settingsOpen}
               aria-controls="pay-dashboard-settings-content"
             >
-              <span><span className="step-label">Moins souvent modifié</span><strong>Réglages et explications</strong></span>
+              <span><span className="step-label">Moins souvent modifié</span><strong>Affiner les valeurs manuellement si besoin</strong></span>
               <span>{settingsOpen ? "Replier" : "Ouvrir"}</span>
               <i aria-hidden="true">⌄</i>
             </button>

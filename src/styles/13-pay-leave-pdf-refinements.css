@@ -144,7 +144,10 @@
 .pay-calculation-section h4 { margin: 14px 0 5px; color: #7b3f35; font-size: .78rem; }
 .pay-calculation-gross-before { display: flex; justify-content: space-between; gap: 12px; margin: 9px 0 0; border-top: 1px solid var(--bg); padding-top: 9px; color: var(--muted); font-size: 11px; }
 .pay-calculation-gross-before strong { color: #3a332c; white-space: nowrap; }
-.pay-calculation-subtotal th, .pay-calculation-subtotal td { border-top: 2px solid var(--border-control) !important; color: var(--muted); }
+/* Le filet du sous-total sur la rangée entière : posé sur chaque case, il
+   se décalait entre l’intitulé (en grille) et le montant (cellule). */
+.pay-calculation-subtotal { border-top: 2px solid var(--border-control); }
+.pay-calculation-subtotal th, .pay-calculation-subtotal td { border-top: 0 !important; color: var(--muted); }
 .pay-calculation-totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
 .pay-calculation-totals article { display: grid; gap: 3px; border: 1px solid var(--border-card); border-radius: 13px; padding: 11px; background: #fff; }
 .pay-calculation-totals span, .pay-calculation-totals small { color: var(--muted); font-size: 10px; }
