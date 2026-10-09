@@ -958,25 +958,6 @@
   align-items: flex-end;
   gap: 3px;
 }
-.holiday-pay-picker {
-  display: inline-block;
-  width: auto;
-}
-.holiday-pay-picker .choice-picker-trigger {
-  width: auto;
-  min-height: 32px;
-  padding: 0 8px 0 10px;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 750;
-}
-.holiday-pay-picker .choice-picker-trigger svg {
-  width: 13px;
-}
-.holiday-pay-picker .choice-picker-menu {
-  min-width: 180px;
-  width: max-content;
-}
 .leave-type-picker .choice-picker-menu {
   width: min(360px, calc(100vw - 58px));
 }

@@ -3,6 +3,7 @@ import {
   SUNDAY_ALLOWANCE,
   applyManualSundayLeave,
   dateKey,
+  fromKey,
   getDayInfo,
   holidayAllowance,
   holidayPayslip,
@@ -161,6 +162,20 @@ export function collectWorkedDays({
       (item) => item.choice === "recovery",
     ).length,
   };
+}
+
+/** Les fériés choisis en « Prime + récup » qui alimentent le solde de
+ *  récupération. Un férié compensé (en repos dans le cycle, sans échange qui
+ *  le fasse travailler) n'y entre qu'une fois sa date passée. */
+export function holidayRecoverySources(entries: Entries, group: number, todayKey: string) {
+  return Object.entries(entries)
+    .filter(([date, entry]) => {
+      if (entry.holidayPay !== "recovery") return false;
+      const info = getDayInfo(fromKey(date), group);
+      const compensated = Boolean(info.holiday) && info.kind !== "work" && entry.exchangeRole !== "return";
+      return !compensated || date < todayKey;
+    })
+    .map(([date, entry]) => ({ date, minutes: entry.holidayRecoveryMinutes }));
 }
 
 export type PayAllowancesInput = CalendarContext & {

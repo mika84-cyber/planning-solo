@@ -272,10 +272,10 @@
 
 /* Infos congés, retravaillées : chaque rubrique a sa couleur (report en
    terracotta, fractionnement en vert, congés exceptionnels en violet), un
-   filet de cette couleur en tête et des pastilles assorties. Sur grand écran,
+   liseré de cette couleur à gauche et des pastilles assorties. Sur grand écran,
    le report et le fractionnement s'empilent à gauche, les congés
    exceptionnels occupent la colonne de droite. */
-.leave-info-content section { --info-accent: #b35a36; --info-soft: #f7e3d8; --info-ink: #8a3d22; border-top: 3px solid var(--info-accent); }
+.leave-info-content section { --info-accent: #b35a36; --info-soft: #f7e3d8; --info-ink: #8a3d22; border-left: 4px solid var(--info-accent); }
 .leave-info-content section.leave-info-fraction { --info-accent: #2f7a5e; --info-soft: #dff0e8; --info-ink: #1f5c45; }
 .leave-info-content section.leave-info-exceptional { --info-accent: #6a4fa3; --info-soft: #ebe5f6; --info-ink: #4d3780; }
 .leave-info-content h3 { border-bottom: 0; padding-bottom: 0; color: var(--info-ink); font-family: var(--font-display); font-size: 1.08rem; font-weight: 600; }

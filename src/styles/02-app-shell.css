@@ -306,10 +306,6 @@ h1 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 238px;
 }
-.choice-picker-menu.choice-picker-menu-portal.holiday-pay-picker {
-  min-width: 180px;
-  width: max-content;
-}
 .choice-picker-menu.choice-picker-menu-portal.leave-type-picker {
   width: min(360px, calc(100vw - 24px));
 }

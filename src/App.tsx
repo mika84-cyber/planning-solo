@@ -93,6 +93,7 @@ import { buildPayContent } from "./payContent";
 import {
   EMPTY_MANUAL_ADJUSTMENTS,
   computePayAllowances,
+  holidayRecoverySources,
 } from "./payAllowances";
 import { computeLeaveStats } from "./leaveStats";
 import { cetBalance } from "./cet";
@@ -397,7 +398,8 @@ export default function Home() {
   const {
     payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
     payProfileFocusRequested, setPayProfileFocusRequested,
-    payPeriodOpen, setPayPeriodOpen, payMonthSlide, setPayMonthSlide,
+    payVerificationRequested, setPayVerificationRequested,
+    payMonthSlide, setPayMonthSlide,
     payMonthSlideTimer, payslipCheck, setPayslipCheck, setPayslipError,
     setPayslipImportBusy, setPayslipImportError,
     setPayslipImportResult, setPayslipImportMode,
@@ -1466,13 +1468,8 @@ export default function Home() {
   ]);
 
   const holidayRecoveryEarnings = useMemo(
-    () =>
-      holidayRecoveryEntries(
-        Object.entries(entries)
-          .filter(([, entry]) => entry.holidayPay === "recovery")
-          .map(([date, entry]) => ({ date, minutes: entry.holidayRecoveryMinutes })),
-      ),
-    [entries],
+    () => holidayRecoveryEntries(holidayRecoverySources(entries, group, dateKey(now))),
+    [entries, group, now],
   );
   const unresolvedHolidayRecoveryCount = useMemo(
     () => Object.values(entries).filter((entry) =>
@@ -2471,9 +2468,7 @@ export default function Home() {
       baseSalary={baseSalary}
       month={payView.getMonth()}
       year={payView.getFullYear()}
-      payPeriodOpen={payPeriodOpen}
       holidayChoiceEditing={holidayChoiceEditing}
-      onTogglePayPeriod={() => setPayPeriodOpen((current) => !current)}
       onChangeMonth={changePayMonth}
       onGoToday={goPayToday}
       onEditHolidayChoice={setHolidayChoiceEditing}
@@ -2805,7 +2800,7 @@ export default function Home() {
               onAction: () => {
                 setHomeSection("pay");
                 setPayScreen("overview");
-                scrollWhenReady("pay-dashboard-verification");
+                setPayVerificationRequested(true);
               },
             }] : []),
             ...(HOME_SETUP_GUIDANCE_ENABLED ? [
@@ -2839,20 +2834,6 @@ export default function Home() {
               onAction: () => {
                 setHomeSection("pay");
                 setPayScreen("allowances");
-              },
-            }] : []),
-            ...(payslipRateCalibration.reason !== "ready" ? [{
-              id: "payslip-calibration",
-              title: "Ajouter quelques bulletins de paie",
-              intro: "Ajoutez quelques bulletins PDF pour permettre à l’application d’affiner automatiquement vos estimations de paie.",
-              detail: "Les éléments de paie seront remplis automatiquement, sans saisie manuelle. Choisissez idéalement des mois avec des primes différentes pour affiner les estimations.",
-              actionLabel: "Ajouter des PDF",
-              onAction: () => {
-                setHomeSection("pay");
-                setPayScreen("overview");
-                setPayAdvancedOpen(true);
-                setPaySettingsOpen(true);
-                window.setTimeout(() => document.getElementById("payslip-calibration")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
               },
             }] : []),
             ] : []),
@@ -3005,6 +2986,12 @@ export default function Home() {
           profileLabel={payContent.profileLabel}
           reliability={payContent.reliability}
           variables={payContent.variables}
+          calculation={payContent.calculation}
+          allowancesPending={payContent.allowancesPending}
+          verification={payContent.verification}
+          verificationAccount={payContent.verificationAccount}
+          verificationRequested={payVerificationRequested}
+          onVerificationShown={() => setPayVerificationRequested(false)}
           deductionContent={payContent.deductionContent}
           monthSlide={payMonthSlide}
           allowancesContent={allowancesContent}
@@ -3014,7 +3001,11 @@ export default function Home() {
           onScreenChange={setPayScreen}
           onToggleProfile={() => setPayProfileOpen((current) => !current)}
           onProfileFocused={() => setPayProfileFocusRequested(false)}
-          onToggleSettings={() => setPayAdvancedOpen((current) => !current)}
+          onToggleSettings={() => {
+            // Les éléments de paie s'affichent d'emblée : un niveau de moins à ouvrir.
+            setPaySettingsOpen(true);
+            setPayAdvancedOpen((current) => !current);
+          }}
           onWorkQuotaChange={changeWorkQuota}
           onWorkScheduleChange={changeWorkSchedule}
           onStatusChange={changeStatus}
@@ -3311,13 +3302,18 @@ export default function Home() {
           dates={wishConversionDates}
           moments={Object.fromEntries(wishConversionDates.map((date) => [date, entries[date]?.wishMoment]))}
           onClose={() => setWishConversionDates(null)}
-          onContinue={(types) => {
+          onContinue={(types, cancelled) => {
             setWishConversionDates(null);
-            beginWishConversion(
-              Object.keys(types).sort(),
-              types,
-              Object.fromEntries(Object.keys(types).map((date) => [date, entries[date]?.wishMoment])),
-            );
+            if (Object.keys(types).length)
+              beginWishConversion(
+                Object.keys(types).sort(),
+                types,
+                Object.fromEntries(Object.keys(types).map((date) => [date, entries[date]?.wishMoment])),
+              );
+            // Les souhaits annulés sont retirés un à un du planning.
+            void (async () => {
+              for (const date of cancelled) await saveWishDateDirect(date, false);
+            })();
           }}
         />
         </Suspense>

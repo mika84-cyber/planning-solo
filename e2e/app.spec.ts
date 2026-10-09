@@ -303,7 +303,7 @@ test("les cartes intérieures restent légères avec des bordures visibles et un
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
   await goToSection(page, "pay");
   // Dans l'estimation, le guide d'import est blanc, délimité par le filet sombre des encadrés.
-  const guidance = page.locator('.pay-dashboard-estimate .pay-missing-guidance');
+  const guidance = page.locator('.pay-bulletin-hero .pay-missing-guidance');
   await expect(guidance).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(guidance).toHaveCSS('background-image', 'none');
   await expect(guidance).toHaveCSS('border-top-width', '1px');
@@ -345,17 +345,20 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expectWhiteCard(".leave-tools-area", accentSpine(page));
 
   await goToSection(page, "pay");
-  await expectWhiteCard(".pay-dashboard-month", accentSpine(page));
-  await expectWhiteCard(".pay-dashboard-estimate", accentSpine(page));
-  await expectWhiteCard(".pay-dashboard-variables", accentSpine(page));
-  const allowancesAction = page.locator(".pay-inline-action");
-  await expect(allowancesAction).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
-  await expect(allowancesAction).toHaveCSS("color", "rgb(255, 255, 255)");
-  // Sous « Vérifier mon bulletin », la phrase d’explication est sur blanc.
-  await expect(page.locator(".pay-dashboard-verification > .pay-dashboard-card-heading p")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  // Le bulletin simplifié : le mois, le net et les lignes sur des cartes
+  // blanches au contour fin.
+  await expectWhiteCard(".pay-bulletin-month");
+  await expectWhiteCard(".pay-bulletin-hero");
+  await expectWhiteCard(".pay-bulletin-lines");
+  await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(2);
+  // La vérification (repliée jusqu'au choix d'un bulletin) reste sur blanc.
+  await expect(page.locator(".pay-bulletin-panel")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await page.getByRole("button", { name: "Profil · réglages" }).click();
   const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
   await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
-  // Replié, le profil reste blanc ; son en-tête ne se teinte qu'une fois ouvert.
+  // Ouvert d'emblée, le profil a son en-tête teinté ; replié, il redevient blanc.
+  await expect(payProfile.locator(".pay-profile-summary")).toHaveCSS("background-color", CHAPTER_TINT);
+  await payProfile.locator(".pay-profile-summary").click();
   await expect(payProfile.locator(".pay-profile-summary")).not.toHaveCSS("background-color", CHAPTER_TINT);
   await payProfile.locator(".pay-profile-summary").click();
   await expect(payProfile.locator(".pay-profile-summary")).toHaveCSS("background-color", CHAPTER_TINT);
@@ -367,7 +370,6 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(payProfile.locator(".pay-work-schedule")).toHaveCSS("border-top-width", "1px");
   await expect(payProfile.locator(".pay-work-time-picker").first()).toHaveCSS("border-top-color", profileOutline);
   await expect(payProfile.locator(".pay-work-time-picker").first()).toHaveCSS("border-top-width", "1px");
-  await expect(page.locator(".pay-dashboard-amounts")).toHaveCSS("border-top-width", "1px");
   const payslipChoice = page.locator(".payslip-file-drop").first();
   await expect(payslipChoice).toHaveCSS("border-top-width", "1px");
   await expect(payslipChoice).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
@@ -435,16 +437,16 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
 test("Ma paie utilise une surface blanche sans changer la disposition", async ({ page }, testInfo) => {
   await prepareDemo(page);
   await goToSection(page, "pay");
-  await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(page.locator('.pay-dashboard-month')).toHaveCSS('background-image', 'none');
+  await expect(page.locator('.pay-bulletin-month')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.pay-bulletin-month')).toHaveCSS('background-image', 'none');
   // La démo n'a pas de montant : cette ligne mesurait donc « À compléter »,
   // pas une somme. Une absence se lit désormais en gris discret, pour ne pas
   // être prise pour une estimation réelle.
-  await expect(page.locator('.pay-dashboard-net.is-missing strong')).toHaveCSS(
+  await expect(page.locator('.pay-bulletin-net.is-missing')).toHaveCSS(
     'color',
     await cssTokenRgb(page, '--muted'),
   );
-  await page.locator('.pay-dashboard-estimate').scrollIntoViewIfNeeded();
+  await page.locator('.pay-bulletin-hero').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/coherent-pay-${testInfo.project.name}.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
@@ -1397,6 +1399,18 @@ test("l’accueil ne propose que deux choses à la fois, et se laisse écarter",
   await expect(page.locator(".home-setup-alert")).toHaveCount(0);
 });
 
+test("« Ajouter un bulletin de paie » ouvre la vérification repliée de Ma paie", async ({ page }) => {
+  await prepareDemo(page);
+  const setup = page.locator(".home-setup-alert");
+  await setup.getByRole("button", { name: "Ne plus me le demander" }).first().click();
+  const item = setup.locator(".home-setup-list article").filter({ hasText: "Ajouter un bulletin de paie" });
+  await item.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
+  // La vérification est repliée d'ordinaire : l'invitation l'ouvre et y mène.
+  await expect(page.getByRole("button", { name: "Vérifier le bulletin" })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeInViewport();
+});
+
 test("sans horaires enregistrés, les heures d’une récupération restent à saisir", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
@@ -1434,6 +1448,7 @@ test("une ligne inconnue du bulletin demande si elle est fixe ou ponctuelle", as
       }
     });
   });
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-juin.pdf", mimeType: "application/pdf", buffer: Buffer.from(pdf, "latin1") });
   expect(await question).toContain("« Prime nouvelle » : 40,00");
   await expect(page.getByText(/Prime nouvelle \(40,00\s€, ajoutée aux autres éléments fixes\)/)).toBeVisible();
@@ -1445,6 +1460,7 @@ test("une page s'ajoute après coup au bulletin déjà vérifié", async ({ page
   const pdf = (tokens: string[]) => Buffer.from(["%PDF-1.4", "stream", ...tokens.map((token) => `(${token}) Tj`), "endstream", "%%EOF"].join("\n"), "latin1");
   page.on("dialog", (dialog) => void dialog.dismiss());
   // Première page : le traitement et le cumul brut.
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "page-1.pdf", mimeType: "application/pdf", buffer: pdf(["Juin 2026", "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88", "CUMUL BRUT", "1855.88"]) });
   const addPage = page.locator(".payslip-add-page");
   await expect(addPage).toContainText("Ajouter une page");
@@ -1480,6 +1496,7 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
     return canvas.toDataURL("image/png").split(",")[1];
   });
 
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   const photoInput = page.locator(".payslip-file-drop input");
   await expect(photoInput).toHaveAttribute("accept", /image\/jpeg/);
   await expect(photoInput).toHaveAttribute("multiple", "");
@@ -1506,7 +1523,7 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
 
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026", { timeout: 90_000 });
   await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
-  const payMonthNavigation = page.locator(".pay-dashboard-month");
+  const payMonthNavigation = page.locator(".pay-bulletin-month");
   await payMonthNavigation.getByRole("button", { name: "Mois suivant" }).click();
   await expect(page.locator("#pay-dashboard-title")).toHaveText("Octobre 2026");
   await expect(page.locator(".payslip-detected-period")).toHaveCount(0);
@@ -1669,26 +1686,35 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
     expect(titleTransform).not.toBe("none");
   }
   expect(await payScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pay-art.jpg");
-  await expect(payScreen.locator(".pay-dashboard-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
+  await expect(payScreen.locator(".pay-bulletin-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
   await expect(page.getByText("Net estimé", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "À vérifier" })).toHaveCount(0);
   await expect(payScreen.locator(".pay-dashboard-checks")).toHaveCount(0);
   await expect(payScreen.locator(".pay-allowances-shortcut")).toHaveCount(0);
-  await expect(payScreen.locator(".pay-profile-open-copy")).toHaveText(/Profil complet|À compléter/);
-  const allowancesLink = page.getByRole("button", { name: "Primes et jours fériés" });
+  const allowancesLink = page.getByRole("button", { name: /^Primes et jours fériés/ });
   await expect(allowancesLink).toBeVisible();
   const allowancesLinkPadding = await allowancesLink.evaluate((node) => getComputedStyle(node).paddingLeft);
-  expect(Number.parseFloat(allowancesLinkPadding)).toBeGreaterThanOrEqual(14);
-  await expect(payScreen.locator(".pay-dashboard-estimate")).toHaveCSS("border-left-width", accentSpine(page));
-  await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeVisible();
+  expect(Number.parseFloat(allowancesLinkPadding)).toBeGreaterThanOrEqual(12);
+  await expect(page.getByRole("button", { name: /^Détail du calcul/ })).toBeVisible();
+  await expect(payScreen.locator(".pay-bulletin-hero")).toHaveCSS("border-left-width", "1px");
+  // Vérification, profil et réglages restent repliés derrière deux boutons.
+  await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeHidden();
+  // « Vérifier le bulletin » propose aussitôt le PDF ou les photos, sans
+  // fenêtre intermédiaire : la vérification ne paraît qu'avec un fichier.
+  const payslipChooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  await payslipChooser;
+  await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeHidden();
+  // « Profil · réglages » déplie d'emblée le profil de paie.
+  await page.getByRole("button", { name: "Profil · réglages" }).click();
   const profileSummary = payScreen.locator(".pay-profile-summary");
   await expect(profileSummary).toBeVisible();
   await expect(profileSummary.locator(".pay-profile-symbol")).toBeVisible();
-  await expect(profileSummary).toHaveAttribute("aria-expanded", "false");
-  await profileSummary.click();
   await expect(profileSummary).toHaveAttribute("aria-expanded", "true");
   await expect(payScreen.locator(".pay-profile-settings-grid")).toBeVisible();
   await profileSummary.click();
+  await expect(profileSummary).toHaveAttribute("aria-expanded", "false");
+  await expect(payScreen.locator(".pay-profile-open-copy")).toHaveText(/Profil complet|À compléter/);
   const paySettings = page.getByRole("button", { name: /Réglages et explications/ });
   await expect(paySettings).toHaveAttribute("aria-expanded", "false");
   await expect(payScreen.getByRole("button", { name: /déclarer.*heures supplémentaires/i })).toHaveCount(0);
@@ -1696,15 +1722,15 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     const dashboardWidth = await payScreen.locator(".pay-dashboard").evaluate((node) => node.getBoundingClientRect().width);
     expect(dashboardWidth).toBeLessThanOrEqual(page.viewportSize()!.width);
-    const [monthCopyBox, monthActionsBox, monthCardBox] = await Promise.all([
-      payScreen.locator(".pay-dashboard-month > div").first().boundingBox(),
-      payScreen.locator(".pay-dashboard-month-actions").boundingBox(),
-      payScreen.locator(".pay-dashboard-month").boundingBox(),
+    // Le mois au centre, une flèche de chaque côté.
+    const [previousBox, monthTitleBox, nextBox, monthCardBox] = await Promise.all([
+      payScreen.locator(".pay-bulletin-month").getByRole("button", { name: "Mois précédent" }).boundingBox(),
+      payScreen.locator(".pay-bulletin-month h2").boundingBox(),
+      payScreen.locator(".pay-bulletin-month").getByRole("button", { name: "Mois suivant" }).boundingBox(),
+      payScreen.locator(".pay-bulletin-month").boundingBox(),
     ]);
-    expect(monthCopyBox).not.toBeNull();
-    expect(monthActionsBox).not.toBeNull();
-    expect(monthCardBox).not.toBeNull();
-    expect(monthActionsBox!.x).toBeGreaterThan(monthCopyBox!.x);
+    expect(previousBox!.x + previousBox!.width).toBeLessThan(monthTitleBox!.x);
+    expect(nextBox!.x).toBeGreaterThan(monthTitleBox!.x + monthTitleBox!.width);
     expect(monthCardBox!.height).toBeLessThanOrEqual(120);
   }
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
@@ -1907,7 +1933,7 @@ test("le mode sombre s’applique à toute l’application et se mémorise", asy
   await goToSection(page, "home");
   for (const section of ["leave", "pay", "program", "colleagues"] as const) {
     await goToSection(page, section);
-    const chapter = page.locator(".leave-balances-direct, .pay-dashboard-estimate, .grand-palais-program-panel, .colleague-received-card").first();
+    const chapter = page.locator(".leave-balances-direct, .pay-bulletin-hero, .grand-palais-program-panel, .colleague-received-card").first();
     await expect(chapter).toBeVisible();
     expect(luminance(await chapter.evaluate((node) => getComputedStyle(node).backgroundColor))).toBeLessThan(0.15);
   }
@@ -2747,6 +2773,13 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
   await expect(page.locator(".calendar-grid .day.leave-day")).toHaveCount(2);
   await openWishDay();
   await expect(chooser.getByRole("button", { name: /Transformer mes souhaits\s*1/ })).toBeVisible();
+  // Dans « Autre », le dernier souhait s'annule au lieu d'être transformé.
+  await chooser.getByRole("button", { name: /Transformer mes souhaits\s*1/ }).click();
+  const lastConversion = page.getByRole("dialog", { name: "Transformer ce souhait" });
+  await lastConversion.getByLabel(/^Autre nature/).selectOption("cancel");
+  await expect(lastConversion.locator(".wish-conversion-summary")).toHaveText("1 souhait annulé");
+  await lastConversion.getByRole("button", { name: "Annuler ce souhait" }).click();
+  await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(0);
 });
 
 test("un congé de l’année suivante se pose à l’avance sur le solde de cette année-là", async ({ page }) => {
@@ -2859,7 +2892,9 @@ test("un congé souhaité se pose aussi le matin ou l’après-midi et se transf
   await page.getByRole("button", { name: "Transformer en congé" }).click();
   const conversion = page.getByRole("dialog", { name: "Transformer ce souhait" });
   await expect(conversion.locator(".wish-conversion-date small")).toHaveText("matin");
-  await expect(conversion.getByRole("combobox")).toHaveCount(0);
+  // Déjà d'un matin, il ne se recoupe pas en demi-journée : « Autre »
+  // ne propose que son annulation.
+  await expect(conversion.getByRole("combobox").locator("option")).toHaveText(["Autre", "Annuler le souhait"]);
   await conversion.locator(".wish-conversion-list li").getByRole("button", { name: /^RTT/ }).click();
   await expect(conversion.locator(".wish-conversion-summary")).toHaveText("1 demi-journée RTT");
   await conversion.getByRole("button", { name: "Continuer" }).click();
@@ -3728,7 +3763,7 @@ test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, t
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   await swipeMainSection(page, 340, 40);
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
-  const payMonth = page.locator(".pay-dashboard-month");
+  const payMonth = page.locator(".pay-bulletin-month");
   const payMonthBefore = await payMonth.locator("h2").textContent();
   const monthTouch = (clientX: number) => ({ identifier: 2, clientX, clientY: 360, pageX: clientX, pageY: 360, screenX: clientX, screenY: 360 });
   const paySwipeZone = page.locator(".pay-dashboard-motion");
@@ -4398,7 +4433,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await dayDialog.getByRole("button", { name: "Fermer" }).click();
 
   await goToSection(page, "pay");
-  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
+  await page.getByRole("button", { name: /^Détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({ hasText: "Grève (1 journée retenue)" });
   // La règle du 10 peut renvoyer la retenue sur la paie suivante selon le jour.
   await expect(async () => {
@@ -4424,7 +4459,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await expect(reopenedOtherBalances.locator("button.strike")).toContainText(/0\s*pris/);
 
   await goToSection(page, "pay");
-  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
+  await page.getByRole("button", { name: /^Détail du calcul/ }).click();
   await expect(page.getByRole("row").filter({ hasText: /^Grève/ })).toHaveCount(0);
 });
 
@@ -4544,7 +4579,7 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
   // retenues sur la paie du mois suivant.
   if (Number(scenario.last.slice(8, 10)) > 10)
     await page.getByRole("button", { name: "Mois suivant" }).click();
-  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
+  await page.getByRole("button", { name: /^Détail du calcul/ }).click();
   const strikePayRow = page.getByRole("row").filter({
     hasText: `Grève (${retainedDays} journées retenues)`,
   });
@@ -5101,10 +5136,12 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await goToSection(page, "pay");
 
   const payDashboard = page.locator(".pay-dashboard");
-  const monthHeading = payDashboard.locator(".pay-dashboard-month h2");
-  const nextMonth = payDashboard.locator(".pay-dashboard-month").getByRole("button", { name: "Mois suivant" });
+  const monthHeading = payDashboard.locator(".pay-bulletin-month h2");
+  const nextMonth = payDashboard.locator(".pay-bulletin-month").getByRole("button", { name: "Mois suivant" });
   await expect(monthHeading).toHaveText("Août 2026");
-  await expect(payDashboard.getByText("Aucun élément variable prévu pour ce mois.")).toBeVisible();
+  // Août n'a que le forfait des dimanches, compté avec les primes.
+  await expect(payDashboard.getByText("Forfait dimanches", { exact: true })).toBeVisible();
+  await payDashboard.getByRole("button", { name: "Profil · réglages" }).click();
   await expect(payDashboard.getByText("Profil utilisé pour les calculs", { exact: true })).toBeVisible();
 
   const settingsToggle = payDashboard.getByRole("button", { name: /Réglages et explications/ });
@@ -5123,7 +5160,7 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await expect(payDashboard.getByText("Dimanches (8)", { exact: true })).toBeVisible();
   await expect(payDashboard.getByText(/dont 1 reporté/)).toBeVisible();
 
-  await payDashboard.getByRole("button", { name: "Voir le détail du calcul" }).click();
+  await payDashboard.getByRole("button", { name: /^Détail du calcul/ }).click();
   await expect(page.getByRole("heading", { name: "Composition du brut" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Retenues et passage au net" })).toBeVisible();
   await expect(page.getByRole("rowheader", { name: /^Traitement indiciaire/ })).toBeVisible();
@@ -5134,7 +5171,7 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await expect(monthHeading).toHaveText("Octobre 2026");
 
-  await payDashboard.getByRole("button", { name: "Primes et jours fériés" }).click();
+  await payDashboard.getByRole("button", { name: /^Primes et jours fériés/ }).click();
   await expect(page.locator(".allowance-note").filter({ hasText: /dimanches? effectués? sur/ })).toBeVisible();
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await expect(monthHeading).toHaveText("Octobre 2026");
@@ -5142,15 +5179,14 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   if (testInfo.project.name === "mobile") {
     await page.setViewportSize({ width: 320, height: 740 });
     await expect(payDashboard).toBeVisible();
-    const [narrowMonthCopy, narrowMonthActions, narrowMonthCard] = await Promise.all([
-      payDashboard.locator(".pay-dashboard-month > div").first().boundingBox(),
-      payDashboard.locator(".pay-dashboard-month-actions").boundingBox(),
-      payDashboard.locator(".pay-dashboard-month").boundingBox(),
+    const [narrowPrevious, narrowTitle, narrowNext, narrowMonthCard] = await Promise.all([
+      payDashboard.locator(".pay-bulletin-month").getByRole("button", { name: "Mois précédent" }).boundingBox(),
+      payDashboard.locator(".pay-bulletin-month h2").boundingBox(),
+      payDashboard.locator(".pay-bulletin-month").getByRole("button", { name: "Mois suivant" }).boundingBox(),
+      payDashboard.locator(".pay-bulletin-month").boundingBox(),
     ]);
-    expect(narrowMonthCopy).not.toBeNull();
-    expect(narrowMonthActions).not.toBeNull();
-    expect(narrowMonthCard).not.toBeNull();
-    expect(narrowMonthActions!.x).toBeGreaterThan(narrowMonthCopy!.x);
+    expect(narrowPrevious!.x + narrowPrevious!.width).toBeLessThan(narrowTitle!.x);
+    expect(narrowNext!.x).toBeGreaterThan(narrowTitle!.x + narrowTitle!.width);
     expect(narrowMonthCard!.height).toBeLessThanOrEqual(120);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     const overflowingElements = await page.locator("body *").evaluateAll((elements) =>
@@ -5177,8 +5213,8 @@ test("le mois de paie reste indépendant du planning", async ({ page }) => {
   // Un dimanche reporté se règle seul : plus d'alerte datée pour y mener. On
   // choisit donc le mois à la main, et c'est son indépendance qui est en jeu.
   await goToSection(page, "pay");
-  await page.locator(".pay-dashboard-month").getByRole("button", { name: "Mois suivant" }).click();
-  await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
+  await page.locator(".pay-bulletin-month").getByRole("button", { name: "Mois suivant" }).click();
+  await expect(page.locator(".pay-bulletin-month h2")).toHaveText("Octobre 2026");
 
   await goToSection(page, "home");
   await expect(planningMonth).toHaveText(initialPlanningMonth || "");
@@ -5190,7 +5226,7 @@ test("le mois de paie reste indépendant du planning", async ({ page }) => {
   await expect(planningMonth).not.toHaveText(initialPlanningMonth || "");
 
   await goToSection(page, "pay");
-  await expect(page.locator(".pay-dashboard-month h2")).toHaveText("Octobre 2026");
+  await expect(page.locator(".pay-bulletin-month h2")).toHaveText("Octobre 2026");
 });
 
 test("le profil de paie d’une nouvelle année peut être confirmé sans modifier un montant", async ({ page }) => {
@@ -5201,7 +5237,8 @@ test("le profil de paie d’une nouvelle année peut être confirmé sans modifi
   const dashboard = page.locator(".pay-dashboard");
   const nextMonth = dashboard.getByRole("button", { name: "Mois suivant" });
   for (let month = 0; month < 5; month += 1) await nextMonth.click();
-  await expect(dashboard.locator(".pay-dashboard-month h2")).toHaveText("Janvier 2027");
+  await expect(dashboard.locator(".pay-bulletin-month h2")).toHaveText("Janvier 2027");
+  await dashboard.getByRole("button", { name: "Profil · réglages" }).click();
   const settingsToggle = dashboard.getByRole("button", { name: /Réglages et explications/ });
   await settingsToggle.click();
   await expect(settingsToggle).toHaveAttribute("aria-expanded", "true");
@@ -5222,8 +5259,9 @@ test("Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordeme
   await goToSection(page, "pay");
   const dashboard = page.locator(".pay-dashboard");
   await expect(dashboard).toBeVisible();
-  const columns = await dashboard.locator(".pay-dashboard-priority-grid").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length);
-  expect(columns).toBe(1);
+  // À 900 px, le net et les lignes de la paie passent côte à côte.
+  const columns = await dashboard.locator(".pay-bulletin-layout").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length);
+  expect(columns).toBe(2);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
   expect(consoleErrors).toEqual([]);
@@ -5233,55 +5271,54 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   await prepareDemo(page);
   await goToSection(page, "pay");
 
-  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
+  await page.getByRole("button", { name: /^Primes et jours fériés/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");
   await expect(page.locator(".allowance-summary-alert")).toHaveCSS("border-top-width", "1px");
-  if ((page.viewportSize()?.width || 0) <= 720) {
-    const card = page.locator(".variable-pay-card");
-    const previous = card.getByRole("button", { name: "Mois précédent", exact: true });
-    const next = card.getByRole("button", { name: "Mois suivant", exact: true });
-    const month = card.locator("#variable-pay-title");
-    const chevron = card.locator(".pay-period-chevron");
-    const closeDetails = card.locator(".variable-pay-total > small");
-    const variableTotal = card.locator(".variable-pay-total > strong");
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      );
-    });
-    const [cardBox, previousBox, nextBox, monthBox, chevronBox] = await Promise.all([
-      card.boundingBox(),
-      previous.boundingBox(),
-      next.boundingBox(),
-      month.boundingBox(),
-      chevron.boundingBox(),
-    ]);
-    expect(cardBox).not.toBeNull();
-    expect(previousBox).not.toBeNull();
-    expect(nextBox).not.toBeNull();
-    expect(monthBox).not.toBeNull();
-    expect(chevronBox).not.toBeNull();
-    expect(previousBox!.y - cardBox!.y).toBeLessThan(28);
-    expect(nextBox!.x - (previousBox!.x + previousBox!.width)).toBeGreaterThanOrEqual(10);
-    expect(cardBox!.x + cardBox!.width - (nextBox!.x + nextBox!.width)).toBeLessThan(28);
-    expect(Math.abs(
-      chevronBox!.y + chevronBox!.height / 2 - (monthBox!.y + monthBox!.height / 2),
-    )).toBeLessThan(3.1);
-    await expect(closeDetails).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, -4)");
-    await expect(variableTotal).toHaveCSS("font-size", "15px");
-  }
+  // Primes pour le mois : le mois en titre, les deux flèches à sa droite,
+  // une pastille par prime ; un appui sur une pastille en montre le détail.
+  const card = page.locator(".variable-pay-card");
+  const previous = card.getByRole("button", { name: "Mois précédent", exact: true });
+  const next = card.getByRole("button", { name: "Mois suivant", exact: true });
+  const month = card.locator("#variable-pay-title");
+  const [cardBox, previousBox, nextBox, monthBox] = await Promise.all([
+    card.boundingBox(),
+    previous.boundingBox(),
+    next.boundingBox(),
+    month.boundingBox(),
+  ]);
+  expect(previousBox!.x).toBeGreaterThan(monthBox!.x + monthBox!.width);
+  expect(nextBox!.x).toBeGreaterThan(previousBox!.x + previousBox!.width);
+  expect(cardBox!.x + cardBox!.width - (nextBox!.x + nextBox!.width)).toBeLessThan(36);
+  expect(Math.abs(
+    previousBox!.y + previousBox!.height / 2 - (monthBox!.y + monthBox!.height / 2),
+  )).toBeLessThan(6);
+  const pill = card.locator(".variable-pay-pill").first();
+  await pill.click();
+  await expect(pill).toHaveAttribute("aria-pressed", "true");
+  await expect(card.locator(".variable-pay-pill-detail")).toBeVisible();
+  await expect(card.getByText("Total brut variable")).toBeVisible();
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
-  await page.getByRole("button", { name: /Voir le détail du calcul/ }).click();
+  await page.getByRole("button", { name: /^Détail du calcul/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Détail du calcul");
   await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toBeVisible();
   const calculationTotals = page.locator(".pay-calculation-totals article");
   await expect(calculationTotals).toHaveCount(4);
   await expect(calculationTotals.first()).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
   await expect(calculationTotals.first()).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  await expect(page.locator(".pay-reliability")).toContainText(/Données à compléter|Valeurs enregistrées|dernières valeurs|Valeurs vérifiées/);
+  // Une simple estimation avec le profil de l'année n'est plus annoncée.
+  await expect(page.getByText("Valeurs enregistrées pour cette année")).toHaveCount(0);
+  // Chaque case se touche pour afficher son calcul, ligne à ligne.
+  await expect(page.getByText("Touchez une case pour voir son calcul.")).toBeVisible();
+  const netCard = calculationTotals.last().getByRole("button");
+  await netCard.click();
+  await expect(netCard).toHaveAttribute("aria-expanded", "true");
+  const explanation = page.locator("#pay-total-explain");
+  await expect(explanation).toContainText("Comment est calculé le net estimé");
+  await expect(explanation).toContainText("Net avant impôt");
+  await netCard.click();
+  await expect(explanation).toHaveCount(0);
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
-  await expect(page.locator(".pay-dashboard-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
+  await expect(page.locator(".pay-bulletin-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
 });
 
 test("la recherche des groupes distingue le chargement, une panne et un résultat", async ({ page }) => {

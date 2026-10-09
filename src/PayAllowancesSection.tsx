@@ -63,6 +63,9 @@ export type AllowanceMonthPay = {
   strikeDeductedDays: number;
   strikeAutomaticDays: number;
   strikePotentialDays: number;
+  /** Jours d'arrêt maladie retenus sur cette paie, et leur montant brut. */
+  sickDays?: number;
+  sick?: number;
 };
 
 type OvertimeForPayMonth = {
@@ -93,9 +96,7 @@ type PayAllowancesSectionProps = {
   baseSalary: number;
   month: number;
   year: number;
-  payPeriodOpen: boolean;
   holidayChoiceEditing: string | null;
-  onTogglePayPeriod: () => void;
   onChangeMonth: (delta: 1 | -1) => void;
   onGoToday: () => void;
   onEditHolidayChoice: (key: string | null) => void;
@@ -113,9 +114,7 @@ export function PayAllowancesSection({
   baseSalary,
   month,
   year,
-  payPeriodOpen,
   holidayChoiceEditing,
-  onTogglePayPeriod,
   onChangeMonth,
   onGoToday,
   onEditHolidayChoice,
@@ -126,6 +125,7 @@ export function PayAllowancesSection({
   /* La liste des dimanches faits est repliée par défaut : la carte reste un
      résumé, et on ne déroule les dates que si on vient les vérifier. */
   const [sundayListOpen, setSundayListOpen] = useState(false);
+  const [openedPrime, setOpenedPrime] = useState("");
   const sundaysDone = allowances.sundays.filter((item) => item.past);
   const variableRows = [
     {
@@ -134,6 +134,13 @@ export function PayAllowancesSection({
         ? `${monthPay.sundayCount} dimanche${s(monthPay.sundayCount)} versé${s(monthPay.sundayCount)} sur cette paie`
         : "Aucun dimanche versé sur cette paie",
       amount: monthPay?.sunday || 0,
+    },
+    // Compté avec les primes, comme sur la page principale et dans le détail
+    // du calcul : le total est le même partout.
+    {
+      label: "Forfait dimanches",
+      quantity: "le même chaque mois, que vous travailliez des dimanches ou non",
+      amount: SUNDAY_ALLOWANCE.monthlyFlat,
     },
     {
       label: "Jours fériés",
@@ -153,6 +160,13 @@ export function PayAllowancesSection({
       amount: mecenatForPayMonth.grossAmountCents / 100,
     },
     {
+      label: "Maladie",
+      quantity: monthPay?.sickDays
+        ? `${monthPay.sickDays} jour${s(monthPay.sickDays)} d’arrêt · carence et retenue de 10 %`
+        : "Aucun arrêt maladie",
+      amount: monthPay?.sickDays ? -(monthPay.sick || 0) : 0,
+    },
+    {
       label: "Grève",
       quantity: monthPay?.strikeDeductedDays || monthPay?.strikePotentialDays
         ? `${monthPay?.strikeDeductedDays || 0} journée${s(monthPay?.strikeDeductedDays || 0)} retenue${s(monthPay?.strikeDeductedDays || 0)}${monthPay?.strikeAutomaticDays ? ` dont ${monthPay.strikeAutomaticDays} repos noir${s(monthPay.strikeAutomaticDays)}` : ""}${monthPay?.strikePotentialDays ? ` · ${monthPay.strikePotentialDays} jour${s(monthPay.strikePotentialDays)} à vérifier` : ""}`
@@ -170,6 +184,8 @@ export function PayAllowancesSection({
   );
 
   /* Le montant choisi ; un clic ouvre directement les choix, sous la ligne. */
+  const today = new Date();
+  const isCurrentPayMonth = today.getFullYear() === year && today.getMonth() === month;
   const holidayChoice = (item: HolidayAllowanceItem) => {
     const editing = holidayChoiceEditing === item.key;
     if (!item.choice)
@@ -226,100 +242,61 @@ export function PayAllowancesSection({
   return (
     <>
       <section className="allowance-card variable-pay-card" aria-labelledby="variable-pay-title">
-        <header
-          role="button"
-          tabIndex={0}
-          aria-expanded={payPeriodOpen}
-          onClick={onTogglePayPeriod}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter" && event.key !== " ") return;
-            event.preventDefault();
-            onTogglePayPeriod();
-          }}
-        >
-          <div className="pay-period-toggle">
-            <span>
-              <span className="step-label">Primes pour le mois</span>
-              <span className="pay-period-month">
-                <h3 id="variable-pay-title">{MONTHS[month]} {year}</h3>
-                <span className="pay-period-chevron" aria-hidden="true">
-                  <svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg>
-                </span>
-              </span>
-            </span>
-          </div>
-          <div className="variable-pay-heading-actions">
-            <div className="pay-month-nav compact">
-              <button type="button" className="pay-nav-arrow" onClick={(event) => { event.stopPropagation(); onChangeMonth(-1); }} aria-label="Mois précédent">
+        {/* Une pastille par prime, verte si elle rapporte, grise sinon ; un
+            appui affiche son détail. Le total ferme la carte. */}
+        <header className="variable-pay-head variable-pay-head-c">
+          <span className="step-label">Primes pour le mois</span>
+          <div className="variable-pay-month">
+            <h3 id="variable-pay-title">{MONTHS[month].charAt(0).toUpperCase() + MONTHS[month].slice(1)} {year}</h3>
+            <span className="variable-pay-arrows">
+              <button type="button" className="pay-nav-arrow" onClick={() => onChangeMonth(-1)} aria-label="Mois précédent">
                 <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
               </button>
-              <button type="button" className="pay-nav-arrow" onClick={(event) => { event.stopPropagation(); onChangeMonth(1); }} aria-label="Mois suivant">
+              <button type="button" className="pay-nav-arrow" onClick={() => onChangeMonth(1)} aria-label="Mois suivant">
                 <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
               </button>
-              <button type="button" className="pay-today-button" onClick={(event) => { event.stopPropagation(); onGoToday(); }}>
-                Aujourd’hui
-              </button>
-            </div>
-            <span className="variable-pay-total">
-              <small>{payPeriodOpen ? "Fermer les détails" : "Ouvrir pour les détails"}</small>
-              <strong>{euros(variableTotal)} <em>brut variable</em></strong>
             </span>
           </div>
+          {isCurrentPayMonth ? null : (
+            <button type="button" className="pay-today-button variable-pay-today" onClick={onGoToday}>Revenir à aujourd’hui</button>
+          )}
         </header>
-        {payPeriodOpen ? <div className="variable-pay-list">
+        <div className="variable-pay-pills" role="group" aria-label="Primes de cette paie">
           {variableRows.map((row) => (
-            <article key={row.label}>
-              <span><strong>{row.label}</strong><small>{row.quantity}</small></span>
-              <b className={row.amount === null ? "pending" : ""}>
-                {row.amount === null ? "À calculer" : euros(row.amount)}
-              </b>
-            </article>
+            <button
+              key={row.label}
+              type="button"
+              className={`variable-pay-pill${row.amount === null ? " pending" : row.amount > 0 ? " positive" : row.amount < 0 ? " negative" : " zero"}`}
+              aria-pressed={openedPrime === row.label}
+              onClick={() => setOpenedPrime((current) => (current === row.label ? "" : row.label))}
+            >
+              <span>{row.label === "Heures supplémentaires payées" ? "Heures sup" : row.label === "Forfait dimanches" ? "Forfait" : row.label}</span>
+              <b>{row.amount === null ? "à calculer" : euros(row.amount)}</b>
+            </button>
           ))}
-        </div> : null}
+        </div>
+        {openedPrime ? (
+          <p className="variable-pay-pill-detail" role="status">
+            <strong>{openedPrime}</strong> · {variableRows.find((row) => row.label === openedPrime)?.quantity}
+          </p>
+        ) : null}
+        <p className={`variable-pay-footer${variableTotal ? "" : " zero"}`}>
+          <span>Total brut variable</span>
+          <strong>{euros(variableTotal)}</strong>
+        </p>
       </section>
 
-      <section className="allowance-overview" aria-labelledby="allowance-overview-title">
-        <div className="allowance-overview-heading">
-          <div>
-            <span className="step-label">Résumé {allowances.year}</span>
-            <h3 id="allowance-overview-title">Mes primes en un coup d’œil</h3>
-          </div>
+      {/* Le résumé à trois cases est retiré : seuls les fériés encore à
+          trancher sont signalés, juste avant leur carte. */}
+      {allowances.holidayPending ? (
+        <div className="allowance-summary-alert">
+          <span aria-hidden="true">!</span>
+          <strong>
+            {allowances.holidayPending} jour{s(allowances.holidayPending)} férié{s(allowances.holidayPending)} à préciser
+          </strong>
+          <small>Choisissez la compensation dans le détail ci-dessous.</small>
         </div>
-        <div className="allowance-overview-grid">
-          {/* Le résumé compte ; les dates, elles, vivent dans la carte des
-              dimanches, où se lisent déjà les socles. */}
-          <article>
-            <span>Dimanches travaillés</span>
-            <strong>{allowances.sundayDone}</strong>
-            <small>{allowances.sundayLeft} encore à venir</small>
-          </article>
-          <article>
-            <span>Jours fériés dans l’année</span>
-            <strong>{allowances.holidays.length}</strong>
-            <small>
-              {allowances.cancelledHolidays.length
-                ? `${allowances.cancelledHolidays.length} annulé${s(allowances.cancelledHolidays.length)}`
-                : allowances.holidayPending
-                  ? `${allowances.holidayPending} à préciser`
-                  : "Tous renseignés"}
-            </small>
-          </article>
-          <article>
-            <span>Primes variables prévues</span>
-            <strong>{euros(allowances.monthlyTotal)}</strong>
-            <small>hors forfait mensuel</small>
-          </article>
-        </div>
-        {allowances.holidayPending ? (
-          <div className="allowance-summary-alert">
-            <span aria-hidden="true">!</span>
-            <strong>
-              {allowances.holidayPending} jour{s(allowances.holidayPending)} férié{s(allowances.holidayPending)} à préciser
-            </strong>
-            <small>Choisissez la compensation dans le détail ci-dessous.</small>
-          </div>
-        ) : null}
-      </section>
+      ) : null}
 
       <div className="allowance-detail-stack">
         <section className="allowance-card">
@@ -454,12 +431,6 @@ export function PayAllowancesSection({
           ) : (
             <p className="allowance-note">Aucun férié travaillé cette année.</p>
           )}
-          {allowances.holidayPending ? (
-            <p className="allowance-note warn">
-              {allowances.holidayPending} férié{s(allowances.holidayPending)} sans compensation choisie :
-              choisissez la compensation sous chacun.
-            </p>
-          ) : null}
         </section>
 
         {allowances.compensated.length > 0 && (

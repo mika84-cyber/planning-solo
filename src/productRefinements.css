@@ -18,11 +18,8 @@
 .pay-import-secondary { margin-top: 4px; padding: 0; text-align: center; }
 .pay-import-secondary .text-button { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 44px; margin: 0; padding: 4px 8px; background: transparent; border: 0; border-radius: 8px; color: var(--muted); font-size: .75rem; font-weight: 600; box-shadow: none; }
 .pay-import-secondary .text-button:hover { text-decoration: underline; }
-.pay-dashboard-estimate .pay-dashboard-detail-button { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: .83rem; font-weight: 650; box-shadow: none; }
-.pay-dashboard-estimate .pay-dashboard-detail-button:hover { background: var(--surface-high); }
-.pay-missing-guidance button:focus-visible, .pay-dashboard-detail-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.pay-missing-guidance button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .pay-elements-card { scroll-margin-top: 100px; }
-.pay-app-screen .pay-dashboard-variable-list article { border-width: 2px; box-shadow: var(--shadow-inset); }
 .app-shell input[type="search"]{padding-right:44px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a94d24' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m16.5 16.5 4 4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:18px 18px}
 .app-shell input[type="search"]:not(:placeholder-shown){background-position:right 38px center}
 /* Le dock est fixé en bas de l’écran. Sans marge de défilement réservée,
@@ -45,14 +42,13 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   box-shadow: none;
   cursor: not-allowed;
 }
-.app-shell :is(.today-overview, .home-notes-section, .leave-balances-direct, .leave-tools-area, .pay-dashboard-estimate, .pay-dashboard-variables, .pay-dashboard-verification, .colleague-card) {
+.app-shell :is(.today-overview, .home-notes-section, .leave-balances-direct, .leave-tools-area, .colleague-card) {
   box-shadow: var(--shadow-card);
   border-top-width: 2px;
   border-right-width: 2px;
   border-bottom-width: 2px;
 }
-.app-shell :is(.today-overview-heading, .pay-dashboard-card-heading, .useful-resource-intro) h2,
-.app-shell .pay-dashboard-card-heading h3 { font-weight: 750; line-height: 1.3; }
+.app-shell :is(.today-overview-heading, .useful-resource-intro) h2 { font-weight: 750; line-height: 1.3; }
 .app-shell :is(.text-button, .secondary-button) { line-height: 1.4; }
 /* Le repère clavier colle à la bordure : un décalage laissait voir un
    second cadre, pris pour une double bordure. */
@@ -81,9 +77,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .planning-calendar-section,
   .leave-balances-direct,
   .leave-tools-area,
-  .pay-dashboard-estimate,
-  .pay-dashboard-variables,
-  .pay-dashboard-verification,
   .pay-missing-guidance,
   .pay-dashboard-settings,
   .pay-profile-settings,
@@ -96,13 +89,11 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   background: #fff;
 }
 .app-shell .pay-app-screen { background: #fff; }
-.app-shell .leave-balances-direct .leave-balance-grid > button,
-.app-shell .pay-dashboard-variable-list > article {
+.app-shell .leave-balances-direct .leave-balance-grid > button {
   border-width: 1px;
 }
 .app-shell .overtime-balance-summary > article { border-width: 1px; }
-.app-shell .pay-missing-guidance,
-.app-shell .pay-dashboard-variables {
+.app-shell .pay-missing-guidance {
   border-color: var(--border-card);
 }
 .app-shell .pay-dashboard-profile-slot .pay-profile-settings {
@@ -130,10 +121,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .leave-balances-direct,
   .leave-tools-area,
   .leave-type-field,
-  .pay-dashboard-month,
-  .pay-dashboard-estimate,
-  .pay-dashboard-variables,
-  .pay-dashboard-verification,
   .pay-missing-guidance,
   .pay-dashboard-settings,
   .pay-dashboard-profile-slot .pay-profile-settings,
@@ -159,9 +146,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .home-setup-alert,
   .planning-command-section,
   .leave-balances-direct,
-  .pay-dashboard-estimate,
-  .pay-dashboard-variables,
-  .pay-dashboard-verification,
   .pay-missing-guidance,
   .pdf-download-screen,
   .useful-resource-panel > .useful-forms-root,
@@ -175,9 +159,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .home-setup-alert > header,
   .planning-command-section > .home-planning-heading,
   .leave-balances-direct > .leave-balances-heading,
-  .pay-dashboard-estimate > .pay-dashboard-estimate-heading,
-  .pay-dashboard-variables > .pay-dashboard-card-heading,
-  .pay-dashboard-verification > .pay-dashboard-card-heading,
   .pay-missing-guidance > .pay-import-heading,
   .pdf-download-screen > .native-screen-heading,
   .useful-resource-panel > .useful-forms-root > .native-screen-heading,
@@ -200,8 +181,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
    la phrase d'explication qui les suit passe sur le blanc du cadre. La bande
    s'arrête alors juste au-dessus d'elle, avec son filet. */
 .app-shell.app-shell :is(
-  .pay-dashboard-variables > .pay-dashboard-card-heading,
-  .pay-dashboard-verification > .pay-dashboard-card-heading,
   .pay-missing-guidance > .pay-import-heading,
   .pdf-download-screen > .native-screen-heading,
   .useful-resource-panel > .useful-forms-root > .native-screen-heading,
@@ -210,8 +189,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .grand-palais-program-screen .grand-palais-program-panel > .useful-expo-schedule-heading
 ):has(> p:last-child) { border-bottom: 0; }
 .app-shell.app-shell :is(
-  .pay-dashboard-variables > .pay-dashboard-card-heading,
-  .pay-dashboard-verification > .pay-dashboard-card-heading,
   .pay-missing-guidance > .pay-import-heading,
   .pdf-download-screen > .native-screen-heading,
   .useful-resource-panel > .useful-forms-root > .native-screen-heading,
@@ -225,15 +202,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   background: #fff;
 }
 /* Côté paie, la phrase est rangée dans un sous-bloc de l'en-tête : même traitement. */
-.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading:has(> div:last-child > p:last-child) { grid-template-columns: minmax(0, 1fr); border-bottom: 0; }
-.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading:has(> div:last-child > p:last-child) > div:last-child { flex: 1 1 100%; width: 100%; min-width: 0; justify-self: stretch; }
-.app-shell.app-shell :is(.pay-dashboard-variables, .pay-dashboard-verification) > .pay-dashboard-card-heading > div:last-child > p:last-child {
-  max-width: none;
-  margin: 12px calc(-1 * var(--chapter-pad)) -12px;
-  border-top: 1px solid var(--chapter-tint-line);
-  padding: 12px var(--chapter-pad) 0;
-  background: #fff;
-}
 /* L'introduction des collègues : surtitre et titre teintés, votre nom dans
    l'annuaire et la présentation sur blanc. */
 .app-shell.app-shell .colleague-sharing-intro { padding: var(--chapter-pad); background: var(--chapter-tint); }
@@ -267,7 +235,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 }
 /* « Votre estimation commence ici » : sous son en-tête teinté, le bloc est
    blanc et délimité par le filet sombre des encadrés. */
-.app-shell.app-shell .pay-dashboard-estimate .pay-missing-guidance { border: 1px solid var(--border-card); background: #fff; box-shadow: none; }
 /* Outils de congés (heures supp, mécénats, CET) : cartes entièrement blanches,
    détachées du cadre par un filet léger. */
 .app-shell.app-shell .leave-tool-disclosure { border-color: var(--border-soft); background: #fff; box-shadow: none; }
@@ -359,7 +326,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Lisibilité : aucun texte à lire sous 11 px. Les repères décoratifs (petites
    capitales des en-têtes, numéros du calendrier, pastilles) restent compacts.
    `:root` place ces règles au-dessus des réglages mobiles plus anciens. */
-:root .leave-balance-grid > button :is(span, small, em), :root .other-leave-balances > summary :is(b, small), :root :is(.manual-adjustments-copy small, .manual-adjustments-summary, .request-archive-summary small), :root :is(.pay-profile-summary-copy small, .pay-dashboard-reliability), :root .has-active-resource .useful-resource-tab-copy small, :root :is(.overtime-balance-summary, .mecenat-rate-summary) article > :is(small, span), :root :is(.leave-tool-disclosure > summary b, .leave-year-tools label > span), :root :is(.payslip-guide-step small, .pay-dashboard-variable-list small) { font-size: 11px; }
+:root .leave-balance-grid > button :is(span, small, em), :root .other-leave-balances > summary :is(b, small), :root :is(.manual-adjustments-copy small, .manual-adjustments-summary, .request-archive-summary small), :root :is(.pay-profile-summary-copy small), :root .has-active-resource .useful-resource-tab-copy small, :root :is(.overtime-balance-summary, .mecenat-rate-summary) article > :is(small, span), :root :is(.leave-tool-disclosure > summary b, .leave-year-tools label > span), :root :is(.payslip-guide-step small) { font-size: 11px; }
 :root .leave-balance-grid > button > span:first-child { font-size: 11.5px; }
 
 /* Moins de cadres emboîtés : les soldes de congés se posent directement

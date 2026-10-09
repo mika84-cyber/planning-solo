@@ -1,0 +1,22 @@
+/* Détail du calcul : les quatre totaux se touchent pour afficher leur
+   calcul, ligne à ligne, dans un encadré à liseré terracotta. */
+.pay-totals-hint { margin: 14px 0 0; color: var(--muted); font-size: 0.76rem; font-weight: 650; }
+.pay-calculation-totals article { padding: 0; transition: border-color 0.15s ease; }
+.app-shell .pay-calculation-totals article > button { display: grid; align-content: start; gap: 3px; width: 100%; height: 100%; min-height: 0; margin: 0; border: 0; border-radius: inherit; padding: 11px; background: none; box-shadow: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.pay-calculation-totals article:hover { border-color: #c9a796; }
+.pay-calculation-totals article.open { border-color: #9a4a2e; box-shadow: inset 0 0 0 1px #9a4a2e; }
+.pay-calculation-totals article > button strong { color: var(--text); }
+.pay-calculation-totals article.net > button strong { color: #8a3d22; }
+.pay-calculation-totals article > button em { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; color: #9a4a2e; font-size: 0.72rem; font-style: normal; font-weight: 800; }
+.pay-calculation-totals article > button em i { font-style: normal; transition: transform 0.15s ease; }
+.pay-calculation-totals article.open > button em i { transform: rotate(90deg); }
+
+.pay-total-explain { margin-top: 10px; border: 1px solid #ead5c9; border-left: 4px solid #9a4a2e; border-radius: 12px; padding: 12px 14px; background: #fbf6f2; }
+.pay-total-explain h4 { margin: 0; color: var(--text); font-size: 0.95rem; font-weight: 850; }
+.pay-total-explain > p { margin: 4px 0 8px; color: var(--muted); font-size: 0.8rem; line-height: 1.45; }
+.pay-total-explain ol { display: grid; margin: 0; padding: 0; list-style: none; }
+.pay-total-explain li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 12px; border-top: 1px solid #eee0d6; padding: 6px 0; color: var(--text); font-size: 0.84rem; font-weight: 650; }
+.pay-total-explain li small { display: block; margin-top: 1px; color: var(--muted); font-size: 0.72rem; font-weight: 550; line-height: 1.35; }
+.pay-total-explain li b { font-variant-numeric: tabular-nums; font-weight: 750; white-space: nowrap; }
+.pay-total-explain li.total { border-top: 1.5px solid #2c2621; font-weight: 850; }
+.pay-total-explain li.total b { font-weight: 850; }

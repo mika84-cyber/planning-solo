@@ -328,16 +328,6 @@
   padding: 15px;
   background: var(--surface);
 }
-.allowance-overview-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.allowance-overview-heading h3 {
-  margin: 2px 0 0;
-  font-size: 18px;
-}
 .soft-detail-button {
   min-height: 38px;
   border: 1px solid var(--border-card);
@@ -348,37 +338,6 @@
   font-size: 12px;
   font-weight: 850;
   cursor: pointer;
-}
-.allowance-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.allowance-overview-grid > :is(article, button) {
-  display: grid;
-  align-content: center;
-  gap: 4px;
-  min-height: 92px;
-  border: 1px solid var(--border-card);
-  border-radius: 13px;
-  padding: 12px;
-  background: var(--surface-high);
-}
-.allowance-overview-grid span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 850;
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
-}
-.allowance-overview-grid strong {
-  color: var(--text);
-  font-size: 24px;
-  line-height: 1.05;
-}
-.allowance-overview-grid small {
-  color: var(--muted);
-  font-size: 10px;
 }
 .allowance-summary-alert {
   display: grid;
@@ -453,13 +412,6 @@
 .payslip-verify-card::before {
   background: #82afa2 !important;
 }
-.payslip-calibration-card {
-  border-style: solid !important;
-  border-color: var(--border-control);
-}
-.payslip-calibration-card::before {
-  background: #bcb0a0 !important;
-}
 .pay-elements-card {
   border-color: var(--border-control);
   background: var(--surface-high);
@@ -522,41 +474,6 @@
 }
 .payslip-period-fallback small {
   margin-top: 2px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.payslip-calibration-card {
-  border-style: dashed;
-  background: var(--surface-high);
-}
-.payslip-calibration-card header small {
-  color: #68817b;
-  font-size: 10px;
-  font-weight: 800;
-}
-.payslip-calibration-drop {
-  display: flex;
-  min-height: 44px;
-  margin-top: 9px;
-}
-.payslip-calibration-status {
-  display: grid;
-  gap: 2px;
-  margin-top: 9px;
-  border: 1px solid var(--border-control);
-  border-radius: 11px;
-  padding: 10px 12px;
-  background: var(--surface-high);
-}
-.payslip-calibration-status.ready {
-  border-color: var(--border-card);
-  background: #fff;
-  color: #2e685c;
-}
-.payslip-calibration-status strong {
-  font-size: 12px;
-}
-.payslip-calibration-status small {
   color: var(--muted);
   font-size: 10px;
 }
@@ -744,19 +661,8 @@
   .allowance-overview {
     padding: 11px;
   }
-  .allowance-overview-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
   .soft-detail-button {
     width: 100%;
-  }
-  .allowance-overview-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .allowance-overview-grid article:last-child {
-    grid-column: 1 / -1;
-    min-height: 72px;
   }
   .allowance-summary-alert {
     grid-template-columns: 24px minmax(0, 1fr);
@@ -1169,15 +1075,6 @@
   outline: 3px solid rgba(122, 111, 95, 0.2);
   outline-offset: 3px;
 }
-.variable-pay-card > header[role="button"][aria-expanded="true"] .pay-period-chevron {
-  transform: rotate(180deg);
-}
-.variable-pay-total { display: grid; justify-items: end; gap: 3px; }
-.variable-pay-total > small {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 850;
-}
 
 .day.half-morning,
 .day.half-afternoon,
@@ -1196,7 +1093,6 @@
   }
   .controls .worked-days-stepper { min-width: 0; }
   .controls .worked-days-trigger { padding: 0 7px; font-size: 11px; }
-  .variable-pay-total > small { max-width: 120px; text-align: right; }
 }
 
 /* Ajustements de finition : liserés structurants, commandes compactes et
@@ -1251,47 +1147,11 @@
 .pay-profile-settings.open .pay-profile-summary > i { transform: rotate(180deg); }
 .pay-profile-settings-grid { padding: 2px 18px 18px; }
 
-.pay-period-toggle {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.pay-period-toggle > span { display: grid; }
-.pay-period-month {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.pay-period-chevron {
-  display: grid;
-  place-items: center;
-  flex: 0 0 22px;
-  width: 22px;
-  height: 22px;
-  color: var(--muted);
-  transition: transform 170ms ease;
-}
-.pay-period-chevron svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
 .variable-pay-card header h3 {
   color: var(--muted);
   font-size: clamp(1.7rem, 4vw, 2.25rem);
   letter-spacing: -0.045em;
 }
-.variable-pay-card .variable-pay-list { animation: app-screen-in 150ms ease-out; }
 
 .pay-dedicated-content.pay-month-out-left { animation: pay-month-out-left 150ms ease-in forwards; }
 .pay-dedicated-content.pay-month-out-right { animation: pay-month-out-right 150ms ease-in forwards; }

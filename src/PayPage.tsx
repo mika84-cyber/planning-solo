@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode, type TouchEventHandler } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { ClockTimePicker } from "./ClockTimePicker";
-import { PayDashboard, type PayDashboardVariable } from "./PayDashboard";
+import { PayDashboard, type PayDashboardVariable, type PayDashboardVerification } from "./PayDashboard";
+import type { PayCalculationBreakdown } from "./PayEstimateDetails";
 import { PAY_STATUS_OPTIONS, type PayStatus } from "./appModel";
 import { WORK_QUOTA_OPTIONS, type WorkQuota, type WorkSchedule } from "./overtime";
 import { MONTHS } from "./planningLogic";
@@ -32,6 +33,15 @@ type PayPageProps = {
   onCompleteEstimate?: () => void;
   reliability: { tone: "exact" | "estimated" | "incomplete"; label: string; detail: string };
   variables: PayDashboardVariable[];
+  calculation?: PayCalculationBreakdown;
+  /** Fériés de l'année encore sans compensation choisie. */
+  allowancesPending?: number;
+  /** Comparaison avec le bulletin du mois affiché. */
+  verification?: PayDashboardVerification;
+  verificationAccount?: string;
+  /** L'accueil demande d'ouvrir la vérification du bulletin. */
+  verificationRequested?: boolean;
+  onVerificationShown?: () => void;
   deductionContent: ReactNode;
   monthSlide: string;
   allowancesContent: ReactNode;
@@ -57,7 +67,8 @@ export function PayPage({
   screen, month, year, profileOpen, profileFocusRequested, settingsOpen, workQuota, workSchedule, status,
   netEstimateComplete, gross, grossComplete, net, profileLabel,
   missingFields, onCompleteEstimate,
-  reliability, variables, deductionContent, monthSlide, allowancesContent, estimateContent,
+  reliability, variables, calculation, allowancesPending, verification, verificationAccount, verificationRequested, onVerificationShown,
+  deductionContent, monthSlide, allowancesContent, estimateContent,
   verificationContent, settingsContent, onScreenChange, onToggleProfile, onProfileFocused,
   onToggleSettings, onWorkQuotaChange, onWorkScheduleChange, onStatusChange, onPreviousMonth,
   onSaveProfile, onNextMonth, onToday, onTouchStart, onTouchEnd,
@@ -136,8 +147,16 @@ export function PayPage({
             month={month} year={year} gross={gross} grossComplete={grossComplete}
             net={net} profileLabel={profileLabel} reliability={reliability}
             missingFields={missingFields} onCompleteEstimate={() => { setFocusMissing(true); onCompleteEstimate?.(); }}
-            variables={variables} deductionContent={deductionContent} verificationContent={verificationContent}
-            profileContent={profileContent} settingsContent={settingsContent} settingsOpen={settingsOpen}
+            variables={variables} calculation={calculation} allowancesPending={allowancesPending}
+            verification={verification} verificationAccount={verificationAccount}
+            verificationRequested={verificationRequested} onVerificationShown={onVerificationShown}
+            onOpenTools={() => { if (!profileOpen) onToggleProfile(); }}
+            onCloseTools={() => {
+              if (profileOpen) onToggleProfile();
+              if (settingsOpen) onToggleSettings();
+            }}
+            deductionContent={deductionContent} verificationContent={verificationContent}
+            profileContent={profileContent} settingsContent={settingsContent} settingsOpen={settingsOpen} profileOpen={profileOpen || profileFocusRequested}
             onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday}
             onOpenEstimateDetails={() => onScreenChange("payslip")}
             onOpenAllowances={() => onScreenChange("allowances")}

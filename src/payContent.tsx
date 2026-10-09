@@ -497,6 +497,7 @@ export function buildPayContent({
             tone: "estimated" as const,
             label: "Valeurs enregistrées pour cette année",
             detail: `Estimation calculée avec le profil de paie ${payYear}.`,
+            quiet: true,
           }
         : {
             tone: "estimated" as const,
@@ -725,6 +726,10 @@ export function buildPayContent({
       : "Estimation réalisée avec les dernières valeurs connues.",
     reliability: payReliability,
     variables,
+    calculation: payCalculation,
+    allowancesPending: allowances.holidayPending,
+    verification: payslipReview ? { tone: payslipReview.tone, label: payslipReview.verdict } : undefined,
+    verificationAccount: payslipSectionProps.accountId,
     deductionContent,
     estimateContent: payEstimateDetails,
     verificationContent: (

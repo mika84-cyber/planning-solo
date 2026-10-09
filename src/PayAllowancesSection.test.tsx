@@ -39,9 +39,7 @@ const props = {
   baseSalary: 2_000,
   month: 6,
   year: 2026,
-  payPeriodOpen: true,
   holidayChoiceEditing: null,
-  onTogglePayPeriod: vi.fn(),
   onChangeMonth: vi.fn(),
   onGoToday: vi.fn(),
   onEditHolidayChoice: vi.fn(),
@@ -71,11 +69,12 @@ describe("PayAllowancesSection", () => {
     const html = renderToStaticMarkup(<PayAllowancesSection {...props} />);
 
     expect(html).toContain("Primes pour le mois");
-    expect(html).toContain("juillet 2026");
-    expect(html).toContain("Heures supplémentaires payées");
+    expect(html).toContain("Juillet 2026");
+    expect(html).toContain("Heures sup");
     expect(html).toContain("Mécénats");
-    expect(html).toContain("dont 1 repos noir");
-    expect(html).toContain("Mes primes en un coup d’œil");
+    // Le détail d’une prime s’affiche à l’appui sur sa pastille.
+    expect(html).toMatch(/variable-pay-pill negative"[^>]*><span>Grève<\/span>/);
+    expect(html).not.toContain("Mes primes en un coup d’œil");
     expect(html).toContain("12 dimanches effectués sur 13 à ce jour");
     expect(html).toContain("Fête nationale");
     expect(html).toContain("Fête du Travail");
@@ -93,15 +92,19 @@ describe("PayAllowancesSection", () => {
     expect(html).toContain("1 dimanche effectué sur 1 à ce jour");
   });
 
-  it("masque le détail mensuel tout en conservant les commandes de navigation", () => {
+  it("montre toujours les primes du mois, celles à zéro regroupées", () => {
     const html = renderToStaticMarkup(
-      <PayAllowancesSection {...props} payPeriodOpen={false} />,
+      <PayAllowancesSection {...props}
+        overtimeForPayMonth={{ totalMinutes: 0, ready: true, amount: 0, cappedMinutes: 0 }} />,
     );
-
-    expect(html).toContain("Ouvrir pour les détails");
+    expect(html).not.toContain("Ouvrir pour les détails");
     expect(html).toContain("Mois précédent");
     expect(html).toContain("Mois suivant");
-    expect(html).not.toContain("Heures supplémentaires payées");
+    expect(html).toContain("Total brut variable");
+    // Le forfait des dimanches compte avec les primes, comme ailleurs.
+    expect(html).toMatch(/variable-pay-pill positive"[^>]*><span>Forfait<\/span>/);
+    // Une pastille par prime, grise quand elle est à zéro.
+    expect(html).toMatch(/variable-pay-pill zero"[^>]*><span>Heures sup<\/span>/);
   });
 });
 

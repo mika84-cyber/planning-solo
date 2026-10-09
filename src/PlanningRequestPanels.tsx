@@ -282,9 +282,10 @@ export type WishChoice =
   | "half:morning"
   | "half:afternoon";
 
-/** Les trois natures courantes en boutons ; toutes les autres qu'accepte une
- *  demande de congé dans le menu « Autre ». Maladie, Divers et récupération
- *  ont leurs propres parcours et ne se mélangent pas à une demande de congé. */
+/** Les trois natures courantes en boutons ; dans le menu « Autre », les
+ *  demi-journées, le CET et l'annulation du souhait. Maladie, Divers et
+ *  récupération ont leurs propres parcours et ne se mélangent pas à une
+ *  demande de congé. */
 const WISH_MAIN_CHOICES: ReadonlyArray<{ choice: WishChoice; label: string; short: string }> = [
   { choice: "annual", label: "CA", short: "CA" },
   { choice: "rtt", label: "RTT", short: "RTT" },
@@ -293,10 +294,11 @@ const WISH_MAIN_CHOICES: ReadonlyArray<{ choice: WishChoice; label: string; shor
 const WISH_OTHER_CHOICES: ReadonlyArray<{ choice: WishChoice; label: string; short: string }> = [
   { choice: "half:morning", label: "Demi-journée · matin", short: "demi-journée" },
   { choice: "half:afternoon", label: "Demi-journée · après-midi", short: "demi-journée" },
-  { choice: "exceptional", label: "Jour exceptionnel", short: "jour exceptionnel" },
-  { choice: "childcare", label: "Garde d’enfant", short: "garde d’enfant" },
   { choice: "cet", label: "CET", short: "CET" },
 ];
+/** Dans « Autre » : retirer le souhait au lieu de le transformer. */
+const WISH_CANCEL = "cancel";
+type WishRowChoice = WishChoice | typeof WISH_CANCEL;
 const WISH_CHOICES = [...WISH_MAIN_CHOICES, ...WISH_OTHER_CHOICES];
 
 /** Type de sélection d'une nature choisie, pour sa couleur. */
@@ -352,12 +354,15 @@ export function WishConversionDialog({
    *  de CA, RTT ou FRA au même moment. */
   moments?: Record<string, "morning" | "afternoon" | undefined>;
   onClose: () => void;
-  onContinue: (choices: Record<string, WishChoice>) => void;
+  /** Les souhaits à transformer, avec leur nature, et ceux à annuler. */
+  onContinue: (choices: Record<string, WishChoice>, cancelled: string[]) => void;
 }) {
-  const [choices, setChoices] = useState<Record<string, WishChoice | undefined>>({});
-  const toConvert = dates.filter((date) => choices[date]);
+  const [choices, setChoices] = useState<Record<string, WishRowChoice | undefined>>({});
+  const toCancel = dates.filter((date) => choices[date] === WISH_CANCEL);
+  const toConvert = dates.filter((date) => choices[date] && choices[date] !== WISH_CANCEL);
+  const convertChoices = Object.fromEntries(toConvert.map((date) => [date, choices[date] as WishChoice]));
   const allSame = (choice: WishChoice) => dates.every((date) => choices[date] === choice);
-  const setChoice = (date: string, choice: WishChoice | undefined) =>
+  const setChoice = (date: string, choice: WishRowChoice | undefined) =>
     setChoices((previous) => ({ ...previous, [date]: choice }));
   const setAll = (choice: WishChoice) =>
     setChoices(allSame(choice) ? {} : Object.fromEntries(dates.map((date) => [date, choice])));
@@ -408,10 +413,11 @@ export function WishConversionDialog({
           {dates.map((date) => {
             const current = choices[date];
             const longLabel = longDate(fromKey(date));
-            const otherSelected = WISH_OTHER_CHOICES.some(({ choice }) => choice === current);
+            const cancelled = current === WISH_CANCEL;
+            const otherSelected = cancelled || WISH_OTHER_CHOICES.some(({ choice }) => choice === current);
             const moment = moments[date];
             return (
-              <li key={date} className={current ? undefined : "kept"}>
+              <li key={date} className={cancelled ? "cancelled" : current ? undefined : "kept"}>
                 <span className="wish-conversion-date">
                   {wishDateLabel(date)}
                   {moment ? <small>{moment === "morning" ? "matin" : "après-midi"}</small> : null}
@@ -426,34 +432,46 @@ export function WishConversionDialog({
                       `${label} le ${longLabel}`,
                     ),
                   )}
-                  {moment ? null : <select
-                    className={otherSelected ? "active" : ""}
-                    style={otherSelected && current ? ({ "--type-color": TYPE_COLORS[wishChoiceType(current)] } as CSSProperties) : undefined}
+                  <select
+                    className={otherSelected ? `active${cancelled ? " cancel" : ""}` : ""}
+                    style={otherSelected && current && !cancelled ? ({ "--type-color": TYPE_COLORS[wishChoiceType(current as WishChoice)] } as CSSProperties) : undefined}
                     aria-label={`Autre nature le ${longLabel}`}
                     value={otherSelected ? current : ""}
-                    onChange={(event) => setChoice(date, (event.target.value || undefined) as WishChoice | undefined)}
+                    onChange={(event) => setChoice(date, (event.target.value || undefined) as WishRowChoice | undefined)}
                   >
                     <option value="">Autre</option>
-                    {WISH_OTHER_CHOICES.map(({ choice, label }) => (
+                    {/* Un souhait déjà d'un matin ou d'un après-midi ne se
+                        recoupe pas en demi-journée. */}
+                    {(moment ? [] : WISH_OTHER_CHOICES).map(({ choice, label }) => (
                       <option key={choice} value={choice}>{label}</option>
                     ))}
-                  </select>}
+                    <option value={WISH_CANCEL}>Annuler le souhait</option>
+                  </select>
                 </div>
               </li>
             );
           })}
         </ul>
         <p className="wish-conversion-summary" aria-live="polite">
-          {toConvert.length ? wishConversionSummary(choices, dates.length, moments) : "Aucune nature choisie : tout reste en souhait."}
+          {toConvert.length || toCancel.length
+            ? [
+                toConvert.length || toCancel.length < dates.length
+                  ? wishConversionSummary(convertChoices, dates.length - toCancel.length, moments)
+                  : "",
+                toCancel.length ? `${toCancel.length} ${toCancel.length > 1 ? "souhaits annulés" : "souhait annulé"}` : "",
+              ].filter(Boolean).join(" · ")
+            : "Aucune nature choisie : tout reste en souhait."}
         </p>
         <button
           className="validate-button wish-conversion-continue"
           type="button"
-          disabled={!toConvert.length}
-          onClick={() => onContinue(Object.fromEntries(toConvert.map((date) => [date, choices[date] as WishChoice])))}
+          disabled={!toConvert.length && !toCancel.length}
+          onClick={() => onContinue(convertChoices, toCancel)}
         >
-          {!toConvert.length
+          {!toConvert.length && !toCancel.length
             ? "Choisissez au moins une nature"
+            : !toConvert.length
+              ? `Annuler ${toCancel.length > 1 ? `${toCancel.length} souhaits` : "ce souhait"}`
             : toConvert.length === dates.length
               ? "Continuer"
               : `Continuer avec ${toConvert.length} ${toConvert.length > 1 ? "congés" : "congé"}`}

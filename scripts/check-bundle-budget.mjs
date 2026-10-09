@@ -58,7 +58,11 @@ const budgets = {
   // (scripts/minify-standalone.mjs, 240 → 170 Kio). Le reste (768,9 Kio
   // mesurés) tient aux rubriques ajoutées depuis le 1er octobre : historique
   // des mécénats, règles des congés, veille du site, signature partagée.
-  totalJavaScript: { raw: 2_360 * KIB, gzip: 771 * KIB },
+  // Relevé le 9 octobre 2026 de 771 à 775 Kio compressés, avec l'accord de
+  // l'administrateur : Ma paie en bulletin simplifié (frise du brut, lignes
+  // détaillées, totaux du calcul expliqués), alors même que l'ancien tableau
+  // de bord et « Affiner mes estimations » ont été retirés (773,8 mesurés).
+  totalJavaScript: { raw: 2_360 * KIB, gzip: 775 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -79,7 +83,10 @@ const budgets = {
   // compacté, mais les retouches successives ont empilé des règles. Un
   // nettoyage des surcharges est prévu à part ; il devra ramener ce total
   // sous 480 Kio plutôt que justifier un nouveau relèvement.
-  totalCss: { raw: 525 * KIB, gzip: 97 * KIB },
+  // Relevé le 9 octobre 2026 à 529 / 99 Kio (528,6 / 98,3 mesurés), avec
+  // l'accord de l'administrateur, pour Ma paie en bulletin simplifié — après
+  // retrait d'environ 16 Ko de styles de l'ancien tableau de bord.
+  totalCss: { raw: 529 * KIB, gzip: 99 * KIB },
 };
 
 async function filesUnder(directory) {

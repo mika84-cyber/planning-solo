@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
 import { minutesLabel, type WorkQuota } from "./overtime";
 import { MONTHS, fromKey, longDate } from "./planningLogic";
+import "./payTotals.css";
 
 export type PayCalculationRow = {
   key: string;
@@ -70,6 +72,8 @@ type PayEstimateDetailsProps = {
     tone: "exact" | "estimated" | "incomplete";
     label: string;
     detail: string;
+    /** Simple estimation avec le profil de l'année : rien à signaler. */
+    quiet?: boolean;
   };
   onPreviousMonth: () => void;
   onNextMonth: () => void;
@@ -91,6 +95,8 @@ export function PayEstimateDetails({
   onNextMonth,
   onToday,
 }: PayEstimateDetailsProps) {
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === monthIndex;
   return (
     <section className="allowance-card allowance-card-lead">
       <header className="pay-detail-month-heading">
@@ -121,12 +127,15 @@ export function PayEstimateDetails({
               <path d="m7.5 5 5 5-5 5" />
             </svg>
           </button>
-          <button type="button" className="pay-today-button" onClick={onToday}>
-            Aujourd’hui
-          </button>
+          {/* Seulement loin du mois en cours : sinon il ne sert à rien. */}
+          {isCurrentMonth ? null : (
+            <button type="button" className="pay-today-button" onClick={onToday}>
+              Aujourd’hui
+            </button>
+          )}
         </div>
       </header>
-      <div className={`pay-reliability ${reliability.tone}`} role="status">
+      {reliability.quiet ? null : <div className={`pay-reliability ${reliability.tone}`} role="status">
         <span aria-hidden="true">
           {reliability.tone === "exact" ? "✓" : reliability.tone === "incomplete" ? "!" : "≈"}
         </span>
@@ -134,19 +143,10 @@ export function PayEstimateDetails({
           <strong>{reliability.label}</strong>
           <small>{reliability.detail}</small>
         </p>
-      </div>
-      <div className="pay-headline">
-        <p className="pay-amount">
-          <span>Brut</span>
-          <strong>{euros(grossEstimateComplete ? gross : 0)}</strong>
-        </p>
-        {net === null ? null : (
-          <p className="pay-amount net">
-            <span>Net estimé</span>
-            <strong>{euros(net)}</strong>
-          </p>
-        )}
-      </div>
+      </div>}
+      {/* Les quatre totaux d'abord ; un appui sur une case explique son
+          calcul, ligne à ligne. Le détail complet suit. */}
+      <PayTotalsExplained gross={gross} grossEstimateComplete={grossEstimateComplete} net={net} calculation={calculation} />
       <section className="pay-calculation-section" aria-labelledby="gross-composition-title">
         <h3 id="gross-composition-title">Composition du brut</h3>
         <table className="allowance-table pay-calculation-table">
@@ -211,12 +211,6 @@ export function PayEstimateDetails({
         </table>
       </section>
 
-      <section className="pay-calculation-totals" aria-label="Totaux du calcul">
-        <article><span>Total brut</span><strong>{grossEstimateComplete ? euros(gross) : "À compléter"}</strong><small>après les retenues appliquées au brut</small></article>
-        <article><span>Total des ajouts variables</span><strong>{euros(calculation.variableAdditions)}</strong><small>inclus dans le brut</small></article>
-        <article><span>Total des retenues</span><strong>{calculation.totalDeductions === null ? "À compléter" : `−${euros(calculation.totalDeductions)}`}</strong><small>retenues brutes, cotisations et impôt</small></article>
-        <article className="net"><span>Net estimé final</span><strong>{net === null ? "À compléter" : euros(net)}</strong><small>montant estimé après impôt</small></article>
-      </section>
       {overtime.totalMinutes ? (
         <div className="overtime-pay-detail">
           <div className="overtime-pay-detail-heading">
@@ -309,5 +303,150 @@ export function PayEstimateDetails({
         </div>
       ) : null}
     </section>
+  );
+}
+
+type TotalKey = "gross" | "variable" | "deductions" | "net";
+type ExplainStep = {
+  label: string;
+  detail?: string;
+  amount: number | null;
+  /** « + », « − » ou « » (premier terme) ; « = » pour un total. */
+  sign: "" | "+" | "−" | "=";
+};
+
+/** Lignes qui changent d'un mois à l'autre (forfait des dimanches compris). */
+const VARIABLE_KEYS = ["sunday-flat", "sundays", "holidays", "compensated", "overtime", "mecenat", "cia"];
+const percent = (value: number) => `${value.toLocaleString("fr-FR")} %`;
+
+/**
+ * Les quatre totaux du mois. Chaque case s'ouvre sur son calcul : les
+ * montants qui la composent, dans l'ordre, jusqu'au total affiché.
+ */
+function PayTotalsExplained({
+  gross,
+  grossEstimateComplete,
+  net,
+  calculation,
+}: {
+  gross: number;
+  grossEstimateComplete: boolean;
+  net: number | null;
+  calculation: PayCalculationBreakdown;
+}) {
+  const [open, setOpen] = useState<TotalKey | null>(null);
+  const brut = grossEstimateComplete ? gross : null;
+  const fixedPart = gross - calculation.variableAdditions;
+  const termsOf = (rows: PayCalculationRow[]): ExplainStep[] =>
+    rows.map((row, index) => ({ label: row.label, amount: row.amount, sign: index ? "+" : "" }));
+  const explanations: Record<TotalKey, { title: string; intro: string; steps: ExplainStep[] }> = {
+    gross: {
+      title: "Comment est calculé le total brut",
+      intro: "Votre traitement, vos indemnités et vos primes du mois, moins ce qui est retenu pour une absence (maladie, grève).",
+      steps: [
+        ...termsOf(calculation.grossComposition),
+        ...calculation.grossDeductions.map((row) => ({ label: row.label, amount: row.amount, sign: "−" as const })),
+        { label: "Total brut", amount: brut, sign: "=" },
+      ],
+    },
+    variable: {
+      title: "Comment sont calculés les ajouts variables",
+      intro: "Ce qui change d’un mois à l’autre. Ces montants sont déjà compris dans le brut et supportent moins de cotisations que le traitement.",
+      steps: [
+        ...termsOf(calculation.grossComposition.filter((row) => VARIABLE_KEYS.includes(row.key))),
+        { label: "Total des ajouts variables", amount: calculation.variableAdditions, sign: "=" },
+      ],
+    },
+    deductions: {
+      title: "Comment est calculé le total des retenues",
+      intro: "Tout ce qui est retiré du brut avant d’arriver sur votre compte.",
+      steps: [
+        ...calculation.grossDeductions.map((row) => ({ label: row.label, detail: "retenue sur le brut", amount: row.amount, sign: "−" as const })),
+        {
+          label: "Cotisations sociales",
+          detail: `On garde ${percent(calculation.netRatioFixed)} de la partie fixe (${euros(fixedPart)}) et ${percent(calculation.netRatioVariable)} des ajouts variables (${euros(calculation.variableAdditions)}) : le reste part en cotisations.`,
+          amount: calculation.estimatedContributions,
+          sign: "−",
+        },
+        ...(calculation.mealVoucherDeduction
+          ? [{ label: "Titres repas", detail: "votre part du mois", amount: calculation.mealVoucherDeduction, sign: "−" as const }]
+          : []),
+        {
+          label: "Impôt sur le revenu",
+          detail: `Prélèvement à la source : ${percent(calculation.pasRate)} du net imposable.`,
+          amount: calculation.incomeTax,
+          sign: "−",
+        },
+        { label: "Total des retenues", amount: calculation.totalDeductions === null ? null : -calculation.totalDeductions, sign: "=" },
+      ],
+    },
+    net: {
+      title: "Comment est calculé le net estimé",
+      intro: "Ce qui arrive sur votre compte : le brut, moins les cotisations, puis moins l’impôt.",
+      steps: [
+        { label: "Total brut", amount: brut, sign: "" },
+        { label: "Cotisations sociales", amount: calculation.estimatedContributions, sign: "−" },
+        ...(calculation.navigo ? [{ label: "Remboursement Navigo", amount: calculation.navigo, sign: "+" as const }] : []),
+        ...(calculation.mealVoucherDeduction ? [{ label: "Titres repas", amount: calculation.mealVoucherDeduction, sign: "−" as const }] : []),
+        { label: "Net avant impôt", amount: calculation.netBeforeTax, sign: "=" },
+        { label: `Impôt (${percent(calculation.pasRate)})`, amount: calculation.incomeTax, sign: "−" },
+        { label: "Net estimé", amount: net, sign: "=" },
+      ],
+    },
+  };
+  const cards: Array<{ key: TotalKey; label: string; value: string; note: string }> = [
+    { key: "gross", label: "Total brut", value: brut === null ? "À compléter" : euros(brut), note: "avant cotisations et impôt" },
+    { key: "variable", label: "Total des ajouts variables", value: euros(calculation.variableAdditions), note: "déjà compris dans le brut" },
+    {
+      key: "deductions",
+      label: "Total des retenues",
+      value: calculation.totalDeductions === null ? "À compléter" : `−${euros(calculation.totalDeductions)}`,
+      note: "cotisations, impôt, absences",
+    },
+    { key: "net", label: "Net estimé final", value: net === null ? "À compléter" : euros(net), note: "ce que vous recevez" },
+  ];
+  const explanation = open ? explanations[open] : null;
+  return (
+    <>
+      <p className="pay-totals-hint">Touchez une case pour voir son calcul.</p>
+      <section className="pay-calculation-totals" aria-label="Totaux du calcul">
+        {cards.map((card) => (
+          <article key={card.key} className={`${card.key === "net" ? "net" : ""}${open === card.key ? " open" : ""}`.trim() || undefined}>
+            <button
+              type="button"
+              aria-expanded={open === card.key}
+              aria-controls="pay-total-explain"
+              onClick={() => setOpen((current) => (current === card.key ? null : card.key))}
+            >
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.note}</small>
+              <em>{open === card.key ? "Masquer le calcul" : "Voir le calcul"}<i aria-hidden="true">›</i></em>
+            </button>
+          </article>
+        ))}
+      </section>
+      {explanation ? (
+        <section id="pay-total-explain" className="pay-total-explain" aria-label={explanation.title}>
+          <h4>{explanation.title}</h4>
+          <p>{explanation.intro}</p>
+          <ol>
+            {explanation.steps.map((step) => (
+              <li key={`${step.sign}${step.label}`} className={step.sign === "=" ? "total" : undefined}>
+                <span>
+                  {step.label}
+                  {step.detail ? <small>{step.detail}</small> : null}
+                </span>
+                <b>
+                  {step.amount === null
+                    ? "à compléter"
+                    : `${step.sign === "+" || step.sign === "−" ? `${step.sign} ` : step.amount < 0 ? "− " : ""}${euros(Math.abs(step.amount))}`}
+                </b>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+    </>
   );
 }

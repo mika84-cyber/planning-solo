@@ -287,10 +287,6 @@
 .planning-calendar-section,
 .home-planning-heading,
 .pay-app-screen,
-.pay-dashboard-month,
-.pay-dashboard-estimate,
-.pay-dashboard-variables,
-.pay-dashboard-verification,
 .pay-dashboard-settings,
 .pay-dashboard-profile-slot .pay-profile-settings,
 .pay-missing-guidance,
@@ -306,15 +302,10 @@
 
 /* Chaque encadré porte le liseré noir ; les cartes de survol restent fines
    pour ne pas peser autant qu'une rubrique. */
-.pay-missing-guidance,
-.pay-dashboard-month,
-.pay-dashboard-estimate {
+.pay-missing-guidance {
   border: 1px solid var(--border-card);
 }
 
-.allowance-overview-grid > :is(article, button) {
-  border-width: 1px;
-}
 
 /* Les rubriques documentaires suivent les mêmes surfaces blanches que le
    reste de l'application. Les pictogrammes gardent leur couleur propre. */

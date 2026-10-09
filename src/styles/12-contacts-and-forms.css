@@ -554,7 +554,6 @@
 .cet-deposit-preview,
 .cet-history,
 .cet-operation-form,
-.variable-pay-list article,
 .sick-request-panel .request-bottom {
   border-width: 2px;
   border-color: var(--border-card);
@@ -842,6 +841,9 @@
   box-shadow: inset 0 0 0 1px var(--type-color);
 }
 .wish-conversion-list li.kept .wish-conversion-date { color: var(--muted); font-weight: 700; }
+/* Un souhait qu'on annule : sa date barrée, « Annuler le souhait » en rouge. */
+.wish-conversion-list li.cancelled .wish-conversion-date { color: var(--muted); text-decoration: line-through; }
+.wish-conversion-chips > select.active.cancel { border-color: #c4485f; background: #fdf0f2; color: #a5283a; box-shadow: inset 0 0 0 1px #c4485f; }
 .wish-conversion .wish-conversion-continue:disabled { cursor: not-allowed; opacity: 0.55; }
 .wish-conversion-summary { margin: 12px 0 0; color: var(--muted); font-size: 0.86rem; font-weight: 800; text-align: center; }
 .wish-conversion .wish-conversion-continue { width: 100%; min-height: 48px; margin-top: 10px; border-radius: 12px; }
@@ -1494,3 +1496,12 @@
 .app-shell .holiday-pay-options button.selected { border-color: #17684f; background: #eaf5f0; color: #17684f; }
 .app-shell .holiday-pay-options button.exchange { border-color: #5eb6c4; background: #eef8fa; color: #1f5f69; }
 .work-exchange-group-hint { margin: 0 0 10px; border-left: 3px solid #5eb6c4; border-radius: 0 8px 8px 0; padding: 8px 10px; background: #eef8fa; color: #1f4f57; font-size: 0.84rem; font-weight: 700; }
+/* Choix des fériés : fond terracotta léger, intitulés en noir ; le choix
+   en cours se reconnaît à son cadre terracotta. « À décider » en terracotta. */
+.app-shell .holiday-pay-options button,
+.app-shell .holiday-pay-options button.exchange,
+.app-shell .holiday-pay-options button.selected { background: #fbf2ec; border-color: #ecd5c8; color: var(--text); }
+.app-shell .holiday-pay-options button span { color: var(--text); }
+.app-shell .holiday-pay-options button:hover { border-color: #d4ae9b; }
+.app-shell .holiday-pay-options button.selected { border: 2px solid #9a4a2e; }
+.holiday-pay-pending { border-color: #c9a796; color: #9a4a2e; }

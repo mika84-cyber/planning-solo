@@ -85,44 +85,6 @@
 }
 /* Brut et net côte à côte, le net mis en avant : c'est le chiffre qu'on
    vient chercher, le brut ne sert qu'à le situer. */
-.pay-headline {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.pay-headline:last-child {
-  margin-bottom: 0;
-}
-.pay-amount {
-  display: grid;
-  gap: 2px;
-  border-radius: 12px;
-  padding: 9px 11px;
-  background: #fff;
-}
-.pay-amount span {
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.pay-amount strong {
-  font-size: 21px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 900;
-  white-space: nowrap;
-}
-.pay-amount.net {
-  background: var(--accent);
-}
-.pay-amount.net span {
-  color: rgba(255, 255, 255, 0.8);
-}
-.pay-amount.net strong {
-  color: #fff;
-}
 
 .allowance-table {
   width: 100%;
@@ -585,3 +547,7 @@
 .sunday-done-table td{padding:6px 0}
 .sunday-done-table tbody tr+tr>th,.sunday-done-table tbody tr+tr>td{border-top:1px dashed #e8ded2}
 .sunday-day{min-width:30px;height:30px}
+/* Légende des dimanches : sur une seule ligne, pastilles plus petites. */
+.sunday-done-legend{flex-wrap:nowrap;justify-content:space-between;gap:8px;overflow-x:auto;font-size:.7rem;white-space:nowrap;scrollbar-width:none}
+.sunday-done-legend span{gap:4px}
+.sunday-done-legend span::before{width:10px;height:10px}

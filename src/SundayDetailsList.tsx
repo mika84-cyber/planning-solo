@@ -15,7 +15,7 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
               payés un par un jusqu'au plafond, au-delà rien. */}
           <p className="sunday-done-legend">
             <span className="paid">Payé {euros(SUNDAY_ALLOWANCE.perSunday)}</span>
-            <span className="flat">Dans le forfait</span>
+            <span className="flat">Forfait</span>
             {allowances.monthly?.some((slot) => slot.reported) ? <span className="carried">Reporté</span> : null}
             {allowances.sundays.length > SUNDAY_ALLOWANCE.paidUntil ? <span className="unpaid">Non payé</span> : null}
             {allowances.sundays.length > sundaysDone.length ? <span className="upcoming">À venir</span> : null}

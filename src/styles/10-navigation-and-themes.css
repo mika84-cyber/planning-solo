@@ -253,19 +253,6 @@
 .pay-dedicated-content.request-archive-content { padding: 0; }
 .variable-pay-card { margin-bottom: 16px; }
 .variable-pay-card header h3 { margin: 4px 0 0; }
-.variable-pay-list { display: grid; gap: 8px; }
-.variable-pay-list article {
-  min-height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 11px 14px;
-}
-.variable-pay-list article > span { display: grid; gap: 3px; }
-.variable-pay-list small { color: #9b8e7c; }
-.variable-pay-list b { color: #286d57; white-space: nowrap; }
-.variable-pay-list b.pending { color: #9c6b2e; }
 @media (max-width: 720px) {
   .top-header {
     padding-top: 11px;
@@ -683,7 +670,6 @@
 }
 .home-notes-section { background: linear-gradient(145deg, #fffaf4, #fff 58%); }
 .home-planning-heading { background: linear-gradient(145deg, var(--surface-high), #fff 58%); }
-.variable-pay-list article { border-radius: 10px; background: #fff; }
 
 @media (max-width: 720px) {
   .planning-leave-desktop { display: none; }

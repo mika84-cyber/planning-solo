@@ -8,7 +8,6 @@ import type {
   PayslipCheck,
   PayslipImportResult,
 } from "./usePayUiState";
-import { PayslipCalibrationCard } from "./PayslipCalibrationCard";
 import { PayslipSettingsSections } from "./PayslipSettingsSections";
 import { PayslipVerificationCard } from "./PayslipVerificationCard";
 
@@ -144,8 +143,6 @@ export function PayslipCheckSection({
   sundayCarryoverMonth,
   sundayCarryoverYear,
   onClearSundayCarryover: clearSundayCarryover,
-  rateSamples: payslipRateSamples,
-  rateCalibration: payslipRateCalibration,
   sickLeaves,
   paySettingsOpen,
   setPaySettingsOpen,
@@ -271,15 +268,6 @@ export function PayslipCheckSection({
             </button>
           </p>
         )}
-
-        <PayslipCalibrationCard
-          importBusy={payslipImportBusy}
-          importMode={payslipImportMode}
-          importError={payslipImportError}
-          onImport={importPayslips}
-          rateSamples={payslipRateSamples}
-          rateCalibration={payslipRateCalibration}
-        />
 
         <PayslipSettingsSections
           allowances={allowances}

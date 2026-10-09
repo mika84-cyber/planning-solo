@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectWorkedDays, computePayAllowances } from "./payAllowances";
+import { collectWorkedDays, computePayAllowances, holidayRecoverySources } from "./payAllowances";
 import { dateKey, getDayInfo } from "./planningLogic";
 import { nextSundayPayoutSlot } from "./usePayActions";
 
@@ -74,5 +74,20 @@ describe("report des dimanches manquants", () => {
     expect(kept).not.toContain(first);
     expect(kept).not.toContain(second);
     expect(kept).not.toContain(third);
+  });
+
+  it("ajoute un férié compensé au solde de récupération une fois sa date passée", () => {
+    const days = Array.from({ length: 365 }, (_, index) => new Date(2026, 0, 1 + index, 12));
+    const compensated = dateKey(days.find((date) => getDayInfo(date, 2).holiday && getDayInfo(date, 2).kind === "off")!);
+    const worked = dateKey(days.find((date) => getDayInfo(date, 2).holiday && getDayInfo(date, 2).kind === "work")!);
+    const entry = { holidayPay: "recovery", holidayRecoveryMinutes: 495 };
+    const entries = { [compensated]: entry, [worked]: entry } as never;
+    const dayBefore = (key: string) => dateKey(new Date(new Date(`${key}T12:00:00`).getTime() - 86_400_000));
+    // La veille du férié compensé : il n'est pas encore au solde.
+    expect(holidayRecoverySources(entries, 2, dayBefore(compensated)).map((item) => item.date)).not.toContain(compensated);
+    // Le lendemain : il y entre.
+    expect(holidayRecoverySources(entries, 2, "2027-01-01").map((item) => item.date)).toContain(compensated);
+    // Un férié travaillé, lui, compte dès le choix.
+    expect(holidayRecoverySources(entries, 2, dayBefore(worked)).map((item) => item.date)).toContain(worked);
   });
 });

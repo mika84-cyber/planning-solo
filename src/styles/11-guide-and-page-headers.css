@@ -57,13 +57,6 @@
     padding-left: 6px;
     font-size: 12px;
   }
-  .holiday-pay-picker .choice-picker-menu {
-    top: auto;
-    bottom: calc(100% + 7px);
-    max-height: min(220px, 45dvh);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
 }
 
 /* Le libellé reste réellement centré, indépendamment de la flèche placée à
@@ -1027,15 +1020,6 @@
   .variable-pay-card > header[role="button"] {
     position: relative;
   }
-  .variable-pay-card .pay-period-toggle {
-    padding-right: 112px;
-  }
-  .variable-pay-card .pay-period-month {
-    gap: 9px;
-  }
-  .variable-pay-card .pay-period-chevron {
-    align-self: center;
-  }
   .variable-pay-card .variable-pay-heading-actions {
     align-items: flex-end;
   }
@@ -1062,12 +1046,6 @@
     width: 168px;
     min-height: 46px;
   }
-  .variable-pay-card .variable-pay-total > small {
-    transform: translateY(-4px);
-  }
-  .variable-pay-card .variable-pay-total > strong {
-    font-size: 15px;
-  }
 }
 
 .month-card .calendar-grid .day.training-recovery-day .training-recovery-label {
@@ -1081,3 +1059,41 @@
   box-shadow: none;
   text-shadow: none;
 }
+
+/* En-tête de « Primes pour le mois », remis à plat : le mois entre ses
+   flèches en haut, le total variable et le bouton du détail en bas. */
+.app-shell .variable-pay-card > header.variable-pay-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px 16px; cursor: default; }
+.variable-pay-head .variable-pay-month { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.variable-pay-head .variable-pay-month h3 { margin: 0; min-width: 0; color: var(--text); font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; }
+.app-shell .variable-pay-head .variable-pay-month .pay-nav-arrow { width: 34px; height: 34px; min-height: 0; flex: none; }
+.app-shell .variable-pay-head .variable-pay-today { width: auto; min-height: 30px; margin-left: auto; padding: 4px 12px; font-size: 0.74rem; }
+
+/* Primes pour le mois, version « détail toujours visible » : le mois centré
+   entre ses flèches, le total en grand, puis la liste des primes. */
+.app-shell .variable-pay-card > header.variable-pay-head { display: grid; justify-items: center; gap: 6px; padding: 14px 16px 10px; text-align: center; }
+.variable-pay-head > .step-label { justify-self: start; }
+.variable-pay-head .variable-pay-month { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; width: 100%; gap: 8px; }
+.variable-pay-head .variable-pay-month h3 { font-family: inherit; font-size: 1.15rem; font-weight: 850; text-align: center; }
+.app-shell .variable-pay-head .variable-pay-today { margin: 0; }
+
+/* Primes pour le mois, version « pastilles » : le mois et ses flèches sur une
+   ligne, une pastille par prime, le total en pied de carte. */
+.app-shell .variable-pay-card > header.variable-pay-head-c { justify-items: stretch; gap: 6px; padding: 14px 16px 4px; text-align: left; }
+.variable-pay-head-c .variable-pay-month { display: flex; grid-template-columns: none; align-items: center; justify-content: space-between; gap: 10px; }
+.variable-pay-head-c .variable-pay-month h3 { font-size: 1.2rem; text-align: left; }
+.variable-pay-head-c .variable-pay-arrows { display: inline-flex; gap: 8px; }
+.app-shell .variable-pay-head-c .variable-pay-today { justify-self: start; }
+.variable-pay-card .variable-pay-pills { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 4px; }
+.app-shell .variable-pay-card .variable-pay-pill { display: inline-flex; align-items: baseline; gap: 6px; min-height: 0; margin: 0; border: 1px solid transparent; border-radius: 999px; padding: 6px 12px; box-shadow: none; font: inherit; font-size: 0.8rem; cursor: pointer; }
+.variable-pay-pill span { font-weight: 750; }
+.variable-pay-pill b { font-weight: 850; font-variant-numeric: tabular-nums; }
+.app-shell .variable-pay-card .variable-pay-pill.positive { background: #e3f3e9; color: #1d6b45; }
+.app-shell .variable-pay-card .variable-pay-pill.zero { background: #f4efe8; color: #8b7c6d; }
+.app-shell .variable-pay-card .variable-pay-pill.negative { background: #fbe4e4; color: #a5283a; }
+.app-shell .variable-pay-card .variable-pay-pill.pending { background: #fbeadf; color: #8a3d22; }
+.app-shell .variable-pay-card .variable-pay-pill[aria-pressed="true"] { border-color: currentColor; }
+.variable-pay-card .variable-pay-pill-detail { margin: 6px 16px 0; border-radius: 10px; padding: 8px 10px; background: #fbf7f2; color: #5b4c3f; font-size: 0.8rem; }
+.variable-pay-card .variable-pay-footer { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 10px 16px 14px; border-top: 1px solid #efe7dc; padding-top: 10px; }
+.variable-pay-card .variable-pay-footer span { color: #6b5d50; font-size: 0.8rem; font-weight: 750; }
+.variable-pay-card .variable-pay-footer strong { color: #1d6b45; font-size: 1.3rem; font-weight: 850; font-variant-numeric: tabular-nums; }
+.variable-pay-card .variable-pay-footer.zero strong { color: #9b8e80; }

@@ -94,10 +94,7 @@ describe("PayslipCheckSection", () => {
     expect(html).toMatch(/payslip-file-drop[\s\S]*?<input[^>]*multiple=""/);
     expect(html).not.toContain("Prendre une photo");
     expect(html).not.toContain("Traitement local");
-    expect(html).toContain("Affiner mes estimations");
-    expect(html).toContain("Choisir plusieurs PDF ou photos");
-    expect(html).toContain("aucune saisie manuelle n’est");
-    expect(html).toContain("montants de primes variés");
+    expect(html).not.toContain("Affiner mes estimations");
     expect(html).toContain("Éléments de paie");
   });
 

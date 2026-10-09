@@ -14,7 +14,6 @@ const schoolVacationUi = readFileSync(new URL("./src/SchoolVacationUi.tsx", impo
 const planningDayCell = readFileSync(new URL("./src/PlanningDayCell.tsx", import.meta.url), "utf8");
 const usefulResourcesHub = readFileSync(new URL("./src/UsefulResourcesHub.tsx", import.meta.url), "utf8");
 const payslipCheckSection = readFileSync(new URL("./src/PayslipCheckSection.tsx", import.meta.url), "utf8");
-const payslipCalibrationCard = readFileSync(new URL("./src/PayslipCalibrationCard.tsx", import.meta.url), "utf8");
 const appDialogLayer = readFileSync(new URL("./src/AppDialogLayer.tsx", import.meta.url), "utf8");
 const dayDetailDialog = readFileSync(new URL("./src/DayDetailDialog.tsx", import.meta.url), "utf8");
 const balanceDetailDialog = readFileSync(new URL("./src/BalanceDetailDialog.tsx", import.meta.url), "utf8");
@@ -36,7 +35,7 @@ const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions
 const planningRequestActions = readFileSync(new URL("./src/usePlanningRequestActions.ts", import.meta.url), "utf8");
 const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", import.meta.url), "utf8");
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
-const app = [appRoot, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, payslipCalibrationCard, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const app = [appRoot, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
   .map(([, relativePath]) =>
@@ -49,6 +48,7 @@ const styles = [
   stylesheetEntry,
   ...importedStyles,
   readFileSync(new URL("./src/grandPalaisProgram.css", import.meta.url), "utf8"),
+  readFileSync(new URL("./src/payBulletin.css", import.meta.url), "utf8"),
 ].join("\n");
 const model = readFileSync(new URL("./src/appModel.ts", import.meta.url), "utf8");
 const calendarApi = readFileSync(new URL("./src/calendarApi.ts", import.meta.url), "utf8");
@@ -132,8 +132,9 @@ describe("finitions d’interface", () => {
   it("conserve le profil et la période de paie repliables", () => {
     expect(app).toContain('className="pay-profile-summary"');
     expect(app).toContain("aria-expanded={profileOpen}");
-    expect(app).toContain('className="pay-period-toggle"');
-    expect(app).toContain("aria-expanded={payPeriodOpen}");
+    // Les primes du mois en pastilles : un appui en montre le détail.
+    expect(app).toContain('className="variable-pay-pills"');
+    expect(app).toContain('className="variable-pay-pill-detail"');
   });
 
   it("anime le changement de mois sans gêner le défilement vertical", () => {
@@ -202,7 +203,10 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Choisir la prime de ${missingHolidayChoices} jour");
     expect(app).toContain("Ajouter un bulletin de paie");
     expect(app).toContain('scrollWhenReady("holiday-choices")');
-    expect(app).toContain('scrollWhenReady("pay-dashboard-verification")');
+    // La vérification du bulletin se replie : l'accueil demande qu'elle
+    // s'ouvre, puis la page y descend.
+    expect(app).toContain("setPayVerificationRequested(true)");
+    expect(payDashboard).toContain("verificationRequested");
     expect(app).toContain('id="holiday-choices"');
     expect(app).not.toContain("className=\"important-alert\"");
     // Un dimanche reporté se règle seul : il ne réclame rien à personne.
@@ -211,7 +215,7 @@ describe("finitions d’interface", () => {
 
   it("actualise les libellés demandés dans les primes", () => {
     expect(app).toContain("Primes pour le mois");
-    expect(app).toContain("Jours fériés dans l’année");
+    expect(app).not.toContain("Jours fériés dans l’année");
     expect(app).not.toContain('className="step-label">Période de paie');
     expect(app).not.toContain("Jours fériés concernés");
   });
@@ -229,13 +233,10 @@ describe("finitions d’interface", () => {
   });
 
   it("rend la navigation mensuelle des primes confortable sur téléphone", () => {
-    expect(app).toContain('className="pay-period-month"');
-    expect(styles).toContain(".variable-pay-card .pay-month-nav.compact .pay-nav-arrow {");
-    expect(styles).toContain("position: absolute;");
-    expect(styles).toContain("width: 44px;");
-    expect(styles).toContain("right: 60px;");
-    expect(app).toContain('className="pay-period-chevron"');
-    expect(styles).toContain(".variable-pay-card .pay-period-chevron {");
+    // Le mois en titre, les deux flèches regroupées à droite.
+    expect(app).toContain('className="variable-pay-head variable-pay-head-c"');
+    expect(app).toContain('className="variable-pay-arrows"');
+    expect(styles).toContain(".variable-pay-head-c .variable-pay-arrows { display: inline-flex; gap: 8px; }");
   });
 
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {
@@ -275,7 +276,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain('aria-label="Fermer cette page"');
     expect(app).toContain('className={`pay-profile-open-copy');
     expect(app).toContain('profileOpen ? "Replier" : netEstimateComplete ? "Profil complet" : "À compléter"');
-    expect((payDashboard.match(/className="pay-today-button"/g) || []).length).toBe(1);
+    expect((payDashboard.match(/className="pay-bulletin-today"/g) || []).length).toBe(1);
     expect((payEstimateDetails.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect(app).toContain("Aucun dimanche versé sur cette paie");
     expect(styles).toContain(".pay-detail-sticky-header");
@@ -317,7 +318,8 @@ describe("finitions d’interface", () => {
   });
 
   it("n'affiche aucun brut trompeur tant que le profil de paie est incomplet", () => {
-    expect(payEstimateDetails).toContain("euros(grossEstimateComplete ? gross : 0)");
+    expect(payEstimateDetails).toContain("const brut = grossEstimateComplete ? gross : null;");
+    expect(payEstimateDetails).toContain('brut === null ? "À compléter" : euros(brut)');
   });
 
   it("enregistre plusieurs congés dans un lot idempotent unique", () => {
@@ -501,8 +503,8 @@ describe("finitions d’interface", () => {
   it("uniformise les libellés de compensation et les sélecteurs mobiles", () => {
     expect(model).toContain('label: "Prime + récup"');
     expect(model).not.toContain("Prime + 1 jour de récup");
-    expect(styles).toContain(".holiday-pay-picker .choice-picker-menu");
-    expect(styles).toContain("bottom: calc(100% + 7px)");
+    // Les trois choix d'un férié se touchent directement : plus de menu.
+    expect(styles).toContain(".holiday-pay-options { display: grid;");
   });
 
   it("distingue la zone du planning mensuel du tableau toutes zones du PDF", () => {
@@ -523,7 +525,7 @@ describe("finitions d’interface", () => {
   });
 
   it("rend les cartes du tableau de bord de paie et les dernières absences immédiatement repérables", () => {
-    expect(styles).toContain(".pay-dashboard-priority-grid");
+    expect(styles).toContain(".pay-bulletin .pay-bulletin-layout");
     expect(styles).toContain("border: 1px solid var(--border-card)");
     expect(app).toContain("recentBalanceDetailDates.has(detail.date)");
     expect(styles).toContain(".recent-leave-date");
@@ -771,8 +773,9 @@ describe("finitions d’interface", () => {
   });
 
   it("organise l’accueil de Ma paie autour du mois et des accès directs", () => {
-    expect(payDashboard).toContain('className="pay-dashboard-month"');
+    expect(payDashboard).toContain('className="pay-bulletin-month"');
     expect(payDashboard).toContain("Net estimé");
+    expect(payDashboard).toContain("Détail du calcul");
     expect(payDashboard).not.toContain("Actions utiles");
     expect(payDashboard).not.toContain("pay-dashboard-checks");
     expect(appRoot).not.toContain("Bulletin du mois non vérifié");
@@ -780,7 +783,7 @@ describe("finitions d’interface", () => {
     expect(payDashboard).toContain("Primes et jours fériés");
     expect(payDashboard).toContain("Vérifier mon bulletin");
     expect(payDashboard).toContain("Réglages et explications");
-    expect(styles).toContain(".pay-dashboard-priority-grid");
+    expect(styles).toContain(".pay-bulletin .pay-bulletin-layout");
     expect(styles).toContain(".pay-dashboard-settings");
   });
 

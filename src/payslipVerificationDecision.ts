@@ -16,6 +16,13 @@ export type PayslipVerificationRecord = {
 
 type StoredRecords = Record<string, PayslipVerificationRecord>;
 
+/** Émis à chaque décision enregistrée ou effacée, pour que Ma paie suive. */
+export const PAYSLIP_VERIFICATION_EVENT = "planning:payslip-verification";
+
+function announceChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(PAYSLIP_VERIFICATION_EVENT));
+}
+
 export function payslipVerificationPeriodKey(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
@@ -45,6 +52,7 @@ export function savePayslipVerification(accountId: string, record: PayslipVerifi
   const records = readRecords(accountId);
   records[payslipVerificationPeriodKey(record.year, record.month)] = record;
   localStorage.setItem(storageKey(accountId), JSON.stringify(records));
+  announceChange();
 }
 
 export function removePayslipVerification(accountId: string, year: number, month: number) {
@@ -52,6 +60,7 @@ export function removePayslipVerification(accountId: string, year: number, month
   const records = readRecords(accountId);
   delete records[payslipVerificationPeriodKey(year, month)];
   localStorage.setItem(storageKey(accountId), JSON.stringify(records));
+  announceChange();
 }
 
 export function payslipAnomalyReportLines(record: PayslipVerificationRecord) {

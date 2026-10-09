@@ -67,5 +67,50 @@ describe("détail mensuel de la paie", () => {
     expect(html).toContain("Total des ajouts variables");
     expect(html).toContain("Total des retenues");
     expect(html).toContain("Net estimé final");
+    // Chaque total se touche pour afficher son calcul.
+    expect(html).toContain("Touchez une case pour voir son calcul.");
+    expect(html.match(/aria-controls="pay-total-explain"/g)).toHaveLength(4);
+    expect(html.match(/Voir le calcul/g)).toHaveLength(4);
+  });
+
+  it("ne répète pas une simple estimation avec le profil de l’année", () => {
+    const html = renderToStaticMarkup(
+      <PayEstimateDetails
+        monthIndex={7}
+        year={2026}
+        gross={2500}
+        grossEstimateComplete
+        net={1980}
+        calculation={{
+          grossComposition: [{ key: "base", label: "Traitement indiciaire", detail: "mensuel", amount: 2500 }],
+          grossDeductions: [],
+          grossBeforeDeductions: 2500,
+          variableAdditions: 0,
+          netRatioFixed: 79,
+          netRatioVariable: 86,
+          estimatedContributions: 500,
+          navigo: 0,
+          mealVoucherDeduction: 0,
+          netBeforeTax: 2000,
+          pasRate: 1,
+          incomeTax: 20,
+          totalDeductions: 520,
+        }}
+        overtime={{ totalMinutes: 0, performedMonth: 6, performedYear: 2026, ready: false, amount: 0, hourlyBase: 0, lines: [] }}
+        workQuota="full"
+        mecenat={{ grossAmountCents: 0, lines: [] }}
+        reliability={{
+          tone: "estimated",
+          label: "Valeurs enregistrées pour cette année",
+          detail: "Estimation calculée avec le profil de paie 2026.",
+          quiet: true,
+        }}
+        onPreviousMonth={vi.fn()}
+        onNextMonth={vi.fn()}
+        onToday={vi.fn()}
+      />,
+    );
+    expect(html).not.toContain("Valeurs enregistrées pour cette année");
+    expect(html).not.toContain('class="pay-reliability');
   });
 });
