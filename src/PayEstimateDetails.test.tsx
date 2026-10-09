@@ -51,8 +51,9 @@ describe("détail mensuel de la paie", () => {
       />,
     );
 
-    expect(html).toContain("Détail de la paie du mois affiché");
-    expect(html).toContain("août 2026");
+    // Le bandeau de la page la nomme déjà : ici, le mois entre ses flèches.
+    expect(html).not.toContain("Détail de la paie du mois affiché");
+    expect(html).toContain("Août 2026");
     expect(html).toContain("2 500,00 €");
     expect(html).toContain("1 980,00 €");
     expect(html).toContain('aria-label="Mois précédent"');

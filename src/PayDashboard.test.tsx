@@ -93,7 +93,10 @@ describe("PayDashboard", () => {
     expect(html).toMatch(/Forfait dimanches[\s\S]*le même chaque mois[\s\S]*\+ 89,59/);
     // Chaque prime avec son détail.
     expect(html).toMatch(/Dimanches \(9\)[\s\S]*dont 1 reporté[\s\S]*\+ 494,37/);
-    expect(html).toMatch(/Cotisations · impôt[\s\S]*cotisations 571,43 · impôt 41,06[\s\S]*− 612,49/);
+    // Cotisations et impôt sur deux lignes, comme dans la frise.
+    expect(html).toMatch(/Cotisations sociales[\s\S]*− 571,43/);
+    expect(html).toMatch(/Impôt sur le revenu[\s\S]*prélèvement à la source · 1,7 %[\s\S]*− 41,06/);
+    expect(html).toMatch(/Retenues<\/span><b>− 612,49/);
     // Un montant inconnu ne compte pas pour zéro : il est signalé.
     expect(html).toMatch(/Jours fériés \(1\)[\s\S]*class="pending">à décider</);
     expect(html).toMatch(/Heures supplémentaires \(2 h 30\)[\s\S]*class="pending">à vérifier</);
@@ -105,14 +108,15 @@ describe("PayDashboard", () => {
     expect(html).toContain("Primes du mois");
     expect(html).toContain("Retenues");
     // La frise dit où va le brut : le net, les cotisations, l'impôt.
-    expect(html).toContain("Où va votre brut");
-    expect(html).toMatch(/<li class="net"><span>Net<\/span> <b>2\s080,00<\/b>/);
-    expect(html).toMatch(/<li class="contributions"><span>Cotisations<\/span> <b>571,43<\/b>/);
-    expect(html).toMatch(/<li class="tax"><span>Impôt<\/span> <b>41,06<\/b>/);
+    expect(html).toContain("Brut en détail");
+    expect(html).toMatch(/<li class="net"><span>Net<\/span><b>2\s080,00<\/b>/);
+    expect(html).toMatch(/<li class="contributions"><span>Cotisations<\/span><b>571,43<\/b>/);
+    expect(html).toMatch(/<li class="tax"><span>Impôt<\/span><b>41,06<\/b>/);
   });
 
   it("dit sous le net si l’estimation a été vérifiée avec le bulletin", () => {
-    expect(renderToStaticMarkup(<PayDashboard {...baseProps} />)).toContain(">Estimation<");
+    // Une simple estimation ne s'annonce pas.
+    expect(renderToStaticMarkup(<PayDashboard {...baseProps} />)).not.toContain("pay-bulletin-status");
     const ok = renderToStaticMarkup(<PayDashboard {...baseProps} verification={{ tone: "ok", label: "Comparaison complète — aucun écart" }} />);
     expect(ok).toContain("Vérifiée avec le bulletin");
     const warning = renderToStaticMarkup(<PayDashboard {...baseProps} verification={{ tone: "warning", label: "2 points à vérifier" }} />);

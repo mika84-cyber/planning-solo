@@ -284,18 +284,6 @@
 .top-header.top-header-forms .top-header-title {
   width: max-content;
 }
-.top-header.top-header-forms::before {
-  position: absolute;
-  z-index: 0;
-  top: calc(100% - var(--art-gap) - var(--art-h) * 0.4171);
-  left: calc(var(--art-x) + var(--art-h) * 0.0169);
-  height: var(--art-h);
-  aspect-ratio: 680 / 531;
-  background: url("/forms-header-art-fast.webp") center / 100% 100% no-repeat;
-  content: "";
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-}
 .top-header.top-header-forms > * {
   position: relative;
   z-index: 1;
@@ -627,15 +615,13 @@
   .mecenat-balance-card .overtime-history-toggle { width: 100%; }
 }
 
-.pay-detail-month-heading,
+
 .variable-pay-heading-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
-.pay-detail-month-heading > div:first-child { display: grid; gap: 3px; }
-.pay-detail-month-heading > div:first-child > strong { color: var(--muted); font-size: 1rem; }
 .variable-pay-heading-actions { align-items: flex-end; }
 .pay-dedicated-content { touch-action: pan-y; }
 

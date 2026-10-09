@@ -24,7 +24,7 @@ describe("navigation principale", () => {
       onOpenMainMenu={vi.fn()}
       onCheckForUpdate={vi.fn()}
     />);
-    expect(html).toContain("Programmation GP");
+    expect(html).toContain("Programme GP");
     expect(html).toContain('aria-label="Ouvrir le menu principal"');
     expect(html.match(/main-menu-button/g)).toHaveLength(1);
     expect(html).toContain("2 messages non lus");
@@ -73,8 +73,8 @@ describe("navigation principale", () => {
     expect(html.indexOf(">Outils<")).toBeLessThan(html.indexOf("Mes données"));
     expect(html).toContain('aria-label="Les pages de l’application"');
     expect(html).toContain("Congés et récupérations");
-    expect(html).toContain("Planning des collègues");
-    expect(html).toContain("Programmation GP");
+    expect(html).toContain("Planning partagé");
+    expect(html).toContain("Programme GP");
     expect(html).toContain("Documents et contacts");
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("Installer l’application");

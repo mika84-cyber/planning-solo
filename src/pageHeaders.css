@@ -1,0 +1,51 @@
+/* En-têtes « bicolore » : plus d'image, de motif ni de dessin. Chaque page
+   a deux aplats de ses couleurs, séparés par une diagonale et un fin filet ;
+   le titre, en blanc, est centré dans la hauteur, à gauche. Chargée après
+   les autres feuilles : elle remplace les en-têtes illustrés. */
+:root .app-shell .top-header {
+  --header-a: #2c2621;
+  --header-b: #6b3a26;
+  --header-c: #a35a35;
+  display: grid !important;
+  /* Une seule rangée : les boutons en haut à droite, le titre au milieu. */
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-content: stretch !important;
+  gap: 10px 12px !important;
+  /* La même hauteur partout, calée sur un titre de deux lignes. */
+  height: 170px !important;
+  min-height: 170px !important;
+  /* Visible : le menu du compte s'ouvre sous le bouton, hors de l'en-tête. */
+  overflow: visible !important;
+  border: 0 !important;
+  padding: 14px 16px 18px !important;
+  background: linear-gradient(112deg, var(--header-a) 0 57%, color-mix(in srgb, var(--header-b) 85%, #fff) 57% 61%, var(--header-c) 61% 100%) !important;
+  box-shadow: 0 10px 24px rgba(40, 30, 20, 0.16) !important;
+}
+:root .app-shell .top-header::before,
+:root .app-shell .top-header::after { display: none !important; }
+:root .app-shell .top-header .header-command-area { position: relative !important; z-index: 2 !important; grid-column: 2 !important; grid-row: 1 !important; align-self: start !important; justify-self: end !important; }
+:root .app-shell .top-header .top-header-title { position: relative !important; z-index: 1 !important; grid-column: 1 / -1 !important; grid-row: 1 !important; align-self: center !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; background: none !important; text-shadow: none !important; transform: translateY(7px) !important; }
+:root .app-shell .top-header .top-header-title::before { display: none !important; }
+:root .app-shell .top-header .top-header-title .eyebrow { margin: 0 0 3px !important; color: rgba(255, 255, 255, 0.82) !important; text-shadow: none !important; font-size: 0.62rem !important; letter-spacing: 0.14em !important; }
+:root .app-shell .top-header .top-header-title h1 { display: -webkit-box !important; overflow: hidden !important; padding-bottom: 0.14em !important; color: #fff !important; font-size: clamp(1.7rem, 7vw, 2.3rem) !important; line-height: 1.08 !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.25) !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+:root .app-shell .top-header .top-header-title h1 span { display: inline !important; }
+/* « Planning / partagé » : sur deux lignes, sur téléphone seulement. */
+@media (max-width: 600px) {
+  :root .app-shell .top-header-colleagues .top-header-title h1 span { display: block !important; }
+}
+
+/* Les couleurs de chaque page, tirées de l'œuvre qui l'illustrait. */
+:root .app-shell .top-header-home { --header-a: #164e55; --header-b: #2f5f68; --header-c: #a0702a; }
+:root .app-shell .top-header-leave { --header-a: #0e2e41; --header-b: #0a5a82; --header-c: #0b6a96; }
+:root .app-shell .top-header-pay { --header-a: #1c2a50; --header-b: #542526; --header-c: #39626f; }
+:root .app-shell :is(.top-header-pdf, .top-header-forms) { --header-a: #39260b; --header-b: #6b4b1a; --header-c: #907632; }
+:root .app-shell .top-header-program { --header-a: #2c380c; --header-b: #38555e; --header-c: #3e5e7c; }
+:root .app-shell .top-header-colleagues { --header-a: #2c2621; --header-b: #6b3a26; --header-c: #a35a35; }
+/* Plus large, chaque titre tient sur une ligne : l'en-tête est moins haut. */
+@media (min-width: 601px) {
+  :root .app-shell .top-header { height: 150px !important; min-height: 150px !important; }
+}
+@media (min-width: 721px) {
+  :root .app-shell .top-header { height: 156px !important; min-height: 156px !important; padding: 18px 22px 22px !important; }
+}

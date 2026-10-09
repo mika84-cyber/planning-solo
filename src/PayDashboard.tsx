@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
 import type { PayCalculationBreakdown, PayCalculationRow } from "./PayEstimateDetails";
 import { MONTHS, s } from "./planningLogic";
-import { loadPayslipVerification, PAYSLIP_VERIFICATION_EVENT } from "./payslipVerificationDecision";
 import "./payBulletin.css";
 
 export type PayDashboardVariable = {
@@ -40,8 +39,8 @@ type PayDashboardProps = {
   allowancesPending?: number;
   /** Comparaison avec le bulletin du mois, quand un bulletin a été ajouté. */
   verification?: PayDashboardVerification;
-  /** Compte sous lequel « Tout est OK » ou une anomalie est enregistré. */
-  verificationAccount?: string;
+  /** « Tout est OK » ou anomalie signalée pour ce mois, gardé dans le compte. */
+  savedVerification?: "ok" | "attention";
   /** Demande venue d'ailleurs (l'accueil) d'ouvrir la vérification. */
   verificationRequested?: boolean;
   onVerificationShown?: () => void;
@@ -66,11 +65,6 @@ type PayDashboardProps = {
 };
 
 const number = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** « paie d’octobre », « paie de novembre ». */
-function payOf(month: string) {
-  return /^[aeiouéè]/i.test(month) ? `paie d’${month}` : `paie de ${month}`;
-}
 
 const sum = (rows: PayCalculationRow[], keys: string[]) =>
   rows.filter((row) => keys.includes(row.key)).reduce((total, row) => total + (row.amount ?? 0), 0);
@@ -135,7 +129,7 @@ export function PayDashboard({
   calculation,
   allowancesPending = 0,
   verification,
-  verificationAccount,
+  savedVerification,
   verificationRequested = false,
   onVerificationShown,
   deductionContent,
@@ -190,18 +184,7 @@ export function PayDashboard({
   useEffect(() => {
     if (hasVerification) setVerifyOpen(true);
   }, [hasVerification]);
-  // « Tout est OK » ou « Signaler une anomalie », gardé sur cet appareil :
-  // relu à chaque décision prise dans la vérification.
-  const readSaved = () =>
-    verificationAccount === undefined ? null : loadPayslipVerification(verificationAccount, year, month)?.status ?? null;
-  const [savedStatus, setSavedStatus] = useState(readSaved);
-  useEffect(() => {
-    if (verificationAccount === undefined) return;
-    const refresh = () => setSavedStatus(loadPayslipVerification(verificationAccount, year, month)?.status ?? null);
-    refresh();
-    window.addEventListener(PAYSLIP_VERIFICATION_EVENT, refresh);
-    return () => window.removeEventListener(PAYSLIP_VERIFICATION_EVENT, refresh);
-  }, [verificationAccount, year, month]);
+  const savedStatus = savedVerification ?? null;
   // « Ajouter un bulletin de paie » depuis l'accueil.
   useEffect(() => {
     if (!verificationRequested) return;
@@ -211,9 +194,6 @@ export function PayDashboard({
   }, [verificationRequested, onVerificationShown]);
 
   const composition = calculation?.grossComposition ?? [];
-  const toNet = calculation && calculation.estimatedContributions !== null && calculation.incomeTax !== null
-    ? calculation.estimatedContributions + calculation.mealVoucherDeduction + calculation.incomeTax - calculation.navigo
-    : null;
 
   /* La frise : où va le brut. Le net (Navigo mis à part, il s'ajoute après
      coup), les cotisations, les titres repas et l'impôt font le brut. */
@@ -262,15 +242,11 @@ export function PayDashboard({
       })),
   ];
 
-  /* Les retenues : maladie et grève, puis cotisations et impôt ; en
-     décembre, les titres repas non prélevés apparaissent barrés. */
+  /* Les retenues : maladie et grève, puis les cotisations, les titres
+     repas et l'impôt, chacun sur sa ligne comme dans la frise ; le Navigo
+     remboursé vient en déduction. En décembre, les titres repas non
+     prélevés apparaissent barrés. */
   const mealVoucher = variables.find((item) => item.key === "mealVoucher");
-  const toNetDetail = calculation ? [
-    calculation.estimatedContributions !== null ? `cotisations ${number.format(calculation.estimatedContributions)}` : "",
-    calculation.incomeTax !== null ? `impôt ${number.format(calculation.incomeTax)}` : "",
-    calculation.mealVoucherDeduction ? `titres repas ${number.format(calculation.mealVoucherDeduction)}` : "",
-    calculation.navigo ? `Navigo remboursé ${number.format(calculation.navigo)}` : "",
-  ].filter(Boolean).join(" · ") : "";
   const withheldLines: BulletinLine[] = [
     ...variables
       .filter((item) => DEDUCTION_KEYS.includes(item.key))
@@ -283,15 +259,42 @@ export function PayDashboard({
         pending: pendingOf(item),
         onOpen: onOpenEstimateDetails,
       })),
-    ...(calculation ? [{
-      key: "to-net",
-      label: "Cotisations · impôt",
-      detail: toNetDetail,
-      amount: toNet,
-      sign: "minus" as const,
-      pending: toNet === null ? "à compléter" : "",
-      onOpen: onOpenEstimateDetails,
-    }] : []),
+    ...(calculation ? [
+      {
+        key: "contributions",
+        label: "Cotisations sociales",
+        detail: "retraite, CSG et CRDS",
+        amount: calculation.estimatedContributions,
+        sign: "minus" as const,
+        pending: calculation.estimatedContributions === null ? "à compléter" : "",
+        onOpen: onOpenEstimateDetails,
+      },
+      ...(calculation.mealVoucherDeduction ? [{
+        key: "meal",
+        label: "Titres repas",
+        detail: "votre part du mois",
+        amount: calculation.mealVoucherDeduction,
+        sign: "minus" as const,
+        onOpen: onOpenEstimateDetails,
+      }] : []),
+      {
+        key: "tax",
+        label: "Impôt sur le revenu",
+        detail: `prélèvement à la source · ${calculation.pasRate.toLocaleString("fr-FR")} %`,
+        amount: calculation.incomeTax,
+        sign: "minus" as const,
+        pending: calculation.incomeTax === null ? "à compléter" : "",
+        onOpen: onOpenEstimateDetails,
+      },
+      ...(calculation.navigo ? [{
+        key: "navigo",
+        label: "Navigo remboursé",
+        detail: "ajouté au net",
+        amount: calculation.navigo,
+        sign: "plus" as const,
+        onOpen: onOpenEstimateDetails,
+      }] : []),
+    ] : []),
     ...(mealVoucher ? [{
       key: "meal-voucher",
       label: "Titres repas",
@@ -302,12 +305,15 @@ export function PayDashboard({
     }] : []),
   ];
 
-  const lineTotal = (lines: BulletinLine[]) =>
-    lines.filter((line) => !line.waived).reduce((total, line) => total + Math.abs(line.amount ?? 0), 0);
+  // Dans les retenues, une ligne « + » (le Navigo) vient en déduction.
+  const lineTotal = (lines: BulletinLine[], groupSign: Sign) =>
+    lines
+      .filter((line) => !line.waived)
+      .reduce((total, line) => total + (groupSign === "minus" && line.sign === "plus" ? -1 : 1) * Math.abs(line.amount ?? 0), 0);
   const groups: BulletinGroup[] = [
-    ...(fixedLines.length ? [{ key: "fixed" as const, title: "Fixe", total: lineTotal(fixedLines), sign: "" as const, lines: fixedLines }] : []),
-    { key: "variable", title: "Primes du mois", total: lineTotal(primeLines), sign: "plus", lines: primeLines },
-    ...(withheldLines.length ? [{ key: "withheld" as const, title: "Retenues", total: lineTotal(withheldLines), sign: "minus" as const, lines: withheldLines }] : []),
+    ...(fixedLines.length ? [{ key: "fixed" as const, title: "Fixe", total: lineTotal(fixedLines, ""), sign: "" as const, lines: fixedLines }] : []),
+    { key: "variable", title: "Primes du mois", total: lineTotal(primeLines, "plus"), sign: "plus", lines: primeLines },
+    ...(withheldLines.length ? [{ key: "withheld" as const, title: "Retenues", total: lineTotal(withheldLines, "minus"), sign: "minus" as const, lines: withheldLines }] : []),
   ];
   const pendingCount = [...primeLines, ...withheldLines].filter((line) => line.pending).length;
 
@@ -317,7 +323,8 @@ export function PayDashboard({
     `${line.label} : ${lineAmount(line)}${line.onOpen ? ". Voir le détail" : ""}`;
 
   /* L'état de l'estimation, sous le net : comparée au bulletin quand il a
-     été ajouté (un appui ouvre la vérification), sinon estimation. */
+     été ajouté (un appui ouvre la vérification), ou incomplète ; rien pour
+     une simple estimation. */
   const status = verification
     ? verification.tone === "ok"
       ? { tone: "ok", text: "Vérifiée avec le bulletin" }
@@ -332,42 +339,45 @@ export function PayDashboard({
         ? { tone: "alert", text: "Anomalie signalée sur le bulletin" }
     : reliability.tone === "incomplete"
       ? { tone: "alert", text: "Données à compléter" }
-      : { tone: "neutral", text: "Estimation" };
+      : null;
 
   return (
     <div className="pay-dashboard pay-bulletin">
-      {/* Le mois en titre, une flèche de chaque côté ; « Revenir à
-          aujourd’hui » ne paraît que lorsqu’on s’éloigne du mois en cours. */}
-      <div className="pay-bulletin-month" role="group" aria-label="Choisir le mois de paie">
-        <button type="button" className="pay-bulletin-month-arrow" onClick={onPreviousMonth} aria-label="Mois précédent">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-        </button>
-        <div className="pay-bulletin-month-title">
-          <span className="pay-bulletin-kicker">Paie de</span>
-          <h2 id="pay-dashboard-title">{monthLabel} {year}</h2>
-          {isCurrentMonth ? null : <button type="button" className="pay-bulletin-today" onClick={onToday}>Revenir à aujourd’hui</button>}
-        </div>
-        <button type="button" className="pay-bulletin-month-arrow" onClick={onNextMonth} aria-label="Mois suivant">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
-        </button>
-      </div>
-
       <div className="pay-bulletin-layout">
-        <section className="pay-bulletin-hero" aria-labelledby="pay-bulletin-net-title">
-          <span id="pay-bulletin-net-title" className="pay-bulletin-kicker">Net estimé · {payOf(MONTHS[month])}</span>
+        <section className="pay-bulletin-hero" aria-labelledby="pay-dashboard-title">
+          {/* Le mois en tête de la carte du net, une flèche de chaque côté ;
+              « Revenir à aujourd’hui » ne paraît que loin du mois en cours. */}
+          <div className="pay-bulletin-month" role="group" aria-label="Choisir le mois de paie">
+            <button type="button" className="pay-bulletin-month-arrow" onClick={onPreviousMonth} aria-label="Mois précédent">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
+            </button>
+            <div className="pay-bulletin-month-title">
+              <span className="pay-bulletin-kicker">Paie de</span>
+              <h2 id="pay-dashboard-title">{monthLabel} {year}</h2>
+              {isCurrentMonth ? null : <button type="button" className="pay-bulletin-today" onClick={onToday}>Revenir à aujourd’hui</button>}
+            </div>
+            <button type="button" className="pay-bulletin-month-arrow" onClick={onNextMonth} aria-label="Mois suivant">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
+            </button>
+          </div>
+          <span className="pay-bulletin-kicker">Net estimé</span>
           <p className={`pay-bulletin-net${net === null ? " is-missing" : ""}`}>{net === null ? "À compléter" : euros(net)}</p>
           <p className="pay-bulletin-gross">Brut {grossComplete ? euros(gross) : "à compléter"}</p>
-          <div className="pay-bulletin-status">
-            {verification || savedStatus ? (
-              <button type="button" className={`pay-bulletin-chip ${status.tone}`} onClick={() => openVerification()} aria-label={`${status.text}. Voir la vérification`}>
-                {status.text}<i aria-hidden="true">›</i>
-              </button>
-            ) : <span className={`pay-bulletin-chip ${status.tone}`}>{status.text}</span>}
-            {pendingCount ? <span className="pay-bulletin-chip pending">{pendingCount} montant{s(pendingCount)} en attente</span> : null}
-          </div>
+          {/* Une simple estimation ne s'annonce pas : la pastille ne paraît que
+              s'il y a quelque chose à savoir (bulletin, données, attente). */}
+          {status || pendingCount ? (
+            <div className="pay-bulletin-status">
+              {status && (verification || savedStatus) ? (
+                <button type="button" className={`pay-bulletin-chip ${status.tone}`} onClick={() => openVerification()} aria-label={`${status.text}. Voir la vérification`}>
+                  {status.text}<i aria-hidden="true">›</i>
+                </button>
+              ) : status ? <span className={`pay-bulletin-chip ${status.tone}`}>{status.text}</span> : null}
+              {pendingCount ? <span className="pay-bulletin-chip pending">{pendingCount} montant{s(pendingCount)} en attente</span> : null}
+            </div>
+          ) : null}
           {split && splitTotal > 0 ? (
             <div className="pay-bulletin-mix">
-              <p className="pay-bulletin-mix-title">Où va votre brut</p>
+              <p className="pay-bulletin-mix-title">Brut en détail</p>
               <div
                 className="pay-bulletin-bar"
                 role="img"
@@ -379,7 +389,7 @@ export function PayDashboard({
               </div>
               <ul className="pay-bulletin-legend" aria-hidden="true">
                 {split.map((part) => (
-                  <li key={part.key} className={part.key}><span>{part.label}</span> <b>{number.format(part.amount)}</b></li>
+                  <li key={part.key} className={part.key}><span>{part.label}</span><b>{number.format(part.amount)}</b></li>
                 ))}
               </ul>
             </div>

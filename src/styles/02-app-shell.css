@@ -42,14 +42,6 @@
   position: relative;
   min-width: 0;
 }
-.top-header-title::before {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 0;
-  border-radius: 999px;
-  content: "";
-}
 .header-actions {
   display: flex;
   align-items: center;
@@ -276,13 +268,6 @@ h1 {
   background: var(--accent);
   color: #fff;
 }
-.year-choice-picker .choice-picker-menu {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 244px;
-}
-.year-choice-picker .choice-picker-menu button {
-  min-width: 0;
-}
 
 /* Sur téléphone et écran tactile, les listes sont rendues au niveau de la
    fenêtre afin de ne plus être coupées par une carte ou un dialogue. */
@@ -293,10 +278,6 @@ h1 {
   overflow-y: auto;
   overscroll-behavior: contain;
   box-shadow: 0 18px 42px rgba(58, 51, 44, 0.28);
-}
-.choice-picker-menu.choice-picker-menu-portal.year-choice-picker {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 244px;
 }
 .choice-picker-menu.choice-picker-menu-portal.toolbar-month-picker {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -414,30 +395,6 @@ h1 {
 .worked-days-panel article.current {
   background: rgba(122, 111, 95, 0.14);
   box-shadow: inset 0 0 0 1px rgba(122, 111, 95, 0.4);
-}
-.worked-days-scope {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.worked-days-scope em {
-  flex: none;
-  white-space: nowrap;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 9.5px;
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: none;
 }
 .worked-days-panel strong {
   font-size: 15px;

@@ -1356,21 +1356,6 @@
   font-weight: 800;
   cursor: pointer;
 }
-.overtime-kind {
-  width: 9px;
-  height: 32px;
-  border-radius: 999px;
-  background: #bcb0a0;
-}
-.overtime-kind.recovery {
-  background: #65a694;
-}
-.overtime-kind.used {
-  background: #d39b5a;
-}
-.overtime-kind.mecenat {
-  background: #9b8e7c;
-}
 .day.hourly-recovery-day,
 .mini-day.hourly-recovery-day {
   border-color: var(--border-card);

@@ -51,6 +51,8 @@ const styles = [
   readFileSync(new URL("./src/payBulletin.css", import.meta.url), "utf8"),
 ].join("\n");
 const model = readFileSync(new URL("./src/appModel.ts", import.meta.url), "utf8");
+// Les en-têtes bicolores, chargés après toutes les autres feuilles.
+const pageHeaders = readFileSync(new URL("./src/pageHeaders.css", import.meta.url), "utf8");
 const calendarApi = readFileSync(new URL("./src/calendarApi.ts", import.meta.url), "utf8");
 const planningPdf = readFileSync(new URL("./src/planningPdf.ts", import.meta.url), "utf8");
 const leaveForm = [
@@ -400,8 +402,9 @@ describe("finitions d’interface", () => {
 
   it("affiche Divers en doré sans pastille dans le choix des absences", () => {
     expect(app).not.toContain('className="other-choice-dot"');
-    expect(styles).toContain("background: #fff8e2 !important");
-    expect(styles).toContain("--person-color: #d9ab2b");
+    // Le doré de Divers vient de sa famille de choix.
+    const requestChoiceFamilies = readFileSync(new URL("./src/requestChoiceFamilies.css", import.meta.url), "utf8");
+    expect(requestChoiceFamilies).toContain(".request-choice .request-choice-row.leave-choice-other { --leave-choice-accent: #d9ab2b; }");
     expect(app).not.toContain("(Grève, décharge syndicale, fermeture exceptionnelle)");
   });
 
@@ -452,10 +455,10 @@ describe("finitions d’interface", () => {
     expect(payAllowancesSection).toContain("holiday-pay-options");
     expect(payAllowancesSection).toContain("<span>Échanger</span>");
     expect((payAllowancesSection.match(/holidayChoice\(item\)/g) || []).length).toBe(2);
-    expect(payEstimateDetails).toContain('className="pay-month-nav compact pay-detail-month-nav"');
+    // Le détail du calcul : le mois entre ses deux flèches, comme la page principale.
+    expect(payEstimateDetails).toContain('className="pay-detail-month-bar"');
     expect(styles).toContain(".holiday-pay-amount {\n  width: fit-content;");
-    expect(styles).toContain("grid-template-columns: 36px 36px");
-    expect(styles).toContain("gap: 8px 12px");
+    expect((payEstimateDetails.match(/className="pay-detail-month-arrow"/g) || []).length).toBe(2);
   });
 
   it("donne le même liseré aux tableaux Planning et Couleurs des deux PDF", () => {
@@ -644,18 +647,18 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("border-color: var(--border-card)");
   });
 
-  it("uniformise exactement les en-têtes sur le gabarit Formulaires utiles", () => {
-    expect(styles).toContain("height: 205px;\n  min-height: 205px;");
-    expect(styles).toContain("height: 215px;\n    min-height: 215px;");
-    expect(styles).toContain("left: 29%;");
+  it("donne la même hauteur à tous les en-têtes, quelle que soit la page", () => {
+    expect(pageHeaders).toContain("height: 170px !important;\n  min-height: 170px !important;");
+    expect(pageHeaders).toContain("height: 156px !important; min-height: 156px !important;");
     expect(styles).toContain("border-color: var(--border-card)");
   });
 
-  it("ne conserve que les fonds illustrés de l’en-tête et du menu", () => {
+  it("ne garde plus d’image derrière les titres d’en-tête, seulement dans le menu", () => {
     expect(app).toContain('className="app-shell"');
-    expect(styles).toContain('url("/header-art-fast.webp")');
     expect(styles).toContain('url("/menu-art-fast.webp")');
-    expect(styles).toContain('url("/forms-header-art-fast.webp")');
+    // Deux aplats de couleur ; les anciennes couches d'image sont masquées.
+    expect(pageHeaders).toContain(":root .app-shell .top-header::after { display: none !important; }");
+    expect(pageHeaders).toContain("linear-gradient(112deg, var(--header-a) 0 57%");
     expect(styles).not.toContain("/home-art.jpg");
     expect(styles).not.toContain("/leave-art.jpg");
     expect(styles).not.toContain("/pay-art.jpg");
@@ -708,12 +711,11 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".request-option-group,");
   });
 
-  it("aligne Divers avec Grève sur les grands écrans et décale l’œuvre sur Z Fold ouvert", () => {
+  it("aligne Divers avec Grève sur les grands écrans", () => {
     expect(styles).toContain("@media (min-width: 721px) {");
     expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.other {\n    grid-column: auto;\n    order: 1;");
     expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.strike { order: 2; }");
     expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.cet { order: 3; }");
-    expect(styles).toContain("left: 53%;");
   });
 
   it("renforce la lisibilité des soldes sans retirer leurs couleurs", () => {
@@ -763,13 +765,10 @@ describe("finitions d’interface", () => {
     expect(app).toContain("nextExtraWork");
   });
 
-  it("réserve l’œuvre bleue à l’en-tête Congés et récupérations", () => {
+  it("donne à Congés et récupérations les bleus de son ancienne œuvre", () => {
     expect(app).toContain('homeSection === "leave"');
     expect(appNavigation).toContain('`top-header top-header-${section}`');
-    expect(styles).toContain(".top-header.top-header-leave {");
-    expect(styles).toContain(".top-header.top-header-leave::before {");
-    expect(styles).toContain('url("/leave-header-art-fast.webp")');
-    expect(styles).toContain("background-position: 50% 50%;\n  filter: none;\n  transform: none;");
+    expect(pageHeaders).toContain(":root .app-shell .top-header-leave { --header-a: #0e2e41;");
   });
 
   it("organise l’accueil de Ma paie autour du mois et des accès directs", () => {
@@ -796,11 +795,10 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain('className="pdf-step-number"');
   });
 
-  it("réserve le dessin aux lignes noires à l’en-tête Ma paie", () => {
+  it("donne à Ma paie les couleurs de son ancienne œuvre", () => {
     expect(app).toContain('homeSection === "pay"');
     expect(appNavigation).toContain('`top-header top-header-${section}`');
-    expect(styles).toContain(".top-header.top-header-pay {");
-    expect(styles).toContain('url("/pay-header-art-fast.webp")');
+    expect(pageHeaders).toContain(":root .app-shell .top-header-pay { --header-a: #1c2a50;");
   });
 
   it("réserve la galerie multicolore à l’en-tête des PDF", () => {

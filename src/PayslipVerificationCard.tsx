@@ -1,5 +1,5 @@
 import { ChoicePicker } from "./ChoicePicker";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s } from "./planningLogic";
 import { minutesLabel, type OvertimeEntry } from "./overtime";
@@ -15,13 +15,11 @@ import { describePayslipGap, explainPayslipGap, type PayslipReviewCheck } from "
 
 import {
   createPayslipAnomalyPdf,
-  loadPayslipVerification,
   payslipAnomalyPdfName,
-  removePayslipVerification,
-  savePayslipVerification,
   type PayslipVerificationRecord,
   type PayslipVerificationStatus,
 } from "./payslipVerificationDecision";
+import { payslipVerificationFor } from "./payslipVerificationRecords";
 
 function formatReviewValue(row: PayslipReviewCheck, value: number) {
   if (row.key === "sundays") return value.toLocaleString("fr-FR");
@@ -55,7 +53,7 @@ function PayslipIssueList({ issues, title }: { issues: PayslipReviewCheck[]; tit
 
 type Props = Pick<
   PayslipCheckSectionProps,
-  "accountId" | "importBusy" | "importMode" | "importError" | "importResult" | "onImport" |
+  "verificationRecords" | "onSaveVerification" | "onRemoveVerification" | "importBusy" | "importMode" | "importError" | "importResult" | "onImport" |
   "check" | "checkError" | "needsPeriod" | "fallbackMonth" | "setFallbackMonth" |
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "unplannedCarence" | "resultDetailsOpen" |
@@ -182,7 +180,9 @@ function downloadPdf(blob: Blob, name: string) {
 }
 
 export function PayslipVerificationCard({
-  accountId,
+  verificationRecords,
+  onSaveVerification,
+  onRemoveVerification,
   importBusy: payslipImportBusy,
   importMode: payslipImportMode,
   importError: payslipImportError,
@@ -217,15 +217,11 @@ export function PayslipVerificationCard({
   onClearSundayCarryover: clearSundayCarryover,
 }: Props) {
   const [activeImportSource, setActiveImportSource] = useState<"file" | "photo">("file");
-  const [savedDecision, setSavedDecision] = useState<PayslipVerificationRecord | null>(() =>
-    loadPayslipVerification(accountId, allowances.year, displayedMonth));
+  // La décision du mois vient du compte (ou de l'appareil, en démo) : elle
+  // suit d'un appareil à l'autre.
+  const savedDecision = payslipVerificationFor(verificationRecords, allowances.year, displayedMonth);
   const [decisionError, setDecisionError] = useState("");
   const [sharingReport, setSharingReport] = useState(false);
-  useEffect(() => {
-    const stored = loadPayslipVerification(accountId, allowances.year, displayedMonth);
-    setSavedDecision(stored);
-    setDecisionError("");
-  }, [accountId, allowances.year, displayedMonth]);
   const checkMatchesDisplayedPeriod = payslipCheck?.reading.month === displayedMonth
     && payslipCheck.reading.year === allowances.year;
   // Un mécénat attendu sur la paie suivante, déjà payé par ce bulletin.
@@ -267,13 +263,11 @@ export function PayslipVerificationCard({
       verifiedCount: payslipReview?.verified.length || 0,
       updatedAt: new Date().toISOString(),
     };
-    savePayslipVerification(accountId, record);
-    setSavedDecision(record);
+    onSaveVerification(record);
     setDecisionError("");
   };
   const resetDecision = () => {
-    removePayslipVerification(accountId, allowances.year, displayedMonth);
-    setSavedDecision(null);
+    onRemoveVerification(allowances.year, displayedMonth);
     setDecisionError("");
   };
   const prepareReport = async () => {

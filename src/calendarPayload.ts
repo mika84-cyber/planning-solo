@@ -11,6 +11,7 @@ import type {
 import { workPostOf } from "./appModel";
 import { cetAccountFromApi } from "./cet";
 import { sanitizeDeductionPayMonths } from "./deductionPayMonth";
+import { sanitizePayslipVerifications } from "./payslipVerificationRecords";
 import type { MecenatEntry } from "./mecenat";
 import type { OvertimeEntry, RecoveryUse } from "./overtime";
 import { halfBalanceFromApi, type HalfMoment, type HolidayPay, type LeaveType } from "./planningLogic";
@@ -138,6 +139,7 @@ function formProfileFromApi(value: unknown): FormProfile | null {
     manualAdjustments: manualAdjustmentsFromApi(raw.manual_adjustments),
     cetAccount: cetAccountFromApi(raw.cet_account),
     deductionPayMonths: sanitizeDeductionPayMonths(raw.deduction_pay_months),
+    payslipVerifications: sanitizePayslipVerifications(raw.payslip_verifications),
   };
 }
 

@@ -1,4 +1,4 @@
-/* Ma paie en bulletin simplifié : le mois en titre, la carte du net, la
+/* Ma paie en bulletin simplifié : la carte du net (le mois en tête), la
    carte des lignes de la paie, puis deux boutons (vérifier le bulletin,
    profil et réglages). Les règles sont préfixées par `.pay-bulletin` pour
    passer devant les anciens styles du tableau de bord. */
@@ -31,10 +31,13 @@
 .pay-bulletin .pay-bulletin-bar .contributions { background: #e88aa0; }
 .pay-bulletin .pay-bulletin-bar .meal { background: #e9b48f; }
 .pay-bulletin .pay-bulletin-bar .tax { background: #5fb28e; }
-.pay-bulletin .pay-bulletin-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 7px 0 0; padding: 0; list-style: none; font-size: 0.76rem; }
-.pay-bulletin .pay-bulletin-legend li { display: inline-flex; align-items: center; gap: 5px; color: #5b4c3f; font-weight: 650; }
-.pay-bulletin .pay-bulletin-legend li::before { width: 9px; height: 9px; border-radius: 2px; content: ""; }
-.pay-bulletin .pay-bulletin-legend b { color: var(--text); font-weight: 800; font-variant-numeric: tabular-nums; }
+/* Une seule rangée : pour chaque part, sa couleur et son nom, le montant
+   dessous ; les parts se répartissent sur toute la largeur. */
+.pay-bulletin .pay-bulletin-legend { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 8px; margin: 7px 0 0; padding: 0; list-style: none; white-space: nowrap; }
+.pay-bulletin .pay-bulletin-legend li { display: grid; grid-template-columns: 8px auto; align-items: center; gap: 1px 4px; min-width: 0; }
+.pay-bulletin .pay-bulletin-legend li::before { grid-column: 1; grid-row: 1; width: 8px; height: 8px; border-radius: 2px; content: ""; }
+.pay-bulletin .pay-bulletin-legend span { grid-column: 2; color: #5b4c3f; font-size: 0.68rem; font-weight: 700; }
+.pay-bulletin .pay-bulletin-legend b { grid-column: 2; color: var(--text); font-size: 0.82rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .pay-bulletin .pay-bulletin-legend .net::before { background: #8a3d22; }
 .pay-bulletin .pay-bulletin-legend .contributions::before { background: #e88aa0; }
 .pay-bulletin .pay-bulletin-legend .meal::before { background: #e9b48f; }
@@ -128,8 +131,9 @@
 .pay-bulletin .pay-bulletin-shortcut em { margin-top: 4px; border-radius: 999px; padding: 2px 8px; background: #fff; color: var(--text); font-size: 0.7rem; font-style: normal; font-weight: 800; white-space: nowrap; box-shadow: inset 0 0 0 1px #d8cdbf; }
 .pay-bulletin .pay-bulletin-shortcut i { color: #9a4a2e; font-size: 1.2rem; font-style: normal; line-height: 1; }
 
-/* Le mois : en titre, une flèche de chaque côté. */
-.pay-bulletin .pay-bulletin-month { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 8px; border: 1px solid #e6dccf; border-radius: 14px; padding: 10px 12px; background: #fff; }
+/* Le mois : en tête de la carte du net, une flèche de chaque côté, un filet
+   dessous. */
+.pay-bulletin .pay-bulletin-month { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 8px; margin: -2px 0 12px; border-bottom: 1px solid #efe6db; padding: 0 0 12px; }
 .app-shell .pay-bulletin .pay-bulletin-month-arrow { display: grid; place-items: center; width: 40px; height: 40px; min-height: 0; margin: 0; border: 1px solid #e3d6c8; border-radius: 50%; padding: 0; background: #fff; box-shadow: none; color: #5b4c3f; cursor: pointer; }
 .app-shell .pay-bulletin .pay-bulletin-month-arrow:hover { border-color: #c9a796; color: #8a3d22; }
 .pay-bulletin .pay-bulletin-month-arrow svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -137,3 +141,16 @@
 .pay-bulletin .pay-bulletin-month-title .pay-bulletin-kicker { margin: 0; }
 .pay-bulletin .pay-bulletin-month-title h2 { margin: 0; color: var(--text); font-family: inherit; font-size: 1.25rem; font-weight: 850; }
 .app-shell .pay-bulletin .pay-bulletin-today { min-height: 0; margin: 2px 0 0; border: 0; padding: 0; background: none; box-shadow: none; color: #9a4a2e; font: inherit; font-size: 0.76rem; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* Primes et jours fériés : les mêmes cartes claires et les mêmes bandeaux
+   que la page principale (vert des primes, terracotta de ce qui reste à
+   décider). */
+.app-shell .pay-dedicated-content.allowances :is(.variable-pay-card, .allowance-detail-stack > .allowance-card) { border: 1px solid #e6dccf; border-radius: 14px; background: #fff; box-shadow: none; }
+.app-shell .pay-dedicated-content.allowances .variable-pay-head .step-label { color: #9a4a2e; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; border: 0; border-radius: 8px; padding: 7px 10px; background: #ecf7f1; color: #1d6b45; }
+.app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header > span { display: inline-flex; align-items: center; gap: 6px; color: inherit; font-family: inherit; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header > span::before { width: 8px; height: 8px; border-radius: 2px; background: #5fb28e; content: ""; }
+.app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header > strong { color: inherit; font-size: 0.95rem; font-weight: 850; white-space: nowrap; }
+.app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header em { color: #3f7a5c; font-size: 0.72rem; font-style: normal; font-weight: 700; }
+.app-shell .pay-dedicated-content.allowances .allowance-summary-alert { border: 1px solid #e6cbbd; border-radius: 12px; background: #fbf5f1; box-shadow: none; color: #9a4a2e; }
+.app-shell .pay-dedicated-content.allowances .allowance-summary-alert > span { background: #9a4a2e; color: #fff; }

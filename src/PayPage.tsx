@@ -38,7 +38,7 @@ type PayPageProps = {
   allowancesPending?: number;
   /** Comparaison avec le bulletin du mois affiché. */
   verification?: PayDashboardVerification;
-  verificationAccount?: string;
+  savedVerification?: "ok" | "attention";
   /** L'accueil demande d'ouvrir la vérification du bulletin. */
   verificationRequested?: boolean;
   onVerificationShown?: () => void;
@@ -67,7 +67,7 @@ export function PayPage({
   screen, month, year, profileOpen, profileFocusRequested, settingsOpen, workQuota, workSchedule, status,
   netEstimateComplete, gross, grossComplete, net, profileLabel,
   missingFields, onCompleteEstimate,
-  reliability, variables, calculation, allowancesPending, verification, verificationAccount, verificationRequested, onVerificationShown,
+  reliability, variables, calculation, allowancesPending, verification, savedVerification, verificationRequested, onVerificationShown,
   deductionContent, monthSlide, allowancesContent, estimateContent,
   verificationContent, settingsContent, onScreenChange, onToggleProfile, onProfileFocused,
   onToggleSettings, onWorkQuotaChange, onWorkScheduleChange, onStatusChange, onPreviousMonth,
@@ -148,7 +148,7 @@ export function PayPage({
             net={net} profileLabel={profileLabel} reliability={reliability}
             missingFields={missingFields} onCompleteEstimate={() => { setFocusMissing(true); onCompleteEstimate?.(); }}
             variables={variables} calculation={calculation} allowancesPending={allowancesPending}
-            verification={verification} verificationAccount={verificationAccount}
+            verification={verification} savedVerification={savedVerification}
             verificationRequested={verificationRequested} onVerificationShown={onVerificationShown}
             onOpenTools={() => { if (!profileOpen) onToggleProfile(); }}
             onCloseTools={() => {

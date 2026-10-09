@@ -38,6 +38,7 @@ import { ConnectionStatus } from "./ConnectionStatus";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
 import { effectivePayProfile, usePayActions } from "./usePayActions";
+import { usePayslipVerifications } from "./usePayslipVerifications";
 import { useOvertimePay } from "./useOvertimePay";
 import { DEMO_PAY_PROFILE, demoPayProfiles } from "./demoPayProfile";
 
@@ -2476,6 +2477,14 @@ export default function Home() {
       onExchangeHoliday={(key) => openWorkExchange(key)}
     />
   ) : null;
+  const payslipVerifications = usePayslipVerifications({
+    accountId: demoMode ? "demo" : userEmail,
+    demoMode,
+    formProfile,
+    setFormProfile,
+    post: postCalendar,
+    notify,
+  });
   const payContent =
     homeSection === "pay"
       ? buildPayContent({
@@ -2518,8 +2527,7 @@ export default function Home() {
           sundayCarryover,
           sundayCarryoverMonth,
           sundayCarryoverYear,
-          demoMode,
-          userEmail,
+          payslipVerifications,
           changePayMonth,
           goPayToday,
         })
@@ -2989,7 +2997,7 @@ export default function Home() {
           calculation={payContent.calculation}
           allowancesPending={payContent.allowancesPending}
           verification={payContent.verification}
-          verificationAccount={payContent.verificationAccount}
+          savedVerification={payContent.savedVerification}
           verificationRequested={payVerificationRequested}
           onVerificationShown={() => setPayVerificationRequested(false)}
           deductionContent={payContent.deductionContent}

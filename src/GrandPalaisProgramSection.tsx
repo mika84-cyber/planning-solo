@@ -851,7 +851,7 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
       </div>
 
       {!guestPreview && sharedPayload?.isAdmin ? (
-        <GrandPalaisCheckPanel lastCheckedAt={sharedPayload.lastCheckedAt} onPayload={setSharedPayload} />
+        <GrandPalaisCheckPanel lastCheckedAt={sharedPayload.lastCheckedAt} report={sharedPayload.lastCheckReport} onPayload={setSharedPayload} />
       ) : null}
 
       {!guestPreview && sharedPayload?.isAdmin && sharedPayload.health ? (

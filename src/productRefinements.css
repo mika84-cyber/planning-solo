@@ -27,7 +27,6 @@
    champ qui prend le focus — peut s’arrêter dessous et devenir impossible à
    toucher. */
 html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
-.app-shell > :is(.mobile-bottom-navigation, .desktop-side-navigation) { left: 50%; right: auto; width: calc(min(1440px, 100%) - 2 * var(--page-gutter)); max-width: none; transform: translateX(-50%); }
 /* Finitions communes des pages et actions ; les états métier du calendrier,
    les couleurs de solde et les actions destructrices conservent leurs styles. */
 .app-shell :is(.primary-action, .validate-button, .save-button):not(.danger):not(.warning-button):not(.update-now-button) {

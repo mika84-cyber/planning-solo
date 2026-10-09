@@ -6,7 +6,7 @@ function json(body: unknown) {
 
 export default async function monitorGrandPalaisProgram() {
   // Netlify schedules in UTC: only one of the two daily slots is midnight in Paris.
-  // Un contrôle à une autre heure se lance à la main depuis Programmation GP.
+  // Un contrôle à une autre heure se lance à la main depuis Programme GP.
   const parisHour = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).find(part => part.type === "hour")?.value;
   if (parisHour !== "00") return json({ ok: true, skipped: true });
   return json(await runGrandPalaisCheck());

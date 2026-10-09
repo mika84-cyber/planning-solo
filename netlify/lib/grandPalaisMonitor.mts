@@ -1,7 +1,9 @@
 import { GRAND_PALAIS_PROGRAM } from "../../src/grandPalaisProgramData.ts";
 import type {
+  GrandPalaisCheckReport,
   GrandPalaisProgramProposal,
   GrandPalaisPrice,
+  GrandPalaisSitePrices,
   SharedGrandPalaisEvent,
 } from "../../src/grandPalaisProgramTypes.ts";
 
@@ -484,6 +486,51 @@ export function isPriceOnlyChange(proposal: GrandPalaisProgramProposal) {
  *  attente, les tarifs et le sous-titre (l'artiste) que la fiche officielle
  *  affiche aujourd'hui. Dates, titre et lieu restent soumis à validation.
  *  Une fiche relue sans tarif ni sous-titre n'efface pas ceux déjà connus. */
+/** Le compte rendu d'un passage : les tarifs nouveaux ou changés sur les
+ *  fiches du site (repris d'eux-mêmes, programme intégré compris), les
+ *  sous-titres mis à jour sur les événements validés, et les propositions
+ *  gardées pour validation. Sans relevé précédent (tout premier passage),
+ *  les tarifs ne sont pas listés : ils le seraient tous. */
+export function grandPalaisCheckReport({
+  checkedAt,
+  previousSitePrices,
+  sitePrices,
+  previousApproved,
+  approved,
+  proposals,
+}: {
+  checkedAt: string;
+  previousSitePrices: GrandPalaisSitePrices[] | null;
+  sitePrices: GrandPalaisSitePrices[];
+  previousApproved: SharedGrandPalaisEvent[];
+  approved: SharedGrandPalaisEvent[];
+  proposals: GrandPalaisProgramProposal[];
+}): GrandPalaisCheckReport {
+  const keyOf = (entry: GrandPalaisSitePrices) => entry.url || `${entry.title}|${entry.startDate}`;
+  const before = new Map((previousSitePrices ?? []).map((entry) => [keyOf(entry), entry]));
+  const prices = previousSitePrices
+    ? sitePrices.flatMap((entry) => {
+        const previous = before.get(keyOf(entry));
+        if (previous && JSON.stringify(previous.prices) === JSON.stringify(entry.prices)) return [];
+        return [{ title: entry.title, kind: previous ? ("changed" as const) : ("new" as const), prices: entry.prices }];
+      })
+    : [];
+  const previousById = new Map(previousApproved.map((event) => [event.id, event]));
+  const details = approved.flatMap((event) => {
+    const previous = previousById.get(event.id);
+    return event.details && previous && previous.details !== event.details ? [{ title: event.title, details: event.details }] : [];
+  });
+  return {
+    checkedAt,
+    prices,
+    details,
+    proposals: proposals.flatMap((proposal) => {
+      const event = proposal.next ?? proposal.previous;
+      return event ? [{ kind: proposal.kind, title: event.title, venueLabel: event.venueLabel }] : [];
+    }),
+  };
+}
+
 export function syncGrandPalaisPrices(
   approved: SharedGrandPalaisEvent[],
   pending: GrandPalaisProgramProposal[],
@@ -602,7 +649,7 @@ export async function sendGrandPalaisAlertEmail(
   }).join("");
   return sendPlanningEmail(
     `${proposals.length} changement${proposals.length > 1 ? "s" : ""} dans la programmation du Grand Palais`,
-    `<p>Planning Solo a détecté une évolution du site officiel :</p><ul>${items}</ul><p>Ouvrez la rubrique Programmation GP pour accepter ou ignorer.</p>`,
+    `<p>Planning Solo a détecté une évolution du site officiel :</p><ul>${items}</ul><p>Ouvrez la rubrique Programme GP pour accepter ou ignorer.</p>`,
     { apiKey, recipient, from },
     fetcher,
   );

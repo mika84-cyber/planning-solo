@@ -626,32 +626,8 @@
   line-height: 1.48;
 }
 
-.useful-expo-year-picker {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
-  gap: 7px;
-  border-radius: 14px;
-  padding: 5px;
-  background: #fff;
-}
 
-.useful-expo-year-picker button {
-  min-height: 42px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: var(--muted);
-  background: transparent;
-  font: inherit;
-  font-weight: 900;
-  cursor: pointer;
-}
 
-.useful-expo-year-picker button.active {
-  border-color: var(--border-card);
-  color: #3a332c;
-  background: var(--surface);
-  box-shadow: 0 5px 13px rgba(37, 88, 79, 0.1);
-}
 
 .useful-expo-timeline {
   position: relative;
@@ -1490,7 +1466,7 @@ fieldset.leave-choices {
 .work-exchange-suggestion-group.group-3 { background: #eaf3e6; color: #3f6536; }
 
 /* Boutons terracotta : un liseré sombre très léger, comme les cases de l’accueil. */
-:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .payslip-file-drop, .home-setup-list button:not(.home-setup-dismiss), .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .month-jump-menu button.active, .choice-picker-menu button.active) {
+:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .payslip-file-drop, .home-setup-list button:not(.home-setup-dismiss), .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .choice-picker-menu button.active) {
   border: 1px solid var(--border-control);
 }
 /* Férié échangé : flèches et dollar sur une pastille blanche, lisible sur

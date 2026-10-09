@@ -7,6 +7,7 @@ import {
   extractGrandPalaisExceptionalClosures,
   extractGrandPalaisProgramLinks,
   extractGrandPalaisProgramPageLinks,
+  grandPalaisCheckReport,
   isGrandPalaisProposalRelevant,
   isPriceOnlyChange,
   sendGrandPalaisAlertEmail,
@@ -351,5 +352,36 @@ describe("surveillance de la programmation du Grand Palais", () => {
     expect(firstMiss.proposals).toEqual([]);
     const secondMiss = detectGrandPalaisChanges(firstMiss.state, [], "2026-08-30T06:00:00.000Z");
     expect(secondMiss.proposals[0]).toMatchObject({ kind: "removed", previous: event });
+  });
+});
+
+describe("compte rendu d'un contrôle du site", () => {
+  const parisPhoto = { title: "Paris Photo", url: "https://www.grandpalais.fr/fr/paris-photo", startDate: "2026-11-12", endDate: "2026-11-15" };
+  const event = {
+    id: "concert", title: "Concert", startDate: "2026-11-20", endDate: "2026-11-20",
+    url: "https://www.grandpalais.fr/fr/concert", venueKey: "grand-palais", venueLabel: "Grand Palais",
+  };
+
+  it("dit les tarifs ajoutés ou changés, les sous-titres et ce qui attend un accord", () => {
+    const report = grandPalaisCheckReport({
+      checkedAt: "2026-10-09T22:00:00.000Z",
+      previousSitePrices: [{ ...parisPhoto, url: "https://www.grandpalais.fr/fr/autre", prices: [{ label: "Plein tarif", amount: 20 }] }],
+      sitePrices: [{ ...parisPhoto, prices: [{ label: "Plein tarif", amount: 32 }, { label: "Tarif réduit", amount: 25 }] }],
+      previousApproved: [event],
+      approved: [{ ...event, details: "Orchestre de Paris" }],
+      proposals: [{ id: "p1", kind: "new", detectedAt: "2026-10-09", next: { ...event, id: "expo", title: "Nouvelle exposition" } }],
+    });
+    expect(report.prices).toEqual([{ title: "Paris Photo", kind: "new", prices: [{ label: "Plein tarif", amount: 32 }, { label: "Tarif réduit", amount: 25 }] }]);
+    expect(report.details).toEqual([{ title: "Concert", details: "Orchestre de Paris" }]);
+    expect(report.proposals).toEqual([{ kind: "new", title: "Nouvelle exposition", venueLabel: "Grand Palais" }]);
+  });
+
+  it("ne liste ni les tarifs inchangés, ni tous les tarifs au tout premier passage", () => {
+    const sitePrices = [{ ...parisPhoto, prices: [{ label: "Plein tarif", amount: 32 }] }];
+    const base = { checkedAt: "2026-10-09T22:00:00.000Z", sitePrices, previousApproved: [], approved: [], proposals: [] };
+    expect(grandPalaisCheckReport({ ...base, previousSitePrices: sitePrices }).prices).toEqual([]);
+    expect(grandPalaisCheckReport({ ...base, previousSitePrices: null }).prices).toEqual([]);
+    const changed = grandPalaisCheckReport({ ...base, previousSitePrices: [{ ...parisPhoto, prices: [{ label: "Plein tarif", amount: 30 }] }] });
+    expect(changed.prices[0]).toMatchObject({ title: "Paris Photo", kind: "changed" });
   });
 });

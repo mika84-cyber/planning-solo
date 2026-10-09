@@ -3,6 +3,7 @@ import { currentUser } from "../lib/identityUser.mts";
 import type {
   BoundaryReport,
   GrandPalaisDismissal,
+  GrandPalaisCheckReport,
   GrandPalaisSitePrices,
   GrandPalaisProgramPayload,
   GrandPalaisProgramProposal,
@@ -10,7 +11,7 @@ import type {
 } from "../../src/grandPalaisProgramTypes.ts";
 import type { GrandPalaisMonitorState } from "../lib/grandPalaisMonitor.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
-import { CHECK_REQUEST_KEY, SITE_PRICES_KEY } from "../lib/grandPalaisCheck.mts";
+import { CHECK_REPORT_KEY, CHECK_REQUEST_KEY, SITE_PRICES_KEY } from "../lib/grandPalaisCheck.mts";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -43,12 +44,13 @@ export default async function grandPalaisProgramHandler(request: Request) {
     && normalizedEmail(user.email) === normalizedEmail(adminEmail()),
   );
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
-  const [approvedValue, pendingValue, state, health, sitePrices] = await Promise.all([
+  const [approvedValue, pendingValue, state, health, sitePrices, lastCheckReport] = await Promise.all([
     store.get("approved", { type: "json" }) as Promise<SharedGrandPalaisEvent[] | null>,
     store.get("pending", { type: "json" }) as Promise<GrandPalaisProgramProposal[] | null>,
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
     store.get("health", { type: "json" }) as Promise<BoundaryReport | null>,
     store.get(SITE_PRICES_KEY, { type: "json" }) as Promise<GrandPalaisSitePrices[] | null>,
+    store.get(CHECK_REPORT_KEY, { type: "json" }) as Promise<GrandPalaisCheckReport | null>,
   ]);
   const approved = approvedValue ?? [];
   const pending = pendingValue ?? [];
@@ -62,6 +64,7 @@ export default async function grandPalaisProgramHandler(request: Request) {
     // elle qui peut agir, et le détail nomme des variables de configuration.
     health: isAdmin ? (health ?? undefined) : undefined,
     sitePrices: sitePrices ?? [],
+    lastCheckReport: isAdmin ? (lastCheckReport ?? undefined) : undefined,
   });
 
   if (request.method === "GET") return json(payload());

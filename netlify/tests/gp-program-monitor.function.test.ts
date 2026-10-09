@@ -15,6 +15,7 @@ vi.mock("../lib/grandPalaisMonitor.mts", async (importOriginal) => {
   return {
     collectGrandPalaisEvents: vi.fn(),
     detectGrandPalaisChanges: vi.fn(),
+    grandPalaisCheckReport: actual.grandPalaisCheckReport,
     isGrandPalaisProposalRelevant: vi.fn(() => true),
     isPriceOnlyChange: actual.isPriceOnlyChange,
     sendGrandPalaisAlertEmail: vi.fn(),
@@ -116,6 +117,8 @@ describe("surveillance planifiée du programme Grand Palais", () => {
       pushSent: true,
       pushWarning: "",
       checkedAt: nextState.lastCheckedAt,
+      // Le compte rendu nomme la proposition gardée pour validation.
+      report: expect.objectContaining({ proposals: [expect.objectContaining({ kind: proposal.kind })] }),
     });
   });
 
@@ -127,8 +130,11 @@ describe("surveillance planifiée du programme Grand Palais", () => {
     const response = await monitorGrandPalaisProgram();
 
     expect(mockedSendAlert).not.toHaveBeenCalled();
-    expect(store.setJSON).toHaveBeenCalledTimes(1);
+    // L'état et le compte rendu du contrôle, rien d'autre : la proposition
+    // déjà en attente n'est pas réenregistrée.
+    expect(store.setJSON).toHaveBeenCalledTimes(2);
     expect(store.setJSON).toHaveBeenCalledWith("monitor-state", nextState);
+    expect(store.setJSON).toHaveBeenCalledWith("last-check-report", expect.objectContaining({ proposals: [] }));
     expect(await response.json()).toMatchObject({ detected: 0, alertSent: false });
   });
 

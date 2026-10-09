@@ -73,8 +73,8 @@ function headerTitle(section: MainSection, payScreen: PayScreen) {
   if (section === "home") return "Accueil";
   if (section === "leave") return "Congés et récupérations";
   if (section === "pdf" || section === "forms") return "Documents et contacts";
-  if (section === "program") return "Programmation GP";
-  if (section === "colleagues") return "Planning des collègues";
+  if (section === "program") return "Programme GP";
+  if (section === "colleagues") return "Planning partagé";
   if (payScreen === "allowances") return "Primes et jours fériés";
   if (payScreen === "payslip") return "Détail du calcul";
   return "Ma paie";
@@ -142,7 +142,7 @@ export function AppHeader({
         <p className="eyebrow">Planning Solo</p>
         <h1>
           {homeSection === "colleagues" ? (
-            <><span>Planning des</span>{" "}<span>collègues</span></>
+            <><span>Planning</span>{" "}<span>partagé</span></>
           ) : homeSection === "forms" ? (
             <><span className="header-title-line">Contacts et</span>{" "}<span className="header-title-line">formulaires</span></>
           ) : homeSection === "pdf" ? (
@@ -150,15 +150,6 @@ export function AppHeader({
           ) : headerTitle(homeSection, payScreen)}
         </h1>
       </div>
-      {homeSection === "colleagues" ? (
-        <img
-          className="colleague-header-illustration"
-          src="/colleague-planning-header.png"
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-        />
-      ) : null}
       {/* Mise à jour en attente : un bouton bien visible au milieu de l'image
           de l'en-tête, jusqu'à ce qu'elle soit faite. */}
       {updateCallVisible ? (
@@ -253,8 +244,8 @@ const MENU_PAGES: ReadonlyArray<{ key: MainSection; titre: string; detail: strin
   { key: "leave", titre: "Congés et récupérations", detail: "Soldes, CET, heures supplémentaires" },
   { key: "pay", titre: "Ma paie", detail: "Estimation, primes et vérification du bulletin" },
   { key: "pdf", titre: "Documents et contacts", detail: "Plannings PDF, formulaires et annuaire" },
-  { key: "program", titre: "Programmation GP", detail: "Expositions et fermetures exceptionnelles" },
-  { key: "colleagues", titre: "Planning des collègues", detail: "Leurs jours de présence, par nom" },
+  { key: "program", titre: "Programme GP", detail: "Expositions et fermetures exceptionnelles" },
+  { key: "colleagues", titre: "Planning partagé", detail: "Les jours de présence des collègues, par nom" },
 ];
 
 type MainMenuProps = {

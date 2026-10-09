@@ -2,6 +2,7 @@ import { getStore } from "@netlify/blobs";
 import {
   collectGrandPalaisEvents,
   detectGrandPalaisChanges,
+  grandPalaisCheckReport,
   isGrandPalaisProposalRelevant,
   isPriceOnlyChange,
   sendGrandPalaisAlertEmail,
@@ -22,16 +23,20 @@ export const SITE_PRICES_KEY = "site-prices";
 /** Clé de la demande de contrôle déposée par l'administrateur. */
 export const CHECK_REQUEST_KEY = "check-request";
 
+/** Clé du compte rendu du dernier contrôle, montré dans « Veille du site ». */
+export const CHECK_REPORT_KEY = "last-check-report";
+
 /** Un passage de la veille : lit le site, met les tarifs à jour, garde les
  *  autres changements en attente d'accord et prévient l'administrateur.
  *  Partagé par le passage de minuit et le contrôle lancé à la main. */
 export async function runGrandPalaisCheck() {
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
-  const [state, storedPending, dismissed, storedApproved] = await Promise.all([
+  const [state, storedPending, dismissed, storedApproved, previousSitePrices] = await Promise.all([
     store.get("monitor-state", { type: "json" }) as Promise<GrandPalaisMonitorState | null>,
     store.get("pending", { type: "json" }) as Promise<GrandPalaisProgramProposal[] | null>,
     store.get("dismissed", { type: "json" }) as Promise<GrandPalaisDismissal[] | null>,
     store.get("approved", { type: "json" }) as Promise<SharedGrandPalaisEvent[] | null>,
+    store.get(SITE_PRICES_KEY, { type: "json" }) as Promise<GrandPalaisSitePrices[] | null>,
   ]);
   const events = await collectGrandPalaisEvents();
   const detected = detectGrandPalaisChanges(state, events);
@@ -56,8 +61,21 @@ export async function runGrandPalaisCheck() {
     .filter((event) => event.prices?.length && event.venueKey !== "exceptional-closure")
     .map((event) => ({ title: event.title, url: event.url, startDate: event.startDate, endDate: event.endDate, prices: event.prices! }));
 
+  // Ce que l'application a repris d'elle-même et ce qui attend un accord :
+  // la veille le dit, plutôt qu'un « rien de nouveau à valider » trompeur
+  // quand des tarifs viennent d'être ajoutés.
+  const report = grandPalaisCheckReport({
+    checkedAt: detected.state.lastCheckedAt ?? new Date().toISOString(),
+    previousSitePrices: sitePrices.length ? previousSitePrices : null,
+    sitePrices,
+    previousApproved: storedApproved ?? [],
+    approved: prices.approved,
+    proposals: fresh,
+  });
+
   await Promise.all([
     store.setJSON("monitor-state", detected.state),
+    store.setJSON(CHECK_REPORT_KEY, report),
     sitePrices.length ? store.setJSON(SITE_PRICES_KEY, sitePrices) : Promise.resolve(),
     fresh.length || prices.changed ? store.setJSON("pending", [...pending, ...fresh]) : Promise.resolve(),
     prices.changed ? store.setJSON("approved", prices.approved) : Promise.resolve(),
@@ -77,7 +95,7 @@ export async function runGrandPalaisCheck() {
     try {
       pushSent = await sendSharedPlanningNotification({
         title: `Grand Palais : ${fresh.length} changement${fresh.length > 1 ? "s" : ""}`,
-        body: `${summary} — ouvrez Programmation GP pour accepter ou ignorer.`,
+        body: `${summary} — ouvrez Programme GP pour accepter ou ignorer.`,
         url: "https://planning-solo.netlify.app/",
         tag: "gp-program-proposal",
       });
@@ -106,5 +124,6 @@ export async function runGrandPalaisCheck() {
     pushSent,
     pushWarning,
     checkedAt: detected.state.lastCheckedAt,
+    report,
   };
 }

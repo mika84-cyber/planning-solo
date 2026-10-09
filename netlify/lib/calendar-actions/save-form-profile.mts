@@ -1,6 +1,7 @@
 import { json, sanitizeCetAccount, type FormProfile, type ManualYearAdjustments } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
 import { sanitizeDeductionPayMonths } from "../calendarValidation.mts";
+import { sanitizePayslipVerifications } from "../../../src/payslipVerificationRecords.ts";
 import { readAtomic, writeAtomic } from "../calendarAtomic.mts";
 export async function handleSaveFormProfile(
   context: CalendarActionContext,
@@ -193,6 +194,7 @@ export async function handleSaveFormProfile(
     manual_adjustments: previousProfile?.manual_adjustments,
     cet_account: previousProfile?.cet_account,
     deduction_pay_months: previousProfile?.deduction_pay_months,
+    payslip_verifications: previousProfile?.payslip_verifications,
     updated_at: new Date().toISOString(),
   };
   // La table est renvoyée entière par l'écran qui la modifie ; les autres
@@ -205,6 +207,17 @@ export async function handleSaveFormProfile(
     )
       return json({ error: "Mois de retenue invalides" }, 400);
     formProfile.deduction_pay_months = sanitizeDeductionPayMonths(body.deductionPayMonths);
+  }
+  // Les décisions des bulletins sont renvoyées entières par l'écran de
+  // vérification ; les autres appels ne les touchent pas.
+  if (body.payslipVerifications !== undefined) {
+    if (
+      !body.payslipVerifications ||
+      typeof body.payslipVerifications !== "object" ||
+      Array.isArray(body.payslipVerifications)
+    )
+      return json({ error: "Vérifications de bulletin invalides" }, 400);
+    formProfile.payslip_verifications = sanitizePayslipVerifications(body.payslipVerifications);
   }
   if (body.cetAccount !== undefined) {
     const cetAccount = sanitizeCetAccount(body.cetAccount);

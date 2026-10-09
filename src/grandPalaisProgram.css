@@ -7,22 +7,7 @@
   background: #fff;
 }
 
-.top-header.top-header-program::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  background: url("/grand-palais-verriere-fast.webp") center 46% / cover no-repeat;
-}
 
-.top-header.top-header-program::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  pointer-events: none;
-  background: none;
-}
 
 .top-header.top-header-program > * {
   position: relative;
@@ -402,14 +387,7 @@
     background: #fff;
   }
 
-  .top-header.top-header-program::before {
-    background-position: 56% 46%;
-    background-size: cover;
-  }
 
-  .top-header.top-header-program::after {
-    background: none;
-  }
 
   .top-header.top-header-program .main-menu-button {
     z-index: 8;
@@ -595,3 +573,7 @@
 .grand-palais-check-button { margin-top: 10px; border: 0; border-radius: 10px; padding: 9px 14px; background: #9a4a2e; color: #fff; font: inherit; font-size: 0.8rem; font-weight: 850; cursor: pointer; }
 .grand-palais-check-button:disabled { background: #c9a796; cursor: progress; }
 .grand-palais-check-panel p b { color: var(--text); }
+/* Compte rendu du dernier contrôle : ce qui a été ajouté, ce qui attend. */
+.grand-palais-check-report { margin-top: 8px; }
+.grand-palais-check-report p { margin: 6px 0 2px; }
+.grand-palais-check-report ul { margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.45; }

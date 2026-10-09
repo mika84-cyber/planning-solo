@@ -345,9 +345,9 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expectWhiteCard(".leave-tools-area", accentSpine(page));
 
   await goToSection(page, "pay");
-  // Le bulletin simplifié : le mois, le net et les lignes sur des cartes
-  // blanches au contour fin.
-  await expectWhiteCard(".pay-bulletin-month");
+  // Le bulletin simplifié : le net (le mois en tête) et les lignes sur des
+  // cartes blanches au contour fin.
+  await expect(page.locator(".pay-bulletin-hero .pay-bulletin-month")).toBeVisible();
   await expectWhiteCard(".pay-bulletin-hero");
   await expectWhiteCard(".pay-bulletin-lines");
   await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(2);
@@ -437,8 +437,10 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
 test("Ma paie utilise une surface blanche sans changer la disposition", async ({ page }, testInfo) => {
   await prepareDemo(page);
   await goToSection(page, "pay");
-  await expect(page.locator('.pay-bulletin-month')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(page.locator('.pay-bulletin-month')).toHaveCSS('background-image', 'none');
+  // Le mois est en tête de la carte du net, elle-même blanche.
+  await expect(page.locator('.pay-bulletin-hero')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.pay-bulletin-hero')).toHaveCSS('background-image', 'none');
+  await expect(page.locator('.pay-bulletin-hero .pay-bulletin-month')).toBeVisible();
   // La démo n'a pas de montant : cette ligne mesurait donc « À compléter »,
   // pas une somme. Une absence se lit désormais en gris discret, pour ne pas
   // être prise pour une estimation réelle.
@@ -692,7 +694,7 @@ test("la barre complète tient sur un Z Fold fermé", async ({ page }, testInfo)
   }))).toBe(true);
   // Même le nom le plus long, une fois étiré, tient dans l'écran le plus étroit.
   await navigation.getByRole("button", { name: SECTION_BUTTONS.colleagues }).click();
-  await expect(page.locator(".top-header h1")).toContainText("Planning des collègues");
+  await expect(page.locator(".top-header h1")).toContainText("Planning partagé");
   await expect.poll(async () => {
     const box = (await navigation.boundingBox())!;
     return box.x >= 0 && box.x + box.width <= 344;
@@ -1009,12 +1011,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(page.locator(".colleague-how-it-works")).toHaveCSS("background-image", "none");
   expect(parseFloat(await howItWorksTitle.evaluate((node) => getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(12.7);
   await expect(page.getByText(/Consultez les noms de l’annuaire et bloquez discrètement/)).toBeVisible();
-  const colleagueIllustration = page.locator(".top-header-colleagues .colleague-header-illustration");
-  await expect(colleagueIllustration).toBeVisible();
-  await expect(colleagueIllustration).toHaveAttribute("src", "/colleague-planning-header.png");
-  await expect(colleagueIllustration).toHaveCSS("object-fit", "contain");
-  // Le panda occupe l'espace libre de l'en-tête, sans décalage qui le ferait chevaucher le titre.
-  expect(await colleagueIllustration.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).f)).toBe(0);
+  // L'en-tête bicolore : plus d'illustration, le titre centré dans la hauteur.
+  await expect(page.locator(".top-header-colleagues .colleague-header-illustration")).toHaveCount(0);
   // La page s'ouvre sur la semaine ; on passe à la vue d'un jour.
   await expect(page.locator(".colleague-week-table")).toBeVisible();
   await page.locator(".colleague-board-mode").getByRole("button", { name: "Jour", exact: true }).click();
@@ -1023,32 +1021,21 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-2 th")).toHaveCSS("background-color", "rgb(255, 243, 227)");
   await expect(tomorrowPreview.locator(".colleague-tomorrow-group.group-1, .colleague-tomorrow-group.group-3")).toHaveCount(0);
   await expect(tomorrowPreview.locator(".colleague-tomorrow-row").last().locator("td").first()).toHaveCSS("border-bottom-width", "0px");
-  await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-color", "rgb(44, 38, 33)");
-  // Un halo chaud derrière le panda, sur la même base sombre.
-  await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-image", /radial-gradient/);
-  await expect(page.locator(".top-header-colleagues")).toHaveCSS("border-radius", "28px");
-  await expect(page.locator(".top-header-colleagues .top-header-title h1 span")).toHaveCount(2);
-  expect(parseFloat(await page.locator(".top-header-colleagues .top-header-title h1").evaluate((node) => getComputedStyle(node).fontSize))).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) <= 700 ? 16 : 20);
+  await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-image", /linear-gradient/);
+  await expect(page.locator(".top-header-colleagues .top-header-title h1")).toHaveText("Planning partagé");
   const [colleagueHeaderBox, colleagueTitleBox, colleagueMenuBox] = await Promise.all([
     page.locator(".top-header-colleagues").boundingBox(),
     page.locator(".top-header-colleagues .top-header-title").boundingBox(),
     page.locator(".top-header-colleagues .main-menu-button").boundingBox(),
   ]);
   expect(Math.abs(colleagueHeaderBox!.height - referenceHeaderHeight), JSON.stringify({ referenceHeaderHeight, colleagueHeaderHeight: colleagueHeaderBox!.height })).toBeLessThanOrEqual(1);
-  const colleagueImageBox = await colleagueIllustration.boundingBox();
-  expect(colleagueTitleBox!.x - colleagueHeaderBox!.x).toBeLessThan(22);
-  expect(colleagueTitleBox!.y - colleagueHeaderBox!.y).toBeLessThan(22);
-  expect(colleagueHeaderBox!.x + colleagueHeaderBox!.width - colleagueMenuBox!.x - colleagueMenuBox!.width).toBeLessThan(22);
+  expect(colleagueTitleBox!.x - colleagueHeaderBox!.x).toBeLessThan(24);
+  // Le titre est centré dans la hauteur de l'en-tête (à quelques pixels près).
+  const titleMiddle = colleagueTitleBox!.y + colleagueTitleBox!.height / 2;
+  const headerMiddle = colleagueHeaderBox!.y + colleagueHeaderBox!.height / 2;
+  expect(Math.abs(titleMiddle - headerMiddle)).toBeLessThan(16);
+  expect(colleagueHeaderBox!.x + colleagueHeaderBox!.width - colleagueMenuBox!.x - colleagueMenuBox!.width).toBeLessThan(26);
   expect(colleagueMenuBox!.y - colleagueHeaderBox!.y).toBeLessThan(30);
-  // En-tête et image mesurés dans la même image : un défilement entre deux relevés
-  // faisait croire que l’image sortait du bandeau.
-  const imageInHeader = await page.evaluate(() => {
-    const header = document.querySelector(".top-header-colleagues")!.getBoundingClientRect();
-    const image = document.querySelector(".top-header-colleagues .colleague-header-illustration")!.getBoundingClientRect();
-    return { top: image.top - header.top, bottom: header.bottom - image.bottom };
-  });
-  expect(imageInHeader.top, JSON.stringify({ colleagueImageBox })).toBeGreaterThanOrEqual(0);
-  expect(imageInHeader.bottom).toBeGreaterThanOrEqual(0);
   await page.locator(".top-header-colleagues").screenshot({ path: `previews/colleague-header-${testInfo.project.name}.png` });
   await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
   await expect(page.locator(".top-header-colleagues .header-update-button")).toBeVisible();
@@ -1201,12 +1188,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const intermediateHeader = await page.locator(".top-header-colleagues").boundingBox();
   const intermediateTitle = await page.locator(".top-header-colleagues .top-header-title").boundingBox();
   const intermediateMenu = await page.locator(".top-header-colleagues .account-button").boundingBox();
-  const intermediateImage = await colleagueIllustration.boundingBox();
-  // Le panda occupe le centre, derrière le titre et les boutons dont il épouse les coins vides.
-  expect(intermediateImage!.height).toBeGreaterThan(130);
-  expect(Math.abs((intermediateImage!.x + intermediateImage!.width / 2) - (intermediateHeader!.x + intermediateHeader!.width / 2))).toBeLessThan(2);
-  expect(intermediateImage!.y + intermediateImage!.height).toBeGreaterThan(intermediateTitle!.y + intermediateTitle!.height);
-  expect(intermediateImage!.y + intermediateImage!.height).toBeLessThanOrEqual(intermediateHeader!.y + intermediateHeader!.height);
+  // Le titre tient dans l'en-tête, les boutons aussi.
+  expect(intermediateTitle!.y + intermediateTitle!.height).toBeLessThanOrEqual(intermediateHeader!.y + intermediateHeader!.height);
   expect(intermediateMenu!.x + intermediateMenu!.width).toBeLessThanOrEqual(intermediateHeader!.x + intermediateHeader!.width);
   const titleCover = await page.evaluate(() => {
     // Le défilement doux de la page laisserait l’en-tête hors de l’écran au moment de la mesure.
@@ -1221,10 +1204,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await page.setViewportSize({ width: 900, height: 1000 });
   const openScreenHeader = await page.locator(".top-header-colleagues").boundingBox();
   const openScreenMenu = await page.locator(".top-header-colleagues .account-button").boundingBox();
-  const openScreenImage = await colleagueIllustration.boundingBox();
   expect(openScreenHeader!.height).toBeLessThanOrEqual(240);
-  expect((await colleagueIllustration.boundingBox())!.height).toBeGreaterThan(205);
-  expect(Math.abs((openScreenImage!.x + openScreenImage!.width / 2) - (openScreenHeader!.x + openScreenHeader!.width / 2))).toBeLessThan(2);
   expect(openScreenHeader!.x + openScreenHeader!.width - openScreenMenu!.x - openScreenMenu!.width).toBeLessThan(90);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
@@ -1237,10 +1217,7 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   expect(Math.abs(receivedWideBox!.width - shareWideBox!.width)).toBeLessThanOrEqual(1);
   expect(receivedWideBox!.y).toBeGreaterThan(shareWideBox!.y + shareWideBox!.height);
   const desktopHeader = await page.locator(".top-header-colleagues").boundingBox();
-  const desktopImage = await colleagueIllustration.boundingBox();
   expect(desktopHeader!.height).toBeLessThanOrEqual(240);
-  expect((await colleagueIllustration.boundingBox())!.height).toBeGreaterThan(205);
-  expect(Math.abs((desktopImage!.x + desktopImage!.width / 2) - (desktopHeader!.x + desktopHeader!.width / 2))).toBeLessThan(2);
   await goToSection(page, "home");
   const desktopReferenceHeader = await page.locator('.top-header:visible').boundingBox();
   expect(Math.abs(desktopHeader!.height - desktopReferenceHeader!.height), JSON.stringify({ desktopReferenceHeight: desktopReferenceHeader!.height, colleagueHeight: desktopHeader!.height })).toBeLessThanOrEqual(1);
@@ -1321,7 +1298,7 @@ test("une invitation acceptée propose le partage en retour", async ({ page }) =
   // Le titre de la rubrique, pas n'importe quel titre : « Planning des
   // collègues » est aussi le titre de la carte d'introduction, et les deux
   // coexistent une fois la section posée.
-  await expect(page.locator(".top-header h1")).toHaveText("Planning des collègues");
+  await expect(page.locator(".top-header h1")).toHaveText("Planning partagé");
 });
 
 test("une demi-journée reste le prochain jour travaillé et y est précisée", async ({ page }) => {
@@ -1594,7 +1571,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(menu.locator(".main-menu-save-status")).toHaveCount(0);
   await expect(menu.getByRole("button", { name: /Vérifier les mises à jour|Installer la mise à jour/ })).toHaveCount(0);
   await expect(menu.getByRole("button", { name: /Mes données/ })).toBeVisible();
-  for (const page_ of ["Congés et récupérations", "Planning des collègues"])
+  for (const page_ of ["Congés et récupérations", "Planning partagé"])
     await expect(menu.getByRole("button", { name: new RegExp(page_) })).toBeVisible();
   const adminContact = menu.getByRole("button", { name: /Messagerie interne|Écrire à l’administrateur/ });
   await expect(adminContact).toBeVisible();
@@ -1609,18 +1586,10 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
 
   await goToSection(page, "leave");
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
+  // L'en-tête bicolore : deux aplats, plus d'œuvre derrière le titre.
   const leaveHeader = page.locator(".top-header-leave");
-  const leaveArtwork = await leaveHeader.evaluate((header) => {
-    const artwork = getComputedStyle(header, "::before");
-    return {
-      backgroundImage: artwork.backgroundImage,
-      filter: artwork.filter,
-      pointerEvents: artwork.pointerEvents,
-    };
-  });
-  expect(leaveArtwork.backgroundImage).toContain("leave-header-art-fast.webp");
-  expect(leaveArtwork.filter).toBe("none");
-  expect(leaveArtwork.pointerEvents).toBe("none");
+  expect(await leaveHeader.evaluate((header) => getComputedStyle(header).backgroundImage)).toContain("linear-gradient");
+  expect(await leaveHeader.evaluate((header) => getComputedStyle(header, "::before").display)).toBe("none");
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
   await expect(page.getByRole("heading", { name: "Gérer mes récupérations et demandes" })).toHaveCount(0);
   const leaveTools = page.locator(".leave-tools-area");
@@ -1669,25 +1638,14 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expectHeaderWidth(payScreen);
   const payHeader = page.locator(".top-header-pay");
   await expect(payHeader.locator(".notification-button")).toHaveCount(0);
-  const payArtwork = await payHeader.evaluate((header) => {
-    const artwork = getComputedStyle(header, "::before");
-    return {
-      backgroundImage: artwork.backgroundImage,
-      filter: artwork.filter,
-      pointerEvents: artwork.pointerEvents,
-    };
-  });
-  expect(payArtwork.backgroundImage).toContain("pay-header-art-fast.webp");
-  expect(payArtwork.filter).toMatch(/saturate\(1\.4/);
-  expect(payArtwork.filter).toContain("contrast");
-  expect(payArtwork.pointerEvents).toBe("none");
-  if ((page.viewportSize()?.width ?? 1000) <= 720) {
-    const titleTransform = await payHeader.locator(".top-header-title").evaluate((node) => getComputedStyle(node).transform);
-    expect(titleTransform).not.toBe("none");
-  }
+  // L'en-tête bicolore ; le titre est légèrement descendu, au milieu.
+  expect(await payHeader.evaluate((header) => getComputedStyle(header).backgroundImage)).toContain("linear-gradient");
+  expect(await payHeader.evaluate((header) => getComputedStyle(header, "::before").display)).toBe("none");
+  const titleTransform = await payHeader.locator(".top-header-title").evaluate((node) => getComputedStyle(node).transform);
+  expect(titleTransform).not.toBe("none");
   expect(await payScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pay-art.jpg");
   await expect(payScreen.locator(".pay-bulletin-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
-  await expect(page.getByText("Net estimé", { exact: true })).toBeVisible();
+  await expect(payScreen.locator(".pay-bulletin-hero").getByText("Net estimé", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "À vérifier" })).toHaveCount(0);
   await expect(payScreen.locator(".pay-dashboard-checks")).toHaveCount(0);
   await expect(payScreen.locator(".pay-allowances-shortcut")).toHaveCount(0);
@@ -1739,7 +1697,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await goToSection(page, "documents");
   await page.getByRole("tab", { name: "Plannings PDF" }).click();
   await expect(page.getByRole("heading", { name: "Télécharger les plannings en PDF" })).toBeVisible();
-  expect(await page.locator(".top-header-pdf").evaluate((node) => getComputedStyle(node, "::before").backgroundImage)).toContain("forms-header-art-fast.webp");
+  expect(await page.locator(".top-header-pdf").evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("linear-gradient");
   const pdfScreen = page.locator(".pdf-download-screen");
   await expectHeaderWidth(pdfScreen);
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
@@ -1965,7 +1923,7 @@ test("le menu principal mène aux pages et garde Mes données", async ({ page })
   // sauvegarde ont quitté ce volet, mais la gestion des données y reste.
   await expect(mainMenu.getByRole("navigation", { name: "Les pages de l’application" }).getByRole("button")).toHaveCount(6);
   await expect(mainMenu.getByRole("button", { name: /Congés et récupérations/ })).toBeVisible();
-  await expect(mainMenu.getByRole("button", { name: /Planning des collègues/ })).toBeVisible();
+  await expect(mainMenu.getByRole("button", { name: /Planning partagé/ })).toBeVisible();
   await expect(mainMenu.locator(".main-menu-refresh")).toHaveCount(0);
   await expect(mainMenu.getByRole("button", { name: /Mes données/ })).toBeVisible();
   await expect(mainMenu.getByRole("button", { name: /Installer l’application/ })).toBeDisabled();
@@ -2024,7 +1982,8 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   const formsHeader = page.locator(".top-header-pdf");
   await expect(formsHeader).toBeVisible();
   await expect(formsHeader).toHaveCSS("position", "relative");
-  expect(await formsHeader.evaluate((node) => getComputedStyle(node, "::before").backgroundImage)).toContain("forms-header-art-fast.webp");
+  // L'en-tête bicolore : deux aplats de couleur, plus d'image derrière le titre.
+  expect(await formsHeader.evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("linear-gradient");
   const formsHeaderBox = (await formsHeader.boundingBox())!;
   const resourceTabsBox = (await page.locator(".has-active-resource .useful-resource-tabs").boundingBox())!;
   expect(Math.abs(resourceTabsBox.width - formsHeaderBox.width)).toBeLessThanOrEqual(1);
@@ -2046,10 +2005,12 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   expect(Math.abs(formsScreenBox.width - resourcesScreenBox.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
   expect(Math.abs(formsHeaderBox.width - homeHeaderBox.width)).toBeLessThan(0.5);
-  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 520 ? 175 : (page.viewportSize()?.width ?? 1000) <= 720 ? 215 : 235))).toBeLessThan(0.5);
+  // La hauteur commune des en-têtes : 170 px sur téléphone, 150 puis 156 en grand.
+  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 600 ? 170 : (page.viewportSize()?.width ?? 1000) <= 720 ? 150 : 156))).toBeLessThan(0.5);
   await expect(formsHeader.locator(".header-update-button")).toHaveCount(1);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
-    expect(parseFloat(await formsHeader.locator("h1").evaluate((node) => getComputedStyle(node).fontSize))).toBeLessThanOrEqual(21);
+    // Le même corps de titre sur toutes les pages, sur deux lignes au besoin.
+    expect(parseFloat(await formsHeader.locator("h1").evaluate((node) => getComputedStyle(node).fontSize))).toBeLessThanOrEqual(37);
   } else {
     const firstFolderBox = (await page.locator(".useful-form-folder").nth(0).boundingBox())!;
     const secondFolderBox = (await page.locator(".useful-form-folder").nth(1).boundingBox())!;
@@ -2476,7 +2437,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await prepareDemo(page);
   await goToSection(page, "program");
 
-  await expect(page.locator(".top-header h1")).toHaveText("Programmation GP");
+  await expect(page.locator(".top-header h1")).toHaveText("Programme GP");
 
   // « En ce moment » se lit toujours dans le même ordre d'espaces : les
   // quatre grands d'abord, la Nef en dernier, quelles que soient les dates.
@@ -2504,9 +2465,9 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   expect(Math.abs(programHeaderBox!.x - programScreenBox!.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(programHeaderBox!.width - programScreenBox!.width)).toBeLessThanOrEqual(1);
   const programHeaderImage = await page.locator(".top-header-program").evaluate((node) =>
-    getComputedStyle(node, "::before").backgroundImage,
+    getComputedStyle(node).backgroundImage,
   );
-  expect(programHeaderImage).toContain("grand-palais-verriere-fast.webp");
+  expect(programHeaderImage).toContain("linear-gradient");
   const programPanelBorders = await page.locator(".grand-palais-program-panel").evaluate((node) => {
     const style = getComputedStyle(node);
     return { left: style.borderLeftWidth, top: style.borderTopWidth };
@@ -3229,7 +3190,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   }
   await expect(contactHeader.locator("h1")).toHaveText("Documents et contacts");
   await expect(contactHeader).toHaveClass(/top-header-pdf/);
-  expect(await contactHeader.evaluate((node) => getComputedStyle(node, "::before").backgroundImage)).toContain("forms-header-art-fast.webp");
+  expect(await contactHeader.evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("linear-gradient");
   await page.getByRole("button", { name: /Contacts Pompidou/ }).click();
   await expect(page.getByRole("heading", { name: "Contacts Pompidou" })).toBeVisible();
   await expect(page.locator(".useful-contacts-screen.useful-contacts-root")).toHaveCount(0);
@@ -3477,9 +3438,9 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   const menuButton = page.getByRole("button", { name: "Ouvrir le menu principal" });
 
   await expect(header).toBeVisible();
-  await expect(header).toHaveCSS("background-image", /header-art-fast\.webp/);
-  await expect(header).toHaveCSS("border-top-width", "2px");
-  await expect(header).toHaveCSS("border-top-color", await cardBorderColor(page));
+  // L'en-tête bicolore, sans cadre : ses deux aplats suffisent à le détacher.
+  await expect(header).toHaveCSS("background-image", /linear-gradient/);
+  await expect(header).toHaveCSS("border-top-width", "0px");
   await expect(account).toHaveCSS("border-top-color", await cardBorderColor(page));
   await expect(menuButton).toBeVisible();
   await expect(page.locator(".section-dock")).toBeVisible();
@@ -3774,11 +3735,11 @@ test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, t
   await swipeMainSection(page, 340, 40);
   await expect(page.locator(".top-header h1")).toHaveText("Documents et contacts");
   await swipeMainSection(page, 340, 40);
-  await expect(page.locator(".top-header h1")).toHaveText("Programmation GP");
+  await expect(page.locator(".top-header h1")).toHaveText("Programme GP");
   await swipeMainSection(page, 340, 40);
-  await expect(page.locator(".top-header h1")).toHaveText("Planning des collègues");
+  await expect(page.locator(".top-header h1")).toHaveText("Planning partagé");
   await swipeMainSection(page, 40, 340);
-  await expect(page.locator(".top-header h1")).toHaveText("Programmation GP");
+  await expect(page.locator(".top-header h1")).toHaveText("Programme GP");
 });
 
 test("le balayage du calendrier mobile change seulement de mois", async ({ page }, testInfo) => {
@@ -3823,8 +3784,9 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   expect((await foldNavigation.boundingBox())!.height).toBeGreaterThanOrEqual(50);
   await expect(foldNavigation.getByRole("button", { name: SECTION_BUTTONS.home })).toHaveClass(/active/);
 
+  // La même hauteur que sur les autres écrans larges.
   const headerBox = await page.locator(".top-header").boundingBox();
-  expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(190);
+  expect(headerBox?.height ?? 0).toBeGreaterThanOrEqual(150);
   // Les alignements sont relus jusqu'à ce que la mise en page se stabilise :
   // sur cet écran large, la grille bouge encore quand on mesure trop tôt.
   await expect(async () => {
@@ -3875,8 +3837,8 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   const formsHeaderBox = (await formsHeader.boundingBox())!;
   expect(formsHeaderBox.x).toBeGreaterThanOrEqual(0);
   expect(formsHeaderBox.x + formsHeaderBox.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-  const artworkImage = await formsHeader.evaluate((node) => getComputedStyle(node, "::before").backgroundImage);
-  expect(artworkImage).toContain("forms-header-art-fast.webp");
+  // L'en-tête bicolore, sans image derrière le titre.
+  expect(await formsHeader.evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("linear-gradient");
 });
 
 test("le paramètre de démonstration ne donne plus accès à l’application", async ({ page }) => {
@@ -5300,7 +5262,9 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await page.getByRole("button", { name: /^Détail du calcul/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Détail du calcul");
-  await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toBeVisible();
+  // Un seul titre (le bandeau) ; dessous, le mois entre ses deux flèches.
+  await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".pay-detail-month-bar").getByRole("button", { name: "Mois suivant" })).toBeVisible();
   const calculationTotals = page.locator(".pay-calculation-totals article");
   await expect(calculationTotals).toHaveCount(4);
   await expect(calculationTotals.first()).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
@@ -5776,6 +5740,13 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
         pending: [],
         isAdmin: true,
         lastCheckedAt: checkRequested && route.request().method() === "GET" ? "2026-10-08T14:30:00.000Z" : "2026-10-07T22:05:00.000Z",
+        // Le contrôle a repris des tarifs de lui-même et trouvé une nouveauté.
+        lastCheckReport: checkRequested && route.request().method() === "GET" ? {
+          checkedAt: "2026-10-08T14:30:00.000Z",
+          prices: [{ title: "Paris Photo", kind: "new", prices: [{ label: "Plein tarif", amount: 32 }] }],
+          details: [],
+          proposals: [{ kind: "new", title: "Nouvelle exposition", venueLabel: "Grand Palais" }],
+        } : undefined,
       }),
     });
   });
@@ -5786,7 +5757,11 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
   await expect(panel).toContainText("jeudi 8 octobre 2026 à 0 h 05");
   await panel.getByRole("button", { name: "Lancer un contrôle maintenant" }).click();
   await expect(panel.getByRole("button", { name: "Contrôle en cours…" })).toBeDisabled();
-  await expect(panel).toContainText("Contrôle terminé : rien de nouveau à valider.", { timeout: 20_000 });
+  // Plus de « rien de nouveau à valider » quand des tarifs viennent d'être
+  // ajoutés : le compte rendu dit ce que l'application a repris.
+  await expect(panel).toContainText("Contrôle terminé.", { timeout: 20_000 });
+  await expect(panel).toContainText("Tarifs ajoutés pour « Paris Photo » : Plein tarif 32,00");
+  await expect(panel).toContainText("Nouveauté : « Nouvelle exposition » (Grand Palais).");
   await expect(panel).toContainText("jeudi 8 octobre 2026 à 16 h 30");
   expect(checkRequested).toBe(true);
 });

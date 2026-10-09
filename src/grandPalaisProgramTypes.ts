@@ -57,6 +57,16 @@ export type GrandPalaisSitePrices = {
   prices: GrandPalaisPrice[];
 };
 
+/** Ce qu'a trouvé le dernier contrôle du site : ce que l'application a
+ *  repris d'elle-même (tarifs, sous-titres) et ce qui attend l'accord de
+ *  l'administrateur (nouveautés, modifications, retraits). */
+export type GrandPalaisCheckReport = {
+  checkedAt: string;
+  prices: Array<{ title: string; kind: "new" | "changed"; prices: GrandPalaisPrice[] }>;
+  details: Array<{ title: string; details: string }>;
+  proposals: Array<{ kind: GrandPalaisProgramProposal["kind"]; title: string; venueLabel: string }>;
+};
+
 export type GrandPalaisProgramPayload = {
   approved: SharedGrandPalaisEvent[];
   pending: GrandPalaisProgramProposal[];
@@ -64,4 +74,6 @@ export type GrandPalaisProgramPayload = {
   lastCheckedAt?: string;
   health?: BoundaryReport;
   sitePrices?: GrandPalaisSitePrices[];
+  /** Pour l'administrateur : le compte rendu du dernier contrôle. */
+  lastCheckReport?: GrandPalaisCheckReport;
 };

@@ -1,3 +1,4 @@
+import type { PayslipVerificationRecord, PayslipVerificationRecords } from "./payslipVerificationRecords";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { NetRatioCalibration } from "./payslip";
 import type { MecenatEntry } from "./mecenat";
@@ -32,8 +33,11 @@ type SickLeavesSummary = {
 
 export type PayslipCheckSectionProps = {
   part: "verification" | "settings";
-  accountId: string;
   payYear: string;
+  /** Décisions « Tout est OK » ou anomalie, bulletin par bulletin. */
+  verificationRecords: PayslipVerificationRecords;
+  onSaveVerification: (record: PayslipVerificationRecord) => void;
+  onRemoveVerification: (year: number, month: number) => void;
   hasPayProfile: boolean;
   helpOpen: boolean;
   setHelpOpen: (open: boolean) => void;
@@ -102,8 +106,10 @@ export type PayslipCheckSectionProps = {
 
 export function PayslipCheckSection({
   part,
-  accountId,
   payYear,
+  verificationRecords,
+  onSaveVerification,
+  onRemoveVerification,
   hasPayProfile,
   helpOpen: showPayslipHelp,
   setHelpOpen: setPayslipHelpOpen,
@@ -174,7 +180,9 @@ export function PayslipCheckSection({
   };
   const verificationCard = (
     <PayslipVerificationCard
-      accountId={accountId}
+      verificationRecords={verificationRecords}
+      onSaveVerification={onSaveVerification}
+      onRemoveVerification={onRemoveVerification}
       importBusy={payslipImportBusy}
       importMode={payslipImportMode}
       importError={payslipImportError}

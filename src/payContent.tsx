@@ -1,3 +1,5 @@
+import { payslipVerificationFor } from "./payslipVerificationRecords";
+import type { usePayslipVerifications } from "./usePayslipVerifications";
 import { Suspense } from "react";
 import { DeferredSection } from "./DeferredSection";
 import { PayEstimateDetails, PayslipCheckSection } from "./appSections";
@@ -102,8 +104,7 @@ export type PayContentInput = {
   sundayCarryover: number;
   sundayCarryoverMonth: number | undefined;
   sundayCarryoverYear: number | undefined;
-  demoMode: boolean;
-  userEmail: string;
+  payslipVerifications: ReturnType<typeof usePayslipVerifications>;
   changePayMonth: (delta: 1 | -1) => void;
   goPayToday: () => void;
 };
@@ -149,8 +150,7 @@ export function buildPayContent({
   sundayCarryover,
   sundayCarryoverMonth,
   sundayCarryoverYear,
-  demoMode,
-  userEmail,
+  payslipVerifications,
   changePayMonth,
   goPayToday,
 }: PayContentInput) {
@@ -603,7 +603,9 @@ export function buildPayContent({
     </Suspense>
   );
   const payslipSectionProps: Omit<PayslipCheckSectionProps, "part"> = {
-    accountId: demoMode ? "demo" : userEmail,
+    verificationRecords: payslipVerifications.records,
+    onSaveVerification: (record) => void payslipVerifications.save(record),
+    onRemoveVerification: (year, month) => void payslipVerifications.remove(year, month),
     payYear,
     hasPayProfile: Boolean(payProfiles[payYear]),
     helpOpen: showPayslipHelp,
@@ -729,7 +731,7 @@ export function buildPayContent({
     calculation: payCalculation,
     allowancesPending: allowances.holidayPending,
     verification: payslipReview ? { tone: payslipReview.tone, label: payslipReview.verdict } : undefined,
-    verificationAccount: payslipSectionProps.accountId,
+    savedVerification: payslipVerificationFor(payslipVerifications.records, payView.getFullYear(), payView.getMonth())?.status,
     deductionContent,
     estimateContent: payEstimateDetails,
     verificationContent: (

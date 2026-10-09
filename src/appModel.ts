@@ -13,6 +13,7 @@ import {
 } from "./planningLogic";
 import type { WorkQuota, WorkSchedule } from "./overtime";
 import type { CetAccount } from "./cet";
+import type { PayslipVerificationRecords } from "./payslipVerificationRecords";
 
 export type ViewMode = "month" | "year";
 export type RequestKind = "leave" | "recovery" | "other" | "strike";
@@ -157,6 +158,8 @@ export type FormProfile = {
   /** Retenues maladie et grève rattachées à un autre mois de paie que celui
    *  de la règle du 10 (voir deductionPayMonth.ts). */
   deductionPayMonths?: Record<string, string>;
+  /** « Tout est OK » ou anomalie signalée, bulletin par bulletin. */
+  payslipVerifications?: PayslipVerificationRecords;
 };
 export type SelectedDay = {
   date: string;

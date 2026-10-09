@@ -17,7 +17,9 @@ const payDrafts = {
 
 const baseProps = {
   part: "verification" as const,
-  accountId: "demo@test.local",
+  verificationRecords: {},
+  onSaveVerification: vi.fn(),
+  onRemoveVerification: vi.fn(),
   payYear: "2026",
   hasPayProfile: true,
   helpOpen: true,

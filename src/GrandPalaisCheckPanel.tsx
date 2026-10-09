@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { euros } from "./appModel";
 import { getSharedGrandPalaisProgram, runGrandPalaisCheckNow } from "./grandPalaisProgramApi";
-import type { GrandPalaisProgramPayload } from "./grandPalaisProgramTypes";
+import type { GrandPalaisCheckReport, GrandPalaisPrice, GrandPalaisProgramPayload } from "./grandPalaisProgramTypes";
 
 /** Délai entre deux relectures pendant un contrôle lancé à la main. */
 const POLL_MS = 10_000;
@@ -16,6 +17,49 @@ export function checkDateLabel(value: string) {
   return `${day} à ${time.replace(/^0/, "")}`;
 }
 
+const priceList = (prices: GrandPalaisPrice[]) =>
+  prices.map((price) => `${price.label} ${price.amount ? euros(price.amount) : "gratuit"}`).join(", ");
+
+const PROPOSAL_LABELS: Record<GrandPalaisCheckReport["proposals"][number]["kind"], string> = {
+  new: "Nouveauté",
+  changed: "Modification",
+  removed: "Retiré du site",
+};
+
+/** Ce que le dernier contrôle a ajouté de lui-même, puis ce qui attend
+ *  l'accord de l'administrateur ; ou, à défaut, qu'il n'a rien trouvé. */
+export function CheckReport({ report }: { report: GrandPalaisCheckReport }) {
+  const added = [
+    ...report.prices.map((item) => ({
+      key: `price-${item.title}`,
+      text: `${item.kind === "new" ? "Tarifs ajoutés" : "Tarifs mis à jour"} pour « ${item.title} » : ${priceList(item.prices)}.`,
+    })),
+    ...report.details.map((item) => ({ key: `details-${item.title}`, text: `Sous-titre de « ${item.title} » : ${item.details}.` })),
+  ];
+  if (!added.length && !report.proposals.length)
+    return <p className="grand-palais-check-report">Rien de nouveau sur le site lors de ce contrôle.</p>;
+  return (
+    <div className="grand-palais-check-report">
+      {added.length ? (
+        <>
+          <p><b>Ajouté par l’application</b></p>
+          <ul>{added.map((item) => <li key={item.key}>{item.text}</li>)}</ul>
+        </>
+      ) : null}
+      {report.proposals.length ? (
+        <>
+          <p><b>À valider ci-dessous</b></p>
+          <ul>
+            {report.proposals.map((item) => (
+              <li key={`${item.kind}-${item.title}`}>{PROPOSAL_LABELS[item.kind]} : « {item.title} »{item.venueLabel ? ` (${item.venueLabel})` : ""}.</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * Veille du site du Grand Palais, pour l'administrateur : la date du dernier
  * contrôle et un bouton pour en lancer un tout de suite. Le contrôle tourne en
@@ -24,9 +68,12 @@ export function checkDateLabel(value: string) {
  */
 export function GrandPalaisCheckPanel({
   lastCheckedAt,
+  report,
   onPayload,
 }: {
   lastCheckedAt?: string;
+  /** Compte rendu du dernier contrôle : tarifs ajoutés, nouveautés. */
+  report?: GrandPalaisCheckReport;
   onPayload: (payload: GrandPalaisProgramPayload) => void;
 }) {
   const [status, setStatus] = useState<"idle" | "running" | "done" | "failed">("idle");
@@ -52,9 +99,9 @@ export function GrandPalaisCheckPanel({
         if ((payload.lastCheckedAt || "") > before) {
           onPayload(payload);
           setStatus("done");
-          setMessage(payload.pending.length
-            ? "Contrôle terminé : des mises à jour attendent votre accord ci-dessous."
-            : "Contrôle terminé : rien de nouveau à valider.");
+          // Le détail (tarifs ajoutés, nouveautés à valider) suit, dans le
+          // compte rendu du contrôle.
+          setMessage("Contrôle terminé.");
           return;
         }
       } catch {}
@@ -84,6 +131,7 @@ export function GrandPalaisCheckPanel({
         </button>
         {status === "running" ? <p role="status">Lecture du site en cours, cela peut prendre une à deux minutes.</p> : null}
         {message ? <p role={status === "failed" ? "alert" : "status"}>{message}</p> : null}
+        {report && status !== "running" && report.checkedAt === lastCheckedAt ? <CheckReport report={report} /> : null}
       </div>
     </section>
   );

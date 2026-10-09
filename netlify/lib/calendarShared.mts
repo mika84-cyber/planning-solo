@@ -1,4 +1,5 @@
 import type { getStore } from "@netlify/blobs";
+import type { PayslipVerificationRecords } from "../../src/payslipVerificationRecords.ts";
 import { isValidDateKey } from "./calendarValidation.mts";
 
 export const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
@@ -179,6 +180,8 @@ export type FormProfile = {
   cet_account?: CetStoredAccount;
   /** Retenues maladie et grève déplacées sur un autre mois de paie. */
   deduction_pay_months?: Record<string, string>;
+  /** Décisions après vérification des bulletins, sous « AAAA-MM ». */
+  payslip_verifications?: PayslipVerificationRecords;
   updated_at: string;
 };
 

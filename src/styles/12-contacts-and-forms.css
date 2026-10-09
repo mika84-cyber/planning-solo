@@ -859,16 +859,7 @@
 /* Dans le premier choix « Poser un congé », Divers reprend exactement le
    traitement neutre des autres options. Sa couleur rose reste réservée au
    planning et aux rubriques de suivi. */
-.request-choice .choice-grid > button.other-leave-choice {
-  border-color: color-mix(in srgb, var(--leave-choice-accent) 45%, var(--border-control)) !important;
-  background: color-mix(in srgb, var(--leave-choice-accent) 8%, #fff) !important;
-  color: var(--text) !important; box-shadow: inset 2px 0 0 color-mix(in srgb, var(--leave-choice-accent) 70%, #fff), 0 4px 10px #243b5410 !important;
-}
 
-.request-choice .choice-grid > button.other-leave-choice:hover {
-  border-color: var(--leave-choice-accent) !important;
-  background: color-mix(in srgb, var(--leave-choice-accent) 13%, #fff) !important;
-}
 
 /* Divers devient un vrai jour non travaillé : rose, lisible et cohérent dans
    le planning comme dans les deux parcours de sélection. */
@@ -880,29 +871,22 @@
   box-shadow: none !important;
 }
 
-.other-leave-choice,
-.leave-choices .other-day {
-  --person-color: #d9ab2b;
-  border-color: #dcbc5e !important;
-  background: #fff8e2 !important;
-}
 
 /* Dans la fiche d'une date, Divers et CET gardent des encadrés neutres : la
    couleur sert uniquement de repère sur leur liseré vertical. */
-.leave-choices .other-day,
+
 .leave-choices .cet-day {
   border-color: var(--line) !important;
   background: var(--surface-high) !important;
   box-shadow: none !important;
 }
 
-.leave-choices .other-day { --person-color: #d9ab2b; }
 .leave-choices .cet-day { --person-color: #2f5fb3; }
 .leave-choices .closure-day {
   --person-color: #d32f36;
   grid-column: 1 / -1;
 }
-.leave-choices .other-day i,
+
 .leave-choices .cet-day i,
 .leave-choices .closure-day i { opacity: 0.8; }
 
@@ -942,16 +926,10 @@
   bottom: 1px;
   font-size: clamp(7px, 0.9vw, 11px);
 }
-.strike-leave-choice,
-.leave-choices .strike-day,
+
 .strike-request-options .request-option-group,
 .strike-request-options .type-tabs button {
   --person-color: #f28b82;
-}
-.leave-choices .strike-day {
-  border-color: var(--line) !important;
-  background: var(--surface-high) !important;
-  box-shadow: none !important;
 }
 .leave-balances-direct .leave-balance-grid button.strike {
   --balance-color: #f28b82;
@@ -972,7 +950,7 @@
 
 /* Dans le premier écran de choix, Maladie et CET restent aussi neutres que
    les autres entrées : leur couleur sert ensuite dans le planning. */
-.request-choice .choice-grid > button.sick-leave-choice,
+
 .request-choice .choice-grid > button.cet-leave-choice {
   border-color: color-mix(in srgb, var(--leave-choice-accent) 45%, var(--border-control)) !important;
   color: var(--text) !important;
@@ -1072,14 +1050,6 @@
     );
 }
 
-.top-header.top-header-forms::before {
-  filter: none;
-  /* Bords de la photo fondus à gauche, à droite et en haut : seule la tête se détache. */
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent), linear-gradient(180deg, transparent, #000 24%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent), linear-gradient(180deg, transparent, #000 24%);
-  mask-composite: intersect;
-}
 
 /* L'image Accueil ne change pas : seul le détourage lumineux des lettres est
    renforcé pour les isoler du dessin. */
@@ -1103,18 +1073,6 @@
 .top-header.top-header-contacts {
   isolation: isolate;
   overflow: hidden;
-}
-.top-header.top-header-contacts::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  top: 50%;
-  left: 58%;
-  height: 100%;
-  aspect-ratio: 1131 / 729;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  background: url("/contacts-header-art-black-fast.webp") center / 100% 100% no-repeat;
 }
 .top-header.top-header-contacts > * {
   position: relative;
@@ -1205,13 +1163,6 @@
 .useful-contact-phone-actions a:last-child:not(:first-child) { background: #3d8a6f; }
 
 @media (max-width: 720px) {
-  .top-header.top-header-contacts::before {
-    top: 50%;
-    left: 53%;
-    height: 48%;
-    aspect-ratio: 1131 / 729;
-    background-size: 100% 100%;
-  }
   .useful-contacts-subheader { margin-top: 1px; }
   .useful-contacts-subheader .section-back-arrow { left: 12px; }
   .useful-contact-card { padding: 13px; }
@@ -1223,13 +1174,7 @@
 /* Sur un téléphone large ou en paysage, le titre raccourci libère une vraie
    scène centrale : l’œuvre l’occupe presque entièrement sans toucher les
    commandes placées à droite. */
-@media (min-width: 500px) and (max-width: 720px) {
-  .top-header.top-header-contacts::before {
-    top: 50%;
-    left: 47%;
-    height: 74%;
-  }
-}
+
 
 @media (max-width: 390px) {
   .useful-contact-phone { grid-template-columns: 1fr; }
@@ -1270,9 +1215,6 @@
     margin-top: 0;
     transform: none;
   }
-  .top-header.top-header-contacts::before {
-    height: 82%;
-  }
 }
 
 @media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
@@ -1295,9 +1237,6 @@
 @media (min-width: 721px) {
   .top-header.top-header-contacts .top-header-title {
     margin-top: 14px;
-  }
-  .top-header.top-header-contacts::before {
-    left: 49%;
   }
 }
 
@@ -1449,13 +1388,7 @@
 
 /* Téléphones standards et Fold fermé : l’œuvre descend dans la zone libre,
    gagne en présence et reste entièrement cadrée à gauche des commandes. */
-@media (max-width: 499px) {
-  .top-header.top-header-contacts::before {
-    top: 68%;
-    left: 29%;
-    height: 58%;
-  }
-}
+
 .useful-contacts-subheader{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:14px;margin:2px 0 20px;padding:14px 16px}.useful-contacts-subheader .section-back-hit-area{position:static;inset:auto;display:grid;place-items:center;width:48px;height:48px;border:1px solid var(--border-control);border-radius:14px;background:linear-gradient(145deg,var(--surface-high),var(--surface));box-shadow:0 5px 13px rgba(87, 78, 66,.1)}.useful-contacts-subheader .section-back-arrow{position:static;width:auto;height:auto;transform:none;background:transparent;color:var(--muted);font-size:22px}.useful-contact-card{grid-template-columns:minmax(190px,.55fr) minmax(0,1.45fr);align-items:start}.useful-contact-card>.useful-contact-identity{grid-column:1;grid-row:1;padding-right:0}.useful-contact-card>.useful-contact-actions{grid-column:2;grid-row:1/span 2}.useful-contact-card-tools{display:flex;grid-column:1;grid-row:2;align-items:center;align-self:end;gap:7px;margin-top:12px}.useful-contact-card-tools .contact-admin-edit,.useful-contact-card-tools .resource-favorite-button{position:static;display:grid;place-items:center;width:42px;height:42px;margin:0;border:1px solid var(--border-control);border-radius:12px;padding:0;background:linear-gradient(145deg,#fff,var(--surface-high));box-shadow:0 4px 11px rgba(87, 78, 66,.09);color: var(--muted);font-size:18px;line-height:1;cursor:pointer}.useful-contact-card-tools .resource-favorite-button[aria-pressed=true]{border-color:#e0bd69;background:#fff5d9;color:#c17a00}
 
 /* Quelques heures de récupération : la case reste celle d'une journée

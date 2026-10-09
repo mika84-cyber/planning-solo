@@ -1,66 +1,55 @@
-import type { PayslipReviewCheck } from "./payslipReview";
+import {
+  payslipVerificationPeriodKey,
+  sanitizePayslipVerifications,
+  type PayslipVerificationRecord,
+  type PayslipVerificationRecords,
+} from "./payslipVerificationRecords";
 
-export type PayslipVerificationStatus = "ok" | "attention";
+export {
+  payslipVerificationPeriodKey,
+  type PayslipVerificationRecord,
+  type PayslipVerificationRecords,
+  type PayslipVerificationStatus,
+} from "./payslipVerificationRecords";
 
-export type PayslipVerificationRecord = {
-  status: PayslipVerificationStatus;
-  year: number;
-  month: number;
-  sourceName: string;
-  note: string;
-  issues: PayslipReviewCheck[];
-  unavailableCount: number;
-  verifiedCount: number;
-  updatedAt: string;
-};
-
-type StoredRecords = Record<string, PayslipVerificationRecord>;
-
-/** Émis à chaque décision enregistrée ou effacée, pour que Ma paie suive. */
-export const PAYSLIP_VERIFICATION_EVENT = "planning:payslip-verification";
-
-function announceChange() {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(PAYSLIP_VERIFICATION_EVENT));
-}
-
-export function payslipVerificationPeriodKey(year: number, month: number) {
-  return `${year}-${String(month + 1).padStart(2, "0")}`;
-}
-
+/* Sur cet appareil : la démo, et les décisions prises avant qu'elles ne
+   soient gardées dans le compte (elles le rejoignent à la connexion). */
 function storageKey(accountId: string) {
   return `planning:payslip-verifications-v1:${accountId.trim().toLowerCase() || "local"}`;
 }
 
-function readRecords(accountId: string): StoredRecords {
+export function readLocalPayslipVerifications(accountId: string): PayslipVerificationRecords {
   if (typeof localStorage === "undefined") return {};
   try {
-    const value = JSON.parse(localStorage.getItem(storageKey(accountId)) || "{}");
-    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    return sanitizePayslipVerifications(JSON.parse(localStorage.getItem(storageKey(accountId)) || "{}"));
   } catch {
     return {};
   }
 }
 
+export function writeLocalPayslipVerifications(accountId: string, records: PayslipVerificationRecords) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(storageKey(accountId), JSON.stringify(records));
+  } catch {
+    // Stockage indisponible (navigation privée) : la décision reste en mémoire.
+  }
+}
+
 export function loadPayslipVerification(accountId: string, year: number, month: number) {
-  const record = readRecords(accountId)[payslipVerificationPeriodKey(year, month)];
-  if (!record || (record.status !== "ok" && record.status !== "attention")) return null;
-  return record;
+  return readLocalPayslipVerifications(accountId)[payslipVerificationPeriodKey(year, month)] ?? null;
 }
 
 export function savePayslipVerification(accountId: string, record: PayslipVerificationRecord) {
-  if (typeof localStorage === "undefined") return;
-  const records = readRecords(accountId);
+  const records = readLocalPayslipVerifications(accountId);
   records[payslipVerificationPeriodKey(record.year, record.month)] = record;
-  localStorage.setItem(storageKey(accountId), JSON.stringify(records));
-  announceChange();
+  writeLocalPayslipVerifications(accountId, records);
 }
 
 export function removePayslipVerification(accountId: string, year: number, month: number) {
-  if (typeof localStorage === "undefined") return;
-  const records = readRecords(accountId);
+  const records = readLocalPayslipVerifications(accountId);
   delete records[payslipVerificationPeriodKey(year, month)];
-  localStorage.setItem(storageKey(accountId), JSON.stringify(records));
-  announceChange();
+  writeLocalPayslipVerifications(accountId, records);
 }
 
 export function payslipAnomalyReportLines(record: PayslipVerificationRecord) {

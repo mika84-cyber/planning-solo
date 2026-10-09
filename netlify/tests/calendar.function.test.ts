@@ -1086,6 +1086,28 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/form-profile")).toMatchObject({ deduction_pay_months: {} });
   });
 
+  it("garde dans le compte les décisions prises après vérification d'un bulletin", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const ok = {
+      status: "ok", year: 2026, month: 8, sourceName: "bulletin.pdf", note: "", issues: [],
+      unavailableCount: 1, verifiedCount: 5, updatedAt: "2026-10-02T08:00:00.000Z",
+    };
+    const response = await calendarHandler(request({
+      action: "save-form-profile",
+      payslipVerifications: { "2026-09": ok, "2026-13": ok, "2026-10": { ...ok, status: "inconnu" } },
+    }));
+    expect(response.status).toBe(200);
+    const stored = data.get("user/user-a/form-profile") as { payslip_verifications: Record<string, unknown> };
+    expect(Object.keys(stored.payslip_verifications)).toEqual(["2026-09"]);
+    expect(stored.payslip_verifications["2026-09"]).toMatchObject({ status: "ok", year: 2026, month: 8 });
+    // Un autre écran qui enregistre le profil sans la table ne l'efface pas.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "" }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ group: "2", payslip_verifications: { "2026-09": { status: "ok" } } });
+    // Retirer la dernière décision vide la table.
+    await calendarHandler(request({ action: "save-form-profile", payslipVerifications: {} }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ payslip_verifications: {} });
+  });
+
   it("garde la signature du téléphone quand un autre écran enregistre le profil", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const signature = "data:image/png;base64,AAAA";
@@ -1318,6 +1340,8 @@ describe("API principale du calendrier", () => {
       { action: "save-form-profile", signature: "", manualYear: 1999 },
       { action: "save-form-profile", signature: "", deductionPayMonths: ["sick:2024-03-20"] },
       { action: "save-form-profile", signature: "", deductionPayMonths: null },
+      { action: "save-form-profile", signature: "", payslipVerifications: ["2026-09"] },
+      { action: "save-form-profile", signature: "", payslipVerifications: null },
       {
         action: "save-form-profile",
         signature: "",

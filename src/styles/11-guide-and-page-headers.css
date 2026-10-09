@@ -77,10 +77,6 @@
 .native-screen-heading + .pay-profile-settings { margin-top: 20px; }
 
 /* Nouveaux points d'entrée et navigation de paie. */
-.request-choice .sick-leave-choice {
-  border-color: var(--border-card);
-  background: linear-gradient(145deg, var(--surface-high), #fff);
-}
 .pay-detail-sticky-header {
   position: sticky;
   z-index: 80;
@@ -193,11 +189,6 @@
     min-height: 54px;
     aspect-ratio: auto;
   }
-}
-.other-leave-choice strong {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* Les actions d'une absence sont immédiatement visibles dans la fiche du jour. */
@@ -666,26 +657,6 @@
   padding-right: 0;
 }
 
-.pay-month-nav.compact.pay-detail-month-nav {
-  display: grid;
-  grid-template-columns: 36px 36px;
-  justify-content: end;
-  gap: 8px 12px;
-  min-width: 84px;
-  margin-left: auto;
-}
-.pay-detail-month-nav .pay-nav-arrow {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border-control);
-  background: var(--surface-high);
-}
-.pay-detail-month-nav .pay-nav-arrow svg { width: 15px; }
-.pay-detail-month-nav .pay-today-button {
-  grid-column: 1 / -1;
-  width: 100%;
-  min-height: 38px;
-}
 
 @media (max-width: 720px) {
   .worked-days-panel {
@@ -715,12 +686,6 @@
     min-height: 50px;
   }
 
-  .pay-detail-month-heading {
-    align-items: flex-start;
-    gap: 20px;
-  }
-  .pay-detail-month-nav { flex-wrap: nowrap; }
-  .pay-detail-month-nav .pay-today-button { flex: initial; }
   .holiday-pay-amount { width: fit-content; }
 }
 
@@ -746,7 +711,6 @@
   box-shadow: 0 20px 46px rgba(66, 48, 32, 0.18);
 }
 .top-header-title { padding-left: 18px; }
-.top-header-title::before { width: 5px; background: linear-gradient(180deg, var(--section-accent), color-mix(in srgb, var(--section-accent) 56%, #f2c9a8)); }
 .top-header-title h1 {
   font-size: clamp(30px, 3.2vw, 43px);
   letter-spacing: -0.045em;
@@ -914,11 +878,6 @@
   .account-button,
   .main-menu-button { width: 44px; height: 44px; }
 
-  .year-choice-picker .choice-picker-menu {
-    max-height: min(58dvh, 460px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
 
   .sick-request-panel .request-heading {
     display: grid;
@@ -1060,26 +1019,17 @@
   text-shadow: none;
 }
 
-/* En-tête de « Primes pour le mois », remis à plat : le mois entre ses
-   flèches en haut, le total variable et le bouton du détail en bas. */
-.app-shell .variable-pay-card > header.variable-pay-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px 16px; cursor: default; }
-.variable-pay-head .variable-pay-month { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.variable-pay-head .variable-pay-month h3 { margin: 0; min-width: 0; color: var(--text); font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; }
-.app-shell .variable-pay-head .variable-pay-month .pay-nav-arrow { width: 34px; height: 34px; min-height: 0; flex: none; }
-.app-shell .variable-pay-head .variable-pay-today { width: auto; min-height: 30px; margin-left: auto; padding: 4px 12px; font-size: 0.74rem; }
-
-/* Primes pour le mois, version « détail toujours visible » : le mois centré
-   entre ses flèches, le total en grand, puis la liste des primes. */
-.app-shell .variable-pay-card > header.variable-pay-head { display: grid; justify-items: center; gap: 6px; padding: 14px 16px 10px; text-align: center; }
+/* En-tête de « Primes pour le mois » : le titre, puis le mois et ses deux
+   flèches sur une ligne ; « Revenir à aujourd’hui » dessous si besoin. */
+.app-shell .variable-pay-card > header.variable-pay-head { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 6px; padding: 14px 16px 10px; text-align: center; cursor: default; }
 .variable-pay-head > .step-label { justify-self: start; }
-.variable-pay-head .variable-pay-month { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; width: 100%; gap: 8px; }
-.variable-pay-head .variable-pay-month h3 { font-family: inherit; font-size: 1.15rem; font-weight: 850; text-align: center; }
-.app-shell .variable-pay-head .variable-pay-today { margin: 0; }
-
-/* Primes pour le mois, version « pastilles » : le mois et ses flèches sur une
-   ligne, une pastille par prime, le total en pied de carte. */
-.app-shell .variable-pay-card > header.variable-pay-head-c { justify-items: stretch; gap: 6px; padding: 14px 16px 4px; text-align: left; }
-.variable-pay-head-c .variable-pay-month { display: flex; grid-template-columns: none; align-items: center; justify-content: space-between; gap: 10px; }
+.variable-pay-head .variable-pay-month { display: flex; flex-wrap: wrap; align-items: center; width: 100%; gap: 8px; }
+.variable-pay-head .variable-pay-month h3 { margin: 0; min-width: 0; color: var(--text); font-family: inherit; font-size: 1.15rem; font-weight: 850; text-align: center; }
+.app-shell .variable-pay-head .variable-pay-month .pay-nav-arrow { width: 34px; height: 34px; min-height: 0; flex: none; }
+.app-shell .variable-pay-head .variable-pay-today { width: auto; min-height: 30px; margin: 0; padding: 4px 12px; font-size: 0.74rem; }
+/* La version en pastilles : titre et mois à gauche, flèches à droite. */
+.app-shell .variable-pay-card > header.variable-pay-head-c { justify-items: stretch; padding: 14px 16px 4px; text-align: left; }
+.variable-pay-head-c .variable-pay-month { justify-content: space-between; gap: 10px; }
 .variable-pay-head-c .variable-pay-month h3 { font-size: 1.2rem; text-align: left; }
 .variable-pay-head-c .variable-pay-arrows { display: inline-flex; gap: 8px; }
 .app-shell .variable-pay-head-c .variable-pay-today { justify-self: start; }

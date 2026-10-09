@@ -8,6 +8,7 @@ import "./leaveCollapsibles.css";
 import "./leaveMenus.css";
 import "./productRefinements.css";
 import "./planningCalendarRefinement.css";
+import "./pageHeaders.css";
 import "./darkTheme.css";
 import { initTheme } from "./theme";
 

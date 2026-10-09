@@ -99,42 +99,22 @@ export function PayEstimateDetails({
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === monthIndex;
   return (
     <section className="allowance-card allowance-card-lead">
-      <header className="pay-detail-month-heading">
-        <div>
-          <span>Détail de la paie du mois affiché</span>
-          <strong>
-            {MONTHS[monthIndex]} {year}
-          </strong>
-        </div>
-        <div className="pay-month-nav compact pay-detail-month-nav">
-          <button
-            type="button"
-            className="pay-nav-arrow"
-            onClick={onPreviousMonth}
-            aria-label="Mois précédent"
-          >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="m12.5 5-5 5 5 5" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="pay-nav-arrow"
-            onClick={onNextMonth}
-            aria-label="Mois suivant"
-          >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="m7.5 5 5 5-5 5" />
-            </svg>
-          </button>
-          {/* Seulement loin du mois en cours : sinon il ne sert à rien. */}
+      {/* Le bandeau du haut nomme déjà la page : ici, seulement le mois et
+          ses deux flèches, comme sur la page principale. */}
+      <div className="pay-detail-month-bar" role="group" aria-label="Choisir le mois de paie">
+        <button type="button" className="pay-detail-month-arrow" onClick={onPreviousMonth} aria-label="Mois précédent">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
+        </button>
+        <div className="pay-detail-month-title">
+          <strong>{MONTHS[monthIndex].charAt(0).toUpperCase() + MONTHS[monthIndex].slice(1)} {year}</strong>
           {isCurrentMonth ? null : (
-            <button type="button" className="pay-today-button" onClick={onToday}>
-              Aujourd’hui
-            </button>
+            <button type="button" className="pay-today-button" onClick={onToday}>Revenir à aujourd’hui</button>
           )}
         </div>
-      </header>
+        <button type="button" className="pay-detail-month-arrow" onClick={onNextMonth} aria-label="Mois suivant">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
+        </button>
+      </div>
       {reliability.quiet ? null : <div className={`pay-reliability ${reliability.tone}`} role="status">
         <span aria-hidden="true">
           {reliability.tone === "exact" ? "✓" : reliability.tone === "incomplete" ? "!" : "≈"}
