@@ -119,7 +119,10 @@ describe("passerelle du calendrier partagé", () => {
     vi.stubGlobal("fetch", fetchMock);
     await expect(syncExistingSharedCalendar(true, [{
       date: "2026-09-06", note_text: "Note existante", note_color: "#D3943D", leave: true,
-    }], [{ id: "p5", from: "2026-09-07", to: "2026-09-08", leave_type: "annual" }])).resolves.toBe("shared");
+    }, {
+      // Plus d'un mois avant : l'historique ancien n'est pas repris.
+      date: "2026-07-01", note_text: "Note ancienne", leave: true,
+    }], [{ id: "p5", from: "2026-09-07", to: "2026-09-08", leave_type: "annual" }], new Date("2026-09-20T12:00:00Z"))).resolves.toBe("shared");
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     const payload = JSON.parse(String(request.body));
     expect(payload).toMatchObject({ action: "bridge-sync-mika-calendar", awayDates: ["2026-09-06"] });

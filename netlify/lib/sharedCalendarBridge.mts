@@ -38,11 +38,11 @@ export async function isMikaSharingAccount(email: string) {
   return hash === MIKA_EMAIL_HASH;
 }
 
-async function bridgeFetch(body?: Record<string, unknown>) {
+async function bridgeFetch(body?: Record<string, unknown>, timeoutMs = 4_000) {
   const { url, secret } = bridgeConfig();
   if (!secret) return null;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4_000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(`${url}?bridge=planning-solo`, {
       method: body ? "POST" : "GET",
@@ -196,13 +196,18 @@ export async function syncExistingSharedCalendar(
   enabled: boolean,
   entries: Array<Record<string, unknown>>,
   periods: Array<Record<string, unknown>>,
+  today = new Date(),
 ) {
   if (!enabled) return "disabled" as const;
-  const notes = entries
-    .filter((entry) => typeof entry.date === "string" && typeof entry.note_text === "string" && entry.note_text.trim())
+  /* Le dernier mois et tout l'avenir : c'est ce qu'Agnès consulte, et un
+     historique complet ne tenait pas dans le temps imparti à la reprise. */
+  const since = new Date(today.getTime() - 31 * 86400000).toISOString().slice(0, 10);
+  const recent = entries.filter((entry) => typeof entry.date === "string" && entry.date >= since);
+  const notes = recent
+    .filter((entry) => typeof entry.note_text === "string" && entry.note_text.trim())
     .map((entry) => ({ date: entry.date, text: entry.note_text, color: entry.note_color }));
-  const awayDates = entries
-    .filter((entry) => typeof entry.date === "string" && entry.leave === true)
+  const awayDates = recent
+    .filter((entry) => entry.leave === true)
     .map((entry) => entry.date);
   const awayPeriods = periods.map(sharedPeriod).filter(Boolean);
   try {
@@ -211,7 +216,7 @@ export async function syncExistingSharedCalendar(
       notes,
       awayDates,
       awayPeriods,
-    });
+    }, 9_000);
     if (!response?.ok) throw new Error(`HTTP ${response?.status || 0}`);
     return "shared" as const;
   } catch (error) {

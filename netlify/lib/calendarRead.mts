@@ -103,7 +103,7 @@ export async function readCalendar(
   cleanOvertime.sort((a, b) => a.date.localeCompare(b.date));
   cleanRecoveryUses.sort((a, b) => a.date.localeCompare(b.date));
   cleanMecenat.sort((a, b) => a.date.localeCompare(b.date));
-  const backfillKey = scopedKey("shared-calendar-backfill-v1");
+  const backfillKey = scopedKey("shared-calendar-backfill-v2");
   const alreadyBackfilled = shareWithAgnes
     ? await store.get(backfillKey, { type: "text" })
     : null;
