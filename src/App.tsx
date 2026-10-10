@@ -1824,25 +1824,27 @@ export default function Home() {
 
   const upcoming = useMemo(() => {
     const todayKey = dateKey(now);
-    const lastKey = dateKey(addDays(now, 365));
-    const datedEntries = Object.entries(entries).filter(
-      ([key]) => key >= todayKey && key <= lastKey,
-    );
+    // Toutes les notes à venir, même au-delà d'un an : le calendrier les
+    // montre, la liste aussi.
+    const datedEntries = Object.entries(entries).filter(([key]) => key >= todayKey);
     const items: NoteListItem[] = [];
     /** Une note posée sur plusieurs jours d'affilée n'apparaît qu'une fois, à
      *  son premier jour à venir. Chaque autre date du planning qui porte une
      *  note a sa ligne : la liste montre les mêmes notes que le calendrier,
-     *  quel que soit l'ordre dans lequel le serveur les renvoie. */
+     *  quel que soit l'ordre dans lequel le serveur les renvoie. Deux notes
+     *  d'un jour chacune restent deux notes, même au texte identique : seul
+     *  un même groupe (une note sur plusieurs jours) se réunit. */
     const continuesPreviousDay = (source: Record<string, { noteText: string; noteGroupId: string }>, key: string) => {
       const previous = source[dateKey(addDays(fromKey(key), -1))];
-      return key > todayKey && previous?.noteText === source[key].noteText && previous.noteGroupId === source[key].noteGroupId;
+      return key > todayKey && Boolean(source[key].noteGroupId) && previous?.noteText === source[key].noteText && previous.noteGroupId === source[key].noteGroupId;
     };
     if (showNotes) {
       for (const [key, entry] of datedEntries) {
         if (!entry.noteText || continuesPreviousDay(entries, key)) continue;
         const notePeriod = notePeriodFor(entries, key, entry);
         items.push({
-          key: `note-${entry.noteGroupId || key}`,
+          // Une clé par jour : deux lignes ne partagent jamais la même.
+          key: `note-${key}`,
           date: key,
           label: entry.noteText,
           detail: periodLabel(notePeriod.from, notePeriod.to),
@@ -1854,13 +1856,12 @@ export default function Home() {
       for (const [key, entry] of Object.entries(partnerEntries)) {
         if (
           key < todayKey ||
-          key > lastKey ||
           entry.noteAuthor !== "agnes" ||
           !entry.noteText ||
           continuesPreviousDay(partnerEntries, key)
         ) continue;
         items.push({
-          key: `agnes-note-${entry.noteGroupId || key}`,
+          key: `agnes-note-${key}`,
           date: key,
           label: entry.noteText,
           detail: periodLabel(key, key),
