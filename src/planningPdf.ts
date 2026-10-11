@@ -906,7 +906,10 @@ function drawGroupPage(
       { label: "Congé validé", color: COLORS.leave },
       { label: "Congé souhaité", color: COLORS.wish },
       { label: "Récupération", color: COLORS.recovery },
-      { label: "Échange n°", color: COLORS.white, assetType: "exchange" },
+      // Les deux échanges dans la même case, chacun avec son logo et son mot :
+      // « Échange » (flèches et numéro), puis « Férié échangé » (flèches et
+      // dollar). La légende garde ainsi ses trois lignes.
+      { label: "Échange", color: COLORS.white, assetType: "exchange" },
       { label: "Maladie", color: COLORS.leave, emojiType: "sick" },
       { label: "Garde d'enfant", color: COLORS.leave, emojiType: "childcare" },
       { label: "Grève", color: leaveFill("strike"), emojiType: "strike" },
@@ -955,7 +958,30 @@ function drawGroupPage(
           doc.rect(symbolX - symbolWidth / 2, centerY - symbolHeight / 2, symbolWidth, symbolHeight, "FD");
         if (item.emojiType) drawLeaveEmoji(doc, item.emojiType, symbolX, centerY);
         else if (item.assetType === "workAccident") drawWorkAccidentMarker(doc, assets?.workAccident, symbolX, centerY);
-        else if (item.assetType === "exchange") drawExchangeMarker(doc, assets?.exchange, symbolX, centerY, 1, 0.85);
+        else if (item.assetType === "exchange") {
+          // Deux logos l'un sous l'autre, chacun avec son mot : « Échange »
+          // (flèches et numéro), puis « Férié échangé » (flèches et dollar).
+          const scale = 0.6;
+          const offset = Math.min(rowHeight / 4, 1.6);
+          const lines = [
+            { image: assets?.exchange, alias: "exchange-marker", label: "Échange", y: centerY - offset },
+            {
+              image: assets?.holidayExchange ?? assets?.exchange,
+              alias: assets?.holidayExchange ? "holiday-exchange-marker" : "exchange-marker",
+              label: "Férié échangé",
+              y: centerY + offset,
+            },
+          ];
+          for (const line of lines) {
+            drawExchangeMarker(doc, line.image, symbolX, line.y, 1, scale, line.alias);
+            // Le logo écrit son numéro en blanc gras : on revient au texte noir.
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(4.6);
+            doc.setTextColor(...COLORS.black);
+            doc.text(line.label, symbolX + 5.2, line.y, { baseline: "middle" });
+          }
+          return;
+        }
         else if (item.closedBadge) {
           doc.setTextColor(225, 28, 35);
           doc.setFont("helvetica", "bold");

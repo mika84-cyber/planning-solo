@@ -168,6 +168,7 @@ export function PayslipCheckSection({
   onCreatePayProfile,
   ciaMonth,
   onSaveCiaMonth: saveCiaMonth,
+  rateCalibration: payslipRateCalibration,
 }: PayslipCheckSectionProps) {
   const [creatingPayProfile, setCreatingPayProfile] = useState(false);
   const createPayProfile = async () => {
@@ -215,6 +216,9 @@ export function PayslipCheckSection({
       sundayCarryoverMonth={sundayCarryoverMonth}
       sundayCarryoverYear={sundayCarryoverYear}
       onClearSundayCarryover={clearSundayCarryover}
+      rateCalibration={payslipRateCalibration}
+      netRatioFixed={netRatioFixed}
+      netRatioVariable={netRatioVariable}
     />
   );
 

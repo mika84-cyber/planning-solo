@@ -217,6 +217,17 @@ export function defaultNetRatiosForPeriod(year: number, month: number, contractu
       };
 }
 
+/** Les taux brut → net sont-ils encore des valeurs moyennes (taux par
+ *  défaut), et pas ceux calculés sur les bulletins de la personne ? */
+export function usesAverageNetRatios(netRatioFixed: number, netRatioVariable: number) {
+  return [
+    [DEFAULT_NET_RATIO_FIXED, DEFAULT_NET_RATIO_VARIABLE],
+    [PRE_PSC_NET_RATIO_FIXED, PRE_PSC_NET_RATIO_VARIABLE],
+    [CONTRACTUEL_NET_RATIO_FIXED, CONTRACTUEL_NET_RATIO_VARIABLE],
+    [CONTRACTUEL_PRE_PSC_NET_RATIO, CONTRACTUEL_PRE_PSC_NET_RATIO],
+  ].some(([fixed, variable]) => fixed === netRatioFixed && variable === netRatioVariable);
+}
+
 export function readingsForCalibrationRegime(
   readings: PayslipReading[],
   regime: PayCalibrationRegime,

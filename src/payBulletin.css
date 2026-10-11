@@ -163,3 +163,12 @@
 /* Plage horaire non renseignée : une seule liste, sur toute la largeur. */
 .pay-work-time-picker.is-empty { grid-template-columns: minmax(0, 1fr); }
 .pay-work-time-picker.is-empty select { color: var(--muted); }
+
+/* Après un premier bulletin : l'invitation à en vérifier un second, pour que
+   l'application calcule les taux de la personne. Sobre, sur fond crème. */
+.payslip-second-hint { display: grid; gap: 6px; margin-top: 12px; border: 1px solid #e3d6c8; border-radius: 14px; padding: 12px 14px; background: #fbf7f2; }
+.payslip-second-hint strong { color: #8a3d22; font-size: 0.86rem; font-weight: 800; }
+.payslip-second-hint p { margin: 0; color: #5b4c3f; font-size: 0.82rem; line-height: 1.45; }
+.payslip-second-button { position: relative; display: inline-flex; align-items: center; justify-content: center; justify-self: start; min-height: 40px; margin-top: 4px; border: 1px solid #2c2621; border-radius: 12px; padding: 0 14px; background: #fff; color: #2c2621; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
+.payslip-second-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.payslip-second-button:hover { background: #f6efe8; }

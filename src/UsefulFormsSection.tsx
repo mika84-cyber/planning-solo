@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
 import "./usefulFolders.css";
-import type { LeavePeriod, PayStatus } from "./appModel";
+import type { LeavePeriod } from "./appModel";
 import { WorkAccidentIcon } from "./WorkAccidentIcon";
 import {
   GRAND_PALAIS_PROGRAM,
@@ -150,7 +150,6 @@ function documentCount(count: number, audioguides = 0) {
 
 type UsefulFormsSectionProps = {
   today?: string;
-  status?: PayStatus;
   periods?: LeavePeriod[];
   onSaveWorkAccident?: (period: { from: string; to: string }) => Promise<boolean>;
   onDeleteWorkAccident?: (period: LeavePeriod) => Promise<boolean>;
@@ -171,7 +170,6 @@ export function folderListHeadings(documents: number, audioguides: number) {
 
 export function UsefulFormsSection({
   today = new Date().toISOString().slice(0, 10),
-  status = "contractuel",
   periods = [],
   onSaveWorkAccident = async () => false,
   onDeleteWorkAccident = async () => false,
@@ -268,7 +266,9 @@ export function UsefulFormsSection({
     return (
       <Suspense fallback={<div className="deferred-section-loading" role="status">Ouverture de la déclaration…</div>}>
       <WorkAccidentSection
-        initialStatus={status}
+        // La fiche s'ouvre toujours sur le parcours contractuel ; on bascule
+        // sur « Fonctionnaire » d'un appui.
+        initialStatus="contractuel"
         periods={periods}
         onSave={onSaveWorkAccident}
         onDelete={onDeleteWorkAccident}

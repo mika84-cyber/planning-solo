@@ -3051,7 +3051,6 @@ export default function Home() {
               isAdmin={isProgramAdmin}
               demoMode={demoMode}
               today={dateKey(now)}
-              status={formProfile?.status || "contractuel"}
               periods={periods}
               onSaveWorkAccident={saveWorkAccident}
               onDeleteWorkAccident={deleteWorkAccident}

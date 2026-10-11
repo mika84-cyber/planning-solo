@@ -5,7 +5,7 @@ import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s } from "./planningLogic";
 import { minutesLabel, type OvertimeEntry } from "./overtime";
 import { matchEarlyPayment } from "./earlyPayment";
 import { mecenatsPaidEarly, type MecenatEntry } from "./mecenat";
-import { isMecenatLabel, isOvertimeLabel } from "./payslip";
+import { isMecenatLabel, isOvertimeLabel, usesAverageNetRatios } from "./payslip";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 import {
   isPayslipImage,
@@ -57,6 +57,7 @@ type Props = Pick<
   "check" | "checkError" | "needsPeriod" | "fallbackMonth" | "setFallbackMonth" |
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "unplannedCarence" | "resultDetailsOpen" |
+  "rateCalibration" | "netRatioFixed" | "netRatioVariable" |
   "setResultDetailsOpen" | "grossForMonth" | "overtime" |
   "mecenat" | "mecenatEntries" | "onMarkMecenatsPaidEarly" | "overtimeEarlyCandidates" |
   "onMarkOvertimePaidEarly" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
@@ -180,6 +181,9 @@ function downloadPdf(blob: Blob, name: string) {
 }
 
 export function PayslipVerificationCard({
+  rateCalibration,
+  netRatioFixed,
+  netRatioVariable,
   verificationRecords,
   onSaveVerification,
   onRemoveVerification,
@@ -217,6 +221,23 @@ export function PayslipVerificationCard({
   onClearSundayCarryover: clearSundayCarryover,
 }: Props) {
   const [activeImportSource, setActiveImportSource] = useState<"file" | "photo">("file");
+  /** Le choix d'un PDF ou de photos, pour ajouter une page au bulletin lu ou
+   *  en vérifier un autre : un seul champ, deux usages. */
+  const payslipFileInput = (mode: "add-page" | "verify") => (
+    <input
+      type="file"
+      accept={PAYSLIP_FILE_ACCEPT}
+      multiple
+      disabled={payslipImportBusy}
+      onChange={(event) => {
+        const files = Array.from(event.target.files || []);
+        event.target.value = "";
+        if (!files.length) return;
+        setActiveImportSource(isPayslipImage(files[0]) ? "photo" : "file");
+        void importPayslips(files, mode);
+      }}
+    />
+  );
   // La décision du mois vient du compte (ou de l'appareil, en démo) : elle
   // suit d'un appareil à l'autre.
   const savedDecision = payslipVerificationFor(verificationRecords, allowances.year, displayedMonth);
@@ -520,23 +541,29 @@ export function PayslipVerificationCard({
               {/* Une autre photo ou page du même bulletin, prise après coup :
                   elle s'ajoute à la lecture déjà faite. */}
               <label className="payslip-add-page">
-                <input
-                  type="file"
-                  accept={PAYSLIP_FILE_ACCEPT}
-                  multiple
-                  disabled={payslipImportBusy}
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files || []);
-                    event.target.value = "";
-                    if (!files.length) return;
-                    setActiveImportSource(isPayslipImage(files[0]) ? "photo" : "file");
-                    void importPayslips(files, "add-page");
-                  }}
-                />
+                {payslipFileInput("add-page")}
                 <span aria-hidden="true">＋</span>
                 <strong>{payslipImportBusy ? "Lecture de la page…" : "Ajouter une page"}</strong>
                 <small>Une autre photo ou page du même bulletin</small>
               </label>
+              {/* Un seul bulletin ne suffit pas à calculer les taux de la
+                  personne : tant que l'estimation repose sur des valeurs
+                  moyennes, on l'invite simplement à en vérifier un second. */}
+              {rateCalibration.reason !== "ready" && usesAverageNetRatios(netRatioFixed, netRatioVariable) ? (
+                <section className="payslip-second-hint" aria-label="Pour un net encore plus juste">
+                  <strong>Pour un net encore plus juste</strong>
+                  <p>
+                    Avec un seul bulletin, l’application estime vos cotisations avec des valeurs
+                    moyennes. Vérifiez maintenant un deuxième bulletin, d’un autre mois où vos primes
+                    sont différentes (plus ou moins de dimanches, par exemple) : elle calculera vos
+                    propres taux.
+                  </p>
+                  <label className="payslip-second-button">
+                    {payslipFileInput("verify")}
+                    Vérifier un autre bulletin
+                  </label>
+                </section>
+              ) : null}
               {payslipReview ? (
                 <section className="payslip-review-decision" aria-label="Conclusion de la vérification">
                   <div><span>Votre conclusion</span><strong>Valider le contrôle du bulletin</strong></div>

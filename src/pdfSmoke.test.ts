@@ -161,7 +161,8 @@ describe("createAnnualPlanningPdf (fumée)", () => {
     expect(text).toContain("CLOSED");
     expect(text).toContain("AT");
     expect(text).toContain("Accident de travail");
-    expect(text).toContain("Échange n°");
+    expect(text).toContain("Échange");
+    expect(text).toContain("Férié échangé");
     expect(text.match(/1/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
