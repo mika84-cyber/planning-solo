@@ -5,7 +5,7 @@ var SHELL = ['./', './index.html', './device.js', './form.css', './sheets.js', '
              './form-value-utils.js', './form-calendar.js', './form-file-utils.js', './form-signature-controller.js',
              './app.webmanifest',
              './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png',
-             './form-bg-1.jpg', './form-bg-2.png', './form-bg-3.png'];
+             './form-bg-1.jpg', './form-bg-2.png', './form-bg-3.png', './form-bg-4.png'];
 
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(SHELL); })

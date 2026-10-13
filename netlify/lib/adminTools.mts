@@ -44,6 +44,15 @@ export async function readGenders(store: Store): Promise<Record<string, Colleagu
   return Object.fromEntries(Object.entries(stored ?? {}).filter((entry): entry is [string, ColleagueGender] => entry[1] === 'h' || entry[1] === 'f'));
 }
 export type Pin = { message: string; until: string };
+/** Rappel aux comptes invités : choisir le traitement des fériés d'une année
+ *  (prime seule, prime et récupération ou échange). Affiché jusqu'à la fin
+ *  de cette année, et seulement tant qu'un férié reste à choisir. */
+export type HolidayReminder = { year: number; sentAt: string; until: string };
+export const holidayReminderKey = 'admin-tools/holiday-reminder';
+export async function activeHolidayReminder(store: Store) {
+  const reminder = await store.get(holidayReminderKey, { type: 'json' }) as HolidayReminder | null;
+  return reminder && Date.parse(reminder.until) > Date.now() ? reminder : null;
+}
 export type Trash = { id: string; title: string; kind: 'document' | 'contact' | 'group-member'; deletedAt: string; entries: Array<{ key: string; value: unknown }> };
 export const trashValid = (item: Trash) => Date.now() - Date.parse(item.deletedAt) < 30 * 86400000;
 export async function archive(store: Store, input: Omit<Trash, 'id' | 'deletedAt'>) {

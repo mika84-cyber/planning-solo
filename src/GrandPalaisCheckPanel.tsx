@@ -60,11 +60,35 @@ export function CheckReport({ report }: { report: GrandPalaisCheckReport }) {
   );
 }
 
+/** « Cette nuit à 0 h 05 », « Aujourd’hui à 14 h 30 », « Hier à … » ou la
+ *  date complète : la veille se lit d'un coup d'œil. */
+export function checkWhenLabel(value: string, now = new Date()) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  const dayKey = (moment: Date) => moment.toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
+  const time = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).replace(":", " h ").replace(/^0/, "");
+  const hour = Number(date.toLocaleTimeString("fr-FR", { hour: "2-digit", hour12: false, timeZone: "Europe/Paris" }).slice(0, 2));
+  if (dayKey(date) === dayKey(now)) return `${hour < 6 ? "Cette nuit" : "Aujourd’hui"} à ${time}`;
+  if (dayKey(date) === dayKey(new Date(now.getTime() - 86_400_000))) return `Hier à ${time}`;
+  return checkDateLabel(value).replace(/^./, (letter) => letter.toLocaleUpperCase("fr"));
+}
+
+/** Le résultat du dernier contrôle en quelques mots. */
+function checkResultLabel(report?: GrandPalaisCheckReport) {
+  if (!report) return "";
+  const added = report.prices.length + report.details.length;
+  const parts = [
+    added ? `${added} mise${added > 1 ? "s" : ""} à jour ajoutée${added > 1 ? "s" : ""}` : "",
+    report.proposals.length ? `${report.proposals.length} à valider` : "",
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "rien de nouveau";
+}
+
 /**
- * Veille du site du Grand Palais, pour l'administrateur : la date du dernier
- * contrôle et un bouton pour en lancer un tout de suite. Le contrôle tourne en
- * arrière-plan ; le panneau relit la programmation jusqu'à voir la date
- * changer, puis affiche les éventuelles mises à jour détectées.
+ * Veille du site du Grand Palais, pour l'administrateur : un bandeau sombre
+ * avec la date et le résultat du dernier contrôle, et un bouton pour en lancer
+ * un tout de suite. Le contrôle tourne en arrière-plan ; le bandeau relit la
+ * programmation jusqu'à voir la date changer, puis affiche le compte rendu.
  */
 export function GrandPalaisCheckPanel({
   lastCheckedAt,
@@ -99,8 +123,6 @@ export function GrandPalaisCheckPanel({
         if ((payload.lastCheckedAt || "") > before) {
           onPayload(payload);
           setStatus("done");
-          // Le détail (tarifs ajoutés, nouveautés à valider) suit, dans le
-          // compte rendu du contrôle.
           setMessage("Contrôle terminé.");
           return;
         }
@@ -115,24 +137,29 @@ export function GrandPalaisCheckPanel({
     timer.current = window.setTimeout(() => void poll(), POLL_MS);
   };
 
+  const currentReport = report && report.checkedAt === lastCheckedAt ? report : undefined;
+  const result = checkResultLabel(currentReport);
   return (
-    <section className="grand-palais-admin-alerts grand-palais-check-panel" aria-labelledby="grand-palais-check-title">
-      <div>
-        <span className="step-label">Réservé à votre compte</span>
-        <h3 id="grand-palais-check-title">Veille du site</h3>
-        <p>
-          {lastCheckedAt
-            ? <>Dernier contrôle du site du Grand Palais : <b>{checkDateLabel(lastCheckedAt)}</b>.</>
-            : "Aucun contrôle du site enregistré pour l’instant."}{" "}
-          Contrôle automatique chaque nuit à minuit.
-        </p>
-        <button type="button" className="grand-palais-check-button" disabled={status === "running"} onClick={() => void runCheck()}>
-          {status === "running" ? "Contrôle en cours…" : "Lancer un contrôle maintenant"}
-        </button>
-        {status === "running" ? <p role="status">Lecture du site en cours, cela peut prendre une à deux minutes.</p> : null}
-        {message ? <p role={status === "failed" ? "alert" : "status"}>{message}</p> : null}
-        {report && status !== "running" && report.checkedAt === lastCheckedAt ? <CheckReport report={report} /> : null}
+    <section className="grand-palais-check-panel gp-watch" aria-labelledby="grand-palais-check-title">
+      <div className="gp-watch-head">
+        <span className="gp-watch-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="1.6" /><path d="M12 12 18 6" /><path d="M7.8 16.2a6 6 0 1 1 8.4 0" /><path d="M5 19a10 10 0 1 1 14 0" /></svg>
+        </span>
+        <div>
+          <h3 id="grand-palais-check-title">Veille du site</h3>
+          <p>
+            {status === "running" ? "Lecture du site en cours, une à deux minutes…"
+              : lastCheckedAt ? <>{checkWhenLabel(lastCheckedAt)}{result ? ` · ${result}` : ""}</>
+              : "Aucun contrôle enregistré pour l’instant"}
+          </p>
+          <small>Contrôle automatique chaque nuit à minuit</small>
+        </div>
       </div>
+      {message ? <p className="gp-watch-message" role={status === "failed" ? "alert" : "status"}>{message}</p> : null}
+      {currentReport && status !== "running" && result !== "rien de nouveau" ? <CheckReport report={currentReport} /> : null}
+      <button type="button" className="grand-palais-check-button" disabled={status === "running"} onClick={() => void runCheck()}>
+        {status === "running" ? "Contrôle en cours…" : "Contrôler maintenant"}
+      </button>
     </section>
   );
 }

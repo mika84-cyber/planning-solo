@@ -79,3 +79,131 @@ test("la signature enregistrée sur le téléphone revient d’elle-même sur le
     return false;
   })).toBe(true);
 });
+
+test("la demande d’échange se remplit, reporte les dates chez le collègue et se télécharge", async ({ page }, testInfo) => {
+  const signature = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 40; canvas.height = 20;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#0b3baf"; context.fillRect(5, 5, 30, 10);
+    return canvas.toDataURL("image/png");
+  });
+  await page.route("**/api/calendar", (route) =>
+    route.fulfill({ json: { form_profile: { full_name: "Mika Test", group: "2", signature } } }));
+  // Le profil du formulaire donne le nom et le groupe, absent de cette feuille.
+  await page.addInitScript(() => localStorage.setItem("demandes:v6:profil", JSON.stringify({ nom: "Mika Test", groupe: "2" })));
+  await page.goto("/formulaire/index.html");
+  // Demande d’échange en troisième, l’annulation en dernier.
+  await expect(page.locator("#sheet option")).toHaveText([
+    "Demande de congés", "Demande de récupérations", "Demande d'échange", "Demande d'annulation de congés",
+  ]);
+  await page.locator("#sheet").selectOption({ label: "Demande d'échange" });
+  await expect(page.locator("#bg")).toHaveAttribute("src", /form-bg-4\.png/);
+
+  const field = (name: string) => page.getByRole("textbox", { name, exact: true });
+  const now = new Date();
+  const today = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  await expect(field("Date de la demande")).toHaveValue(today);
+  await expect(field("Prénom - Nom")).toHaveValue("Mika Test");
+
+  // Le repos demandé se pose sur un jour travaillé, l’échange sur un jour de repos.
+  const calendar = page.locator("#calModal");
+  await field("Je souhaite être en repos le").click();
+  await expect(calendar).toHaveClass(/on/);
+  await expect(calendar.locator(".calday.off:not(:disabled)")).toHaveCount(0);
+  await calendar.locator(".calday:not(:disabled)").first().click();
+  const repos = await field("Je souhaite être en repos le").inputValue();
+  expect(repos).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+
+  await field("Et être planifié en échange le").click();
+  await expect(calendar.locator(".calday:not(.off):not(:disabled)")).toHaveCount(0);
+  await calendar.locator(".calday.off:not(:disabled)").first().click();
+  const echange = await field("Et être planifié en échange le").inputValue();
+  expect(echange).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+
+  await field("Mes horaires le jour de l’échange — de (heure)").click();
+  await page.locator("#timeFrom").selectOption(String(10 * 60));
+  await page.locator("#timeTo").selectOption(String(18 * 60));
+  await page.locator("#timeOk").click();
+
+  // La partie du collègue reprend les mêmes dates et horaires.
+  await expect(field("Le collègue sera planifié le")).toHaveValue(repos);
+  await expect(field("Le collègue sera en repos en échange le")).toHaveValue(echange);
+  await expect(field("Horaires du collègue — de (heure)")).toHaveValue("10h00");
+  await expect(field("Horaires du collègue — à (heure)")).toHaveValue("18h00");
+
+  await field("Prénom - Nom du collègue").click();
+  await page.locator("#editInp").fill("Agnès Exemple");
+  await page.locator("#navDone").click();
+  await expect(page.locator("#sig")).toHaveClass(/has/);
+  // Le collègue signe sur la seconde ligne, avec la même fenêtre de signature.
+  await expect(page.locator("#sig2")).toBeVisible();
+  // Les invites restent dans leur case, même sur téléphone.
+  for (const hint of ["#sighint2"]) {
+    const fits = await page.locator(hint).evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+    expect(fits).toBe(true);
+  }
+  await page.locator("#sig2").dispatchEvent("pointerdown");
+  await expect(page.locator("#sigModal")).toHaveClass(/on/);
+  if (await page.locator("#sigTypedName").isVisible()) await expect(page.locator("#sigTypedName")).toHaveValue("Agnès Exemple");
+  else {
+    const pad = (await page.locator("#sigBig").boundingBox())!;
+    await page.mouse.move(pad.x + 20, pad.y + pad.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(pad.x + pad.width - 20, pad.y + pad.height / 2, { steps: 5 });
+    await page.mouse.up();
+  }
+  await page.locator("#sigModalOk").click();
+  await expect(page.locator("#sig2")).toHaveClass(/has/);
+  // Les deux lignes s'inversent : noms et signatures changent de place.
+  const nameTop = (await field("Prénom - Nom").boundingBox())!.y;
+  const order = page.getByRole("group", { name: "Première ligne du formulaire" });
+  await expect(order.getByRole("button", { name: "Vous" })).toHaveAttribute("aria-pressed", "true");
+  await order.getByRole("button", { name: "Le collègue" }).click();
+  await expect(order.getByRole("button", { name: "Le collègue" })).toHaveAttribute("aria-pressed", "true");
+  expect((await field("Prénom - Nom").boundingBox())!.y).toBeGreaterThan(nameTop);
+  expect((await page.locator("#sig").boundingBox())!.y).toBeGreaterThan((await page.locator("#sig2").boundingBox())!.y);
+  await order.getByRole("button", { name: "Vous" }).click();
+  // Votre signature reste dessinée après l'aller-retour.
+  expect(await page.locator("#sig").evaluate((canvas: HTMLCanvasElement) => {
+    const { data } = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
+    for (let index = 3; index < data.length; index += 4) if (data[index]) return true;
+    return false;
+  })).toBe(true);
+  await page.locator("#observation").fill("Échange convenu avec ma collègue.");
+
+  if (testInfo.project.name !== "ordinateur") return;
+  page.on("dialog", (dialog) => dialog.accept());
+  const download = page.waitForEvent("download");
+  await page.locator("#btnPdf").click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/\.pdf$/);
+  if (process.env.FORM_PDF_OUT) await file.saveAs(process.env.FORM_PDF_OUT);
+});
+
+test("le nom du compte Netlify préremplit la feuille, et « Vider » efface dates et heures au second appui", async ({ page }) => {
+  // Aucun nom saisi dans l'application : celui du compte Netlify est repris.
+  await page.route("**/api/calendar", (route) =>
+    route.fulfill({ json: { account_name: "Camille Durand", form_profile: null } }));
+  await page.goto("/formulaire/index.html");
+  await page.locator("#sheet").selectOption({ label: "Demande d'échange" });
+  const field = (name: string) => page.getByRole("textbox", { name, exact: true });
+  await expect(field("Prénom - Nom")).toHaveValue("Camille Durand");
+
+  await field("Mes horaires le jour de l’échange — de (heure)").click();
+  await page.locator("#timeFrom").selectOption(String(10 * 60));
+  await page.locator("#timeTo").selectOption(String(18 * 60));
+  await page.locator("#timeOk").click();
+  await expect(field("Horaires du collègue — de (heure)")).toHaveValue("10h00");
+
+  // Premier appui : le bouton demande confirmation, rien n'est effacé.
+  const reset = page.locator("#btnReset");
+  await reset.click();
+  await expect(reset).toHaveText(/Confirmer/);
+  await expect(field("Mes horaires le jour de l’échange — de (heure)")).toHaveValue("10h00");
+  await reset.click();
+  await expect(reset).toHaveText(/Vider/);
+  for (const name of ["Mes horaires le jour de l’échange — de (heure)", "Horaires du collègue — de (heure)", "Je souhaite être en repos le"])
+    await expect(field(name)).toHaveValue("");
+  await expect(page.locator(".cell.has")).toHaveCount(0);
+});

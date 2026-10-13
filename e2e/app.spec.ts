@@ -13,6 +13,15 @@ import {
 import { workedDayCount } from "../src/appModel";
 import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES } from "../src/grandPalaisClosures";
 
+/* Les horaires des deux journées d'un échange : ils remplissent la demande. */
+async function setExchangeHours(dialog: Locator) {
+  for (const name of ["Horaires de la journée de votre cycle", "Horaires de la journée de son cycle"]) {
+    const hours = dialog.getByRole("group", { name });
+    await hours.getByLabel("De — heures").selectOption("10");
+    await hours.getByLabel("À — heures").selectOption("18");
+  }
+}
+
 async function prepareDemo(page: Page, withCurrentLeave = false) {
   await page.addInitScript((seedLeave) => {
     localStorage.setItem("planning:e2e-demo-enabled", "1");
@@ -101,7 +110,7 @@ test('outils administrateur et aperçu invité sur Z Fold ouvert', async ({ page
   const panel = page.getByRole('dialog', { name: 'Outils administrateur' });
   await expect(panel).toBeVisible();
   // Tous les volets sont repliés à l'ouverture.
-  await expect(panel.locator('details')).toHaveCount(5);
+  await expect(panel.locator('details')).toHaveCount(6);
   await expect(panel.locator('details[open]')).toHaveCount(0);
   await panel.locator('summary').filter({ hasText: 'Message temporaire sur l’accueil' }).click();
   await panel.getByLabel('Message', { exact: true }).fill('Organisation de demain : rendez-vous à 9 heures.');
@@ -153,6 +162,30 @@ test('outils administrateur et aperçu invité sur Z Fold ouvert', async ({ page
   await panel.getByRole('button', { name: 'Fermer les outils administrateur' }).click();
   await goToSection(page, "home");
   await expect(page.getByRole('complementary', { name: 'Information de l’équipe' })).toHaveCount(0);
+});
+
+test('le rappel des jours fériés part des outils administrateur et mène les invités à leurs choix', async ({ page }) => {
+  const year = new Date().getFullYear() + 1;
+  await prepareDemo(page);
+  // Rien sur l'accueil tant que le rappel n'est pas envoyé.
+  await expect(page.getByRole('complementary', { name: `Jours fériés ${year}` })).toHaveCount(0);
+  await page.locator('.account-button').click();
+  await page.getByRole('menuitem', { name: 'Outils administrateur' }).click();
+  const panel = page.getByRole('dialog', { name: 'Outils administrateur' });
+  await panel.locator('summary').filter({ hasText: 'Rappel des jours fériés' }).click();
+  await expect(panel.getByLabel('Année')).toHaveValue(String(year));
+  page.once('dialog', dialog => dialog.accept());
+  await panel.getByRole('button', { name: `Envoyer le rappel ${year}` }).click();
+  await expect(panel.locator('.admin-toast.is-success')).toContainText(`Rappel des jours fériés ${year} envoyé`);
+  // L'administrateur ne le reçoit pas ; un invité le voit sur son accueil.
+  await panel.getByRole('button', { name: 'Voir comme un invité' }).click();
+  const reminder = page.getByRole('complementary', { name: `Jours fériés ${year}` });
+  await expect(reminder).toContainText('pour que l’application puisse calculer vos primes');
+  // Fériés travaillés et compensés sont comptés séparément.
+  await expect(reminder).toContainText(/À choisir : \d+ férié(s)? travaillé/);
+  await reminder.getByRole('button', { name: `Choisir mes jours fériés ${year}` }).click();
+  await expect(page.locator('#holiday-choices')).toContainText(`Jours fériés ${year}`);
+  await expect(page.locator('#holiday-choices')).toBeInViewport();
 });
 
 async function openMainMenu(page: Page) {
@@ -1347,41 +1380,41 @@ test("Aujourd’hui conserve le groupe pendant la demi-journée travaillée", as
   await expect(page.locator(".today-status small")).toHaveText(`Avec le groupe ${colleagueGroup}`);
 });
 
-test("l’accueil ne propose que deux choses à la fois, et se laisse écarter", async ({ page }) => {
+test("l’accueil montre la liste de départ avec sa progression, et chaque étape se refuse", async ({ page }) => {
   await prepareDemo(page);
-  const setup = page.locator(".home-setup-alert");
+  const setup = page.locator(".home-setup-checklist");
   await expect(setup).toHaveCount(1);
-  await expect(setup).toContainText("Compléter votre profil de calcul");
-  await expect(setup).toContainText("Choisir la prime de 4 jours fériés");
-  await expect(setup).toContainText("le nombre de dimanches travaillés");
-  // Une troisième attend son tour : l'accueil ne doit pas redevenir une liste
-  // de corvées à faire défiler avant d'atteindre le calendrier.
-  await expect(setup).not.toContainText("Ajouter un bulletin de paie");
+  // Les quatre étapes restent visibles ; chacune à faire mène au bon écran.
+  await expect(setup.locator(".home-setup-steps li")).toHaveCount(4);
+  await expect(setup.locator(".home-setup-steps li").first()).toContainText("Groupe de planning");
+  await expect(setup).toContainText("Profil de calcul");
+  await expect(setup).toContainText(`Jours fériés ${new Date().getFullYear()}`);
+  await expect(setup).toContainText("4 à choisir");
+  await expect(setup).toContainText("Bulletin de paie");
+  await expect(setup.getByRole("heading", { name: /Mise en route : \d sur 4/ })).toBeVisible();
+  await expect(setup.getByRole("progressbar", { name: "Étapes terminées" })).toBeVisible();
   // L'alerte ambre disait la même chose à un autre endroit : elle a disparu.
   await expect(page.locator(".important-alert")).toHaveCount(0);
   await expect(setup).toHaveCSS("margin-top", "12px");
-  await expect(setup).toHaveCSS("margin-bottom", "12px");
-  await expect(setup.locator(".home-setup-list article").first()).toHaveCSS("border-top-width", "1px");
-
-  // Chaque manque s'écarte séparément, et la suivante prend la place libre.
-  const dismiss = setup.getByRole("button", { name: "Ne plus me le demander" });
-  await expect(dismiss).toHaveCount(2);
-  await dismiss.first().click();
-  await expect(setup).toContainText("Ajouter un bulletin de paie");
-  await dismiss.first().click();
-  await dismiss.first().click();
+  // Une étape refusée se grise et peut être reprise ; quand toutes sont
+  // faites ou refusées, la liste disparaît.
+  await setup.getByRole("button", { name: "Ne pas remplir : Profil de calcul" }).click();
+  await expect(setup.locator("li.skipped")).toContainText("Pas maintenant");
+  await setup.getByRole("button", { name: "Reprendre : Profil de calcul" }).click();
+  await expect(setup.getByRole("button", { name: "Ne pas remplir : Profil de calcul" })).toBeVisible();
+  for (const title of ["Groupe de planning", "Profil de calcul", `Jours fériés ${new Date().getFullYear()}`, "Bulletin de paie"]) {
+    const decline = setup.getByRole("button", { name: `Ne pas remplir : ${title}` });
+    if (await decline.count()) await decline.click();
+  }
   await expect(setup).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
-  await expect(page.locator(".home-setup-alert")).toHaveCount(0);
+  await expect(page.locator(".home-setup-checklist")).toHaveCount(0);
 });
 
-test("« Ajouter un bulletin de paie » ouvre la vérification repliée de Ma paie", async ({ page }) => {
+test("« Bulletin de paie » ouvre la vérification repliée de Ma paie", async ({ page }) => {
   await prepareDemo(page);
-  const setup = page.locator(".home-setup-alert");
-  await setup.getByRole("button", { name: "Ne plus me le demander" }).first().click();
-  const item = setup.locator(".home-setup-list article").filter({ hasText: "Ajouter un bulletin de paie" });
-  await item.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await page.locator(".home-setup-checklist").getByRole("button", { name: "Bulletin de paie", exact: true }).click();
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
   // La vérification est repliée d'ordinaire : l'invitation l'ouvre et y mène.
   await expect(page.getByRole("button", { name: "Vérifier le bulletin" })).toHaveAttribute("aria-expanded", "true");
@@ -3374,7 +3407,27 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   const partnerCycle = page.getByRole("region", { name: "Cycle de travail du groupe 1" });
   await expect(partnerCycle.getByLabel("Légende du groupe 1")).toContainText("TravailReposFormation");
   await partnerCycle.locator(`[data-date="${dateKey(returned)}"]`).click();
+  const exchangeDialog = page.getByRole("dialog", { name: "Enregistrer un échange" });
   await page.getByRole("button", { name: "Valider les deux dates" }).click();
+  await expect(page.getByRole("alert")).toContainText("horaires");
+  await setExchangeHours(exchangeDialog);
+  await page.getByRole("button", { name: "Valider les deux dates" }).click();
+
+  // La demande d'échange s'ouvre, remplie. Le repos le plus proche est celui
+  // de Camille : elle passe en première ligne.
+  await expect(page).toHaveURL(/\/formulaire\/index\.html/);
+  const formDate = (date: Date) => date.toLocaleDateString("fr-FR");
+  const field = (name: string) => page.getByRole("textbox", { name, exact: true });
+  await expect(page.locator("#sheet")).toHaveValue("2");
+  await expect(field("Prénom - Nom du collègue")).toHaveValue("Camille");
+  await expect(field("Je souhaite être en repos le")).toHaveValue(formDate(returned));
+  await expect(field("Et être planifié en échange le")).toHaveValue(formDate(agreement));
+  await expect(field("Mes horaires le jour de l’échange — de (heure)")).toHaveValue("10h00");
+  await expect(field("Horaires du collègue — à (heure)")).toHaveValue("18h00");
+  const [nameBox, colleagueBox] = await Promise.all([field("Prénom - Nom").boundingBox(), field("Prénom - Nom du collègue").boundingBox()]);
+  expect(colleagueBox!.y).toBeLessThan(nameBox!.y);
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
 
   await expect(page.locator(".day.exchange-given")).toHaveCount(1);
   await expect(page.locator(".day.exchange-return")).toHaveCount(1);
@@ -3428,6 +3481,26 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await page.getByRole("button", { name: "Supprimer l’échange" }).click();
   await expect(page.locator(".day.exchange-day")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Mes échanges" })).toHaveCount(0);
+});
+
+test("l’onglet Jour férié propose les fériés travaillés et ouvre la demande d’échange remplie", async ({ page }) => {
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Faire un échange" }).click();
+  const dialog = page.getByRole("dialog", { name: "Enregistrer un échange" });
+  await expect(dialog.getByRole("tab", { name: "Échange de jour" })).toHaveAttribute("aria-selected", "true");
+  await dialog.getByRole("tab", { name: "Jour férié" }).click();
+  const give = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" });
+  await give.getByRole("radio").first().click();
+  const back = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" });
+  const returns = back.getByRole("radio");
+  if (!(await returns.count())) return; // aucun férié à rendre cette année-là
+  await returns.first().click();
+  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
+  await setExchangeHours(dialog);
+  await dialog.getByRole("button", { name: "Valider les deux dates" }).click();
+  await expect(page).toHaveURL(/\/formulaire\/index\.html/);
+  await expect(page.getByRole("textbox", { name: "Prénom - Nom du collègue", exact: true })).toHaveValue("Camille");
+  await expect(page.getByRole("textbox", { name: "Je souhaite être en repos le", exact: true })).toHaveValue(/\d{2}\/\d{2}\/\d{4}/);
 });
 
 test("l’en-tête et les années sont confortables", async ({ page }, testInfo) => {
@@ -4187,9 +4260,7 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
 
 test("les horaires du profil préremplissent une récupération", async ({ page }) => {
   await prepareDemo(page);
-  const setup = page.locator(".home-setup-alert");
-  const profileInvite = setup.locator("article").filter({ hasText: "Compléter votre profil de calcul" });
-  await profileInvite.getByRole("button", { name: "Renseigner" }).click();
+  await page.locator(".home-setup-checklist").getByRole("button", { name: "Profil de calcul", exact: true }).click();
   const profile = page.locator("#pay-profile-settings");
   await expect(profile).toBeInViewport();
   await expect(profile).toBeFocused();
@@ -5779,15 +5850,16 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
   await goToSection(page, "program");
   const panel = page.locator(".grand-palais-check-panel");
   await expect(panel.getByRole("heading", { name: "Veille du site" })).toBeVisible();
-  await expect(panel).toContainText("jeudi 8 octobre 2026 à 0 h 05");
-  await panel.getByRole("button", { name: "Lancer un contrôle maintenant" }).click();
+  await expect(panel).toContainText(/jeudi 8 octobre 2026 à 0 h 05/i);
+  await panel.getByRole("button", { name: "Contrôler maintenant" }).click();
   await expect(panel.getByRole("button", { name: "Contrôle en cours…" })).toBeDisabled();
   // Plus de « rien de nouveau à valider » quand des tarifs viennent d'être
   // ajoutés : le compte rendu dit ce que l'application a repris.
   await expect(panel).toContainText("Contrôle terminé.", { timeout: 20_000 });
   await expect(panel).toContainText("Tarifs ajoutés pour « Paris Photo » : Plein tarif 32,00");
   await expect(panel).toContainText("Nouveauté : « Nouvelle exposition » (Grand Palais).");
-  await expect(panel).toContainText("jeudi 8 octobre 2026 à 16 h 30");
+  await expect(panel).toContainText(/jeudi 8 octobre 2026 à 16 h 30/i);
+  await expect(panel).toContainText("1 mise à jour ajoutée · 1 à valider");
   expect(checkRequested).toBe(true);
 });
 
@@ -5813,8 +5885,14 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
   await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   await firstReturn.click();
   await expect(firstReturn).toHaveAttribute("aria-checked", "true");
+  // Un férié cédé ouvre l'onglet des fériés.
+  await expect(dialog.getByRole("tab", { name: "Jour férié" })).toHaveAttribute("aria-selected", "true");
+  await setExchangeHours(dialog);
   await dialog.getByRole("button", { name: "Valider les deux dates" }).click();
-  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/formulaire\/index\.html/);
+  await page.goBack();
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
   // La paie : le férié cédé disparaît, le férié repris apparaît.
   await expect(holidayCard.locator("tr").filter({ hasText: returnedName })).toHaveCount(1);
   await expect(holidayCard.locator("tr").filter({ hasText: givenName })).toHaveCount(0);

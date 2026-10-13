@@ -45,14 +45,14 @@ function extraWorkHours(item: { start: string; end: string }) {
   return `${clock(item.start)} – ${clock(item.end)}`;
 }
 
+/** Une étape de « Pour bien démarrer » : faite, elle reste cochée dans la
+ *  liste ; à faire, toute la ligne mène à l'écran où elle se règle. */
 export type HomeSetupItem = {
   id: string;
   title: string;
-  intro: string;
   detail: string;
-  actionLabel: string;
+  done: boolean;
   onAction: () => void;
-  dismissible?: boolean;
 };
 
 type HomeDashboardProps = {
@@ -112,23 +112,15 @@ export function HomeDashboard({
       return [];
     }
   });
-  /* Deux invitations au plus : au-delà, l'accueil redevient une liste de
-     corvées qu'on fait défiler pour atteindre le calendrier. Les suivantes
-     apparaissent quand les premières sont réglées ou écartées. */
-  const visibleSetupItems = setupItems
-    .filter((item) => !dismissedSetupItems.includes(item.id))
-    .slice(0, 2);
-  // Plusieurs manques d'une même rubrique partagent la même explication : la
-  // répéter en tête vaut mieux qu'une phrase passe-partout.
-  const sharedIntro = visibleSetupItems.every(
-    (item) => item.intro === visibleSetupItems[0]?.intro,
-  );
-  const setupIntro = visibleSetupItems.length && sharedIntro
-    ? visibleSetupItems[0].intro
-    : "Plusieurs informations sont encore nécessaires pour adapter votre planning et vos calculs. Complétez les rubriques ci-dessous selon votre situation.";
-  const dismissSetupItem = (id: string) => {
+  /* Toutes les étapes restent visibles : cochées une fois faites, grisées
+     si on a choisi de ne pas les remplir (« Reprendre » les rouvre). La liste
+     disparaît quand chacune est faite ou écartée. */
+  const skippedSetup = (item: HomeSetupItem) => !item.done && dismissedSetupItems.includes(item.id);
+  const setupHandled = setupItems.filter((item) => item.done || skippedSetup(item)).length;
+  const setupVisible = setupHandled < setupItems.length;
+  const setSkipped = (id: string, skipped: boolean) => {
     setDismissedSetupItems((current) => {
-      const next = [...new Set([...current, id])];
+      const next = skipped ? [...new Set([...current, id])] : current.filter((item) => item !== id);
       if (typeof localStorage !== "undefined")
         localStorage.setItem(setupDismissKey, JSON.stringify(next));
       return next;
@@ -161,6 +153,66 @@ export function HomeDashboard({
 
   return (
     <>
+      {setupVisible ? (
+        <section className="home-setup-alert home-setup-checklist" aria-labelledby="home-setup-title" aria-live="polite">
+          <header>
+            <div>
+              <span className="step-label">Pour bien démarrer</span>
+              <h2 id="home-setup-title">Mise en route : {setupHandled} sur {setupItems.length}</h2>
+            </div>
+          </header>
+          <div
+            className="home-setup-progress"
+            role="progressbar"
+            aria-label="Étapes terminées"
+            aria-valuemin={0}
+            aria-valuemax={setupItems.length}
+            aria-valuenow={setupHandled}
+          >
+            <span style={{ width: `${(setupHandled / setupItems.length) * 100}%` }} />
+          </div>
+          <ol className="home-setup-steps">
+            {setupItems.map((item, index) => {
+              const skipped = skippedSetup(item);
+              /* Toute la ligne mène à l'écran où l'étape se règle ; « Pas
+                 maintenant » se lit dans son explication, sans bouton à part. */
+              return (
+                <li key={item.id} className={item.done ? "done" : skipped ? "skipped" : undefined}>
+                  <div className="home-setup-row">
+                    <span className="home-setup-mark" aria-hidden="true">{item.done ? "✓" : skipped ? "–" : index + 1}</span>
+                    <span className="home-setup-text">
+                      {item.done || skipped
+                        ? <strong>{item.title}</strong>
+                        : <button className="home-setup-main" type="button" onClick={item.onAction}><strong>{item.title}</strong></button>}
+                      <small>
+                        {skipped ? "Pas maintenant" : item.detail}
+                        {item.done ? <span className="home-setup-hidden"> · Fait</span> : (
+                          <>
+                            <button
+                              className="home-setup-skip"
+                              type="button"
+                              onClick={() => setSkipped(item.id, !skipped)}
+                              aria-label={skipped ? `Reprendre : ${item.title}` : `Ne pas remplir : ${item.title}`}
+                            >
+                              {skipped ? "Reprendre" : "Pas maintenant"}
+                            </button>
+                          </>
+                        )}
+                      </small>
+                    </span>
+                    {item.done || skipped ? null : <span className="home-setup-chevron" aria-hidden="true">›</span>}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+          {/* Un conseil, pas une étape : rien à cocher. */}
+          <p className="home-setup-tip">
+            <span><b>Conseil :</b> enregistrez tous vos congés de l’année, déjà pris comme à venir. L’application en a besoin pour calculer la prime des dimanches et le détail de vos soldes.</span>
+          </p>
+        </section>
+      ) : null}
+
       <section className="today-overview" aria-labelledby="today-title">
         <div className="today-overview-heading">
           <div>
@@ -291,27 +343,6 @@ export function HomeDashboard({
           ) : null}
         </div>
       </section>
-
-      {visibleSetupItems.length ? (
-        <section className="home-setup-alert" aria-labelledby="home-setup-title" aria-live="polite">
-          <header>
-            <span aria-hidden="true">!</span>
-            <div><span className="step-label">Pour bien démarrer</span><h2 id="home-setup-title">Informations à compléter</h2></div>
-          </header>
-          <p>{setupIntro}</p>
-          <div className="home-setup-list">
-            {visibleSetupItems.map((item) => (
-              <article key={item.id}>
-                <span><strong>{item.title}</strong><small>{item.detail}</small></span>
-                <span className="home-setup-actions">
-                  <button type="button" onClick={item.onAction}>{item.actionLabel}<b aria-hidden="true">→</b></button>
-                  {item.dismissible !== false ? <button className="home-setup-dismiss" type="button" onClick={() => dismissSetupItem(item.id)}>Ne plus me le demander</button> : null}
-                </span>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       <section className="home-notes-section" aria-labelledby="home-notes-title">
         {/* L'en-tête porte le bouton d'ajout, juste avant la flèche : on peut

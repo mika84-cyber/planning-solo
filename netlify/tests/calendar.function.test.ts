@@ -79,6 +79,14 @@ describe("API principale du calendrier", () => {
     expect(store.setJSON).not.toHaveBeenCalled();
   });
 
+  it("renvoie le prénom et le nom du compte Netlify pour préremplir les formulaires", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "camille.durand@example.test", name: "Camille Durand" } as never);
+    expect((await (await calendarHandler(new Request("https://example.test/api/calendar"))).json()).account_name).toBe("Camille Durand");
+    // Sans nom enregistré sur Netlify, il se déduit de l'adresse.
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "camille.durand@example.test" } as never);
+    expect((await (await calendarHandler(new Request("https://example.test/api/calendar"))).json()).account_name).toBe("Camille Durand");
+  });
+
   it("ne renvoie que les données du compte connecté", async () => {
     data.set("user/user-a/entry/2026-08-28", {
       date: "2026-08-28",

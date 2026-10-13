@@ -36,8 +36,8 @@ describe('outils administrateur', () => {
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
   it('ne révèle aux invités que le message actif et refuse toutes leurs écritures', async () => {
     guest();
-    expect(await (await handler(get())).json()).toEqual({ pin: null });
-    for (const action of ['pin', 'move-member', 'set-genders', 'remove-member', 'restore', 'cancel-job', 'dismiss-alert', 'delete-job', 'purge-trash']) expect((await handler(post({ action }))).status).toBe(403);
+    expect(await (await handler(get())).json()).toEqual({ pin: null, holidayReminder: null });
+    for (const action of ['pin', 'holiday-reminder', 'move-member', 'set-genders', 'remove-member', 'restore', 'cancel-job', 'dismiss-alert', 'delete-job', 'purge-trash']) expect((await handler(post({ action }))).status).toBe(403);
     vi.mocked(getUser).mockResolvedValue(null);
     expect((await handler(get())).status).toBe(401);
     owner();
@@ -48,6 +48,16 @@ describe('outils administrateur', () => {
     guest(); expect((await overview()).pin.message).toBe('Information temporaire');
     vi.setSystemTime(new Date('2026-09-09T11:01:00Z')); expect((await overview()).pin).toBeNull();
     owner(); expect((await handler(post({ action: 'pin', message: '' }))).status).toBe(200);
+  });
+  it('envoie aux invités le rappel des fériés de l’année suivante, jusqu’à la fin de cette année', async () => {
+    expect((await handler(post({ action: 'holiday-reminder', year: 2025 }))).status).toBe(400);
+    expect((await handler(post({ action: 'holiday-reminder', year: 2028 }))).status).toBe(400);
+    expect((await handler(post({ action: 'holiday-reminder', year: 2027 }))).status).toBe(200);
+    guest(); expect((await overview()).holidayReminder).toMatchObject({ year: 2027, until: '2028-01-01T00:00:00.000Z' });
+    vi.setSystemTime(new Date('2028-01-01T00:00:01Z')); expect((await overview()).holidayReminder).toBeNull();
+    vi.setSystemTime(new Date('2026-09-09T10:00:00Z'));
+    owner(); expect((await handler(post({ action: 'holiday-reminder', year: null }))).status).toBe(200);
+    guest(); expect((await overview()).holidayReminder).toBeNull();
   });
   it('déplace sans doublon et fournit les groupes mis à jour aux invités', async () => {
     const before = (await overview()).groups;

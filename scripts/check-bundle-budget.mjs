@@ -64,7 +64,12 @@ const budgets = {
   // de bord et « Affiner mes estimations » ont été retirés (773,8 mesurés).
   // Relevé le 13 octobre 2026 de 2 360 à 2 365 Kio bruts, avec l'accord de
   // l'administrateur : heures supp effaçables depuis la fiche du jour.
-  totalJavaScript: { raw: 2_365 * KIB, gzip: 775 * KIB },
+  // Relevé le 14 octobre 2026 à 2 380 / 781 Kio, avec l'accord de
+  // l'administrateur : demande d'échange (formulaire, seconde signature,
+  // ouverture préremplie depuis l'échange), horaires et onglet férié de
+  // l'échange, rappel des fériés, liste « Pour bien démarrer », veille du site
+  // (2 377,9 / 780,0 Kio mesurés).
+  totalJavaScript: { raw: 2_380 * KIB, gzip: 781 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -88,7 +93,9 @@ const budgets = {
   // Relevé le 9 octobre 2026 à 529 / 99 Kio (528,6 / 98,3 mesurés), avec
   // l'accord de l'administrateur, pour Ma paie en bulletin simplifié — après
   // retrait d'environ 16 Ko de styles de l'ancien tableau de bord.
-  totalCss: { raw: 529 * KIB, gzip: 99 * KIB },
+  // Relevé le 14 octobre 2026 à 535 / 100 Kio avec l'accord de
+  // l'administrateur, pour les mêmes rubriques (533,6 / 99,3 Kio mesurés).
+  totalCss: { raw: 535 * KIB, gzip: 100 * KIB },
 };
 
 async function filesUnder(directory) {

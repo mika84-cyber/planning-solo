@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type Dispatch, type SetStateAction } from "react";
 import { ChoicePicker } from "./ChoicePicker";
+import { ClockTimePicker } from "./ClockTimePicker";
 import { searchColleagueGroups } from "./ColleagueGroupsDirectory";
 import type { ColleagueGroup } from "./colleagueGroups";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
@@ -7,7 +8,7 @@ import { getColleagueGroups } from "./colleagueSharingApi";
 import { GROUP_OPTIONS, fromKey, getDayInfo } from "./planningLogic";
 import { normalizeSearchText } from "./searchMatching";
 import { WorkExchangeDatePicker } from "./WorkExchangeDatePicker";
-import { holidaysForExchangeReturn, type WorkExchangeDraft } from "./workExchange";
+import { holidaysForExchangeGive, holidaysForExchangeReturn, type WorkExchangeDraft } from "./workExchange";
 
 type Props = {
   open: boolean;
@@ -49,7 +50,16 @@ export function WorkExchangeDialog({
   const [annuaire, setAnnuaire] = useState<readonly ColleagueGroup[]>([]);
   const [suggestionsOuvertes, setSuggestionsOuvertes] = useState(false);
   const [suggestionActive, setSuggestionActive] = useState(-1);
+  const [holidayTab, setHolidayTab] = useState(false);
   const listeId = useId();
+
+  /* L'onglet « Jour férié » s'ouvre de lui-même quand le jour cédé en est un,
+     au moment où la fenêtre s'ouvre. */
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setHolidayTab(Boolean(draft.agreementDate && getDayInfo(fromKey(draft.agreementDate), group).holiday));
+  }
 
   /* L'annuaire des collègues sert déjà ailleurs : il donne le nom et le
      groupe, exactement ce qu'il faut ici pour éviter une double saisie. */
@@ -110,6 +120,25 @@ export function WorkExchangeDialog({
 
   if (!open) return null;
   const editing = Boolean(draft.id);
+  const giveHolidays = holidayTab ? holidaysForExchangeGive(group, new Date()) : [];
+  const chooseTab = (holiday: boolean) => {
+    if (holiday === holidayTab) return;
+    setHolidayTab(holiday);
+    setDraft((current) => ({ ...current, agreementDate: "", returnDate: "" }));
+  };
+  const holidayButton = (holiday: { key: string; name: string }, selected: boolean, onPick: () => void) => (
+    <button key={holiday.key} type="button" role="radio" aria-checked={selected} className={selected ? "selected" : undefined} onClick={onPick}>
+      <strong>{holiday.name}</strong>
+      <small>{fromKey(holiday.key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</small>
+    </button>
+  );
+  /* Les horaires de chaque journée figurent sur la demande d'échange. */
+  const hours = (label: string, startKey: "agreementStart" | "returnStart", endKey: "agreementEnd" | "returnEnd") => (
+    <div className="work-exchange-hours" role="group" aria-label={label}>
+      <ClockTimePicker label="De" value={draft[startKey]} allowEmpty emptyLabel="—" onChange={(value) => setDraft((current) => ({ ...current, [startKey]: value }))} />
+      <ClockTimePicker label="À" value={draft[endKey]} allowEmpty emptyLabel="—" onChange={(value) => setDraft((current) => ({ ...current, [endKey]: value }))} />
+    </div>
+  );
   return (
     <div
       className="modal-backdrop"
@@ -129,6 +158,13 @@ export function WorkExchangeDialog({
           Les deux dates sont obligatoires et seront toujours enregistrées ensemble.
           L’échange ne modifie ni la paie ni les congés.
         </p>
+        <div className="work-exchange-tabs" role="tablist" aria-label="Type d’échange">
+          {([[false, "Échange de jour"], [true, "Jour férié"]] as const).map(([holiday, label]) => (
+            <button key={label} type="button" role="tab" aria-selected={holidayTab === holiday} className={holidayTab === holiday ? "active" : undefined} onClick={() => chooseTab(holiday)}>
+              {label}
+            </button>
+          ))}
+        </div>
         {offGroups.length ? (
           <p className="work-exchange-group-hint">
             {agreementInfo?.holiday ? `${agreementInfo.holiday} : ` : ""}
@@ -208,40 +244,39 @@ export function WorkExchangeDialog({
         </div>
 
         <div className="work-exchange-date-grid">
-          <label className="work-exchange-date-card agreement">
-            <strong>Journée de votre cycle · Groupe {group}</strong>
+          <div className="work-exchange-date-card agreement">
+            <strong>{holidayTab ? "Férié de votre cycle" : "Journée de votre cycle"} · Groupe {group}</strong>
             <span>Vous deviez travailler · {draft.partnerName.trim() || "Votre collègue"} vous remplace</span>
-            <WorkExchangeDatePicker
-              value={draft.agreementDate}
-              ownerGroup={group}
-              otherGroup={draft.partnerGroup}
-              ariaLabel="Choisir la journée de votre cycle"
-              onChange={(agreementDate) => setDraft((current) => ({ ...current, agreementDate }))}
-            />
-          </label>
+            {holidayTab ? (
+              <div className="work-exchange-holiday-list" role="radiogroup" aria-label="Choisir le férié que vous cédez">
+                {giveHolidays.length ? giveHolidays.map((holiday) => holidayButton(holiday, draft.agreementDate === holiday.key, () =>
+                  setDraft((current) => ({ ...current, agreementDate: holiday.key, returnDate: "", partnerGroup: holiday.partnerGroup })),
+                )) : <small>Aucun férié travaillé dans les douze prochains mois.</small>}
+              </div>
+            ) : (
+              <WorkExchangeDatePicker
+                value={draft.agreementDate}
+                ownerGroup={group}
+                otherGroup={draft.partnerGroup}
+                ariaLabel="Choisir la journée de votre cycle"
+                onChange={(agreementDate) => setDraft((current) => ({ ...current, agreementDate }))}
+              />
+            )}
+            {hours("Horaires de la journée de votre cycle", "agreementStart", "agreementEnd")}
+          </div>
           <div className="work-exchange-date-card return">
             <strong>Journée de son cycle · Groupe {draft.partnerGroup}</strong>
             <span>
               {draft.partnerName.trim() || "Votre collègue"} devait travailler · Vous {colleagueObjectPronoun(draft.partnerName)} remplacez
               {agreementInfo?.holiday ? " · un jour férié, comme celui que vous cédez" : ""}
             </span>
-            {agreementInfo?.holiday ? (
+            {holidayTab || agreementInfo?.holiday ? (
               /* Un férié se rend par un férié : la liste de ceux possibles,
                  plutôt que tout le calendrier. */
               <div className="work-exchange-holiday-list" role="radiogroup" aria-label="Choisir le férié du cycle du collègue">
-                {returnHolidays.length ? returnHolidays.map((holiday) => (
-                  <button
-                    key={holiday.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={draft.returnDate === holiday.key}
-                    className={draft.returnDate === holiday.key ? "selected" : undefined}
-                    onClick={() => setDraft((current) => ({ ...current, returnDate: holiday.key }))}
-                  >
-                    <strong>{holiday.name}</strong>
-                    <small>{fromKey(holiday.key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</small>
-                  </button>
-                )) : <small>Aucun férié travaillé par le groupe {draft.partnerGroup} où vous êtes en repos.</small>}
+                {returnHolidays.length ? returnHolidays.map((holiday) => holidayButton(holiday, draft.returnDate === holiday.key, () =>
+                  setDraft((current) => ({ ...current, returnDate: holiday.key })),
+                )) : <small>{holidayTab && !draft.agreementDate ? "Choisissez d’abord le férié que vous cédez." : `Aucun férié travaillé par le groupe ${draft.partnerGroup} où vous êtes en repos.`}</small>}
               </div>
             ) : (
               <WorkExchangeDatePicker
@@ -252,6 +287,7 @@ export function WorkExchangeDialog({
                 onChange={(returnDate) => setDraft((current) => ({ ...current, returnDate }))}
               />
             )}
+            {hours("Horaires de la journée de son cycle", "returnStart", "returnEnd")}
           </div>
         </div>
 

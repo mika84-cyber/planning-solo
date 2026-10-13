@@ -659,7 +659,16 @@ export function BoundaryReportPanel({
   );
 }
 
-export function GrandPalaisProgramSection({ guestPreview = false }: { guestPreview?: boolean }) {
+/* La veille de l'administrateur s'affiche sans attendre le serveur : la date
+   et le compte rendu du dernier contrôle sont gardés sur l'appareil, puis
+   remplacés dès que la programmation est relue. */
+const CHECK_CACHE_KEY = "planning:gp-check-cache-v1";
+type CheckCache = Pick<GrandPalaisProgramPayload, "lastCheckedAt" | "lastCheckReport">;
+function readCheckCache(): CheckCache | null {
+  try { return JSON.parse(localStorage.getItem(CHECK_CACHE_KEY) || "null"); } catch { return null; }
+}
+
+export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = false }: { guestPreview?: boolean; isAdmin?: boolean }) {
   const [clock, setClock] = useState(() => grandPalaisClock());
   const { today, openingReady } = clock;
   useEffect(() => {
@@ -675,6 +684,13 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
     return () => { clearTimeout(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, []);
   const [sharedPayload, setSharedPayload] = useState<GrandPalaisProgramPayload | null>(null);
+  const [checkCache] = useState(readCheckCache);
+  useEffect(() => {
+    if (!sharedPayload?.isAdmin) return;
+    try {
+      localStorage.setItem(CHECK_CACHE_KEY, JSON.stringify({ lastCheckedAt: sharedPayload.lastCheckedAt, lastCheckReport: sharedPayload.lastCheckReport }));
+    } catch {}
+  }, [sharedPayload]);
   const [reviewBusy, setReviewBusy] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [healthBusy, setHealthBusy] = useState(false);
@@ -850,8 +866,12 @@ export function GrandPalaisProgramSection({ guestPreview = false }: { guestPrevi
         </div>
       </div>
 
-      {!guestPreview && sharedPayload?.isAdmin ? (
-        <GrandPalaisCheckPanel lastCheckedAt={sharedPayload.lastCheckedAt} report={sharedPayload.lastCheckReport} onPayload={setSharedPayload} />
+      {!guestPreview && (sharedPayload ? sharedPayload.isAdmin : isAdmin) ? (
+        <GrandPalaisCheckPanel
+          lastCheckedAt={sharedPayload ? sharedPayload.lastCheckedAt : checkCache?.lastCheckedAt}
+          report={sharedPayload ? sharedPayload.lastCheckReport : checkCache?.lastCheckReport}
+          onPayload={setSharedPayload}
+        />
       ) : null}
 
       {!guestPreview && sharedPayload?.isAdmin && sharedPayload.health ? (

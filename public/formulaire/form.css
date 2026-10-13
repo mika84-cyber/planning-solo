@@ -122,14 +122,22 @@
   body.clean .fld.motif-field.has + .zone{background:transparent}
   body.clean .fld.grp.has + .zone{background:transparent}
 
-  #sig{position:absolute;z-index:2;touch-action:none;cursor:crosshair;
+  #sig,#sig2{position:absolute;z-index:2;touch-action:none;cursor:crosshair;
        background:rgba(64,120,220,.09);border-radius:3px}
-  #sig.has{background:transparent}
-  #sighint{position:absolute;z-index:1;pointer-events:none;color:#8aa0c8;font-size:12px;font-weight:600;text-align:center}
-  #sigclear{position:absolute;z-index:7;font-family:Arial,Helvetica,sans-serif;font-weight:700;
+  #sig.has,#sig2.has{background:transparent}
+  #sig2[hidden],#sighint2[hidden],#sigclear2[hidden]{display:none}
+  .fld[hidden],.zone[hidden]{display:none}
+  /* Échange : qui occupe la première ligne, l'agent ou le collègue. */
+  #lineOrder{display:flex;max-width:1000px;margin:10px auto 0;padding:0 12px;box-sizing:border-box;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+  #lineOrder[hidden]{display:none}
+  #lineOrder span{font-size:12.5px;font-weight:700;color:#e9e1d6;margin-right:4px}
+  #lineOrder button{font:700 12.5px/1 Arial,Helvetica,sans-serif;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--ui-border,#d8cdbf);background:#fff;color:var(--ui-strong,#2c2621);cursor:pointer}
+  #lineOrder button[aria-pressed="true"]{background:var(--ui,#83452c);border-color:var(--ui,#83452c);color:#fff}
+  #sighint,#sighint2{position:absolute;z-index:1;pointer-events:none;color:#8aa0c8;font-size:12px;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden}
+  #sigclear,#sigclear2{position:absolute;z-index:7;font-family:Arial,Helvetica,sans-serif;font-weight:700;
             line-height:1.2;color:var(--accent);background:#fff;border:1px solid var(--accent);
             border-radius:4px;padding:4px 5px;cursor:pointer;text-align:center;display:none}
-  #sigclear:hover{background:var(--accent);color:#fff}
+  #sigclear:hover,#sigclear2:hover{background:var(--accent);color:#fff}
   #sigSaveManual{position:absolute;z-index:8;display:none;font-family:Arial,Helvetica,sans-serif;font-weight:750;line-height:1.2;
                  color:var(--accent);background:#fff;border:1px solid var(--accent);border-radius:4px;padding:4px 5px;cursor:pointer;text-align:center}
   #sigSavedDelete{position:absolute;z-index:9;display:none;align-items:center;justify-content:center;padding:0;border-radius:999px;
@@ -235,6 +243,9 @@
   .calday.training:hover{background:#bcc0c7}
   .calday.off{background:#14161a;border-color:#000;color:#fff;opacity:1;cursor:not-allowed;text-decoration:none;box-shadow:none}
   .calday.off:hover{background:#14161a;border-color:#000}
+  /* Date d'échange : seuls les jours de repos se choisissent. */
+  .calday.off:not(:disabled){cursor:pointer}
+  .calday:disabled:not(.off){opacity:.38;cursor:not-allowed}
   .calday.special-off{background:#3a3f47;border-color:#272b31;color:#fff;box-shadow:none}
   .calday.today:not(.sel){box-shadow:0 0 0 2px rgba(23,59,108,.95) inset,0 0 0 4px rgba(23,59,108,.10) inset}
   .calday.sel{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:800;opacity:1;box-shadow:0 6px 12px rgba(32,70,150,.22)}
@@ -594,7 +605,7 @@
   #calLegend .lg-work i{border-color:rgba(44,38,33,.18)}
   #calSameBox{border-color:var(--ui);background:var(--ui-soft)}
   @media screen{ .paper{box-shadow:0 10px 30px rgba(74,48,28,.18)} }
-  @media print{ body{background:#fff;padding-bottom:0} .bar,.sub,.msg,.att,.att-note,#observationBox,#pageNav,.edit,#sigclear,#sigSaveManual,#sigSavedDelete,#sigModal,#sigSavePrompt,#calModal,#timeModal{display:none!important}
+  @media print{ body{background:#fff;padding-bottom:0} .bar,.sub,.msg,.att,.att-note,#observationBox,#pageNav,.edit,#lineOrder,#sigclear,#sigclear2,#sigSaveManual,#sigSavedDelete,#sigModal,#sigSavePrompt,#calModal,#timeModal{display:none!important}
                 .stage{padding:0} .paper{box-shadow:none} }
 
   /* Ambiance « plan de travail » : sous la barre claire, la feuille se
@@ -643,3 +654,6 @@
     /* La pastille de retour se centre sur le sélecteur, sous le sur-titre. */
     .bar-in{--back-top:19px}
   }
+
+  /* « Vider » armé : un second appui efface la feuille. */
+  #btnReset.armed{background:#b3261e!important;border-color:#b3261e!important;color:#fff!important}

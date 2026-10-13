@@ -84,7 +84,7 @@ import { usePlanningEntryActions } from "./usePlanningEntryActions";
 import { usePlanningEditorActions } from "./usePlanningEditorActions";
 import { usePlanningInteractionActions } from "./usePlanningInteractionActions";
 import { usePlanningRequestActions } from "./usePlanningRequestActions";
-import { useWorkExchangeActions } from "./useWorkExchangeActions";
+import { readDemoExchanges, useWorkExchangeActions } from "./useWorkExchangeActions";
 import { useWorkAccidentActions } from "./useWorkAccidentActions";
 import { useAppShellUiState } from "./useAppShellUiState";
 import { useFeedbackMessaging } from "./useFeedbackMessaging";
@@ -118,7 +118,7 @@ import { MonthCalendar } from "./PlanningView";
 import { WorkExchangeDialog } from "./WorkExchangeDialog";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
-import { workExchangeForDate } from "./workExchange";
+import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
 import { requestLeaveBalanceUsage, requestRecoveryMinutes, zeroLeaveBalanceType, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
@@ -225,7 +225,6 @@ import {
   automaticHalfBalance,
   halfMomentFromStart,
   leaveTypeLabel,
-  s,
   localDate,
   periodLabel,
   sameDate,
@@ -235,9 +234,6 @@ import {
   type SchoolVacation,
 } from "./planningLogic";
 import { mecenatRuleViolations } from "./mecenatRules";
-
-// Conservé prêt à être réactivé lorsque le parcours d’accompagnement sera finalisé.
-const HOME_SETUP_GUIDANCE_ENABLED = false;
 
 /** Amène à l'endroit exact où l'information se saisit. L'écran visé se
  *  charge à la demande : viser l'ancre tout de suite la manquerait, on
@@ -250,11 +246,6 @@ function scrollWhenReady(id: string, attempts = 20) {
   }
   if (attempts > 0) window.setTimeout(() => scrollWhenReady(id, attempts - 1), 100);
 }
-
-/** Ce que l'écran de paie attend, dit une fois pour toutes : chaque
- *  invitation renvoie ensuite à l'endroit précis où cela se saisit. */
-const PAY_SETUP_INTRO =
-  "Pour estimer votre paie, l’application a besoin de connaître le nombre de dimanches travaillés, le choix de la prime des jours fériés et les valeurs de votre bulletin de salaire.";
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
 
@@ -792,6 +783,16 @@ export default function Home() {
             localStorage.removeItem("planning:demo-completed-request-v1");
           }
         } catch {}
+        // Les échanges de la démo reviennent après l'ouverture du formulaire.
+        const demoExchanges = readDemoExchanges();
+        if (demoExchanges.length)
+          setEntries((current) => {
+            const next = { ...current };
+            for (const item of demoExchanges)
+              for (const [date, fields] of Object.entries(exchangeEntryFields(item)))
+                next[date] = { ...(next[date] || emptyEntry()), ...fields };
+            return next;
+          });
         setUserEmail("demo@demo.local");
         setIsProgramAdmin(import.meta.env.DEV && localDemoAdmin);
         setAuthStatus("ready");
@@ -1205,6 +1206,8 @@ export default function Home() {
     demoMode,
     isExceptionallyClosed: (key) => Boolean(exceptionalClosureFor(key)),
     showSuccess: confirm,
+    formProfile,
+    userEmail,
   });
   const {
     exchanges: workExchanges,
@@ -2729,7 +2732,26 @@ export default function Home() {
       />
       {actualProgramAdmin && guestPreview && <div className="admin-preview-banner" role="status">Aperçu invité · Vos données<button type="button" onClick={() => setGuestPreview(false)}>Quitter l’aperçu</button></div>}
       {isProgramAdmin && adminToolsOpen && <Suspense fallback={<p role="status">Ouverture des outils…</p>}><AdminToolsPanel demoMode={demoMode} onClose={() => setAdminToolsOpen(false)} onPreview={() => { setAdminToolsOpen(false); setGuestPreview(true); }} onChanged={() => { clearColleagueGroupsCache(); setAdminRevision(value => value + 1); }} /></Suspense>}
-      {homeSection === 'home' && <HomeAdminMessage demoMode={demoMode} />}
+      {homeSection === 'home' && <HomeAdminMessage
+        demoMode={demoMode}
+        hideHolidayReminder={isProgramAdmin}
+        holidayChoicesPending={(year) => {
+          // Les fériés de l'année du rappel encore sans prime ni récup choisie.
+          const yearAllowances = computePayAllowances({
+            year, today: now, entries, periods, group, baseSalary,
+            manualAdjustments: formProfile?.manualAdjustments,
+            sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth,
+            sundayCarryoverFromYear, sundayCarryoverFromMonth, recoveryUses,
+          });
+          return { worked: yearAllowances.holidayPending, compensated: yearAllowances.compensated.filter((item) => !item.choice).length };
+        }}
+        onOpenHolidayChoices={(year) => {
+          setHomeSection("pay");
+          setPayView(localDate(year, 0, 1));
+          setPayScreen("allowances");
+          scrollWhenReady("holiday-choices");
+        }}
+      />}
 
       {feedbackMessaging.resolutionNotice ? (
         <Suspense fallback={null}>
@@ -2777,12 +2799,18 @@ export default function Home() {
           nextExtraWork={nextExtraWork}
           setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
           setupItems={[
-            ...(missingCalculationProfile ? [{
+            {
+              id: "planning-group",
+              title: "Groupe de planning",
+              detail: formProfile?.group ? `Groupe ${group}` : "Jours de travail et de repos",
+              done: Boolean(formProfile?.group),
+              onAction: () => setGroupChooserOpen(true),
+            },
+            {
               id: "pay-profile",
-              title: "Compléter votre profil de calcul",
-              intro: PAY_SETUP_INTRO,
-              detail: "Quotité de travail et statut : ils décident de la façon dont tout est calculé.",
-              actionLabel: "Renseigner",
+              title: "Profil de calcul",
+              detail: missingCalculationProfile ? "Statut et quotité" : "Statut et quotité renseignés",
+              done: !missingCalculationProfile,
               onAction: () => {
                 setHomeSection("pay");
                 setPayScreen("overview");
@@ -2790,65 +2818,31 @@ export default function Home() {
                 setPayAdvancedOpen(false);
                 setPayProfileFocusRequested(true);
               },
-            }] : []),
-            ...(missingHolidayChoices ? [{
+            },
+            {
               id: "holiday-choice",
-              title: `Choisir la prime de ${missingHolidayChoices} jour${s(missingHolidayChoices)} férié${s(missingHolidayChoices)}`,
-              intro: PAY_SETUP_INTRO,
-              detail: "Pour chacun : la prime seule, ou la prime et un jour de récupération.",
-              actionLabel: "Renseigner",
+              title: `Jours fériés ${now.getFullYear()}`,
+              detail: missingHolidayChoices
+                ? `${missingHolidayChoices} à choisir`
+                : "Tous choisis",
+              done: !missingHolidayChoices,
               onAction: () => {
                 setHomeSection("pay");
                 setPayScreen("allowances");
                 scrollWhenReady("holiday-choices");
               },
-            }] : []),
-            ...(missingPayValues ? [{
+            },
+            {
               id: "payslip-upload",
-              title: "Ajouter un bulletin de paie",
-              intro: PAY_SETUP_INTRO,
-              detail: "Les valeurs lues sur le bulletin sont reprises toutes seules : rien à saisir.",
-              actionLabel: "Ajouter",
+              title: "Bulletin de paie",
+              detail: missingPayValues ? "Lu tout seul" : "Valeurs enregistrées",
+              done: !missingPayValues,
               onAction: () => {
                 setHomeSection("pay");
                 setPayScreen("overview");
                 setPayVerificationRequested(true);
               },
-            }] : []),
-            ...(HOME_SETUP_GUIDANCE_ENABLED ? [
-            ...(!formProfile?.group ? [{
-              id: "planning-group",
-              title: "Choisir votre groupe de planning",
-              intro: "Choisissez votre groupe de planning pour afficher correctement vos jours de travail, de repos et votre calendrier.",
-              detail: "Indispensable pour afficher vos jours de travail et de repos.",
-              actionLabel: "Choisir",
-              onAction: () => setGroupChooserOpen(true),
-            }] : []),
-            ...(!formProfile?.status || !formProfile?.workQuota ? [{
-              id: "pay-profile",
-              title: "Compléter votre profil de paie",
-              intro: "Complétez votre statut et votre quotité afin d’adapter les calculs de paie et de temps de travail à votre situation.",
-              detail: "Indiquez simplement votre statut et votre quotité de travail.",
-              actionLabel: "Compléter",
-              onAction: () => {
-                setHomeSection("pay");
-                setPayScreen("overview");
-                setPayProfileOpen(true);
-                setPayAdvancedOpen(true);
-              },
-            }] : []),
-            ...(allowances.holidayPending > 0 || allowances.compensated.some((item) => !item.choice) ? [{
-              id: "holiday-pay",
-              title: "Renseigner les jours fériés",
-              intro: "Indiquez le traitement de vos jours fériés pour répartir correctement les primes et les récupérations.",
-              detail: "Précisez pour chacun le choix entre prime et récupération.",
-              actionLabel: "Renseigner",
-              onAction: () => {
-                setHomeSection("pay");
-                setPayScreen("allowances");
-              },
-            }] : []),
-            ] : []),
+            },
           ]}
           hasAnyNote={hasAnyNote}
           noteQuery={noteQuery}
@@ -3065,7 +3059,7 @@ export default function Home() {
       ) : null}
       {homeSection === "program" ? (
         <Suspense fallback={<DeferredSection label="la programmation GP" />}>
-          <GrandPalaisProgramSection guestPreview={guestPreview} />
+          <GrandPalaisProgramSection guestPreview={guestPreview} isAdmin={isProgramAdmin} />
         </Suspense>
       ) : null}
       {homeSection === "colleagues" ? (

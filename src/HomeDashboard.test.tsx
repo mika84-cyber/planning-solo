@@ -12,10 +12,15 @@ const baseProps = {
   importantAlert: "",
   setupItems: [{
     id: "planning-group",
-    title: "Choisir votre groupe de planning",
-    intro: "Choisissez votre groupe de planning pour afficher correctement vos jours de travail.",
-    detail: "Indispensable pour afficher vos jours.",
-    actionLabel: "Choisir",
+    title: "Groupe de planning",
+    detail: "Vos jours de travail et de repos",
+    done: false,
+    onAction: vi.fn(),
+  }, {
+    id: "pay-profile",
+    title: "Profil de calcul",
+    detail: "Statut et quotité renseignés",
+    done: true,
     onAction: vi.fn(),
   }],
   setupDismissKey: "planning:test-setup-dismissed",
@@ -39,38 +44,21 @@ describe("HomeDashboard", () => {
     expect(html).not.toContain("Trouver un document");
   });
 
-  it("alerte sur les informations importantes encore manquantes", () => {
+  it("montre toutes les étapes de départ, cochées une fois faites", () => {
     const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
-    expect(html).toContain("Informations à compléter");
-    expect(html).toContain("Choisir votre groupe de planning");
     expect(html).toContain("Pour bien démarrer");
-    expect(html).toContain("Choisissez votre groupe de planning pour afficher correctement vos jours de travail.");
-    expect(html).toContain("Ne plus me le demander");
+    expect(html).toContain("Mise en route : 1 sur 2");
+    expect(html).toContain("Groupe de planning");
+    expect(html).toContain("Profil de calcul");
+    expect(html).toContain('aria-valuenow="1"');
+    expect(html).toContain("Ne pas remplir");
+    // Le conseil sur les congés n'est pas une étape à cocher.
+    expect(html).toContain("prime des dimanches et le détail de vos soldes");
   });
 
-  it("affiche un message général lorsque plusieurs rubriques sont à compléter", () => {
-    const html = renderToStaticMarkup(<HomeDashboard
-      {...baseProps}
-      setupItems={[
-        ...baseProps.setupItems,
-        {
-          id: "pay-profile",
-          title: "Compléter votre profil de paie",
-          intro: "Ce texte propre au profil ne doit pas devenir le résumé général.",
-          detail: "Indiquez votre statut et votre quotité.",
-          actionLabel: "Compléter",
-          onAction: vi.fn(),
-        },
-      ]}
-    />);
-    expect(html).toContain("Plusieurs informations sont encore nécessaires");
-    expect(html).toContain("Complétez les rubriques ci-dessous selon votre situation.");
-    expect(html).not.toContain("Ce texte propre au profil ne doit pas devenir le résumé général.");
-  });
-
-  it("retire l’alerte lorsque la configuration est complète", () => {
-    const html = renderToStaticMarkup(<HomeDashboard {...baseProps} setupItems={[]} />);
-    expect(html).not.toContain("Informations à compléter");
+  it("retire la liste lorsque tout est fait", () => {
+    const html = renderToStaticMarkup(<HomeDashboard {...baseProps} setupItems={baseProps.setupItems.map((item) => ({ ...item, done: true }))} />);
+    expect(html).not.toContain("Pour bien démarrer");
   });
 
   it("précise une demi-journée sur le prochain jour travaillé", () => {

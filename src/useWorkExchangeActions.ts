@@ -1,5 +1,5 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import type { Entries, LeavePeriod, WorkExchange } from "./appModel";
+import type { Entries, FormProfile, LeavePeriod, WorkExchange } from "./appModel";
 import { emptyEntry } from "./appModel";
 import { calendarErrorMessage, postCalendar } from "./calendarApi";
 import type { RecoveryUse } from "./overtime";
@@ -7,12 +7,35 @@ import { fromKey, getDayInfo } from "./planningLogic";
 import {
   emptyWorkExchangeDraft,
   exchangeDraftFromExchange,
+  exchangeEntryFields,
   validateWorkExchange,
   workExchangesFromEntries,
   type WorkExchangeDraft,
 } from "./workExchange";
 
 type ApiEntryResult = { date: string; updatedAt: string; deleted: boolean };
+
+export const EXCHANGE_HANDOFF_KEY = "planning:exchange-handoff-v1";
+/* La démo garde ses échanges le temps de l'onglet : le formulaire s'ouvre
+   dans la même page et l'échange doit être là au retour. */
+export const DEMO_EXCHANGES_KEY = "planning:demo-exchanges-v1";
+type StoredExchange = Pick<WorkExchangeDraft, "id" | "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">;
+
+export function readDemoExchanges(): StoredExchange[] {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(DEMO_EXCHANGES_KEY) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeDemoExchange(id: string, exchange: StoredExchange | null) {
+  try {
+    const rest = readDemoExchanges().filter((item) => item.id !== id);
+    sessionStorage.setItem(DEMO_EXCHANGES_KEY, JSON.stringify(exchange ? [...rest, exchange] : rest));
+  } catch {}
+}
 
 type Options = {
   group: number;
@@ -24,6 +47,10 @@ type Options = {
   isExceptionallyClosed: (date: string) => boolean;
   showSuccess: (message: string) => void;
   confirmAction?: (message: string) => boolean;
+  formProfile?: FormProfile | null;
+  userEmail?: string;
+  /** Ouvre la demande d'échange préremplie ; remplaçable dans les tests. */
+  openForm?: () => void;
 };
 
 function clearExchangeFields(entry: ReturnType<typeof emptyEntry>) {
@@ -46,7 +73,11 @@ export function useWorkExchangeActions({
   isExceptionallyClosed,
   showSuccess,
   confirmAction = (message) => window.confirm(message),
+  formProfile = null,
+  userEmail = "",
+  openForm = () => window.location.assign("/formulaire/index.html?echange=1"),
 }: Options) {
+  const schedule = formProfile?.workSchedule;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<WorkExchangeDraft>(() => emptyWorkExchangeDraft(group));
   const [error, setError] = useState("");
@@ -54,7 +85,7 @@ export function useWorkExchangeActions({
   const exchanges = useMemo(() => workExchangesFromEntries(entries), [entries]);
 
   function openNew(agreementDate = "") {
-    const next = emptyWorkExchangeDraft(group);
+    const next = emptyWorkExchangeDraft(group, "", schedule);
     if (agreementDate) {
       const kind = getDayInfo(fromKey(agreementDate), group).kind;
       if (kind === "work") {
@@ -71,7 +102,7 @@ export function useWorkExchangeActions({
   }
 
   function openEdit(exchange: WorkExchange) {
-    setDraft(exchangeDraftFromExchange(exchange));
+    setDraft(exchangeDraftFromExchange(exchange, schedule));
     setError("");
     setOpen(true);
   }
@@ -106,21 +137,9 @@ export function useWorkExchangeActions({
         updatedAt: result?.updatedAt || new Date().toISOString(),
       };
     }
-    if (nextDraft) {
-      const common = {
-        exchangeId: nextDraft.id,
-        exchangePartner: nextDraft.partnerName.trim(),
-        exchangePartnerGroup: nextDraft.partnerGroup,
-      };
-      next[nextDraft.agreementDate] = {
-        ...next[nextDraft.agreementDate], ...common,
-        exchangeRole: "given", exchangeOtherDate: nextDraft.returnDate,
-      };
-      next[nextDraft.returnDate] = {
-        ...next[nextDraft.returnDate], ...common,
-        exchangeRole: "return", exchangeOtherDate: nextDraft.agreementDate,
-      };
-    }
+    if (nextDraft)
+      for (const [date, fields] of Object.entries(exchangeEntryFields(nextDraft)))
+        next[date] = { ...next[date], ...fields };
     return next;
   }
 
@@ -139,6 +158,10 @@ export function useWorkExchangeActions({
     });
     if (validationError) {
       setError(validationError);
+      return;
+    }
+    if (![draft.agreementStart, draft.agreementEnd, draft.returnStart, draft.returnEnd].every(Boolean)) {
+      setError("Indiquez les horaires des deux journées.");
       return;
     }
     const previous = draft.id ? exchanges.find((item) => item.id === draft.id) : undefined;
@@ -168,6 +191,19 @@ export function useWorkExchangeActions({
       setEntries((current) => applyExchange(current, nextDraft, previous, result.entries));
       setOpen(false);
       showSuccess(previous ? "L’échange a été modifié sur ses deux dates." : "L’échange a été enregistré sur ses deux dates.");
+      const { id, partnerName, partnerGroup, agreementDate, returnDate } = nextDraft;
+      if (demoMode) storeDemoExchange(id, { id, partnerName, partnerGroup, agreementDate, returnDate });
+      /* La demande d'échange s'ouvre aussitôt, remplie avec ces dates. */
+      try {
+        localStorage.setItem(EXCHANGE_HANDOFF_KEY, JSON.stringify({
+          version: 1,
+          ownerKey: userEmail.trim().toLowerCase(),
+          profile: { fullName: formProfile?.fullName || "", group: String(group), signature: formProfile?.signature || "" },
+          ...nextDraft,
+          partnerName: partnerName.trim(),
+        }));
+        openForm();
+      } catch {}
     } catch (caught) {
       setError(calendarErrorMessage(caught, "L’échange n’a pas pu être enregistré."));
     } finally {
@@ -194,6 +230,7 @@ export function useWorkExchangeActions({
             ),
           });
       setEntries((current) => applyExchange(current, null, previous, result.entries));
+      if (demoMode) storeDemoExchange(previous.id, null);
       setOpen(false);
       showSuccess("Les deux journées de l’échange ont été supprimées.");
     } catch (caught) {

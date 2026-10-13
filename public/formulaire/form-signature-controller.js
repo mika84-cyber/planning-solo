@@ -18,6 +18,34 @@ export function signatureStrokeWidth({ panelZoom, browserZoom, finePointer, stro
   return Math.max(finePointer ? 1 : 1.25, Math.min(finePointer ? 4.5 : 5.5, cssPixels));
 }
 
+/* Dessine une signature enregistrée. Sur une feuille aux cases plus hautes
+   (sigFit), elle est recadrée sur son tracé puis agrandie sans déformation,
+   au lieu d'être étirée aux proportions de la case. */
+export function drawSignature(context, image, width, height, fit) {
+  if (!fit) { context.drawImage(image, 0, 0, width, height); return; }
+  const work = context.canvas.ownerDocument.createElement('canvas');
+  work.width = image.naturalWidth || image.width;
+  work.height = image.naturalHeight || image.height;
+  const workContext = work.getContext('2d');
+  workContext.drawImage(image, 0, 0);
+  const { data } = workContext.getImageData(0, 0, work.width, work.height);
+  let left = work.width, top = work.height, right = -1, bottom = -1;
+  for (let y = 0; y < work.height; y++)
+    for (let x = 0; x < work.width; x++)
+      if (data[(y * work.width + x) * 4 + 3] > 8) {
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+  if (right < 0) return;
+  const sourceWidth = right - left + 1, sourceHeight = bottom - top + 1;
+  const scale = Math.min((width * 0.92) / sourceWidth, (height * 0.8) / sourceHeight);
+  const drawWidth = sourceWidth * scale, drawHeight = sourceHeight * scale;
+  context.drawImage(work, left, top, sourceWidth, sourceHeight,
+    (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
 export function createSignatureController(options) {
   const {
     win,
@@ -75,6 +103,11 @@ export function createSignatureController(options) {
   let bigLast = null;
   let bigHasInk = false;
   let mode = finePointer ? 'type' : 'draw';
+  /* Signature d'une autre personne (le collègue d'un échange) : la même
+     fenêtre sert, mais le résultat va sur sa case et n'est jamais conservé
+     comme signature de l'agent. */
+  let target = null;
+  let typedForOther = false;
   let stroke = win.localStorage.getItem('signatureStroke') || 'normal';
 
   function storageKey(prefix) {
@@ -218,7 +251,7 @@ export function createSignatureController(options) {
       const image = new Image();
       image.onload = () => {
         context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        drawSignature(context, image, canvas.width, canvas.height, getModel().sigFit);
         setHasInk(true);
         canvas.classList.add('has');
         hint.style.display = 'none';
@@ -234,6 +267,17 @@ export function createSignatureController(options) {
   /* La signature enregistrée sur le compte (depuis le téléphone) : reprise
      sur tout appareil connecté dont le cadre est encore vide, y compris sur
      ordinateur et avec un formulaire vierge. */
+  let accountRequest = null;
+  /** La fiche du compte, lue une seule fois : signature et nom enregistrés. */
+  function accountPayload() {
+    if (!canSyncWithPlanning()) return Promise.resolve(null);
+    if (!accountRequest)
+      accountRequest = win
+        .fetch('/api/calendar', { cache: 'no-store', credentials: 'same-origin' })
+        .then((response) => (response.ok ? response.json() : null))
+        .catch(() => null);
+    return accountRequest;
+  }
   let accountSignature = null;
   function restoreFromAccount() {
     // Sur un téléphone où l'on a refusé de garder la signature, on respecte ce choix.
@@ -241,9 +285,7 @@ export function createSignatureController(options) {
       return Promise.resolve(false);
     // Une seule lecture du compte par ouverture du formulaire.
     if (!accountSignature)
-      accountSignature = win
-        .fetch('/api/calendar', { cache: 'no-store', credentials: 'same-origin' })
-        .then((response) => (response.ok ? response.json() : null))
+      accountSignature = accountPayload()
         .then((payload) => (payload && payload.form_profile && payload.form_profile.signature) || '')
         .catch(() => '');
     return accountSignature
@@ -259,7 +301,7 @@ export function createSignatureController(options) {
           image.onload = () => {
             if (getHasInk()) { resolve(false); return; }
             context.clearRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            drawSignature(context, image, canvas.width, canvas.height, getModel().sigFit);
             setHasInk(true);
             canvas.classList.add('has');
             hint.style.display = 'none';
@@ -328,6 +370,8 @@ export function createSignatureController(options) {
       element.style.height = height + 'px';
     });
     hint.style.lineHeight = height + 'px';
+    // Le texte d'invite suit la taille de la feuille, sans déborder sur téléphone.
+    hint.style.fontSize = Math.max(7, Math.min(12, 30 * scale)) + 'px';
     const boxWidth = (clearBox[2] - clearBox[0]) * scale;
     const boxHeight = (clearBox[3] - clearBox[1]) * scale;
     const actionWidth = Math.max(46, boxWidth - 10);
@@ -476,24 +520,29 @@ export function createSignatureController(options) {
     applyModalZoom('sigPanel');
   }
 
-  function openModal() {
+  function openModal(other) {
+    target = other || null;
+    const inked = target ? target.hasInk : getHasInk();
+    if (target || typedForOther) typedName.value = target ? target.name : '';
+    typedForOther = Boolean(target);
     if (win.matchMedia('(min-width:761px)').matches) typedFont.value = 'simple';
     modal.classList.add('on');
     doc.body.style.overflow = 'hidden';
     fitModalToVisualViewport();
-    bigHasInk = getHasInk();
+    bigHasInk = inked;
     if (finePointer) {
-      if (!typedName.value) typedName.value = profileName();
-      setMode(getHasInk() ? 'draw' : 'type');
+      if (!typedName.value && !target) typedName.value = profileName();
+      setMode(inked ? 'draw' : 'type');
     } else setMode('draw');
     win.requestAnimationFrame(() => {
       sizeBig();
-      if (!getHasInk() && mode === 'draw')
+      if (!inked && mode === 'draw')
         bigContext.clearRect(0, 0, bigCanvas.width, bigCanvas.height);
     });
   }
 
   function closeModal() {
+    target = null;
     modal.classList.remove('on');
     doc.body.style.overflow = '';
     modal.style.left = '';
@@ -578,6 +627,20 @@ export function createSignatureController(options) {
   });
   modalCancelButton.addEventListener('click', closeModal);
   modalOkButton.addEventListener('click', () => {
+    if (target) {
+      const other = target;
+      const otherContext = other.canvas.getContext('2d');
+      otherContext.clearRect(0, 0, other.canvas.width, other.canvas.height);
+      if (bigHasInk) {
+        const scale = Math.min(other.canvas.width / bigCanvas.width, other.canvas.height / bigCanvas.height);
+        const width = bigCanvas.width * scale;
+        const height = bigCanvas.height * scale;
+        otherContext.drawImage(bigCanvas, (other.canvas.width - width) / 2, (other.canvas.height - height) / 2, width, height);
+      }
+      closeModal();
+      other.done(bigHasInk);
+      return;
+    }
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (bigHasInk) {
       const scale = Math.min(canvas.width / bigCanvas.width, canvas.height / bigCanvas.height);
@@ -631,6 +694,7 @@ export function createSignatureController(options) {
   updateStrokeControl();
 
   return {
+    accountPayload,
     clear,
     closeModal,
     closeSavePrompt,

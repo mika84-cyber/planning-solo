@@ -577,3 +577,17 @@
 .grand-palais-check-report { margin-top: 8px; }
 .grand-palais-check-report p { margin: 6px 0 2px; }
 .grand-palais-check-report ul { margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.45; }
+
+/* Veille du site : bandeau sombre réservé à l'administrateur. */
+.gp-watch { margin: 14px 0; border-radius: 18px; padding: 14px 16px; background: #4a1b0c; color: #faece7; }
+.gp-watch-head { display: flex; gap: 12px; align-items: center; }
+.gp-watch-icon { display: flex; flex: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: #712b13; color: #f5c4b3; }
+.gp-watch-icon svg { width: 20px; height: 20px; }
+.gp-watch h3 { margin: 0; color: #fff; font-size: 1rem; }
+.gp-watch-head p { margin: 2px 0 0; color: #f5c4b3; font-size: 0.86rem; font-weight: 700; }
+.gp-watch-head small { display: block; margin-top: 2px; color: #d9a99a; font-size: 0.74rem; }
+.gp-watch .gp-watch-message { margin: 10px 0 0; color: #fff; font-size: 0.84rem; }
+.gp-watch .grand-palais-check-report { margin-top: 10px; border-radius: 12px; padding: 8px 10px; background: rgba(255, 255, 255, 0.08); color: #faece7; }
+.gp-watch .grand-palais-check-report b { color: #fff; }
+.app-shell .gp-watch .grand-palais-check-button { display: block; width: 100%; margin-top: 12px; border: 0; border-radius: 999px; padding: 10px 14px; background: #faece7; color: #4a1b0c; font: inherit; font-size: 0.86rem; font-weight: 850; cursor: pointer; }
+.app-shell .gp-watch .grand-palais-check-button:disabled { background: #d9a99a; cursor: progress; }

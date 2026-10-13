@@ -1,1 +1,2 @@
 .admin-home-message{border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:17px;padding:18px;margin:15px 0;background:#fff;color:var(--muted)}.admin-home-message p{white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-home-message.holiday-reminder{display:grid;gap:6px}.admin-home-message.holiday-reminder strong{color:var(--text)}.admin-home-message.holiday-reminder p{margin:0}.admin-home-message.holiday-reminder .primary-action{justify-self:start;margin-top:6px}

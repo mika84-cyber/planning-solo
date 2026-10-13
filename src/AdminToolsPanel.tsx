@@ -4,9 +4,9 @@ import type { ColleagueGroup } from './colleagueGroups';
 import { matchesSearch } from './searchMatching';
 import { shareUsefulDocument } from './usefulDocumentsApi';
 import './adminTools.css';
-import { adminToolsApi as api, demoPin, setDemoPin, type Pin } from './adminToolsApi';
+import { adminToolsApi as api, demoHolidayReminder, demoPin, setDemoHolidayReminder, setDemoPin, type HolidayReminder, type Pin } from './adminToolsApi';
 type Overview = {
-  pin: Pin | null; groups: readonly ColleagueGroup[];
+  pin: Pin | null; holidayReminder: HolidayReminder | null; groups: readonly ColleagueGroup[];
   trash: Array<{ id: string; title: string; kind: string; deletedAt: string }>;
   jobs: Array<{ id: string; title: string; at: string; status: string; error?: string }>;
   alerts: Array<{ id: string; title: string; documentId: string; message?: string; total: number; seen: number; sent: number; emailsSent: number; unseenIds: string[]; createdAt: string }>;
@@ -16,6 +16,7 @@ const localInput = (date: string) => { const value = new Date(date); return new 
 function describeAction(payload: Record<string, unknown>) {
   switch (payload.action) {
     case 'pin': return payload.message ? 'Message enregistré : il s’affiche sur l’accueil de tous les comptes invités.' : 'Message retiré de l’accueil.';
+    case 'holiday-reminder': return payload.year ? `Rappel des jours fériés ${String(payload.year)} envoyé : il s’affiche sur l’accueil des comptes qui n’ont pas encore tout choisi.` : 'Rappel des jours fériés retiré.';
     case 'move-member': return `${String(payload.member)} déplacé·e dans le groupe ${String(payload.group)}.`;
     case 'remove-member': return `${String(payload.member)} retiré·e des trois groupes.`;
     case 'cancel-job': return 'Programmation annulée.';
@@ -27,7 +28,7 @@ function describeAction(payload: Record<string, unknown>) {
     default: return 'Modification enregistrée.';
   }
 }
-const demoOverview = (): Overview => ({ pin: demoPin, trash: [{ id: 'demo-trash', title: 'Ancien formulaire de congés', kind: 'document', deletedAt: new Date(Date.now() - 2 * 86400000).toISOString() }], jobs: [{ id: 'demo-job', title: 'Planning d’octobre', at: new Date(Date.now() - 86400000).toISOString(), status: 'done' }], alerts: [{ id: 'demo-alert', title: 'Consignes exposition', documentId: 'demo-document', total: 5, seen: 3, sent: 5, emailsSent: 5, unseenIds: ['demo-a', 'demo-b'], createdAt: new Date(Date.now() - 86400000).toISOString() }], groups: [1, 2, 3].map(number => ({ number: number as 1 | 2 | 3, members: number === 1 ? ['Camille Exemple'] : number === 2 ? ['Alex Exemple'] : [] })) });
+const demoOverview = (): Overview => ({ pin: demoPin, holidayReminder: demoHolidayReminder, trash: [{ id: 'demo-trash', title: 'Ancien formulaire de congés', kind: 'document', deletedAt: new Date(Date.now() - 2 * 86400000).toISOString() }], jobs: [{ id: 'demo-job', title: 'Planning d’octobre', at: new Date(Date.now() - 86400000).toISOString(), status: 'done' }], alerts: [{ id: 'demo-alert', title: 'Consignes exposition', documentId: 'demo-document', total: 5, seen: 3, sent: 5, emailsSent: 5, unseenIds: ['demo-a', 'demo-b'], createdAt: new Date(Date.now() - 86400000).toISOString() }], groups: [1, 2, 3].map(number => ({ number: number as 1 | 2 | 3, members: number === 1 ? ['Camille Exemple'] : number === 2 ? ['Alex Exemple'] : [] })) });
 
 
 export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { demoMode: boolean; onClose: () => void; onPreview: () => void; onChanged: () => void }) {
@@ -40,6 +41,8 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
   const blurTimer = useRef<number | undefined>(undefined);
   const [confirmation, setConfirmation] = useState<Overview['alerts'][number] | null>(null);
   const [jobDates, setJobDates] = useState<Record<string, string>>({});
+  const thisYear = new Date().getFullYear();
+  const [reminderYear, setReminderYear] = useState(thisYear + 1);
   useEffect(() => {
     if (!status) return;
     const timer = window.setTimeout(() => setStatus(''), 5000);
@@ -57,6 +60,7 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
     try {
       if (demoMode) {
         if (payload.action === 'pin') { setDemoPin(payload.message ? { message: String(payload.message), until: String(payload.until) } : null); setData(current => current && { ...current, pin: demoPin }); }
+        if (payload.action === 'holiday-reminder') { setDemoHolidayReminder(payload.year ? { year: Number(payload.year), sentAt: new Date().toISOString(), until: new Date(Number(payload.year) + 1, 0, 1).toISOString() } : null); setData(current => current && { ...current, holidayReminder: demoHolidayReminder }); }
         if (payload.action === 'move-member') setData(current => current && { ...current, groups: current.groups.map(item => ({ ...item, members: [...item.members.filter(name => name !== payload.member), ...(item.number === payload.group ? [String(payload.member)] : [])].sort((a, b) => a.localeCompare(b, 'fr')) })) });
         if (payload.action === 'remove-member') setData(current => current && { ...current, groups: current.groups.map(item => ({ ...item, members: item.members.filter(name => name !== payload.member) })) });
         if (payload.action === 'dismiss-alert') setData(current => current && { ...current, alerts: current.alerts.filter(item => item.id !== payload.id) });
@@ -88,6 +92,14 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
         <label>Afficher jusqu’au<input type="datetime-local" required value={until} onChange={event => setUntil(event.target.value)} /></label><small>Heure de cet appareil · Tous les comptes invités.</small>
         <button type="submit" disabled={busy || !message.trim() || !until}>Enregistrer le message</button>{data.pin && <button type="button" disabled={busy} onClick={() => void act({ action: 'pin', message: '' })}>Retirer le message</button>}
       </form></details>
+      <details><summary>Rappel des jours fériés{data.holidayReminder ? ` · ${data.holidayReminder.year} envoyé` : ''}</summary>
+        <p>Le rappel apparaît sur l’accueil des autres comptes dès que vous l’envoyez : il les invite à choisir le traitement de leurs jours fériés de l’année (prime seule, prime + récup ou échange), avec un bouton qui ouvre directement « Primes et jours fériés ». Il disparaît pour chacun dès que tous ses fériés sont choisis, et au plus tard le 31 décembre.</p>
+        {data.holidayReminder ? <p className="admin-member-selected">Rappel des jours fériés {data.holidayReminder.year} envoyé le {formatDate(data.holidayReminder.sentAt)}.</p> : null}
+        <form onSubmit={event => { event.preventDefault(); if (window.confirm(`Envoyer aux autres comptes le rappel des jours fériés ${reminderYear} ?`)) void act({ action: 'holiday-reminder', year: reminderYear }); }}>
+          <label>Année<select value={reminderYear} onChange={event => setReminderYear(Number(event.target.value))}>{[thisYear, thisYear + 1].map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+          <div><button type="submit" disabled={busy}>Envoyer le rappel {reminderYear}</button>{data.holidayReminder && <button type="button" disabled={busy} onClick={() => void act({ action: 'holiday-reminder', year: null })}>Retirer le rappel</button>}</div>
+        </form>
+      </details>
       <details><summary>Publications programmées ({data.jobs.filter(job => job.status === 'pending').length})</summary><p>Programmez un document depuis « Ajouter un document », ou une alerte depuis son bouton de partage. Vérification toutes les cinq minutes.</p>
         {data.jobs.length ? data.jobs.map(job => <article key={job.id}><button type="button" className="admin-dismiss" aria-label={`Effacer la publication ${job.title}`} title="Effacer" disabled={busy} onClick={() => { if (job.status === 'pending' && !window.confirm(`Effacer « ${job.title} » ? La publication programmée sera annulée.`)) return; void act({ action: 'delete-job', id: job.id }); }}>×</button><strong>{job.title}</strong><p>{formatDate(job.at)} · {({ pending: 'Programmée', done: 'Terminée', cancelled: 'Annulée', error: 'À vérifier' } as Record<string, string>)[job.status]}</p>{job.error && <p role="alert">{job.error}</p>}{job.status === 'pending' && <button type="button" disabled={busy} onClick={() => void act({ action: 'cancel-job', id: job.id })}>Annuler la programmation</button>}{['pending', 'cancelled'].includes(job.status) && <form onSubmit={event => { event.preventDefault(); void act({ action: 'reschedule-job', id: job.id, at: new Date(jobDates[job.id]).toISOString() }); }}><label>Nouvelle date<input type="datetime-local" required value={jobDates[job.id] || ''} onChange={event => setJobDates(current => ({ ...current, [job.id]: event.target.value }))} /></label><button type="submit" disabled={busy || !jobDates[job.id]}>Reprogrammer</button></form>}</article>) : <p>Aucune publication programmée.</p>}
       </details>

@@ -1478,6 +1478,41 @@ fieldset.leave-choices {
 .work-exchange-holiday-list button strong { font-size: 0.86rem; }
 .work-exchange-holiday-list button small { color: var(--muted); font-size: 0.74rem; font-weight: 700; }
 .app-shell .work-exchange-holiday-list button.selected { border: 2px solid #5eb6c4; background: #eef8fa; }
+/* Échange : deux onglets (jour ordinaire ou férié) et les horaires de chaque journée. */
+.work-exchange-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 4px 0 10px; padding: 4px; border: 1px solid #e3d9cc; border-radius: 999px; background: #f7f2ea; }
+.app-shell .work-exchange-tabs button { min-height: 34px; margin: 0; border: 0; border-radius: 999px; padding: 6px 10px; background: transparent; box-shadow: none; color: var(--muted); font: inherit; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
+.app-shell .work-exchange-tabs button.active { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(44, 38, 33, 0.14); }
+.work-exchange-hours { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.work-exchange-hours .clock-time-field > span:first-child { font-size: 0.74rem; font-weight: 800; color: var(--muted); }
 .calendar-grid .day .exchange-calendar-marker.holiday-exchange,
 .mini-grid .mini-day .exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
 .work-exchange-list article.holiday-exchange header img { box-sizing: border-box; border-radius: 50%; padding: 2px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
+
+/* « Pour bien démarrer » : liste de progression. Toutes les étapes restent
+   visibles, cochées une fois faites ; chaque étape à faire est un raccourci. */
+.home-setup-checklist > header { justify-content: space-between; }
+.app-shell .home-setup-steps .home-setup-skip { position: relative; z-index: 2; display: block; min-height: 0; margin: 3px 0 0; border: 0; padding: 0; background: transparent; box-shadow: none; color: var(--accent); font: inherit; font-weight: 750; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; white-space: nowrap; }
+.home-setup-steps .home-setup-row { position: relative; }
+.app-shell .home-setup-steps .home-setup-main { min-height: 0; margin: 0; border: 0; padding: 0; background: transparent; box-shadow: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.home-setup-steps .home-setup-main::after { content: ""; position: absolute; inset: 0; border-radius: 14px; }
+.home-setup-steps li:not(.done):not(.skipped) .home-setup-row:hover { border-color: var(--accent); }
+.home-setup-steps li.skipped .home-setup-row { background: transparent; }
+.home-setup-steps li.skipped .home-setup-mark { border-color: var(--muted); color: var(--muted); }
+.home-setup-steps li.skipped .home-setup-text strong { color: var(--muted); }
+.home-setup-progress { height: 6px; margin: 2px 0 12px; border-radius: 999px; background: rgba(44, 38, 33, 0.1); overflow: hidden; }
+.home-setup-progress > span { display: block; height: 100%; border-radius: inherit; background: #2f7d5b; transition: width 0.3s ease; }
+.home-setup-steps { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.app-shell .home-setup-steps .home-setup-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 0; margin: 0; border: 1px solid var(--border-card); border-radius: 14px; padding: 10px 12px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: left; }
+.app-shell .home-setup-steps button.home-setup-row { cursor: pointer; }
+.app-shell .home-setup-steps button.home-setup-row:hover { border-color: var(--accent); }
+.home-setup-mark { display: flex; flex: none; align-items: center; justify-content: center; width: 26px; height: 26px; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-size: 0.8rem; font-weight: 900; }
+.home-setup-text { display: grid; flex: 1; gap: 1px; min-width: 0; }
+.home-setup-text strong { font-size: 0.92rem; }
+.home-setup-text small { color: var(--muted); font-size: 0.78rem; }
+.home-setup-chevron { color: var(--muted); font-size: 1.3rem; line-height: 1; }
+.home-setup-steps li.done .home-setup-row { background: transparent; }
+.home-setup-steps li.done .home-setup-mark { border-color: #2f7d5b; background: #2f7d5b; color: #fff; }
+.home-setup-steps li.done .home-setup-text strong { color: var(--muted); }
+.home-setup-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.home-setup-tip { display: flex; gap: 8px; align-items: flex-start; margin: 10px 2px 0; color: var(--muted); font-size: 0.8rem; line-height: 1.45; }
+.home-setup-tip b { color: var(--text); }

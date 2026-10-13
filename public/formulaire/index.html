@@ -52,6 +52,12 @@
   <button type="button" class="btn neutral" id="pageRemove">Supprimer cette feuille</button>
 </div>
 
+<div id="lineOrder" role="group" aria-label="Première ligne du formulaire" hidden>
+  <span>En première ligne</span>
+  <button type="button" data-order="" aria-pressed="true">Vous</button>
+  <button type="button" data-order="2" aria-pressed="false">Le collègue</button>
+</div>
+
 <div class="stage" id="stage">
   <div class="paper" id="paper">
     <img id="bg" alt="Formulaire" decoding="async" fetchpriority="high">
@@ -60,6 +66,9 @@
     <button type="button" id="sigclear">Recommencer la signature</button>
     <button type="button" id="sigSaveManual">Enregistrer cette signature</button>
     <button type="button" id="sigSavedDelete" aria-label="Supprimer la signature enregistrée" title="Supprimer la signature enregistrée">×</button>
+    <div id="sighint2" hidden>Signature du collègue</div>
+    <canvas id="sig2" hidden aria-label="Signature du collègue"></canvas>
+    <button type="button" id="sigclear2" hidden>Effacer sa signature</button>
   </div>
 </div>
 

@@ -15,7 +15,7 @@ import {
   readFileArrayBuffer as readArrayBuffer,
   readImageAttachment as readImage,
 } from './form-file-utils.js';
-import { createSignatureController } from './form-signature-controller.js';
+import { createSignatureController, drawSignature } from './form-signature-controller.js';
 
 (function(){
 "use strict";
@@ -71,6 +71,12 @@ var store = (function(){
   return { get:function(){ return Promise.resolve(null); }, set:function(){ return Promise.resolve(); } };
 })();
 function key(){ return 'demandes:v4:' + M.id; }
+/* Demande d'échange : la personne dont le repos vient en premier occupe la
+   première ligne. Quand c'est le collègue, son nom et sa signature passent
+   en haut et ceux de l'agent en bas ; les dates restent à leur place. */
+function swapped(){ var i=byName.ordre; return i!==undefined && !!inputs[i] && inputs[i].value==='2'; }
+function boxOf(f){ return swapped() && f.b2 ? f.b2 : f.b; }
+function sheetModel(){ return M && swapped() ? Object.assign({},M,{sig:M.sig2,clr:M.clr2}) : M; }
 function planningOwnerSuffix(){
   var owner=(typeof planningImport!=='undefined' && planningImport && planningImport.ownerKey) || '';
   return owner ? ':'+encodeURIComponent(String(owner).trim().toLowerCase()) : '';
@@ -149,7 +155,7 @@ function setVal(i, v, silent){
   if(!silent) scheduleSave();
 }
 function onEdit(i, raw){
-  var f = IF[i], v = clean(f, raw);
+  var f = IF[i], v = clean(f, raw), avant = inputs[i].value;
   inputs[i].value = v;
   inputs[i].classList.toggle('has', v !== '');
   if(f.k === 'time') paintCells(f.n, v);
@@ -160,6 +166,10 @@ function onEdit(i, raw){
   });
   refreshAtt();
   if(f.n === 'nom' || f.n === 'groupe') profileWrite();
+  /* Demande d'échange : les dates et horaires de la première partie se
+     reportent dans celle du collègue, tant qu'elle n'a pas été modifiée. */
+  var copie = M.mirror && byName[M.mirror[f.n]];
+  if(copie !== undefined && (!inputs[copie].value || inputs[copie].value === avant)) onEdit(copie, v);
   scheduleSave();
   return v;
 }
@@ -349,6 +359,7 @@ function loadSheet(idx){
         if(f.k === 'time'){ el.setAttribute('inputmode','none'); el.maxLength = 5; el.readOnly = true; }
         if(f.k === 'timerange'){ el.setAttribute('inputmode','none'); el.maxLength = 15; el.readOnly = true; }
         if(f.k === 'soit'){ el.setAttribute('inputmode','decimal'); el.maxLength = 6; }
+        if(f.k === 'flag') el.hidden = true;
       }
       el.setAttribute('aria-label', f.l);
       byName[f.n] = inputs.length;
@@ -366,10 +377,14 @@ function loadSheet(idx){
     }
     var z = document.createElement('div');
     z.className = 'zone' + ((f.k === 'time' || f.k === 'timerange') ? ' z0' : '');
+    if(f.k === 'flag') z.hidden = true;
     track(el); track(z);
     f.el = el; f.zn = z;
   });
   IF = M.fields.filter(function(f){ return f.i; });
+  [sig2, hint2, clr2].forEach(function(el){ el.hidden = !M.sig2; });
+  clearSig2();
+  lineOrder.hidden = !M.swap;
 
 
   checkState = {};
@@ -425,7 +440,7 @@ function loadSheet(idx){
   applyZoom(); layout();
   pageSnapshots = [null]; pageIndex = 0; pageCount = 1; updatePageUI();
   return restore().then(function(){ return restoreSavedSignature(); }).then(function(){
-    applyProfile(); prefill(); recalcAll(); refreshAtt(); layout(); updateSignaturePersistenceUI();
+    applyProfile(); prefill(); recalcAll(); refreshAtt(); layout(); updateSignaturePersistenceUI(); fillAccountName();
   });
 }
 
@@ -449,7 +464,7 @@ function layout(){
   if(!w) return;
   var s = w / IW;
   M.fields.forEach(function(f){
-    var b = f.b, h = (b[3]-b[1])*s, fs = h*(f.r || 0.70)*0.97, el = f.el, z = f.zn;
+    var b = boxOf(f), h = (b[3]-b[1])*s, fs = h*(f.r || 0.70)*0.97, el = f.el, z = f.zn;
     var L = b[0]*s, T = (b[1] + (f.dy || 0))*s, Wd = (b[2]-b[0])*s;
     // Les horaires utilisent exactement la même taille, graisse et hauteur que les dates.
     var hourDrop = 0;
@@ -489,6 +504,10 @@ function layout(){
   });
 
   sizeSig(s);
+  if(M.sig2) sizeSig2(s);
+  if(M.swap) Array.prototype.forEach.call(lineOrder.querySelectorAll('button'), function(b){
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-order') === (swapped() ? '2' : '')));
+  });
 }
 function applyZoom(){
   var v = document.getElementById('zoom').value;
@@ -540,8 +559,10 @@ function openEditor(i){
 function closeEditor(){ editBox.classList.remove('on'); cur = -1; }
 function go(step){
   var i = cur < 0 ? 0 : cur + step;
+  while(IF[i] && IF[i].k === 'flag') i += step < 0 ? -1 : 1;
   if(i < 0) i = 0;
   if(i >= inputs.length) i = inputs.length - 1;
+  while(i > 0 && IF[i].k === 'flag') i--;
   inputs[i].scrollIntoView({block:'center', behavior:'smooth'});
   openEditor(i);
   if(!coarse) inputs[i].focus();
@@ -728,7 +749,7 @@ var signatureController = createSignatureController({
     saveNoButton:document.getElementById('sigSaveNo')
   },
   canvasScale:SS,
-  getModel:function(){ return M; },
+  getModel:sheetModel,
   getHasInk:function(){ return hasInk; },
   setHasInk:function(value){ hasInk=value; },
   getPdfDone:function(){ return pdfDone; },
@@ -755,6 +776,18 @@ var signatureController = createSignatureController({
 });
 function mobileSignaturePersistence(){ return signatureController.mobilePersistence(); }
 function updateSignaturePersistenceUI(){ signatureController.updatePersistenceUI(); }
+/* « Prénom - Nom » vide : le nom du profil de l'application, sinon celui du
+   compte Netlify. Il n'écrase jamais un nom déjà saisi. */
+function fillAccountName(){
+  if(byName.nom === undefined || inputs[byName.nom].value) return;
+  signatureController.accountPayload().then(function(payload){
+    var profile = payload && payload.form_profile;
+    var name = (profile && typeof profile.full_name === 'string' && profile.full_name.trim()) ||
+      (payload && typeof payload.account_name === 'string' && payload.account_name.trim()) || '';
+    var i = byName.nom;
+    if(name && i !== undefined && !inputs[i].value) onEdit(i, name.slice(0, 120));
+  });
+}
 function restoreSavedSignature(){
   /* D'abord la signature gardée sur cet appareil, sinon celle du compte. */
   return signatureController.restoreSaved().then(function(){ return signatureController.restoreFromAccount(); });
@@ -766,6 +799,66 @@ function sizeBig(){ signatureController.sizeBig(); }
 function openSigModal(){ signatureController.openModal(); }
 function closeSigModal(){ signatureController.closeModal(); }
 function closeSigSavePrompt(){ signatureController.closeSavePrompt(); }
+
+/* Seconde signature (le collègue d'un échange) : elle passe par la même
+   fenêtre, mais reste propre à ce formulaire. */
+var sig2 = document.getElementById('sig2'), sctx2 = sig2.getContext('2d');
+/* Échange : qui occupe la première ligne, l'agent ou le collègue. */
+var lineOrder = document.getElementById('lineOrder');
+lineOrder.addEventListener('click', function(e){
+  var b = e.target.closest('button[data-order]');
+  if(!b || !M || byName.ordre === undefined) return;
+  onEdit(byName.ordre, b.getAttribute('data-order'));
+  layout();
+  say(swapped() ? 'Le collègue est en première ligne.' : 'Vous êtes en première ligne.');
+});
+var hint2 = document.getElementById('sighint2'), clr2 = document.getElementById('sigclear2');
+var hasInk2 = false;
+function sig2Box(){ return swapped() ? M.sig : M.sig2; }
+function clr2Box(){ return swapped() ? M.clr : M.clr2; }
+function paintSig2(ink){
+  hasInk2 = ink;
+  sig2.classList.toggle('has', ink);
+  hint2.style.display = ink ? 'none' : '';
+  clr2.style.display = ink ? 'block' : 'none';
+}
+function clearSig2(){ sctx2.clearRect(0,0,sig2.width,sig2.height); paintSig2(false); }
+function drawSig2(data){
+  if(!data) return;
+  var im = new Image();
+  im.onload = function(){ sctx2.clearRect(0,0,sig2.width,sig2.height); sctx2.drawImage(im,0,0,sig2.width,sig2.height); paintSig2(true); };
+  im.src = data;
+}
+function sizeSig2(s){
+  var b = sig2Box(), c = clr2Box();
+  [sig2, hint2].forEach(function(el){
+    el.style.left = (b[0]*s)+'px'; el.style.top = (b[1]*s)+'px';
+    el.style.width = ((b[2]-b[0])*s)+'px'; el.style.height = ((b[3]-b[1])*s)+'px';
+  });
+  hint2.style.lineHeight = ((b[3]-b[1])*s)+'px';
+  hint2.style.fontSize = Math.max(7, Math.min(12, 30*s))+'px';
+  clr2.style.left = (c[0]*s+5)+'px'; clr2.style.top = (c[1]*s)+'px';
+  clr2.style.width = Math.max(46,(c[2]-c[0])*s-10)+'px';
+  clr2.style.fontSize = Math.max(7, Math.min(13, 19*s))+'px';
+  var w = (b[2]-b[0])*SS, h = (b[3]-b[1])*SS;
+  if(sig2.width !== w || sig2.height !== h){
+    var data = hasInk2 ? sig2.toDataURL('image/png') : '';
+    sig2.width = w; sig2.height = h;
+    if(data) drawSig2(data);
+  }
+}
+sig2.addEventListener('pointerdown', function(e){
+  e.preventDefault(); closeEditor();
+  signatureController.openModal({
+    canvas:sig2, hasInk:hasInk2,
+    name:(byName.collegue !== undefined ? inputs[byName.collegue].value.trim() : ''),
+    done:function(ink){ paintSig2(ink); pdfDone=false; scheduleSave(); }
+  });
+});
+clr2.addEventListener('click', function(e){
+  e.preventDefault(); clearSig2(); pdfDone=false; scheduleSave();
+  say('Signature du collègue effacée.');
+});
 
 /* ================= calendrier ================= */
 var MOIS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -795,8 +888,9 @@ JOURS_FR.forEach(function(j){
 
 function activeGroup(){
   var i=byName.groupe;
-  if(i === undefined || !inputs[i]) return 0;
-  var m=String(inputs[i].value||'').match(/(?:^|\D)([123])(?:\D|$)/);
+  /* Sans case « Groupe » sur la feuille, le groupe du profil donne le cycle. */
+  var v=i === undefined || !inputs[i] ? profileRead().groupe : inputs[i].value;
+  var m=String(v||'').match(/(?:^|\D)([123])(?:\D|$)/);
   return m ? +m[1] : 0;
 }
 function cycleInfo(d){
@@ -808,6 +902,16 @@ function updateCycleInfo(){
                    : 'Indiquez 1, 2 ou 3 dans le champ « Groupe » pour activer le planning.';
   var hc=document.getElementById('calHolidayCount');
   if(hc) hc.textContent=g && calView ? countWorkedHolidays(calView.y,g)+' jours fériés travaillés en '+calView.y : '';
+}
+/* Jours que la case de date permet de choisir : par défaut les jours
+   travaillés, seulement les jours de repos pour la date d'échange, et tous
+   les jours pour celles du collègue, dont le cycle n'est pas connu. */
+function daySelectable(ci){
+  var f=calField >= 0 ? IF[calField] : null;
+  var mode=!f ? '' : (swapped() && 'cal2' in f ? f.cal2 : f.cal);
+  if(mode === 'any') return true;
+  if(mode === 'off') return ci.kind === 'off' || ci.kind === 'unknown';
+  return ci.selectable;
 }
 function sameCalendarDay(a,b){
   return !!a && !!b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
@@ -913,6 +1017,8 @@ function renderCal(){
     if(ci.kind==='off'){
       b.classList.add('off');
       if(ci.special) b.classList.add('special-off');
+    }
+    if(!daySelectable(ci)){
       b.disabled=true;
       b.setAttribute('aria-disabled','true');
     }
@@ -924,14 +1030,13 @@ function renderCal(){
     } else if(calSel && sameCalendarDay(d,calSel)) {
       b.classList.add('sel'); b.setAttribute('aria-pressed','true');
     }
-    (function(dd, info){ b.addEventListener('click', function(){ if(info.selectable) pickDay(dd); }); })(d,ci);
+    (function(dd, info){ b.addEventListener('click', function(){ if(daySelectable(info)) pickDay(dd); }); })(d,ci);
     calGrid.appendChild(b);
   }
 }
 function pickDay(d){
   if(!d) return;
-  var ci=cycleInfo(d);
-  if(!ci.selectable) return;
+  if(!daySelectable(cycleInfo(d))) return;
   if(calRangeRow){
     if(!calRangeAwaitingEnd || !calRangeStart){
       calRangeStart=new Date(d.getFullYear(),d.getMonth(),d.getDate());
@@ -993,7 +1098,7 @@ function updateSameDateButton(){
   b.textContent = v ? 'Dupliquer la date du ' + v : 'Dupliquer la date « du »';
 }
 function openCalendar(i){
-  if(!activeGroup()){
+  if(!activeGroup() && byName.groupe !== undefined){
     alert('Renseignez d’abord le groupe pour faire apparaître votre cycle de travail.');
     var gi=byName.groupe;
     if(gi !== undefined && inputs[gi]){
@@ -1120,7 +1225,8 @@ document.addEventListener('keydown', function(e){
 function capturePage(){
   return { v:inputs.map(function(el){return el.value;}),
            m:inputs.map(function(el){return el.dataset.manual==='1'?1:0;}),
-           c:Object.assign({},checkState), s:hasInk?sig.toDataURL('image/png'):'' };
+           c:Object.assign({},checkState), s:hasInk?sig.toDataURL('image/png'):'',
+           s2:hasInk2?sig2.toDataURL('image/png'):'' };
 }
 function applyPageState(d){
   d=d||{v:[],m:[],c:{},s:''};
@@ -1129,6 +1235,7 @@ function applyPageState(d){
   (M.checks||[]).forEach(function(c){checkState[c.n]=!!(d.c&&d.c[c.n]);paintCheck(c);});
   sctx.clearRect(0,0,sig.width,sig.height); hasInk=false; sig.classList.remove('has'); hint.style.display='';
   if(d.s){ var im=new Image(); im.onload=function(){sctx.drawImage(im,0,0,sig.width,sig.height);hasInk=true;sig.classList.add('has');hint.style.display='none';updateClr();}; im.src=d.s; }
+  clearSig2(); drawSig2(d.s2);
   recalcAll(); refreshAtt(); layout();
 }
 function blankPageFrom(first){
@@ -1183,6 +1290,7 @@ function scheduleSave(){
       /* Sur mobile, la signature n'est conservée que dans l'emplacement dédié
          après un consentement explicite. Le formulaire courant ne la sauvegarde pas en parallèle. */
       base.s = withSig && hasInk && !mobileSignaturePersistence() ? sig.toDataURL('image/png') : '';
+      base.s2 = withSig && hasInk2 ? sig2.toDataURL('image/png') : '';
       return store.set(key(), JSON.stringify(base));
     }
     try{
@@ -1207,6 +1315,7 @@ function restore(){
       checkState[c.n] = !!(d.c && d.c[c.n]);
       paintCheck(c);
     });
+    drawSig2(d.s2);
     if(d.s && !mobileSignaturePersistence()){
       var im = new Image();
       im.onload = function(){
@@ -1238,8 +1347,24 @@ function estDatePassee(v){
   auj.setHours(0,0,0,0);
   return d < auj;
 }
+/* « Vider » se confirme d'un second appui sur le même bouton : la fenêtre de
+   confirmation du navigateur est bloquée dans certaines applications et
+   répondait « non » sans s'afficher, ce qui laissait tout en place. */
+var resetArmed = null;
+function disarmReset(){
+  var b = document.getElementById('btnReset');
+  clearTimeout(resetArmed); resetArmed = null;
+  b.classList.remove('armed'); b.querySelector('span').textContent = 'Vider';
+}
 document.getElementById('btnReset').addEventListener('click', function(){
-  if(!confirm('Vider « ' + M.name + ' » ?')) return;
+  var b = this;
+  if(!resetArmed){
+    b.classList.add('armed'); b.querySelector('span').textContent = 'Confirmer';
+    say('Touchez à nouveau pour vider « ' + M.name + ' ».');
+    resetArmed = setTimeout(disarmReset, 4000);
+    return;
+  }
+  disarmReset();
   inputs.forEach(function(el, i){
     el.value = ''; el.classList.remove('has'); delete el.dataset.manual;
   });
@@ -1251,7 +1376,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   calRangeHelpShown = false;
   hideRangeHelp();
   effacerErreurs();
-  clearSig(); closeEditor(); applyProfile(); prefill(true); recalcAll(); refreshAtt();
+  clearSig(); clearSig2(); closeEditor(); applyProfile(); prefill(true); recalcAll(); refreshAtt(); layout();
   restoreSavedSignature();
   if(pageCount>1) pageSnapshots[pageIndex]=capturePage(); scheduleSave();
   say('Formulaire vidé.'); showToast('Formulaire vidé');
@@ -1308,7 +1433,7 @@ function buildPdf(snap){
     if(!f.d) return;
     var v = valueOf(f, snap);
     if(!v) return;
-    var x0=f.b[0]*K, y0=(f.b[1] + (f.dy || 0))*K, x1=f.b[2]*K, y1=(f.b[3] + (f.dy || 0))*K;
+    var fb=boxOf(f), x0=fb[0]*K, y0=(fb[1] + (f.dy || 0))*K, x1=fb[2]*K, y1=(fb[3] + (f.dy || 0))*K;
     if(f.e){ pdf.setFillColor(f.p[0],f.p[1],f.p[2]); pdf.rect(x0,y0,x1-x0,y1-y0,'F'); }
     // largeur de centrage : toute la colonne (f.cx) si definie, sinon la zone propre du champ
     var cx0 = f.cx ? f.cx[0]*K : x0, cx1 = f.cx ? f.cx[1]*K : x1;
@@ -1346,9 +1471,15 @@ function buildPdf(snap){
   });
   var sigData=snap ? snap.s : (hasInk?sig.toDataURL('image/png'):'');
   if(sigData){
-    var SB = M.sig;
+    var SB = sheetModel().sig;
     pdf.addImage(sigData, 'PNG',
                  SB[0]*K, SB[1]*K, (SB[2]-SB[0])*K, (SB[3]-SB[1])*K, undefined, 'FAST');
+  }
+  var sig2Data=snap ? snap.s2 : (hasInk2?sig2.toDataURL('image/png'):'');
+  if(sig2Data && M.sig2){
+    var S2 = sig2Box();
+    pdf.addImage(sig2Data, 'PNG',
+                 S2[0]*K, S2[1]*K, (S2[2]-S2[0])*K, (S2[3]-S2[1])*K, undefined, 'FAST');
   }
   return pdf;
 }
@@ -1381,12 +1512,14 @@ function controler(){
   }
 
   if(!valeur('nom'))    faute('le nom et le prénom', 'nom');
-  if(!valeur('groupe')) faute('le groupe', 'groupe');
+  if(byName.groupe !== undefined && !valeur('groupe')) faute('le groupe', 'groupe');
+  if(byName.collegue !== undefined && !valeur('collegue')) faute('le prénom et le nom du collègue', 'collegue');
 
   var remplies = 0;
   M.rows.forEach(function(r){
     var vf = valeur(r.f), vt = r.t ? valeur(r.t) : '', vd = r.de ? valeur(r.de) : '',
         va = r.ar ? valeur(r.ar) : '', vs = valeur(r.s);
+    if(r.q && !vf){ faute(intituleLigne(r) + ' : date non renseignée', r.f); return; }
     if(!(vf || vt || vd || va)) return;
     remplies++;
     var lab = intituleLigne(r);
@@ -1399,7 +1532,7 @@ function controler(){
       faute(lab + ' : heure de fin ' + (va ? 'incomplète' : 'non renseignée'), r.ar);
     if(r.de && r.ar && heureValide(vd) && heureValide(va) && minutes(va) <= minutes(vd))
       faute(lab + ' : l’heure de fin doit être après l’heure de début', r.ar);
-    if(!vs)                        faute(lab + ' : colonne « soit » vide', r.s);
+    if(r.s && !vs)                 faute(lab + ' : colonne « soit » vide', r.s);
     if(r.m && !valeur(r.m))        faute(lab + ' : motif non renseigné', r.m);
   });
   if(!remplies){
@@ -1434,6 +1567,14 @@ function avertissementsPlanning(){
     var d1=parseD(vf), d2=parseD(vt||vf);
     if(!d1 || !d2) return;
     if(d2<d1){ var tmp=d1; d1=d2; d2=tmp; }
+    /* Échange : le repos demandé tombe un jour travaillé, et le jour pris
+       en échange un jour de repos. */
+    if(r.k==='ech'){
+      var kind=cycleInfo(d1).kind, w=swapped() ? r.w2 : r.w;
+      if(w==='work' && kind==='off') warnings.push(intituleLigne(r)+' : vous êtes déjà en repos ce jour-là');
+      if(w==='off' && kind!=='off' && kind!=='unknown') warnings.push(intituleLigne(r)+' : vous travaillez déjà ce jour-là');
+      return;
+    }
     var off=[], feries=[];
     for(var d=new Date(d1.getTime()), guard=0; d<=d2 && guard<370; d.setDate(d.getDate()+1),guard++){
       var ci=cycleInfo(d);
@@ -1451,12 +1592,16 @@ function avertissementsPlanning(){
   });
   return warnings;
 }
+function titreAvertissement(){
+  return M.id === 'echange' ? 'Attention : vérifiez les dates de l’échange.\n\n'
+    : 'Attention : la période sélectionnée contient des jours non travaillés.\n\n';
+}
 function confirmerAvantPdf(){
   var r = controler();
   if(!r.P.length){
     var w0=avertissementsPlanning();
     if(w0.length){
-      return confirm('Attention : la période sélectionnée contient des jours non travaillés.\n\n'
+      return confirm(titreAvertissement()
         + w0.slice(0,6).map(function(t){return '• '+t;}).join('\n')
         + (w0.length>6?'\n• …':'' )
         + '\n\nOK : continuer.\nAnnuler : revenir au formulaire.');
@@ -1478,7 +1623,7 @@ function confirmerAvantPdf(){
     effacerErreurs();
     var w=avertissementsPlanning();
     if(w.length){
-      ok=confirm('Attention : la période sélectionnée contient des jours non travaillés.\n\n'
+      ok=confirm(titreAvertissement()
         + w.slice(0,6).map(function(t){return '• '+t;}).join('\n')
         + (w.length>6?'\n• …':'' )
         + '\n\nOK : continuer.\nAnnuler : revenir au formulaire.');
@@ -1515,6 +1660,9 @@ async function buildPdfBytes(){
     var boxH = (M.id === 'conges') ? 84.8 : 48;
     var boxX = (M.id === 'conges') ? 257.1 : (ps.width - boxW) / 2;
     var boxY = (M.id === 'conges') ? 36.9 : 46;
+    /* Une feuille peut fixer son cadre : x, y depuis le bas, largeur, hauteur
+       et hauteur du bandeau de titre. */
+    if(M.obs){ boxX = M.obs[0]; boxY = M.obs[1]; boxW = M.obs[2]; boxH = M.obs[3]; }
     obsPage.drawRectangle({
       x:boxX, y:boxY, width:boxW, height:boxH,
       /* Même trait que les cadres de signature voisins, plus appuyé. */
@@ -1523,7 +1671,7 @@ async function buildPdfBytes(){
       color:PDFLib.rgb(1,1,1), opacity:.97
     });
     /* Ligne de séparation du titre, alignée sur celles des cadres voisins. */
-    var obsHeaderY = (M.id === 'conges') ? 94.3 : boxY + boxH - 15;
+    var obsHeaderY = (M.id === 'conges') ? 94.3 : boxY + boxH - (M.obs ? M.obs[4] : 15);
     obsPage.drawLine({
       start:{x:boxX,y:obsHeaderY}, end:{x:boxX+boxW,y:obsHeaderY},
       thickness:1.1, color:PDFLib.rgb(.08,.08,.08)
@@ -1548,14 +1696,14 @@ async function buildPdfBytes(){
       else line=test;
     }
     if(line) lines.push(line);
-    var maxLines=(M.id === 'conges') ? 8 : 6;
+    var maxLines=(M.id === 'conges') ? 8 : M.obs ? Math.floor((obsHeaderY - boxY - 14) / 6.2) + 1 : 6;
     if(lines.length>maxLines){
       lines=lines.slice(0,maxLines);
       var last=lines[maxLines-1];
       while(last && obsBold.widthOfTextAtSize(last+'…',fontSize)>usable) last=last.slice(0,-1);
       lines[maxLines-1]=last+'…';
     }
-    var y=(M.id === 'conges') ? obsHeaderY-11 : boxY+boxH-18;
+    var y=(M.id === 'conges' || M.obs) ? obsHeaderY-11 : boxY+boxH-18;
     lines.forEach(function(t){
       obsPage.drawText(t,{x:boxX+7,y:y,size:fontSize,font:obsBold,color:PDFLib.rgb(INK[0]/255,INK[1]/255,INK[2]/255)});
       y-=6.2;
@@ -1809,7 +1957,7 @@ function drawPlanningSignature(data){
     var im=new Image();
     im.onload=function(){
       sctx.clearRect(0,0,sig.width,sig.height);
-      sctx.drawImage(im,0,0,sig.width,sig.height);
+      drawSignature(sctx,im,sig.width,sig.height,M.sigFit);
       hasInk=true; sig.classList.add('has'); hint.style.display='none'; pdfDone=false;
       updateClr(); resolve();
     };
@@ -1891,6 +2039,55 @@ async function applyPlanningImport(data){
   var pageMessage=pageCount>1?' sur '+pageCount+' feuilles':'';
   say('Les dates choisies dans le planning ont ete integrees au formulaire'+pageMessage+'.');
   showToast('Demande integree'+pageMessage);
+}
+
+/* ================= échange enregistré dans le planning ================= */
+var EXCHANGE_HANDOFF_KEY='planning:exchange-handoff-v1';
+function readExchangeImport(){
+  try{
+    if(new URLSearchParams(location.search).get('echange')!=='1') return null;
+    var data=JSON.parse(localStorage.getItem(EXCHANGE_HANDOFF_KEY)||'null');
+    return data && data.version===1 && data.agreementDate && data.returnDate ? data : null;
+  }catch(e){ return null; }
+}
+/* Les dates et horaires de l'échange remplissent la feuille. Le repos le plus
+   proche occupe la première ligne : si c'est celui du collègue, il passe en
+   haut et l'agent en bas. Les horaires d'une date sont ceux de la personne
+   qui y travaille en remplacement. */
+function applyExchangeImport(data){
+  inputs.forEach(function(el,i){
+    var n=IF[i].n;
+    if(n==='nom' || n==='date_sig') return;
+    delete el.dataset.manual;
+    setVal(i,'',true);
+  });
+  clearSig2();
+  if(observation) observation.value='';
+  function put(name,value){ var i=byName[name]; if(i!==undefined && value) onEdit(i,value); }
+  var p=data.profile||{};
+  if(p.group){
+    var d=profileRead(); d.groupe=String(p.group);
+    try{ localStorage.setItem('demandes:v6:profil'+planningOwnerSuffix(),JSON.stringify(d)); }catch(e){}
+  }
+  if(p.fullName) put('nom',p.fullName);
+  var a=data.agreementDate, r=data.returnDate, mineFirst=a<=r;
+  var d1=mineFirst?a:r, d2=mineFirst?r:a;
+  function hours(date){ return date===a ? [data.agreementStart,data.agreementEnd] : [data.returnStart,data.returnEnd]; }
+  if(!mineFirst) put('ordre','2');
+  put('collegue',data.partnerName);
+  put('rep_date',isoToFormDate(d1)); put('ech_date',isoToFormDate(d2));
+  put('ech_de',planningTime(hours(d2)[0])); put('ech_a',planningTime(hours(d2)[1]));
+  put('col_plan',isoToFormDate(d1)); put('col_repos',isoToFormDate(d2));
+  put('col_de',planningTime(hours(d1)[0])); put('col_a',planningTime(hours(d1)[1]));
+  try{
+    localStorage.removeItem(EXCHANGE_HANDOFF_KEY);
+    history.replaceState(null,'',location.pathname);
+  }catch(e){}
+  return (p.signature ? drawPlanningSignature(p.signature) : Promise.resolve()).then(function(){
+    layout(); scheduleSave();
+    say('L’échange enregistré dans le planning a été intégré au formulaire.');
+    showToast('Échange intégré');
+  });
 }
 
 function archivePlanningRequest(pdf){
@@ -2007,7 +2204,7 @@ sel.addEventListener('change', function(){
   bg.onload = function(){ bg.onload = null; finishSwitch(); };
   loadSheet(i).then(function(){
     finishSwitch();
-    try{ store.set('demandes:v4:last', String(i)); }catch(e){}
+    try{ store.set('demandes:v4:last', SHEETS[i].id); }catch(e){}
   });
 });
 
@@ -2025,19 +2222,31 @@ var planningImport=readPlanningImport();
 var planningImportActive=!!planningImport;
 var lastSheetFast='0';
 try{ lastSheetFast=localStorage.getItem('demandes:v4:last') || '0'; }catch(e){}
+/* La dernière feuille est retenue par son identifiant. Un ancien numéro
+   renvoie à l'ordre d'avant la demande d'échange. */
+function storedSheetIndex(v){
+  var id=/^\d+$/.test(String(v)) ? ['conges','recup','annul'][+v] : v;
+  for(var i=0;i<SHEETS.length;i++) if(SHEETS[i].id===id) return i;
+  return 0;
+}
+var exchangeImport=planningImportActive ? null : readExchangeImport();
 var firstIndex=planningImportActive ? planningSheetIndex(planningImport)
-  : Math.max(0,Math.min(SHEETS.length-1,parseInt(lastSheetFast,10)||0));
+  : storedSheetIndex(exchangeImport ? 'echange' : lastSheetFast);
 sel.value=firstIndex;
 bg.onload=function(){ bg.onload=null; layout(); };
 loadSheet(firstIndex).then(function(){
   if(planningImportActive) return applyPlanningImport(planningImport);
+  if(exchangeImport){
+    try{ store.set('demandes:v4:last','echange'); }catch(e){}
+    return applyExchangeImport(exchangeImport);
+  }
 });
 /* Le stockage asynchrone est consulté après le premier affichage pour ne pas bloquer l'ouverture. */
 var afterFirstPaint=window.requestIdleCallback || function(fn){ setTimeout(fn,80); };
 afterFirstPaint(function(){
-  if(planningImportActive) return;
+  if(planningImportActive || exchangeImport) return;
   store.get('demandes:v4:last').then(function(v){
-    var i=Math.max(0,Math.min(SHEETS.length-1,parseInt(v||String(firstIndex),10)||0));
+    var i=v ? storedSheetIndex(v) : firstIndex;
     if(i!==firstIndex){ sel.value=i; bg.onload=function(){ bg.onload=null; layout(); }; loadSheet(i); }
   }).catch(function(){});
 });

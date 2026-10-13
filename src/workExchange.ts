@@ -9,16 +9,44 @@ export type WorkExchangeDraft = {
   partnerGroup: number;
   agreementDate: string;
   returnDate: string;
+  /** Horaires de chaque journée, repris sur la demande d'échange. Ils ne
+   *  sont pas enregistrés : le profil les propose à chaque ouverture. */
+  agreementStart: string;
+  agreementEnd: string;
+  returnStart: string;
+  returnEnd: string;
 };
 
-export function emptyWorkExchangeDraft(group: number, agreementDate = ""): WorkExchangeDraft {
+type Schedule = { start?: string; end?: string } | undefined;
+
+function scheduleHours(schedule: Schedule) {
+  const start = schedule?.start || "", end = schedule?.end || "";
+  return { agreementStart: start, agreementEnd: end, returnStart: start, returnEnd: end };
+}
+
+export function emptyWorkExchangeDraft(group: number, agreementDate = "", schedule?: Schedule): WorkExchangeDraft {
   return {
     id: "",
     partnerName: "",
     partnerGroup: group === 1 ? 2 : 1,
     agreementDate,
     returnDate: "",
+    ...scheduleHours(schedule),
   };
+}
+
+/** Les fériés à venir que vous travaillez alors qu'un autre groupe est en
+ *  repos : ceux que vous pouvez céder dans un échange de férié. */
+export function holidaysForExchangeGive(group: number, from: Date) {
+  const holidays: Array<{ key: string; name: string; partnerGroup: number }> = [];
+  for (let offset = 0; offset < 366; offset++) {
+    const date = addDays(from, offset);
+    const mine = getDayInfo(date, group);
+    const partnerGroup = [1, 2, 3].find((other) => other !== group && getDayInfo(date, other).kind === "off");
+    if (mine.holiday && mine.kind === "work" && partnerGroup)
+      holidays.push({ key: dateKey(date), name: mine.holiday, partnerGroup });
+  }
+  return holidays;
 }
 
 export function workExchangeForDate(entries: Entries, date: string): WorkExchange | null {
@@ -117,12 +145,22 @@ export function holidaysForExchangeReturn(agreementDate: string, group: number, 
   return holidays;
 }
 
-export function exchangeDraftFromExchange(exchange: WorkExchange): WorkExchangeDraft {
+export function exchangeDraftFromExchange(exchange: WorkExchange, schedule?: Schedule): WorkExchangeDraft {
   return {
     id: exchange.id,
     partnerName: exchange.partnerName,
     partnerGroup: exchange.partnerGroup,
     agreementDate: exchange.agreementDate,
     returnDate: exchange.returnDate,
+    ...scheduleHours(schedule),
+  };
+}
+
+/** Les champs d'échange des deux journées, pour le planning. */
+export function exchangeEntryFields(draft: Pick<WorkExchangeDraft, "id" | "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">) {
+  const common = { exchangeId: draft.id, exchangePartner: draft.partnerName.trim(), exchangePartnerGroup: draft.partnerGroup };
+  return {
+    [draft.agreementDate]: { ...common, exchangeRole: "given" as const, exchangeOtherDate: draft.returnDate },
+    [draft.returnDate]: { ...common, exchangeRole: "return" as const, exchangeOtherDate: draft.agreementDate },
   };
 }

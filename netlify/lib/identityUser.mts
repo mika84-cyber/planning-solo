@@ -42,3 +42,13 @@ export async function currentUser(
   // Hors de la plateforme (développement local) : la bibliothèque décide.
   return getUser();
 }
+
+/** Le prénom et le nom du compte : celui enregistré sur Netlify Identity,
+ *  sinon déduit de l'adresse (« prenom.nom@… » → « Prenom Nom »). */
+export function accountDisplayName(user: Pick<User, "name" | "email">) {
+  const clean = (value: unknown) => typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, 120) : "";
+  const stored = clean(user.name);
+  if (stored) return stored;
+  const local = (user.email || "").split("@")[0].replace(/[._-]+/g, " ");
+  return clean(local.replace(/(^|\s)\p{L}/gu, (letter) => letter.toLocaleUpperCase("fr")));
+}

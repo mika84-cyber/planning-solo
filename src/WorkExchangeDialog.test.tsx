@@ -14,6 +14,10 @@ describe("WorkExchangeDialog", () => {
           partnerGroup: 1,
           agreementDate: "",
           returnDate: "",
+          agreementStart: "",
+          agreementEnd: "",
+          returnStart: "10:00",
+          returnEnd: "18:00",
         }}
         setDraft={vi.fn()}
         error="Les deux dates de l’échange sont obligatoires."
@@ -34,6 +38,11 @@ describe("WorkExchangeDialog", () => {
     expect(html).not.toContain("Votre cycle, groupe 2");
     expect(html).not.toContain("Cycle du collègue, groupe 1");
     expect((html.match(/type=\"date\"/g) || []).length).toBe(0);
+    // Deux onglets, et les horaires demandés pour chacune des deux journées.
+    expect(html).toContain("Échange de jour");
+    expect(html).toContain("Jour férié");
+    expect(html).toContain('aria-label="Horaires de la journée de votre cycle"');
+    expect(html).toContain('aria-label="Horaires de la journée de son cycle"');
   });
 
   it("dit avec quel groupe échanger un jour cédé", async () => {
@@ -43,7 +52,7 @@ describe("WorkExchangeDialog", () => {
     const offGroup = [1, 3].find((other) => getDayInfo(day, other).kind === "off");
     const html = renderToStaticMarkup(
       <WorkExchangeDialog open group={2}
-        draft={{ id: "", partnerName: "", partnerGroup: offGroup!, agreementDate: dateKey(day), returnDate: "" }}
+        draft={{ id: "", partnerName: "", partnerGroup: offGroup!, agreementDate: dateKey(day), returnDate: "", agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "" }}
         setDraft={vi.fn()} error="" saving={false} onClose={vi.fn()} onSave={vi.fn()} onDelete={vi.fn()} />,
     );
     expect(html).toContain("work-exchange-group-hint");

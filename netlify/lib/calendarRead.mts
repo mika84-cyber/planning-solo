@@ -22,6 +22,8 @@ type CalendarReadContext = {
   recoveryUsePrefix: string;
   mecenatPrefix: string;
   shareWithAgnes: boolean;
+  /** Prénom et nom du compte Netlify, pour préremplir les formulaires. */
+  accountName?: string;
 };
 
 export async function readCalendar(
@@ -37,6 +39,7 @@ export async function readCalendar(
     recoveryUsePrefix,
     mecenatPrefix,
     shareWithAgnes,
+    accountName = "",
   } = context;
   const [
     listed,
@@ -117,6 +120,7 @@ export async function readCalendar(
   }
   return json({
     email,
+    account_name: accountName,
     entries: cleanEntries,
     periods: cleanPeriods,
     overtime_entries: cleanOvertime,

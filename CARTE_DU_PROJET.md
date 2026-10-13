@@ -55,7 +55,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/AppNavigation.tsx` : en-tête, compte et menu principal communs à tous
   les écrans.
 - `src/AdminToolsPanel.tsx`, `src/adminTools.css`, `netlify/functions/admin-tools.mts`
-  et `netlify/lib/adminTools.mts` : aperçu invité, message temporaire, groupes,
+  et `netlify/lib/adminTools.mts` : aperçu invité, message temporaire, rappel
+  des jours fériés (`HomeAdminMessage.tsx`, raccourci vers les choix), groupes,
   corbeille de 30 jours et suivi des alertes. `admin-publications.mts` exécute
   les publications programmées chaque minute ; tests dans `admin-tools.function.test.ts`.
 - `src/FeedbackMessenger.tsx`, `src/feedbackMessenger.css` et
@@ -194,6 +195,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles
   du formulaire autonome de demande.
+  Feuilles : congés, récupérations, échange (`form-bg-4.png`, dates et
+  horaires recopiés chez le collègue via `mirror`) et annulation.
 
 ## PDF et PWA
 

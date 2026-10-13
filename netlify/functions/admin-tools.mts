@@ -1,6 +1,6 @@
 import { currentUser } from '../lib/identityUser.mts';
 import { isTrustedMutation } from '../lib/requestSecurity.mts';
-import { adminStore, archive, isOwner, records, readGroups, groupsKey, readGenders, gendersKey, trashValid, futureDate, receiptKey, deliveryKey, type Trash, type Pin, type Delivery, type Job } from '../lib/adminTools.mts';
+import { adminStore, archive, isOwner, records, readGroups, groupsKey, readGenders, gendersKey, trashValid, futureDate, receiptKey, deliveryKey, activeHolidayReminder, holidayReminderKey, type Trash, type Pin, type Delivery, type Job } from '../lib/adminTools.mts';
 import type { UsefulContactsPayload, UsefulContact } from '../../src/usefulContactsTypes.ts';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'private, no-store' } });
 export default async function handler(request: Request) {
@@ -11,7 +11,8 @@ export default async function handler(request: Request) {
   const owner = isOwner(user.email);
   if (request.method === 'GET') {
     const pin = await store.get('admin-tools/pin', { type: 'json' }) as Pin | null;
-    if (!owner || new URL(request.url).searchParams.has('public')) return json({ pin: pin && Date.parse(pin.until) > Date.now() ? pin : null });
+    const holidayReminder = await activeHolidayReminder(store);
+    if (!owner || new URL(request.url).searchParams.has('public')) return json({ pin: pin && Date.parse(pin.until) > Date.now() ? pin : null, holidayReminder });
     const trash = (await records<Trash>(store, 'admin-tools/trash/')).filter(trashValid).map(({ entries: _entries, ...item }) => item);
     const deliveries = await records<Delivery>(store, 'admin-tools/deliveries/');
     const alerts = await Promise.all(deliveries.map(async delivery => {
@@ -19,7 +20,7 @@ export default async function handler(request: Request) {
       return { id: delivery.notice.id, title: delivery.notice.title, documentId: delivery.notice.documentId, message: delivery.notice.message, total: delivery.recipients.length, sent: delivery.alertSent.length, emailsSent: delivery.emailSent.length, seen: seen.filter(Boolean).length, unseenIds: delivery.recipients.filter((_, index) => !seen[index]).map(guest => guest.id), createdAt: delivery.createdAt };
     }));
     const jobs = (await records<Job>(store, 'admin-tools/jobs/')).map(({ recipients: _recipients, notice: _notice, ...job }) => job);
-    return json({ pin, trash, alerts, jobs, groups: await readGroups(store) });
+    return json({ pin, holidayReminder, trash, alerts, jobs, groups: await readGroups(store) });
   }
   if (request.method !== 'POST') return json({ error: 'Méthode non autorisée.' }, 405);
   if (!owner) return json({ error: 'Réservé au compte administrateur.' }, 403);
@@ -33,6 +34,13 @@ export default async function handler(request: Request) {
         const until = futureDate(body.until);
         if (!until) return json({ error: 'Une date de fin est nécessaire.' }, 400);
         await store.setJSON('admin-tools/pin', { message: body.message.trim(), until });
+      }
+    } else if (body.action === 'holiday-reminder') {
+      if (body.year === null) await store.delete(holidayReminderKey);
+      else {
+        const thisYear = new Date().getFullYear();
+        if (!Number.isInteger(body.year) || body.year < thisYear || body.year > thisYear + 1) return json({ error: 'Choisissez l’année en cours ou la suivante.' }, 400);
+        await store.setJSON(holidayReminderKey, { year: body.year, sentAt: new Date().toISOString(), until: new Date(Date.UTC(body.year + 1, 0, 1)).toISOString() });
       }
     } else if (body.action === 'move-member') {
       if (typeof body.member !== 'string' || ![1, 2, 3].includes(body.group)) return json({ error: 'Collègue ou groupe invalide.' }, 400);

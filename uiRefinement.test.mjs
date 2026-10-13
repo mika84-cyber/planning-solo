@@ -201,9 +201,10 @@ describe("finitions d’interface", () => {
     // Chaque invitation ouvre son écran et descend jusqu'au bon bloc : la
     // liste des fériés, l'ajout d'un bulletin. Arriver en haut de la page
     // laisserait chercher.
-    expect(app).toContain("Compléter votre profil de calcul");
-    expect(app).toContain("Choisir la prime de ${missingHolidayChoices} jour");
-    expect(app).toContain("Ajouter un bulletin de paie");
+    expect(app).toContain('title: "Profil de calcul"');
+    expect(app).toContain("${missingHolidayChoices} à choisir");
+    expect(app).toContain('title: "Bulletin de paie"');
+    expect(app).toContain('title: "Groupe de planning"');
     expect(app).toContain('scrollWhenReady("holiday-choices")');
     // La vérification du bulletin se replie : l'accueil demande qu'elle
     // s'ouvre, puis la page y descend.

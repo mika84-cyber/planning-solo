@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { currentUser } from "../lib/identityUser.mts";
+import { currentUser, accountDisplayName } from "../lib/identityUser.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { migrateLegacyData, userDataKey } from "../lib/userScopedStore.mts";
 import { readCalendarBody } from "../lib/calendarValidation.mts";
@@ -46,6 +46,7 @@ async function calendarHandler(request: Request): Promise<Response> {
       recoveryUsePrefix,
       mecenatPrefix,
       shareWithAgnes,
+      accountName: accountDisplayName(user),
     });
   if (request.method !== "POST")
     return json({ error: "Méthode non autorisée" }, 405);
