@@ -62,7 +62,9 @@ const budgets = {
   // l'administrateur : Ma paie en bulletin simplifié (frise du brut, lignes
   // détaillées, totaux du calcul expliqués), alors même que l'ancien tableau
   // de bord et « Affiner mes estimations » ont été retirés (773,8 mesurés).
-  totalJavaScript: { raw: 2_360 * KIB, gzip: 775 * KIB },
+  // Relevé le 13 octobre 2026 de 2 360 à 2 365 Kio bruts, avec l'accord de
+  // l'administrateur : heures supp effaçables depuis la fiche du jour.
+  totalJavaScript: { raw: 2_365 * KIB, gzip: 775 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

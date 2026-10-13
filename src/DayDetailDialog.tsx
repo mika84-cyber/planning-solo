@@ -14,7 +14,7 @@ import type {
   WorkExchange,
 } from "./appModel";
 import { HOLIDAY_PAY_OPTIONS, WORK_POSTS, euros, noteDateLabel } from "./appModel";
-import { minutesLabel, type RecoveryUse } from "./overtime";
+import { minutesLabel, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import {
   HALF_BALANCE_OPTIONS,
   HALF_MOMENT_OPTIONS,
@@ -61,6 +61,7 @@ export type DayDetailDialogProps = {
   dayExchange: WorkExchange | null;
   dayStoredPeriods: LeavePeriod[];
   dayRecoveryUses: RecoveryUse[];
+  dayOvertime: OvertimeEntry[];
   dayExceptionalClosure: boolean;
   dayHolidayChoiceVisible: boolean;
   /** Jour travaillé : on peut y préciser le poste (accueil, billetterie). */
@@ -85,6 +86,7 @@ export type DayDetailDialogProps = {
   beginNoteDateSelection: () => void;
   editDayLeavePeriod: (period: LeavePeriod) => void;
   deleteRecoveryUse: (entry: RecoveryUse) => Promise<void>;
+  deleteOvertimeEntry: (entry: OvertimeEntry) => Promise<void>;
   deleteAgnesNote: (date: string) => Promise<void>;
   appendNoteLine: () => void;
 };
@@ -98,6 +100,7 @@ export function DayDetailDialog({
   dayExchange,
   dayStoredPeriods,
   dayRecoveryUses,
+  dayOvertime,
   dayExceptionalClosure,
   dayHolidayChoiceVisible,
   dayWorkPostVisible = false,
@@ -119,6 +122,7 @@ export function DayDetailDialog({
   beginNoteDateSelection,
   editDayLeavePeriod,
   deleteRecoveryUse,
+  deleteOvertimeEntry,
   deleteAgnesNote,
   appendNoteLine,
 }: DayDetailDialogProps) {
@@ -542,29 +546,28 @@ export function DayDetailDialog({
                 ))}
               </div>
             )}
-            {dayRecoveryUses.length > 0 && (
-              <div className="day-stored-periods day-recovery-details">
-                <strong>Récupérations prises ce jour</strong>
-                {dayRecoveryUses.map((entry) => (
-                  <article key={entry.id}>
+            {([
+              ["Heures supp enregistrées ce jour", dayOvertime.map((entry) => [entry.id, "Heures supp", `${minutesLabel(entry.minutes)} mises en récupération`, "Effacer les heures supp", () => deleteOvertimeEntry(entry)])],
+              ["Récupérations prises ce jour", dayRecoveryUses.map((entry) => [entry.id, entry.kind === "training" ? "Formation" : "Récupération", `${minutesLabel(entry.minutes)} prises sur votre solde`, "Effacer la récupération", () => deleteRecoveryUse(entry)])],
+            ] as [string, [string, string, string, string, () => Promise<void>][]][]).map(([heading, rows]) => rows.length > 0 && (
+              <div key={heading} className="day-stored-periods day-recovery-details">
+                <strong>{heading}</strong>
+                {rows.map(([id, title, detail, label, remove]) => (
+                  <article key={id}>
                     <i className="recovery" />
                     <span>
-                      {entry.kind === "training" ? "Formation" : "Récupération"}
-                      <small>{minutesLabel(entry.minutes)} prises sur votre solde</small>
+                      {title}
+                      <small>{detail}</small>
                     </span>
                     <div className="period-direct-actions recovery-direct-actions">
-                      <button
-                        className="period-delete-button"
-                        type="button"
-                        onClick={() => void deleteRecoveryUse(entry)}
-                      >
-                        Effacer la récupération
+                      <button className="period-delete-button" type="button" onClick={() => void remove()}>
+                        {label}
                       </button>
                     </div>
                   </article>
                 ))}
               </div>
-            )}
+            ))}
           </>
         ) : null}
         {quickNoteMode || noteEditorOpen ? (

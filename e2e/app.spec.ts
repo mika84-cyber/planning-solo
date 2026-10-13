@@ -4114,6 +4114,31 @@ test("une heure supplémentaire de jour crédite 1 h 15 en récupération", asyn
   await expect(page.locator(".overtime-history")).toContainText("1 h travaillées → 15 min gagnées (1 h 15)");
 });
 
+test("les heures supp en récupération s’effacent depuis la fiche du jour", async ({ page }) => {
+  const day = new Date();
+  const dayName = day.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await openLeaveTool(page, "Heures supplémentaires et récupérations");
+  await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
+  const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
+  await dialog.getByLabel("Date").fill(dateKey(day));
+  await setClockTime(dialog, "Heure de début", "18:00");
+  await setClockTime(dialog, "Heure de fin", "20:00");
+  await dialog.getByRole("button", { name: "À récupérer" }).click();
+  await dialog.getByRole("button", { name: "Enregistrer les heures" }).click();
+  await expect(dialog).toBeHidden();
+
+  await goToSection(page, "home");
+  await page.getByRole("button", { name: new RegExp(`^${dayName}`) }).first().click();
+  const dayDialog = page.getByRole("dialog", { name: /2026/ });
+  await expect(dayDialog).toContainText("Heures supp enregistrées ce jour");
+  await expect(dayDialog).toContainText("2 h mises en récupération");
+  page.once("dialog", (confirm) => void confirm.accept());
+  await dayDialog.getByRole("button", { name: "Effacer les heures supp" }).click();
+  await expect(page.getByText("Heures supp enregistrées ce jour")).toHaveCount(0);
+});
+
 test("une formation utilise le bon nombre d’heures et apparaît en REC", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");

@@ -2602,6 +2602,9 @@ export default function Home() {
   const dayRecoveryUses = dayDate
     ? recoveryUses.filter((entry) => entry.date === dayDate)
     : [];
+  const dayOvertime = overtimeEntries.filter(
+    (entry) => entry.date === dayDate && entry.disposition === "recovery",
+  );
   const dayExceptionalClosure = dayDate
     ? exceptionalClosureFor(dayDate)
     : undefined;
@@ -3353,6 +3356,7 @@ export default function Home() {
             dayExchange={dayExchange}
             dayStoredPeriods={dayStoredPeriods}
             dayRecoveryUses={dayRecoveryUses}
+            dayOvertime={dayOvertime}
             dayExceptionalClosure={Boolean(dayExceptionalClosure)}
             dayHolidayChoiceVisible={dayHolidayChoiceVisible}
             dayWorkPostVisible={dayWorkPostVisible}
@@ -3380,6 +3384,7 @@ export default function Home() {
             beginNoteDateSelection={beginNoteDateSelection}
             editDayLeavePeriod={editDayLeavePeriod}
             deleteRecoveryUse={deleteRecoveryUse}
+            deleteOvertimeEntry={deleteOvertimeEntry}
             deleteAgnesNote={deleteAgnesNote}
             appendNoteLine={appendNoteLine}
           />
