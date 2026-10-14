@@ -593,15 +593,20 @@
 .app-shell .gp-watch .grand-palais-check-button { display: block; width: 100%; margin-top: 12px; border: 0; border-radius: 999px; padding: 10px 14px; background: #8a3a22; color: #fff; font: inherit; font-size: 0.86rem; font-weight: 850; cursor: pointer; }
 .app-shell .gp-watch .grand-palais-check-button:disabled { background: #c9a796; cursor: progress; }
 
-/* Audioguide sur la fiche de l'exposition : même format que les tarifs,
-   boutons dans la couleur de la salle. */
-.expo-audioguide dl { grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; }
-.expo-audioguide dt::after { content: " :"; }
-.expo-audioguide dd { text-align: left; white-space: normal; }
-.expo-audioguide .expo-audioguide-code { letter-spacing: 0.14em; }
-.expo-audioguide-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+/* Audioguide sur la fiche de l'exposition : une carte façon billet, dans la
+   couleur de la salle. */
+.expo-audioguide { width: min(100%, 360px); margin: 10px 0 0; }
+.expo-audioguide-ticket { display: flex; overflow: hidden; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; background: #fff; }
+.expo-audioguide-stub { display: grid; flex: none; align-content: center; justify-items: center; gap: 3px; min-width: 64px; padding: 10px 8px; background: var(--venue-accent, var(--accent)); color: #fff; }
+.expo-audioguide-stub svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.expo-audioguide-stub b { font-size: 0.92rem; font-weight: 850; letter-spacing: 0.12em; font-variant-numeric: tabular-nums; }
+.expo-audioguide-body { display: grid; gap: 2px; min-width: 0; padding: 9px 11px; border-left: 1.5px dashed var(--venue-line, var(--line)); }
+.expo-audioguide-body strong { color: var(--text); font-size: 0.86rem; }
+.expo-card .expo-audioguide-body small { color: var(--muted); font-size: 0.76rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.expo-audioguide-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .app-shell .expo-audioguide-actions > a, .app-shell .expo-audioguide-actions > button { min-height: 0; margin: 0; border: 1px solid var(--venue-accent, var(--accent)); border-radius: 999px; padding: 5px 11px; background: #fff; box-shadow: none; color: var(--venue-accent, var(--accent)); font: inherit; font-size: 0.76rem; font-weight: 800; text-decoration: none; cursor: pointer; }
 .app-shell .expo-audioguide-actions > a { background: var(--venue-accent, var(--accent)); color: #fff; }
 .expo-audioguide figure { display: grid; justify-items: center; gap: 4px; margin: 8px 0 0; }
 .expo-audioguide figure img { width: 180px; height: 180px; border: 1px solid var(--venue-line, var(--line)); border-radius: 10px; background: #fff; }
 .expo-audioguide figcaption { color: var(--muted); font-size: 0.74rem; }
+.expo-audioguide-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
