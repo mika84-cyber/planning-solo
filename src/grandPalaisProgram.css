@@ -578,16 +578,30 @@
 .grand-palais-check-report p { margin: 6px 0 2px; }
 .grand-palais-check-report ul { margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.45; }
 
-/* Veille du site : bandeau sombre réservé à l'administrateur. */
-.gp-watch { margin: 14px 0; border-radius: 18px; padding: 14px 16px; background: #4a1b0c; color: #faece7; }
+/* Veille du site : bandeau réservé à l'administrateur, dans un bordeaux
+   éclairci (même teinte, plus légère). */
+.gp-watch { margin: 14px 0; border: 1px solid #e5c3b6; border-radius: 18px; padding: 14px 16px; background: #f7e4dc; color: #4a1b0c; }
 .gp-watch-head { display: flex; gap: 12px; align-items: center; }
-.gp-watch-icon { display: flex; flex: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: #712b13; color: #f5c4b3; }
+.gp-watch-icon { display: flex; flex: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: #8a3a22; color: #fff; }
 .gp-watch-icon svg { width: 20px; height: 20px; }
-.gp-watch h3 { margin: 0; color: #fff; font-size: 1rem; }
-.gp-watch-head p { margin: 2px 0 0; color: #f5c4b3; font-size: 0.86rem; font-weight: 700; }
-.gp-watch-head small { display: block; margin-top: 2px; color: #d9a99a; font-size: 0.74rem; }
-.gp-watch .gp-watch-message { margin: 10px 0 0; color: #fff; font-size: 0.84rem; }
-.gp-watch .grand-palais-check-report { margin-top: 10px; border-radius: 12px; padding: 8px 10px; background: rgba(255, 255, 255, 0.08); color: #faece7; }
-.gp-watch .grand-palais-check-report b { color: #fff; }
-.app-shell .gp-watch .grand-palais-check-button { display: block; width: 100%; margin-top: 12px; border: 0; border-radius: 999px; padding: 10px 14px; background: #faece7; color: #4a1b0c; font: inherit; font-size: 0.86rem; font-weight: 850; cursor: pointer; }
-.app-shell .gp-watch .grand-palais-check-button:disabled { background: #d9a99a; cursor: progress; }
+.gp-watch h3 { margin: 0; color: #4a1b0c; font-size: 1rem; }
+.gp-watch-head p { margin: 2px 0 0; color: #712b13; font-size: 0.86rem; font-weight: 700; }
+.gp-watch-head small { display: block; margin-top: 2px; color: #8f5a48; font-size: 0.74rem; }
+.gp-watch .gp-watch-message { margin: 10px 0 0; color: #4a1b0c; font-size: 0.84rem; }
+.gp-watch .grand-palais-check-report { margin-top: 10px; border-radius: 12px; padding: 8px 10px; background: rgba(255, 255, 255, 0.65); color: #4a1b0c; }
+.gp-watch .grand-palais-check-report b { color: #4a1b0c; }
+.app-shell .gp-watch .grand-palais-check-button { display: block; width: 100%; margin-top: 12px; border: 0; border-radius: 999px; padding: 10px 14px; background: #8a3a22; color: #fff; font: inherit; font-size: 0.86rem; font-weight: 850; cursor: pointer; }
+.app-shell .gp-watch .grand-palais-check-button:disabled { background: #c9a796; cursor: progress; }
+
+/* Audioguide sur la fiche de l'exposition : même format que les tarifs,
+   boutons dans la couleur de la salle. */
+.expo-audioguide dl { grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; }
+.expo-audioguide dt::after { content: " :"; }
+.expo-audioguide dd { text-align: left; white-space: normal; }
+.expo-audioguide .expo-audioguide-code { letter-spacing: 0.14em; }
+.expo-audioguide-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.app-shell .expo-audioguide-actions > a, .app-shell .expo-audioguide-actions > button { min-height: 0; margin: 0; border: 1px solid var(--venue-accent, var(--accent)); border-radius: 999px; padding: 5px 11px; background: #fff; box-shadow: none; color: var(--venue-accent, var(--accent)); font: inherit; font-size: 0.76rem; font-weight: 800; text-decoration: none; cursor: pointer; }
+.app-shell .expo-audioguide-actions > a { background: var(--venue-accent, var(--accent)); color: #fff; }
+.expo-audioguide figure { display: grid; justify-items: center; gap: 4px; margin: 8px 0 0; }
+.expo-audioguide figure img { width: 180px; height: 180px; border: 1px solid var(--venue-line, var(--line)); border-radius: 10px; background: #fff; }
+.expo-audioguide figcaption { color: var(--muted); font-size: 0.74rem; }

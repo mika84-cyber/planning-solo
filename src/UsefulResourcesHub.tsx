@@ -1,12 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import "./usefulResourcesHub.css";
 
-type ResourceTab = "pdf" | "forms" | "contacts";
+type ResourceTab = "forms" | "contacts";
 
 type UsefulResourcesHubProps = {
   forms: ReactNode;
   contacts: ReactNode;
-  pdf: ReactNode;
   initialTab?: ResourceTab;
 };
 
@@ -18,12 +17,6 @@ const RESOURCE_TABS: ReadonlyArray<{
   description: string;
   icon: ReactNode;
 }> = [
-  {
-    key: "pdf",
-    title: "Plannings PDF",
-    description: "Votre groupe, les 3 groupes, vos congés et les fériés travaillés",
-    icon: <svg viewBox="0 0 48 48"><path d="M14 6h14l8 8v28H14z" /><path d="M28 6v8h8" /><path d="M19 24h12M19 30h12M19 36h7" /></svg>,
-  },
   {
     key: "forms",
     title: "Formulaires",
@@ -38,7 +31,7 @@ const RESOURCE_TABS: ReadonlyArray<{
   },
 ];
 
-export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulResourcesHubProps) {
+export function UsefulResourcesHub({ forms, contacts, initialTab }: UsefulResourcesHubProps) {
   const [activeTab, setActiveTab] = useState<ResourceTab | null>(initialTab ?? null);
   const selectTab = (tab: ResourceTab) => {
     setActiveTab(tab);
@@ -65,7 +58,7 @@ export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulR
       <div className="useful-resource-intro">
         <span className="step-label">Documents et contacts</span>
         <h2 id="useful-resources-title">Choisir une rubrique</h2>
-        <p>Vos plannings à télécharger, les formulaires et les numéros utiles.</p>
+        <p>Les formulaires et les numéros utiles.</p>
       </div>
 
       {activeTab ? (
@@ -106,9 +99,9 @@ export function UsefulResourcesHub({ forms, contacts, pdf, initialTab }: UsefulR
           className="useful-resource-panel"
           id={`useful-resource-panel-${activeTab}`}
           role="tabpanel"
-          aria-label={activeTab === "pdf" ? "Plannings PDF" : activeTab === "forms" ? "Formulaires" : "Contacts"}
+          aria-label={activeTab === "forms" ? "Formulaires" : "Contacts"}
         >
-          {activeTab === "pdf" ? pdf : activeTab === "forms" ? forms : contacts}
+          {activeTab === "forms" ? forms : contacts}
         </div>
       ) : null}
     </section>

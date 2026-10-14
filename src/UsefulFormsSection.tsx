@@ -1,13 +1,11 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
-import "./usefulFolders.css";
+import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
+import "./resourceFolderList.css";
 import type { LeavePeriod } from "./appModel";
-import { WorkAccidentIcon } from "./WorkAccidentIcon";
 import {
   GRAND_PALAIS_PROGRAM,
   isGrandPalaisEntryVisible,
   type GrandPalaisProgramData,
 } from "./GrandPalaisProgramSection";
-import { readResourceFavorites, writeResourceFavorites } from "./resourceFavorites";
 import { matchesSearch } from "./searchMatching";
 import "./usefulDocumentAdmin.css";
 import { DocumentShareDialog } from "./DocumentShareDialog";
@@ -72,16 +70,6 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
         programEntryTitle: "Hilma af Klint - Les peintures du Temple (1906-1915)",
       },
     ],
-    audioguides: [
-      {
-        title: "Cézanne et nous",
-        programEntryTitle: "Cezanne et nous",
-        url: "https://audioguide.grandpalais.fr/bypass",
-        code: "7268",
-        languages: "Français et anglais",
-        qr: "/useful-forms/audioguide-cezanne-qr.png",
-      },
-    ],
   },
   {
     key: "sap",
@@ -140,10 +128,29 @@ export function usefulFormFoldersForDate(
   }));
 }
 
+/** La couleur de chaque dossier, reprise de la page Documents : liseré,
+ *  icône pleine et flèche ronde. */
+const FOLDER_TONES: Record<string, string> = {
+  expo: "#2f7f74",
+  sap: "#5368a8",
+  brantome: "#b9781e",
+  tickets: "#9a5a86",
+  accident: "#a4532f",
+};
+const DEFAULT_TONE = "#7d6f5f";
+/** Un pictogramme par dossier, au trait, sur une pastille claire. */
+const FOLDER_ICONS: Record<string, string[]> = {
+  expo: ["M6 5h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z", "M8.5 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z", "m20 15-4.5-4.5L7 19"],
+  sap: ["M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z", "M16 3v4M8 3v4M4 11h16", "M8 15h3v3H8z"],
+  brantome: ["M4 21h16", "M6 21V8l6-4 6 4v13", "M9.5 10h1M13.5 10h1M9.5 14h1M13.5 14h1", "M10.5 21v-3h3v3"],
+  tickets: ["M5 6h14a2 2 0 0 1 2 2v2.5a1.5 1.5 0 0 0 0 3V16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.5a1.5 1.5 0 0 0 0-3V8a2 2 0 0 1 2-2z", "M15 6v2.5M15 11v2M15 15.5V18"],
+};
+const FALLBACK_FOLDER_ICON = ["M3 7h6l2 2h10v10H3z"];
+
 function documentCount(count: number, audioguides = 0) {
   const parts = [
     count ? `${count} document${count > 1 ? "s" : ""}` : "",
-    audioguides ? `+ ${audioguides} audioguide${audioguides > 1 ? "s" : ""}` : "",
+    audioguides ? `${count ? "+ " : ""}${audioguides} audioguide${audioguides > 1 ? "s" : ""}` : "",
   ].filter(Boolean);
   return parts.length ? parts.join(" ") : "Vide pour le moment";
 }
@@ -173,7 +180,6 @@ export function UsefulFormsSection({
   periods = [],
   onSaveWorkAccident = async () => false,
   onDeleteWorkAccident = async () => false,
-  accountId = "",
   isAdmin = false,
   demoMode = false,
 }: UsefulFormsSectionProps = {}) {
@@ -182,7 +188,6 @@ export function UsefulFormsSection({
   const [downloadError, setDownloadError] = useState("");
   const [shownQr, setShownQr] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [favorites, setFavorites] = useState(() => readResourceFavorites(accountId, "documents"));
   const [sharedDocuments, setSharedDocuments] = useState<SharedUsefulDocument[]>([]);
   const [shareDocument, setShareDocument] = useState<UsefulFormDocument | null>(null);
   const [editDocument, setEditDocument] = useState<UsefulFormDocument | null>(null);
@@ -201,12 +206,6 @@ export function UsefulFormsSection({
   const visibleFolders = useMemo(() => allFolders.filter((item) => matchesSearch(item.title, normalizedSearch)
     || item.documents.some((document) => matchesSearch(document.title, normalizedSearch))
     || Boolean(item.audioguides?.some((guide) => matchesSearch(`Audioguide ${guide.title}`, normalizedSearch)))), [allFolders, normalizedSearch]);
-  const favoriteDocuments = allFolders.flatMap((item) => item.documents.map((document) => ({ ...document, folderKey: item.key }))).filter((document) => favorites.includes(document.file));
-  const toggleFavorite = (file: string) => setFavorites((current) => {
-    const next = current.includes(file) ? current.filter((item) => item !== file) : [...current, file];
-    writeResourceFavorites(accountId, "documents", next);
-    return next;
-  });
   useEffect(() => {
     void import("./WorkAccidentSection");
   }, []);
@@ -350,7 +349,6 @@ export function UsefulFormsSection({
                       : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}
                   </span>
                 </a>
-                {!isAdmin && <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(document.file)} aria-label={`${favorites.includes(document.file) ? "Retirer" : "Ajouter"} ${document.title} ${favorites.includes(document.file) ? "des" : "aux"} favoris`} onClick={() => toggleFavorite(document.file)}>★</button>}
                 {isAdmin && <button type="button" className="document-share-button" aria-label={`Partager ${document.title}`} title="Partager ce document" onClick={() => setShareDocument(document)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>}
               </article>
               );
@@ -415,35 +413,46 @@ export function UsefulFormsSection({
       </div>
       <label className="resource-search-field"><span>Rechercher un document</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom du document" /></label>
       <div className="useful-form-content-stack">
-      {favoriteDocuments.length && !normalizedSearch ? <section className="resource-favorites-strip" aria-label="Documents favoris"><strong>Favoris</strong><div>{favoriteDocuments.map((document) => <button key={document.file} type="button" onClick={() => openFolder(document.folderKey)}>★ {document.title}</button>)}</div></section> : null}
-      <div className="useful-form-folder-grid">
+      <div className="resource-folder-list">
         {visibleFolders.map((item) => (
           <button
             key={item.key}
-            className={`useful-form-folder tone-${item.key}`}
+            className="resource-folder-row"
+            style={{ "--row-tone": FOLDER_TONES[item.key] ?? DEFAULT_TONE } as CSSProperties}
             type="button"
             onClick={() => openFolder(item.key)}
           >
-            <span className="useful-form-folder-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M3 6h7l2 2h9v11H3z" />
-              </svg>
+            <span className="resource-folder-row-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">{(FOLDER_ICONS[item.key] ?? FALLBACK_FOLDER_ICON).map((d) => <path key={d} d={d} />)}</svg>
             </span>
-            <span>
+            <span className="resource-folder-row-copy">
               <strong>{item.title}</strong>
               <small>{item.image ? "Information pratique" : documentCount(item.documents.length, item.audioguides?.length)}</small>
-              <em>{item.description}</em>
             </span>
+            <span className="resource-folder-row-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" /></svg></span>
           </button>
         ))}
-        <button className="useful-form-folder useful-form-work-accident-entry tone-accident" type="button" onClick={() => openFolder("work-accident")}>
-          <WorkAccidentIcon className="useful-form-folder-icon" />
-          <span>
-            <strong>Déclarer un accident de travail</strong>
-            <em>Procédure, contacts, documents et ajout au planning.</em>
-          </span>
-        </button>
       </div>
+      {/* L'accident de travail n'est pas un dossier comme les autres : un
+          encadré à part, qui appelle à agir. */}
+      <section className="resource-accident" aria-labelledby="resource-accident-title">
+        <p className="resource-accident-label">En cas d’accident</p>
+        <button className="resource-accident-card" type="button" onClick={() => openFolder("work-accident")}>
+          <span className="resource-accident-icon" aria-hidden="true">
+            <svg viewBox="4 2.5 18 19">
+              <path d="M11 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" />
+              <path d="M5.5 21v-5a4.5 4.5 0 0 1 4.5-4.5h2a4.5 4.5 0 0 1 4.5 4.5v5" />
+              <path d="M14.5 12 8 18.5h6l2-2" />
+              <path d="M19.5 3v4M17.5 5h4" />
+            </svg>
+          </span>
+          <span className="resource-accident-copy">
+            <strong id="resource-accident-title">Déclarer un accident de travail</strong>
+            <small>Procédure et documents</small>
+          </span>
+          <span className="resource-accident-go">Déclarer</span>
+        </button>
+      </section>
       </div>
     </section>
     </>

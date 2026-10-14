@@ -157,7 +157,8 @@ function titleWords(title: string) {
  *  aux événements du programme qui n'ont pas été validés depuis la veille :
  *  « Paris Photo World Supreme » reprend ceux de la fiche « Paris Photo
  *  2026 ». Une fiche correspond si l'un des titres contient l'autre et si
- *  leurs dates se chevauchent ; elle remplace les tarifs connus. */
+ *  leurs dates se chevauchent, ou, à défaut, si elle est la seule à avoir
+ *  exactement les mêmes dates ; elle remplace les tarifs connus. */
 export function applyGrandPalaisSitePrices(
   program: GrandPalaisProgramData,
   sitePrices: GrandPalaisSitePrices[],
@@ -170,10 +171,16 @@ export function applyGrandPalaisSitePrices(
   const matching = (entry: GrandPalaisProgramEntry) => {
     if (!entry.startsOn || !entry.endsOn) return undefined;
     const words = titleWords(entry.title);
-    return sites.find((site) =>
+    const byTitle = sites.find((site) =>
       (site.url && entry.officialUrl === site.url) ||
       (words && (words.includes(site.words) || site.words.includes(words)) &&
         site.startDate <= entry.endsOn! && entry.startsOn! <= site.endDate));
+    if (byTitle) return byTitle;
+    /* Titres différents (« Arabian Horse Championship » dans l'application,
+       « Championnat du Monde du Cheval Arabe » sur le site) : une fiche aux
+       mêmes dates exactes, seule à les avoir, est la même manifestation. */
+    const sameDates = sites.filter((site) => site.startDate === entry.startsOn && site.endDate === entry.endsOn);
+    return sameDates.length === 1 ? sameDates[0] : undefined;
   };
   return Object.fromEntries(Object.entries(program).map(([key, venue]) => [key, {
     ...venue,
@@ -542,6 +549,7 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
   // Un tarif qui ne valait que pour un jour passé n'a plus à être montré.
   const visiblePrices = (entry.prices ?? []).filter((price) => !price.until || price.until >= today);
   const officialUrl = safeGrandPalaisUrl(entry.officialUrl);
+  const [audioguideQrOpen, setAudioguideQrOpen] = useState(false);
   return (
     <article
       className="expo-card"
@@ -576,6 +584,31 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
           </span>
         ) : null}
         {status.detail && !upcomingCountdown ? <span className="expo-card-remaining">{status.detail}</span> : null}
+        {/* L'audioguide de l'exposition : l'ouvrir (le code d'accès est
+            copié) ou montrer son QR code au visiteur. */}
+        {entry.audioguide ? (
+          <div className="expo-price expo-audioguide">
+            <p>Audioguide</p>
+            <dl>
+              <dt>Code d’accès</dt>
+              <dd className="expo-audioguide-code">{entry.audioguide.code}</dd>
+              <dt>Langues</dt>
+              <dd>{entry.audioguide.languages}</dd>
+            </dl>
+            <div className="expo-audioguide-actions">
+              <a href={entry.audioguide.url} target="_blank" rel="noopener noreferrer" onClick={() => void navigator.clipboard?.writeText(entry.audioguide!.code).catch(() => undefined)}>Ouvrir l’audioguide</a>
+              <button type="button" aria-expanded={audioguideQrOpen} onClick={() => setAudioguideQrOpen((open) => !open)}>
+                {audioguideQrOpen ? "Masquer le QR code" : "Afficher le QR code"}
+              </button>
+            </div>
+            {audioguideQrOpen ? (
+              <figure>
+                <img src={entry.audioguide.qr} alt={`QR code de l’audioguide ${entry.title}`} width="200" height="200" />
+                <figcaption>À flasher par le visiteur</figcaption>
+              </figure>
+            ) : null}
+          </div>
+        ) : null}
         {/* Les tarifs ferment la carte, juste avant le lien : on lit d'abord
             ce qu'est l'exposition, puis ce qu'elle coûte. */}
         {visiblePrices.length ? (

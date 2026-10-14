@@ -22,6 +22,16 @@ async function setExchangeHours(dialog: Locator) {
   }
 }
 
+/* Les plannings PDF s'ouvrent depuis le calendrier de l'accueil. */
+async function openPlanningPdf(page: Page) {
+  await goToSection(page, "home");
+  await page.locator(".planning-export-pdf").click();
+  await expect(page.getByRole("dialog", { name: "Plannings PDF" })).toBeVisible();
+}
+async function closePlanningPdf(page: Page) {
+  await page.getByRole("dialog", { name: "Plannings PDF" }).getByRole("button", { name: "Fermer" }).click();
+}
+
 async function prepareDemo(page: Page, withCurrentLeave = false) {
   await page.addInitScript((seedLeave) => {
     localStorage.setItem("planning:e2e-demo-enabled", "1");
@@ -151,7 +161,6 @@ test('outils administrateur et aperçu invité sur Z Fold ouvert', async ({ page
   await page.getByRole('button', { name: /Formulaire SAP/ }).click();
   await expect(page.locator('.document-share-button')).toHaveCount(0);
   await expect(page.locator('.document-edit-button')).toHaveCount(0);
-  await expect(page.locator('.resource-favorite-button').first()).toBeVisible();
   await page.locator('.account-button').click();
   await expect(page.getByRole('menuitem', { name: 'Outils administrateur' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Quitter l’aperçu' }).click();
@@ -408,25 +417,25 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(payslipChoice).toHaveCSS("background-color", await cssTokenRgb(page, "--action-primary"));
   await expect(payslipChoice).toHaveCSS("color", "rgb(255, 255, 255)");
 
-  await goToSection(page, "documents");
-  await page.getByRole("tab", { name: /^Plannings PDF/ }).click();
+  await openPlanningPdf(page);
   // Réglages et documents colorés : chaque tuile et chaque ligne a sa teinte.
   const settingTints = await page.locator(".pdf-quick-setting").evaluateAll((tiles) => tiles.map((tile) => getComputedStyle(tile).backgroundColor));
   expect(new Set(settingTints).size).toBe(3);
   const docTones = await page.locator(".pdf-doc-download").evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
   expect(new Set(docTones).size).toBe(4);
+  await closePlanningPdf(page);
 
   await openUsefulResource(page, "Formulaires");
   await expectWhiteCard(".useful-forms-screen.useful-forms-root", accentSpine(page));
-  // Les dossiers, accident de travail compris, sont des tuiles teintées en
-  // forme de dossier, sans dégradé ni ombre.
-  await expect(page.locator(".useful-form-folder").first()).toHaveCSS("background-image", "none");
-  await expect(page.locator(".useful-form-folder").first()).toHaveCSS("box-shadow", "none");
-  await expect(page.locator(".useful-form-work-accident-entry")).toHaveCSS("box-shadow", "none");
+  // Les dossiers, accident de travail compris, sont des lignes au gabarit de
+  // la page Documents : liseré à leur couleur et léger dégradé.
+  await expect(page.locator(".resource-folder-row").first()).toHaveCSS("background-image", /linear-gradient/);
+  await expect(page.locator(".resource-folder-row")).toHaveCount(4);
+  await expect(page.locator(".resource-accident-card")).toBeVisible();
   await openUsefulResource(page, "Contacts");
   await expectWhiteCard(".useful-contacts-screen.useful-contacts-root", accentSpine(page));
-  await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("background-image", "none");
-  await expect(page.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("box-shadow", "none");
+  await expect(page.locator(".resource-folder-list > button").first()).toHaveCSS("background-image", /linear-gradient/);
+  await expect(page.locator(".resource-folder-list > button")).toHaveCount(3);
 
   await goToSection(page, "program");
   // Un chapitre réduit à son titre est teinté en entier ; les autres portent
@@ -582,8 +591,9 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   await expect(page.locator(".month-card")).toBeVisible();
   await expect(page.getByRole("button", { name: "Poser un congé" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Faire un échange" })).toBeVisible();
+  await planning.getByRole("button", { name: "Plannings PDF" }).click();
   const downloadPromise = page.waitForEvent("download");
-  await planning.getByRole("button", { name: "Exporter en PDF" }).click();
+  await page.getByRole("dialog", { name: "Plannings PDF" }).getByRole("button", { name: /^Mon planning avec mes congés/ }).click();
   expect((await downloadPromise).suggestedFilename()).toBe("planning-2026-groupe-2-avec-conges.pdf");
 });
 
@@ -939,7 +949,7 @@ async function openUsefulResource(page: Page, name: "Formulaires" | "Contacts") 
   await page.getByRole("tab", { name: new RegExp(`^${name}`) }).click();
 }
 
-test("les documents et contacts gardent trois onglets accessibles sur petit écran et Z Fold ouvert", async ({ page }) => {
+test("les documents et contacts gardent deux onglets accessibles sur petit écran et Z Fold ouvert", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "documents");
   const cards = page.locator(".useful-resource-tab");
@@ -947,18 +957,17 @@ test("les documents et contacts gardent trois onglets accessibles sur petit écr
   // Une liste : chaque rubrique a sa vignette de même taille, son titre et ce
   // qu'on y trouve.
   const arts = await page.locator(".useful-resource-tab-art svg").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
-  expect(arts).toHaveLength(3);
+  expect(arts).toHaveLength(2);
   for (const art of arts.slice(1)) expect(Math.abs(art.height - arts[0].height)).toBeLessThan(2);
-  await expect(cards.locator(".useful-resource-tab-copy small")).toHaveCount(3);
+  await expect(cards.locator(".useful-resource-tab-copy small")).toHaveCount(2);
   if (page.viewportSize()!.width <= 720) {
     // Sur téléphone, les rubriques s'empilent, chacune sur toute la largeur.
     expect(boxes[1].y).toBeGreaterThan(boxes[0].y + boxes[0].height);
-    expect(boxes[2].y).toBeGreaterThan(boxes[1].y + boxes[1].height);
-    expect(Math.abs(boxes[0].width - boxes[2].width)).toBeLessThan(2);
+    expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThan(2);
     expect(boxes[0].width).toBeGreaterThan(page.viewportSize()!.width * 0.85);
   } else if (page.viewportSize()!.width >= 900) {
-    // Sur grand écran, les trois tiennent sur une ligne.
-    expect(Math.abs(boxes[0].y - boxes[2].y)).toBeLessThan(3);
+    // Sur grand écran, les deux tiennent sur une ligne.
+    expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(3);
   }
   await page.getByRole("tab", { name: "Formulaires" }).click();
   await expect(page.getByRole("tabpanel", { name: "Formulaires" })).toBeVisible();
@@ -967,7 +976,7 @@ test("les documents et contacts gardent trois onglets accessibles sur petit écr
   await expect(page.getByRole("tab", { name: "Formulaires" })).toHaveCSS("background-color", await cssTokenRgb(page, "--accent"));
   await expect(page.getByRole("tab", { name: "Contacts" })).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(await page.locator(".has-active-resource .useful-resource-tab-art").evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).display === "none"))).toBe(true);
-  await expect(page.locator(".useful-form-folder-grid > button i")).toHaveCount(0);
+  await expect(page.locator(".resource-folder-list > button i")).toHaveCount(0);
   await page.getByRole("button", { name: /Formulaire Expo/ }).click();
   await expect(page.locator(".useful-forms-folder-header")).toHaveCSS("background-image", "none");
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
@@ -1727,12 +1736,9 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 
   await openMainMenu(page);
-  await goToSection(page, "documents");
-  await page.getByRole("tab", { name: "Plannings PDF" }).click();
+  await openPlanningPdf(page);
   await expect(page.getByRole("heading", { name: "Télécharger les plannings en PDF" })).toBeVisible();
-  expect(await page.locator(".top-header-pdf").evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("linear-gradient");
   const pdfScreen = page.locator(".pdf-download-screen");
-  await expectHeaderWidth(pdfScreen);
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
   await expect(pdfScreen).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
   await expect(pdfScreen.locator("> .native-screen-heading")).toHaveCSS("background-color", CHAPTER_TINT);
@@ -1987,8 +1993,7 @@ test("le planning avec congés se génère avec les catégories d’absence", as
     );
   });
   await prepareDemo(page);
-  await goToSection(page, "documents");
-  await page.getByRole("tab", { name: "Plannings PDF" }).click();
+  await openPlanningPdf(page);
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: /^Mon planning avec mes congés/ }).click();
@@ -2005,7 +2010,7 @@ test("le planning avec congés se génère avec les catégories d’absence", as
 });
 
 test("les formulaires utiles conservent leurs dossiers, leur ordre et leur téléchargement", async ({ page }) => {
-  // Pendant l'exposition Cézanne : son audioguide est dans le dossier Expo.
+  // Pendant l'exposition Cézanne : son audioguide est sur sa fiche, dans Programme GP.
   await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
   await prepareDemo(page);
   const homeHeaderBox = (await page.locator(".top-header").boundingBox())!;
@@ -2024,15 +2029,13 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(page.locator(".useful-forms-screen.useful-forms-root")).toHaveCSS("border-left-width", accentSpine(page));
   const resourcesScreenBox = (await page.locator(".useful-resources-screen").boundingBox())!;
   await expect(page.locator(".useful-forms-screen .useful-resource-search")).toHaveCount(0);
-  const folderBoxes = await page.locator(".useful-form-folder").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
-  expect(folderBoxes.length).toBeGreaterThan(2);
-  // Mosaïque : deux dossiers par ligne, l'accident de travail sur toute la largeur dessous.
-  expect(Math.abs(folderBoxes[1].y - folderBoxes[0].y)).toBeLessThan(2);
-  expect(folderBoxes[2].y).toBeGreaterThan(folderBoxes[0].y + folderBoxes[0].height);
-  expect(Math.abs(folderBoxes[0].width - folderBoxes[1].width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(folderBoxes[2].height - folderBoxes[3].height)).toBeLessThanOrEqual(1);
-  expect(folderBoxes[4].width).toBeGreaterThan(folderBoxes[0].width * 1.8);
-  expect(folderBoxes[4].y).toBeGreaterThan(folderBoxes[2].y + folderBoxes[2].height);
+  const folderBoxes = await page.locator(".resource-folder-row").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  expect(folderBoxes.length).toBe(4);
+  // Liste : un dossier par ligne, tous à la même largeur, l'un sous l'autre.
+  for (let index = 1; index < folderBoxes.length; index++) {
+    expect(folderBoxes[index].y).toBeGreaterThan(folderBoxes[index - 1].y + folderBoxes[index - 1].height - 1);
+    expect(Math.abs(folderBoxes[index].width - folderBoxes[0].width)).toBeLessThanOrEqual(1);
+  }
   expect(Math.abs(resourcesScreenBox.x - formsHeaderBox.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(resourcesScreenBox.width - formsHeaderBox.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(formsScreenBox.width - resourcesScreenBox.width)).toBeLessThanOrEqual(1);
@@ -2045,47 +2048,29 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     // Le même corps de titre sur toutes les pages, sur deux lignes au besoin.
     expect(parseFloat(await formsHeader.locator("h1").evaluate((node) => getComputedStyle(node).fontSize))).toBeLessThanOrEqual(37);
   } else {
-    const firstFolderBox = (await page.locator(".useful-form-folder").nth(0).boundingBox())!;
-    const secondFolderBox = (await page.locator(".useful-form-folder").nth(1).boundingBox())!;
-    expect(Math.abs(firstFolderBox.width - secondFolderBox.width)).toBeLessThanOrEqual(1);
-    expect(firstFolderBox.width).toBeGreaterThan(200);
+    const firstFolderBox = (await page.locator(".resource-folder-row").nth(0).boundingBox())!;
+    expect(firstFolderBox.width).toBeGreaterThan(400);
   }
-  const folders = page.locator(".useful-form-folder-grid > button");
-  await expect(folders.first()).toHaveCSS("box-shadow", "none");
+  const folders = page.locator(".resource-folder-list > button");
   await expect(folders).toHaveText([
-    /Formulaire Expo.*1 audioguide/,
+    /Formulaire Expo/,
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*8 documents/,
     /Horaires tickets resto.*Information pratique/,
-    /Déclarer un accident de travail.*Procédure, contacts, documents et ajout au planning/,
   ]);
+  // L'accident de travail, à part, sous la liste.
+  const accident = page.locator(".resource-accident-card");
+  await expect(accident).toContainText("Déclarer un accident de travail");
+  await expect(accident).toContainText("Déclarer");
   // Comme les annuaires de contacts, chaque dossier montre son titre, son
   // nombre et une courte description ; l'accident de travail garde son logo.
-  await expect(folders.nth(3)).toHaveCSS("background-image", "none");
-  await expect(folders.nth(3).locator("em")).toHaveText("Retrait des titres au guichet");
-  await expect(folders.nth(4).locator("em")).toBeVisible();
-  await expect(folders.nth(4).locator(".work-accident-symbol img")).toBeVisible();
+  await expect(folders.nth(3).locator("small")).toHaveText("Information pratique");
+  await expect(accident.locator(".resource-accident-icon svg")).toBeVisible();
 
   await folders.nth(0).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
-  // L'audioguide prend la forme des fiches, à la suite de la liste.
-  await expect(page.locator(".useful-form-download-list .useful-form-download-card")).toHaveCount(1);
-  // Sans document à côté, l’audioguide n’a pas besoin d’intitulé de séparation.
-  await expect(page.locator(".useful-form-list-heading")).toHaveCount(0);
-  await expect(page.locator(".useful-forms-empty")).toHaveCount(0);
   await expect(page.locator(".useful-forms-folder-screen")).not.toContainText("Hilma Af Klint");
-  // L'audioguide Cézanne s'ouvre sans scanner le QR code, code d'accès en vue.
-  const guide = page.locator(".useful-audioguide-card");
-  await expect(guide).toContainText("Cézanne et nous");
-  await expect(guide).toContainText("7268");
-  const guideLink = guide.getByRole("link", { name: "Ouvrir l’audioguide" });
-  await expect(guideLink).toHaveAttribute("href", "https://audioguide.grandpalais.fr/bypass");
-  await expect(guideLink).toHaveAttribute("target", "_blank");
-  // Le QR code d'origine s'affiche pour qu'un visiteur le flashe.
-  await guide.getByRole("button", { name: "Afficher le QR code" }).click();
-  await expect(guide.getByRole("img", { name: /QR code de l’audioguide/ })).toBeVisible();
-  await guide.getByRole("button", { name: "Masquer le QR code" }).click();
-  await expect(guide.locator(".useful-audioguide-qr")).toHaveCount(0);
+  await expect(page.locator(".useful-audioguide-card")).toHaveCount(0);
   const formsBackArea = page.getByRole("button", { name: "Revenir aux dossiers de formulaires" });
   const [formsBackBox, folderHeaderBox] = await Promise.all([
     formsBackArea.boundingBox(),
@@ -2183,7 +2168,6 @@ test("l’administrateur partage un document et l’alerte invitée ouvre la bon
   await editDialog.getByRole('button', { name: 'Supprimer le document', exact: true }).click();
   await editDialog.getByRole('button', { name: 'Confirmer la suppression' }).click();
   await expect(page.getByRole('button', { name: 'Partager Formulaire SAP corrigé', exact: true })).toHaveCount(0);
-  await expect(page.locator('.resource-favorite-button')).toHaveCount(0);
   await page.getByRole('button', { name: 'Partager Demande de congés', exact: true }).click();
   const share = page.getByRole('dialog', { name: 'Partager un document' });
   await share.getByLabel('Choisir un ou plusieurs comptes').check();
@@ -2224,7 +2208,6 @@ test("l’administrateur partage un document et l’alerte invitée ouvre la bon
   await expect(page.locator('.document-share-button')).toHaveCount(0);
   await expect(page.locator('.document-edit-button')).toHaveCount(0);
   await expect(page.locator('.useful-document-admin-panel')).toHaveCount(0);
-  await expect(page.locator('.resource-favorite-button')).toHaveCount(3);
 });
 
 test("l’administrateur peut afficher un message collectif sans envoyer d’e-mail", async ({ page }) => {
@@ -3190,6 +3173,21 @@ test("le compte administrateur peut valider seul une mise à jour du Grand Palai
   await expect(page.getByRole("tab", { name: "Salon d’honneur", exact: true })).toBeVisible();
 });
 
+test("l’audioguide Cézanne s’ouvre depuis la fiche de l’exposition, avec son code et son QR code", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  const guide = page.locator(".expo-card").filter({ hasText: "Cezanne et nous" }).first().locator(".expo-audioguide");
+  await expect(guide).toContainText("7268");
+  const guideLink = guide.getByRole("link", { name: "Ouvrir l’audioguide" });
+  await expect(guideLink).toHaveAttribute("href", "https://audioguide.grandpalais.fr/bypass");
+  await expect(guideLink).toHaveAttribute("target", "_blank");
+  await guide.getByRole("button", { name: "Afficher le QR code" }).click();
+  await expect(guide.getByRole("img", { name: /QR code de l’audioguide/ })).toBeVisible();
+  await guide.getByRole("button", { name: "Masquer le QR code" }).click();
+  await expect(guide.locator("figure")).toHaveCount(0);
+});
+
 test("les contacts utiles sont classés, directement appelables et harmonisés sur Z Fold ouvert", async ({ page }) => {
   await prepareDemo(page);
   await openUsefulResource(page, "Contacts");
@@ -3198,12 +3196,12 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   const resourcesScreen = page.locator(".useful-resources-screen");
   const contactsRoot = page.locator(".useful-contacts-screen.useful-contacts-root");
   await expect(contactsRoot).toBeVisible();
-  await expect(contactsRoot.locator(".useful-contact-directory-grid > button").first()).toHaveCSS("box-shadow", "none");
+  await expect(contactsRoot.locator(".resource-folder-list > button")).toHaveCount(3);
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-image', /svg/);
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-position', /14px/);
   await expect(contactsRoot.locator(".useful-resource-search")).toHaveCount(0);
   await expect(contactsRoot).toHaveCSS("border-left-width", accentSpine(page));
-  await expect(contactsRoot.locator(".useful-contact-directory-grid > button i")).toHaveCount(0);
+  await expect(contactsRoot.locator(".resource-folder-list > button i")).toHaveCount(0);
   const [contactHeaderBox, resourcesScreenBox, contactsRootBox] = await Promise.all([
     contactHeader.boundingBox(),
     resourcesScreen.boundingBox(),
@@ -3215,7 +3213,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   if ((page.viewportSize()?.width ?? 1000) > 900) {
     const [introBox, directoryBox] = await Promise.all([
       contactsRoot.locator(":scope > .native-screen-heading").boundingBox(),
-      contactsRoot.locator(":scope > .useful-contact-directory-grid").boundingBox(),
+      contactsRoot.locator(":scope > .resource-folder-stack").boundingBox(),
     ]);
     expect(introBox).not.toBeNull();
     expect(directoryBox).not.toBeNull();
@@ -3244,19 +3242,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await expect(contactTools).toBeVisible();
   const contactActions = contactCard.locator('.useful-contact-actions');
   const editButton = contactTools.locator('.contact-admin-edit');
-  const favoriteButton = contactCard.locator('.resource-favorite-button');
   await expect(editButton).toBeVisible();
-  await expect(favoriteButton).toBeVisible();
-  // Le bouton d'édition n'apparaît qu'une fois le rôle administrateur connu :
-  // mesurer trop tôt donnait un alignement encore instable. On réessaie
-  // jusqu'à ce que la mise en page soit posée.
-  await expect(async () => {
-    const edit = (await editButton.boundingBox())!;
-    const favorite = (await favoriteButton.boundingBox())!;
-    expect(Math.abs(edit.y - favorite.y)).toBeLessThanOrEqual(4);
-    expect(Math.abs(edit.width - favorite.width)).toBeLessThanOrEqual(1);
-    expect(Math.abs(edit.height - favorite.height)).toBeLessThanOrEqual(1);
-  }).toPass();
   // Toutes les boîtes sont relevées ensemble et réessayées : mesurer la carte
   // avant l'apparition du bouton d'administration et ses actions après
   // comparait deux états différents de la même carte.
@@ -3264,7 +3250,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
     const carte = (await contactCard.boundingBox())!;
     const outils = (await contactTools.boundingBox())!;
     const actions = (await contactActions.boundingBox())!;
-    const favori = (await favoriteButton.boundingBox())!;
+    const edit = (await editButton.boundingBox())!;
     if ((page.viewportSize()?.width ?? 0) > 720) {
       expect(outils.x - carte.x).toBeLessThan(40);
       // La refonte a déplacé ce bloc : il n'est plus ancré au bas de la carte.
@@ -3274,8 +3260,8 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
       expect(outils.y + outils.height).toBeLessThanOrEqual(carte.y + carte.height + 1);
       expect(actions.x).toBeGreaterThan(outils.x + outils.width);
     } else {
-      expect(favori.y - carte.y).toBeLessThan(24);
-      expect(carte.x + carte.width - favori.x - favori.width).toBeLessThanOrEqual(18);
+      expect(edit.y).toBeGreaterThanOrEqual(carte.y - 1);
+      expect(edit.y + edit.height).toBeLessThanOrEqual(carte.y + carte.height + 1);
     }
   }).toPass();
   const rasGroupMail = page.getByRole("link", { name: "Envoyer un e-mail à toute l’équipe des RAS" });
@@ -3760,9 +3746,9 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
 
   // La page des PDF n'a plus de menu déroulant : année et groupe se règlent
   // d'un toucher, sans liste à ouvrir.
-  await goToSection(page, "documents");
-  await page.getByRole("tab", { name: "Plannings PDF" }).click();
+  await openPlanningPdf(page);
   await expect(page.locator(".pdf-download-screen .choice-picker-trigger")).toHaveCount(0);
+  await closePlanningPdf(page);
 
   await goToSection(page, "leave");
   await assertVisibleMenus();

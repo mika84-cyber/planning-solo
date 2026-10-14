@@ -53,7 +53,7 @@ export function PdfDownloadPage({
   return (
     <section className="pdf-download-screen" id="planning-pdf" aria-labelledby="pdf-download-title">
       <div className="native-screen-heading pdf-download-intro">
-        <span className="step-label">Documents</span>
+        <span className="step-label">Plannings PDF</span>
         <h2 id="pdf-download-title">Télécharger les plannings en PDF</h2>
         <p>
           {narrowScreen

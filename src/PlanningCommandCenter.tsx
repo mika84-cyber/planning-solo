@@ -252,7 +252,7 @@ export function PlanningCommandCenter({
               <span className="step-label">Calendrier</span>
               <h2 id="home-planning-title">Mon planning</h2>
             </div>
-            {onExportPdf ? <button type="button" className="soft-detail-button planning-export-pdf" disabled={exportingPdf} onClick={onExportPdf}>{exportingPdf ? "Création…" : "Exporter en PDF"}</button> : null}
+            {onExportPdf ? <button type="button" className="soft-detail-button planning-export-pdf" disabled={exportingPdf} onClick={onExportPdf}>{exportingPdf ? "Création…" : "Plannings PDF"}</button> : null}
           </div>
         </section>
       ) : null}

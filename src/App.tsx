@@ -298,6 +298,8 @@ export default function Home() {
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
+  /** « Plannings PDF » du calendrier ouvre les plannings à imprimer. */
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const {
     authStatus, setAuthStatus, userEmail, setUserEmail,
     isProgramAdmin: actualProgramAdmin, setIsProgramAdmin, loginEmail, setLoginEmail,
@@ -3029,18 +3031,6 @@ export default function Home() {
         <Suspense fallback={<DeferredSection label="vos contacts et formulaires" />}>
         <UsefulResourcesHub
           initialTab={homeSection === "pdf" ? undefined : "forms"}
-          pdf={(
-            <PdfDownloadPage
-              narrowScreen={narrowScreen}
-              year={view.getFullYear()}
-              group={group}
-              showSchoolVacations={showSchoolVacationsOnPdf}
-              exporting={pdfExporting}
-              onYearChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-              onShowSchoolVacationsChange={setShowSchoolVacationsOnPdf}
-              onExport={(scope, includeSchoolVacations, pdfGroup) => void exportAnnualPlanning(scope, includeSchoolVacations, pdfGroup)}
-            />
-          )}
           forms={(
             <UsefulFormsSection
               key={adminRevision}
@@ -3112,13 +3102,34 @@ export default function Home() {
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
         onToday={goToday}
-        onExportPdf={homeSection === "home" ? () => void exportAnnualPlanning("my-leaves", showSchoolVacationsOnPdf) : undefined}
-        exportingPdf={pdfExporting === "my-leaves"}
+        onExportPdf={homeSection === "home" ? () => setPdfDialogOpen(true) : undefined}
+        exportingPdf={false}
         showSchoolVacations={showSchoolVacations}
         schoolZone={schoolZone}
         onShowSchoolVacationsChange={setShowSchoolVacations}
         onSchoolZoneChange={setSchoolZone}
       />
+
+      {/* Les plannings PDF s'ouvrent depuis le calendrier de l'accueil. */}
+      {pdfDialogOpen ? (
+        <Suspense fallback={null}>
+          <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setPdfDialogOpen(false)}>
+            <section className="modal-card planning-pdf-dialog" role="dialog" aria-modal="true" aria-label="Plannings PDF">
+              <button className="modal-close" type="button" aria-label="Fermer" onClick={() => setPdfDialogOpen(false)}>×</button>
+              <PdfDownloadPage
+                narrowScreen={narrowScreen}
+                year={view.getFullYear()}
+                group={group}
+                showSchoolVacations={showSchoolVacationsOnPdf}
+                exporting={pdfExporting}
+                onYearChange={(year) => setView(localDate(year, view.getMonth(), 1))}
+                onShowSchoolVacationsChange={setShowSchoolVacationsOnPdf}
+                onExport={(scope, includeSchoolVacations, pdfGroup) => void exportAnnualPlanning(scope, includeSchoolVacations, pdfGroup)}
+              />
+            </section>
+          </div>
+        </Suspense>
+      ) : null}
 
       {/* Les trois exports annuels ne dépendent plus d'une vue annuelle
           retirée : la rubrique PDF les porte à elle seule. */}

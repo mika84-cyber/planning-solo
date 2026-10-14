@@ -611,8 +611,9 @@ describe("finitions d’interface", () => {
     expect(appNavigation).toContain("Mes données");
     expect(styles).not.toContain(".main-menu-refresh");
     expect(appRoot).toContain("<UsefulResourcesHub");
-    expect(appRoot).toContain("pdf={(");
-    expect(usefulResourcesHub).toContain('key: "pdf"');
+    // Les plannings PDF s'ouvrent depuis le calendrier, dans une fenêtre.
+    expect(appRoot).toContain("planning-pdf-dialog");
+    expect(usefulResourcesHub).not.toContain('key: "pdf"');
     expect(usefulResourcesHub).toContain("useful-resources-screen");
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(styles).toContain(".main-menu-secondary .guide-menu-entry");

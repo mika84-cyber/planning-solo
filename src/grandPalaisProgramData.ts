@@ -28,6 +28,16 @@ export type GrandPalaisProgramEntry = {
   startsOn?: string;
   endsOn?: string;
   currentlyOpen?: boolean;
+  /** L'audioguide de l'exposition : la page qu'ouvre son QR code, le code
+   *  d'accès à y saisir et le QR code d'origine, à faire flasher. */
+  audioguide?: { url: string; code: string; languages: string; qr: string };
+};
+
+const CEZANNE_AUDIOGUIDE = {
+  url: "https://audioguide.grandpalais.fr/bypass",
+  code: "7268",
+  languages: "Français et anglais",
+  qr: "/useful-forms/audioguide-cezanne-qr.png",
 };
 
 export type GrandPalaisVenue = {
@@ -55,6 +65,7 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           ],
           startsOn: "2026-09-23",
           endsOn: "2027-01-17",
+          audioguide: CEZANNE_AUDIOGUIDE,
         },
       ],
       2027: [
@@ -64,6 +75,7 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           details: "J-R Touzet · X. Rey · C. Bernardi · M. Gauthier",
           startsOn: "2026-09-23",
           endsOn: "2027-01-17",
+          audioguide: CEZANNE_AUDIOGUIDE,
         },
         {
           title: "Marcel Duchamp, portrait possible",

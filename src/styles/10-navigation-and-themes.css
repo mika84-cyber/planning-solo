@@ -352,22 +352,9 @@
   padding: 13px 14px;
   background: var(--surface-high);
 }
-.resource-favorite-button {
-  width: 38px;
-  height: 38px;
-  border: 1px solid var(--border-control);
-  border-radius: 11px;
-  background: var(--surface);
-  color: #9b8e7c;
-  font-size: 18px;
-}
-.resource-favorite-button[aria-pressed="true"] { border-color: #d59a37; background: #fff6df; color: #b97400; }
 .resource-search-field { display: grid; gap: 5px; }
 .resource-search-field > span { color: var(--muted); font-size: 11px; font-weight: 850; }
 .resource-search-field input { min-height: 44px; border: 1px solid var(--border-control); border-radius: 12px; padding: 0 13px; background: var(--surface); font: inherit; }
-.resource-favorites-strip { display: grid; gap: 8px; border: 1px solid #ead5a8; border-radius: 14px; padding: 12px; background: #fffaf0; }
-.resource-favorites-strip > div { display: flex; flex-wrap: wrap; gap: 7px; }
-.resource-favorites-strip button { border: 1px solid #e0c383; border-radius: 999px; padding: 7px 10px; background: var(--surface); color: #73501d; font-weight: 750; }
 .useful-form-file-icon {
   width: 42px;
   height: 42px;

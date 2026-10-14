@@ -413,4 +413,18 @@ describe("programmation du Grand Palais", () => {
     expect(Object.values(elsewhere).flatMap((venue) => Object.values(venue.schedule).flatMap((list) => list ?? []))
       .some((entry) => entry.prices === prices)).toBe(false);
   });
+
+  it("reprend le tarif d'une fiche au titre différent quand elle seule a exactement les mêmes dates", () => {
+    const prices = [{ label: "Unique", amount: 10 }];
+    const site = { title: "Championnat du Monde du Cheval Arabe", url: "", startDate: "2026-11-25", endDate: "2026-11-27", prices };
+    const entries = (program: ReturnType<typeof applyGrandPalaisSitePrices>) =>
+      Object.values(program).flatMap((venue) => Object.values(venue.schedule).flatMap((list) => list ?? []));
+    const horse = entries(applyGrandPalaisSitePrices(GRAND_PALAIS_PROGRAM, [site]))
+      .find((entry) => entry.title === "Arabian Horse Championship");
+    expect(horse?.prices).toEqual(prices);
+    // Deux fiches aux mêmes dates : impossible de savoir laquelle, aucun tarif.
+    const twins = entries(applyGrandPalaisSitePrices(GRAND_PALAIS_PROGRAM, [site, { ...site, title: "Autre salon du même week-end" }]))
+      .find((entry) => entry.title === "Arabian Horse Championship");
+    expect(twins?.prices).toBeUndefined();
+  });
 });

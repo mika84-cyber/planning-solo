@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import "./usefulFolders.css";
+import { useEffect, useState, type CSSProperties } from "react";
+import "./resourceFolderList.css";
 import { changeUsefulContact, getUsefulContacts } from "./contactsApi";
 import { ContactEditDialog } from "./ContactEditDialog";
 import type {
@@ -7,7 +7,6 @@ import type {
   UsefulContact,
   UsefulContactsPayload,
 } from "./usefulContactsTypes";
-import { readResourceFavorites, writeResourceFavorites } from "./resourceFavorites";
 import { matchesSearch } from "./searchMatching";
 import "./usefulDocumentAdmin.css";
 import { VISITOR_QR_LINKS, VisitorQrLinks } from "./VisitorQrLinks";
@@ -48,7 +47,7 @@ export function usefulContactId(contact: UsefulContact) {
   return [contact.context || "contact", contact.name, contact.email || "", ...(contact.phones?.map((phone) => phone.number) ?? [])].join("|").toLocaleLowerCase("fr");
 }
 
-function ContactCards({ contacts, favorites, onToggleFavorite, isAdmin, onEdit }: { contacts: UsefulContact[]; favorites: string[]; onToggleFavorite: (id: string) => void; isAdmin: boolean; onEdit: (contact: UsefulContact) => void }) {
+function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]; isAdmin: boolean; onEdit: (contact: UsefulContact) => void }) {
   return (
     <div className="useful-contact-list">
       {contacts.map((contact) => (
@@ -103,7 +102,6 @@ function ContactCards({ contacts, favorites, onToggleFavorite, isAdmin, onEdit }
           </div>
           <div className="useful-contact-card-tools" role="group" aria-label={`Actions pour ${contact.name}`}>
             {isAdmin ? <button type="button" className="contact-admin-edit" aria-label={`Modifier ${contact.name}`} title="Modifier ce contact" onClick={() => onEdit(contact)}>✎</button> : null}
-            <button type="button" className="resource-favorite-button" aria-pressed={favorites.includes(usefulContactId(contact))} aria-label={`${favorites.includes(usefulContactId(contact)) ? "Retirer" : "Ajouter"} ${contact.name} ${favorites.includes(usefulContactId(contact)) ? "des" : "aux"} favoris`} onClick={() => onToggleFavorite(usefulContactId(contact))}>★</button>
           </div>
         </article>
       ))}
@@ -118,21 +116,15 @@ type UsefulContactsSectionProps = {
   demoMode?: boolean;
 };
 
-export function UsefulContactsSection({ initialData, accountId = "", isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
+export function UsefulContactsSection({ initialData, isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
   const [directory, setDirectory] = useState<"pompidou" | "gprmn" | "visitors" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
   const [contacts, setContacts] = useState<UsefulContactsPayload | null>(initialData || null);
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [favorites, setFavorites] = useState(() => readResourceFavorites(accountId, "contacts"));
   const [editingContact, setEditingContact] = useState<UsefulContact | null>(null);
   const [addingContact, setAddingContact] = useState(false);
-  const toggleFavorite = (id: string) => setFavorites((current) => {
-    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-    writeResourceFavorites(accountId, "contacts", next);
-    return next;
-  });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: loadAttempt est le déclencheur explicite du bouton Réessayer.
   useEffect(() => {
@@ -226,7 +218,7 @@ export function UsefulContactsSection({ initialData, accountId = "", isAdmin = f
           </a>
         ) : null}
         {adminDialog("pompidou", activePompidouSection.key)}
-        <ContactCards contacts={activePompidouSection.contacts} favorites={favorites} onToggleFavorite={toggleFavorite} isAdmin={isAdmin} onEdit={setEditingContact} />
+        <ContactCards contacts={activePompidouSection.contacts} isAdmin={isAdmin} onEdit={setEditingContact} />
       </section>
     );
   }
@@ -271,7 +263,7 @@ export function UsefulContactsSection({ initialData, accountId = "", isAdmin = f
           <div><span className="step-label">Contacts utiles</span><h2 id="gprmn-contacts-title">Contact GP‑RMN</h2></div>
         </header>
         {adminDialog("gprmn")}
-        <ContactCards contacts={contacts.gprmn} favorites={favorites} onToggleFavorite={toggleFavorite} isAdmin={isAdmin} onEdit={setEditingContact} />
+        <ContactCards contacts={contacts.gprmn} isAdmin={isAdmin} onEdit={setEditingContact} />
       </section>
     );
   }
@@ -284,22 +276,31 @@ export function UsefulContactsSection({ initialData, accountId = "", isAdmin = f
         <p>Choisissez un annuaire pour retrouver les personnes, services et numéros utiles.</p>
       </div>
       <label className="resource-search-field"><span>Rechercher une personne ou un service</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom ou service" /></label>
-      {(() => {
-        const query = searchQuery.trim();
-        const allContacts = [...contacts.pompidou.flatMap((section) => section.contacts), ...contacts.gprmn];
-        const matches = allContacts.filter((contact) => matchesSearch(`${contact.name} ${contact.context || ""}`, query)).sort((left, right) => Number(favorites.includes(usefulContactId(right))) - Number(favorites.includes(usefulContactId(left))));
-        return query || favorites.length ? <ContactCards contacts={matches.filter((contact) => query || favorites.includes(usefulContactId(contact)))} favorites={favorites} onToggleFavorite={toggleFavorite} isAdmin={isAdmin} onEdit={setEditingContact} /> : null;
-      })()}
-      <div className="useful-contact-directory-grid">
+      <div className="resource-folder-stack">
+      {searchQuery.trim() ? (
+        <ContactCards
+          contacts={[...contacts.pompidou.flatMap((section) => section.contacts), ...contacts.gprmn]
+            .filter((contact) => matchesSearch(`${contact.name} ${contact.context || ""}`, searchQuery.trim()))}
+          isAdmin={isAdmin}
+          onEdit={setEditingContact}
+        />
+      ) : null}
+      <div className="resource-folder-list">
           {([
-            ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, tickets resto"],
-            ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Accident, secourisme, supervision Expo"],
-            ["visitors", "Pour les visiteurs", VISITOR_QR_LINKS.length, "Réclamation et objet perdu, en QR code"],
-          ] as const).map(([key, title, count, description]) => (
-            <button key={key} type="button" className={`directory-${key}`} onClick={() => setDirectory(key)}>
-              <span aria-hidden="true">{key === "pompidou" ? "P" : key === "gprmn" ? "G" : "V"}</span><span><strong>{title}</strong>{count ? <small>{count} {key === "visitors" ? `QR code${count > 1 ? "s" : ""}` : `contact${count > 1 ? "s" : ""}`}</small> : null}<em>{description}</em></span>
+            ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, tickets resto", "#3a5f8f"],
+            ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Accident, secourisme, supervision Expo", "#2f7a52"],
+            ["visitors", "Pour les visiteurs", VISITOR_QR_LINKS.length, "Réclamation et objet perdu, en QR code", "#a45f2d"],
+          ] as const).map(([key, title, count, description, tone]) => (
+            <button key={key} type="button" className={`resource-folder-row directory-${key}`} style={{ "--row-tone": tone } as CSSProperties} onClick={() => setDirectory(key)}>
+              <span className="resource-folder-row-icon resource-folder-row-letter" aria-hidden="true">{key === "pompidou" ? "P" : key === "gprmn" ? "G" : "V"}</span>
+              <span className="resource-folder-row-copy">
+                <strong>{title}</strong>
+                <small>{count ? `${count} ${key === "visitors" ? `QR code${count > 1 ? "s" : ""}` : `contact${count > 1 ? "s" : ""}`}` : description}</small>
+              </span>
+              <span className="resource-folder-row-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" /></svg></span>
             </button>
           ))}
+      </div>
       </div>
     </section>
   );
