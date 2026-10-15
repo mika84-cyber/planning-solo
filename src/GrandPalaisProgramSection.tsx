@@ -539,13 +539,8 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
   linkLabel: string;
 }) {
   const status = grandPalaisEntryStatus(entry, today, openingReady);
-  const current = status.label === "En cours";
   const countdown = status.label === "Prochainement" ? status.detail.replace(/^Commence /, "") : "";
   const upcomingCountdown = countdown ? countdown.charAt(0).toUpperCase() + countdown.slice(1) : "";
-  const totalDays = entry.startsOn && entry.endsOn ? dayDistance(entry.startsOn, entry.endsOn) : 0;
-  const progress = current && totalDays > 0 && entry.startsOn
-    ? Math.min(100, Math.max(0, Math.round((dayDistance(entry.startsOn, today) / totalDays) * 100)))
-    : null;
   // Un tarif qui ne valait que pour un jour passé n'a plus à être montré.
   const visiblePrices = (entry.prices ?? []).filter((price) => !price.until || price.until >= today);
   const officialUrl = safeGrandPalaisUrl(entry.officialUrl);
@@ -576,11 +571,6 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
         {upcomingCountdown ? (
           <span className="expo-card-status expo-card-countdown">
             <em>{upcomingCountdown}</em>
-          </span>
-        ) : null}
-        {progress !== null ? (
-          <span className="expo-progress" aria-hidden="true">
-            <i style={{ width: `${progress}%` }} />
           </span>
         ) : null}
         {status.detail && !upcomingCountdown ? <span className="expo-card-remaining">{status.detail}</span> : null}

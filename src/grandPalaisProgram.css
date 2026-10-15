@@ -268,8 +268,6 @@
 /* Le premier tarif, celui qu'on cherche en général, ressort par sa taille :
    la teinte du lieu ne passerait pas le contraste sur les fonds les plus pâles. */
 .expo-price dd:first-of-type { color: var(--text); }
-.expo-progress { display: block; width: min(100%, 260px); height: 5px; margin: 5px 0 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.9); box-shadow: inset 0 0 0 1px var(--venue-line, var(--line)); overflow: hidden; }
-.expo-progress i { display: block; height: 100%; border-radius: inherit; background: var(--venue-accent, var(--accent)); }
 .expo-card-status em { border: 1px solid var(--border-control); border-radius: 999px; padding: 5px 10px; background: var(--surface); color: var(--muted); font-size: 0.72rem; font-style: normal; font-weight: 900; white-space: nowrap; }
 .useful-expo-timeline article[data-status="En cours"] .expo-card-status em::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); content: ""; }
 /* En-tête des expos : deux repères côte à côte, à la couleur de leur espace. */
@@ -598,14 +596,16 @@
 .expo-audioguide { width: min(100%, 360px); margin: 10px 0 0; }
 /* Billet doux : fond à peine teinté de la salle, talon clair au code en
    couleur, encoches rondes de part et d'autre du pointillé. */
-.expo-audioguide-ticket { display: flex; overflow: hidden; border: 1px solid var(--venue-line, var(--line)); border-radius: 14px; background: color-mix(in srgb, var(--venue-bg, var(--surface-soft)) 30%, #fff); box-shadow: 0 1px 2px color-mix(in srgb, var(--venue-accent, var(--accent)) 14%, transparent); }
-.expo-audioguide-stub { display: grid; flex: none; align-content: center; justify-items: center; gap: 4px; min-width: 66px; padding: 10px 8px; background: color-mix(in srgb, var(--venue-accent, var(--accent)) 13%, #fff); color: var(--venue-accent, var(--accent)); }
+.expo-audioguide-ticket { display: flex; border: 1px solid var(--venue-line, var(--line)); border-radius: 14px; background: color-mix(in srgb, var(--venue-bg, var(--surface-soft)) 30%, #fff); box-shadow: 0 1px 2px color-mix(in srgb, var(--venue-accent, var(--accent)) 14%, transparent); }
+.expo-audioguide-stub { display: grid; flex: none; align-content: center; justify-items: center; gap: 4px; min-width: 66px; padding: 10px 8px; border-radius: 13px 0 0 13px; background: color-mix(in srgb, var(--venue-accent, var(--accent)) 13%, #fff); color: var(--venue-accent, var(--accent)); }
 .expo-audioguide-stub svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .expo-audioguide-stub b { font-size: 1rem; font-weight: 850; letter-spacing: 0.1em; font-variant-numeric: tabular-nums; }
 .expo-audioguide-body { position: relative; display: grid; flex: 1; gap: 2px; min-width: 0; padding: 9px 12px; border-left: 1.5px dashed var(--venue-line, var(--line)); }
-.expo-audioguide-body::before, .expo-audioguide-body::after { position: absolute; left: -8px; width: 14px; height: 14px; border: 1px solid var(--venue-line, var(--line)); border-radius: 50%; background: var(--venue-bg, var(--surface)); content: ""; }
-.expo-audioguide-body::before { top: -8px; }
-.expo-audioguide-body::after { bottom: -8px; }
+/* Chaque encoche est un demi-cercle posé sur le contour du billet : elle
+   le coupe, sans trait au-dessus ni au-dessous. */
+.expo-audioguide-body::before, .expo-audioguide-body::after { position: absolute; left: -9px; width: 16px; height: 8px; border: 1px solid var(--venue-line, var(--line)); background: var(--venue-bg, var(--surface)); content: ""; }
+.expo-audioguide-body::before { top: -1px; border-top: 0; border-radius: 0 0 8px 8px; }
+.expo-audioguide-body::after { bottom: -1px; border-bottom: 0; border-radius: 8px 8px 0 0; }
 .expo-audioguide-body strong { color: var(--text); font-size: 0.9rem; }
 .expo-card .expo-audioguide-body small { color: var(--muted); font-size: 0.76rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .expo-audioguide-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }

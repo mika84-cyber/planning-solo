@@ -3179,6 +3179,8 @@ test("l’audioguide Cézanne s’ouvre depuis la fiche de l’exposition, avec 
   await goToSection(page, "program");
   const guide = page.locator(".expo-card").filter({ hasText: "Cezanne et nous" }).first().locator(".expo-audioguide");
   await expect(guide).toContainText("7268");
+  // La durée de l’exposition se lit en texte (« Encore … »), sans barre de progression.
+  await expect(page.locator(".expo-card .expo-progress")).toHaveCount(0);
   const guideLink = guide.getByRole("link", { name: "Ouvrir l’audioguide" });
   await expect(guideLink).toHaveAttribute("href", "https://audioguide.grandpalais.fr/bypass");
   await expect(guideLink).toHaveAttribute("target", "_blank");
