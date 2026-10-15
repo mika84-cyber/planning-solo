@@ -581,7 +581,7 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
           <div className="expo-audioguide">
             <div className="expo-audioguide-card">
               <button type="button" className="expo-audioguide-qr" aria-expanded={audioguideQrOpen} aria-label={audioguideQrOpen ? "Masquer le QR code" : "Afficher le QR code"} onClick={() => setAudioguideQrOpen((open) => !open)}>
-                <img src={entry.audioguide.qr} alt="" width="74" height="74" />
+                <img src={entry.audioguide.qr} alt="" width="84" height="84" />
                 <span className="expo-audioguide-zoom" aria-hidden="true">
                   <svg viewBox="0 0 24 24">{audioguideQrOpen ? <path d="M5 12h14" /> : <path d="M12 5v14M5 12h14" />}</svg>
                 </span>

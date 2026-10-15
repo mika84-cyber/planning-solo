@@ -595,19 +595,19 @@
    à gauche (un toucher l'agrandit), le reste dans la couleur de la salle. */
 .expo-audioguide { width: min(100%, 360px); margin: 10px 0 0; }
 .expo-audioguide svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.expo-audioguide-card { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px; border: 1px solid var(--venue-line, var(--line)); border-radius: 16px; background: #fff; box-shadow: 0 1px 3px color-mix(in srgb, var(--venue-accent, var(--accent)) 16%, transparent); }
+.expo-audioguide-card { display: flex; align-items: center; gap: 18px; padding: 12px 14px 12px 12px; border: 1px solid var(--venue-line, var(--line)); border-radius: 16px; background: #fff; box-shadow: 0 1px 3px color-mix(in srgb, var(--venue-accent, var(--accent)) 16%, transparent); }
 .app-shell .expo-audioguide-qr { position: relative; flex: none; min-height: 0; margin: 0; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; padding: 5px; background: #fff; box-shadow: none; cursor: zoom-in; }
 .app-shell .expo-audioguide-qr[aria-expanded="true"] { cursor: zoom-out; }
-.expo-audioguide-qr img { display: block; width: 74px; height: 74px; }
+.expo-audioguide-qr img { display: block; width: 84px; height: 84px; }
 .expo-audioguide-zoom { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: var(--venue-accent, var(--accent)); color: #fff; }
 .expo-audioguide-zoom svg { width: 12px; height: 12px; stroke-width: 2.6; }
-.expo-audioguide-body { display: grid; justify-items: start; gap: 3px; min-width: 0; }
+.expo-audioguide-body { display: grid; flex: 1; justify-items: start; gap: 4px; min-width: 0; }
 .expo-audioguide-body strong { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.95rem; }
 .expo-audioguide-body strong svg { width: 18px; height: 18px; color: var(--venue-accent, var(--accent)); }
 .expo-card .expo-audioguide-body small { color: var(--muted); font-size: 0.76rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .expo-audioguide-code { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.74rem; font-weight: 700; }
 .expo-audioguide-code b { border-radius: 7px; padding: 1px 7px 1px 9px; background: color-mix(in srgb, var(--venue-accent, var(--accent)) 11%, #fff); color: var(--venue-accent, var(--accent)); font-size: 0.86rem; font-weight: 850; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; }
-.app-shell .expo-audioguide-body > a { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; border-radius: 999px; padding: 6px 13px 6px 11px; background: var(--venue-accent, var(--accent)); color: #fff; font-size: 0.78rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.app-shell .expo-audioguide-body > a { display: inline-flex; justify-self: stretch; justify-content: center; align-items: center; gap: 6px; margin-top: 5px; border-radius: 999px; padding: 6px 13px 6px 11px; background: var(--venue-accent, var(--accent)); color: #fff; font-size: 0.78rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
 .expo-audioguide-body > a svg { width: 15px; height: 15px; }
 .expo-audioguide figure { display: grid; justify-items: center; gap: 4px; margin: 10px 0 0; }
 .expo-audioguide figure img { width: 200px; height: 200px; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; padding: 8px; background: #fff; }
