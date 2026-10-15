@@ -615,6 +615,9 @@
 .expo-audioguide figure { display: grid; justify-items: center; gap: 4px; margin: 10px 0 0; }
 .expo-audioguide figure img { width: 200px; height: 200px; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; padding: 8px; background: #fff; }
 .expo-audioguide figcaption { color: var(--muted); font-size: 0.74rem; }
+/* Après l'audioguide, les tarifs prennent du recul et perdent leur trait :
+   collé sous la carte, il semblait en faire partie. */
+.expo-audioguide + .expo-price { margin-top: 16px; padding-top: 0; border-top: 0; }
 /* Téléphone étroit : colonnes un peu resserrées pour garder « Code d'accès »
    et « Ouvrir l'audioguide » sur une ligne. */
 @media (max-width: 389px) {
