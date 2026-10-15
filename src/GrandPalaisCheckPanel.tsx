@@ -73,6 +73,13 @@ export function checkWhenLabel(value: string, now = new Date()) {
   return checkDateLabel(value).replace(/^./, (letter) => letter.toLocaleUpperCase("fr"));
 }
 
+/** L'heure (« 0 h 05 ») reste d'un seul tenant en fin de ligne. */
+function CheckWhen({ label }: { label: string }) {
+  const at = label.lastIndexOf(" à ");
+  if (at < 0) return <>{label}</>;
+  return <>{label.slice(0, at + 3)}<span className="gp-watch-time">{label.slice(at + 3)}</span></>;
+}
+
 /** Le résultat du dernier contrôle en quelques mots. */
 function checkResultLabel(report?: GrandPalaisCheckReport) {
   if (!report) return "";
@@ -85,10 +92,9 @@ function checkResultLabel(report?: GrandPalaisCheckReport) {
 }
 
 /**
- * Veille du site du Grand Palais, pour l'administrateur : un bandeau aux
- * couleurs de l'en-tête « Programme GP », puis deux cases — date du dernier
- * contrôle et résultat en pastille — et un bouton pour en lancer un tout de
- * suite. Le contrôle tourne en arrière-plan ; le bandeau relit la
+ * Veille du site du Grand Palais, pour l'administrateur : une carte unie
+ * avec deux cases — date du dernier contrôle et résultat en pastille — et un
+ * bouton pour en lancer un tout de suite. Le contrôle tourne en arrière-plan ; le bandeau relit la
  * programmation jusqu'à voir la date changer, puis affiche le compte rendu.
  */
 export function GrandPalaisCheckPanel({
@@ -150,7 +156,7 @@ export function GrandPalaisCheckPanel({
       <dl className="gp-watch-facts">
         <div>
           <dt>Dernier contrôle</dt>
-          <dd>{lastCheckedAt ? checkWhenLabel(lastCheckedAt) : "Aucun contrôle enregistré pour l’instant"}</dd>
+          <dd>{lastCheckedAt ? <CheckWhen label={checkWhenLabel(lastCheckedAt)} /> : "Aucun contrôle enregistré pour l’instant"}</dd>
         </div>
         <div>
           <dt>Résultat</dt>
