@@ -568,52 +568,58 @@
 :root .grand-palais-venue-navigation .grand-palais-primary-picker > button.active { border-radius: 0 12px 12px 0; background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 17%, #fff); }
 
 /* Veille du site : lancer un contrôle à la main. */
-.grand-palais-check-button { margin-top: 10px; border: 0; border-radius: 10px; padding: 9px 14px; background: #9a4a2e; color: #fff; font: inherit; font-size: 0.8rem; font-weight: 850; cursor: pointer; }
-.grand-palais-check-button:disabled { background: #c9a796; cursor: progress; }
-.grand-palais-check-panel p b { color: var(--text); }
 /* Compte rendu du dernier contrôle : ce qui a été ajouté, ce qui attend. */
 .grand-palais-check-report { margin-top: 8px; }
 .grand-palais-check-report p { margin: 6px 0 2px; }
 .grand-palais-check-report ul { margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.45; }
 
-/* Veille du site : bandeau réservé à l'administrateur, dans un bordeaux
-   éclairci (même teinte, plus légère). */
-.gp-watch { margin: 14px 0; border: 1px solid #e5c3b6; border-radius: 18px; padding: 14px 16px; background: #f7e4dc; color: #4a1b0c; }
-.gp-watch-head { display: flex; gap: 12px; align-items: center; }
-.gp-watch-icon { display: flex; flex: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: #8a3a22; color: #fff; }
-.gp-watch-icon svg { width: 20px; height: 20px; }
-.gp-watch h3 { margin: 0; color: #4a1b0c; font-size: 1rem; }
-.gp-watch-head p { margin: 2px 0 0; color: #712b13; font-size: 0.86rem; font-weight: 700; }
-.gp-watch-head small { display: block; margin-top: 2px; color: #8f5a48; font-size: 0.74rem; }
-.gp-watch .gp-watch-message { margin: 10px 0 0; color: #4a1b0c; font-size: 0.84rem; }
-.gp-watch .grand-palais-check-report { margin-top: 10px; border-radius: 12px; padding: 8px 10px; background: rgba(255, 255, 255, 0.65); color: #4a1b0c; }
-.gp-watch .grand-palais-check-report b { color: #4a1b0c; }
-.app-shell .gp-watch .grand-palais-check-button { display: block; width: 100%; margin-top: 12px; border: 0; border-radius: 999px; padding: 10px 14px; background: #8a3a22; color: #fff; font: inherit; font-size: 0.86rem; font-weight: 850; cursor: pointer; }
-.app-shell .gp-watch .grand-palais-check-button:disabled { background: #c9a796; cursor: progress; }
+/* Veille du site, réservée à l'administrateur : un bandeau aux couleurs de
+   l'en-tête « Programme GP » (vert olive, filet, bleu ardoise), deux cases
+   « Dernier contrôle » et « Résultat », puis le bouton. */
+.gp-watch { margin: 14px 0; overflow: hidden; border: 1px solid rgba(44, 38, 33, 0.45); border-radius: 18px; background: #fbfbf6; color: #2c380c; }
+.gp-watch-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: linear-gradient(112deg, #2c380c 0 62%, color-mix(in srgb, #38555e 85%, #fff) 62% 65%, #3e5e7c 65% 100%); color: #eef1df; }
+.gp-watch-head svg { flex: none; width: 20px; height: 20px; }
+.gp-watch h3 { margin: 0; color: #fff; font-family: var(--font-display); font-size: 1.1rem; }
+.gp-watch-facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; margin: 0; background: #d9dec0; }
+.gp-watch-facts > div { padding: 10px 16px; background: #f4f6ea; }
+.gp-watch-facts dt { color: #565c40; font-size: 0.64rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.gp-watch-facts dd { margin: 4px 0 0; color: #2c380c; font-size: 0.86rem; font-weight: 800; }
+.gp-watch-result { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 10px; background: #e6e8dc; color: #2c380c; font-size: 0.74rem; font-weight: 800; }
+.gp-watch-result svg { width: 13px; height: 13px; stroke-width: 2.4; }
+.gp-watch-result.is-clear { background: #dfeccf; color: #2f5a17; }
+.gp-watch-result.is-pending { background: #f6e7c4; color: #7a5410; }
+.gp-watch-body { padding: 0 16px 12px; }
+.gp-watch .gp-watch-message { margin: 10px 0 0; color: #2c380c; font-size: 0.84rem; }
+.gp-watch .grand-palais-check-report { border-radius: 12px; padding: 8px 10px; background: #f4f6ea; color: #2c380c; }
+.gp-watch .grand-palais-check-report b { color: #2c380c; }
+.app-shell .gp-watch .grand-palais-check-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 12px; border: 0; border-radius: 999px; padding: 10px 14px; background: #2c380c; color: #fff; font: inherit; font-size: 0.86rem; font-weight: 850; cursor: pointer; }
+.app-shell .gp-watch .grand-palais-check-button svg { width: 16px; height: 16px; stroke-width: 2.2; }
+.app-shell .gp-watch .grand-palais-check-button:disabled { background: #9aa47a; cursor: progress; }
+.gp-watch-body > small { display: block; margin-top: 8px; color: #565c40; font-size: 0.72rem; text-align: center; }
 
 /* Audioguide sur la fiche de l'exposition : une carte en deux colonnes
    presque égales, sur un dégradé en diagonale du pastel de la salle (plus
    soutenu dans le coin en haut à gauche) vers le blanc ; le QR code à gauche
    reste sur fond blanc (un toucher l'agrandit). Contour : le même léger
    liseré noir que le planning partagé. */
-.expo-audioguide { width: min(100%, 360px); margin: 10px 0 0; }
-.expo-audioguide svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.expo-audioguide-card { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid rgba(44, 38, 33, 0.45); border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--venue-accent, var(--accent)) 26%, var(--venue-bg, var(--surface-soft))) 0%, var(--venue-bg, var(--surface-soft)) 38%, color-mix(in srgb, var(--venue-bg, var(--surface-soft)) 30%, #fff) 70%, #fff 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px color-mix(in srgb, var(--venue-accent, var(--accent)) 55%, transparent), 0 1px 2px color-mix(in srgb, var(--venue-accent, var(--accent)) 15%, transparent); }
-.app-shell .expo-audioguide-qr { position: relative; display: grid; place-items: center; justify-self: stretch; aspect-ratio: 1; min-height: 0; margin: 0; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; padding: 8px; background: #fff; box-shadow: none; cursor: zoom-in; }
+.expo-audioguide { --ag: var(--venue-accent, var(--accent)); --ag-line: var(--venue-line, var(--line)); --ag-bg: var(--venue-bg, var(--surface-soft)); width: min(100%, 360px); margin: 10px 0 0; }
+.expo-audioguide svg, .gp-watch svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.expo-audioguide-card { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid rgba(44, 38, 33, 0.45); border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--ag) 26%, var(--ag-bg)) 0%, var(--ag-bg) 38%, color-mix(in srgb, var(--ag-bg) 30%, #fff) 70%, #fff 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px color-mix(in srgb, var(--ag) 55%, transparent), 0 1px 2px color-mix(in srgb, var(--ag) 15%, transparent); }
+.app-shell .expo-audioguide-qr { position: relative; display: grid; place-items: center; justify-self: stretch; aspect-ratio: 1; min-height: 0; margin: 0; border: 1px solid var(--ag-line); border-radius: 12px; padding: 8px; background: #fff; box-shadow: none; cursor: zoom-in; }
 .app-shell .expo-audioguide-qr[aria-expanded="true"] { cursor: zoom-out; }
 .expo-audioguide-qr img { display: block; width: 100%; max-width: 130px; height: auto; }
-.expo-audioguide-zoom { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: var(--venue-accent, var(--accent)); color: #fff; }
+.expo-audioguide-zoom { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: var(--ag); color: #fff; }
 .expo-audioguide-zoom svg { width: 12px; height: 12px; stroke-width: 2.6; }
 .expo-audioguide-body { display: grid; justify-items: start; gap: 4px; min-width: 0; }
 .expo-audioguide-body strong { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.95rem; }
-.expo-audioguide-body strong svg { width: 18px; height: 18px; color: var(--venue-accent, var(--accent)); }
+.expo-audioguide-body strong svg { width: 18px; height: 18px; color: var(--ag); }
 .expo-card .expo-audioguide-body small { color: var(--muted); font-size: 0.76rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .expo-audioguide-code { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.74rem; font-weight: 700; }
-.expo-audioguide-code b { border-radius: 7px; padding: 1px 7px 1px 9px; background: #fff; color: var(--venue-accent, var(--accent)); font-size: 0.86rem; font-weight: 850; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; }
-.app-shell .expo-audioguide-body > a { display: inline-flex; justify-self: stretch; justify-content: center; align-items: center; gap: 6px; margin-top: 5px; border-radius: 999px; padding: 6px 13px 6px 11px; background: var(--venue-accent, var(--accent)); color: #fff; font-size: 0.78rem; font-weight: 800; text-align: center; text-decoration: none; }
+.expo-audioguide-code b { border-radius: 7px; padding: 1px 7px 1px 9px; background: #fff; color: var(--ag); font-size: 0.86rem; font-weight: 850; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; }
+.app-shell .expo-audioguide-body > a { display: inline-flex; justify-self: stretch; justify-content: center; align-items: center; gap: 6px; margin-top: 5px; border-radius: 999px; padding: 6px 13px 6px 11px; background: var(--ag); color: #fff; font-size: 0.78rem; font-weight: 800; text-align: center; text-decoration: none; }
 .expo-audioguide-body > a svg { width: 15px; height: 15px; }
 .expo-audioguide figure { display: grid; justify-items: center; gap: 4px; margin: 10px 0 0; }
-.expo-audioguide figure img { width: 200px; height: 200px; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; padding: 8px; background: #fff; }
+.expo-audioguide figure img { width: 200px; height: 200px; border: 1px solid var(--ag-line); border-radius: 12px; padding: 8px; background: #fff; }
 .expo-audioguide figcaption { color: var(--muted); font-size: 0.74rem; }
 /* Après l'audioguide, les tarifs prennent du recul et perdent leur trait :
    collé sous la carte, il semblait en faire partie. */

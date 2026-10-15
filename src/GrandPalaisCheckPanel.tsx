@@ -85,9 +85,10 @@ function checkResultLabel(report?: GrandPalaisCheckReport) {
 }
 
 /**
- * Veille du site du Grand Palais, pour l'administrateur : un bandeau sombre
- * avec la date et le résultat du dernier contrôle, et un bouton pour en lancer
- * un tout de suite. Le contrôle tourne en arrière-plan ; le bandeau relit la
+ * Veille du site du Grand Palais, pour l'administrateur : un bandeau aux
+ * couleurs de l'en-tête « Programme GP », puis deux cases — date du dernier
+ * contrôle et résultat en pastille — et un bouton pour en lancer un tout de
+ * suite. Le contrôle tourne en arrière-plan ; le bandeau relit la
  * programmation jusqu'à voir la date changer, puis affiche le compte rendu.
  */
 export function GrandPalaisCheckPanel({
@@ -139,27 +140,41 @@ export function GrandPalaisCheckPanel({
 
   const currentReport = report && report.checkedAt === lastCheckedAt ? report : undefined;
   const result = checkResultLabel(currentReport);
+  const running = status === "running";
   return (
     <section className="grand-palais-check-panel gp-watch" aria-labelledby="grand-palais-check-title">
       <div className="gp-watch-head">
-        <span className="gp-watch-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="1.6" /><path d="M12 12 18 6" /><path d="M7.8 16.2a6 6 0 1 1 8.4 0" /><path d="M5 19a10 10 0 1 1 14 0" /></svg>
-        </span>
-        <div>
-          <h3 id="grand-palais-check-title">Veille du site</h3>
-          <p>
-            {status === "running" ? "Lecture du site en cours, une à deux minutes…"
-              : lastCheckedAt ? <>{checkWhenLabel(lastCheckedAt)}{result ? ` · ${result}` : ""}</>
-              : "Aucun contrôle enregistré pour l’instant"}
-          </p>
-          <small>Contrôle automatique chaque nuit à minuit</small>
-        </div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.6" /><path d="M12 12 18 6" /><path d="M7.8 16.2a6 6 0 1 1 8.4 0" /><path d="M5 19a10 10 0 1 1 14 0" /></svg>
+        <h3 id="grand-palais-check-title">Veille du site</h3>
       </div>
-      {message ? <p className="gp-watch-message" role={status === "failed" ? "alert" : "status"}>{message}</p> : null}
-      {currentReport && status !== "running" && result !== "rien de nouveau" ? <CheckReport report={currentReport} /> : null}
-      <button type="button" className="grand-palais-check-button" disabled={status === "running"} onClick={() => void runCheck()}>
-        {status === "running" ? "Contrôle en cours…" : "Contrôler maintenant"}
-      </button>
+      <dl className="gp-watch-facts">
+        <div>
+          <dt>Dernier contrôle</dt>
+          <dd>{lastCheckedAt ? checkWhenLabel(lastCheckedAt) : "Aucun contrôle enregistré pour l’instant"}</dd>
+        </div>
+        <div>
+          <dt>Résultat</dt>
+          <dd>
+            {running ? <span className="gp-watch-result">Lecture en cours…</span>
+              : result ? (
+                <span className={`gp-watch-result ${result === "rien de nouveau" ? "is-clear" : "is-pending"}`}>
+                  {result === "rien de nouveau" ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg> : null}
+                  {result === "rien de nouveau" ? "Rien de nouveau" : result}
+                </span>
+              ) : "—"}
+          </dd>
+        </div>
+      </dl>
+      <div className="gp-watch-body">
+        {running ? <p className="gp-watch-message" role="status">Lecture du site en cours, une à deux minutes…</p> : null}
+        {message ? <p className="gp-watch-message" role={status === "failed" ? "alert" : "status"}>{message}</p> : null}
+        {currentReport && !running && result !== "rien de nouveau" ? <CheckReport report={currentReport} /> : null}
+        <button type="button" className="grand-palais-check-button" disabled={running} onClick={() => void runCheck()}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></svg>
+          {running ? "Contrôle en cours…" : "Contrôler maintenant"}
+        </button>
+        <small>Contrôle automatique chaque nuit à minuit</small>
+      </div>
     </section>
   );
 }

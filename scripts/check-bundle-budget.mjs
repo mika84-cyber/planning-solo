@@ -95,7 +95,10 @@ const budgets = {
   // retrait d'environ 16 Ko de styles de l'ancien tableau de bord.
   // Relevé le 14 octobre 2026 à 535 / 100 Kio avec l'accord de
   // l'administrateur, pour les mêmes rubriques (533,6 / 99,3 Kio mesurés).
-  totalCss: { raw: 535 * KIB, gzip: 100 * KIB },
+  // Relevé le 15 octobre 2026 à 537 Kio bruts avec l'accord de
+  // l'administrateur, pour la carte de l'audioguide et la veille du site
+  // (536,0 / 100,0 Kio mesurés).
+  totalCss: { raw: 537 * KIB, gzip: 100 * KIB },
 };
 
 async function filesUnder(directory) {

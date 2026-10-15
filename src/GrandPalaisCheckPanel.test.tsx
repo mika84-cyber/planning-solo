@@ -34,4 +34,18 @@ describe("veille du site du Grand Palais", () => {
     );
     expect(stale).not.toContain("Paris Photo");
   });
+
+  it("range la date et le résultat dans deux cases, le résultat en pastille", () => {
+    const html = renderToStaticMarkup(
+      <GrandPalaisCheckPanel lastCheckedAt={report.checkedAt} report={report} onPayload={vi.fn()} />,
+    );
+    expect(html).toContain("Dernier contrôle");
+    expect(html).toContain("Résultat");
+    expect(html).toMatch(/gp-watch-result is-pending">1 mise à jour ajoutée · 1 à valider</);
+    const clear = renderToStaticMarkup(
+      <GrandPalaisCheckPanel lastCheckedAt={report.checkedAt} report={{ ...report, prices: [], proposals: [] }} onPayload={vi.fn()} />,
+    );
+    expect(clear).toMatch(/gp-watch-result is-clear">.*Rien de nouveau</);
+    expect(clear).toContain("Contrôle automatique chaque nuit à minuit");
+  });
 });
