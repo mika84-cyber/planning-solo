@@ -594,10 +594,11 @@
 /* Audioguide sur la fiche de l'exposition : une carte en deux colonnes
    presque égales, sur un dégradé en diagonale du pastel de la salle (plus
    soutenu dans le coin en haut à gauche) vers le blanc ; le QR code à gauche
-   reste sur fond blanc (un toucher l'agrandit). */
+   reste sur fond blanc (un toucher l'agrandit). Contour : le même léger
+   liseré noir que le planning partagé. */
 .expo-audioguide { width: min(100%, 360px); margin: 10px 0 0; }
 .expo-audioguide svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.expo-audioguide-card { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid color-mix(in srgb, var(--venue-accent, var(--accent)) 35%, var(--venue-bg, var(--surface-soft))); border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--venue-accent, var(--accent)) 26%, var(--venue-bg, var(--surface-soft))) 0%, var(--venue-bg, var(--surface-soft)) 38%, color-mix(in srgb, var(--venue-bg, var(--surface-soft)) 30%, #fff) 70%, #fff 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px color-mix(in srgb, var(--venue-accent, var(--accent)) 55%, transparent), 0 1px 2px color-mix(in srgb, var(--venue-accent, var(--accent)) 15%, transparent); }
+.expo-audioguide-card { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid rgba(44, 38, 33, 0.45); border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--venue-accent, var(--accent)) 26%, var(--venue-bg, var(--surface-soft))) 0%, var(--venue-bg, var(--surface-soft)) 38%, color-mix(in srgb, var(--venue-bg, var(--surface-soft)) 30%, #fff) 70%, #fff 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px color-mix(in srgb, var(--venue-accent, var(--accent)) 55%, transparent), 0 1px 2px color-mix(in srgb, var(--venue-accent, var(--accent)) 15%, transparent); }
 .app-shell .expo-audioguide-qr { position: relative; display: grid; place-items: center; justify-self: stretch; aspect-ratio: 1; min-height: 0; margin: 0; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; padding: 8px; background: #fff; box-shadow: none; cursor: zoom-in; }
 .app-shell .expo-audioguide-qr[aria-expanded="true"] { cursor: zoom-out; }
 .expo-audioguide-qr img { display: block; width: 100%; max-width: 130px; height: auto; }
