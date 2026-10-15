@@ -574,28 +574,29 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
           </span>
         ) : null}
         {status.detail && !upcomingCountdown ? <span className="expo-card-remaining">{status.detail}</span> : null}
-        {/* L'audioguide de l'exposition : l'ouvrir (le code d'accès est
-            copié) ou montrer son QR code au visiteur. */}
+        {/* L'audioguide de l'exposition : son QR code reste visible pour
+            le visiteur (un toucher l'agrandit), le code d'accès se lit à côté
+            et « Ouvrir l'audioguide » le copie avant d'ouvrir la page. */}
         {entry.audioguide ? (
           <div className="expo-audioguide">
-            {/* Une carte façon billet : le talon porte le casque et le code
-                d'accès, le reste les langues et les deux actions. */}
-            <div className="expo-audioguide-ticket">
-              <span className="expo-audioguide-stub">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
-                <b><span className="expo-audioguide-hidden">Code d’accès </span>{entry.audioguide.code}</b>
-              </span>
-              <span className="expo-audioguide-body">
-                <strong>Audioguide</strong>
-                <small>{entry.audioguide.languages}</small>
-                <span className="expo-audioguide-actions">
-                  <a href={entry.audioguide.url} target="_blank" rel="noopener noreferrer" aria-label="Ouvrir l’audioguide" onClick={() => void navigator.clipboard?.writeText(entry.audioguide!.code).catch(() => undefined)}>Ouvrir</a>
-                  {/* Libellés courts pour tenir sur une ligne ; le nom complet
-                      reste annoncé aux lecteurs d'écran. */}
-                  <button type="button" aria-expanded={audioguideQrOpen} aria-label={audioguideQrOpen ? "Masquer le QR code" : "Afficher le QR code"} onClick={() => setAudioguideQrOpen((open) => !open)}>
-                    {audioguideQrOpen ? "Masquer" : "QR code"}
-                  </button>
+            <div className="expo-audioguide-card">
+              <button type="button" className="expo-audioguide-qr" aria-expanded={audioguideQrOpen} aria-label={audioguideQrOpen ? "Masquer le QR code" : "Afficher le QR code"} onClick={() => setAudioguideQrOpen((open) => !open)}>
+                <img src={entry.audioguide.qr} alt="" width="74" height="74" />
+                <span className="expo-audioguide-zoom" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">{audioguideQrOpen ? <path d="M5 12h14" /> : <path d="M12 5v14M5 12h14" />}</svg>
                 </span>
+              </button>
+              <span className="expo-audioguide-body">
+                <strong>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
+                  Audioguide
+                </strong>
+                <small>{entry.audioguide.languages}</small>
+                <span className="expo-audioguide-code">Code d’accès <b>{entry.audioguide.code}</b></span>
+                <a href={entry.audioguide.url} target="_blank" rel="noopener noreferrer" onClick={() => void navigator.clipboard?.writeText(entry.audioguide!.code).catch(() => undefined)}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6" /><path d="M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
+                  Ouvrir l’audioguide
+                </a>
               </span>
             </div>
             {audioguideQrOpen ? (
