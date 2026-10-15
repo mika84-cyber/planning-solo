@@ -599,9 +599,11 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
                 <strong>Audioguide</strong>
                 <small>{entry.audioguide.languages}</small>
                 <span className="expo-audioguide-actions">
-                  <a href={entry.audioguide.url} target="_blank" rel="noopener noreferrer" onClick={() => void navigator.clipboard?.writeText(entry.audioguide!.code).catch(() => undefined)}>Ouvrir l’audioguide</a>
-                  <button type="button" aria-expanded={audioguideQrOpen} onClick={() => setAudioguideQrOpen((open) => !open)}>
-                    {audioguideQrOpen ? "Masquer le QR code" : "Afficher le QR code"}
+                  <a href={entry.audioguide.url} target="_blank" rel="noopener noreferrer" aria-label="Ouvrir l’audioguide" onClick={() => void navigator.clipboard?.writeText(entry.audioguide!.code).catch(() => undefined)}>Ouvrir</a>
+                  {/* Libellés courts pour tenir sur une ligne ; le nom complet
+                      reste annoncé aux lecteurs d'écran. */}
+                  <button type="button" aria-expanded={audioguideQrOpen} aria-label={audioguideQrOpen ? "Masquer le QR code" : "Afficher le QR code"} onClick={() => setAudioguideQrOpen((open) => !open)}>
+                    {audioguideQrOpen ? "Masquer" : "QR code"}
                   </button>
                 </span>
               </span>

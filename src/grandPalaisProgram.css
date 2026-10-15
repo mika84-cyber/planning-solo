@@ -596,16 +596,21 @@
 /* Audioguide sur la fiche de l'exposition : une carte façon billet, dans la
    couleur de la salle. */
 .expo-audioguide { width: min(100%, 360px); margin: 10px 0 0; }
-.expo-audioguide-ticket { display: flex; overflow: hidden; border: 1px solid var(--venue-line, var(--line)); border-radius: 12px; background: #fff; }
-.expo-audioguide-stub { display: grid; flex: none; align-content: center; justify-items: center; gap: 3px; min-width: 64px; padding: 10px 8px; background: var(--venue-accent, var(--accent)); color: #fff; }
+/* Billet doux : fond à peine teinté de la salle, talon clair au code en
+   couleur, encoches rondes de part et d'autre du pointillé. */
+.expo-audioguide-ticket { display: flex; overflow: hidden; border: 1px solid var(--venue-line, var(--line)); border-radius: 14px; background: color-mix(in srgb, var(--venue-bg, var(--surface-soft)) 30%, #fff); box-shadow: 0 1px 2px color-mix(in srgb, var(--venue-accent, var(--accent)) 14%, transparent); }
+.expo-audioguide-stub { display: grid; flex: none; align-content: center; justify-items: center; gap: 4px; min-width: 66px; padding: 10px 8px; background: color-mix(in srgb, var(--venue-accent, var(--accent)) 13%, #fff); color: var(--venue-accent, var(--accent)); }
 .expo-audioguide-stub svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.expo-audioguide-stub b { font-size: 0.92rem; font-weight: 850; letter-spacing: 0.12em; font-variant-numeric: tabular-nums; }
-.expo-audioguide-body { display: grid; gap: 2px; min-width: 0; padding: 9px 11px; border-left: 1.5px dashed var(--venue-line, var(--line)); }
-.expo-audioguide-body strong { color: var(--text); font-size: 0.86rem; }
+.expo-audioguide-stub b { font-size: 1rem; font-weight: 850; letter-spacing: 0.1em; font-variant-numeric: tabular-nums; }
+.expo-audioguide-body { position: relative; display: grid; flex: 1; gap: 2px; min-width: 0; padding: 9px 12px; border-left: 1.5px dashed var(--venue-line, var(--line)); }
+.expo-audioguide-body::before, .expo-audioguide-body::after { position: absolute; left: -8px; width: 14px; height: 14px; border: 1px solid var(--venue-line, var(--line)); border-radius: 50%; background: var(--venue-bg, var(--surface)); content: ""; }
+.expo-audioguide-body::before { top: -8px; }
+.expo-audioguide-body::after { bottom: -8px; }
+.expo-audioguide-body strong { color: var(--text); font-size: 0.9rem; }
 .expo-card .expo-audioguide-body small { color: var(--muted); font-size: 0.76rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
-.expo-audioguide-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.app-shell .expo-audioguide-actions > a, .app-shell .expo-audioguide-actions > button { min-height: 0; margin: 0; border: 1px solid var(--venue-accent, var(--accent)); border-radius: 999px; padding: 5px 11px; background: #fff; box-shadow: none; color: var(--venue-accent, var(--accent)); font: inherit; font-size: 0.76rem; font-weight: 800; text-decoration: none; cursor: pointer; }
-.app-shell .expo-audioguide-actions > a { background: var(--venue-accent, var(--accent)); color: #fff; }
+.expo-audioguide-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.app-shell .expo-audioguide-actions > a, .app-shell .expo-audioguide-actions > button { flex: 1 1 0; min-height: 0; margin: 0; border: 1px solid var(--venue-line, var(--line)); border-radius: 999px; padding: 6px 10px; background: #fff; box-shadow: none; color: var(--venue-accent, var(--accent)); font: inherit; font-size: 0.78rem; font-weight: 800; text-align: center; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.app-shell .expo-audioguide-actions > a { border-color: var(--venue-accent, var(--accent)); background: var(--venue-accent, var(--accent)); color: #fff; }
 .expo-audioguide figure { display: grid; justify-items: center; gap: 4px; margin: 8px 0 0; }
 .expo-audioguide figure img { width: 180px; height: 180px; border: 1px solid var(--venue-line, var(--line)); border-radius: 10px; background: #fff; }
 .expo-audioguide figcaption { color: var(--muted); font-size: 0.74rem; }
