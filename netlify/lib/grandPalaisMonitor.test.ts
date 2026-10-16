@@ -105,7 +105,8 @@ describe("surveillance de la programmation du Grand Palais", () => {
       + "<p><strong>Tarif enfant</strong> : 5 € la journée / 12 € les 3 jours<br>3 à 11 ans</p>"
       + "<p><strong>Tarif famille</strong> : 30 € la journée / 75 € les 3 jours<br>2 adultes et jusqu’à 2 enfants de moins de 12 ans<br>"
       + "Enfant supplémentaire de moins de 12 ans (avec un billet famille) : 5 € la journée / 12 € les 3 jours</p>"
-      + "<p><strong>Gratuit</strong><br>Moins de 3 ans</p></div>";
+      // La page coupe « Moins » par une balise : « M<span>oins de 3 ans ».
+      + "<p><span><strong>Gratuit</strong></span><br>M<span>oins de 3 ans</span></p></div>";
     expect(extractGrandPalaisPrices(html)).toEqual([
       { label: "Adulte · journée", amount: 15 },
       { label: "Adulte · 3 jours", amount: 35 },

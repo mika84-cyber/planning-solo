@@ -144,28 +144,32 @@ export function useWorkExchangeActions({
   }
 
   async function save() {
+    // Hors d'un férié, ou avec un férié rendu, ce n'est pas un remplacement seul.
+    const replacement = Boolean(draft.replacement);
+    const dated = replacement ? { ...draft, returnDate: "" } : draft;
     const occupiedDates = new Set<string>();
     for (const period of periods)
-      for (const date of [draft.agreementDate, draft.returnDate])
+      for (const date of [dated.agreementDate, dated.returnDate])
         if (date && date >= period.from && date <= period.to) occupiedDates.add(date);
-    for (const date of [draft.agreementDate, draft.returnDate]) {
+    for (const date of [dated.agreementDate, dated.returnDate]) {
       if (!date) continue;
       if (entries[date]?.leave || entries[date]?.wish || recoveryUses.some((item) => item.date === date))
         occupiedDates.add(date);
     }
-    const validationError = validateWorkExchange(draft, {
+    const validationError = validateWorkExchange(dated, {
       group, entries, occupiedDates, isExceptionallyClosed,
     });
     if (validationError) {
       setError(validationError);
       return;
     }
-    if (![draft.agreementStart, draft.agreementEnd, draft.returnStart, draft.returnEnd].every(Boolean)) {
-      setError("Indiquez les horaires des deux journées.");
+    if (replacement ? !(draft.agreementStart && draft.agreementEnd)
+      : ![draft.agreementStart, draft.agreementEnd, draft.returnStart, draft.returnEnd].every(Boolean)) {
+      setError(replacement ? "Indiquez vos horaires ce jour-là." : "Indiquez les horaires des deux journées.");
       return;
     }
     const previous = draft.id ? exchanges.find((item) => item.id === draft.id) : undefined;
-    const nextDraft = { ...draft, id: draft.id || crypto.randomUUID() };
+    const nextDraft = { ...dated, id: draft.id || crypto.randomUUID() };
     const affected = [...new Set([
       previous?.agreementDate, previous?.returnDate,
       nextDraft.agreementDate, nextDraft.returnDate,
@@ -190,13 +194,17 @@ export function useWorkExchangeActions({
           });
       setEntries((current) => applyExchange(current, nextDraft, previous, result.entries));
       setOpen(false);
-      showSuccess(previous ? "L’échange a été modifié sur ses deux dates." : "L’échange a été enregistré sur ses deux dates.");
+      showSuccess(replacement
+        ? previous ? "Le remplacement a été modifié." : "Le remplacement a été enregistré."
+        : previous ? "L’échange a été modifié sur ses deux dates." : "L’échange a été enregistré sur ses deux dates.");
       const { id, partnerName, partnerGroup, agreementDate, returnDate } = nextDraft;
       if (demoMode) storeDemoExchange(id, { id, partnerName, partnerGroup, agreementDate, returnDate });
-      /* La demande d'échange s'ouvre aussitôt, remplie avec ces dates. */
+      /* La demande s'ouvre aussitôt, remplie avec ces dates : la demande
+         d'échange, ou pour un férié la demande de remplacement. */
       try {
         localStorage.setItem(EXCHANGE_HANDOFF_KEY, JSON.stringify({
           version: 1,
+          sheet: getDayInfo(fromKey(agreementDate), group).holiday ? "ferie" : "echange",
           ownerKey: userEmail.trim().toLowerCase(),
           profile: { fullName: formProfile?.fullName || "", group: String(group), signature: formProfile?.signature || "" },
           ...nextDraft,
@@ -213,8 +221,8 @@ export function useWorkExchangeActions({
 
   async function remove() {
     const previous = exchanges.find((item) => item.id === draft.id);
-    if (!previous || (!demoMode && !confirmAction("Supprimer les deux journées de cet échange ?"))) return;
-    const affected = [previous.agreementDate, previous.returnDate];
+    if (!previous || (!demoMode && !confirmAction(previous.returnDate ? "Supprimer les deux journées de cet échange ?" : "Supprimer ce remplacement ?"))) return;
+    const affected = [previous.agreementDate, previous.returnDate].filter(Boolean);
     setSaving(true);
     setError("");
     try {
@@ -232,7 +240,7 @@ export function useWorkExchangeActions({
       setEntries((current) => applyExchange(current, null, previous, result.entries));
       if (demoMode) storeDemoExchange(previous.id, null);
       setOpen(false);
-      showSuccess("Les deux journées de l’échange ont été supprimées.");
+      showSuccess(previous.returnDate ? "Les deux journées de l’échange ont été supprimées." : "Le remplacement a été supprimé.");
     } catch (caught) {
       setError(calendarErrorMessage(caught, "L’échange n’a pas pu être supprimé."));
     } finally {

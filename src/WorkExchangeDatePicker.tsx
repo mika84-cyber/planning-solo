@@ -13,11 +13,14 @@ import {
 type Props = {
   value: string;
   ownerGroup: number;
+  /** Groupe qui doit être en repos ; 0 : n'importe quel autre groupe. */
   otherGroup: number;
   ariaLabel: string;
   onChange: (date: string) => void;
   /** Un férié s'échange contre un férié : seuls ceux-là sont proposés. */
   holidaysOnly?: boolean;
+  /** Un férié se cède depuis l'onglet « Jour férié » : écarté ici. */
+  excludeHolidays?: boolean;
 };
 
 function initialView(value: string) {
@@ -32,7 +35,9 @@ export function WorkExchangeDatePicker({
   ariaLabel,
   onChange,
   holidaysOnly = false,
+  excludeHolidays = false,
 }: Props) {
+  const others = otherGroup ? [otherGroup] : [1, 2, 3].filter((item) => item !== ownerGroup);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => initialView(value));
 
@@ -54,8 +59,8 @@ export function WorkExchangeDatePicker({
         aria-expanded={open}
         onClick={toggle}
       >
-        <span>{value ? "Date sélectionnée" : "Choisir dans le calendrier"}</span>
-        <strong>{value ? longDate(fromKey(value)) : "Aucune date"}</strong>
+        <strong>{value ? longDate(fromKey(value)) : "Choisir une date"}</strong>
+        <span>{value ? "Changer" : "Calendrier du groupe " + ownerGroup}</span>
       </button>
 
       {open ? (
@@ -79,9 +84,10 @@ export function WorkExchangeDatePicker({
             month={view.getMonth()}
             renderDay={(date) => {
               const ownerInfo = getDayInfo(date, ownerGroup);
-              const otherInfo = getDayInfo(date, otherGroup);
+              const otherOff = others.filter((item) => getDayInfo(date, item).kind === "off");
               const key = dateKey(date);
-              const selectable = ownerInfo.kind === "work" && otherInfo.kind === "off" && (!holidaysOnly || Boolean(ownerInfo.holiday));
+              const selectable = ownerInfo.kind === "work" && otherOff.length > 0
+                && (!holidaysOnly || Boolean(ownerInfo.holiday)) && !(excludeHolidays && ownerInfo.holiday);
               const incompatibleWorkDay = ownerInfo.kind === "work" && !selectable;
               return (
                 <button
@@ -90,8 +96,8 @@ export function WorkExchangeDatePicker({
                   className={`exchange-cycle-day ${ownerInfo.kind} ${selectable ? "selectable" : incompatibleWorkDay ? "incompatible" : "unavailable"}${key === value ? " selected" : ""}`}
                   data-date={key}
                   disabled={!selectable}
-                  aria-label={`${longDate(date)}, groupe ${ownerGroup} : ${DAY_LABELS[ownerInfo.kind]}, groupe ${otherGroup} : ${DAY_LABELS[otherInfo.kind]}${selectable ? ", disponible pour l’échange" : ", indisponible pour l’échange"}`}
-                  title={`Groupe ${ownerGroup} : ${DAY_LABELS[ownerInfo.kind]} · Groupe ${otherGroup} : ${DAY_LABELS[otherInfo.kind]}`}
+                  aria-label={`${longDate(date)}, groupe ${ownerGroup} : ${DAY_LABELS[ownerInfo.kind]}${others.map((item) => `, groupe ${item} : ${DAY_LABELS[getDayInfo(date, item).kind]}`).join("")}${selectable ? ", disponible pour l’échange" : ", indisponible pour l’échange"}`}
+                  title={`Groupe ${ownerGroup} : ${DAY_LABELS[ownerInfo.kind]}${others.map((item) => ` · Groupe ${item} : ${DAY_LABELS[getDayInfo(date, item).kind]}`).join("")}`}
                   onClick={() => {
                     onChange(key);
                     setOpen(false);
@@ -104,7 +110,10 @@ export function WorkExchangeDatePicker({
             }}
           />
           <small>
-            Seuls les jours où le groupe {ownerGroup} travaille et où le groupe {otherGroup} est en repos sont sélectionnables.
+            {otherGroup
+              ? `Seuls les jours où le groupe ${ownerGroup} travaille et où le groupe ${otherGroup} est en repos sont sélectionnables.`
+              : `Seuls les jours où vous travaillez et où un autre groupe est en repos sont sélectionnables.`}
+            {excludeHolidays ? " Un jour férié se cède depuis l’onglet « Jour férié »." : ""}
           </small>
         </section>
       ) : null}

@@ -95,7 +95,8 @@ test("la demande d’échange se remplit, reporte les dates chez le collègue et
   await page.goto("/formulaire/index.html");
   // Demande d’échange en troisième, l’annulation en dernier.
   await expect(page.locator("#sheet option")).toHaveText([
-    "Demande de congés", "Demande de récupérations", "Demande d'échange", "Demande d'annulation de congés",
+    "Demande de congés", "Demande de récupérations", "Demande d'échange",
+    "Demande de remplacement férié", "Demande d'annulation de congés",
   ]);
   await page.locator("#sheet").selectOption({ label: "Demande d'échange" });
   await expect(page.locator("#bg")).toHaveAttribute("src", /form-bg-4\.png/);
@@ -177,6 +178,74 @@ test("la demande d’échange se remplit, reporte les dates chez le collègue et
     return false;
   })).toBe(true);
   await page.locator("#observation").fill("Échange convenu avec ma collègue.");
+
+  if (testInfo.project.name !== "ordinateur") return;
+  page.on("dialog", (dialog) => dialog.accept());
+  const download = page.waitForEvent("download");
+  await page.locator("#btnPdf").click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/\.pdf$/);
+  if (process.env.FORM_PDF_OUT) await file.saveAs(process.env.FORM_PDF_OUT);
+});
+
+test("la demande de remplacement de jour férié se remplit comme l’échange : férié travaillé, collègue sur les mêmes horaires", async ({ page }, testInfo) => {
+  await page.route("**/api/calendar", (route) =>
+    route.fulfill({ json: { form_profile: { full_name: "Mika Test", group: "2" } } }));
+  await page.addInitScript(() => localStorage.setItem("demandes:v6:profil", JSON.stringify({ nom: "Mika Test", groupe: "2" })));
+  await page.goto("/formulaire/index.html");
+  // Juste après la demande d’échange, l’annulation reste en dernier.
+  await expect(page.locator("#sheet option")).toHaveText([
+    "Demande de congés", "Demande de récupérations", "Demande d'échange",
+    "Demande de remplacement férié", "Demande d'annulation de congés",
+  ]);
+  await page.locator("#sheet").selectOption({ label: "Demande de remplacement férié" });
+  await expect(page.locator("#bg")).toHaveAttribute("src", /form-bg-5\.png/);
+
+  const field = (name: string) => page.getByRole("textbox", { name, exact: true });
+  const now = new Date();
+  const today = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  await expect(field("Date de la demande")).toHaveValue(today);
+  await expect(field("Prénom - Nom")).toHaveValue("Mika Test");
+
+  // Seuls les fériés travaillés se choisissent, le calendrier s’ouvre sur le prochain.
+  const calendar = page.locator("#calModal");
+  await field("Je souhaite être en repos le (jour férié)").click();
+  await expect(calendar).toHaveClass(/on/);
+  const choices = calendar.locator(".calday:not(:disabled)");
+  expect(await choices.count()).toBeGreaterThan(0);
+  expect(await calendar.locator(".calday.off:not(:disabled)").count()).toBe(0);
+  await choices.first().click();
+  const ferie = await field("Je souhaite être en repos le (jour férié)").inputValue();
+  expect(ferie).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+
+  await field("Mes horaires ce jour-là — de (heure)").click();
+  await page.locator("#timeFrom").selectOption(String(10 * 60));
+  await page.locator("#timeTo").selectOption(String(18 * 60));
+  await page.locator("#timeOk").click();
+
+  // Le collègue est planifié le même jour, sur les mêmes horaires.
+  await expect(field("Le collègue sera planifié le")).toHaveValue(ferie);
+  await expect(field("Horaires du collègue — de (heure)")).toHaveValue("10h00");
+  await expect(field("Horaires du collègue — à (heure)")).toHaveValue("18h00");
+  // Comme l’échange, le collègue peut passer en première ligne.
+  await expect(page.getByRole("group", { name: "Première ligne du formulaire" })).toBeVisible();
+
+  await field("Prénom - Nom du collègue").click();
+  await page.locator("#editInp").fill("Agnès Exemple");
+  await page.locator("#navDone").click();
+  await expect(page.locator("#sig2")).toBeVisible();
+  await page.locator("#sig2").dispatchEvent("pointerdown");
+  await expect(page.locator("#sigModal")).toHaveClass(/on/);
+  if (await page.locator("#sigTypedName").isVisible()) await expect(page.locator("#sigTypedName")).toHaveValue("Agnès Exemple");
+  else {
+    const pad = (await page.locator("#sigBig").boundingBox())!;
+    await page.mouse.move(pad.x + 20, pad.y + pad.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(pad.x + pad.width - 20, pad.y + pad.height / 2, { steps: 5 });
+    await page.mouse.up();
+  }
+  await page.locator("#sigModalOk").click();
+  await expect(page.locator("#sig2")).toHaveClass(/has/);
 
   if (testInfo.project.name !== "ordinateur") return;
   page.on("dialog", (dialog) => dialog.accept());

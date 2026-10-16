@@ -1,11 +1,9 @@
 import { useEffect, useId, useState, type Dispatch, type SetStateAction } from "react";
-import { ChoicePicker } from "./ChoicePicker";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { searchColleagueGroups } from "./ColleagueGroupsDirectory";
 import type { ColleagueGroup } from "./colleagueGroups";
-import { colleagueObjectPronoun } from "./colleaguePronoun";
 import { getColleagueGroups } from "./colleagueSharingApi";
-import { GROUP_OPTIONS, fromKey, getDayInfo } from "./planningLogic";
+import { fromKey, getDayInfo } from "./planningLogic";
 import { normalizeSearchText } from "./searchMatching";
 import { WorkExchangeDatePicker } from "./WorkExchangeDatePicker";
 import { holidaysForExchangeGive, holidaysForExchangeReturn, type WorkExchangeDraft } from "./workExchange";
@@ -120,25 +118,44 @@ export function WorkExchangeDialog({
 
   if (!open) return null;
   const editing = Boolean(draft.id);
+  // Remplacement seul : uniquement dans l'onglet « Jour férié ».
+  const replacement = holidayTab && Boolean(draft.replacement);
+  const partner = draft.partnerName.trim();
   const giveHolidays = holidayTab ? holidaysForExchangeGive(group, new Date()) : [];
   const chooseTab = (holiday: boolean) => {
     if (holiday === holidayTab) return;
     setHolidayTab(holiday);
-    setDraft((current) => ({ ...current, agreementDate: "", returnDate: "" }));
+    setDraft((current) => ({ ...current, agreementDate: "", returnDate: "", replacement: false }));
   };
+  /* Votre journée fixe le groupe du collègue : l'un de ceux qui sont en
+     repos ce jour-là. Sa journée est à refaire si le groupe change. */
+  const chooseAgreement = (agreementDate: string, partnerGroup?: number) =>
+    setDraft((current) => {
+      const off = [1, 2, 3].filter((other) => other !== group && getDayInfo(fromKey(agreementDate), other).kind === "off");
+      const nextGroup = partnerGroup ?? (off.includes(current.partnerGroup) ? current.partnerGroup : off[0] ?? current.partnerGroup);
+      return { ...current, agreementDate, partnerGroup: nextGroup, returnDate: nextGroup === current.partnerGroup ? current.returnDate : "" };
+    });
+  const dayLabel = (key: string) => fromKey(key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const holidayButton = (holiday: { key: string; name: string }, selected: boolean, onPick: () => void) => (
-    <button key={holiday.key} type="button" role="radio" aria-checked={selected} className={selected ? "selected" : undefined} onClick={onPick}>
+    <button key={holiday.key} type="button" role="radio" aria-checked={selected} className={`xch-choice${selected ? " selected" : ""}`} onClick={onPick}>
       <strong>{holiday.name}</strong>
-      <small>{fromKey(holiday.key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</small>
+      <small>{dayLabel(holiday.key)}</small>
     </button>
   );
-  /* Les horaires de chaque journée figurent sur la demande d'échange. */
+  /* Les horaires de chaque journée figurent sur la demande. */
   const hours = (label: string, startKey: "agreementStart" | "returnStart", endKey: "agreementEnd" | "returnEnd") => (
-    <div className="work-exchange-hours" role="group" aria-label={label}>
+    <div className="xch-hours" role="group" aria-label={label}>
       <ClockTimePicker label="De" value={draft[startKey]} allowEmpty emptyLabel="—" onChange={(value) => setDraft((current) => ({ ...current, [startKey]: value }))} />
       <ClockTimePicker label="À" value={draft[endKey]} allowEmpty emptyLabel="—" onChange={(value) => setDraft((current) => ({ ...current, [endKey]: value }))} />
     </div>
   );
+  const sheet = !holidayTab
+    ? { title: "1 demande d’échange", detail: "Vos deux journées figurent sur la même feuille." }
+    : replacement
+      ? { title: "1 demande de remplacement", detail: "Votre collègue travaille votre férié, sans férié rendu." }
+      : { title: "2 demandes de remplacement", detail: "Un férié ne se cède pas avec une demande d’échange : une feuille pour votre férié, une pour le sien." };
+  const noun = holidayTab ? "férié" : "journée";
+  const complete = Boolean(draft.agreementDate && partner && (replacement || draft.returnDate));
   return (
     <div
       className="modal-backdrop"
@@ -153,154 +170,207 @@ export function WorkExchangeDialog({
       >
         <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">×</button>
         <span className="step-label">Organisation entre collègues</span>
-        <h2 id="work-exchange-title">{editing ? "Modifier l’échange" : "Enregistrer un échange"}</h2>
-        <p>
-          Les deux dates sont obligatoires et seront toujours enregistrées ensemble.
-          L’échange ne modifie ni la paie ni les congés.
-        </p>
-        <div className="work-exchange-tabs" role="tablist" aria-label="Type d’échange">
-          {([[false, "Échange de jour"], [true, "Jour férié"]] as const).map(([holiday, label]) => (
+        <h2 id="work-exchange-title">
+          {editing ? replacement ? "Modifier le remplacement" : "Modifier l’échange" : "Faire un échange"}
+        </h2>
+        <div className="xch-tabs" role="tablist" aria-label="Type d’échange">
+          {([[false, "Journée"], [true, "Jour férié"]] as const).map(([holiday, label]) => (
             <button key={label} type="button" role="tab" aria-selected={holidayTab === holiday} className={holidayTab === holiday ? "active" : undefined} onClick={() => chooseTab(holiday)}>
               {label}
             </button>
           ))}
         </div>
-        {offGroups.length ? (
-          <p className="work-exchange-group-hint">
-            {agreementInfo?.holiday ? `${agreementInfo.holiday} : ` : ""}
-            le {fromKey(draft.agreementDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}, {offGroups.length > 1 ? `les groupes ${offGroups.join(" et ")} sont` : `le groupe ${offGroups[0]} est`} en repos.
-            {" "}Échangez avec un collègue {offGroups.length > 1 ? "de l’un de ces groupes" : `du groupe ${offGroups[0]}`}.
-          </p>
-        ) : null}
-        <div className="work-exchange-person-grid">
-          <label>
-            <span>Collègue</span>
-            <input
-              type="text"
-              value={draft.partnerName}
-              maxLength={80}
-              autoComplete="off"
-              placeholder="Prénom et/ou nom"
-              role="combobox"
-              aria-expanded={listeVisible}
-              aria-controls={listeId}
-              aria-autocomplete="list"
-              aria-activedescendant={listeVisible && suggestionActive >= 0 ? `${listeId}-${suggestionActive}` : undefined}
-              onFocus={() => setSuggestionsOuvertes(true)}
-              onBlur={() => window.setTimeout(() => setSuggestionsOuvertes(false), 150)}
-              onKeyDown={(event) => {
-                if (!listeVisible) return;
-                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                  event.preventDefault();
-                  const pas = event.key === "ArrowDown" ? 1 : -1;
-                  setSuggestionActive((courant) => (courant + pas + suggestions.length) % suggestions.length);
-                } else if (event.key === "Enter" && suggestionActive >= 0) {
-                  event.preventDefault();
-                  const item = suggestions[suggestionActive];
-                  if (item) choisirCollegue(item.member, item.group);
-                } else if (event.key === "Escape") {
-                  setSuggestionsOuvertes(false);
-                }
-              }}
-              onChange={(event) => {
-                setSuggestionsOuvertes(true);
-                setSuggestionActive(-1);
-                setDraft((current) => ({ ...current, partnerName: event.target.value }));
-              }}
-            />
-            {listeVisible ? (
-              <ul className="work-exchange-suggestions" id={listeId} role="listbox" aria-label="Collègues proposés">
-                {suggestions.map((item, index) => (
-                  <li key={`${item.group}-${item.member}`}>
-                    <button
-                      type="button"
-                      role="option"
-                      id={`${listeId}-${index}`}
-                      aria-selected={index === suggestionActive}
-                      className={index === suggestionActive ? "active" : undefined}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onMouseEnter={() => setSuggestionActive(index)}
-                      onClick={() => choisirCollegue(item.member, item.group)}
-                    >
-                      <span className="work-exchange-suggestion-avatar" aria-hidden="true">{initiales(item.member)}</span>
-                      <strong>{surligner(item.member)}</strong>
-                      <small className={`work-exchange-suggestion-group group-${item.group}`}>Groupe {item.group}</small>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+        {/* Ce que l'échange produira : la ou les feuilles à faire signer. */}
+        <div className="xch-sheet" aria-live="polite">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4M10 12h5M10 16h5" /></svg>
+          <div>
+            <strong>{sheet.title}</strong>
+            <small>{sheet.detail}</small>
+            {holidayTab ? (
+              <label className="xch-switch">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={replacement}
+                  onChange={(event) => setDraft((current) => ({ ...current, replacement: event.target.checked, returnDate: event.target.checked ? "" : current.returnDate }))}
+                />
+                <span>Remplacement seul, sans férié rendu</span>
+              </label>
             ) : null}
-          </label>
-          <div className="work-exchange-group-field">
-            <span>Son groupe</span>
-            <ChoicePicker
-              value={draft.partnerGroup}
-              options={GROUP_OPTIONS.filter((option) => option.value !== group)}
-              onChange={(partnerGroup) => setDraft((current) => ({ ...current, partnerGroup }))}
-              ariaLabel="Choisir le groupe du collègue"
-              className="work-exchange-group-picker"
-            />
           </div>
         </div>
 
-        <div className="work-exchange-date-grid">
-          <div className="work-exchange-date-card agreement">
-            <strong>{holidayTab ? "Férié de votre cycle" : "Journée de votre cycle"} · Groupe {group}</strong>
-            <span>Vous deviez travailler · {draft.partnerName.trim() || "Votre collègue"} vous remplace</span>
+        <ol className="xch-steps">
+          <li>
+            <header>
+              <b aria-hidden="true">1</b>
+              <div>
+                <strong>Votre {noun}</strong>
+                <small>Groupe {group} · {partner || "Votre collègue"} vous remplace</small>
+              </div>
+            </header>
             {holidayTab ? (
-              <div className="work-exchange-holiday-list" role="radiogroup" aria-label="Choisir le férié que vous cédez">
+              <div className="xch-choices" role="radiogroup" aria-label="Choisir le férié que vous cédez">
                 {giveHolidays.length ? giveHolidays.map((holiday) => holidayButton(holiday, draft.agreementDate === holiday.key, () =>
-                  setDraft((current) => ({ ...current, agreementDate: holiday.key, returnDate: "", partnerGroup: holiday.partnerGroup })),
-                )) : <small>Aucun férié travaillé dans les douze prochains mois.</small>}
+                  chooseAgreement(holiday.key, holiday.partnerGroup),
+                )) : <p className="xch-empty">Aucun férié travaillé dans les douze prochains mois.</p>}
               </div>
             ) : (
               <WorkExchangeDatePicker
                 value={draft.agreementDate}
                 ownerGroup={group}
-                otherGroup={draft.partnerGroup}
+                otherGroup={partner ? draft.partnerGroup : 0}
+                excludeHolidays
                 ariaLabel="Choisir la journée de votre cycle"
-                onChange={(agreementDate) => setDraft((current) => ({ ...current, agreementDate }))}
+                onChange={(agreementDate) => chooseAgreement(agreementDate)}
               />
             )}
             {hours("Horaires de la journée de votre cycle", "agreementStart", "agreementEnd")}
-          </div>
-          <div className="work-exchange-date-card return">
-            <strong>Journée de son cycle · Groupe {draft.partnerGroup}</strong>
-            <span>
-              {draft.partnerName.trim() || "Votre collègue"} devait travailler · Vous {colleagueObjectPronoun(draft.partnerName)} remplacez
-              {agreementInfo?.holiday ? " · un jour férié, comme celui que vous cédez" : ""}
-            </span>
-            {holidayTab || agreementInfo?.holiday ? (
-              /* Un férié se rend par un férié : la liste de ceux possibles,
-                 plutôt que tout le calendrier. */
-              <div className="work-exchange-holiday-list" role="radiogroup" aria-label="Choisir le férié du cycle du collègue">
-                {returnHolidays.length ? returnHolidays.map((holiday) => holidayButton(holiday, draft.returnDate === holiday.key, () =>
-                  setDraft((current) => ({ ...current, returnDate: holiday.key })),
-                )) : <small>{holidayTab && !draft.agreementDate ? "Choisissez d’abord le férié que vous cédez." : `Aucun férié travaillé par le groupe ${draft.partnerGroup} où vous êtes en repos.`}</small>}
-              </div>
-            ) : (
-              <WorkExchangeDatePicker
-                value={draft.returnDate}
-                ownerGroup={draft.partnerGroup}
-                otherGroup={group}
-                ariaLabel="Choisir la journée du cycle du collègue"
-                onChange={(returnDate) => setDraft((current) => ({ ...current, returnDate }))}
-              />
-            )}
-            {hours("Horaires de la journée de son cycle", "returnStart", "returnEnd")}
-          </div>
-        </div>
+          </li>
 
+          <li>
+            <header>
+              <b aria-hidden="true">2</b>
+              <div>
+                <strong>Votre collègue</strong>
+                <small>
+                  {offGroups.length
+                    ? `En repos ce jour-là : ${offGroups.length > 1 ? `groupes ${offGroups.join(" et ")}` : `groupe ${offGroups[0]}`}`
+                    : "D’un autre groupe que le vôtre"}
+                </small>
+              </div>
+            </header>
+            <label className="xch-person">
+              <span className="visually-hidden">Collègue</span>
+              <input
+                type="text"
+                value={draft.partnerName}
+                maxLength={80}
+                autoComplete="off"
+                placeholder="Prénom et/ou nom"
+                role="combobox"
+                aria-expanded={listeVisible}
+                aria-controls={listeId}
+                aria-autocomplete="list"
+                aria-activedescendant={listeVisible && suggestionActive >= 0 ? `${listeId}-${suggestionActive}` : undefined}
+                onFocus={() => setSuggestionsOuvertes(true)}
+                onBlur={() => window.setTimeout(() => setSuggestionsOuvertes(false), 150)}
+                onKeyDown={(event) => {
+                  if (!listeVisible) return;
+                  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                    event.preventDefault();
+                    const pas = event.key === "ArrowDown" ? 1 : -1;
+                    setSuggestionActive((courant) => (courant + pas + suggestions.length) % suggestions.length);
+                  } else if (event.key === "Enter" && suggestionActive >= 0) {
+                    event.preventDefault();
+                    const item = suggestions[suggestionActive];
+                    if (item) choisirCollegue(item.member, item.group);
+                  } else if (event.key === "Escape") {
+                    setSuggestionsOuvertes(false);
+                  }
+                }}
+                onChange={(event) => {
+                  setSuggestionsOuvertes(true);
+                  setSuggestionActive(-1);
+                  setDraft((current) => ({ ...current, partnerName: event.target.value }));
+                }}
+              />
+              {listeVisible ? (
+                <ul className="work-exchange-suggestions" id={listeId} role="listbox" aria-label="Collègues proposés">
+                  {suggestions.map((item, index) => (
+                    <li key={`${item.group}-${item.member}`}>
+                      <button
+                        type="button"
+                        role="option"
+                        id={`${listeId}-${index}`}
+                        aria-selected={index === suggestionActive}
+                        className={index === suggestionActive ? "active" : undefined}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onMouseEnter={() => setSuggestionActive(index)}
+                        onClick={() => choisirCollegue(item.member, item.group)}
+                      >
+                        <span className="work-exchange-suggestion-avatar" aria-hidden="true">{initiales(item.member)}</span>
+                        <strong>{surligner(item.member)}</strong>
+                        <small className={`work-exchange-suggestion-group group-${item.group}`}>Groupe {item.group}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </label>
+            {/* Le groupe se déduit de votre journée ; seuls ceux en repos ce
+                jour-là restent possibles. */}
+            <div className="xch-groups" role="radiogroup" aria-label="Choisir le groupe du collègue">
+              {[1, 2, 3].filter((other) => other !== group).map((other) => {
+                const possible = !offGroups.length || offGroups.includes(other);
+                return (
+                  <button
+                    key={other}
+                    type="button"
+                    role="radio"
+                    aria-checked={draft.partnerGroup === other}
+                    disabled={!possible}
+                    className={`group-${other}${draft.partnerGroup === other ? " selected" : ""}`}
+                    onClick={() => setDraft((current) => ({ ...current, partnerGroup: other, returnDate: other === current.partnerGroup ? current.returnDate : "" }))}
+                  >
+                    Groupe {other}
+                  </button>
+                );
+              })}
+            </div>
+          </li>
+
+          {replacement ? null : (
+            <li>
+              <header>
+                <b aria-hidden="true">3</b>
+                <div>
+                  <strong>{holidayTab ? "Son férié" : "Sa journée"}</strong>
+                  <small>Groupe {draft.partnerGroup} · Vous remplacez {partner || "votre collègue"}</small>
+                </div>
+              </header>
+              {!draft.agreementDate ? (
+                <p className="xch-empty">Choisissez d’abord votre {noun}.</p>
+              ) : holidayTab ? (
+                /* Un férié se rend par un férié : la liste de ceux possibles. */
+                <div className="xch-choices" role="radiogroup" aria-label="Choisir le férié du cycle du collègue">
+                  {returnHolidays.length ? returnHolidays.map((holiday) => holidayButton(holiday, draft.returnDate === holiday.key, () =>
+                    setDraft((current) => ({ ...current, returnDate: holiday.key })),
+                  )) : <p className="xch-empty">Aucun férié travaillé par le groupe {draft.partnerGroup} où vous êtes en repos.</p>}
+                </div>
+              ) : (
+                <WorkExchangeDatePicker
+                  value={draft.returnDate}
+                  ownerGroup={draft.partnerGroup}
+                  otherGroup={group}
+                  excludeHolidays
+                  ariaLabel="Choisir la journée du cycle du collègue"
+                  onChange={(returnDate) => setDraft((current) => ({ ...current, returnDate }))}
+                />
+              )}
+              {hours("Horaires de la journée de son cycle", "returnStart", "returnEnd")}
+            </li>
+          )}
+        </ol>
+
+        {/* En une phrase, qui remplace qui et quand. */}
+        {complete ? (
+          <p className="xch-recap">
+            <span>{partner} vous remplace le {dayLabel(draft.agreementDate)}.</span>
+            {replacement ? null : <span>Vous remplacez {partner} le {dayLabel(draft.returnDate)}.</span>}
+          </p>
+        ) : null}
         {error ? <p className="work-exchange-error" role="alert">{error}</p> : null}
-        <div className="modal-actions work-exchange-actions">
+        <div className="xch-actions">
           {editing ? (
-            <button className="delete-button" type="button" onClick={onDelete} disabled={saving}>
-              Supprimer l’échange
+            <button className="xch-delete" type="button" onClick={onDelete} disabled={saving}>
+              {replacement ? "Supprimer le remplacement" : "Supprimer l’échange"}
             </button>
           ) : null}
           <button className="secondary-button" type="button" onClick={onClose}>Annuler</button>
           <button className="save-button" type="button" onClick={onSave} disabled={saving}>
-            {saving ? "Synchronisation…" : editing ? "Enregistrer les modifications" : "Valider les deux dates"}
+            {saving ? "Synchronisation…" : editing ? "Enregistrer les modifications" : replacement ? "Valider le remplacement" : "Valider l’échange"}
           </button>
         </div>
       </section>

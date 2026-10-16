@@ -265,11 +265,6 @@
     line-height: 1.42;
   }
 
-  .useful-form-folder-grid {
-    align-items: stretch;
-    margin-top: 0;
-  }
-
   .useful-forms-folder-screen {
     width: calc(100% - 16px);
     border-radius: 21px;

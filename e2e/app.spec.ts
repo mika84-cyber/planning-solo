@@ -3378,7 +3378,7 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await prepareDemo(page);
   await page.getByRole("button", { name: "Faire un échange" }).click();
   await page.getByPlaceholder("Prénom et/ou nom").fill("Camille");
-  await page.getByRole("button", { name: "Valider les deux dates" }).click();
+  await page.getByRole("button", { name: "Valider l’échange" }).click();
   await expect(page.getByRole("alert")).toContainText("deux dates");
   await page.getByRole("button", { name: "Choisir la journée de votre cycle" }).click();
   const myCycle = page.getByRole("region", { name: "Cycle de travail du groupe 2" });
@@ -3397,11 +3397,11 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   const partnerCycle = page.getByRole("region", { name: "Cycle de travail du groupe 1" });
   await expect(partnerCycle.getByLabel("Légende du groupe 1")).toContainText("TravailReposFormation");
   await partnerCycle.locator(`[data-date="${dateKey(returned)}"]`).click();
-  const exchangeDialog = page.getByRole("dialog", { name: "Enregistrer un échange" });
-  await page.getByRole("button", { name: "Valider les deux dates" }).click();
+  const exchangeDialog = page.getByRole("dialog", { name: "Faire un échange" });
+  await page.getByRole("button", { name: "Valider l’échange" }).click();
   await expect(page.getByRole("alert")).toContainText("horaires");
   await setExchangeHours(exchangeDialog);
-  await page.getByRole("button", { name: "Valider les deux dates" }).click();
+  await page.getByRole("button", { name: "Valider l’échange" }).click();
 
   // La demande d'échange s'ouvre, remplie. Le repos le plus proche est celui
   // de Camille : elle passe en première ligne.
@@ -3473,12 +3473,16 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await expect(page.getByRole("heading", { name: "Mes échanges" })).toHaveCount(0);
 });
 
-test("l’onglet Jour férié propose les fériés travaillés et ouvre la demande d’échange remplie", async ({ page }) => {
+test("l’onglet Jour férié explique le remplacement et prépare les deux feuilles d’un échange de fériés", async ({ page }) => {
   await prepareDemo(page);
   await page.getByRole("button", { name: "Faire un échange" }).click();
-  const dialog = page.getByRole("dialog", { name: "Enregistrer un échange" });
-  await expect(dialog.getByRole("tab", { name: "Échange de jour" })).toHaveAttribute("aria-selected", "true");
+  const dialog = page.getByRole("dialog", { name: "Faire un échange" });
+  await expect(dialog.getByRole("tab", { name: "Journée" })).toHaveAttribute("aria-selected", "true");
   await dialog.getByRole("tab", { name: "Jour férié" }).click();
+  // Un férié se cède par une demande de remplacement : deux feuilles pour un échange.
+  await expect(dialog.locator(".xch-sheet")).toContainText("2 demandes de remplacement");
+  await expect(dialog.locator(".xch-sheet")).toContainText("ne se cède pas avec une demande d’échange");
+  await expect(dialog.getByRole("switch", { name: "Remplacement seul, sans férié rendu" })).not.toBeChecked();
   const give = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" });
   await give.getByRole("radio").first().click();
   const back = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" });
@@ -3487,10 +3491,72 @@ test("l’onglet Jour férié propose les fériés travaillés et ouvre la deman
   await returns.first().click();
   await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   await setExchangeHours(dialog);
-  await dialog.getByRole("button", { name: "Valider les deux dates" }).click();
+  await dialog.getByRole("button", { name: "Valider l’échange" }).click();
+
+  // La demande de remplacement s'ouvre sur la feuille 1 : votre férié.
   await expect(page).toHaveURL(/\/formulaire\/index\.html/);
+  await expect(page.locator("#bg")).toHaveAttribute("src", /form-bg-5\.png/);
+  const field = (name: string) => page.getByRole("textbox", { name, exact: true });
+  const sheets = page.getByRole("group", { name: "Feuilles de l’échange de fériés" });
+  await expect(sheets.getByRole("button", { name: "Feuille 1 · votre férié" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("group", { name: "Première ligne du formulaire" })).toBeHidden();
+  await expect(field("Prénom - Nom du collègue")).toHaveValue("Camille");
+  const mine = await field("Je souhaite être en repos le (jour férié)").inputValue();
+  expect(mine).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  await expect(field("Le collègue sera planifié le")).toHaveValue(mine);
+  await expect(field("Mes horaires ce jour-là — de (heure)")).toHaveValue("10h00");
+  const nameTop = (await field("Prénom - Nom").boundingBox())!.y;
+
+  // Feuille 2 : le férié du collègue, vous en seconde ligne.
+  await sheets.getByRole("button", { name: "Feuille 2 · son férié" }).click();
+  await expect(sheets.getByRole("button", { name: "Feuille 2 · son férié" })).toHaveAttribute("aria-pressed", "true");
+  const his = await field("Je souhaite être en repos le (jour férié)").inputValue();
+  expect(his).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  expect(his).not.toBe(mine);
+  await expect(field("Le collègue sera planifié le")).toHaveValue(his);
+  expect((await field("Prénom - Nom").boundingBox())!.y).toBeGreaterThan(nameTop);
+  // Retour à la feuille 1.
+  await sheets.getByRole("button", { name: "Feuille 1 · votre férié" }).click();
+  await expect(field("Je souhaite être en repos le (jour férié)")).toHaveValue(mine);
+});
+
+test("un férié peut être simplement remplacé, sans férié rendu ni seconde feuille", async ({ page }) => {
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Faire un échange" }).click();
+  const dialog = page.getByRole("dialog", { name: "Faire un échange" });
+  await dialog.getByRole("tab", { name: "Jour férié" }).click();
+  await dialog.getByRole("switch", { name: "Remplacement seul, sans férié rendu" }).check();
+  const replacement = dialog;
+  await expect(replacement.locator(".xch-sheet")).toContainText("1 demande de remplacement");
+  // Pas de férié rendu : l'étape « Son férié » disparaît.
+  await expect(replacement.getByText("Son férié", { exact: true })).toHaveCount(0);
+  const give = replacement.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" });
+  const first = give.getByRole("radio").first();
+  const holidayName = (await first.locator("strong").textContent())!.trim();
+  await first.click();
+  await replacement.getByPlaceholder("Prénom et/ou nom").fill("Camille");
+  const hours = replacement.getByRole("group", { name: "Horaires de la journée de votre cycle" });
+  await hours.getByLabel("De — heures").selectOption("10");
+  await hours.getByLabel("À — heures").selectOption("18");
+  await replacement.getByRole("button", { name: "Valider le remplacement" }).click();
+
+  // Une seule feuille : pas de choix entre deux feuilles.
+  await expect(page).toHaveURL(/\/formulaire\/index\.html/);
+  await expect(page.locator("#bg")).toHaveAttribute("src", /form-bg-5\.png/);
+  await expect(page.getByRole("group", { name: "Feuilles de l’échange de fériés" })).toBeHidden();
   await expect(page.getByRole("textbox", { name: "Prénom - Nom du collègue", exact: true })).toHaveValue("Camille");
-  await expect(page.getByRole("textbox", { name: "Je souhaite être en repos le", exact: true })).toHaveValue(/\d{2}\/\d{2}\/\d{4}/);
+  await expect(page.getByRole("textbox", { name: "Horaires du collègue — de (heure)", exact: true })).toHaveValue("10h00");
+
+  // Dans le planning : le férié remplacé, sans journée rendue.
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Mes échanges" })).toBeVisible();
+  await expect(page.locator(".work-exchange-list article li p")).toHaveText([new RegExp(`Camille vous remplace : ${holidayName}`)]);
+  await page.getByRole("button", { name: "Modifier le remplacement avec Camille" }).click();
+  const edit = page.getByRole("dialog", { name: "Modifier le remplacement" });
+  await expect(edit.getByRole("switch", { name: "Remplacement seul, sans férié rendu" })).toBeChecked();
+  page.once("dialog", (dialog) => dialog.accept());
+  await edit.getByRole("button", { name: "Supprimer le remplacement" }).click();
+  await expect(page.getByRole("heading", { name: "Mes échanges" })).toHaveCount(0);
 });
 
 test("l’en-tête et les années sont confortables", async ({ page }, testInfo) => {
@@ -5865,10 +5931,10 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
   await expect(options.getByRole("button")).toHaveText([/Prime seule/, /Prime \+ récup/, /Échanger/]);
   const givenName = (await holidayCard.locator("tr:not(.holiday-pay-options-row) th").first().evaluate((node) => node.firstChild?.textContent || "")).trim();
   await options.getByRole("button", { name: /Échanger/ }).click();
-  const dialog = page.getByRole("dialog", { name: "Enregistrer un échange" });
-  await expect(dialog.locator(".work-exchange-group-hint")).toContainText(/Échangez avec un collègue (du groupe [13]|de l’un de ces groupes)/);
+  const dialog = page.getByRole("dialog", { name: "Faire un échange" });
+  await expect(dialog.locator(".xch-steps")).toContainText(/En repos ce jour-là : groupes? [13]/);
   // En retour, la liste des fériés de l'année que le collègue travaille.
-  await expect(dialog.locator(".work-exchange-date-card.return")).toContainText("un jour férié");
+  await expect(dialog.getByText("Son férié", { exact: true })).toBeVisible();
   const returnList = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" });
   const firstReturn = returnList.getByRole("radio").first();
   const returnedName = (await firstReturn.locator("strong").textContent())!.trim();
@@ -5878,7 +5944,7 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
   // Un férié cédé ouvre l'onglet des fériés.
   await expect(dialog.getByRole("tab", { name: "Jour férié" })).toHaveAttribute("aria-selected", "true");
   await setExchangeHours(dialog);
-  await dialog.getByRole("button", { name: "Valider les deux dates" }).click();
+  await dialog.getByRole("button", { name: "Valider l’échange" }).click();
   await expect(page).toHaveURL(/\/formulaire\/index\.html/);
   await page.goBack();
   await goToSection(page, "pay");

@@ -414,7 +414,7 @@
   border-left-width: 0;
 }
 
-.home-setup-alert{background:#fdeed6;border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-list{display:grid;gap:9px}.home-setup-list article{align-items:center;background:var(--surface-high);border:1px solid var(--border-card);border-radius:14px;display:flex;gap:12px;justify-content:space-between;padding:10px 12px}.home-setup-list article>span{display:grid;gap:2px}.home-setup-list small{color:var(--muted)}.home-setup-actions{display:flex!important;gap:7px!important}.home-setup-list button{align-items:center;background:var(--accent);border:0;border-radius:11px;color:#fff;display:flex;font-weight:850;gap:8px;min-height:40px;padding:8px 13px;white-space:nowrap}.home-setup-list button.home-setup-dismiss{background:var(--surface);border:1px solid var(--section-outline);color:var(--muted);font-size:11px}
+.home-setup-alert{background:#fdeed6;border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-actions{display:flex!important;gap:7px!important}
 
 @media (max-width: 720px) {
   .planning-workspace-shell.framed {
@@ -435,7 +435,7 @@
     width: 100%;
   }
 
-  .home-setup-list article{align-items:stretch;flex-direction:column}.home-setup-actions{display:grid!important;grid-template-columns:1fr 1fr}.home-setup-list button{justify-content:center;white-space:normal;width:100%}
+  .home-setup-actions{display:grid!important;grid-template-columns:1fr 1fr}
 }
 
 .app-shell > .top-header,
@@ -495,7 +495,6 @@
   }
   .useful-contacts-root > .native-screen-heading { grid-area: intro; display: flex; flex-direction: column; justify-content: center; margin: 0; }
   .useful-contacts-root > .resource-search-field { grid-area: search; align-self: start; }
-  .useful-contacts-root > .useful-contact-directory-grid { grid-area: directories; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; margin: 0; }
   .useful-forms-screen:not(.useful-forms-folder-screen) {
     grid-template-areas:
       "intro search"
@@ -937,66 +936,7 @@
   letter-spacing: 0.045em;
 }
 
-.work-exchange-dialog {
-  width: min(720px, calc(100vw - 28px));
-}
 
-.work-exchange-person-grid,
-.work-exchange-date-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.work-exchange-person-grid label,
-.work-exchange-group-field,
-.work-exchange-date-card {
-  display: grid;
-  gap: 7px;
-}
-
-.work-exchange-person-grid label > span,
-.work-exchange-group-field > span,
-.work-exchange-date-card > span {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.work-exchange-person-grid input {
-  width: 100%;
-  min-height: 46px;
-  box-sizing: border-box;
-  border: 1.5px solid var(--border-control);
-  border-radius: 12px;
-  padding: 10px 12px;
-  color: #2c2621;
-  background: var(--surface);
-  font: inherit;
-  font-weight: 750;
-}
-
-.work-exchange-cycle-picker {
-  min-width: 0;
-}
-
-.work-exchange-date-trigger {
-  display: grid;
-  gap: 3px;
-  width: 100%;
-  min-height: 52px;
-  border: 1.5px solid var(--border-card);
-  border-radius: 12px;
-  padding: 8px 12px;
-  color: #2c2621;
-  background: var(--surface);
-  text-align: left;
-  cursor: pointer;
-}
-
-.work-exchange-date-trigger span { color: var(--muted); font-size: 0.7rem; font-weight: 750; }
-.work-exchange-date-trigger strong { font-size: 0.83rem; }
 
 .work-exchange-cycle-calendar {
   margin-top: 8px;
@@ -1056,26 +996,6 @@
 .exchange-cycle-day.selected { border-color: var(--accent-strong); color: #fff; background: var(--accent); box-shadow: 0 4px 10px rgba(152, 84, 56, 0.3); opacity: 1; }
 .work-exchange-cycle-calendar > small { display: block; min-height: 0; margin-top: 7px; font-size: 0.64rem; }
 
-.work-exchange-date-card {
-  border: 1px solid var(--border-card);
-  border-radius: 16px;
-  padding: 14px;
-  background: var(--surface);
-}
-
-.work-exchange-error {
-  margin: 14px 0 0;
-  border-left: 4px solid #b42331;
-  border-radius: 9px;
-  padding: 10px 12px;
-  color: #8e1e2a;
-  background: #fff1f2;
-  font-weight: 800;
-}
-
-.work-exchange-actions .delete-button {
-  margin-right: auto;
-}
 
 .work-exchange-panel {
   margin-top: 14px;
@@ -1294,20 +1214,8 @@ fieldset.leave-choices {
     transform: translate(-50%, -50%);
   }
 
-  .work-exchange-person-grid,
-  .work-exchange-date-grid,
   .work-exchange-list {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .work-exchange-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .work-exchange-actions > button {
-    width: 100%;
-    margin: 0;
   }
 
   .work-exchange-list li {
@@ -1417,7 +1325,6 @@ fieldset.leave-choices {
 
 /* Les collègues connus sont proposés dès les premières lettres : le nom et
    le groupe sont saisis ensemble, sans risque de les faire diverger. */
-.work-exchange-person-grid label { position: relative; }
 .work-exchange-suggestions {
   position: absolute;
   z-index: 6;
@@ -1466,24 +1373,14 @@ fieldset.leave-choices {
 .work-exchange-suggestion-group.group-3 { background: #eaf3e6; color: #3f6536; }
 
 /* Boutons terracotta : un liseré sombre très léger, comme les cases de l’accueil. */
-:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .payslip-file-drop, .home-setup-list button:not(.home-setup-dismiss), .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .choice-picker-menu button.active) {
+:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .payslip-file-drop, .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .choice-picker-menu button.active) {
   border: 1px solid var(--border-control);
 }
 /* Férié échangé : flèches et dollar sur une pastille blanche, lisible sur
    une case sombre (jour cédé) comme claire. */
 .exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
 /* Férié rendu : la liste des fériés possibles, un bouton par férié. */
-.work-exchange-holiday-list { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
-.app-shell .work-exchange-holiday-list button { display: grid; gap: 1px; min-height: 0; margin: 0; border: 1px solid #d8cdbf; border-radius: 10px; padding: 8px 10px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
-.work-exchange-holiday-list button strong { font-size: 0.86rem; }
-.work-exchange-holiday-list button small { color: var(--muted); font-size: 0.74rem; font-weight: 700; }
-.app-shell .work-exchange-holiday-list button.selected { border: 2px solid #5eb6c4; background: #eef8fa; }
 /* Échange : deux onglets (jour ordinaire ou férié) et les horaires de chaque journée. */
-.work-exchange-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 4px 0 10px; padding: 4px; border: 1px solid #e3d9cc; border-radius: 999px; background: #f7f2ea; }
-.app-shell .work-exchange-tabs button { min-height: 34px; margin: 0; border: 0; border-radius: 999px; padding: 6px 10px; background: transparent; box-shadow: none; color: var(--muted); font: inherit; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
-.app-shell .work-exchange-tabs button.active { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(44, 38, 33, 0.14); }
-.work-exchange-hours { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-.work-exchange-hours .clock-time-field > span:first-child { font-size: 0.74rem; font-weight: 800; color: var(--muted); }
 .calendar-grid .day .exchange-calendar-marker.holiday-exchange,
 .mini-grid .mini-day .exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
 .work-exchange-list article.holiday-exchange header img { box-sizing: border-box; border-radius: 50%; padding: 2px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
@@ -1521,3 +1418,48 @@ fieldset.leave-choices {
 .app-shell .modal-card.planning-pdf-dialog { width: min(760px, calc(100% - 24px)); max-width: none; max-height: calc(100dvh - 32px); overflow-y: auto; padding: 0; }
 .planning-pdf-dialog > .modal-close { position: sticky; top: 10px; z-index: 3; float: right; margin: 10px 10px -44px 0; }
 .planning-pdf-dialog > .pdf-download-screen { margin: 0; border: 0; box-shadow: none; }
+
+/* « Faire un échange » : même fenêtre pour une journée et un férié. */
+.app-shell .modal-card.work-exchange-dialog { width: min(560px, calc(100vw - 24px)); padding-bottom: 0; }
+.xch-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 12px 0; border-radius: 999px; padding: 4px; background: #f3ece2; }
+.app-shell .xch-tabs button { min-height: 36px; margin: 0; border: 0; border-radius: 999px; padding: 6px 10px; background: transparent; box-shadow: none; color: var(--muted); font: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer; }
+.app-shell .xch-tabs button.active { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(44, 38, 33, 0.16); }
+.xch-sheet { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; border-radius: 14px; padding: 11px 12px; background: #eef7f8; color: #1f4f57; }
+.xch-sheet svg { width: 22px; height: 22px; fill: none; stroke: #2f7f8c; stroke-width: 1.7; stroke-linejoin: round; }
+.xch-sheet strong { display: block; font-size: 0.9rem; }
+.xch-sheet small { display: block; font-size: 0.78rem; font-weight: 650; }
+.xch-switch { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: #1f4f57; font-size: 0.8rem; font-weight: 750; cursor: pointer; }
+.xch-switch input { appearance: none; position: relative; flex: none; width: 34px; height: 20px; margin: 0; border-radius: 999px; background: #c5d6d9; cursor: pointer; }
+.xch-switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+.xch-switch input:checked { background: #2f7f8c; }
+.xch-switch input:checked::after { transform: translateX(14px); }
+.xch-steps { display: grid; margin: 4px 0 0; padding: 0; list-style: none; }
+.xch-steps > li { display: grid; gap: 10px; border-bottom: 1px solid #ece4d9; padding: 16px 0; }
+.xch-steps > li:last-child { border-bottom: 0; }
+.xch-steps header { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 10px; }
+.xch-steps header b { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.8rem; }
+.xch-steps header strong, .xch-steps header small { display: block; }
+.xch-steps header small { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+.xch-steps > li > :not(header) { margin-left: 36px; }
+.xch-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.app-shell .xch-choice, .app-shell .work-exchange-date-trigger { display: grid; gap: 1px; width: 100%; min-height: 0; margin: 0; border: 1px solid #ddd2c4; border-radius: 12px; padding: 9px 12px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.app-shell .xch-choice.selected { border: 2px solid var(--accent); padding: 8px 11px; background: #fbf3ec; }
+.xch-choice strong, .work-exchange-date-trigger strong { font-size: 0.9rem; }
+.xch-choice small, .work-exchange-date-trigger span { color: var(--muted); font-size: 0.76rem; font-weight: 700; }
+.xch-empty { margin: 0; color: var(--muted); font-size: 0.84rem; }
+.xch-hours { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.xch-hours .clock-time-field { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.xch-hours .clock-time-field > span:first-child { color: var(--muted); font-size: 0.74rem; font-weight: 800; }
+.xch-hours .clock-time-picker { min-height: 40px; border: 1px solid #ddd2c4; border-radius: 12px; box-shadow: none; }
+.xch-hours .clock-time-picker select { height: 40px; font-size: 15px; }
+.xch-person { position: relative; display: block; }
+.xch-person input { box-sizing: border-box; width: 100%; min-height: 46px; border: 1px solid #ddd2c4; border-radius: 12px; padding: 10px 12px; background: #fff; color: var(--text); font: inherit; font-weight: 750; }
+.xch-groups { display: flex; gap: 6px; }
+.app-shell .xch-groups button { min-height: 32px; margin: 0; border: 1px solid #ddd2c4; border-radius: 999px; padding: 4px 14px; background: #fff; box-shadow: none; color: var(--muted); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
+.app-shell .xch-groups button.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
+.app-shell .xch-groups button:disabled { opacity: 0.4; }
+.xch-recap { display: grid; margin: 0 0 12px; border-radius: 12px; padding: 9px 12px; background: #eef7f8; color: #1f4f57; font-size: 0.84rem; font-weight: 750; }
+.xch-actions { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 8px; border-top: 1px solid #ece4d9; padding: 12px 0 14px; background: inherit; }
+.app-shell .xch-actions > button { margin: 0; }
+.app-shell .xch-actions .save-button { flex: 1 1 auto; }
+.app-shell .xch-delete { margin: 0 auto 0 0; border: 0; padding: 0; background: none; box-shadow: none; color: #a3333d; font: inherit; font-size: 0.82rem; font-weight: 800; text-decoration: underline; cursor: pointer; }

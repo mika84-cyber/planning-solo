@@ -188,9 +188,11 @@ export function DayDetailDialog({
         ) : null}
             {!quickNoteMode && dayExchange ? (
               <div className="day-exchange-summary">
-                <strong>Échange avec {dayExchange.partnerName} - Groupe {dayExchange.partnerGroup}</strong>
+                <strong>{dayExchange.returnDate ? "Échange" : "Remplacement"} avec {dayExchange.partnerName} - Groupe {dayExchange.partnerGroup}</strong>
                 <span>
-                  {dayDate === dayExchange.agreementDate
+                  {!dayExchange.returnDate
+                    ? `${dayExchange.partnerName} vous remplace ce jour, sans férié rendu.`
+                    : dayDate === dayExchange.agreementDate
                     ? `${dayExchange.partnerName} vous remplace ce jour, vous ${colleagueObjectPronoun(dayExchange.partnerName)} remplacez le ${longDate(fromKey(dayExchange.returnDate))}.`
                     : `Vous ${colleagueObjectPronoun(dayExchange.partnerName)} remplacez ce jour, ${dayExchange.partnerName} vous remplace le ${longDate(fromKey(dayExchange.agreementDate))}.`}
                 </span>
@@ -202,7 +204,7 @@ export function DayDetailDialog({
                     editWorkExchange(dayExchange);
                   }}
                 >
-                  Modifier ou supprimer l’échange
+                  Modifier ou supprimer {dayExchange.returnDate ? "l’échange" : "le remplacement"}
                 </button>
               </div>
             ) : null}

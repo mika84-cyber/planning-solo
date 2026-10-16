@@ -140,6 +140,8 @@ export function sanitizeCalendarBackup(value: unknown) {
   const entriesByDate = new Map(entries.map((entry) => [entry.date, entry]));
   for (const entry of entries) {
     if (!entry.exchange_id) continue;
+    // Remplacement seul d'un férié : la journée cédée, sans journée rendue.
+    if (entry.exchange_role === "given" && !entry.exchange_other_date && entry.exchange_partner && entry.exchange_partner_group) continue;
     const counterpart = entry.exchange_other_date
       ? entriesByDate.get(String(entry.exchange_other_date))
       : undefined;

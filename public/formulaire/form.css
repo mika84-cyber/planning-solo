@@ -128,11 +128,11 @@
   #sig2[hidden],#sighint2[hidden],#sigclear2[hidden]{display:none}
   .fld[hidden],.zone[hidden]{display:none}
   /* Échange : qui occupe la première ligne, l'agent ou le collègue. */
-  #lineOrder{display:flex;max-width:1000px;margin:10px auto 0;padding:0 12px;box-sizing:border-box;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
-  #lineOrder[hidden]{display:none}
-  #lineOrder span{font-size:12.5px;font-weight:700;color:#e9e1d6;margin-right:4px}
-  #lineOrder button{font:700 12.5px/1 Arial,Helvetica,sans-serif;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--ui-border,#d8cdbf);background:#fff;color:var(--ui-strong,#2c2621);cursor:pointer}
-  #lineOrder button[aria-pressed="true"]{background:var(--ui,#83452c);border-color:var(--ui,#83452c);color:#fff}
+  #lineOrder,#ferieSheets{display:flex;max-width:1000px;margin:10px auto 0;padding:0 12px;box-sizing:border-box;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+  #lineOrder[hidden],#ferieSheets[hidden]{display:none}
+  #lineOrder span,#ferieSheets span{font-size:12.5px;font-weight:700;color:#e9e1d6;margin-right:4px}
+  #lineOrder button,#ferieSheets button{font:700 12.5px/1 Arial,Helvetica,sans-serif;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--ui-border,#d8cdbf);background:#fff;color:var(--ui-strong,#2c2621);cursor:pointer}
+  #lineOrder button[aria-pressed="true"],#ferieSheets button[aria-pressed="true"]{background:var(--ui,#83452c);border-color:var(--ui,#83452c);color:#fff}
   #sighint,#sighint2{position:absolute;z-index:1;pointer-events:none;color:#8aa0c8;font-size:12px;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden}
   #sigclear,#sigclear2{position:absolute;z-index:7;font-family:Arial,Helvetica,sans-serif;font-weight:700;
             line-height:1.2;color:var(--accent);background:#fff;border:1px solid var(--accent);
@@ -605,7 +605,7 @@
   #calLegend .lg-work i{border-color:rgba(44,38,33,.18)}
   #calSameBox{border-color:var(--ui);background:var(--ui-soft)}
   @media screen{ .paper{box-shadow:0 10px 30px rgba(74,48,28,.18)} }
-  @media print{ body{background:#fff;padding-bottom:0} .bar,.sub,.msg,.att,.att-note,#observationBox,#pageNav,.edit,#lineOrder,#sigclear,#sigclear2,#sigSaveManual,#sigSavedDelete,#sigModal,#sigSavePrompt,#calModal,#timeModal{display:none!important}
+  @media print{ body{background:#fff;padding-bottom:0} .bar,.sub,.msg,.att,.att-note,#observationBox,#pageNav,.edit,#lineOrder,#ferieSheets,#sigclear,#sigclear2,#sigSaveManual,#sigSavedDelete,#sigModal,#sigSavePrompt,#calModal,#timeModal{display:none!important}
                 .stage{padding:0} .paper{box-shadow:none} }
 
   /* Ambiance « plan de travail » : sous la barre claire, la feuille se

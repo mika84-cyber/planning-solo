@@ -94,13 +94,14 @@ export async function handleSaveExchange(context: CalendarActionContext) {
   const previousReturnDate = typeof context.body.previousReturnDate === "string"
     ? context.body.previousReturnDate
     : "";
+  // Un remplacement seul d'un férié n'a pas de journée rendue.
   if (
     !validId(id) || !partner || ![1, 2, 3].includes(partnerGroup) ||
-    !isValidDateKey(agreementDate) || !isValidDateKey(returnDate) ||
+    !isValidDateKey(agreementDate) || (returnDate && !isValidDateKey(returnDate)) ||
     returnDate === agreementDate ||
     (previousAgreementDate && !isValidDateKey(previousAgreementDate)) ||
     (previousReturnDate && !isValidDateKey(previousReturnDate)) ||
-    Boolean(previousAgreementDate) !== Boolean(previousReturnDate)
+    (previousReturnDate && !previousAgreementDate)
   ) return json({ error: "Échange invalide" }, 400);
 
   const dates = [...new Set([
@@ -109,7 +110,7 @@ export async function handleSaveExchange(context: CalendarActionContext) {
   const loaded = await loadAffected(context, dates, expectedVersions(context.body.expectedUpdatedAts));
   if ("error" in loaded) return json({ error: loaded.error }, 409);
   const previous = loaded.rows;
-  for (const date of [agreementDate, returnDate]) {
+  for (const date of [agreementDate, returnDate].filter(Boolean)) {
     const otherId = previous.get(date)?.exchange_id;
     if (otherId && otherId !== id)
       return json({ error: "Une des journées appartient déjà à un autre échange" }, 409);
@@ -134,7 +135,8 @@ export async function handleSaveExchange(context: CalendarActionContext) {
       entry.exchange_role = date === agreementDate ? "given" : "return";
       entry.exchange_partner = partner;
       entry.exchange_partner_group = partnerGroup;
-      entry.exchange_other_date = date === agreementDate ? returnDate : agreementDate;
+      const other = date === agreementDate ? returnDate : agreementDate;
+      if (other) entry.exchange_other_date = other;
     }
     next.set(date, entry);
   }
@@ -152,9 +154,9 @@ export async function handleDeleteExchange(context: CalendarActionContext) {
   const returnDate = typeof context.body.returnDate === "string"
     ? context.body.returnDate
     : "";
-  if (!validId(id) || !isValidDateKey(agreementDate) || !isValidDateKey(returnDate))
+  if (!validId(id) || !isValidDateKey(agreementDate) || (returnDate && !isValidDateKey(returnDate)))
     return json({ error: "Échange invalide" }, 400);
-  const dates = [...new Set([agreementDate, returnDate])];
+  const dates = [...new Set([agreementDate, returnDate].filter(Boolean))];
   const loaded = await loadAffected(context, dates, expectedVersions(context.body.expectedUpdatedAts));
   if ("error" in loaded) return json({ error: loaded.error }, 409);
   if (dates.some((date) => loaded.rows.get(date)?.exchange_id !== id))

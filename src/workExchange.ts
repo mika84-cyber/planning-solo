@@ -15,6 +15,9 @@ export type WorkExchangeDraft = {
   agreementEnd: string;
   returnStart: string;
   returnEnd: string;
+  /** Remplacement seul d'un férié : le collègue travaille votre férié, sans
+   *  férié rendu. L'échange n'a alors qu'une date. */
+  replacement?: boolean;
 };
 
 type Schedule = { start?: string; end?: string } | undefined;
@@ -56,14 +59,15 @@ export function workExchangeForDate(entries: Entries, date: string): WorkExchang
     !entry.exchangeRole ||
     !entry.exchangePartner ||
     !entry.exchangePartnerGroup ||
-    !entry.exchangeOtherDate
+    // Seul un remplacement (journée cédée) peut n'avoir qu'une date.
+    (!entry.exchangeOtherDate && entry.exchangeRole !== "given")
   ) return null;
   return {
     id: entry.exchangeId,
     partnerName: entry.exchangePartner,
     partnerGroup: entry.exchangePartnerGroup,
-    agreementDate: entry.exchangeRole === "given" ? date : entry.exchangeOtherDate,
-    returnDate: entry.exchangeRole === "return" ? date : entry.exchangeOtherDate,
+    agreementDate: entry.exchangeRole === "given" ? date : entry.exchangeOtherDate || "",
+    returnDate: entry.exchangeRole === "return" ? date : entry.exchangeOtherDate || "",
     updatedAt: entry.updatedAt,
   };
 }
@@ -94,6 +98,21 @@ export function validateWorkExchange(
   if (partnerName.length > 80) return "Le nom du collègue est trop long.";
   if (![1, 2, 3].includes(draft.partnerGroup) || draft.partnerGroup === group)
     return "Choisissez le groupe du collègue.";
+  if (draft.replacement) {
+    if (!draft.agreementDate) return "Choisissez le férié où votre collègue vous remplace.";
+    const mine = getDayInfo(fromKey(draft.agreementDate), group);
+    if (!mine.holiday) return "Un remplacement seul ne concerne qu’un jour férié.";
+    if (mine.kind !== "work" || getDayInfo(fromKey(draft.agreementDate), draft.partnerGroup).kind !== "off")
+      return "Pour ce férié, vous devez travailler et votre collègue doit être en repos.";
+    if (isExceptionallyClosed(draft.agreementDate))
+      return "Un remplacement est impossible pendant une fermeture exceptionnelle.";
+    const otherExchange = entries[draft.agreementDate]?.exchangeId;
+    if (otherExchange && otherExchange !== draft.id)
+      return "Ce férié appartient déjà à un autre échange.";
+    if (occupiedDates.has(draft.agreementDate))
+      return "Ce férié comporte déjà un congé ou une récupération.";
+    return "";
+  }
   if (!draft.agreementDate || !draft.returnDate)
     return "Les deux dates de l’échange sont obligatoires.";
   if (draft.returnDate === draft.agreementDate)
@@ -153,12 +172,16 @@ export function exchangeDraftFromExchange(exchange: WorkExchange, schedule?: Sch
     agreementDate: exchange.agreementDate,
     returnDate: exchange.returnDate,
     ...scheduleHours(schedule),
+    replacement: !exchange.returnDate,
   };
 }
 
 /** Les champs d'échange des deux journées, pour le planning. */
 export function exchangeEntryFields(draft: Pick<WorkExchangeDraft, "id" | "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">) {
   const common = { exchangeId: draft.id, exchangePartner: draft.partnerName.trim(), exchangePartnerGroup: draft.partnerGroup };
+  // Remplacement seul : la journée cédée, sans journée rendue.
+  if (!draft.returnDate)
+    return { [draft.agreementDate]: { ...common, exchangeRole: "given" as const, exchangeOtherDate: undefined } };
   return {
     [draft.agreementDate]: { ...common, exchangeRole: "given" as const, exchangeOtherDate: draft.returnDate },
     [draft.returnDate]: { ...common, exchangeRole: "return" as const, exchangeOtherDate: draft.agreementDate },

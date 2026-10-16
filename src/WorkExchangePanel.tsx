@@ -14,13 +14,14 @@ function dayLabel(key: string) {
  *  ce qu'elle devient pour vous (repos ou travail) et qui remplace qui. */
 function chronologicalDetails(exchange: WorkExchange) {
   const pronoun = colleagueObjectPronoun(exchange.partnerName);
+  // Un remplacement seul n'a pas de journée rendue.
   return [
-    {
+    ...(exchange.returnDate ? [{
       date: exchange.returnDate,
       role: "return" as const,
       tag: "Travail",
       label: `Vous ${pronoun} remplacez ${dayLabel(exchange.returnDate)}`,
-    },
+    }] : []),
     {
       date: exchange.agreementDate,
       role: "given" as const,
@@ -59,7 +60,7 @@ export function WorkExchangePanel({
                 <strong>{exchange.partnerName}</strong>
                 <small className={`work-exchange-group group-${exchange.partnerGroup}`}>Groupe {exchange.partnerGroup}</small>
               </div>
-              <button type="button" onClick={() => onEdit(exchange)} aria-label={`Modifier l’échange avec ${exchange.partnerName}`}>Modifier</button>
+              <button type="button" onClick={() => onEdit(exchange)} aria-label={`Modifier ${exchange.returnDate ? "l’échange" : "le remplacement"} avec ${exchange.partnerName}`}>Modifier</button>
             </header>
             <ol>
               {chronologicalDetails(exchange).map((detail) => (

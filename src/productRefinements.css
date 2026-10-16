@@ -224,7 +224,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 
 /* Sous-chapitres : encarts crème, sans bordure ni ombre. */
 .app-shell.app-shell :is(
-  .home-setup-list > *,
   .other-leave-balances,
   .cet-callout
 ) {
@@ -237,8 +236,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Outils de congés (heures supp, mécénats, CET) : cartes entièrement blanches,
    détachées du cadre par un filet léger. */
 .app-shell.app-shell .leave-tool-disclosure { border-color: var(--border-soft); background: #fff; box-shadow: none; }
-/* Sur un chapitre déjà crème, l'encart repasse au blanc pour rester lisible. */
-.app-shell.app-shell .home-setup-alert .home-setup-list > * { background: #fff; }
 /* « Comment ça marche » et « Être trouvé par mes collègues » : sous leur
    en-tête teinté, le contenu est sur blanc, dans un cadre au filet léger. */
 .app-shell.app-shell .colleague-sharing-page :is(.colleague-how-it-works, .colleague-profile-card) {

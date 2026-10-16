@@ -384,7 +384,7 @@ function loadSheet(idx){
   IF = M.fields.filter(function(f){ return f.i; });
   [sig2, hint2, clr2].forEach(function(el){ el.hidden = !M.sig2; });
   clearSig2();
-  lineOrder.hidden = !M.swap;
+  refreshFerieSheets();
 
 
   checkState = {};
@@ -812,6 +812,42 @@ lineOrder.addEventListener('click', function(e){
   layout();
   say(swapped() ? 'Le collègue est en première ligne.' : 'Vous êtes en première ligne.');
 });
+/* Échange de fériés : deux demandes de remplacement, une par férié. La
+   feuille 1 porte votre férié, la feuille 2 celui du collègue, où vous
+   passez en seconde ligne. */
+var FERIE_PAIR_KEY = 'demandes:ferie-pair-v1', ferieSheets = document.getElementById('ferieSheets');
+function readFeriePair(){
+  try{ var d = JSON.parse(sessionStorage.getItem(FERIE_PAIR_KEY) || 'null'); return d && d.agreementDate && d.returnDate ? d : null; }
+  catch(e){ return null; }
+}
+function refreshFerieSheets(){
+  var on = !!(M && M.id === 'ferie' && readFeriePair());
+  ferieSheets.hidden = !on;
+  lineOrder.hidden = !M.swap || on;
+  if(on) Array.prototype.forEach.call(ferieSheets.querySelectorAll('button'), function(b){
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-part') === (swapped() ? '2' : '1')));
+  });
+}
+function fillFerieSheet(data, part){
+  var mine = part !== 2;
+  ['rep_date','rep_de','rep_a','col_plan','col_de','col_a'].forEach(function(n){
+    var i = byName[n]; if(i !== undefined){ delete inputs[i].dataset.manual; setVal(i, '', true); }
+  });
+  function put(name, value){ var i = byName[name]; if(i !== undefined && value) onEdit(i, value); }
+  if(byName.ordre !== undefined) onEdit(byName.ordre, mine ? '' : '2');
+  put('collegue', data.partnerName);
+  put('rep_date', isoToFormDate(mine ? data.agreementDate : data.returnDate));
+  put('rep_de', planningTime(mine ? data.agreementStart : data.returnStart));
+  put('rep_a', planningTime(mine ? data.agreementEnd : data.returnEnd));
+  refreshFerieSheets(); layout(); scheduleSave();
+}
+ferieSheets.addEventListener('click', function(e){
+  var b = e.target.closest('button[data-part]'), pair = readFeriePair();
+  if(!b || !pair || !M || M.id !== 'ferie') return;
+  var part = +b.getAttribute('data-part');
+  fillFerieSheet(pair, part);
+  say(part === 2 ? 'Feuille 2 : le férié du collègue, vous en seconde ligne.' : 'Feuille 1 : votre férié.');
+});
 var hint2 = document.getElementById('sighint2'), clr2 = document.getElementById('sigclear2');
 var hasInk2 = false;
 function sig2Box(){ return swapped() ? M.sig : M.sig2; }
@@ -915,12 +951,14 @@ function updateCycleInfo(){
 }
 /* Jours que la case de date permet de choisir : par défaut les jours
    travaillés, seulement les jours de repos pour la date d'échange, et tous
-   les jours pour celles du collègue, dont le cycle n'est pas connu. */
+   les jours pour celles du collègue, dont le cycle n'est pas connu, et
+   seulement les fériés travaillés pour un remplacement de jour férié. */
 function daySelectable(ci){
   var f=calField >= 0 ? IF[calField] : null;
   var mode=!f ? '' : (swapped() && 'cal2' in f ? f.cal2 : f.cal);
   if(mode === 'any') return true;
   if(mode === 'off') return ci.kind === 'off' || ci.kind === 'unknown';
+  if(mode === 'holiday') return !!ci.holiday && ci.kind !== 'off';
   return ci.selectable;
 }
 function sameCalendarDay(a,b){
@@ -1132,6 +1170,10 @@ function openCalendar(i){
     if(IF[i].n===calRangeRow.t && calRangeStart) calRangeAwaitingEnd=true;
   }
   var base = cur || calRangeStart || (calLastView ? new Date(calLastView.y, calLastView.m, 1) : new Date());
+  // Remplacement de jour férié : ouverture sur le prochain férié travaillé.
+  if(!cur && IF[i].cal === 'holiday')
+    for(var d = new Date(), k = 0; k < 400; k++, d.setDate(d.getDate() + 1))
+      if(daySelectable(cycleInfo(d))){ base = d; break; }
   calView = { y: base.getFullYear(), m: base.getMonth() };
   updateRangeHint();
   renderCal();
@@ -1386,6 +1428,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   calRangeHelpShown = false;
   hideRangeHelp();
   effacerErreurs();
+  try{ sessionStorage.removeItem(FERIE_PAIR_KEY); }catch(e){}
   clearSig(); clearSig2(); closeEditor(); applyProfile(); prefill(true); recalcAll(); refreshAtt(); layout();
   restoreSavedSignature();
   if(pageCount>1) pageSnapshots[pageIndex]=capturePage(); scheduleSave();
@@ -1581,7 +1624,8 @@ function avertissementsPlanning(){
        en échange un jour de repos. */
     if(r.k==='ech'){
       var kind=cycleInfo(d1).kind, w=swapped() ? r.w2 : r.w;
-      if(w==='work' && kind==='off') warnings.push(intituleLigne(r)+' : vous êtes déjà en repos ce jour-là');
+      if(w==='holiday' && !cycleInfo(d1).holiday) warnings.push(intituleLigne(r)+' : ce jour n’est pas férié');
+      if((w==='work' || w==='holiday') && kind==='off') warnings.push(intituleLigne(r)+' : vous êtes déjà en repos ce jour-là');
       if(w==='off' && kind!=='off' && kind!=='unknown') warnings.push(intituleLigne(r)+' : vous travaillez déjà ce jour-là');
       return;
     }
@@ -1603,7 +1647,8 @@ function avertissementsPlanning(){
   return warnings;
 }
 function titreAvertissement(){
-  return M.id === 'echange' ? 'Attention : vérifiez les dates de l’échange.\n\n'
+  return M.id === 'ferie' ? 'Attention : vérifiez le jour férié.\n\n'
+    : M.id === 'echange' ? 'Attention : vérifiez les dates de l’échange.\n\n'
     : 'Attention : la période sélectionnée contient des jours non travaillés.\n\n';
 }
 function confirmerAvantPdf(){
@@ -2052,12 +2097,48 @@ async function applyPlanningImport(data){
 }
 
 /* ================= échange enregistré dans le planning ================= */
+/* Un férié : la demande de remplacement, feuille 1 remplie ; s'il y a un
+   férié rendu, la feuille 2 se prépare depuis le choix au-dessus. */
+function applyFerieImport(data){
+  inputs.forEach(function(el,i){
+    var n=IF[i].n;
+    if(n==='nom' || n==='date_sig') return;
+    delete el.dataset.manual;
+    setVal(i,'',true);
+  });
+  clearSig2();
+  if(observation) observation.value='';
+  var p=data.profile||{};
+  if(p.group){
+    var d=profileRead(); d.groupe=String(p.group);
+    try{ localStorage.setItem('demandes:v6:profil'+planningOwnerSuffix(),JSON.stringify(d)); }catch(e){}
+  }
+  if(p.fullName && byName.nom!==undefined) onEdit(byName.nom,p.fullName);
+  try{
+    if(data.returnDate) sessionStorage.setItem(FERIE_PAIR_KEY,JSON.stringify({
+      partnerName:data.partnerName, agreementDate:data.agreementDate, returnDate:data.returnDate,
+      agreementStart:data.agreementStart, agreementEnd:data.agreementEnd, returnStart:data.returnStart, returnEnd:data.returnEnd
+    }));
+    else sessionStorage.removeItem(FERIE_PAIR_KEY);
+  }catch(e){}
+  fillFerieSheet(data,1);
+  try{
+    localStorage.removeItem(EXCHANGE_HANDOFF_KEY);
+    history.replaceState(null,'',location.pathname);
+  }catch(e){}
+  return (p.signature ? drawPlanningSignature(p.signature) : Promise.resolve()).then(function(){
+    layout(); scheduleSave();
+    say(data.returnDate ? 'Feuille 1 remplie : votre férié. La feuille 2, celle du collègue, se prépare juste au-dessus.'
+      : 'Le remplacement enregistré dans le planning a été intégré au formulaire.');
+    showToast(data.returnDate ? 'Feuille 1 sur 2' : 'Remplacement intégré');
+  });
+}
 var EXCHANGE_HANDOFF_KEY='planning:exchange-handoff-v1';
 function readExchangeImport(){
   try{
     if(new URLSearchParams(location.search).get('echange')!=='1') return null;
     var data=JSON.parse(localStorage.getItem(EXCHANGE_HANDOFF_KEY)||'null');
-    return data && data.version===1 && data.agreementDate && data.returnDate ? data : null;
+    return data && data.version===1 && data.agreementDate && (data.returnDate || data.sheet==='ferie') ? data : null;
   }catch(e){ return null; }
 }
 /* Les dates et horaires de l'échange remplissent la feuille. Le repos le plus
@@ -2065,6 +2146,7 @@ function readExchangeImport(){
    haut et l'agent en bas. Les horaires d'une date sont ceux de la personne
    qui y travaille en remplacement. */
 function applyExchangeImport(data){
+  if(data.sheet==='ferie') return applyFerieImport(data);
   inputs.forEach(function(el,i){
     var n=IF[i].n;
     if(n==='nom' || n==='date_sig') return;
@@ -2241,13 +2323,13 @@ function storedSheetIndex(v){
 }
 var exchangeImport=planningImportActive ? null : readExchangeImport();
 var firstIndex=planningImportActive ? planningSheetIndex(planningImport)
-  : storedSheetIndex(exchangeImport ? 'echange' : lastSheetFast);
+  : storedSheetIndex(exchangeImport ? (exchangeImport.sheet==='ferie' ? 'ferie' : 'echange') : lastSheetFast);
 sel.value=firstIndex;
 bg.onload=function(){ bg.onload=null; layout(); };
 loadSheet(firstIndex).then(function(){
   if(planningImportActive) return applyPlanningImport(planningImport);
   if(exchangeImport){
-    try{ store.set('demandes:v4:last','echange'); }catch(e){}
+    try{ store.set('demandes:v4:last',exchangeImport.sheet==='ferie' ? 'ferie' : 'echange'); }catch(e){}
     return applyExchangeImport(exchangeImport);
   }
 });

@@ -16,20 +16,13 @@
   opacity: 1;
 }
 
-.useful-form-folder,
-.useful-contact-directory-grid > button {
-  box-shadow: 0 8px 22px rgba(58, 51, 44, 0.075);
-}
 
-.useful-form-folder,
-.useful-contact-directory-grid > button,
 .pdf-action {
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 @media (hover: hover) {
-  .useful-form-folder:hover,
-  .useful-contact-directory-grid > button:hover,
+  
   .pdf-action:hover {
     transform: translateY(-2px);
     box-shadow: 0 11px 24px rgba(58, 51, 44, 0.12);
@@ -110,9 +103,7 @@
     gap: 18px;
   }
 
-  .pdf-download-screen > section,
-  .useful-forms-screen > .useful-form-folder-grid,
-  .useful-contacts-screen > .useful-contact-directory-grid {
+  .pdf-download-screen > section{
     border-radius: 20px;
   }
 }

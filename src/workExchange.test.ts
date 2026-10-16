@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { workedDayCount, type Entries } from "./appModel";
 import {
   emptyWorkExchangeDraft,
+  exchangeEntryFields,
+  holidaysForExchangeGive,
   holidaysForExchangeReturn,
   validateWorkExchange,
   workExchangeForDate,
@@ -89,5 +91,28 @@ describe("échanges de journées", () => {
       agreementDate: "2026-08-03",
       returnDate: "2026-08-09",
     });
+  });
+
+  it("enregistre un remplacement seul de férié sur sa seule date, puis le relit", () => {
+    const holiday = holidaysForExchangeGive(2, localDate(2026, 0, 1))[0];
+    expect(holiday).toBeDefined();
+    const draft = {
+      ...emptyWorkExchangeDraft(2),
+      id: "remplacement",
+      partnerName: "Camille",
+      partnerGroup: holiday.partnerGroup,
+      agreementDate: holiday.key,
+      replacement: true,
+    };
+    expect(validateWorkExchange(draft, context)).toBe("");
+    // Un jour ordinaire ne se remplace pas seul.
+    const ordinary = Array.from({ length: 60 }, (_, index) => addDays(localDate(2026, 8, 1), index))
+      .find((date) => getDayInfo(date, 2).kind === "work" && !getDayInfo(date, 2).holiday && getDayInfo(date, 1).kind === "off")!;
+    expect(validateWorkExchange({ ...draft, partnerGroup: 1, agreementDate: dateKey(ordinary) }, context))
+      .toBe("Un remplacement seul ne concerne qu’un jour férié.");
+    const fields = exchangeEntryFields(draft);
+    expect(Object.keys(fields)).toEqual([holiday.key]);
+    const entries = { [holiday.key]: { ...fields[holiday.key], updatedAt: "x" } } as unknown as Entries;
+    expect(workExchangeForDate(entries, holiday.key)).toMatchObject({ agreementDate: holiday.key, returnDate: "" });
   });
 });

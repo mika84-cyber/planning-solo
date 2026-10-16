@@ -324,7 +324,10 @@ function findJsonLdEvent(value: unknown): Record<string, unknown> | undefined {
 export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
   // Les scripts ne sont pas du texte lu : leurs données (« "price": 10 ») ou
   // leurs gabarits de billetterie masquaient la rubrique « Tarifs » affichée.
-  const visible = html.replace(/<(script|style|noscript|template)\b[^>]*>[\s\S]*?<\/\1>/gi, " ");
+  const visible = html.replace(/<(script|style|noscript|template)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    // Une balise de mise en forme collée au milieu d'un mot n'y met pas
+    // d'espace : la page écrit « M<span>oins de 3 ans ».
+    .replace(/(?<=[\p{L}\d])(?:<\/?(?:span|strong|b|em|i|u|a|small|mark|sup|sub)\b[^>]*>)+(?=[\p{L}\d])/giu, "");
   // Les paragraphes et retours à la ligne restent des lignes : la précision
   // « 12 ans et plus » sous un tarif ne se colle plus au nom du suivant.
   const text = decodeHtml(visible

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { WorkExchangeDialog } from "./WorkExchangeDialog";
 
 describe("WorkExchangeDialog", () => {
-  it("rend les deux dates obligatoires et l’absence d’effet sur la paie", () => {
+  it("présente la feuille à signer puis trois étapes : votre journée, votre collègue, sa journée", () => {
     const html = renderToStaticMarkup(
       <WorkExchangeDialog
         open
@@ -27,35 +27,39 @@ describe("WorkExchangeDialog", () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(html).toContain("Journée de votre cycle · Groupe 2");
-    expect(html).toContain("Journée de son cycle · Groupe 1");
-    expect(html).not.toContain("Il n’y a pas d’ordre chronologique");
-    expect(html).toContain("ne modifie ni la paie ni les congés");
+    expect(html).toContain("Faire un échange");
+    // Deux onglets, la même structure.
+    expect(html).toContain(">Journée<");
+    expect(html).toContain(">Jour férié<");
+    expect(html).toContain("1 demande d’échange");
+    expect(html).toContain("Votre journée");
+    expect(html).toContain("Groupe 2 · Camille vous remplace");
+    expect(html).toContain("Votre collègue");
+    expect(html).toContain("Sa journée");
+    expect(html).toContain("Groupe 1 · Vous remplacez Camille");
+    // Sa journée attend la vôtre.
+    expect(html).toContain("Choisissez d’abord votre journée.");
     expect(html).toContain("Les deux dates de l’échange sont obligatoires.");
     expect(html).toContain("Choisir la journée de votre cycle");
-    expect(html).toContain("Choisir la journée du cycle du collègue");
-    expect(html).toContain("Vous la remplacez");
-    expect(html).not.toContain("Votre cycle, groupe 2");
-    expect(html).not.toContain("Cycle du collègue, groupe 1");
-    expect((html.match(/type=\"date\"/g) || []).length).toBe(0);
-    // Deux onglets, et les horaires demandés pour chacune des deux journées.
-    expect(html).toContain("Échange de jour");
-    expect(html).toContain("Jour férié");
+    expect((html.match(/type="date"/g) || []).length).toBe(0);
     expect(html).toContain('aria-label="Horaires de la journée de votre cycle"');
     expect(html).toContain('aria-label="Horaires de la journée de son cycle"');
+    expect(html).toContain("Valider l’échange");
   });
 
-  it("dit avec quel groupe échanger un jour cédé", async () => {
+  it("déduit de votre journée le groupe du collègue, seul choix possible", async () => {
     const { getDayInfo, dateKey } = await import("./planningLogic");
     const day = Array.from({ length: 31 }, (_, index) => new Date(2026, 11, index + 1, 12))
-      .find((date) => getDayInfo(date, 2).kind === "work" && [1, 3].some((other) => getDayInfo(date, other).kind === "off"))!;
-    const offGroup = [1, 3].find((other) => getDayInfo(day, other).kind === "off");
+      .find((date) => getDayInfo(date, 2).kind === "work" && !getDayInfo(date, 2).holiday
+        && [1, 3].filter((other) => getDayInfo(date, other).kind === "off").length === 1)!;
+    const offGroup = [1, 3].find((other) => getDayInfo(day, other).kind === "off")!;
     const html = renderToStaticMarkup(
       <WorkExchangeDialog open group={2}
-        draft={{ id: "", partnerName: "", partnerGroup: offGroup!, agreementDate: dateKey(day), returnDate: "", agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "" }}
+        draft={{ id: "", partnerName: "", partnerGroup: offGroup, agreementDate: dateKey(day), returnDate: "", agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "" }}
         setDraft={vi.fn()} error="" saving={false} onClose={vi.fn()} onSave={vi.fn()} onDelete={vi.fn()} />,
     );
-    expect(html).toContain("work-exchange-group-hint");
-    expect(html).toContain(`du groupe ${offGroup}`);
+    expect(html).toContain(`En repos ce jour-là : groupe ${offGroup}`);
+    const other = offGroup === 1 ? 3 : 1;
+    expect(html).toMatch(new RegExp(`aria-checked="false" disabled="" class="group-${other}"`));
   });
 });

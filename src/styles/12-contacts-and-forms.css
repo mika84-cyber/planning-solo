@@ -26,12 +26,12 @@
   opacity: 0.25;
 }
 .useful-contacts-screen > * { position: relative; z-index: 1; }
-.useful-contact-directory-grid > button,
+
 .useful-contact-category-grid > button {
   border-color: var(--border-card);
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
-.useful-contact-directory-grid > button:hover,
+
 .useful-contact-category-grid > button:hover {
   border-color: var(--muted);
   transform: translateY(-2px);
@@ -91,7 +91,7 @@
 
 /* Rubriques pratiques : quatrième dossier équilibré, image lisible et
    annuaire tactile sans surcharger les écrans étroits. */
-.useful-form-folder.tone-tickets { --folder-accent: #9a5a86; }
+
 .useful-forms-folder-header.tone-tickets { --folder-accent: #9a5a86; }
 .useful-form-information-image {
   display: grid;
@@ -116,14 +116,14 @@
   background: linear-gradient(145deg, #fff, var(--surface-card) 56%, #fff);
   box-shadow: inset 0 5px #7a6f5f, var(--shadow-card);
 }
-.useful-contact-directory-grid,
+
 .useful-contact-category-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-top: 18px;
 }
-.useful-contact-directory-grid > button,
+
 .useful-contact-category-grid > button {
   min-width: 0;
   display: grid;
@@ -140,35 +140,20 @@
   cursor: pointer;
   box-shadow: var(--shadow-card);
 }
-.useful-contact-directory-grid > button > span:first-child {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 18px;
-  font-weight: 950;
-}
-.useful-contact-directory-grid > button:nth-child(2) > span:first-child {
-  background: #fff0dc;
-  color: #9b591d;
-}
-.useful-contact-directory-grid button > span:nth-child(2),
+
 .useful-contact-category-grid button > span:first-child {
   display: grid;
   gap: 5px;
 }
-.useful-contact-directory-grid strong,
+
 .useful-contact-category-grid strong { font-size: 16px; }
-.useful-contact-directory-grid small,
+
 .useful-contact-category-grid small {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.4;
 }
-.useful-contact-directory-grid i,
+
 .useful-contact-category-grid i {
   color: var(--muted);
   font-size: 26px;
@@ -235,7 +220,7 @@
     border-radius: 18px;
     padding: 14px;
   }
-  .useful-contact-directory-grid,
+  
   .useful-contact-category-grid { grid-template-columns: 1fr; gap: 10px; }
   .useful-contact-card { gap: 10px; }
   .useful-contact-actions { justify-content: stretch; }
@@ -456,11 +441,6 @@
   .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading h2 {
     font-size: clamp(1.65rem, 3vw, 2.25rem);
     line-height: 1.08;
-  }
-
-  .useful-form-folder-grid {
-    align-content: stretch;
-    margin: 0;
   }
 
   .useful-forms-folder-screen .useful-form-download-list {
@@ -1426,7 +1406,6 @@
 .holiday-pay-options button small { color: #6b5d50; font-size: 0.7rem; font-weight: 700; }
 .app-shell .holiday-pay-options button.selected { border-color: #17684f; background: #eaf5f0; color: #17684f; }
 .app-shell .holiday-pay-options button.exchange { border-color: #5eb6c4; background: #eef8fa; color: #1f5f69; }
-.work-exchange-group-hint { margin: 0 0 10px; border-left: 3px solid #5eb6c4; border-radius: 0 8px 8px 0; padding: 8px 10px; background: #eef8fa; color: #1f4f57; font-size: 0.84rem; font-weight: 700; }
 /* Choix des fériés : fond terracotta léger, intitulés en noir ; le choix
    en cours se reconnaît à son cadre terracotta. « À décider » en terracotta. */
 .app-shell .holiday-pay-options button,

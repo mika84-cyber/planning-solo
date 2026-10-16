@@ -196,7 +196,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles
   du formulaire autonome de demande.
   Feuilles : congés, récupérations, échange (`form-bg-4.png`, dates et
-  horaires recopiés chez le collègue via `mirror`) et annulation.
+  horaires recopiés chez le collègue via `mirror`), remplacement de jour férié
+  (`form-bg-5.png`, calendrier limité aux fériés travaillés via `cal: 'holiday'`,
+  date et horaires recopiés chez le collègue) et annulation.
 
 ## PDF et PWA
 

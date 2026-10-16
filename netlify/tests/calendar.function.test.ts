@@ -281,6 +281,39 @@ describe("API principale du calendrier", () => {
     expect(data.has("user/user-a/entry/2026-09-08")).toBe(false);
   });
 
+  it("enregistre un remplacement seul de férié sur sa seule date, puis le transforme en échange", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const save = await calendarHandler(request({
+      action: "save-exchange",
+      id: "replacement-noel",
+      partnerName: "Camille",
+      partnerGroup: 1,
+      agreementDate: "2026-11-11",
+      returnDate: "",
+      expectedUpdatedAts: { "2026-11-11": "" },
+    }));
+    expect(save.status).toBe(200);
+    const given = data.get("user/user-a/entry/2026-11-11") as Record<string, unknown>;
+    expect(given).toMatchObject({ exchange_id: "replacement-noel", exchange_role: "given", exchange_partner: "Camille" });
+    expect(given.exchange_other_date).toBeUndefined();
+
+    // Un férié rendu s'ajoute ensuite : l'échange retrouve ses deux dates.
+    const update = await calendarHandler(request({
+      action: "save-exchange",
+      id: "replacement-noel",
+      partnerName: "Camille",
+      partnerGroup: 1,
+      agreementDate: "2026-11-11",
+      returnDate: "2026-05-14",
+      previousAgreementDate: "2026-11-11",
+      previousReturnDate: "",
+      expectedUpdatedAts: { "2026-11-11": String(given.updated_at), "2026-05-14": "" },
+    }));
+    expect(update.status).toBe(200);
+    expect(data.get("user/user-a/entry/2026-11-11")).toMatchObject({ exchange_other_date: "2026-05-14" });
+    expect(data.get("user/user-a/entry/2026-05-14")).toMatchObject({ exchange_role: "return", exchange_other_date: "2026-11-11" });
+  });
+
   it("refuse une action inconnue sans toucher au stockage", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const response = await calendarHandler(request({ action: "action-inconnue" }));
