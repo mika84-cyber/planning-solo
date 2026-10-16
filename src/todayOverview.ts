@@ -8,6 +8,7 @@ import {
   GROUP_OPTIONS,
   coWorkingGroupsForDate,
   dateKey,
+  fromKey,
   getDayInfo,
   halfBalanceOf,
   leaveTypeLabel,
@@ -81,7 +82,13 @@ export function computeTodayOverview({
   } else if (todayExchange) {
     // Le prénom seul : la ligne tient sur une seule ligne.
     const partnerFirstName = todayExchange.partnerName.trim().split(/\s+/)[0] || todayExchange.partnerName;
-    status = entry?.exchangeRole === "given"
+    // Échange de formations : chacun suit la formation de l'autre.
+    const trainingSwap = getDayInfo(fromKey(todayExchange.agreementDate), group).kind === "training";
+    status = trainingSwap
+      ? entry?.exchangeRole === "given"
+        ? `${todayPost || "Travail"} · ${partnerFirstName} suit votre formation`
+        : `Formation · à la place de ${partnerFirstName}`
+      : entry?.exchangeRole === "given"
       ? `Repos · remplacé par ${partnerFirstName}`
       : `${todayPost || "Travail"} · remplacement de ${partnerFirstName}`;
     tone = "exchange";
@@ -112,7 +119,7 @@ export function computeTodayOverview({
     if (isExceptionallyClosed(candidateKey)) {
       return true;
     }
-    return entries[candidateKey]?.exchangeRole === "given" ||
+    return (entries[candidateKey]?.exchangeRole === "given" && getDayInfo(fromKey(candidateKey), group).kind !== "training") ||
       Boolean(entries[candidateKey]?.leave) ||
       Boolean(
         selections[candidateKey] &&

@@ -1,6 +1,7 @@
 import type { WorkExchange } from "./appModel";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
 import { fromKey, getDayInfo, longDate } from "./planningLogic";
+import { isTrainingExchange } from "./workExchange";
 
 /** « : Jour de l’an · jeudi 1 janvier 2026 » pour un férié, « le mardi
  *  15 septembre 2026 » sinon. */
@@ -12,8 +13,14 @@ function dayLabel(key: string) {
 
 /** Les deux journées de l'échange, dans l'ordre du calendrier : chacune dit
  *  ce qu'elle devient pour vous (repos ou travail) et qui remplace qui. */
-function chronologicalDetails(exchange: WorkExchange) {
+function chronologicalDetails(exchange: WorkExchange, group: number) {
   const pronoun = colleagueObjectPronoun(exchange.partnerName);
+  // Échange de formations : chacun suit la formation de l'autre.
+  if (group && exchange.returnDate && isTrainingExchange(exchange, group))
+    return [
+      { date: exchange.agreementDate, role: "return" as const, tag: "Travail", label: `${exchange.partnerName} suit votre formation ${dayLabel(exchange.agreementDate)}` },
+      { date: exchange.returnDate, role: "return" as const, tag: "Formation", label: `Vous suivez sa formation ${dayLabel(exchange.returnDate)}` },
+    ].sort((first, second) => first.date.localeCompare(second.date));
   // Un remplacement seul n'a pas de journée rendue.
   return [
     ...(exchange.returnDate ? [{
@@ -33,9 +40,12 @@ function chronologicalDetails(exchange: WorkExchange) {
 
 export function WorkExchangePanel({
   exchanges,
+  group = 0,
   onEdit,
 }: {
   exchanges: WorkExchange[];
+  /** Votre groupe : un échange de formations se lit sur votre cycle. */
+  group?: number;
   onEdit: (exchange: WorkExchange) => void;
 }) {
   if (!exchanges.length) return null;
@@ -63,7 +73,7 @@ export function WorkExchangePanel({
               <button type="button" onClick={() => onEdit(exchange)} aria-label={`Modifier ${exchange.returnDate ? "l’échange" : "le remplacement"} avec ${exchange.partnerName}`}>Modifier</button>
             </header>
             <ol>
-              {chronologicalDetails(exchange).map((detail) => (
+              {chronologicalDetails(exchange, group).map((detail) => (
                 <li key={detail.date} className={`exchange-${detail.role}`}>
                   <b aria-hidden="true">{detail.tag}</b>
                   <p>{detail.label}</p>

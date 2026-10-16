@@ -411,7 +411,9 @@ describe("solde de récupération", () => {
     expect(recovery).toMatchObject({ onLeave: 0.5, worked: 0.5 });
     expect(fullRecovery).toMatchObject({ onLeave: 1, worked: 0 });
     expect(halfTimeRecovery).toMatchObject({ onLeave: 1, worked: 0 });
-    expect(exchange).toMatchObject({ exchangedGiven: 1, worked: 0 });
+    // Une formation cédée s'échange contre une formation : vous travaillez à
+    // la place du collègue, la journée reste comptée.
+    expect(exchange).toMatchObject({ exchangedGiven: 0, worked: 1 });
   });
 
   it("retire aussi la fermeture du travail restant entre deux dates", () => {

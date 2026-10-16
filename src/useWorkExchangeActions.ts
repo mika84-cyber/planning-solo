@@ -88,10 +88,12 @@ export function useWorkExchangeActions({
     const next = emptyWorkExchangeDraft(group, "", schedule);
     if (agreementDate) {
       const kind = getDayInfo(fromKey(agreementDate), group).kind;
-      if (kind === "work") {
+      if (kind === "work" || kind === "training") {
         next.agreementDate = agreementDate;
-        // Le collègue doit être en repos ce jour-là : son groupe est connu.
-        const offGroup = [1, 2, 3].find((other) => other !== group && getDayInfo(fromKey(agreementDate), other).kind === "off");
+        // Le collègue doit être en repos ce jour-là (au travail pour une
+        // formation cédée) : son groupe est connu.
+        const wanted = kind === "training" ? "work" : "off";
+        const offGroup = [1, 2, 3].find((other) => other !== group && getDayInfo(fromKey(agreementDate), other).kind === wanted);
         if (offGroup) next.partnerGroup = offGroup;
       }
       else if (kind === "off") next.returnDate = agreementDate;

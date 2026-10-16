@@ -10,8 +10,14 @@ const byFirstName = (first: string, second: string) =>
  *  modifiée par l'administrateur (et donc enregistrée) les reçoit une seule
  *  fois : un retrait ultérieur n'est pas annulé. */
 export const COLLEAGUE_GROUP_ADDITIONS: ReadonlyArray<{ id: string; group: 1 | 2 | 3; members: readonly string[] }> = [
-  { id: "2026-10-groupe-1", group: 1, members: ["Katayoun Rouhi-Outil", "Zackarielle Vasseront"] },
+  { id: "2026-10-groupe-1", group: 1, members: ["Katayoun Rouhi-Outil", "Zackarielle Vasserot"] },
 ];
+
+/** Noms mal orthographiés dans une liste déjà enregistrée : corrigés à la
+ *  lecture, sans toucher au reste de la liste. */
+export const COLLEAGUE_NAME_FIXES: Readonly<Record<string, string>> = {
+  "Zackarielle Vasseront": "Zackarielle Vasserot",
+};
 
 export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
   {
@@ -52,7 +58,7 @@ export const COLLEAGUE_GROUPS: readonly ColleagueGroup[] = [
       "Christophe Stezowski",
       "Sivasankari Verdy",
       "Katayoun Rouhi-Outil",
-      "Zackarielle Vasseront",
+      "Zackarielle Vasserot",
     ].sort(byFirstName),
   },
   {

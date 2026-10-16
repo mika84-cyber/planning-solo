@@ -24,7 +24,8 @@ export function canChooseWorkPost({
   if (closed || entry?.leave) return false;
   if (periods.some((period) => date >= period.from && date <= period.to)) return false;
   if (recoveryUses.some((use) => use.date === date)) return false;
-  if (entry?.exchangeRole === "given") return false;
+  // Formation cédée : vous travaillez à la place du collègue.
+  if (entry?.exchangeRole === "given") return getDayInfo(fromKey(date), group).kind === "training";
   if (entry?.exchangeRole === "return") return true;
   return getDayInfo(fromKey(date), group).kind === "work";
 }

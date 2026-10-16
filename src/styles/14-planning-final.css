@@ -1436,10 +1436,10 @@ fieldset.leave-choices {
 .xch-steps { display: grid; margin: 4px 0 0; padding: 0; list-style: none; }
 .xch-steps > li { display: grid; gap: 10px; border-bottom: 1px solid #ece4d9; padding: 16px 0; }
 .xch-steps > li:last-child { border-bottom: 0; }
-.xch-steps header { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 10px; }
-.xch-steps header b { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.8rem; }
-.xch-steps header strong, .xch-steps header small { display: block; }
-.xch-steps header small { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+.xch-steps > li > header { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 10px; }
+.xch-steps > li > header b { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.8rem; }
+.xch-steps > li > header strong, .xch-steps > li > header small { display: block; }
+.xch-steps > li > header small { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
 .xch-steps > li > :not(header) { margin-left: 36px; }
 .xch-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
 .app-shell .xch-choice, .app-shell .work-exchange-date-trigger { display: grid; gap: 1px; width: 100%; min-height: 0; margin: 0; border: 1px solid #ddd2c4; border-radius: 12px; padding: 9px 12px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
@@ -1447,6 +1447,7 @@ fieldset.leave-choices {
 .xch-choice strong, .work-exchange-date-trigger strong { font-size: 0.9rem; }
 .xch-choice small, .work-exchange-date-trigger span { color: var(--muted); font-size: 0.76rem; font-weight: 700; }
 .xch-empty { margin: 0; color: var(--muted); font-size: 0.84rem; }
+.xch-warning { margin: 0; border-radius: 10px; padding: 8px 11px; background: #fdf1dc; color: #7a5410; font-size: 0.8rem; font-weight: 750; }
 .xch-hours { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .xch-hours .clock-time-field { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
 .xch-hours .clock-time-field > span:first-child { color: var(--muted); font-size: 0.74rem; font-weight: 800; }

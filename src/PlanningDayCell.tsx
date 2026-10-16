@@ -16,6 +16,7 @@ import {
   type LeaveType,
   type SchoolVacation,
 } from "./planningLogic";
+import { isTrainingExchange } from "./workExchange";
 
 type PlanningDayCellProps = {
   date: Date;
@@ -91,7 +92,14 @@ export function PlanningDayCell({
   const exchangeRole = exchange
     ? entry?.exchangeRole || (exchange.agreementDate === dateKey(date) ? "given" : "return")
     : "";
-  const exchangeLabel = exchange
+  // Échange de formations : le mercredi cédé est travaillé, le mercredi repris
+  // est une formation ; aucun des deux n'est un repos.
+  const trainingSwap = Boolean(exchange) && isTrainingExchange(exchange!, group);
+  const exchangeLabel = exchange && trainingSwap
+    ? exchangeRole === "given"
+      ? `Travail · ${exchange.partnerName} suit votre formation`
+      : `Formation · à la place de ${exchange.partnerName}`
+    : exchange
     ? exchangeRole === "given"
       ? `Repos · votre cycle groupe ${group} · remplacé par ${exchange.partnerName}`
       : `Travail · cycle groupe ${exchange.partnerGroup} · remplacement de ${exchange.partnerName}`
@@ -182,7 +190,7 @@ export function PlanningDayCell({
   return (
     <button
       type="button"
-      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery || fullHourlyRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hourlyMoment ? ` half-${hourlyMoment} half-hours` : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}${myHalfBalance === "annual" ? "" : ` half-${myHalfBalance}`}` : ""}${wishOutline ? ` wish-day${entry?.wishMoment ? ` wish-${entry.wishMoment}` : ""}` : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? ` range-selected range-edge${pendingWishMoment ? ` range-wish-${pendingWishMoment}` : ""}` : ""}`}
+      className={`${compact ? "mini-day" : "day"} ${info.kind}${date.getDay() === 0 || date.getDay() === 6 ? " weekend" : ""}${visibleLeave && !myRecovery && !myHalfMoment ? ` leave-day leave-${myLeaveType}` : ""}${personalDay ? " personal-day" : ""}${myRecovery || fullHourlyRecovery ? " recovery-day" : ""}${hasHourlyRecovery ? " hourly-recovery-day" : ""}${hourlyMoment ? ` half-${hourlyMoment} half-hours` : ""}${hasTrainingRecovery ? " training-recovery-day" : ""}${myHalfMoment ? ` half-${myHalfMoment}${myHalfBalance === "annual" ? "" : ` half-${myHalfBalance}`}` : ""}${wishOutline ? ` wish-day${entry?.wishMoment ? ` wish-${entry.wishMoment}` : ""}` : ""}${agnesLeave ? " agnes-leave-day" : ""}${today ? " today" : ""}${visibleNote ? " has-note" : ""}${exceptionalClosure ? " exceptional-closure-day" : ""}${exchange ? ` exchange-day exchange-${trainingSwap ? "return" : exchangeRole}` : ""}${workAccident ? " work-accident-day" : ""}${schoolVacation ? " school-vacation-day" : ""}${selected || cleanupSelected ? " request-selected" : ""}${selected?.type === "strike" ? " request-selected-strike" : ""}${cleanupSelected ? " cleanup-selected" : ""}${inPendingRange ? ` range-selected range-edge${pendingWishMoment ? ` range-wish-${pendingWishMoment}` : ""}` : ""}`}
       style={selectionStyle}
       onClick={onClick}
       title={title}
@@ -232,7 +240,7 @@ export function PlanningDayCell({
         <>
           {!compact ? (
             <span className="exchange-calendar-label">
-              {exchangeRole === "given" ? "OFF" : "TRAVAIL"}
+              {trainingSwap ? exchangeRole === "given" ? "TRAVAIL" : "FORMATION" : exchangeRole === "given" ? "OFF" : "TRAVAIL"}
             </span>
           ) : null}
           {/* Un férié échangé : les flèches de l'échange entourent un dollar. */}

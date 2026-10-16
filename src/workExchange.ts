@@ -52,6 +52,12 @@ export function holidaysForExchangeGive(group: number, from: Date) {
   return holidays;
 }
 
+/** Échange de formations : votre mercredi de formation cédé (vous
+ *  travaillez) ou celui du collègue repris (vous suivez sa formation). */
+export function isTrainingExchange(exchange: Pick<WorkExchange, "agreementDate">, group: number) {
+  return getDayInfo(fromKey(exchange.agreementDate), group).kind === "training";
+}
+
 export function workExchangeForDate(entries: Entries, date: string): WorkExchange | null {
   const entry = entries[date];
   if (
@@ -120,13 +126,21 @@ export function validateWorkExchange(
 
   const agreementMine = getDayInfo(fromKey(draft.agreementDate), group).kind;
   const agreementPartner = getDayInfo(fromKey(draft.agreementDate), draft.partnerGroup).kind;
-  if (agreementMine !== "work" || agreementPartner !== "off")
-    return "Pour la journée de votre cycle, vous devez travailler et votre collègue doit être en repos.";
-
   const returnMine = getDayInfo(fromKey(draft.returnDate), group).kind;
   const returnPartner = getDayInfo(fromKey(draft.returnDate), draft.partnerGroup).kind;
-  if (returnMine !== "off" || returnPartner !== "work")
-    return "Pour la journée du cycle du collègue, vous devez être en repos et votre collègue doit travailler.";
+  // Un mercredi de formation s'échange contre un mercredi de formation : chacun
+  // suit la formation de l'autre et travaille à sa place le jour de la sienne.
+  if (agreementMine === "training") {
+    if (agreementPartner !== "work")
+      return "Pour votre mercredi de formation, votre collègue doit travailler ce jour-là.";
+    if (returnPartner !== "training" || returnMine !== "work")
+      return "Une formation s’échange contre une formation : choisissez un mercredi de formation de votre collègue où vous travaillez.";
+  } else {
+    if (agreementMine !== "work" || agreementPartner !== "off")
+      return "Pour la journée de votre cycle, vous devez travailler et votre collègue doit être en repos.";
+    if (returnMine !== "off" || returnPartner !== "work")
+      return "Pour la journée du cycle du collègue, vous devez être en repos et votre collègue doit travailler.";
+  }
   // Un férié cédé se rend par un autre férié.
   if (getDayInfo(fromKey(draft.agreementDate), group).holiday) {
     if (!getDayInfo(fromKey(draft.returnDate), draft.partnerGroup).holiday)

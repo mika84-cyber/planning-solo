@@ -349,7 +349,8 @@ export function personalPresenceForDate(
   // Le poste (accueil, billetterie) accompagne une journée travaillée.
   const work: PersonalPresence = entry?.workPost ? { status: "work", workPost: entry.workPost } : { status: "work" };
   if (entry?.exchangeRole === "return") return work;
-  if (entry?.exchangeRole === "given") return { status: "absence" };
+  // Formation cédée : vous travaillez à la place du collègue.
+  if (entry?.exchangeRole === "given") return scheduled === "training" ? work : { status: "absence" };
   if (scheduled === "off") return { status: "rest" };
   const dayPeriods = periods.filter((item) => key >= item.from && key <= item.to);
   if (dayPeriods.some((item) => item.leaveType !== "half") || entry?.leave) return { status: "absence" };
@@ -455,7 +456,7 @@ export function workedDayCount(
         exceptionallyClosed++;
         continue;
       }
-      if (exchangeRoleFor(key) === "given") {
+      if (exchangeRoleFor(key) === "given" && kind !== "training") {
         exchangedGiven++;
         continue;
       }
@@ -512,7 +513,7 @@ export function workedDayCountBetween(
       exceptionallyClosed++;
       continue;
     }
-    if (exchangeRoleFor(key) === "given") {
+    if (exchangeRoleFor(key) === "given" && kind !== "training") {
       exchangedGiven++;
       continue;
     }

@@ -3386,9 +3386,14 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await expect(myCycle.getByLabel("Légende du groupe 2")).toContainText("TravailReposFormation");
   expect(await myCycle.locator(".exchange-cycle-day.selectable").count()).toBeGreaterThan(0);
   await expect(myCycle.locator(".exchange-cycle-day.off").first()).toHaveCSS("background-color", "rgb(44, 38, 33)");
-  const trainingDays = myCycle.locator(".exchange-cycle-day.training");
+  // Vos mercredis de formation se cèdent (case blanche) ; les autres jours de
+  // formation gardent leur gris.
+  const trainingDays = myCycle.locator(".exchange-cycle-day.training:not(.selectable)");
   if (await trainingDays.count())
     await expect(trainingDays.first()).toHaveCSS("background-color", "rgb(180, 180, 180)");
+  const myTrainings = myCycle.locator(".exchange-cycle-day.training.selectable");
+  if (await myTrainings.count())
+    await expect(myTrainings.first()).toHaveCSS("background-color", "rgb(255, 255, 255)");
   expect(await myCycle.locator(".exchange-cycle-unavailable").count()).toBeGreaterThan(0);
   await expect(myCycle.locator(".exchange-cycle-day.off .exchange-cycle-unavailable")).toHaveCount(0);
   await expect(myCycle.locator(".exchange-cycle-day.training .exchange-cycle-unavailable")).toHaveCount(0);
@@ -3472,6 +3477,29 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await page.getByRole("button", { name: "Supprimer l’échange" }).click();
   await expect(page.locator(".day.exchange-day")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Mes échanges" })).toHaveCount(0);
+});
+
+test("un mercredi de formation s’échange, depuis l’onglet Journée, contre un mercredi de formation du collègue", async ({ page }) => {
+  const now = new Date();
+  const days = Array.from({ length: 60 }, (_, index) => localDate(now.getFullYear(), now.getMonth(), index + 1));
+  const mine = days.find((date) => getDayInfo(date, 2).kind === "training" && getDayInfo(date, 1).kind === "work");
+  if (!mine) throw new Error("Aucun mercredi de formation du groupe 2 trouvé");
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Faire un échange" }).click();
+  const dialog = page.getByRole("dialog", { name: "Faire un échange" });
+  await dialog.getByRole("button", { name: "Choisir la journée de votre cycle" }).click();
+  const myCycle = page.getByRole("region", { name: "Cycle de travail du groupe 2" });
+  while (!(await myCycle.locator(`[data-date="${dateKey(mine)}"]`).count()))
+    await myCycle.getByRole("button", { name: "Mois suivant" }).click();
+  await myCycle.locator(`[data-date="${dateKey(mine)}"]`).click();
+  // Un mercredi : l'avertissement ; le collègue travaille ce jour-là.
+  await expect(dialog.locator(".xch-warning")).toContainText("uniquement contre un mercredi de formation");
+  await expect(dialog.locator(".xch-steps")).toContainText("Au travail ce jour-là");
+  await dialog.getByRole("button", { name: "Choisir la journée du cycle du collègue" }).click();
+  const partnerCycle = page.getByRole("region", { name: /Cycle de travail du groupe [13]/ });
+  const choices = await partnerCycle.locator(".exchange-cycle-day.selectable").evaluateAll((items) => items.map((item) => (item as HTMLElement).dataset.date || ""));
+  // Seuls ses mercredis de formation sont proposés.
+  for (const key of choices) expect(new Date(`${key}T12:00:00`).getDay()).toBe(3);
 });
 
 test("l’onglet Jour férié explique le remplacement et prépare les deux feuilles d’un échange de fériés", async ({ page }, testInfo) => {

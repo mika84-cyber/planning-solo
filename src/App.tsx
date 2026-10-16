@@ -3240,7 +3240,7 @@ export default function Home() {
         />
       </section>
       {homeSection === "home" ? (
-        <WorkExchangePanel exchanges={workExchanges} onEdit={editWorkExchange} />
+        <WorkExchangePanel exchanges={workExchanges} group={group} onEdit={editWorkExchange} />
       ) : null}
       {homeSection === "home" ? (
         <div className="planning-calendar-cleanup-row">
@@ -3359,6 +3359,7 @@ export default function Home() {
             entries={entries}
             partnerEntries={partnerEntries}
             dayExchange={dayExchange}
+            exchangeGroup={group}
             dayStoredPeriods={dayStoredPeriods}
             dayRecoveryUses={dayRecoveryUses}
             dayOvertime={dayOvertime}

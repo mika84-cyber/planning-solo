@@ -21,6 +21,10 @@ type Props = {
   holidaysOnly?: boolean;
   /** Un férié se cède depuis l'onglet « Jour férié » : écarté ici. */
   excludeHolidays?: boolean;
+  /** Votre mercredi de formation se cède aussi, contre une formation. */
+  allowTraining?: boolean;
+  /** Seuls les mercredis de formation du groupe, où l'autre travaille. */
+  trainingOnly?: boolean;
 };
 
 function initialView(value: string) {
@@ -36,6 +40,8 @@ export function WorkExchangeDatePicker({
   onChange,
   holidaysOnly = false,
   excludeHolidays = false,
+  allowTraining = false,
+  trainingOnly = false,
 }: Props) {
   const others = otherGroup ? [otherGroup] : [1, 2, 3].filter((item) => item !== ownerGroup);
   const [open, setOpen] = useState(false);
@@ -84,9 +90,13 @@ export function WorkExchangeDatePicker({
             month={view.getMonth()}
             renderDay={(date) => {
               const ownerInfo = getDayInfo(date, ownerGroup);
-              const otherOff = others.filter((item) => getDayInfo(date, item).kind === "off");
+              const otherKinds = others.map((item) => getDayInfo(date, item).kind);
               const key = dateKey(date);
-              const selectable = ownerInfo.kind === "work" && otherOff.length > 0
+              // Une formation s'échange contre une formation : ce jour-là,
+              // l'autre travaille et prend la place laissée.
+              const training = ownerInfo.kind === "training" && otherKinds.includes("work");
+              const ordinary = ownerInfo.kind === "work" && otherKinds.includes("off");
+              const selectable = (trainingOnly ? training : ordinary || (allowTraining && training))
                 && (!holidaysOnly || Boolean(ownerInfo.holiday)) && !(excludeHolidays && ownerInfo.holiday);
               const incompatibleWorkDay = ownerInfo.kind === "work" && !selectable;
               return (
@@ -111,8 +121,10 @@ export function WorkExchangeDatePicker({
           />
           <small>
             {otherGroup
-              ? `Seuls les jours où le groupe ${ownerGroup} travaille et où le groupe ${otherGroup} est en repos sont sélectionnables.`
-              : `Seuls les jours où vous travaillez et où un autre groupe est en repos sont sélectionnables.`}
+              ? trainingOnly
+                ? `Seuls les mercredis de formation du groupe ${ownerGroup}, où vous travaillez, sont sélectionnables.`
+                : `Seuls les jours où le groupe ${ownerGroup} travaille et où le groupe ${otherGroup} est en repos sont sélectionnables.`
+              : `Seuls les jours où vous travaillez et où un autre groupe est en repos sont sélectionnables, ainsi que vos mercredis de formation.`}
             {excludeHolidays ? " Un jour férié se cède depuis l’onglet « Jour férié »." : ""}
           </small>
         </section>

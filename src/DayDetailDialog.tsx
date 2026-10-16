@@ -2,6 +2,7 @@ import { type RefObject } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import "./dayActionGrid.css";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
+import { isTrainingExchange } from "./workExchange";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import type { SharedGrandPalaisEvent } from "./grandPalaisProgramTypes";
 import type { usePlanningUiState } from "./usePlanningUiState";
@@ -59,6 +60,8 @@ export type DayDetailDialogProps = {
   entries: Entries;
   partnerEntries: PartnerCalendarEntries;
   dayExchange: WorkExchange | null;
+  /** Votre groupe : un échange de formations se lit sur votre cycle. */
+  exchangeGroup?: number;
   dayStoredPeriods: LeavePeriod[];
   dayRecoveryUses: RecoveryUse[];
   dayOvertime: OvertimeEntry[];
@@ -98,6 +101,7 @@ export function DayDetailDialog({
   entries,
   partnerEntries,
   dayExchange,
+  exchangeGroup = 0,
   dayStoredPeriods,
   dayRecoveryUses,
   dayOvertime,
@@ -192,6 +196,10 @@ export function DayDetailDialog({
                 <span>
                   {!dayExchange.returnDate
                     ? `${dayExchange.partnerName} vous remplace ce jour, sans férié rendu.`
+                    : exchangeGroup && isTrainingExchange(dayExchange, exchangeGroup)
+                    ? dayDate === dayExchange.agreementDate
+                      ? `${dayExchange.partnerName} suit votre formation ce jour, vous travaillez à sa place ; vous suivez la sienne le ${longDate(fromKey(dayExchange.returnDate))}.`
+                      : `Vous suivez la formation de ${dayExchange.partnerName} ce jour, à sa place ; ${dayExchange.partnerName} suit la vôtre le ${longDate(fromKey(dayExchange.agreementDate))}.`
                     : dayDate === dayExchange.agreementDate
                     ? `${dayExchange.partnerName} vous remplace ce jour, vous ${colleagueObjectPronoun(dayExchange.partnerName)} remplacez le ${longDate(fromKey(dayExchange.returnDate))}.`
                     : `Vous ${colleagueObjectPronoun(dayExchange.partnerName)} remplacez ce jour, ${dayExchange.partnerName} vous remplace le ${longDate(fromKey(dayExchange.agreementDate))}.`}

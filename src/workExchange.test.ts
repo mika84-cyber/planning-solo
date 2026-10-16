@@ -115,4 +115,16 @@ describe("échanges de journées", () => {
     const entries = { [holiday.key]: { ...fields[holiday.key], updatedAt: "x" } } as unknown as Entries;
     expect(workExchangeForDate(entries, holiday.key)).toMatchObject({ agreementDate: holiday.key, returnDate: "" });
   });
+
+  it("échange une formation contre une formation, jamais contre une journée ordinaire", () => {
+    const dates = Array.from({ length: 120 }, (_, index) => addDays(localDate(2026, 9, 1), index));
+    // Votre formation : le groupe 1 travaille ce mercredi-là.
+    const mine = dates.find((date) => getDayInfo(date, 2).kind === "training" && getDayInfo(date, 1).kind === "work")!;
+    // Sa formation : vous travaillez ce mercredi-là.
+    const his = dates.find((date) => getDayInfo(date, 1).kind === "training" && getDayInfo(date, 2).kind === "work")!;
+    const ordinary = dates.find((date) => getDayInfo(date, 2).kind === "off" && getDayInfo(date, 1).kind === "work")!;
+    const draft = { ...emptyWorkExchangeDraft(2), partnerName: "Camille", partnerGroup: 1, agreementDate: dateKey(mine) };
+    expect(validateWorkExchange({ ...draft, returnDate: dateKey(his) }, context)).toBe("");
+    expect(validateWorkExchange({ ...draft, returnDate: dateKey(ordinary) }, context)).toMatch(/s’échange contre une formation/);
+  });
 });

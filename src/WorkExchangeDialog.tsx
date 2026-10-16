@@ -83,8 +83,10 @@ export function WorkExchangeDialog({
   /* Le jour cédé fixe le groupe du collègue : celui qui est en repos ce
      jour-là. Les noms proposés s'y limitent. */
   const agreementInfo = draft.agreementDate ? getDayInfo(fromKey(draft.agreementDate), group) : null;
-  const offGroups = agreementInfo?.kind === "work"
-    ? [1, 2, 3].filter((other) => other !== group && getDayInfo(fromKey(draft.agreementDate), other).kind === "off")
+  /* Une formation cédée : le collègue travaille ce jour-là. */
+  const trainingSwap = agreementInfo?.kind === "training";
+  const offGroups = agreementInfo?.kind === "work" || trainingSwap
+    ? [1, 2, 3].filter((other) => other !== group && getDayInfo(fromKey(draft.agreementDate), other).kind === (trainingSwap ? "work" : "off"))
     : [];
   const returnHolidays = agreementInfo?.holiday ? holidaysForExchangeReturn(draft.agreementDate, group, draft.partnerGroup) : [];
   const suggestions = searchColleagueGroups(annuaire, draft.partnerName)
@@ -131,7 +133,8 @@ export function WorkExchangeDialog({
      repos ce jour-là. Sa journée est à refaire si le groupe change. */
   const chooseAgreement = (agreementDate: string, partnerGroup?: number) =>
     setDraft((current) => {
-      const off = [1, 2, 3].filter((other) => other !== group && getDayInfo(fromKey(agreementDate), other).kind === "off");
+      const wanted = getDayInfo(fromKey(agreementDate), group).kind === "training" ? "work" : "off";
+      const off = [1, 2, 3].filter((other) => other !== group && getDayInfo(fromKey(agreementDate), other).kind === wanted);
       const nextGroup = partnerGroup ?? (off.includes(current.partnerGroup) ? current.partnerGroup : off[0] ?? current.partnerGroup);
       return { ...current, agreementDate, partnerGroup: nextGroup, returnDate: nextGroup === current.partnerGroup ? current.returnDate : "" };
     });
@@ -220,10 +223,18 @@ export function WorkExchangeDialog({
                 ownerGroup={group}
                 otherGroup={partner ? draft.partnerGroup : 0}
                 excludeHolidays
+                allowTraining
                 ariaLabel="Choisir la journée de votre cycle"
                 onChange={(agreementDate) => chooseAgreement(agreementDate)}
               />
             )}
+            {!holidayTab && draft.agreementDate && fromKey(draft.agreementDate).getDay() === 3 ? (
+              <p className="xch-warning" role="note">
+                {trainingSwap
+                  ? "Mercredi de formation : il s’échange uniquement contre un mercredi de formation de votre collègue."
+                  : "Un mercredi : vérifiez qu’il ne s’agit pas d’un jour de formation."}
+              </p>
+            ) : null}
             {hours("Horaires de la journée de votre cycle", "agreementStart", "agreementEnd")}
           </li>
 
@@ -234,7 +245,7 @@ export function WorkExchangeDialog({
                 <strong>Votre collègue</strong>
                 <small>
                   {offGroups.length
-                    ? `En repos ce jour-là : ${offGroups.length > 1 ? `groupes ${offGroups.join(" et ")}` : `groupe ${offGroups[0]}`}`
+                    ? `${trainingSwap ? "Au travail" : "En repos"} ce jour-là : ${offGroups.length > 1 ? `groupes ${offGroups.join(" et ")}` : `groupe ${offGroups[0]}`}`
                     : "D’un autre groupe que le vôtre"}
                 </small>
               </div>
@@ -343,6 +354,7 @@ export function WorkExchangeDialog({
                   ownerGroup={draft.partnerGroup}
                   otherGroup={group}
                   excludeHolidays
+                  trainingOnly={trainingSwap}
                   ariaLabel="Choisir la journée du cycle du collègue"
                   onChange={(returnDate) => setDraft((current) => ({ ...current, returnDate }))}
                 />
@@ -355,8 +367,13 @@ export function WorkExchangeDialog({
         {/* En une phrase, qui remplace qui et quand. */}
         {complete ? (
           <p className="xch-recap">
-            <span>{partner} vous remplace le {dayLabel(draft.agreementDate)}.</span>
-            {replacement ? null : <span>Vous remplacez {partner} le {dayLabel(draft.returnDate)}.</span>}
+            {trainingSwap ? <>
+              <span>{partner} suit votre formation le {dayLabel(draft.agreementDate)}, vous travaillez à sa place.</span>
+              <span>Vous suivez sa formation le {dayLabel(draft.returnDate)}, {partner} travaille à votre place.</span>
+            </> : <>
+              <span>{partner} vous remplace le {dayLabel(draft.agreementDate)}.</span>
+              {replacement ? null : <span>Vous remplacez {partner} le {dayLabel(draft.returnDate)}.</span>}
+            </>}
           </p>
         ) : null}
         {error ? <p className="work-exchange-error" role="alert">{error}</p> : null}

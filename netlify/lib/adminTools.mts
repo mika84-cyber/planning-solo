@@ -1,5 +1,5 @@
 import { getStore } from '@netlify/blobs';
-import { COLLEAGUE_GROUP_ADDITIONS, COLLEAGUE_GROUPS, type ColleagueGroup } from './colleagueGroups.ts';
+import { COLLEAGUE_GROUP_ADDITIONS, COLLEAGUE_GROUPS, COLLEAGUE_NAME_FIXES, type ColleagueGroup } from './colleagueGroups.ts';
 import { sendDocumentAnnouncementEmail } from './documentAnnouncementEmail.mts';
 
 export type Store = ReturnType<typeof getStore>;
@@ -16,8 +16,11 @@ export async function records<T>(store: Store, prefix: string): Promise<T[]> {
 export const groupsKey = 'admin-tools/groups';
 const groupAdditionsKey = 'admin-tools/group-additions';
 export async function readGroups(store: Store): Promise<readonly ColleagueGroup[]> {
-  const stored = await store.get(groupsKey, { type: 'json' }) as ColleagueGroup[] | null;
-  if (!stored) return COLLEAGUE_GROUPS;
+  const saved = await store.get(groupsKey, { type: 'json' }) as ColleagueGroup[] | null;
+  if (!saved) return COLLEAGUE_GROUPS;
+  // Un nom mal orthographié est corrigé dans la liste enregistrée.
+  const stored = saved.map(group => ({ ...group, members: group.members.map(member => COLLEAGUE_NAME_FIXES[member] ?? member) }));
+  if (JSON.stringify(stored) !== JSON.stringify(saved)) await store.setJSON(groupsKey, stored);
   // Une liste déjà enregistrée reçoit une seule fois les collègues ajoutés
   // depuis : ni doublon, ni retour d'un collègue retiré ensuite.
   const applied = await store.get(groupAdditionsKey, { type: 'json' }) as string[] | null ?? [];
@@ -41,7 +44,9 @@ export type ColleagueGender = 'h' | 'f';
 export const gendersKey = 'admin-tools/genders';
 export async function readGenders(store: Store): Promise<Record<string, ColleagueGender>> {
   const stored = await store.get(gendersKey, { type: 'json' }) as Record<string, unknown> | null;
-  return Object.fromEntries(Object.entries(stored ?? {}).filter((entry): entry is [string, ColleagueGender] => entry[1] === 'h' || entry[1] === 'f'));
+  return Object.fromEntries(Object.entries(stored ?? {})
+    .filter((entry): entry is [string, ColleagueGender] => entry[1] === 'h' || entry[1] === 'f')
+    .map(([name, gender]) => [COLLEAGUE_NAME_FIXES[name] ?? name, gender]));
 }
 export type Pin = { message: string; until: string };
 /** Rappel aux comptes invités : choisir le traitement des fériés d'une année
