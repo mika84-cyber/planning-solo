@@ -29,7 +29,7 @@
     "@netlify/identity": "^2.0.0",
     "@tesseract.js-data/fra": "^1.0.0",
     "jspdf": "^4.2.1",
-    "nodemailer": "^9.1.1",
+    "nodemailer": "^10.1.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "tesseract.js": "^7.0.0"
