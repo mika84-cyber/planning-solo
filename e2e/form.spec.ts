@@ -140,13 +140,15 @@ test("la demande d’échange se remplit, reporte les dates chez le collègue et
   await expect(page.locator("#sig2")).toBeVisible();
   // Les invites restent dans leur case, même sur téléphone et avec une police
   // plus large (Android, Linux) : on l'élargit puis on relance la mise en page.
-  await page.addStyleTag({ content: "#sighint2 { letter-spacing: 0.6px; }" });
+  await page.addStyleTag({ content: "#sighint2 { letter-spacing: 3px; }" });
   await page.evaluate(() => window.dispatchEvent(new Event("resize")));
   await page.waitForTimeout(600);
   for (const hint of ["#sighint2"]) {
     const fits = await page.locator(hint).evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
     expect(fits).toBe(true);
   }
+  // Trop étroite pour le texte entier, l'invite se raccourcit.
+  if (testInfo.project.name === "mobile") await expect(page.locator("#sighint2")).toHaveText("Collègue");
   await page.locator("#sig2").dispatchEvent("pointerdown");
   await expect(page.locator("#sigModal")).toHaveClass(/on/);
   if (await page.locator("#sigTypedName").isVisible()) await expect(page.locator("#sigTypedName")).toHaveValue("Agnès Exemple");

@@ -823,10 +823,13 @@ function paintSig2(ink){
   clr2.style.display = ink ? 'block' : 'none';
   if(!ink) fitHint2();
 }
-// Selon les polices du téléphone, l'invite peut déborder : on la réduit.
+// Selon les polices du téléphone, l'invite peut déborder : on la réduit,
+// puis, si elle ne tient toujours pas, elle se raccourcit en « Collègue ».
 var hint2Size = 12;
 function fitHint2(){
-  for(var z = hint2Size; (hint2.style.fontSize = z+'px') && z > 6 && hint2.scrollWidth > hint2.clientWidth + 1; z -= .5);
+  hint2.textContent = 'Signature du collègue';
+  for(var z = hint2Size; (hint2.style.fontSize = z+'px') && z > 7 && hint2.scrollWidth > hint2.clientWidth + 1; z -= .5);
+  if(hint2.scrollWidth > hint2.clientWidth + 1) hint2.textContent = 'Collègue';
 }
 function clearSig2(){ sctx2.clearRect(0,0,sig2.width,sig2.height); paintSig2(false); }
 function drawSig2(data){
