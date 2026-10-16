@@ -99,6 +99,26 @@ describe("surveillance de la programmation du Grand Palais", () => {
     expect(extractGrandPalaisPrices("<p>Une exposition sans rubrique tarifs.</p>")).toEqual([]);
   });
 
+  it("relève chaque durée de chaque billet, cas du Championnat du Monde du Cheval Arabe", () => {
+    const html = '<button><h3>Accessibilité</h3></button><button><h3>Tarifs</h3></button><div>'
+      + "<p><strong>Tarif adulte</strong> : 15 € la journée / 35 € les 3 jours<br>12 ans et plus</p>"
+      + "<p><strong>Tarif enfant</strong> : 5 € la journée / 12 € les 3 jours<br>3 à 11 ans</p>"
+      + "<p><strong>Tarif famille</strong> : 30 € la journée / 75 € les 3 jours<br>2 adultes et jusqu’à 2 enfants de moins de 12 ans<br>"
+      + "Enfant supplémentaire de moins de 12 ans (avec un billet famille) : 5 € la journée / 12 € les 3 jours</p>"
+      + "<p><strong>Gratuit</strong><br>Moins de 3 ans</p></div>";
+    expect(extractGrandPalaisPrices(html)).toEqual([
+      { label: "Adulte · journée", amount: 15 },
+      { label: "Adulte · 3 jours", amount: 35 },
+      { label: "Enfant · journée", amount: 5 },
+      { label: "Enfant · 3 jours", amount: 12 },
+      { label: "Famille · journée", amount: 30 },
+      { label: "Famille · 3 jours", amount: 75 },
+      { label: "Enfant supplémentaire de moins de 12 ans (avec un billet famille) · journée", amount: 5 },
+      { label: "Enfant supplémentaire de moins de 12 ans (avec un billet famille) · 3 jours", amount: 12 },
+      { label: "Moins de 3 ans", amount: 0 },
+    ]);
+  });
+
   it("relève l’artiste et le prix d’appel d’un concert, cas de COLLECTOR 2027", () => {
     const html = `${eventPage({
       name: "COLLECTOR 2027",

@@ -325,7 +325,13 @@ export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
   // Les scripts ne sont pas du texte lu : leurs données (« "price": 10 ») ou
   // leurs gabarits de billetterie masquaient la rubrique « Tarifs » affichée.
   const visible = html.replace(/<(script|style|noscript|template)\b[^>]*>[\s\S]*?<\/\1>/gi, " ");
-  const text = decodeHtml(visible.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
+  // Les paragraphes et retours à la ligne restent des lignes : la précision
+  // « 12 ans et plus » sous un tarif ne se colle plus au nom du suivant.
+  const text = decodeHtml(visible
+    .replace(/<\/?(?:p|br|li|div|h[1-6]|tr|dt|dd|ul|ol|table|section)\b[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " "))
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/ *\n[\s]*/g, "\n");
   let free = false;
   // Le premier « tarif » de la page peut être un lien de menu : chaque mention
   // est essayée jusqu'à celle qui annonce vraiment des montants.
@@ -350,10 +356,26 @@ export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
   return free ? [{ label: "Gratuit", amount: 0 }] : [];
 }
 
+const PRICE_AMOUNT = String.raw`(?:€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*€)`;
+
+/** « la journée », « les 3 jours » : la durée d'un billet, sans article. */
+function priceQualifier(text: string) {
+  return text.trim().replace(/^(?:(?:la|le|les)\s+|l['’]\s*)/i, "").trim();
+}
+
 function pricesInBlock(block: string) {
   const prices: GrandPalaisPrice[] = [];
   const seen = new Set<string>();
-  for (const match of block.matchAll(/([^.;!?•]{2,60}?)\s*:\s*(?:€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*€)/g)) {
+  const add = (label: string, amount: number) => {
+    if (!label || label.length > 80 || seen.has(label.toLowerCase())) return;
+    seen.add(label.toLowerCase());
+    prices.push({ label: label.charAt(0).toUpperCase() + label.slice(1), amount });
+  };
+  const entry = new RegExp(String.raw`([^.;!?•\n]{2,80}?)\s*:\s*${PRICE_AMOUNT}`, "g");
+  // Un même billet peut annoncer plusieurs durées sur sa ligne :
+  // « Tarif adulte : 15 € la journée / 35 € les 3 jours ».
+  const more = new RegExp(String.raw`^\s*([^/\n€:]{0,25}?)\s*\/\s*${PRICE_AMOUNT}\s*([^/\n€:]{0,25}?)\s*(?=\/|\n|$)`);
+  for (let match = entry.exec(block); match; match = entry.exec(block)) {
     const amount = Number((match[2] ?? match[3]).replace(",", "."));
     // Un tarif du Grand Palais tient largement sous cette borne : au-delà, la
     // lecture a attrapé autre chose qu'un prix.
@@ -365,10 +387,27 @@ function pricesInBlock(block: string) {
     // partie du nom : on repart de la dernière rubrique « Tarifs ».
     label = label.replace(/^.*\b(?:tarifs|prices)\b\s*/i, "") || label;
     while (/^(?:tarifs?|prices?)\s+\S/i.test(label)) label = label.replace(/^(?:tarifs?|prices?)\s+/i, "");
-    if (!label || label.length > 45 || seen.has(label.toLowerCase())) continue;
-    seen.add(label.toLowerCase());
-    prices.push({ label: label.charAt(0).toUpperCase() + label.slice(1), amount });
-    if (prices.length >= 6) break;
+    if (!label || label.length > 70) continue;
+    const durations: { amount: number; qualifier: string }[] = [];
+    let rest = block.slice(entry.lastIndex);
+    let qualifier = "";
+    for (let next = rest.match(more); next; next = rest.match(more)) {
+      qualifier ||= priceQualifier(next[1]);
+      durations.push({ amount: Number((next[2] ?? next[3]).replace(",", ".")), qualifier: priceQualifier(next[4]) });
+      entry.lastIndex += next[0].length;
+      rest = block.slice(entry.lastIndex);
+    }
+    if (durations.length && qualifier) {
+      add(`${label} · ${qualifier}`, amount);
+      for (const duration of durations)
+        if (duration.amount > 0 && duration.amount <= 500) add(duration.qualifier ? `${label} · ${duration.qualifier}` : label, duration.amount);
+    } else add(label, amount);
+    if (prices.length >= 12) return prices;
+  }
+  // « Gratuit » seul sur sa ligne, puis à qui : « Moins de 3 ans ».
+  if (prices.length) {
+    const free = block.match(/\n(?:gratuit|free)\n([^\n]{3,60})/i);
+    if (free && /\b(?:ans|enfants?|moins|under|children|demandeurs|étudiants|accompagnat)/i.test(free[1])) add(free[1].trim(), 0);
   }
   return prices;
 }
