@@ -74,7 +74,14 @@ function key(){ return 'demandes:v4:' + M.id; }
 /* Demande d'échange : la personne dont le repos vient en premier occupe la
    première ligne. Quand c'est le collègue, son nom et sa signature passent
    en haut et ceux de l'agent en bas ; les dates restent à leur place. */
-function swapped(){ var i=byName.ordre; return i!==undefined && !!inputs[i] && inputs[i].value==='2'; }
+/* Pendant la fabrication du PDF, l'ordre des lignes est celui de la page
+   imprimée, pas celui de la page affichée. */
+var pdfSnap = null;
+function swapped(){
+  var i=byName.ordre;
+  if(i===undefined) return false;
+  return (pdfSnap ? (pdfSnap.v && pdfSnap.v[i]) : (inputs[i] && inputs[i].value)) === '2';
+}
 function boxOf(f){ return swapped() && f.b2 ? f.b2 : f.b; }
 function sheetModel(){ return M && swapped() ? Object.assign({},M,{sig:M.sig2,clr:M.clr2}) : M; }
 function planningOwnerSuffix(){
@@ -820,13 +827,23 @@ function readFeriePair(){
   try{ var d = JSON.parse(sessionStorage.getItem(FERIE_PAIR_KEY) || 'null'); return d && d.agreementDate && d.returnDate ? d : null; }
   catch(e){ return null; }
 }
+function feriePairOn(){ return !!(M && M.id === 'ferie' && readFeriePair() && pageCount === 2); }
 function refreshFerieSheets(){
-  var on = !!(M && M.id === 'ferie' && readFeriePair());
+  var on = feriePairOn();
   ferieSheets.hidden = !on;
   lineOrder.hidden = !M.swap || on;
+  document.getElementById('pageNav').classList.toggle('on', pageCount > 1 && !on);
   if(on) Array.prototype.forEach.call(ferieSheets.querySelectorAll('button'), function(b){
-    b.setAttribute('aria-pressed', String(b.getAttribute('data-part') === (swapped() ? '2' : '1')));
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-part') === String(pageIndex + 1)));
   });
+}
+/* Les signatures figurent sur les deux feuilles : la vôtre et, s'il a signé,
+   celle du collègue, chacune à sa ligne. */
+function syncFerieSignatures(){
+  if(!feriePairOn()) return;
+  var a = pageSnapshots[0] || {}, b = pageSnapshots[1] || {};
+  ['s','s2'].forEach(function(k){ var v = a[k] || b[k]; if(v){ a[k] = v; b[k] = v; } });
+  pageSnapshots[0] = a; pageSnapshots[1] = b;
 }
 function fillFerieSheet(data, part){
   var mine = part !== 2;
@@ -845,7 +862,10 @@ ferieSheets.addEventListener('click', function(e){
   var b = e.target.closest('button[data-part]'), pair = readFeriePair();
   if(!b || !pair || !M || M.id !== 'ferie') return;
   var part = +b.getAttribute('data-part');
-  fillFerieSheet(pair, part);
+  if(!feriePairOn() || part - 1 === pageIndex) return;
+  pageSnapshots[pageIndex] = capturePage();
+  syncFerieSignatures();
+  pageIndex = part - 1; applyPageState(pageSnapshots[pageIndex]); updatePageUI(); refreshFerieSheets();
   say(part === 2 ? 'Feuille 2 : le férié du collègue, vous en seconde ligne.' : 'Feuille 1 : votre férié.');
 });
 var hint2 = document.getElementById('sighint2'), clr2 = document.getElementById('sigclear2');
@@ -1298,6 +1318,7 @@ function blankPageFrom(first){
 function updatePageUI(){
   var nav=document.getElementById('pageNav'), b=document.getElementById('btnSecond');
   nav.classList.toggle('on',pageCount>1);
+  if(M && M.id === 'ferie') refreshFerieSheets();
   /* Seuls les libellés changent : l'icône du bouton reste en place. */
   b.querySelector('.tool-long').textContent=pageCount>=5?'5 feuilles maximum':'Ajouter une feuille';
   b.querySelector('.tool-short').textContent=pageCount>=5?'5 max':'Feuille';
@@ -1470,6 +1491,10 @@ function valueOf(f, snap){
   return part(sv, f.src[1]);
 }
 function buildPdf(snap){
+  pdfSnap = snap || null;
+  try{ return buildPdfPage(snap); } finally { pdfSnap = null; }
+}
+function buildPdfPage(snap){
   var jsPDF = window.jspdf.jsPDF;
   var pdf = new jsPDF({ unit:'pt', format:[PW,PH], orientation:'portrait', compress:false });
   var bgEl=document.getElementById('bg');
@@ -1690,6 +1715,7 @@ async function buildPdfBytes(){
   var base, doc;
   if(pageCount>1){
     pageSnapshots[pageIndex]=capturePage();
+    syncFerieSignatures();
     doc=await PDFLib.PDFDocument.create();
     for(var pi=0;pi<pageCount;pi++){
       var src=await PDFLib.PDFDocument.load(buildPdf(pageSnapshots[pi]).output('arraybuffer'));
@@ -2121,16 +2147,26 @@ function applyFerieImport(data){
     }));
     else sessionStorage.removeItem(FERIE_PAIR_KEY);
   }catch(e){}
-  fillFerieSheet(data,1);
+  /* Échange de fériés : la feuille 2 est préparée en seconde page, la
+     feuille 1 reste affichée. */
+  pageSnapshots = [null]; pageIndex = 0; pageCount = 1;
+  if(data.returnDate){
+    fillFerieSheet(data,2);
+    var second = capturePage();
+    fillFerieSheet(data,1);
+    pageSnapshots = [null, second]; pageCount = 2;
+  } else fillFerieSheet(data,1);
+  updatePageUI(); refreshFerieSheets();
   try{
     localStorage.removeItem(EXCHANGE_HANDOFF_KEY);
     history.replaceState(null,'',location.pathname);
   }catch(e){}
   return (p.signature ? drawPlanningSignature(p.signature) : Promise.resolve()).then(function(){
+    if(pageCount === 2){ pageSnapshots[0] = capturePage(); syncFerieSignatures(); pageSnapshots[0] = null; }
     layout(); scheduleSave();
-    say(data.returnDate ? 'Feuille 1 remplie : votre férié. La feuille 2, celle du collègue, se prépare juste au-dessus.'
+    say(data.returnDate ? 'Les deux feuilles sont remplies : votre férié, puis celui du collègue. Le PDF les contient toutes les deux.'
       : 'Le remplacement enregistré dans le planning a été intégré au formulaire.');
-    showToast(data.returnDate ? 'Feuille 1 sur 2' : 'Remplacement intégré');
+    showToast(data.returnDate ? 'Deux feuilles prêtes' : 'Remplacement intégré');
   });
 }
 var EXCHANGE_HANDOFF_KEY='planning:exchange-handoff-v1';

@@ -31,7 +31,8 @@ describe("WorkExchangeDialog", () => {
     // Deux onglets, la même structure.
     expect(html).toContain(">Journée<");
     expect(html).toContain(">Jour férié<");
-    expect(html).toContain("1 demande d’échange");
+    // Une journée : pas d'encadré, la demande d'échange va de soi.
+    expect(html).not.toContain("xch-sheet");
     expect(html).toContain("Votre journée");
     expect(html).toContain("Groupe 2 · Camille vous remplace");
     expect(html).toContain("Votre collègue");

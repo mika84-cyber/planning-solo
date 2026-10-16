@@ -149,11 +149,9 @@ export function WorkExchangeDialog({
       <ClockTimePicker label="À" value={draft[endKey]} allowEmpty emptyLabel="—" onChange={(value) => setDraft((current) => ({ ...current, [endKey]: value }))} />
     </div>
   );
-  const sheet = !holidayTab
-    ? { title: "1 demande d’échange", detail: "Vos deux journées figurent sur la même feuille." }
-    : replacement
-      ? { title: "1 demande de remplacement", detail: "Votre collègue travaille votre férié, sans férié rendu." }
-      : { title: "2 demandes de remplacement", detail: "Un férié ne se cède pas avec une demande d’échange : une feuille pour votre férié, une pour le sien." };
+  const sheet = replacement
+    ? { title: "1 demande de remplacement", detail: "Votre collègue travaille votre férié, sans férié rendu en retour." }
+    : { title: "2 demandes de remplacement", detail: "Un férié ne s’échange pas avec la demande d’échange : chacun cède le sien sur une demande de remplacement. Vous signerez donc deux feuilles, une pour votre férié et une pour celui de votre collègue." };
   const noun = holidayTab ? "férié" : "journée";
   const complete = Boolean(draft.agreementDate && partner && (replacement || draft.returnDate));
   return (
@@ -181,14 +179,14 @@ export function WorkExchangeDialog({
           ))}
         </div>
 
-        {/* Ce que l'échange produira : la ou les feuilles à faire signer. */}
+        {/* Un férié : la ou les demandes de remplacement à faire signer. */}
+        {holidayTab ? (
         <div className="xch-sheet" aria-live="polite">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4M10 12h5M10 16h5" /></svg>
           <div>
             <strong>{sheet.title}</strong>
             <small>{sheet.detail}</small>
-            {holidayTab ? (
-              <label className="xch-switch">
+            <label className="xch-switch">
                 <input
                   type="checkbox"
                   role="switch"
@@ -196,10 +194,10 @@ export function WorkExchangeDialog({
                   onChange={(event) => setDraft((current) => ({ ...current, replacement: event.target.checked, returnDate: event.target.checked ? "" : current.returnDate }))}
                 />
                 <span>Remplacement seul, sans férié rendu</span>
-              </label>
-            ) : null}
+            </label>
           </div>
         </div>
+        ) : null}
 
         <ol className="xch-steps">
           <li>

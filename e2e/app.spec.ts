@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   addDays,
@@ -3473,7 +3474,7 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await expect(page.getByRole("heading", { name: "Mes échanges" })).toHaveCount(0);
 });
 
-test("l’onglet Jour férié explique le remplacement et prépare les deux feuilles d’un échange de fériés", async ({ page }) => {
+test("l’onglet Jour férié explique le remplacement et prépare les deux feuilles d’un échange de fériés", async ({ page }, testInfo) => {
   await prepareDemo(page);
   await page.getByRole("button", { name: "Faire un échange" }).click();
   const dialog = page.getByRole("dialog", { name: "Faire un échange" });
@@ -3481,7 +3482,7 @@ test("l’onglet Jour férié explique le remplacement et prépare les deux feui
   await dialog.getByRole("tab", { name: "Jour férié" }).click();
   // Un férié se cède par une demande de remplacement : deux feuilles pour un échange.
   await expect(dialog.locator(".xch-sheet")).toContainText("2 demandes de remplacement");
-  await expect(dialog.locator(".xch-sheet")).toContainText("ne se cède pas avec une demande d’échange");
+  await expect(dialog.locator(".xch-sheet")).toContainText("Vous signerez donc deux feuilles");
   await expect(dialog.getByRole("switch", { name: "Remplacement seul, sans férié rendu" })).not.toBeChecked();
   const give = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" });
   await give.getByRole("radio").first().click();
@@ -3518,6 +3519,41 @@ test("l’onglet Jour férié explique le remplacement et prépare les deux feui
   // Retour à la feuille 1.
   await sheets.getByRole("button", { name: "Feuille 1 · votre férié" }).click();
   await expect(field("Je souhaite être en repos le (jour férié)")).toHaveValue(mine);
+
+  // Votre signature, posée sur la feuille 1, figure aussi sur la feuille 2.
+  await page.locator("#sig").dispatchEvent("pointerdown");
+  await expect(page.locator("#sigModal")).toHaveClass(/on/);
+  if (await page.locator("#sigTypedName").isVisible()) {
+    if (!(await page.locator("#sigTypedName").inputValue())) await page.locator("#sigTypedName").fill("Mika Test");
+  } else {
+    const pad = (await page.locator("#sigBig").boundingBox())!;
+    await page.mouse.move(pad.x + 20, pad.y + pad.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(pad.x + pad.width - 20, pad.y + pad.height / 2, { steps: 5 });
+    await page.mouse.up();
+  }
+  await page.locator("#sigModalOk").click();
+  if (await page.locator("#sigSaveNo").isVisible().catch(() => false)) await page.locator("#sigSaveNo").click();
+  await expect(page.locator("#sig")).toHaveClass(/has/);
+  await sheets.getByRole("button", { name: "Feuille 2 · son férié" }).click();
+  await expect(page.locator("#sig")).toHaveClass(/has/);
+
+  // Le PDF contient les deux feuilles, chacune avec sa signature.
+  if (testInfo.project.name !== "ordinateur") return;
+  page.on("dialog", (dialog) => dialog.accept());
+  const download = page.waitForEvent("download");
+  await page.locator("#btnPdf").click();
+  const pdfFile = await download;
+  if (process.env.FORM_PDF_OUT) await pdfFile.saveAs(process.env.FORM_PDF_OUT);
+  const bytes = readFileSync((await pdfFile.path())!);
+  const images = await page.evaluate(async (base64) => {
+    const lib = (window as unknown as { PDFLib: { PDFDocument: { load: (b: Uint8Array) => Promise<{ getPages: () => Array<{ node: { Resources: () => { lookup: (n: unknown) => { keys: () => unknown[] } | undefined } | undefined } }> }> }; PDFName: { of: (n: string) => unknown } } }).PDFLib;
+    const doc = await lib.PDFDocument.load(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
+    return doc.getPages().map((pdfPage) => pdfPage.node.Resources()?.lookup(lib.PDFName.of("XObject"))?.keys().length ?? 0);
+  }, bytes.toString("base64"));
+  expect(images).toHaveLength(2);
+  // Le fond de la feuille et la signature, sur chaque page.
+  for (const count of images) expect(count).toBeGreaterThanOrEqual(2);
 });
 
 test("un férié peut être simplement remplacé, sans férié rendu ni seconde feuille", async ({ page }) => {
