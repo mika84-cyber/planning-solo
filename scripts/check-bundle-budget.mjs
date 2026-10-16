@@ -69,7 +69,10 @@ const budgets = {
   // ouverture préremplie depuis l'échange), horaires et onglet férié de
   // l'échange, rappel des fériés, liste « Pour bien démarrer », veille du site
   // (2 377,9 / 780,0 Kio mesurés).
-  totalJavaScript: { raw: 2_380 * KIB, gzip: 781 * KIB },
+  // Relevé le 16 octobre 2026 à 2 385 Kio bruts, avec l'accord de
+  // l'administrateur : l'invite « Signature du collègue » se réduit pour
+  // tenir dans sa case sur téléphone (2 380,1 Kio mesurés).
+  totalJavaScript: { raw: 2_385 * KIB, gzip: 781 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

@@ -821,6 +821,12 @@ function paintSig2(ink){
   sig2.classList.toggle('has', ink);
   hint2.style.display = ink ? 'none' : '';
   clr2.style.display = ink ? 'block' : 'none';
+  if(!ink) fitHint2();
+}
+// Selon les polices du téléphone, l'invite peut déborder : on la réduit.
+var hint2Size = 12;
+function fitHint2(){
+  for(var z = hint2Size; (hint2.style.fontSize = z+'px') && z > 6 && hint2.scrollWidth > hint2.clientWidth + 1; z -= .5);
 }
 function clearSig2(){ sctx2.clearRect(0,0,sig2.width,sig2.height); paintSig2(false); }
 function drawSig2(data){
@@ -836,7 +842,8 @@ function sizeSig2(s){
     el.style.width = ((b[2]-b[0])*s)+'px'; el.style.height = ((b[3]-b[1])*s)+'px';
   });
   hint2.style.lineHeight = ((b[3]-b[1])*s)+'px';
-  hint2.style.fontSize = Math.max(7, Math.min(12, 30*s))+'px';
+  hint2Size = Math.max(7, Math.min(12, 30*s));
+  fitHint2();
   clr2.style.left = (c[0]*s+5)+'px'; clr2.style.top = (c[1]*s)+'px';
   clr2.style.width = Math.max(46,(c[2]-c[0])*s-10)+'px';
   clr2.style.fontSize = Math.max(7, Math.min(13, 19*s))+'px';
