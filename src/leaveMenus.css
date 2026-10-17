@@ -20,7 +20,7 @@
 .leave-primary-action-bar { display: grid; gap: 10px; }
 /* Le bouton du formulaire prend la teinte terracotta de l'application, en
    version douce, à côté de l'action principale pleine. */
-.leave-primary-action-bar > .leave-open-form-action { border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 14px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 800; }
+.leave-primary-action-bar > .leave-open-form-action { border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 800; }
 
 .leave-balances-direct .other-leave-balances[open] {
   display: flex;

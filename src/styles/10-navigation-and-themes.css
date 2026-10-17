@@ -5,7 +5,7 @@
   display: grid;
   place-content: center;
   gap: 5px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #fff;
   color: var(--muted);
   cursor: pointer; position: relative;
@@ -66,7 +66,7 @@
   margin-top: 22px;
   padding: 22px;
   border: 1px solid var(--border-card);
-  border-radius: 24px;
+  border-radius: 18px;
 }
 .home-planning-heading { margin-bottom: 14px; padding-bottom: 18px; }
 .home-content-heading {
@@ -80,7 +80,7 @@
   min-height: 42px;
   padding: 0 16px;
   border: 1px solid var(--border-control);
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--accent-strong);
   font-weight: 800;
@@ -93,9 +93,9 @@
 }
 .leave-request-archive .request-archive-toggle { width: 100%; }
 @media (max-width: 720px) {
-  .main-menu-button { display: grid !important; flex-basis: 42px; border-radius: 13px; }
+  .main-menu-button { display: grid !important; flex-basis: 42px; border-radius: 12px; }
   .home-notes-section,
-  .home-planning-heading { margin-top: 14px; padding: 17px; border-radius: 20px; }
+  .home-planning-heading { margin-top: 14px; padding: 17px; border-radius: 18px; }
   .home-content-heading { align-items: flex-start; }
   .home-content-heading h2 { font-size: 1.25rem; }
   .home-content-heading > button { padding: 0 12px; }
@@ -222,7 +222,7 @@
   align-items: center;
   gap: 9px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 0 15px 0 10px;
   background: var(--surface);
   color: var(--muted);
@@ -246,7 +246,7 @@
   place-items: center;
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: 18px;
   transform: translateY(-50%);
 }
 .pay-dedicated-content { animation: none; }
@@ -262,7 +262,7 @@
   .main-menu-button { order: 4; }  .pay-app-screen,
   .pdf-download-screen {
     min-height: calc(100dvh - 112px);
-    border-radius: 22px;
+    border-radius: 18px;
     padding: 18px 14px calc(22px + env(safe-area-inset-bottom));
   }
   .planning-group-leave-action { width: 100%; }
@@ -331,7 +331,7 @@
   align-items: center;
   gap: 13px;
   border: 1.5px solid var(--app-frame-soft);
-  border-radius: 15px;
+  border-radius: 18px;
   padding: 13px 14px;
   background: var(--surface-high);
 }
@@ -382,7 +382,7 @@
 @media (min-width: 721px) { .useful-form-download-list > .useful-audioguide-card { grid-template-columns: auto minmax(0, 1fr) auto; } .useful-audioguide-actions { grid-column: auto; } .useful-audioguide-actions > * { flex: 0 0 auto; padding: 10px 14px; white-space: nowrap; } }
 .useful-form-file-copy .useful-audioguide-code { font-size: 12px; font-weight: 600; letter-spacing: 0; }
 .useful-audioguide-code b { margin-left: 4px; color: var(--text); font-size: 14px; letter-spacing: .18em; }
-.useful-audioguide-qr { display: grid; justify-items: center; gap: 8px; grid-column: 1 / -1; margin: 4px 0 0; border-radius: 14px; padding: 12px; background: #fff; }
+.useful-audioguide-qr { display: grid; justify-items: center; gap: 8px; grid-column: 1 / -1; margin: 4px 0 0; border-radius: 18px; padding: 12px; background: #fff; }
 .useful-audioguide-qr img { width: min(240px, 70vw); height: auto; image-rendering: pixelated; }
 .useful-audioguide-qr figcaption { color: var(--muted); font-size: 12.5px; }
 .useful-audioguide-qr b { margin-left: 4px; color: var(--text); font-size: 18px; letter-spacing: .2em; }
@@ -543,7 +543,7 @@
   align-items: center;
   gap: clamp(20px, 4vw, 46px);
   margin-top: 26px;
-  border-radius: 22px;
+  border-radius: 18px;
   background: linear-gradient(135deg, #fff 0%, #fff 54%, #fdf7ef 100%);
 }
 .pay-profile-settings h3 { margin: 4px 0 7px; }
@@ -572,12 +572,12 @@
   font-size: 15px;
   font-weight: 850;
 }
-.pay-work-schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; border: 1px solid var(--border-card); border-radius: 14px; padding: 12px; background: #fff; }.pay-profile-save{grid-column:1/-1;justify-self:end;min-width:180px}
+.pay-work-schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; border: 1px solid var(--border-card); border-radius: 18px; padding: 12px; background: #fff; }.pay-profile-save{grid-column:1/-1;justify-self:end;min-width:180px}
 .pay-work-schedule legend { padding: 0 5px; color: var(--accent-strong); font-family: inherit; font-size: 12px; font-weight: 850; }
 .pay-work-schedule > small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
 .pay-work-schedule label,.pay-work-time-field { display: grid; gap: 5px; color: var(--accent-strong); font-family: inherit; font-size: 12px; font-weight: 850; }
-.pay-work-schedule input { min-width: 0; height: 42px; border: 1px solid rgba(140, 61, 24, 0.2); border-radius: 10px; padding: 0 7px; background: var(--surface); color: var(--text); font: inherit; }
-.pay-work-time-picker{align-items:center;background:var(--surface);border:1px solid var(--border-card);border-radius:10px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);height:42px;overflow:hidden}.pay-work-time-picker:focus-within{border-color:var(--border-card);box-shadow:0 0 0 3px rgba(155, 142, 124,.12)}.pay-work-time-picker select{appearance:none;background:transparent;border:0;color:var(--text);font-family:inherit;font-size:15px;font-weight:850;height:100%;min-width:0;padding:0 8px;text-align:center}.pay-work-time-picker select:focus{outline:0}.pay-work-time-picker b{color:#9b8e7c;font-size:15px}
+.pay-work-schedule input { min-width: 0; height: 42px; border: 1px solid rgba(140, 61, 24, 0.2); border-radius: 12px; padding: 0 7px; background: var(--surface); color: var(--text); font: inherit; }
+.pay-work-time-picker{align-items:center;background:var(--surface);border:1px solid var(--border-card);border-radius:12px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);height:42px;overflow:hidden}.pay-work-time-picker:focus-within{border-color:var(--border-card);box-shadow:0 0 0 3px rgba(155, 142, 124,.12)}.pay-work-time-picker select{appearance:none;background:transparent;border:0;color:var(--text);font-family:inherit;font-size:15px;font-weight:850;height:100%;min-width:0;padding:0 8px;text-align:center}.pay-work-time-picker select:focus{outline:0}.pay-work-time-picker b{color:#9b8e7c;font-size:15px}
 @media (max-width: 720px) {
   .mecenat-balance-card .overtime-actions,
   .mecenat-balance-card .overtime-actions .mecenat-action,
@@ -715,7 +715,7 @@
 .solidarity-hours-action {
   min-height: 46px;
   border-color: #c96c12 !important;
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 0 18px;
   background: linear-gradient(135deg, #ed9638, #dc781d) !important;
   color: #fff !important;
@@ -779,7 +779,7 @@
 /* Calendrier : le volet de la case des jours travaillés s'ouvre sous elle, sur
    toute sa largeur, et donne en trois chiffres ce qu'il reste d'ici au
    31 décembre. */
-.app-shell .controls .worked-days .worked-days-panel { top: calc(100% + 8px); bottom: auto; left: 0; right: 0; display: block; width: auto; border: 1px solid #e3d6c8; border-radius: 14px; padding: 12px 14px 14px; background: #fff; box-shadow: 0 12px 28px rgba(58, 51, 44, .16); }
+.app-shell .controls .worked-days .worked-days-panel { top: calc(100% + 8px); bottom: auto; left: 0; right: 0; display: block; width: auto; border: 1px solid #e3d6c8; border-radius: 18px; padding: 12px 14px 14px; background: #fff; box-shadow: 0 12px 28px rgba(58, 51, 44, .16); }
 .worked-days-remaining h5 { margin: 0 0 10px; color: #9a4a2e; font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .worked-days-remaining ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
 .worked-days-remaining li { display: grid; justify-items: center; gap: 2px; padding: 0 4px; }

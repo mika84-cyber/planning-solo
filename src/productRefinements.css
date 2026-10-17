@@ -332,3 +332,10 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Accueil, « En un coup d'œil » : l'encadré rogne ce qui dépasse, pour que
    le corps de la carte (src/homeOverview.css) suive son coin arrondi. */
 .app-shell .today-overview { row-gap: 0; overflow: clip; }
+
+/* Les petits libellés en capitales (intitulés de blocs, lignes du coup
+   d'œil, réglages) : 11 px et graisse moyenne partout, au lieu de tailles
+   descendant à 10 px en très gras. */
+.app-shell :is(.step-label, .eyebrow, .today-block-label, .pdf-quick-setting > span, .pdf-section-divider span, .xch-steps > li > header small, .gp-watch-text small) { font-size: 11px; font-weight: 700; letter-spacing: .07em; }
+/* « Comment ça marche » (planning partagé) sert de titre de carte : il garde sa taille lisible. */
+.app-shell .colleague-how-header .eyebrow { font-size: .82rem; }

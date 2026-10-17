@@ -13,7 +13,7 @@
 /* Les deux cartes. */
 .pay-bulletin .pay-bulletin-hero,
 .pay-bulletin .pay-bulletin-lines,
-.pay-bulletin .pay-bulletin-panel { border: 1px solid #e6dccf; border-radius: 14px; padding: 14px 16px; background: #fff; }
+.pay-bulletin .pay-bulletin-panel { border: 1px solid #e6dccf; border-radius: 18px; padding: 14px 16px; background: #fff; }
 .pay-bulletin .pay-bulletin-kicker { display: block; margin: 0 0 6px; color: #9a4a2e; font-family: inherit; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 
 /* Le net. */
@@ -150,7 +150,7 @@
 /* Primes et jours fériés : les mêmes cartes claires et les mêmes bandeaux
    que la page principale (vert des primes, terracotta de ce qui reste à
    décider). */
-.app-shell .pay-dedicated-content.allowances :is(.variable-pay-card, .allowance-detail-stack > .allowance-card) { border: 1px solid #e6dccf; border-radius: 14px; background: #fff; box-shadow: none; }
+.app-shell .pay-dedicated-content.allowances :is(.variable-pay-card, .allowance-detail-stack > .allowance-card) { border: 1px solid #e6dccf; border-radius: 18px; background: #fff; box-shadow: none; }
 .app-shell .pay-dedicated-content.allowances .variable-pay-head .step-label { color: #9a4a2e; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; border: 0; border-radius: 8px; padding: 7px 10px; background: #ecf7f1; color: #1d6b45; }
 .app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header > span { display: inline-flex; align-items: center; gap: 6px; color: inherit; font-family: inherit; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
@@ -166,7 +166,7 @@
 
 /* Après un premier bulletin : l'invitation à en vérifier un second, pour que
    l'application calcule les taux de la personne. Sobre, sur fond crème. */
-.payslip-second-hint { display: grid; gap: 6px; margin-top: 12px; border: 1px solid #e3d6c8; border-radius: 14px; padding: 12px 14px; background: #fbf7f2; }
+.payslip-second-hint { display: grid; gap: 6px; margin-top: 12px; border: 1px solid #e3d6c8; border-radius: 18px; padding: 12px 14px; background: #fbf7f2; }
 .payslip-second-hint strong { color: #8a3d22; font-size: 0.86rem; font-weight: 800; }
 .payslip-second-hint p { margin: 0; color: #5b4c3f; font-size: 0.82rem; line-height: 1.45; }
 .payslip-second-button { position: relative; display: inline-flex; align-items: center; justify-content: center; justify-self: start; min-height: 40px; margin-top: 4px; border: 1px solid #2c2621; border-radius: 12px; padding: 0 14px; background: #fff; color: #2c2621; font-size: 0.86rem; font-weight: 800; cursor: pointer; }

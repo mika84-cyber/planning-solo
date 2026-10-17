@@ -46,17 +46,20 @@
   padding: 9px 2px 0;
   background: none;
 }
+.school-vacation-row { display: flex; flex: 1 1 100%; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
+.school-vacation-zone { display: inline-flex; align-items: baseline; gap: 5px; min-height: 0; margin: 0; border: 0; padding: 4px 2px; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.school-vacation-zone strong { font-size: .92rem; font-weight: 800; }
+.school-vacation-zone small { color: var(--muted); font-size: .8rem; font-weight: 700; text-decoration: underline; text-decoration-color: rgba(44, 38, 33, .35); text-underline-offset: 3px; }
 .school-vacation-switch {
   display: grid;
-  grid-template-columns: 46px auto;
-  column-gap: 10px;
-  align-items: center;
-  min-height: 48px;
+  flex: none;
+  min-height: 0;
+  margin: 0;
   border: 0;
-  padding: 0 5px;
+  padding: 2px;
   background: transparent;
-  color: var(--text);
-  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
 }
 .school-vacation-switch > span {
   position: relative;
@@ -78,9 +81,6 @@
 }
 .school-vacation-switch.active > span { border-color: #7255ad; background: #8c70c4; }
 .school-vacation-switch.active > span i { transform: translateX(18px); }
-.school-vacation-switch strong,
-.school-vacation-switch small { grid-column: 2; }
-.school-vacation-switch small { color: var(--muted); font-size: .69rem; }
 
 .school-zone-picker {
   display: grid;
@@ -110,7 +110,7 @@
   gap: 10px;
   margin: 0 0 10px;
   border: 1px solid var(--border-control);
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 9px 12px;
   background: var(--surface-high);
   color: var(--text);

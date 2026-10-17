@@ -31,11 +31,11 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 16px;
-  border-radius: 15px;
+  border-radius: 18px;
   padding: 6px;
   background: var(--surface);
 }
-.work-accident-status button { min-height: 44px; border: 1.5px solid transparent; border-radius: 11px; color: var(--muted); font-weight: 800; background: transparent; }
+.work-accident-status button { min-height: 44px; border: 1.5px solid transparent; border-radius: 12px; color: var(--muted); font-weight: 800; background: transparent; }
 .work-accident-status button.active { border-color: var(--border-card); color: var(--border-card); background: var(--surface); box-shadow: 0 5px 14px var(--border-card); }
 .work-accident-urgent {
   margin-bottom: 16px;
@@ -70,7 +70,7 @@
   gap: 10px;
   min-height: 66px;
   border: 1px solid var(--border-control);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 10px 12px;
   color: #3a332c;
   text-decoration: none;
@@ -82,7 +82,7 @@
 .work-accident-contact-action::before { display: grid; flex: 0 0 25px; height: 25px; place-items: center; border-radius: 8px; color: var(--muted); background: var(--bg); content: "☎"; }
 .work-accident-contact-action.email::before { content: "✉"; }
 .work-accident-documents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.work-accident-documents a { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 62px; border: 1.5px solid #bcb0a0; border-radius: 13px; padding: 10px 12px; color: #3a332c; text-decoration: none; background: var(--surface-high); }
+.work-accident-documents a { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 62px; border: 1.5px solid #bcb0a0; border-radius: 12px; padding: 10px 12px; color: #3a332c; text-decoration: none; background: var(--surface-high); }
 .work-accident-documents a > span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; color: #fff; font-size: 10px; font-weight: 900; background: #7a6f5f; }
 .work-accident-documents a > strong { font-size: 14px; line-height: 1.25; }
 .work-accident-documents a > b { color: var(--muted); font-size: 12px; }
@@ -90,11 +90,11 @@
 .work-accident-planning > div:first-child p { margin: 0 0 14px; }
 .work-accident-date-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .work-accident-date-fields label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 800; }
-.work-accident-date-fields input { min-width: 0; min-height: 46px; border: 1.5px solid #bcb0a0; border-radius: 11px; padding: 9px 11px; color: #2c2621; background: var(--surface); }
+.work-accident-date-fields input { min-width: 0; min-height: 46px; border: 1.5px solid #bcb0a0; border-radius: 12px; padding: 9px 11px; color: #2c2621; background: var(--surface); }
 .work-accident-date-input { position: relative; display: block; }
 .work-accident-date-input input { width: 100%; }
 .work-accident-date-input > span { display: none; }
-.work-accident-save { width: 100%; min-height: 48px; margin-top: 13px; border: 2px solid #2c2621; border-radius: 13px; color: #fff; font-weight: 900; background: linear-gradient(100deg, #7a6f5f, var(--muted)); }
+.work-accident-save { width: 100%; min-height: 48px; margin-top: 13px; border: 2px solid #2c2621; border-radius: 12px; color: #fff; font-weight: 900; background: linear-gradient(100deg, #7a6f5f, var(--muted)); }
 .work-accident-save:disabled { opacity: 0.5; }
 .work-accident-records { display: grid; gap: 8px; margin-top: 15px; border-top: 1px solid var(--border-control); padding-top: 13px; }
 .work-accident-records h4 { margin: 0 0 2px; }
@@ -124,12 +124,12 @@
   outline-offset: -1.5px;
 }
 /* Fiche du jour : le poste dans un encadré discret, en deux tuiles. */
-.day-work-post { min-width: 0; margin: 18px 0 14px; border: 1px solid #ece5db; border-radius: 16px; padding: 10px 12px 12px; background: #fbf8f4; }
+.day-work-post { min-width: 0; margin: 18px 0 14px; border: 1px solid #ece5db; border-radius: 18px; padding: 10px 12px 12px; background: #fbf8f4; }
 .day-work-post legend { float: left; display: flex; align-items: baseline; gap: 8px; width: 100%; margin: 0 0 8px; padding: 0; color: var(--muted); font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .day-work-post legend small { font-size: .74rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .day-work-post > div { display: flex; clear: both; flex-wrap: wrap; gap: 8px; }
-.day-work-post button { display: inline-flex; flex: 1 1 140px; align-items: center; gap: 10px; min-height: 48px; border: 1.5px solid var(--border-control); border-radius: 14px; padding: 6px 14px 6px 8px; background: #fff; color: var(--text); font: inherit; font-size: .92rem; font-weight: 750; cursor: pointer; }
-.day-work-post button b { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #fdecea; color: #c62828; font-size: .84rem; }
+.day-work-post button { display: inline-flex; flex: 1 1 140px; align-items: center; gap: 10px; min-height: 48px; border: 1.5px solid var(--border-control); border-radius: 12px; padding: 6px 14px 6px 8px; background: #fff; color: var(--text); font: inherit; font-size: .92rem; font-weight: 750; cursor: pointer; }
+.day-work-post button b { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 12px; background: #fdecea; color: #c62828; font-size: .84rem; }
 .day-work-post button.active { border-color: #c62828; background: #fdf1f0; color: #9f1f1f; }
 .day-work-post button.active b { background: #c62828; color: #fff; }
 /* Poste du jour hors salles : A (accueil) ou B (billetterie) dans une petite

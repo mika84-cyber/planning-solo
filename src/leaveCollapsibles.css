@@ -9,7 +9,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border-card);
-  border-radius: 20px;
+  border-radius: 18px;
   background: linear-gradient(155deg, var(--surface-high), #fff 74%);
   box-shadow: 0 5px 16px #52728f17;
 }
@@ -50,7 +50,7 @@
   flex: none;
   overflow: hidden;
   place-items: center;
-  border-radius: 16px;
+  border-radius: 18px;
   /* Fond blanc pour les trois dessins : ils se détachent de l'encart crème. */
   background: #fff;
   color: var(--muted);
@@ -151,7 +151,7 @@
   }
 
   .leave-tool-disclosure {
-    border-radius: 15px;
+    border-radius: 18px;
   }
 
   .leave-tool-disclosure > summary {
@@ -226,7 +226,7 @@
 /* Infos congés : une ligne au-dessus des soldes, dans l'esprit du détail
    des dimanches (lin, accents terracotta), qui se déplie sur le report, le
    fractionnement et les congés exceptionnels. */
-.leave-info-card { margin: 0 0 12px; overflow: hidden; border: 1px solid #e3d8ca; border-radius: 16px; background: #fff; box-shadow: 0 10px 24px -18px rgba(90, 60, 30, .55); }
+.leave-info-card { margin: 0 0 12px; overflow: hidden; border: 1px solid #e3d8ca; border-radius: 12px; background: #fff; box-shadow: 0 10px 24px -18px rgba(90, 60, 30, .55); }
 .leave-info-card[open] { border-color: #8a7e72; }
 .leave-info-card > summary { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; color: var(--text); cursor: pointer; list-style: none; }
 .leave-info-card > summary::-webkit-details-marker { display: none; }
@@ -242,7 +242,7 @@
 .leave-info-card:not([open]) .leave-info-hide, .leave-info-card[open] .leave-info-show { display: none; }
 .leave-info-content { border-top: 1px solid #e3d8ca; padding: 12px; background: #f7f2ea; }
 .leave-info-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 12px; }
-.leave-info-content section { display: grid; align-content: start; gap: 10px; border: 1px solid #e6ded3; border-radius: 14px; padding: 14px; background: #fff; }
+.leave-info-content section { display: grid; align-content: start; gap: 10px; border: 1px solid #e6ded3; border-radius: 18px; padding: 14px; background: #fff; }
 .leave-info-content h3 { margin: 0; border-bottom: 1px solid #efe8de; padding-bottom: 8px; color: var(--text); font-size: 1rem; }
 .leave-info-content p { margin: 0; color: var(--muted); font-size: .84rem; }
 .leave-info-rows { display: grid; margin: 0; padding: 0; list-style: none; }
@@ -265,7 +265,7 @@
 /* Z Fold ouvert : les trois cartes restent empilées, comme fermé. */
 @media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) { .leave-info-sections { grid-template-columns: minmax(0, 1fr); } }
 /* Absence de 31 jours et plus : un rappel sobre et son courrier. */
-.long-absence-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 0 0 14px; border: 1px solid #e9c7a4; border-radius: 16px; padding: 12px 14px; background: #fdf5ec; }
+.long-absence-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 0 0 14px; border: 1px solid #e9c7a4; border-radius: 18px; padding: 12px 14px; background: #fdf5ec; }
 .long-absence-notice p { display: grid; gap: 3px; min-width: 0; margin: 0; }
 .long-absence-notice span { color: var(--muted); font-size: .84rem; }
 .long-absence-letter textarea { width: 100%; min-height: 320px; box-sizing: border-box; font: inherit; font-size: .9rem; line-height: 1.45; }

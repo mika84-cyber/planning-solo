@@ -51,7 +51,7 @@ html[data-theme="dark"] .section-dock > button.active { background: #f1e8df; col
 /* Échanges : le jour cédé garde le noir des repos, le jour repris le beige
    des jours travaillés ; le filet turquoise reste celui du mode clair. */
 html[data-theme="dark"] :is(.calendar-grid .day, .mini-grid .mini-day).exchange-day {
-  border-color: #5eb6c4;
+  border-color: #5b86a0;
   background: linear-gradient(180deg, #ece2cd 58%, #bfe3e6 100%);
   color: #2c2621;
 }
@@ -63,7 +63,7 @@ html[data-theme="dark"] :is(.calendar-grid .day, .mini-grid .mini-day).exchange-
 }
 html[data-theme="dark"] .day.exchange-return .exchange-calendar-label { color: #2c2621; }
 html[data-theme="dark"] .work-exchange-list li { background: #1d2426; }
-html[data-theme="dark"] .work-exchange-list li b { border-color: #5eb6c4; background: #ece2cd; color: #2c2621; }
+html[data-theme="dark"] .work-exchange-list li b { border-color: #5b86a0; background: #ece2cd; color: #2c2621; }
 html[data-theme="dark"] .work-exchange-list li.exchange-given b { background: #0a0807; color: #f4ece2; }
 
 /* Semaine des collègues : des pastilles de teinte moyenne, lettres foncées,

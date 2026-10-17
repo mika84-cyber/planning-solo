@@ -129,8 +129,8 @@
   margin: 0 0 7px;
   color: var(--accent-strong);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 h1 {
@@ -145,7 +145,7 @@ h1 {
 .warning-button {
   min-height: 46px;
   border: 0;
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 0 18px;
   background: var(--accent);
   color: #fff;
@@ -194,7 +194,7 @@ h1 {
   width: 100%;
   min-height: 43px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: 12px;
   padding: 0 11px 0 13px;
   background: var(--surface);
   color: var(--text);
@@ -234,7 +234,7 @@ h1 {
      il déborde de la fenêtre des deux côtés. */
   max-width: calc(100vw - 24px);
   border: 1px solid var(--section-outline);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 9px;
   background: var(--surface);
   box-shadow: 0 16px 34px rgb(38 58 88 / 20%);
@@ -297,7 +297,7 @@ h1 {
 .controls select {
   height: 43px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: 12px;
   padding: 0 34px 0 12px;
   background: var(--surface);
   color: var(--text);
@@ -371,7 +371,7 @@ h1 {
   gap: 5px;
   width: min(400px, calc(100vw - 24px));
   border: 1px solid var(--section-outline);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 8px;
   background: var(--surface);
   box-shadow: 0 16px 34px rgba(58, 51, 44, 0.16);
@@ -470,7 +470,7 @@ h1 {
   place-items: center;
   min-width: 20px;
   height: 20px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--type-color);
   color: #fff;
   font-size: 11px;
@@ -518,7 +518,7 @@ h1 {
 .summary article {
   padding: 15px 17px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--card);
   box-shadow: var(--shadow);
 }
@@ -540,7 +540,7 @@ h1 {
 .leave-balance-grid button {
   border: 0;
   border-left: 5px solid var(--balance-color);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 12px 14px;
   background: color-mix(in srgb, var(--balance-color) 8%, white);
   color: inherit;
@@ -598,7 +598,7 @@ h1 {
   width: min(520px, calc(100vw - 20px));
   padding: 8px 8px 8px 16px;
   border: 1px solid var(--border-card);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--surface);
   box-shadow: 0 10px 28px rgba(44, 38, 33, 0.2);
   color: var(--text);
@@ -615,7 +615,7 @@ h1 {
   min-height: 40px;
   padding: 0 14px;
   border: 0;
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--accent);
   color: #fff;
   font: inherit;
@@ -684,7 +684,7 @@ h1 {
   align-items: center;
   gap: 12px;
   margin: 14px 0 18px;
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 13px;
   background: var(--surface);
 }
@@ -716,7 +716,7 @@ h1 {
   gap: 12px;
   min-height: 42px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 7px 10px;
   background: var(--surface);
   color: var(--text);

@@ -27,7 +27,7 @@
   width: 42px;
   height: 42px;
   place-items: center;
-  border-radius: 13px;
+  border-radius: 12px;
   background: #fff;
   color: #a94f58;
 }
@@ -103,7 +103,7 @@
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--border-control);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 9px 13px;
   background: var(--surface);
   color: #3a332c;
@@ -129,7 +129,7 @@
   justify-content: space-between;
   gap: 12px;
   border: 1px solid var(--border-control);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 10px 12px;
   background: var(--surface);
 }
@@ -150,7 +150,7 @@
 .colleague-group-card {
   overflow: hidden;
   border: 1px solid var(--border-control);
-  border-radius: 15px;
+  border-radius: 18px;
   background: var(--surface);
 }
 

@@ -13,10 +13,11 @@ describe("vacances scolaires dans le planning mensuel", () => {
       />,
     );
     expect(html).toContain("Vacances scolaires");
-    expect(html).toContain("Zone A");
-    expect(html).toContain("Zone B");
+    // Une ligne : la zone choisie à côté du nom, les autres zones repliées.
     expect(html).toContain("Zone C");
+    expect(html).not.toContain("Zone A");
     expect(html).toContain('aria-checked="true"');
+    expect(html).toContain('aria-label="Vacances scolaires, Zone C : choisir la zone"');
   });
 
   it("résume uniquement les périodes du mois affiché", () => {

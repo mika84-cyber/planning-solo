@@ -37,7 +37,7 @@
 .planning-workspace-shell.framed .controls .choice-picker-trigger,
 .planning-workspace-shell.framed .controls .worked-days-trigger {
   border: 1px solid var(--border-control);
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--surface);
   box-shadow: 0 3px 10px rgba(87, 78, 66, 0.055);
 }
@@ -55,7 +55,7 @@
 .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
   min-height: 46px;
   border: 1px solid var(--border-control);
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--surface);
   box-shadow: 0 4px 12px rgba(87, 78, 66, 0.055);
 }
@@ -221,7 +221,7 @@
   margin: 0;
   border: 1.5px solid var(--border-card);
   border-left: 6px solid var(--border-card);
-  border-radius: 20px;
+  border-radius: 18px;
   background:
     radial-gradient(circle at 100% 0, rgba(155, 142, 124, 0.12), transparent 34%),
     linear-gradient(150deg, var(--surface-high), #fff 48%);
@@ -241,7 +241,7 @@
   width: 50px;
   height: 50px;
   border-color: var(--muted);
-  border-radius: 15px;
+  border-radius: 18px;
   background: linear-gradient(145deg, #9b8e7c, #7a6f5f);
   box-shadow: 0 6px 14px rgba(122, 111, 95, 0.2), inset 0 0 0 3px rgba(255, 255, 255, 0.15);
 }
@@ -287,7 +287,7 @@
   .cet-section-static .cet-heading-static .cet-symbol {
     width: 44px;
     height: 44px;
-    border-radius: 13px;
+    border-radius: 12px;
   }
 
   .cet-section-static .cet-heading-static small {
@@ -414,7 +414,7 @@
   border-left-width: 0;
 }
 
-.home-setup-alert{background:#fdeed6;border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:22px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-actions{display:flex!important;gap:7px!important}
+.home-setup-alert{background:#fdeed6;border:1px solid var(--border-card);border-left:5px solid var(--accent);border-radius:18px;margin:12px 0;padding:18px 20px}.home-setup-alert>header{align-items:center;display:flex;gap:12px}.home-setup-alert>header>span{align-items:center;background:#d68a22;border-radius:50%;color:#fff;display:flex;font-weight:950;height:34px;justify-content:center;width:34px}.home-setup-alert h2{font-size:1.15rem;margin:2px 0}.home-setup-alert>p{color:var(--muted);margin:10px 0 14px}.home-setup-actions{display:flex!important;gap:7px!important}
 
 @media (max-width: 720px) {
   .planning-workspace-shell.framed {
@@ -653,7 +653,7 @@
   gap: 12px;
   min-height: 86px;
   border: 1px solid var(--border-card);
-  border-radius: 15px;
+  border-radius: 18px;
   padding: 13px 14px 13px 8px;
   background: var(--surface);
 }
@@ -816,7 +816,7 @@
   width: 100%;
   min-height: 46px;
   border: 1px solid var(--border-control);
-  border-radius: 13px;
+  border-radius: 12px;
   color: var(--accent-strong);
   background: var(--surface);
   box-shadow: 0 3px 10px rgba(87, 78, 66, 0.055);
@@ -872,10 +872,10 @@
   width: 100%;
   min-height: 46px;
   border: 2px solid #111820;
-  border-radius: 14px;
-  color: #10262a;
-  background: linear-gradient(145deg, #dff6f8, #a9dfe6);
-  box-shadow: 0 5px 14px rgba(36, 125, 139, 0.16);
+  border-radius: 12px;
+  color: #1f3240;
+  background: linear-gradient(145deg, #e6eef3, #b9cedb);
+  box-shadow: 0 5px 14px rgba(91, 134, 160, 0.18);
   font: inherit;
   font-weight: 900;
   cursor: pointer;
@@ -886,20 +886,20 @@
    Le filet turquoise et le reflet en pied de case signalent l'échange. */
 :root .day.exchange-day,
 :root .mini-day.exchange-day {
-  border: 2px solid #5eb6c4;
+  border: 2px solid #5b86a0;
   color: #2c2621;
-  background: linear-gradient(180deg, var(--surface) 58%, #d6f0f3 100%);
+  background: linear-gradient(180deg, var(--surface) 58%, #dbe7ee 100%);
   box-shadow: 0 4px 11px rgba(87, 78, 66, 0.14);
 }
 
 :root .day.exchange-given,
 :root .mini-day.exchange-given {
   color: #fff;
-  background: linear-gradient(180deg, #2c2621 58%, #1f4d54 100%);
+  background: linear-gradient(180deg, #2c2621 58%, #2b4a5c 100%);
 }
 
 :root .day.exchange-given .exchange-calendar-label {
-  color: #9fe2ea;
+  color: #b8d2e2;
 }
 
 /* Le repère d'échange se tient dans le coin supérieur droit de la case,
@@ -945,7 +945,7 @@
 .work-exchange-cycle-calendar {
   margin-top: 8px;
   border: 1.5px solid var(--border-card);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 9px;
   background: #fff;
 }
@@ -1044,7 +1044,7 @@
   display: grid;
   gap: 10px;
   border: 1.5px solid var(--border-card);
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 12px;
   background: var(--surface);
 }
@@ -1107,17 +1107,17 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  border-left: 3px solid #5eb6c4;
+  border-left: 3px solid #5b86a0;
   border-radius: 4px 10px 10px 4px;
   padding: 6px 10px 6px 8px;
-  background: #f1f9fa;
+  background: #eef3f6;
 }
 
 .work-exchange-list li b {
   box-sizing: border-box;
   min-width: 66px;
   text-align: center;
-  border: 1.5px solid #5eb6c4;
+  border: 1.5px solid #5b86a0;
   border-radius: 7px;
   padding: 3px 7px;
   background: #fff;
@@ -1143,7 +1143,7 @@
 
 .work-exchange-list article button {
   border: 1px solid var(--border-card);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 7px 12px;
   color: #2c2621;
   background: var(--surface);
@@ -1181,7 +1181,7 @@ fieldset.leave-choices {
   gap: 8px;
   margin: 16px 0;
   border: 2px solid var(--border-card);
-  border-radius: 15px;
+  border-radius: 18px;
   padding: 13px;
   background: linear-gradient(145deg, #eefafb, #bce6eb);
 }
@@ -1303,28 +1303,28 @@ fieldset.leave-choices {
    l'année réunis dans un seul cadre, séparés d'un simple filet. Avancer d'un
    mois ne demande plus d'ouvrir un menu, ce qui est le geste le plus fréquent. */
 .planning-workspace-shell.framed .planning-settings-body .period-navigation{display:flex;align-items:center;gap:8px;width:100%;margin:4px 0 0;grid-template-columns:none}
-/* Flèches du mois : le violet plein du bouton des vacances scolaires. */
-.period-step{display:grid;flex:none;place-items:center;width:38px;height:38px;border:1px solid rgba(44,38,33,.3);border-radius:50%;padding:0;background:#7255ad;color:#fff;cursor:pointer;box-shadow:0 3px 8px rgba(114,85,173,.28);transition:background-color 140ms ease,border-color 140ms ease}
-.period-step:hover{background:#8c70c4}
+/* Flèches du mois : le terracotta des boutons ; le violet reste aux vacances scolaires. */
+.period-step{display:grid;flex:none;place-items:center;width:38px;height:38px;border:1px solid rgba(44,38,33,.3);border-radius:50%;padding:0;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 3px 8px rgba(131,69,44,.28);transition:background-color 140ms ease,border-color 140ms ease}
+.period-step:hover{background:var(--accent-strong)}
 .period-step svg{width:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 /* Mois et année : deux pastilles distinctes, chacune avec son chevron, dans
    la police des titres, entre les deux flèches violettes. Chaque pastille
    ouvre son menu ; la pastille ouverte (ou survolée) fonce son contour. */
 .period-pickers{display:flex;flex:1 1 auto;align-items:center;gap:8px;min-width:0}
 .period-pickers>*{flex:1 1 0;min-width:0}
-.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger{position:relative;display:inline-flex;justify-content:center;align-items:center;gap:0;width:100%;min-height:44px;border:1px solid rgba(44,38,33,.3);border-radius:13px;padding:0 16px;background:#fbf6ef;box-shadow:none;color:var(--text);font-family:var(--font-display);font-size:clamp(.72rem,3.4vw,1.15rem);font-weight:600;letter-spacing:0;line-height:1.1;text-transform:capitalize}
+.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger{position:relative;display:inline-flex;justify-content:center;align-items:center;gap:0;width:100%;min-height:44px;border:1px solid rgba(44,38,33,.3);border-radius:12px;padding:0 16px;background:#fbf6ef;box-shadow:none;color:var(--text);font-family:var(--font-display);font-size:clamp(.72rem,3.4vw,1.15rem);font-weight:600;letter-spacing:0;line-height:1.1;text-transform:capitalize}
 .app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger svg{position:absolute;right:7px;top:50%;display:block;width:12px;transform:translateY(-50%);opacity:.75}
 .app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger:is(:hover,[aria-expanded="true"]){border-color:rgba(44,38,33,.8);background:var(--accent-soft);color:var(--text)}
 
 /* Le retour au mois courant occupe sa propre ligne, juste avant le compteur. */
 .planning-workspace-shell.framed .planning-settings-body .controls{display:flex;justify-content:center;margin-top:0;padding:0}
-.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button{grid-column:1;width:100%;min-height:46px;border:1px solid var(--border-control);border-radius:13px;padding:9px 14px;background:var(--surface);box-shadow:0 3px 10px rgba(87,78,66,.055);color:var(--accent-strong);font:inherit;font-size:16px;font-weight:900;letter-spacing:.01em;text-decoration:none;cursor:pointer}
+.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button{grid-column:1;width:100%;min-height:46px;border:1px solid var(--border-control);border-radius:12px;padding:9px 14px;background:var(--surface);box-shadow:0 3px 10px rgba(87,78,66,.055);color:var(--accent-strong);font:inherit;font-size:16px;font-weight:900;letter-spacing:.01em;text-decoration:none;cursor:pointer}
 .planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button:hover{background:var(--accent-soft)}
 
 /* Une alerte qui nomme l'écran où corriger devient le chemin lui-même : tout
    le bloc est cliquable, et la dernière ligne annonce où il mène. */
-.alert-fix-action{display:grid;gap:5px;width:100%;border:1px solid rgba(168,57,47,.3);border-radius:13px;padding:11px 12px;background:#fffaf8;text-align:left;cursor:pointer}
+.alert-fix-action{display:grid;gap:5px;width:100%;border:1px solid rgba(168,57,47,.3);border-radius:12px;padding:11px 12px;background:#fffaf8;text-align:left;cursor:pointer}
 .alert-fix-action:hover{border-color:#a8392f;background:#fff4f1}
 .alert-fix-action>b{color:#8f2b22}
 
@@ -1345,7 +1345,7 @@ fieldset.leave-choices {
   overflow: auto;
   margin: 0;
   border: 1px solid var(--border-control);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 6px;
   background: #fffdf9;
   box-shadow: 0 18px 38px rgba(44, 38, 33, 0.18), 0 2px 6px rgba(44, 38, 33, 0.08);
@@ -1359,7 +1359,7 @@ fieldset.leave-choices {
   width: 100%;
   min-height: 48px;
   border: 0;
-  border-radius: 11px;
+  border-radius: 12px;
   padding: 6px 8px;
   background: none;
   color: var(--text);
@@ -1386,12 +1386,12 @@ fieldset.leave-choices {
 }
 /* Férié échangé : flèches et dollar sur une pastille blanche, lisible sur
    une case sombre (jour cédé) comme claire. */
-.exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
+.exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5b86a0; }
 /* Férié rendu : la liste des fériés possibles, un bouton par férié. */
 /* Échange : deux onglets (jour ordinaire ou férié) et les horaires de chaque journée. */
 .calendar-grid .day .exchange-calendar-marker.holiday-exchange,
-.mini-grid .mini-day .exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
-.work-exchange-list article.holiday-exchange header img { box-sizing: border-box; border-radius: 50%; padding: 2px; background: #fff; box-shadow: 0 0 0 1px #5eb6c4; }
+.mini-grid .mini-day .exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5b86a0; }
+.work-exchange-list article.holiday-exchange header img { box-sizing: border-box; border-radius: 50%; padding: 2px; background: #fff; box-shadow: 0 0 0 1px #5b86a0; }
 
 /* « Pour bien démarrer » : liste de progression. Toutes les étapes restent
    visibles, cochées une fois faites ; chaque étape à faire est un raccourci. */
@@ -1399,7 +1399,7 @@ fieldset.leave-choices {
 .app-shell .home-setup-steps .home-setup-skip { position: relative; z-index: 2; display: block; min-height: 0; margin: 3px 0 0; border: 0; padding: 0; background: transparent; box-shadow: none; color: var(--accent); font: inherit; font-weight: 750; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; white-space: nowrap; }
 .home-setup-steps .home-setup-row { position: relative; }
 .app-shell .home-setup-steps .home-setup-main { min-height: 0; margin: 0; border: 0; padding: 0; background: transparent; box-shadow: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.home-setup-steps .home-setup-main::after { content: ""; position: absolute; inset: 0; border-radius: 14px; }
+.home-setup-steps .home-setup-main::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
 .home-setup-steps li:not(.done):not(.skipped) .home-setup-row:hover { border-color: var(--accent); }
 .home-setup-steps li.skipped .home-setup-row { background: transparent; }
 .home-setup-steps li.skipped .home-setup-mark { border-color: var(--muted); color: var(--muted); }
@@ -1407,7 +1407,7 @@ fieldset.leave-choices {
 .home-setup-progress { height: 6px; margin: 2px 0 12px; border-radius: 999px; background: rgba(44, 38, 33, 0.1); overflow: hidden; }
 .home-setup-progress > span { display: block; height: 100%; border-radius: inherit; background: #2f7d5b; transition: width 0.3s ease; }
 .home-setup-steps { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
-.app-shell .home-setup-steps .home-setup-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 0; margin: 0; border: 1px solid var(--border-card); border-radius: 14px; padding: 10px 12px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: left; }
+.app-shell .home-setup-steps .home-setup-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 0; margin: 0; border: 1px solid var(--border-card); border-radius: 12px; padding: 10px 12px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: left; }
 .app-shell .home-setup-steps button.home-setup-row { cursor: pointer; }
 .app-shell .home-setup-steps button.home-setup-row:hover { border-color: var(--accent); }
 .home-setup-mark { display: flex; flex: none; align-items: center; justify-content: center; width: 26px; height: 26px; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-size: 0.8rem; font-weight: 900; }
@@ -1434,14 +1434,14 @@ fieldset.leave-choices {
 .xch-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 12px 0; border-radius: 999px; padding: 4px; background: #f3ece2; }
 .app-shell .xch-tabs button { min-height: 36px; margin: 0; border: 0; border-radius: 999px; padding: 6px 10px; background: transparent; box-shadow: none; color: var(--muted); font: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer; }
 .app-shell .xch-tabs button.active { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(44, 38, 33, 0.16); }
-.xch-sheet { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; border-radius: 14px; padding: 11px 12px; background: #eef7f8; color: #1f4f57; }
-.xch-sheet svg { width: 22px; height: 22px; fill: none; stroke: #2f7f8c; stroke-width: 1.7; stroke-linejoin: round; }
+.xch-sheet { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; border-radius: 18px; padding: 11px 12px; background: #e9f0f4; color: #2f4f60; }
+.xch-sheet svg { width: 22px; height: 22px; fill: none; stroke: #5b86a0; stroke-width: 1.7; stroke-linejoin: round; }
 .xch-sheet strong { display: block; font-size: 0.9rem; }
 .xch-sheet small { display: block; font-size: 0.78rem; font-weight: 650; }
-.xch-switch { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: #1f4f57; font-size: 0.8rem; font-weight: 750; cursor: pointer; }
-.xch-switch input { appearance: none; position: relative; flex: none; width: 34px; height: 20px; margin: 0; border-radius: 999px; background: #c5d6d9; cursor: pointer; }
+.xch-switch { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: #2f4f60; font-size: 0.8rem; font-weight: 750; cursor: pointer; }
+.xch-switch input { appearance: none; position: relative; flex: none; width: 34px; height: 20px; margin: 0; border-radius: 999px; background: #c7d5dd; cursor: pointer; }
 .xch-switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
-.xch-switch input:checked { background: #2f7f8c; }
+.xch-switch input:checked { background: #5b86a0; }
 .xch-switch input:checked::after { transform: translateX(14px); }
 .xch-steps { display: grid; margin: 4px 0 0; padding: 0; list-style: none; }
 .xch-steps > li { display: grid; gap: 10px; border-bottom: 1px solid #ece4d9; padding: 16px 0; }
@@ -1469,7 +1469,7 @@ fieldset.leave-choices {
 .app-shell .xch-groups button { min-height: 32px; margin: 0; border: 1px solid #ddd2c4; border-radius: 999px; padding: 4px 14px; background: #fff; box-shadow: none; color: var(--muted); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
 .app-shell .xch-groups button.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
 .app-shell .xch-groups button:disabled { opacity: 0.4; }
-.xch-recap { display: grid; margin: 0 0 12px; border-radius: 12px; padding: 9px 12px; background: #eef7f8; color: #1f4f57; font-size: 0.84rem; font-weight: 750; }
+.xch-recap { display: grid; margin: 0 0 12px; border-radius: 12px; padding: 9px 12px; background: #e9f0f4; color: #2f4f60; font-size: 0.84rem; font-weight: 750; }
 .xch-actions { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 8px; border-top: 1px solid #ece4d9; padding: 12px 0 14px; background: inherit; }
 .app-shell .xch-actions > button { margin: 0; }
 .app-shell .xch-actions .save-button { flex: 1 1 auto; }

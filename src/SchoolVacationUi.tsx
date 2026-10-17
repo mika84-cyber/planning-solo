@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { SchoolVacation, SchoolZone } from "./planningLogic";
 import { SCHOOL_ZONE_OPTIONS, fromKey } from "./planningLogic";
 import schoolVacationStyles from "./schoolVacations.css?inline";
@@ -20,20 +21,35 @@ export function SchoolVacationSettings({
   onVisibleChange: (visible: boolean) => void;
   onZoneChange: (zone: SchoolZone) => void;
 }) {
+  /* Un réglage rare, sur une seule ligne : le nom et la zone à gauche (un
+     appui déroule les zones), l'interrupteur à droite. */
+  const [zonesOpen, setZonesOpen] = useState(false);
+  const zoneLabel = SCHOOL_ZONE_OPTIONS.find((option) => option.value === zone)?.label ?? "";
   return (
     <section className="school-vacation-settings" aria-label="Vacances scolaires">
-      <button
-        className={`school-vacation-switch${visible ? " active" : ""}`}
-        type="button"
-        role="switch"
-        aria-checked={visible}
-        onClick={() => onVisibleChange(!visible)}
-      >
-        <span aria-hidden="true"><i /></span>
-        <strong>Vacances scolaires</strong>
-        <small>{visible ? "Affichées dans le planning" : "Masquées"}</small>
-      </button>
-      {visible ? (
+      <div className="school-vacation-row">
+        <button
+          className="school-vacation-zone"
+          type="button"
+          aria-expanded={zonesOpen}
+          aria-label={`Vacances scolaires, ${zoneLabel} : choisir la zone`}
+          onClick={() => setZonesOpen((open) => !open)}
+        >
+          <strong>Vacances scolaires</strong>
+          <small>· {zoneLabel}</small>
+        </button>
+        <button
+          className={`school-vacation-switch${visible ? " active" : ""}`}
+          type="button"
+          role="switch"
+          aria-checked={visible}
+          aria-label="Vacances scolaires affichées dans le planning"
+          onClick={() => onVisibleChange(!visible)}
+        >
+          <span aria-hidden="true"><i /></span>
+        </button>
+      </div>
+      {zonesOpen ? (
         <div className="school-zone-picker" role="group" aria-label="Zone scolaire affichée">
           {SCHOOL_ZONE_OPTIONS.map((option) => (
             <button
@@ -41,7 +57,7 @@ export function SchoolVacationSettings({
               key={option.value}
               className={zone === option.value ? "active" : ""}
               aria-pressed={zone === option.value}
-              onClick={() => onZoneChange(option.value)}
+              onClick={() => { onZoneChange(option.value); setZonesOpen(false); }}
             >
               {option.label}
             </button>

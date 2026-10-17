@@ -82,7 +82,6 @@ export function LeaveBalancesSection({
                 ? "sans carence · CA superposés recrédités"
                 : "sans effet sur les congés"}
       </small>
-      <em>Voir le détail</em>
     </button>
   );
   return (
@@ -131,7 +130,6 @@ export function LeaveBalancesSection({
                   {s(balance.manualUsed)} sans date
                 </small>
               ) : null}
-              <em>Voir le détail</em>
             </button>
           ))}
           {countedBalanceButton("sick")}

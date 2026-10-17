@@ -18,7 +18,7 @@
   min-width: 0;
   min-height: 66px;
   border: 1px solid color-mix(in srgb, var(--setting-tone) 30%, var(--border-control));
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 9px 10px 8px;
   background: color-mix(in srgb, var(--setting-tone) 9%, var(--surface-high));
   transition: border-color .15s ease, background .15s ease;
@@ -41,6 +41,17 @@
 .pdf-quick-setting:has(:focus-visible) { outline: 2px solid var(--setting-tone); outline-offset: 2px; }
 .pdf-quick-setting :focus-visible { outline: none; }
 
+/* Petit écran (Z Fold fermé) : trois tuiles de front rognaient l'année ;
+   la tuile de l'année prend toute une ligne, groupe et vacances la suivante. */
+@media (max-width: 400px) {
+  .pdf-download-screen .pdf-quick-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* La tuile de l'année devient une barre basse : libellé à gauche, flèches et année à droite. */
+  .pdf-download-screen .pdf-quick-year { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 0; padding: 6px 10px 6px 12px; }
+  .pdf-download-screen .pdf-quick-year .pdf-year-stepper { width: 132px; min-height: 0; }
+}
+/* Dans la fenêtre, le titre laisse la place au bouton de fermeture. */
+.planning-pdf-dialog #pdf-download-title { padding-right: 52px; }
+
 /* Année : deux flèches rondes autour de l'année, à la couleur de la tuile. */
 .pdf-year-stepper { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; min-height: 30px; }
 .pdf-year-stepper strong { color: var(--text); font-size: 1.02rem; font-weight: 850; text-align: center; font-variant-numeric: tabular-nums; }
@@ -51,7 +62,7 @@
 
 /* Groupe : trois pastilles, chacune à la couleur de son groupe ; la choisie est pleine. */
 .pdf-group-pills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; min-height: 30px; }
-.pdf-group-pills button { min-width: 0; height: 30px; border: 1.5px solid var(--pill-tone); border-radius: 10px; padding: 0; background: var(--surface-high); color: var(--pill-tone); font: inherit; font-size: .95rem; font-weight: 850; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.pdf-group-pills button { min-width: 0; height: 30px; border: 1.5px solid var(--pill-tone); border-radius: 12px; padding: 0; background: var(--surface-high); color: var(--pill-tone); font: inherit; font-size: .95rem; font-weight: 850; cursor: pointer; transition: background .15s ease, color .15s ease; }
 .pdf-group-pills button:hover:not(.active) { background: color-mix(in srgb, var(--pill-tone) 12%, var(--surface-high)); }
 .pdf-group-pills button.active { background: var(--pill-tone); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--pill-tone) 35%, transparent); }
 
@@ -75,7 +86,7 @@
   box-shadow: none;
   cursor: pointer;
 }
-.pdf-quick-switch::before { position: absolute; inset: 0; border-radius: 16px; content: ""; }
+.pdf-quick-switch::before { position: absolute; inset: 0; border-radius: 12px; content: ""; }
 .pdf-quick-switch > i {
   position: relative;
   flex: 0 0 auto;
@@ -123,7 +134,7 @@
   gap: 12px;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--doc-tone) 28%, var(--border-control));
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 11px 12px 11px 14px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--doc-tone) 11%, var(--surface-high)), var(--surface-high) 75%);
   color: var(--text);
@@ -144,7 +155,7 @@
   width: 42px;
   height: 42px;
   place-items: center;
-  border-radius: 13px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--doc-tone) 15%, var(--surface-high));
   color: var(--doc-tone);
 }

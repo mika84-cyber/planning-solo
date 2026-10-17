@@ -7,11 +7,11 @@
 .note-modal .day-action-grid fieldset.leave-choices-primary { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; margin: 0; border: 0; padding: 0; background: none; }
 .note-modal .day-action-grid :is(.leave-choices-primary > button, .day-note-tile) {
   display: grid; grid-template: auto auto / 42px minmax(0, 1fr); align-items: center; gap: 2px 11px; width: 100%; min-height: 78px; margin: 0;
-  border: 1px solid var(--border-control); border-radius: 16px; padding: 12px; background: #fff; color: var(--text); font: inherit; font-size: .94rem;
+  border: 1px solid var(--border-control); border-radius: 12px; padding: 12px; background: #fff; color: var(--text); font: inherit; font-size: .94rem;
   font-weight: 850; line-height: 1.15; text-align: left; box-shadow: none; cursor: pointer; transition: border-color .15s;
 }
 .note-modal .day-action-grid :is(.leave-choices-primary > button, .day-note-tile) > i {
-  display: grid; grid-row: 1 / 3; place-items: center; width: 42px; height: 42px; margin: 0; border-radius: 13px; opacity: 1;
+  display: grid; grid-row: 1 / 3; place-items: center; width: 42px; height: 42px; margin: 0; border-radius: 12px; opacity: 1;
   background: color-mix(in srgb, var(--tile-color) 15%, #fff); color: var(--tile-color);
 }
 .note-modal .day-action-grid i svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -25,7 +25,7 @@
 .note-modal .day-closure-link:disabled { opacity: .55; cursor: wait; }
 @media (max-width: 380px) {
   .note-modal .day-action-grid :is(.leave-choices-primary > button, .day-note-tile) { grid-template: auto / minmax(0, 1fr); justify-items: start; gap: 3px; padding: 11px; }
-  .note-modal .day-action-grid :is(.leave-choices-primary > button, .day-note-tile) > i { grid-row: auto; width: 36px; height: 36px; margin-bottom: 4px; border-radius: 11px; }
+  .note-modal .day-action-grid :is(.leave-choices-primary > button, .day-note-tile) > i { grid-row: auto; width: 36px; height: 36px; margin-bottom: 4px; border-radius: 12px; }
 }
 /* Notes du jour : sans cadre autour, un fin liseré à la couleur de l'auteur. */
 .note-modal .day-notes-editor:not(:has(> *)) { display: none; }
@@ -33,7 +33,7 @@
 .note-modal .day-notes-editor.day-notes-reading { margin: 10px 0 0; border: 0; padding: 0; background: none; }
 .note-modal .day-notes-section-heading { display: block; margin: 0; }
 .note-modal .day-notes-section-heading h3 { margin: 0 0 2px; color: var(--muted); font-family: inherit; font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
-.note-modal .day-notes-editor .day-author-note { border: 1px solid; border-radius: 14px; box-shadow: none; }
+.note-modal .day-notes-editor .day-author-note { border: 1px solid; border-radius: 18px; box-shadow: none; }
 .note-modal .day-notes-editor .day-author-note-mika { border-color: #d3e5a3; background: #f4fadf; }
 .note-modal .day-notes-editor .day-author-note-agnes { border-color: #f2c6d6; background: #fdeff4; }
 .note-modal .day-notes-editor .day-author-note-mika :is(strong) { color: #5f7f0a; }

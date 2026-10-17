@@ -73,7 +73,7 @@
   min-width: 0;
   border: 1.5px solid var(--venue-line, var(--section-outline));
   border-left: 5px solid var(--venue-accent, var(--border-card));
-  border-radius: 15px;
+  border-radius: 12px;
   color: var(--text);
   background: var(--venue-bg, var(--surface-high));
   font: inherit;
@@ -150,7 +150,7 @@
   gap: 4px 16px;
   align-items: center;
   border: 1px solid #e5c995;
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.86);
 }
@@ -180,7 +180,7 @@
 
 .grand-palais-admin-alert-list button {
   border: 1.5px solid var(--section-outline);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 8px 12px;
   color: #fff;
   background: var(--text);
@@ -219,7 +219,7 @@
 
 .grand-palais-program-screen .grand-palais-program-panel {
   border: 2px solid var(--section-outline);
-  border-radius: 22px;
+  border-radius: 18px;
   box-shadow: var(--shadow-card);
 }
 
@@ -275,7 +275,7 @@
    des expos n'a pas le plafond de 720 px des autres en-têtes. */
 .grand-palais-program-intro .native-screen-heading { max-width: none; }
 .grand-palais-program-summary { display: grid; gap: 10px; margin-top: 12px; }
-.grand-palais-program-summary > article { display: grid; align-content: start; gap: 4px; min-width: 0; border: 1px solid var(--venue-line, var(--border-soft)); border-left: 4px solid var(--venue-accent, var(--accent)); border-radius: 14px; padding: 10px 12px; background: var(--venue-bg, var(--surface-soft)); }
+.grand-palais-program-summary > article { display: grid; align-content: start; gap: 4px; min-width: 0; border: 1px solid var(--venue-line, var(--border-soft)); border-left: 4px solid var(--venue-accent, var(--accent)); border-radius: 18px; padding: 10px 12px; background: var(--venue-bg, var(--surface-soft)); }
 .grand-palais-program-summary strong { color: var(--text); font-family: var(--font-display); font-size: 1.04rem; font-weight: 600; line-height: 1.25; }
 
 /* « Ouvert aujourd'hui » : le pied de la carte du titre, sur un fond crème
@@ -331,14 +331,14 @@
 .grand-palais-interexpo-open li b { color: var(--venue-accent); }
 .grand-palais-interexpo-open li b::after { margin: 0 5px; color: var(--muted); content: "·"; }
 .grand-palais-interexpo-open li small { color: #4a423b; font-weight: 600; }
-.grand-palais-interexpo-cut { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 1px 12px; min-width: 0; border: 1.5px solid #8a7e72; border-radius: 16px; padding: 10px 14px; background: #fbf1ea; }
+.grand-palais-interexpo-cut { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 1px 12px; min-width: 0; border: 1.5px solid #8a7e72; border-radius: 18px; padding: 10px 14px; background: #fbf1ea; }
 .grand-palais-interexpo-cut > :not(svg) { grid-column: 2; }
 .grand-palais-interexpo-art { grid-row: 1 / span 3; align-self: center; width: 44px; height: 44px; border: 1px solid #efd6c4; border-radius: 12px; padding: 3px; background: #fff; fill: none; stroke: #9a5a3a; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .grand-palais-interexpo-art circle { fill: #9a5a3a; stroke: none; }
 .grand-palais-interexpo-art-roof { fill: #f2c9ad; }
 .grand-palais-interexpo-art-door { fill: #e9a27d; }
 .grand-palais-interexpo-number { position: absolute; top: 8px; left: -41px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #2f7a52; box-shadow: 0 0 0 4px #fff; color: #fff; font-size: .82rem; font-weight: 800; }
-.grand-palais-interexpo-open .grand-palais-interexpo-cut { border: 1px solid #efcdb8; border-radius: 14px; }
+.grand-palais-interexpo-open .grand-palais-interexpo-cut { border: 1px solid #efcdb8; border-radius: 18px; }
 /* Grand écran : les expositions à gauche, la fermeture à droite. */
 @media (min-width: 900px) {
   .grand-palais-interexpo-open { grid-template-columns: minmax(0, 1fr) minmax(300px, 36%); align-items: start; }
@@ -474,7 +474,7 @@
   align-self: start;
   max-width: 100%;
   margin-bottom: 7px;
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 4px 11px;
   background: var(--venue-accent, var(--accent));
   color: #fff;
@@ -505,7 +505,7 @@
    terracotta. */
 .grand-palais-view-label { margin: 0 0 -6px 4px; color: #6b5d50; font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 :root .grand-palais-view-tools .grand-palais-view-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; border: 1px solid #ebe1d5; border-radius: 20px; padding: 5px; background: #fff; box-shadow: 0 1px 3px rgba(44, 38, 33, .05); }
-:root .grand-palais-view-tools .grand-palais-view-picker button { display: grid; justify-items: center; align-content: start; gap: 7px; min-height: 0; border: 1px solid transparent; border-radius: 16px; padding: 12px 4px 10px; background: transparent; color: #5e5146; font-size: .7rem; font-weight: 800; line-height: 1.15; text-align: center; white-space: normal; box-shadow: none; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
+:root .grand-palais-view-tools .grand-palais-view-picker button { display: grid; justify-items: center; align-content: start; gap: 7px; min-height: 0; border: 1px solid transparent; border-radius: 12px; padding: 12px 4px 10px; background: transparent; color: #5e5146; font-size: .7rem; font-weight: 800; line-height: 1.15; text-align: center; white-space: normal; box-shadow: none; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
 :root .grand-palais-view-tools .grand-palais-view-picker button span { text-wrap: balance; }
 :root .grand-palais-view-tools .grand-palais-view-picker button svg { box-sizing: content-box; width: 28px; height: 28px; border-radius: 0; padding: 2px 0 0; background: none; color: #8a7d6e; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: background .15s, color .15s; }
 :root .grand-palais-view-tools .grand-palais-view-picker button svg .view-icon-dot { fill: #2f8a5b; stroke: none; }
@@ -515,7 +515,7 @@
 /* Z Fold fermé et petits téléphones : « En ce moment » passe sur deux lignes. */
 @media (max-width: 380px) {
   :root .grand-palais-view-tools .grand-palais-view-picker { gap: 3px; padding: 4px; }
-  :root .grand-palais-view-tools .grand-palais-view-picker button { border-radius: 14px; padding: 10px 3px 9px; font-size: .66rem; }
+  :root .grand-palais-view-tools .grand-palais-view-picker button { border-radius: 12px; padding: 10px 3px 9px; font-size: .66rem; }
 }
 
 /* Carte d'exposition : l'état en haut à droite, le temps restant sous la barre. */
@@ -607,7 +607,7 @@
    liseré noir que le planning partagé. */
 .expo-audioguide { --ag: var(--venue-accent, var(--accent)); --ag-line: var(--venue-line, var(--line)); --ag-bg: var(--venue-bg, var(--surface-soft)); width: min(100%, 360px); margin: 10px 0 0; }
 .expo-audioguide svg, .gp-watch svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.expo-audioguide-card { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid rgba(44, 38, 33, 0.45); border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--ag) 26%, var(--ag-bg)) 0%, var(--ag-bg) 38%, color-mix(in srgb, var(--ag-bg) 30%, #fff) 70%, #fff 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px color-mix(in srgb, var(--ag) 55%, transparent), 0 1px 2px color-mix(in srgb, var(--ag) 15%, transparent); }
+.expo-audioguide-card { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid rgba(44, 38, 33, 0.45); border-radius: 18px; background: linear-gradient(135deg, color-mix(in srgb, var(--ag) 26%, var(--ag-bg)) 0%, var(--ag-bg) 38%, color-mix(in srgb, var(--ag-bg) 30%, #fff) 70%, #fff 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px color-mix(in srgb, var(--ag) 55%, transparent), 0 1px 2px color-mix(in srgb, var(--ag) 15%, transparent); }
 .app-shell .expo-audioguide-qr { position: relative; display: grid; place-items: center; justify-self: stretch; aspect-ratio: 1; min-height: 0; margin: 0; border: 1px solid var(--ag-line); border-radius: 12px; padding: 8px; background: #fff; box-shadow: none; cursor: zoom-in; }
 .app-shell .expo-audioguide-qr[aria-expanded="true"] { cursor: zoom-out; }
 .expo-audioguide-qr img { display: block; width: 100%; max-width: 130px; height: auto; }

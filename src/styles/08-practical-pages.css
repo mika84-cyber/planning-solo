@@ -36,7 +36,7 @@
   gap: 10px;
   margin: 12px 0;
   border: 1px solid var(--border-card);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 10px 12px;
   background: var(--surface-high);
   color: var(--muted);
@@ -72,7 +72,7 @@
   width: min(430px, calc(100vw - 28px));
   border: 1px solid var(--border-card);
   border-left: 6px solid #d08a2e;
-  border-radius: 15px;
+  border-radius: 18px;
   padding: 11px 10px 11px 14px;
   background: var(--surface);
   box-shadow: 0 16px 40px rgba(44, 38, 33, 0.22);
@@ -104,7 +104,7 @@
   }
 
   .pdf-download-screen > section{
-    border-radius: 20px;
+    border-radius: 18px;
   }
 }
 
@@ -128,7 +128,7 @@
   gap: 8px;
   min-height: 120px;
   border: 1.5px dashed var(--border-control);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 20px;
   background: var(--surface-high);
   color: var(--muted);
@@ -152,7 +152,7 @@
   min-height: 120px;
   margin: 12px 0;
   border: 1.5px dashed var(--border-control);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--surface-high);
   color: var(--muted);
   font-size: 12px;

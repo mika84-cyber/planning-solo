@@ -579,7 +579,7 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   // « Aujourd’hui » : le mot en terracotta dans le même encadré que les jours travaillés.
   await expect(todayButton).toHaveCSS("background-color", "rgb(251, 246, 239)");
   await expect(todayButton).toHaveCSS("border-top-width", "1px");
-  await expect(todayButton).toHaveCSS("border-top-left-radius", "13px");
+  await expect(todayButton).toHaveCSS("border-top-left-radius", "12px");
   await expect(todayButton).toHaveCSS("color", await cssTokenRgb(page, "--accent-strong"));
   expect(parseFloat(await todayButton.evaluate((node) => getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(15);
   const trainingDay = page.locator(".month-card .day.training").first();
@@ -3042,7 +3042,11 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   await prepareDemo(page);
   const vacationSwitch = page.getByRole("switch", { name: /Vacances scolaires/ });
   await expect(vacationSwitch).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByRole("button", { name: "Zone C" })).toHaveAttribute("aria-pressed", "true");
+  // Une seule ligne : la zone se déroule d'un appui sur « Vacances scolaires · Zone C ».
+  await page.getByRole("button", { name: /Vacances scolaires, Zone C/ }).click();
+  await expect(page.getByRole("button", { name: "Zone C", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Zone C", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Zone A", exact: true })).toHaveCount(0);
   const [toolbarBox, settingsBox] = await Promise.all([
     page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
     page.locator(".school-vacation-settings").boundingBox(),
@@ -3072,8 +3076,10 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   // La fermeture laisse voir, à gauche, la barre violette des vacances.
   expect(closedMarkerBox!.x).toBeGreaterThan(closedDayBox!.x + 4);
   expect(await closedVacationDay.evaluate((cell) => getComputedStyle(cell, "::before").left)).toBe("0px");
-  await page.getByRole("button", { name: "Zone A" }).click();
-  await expect(page.getByRole("button", { name: "Zone A" })).toHaveAttribute("aria-pressed", "true");
+  // Changer de zone : un appui sur « Vacances scolaires · Zone C » déroule les zones.
+  await page.getByRole("button", { name: /Vacances scolaires, Zone C/ }).click();
+  await page.getByRole("button", { name: "Zone A", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Vacances scolaires, Zone A/ })).toBeVisible();
   await vacationSwitch.click();
   await expect(page.locator(".school-vacation-month-summary")).toHaveCount(0);
   await expect(page.locator(".month-card .school-vacation-day")).toHaveCount(0);
@@ -3435,9 +3441,9 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await expect(page.locator(".day.exchange-return")).toHaveCount(1);
   // Le jour cédé devient un vrai repos (fond sombre), le jour repris un jour
   // travaillé (fond clair) ; tous deux gardent le filet turquoise de l'échange.
-  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", "rgb(94, 182, 196)");
+  await expect(page.locator(".day.exchange-given")).toHaveCSS("border-top-color", "rgb(91, 134, 160)");
   await expect(page.locator(".day.exchange-given")).toHaveCSS("background-image", /rgb\(44, 38, 33\)/);
-  await expect(page.locator(".day.exchange-return")).toHaveCSS("border-top-color", "rgb(94, 182, 196)");
+  await expect(page.locator(".day.exchange-return")).toHaveCSS("border-top-color", "rgb(91, 134, 160)");
   await expect(page.locator(".day.exchange-given .exchange-calendar-marker")).toHaveAttribute("src", "/exchange-arrows.png");
   await expect(page.locator(".day.exchange-given .exchange-calendar-label")).toHaveText("OFF");
   await expect(page.locator(".day.exchange-return .exchange-calendar-label")).toHaveText("TRAVAIL");

@@ -1,7 +1,7 @@
 import type { Entries, WorkExchange } from "./appModel";
 import { addDays, dateKey, fromKey, getDayInfo } from "./planningLogic";
 
-export const WORK_EXCHANGE_COLOR = "#5EB6C4";
+export const WORK_EXCHANGE_COLOR = "#5B86A0";
 
 export type WorkExchangeDraft = {
   id: string;

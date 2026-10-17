@@ -231,7 +231,7 @@ function drawExchangeMarker(
   // Une étiquette blanche cerclée de turquoise : la pastille des flèches, puis
   // le numéro de l'échange en brun foncé, comme sur le planning de l'appli.
   doc.setFillColor(...COLORS.white);
-  doc.setDrawColor(94, 182, 196);
+  doc.setDrawColor(91, 134, 160);
   doc.setLineWidth(0.3 * k);
   doc.roundedRect(centerX - 4.1 * k, centerY - 2.05 * k, 8.2 * k, 4.1 * k, 2.05 * k, 2.05 * k, "FD");
   if (!drawAsset(doc, image, centerX - 3.65 * k, centerY - 1.6 * k, 3.2 * k, 3.2 * k, alias)) {
