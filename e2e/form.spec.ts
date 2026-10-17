@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { adaptStandalonePage } from "../scripts/build-congecp.mjs";
 
 test("le formulaire modulaire charge ses données et ses commandes", async ({ page }) => {
   const runtimeErrors: string[] = [];
@@ -283,7 +284,26 @@ test("le nom du compte Netlify préremplit la feuille, et « Vider » efface dat
   await expect(page.locator(".cell.has")).toHaveCount(0);
 });
 
-test("le calendrier laisse choisir son groupe sur une feuille sans case « Groupe »", async ({ page }) => {
+test("sous Planning Solo, le calendrier renvoie à la case « Groupe » sans en proposer le choix", async ({ page }) => {
+  await page.goto("/formulaire/index.html");
+  await page.locator("#sheet").selectOption({ label: "Demande d'échange" });
+  await page.getByRole("textbox", { name: "Et être planifié en échange le", exact: true }).click();
+  await expect(page.locator("#calModal")).toHaveClass(/on/);
+  // Le choix du groupe appartient au site autonome : ici, il n'existe pas.
+  await expect(page.locator("#calGroupChoice")).toHaveCount(0);
+  await expect(page.locator("#calCycleText"))
+    .toHaveText("Indiquez 1, 2 ou 3 dans le champ « Groupe » pour activer le planning.");
+});
+
+test("sur le site autonome, le calendrier laisse choisir son groupe et applique son cycle", async ({ page }) => {
+  // La page servie est celle de Congé CP, telle que la construction la produit.
+  await page.route("**/formulaire/index.html", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      body: adaptStandalonePage(await response.text()),
+      contentType: "text/html; charset=utf-8",
+    });
+  });
   await page.goto("/formulaire/index.html");
   await page.locator("#sheet").selectOption({ label: "Demande d'échange" });
   // Cette feuille n'a pas de case « Groupe » : le cycle se règle au calendrier.

@@ -112,4 +112,4 @@ async function build() {
   console.log("Déposez ce dossier sur Netlify Drop pour mettre congecp à jour.");
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) await build();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await build();

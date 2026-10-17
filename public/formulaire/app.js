@@ -977,13 +977,21 @@ function chooseCycleGroup(g){
   updateCycleInfo();
   if(calModal.classList.contains('on')) renderCal();
 }
-var calGroupButtons=[].slice.call(document.querySelectorAll('#calGroupChoice .calgroup'));
+/* Le choix du groupe n'est proposé que sur le site autonome Congé CP, qui n'a
+   pas l'application derrière lui pour régler le planning. Sous /formulaire/ de
+   Planning Solo, la case « Groupe » des feuilles reste la seule entrée. */
+var standaloneSite=(document.querySelector('meta[name="planning-api"]') || {}).content === 'none';
+var calGroupChoice=document.getElementById('calGroupChoice');
+if(!standaloneSite && calGroupChoice){ calGroupChoice.remove(); calGroupChoice=null; }
+var calGroupButtons=calGroupChoice ? [].slice.call(calGroupChoice.querySelectorAll('.calgroup')) : [];
 calGroupButtons.forEach(function(b){
   b.addEventListener('click', function(){ chooseCycleGroup(+b.dataset.group); });
 });
 function updateCycleInfo(){
   var g=activeGroup(), el=document.getElementById('calCycleText');
-  el.textContent=g ? ('Planning groupe '+g) : 'Choisissez votre groupe pour afficher le cycle.';
+  el.textContent=g ? ('Planning groupe '+g)
+                   : (standaloneSite ? 'Choisissez votre groupe pour afficher le cycle.'
+                                     : 'Indiquez 1, 2 ou 3 dans le champ « Groupe » pour activer le planning.');
   calGroupButtons.forEach(function(b){
     var on=+b.dataset.group === g;
     b.classList.toggle('on', on);

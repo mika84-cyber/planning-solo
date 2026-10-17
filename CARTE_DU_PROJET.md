@@ -195,10 +195,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles
   du formulaire autonome de demande.
-  Le groupe de cycle se choisit dans le calendrier lui-même (`#calGroupChoice`,
-  `chooseCycleGroup`) : il nourrit la case « Groupe » de la feuille quand elle
-  en a une, sinon le profil, pour les feuilles d'échange et de remplacement de
-  jour férié qui n'ont pas cette case.
+  Sur le site autonome Congé CP seulement, le groupe de cycle se choisit dans
+  le calendrier (`#calGroupChoice`, `chooseCycleGroup`) : il nourrit la case
+  « Groupe » de la feuille quand elle en a une, sinon le profil, pour les
+  feuilles d'échange et de remplacement de jour férié qui n'ont pas cette case.
+  Sous `/formulaire/` de Planning Solo, `app.js` retire ce choix d'après la
+  balise `planning-api` et le bandeau renvoie à la case « Groupe ».
   Feuilles : congés, récupérations, échange (`form-bg-4.png`, dates et
   horaires recopiés chez le collègue via `mirror`), remplacement de jour férié
   (`form-bg-5.png`, calendrier limité aux fériés travaillés via `cal: 'holiday'`,
