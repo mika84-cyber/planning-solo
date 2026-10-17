@@ -282,3 +282,32 @@ test("le nom du compte Netlify préremplit la feuille, et « Vider » efface dat
     await expect(field(name)).toHaveValue("");
   await expect(page.locator(".cell.has")).toHaveCount(0);
 });
+
+test("le calendrier laisse choisir son groupe sur une feuille sans case « Groupe »", async ({ page }) => {
+  await page.goto("/formulaire/index.html");
+  await page.locator("#sheet").selectOption({ label: "Demande d'échange" });
+  // Cette feuille n'a pas de case « Groupe » : le cycle se règle au calendrier.
+  await expect(page.getByRole("combobox", { name: "Groupe", exact: true })).toHaveCount(0);
+
+  const calendar = page.locator("#calModal");
+  await page.getByRole("textbox", { name: "Et être planifié en échange le", exact: true }).click();
+  await expect(calendar).toHaveClass(/on/);
+  await expect(page.locator("#calCycleText")).toHaveText("Choisissez votre groupe pour afficher le cycle.");
+  // Cycle inconnu : aucune date n'est encore écartée.
+  const total = await calendar.locator(".calday").count();
+  expect(await calendar.locator(".calday:not(:disabled)").count()).toBe(total);
+
+  // Le groupe choisi ici applique son cycle : seuls les jours de repos restent.
+  await page.locator('#calGroupChoice [data-group="2"]').click();
+  await expect(page.locator("#calCycleText")).toHaveText("Planning groupe 2");
+  await expect(page.locator('#calGroupChoice [data-group="2"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(calendar.locator(".calday:not(.off):not(:disabled)")).toHaveCount(0);
+  expect(await calendar.locator(".calday:not(:disabled)").count()).toBeLessThan(total);
+
+  // La date devient saisissable, et le choix se reporte sur la feuille qui a la case.
+  await calendar.locator(".calday.off:not(:disabled)").first().click();
+  await expect(page.getByRole("textbox", { name: "Et être planifié en échange le", exact: true }))
+    .toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/);
+  await page.locator("#sheet").selectOption({ label: "Demande de congés" });
+  await expect(page.getByRole("combobox", { name: "Groupe", exact: true })).toHaveValue("2");
+});

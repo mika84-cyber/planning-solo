@@ -665,3 +665,14 @@
   @media(max-width:760px){
     .bar-in:not(:has(#btnBackApp)) .form-choice{padding-left:0}
   }
+
+  /* Le groupe se choisit dans le calendrier lui-même : les feuilles d'échange
+     et de remplacement de jour férié n'ont pas de case « Groupe », et le cycle
+     affiché doit pouvoir être corrigé là où on s'en sert. */
+  #calCycleInfo{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+  #calGroupChoice{display:inline-flex;align-items:center;gap:4px}
+  .calgroup{min-width:30px;height:28px;padding:0 8px;border:1px solid var(--control-border);border-radius:8px;
+            background:var(--panel);color:var(--muted);font:700 12.5px/1 inherit;cursor:pointer}
+  .calgroup:hover{border-color:var(--ui);color:var(--ui)}
+  .calgroup.on{border-color:var(--ui);background:var(--ui-soft);color:var(--ui-strong)}
+  .calgroup:focus-visible{outline:2px solid var(--ui);outline-offset:2px}

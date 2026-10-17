@@ -962,10 +962,33 @@ function activeGroup(){
 function cycleInfo(d){
   return cycleInfoFor(d, activeGroup());
 }
+/* Le groupe choisi dans le calendrier nourrit la case « Groupe » quand la
+   feuille en a une, sinon le profil : les feuilles d'échange et de
+   remplacement de jour férié n'ont pas cette case, et leur cycle doit pouvoir
+   être corrigé là où on s'en sert. */
+function chooseCycleGroup(g){
+  var i=byName.groupe;
+  if(i !== undefined && inputs[i]) onEdit(i, String(g));
+  else {
+    var d=profileRead();
+    d.groupe=String(g);
+    try{ localStorage.setItem('demandes:v6:profil'+planningOwnerSuffix(), JSON.stringify(d)); }catch(e){}
+  }
+  updateCycleInfo();
+  if(calModal.classList.contains('on')) renderCal();
+}
+var calGroupButtons=[].slice.call(document.querySelectorAll('#calGroupChoice .calgroup'));
+calGroupButtons.forEach(function(b){
+  b.addEventListener('click', function(){ chooseCycleGroup(+b.dataset.group); });
+});
 function updateCycleInfo(){
-  var g=activeGroup(), el=document.getElementById('calCycleInfo');
-  el.textContent=g ? ('Planning groupe '+g)
-                   : 'Indiquez 1, 2 ou 3 dans le champ « Groupe » pour activer le planning.';
+  var g=activeGroup(), el=document.getElementById('calCycleText');
+  el.textContent=g ? ('Planning groupe '+g) : 'Choisissez votre groupe pour afficher le cycle.';
+  calGroupButtons.forEach(function(b){
+    var on=+b.dataset.group === g;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   var hc=document.getElementById('calHolidayCount');
   if(hc) hc.textContent=g && calView ? countWorkedHolidays(calView.y,g)+' jours fériés travaillés en '+calView.y : '';
 }
