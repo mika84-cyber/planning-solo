@@ -46,6 +46,29 @@ export function drawSignature(context, image, width, height, fit) {
     (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
+/* La synchronisation de la signature passe par /api/calendar, qui n'existe
+   que sur Planning Solo. Le site autonome Congé CP déclare « none » dans sa
+   page : la signature y reste alors sur l'appareil, sans appel ni message
+   d'échec. La démo publique reste elle aussi hors synchronisation. */
+export function planningApiAvailable(win, doc) {
+  try {
+    const declared = doc && doc.querySelector ? doc.querySelector('meta[name="planning-api"]') : null;
+    if (declared && declared.getAttribute('content') === 'none') return false;
+    const publicDemoUntil = win.localStorage.getItem('planning:public-demo-until');
+    const publicDemo =
+      publicDemoUntil &&
+      Number.isFinite(Date.parse(publicDemoUntil)) &&
+      Date.now() <= Date.parse(publicDemoUntil);
+    const e2eDemo =
+      publicDemo ||
+      ((win.location.hostname === '127.0.0.1' || win.location.hostname === 'localhost') &&
+        win.localStorage.getItem('planning:e2e-demo-enabled') === '1');
+    return !e2eDemo;
+  } catch {
+    return false;
+  }
+}
+
 export function createSignatureController(options) {
   const {
     win,
@@ -165,20 +188,7 @@ export function createSignatureController(options) {
   }
 
   function canSyncWithPlanning() {
-    try {
-      const publicDemoUntil = win.localStorage.getItem('planning:public-demo-until');
-      const publicDemo =
-        publicDemoUntil &&
-        Number.isFinite(Date.parse(publicDemoUntil)) &&
-        Date.now() <= Date.parse(publicDemoUntil);
-      const e2eDemo =
-        publicDemo ||
-        ((win.location.hostname === '127.0.0.1' || win.location.hostname === 'localhost') &&
-          win.localStorage.getItem('planning:e2e-demo-enabled') === '1');
-      return !e2eDemo;
-    } catch {
-      return false;
-    }
+    return planningApiAvailable(win, doc);
   }
 
   function syncSavedSignatureToPlanning(data, showConfirmation) {

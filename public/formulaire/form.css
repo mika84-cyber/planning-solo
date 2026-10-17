@@ -657,3 +657,11 @@
 
   /* « Vider » armé : un second appui efface la feuille. */
   #btnReset.armed{background:#b3261e!important;border-color:#b3261e!important;color:#fff!important}
+
+  /* Site autonome « Congé CP » : la page n'a pas de retour vers l'application,
+     la place réservée à sa pastille revient donc au choix du formulaire, qui
+     occupe toute la largeur. Sur Planning Solo, le bouton est là et rien ne
+     change. */
+  @media(max-width:760px){
+    .bar-in:not(:has(#btnBackApp)) .form-choice{padding-left:0}
+  }

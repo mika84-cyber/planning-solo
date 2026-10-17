@@ -1,7 +1,7 @@
 {
   "name": "Congé CP",
   "short_name": "Congé CP",
-  "description": "Congés, récupérations et annulations : remplir le formulaire et l'enregistrer en PDF.",
+  "description": "Congés, récupérations, échanges, remplacements de jour férié et annulations : remplir le formulaire et l'enregistrer en PDF.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

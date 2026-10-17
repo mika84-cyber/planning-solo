@@ -2,6 +2,10 @@
 <meta name="viewport" id="vpmeta" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="referrer" content="no-referrer">
+<!-- Déploiement : « same-origin » sur Planning Solo, où /api/calendar répond.
+     La construction du site autonome Congé CP y inscrit « none » : la page
+     s'y passe alors du compte et de la synchronisation. -->
+<meta name="planning-api" content="same-origin">
 <meta name="theme-color" content="#0b3baf">
 <link rel="manifest" href="app.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
@@ -30,7 +34,7 @@
       </div>
     </div>
     <div class="bar-actions">
-      <a class="btn secondary back-app-button" id="btnBackApp" href="/"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M5 12l6 6M5 12l6-6"/></svg><span>Revenir à l’application</span></a>
+      <!-- planning-solo-only:début --><a class="btn secondary back-app-button" id="btnBackApp" href="/"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M5 12l6 6M5 12l6-6"/></svg><span>Revenir à l’application</span></a><!-- planning-solo-only:fin -->
       <div class="form-tools" role="group" aria-label="Outils du formulaire">
         <button class="btn neutral" id="btnReset"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 20h-10.5l-4.21-4.3a1 1 0 0 1 0-1.41l10-10a1 1 0 0 1 1.41 0l5 5a1 1 0 0 1 0 1.41l-9.2 9.3M18 13.3l-6.3-6.3"/></svg><span>Vider</span></button>
         <button class="btn secondary" id="btnSecond"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2zM12 11v6M9 14h6"/></svg><span class="tool-long">Ajouter une feuille</span><span class="tool-short">Feuille</span></button>

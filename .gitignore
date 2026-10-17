@@ -17,6 +17,7 @@ demo-dist-*/
 demo-release-*/
 qa-pdf-dist/
 dist-pwa-e2e/
+dist-congecp/
 tmp/
 previews/
 video-frames/

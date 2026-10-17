@@ -199,6 +199,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   horaires recopiés chez le collègue via `mirror`), remplacement de jour férié
   (`form-bg-5.png`, calendrier limité aux fériés travaillés via `cal: 'holiday'`,
   date et horaires recopiés chez le collègue) et annulation.
+- `scripts/build-congecp.mjs` : site autonome « Congé CP » (congecp), déposé à
+  la main sur Netlify Drop. `npm run build:congecp` recopie
+  `public/formulaire/` dans `dist-congecp/`, retire les blocs
+  `planning-solo-only` de la page (le retour vers l'application), passe la
+  balise `planning-api` à « none » — la signature reste alors sur l'appareil,
+  sans appel à `/api/calendar` —, écrit un `_headers` reprenant les protections
+  de `netlify.toml` et date le cache du service worker. Tests dans
+  `congecpBuild.test.mjs`.
 
 ## PDF et PWA
 
@@ -208,7 +216,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   DOMPurify et canvg, optionnels dans jsPDF, ne sont pas livrés ; les méthodes
   `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
 - `scripts/minify-standalone.mjs` : compacte à la construction le formulaire
-  autonome (`public/formulaire`), copié tel quel par Vite.
+  autonome (`public/formulaire`), copié tel quel par Vite. Le compactage
+  lui-même vit dans `scripts/lib/compact-standalone.mjs`, partagé avec la
+  construction du site Congé CP.
 - `public/sw.js` : cache hors ligne et activation des mises à jour. À la
   construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
   version et remplit `PRECACHE` : code, styles, polices et images légères
