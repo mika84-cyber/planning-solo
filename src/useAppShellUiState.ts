@@ -34,7 +34,7 @@ export function useAppShellUiState() {
   const [showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf] = useState(false);
   const [showSchoolVacations, setShowSchoolVacationsState] = useState(() => {
     const saved = localStorage.getItem(SCHOOL_VACATIONS_VISIBLE_KEY);
-    return saved === "1" || (saved === null && import.meta.env.DEV && location.search.includes("local-test=1"));
+    return saved === "1" || (saved === null && import.meta.env.DEV && (location.search.includes("local-test=1") || import.meta.env.VITE_PREVIEW_DEMO === "true"));
   });
   const [schoolZone, setSchoolZoneState] = useState<SchoolZone>(() => {
     const saved = localStorage.getItem(SCHOOL_VACATIONS_ZONE_KEY);

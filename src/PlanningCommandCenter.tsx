@@ -252,7 +252,8 @@ export function PlanningCommandCenter({
               <span className="step-label">Calendrier</span>
               <h2 id="home-planning-title">Mon planning</h2>
             </div>
-            {onExportPdf ? <button type="button" className="soft-detail-button planning-export-pdf" disabled={exportingPdf} onClick={onExportPdf}>{exportingPdf ? "Création…" : "Plannings PDF"}</button> : null}
+            {/* Une flèche (dessinée en CSS) dit que le bouton ouvre un choix. */}
+            {onExportPdf ? <button type="button" className="soft-detail-button planning-export-pdf" aria-haspopup="dialog" disabled={exportingPdf} onClick={onExportPdf}>{exportingPdf ? "Création…" : "Choisir un planning"}</button> : null}
           </div>
         </section>
       ) : null}

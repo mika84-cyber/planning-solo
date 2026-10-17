@@ -289,6 +289,8 @@ export default function Home() {
     (import.meta.env.DEV &&
       localTestHost &&
       (new URLSearchParams(location.search).get("local-test") === "1" ||
+        // Le serveur « demo-solo » de l'aperçu ouvre toujours la démo sans compte.
+        import.meta.env.VITE_PREVIEW_DEMO === "true" ||
         (import.meta.env.VITE_E2E_DEMO === "true" &&
           localStorage.getItem("planning:e2e-demo-enabled") === "1")));
   const feedbackPreviewRole = import.meta.env.DEV && localTestHost
@@ -298,7 +300,7 @@ export default function Home() {
   const [now, setNow] = useState(() => localDate(2026, 6, 31));
   const [view, setView] = useState(() => localDate(2026, 6, 1));
   const [group, setGroup] = useState(2);
-  /** « Plannings PDF » du calendrier ouvre les plannings à imprimer. */
+  /** « Choisir un planning » du calendrier ouvre les plannings à imprimer. */
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const {
     authStatus, setAuthStatus, userEmail, setUserEmail,

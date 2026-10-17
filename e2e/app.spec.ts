@@ -592,7 +592,7 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   await expect(page.locator(".month-card")).toBeVisible();
   await expect(page.getByRole("button", { name: "Poser un congé" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Faire un échange" })).toBeVisible();
-  await planning.getByRole("button", { name: "Plannings PDF" }).click();
+  await planning.getByRole("button", { name: "Choisir un planning" }).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("dialog", { name: "Plannings PDF" }).getByRole("button", { name: /^Mon planning avec mes congés/ }).click();
   expect((await downloadPromise).suggestedFilename()).toBe("planning-2026-groupe-2-avec-conges.pdf");
