@@ -227,17 +227,13 @@ async function sectionDock(page: Page) {
 }
 
 /** Écart, en pixels, entre le centre du texte « MOIS — ANNÉE » et le centre de
- *  l’espace laissé entre les deux flèches violettes. Mesuré sur le texte lui-même :
- *  les boutons peuvent être plus larges que leur contenu. */
+ *  l’espace laissé entre les deux flèches violettes. Mesuré sur les deux
+ *  pastilles du mois et de l’année. */
 async function periodTextOffset(page: Page) {
   return page.evaluate(() => {
     const arrows = [...document.querySelectorAll(".period-navigation .period-step")].map((node) => node.getBoundingClientRect());
-    const texts = [...document.querySelectorAll(".period-pickers .choice-picker-trigger")].map((trigger) => {
-      const range = document.createRange();
-      range.selectNodeContents(trigger.querySelector("span") ?? trigger);
-      return range.getBoundingClientRect();
-    });
-    return (texts[0].left + texts[1].right) / 2 - (arrows[0].right + arrows[1].left) / 2;
+    const pills = [...document.querySelectorAll(".period-pickers .choice-picker-trigger")].map((trigger) => trigger.getBoundingClientRect());
+    return (pills[0].left + pills[1].right) / 2 - (arrows[0].right + arrows[1].left) / 2;
   });
 }
 
@@ -2514,12 +2510,15 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.getByText(/Programmation prévisionnelle/)).toHaveCount(0);
   await expect(page.locator(".grand-palais-program-panel .useful-expo-timeline-mark").first()).toBeHidden();
   const choices = page.locator(".grand-palais-primary-picker > button");
-  // Une liste en couleur : chaque espace a sa teinte, son liseré et son
-  // badge plein (bleu des Galeries 3 et 4).
+  // Une liste blanche : chaque espace a son liseré et son badge plein à sa
+  // couleur (bleu des Galeries 3 et 4) ; seul l'espace ouvert prend sa teinte.
   await expect(choices.first().locator("b")).toHaveCSS("background-color", "rgb(50, 111, 168)");
   await expect(choices.first()).toHaveCSS("border-left-color", "rgb(50, 111, 168)");
   expect(new Set(await choices.locator("b").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
-  expect(new Set(await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
+  expect(new Set(await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).borderLeftColor))).size).toBeGreaterThanOrEqual(4);
+  const rowBackgrounds = await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
+  expect(rowBackgrounds[0]).not.toBe(rowBackgrounds[1]);
+  expect(new Set(rowBackgrounds.slice(1)).size).toBe(1);
   await expect(choices).toHaveText([
     /Galeries 3 et 4.*au programme/,
     /Galerie 8.*au programme/,
@@ -3794,8 +3793,8 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     const nextArrowBox = await arrows.last().boundingBox();
     expect(previousArrowBox!.x).toBeLessThan(monthPickerBox!.x);
     expect(nextArrowBox!.x).toBeGreaterThan(yearPickerBox!.x + yearPickerBox!.width - 1);
-    // Les menus s'ouvrent au clic : pas de chevron à l'intérieur du cadre.
-    await expect(page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger svg")).toBeHidden();
+    // Deux pastilles distinctes, chacune avec son chevron.
+    await expect(page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger svg")).toBeVisible();
     await expect(page.locator(".month-toolbar .today-button")).toHaveCount(1);
   }
   expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
