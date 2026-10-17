@@ -604,17 +604,19 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
   }
-  // Le dock, sur tous les écrans : une capsule sombre en bas de l'écran. La
-  // rubrique en cours s'étire en pastille claire et montre son nom ; les
-  // autres ne gardent que leur icône.
+  // Le dock, sur tous les écrans : une capsule sombre en bas de l'écran.
+  // Chaque rubrique montre son nom ; la rubrique en cours se marque d'une
+  // pastille claire, derrière l'icône sur téléphone, derrière tout sur
+  // ordinateur.
   const dock = await sectionDock(page);
   const choices = dock.getByRole("button");
   await expect(choices.locator(":scope > span")).toHaveText(["Accueil", "Congés", "Ma paie", "Docs", "Expos", "Collègues"]);
   await expect(choices.first()).toHaveAttribute("aria-current", "page");
-  await expect(choices.first()).toHaveCSS("background-color", "rgb(255, 253, 249)");
+  const phone = (page.viewportSize()?.width ?? 1280) <= 720;
+  await expect(phone ? choices.first().locator("svg") : choices.first()).toHaveCSS("background-color", "rgb(255, 253, 249)");
   await expect(choices.nth(1)).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect.poll(() => choices.first().locator("span").evaluate((node) => node.getBoundingClientRect().width)).toBeGreaterThan(30);
-  expect(await choices.nth(1).locator("span").evaluate((node) => node.getBoundingClientRect().width)).toBe(0);
+  for (const index of [0, 1, 5])
+    expect(await choices.nth(index).locator("span").evaluate((node) => node.getBoundingClientRect().width)).toBeGreaterThan(20);
   const dockBoxes = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
   expect(dockBoxes.every((box) => box.width >= 38 && box.height >= 44)).toBe(true);
   expect(new Set(dockBoxes.map((box) => Math.round(box.y))).size).toBe(1);

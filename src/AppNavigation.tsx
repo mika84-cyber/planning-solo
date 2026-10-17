@@ -42,9 +42,9 @@ const SECTION_TABS = MAIN_SECTION_ORDER.map((key) => ({
   long: key === "home" ? "Accueil" : key === "leave" ? "Congés" : key === "pay" ? "Ma paie" : key === "pdf" ? "Documents" : key === "program" ? "Programme" : "Collègues",
 }));
 
-/** Le dock : une capsule sombre posée en bas de l'écran, avec les six
- *  rubriques en icônes. La rubrique ouverte s'étire pour montrer son nom ;
- *  les autres gardent le leur pour les lecteurs d'écran. */
+/** Le dock : une capsule sombre posée en bas de l'écran. Chaque rubrique
+ *  montre son icône et son nom ; la rubrique ouverte passe en pastille
+ *  claire. Sur petit écran, « Collègues » devient « Team ». */
 export function AdaptiveNavigation({ homeSection, onNavigate }: {
   homeSection: MainSection; onNavigate: (section: MainSection) => void; onMore: () => void; unreadFeedbackCount: number;
 }) {

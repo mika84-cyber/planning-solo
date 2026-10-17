@@ -229,9 +229,10 @@ describe("finitions d’interface", () => {
     expect(styles).not.toContain("#e4ecf7");
     expect(styles).not.toContain("#304f79");
     expect(styles).not.toContain("#4c5e76");
-    // Le dock : la rubrique en cours s'étire en pastille claire et montre son
-    // nom, avec un trait d'icône plus épais — la couleur seule ne suffisait pas.
-    expect(styles).toContain(".section-dock > button.active > span { max-width: 110px; opacity: 1; }");
+    // Le dock : chaque rubrique montre son nom ; la rubrique en cours passe en
+    // pastille claire, avec un trait d'icône plus épais — la couleur seule ne
+    // suffisait pas.
+    expect(styles).toContain(".section-dock > button.active { background: #fffdf9; color: var(--accent-strong); }");
     expect(styles).toContain(".section-dock > button.active svg { stroke-width: 2.3; }");
   });
 
