@@ -35,7 +35,7 @@ html[data-theme="dark"] .app-shell .expo-audioguide-qr { border-color: transpare
 html[data-theme="dark"] .expo-audioguide-qr img { filter: brightness(.92); }
 html[data-theme="dark"] .expo-audioguide-zoom { border-color: #1d1916; }
 html[data-theme="dark"] .expo-audioguide-body strong svg { color: color-mix(in srgb, var(--ag) 55%, #fff); }
-html[data-theme="dark"] .expo-audioguide-code b { background: color-mix(in srgb, var(--ag) 28%, #1d1916); color: color-mix(in srgb, var(--ag) 40%, #fff); }
+html[data-theme="dark"] .expo-audioguide-code b { border-color: rgba(255, 255, 255, 0.35); background: color-mix(in srgb, var(--ag) 28%, #1d1916); color: color-mix(in srgb, var(--ag) 40%, #fff); }
 html[data-theme="dark"] .expo-audioguide figure img { border-color: transparent; }
 /* Choisir un espace : la teinte de chaque espace, sur fond sombre. */
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 18%, #1d1916); }
