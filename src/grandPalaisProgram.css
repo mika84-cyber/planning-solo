@@ -573,30 +573,28 @@
 .grand-palais-check-report p { margin: 6px 0 2px; }
 .grand-palais-check-report ul { margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.45; }
 
-/* Veille du site, réservée à l'administrateur : une carte unie terracotta
-   pâle, le titre posé dessus, deux cases « Dernier contrôle » et
-   « Résultat » séparées par un trait net, puis le bouton. */
-.gp-watch { margin: 14px 0; border: 1px solid rgba(44, 38, 33, 0.45); border-radius: 18px; background: #f8e9e1; color: #4a1b0c; }
-.gp-watch-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 6px; color: #8a3a22; }
-.gp-watch-head svg { flex: none; width: 20px; height: 20px; }
-.gp-watch h3 { margin: 0; color: #4a1b0c; font-family: var(--font-display); font-size: 1.1rem; }
-.gp-watch-facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 4px 16px 0; }
-.gp-watch-facts > div { border: 1px solid rgba(138, 58, 34, 0.4); border-radius: 12px; padding: 9px 12px; }
-.gp-watch-facts dt { color: #7a4a38; font-size: 0.64rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
-.gp-watch-facts dd { margin: 4px 0 0; color: #4a1b0c; font-size: 0.86rem; font-weight: 800; }
+/* Veille du site, réservée à l'administrateur : une bande d'une ligne au
+   bleu ardoise de l'en-tête — titre et pastille de résultat, date du dernier
+   contrôle dessous, bouton rond à droite. Le compte rendu se déplie sous la
+   ligne quand il y a quelque chose à lire. */
+.gp-watch { margin: 14px 0; border: 1px solid #b9c7cb; border-radius: 18px; padding: 10px 12px; background: #eef2f3; color: #1f3238; }
+.gp-watch-row { display: flex; align-items: center; gap: 10px; }
+.gp-watch-row > svg { flex: none; width: 20px; height: 20px; color: #38555e; }
+.gp-watch-text { flex: 1 1 auto; min-width: 0; }
+.gp-watch-text h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; color: #1f3238; font-family: var(--font-display); font-size: 1rem; }
+.gp-watch-text small { display: block; margin-top: 2px; color: #4e656b; font-size: 0.76rem; font-weight: 650; }
 .gp-watch-time { white-space: nowrap; }
-.gp-watch-result { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 10px; background: #f1dcd1; font-size: 0.74rem; font-weight: 800; }
+.gp-watch-result { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 2px 9px; background: #dde5e8; color: #38555e; font-family: var(--font-body, inherit); font-size: 0.72rem; font-weight: 800; }
 .gp-watch-result svg { width: 13px; height: 13px; stroke-width: 2.4; }
 .gp-watch-result.is-clear { background: #dfeccf; color: #2f5a17; }
 .gp-watch-result.is-pending { background: #f6e7c4; color: #7a5410; }
-.gp-watch-body { padding: 0 16px 12px; }
-.gp-watch .gp-watch-message { margin: 10px 0 0; color: #4a1b0c; font-size: 0.84rem; }
-.gp-watch .grand-palais-check-report { color: #4a1b0c; }
-.gp-watch .grand-palais-check-report b { color: #4a1b0c; }
-.app-shell .gp-watch .grand-palais-check-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 12px; border: 0; border-radius: 999px; padding: 10px 14px; background: #8a3a22; color: #fff; font: inherit; font-size: 0.86rem; font-weight: 850; cursor: pointer; }
-.app-shell .gp-watch .grand-palais-check-button svg { width: 16px; height: 16px; stroke-width: 2.2; }
-.app-shell .gp-watch .grand-palais-check-button:disabled { background: #c9a796; cursor: progress; }
-.gp-watch-body > small { display: block; margin-top: 8px; color: #7a4a38; font-size: 0.72rem; text-align: center; }
+.app-shell .gp-watch .grand-palais-check-button { flex: none; display: grid; place-items: center; width: 40px; height: 40px; min-height: 0; margin: 0; border: 0; border-radius: 50%; padding: 0; background: #38555e; color: #fff; box-shadow: none; cursor: pointer; }
+.app-shell .gp-watch .grand-palais-check-button svg { width: 18px; height: 18px; stroke-width: 2.2; }
+.app-shell .gp-watch .grand-palais-check-button:disabled { background: #9fb0b5; cursor: progress; }
+.gp-watch-body { margin-top: 8px; padding-left: 30px; }
+.gp-watch .gp-watch-message { margin: 0; color: #1f3238; font-size: 0.84rem; }
+.gp-watch .grand-palais-check-report { color: #1f3238; }
+.gp-watch .grand-palais-check-report b { color: #1f3238; }
 
 /* Audioguide sur la fiche de l'exposition : une carte en deux colonnes
    presque égales, sur un dégradé en diagonale du pastel de la salle (plus

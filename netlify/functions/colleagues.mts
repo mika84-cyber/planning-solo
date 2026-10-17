@@ -35,6 +35,27 @@ type ColleagueBlock = {
   blockedName: string;
   createdAt: string;
 };
+/** Un échange proposé à un collègue : la journée du cycle de l'expéditeur
+ *  (le collègue y travaille à sa place) et la journée du cycle du collègue
+ *  (l'expéditeur y travaille). Accepté, il s'inscrit dans le planning du
+ *  collègue sans ressaisie. */
+type ExchangeRequest = {
+  id: string;
+  fromId: string;
+  fromName: string;
+  fromGroup: number;
+  toId: string;
+  toName: string;
+  agreementDate: string;
+  returnDate: string;
+  agreementStart: string;
+  agreementEnd: string;
+  returnStart: string;
+  returnEnd: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+  updatedAt: string;
+};
 
 const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers });
@@ -47,6 +68,10 @@ const blockerKey = (blockerId: string, blockedId: string) =>
   `colleagues/block/by-user/${encodeURIComponent(blockerId)}/${encodeURIComponent(blockedId)}`;
 const blockedKey = (blockedId: string, blockerId: string) =>
   `colleagues/block/against-user/${encodeURIComponent(blockedId)}/${encodeURIComponent(blockerId)}`;
+const exchangeToKey = (toId: string, id: string) => `colleagues/exchange/to/${encodeURIComponent(toId)}/${encodeURIComponent(id)}`;
+const exchangeFromKey = (fromId: string, id: string) => `colleagues/exchange/from/${encodeURIComponent(fromId)}/${encodeURIComponent(id)}`;
+const validDateKey = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+const validTime = (value: unknown) => typeof value === "string" && /^(\d{2}:\d{2})?$/.test(value) ? value : "";
 const identityDirectorySyncKey = "colleagues/meta/identity-directory-sync";
 const IDENTITY_DIRECTORY_SYNC_TTL_MS = 5 * 60 * 1000;
 const validUserId = (value: unknown): value is string =>
@@ -102,6 +127,47 @@ async function removeBlock(store: Store, blockerId: string, blockedId: string) {
     store.delete(blockerKey(blockerId, blockedId)),
     store.delete(blockedKey(blockedId, blockerId)),
   ]);
+}
+
+async function writeExchangeRequest(store: Store, request: ExchangeRequest) {
+  await Promise.all([
+    store.setJSON(exchangeToKey(request.toId, request.id), request),
+    store.setJSON(exchangeFromKey(request.fromId, request.id), request),
+  ]);
+}
+
+async function removeExchangeRequest(store: Store, request: ExchangeRequest) {
+  await Promise.all([
+    store.delete(exchangeToKey(request.toId, request.id)),
+    store.delete(exchangeFromKey(request.fromId, request.id)),
+  ]);
+}
+
+/** Inscrit l'échange accepté dans le planning du collègue : il travaille la
+ *  journée de l'expéditeur, se repose la sienne. */
+async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
+  const now = new Date().toISOString();
+  const days: Array<[string, "return" | "given", string]> = [
+    [request.agreementDate, "return", request.returnDate],
+    [request.returnDate, "given", request.agreementDate],
+  ];
+  const entries = await Promise.all(days.map(([date]) =>
+    store.get(userDataKey(request.toId, `entry/${date}`), { type: "json" }) as Promise<Record<string, unknown> | null>));
+  for (const entry of entries) {
+    if (entry?.exchange_id && entry.exchange_id !== request.id) return "Une de vos journées appartient déjà à un autre échange.";
+    if (entry?.leave === true) return "Une de vos journées comporte déjà un congé.";
+  }
+  await Promise.all(days.map(([date, role, otherDate], index) => store.setJSON(userDataKey(request.toId, `entry/${date}`), {
+    date, note_text: "", note_color: "#D3943D", note_updated_at: "", note_group_id: "", leave: false, wish: false,
+    ...(entries[index] || {}),
+    exchange_id: request.id,
+    exchange_role: role,
+    exchange_partner: request.fromName,
+    exchange_partner_group: request.fromGroup,
+    exchange_other_date: otherDate,
+    updated_at: now,
+  })));
+  return "";
 }
 
 async function readProfile(store: Store, userId: string) {
@@ -182,7 +248,7 @@ async function directoryResponse(store: Store, userId: string, email: string) {
   const privileged = await isMikaSharingAccount(email);
   if (privileged) await ensureIdentityDirectory(store);
   await ensureProfile(store, userId, email);
-  const [self, profiles, incoming, outgoing, blockedByMe, blockedMe, groups] = await Promise.all([
+  const [self, profiles, incoming, outgoing, blockedByMe, blockedMe, groups, exchangesIn, exchangesOut] = await Promise.all([
     readProfile(store, userId),
     readMany<PublicProfile>(store, "colleagues/profile/"),
     readMany<Share>(store, `colleagues/share/viewer/${encodeURIComponent(userId)}/`),
@@ -190,6 +256,8 @@ async function directoryResponse(store: Store, userId: string, email: string) {
     readMany<ColleagueBlock>(store, `colleagues/block/by-user/${encodeURIComponent(userId)}/`),
     readMany<ColleagueBlock>(store, `colleagues/block/against-user/${encodeURIComponent(userId)}/`),
     readGroups(adminStore()),
+    readMany<ExchangeRequest>(store, `colleagues/exchange/to/${encodeURIComponent(userId)}/`),
+    readMany<ExchangeRequest>(store, `colleagues/exchange/from/${encodeURIComponent(userId)}/`),
   ]);
   const excludedIds = new Set([
     ...blockedByMe.map((block) => block.blockedId),
@@ -217,6 +285,11 @@ async function directoryResponse(store: Store, userId: string, email: string) {
     blocked: blockedByMe
       .map((block) => ({ userId: block.blockedId, displayName: block.blockedName }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName, "fr")),
+    // Les échanges proposés : à accepter pour les reçus, répondus pour les envoyés.
+    exchangeRequests: {
+      incoming: exchangesIn.filter((item) => item.status === "pending").sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      outgoing: exchangesOut.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    },
   });
 }
 
@@ -442,6 +515,51 @@ export default async (request: Request) => {
     const viewerId = body.viewerId;
     if (!validUserId(viewerId)) return json({ error: "Partage invalide." }, 400);
     await removeShare(store, user.id, viewerId);
+    return directoryResponse(store, user.id, user.email);
+  }
+
+  if (action === "propose-exchange") {
+    const id = body.id, partnerId = body.partnerId, fromGroup = Number(body.group);
+    if (!validUserId(id) || !validUserId(partnerId) || partnerId === user.id) return json({ error: "Échange invalide." }, 400);
+    if (!validDateKey(body.agreementDate) || !validDateKey(body.returnDate) || body.agreementDate === body.returnDate || ![1, 2, 3].includes(fromGroup))
+      return json({ error: "Échange invalide." }, 400);
+    const [sender, partner, blockedByPartner] = await Promise.all([
+      ensureProfile(store, user.id, user.email),
+      readProfile(store, partnerId),
+      store.get(blockerKey(partnerId, user.id), { type: "json" }),
+    ]);
+    if (!partner || !partner.visible || blockedByPartner) return json({ error: "Ce collègue n’est pas disponible." }, 404);
+    const existing = (await store.get(exchangeFromKey(user.id, id), { type: "json" })) as ExchangeRequest | null;
+    await writeExchangeRequest(store, {
+      id, fromId: user.id, fromName: sender.displayName, fromGroup, toId: partnerId, toName: partner.displayName,
+      agreementDate: body.agreementDate, returnDate: body.returnDate,
+      agreementStart: validTime(body.agreementStart), agreementEnd: validTime(body.agreementEnd),
+      returnStart: validTime(body.returnStart), returnEnd: validTime(body.returnEnd),
+      status: "pending", createdAt: existing?.createdAt || now, updatedAt: now,
+    });
+    return directoryResponse(store, user.id, user.email);
+  }
+
+  if (action === "respond-exchange") {
+    const id = body.id;
+    if (!validUserId(id)) return json({ error: "Échange invalide." }, 400);
+    const request = (await store.get(exchangeToKey(user.id, id), { type: "json" })) as ExchangeRequest | null;
+    if (!request || request.status !== "pending") return json({ error: "Proposition introuvable." }, 404);
+    if (body.response === "accept") {
+      const problem = await applyExchangeToCalendar(store, request);
+      if (problem) return json({ error: problem }, 409);
+      await writeExchangeRequest(store, { ...request, status: "accepted", updatedAt: now });
+    } else if (body.response === "decline") {
+      await writeExchangeRequest(store, { ...request, status: "declined", updatedAt: now });
+    } else return json({ error: "Réponse invalide." }, 400);
+    return directoryResponse(store, user.id, user.email);
+  }
+
+  if (action === "clear-exchange-request") {
+    const id = body.id;
+    if (!validUserId(id)) return json({ error: "Échange invalide." }, 400);
+    const request = (await store.get(exchangeFromKey(user.id, id), { type: "json" })) as ExchangeRequest | null;
+    if (request) await removeExchangeRequest(store, request);
     return directoryResponse(store, user.id, user.email);
   }
 

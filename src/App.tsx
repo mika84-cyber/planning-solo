@@ -46,6 +46,8 @@ const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 const DayDetailDialog = lazy(() => import("./DayDetailDialog").then((module) => ({ default: module.DayDetailDialog })));
 const LongAbsenceNotice = lazy(() => import("./LongAbsenceNotice").then((module) => ({ default: module.LongAbsenceNotice })));
+// « Faire un échange » ne sert qu'à la demande : chargée à l'ouverture.
+const WorkExchangeDialog = lazy(() => import("./WorkExchangeDialog").then((module) => ({ default: module.WorkExchangeDialog })));
 const HomeDashboard = lazy(() =>
   homeDashboardModule.then(({ HomeDashboard: Component }) => ({ default: Component })),
 );
@@ -115,7 +117,6 @@ import { PlanningCommandCenter } from "./PlanningCommandCenter";
 import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
 import { PlanningDayCell } from "./PlanningDayCell";
 import { MonthCalendar } from "./PlanningView";
-import { WorkExchangeDialog } from "./WorkExchangeDialog";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
@@ -2789,6 +2790,20 @@ export default function Home() {
             setHomeSection("colleagues");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
+          onExchangeAccepted={(request) => {
+            // L'échange accepté : en démo il s'inscrit sur place ; sinon le
+            // serveur l'a posé dans le planning, qui se relit.
+            if (!demoMode) { void loadCalendar().catch(() => undefined); return; }
+            const fields = exchangeEntryFields({
+              id: request.id, partnerName: request.fromName, partnerGroup: request.fromGroup,
+              agreementDate: request.returnDate, returnDate: request.agreementDate,
+            });
+            setEntries((current) => {
+              const next = { ...current };
+              for (const [date, values] of Object.entries(fields)) next[date] = { ...(next[date] || emptyEntry()), ...values };
+              return next;
+            });
+          }}
         />
       </Suspense>
 
@@ -3032,7 +3047,6 @@ export default function Home() {
       {homeSection === "pdf" || homeSection === "forms" ? (
         <Suspense fallback={<DeferredSection label="vos contacts et formulaires" />}>
         <UsefulResourcesHub
-          initialTab={homeSection === "pdf" ? undefined : "forms"}
           forms={(
             <UsefulFormsSection
               key={adminRevision}
@@ -3242,7 +3256,7 @@ export default function Home() {
         />
       </section>
       {homeSection === "home" ? (
-        <WorkExchangePanel exchanges={workExchanges} group={group} onEdit={editWorkExchange} />
+        <WorkExchangePanel exchanges={workExchanges} group={group} today={dateKey(now)} onEdit={editWorkExchange} />
       ) : null}
       {homeSection === "home" ? (
         <div className="planning-calendar-cleanup-row">
@@ -3266,18 +3280,22 @@ export default function Home() {
         </>
       ) : null}
       </div>
-      <WorkExchangeDialog
-        open={workExchangeUi.open}
-        demoMode={demoMode}
-        group={group}
-        draft={workExchangeUi.draft}
-        setDraft={workExchangeUi.setDraft}
-        error={workExchangeUi.error}
-        saving={workExchangeUi.saving}
-        onClose={workExchangeUi.close}
-        onSave={() => void workExchangeUi.save()}
-        onDelete={() => void workExchangeUi.remove()}
-      />
+      {workExchangeUi.open ? (
+        <Suspense fallback={null}>
+          <WorkExchangeDialog
+            open
+            demoMode={demoMode}
+            group={group}
+            draft={workExchangeUi.draft}
+            setDraft={workExchangeUi.setDraft}
+            error={workExchangeUi.error}
+            saving={workExchangeUi.saving}
+            onClose={workExchangeUi.close}
+            onSave={() => void workExchangeUi.save()}
+            onDelete={() => void workExchangeUi.remove()}
+          />
+        </Suspense>
+      ) : null}
       {requestChooser ? (
         <Suspense fallback={null}>
         <RequestChooserDialog

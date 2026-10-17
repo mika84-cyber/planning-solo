@@ -952,40 +952,26 @@ async function openUsefulResource(page: Page, name: "Formulaires" | "Contacts") 
   await page.getByRole("tab", { name: new RegExp(`^${name}`) }).click();
 }
 
-test("les documents et contacts gardent deux onglets accessibles sur petit écran et Z Fold ouvert", async ({ page }) => {
+test("les documents s’ouvrent directement sur les formulaires, Contacts à côté, sur petit écran et Z Fold ouvert", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "documents");
-  const cards = page.locator(".useful-resource-tab");
-  const boxes = await cards.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
-  // Une liste : chaque rubrique a sa vignette de même taille, son titre et ce
-  // qu'on y trouve.
-  const arts = await page.locator(".useful-resource-tab-art svg").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
-  expect(arts).toHaveLength(2);
-  for (const art of arts.slice(1)) expect(Math.abs(art.height - arts[0].height)).toBeLessThan(2);
-  await expect(cards.locator(".useful-resource-tab-copy small")).toHaveCount(2);
-  if (page.viewportSize()!.width <= 720) {
-    // Sur téléphone, les rubriques s'empilent, chacune sur toute la largeur.
-    expect(boxes[1].y).toBeGreaterThan(boxes[0].y + boxes[0].height);
-    expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThan(2);
-    expect(boxes[0].width).toBeGreaterThan(page.viewportSize()!.width * 0.85);
-  } else if (page.viewportSize()!.width >= 900) {
-    // Sur grand écran, les deux tiennent sur une ligne.
-    expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(3);
-  }
-  await page.getByRole("tab", { name: "Formulaires" }).click();
+  // Pas d'écran d'entrée : les dossiers de formulaires sont là d'emblée.
   await expect(page.getByRole("tabpanel", { name: "Formulaires" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Toutes les rubriques" })).toBeVisible();
-  // Rubrique ouverte : un sélecteur segmenté, seul l'onglet choisi est coloré.
+  await expect(page.getByRole("button", { name: /Formulaire SAP/ })).toBeVisible();
+  await expect(page.getByText("Choisir une rubrique")).toHaveCount(0);
+  // Un sélecteur segmenté : seul l'onglet choisi est coloré, pas de vignette.
   await expect(page.getByRole("tab", { name: "Formulaires" })).toHaveCSS("background-color", await cssTokenRgb(page, "--accent"));
   await expect(page.getByRole("tab", { name: "Contacts" })).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  expect(await page.locator(".has-active-resource .useful-resource-tab-art").evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).display === "none"))).toBe(true);
+  await expect(page.locator(".useful-resource-tab-art")).toHaveCount(0);
+  const tabs = await page.locator(".useful-resource-tab").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  expect(Math.abs(tabs[0].y - tabs[1].y)).toBeLessThan(2);
   await expect(page.locator(".resource-folder-list > button i")).toHaveCount(0);
   await page.getByRole("button", { name: /Formulaire Expo/ }).click();
   await expect(page.locator(".useful-forms-folder-header")).toHaveCSS("background-image", "none");
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
-  await page.getByRole("button", { name: "Toutes les rubriques" }).click();
-  await expect(page.getByRole("tabpanel")).toHaveCount(0);
-  await expect(page.locator(".useful-resource-tab-art").first()).toBeVisible();
+  await page.getByRole("tab", { name: "Contacts" }).click();
+  await expect(page.getByRole("tabpanel", { name: "Contacts" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Contacts Pompidou/ })).toBeVisible();
 });
 
 async function swipeMainSection(page: Page, fromX: number, toX: number) {
@@ -1324,6 +1310,25 @@ test("l’aide au partage reste dépliée, puis les réglages s’ouvrent depuis
     expect(shareBox!.y).toBeGreaterThan(boardBox!.y + boardBox!.height);
   }
   await expect(page.locator(".colleague-more-list")).toHaveCount(0);
+});
+
+test("un échange proposé par un collègue s’accepte d’un geste et s’inscrit dans le planning", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("planning:e2e-demo-enabled", "1");
+    localStorage.setItem("planning:guide-seen-v1:demo", "1");
+  });
+  await page.goto("/?demo-exchange-request=1");
+  const dialog = page.getByRole("dialog", { name: "Camille Durand vous propose un échange" });
+  await expect(dialog).toContainText(/Vous travaillez à sa place le \w+ \d+ \w+ 2\d{3}, de 10 h à 18 h\./);
+  await expect(dialog).toContainText("Camille Durand vous remplace le");
+  await dialog.getByRole("button", { name: "Accepter", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  // L'échange est dans le planning, sans rien ressaisir.
+  await expect(page.getByRole("heading", { name: "Mes échanges" })).toBeVisible();
+  const card = page.locator(".work-exchange-list article").first();
+  await expect(card.locator("header")).toContainText("Camille DurandGroupe 1");
+  await expect(card.locator("li.exchange-return p")).toContainText("Vous la remplacez");
+  await expect(card.locator("li.exchange-given p")).toContainText("Camille Durand vous remplace");
 });
 
 test("une invitation acceptée propose le partage en retour", async ({ page }) => {
@@ -3627,6 +3632,9 @@ test("un férié peut être simplement remplacé, sans férié rendu ni seconde 
 
 test("l’en-tête et les années sont confortables", async ({ page }, testInfo) => {
   await prepareDemo(page);
+  // Les rubriques chargées à la demande déplacent le contenu en arrivant :
+  // les mesures attendent qu'elles soient toutes en place.
+  await expect(page.locator(".deferred-section-loading")).toHaveCount(0);
   const header = page.locator(".top-header");
   const update = page.locator(".top-header .header-update-button");
   const account = page.getByRole("button", { name: "Compte" });
@@ -3660,7 +3668,10 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(calendarSectionBox).not.toBeNull();
     expect(calendarGridBox).not.toBeNull();
     expect(deleteButtonBox!.width).toBeGreaterThan(calendarSectionBox!.width * 0.95);
-    expect(deleteButtonBox!.y).toBeGreaterThanOrEqual(calendarGridBox!.y + calendarGridBox!.height);
+    await expect.poll(async () => {
+      const [button, grid] = await Promise.all([page.locator(".calendar-bulk-delete-below").boundingBox(), page.locator(".month-card .calendar-grid").boundingBox()]);
+      return button && grid ? button.y >= grid.y + grid.height : false;
+    }).toBe(true);
   }
   const planningTodayBox = await page.locator(".planning-today-button").boundingBox();
   expect(planningTodayBox).not.toBeNull();
@@ -3695,9 +3706,14 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(leaveBox).not.toBeNull();
     // Les cartes côte à côte, de même largeur et de même hauteur, la
     // journée en premier.
-    expect(nextWorkBox!.x).toBeGreaterThanOrEqual(statusBox!.x + statusBox!.width - 1);
-    expect(leaveBox!.x).toBeGreaterThanOrEqual(nextWorkBox!.x + nextWorkBox!.width - 1);
-    expect(Math.abs(statusBox!.y - leaveBox!.y)).toBeLessThanOrEqual(1);
+    await expect.poll(async () => {
+      const [status, nextWork, leave] = await Promise.all([
+        page.locator(".today-status").boundingBox(), page.locator(".today-next-work").boundingBox(), page.locator(".today-leave-balance").boundingBox(),
+      ]);
+      return Boolean(status && nextWork && leave
+        && nextWork.x >= status.x + status.width - 1 && leave.x >= nextWork.x + nextWork.width - 1
+        && Math.abs(status.y - leave.y) <= 1);
+    }).toBe(true);
     expect(Math.abs(statusBox!.height - leaveBox!.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
   } else {

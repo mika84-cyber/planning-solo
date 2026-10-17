@@ -35,17 +35,20 @@ describe("veille du site du Grand Palais", () => {
     expect(stale).not.toContain("Paris Photo");
   });
 
-  it("range la date et le résultat dans deux cases, le résultat en pastille", () => {
+  it("tient sur une ligne : le résultat en pastille près du titre, la date dessous, le bouton rond nommé", () => {
     const html = renderToStaticMarkup(
       <GrandPalaisCheckPanel lastCheckedAt={report.checkedAt} report={report} onPayload={vi.fn()} />,
     );
     expect(html).toContain("Dernier contrôle");
-    expect(html).toContain("Résultat");
     expect(html).toMatch(/gp-watch-result is-pending">1 mise à jour ajoutée · 1 à valider</);
+    expect(html).toContain('aria-label="Contrôler maintenant"');
     const clear = renderToStaticMarkup(
       <GrandPalaisCheckPanel lastCheckedAt={report.checkedAt} report={{ ...report, prices: [], proposals: [] }} onPayload={vi.fn()} />,
     );
     expect(clear).toMatch(/gp-watch-result is-clear">.*Rien de nouveau</);
-    expect(clear).toContain("Contrôle automatique chaque nuit à minuit");
+    expect(clear).toContain("<br/>Contrôle automatique chaque nuit à minuit");
+    // Rien à lire : pas de bloc sous la ligne.
+    expect(clear).not.toContain("gp-watch-body");
+    expect(renderToStaticMarkup(<GrandPalaisCheckPanel onPayload={vi.fn()} />)).toContain("Aucun contrôle pour l’instant");
   });
 });

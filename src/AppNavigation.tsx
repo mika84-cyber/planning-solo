@@ -245,7 +245,7 @@ const MENU_PAGES: ReadonlyArray<{ key: MainSection; titre: string; detail: strin
   { key: "home", titre: "Accueil", detail: "Aujourd’hui, le planning du mois et vos notes" },
   { key: "leave", titre: "Congés et récupérations", detail: "Soldes, CET, heures supplémentaires" },
   { key: "pay", titre: "Ma paie", detail: "Estimation, primes et vérification du bulletin" },
-  { key: "pdf", titre: "Documents et contacts", detail: "Plannings PDF, formulaires et annuaire" },
+  { key: "pdf", titre: "Documents et contacts", detail: "Formulaires et annuaire" },
   { key: "program", titre: "Programme GP", detail: "Expositions et fermetures exceptionnelles" },
   { key: "colleagues", titre: "Planning partagé", detail: "Les jours de présence des collègues, par nom" },
 ];

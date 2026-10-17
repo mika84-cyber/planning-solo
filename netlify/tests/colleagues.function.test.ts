@@ -262,6 +262,56 @@ describe("partage des plannings entre collègues", () => {
     expect((await colleaguesHandler(new Request("https://example.test/api/colleagues?ownerId=user-a"))).status).toBe(200);
   });
 
+  it("propose un échange à un collègue qui l’accepte : il s’inscrit dans son planning sans ressaisie", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît");
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "user-a@example.test" } as never);
+    const proposed = await colleaguesHandler(post({
+      action: "propose-exchange", id: "exchange-1", partnerId: "user-b", group: 2,
+      agreementDate: "2026-11-03", returnDate: "2026-11-10", agreementStart: "10:00", agreementEnd: "18:00", returnStart: "", returnEnd: "",
+    }));
+    expect(proposed.status).toBe(200);
+    expect((await proposed.json()).exchangeRequests.outgoing[0]).toMatchObject({ toName: "Benoît", status: "pending" });
+
+    mockedGetUser.mockResolvedValue({ id: "user-b", email: "user-b@example.test" } as never);
+    const seen = await (await colleaguesHandler(new Request("https://example.test/api/colleagues"))).json();
+    expect(seen.exchangeRequests.incoming[0]).toMatchObject({ id: "exchange-1", fromName: "Alice", agreementDate: "2026-11-03", agreementStart: "10:00" });
+    // Une note déjà posée ce jour-là est conservée.
+    data.set("user/user-b/entry/2026-11-10", { date: "2026-11-10", note_text: "Dentiste", leave: false, wish: false, updated_at: "v1" });
+    const accepted = await colleaguesHandler(post({ action: "respond-exchange", id: "exchange-1", response: "accept" }));
+    expect(accepted.status).toBe(200);
+    // Benoît travaille la journée d'Alice, se repose la sienne.
+    expect(data.get("user/user-b/entry/2026-11-03")).toMatchObject({ exchange_id: "exchange-1", exchange_role: "return", exchange_partner: "Alice", exchange_partner_group: 2, exchange_other_date: "2026-11-10" });
+    expect(data.get("user/user-b/entry/2026-11-10")).toMatchObject({ exchange_role: "given", note_text: "Dentiste", exchange_other_date: "2026-11-03" });
+    expect((await accepted.json()).exchangeRequests.incoming).toEqual([]);
+
+    // Alice voit la réponse, puis la range.
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "user-a@example.test" } as never);
+    const result = await (await colleaguesHandler(new Request("https://example.test/api/colleagues"))).json();
+    expect(result.exchangeRequests.outgoing[0]).toMatchObject({ status: "accepted" });
+    await colleaguesHandler(post({ action: "clear-exchange-request", id: "exchange-1" }));
+    expect(data.has("colleagues/exchange/from/user-a/exchange-1")).toBe(false);
+    expect(data.has("colleagues/exchange/to/user-b/exchange-1")).toBe(false);
+  });
+
+  it("refuse d’inscrire un échange sur une journée déjà prise, et retient un refus", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît");
+    const request = {
+      id: "exchange-2", fromId: "user-a", fromName: "Alice", fromGroup: 2, toId: "user-b", toName: "Benoît",
+      agreementDate: "2026-11-03", returnDate: "2026-11-10", agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "",
+      status: "pending", createdAt: "2026-10-01", updatedAt: "2026-10-01",
+    };
+    data.set("colleagues/exchange/to/user-b/exchange-2", request);
+    data.set("colleagues/exchange/from/user-a/exchange-2", request);
+    data.set("user/user-b/entry/2026-11-03", { date: "2026-11-03", exchange_id: "autre", exchange_role: "given", leave: false, wish: false, updated_at: "v1" });
+    mockedGetUser.mockResolvedValue({ id: "user-b", email: "user-b@example.test" } as never);
+    const blocked = await colleaguesHandler(post({ action: "respond-exchange", id: "exchange-2", response: "accept" }));
+    expect(blocked.status).toBe(409);
+    expect(data.get("colleagues/exchange/to/user-b/exchange-2")).toMatchObject({ status: "pending" });
+    expect((await colleaguesHandler(post({ action: "respond-exchange", id: "exchange-2", response: "decline" }))).status).toBe(200);
+    expect(data.get("colleagues/exchange/from/user-a/exchange-2")).toMatchObject({ status: "declined" });
+    expect(data.get("user/user-b/entry/2026-11-10")).toBeUndefined();
+  });
+
   it("permet au destinataire de supprimer son accès", async () => {
     profile("user-a", "Alice"); profile("user-b", "Benoît");
     data.set("colleagues/share/viewer/user-b/user-a", {

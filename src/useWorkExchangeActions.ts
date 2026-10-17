@@ -2,6 +2,8 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { Entries, FormProfile, LeavePeriod, WorkExchange } from "./appModel";
 import { emptyEntry } from "./appModel";
 import { calendarErrorMessage, postCalendar } from "./calendarApi";
+import { findColleagueAccount } from "./colleagueNames";
+import { getColleagueDirectory, updateColleagueSharing } from "./colleagueSharingApi";
 import type { RecoveryUse } from "./overtime";
 import { fromKey, getDayInfo } from "./planningLogic";
 import {
@@ -201,6 +203,9 @@ export function useWorkExchangeActions({
         : previous ? "L’échange a été modifié sur ses deux dates." : "L’échange a été enregistré sur ses deux dates.");
       const { id, partnerName, partnerGroup, agreementDate, returnDate } = nextDraft;
       if (demoMode) storeDemoExchange(id, { id, partnerName, partnerGroup, agreementDate, returnDate });
+      /* Le collègue a un compte dans l'annuaire : l'échange lui est proposé,
+         pour qu'il l'accepte d'un geste et l'ait dans son planning. */
+      if (!demoMode && returnDate) await proposeToColleague(nextDraft).catch(() => undefined);
       /* La demande s'ouvre aussitôt, remplie avec ces dates : la demande
          d'échange, ou pour un férié la demande de remplacement. */
       try {
@@ -219,6 +224,18 @@ export function useWorkExchangeActions({
     } finally {
       setSaving(false);
     }
+  }
+
+  async function proposeToColleague(saved: WorkExchangeDraft) {
+    const directory = await getColleagueDirectory();
+    const account = findColleagueAccount(saved.partnerName, directory.directory);
+    if (!account) return;
+    await updateColleagueSharing({
+      action: "propose-exchange", id: saved.id, partnerId: account.userId, group,
+      agreementDate: saved.agreementDate, returnDate: saved.returnDate,
+      agreementStart: saved.agreementStart, agreementEnd: saved.agreementEnd,
+      returnStart: saved.returnStart, returnEnd: saved.returnEnd,
+    });
   }
 
   async function remove() {

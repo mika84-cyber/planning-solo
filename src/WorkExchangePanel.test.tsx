@@ -33,4 +33,18 @@ describe("WorkExchangePanel", () => {
     expect(html).toContain("Camille vous remplace : Jour de l’an");
     expect(html).toContain("/holiday-exchange.png");
   });
+
+  it("replie les échanges passés sous la liste et ne compte que ceux à venir", () => {
+    const html = renderToStaticMarkup(<WorkExchangePanel
+      today="2026-10-18"
+      exchanges={[
+        { id: "futur", partnerName: "Camille", partnerGroup: 1, agreementDate: "2026-11-03", returnDate: "2026-11-10", updatedAt: "" },
+        { id: "passe", partnerName: "Adriana", partnerGroup: 3, agreementDate: "2026-09-18", returnDate: "2026-09-15", updatedAt: "" },
+      ]}
+      onEdit={() => undefined} />);
+    expect(html).toContain("<strong>1</strong>");
+    expect(html).toContain("Échanges passés · 1");
+    expect(html.indexOf("Camille")).toBeLessThan(html.indexOf("<details"));
+    expect(html.indexOf("Adriana")).toBeGreaterThan(html.indexOf("<details"));
+  });
 });

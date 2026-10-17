@@ -923,6 +923,10 @@
   width: 30%;
   height: 30%;
 }
+/* Un jour à note : le ruban occupe le haut de la case, le repère d'échange
+   descend juste dessous au lieu de le couper. */
+.app-shell .day.has-note .exchange-calendar-marker { top: 12px; }
+.app-shell .mini-day.has-note .exchange-calendar-marker.compact { top: 7px; }
 
 .exchange-calendar-label {
   position: absolute;
@@ -1151,6 +1155,19 @@
 .work-exchange-list article button:hover {
   background: #f4ede4;
 }
+/* Poser un congé : le panneau, au-dessus du calendrier, grandit à chaque
+   date touchée (résumé, boutons). Sans cette règle, le navigateur garde le
+   panneau en place et le calendrier descend sous le doigt ; en l'excluant de
+   l'ancrage, c'est le calendrier qui reste fixe. */
+.calendar-request-panel { overflow-anchor: none; }
+/* Les échanges passés, repliés sous la liste. */
+.work-exchange-empty { margin: 12px 0 0; color: var(--muted); font-size: 0.86rem; }
+.work-exchange-history { margin-top: 12px; }
+.work-exchange-history > summary { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.84rem; font-weight: 800; list-style: none; cursor: pointer; }
+.work-exchange-history > summary::-webkit-details-marker { display: none; }
+.work-exchange-history > summary::before { content: ""; width: 6px; height: 6px; margin-left: 2px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); }
+.work-exchange-history[open] > summary::before { transform: rotate(45deg); }
+.work-exchange-history > .work-exchange-list { margin-top: 10px; opacity: 0.88; }
 
 
 fieldset.leave-choices {
@@ -1187,6 +1204,8 @@ fieldset.leave-choices {
     background: transparent;
     box-shadow: none;
   }
+
+  .app-shell .day.has-note .exchange-calendar-marker:not(.compact) { top: 9px; }
 
   .day .exchange-calendar-label {
     top: auto;

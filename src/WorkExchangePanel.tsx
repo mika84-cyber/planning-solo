@@ -38,17 +38,55 @@ function chronologicalDetails(exchange: WorkExchange, group: number) {
   ].sort((first, second) => first.date.localeCompare(second.date));
 }
 
+/** Un échange est passé quand sa dernière journée est derrière nous. */
+function lastDay(exchange: WorkExchange) {
+  return exchange.returnDate > exchange.agreementDate ? exchange.returnDate : exchange.agreementDate;
+}
+
+function ExchangeCard({ exchange, group, onEdit }: { exchange: WorkExchange; group: number; onEdit: (exchange: WorkExchange) => void }) {
+  // Un échange de fériés : les flèches entourent un dollar.
+  const holidayExchange = Boolean(getDayInfo(fromKey(exchange.agreementDate), 1).holiday);
+  return (
+    <article className={holidayExchange ? "holiday-exchange" : undefined}>
+      <header>
+        <img src={holidayExchange ? "/holiday-exchange.png" : "/exchange-arrows.png"} alt="" aria-hidden="true" />
+        <div>
+          <strong>{exchange.partnerName}</strong>
+          <small className={`work-exchange-group group-${exchange.partnerGroup}`}>Groupe {exchange.partnerGroup}</small>
+        </div>
+        <button type="button" onClick={() => onEdit(exchange)} aria-label={`Modifier ${exchange.returnDate ? "l’échange" : "le remplacement"} avec ${exchange.partnerName}`}>Modifier</button>
+      </header>
+      <ol>
+        {chronologicalDetails(exchange, group).map((detail) => (
+          <li key={detail.date} className={`exchange-${detail.role}`}>
+            <b aria-hidden="true">{detail.tag}</b>
+            <p>{detail.label}</p>
+          </li>
+        ))}
+      </ol>
+    </article>
+  );
+}
+
 export function WorkExchangePanel({
   exchanges,
   group = 0,
+  today = "",
   onEdit,
 }: {
   exchanges: WorkExchange[];
   /** Votre groupe : un échange de formations se lit sur votre cycle. */
   group?: number;
+  /** La date du jour (AAAA-MM-JJ) : les échanges passés se replient. */
+  today?: string;
   onEdit: (exchange: WorkExchange) => void;
 }) {
   if (!exchanges.length) return null;
+  // Les échanges à venir en tête ; les passés, repliés, du plus récent au
+  // plus ancien, pour retrouver qui a remplacé qui dans l'année.
+  const upcoming = exchanges.filter((exchange) => !today || lastDay(exchange) >= today);
+  const past = exchanges.filter((exchange) => today && lastDay(exchange) < today)
+    .sort((first, second) => lastDay(second).localeCompare(lastDay(first)));
   return (
     <section className="work-exchange-panel" aria-labelledby="work-exchanges-title">
       <div className="work-exchange-panel-heading">
@@ -56,34 +94,21 @@ export function WorkExchangePanel({
           <span className="step-label">Organisation entre collègues</span>
           <h2 id="work-exchanges-title">Mes échanges</h2>
         </div>
-        <strong>{exchanges.length}</strong>
+        <strong>{upcoming.length}</strong>
       </div>
-      <div className="work-exchange-list">
-        {exchanges.map((exchange) => {
-          // Un échange de fériés : les flèches entourent un dollar.
-          const holidayExchange = Boolean(getDayInfo(fromKey(exchange.agreementDate), 1).holiday);
-          return (
-          <article key={exchange.id} className={holidayExchange ? "holiday-exchange" : undefined}>
-            <header>
-              <img src={holidayExchange ? "/holiday-exchange.png" : "/exchange-arrows.png"} alt="" aria-hidden="true" />
-              <div>
-                <strong>{exchange.partnerName}</strong>
-                <small className={`work-exchange-group group-${exchange.partnerGroup}`}>Groupe {exchange.partnerGroup}</small>
-              </div>
-              <button type="button" onClick={() => onEdit(exchange)} aria-label={`Modifier ${exchange.returnDate ? "l’échange" : "le remplacement"} avec ${exchange.partnerName}`}>Modifier</button>
-            </header>
-            <ol>
-              {chronologicalDetails(exchange, group).map((detail) => (
-                <li key={detail.date} className={`exchange-${detail.role}`}>
-                  <b aria-hidden="true">{detail.tag}</b>
-                  <p>{detail.label}</p>
-                </li>
-              ))}
-            </ol>
-          </article>
-          );
-        })}
-      </div>
+      {upcoming.length ? (
+        <div className="work-exchange-list">
+          {upcoming.map((exchange) => <ExchangeCard key={exchange.id} exchange={exchange} group={group} onEdit={onEdit} />)}
+        </div>
+      ) : <p className="work-exchange-empty">Aucun échange à venir.</p>}
+      {past.length ? (
+        <details className="work-exchange-history">
+          <summary>Échanges passés · {past.length}</summary>
+          <div className="work-exchange-list">
+            {past.map((exchange) => <ExchangeCard key={exchange.id} exchange={exchange} group={group} onEdit={onEdit} />)}
+          </div>
+        </details>
+      ) : null}
     </section>
   );
 }

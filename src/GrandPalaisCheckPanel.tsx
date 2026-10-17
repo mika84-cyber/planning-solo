@@ -92,9 +92,10 @@ function checkResultLabel(report?: GrandPalaisCheckReport) {
 }
 
 /**
- * Veille du site du Grand Palais, pour l'administrateur : une carte unie
- * avec deux cases — date du dernier contrôle et résultat en pastille — et un
- * bouton pour en lancer un tout de suite. Le contrôle tourne en arrière-plan ; le bandeau relit la
+ * Veille du site du Grand Palais, pour l'administrateur : une bande d'une
+ * ligne, au bleu ardoise de l'en-tête — le résultat en pastille à côté du
+ * titre, la date du dernier contrôle dessous, un bouton rond pour en lancer
+ * un tout de suite. Le contrôle tourne en arrière-plan ; la bande relit la
  * programmation jusqu'à voir la date changer, puis affiche le compte rendu.
  */
 export function GrandPalaisCheckPanel({
@@ -147,40 +148,38 @@ export function GrandPalaisCheckPanel({
   const currentReport = report && report.checkedAt === lastCheckedAt ? report : undefined;
   const result = checkResultLabel(currentReport);
   const running = status === "running";
+  const buttonLabel = running ? "Contrôle en cours…" : "Contrôler maintenant";
   return (
     <section className="grand-palais-check-panel gp-watch" aria-labelledby="grand-palais-check-title">
-      <div className="gp-watch-head">
+      <div className="gp-watch-row">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.6" /><path d="M12 12 18 6" /><path d="M7.8 16.2a6 6 0 1 1 8.4 0" /><path d="M5 19a10 10 0 1 1 14 0" /></svg>
-        <h3 id="grand-palais-check-title">Veille du site</h3>
-      </div>
-      <dl className="gp-watch-facts">
-        <div>
-          <dt>Dernier contrôle</dt>
-          <dd>{lastCheckedAt ? <CheckWhen label={checkWhenLabel(lastCheckedAt)} /> : "Aucun contrôle enregistré pour l’instant"}</dd>
-        </div>
-        <div>
-          <dt>Résultat</dt>
-          <dd>
+        <div className="gp-watch-text">
+          <h3 id="grand-palais-check-title">
+            Veille du site
             {running ? <span className="gp-watch-result">Lecture en cours…</span>
               : result ? (
                 <span className={`gp-watch-result ${result === "rien de nouveau" ? "is-clear" : "is-pending"}`}>
                   {result === "rien de nouveau" ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg> : null}
                   {result === "rien de nouveau" ? "Rien de nouveau" : result}
                 </span>
-              ) : "—"}
-          </dd>
+              ) : null}
+          </h3>
+          <small>
+            {lastCheckedAt ? <>Dernier contrôle <CheckWhen label={checkWhenLabel(lastCheckedAt).replace(/^./, (letter) => letter.toLocaleLowerCase("fr"))} /></> : "Aucun contrôle pour l’instant"}
+            <br />Contrôle automatique chaque nuit à minuit
+          </small>
         </div>
-      </dl>
-      <div className="gp-watch-body">
-        {running ? <p className="gp-watch-message" role="status">Lecture du site en cours, une à deux minutes…</p> : null}
-        {message ? <p className="gp-watch-message" role={status === "failed" ? "alert" : "status"}>{message}</p> : null}
-        {currentReport && !running && result !== "rien de nouveau" ? <CheckReport report={currentReport} /> : null}
-        <button type="button" className="grand-palais-check-button" disabled={running} onClick={() => void runCheck()}>
+        <button type="button" className="grand-palais-check-button" disabled={running} aria-label={buttonLabel} title={buttonLabel} onClick={() => void runCheck()}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></svg>
-          {running ? "Contrôle en cours…" : "Contrôler maintenant"}
         </button>
-        <small>Contrôle automatique chaque nuit à minuit</small>
       </div>
+      {running || message || (currentReport && result !== "rien de nouveau") ? (
+        <div className="gp-watch-body">
+          {running ? <p className="gp-watch-message" role="status">Lecture du site en cours, une à deux minutes…</p> : null}
+          {message ? <p className="gp-watch-message" role={status === "failed" ? "alert" : "status"}>{message}</p> : null}
+          {currentReport && !running && result !== "rien de nouveau" ? <CheckReport report={currentReport} /> : null}
+        </div>
+      ) : null}
     </section>
   );
 }

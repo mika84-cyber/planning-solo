@@ -76,7 +76,11 @@ const budgets = {
   // l'administrateur : demande de remplacement de jour férié (feuille 1 et
   // feuille 2 d'un échange de fériés) et remplacement seul dans « Faire un
   // échange » (2 388,1 / 781,8 Kio mesurés).
-  totalJavaScript: { raw: 2_395 * KIB, gzip: 784 * KIB },
+  // Relevé le 18 octobre 2026 à 2 400 / 787 Kio, avec l'accord de
+  // l'administrateur : « Faire un échange » chargée à la demande (un morceau
+  // de plus, le démarrage allégé de 4 Kio) et échange proposé au collègue
+  // (2 396,8 / 786,2 Kio mesurés).
+  totalJavaScript: { raw: 2_400 * KIB, gzip: 787 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

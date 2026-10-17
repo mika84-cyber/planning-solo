@@ -10,6 +10,24 @@ export type ColleagueShare = {
   updatedAt: string;
   viewerSeenAt?: string;
 };
+/** Un échange proposé par un collègue (ou envoyé à un collègue). */
+export type ColleagueExchangeRequest = {
+  id: string;
+  fromId: string;
+  fromName: string;
+  fromGroup: number;
+  toId: string;
+  toName: string;
+  agreementDate: string;
+  returnDate: string;
+  agreementStart: string;
+  agreementEnd: string;
+  returnStart: string;
+  returnEnd: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+  updatedAt: string;
+};
 export type ColleagueDirectory = {
   self: { userId: string; displayName: string; visible: boolean };
   canShareWithoutApproval: boolean;
@@ -18,6 +36,7 @@ export type ColleagueDirectory = {
   incoming: ColleagueShare[];
   outgoing: ColleagueShare[];
   blocked: Array<{ userId: string; displayName: string }>;
+  exchangeRequests?: { incoming: ColleagueExchangeRequest[]; outgoing: ColleagueExchangeRequest[] };
 };
 export type SharedColleaguePlanning = {
   owner: { userId: string; displayName: string };

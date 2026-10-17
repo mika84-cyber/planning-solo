@@ -8,6 +8,17 @@ updates:
       time: "06:00"
       timezone: Europe/Paris
     open-pull-requests-limit: 5
+    # React 19.3 alourdit l'application de 25 Kio : on reste en 19.2 tant que
+    # les budgets de taille ne sont pas revus.
+    ignore:
+      - dependency-name: react
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-minor"]
     groups:
       npm-minor-and-patch:
         update-types:

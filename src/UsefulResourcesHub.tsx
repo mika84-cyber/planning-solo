@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from "react";
-import "./usefulResourcesHub.css";
 
 type ResourceTab = "forms" | "contacts";
 
@@ -9,65 +8,29 @@ type UsefulResourcesHubProps = {
   initialTab?: ResourceTab;
 };
 
-/** Chaque rubrique dit en une ligne ce qu'on y trouve, à côté de son icône
- *  sur une pastille à sa couleur. */
-const RESOURCE_TABS: ReadonlyArray<{
-  key: ResourceTab;
-  title: string;
-  description: string;
-  icon: ReactNode;
-}> = [
-  {
-    key: "forms",
-    title: "Formulaires",
-    description: "Expo, SAP, Brantôme et accident de travail",
-    icon: <svg viewBox="0 0 48 48"><path d="M6 14h13l4 4h19v22H6z" /><path d="M6 22h36" /><path d="M15 9h12" /></svg>,
-  },
-  {
-    key: "contacts",
-    title: "Contacts",
-    description: "Numéros utiles et services du musée, à appeler d’un toucher",
-    icon: <svg viewBox="0 0 48 48"><path d="M14 8h7l3 9-4.5 3a22 22 0 0 0 9.5 9.5l3-4.5 9 3v7a3 3 0 0 1-3 3C21 38 10 27 10 11a3 3 0 0 1 4-3z" /></svg>,
-  },
+const RESOURCE_TABS: ReadonlyArray<{ key: ResourceTab; title: string }> = [
+  { key: "forms", title: "Formulaires" },
+  { key: "contacts", title: "Contacts" },
 ];
 
-export function UsefulResourcesHub({ forms, contacts, initialTab }: UsefulResourcesHubProps) {
-  const [activeTab, setActiveTab] = useState<ResourceTab | null>(initialTab ?? null);
+/** Documents et contacts : les formulaires s'affichent d'emblée, Contacts à
+ *  côté dans un sélecteur segmenté. Plus d'écran d'entrée à traverser. */
+export function UsefulResourcesHub({ forms, contacts, initialTab = "forms" }: UsefulResourcesHubProps) {
+  const [activeTab, setActiveTab] = useState<ResourceTab>(initialTab);
   const selectTab = (tab: ResourceTab) => {
     setActiveTab(tab);
     window.history.pushState({ ...window.history.state, resourceTab: tab }, "");
     window.scrollTo({ top: 0, behavior: "auto" });
   };
-  const returnToResources = () => {
-    setActiveTab(null);
-    const { resourceTab: _resourceTab, ...historyState } = window.history.state ?? {};
-    window.history.replaceState(historyState, "");
-    window.scrollTo({ top: 0, behavior: "auto" });
-  };
+  // Le bouton Retour du téléphone revient à l'onglet précédent.
   useEffect(() => {
-    const closeTab = () => setActiveTab((current) => window.history.state?.resourceTab ?? (current ? null : current));
-    window.addEventListener("popstate", closeTab);
-    return () => window.removeEventListener("popstate", closeTab);
+    const restoreTab = () => setActiveTab(window.history.state?.resourceTab ?? "forms");
+    window.addEventListener("popstate", restoreTab);
+    return () => window.removeEventListener("popstate", restoreTab);
   }, []);
 
   return (
-    <section
-      className={`useful-resources-screen${activeTab ? " has-active-resource" : ""}`}
-      aria-labelledby="useful-resources-title"
-    >
-      <div className="useful-resource-intro">
-        <span className="step-label">Documents et contacts</span>
-        <h2 id="useful-resources-title">Choisir une rubrique</h2>
-        <p>Les formulaires et les numéros utiles.</p>
-      </div>
-
-      {activeTab ? (
-        <button className="useful-resource-back" type="button" onClick={returnToResources}>
-          <span aria-hidden="true">←</span>
-          Toutes les rubriques
-        </button>
-      ) : null}
-
+    <section className="useful-resources-screen has-active-resource" aria-label="Documents et contacts">
       <div className="useful-resource-tabs" role="tablist" aria-label="Documents et contacts">
         {RESOURCE_TABS.map((tab) => (
           <button
@@ -80,30 +43,18 @@ export function UsefulResourcesHub({ forms, contacts, initialTab }: UsefulResour
             aria-label={tab.title}
             onClick={() => selectTab(tab.key)}
           >
-            <span className="useful-resource-tab-art" aria-hidden="true">
-              {tab.icon}
-            </span>
-            <span className="useful-resource-tab-copy">
-              <strong>{tab.title}</strong>
-              <small>{tab.description}</small>
-            </span>
-            <span className="useful-resource-tab-go" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" /></svg>
-            </span>
+            <span className="useful-resource-tab-copy"><strong>{tab.title}</strong></span>
           </button>
         ))}
       </div>
-
-      {activeTab ? (
-        <div
-          className="useful-resource-panel"
-          id={`useful-resource-panel-${activeTab}`}
-          role="tabpanel"
-          aria-label={activeTab === "forms" ? "Formulaires" : "Contacts"}
-        >
-          {activeTab === "forms" ? forms : contacts}
-        </div>
-      ) : null}
+      <div
+        className="useful-resource-panel"
+        id={`useful-resource-panel-${activeTab}`}
+        role="tabpanel"
+        aria-label={activeTab === "forms" ? "Formulaires" : "Contacts"}
+      >
+        {activeTab === "forms" ? forms : contacts}
+      </div>
     </section>
   );
 }
