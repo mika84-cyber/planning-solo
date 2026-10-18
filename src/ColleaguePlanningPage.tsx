@@ -531,18 +531,6 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
     else void openPlanning(ownerId);
   };
 
-  const downloadPlanning = async () => {
-    if (!selected) return;
-    setBusy(true);
-    try {
-      const { downloadColleaguePlanningYearPdf } = await import("./colleaguePlanningPdf");
-      await downloadColleaguePlanningYearPdf(selected, view.getFullYear());
-      setError("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Le PDF n’a pas pu être créé.");
-    } finally { setBusy(false); }
-  };
-
   const directory = useMemo(() => {
     if (!data) return [];
     const sharedIds = new Set(data.outgoing.map((share) => share.viewerId));
@@ -608,13 +596,14 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
       <section className="colleague-card colleague-planning-view">
         <div className="colleague-planning-heading"><div><p className="eyebrow">Planning partagé</p><h2>{planningFirstName(selected.owner.displayName)}</h2></div><button className="secondary" type="button" onClick={() => setSelected(null)}>Retour à mes collègues</button></div>
         <div className="colleague-month-nav"><button className="period-step" type="button" aria-label="Mois précédent" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1, 12))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button><strong><span>{MONTHS[view.getMonth()]}</span><i aria-hidden="true" /><span>{view.getFullYear()}</span></strong><button className="period-step" type="button" aria-label="Mois suivant" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1, 12))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button></div>
-        <section className={`colleague-planning-tools${commonDaysOpen ? " is-comparing" : ""}`} aria-label="Outils du planning partagé">
+        {/* Seuls les jours en commun : le planning annuel du collègue, absences
+            comprises, ne se télécharge plus. */}
+        {getOwnPresence ? <section className={`colleague-planning-tools${commonDaysOpen ? " is-comparing" : ""}`} aria-label="Outils du planning partagé">
           <div className="colleague-planning-tools-heading"><span>Outils du mois</span><small>{MONTHS[view.getMonth()]} {view.getFullYear()}</small></div>
           <div className="colleague-planning-tool-actions">
-            {getOwnPresence ? <button className={`colleague-planning-tool common${commonDaysOpen ? " active" : ""}`} type="button" aria-expanded={commonDaysOpen} onClick={() => setCommonDaysOpen((current) => !current)}><span className="colleague-planning-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6m1-6c3.3 0 6 2.2 6 5" /></svg></span><span><strong>Nos jours en commun</strong><small>Comparer nos présences</small></span></button> : null}
-            <button className="colleague-planning-tool pdf colleague-pdf-download" type="button" disabled={busy} onClick={() => void downloadPlanning()}><span className="colleague-planning-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v5h5M12 10v7m-3-3 3 3 3-3" /></svg></span><span><strong>Télécharger en PDF</strong><small>Conserver ce planning</small></span></button>
+            <button className={`colleague-planning-tool common${commonDaysOpen ? " active" : ""}`} type="button" aria-expanded={commonDaysOpen} onClick={() => setCommonDaysOpen((current) => !current)}><span className="colleague-planning-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6m1-6c3.3 0 6 2.2 6 5" /></svg></span><span><strong>Nos jours en commun</strong><small>Comparer nos présences</small></span></button>
           </div>
-        </section>
+        </section> : null}
         {commonDaysOpen && getOwnPresence ? <CommonDaysPanel planning={selected} view={view} getOwnPresence={getOwnPresence} /> : null}
         <MonthGrid planning={selected} view={view} />
         <p className="colleague-privacy-reminder">Les absences sont volontairement affichées sans leur motif.</p>

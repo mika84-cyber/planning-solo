@@ -1195,9 +1195,10 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   ]);
   expect(Math.abs(desktopTools!.width - desktopCalendar!.width)).toBeLessThan(2);
   await page.setViewportSize({ width: 344, height: 882 });
-  const annualPdfDownload = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Télécharger en PDF" }).click();
-  expect((await annualPdfDownload).suggestedFilename()).toBe("planning-agnes-2026.pdf");
+  // Le planning annuel d'un collègue, absences comprises, ne se télécharge
+  // plus : seuls les jours en commun restent proposés.
+  await expect(page.getByRole("button", { name: "Télécharger en PDF" })).toHaveCount(0);
+  await expect(page.locator(".colleague-planning-tool")).toHaveCount(1);
   await page.getByRole("button", { name: "Retour à mes collègues" }).click();
   page.once("dialog", async (dialog) => dialog.accept());
   await receivedCard.getByRole("button", { name: "Supprimer l’accès" }).click();
