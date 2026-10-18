@@ -41,9 +41,11 @@
 .pdf-quick-setting:has(:focus-visible) { outline: 2px solid var(--setting-tone); outline-offset: 2px; }
 .pdf-quick-setting :focus-visible { outline: none; }
 
-/* Petit écran (Z Fold fermé) : trois tuiles de front rognaient l'année ;
-   la tuile de l'année prend toute une ligne, groupe et vacances la suivante. */
-@media (max-width: 400px) {
+/* Téléphone : trois tuiles de front rognaient l'année ; la tuile de l'année
+   prend toute une ligne, groupe et vacances la suivante. La règle vaut pour
+   tous les téléphones, quelle que soit leur largeur, et non plus seulement
+   sous 400 px où elle manquait selon l'appareil. */
+@media (max-width: 720px) {
   .pdf-download-screen .pdf-quick-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* La tuile de l'année devient une barre basse : libellé à gauche, flèches et année à droite. */
   .pdf-download-screen .pdf-quick-year { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 0; padding: 6px 10px 6px 12px; }
