@@ -49,4 +49,16 @@ describe("fonction sécurisée des contacts", () => {
     expect(payload.pompidou).toHaveLength(6);
     expect(payload.gprmn).toHaveLength(2);
   });
+
+  it("envoie les codes radio aux comptes connectés sans jamais les enregistrer", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-1", email: "test@example.test" } as never);
+    const payload = await (await contactsHandler(new Request("https://example.test/api/contacts"))).json() as { radioCodes: { code: string; meaning: string }[] };
+    expect(payload.radioCodes.map((item) => item.code)).toEqual(["FOX", "TANGO", "VICTOR", "BRAVO", "CHARLIE", "MIKE", "EXGO", "CODE 22", "CODE 17", "SIERRA"]);
+    expect(payload.radioCodes[0]).toEqual({ code: "FOX", meaning: "Alerte Feu" });
+
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    const answer = await (await contactsHandler(new Request("https://example.test/api/contacts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "add", directory: "gprmn", contact: { name: "Nouveau", email: "nouveau@example.test" } }) }))).json();
+    expect(answer.radioCodes).toHaveLength(10);
+    expect(stored.get("useful-contacts/admin-directory")).not.toHaveProperty("radioCodes");
+  });
 });

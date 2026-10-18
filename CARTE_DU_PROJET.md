@@ -97,6 +97,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   travail marquées dans le planning sans carence ; seuls les CA superposés sont
   retirés et recrédités automatiquement, les autres congés restant modifiables.
 - `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
+  « Codes urgences radio » (FOX, TANGO…) : `netlify/lib/usefulRadioCodes.mts`,
+  envoyés par `/api/contacts` aux seuls comptes connectés, jamais enregistrés.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande (préparée au repos par
   `src/warmUpScreens.ts`), navigation par espace et périodes d’inter expos.

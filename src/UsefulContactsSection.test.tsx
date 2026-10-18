@@ -31,6 +31,17 @@ describe("contacts utiles", () => {
     expect(html).not.toContain("›");
   });
 
+  it("ajoute l’annuaire des codes radio quand le serveur les envoie", () => {
+    const withCodes = renderToStaticMarkup(
+      <UsefulContactsSection initialData={{ ...CONTACTS_FIXTURE, radioCodes: [{ code: "FOX", meaning: "Alerte Feu" }, { code: "TANGO", meaning: "Attaque Terroriste" }] }} />,
+    );
+    expect(withCodes).toContain("Codes urgences radio");
+    expect(withCodes).toContain("2 codes d’urgence");
+    expect(withCodes.indexOf("Pour les visiteurs")).toBeLessThan(withCodes.indexOf("Codes urgences radio"));
+    // Sans codes reçus (ancienne réponse), pas d'annuaire vide.
+    expect(renderToStaticMarkup(<UsefulContactsSection initialData={CONTACTS_FIXTURE} />)).not.toContain("Codes urgences radio");
+  });
+
   it("n’affiche aucune coordonnée avant le chargement authentifié", () => {
     const html = renderToStaticMarkup(<UsefulContactsSection />);
     expect(html).toContain("Chargement de l’annuaire sécurisé");

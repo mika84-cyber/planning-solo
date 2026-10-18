@@ -27,7 +27,12 @@ export type PompidouContactSection = {
   contacts: UsefulContact[];
 };
 
+/** Un code d'urgence à la radio : « FOX », « Alerte Feu ». */
+export type UsefulRadioCode = { code: string; meaning: string };
+
 export type UsefulContactsPayload = {
   pompidou: PompidouContactSection[];
   gprmn: UsefulContact[];
+  /** Ajoutés par le serveur à chaque réponse, jamais enregistrés. */
+  radioCodes?: UsefulRadioCode[];
 };

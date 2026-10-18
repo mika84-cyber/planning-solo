@@ -3221,6 +3221,22 @@ test("l’audioguide Cézanne s’ouvre depuis la fiche de l’exposition, avec 
   await expect(guide.locator("figure")).toHaveCount(0);
 });
 
+test("les codes urgences radio s’ouvrent depuis Contacts utiles et se retrouvent par la recherche", async ({ page }) => {
+  await prepareDemo(page);
+  await openUsefulResource(page, "Contacts");
+  const contactsRoot = page.locator(".useful-contacts-screen.useful-contacts-root");
+  await contactsRoot.getByRole("button", { name: /Codes urgences radio/ }).click();
+  await expect(page.getByRole("heading", { name: "Codes urgences radio" })).toBeVisible();
+  const codes = page.locator(".radio-code-list li");
+  await expect(codes).toHaveCount(10);
+  await expect(codes.first()).toHaveText(/FOX\s*Alerte Feu/);
+  await expect(codes.last()).toHaveText(/SIERRA\s*Risque d’atteinte à la Structure du bâtiment/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("button", { name: "Revenir aux contacts utiles" }).click();
+  await page.getByLabel("Rechercher une personne ou un service").fill("bombe");
+  await expect(page.locator(".radio-code-list li")).toHaveText([/BRAVO\s*Alerte à la Bombe/]);
+});
+
 test("les contacts utiles sont classés, directement appelables et harmonisés sur Z Fold ouvert", async ({ page }) => {
   await prepareDemo(page);
   await openUsefulResource(page, "Contacts");
@@ -3229,7 +3245,8 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   const resourcesScreen = page.locator(".useful-resources-screen");
   const contactsRoot = page.locator(".useful-contacts-screen.useful-contacts-root");
   await expect(contactsRoot).toBeVisible();
-  await expect(contactsRoot.locator(".resource-folder-list > button")).toHaveCount(3);
+  // Pompidou, GP‑RMN, visiteurs et codes urgences radio.
+  await expect(contactsRoot.locator(".resource-folder-list > button")).toHaveCount(4);
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-image', /svg/);
   await expect(contactsRoot.locator('input[type="search"]')).toHaveCSS('background-position', /14px/);
   await expect(contactsRoot.locator(".useful-resource-search")).toHaveCount(0);

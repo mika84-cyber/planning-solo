@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { USEFUL_CONTACTS_DATA } from "./netlify/lib/usefulContactsData.mts";
+import { USEFUL_RADIO_CODES } from "./netlify/lib/usefulRadioCodes.mts";
 export default defineConfig({
   plugins: [
     react(),
@@ -13,7 +14,7 @@ export default defineConfig({
           response.statusCode = 200;
           response.setHeader("content-type", "application/json; charset=utf-8");
           response.setHeader("cache-control", "no-store");
-          response.end(JSON.stringify(USEFUL_CONTACTS_DATA));
+          response.end(JSON.stringify({ ...USEFUL_CONTACTS_DATA, radioCodes: USEFUL_RADIO_CODES }));
         });
       },
     },

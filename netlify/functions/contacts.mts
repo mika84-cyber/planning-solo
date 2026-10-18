@@ -1,6 +1,7 @@
 import { currentUser } from "../lib/identityUser.mts";
 import { getStore } from "@netlify/blobs";
 import { USEFUL_CONTACTS_DATA } from "../lib/usefulContactsData.mts";
+import { USEFUL_RADIO_CODES } from "../lib/usefulRadioCodes.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { archive } from '../lib/adminTools.mts';
 import type { UsefulContact, UsefulContactsPayload } from "../../src/usefulContactsTypes.ts";
@@ -25,6 +26,13 @@ function parseContact(value: unknown, id?: string): UsefulContact | null {
   return { id, name, ...(email ? { email } : {}), ...(phones.length ? { phones } : {}) };
 }
 
+/** L'annuaire envoyé, avec les codes radio : ceux-ci ne sont jamais
+ *  enregistrés avec les contacts modifiables. */
+function withRadioCodes(directory: UsefulContactsPayload): UsefulContactsPayload {
+  const { radioCodes: _stored, ...contacts } = directory;
+  return { ...contacts, radioCodes: USEFUL_RADIO_CODES };
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -43,7 +51,7 @@ async function contactsHandler(request: Request): Promise<Response> {
   const store = getStore({ name: "planning-solo", consistency: "strong" });
   let directory = await store.get(directoryKey, { type: "json" }) as UsefulContactsPayload | null;
   directory ||= baseline();
-  if (request.method === "GET") return json(directory);
+  if (request.method === "GET") return json(withRadioCodes(directory));
   if (request.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
   if (normalizedEmail(user.email) !== normalizedEmail(configuredAdminEmail())) return json({ error: "Modification réservée au compte administrateur" }, 403);
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -74,8 +82,9 @@ async function contactsHandler(request: Request): Promise<Response> {
       directory.gprmn = directory.gprmn.filter(item => item.id !== id);
     }
   }
-  await store.setJSON(directoryKey, directory);
-  return json(directory);
+  const { radioCodes: _radioCodes, ...stored } = directory;
+  await store.setJSON(directoryKey, stored);
+  return json(withRadioCodes(stored));
 }
 
 export default contactsHandler;

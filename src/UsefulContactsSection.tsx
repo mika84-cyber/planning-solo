@@ -6,6 +6,7 @@ import type {
   PompidouContactSectionKey,
   UsefulContact,
   UsefulContactsPayload,
+  UsefulRadioCode,
 } from "./usefulContactsTypes";
 import { matchesSearch } from "./searchMatching";
 import "./usefulDocumentAdmin.css";
@@ -109,6 +110,18 @@ function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]
   );
 }
 
+/** Les codes d'urgence à la radio : le code en pastille rouge, puis ce qu'il
+ *  annonce. */
+function RadioCodeList({ codes }: { codes: UsefulRadioCode[] }) {
+  return (
+    <ul className="radio-code-list">
+      {codes.map((item) => (
+        <li key={item.code}><b>{item.code}</b><span>{item.meaning}</span></li>
+      ))}
+    </ul>
+  );
+}
+
 type UsefulContactsSectionProps = {
   initialData?: UsefulContactsPayload;
   accountId?: string;
@@ -117,7 +130,7 @@ type UsefulContactsSectionProps = {
 };
 
 export function UsefulContactsSection({ initialData, isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
-  const [directory, setDirectory] = useState<"pompidou" | "gprmn" | "visitors" | null>(null);
+  const [directory, setDirectory] = useState<"pompidou" | "gprmn" | "visitors" | "radio" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
   const [contacts, setContacts] = useState<UsefulContactsPayload | null>(initialData || null);
   const [loadError, setLoadError] = useState("");
@@ -255,6 +268,20 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
     );
   }
 
+  // Codes radio : réservés aux comptes connectés, ils arrivent avec l'annuaire.
+  if (directory === "radio" && contacts.radioCodes?.length) {
+    return (
+      <section className="useful-contacts-screen" aria-labelledby="radio-codes-title">
+        <header className="useful-contacts-subheader">
+          <button className="section-back-hit-area" type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
+          <div><span className="step-label">Contacts utiles</span><h2 id="radio-codes-title">Codes urgences radio</h2></div>
+        </header>
+        <p className="radio-code-intro">À annoncer à la radio pour alerter sans inquiéter le public.</p>
+        <RadioCodeList codes={contacts.radioCodes} />
+      </section>
+    );
+  }
+
   if (directory === "gprmn") {
     return (
       <section className="useful-contacts-screen" aria-labelledby="gprmn-contacts-title">
@@ -277,6 +304,9 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
       </div>
       <label className="resource-search-field"><span>Rechercher une personne ou un service</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom ou service" /></label>
       <div className="resource-folder-stack">
+      {searchQuery.trim() && contacts.radioCodes?.some((item) => matchesSearch(`${item.code} ${item.meaning}`, searchQuery.trim())) ? (
+        <RadioCodeList codes={contacts.radioCodes.filter((item) => matchesSearch(`${item.code} ${item.meaning}`, searchQuery.trim()))} />
+      ) : null}
       {searchQuery.trim() ? (
         <ContactCards
           contacts={[...contacts.pompidou.flatMap((section) => section.contacts), ...contacts.gprmn]
@@ -290,12 +320,13 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
             ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, tickets resto", "#3a5f8f"],
             ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Accident, secourisme, supervision Expo", "#2f7a52"],
             ["visitors", "Pour les visiteurs", VISITOR_QR_LINKS.length, "Réclamation et objet perdu, en QR code", "#a45f2d"],
+            ...(contacts.radioCodes?.length ? [["radio", "Codes urgences radio", contacts.radioCodes.length, "Codes d’urgence à la radio", "#b3261e"] as const] : []),
           ] as const).map(([key, title, count, description, tone]) => (
             <button key={key} type="button" className={`resource-folder-row directory-${key}`} style={{ "--row-tone": tone } as CSSProperties} onClick={() => setDirectory(key)}>
-              <span className="resource-folder-row-icon resource-folder-row-letter" aria-hidden="true">{key === "pompidou" ? "P" : key === "gprmn" ? "G" : "V"}</span>
+              <span className="resource-folder-row-icon resource-folder-row-letter" aria-hidden="true">{key === "pompidou" ? "P" : key === "gprmn" ? "G" : key === "radio" ? "R" : "V"}</span>
               <span className="resource-folder-row-copy">
                 <strong>{title}</strong>
-                <small>{count ? `${count} ${key === "visitors" ? `QR code${count > 1 ? "s" : ""}` : `contact${count > 1 ? "s" : ""}`}` : description}</small>
+                <small>{count ? `${count} ${key === "visitors" ? `QR code${count > 1 ? "s" : ""}` : key === "radio" ? `code${count > 1 ? "s" : ""} d’urgence` : `contact${count > 1 ? "s" : ""}`}` : description}</small>
               </span>
               <span className="resource-folder-row-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" /></svg></span>
             </button>
