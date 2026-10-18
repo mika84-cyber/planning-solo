@@ -312,7 +312,8 @@
 /* Le mémo « Règles des congés » : un bleu ardoise froid, distinct des tuiles
    de soldes, pour dire qu'il s'agit de règles et non d'un décompte. */
 .leave-info-card { border-color: #cfd8e3; background: #eef2f6; box-shadow: none; }
-.leave-info-card[open] { border-color: #9fb0c3; }
+/* Un fin liseré noir, fermée comme ouverte, pour détacher la carte des soldes. */
+.leave-info-card, .leave-info-card[open] { border: 1px solid #000; }
 .leave-info-card > summary:hover { background: #e6ecf2; }
 .leave-info-icon { border-radius: 11px; background: #3f5670; }
 .leave-info-icon svg { stroke-width: 1.8; stroke-linejoin: round; }

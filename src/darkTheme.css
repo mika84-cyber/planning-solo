@@ -129,3 +129,5 @@ html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .contributions::befor
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-head span::before { background: #d9849a; }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .meal,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .meal::before { background: #d9a27e; }
+/* Règles des congés : le liseré noir devient clair sur fond sombre. */
+html[data-theme="dark"] .leave-info-card { border-color: rgba(255, 255, 255, 0.55); }
