@@ -13,34 +13,33 @@ export const EXCEPTIONAL_LEAVE_RULES = [
 
 const MONTH_INITIALS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 
-/** « Infos congés » : une ligne au-dessus des soldes, qui se déplie sur le
- *  report des congés annuels, le fractionnement des agents d'accueil et le
- *  barème des congés exceptionnels. */
+/** Chevron commun aux trois lignes ; il pivote quand la ligne est ouverte. */
+const CHEVRON = <svg className="leave-info-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
+
+/** « Règles des congés » au-dessus des soldes : un menu déroulant, fermé au
+ *  départ, qui s'ouvre sur trois lignes (titre et l'essentiel en une phrase),
+ *  chacune se dépliant sur son détail — report, fractionnement des agents
+ *  d'accueil, barème des congés exceptionnels. */
 export function LeaveInfoCard() {
   return (
     <details className="leave-info-card">
-      <summary>
-        {/* Un mémo à part, en bleu ardoise : des règles, pas un solde. */}
-        <span className="leave-info-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M5 4.5h9.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3Z" /><path d="M5 17a3 3 0 0 1 3-3h9.5M9 8.5h5" /></svg>
-        </span>
-        <span className="leave-info-copy">
-          <em className="leave-info-kicker">À savoir</em>
-          <strong>Règles des congés</strong>
-          <small>Report, fractionnement et congés exceptionnels</small>
-        </span>
-        <em aria-hidden="true">
-          <span className="leave-info-show">Voir les infos</span>
-          <span className="leave-info-hide">Masquer</span>
-          <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
-        </em>
+      <summary className="leave-info-title">
+        <strong>Règles des congés</strong>
+        {CHEVRON}
       </summary>
-      <div className="leave-info-content">
-        <div className="leave-info-sections">
-          {/* Report : deux échéances, chacune avec sa date en éphéméride et les
-              congés qu'elle concerne. */}
-          <section className="leave-info-carry" aria-labelledby="leave-info-carry">
-            <h3 id="leave-info-carry">Report des congés</h3>
+      <div className="leave-info-list">
+        {/* Report : deux échéances, chacune avec sa date en éphéméride et les
+            congés qu'elle concerne. */}
+        <details className="leave-info-row leave-info-carry">
+          <summary>
+            <span className="leave-info-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M4 10h16M9 3v4m6-4v4" /></svg></span>
+            <span className="leave-info-row-copy">
+              <strong>Report des congés</strong>
+              <small>30 avril · RTT au 31 décembre</small>
+            </span>
+            {CHEVRON}
+          </summary>
+          <div className="leave-info-row-body">
             <div className="leave-info-deadline">
               <span className="leave-info-date" aria-hidden="true"><b>30</b><small>avril</small></span>
               <span>
@@ -60,9 +59,18 @@ export function LeaveInfoCard() {
                 <small>Sauf versement sur le CET.</small>
               </span>
             </div>
-          </section>
-          <section className="leave-info-fraction" aria-labelledby="leave-info-fraction">
-            <h3 id="leave-info-fraction">Jours de fractionnement</h3>
+          </div>
+        </details>
+        <details className="leave-info-row leave-info-fraction">
+          <summary>
+            <span className="leave-info-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></span>
+            <span className="leave-info-row-copy">
+              <strong>Jours de fractionnement</strong>
+              <small>+1 j dès 4 j hors saison</small>
+            </span>
+            {CHEVRON}
+          </summary>
+          <div className="leave-info-row-body">
             <p>Des jours en plus pour les congés annuels posés hors saison :</p>
             <ol className="leave-info-months" aria-label="Mois qui comptent : janvier à avril et novembre à décembre">
               {MONTH_INITIALS.map((initial, index) => (
@@ -77,9 +85,18 @@ export function LeaveInfoCard() {
             <small className="leave-info-note">
               Les RTT ne comptent pas, une demi-journée compte pour moitié. Calcul automatique dans vos soldes dès 2027.
             </small>
-          </section>
-          <section className="leave-info-exceptional" aria-labelledby="leave-info-exceptional">
-            <h3 id="leave-info-exceptional">Congés exceptionnels</h3>
+          </div>
+        </details>
+        <details className="leave-info-row leave-info-exceptional">
+          <summary>
+            <span className="leave-info-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 4 2.3 4.7 5.2.8-3.8 3.7.9 5.2L12 16l-4.6 2.4.9-5.2-3.8-3.7 5.2-.8L12 4Z" /></svg></span>
+            <span className="leave-info-row-copy">
+              <strong>Congés exceptionnels</strong>
+              <small>{EXCEPTIONAL_LEAVE_RULES.length} situations, sur justificatif</small>
+            </span>
+            {CHEVRON}
+          </summary>
+          <div className="leave-info-row-body">
             <ul className="leave-info-rows">
               {EXCEPTIONAL_LEAVE_RULES.map((rule) => (
                 <li key={rule.nature}>
@@ -92,22 +109,8 @@ export function LeaveInfoCard() {
               ))}
             </ul>
             <small className="leave-info-note">Sur justificatif joint à la demande, selon l’appréciation du chef de service.</small>
-          </section>
-        </div>
-        {/* Même bouton que « Masquer les dates » des dimanches : il referme
-            le volet sans remonter jusqu'à son titre. */}
-        <button
-          className="sunday-dates-close"
-          type="button"
-          style={{ marginTop: 12 }}
-          onClick={(event) => {
-            const details = event.currentTarget.closest("details");
-            if (details) details.open = false;
-          }}
-        >
-          Masquer les infos
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
-        </button>
+          </div>
+        </details>
       </div>
     </details>
   );
