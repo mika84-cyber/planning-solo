@@ -18,7 +18,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/CalendarCleanup.tsx` : panneau et boutons « Effacer plusieurs dates ou
   notes ».
 - `src/LeaveBalancesSection.tsx` : cartes des soldes, choix de l'année et accès
-  aux reprises manuelles.
+  aux reprises manuelles ; les dix briques se suivent dans une seule grille,
+  sans volet « Autres congés ».
 - `src/CetSection.tsx` : configuration, simulation, opérations et historique du
   compte épargne-temps.
 - `src/CetFormDialog.tsx` : saisie guidée des formulaires officiels d’ouverture,
@@ -40,8 +41,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `netlify/lib/calendar-actions/save-request.mts`.
 - `src/annualCarryOver.ts` : report des CA jusqu'au 30 avril suivant, partagé
   avec la validation serveur des demandes.
-- `src/LeaveInfoCard.tsx` : ligne « Infos congés » au-dessus des soldes
-  (report, fractionnement, congés exceptionnels) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
+- `src/LeaveInfoCard.tsx` : menu déroulant « Règles des congés » au-dessus des
+  soldes, ouvert sur trois lignes dépliables chacune (report, fractionnement,
+  congés exceptionnels) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
   absences de 31 jours et plus et courrier de dérogation.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
   session, renouvellement du jeton au retour et nouvelle tentative des appels
@@ -157,7 +159,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   billetterie), stocké en `work_post` sur la journée et partagé aux collègues
   par `personalPresenceForDate` (lettres E, C, B dans la semaine).
 - `src/overtime.ts` : heures supplémentaires et récupérations.
-- `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats.
+- `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats, au
+  barème du jour de la vacation (décret n° 2010-147, arrêté du 18 mai 2010
+  modifié ; depuis 2024, 22,90 € de 7 h à 22 h et 35 € de 22 h à 7 h).
 - `src/mecenatRules.ts` : amplitude de 12 h, repos de 11 h et lundis, signalés
   sans bloquer l’inscription d’un mécénat.
 - `src/earlyPayment.ts` : mécénats et heures « à payer » qu’un bulletin vérifié

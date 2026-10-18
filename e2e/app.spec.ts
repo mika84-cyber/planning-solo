@@ -679,7 +679,8 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
 test("les congés reportables au 30 avril s'affichent l'un sous l'autre", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
-  await page.locator(".leave-info-card > summary").click();
+  await page.locator(".leave-info-card > .leave-info-title").click();
+  await page.locator(".leave-info-carry > summary").click();
   const tags = page.getByRole("list", { name: "Congés reportables" }).getByRole("listitem");
   await expect(tags).toHaveText(["Congés annuels", "Jours de fractionnement", "Fériés en récupération"]);
   const boxes = await tags.evaluateAll((items) => items.map((item) => item.getBoundingClientRect().toJSON()));
@@ -5975,45 +5976,51 @@ test("une mise à jour ignorée laisse un bouton « Faire la mise à jour » dan
   await expect(call).toHaveCount(0);
 });
 
-test("les infos congés, au-dessus des soldes, expliquent report, fractionnement et congés exceptionnels", async ({ page }) => {
+test("les règles des congés, au-dessus des soldes, s'ouvrent sur trois lignes dépliables", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
   const info = page.locator("details.leave-info-card");
+  const title = info.locator(":scope > summary.leave-info-title");
+  const rows = info.locator(".leave-info-list > details.leave-info-row");
+  // Fermé au départ : le titre seul, sur une ligne basse, avant les soldes.
   await expect(info).not.toHaveAttribute("open", "");
-  // Une ligne au-dessus des soldes CA et RTT.
-  const [infoBox, gridBox] = await Promise.all([
+  await expect(title).toHaveText("Règles des congés");
+  await expect(rows.first()).toBeHidden();
+  const [closedBox, gridBox] = await Promise.all([
     info.boundingBox(),
     page.locator(".direct-balances-content > .leave-balance-grid").boundingBox(),
   ]);
-  expect(infoBox!.y + infoBox!.height).toBeLessThanOrEqual(gridBox!.y);
-  expect(infoBox!.height).toBeLessThan(80);
-  await info.locator(":scope > summary").click();
-  await expect(info.getByRole("heading", { name: "Report des congés" })).toBeVisible();
-  await expect(info).toContainText("Jusqu’au 30 avril suivant");
-  await expect(info.getByRole("heading", { name: "Jours de fractionnement" })).toBeVisible();
-  await expect(info.locator(".leave-info-months li.counts")).toHaveCount(6);
-  await expect(info.locator(".leave-info-steps")).toContainText("+1 jour");
+  expect(closedBox!.height).toBeLessThan(70);
+  expect(closedBox!.y + closedBox!.height).toBeLessThanOrEqual(gridBox!.y);
+  await title.click();
+  await expect(info).toHaveAttribute("open", "");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.locator(":scope > summary strong")).toHaveText(["Report des congés", "Jours de fractionnement", "Congés exceptionnels"]);
+  for (let index = 0; index < 3; index += 1) await expect(rows.nth(index)).not.toHaveAttribute("open", "");
+  // Ouvert, le menu montre les trois lignes fermées, toujours avant les soldes.
+  const [openBox, openGridBox] = await Promise.all([
+    info.boundingBox(),
+    page.locator(".direct-balances-content > .leave-balance-grid").boundingBox(),
+  ]);
+  expect(openBox!.y + openBox!.height).toBeLessThanOrEqual(openGridBox!.y);
+  expect(openBox!.height).toBeLessThan(260);
+  // Chaque ligne se déplie seule sur son détail.
+  await rows.nth(0).locator(":scope > summary").click();
+  await expect(rows.nth(0)).toContainText("Jusqu’au 30 avril suivant");
+  await expect(rows.nth(1)).not.toHaveAttribute("open", "");
+  await rows.nth(1).locator(":scope > summary").click();
+  await expect(rows.nth(1).locator(".leave-info-months li.counts")).toHaveCount(6);
+  await expect(rows.nth(1).locator(".leave-info-steps")).toContainText("+1 jour");
+  await rows.nth(2).locator(":scope > summary").click();
+  await expect(rows.nth(2)).toContainText("Mariage ou PACS de l’agent");
   await expect(info).not.toContainText("ASI");
-  await expect(info.getByRole("heading", { name: "Congés exceptionnels" })).toBeVisible();
-  await expect(info).toContainText("Mariage ou PACS de l’agent");
   expect(await info.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-  // « Masquer les infos » referme le volet.
-  await info.getByRole("button", { name: "Masquer les infos" }).click();
+  // Un nouveau toucher sur le titre d'une ligne la referme ; le titre du menu
+  // referme le tout.
+  await rows.nth(0).locator(":scope > summary").click();
+  await expect(rows.nth(0)).not.toHaveAttribute("open", "");
+  await title.click();
   await expect(info).not.toHaveAttribute("open", "");
-});
-
-test("Z Fold ouvert : les infos congés restent empilées comme sur Z Fold fermé", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "z-fold", "Scénario réservé au viewport Z Fold ouvert");
-  await prepareDemo(page);
-  await goToSection(page, "leave");
-  const info = page.locator("details.leave-info-card");
-  await info.locator(":scope > summary").click();
-  const sections = info.locator(".leave-info-sections > section");
-  await expect(sections).toHaveCount(3);
-  const boxes = await sections.evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ x, y }) => ({ x, y })));
-  expect(boxes[1].y).toBeGreaterThan(boxes[0].y);
-  expect(boxes[2].y).toBeGreaterThan(boxes[1].y);
-  expect(Math.abs(boxes[0].x - boxes[2].x)).toBeLessThanOrEqual(1);
 });
 
 test("l’administrateur voit la date du dernier contrôle du site et peut en lancer un", async ({ page }) => {
