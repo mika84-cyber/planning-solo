@@ -314,16 +314,18 @@
 .leave-info-card { border-color: #cfd8e3; background: #eef2f6; box-shadow: none; }
 /* Un fin liseré noir, fermée comme ouverte, pour détacher la carte des soldes. */
 .leave-info-card, .leave-info-card[open] { border: 1px solid #000; }
-/* Le bandeau du titre en terracotta plein, texte et icône en blanc ; le
+/* Le bandeau du titre en terracotta pâle, la teinte douce de « Formulaire
+   vierge » : la carte reste au second plan derrière « Poser un congé ».
+   Titre en terracotta foncé, icône dans une pastille terracotta pleine ; le
    détail, une fois ouvert, garde son fond clair. */
-.leave-info-card > summary { background: var(--accent); }
-.leave-info-card > summary:hover { background: var(--accent-strong); }
-.leave-info-icon { border-radius: 11px; background: rgba(255, 255, 255, .18); }
+.leave-info-card > summary { background: var(--accent-soft); }
+.leave-info-card > summary:hover { background: color-mix(in srgb, var(--accent-soft) 88%, var(--accent)); }
+.leave-info-icon { border-radius: 11px; background: var(--accent); }
 .leave-info-icon svg { stroke-width: 1.8; stroke-linejoin: round; }
-.leave-info-kicker { color: rgba(255, 255, 255, .82); font-size: .64rem; font-style: normal; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.leave-info-copy strong { color: #fff; }
-.leave-info-copy small { color: rgba(255, 255, 255, .8); }
-.leave-info-card > summary > em { border-color: #fff; background: #fff; color: var(--accent-strong); }
+.leave-info-kicker { color: var(--accent); font-size: .64rem; font-style: normal; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.leave-info-copy strong { color: var(--accent-strong); }
+.leave-info-copy small { color: color-mix(in srgb, var(--accent-strong) 70%, #fff); }
+.leave-info-card > summary > em { border-color: color-mix(in srgb, var(--accent) 35%, transparent); background: #fff; color: var(--accent-strong); }
 .leave-info-content { border-top-color: #cfd8e3; background: #f3f6f9; }
 .leave-info-content .sunday-dates-close { border-color: #cfd8e3; color: #3f5670; }
 @media (max-width: 600px) { .leave-info-copy small { display: none; } }
