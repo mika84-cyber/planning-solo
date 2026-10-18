@@ -8,7 +8,7 @@ import {
   type OvertimeEntry,
   type WorkQuota,
 } from "./overtime";
-import { RESIDENCE_ALLOWANCE_RATE, fromKey, getDayInfo } from "./planningLogic";
+import { RESIDENCE_ALLOWANCE_RATE, addDays, dateKey, fromKey, getDayInfo } from "./planningLogic";
 import type { OvertimeDraft } from "./useWorkTimeUiState";
 
 type OvertimePayInput = {
@@ -90,12 +90,22 @@ export function useOvertimePay({
   // « À payer » : ce que ces heures rapporteront, avant de les enregistrer.
   // L'écart avec et sans elles tient compte du seuil des 14 h et du plafond.
   const overtimePayPreview = useMemo(() => {
-    if (overtimeDraft.disposition !== "paid" || !/^\d{4}-\d{2}-\d{2}$/.test(overtimeDraft.date)) return null;
+    if (overtimeDraft.disposition !== "paid") return null;
     const split = splitOvertimeRange(overtimeDraft.start, overtimeDraft.end);
     if (!split) return null;
-    const pay = nextPayPeriod(overtimeDraft.date);
+    // Les horaires se saisissent souvent avant la date : le montant s'annonce
+    // déjà, calculé pour le prochain jour de semaine ordinaire (ni dimanche ni
+    // férié) ; la date choisie ensuite l'affine (tarif du dimanche, mois payé).
+    const dateless = !/^\d{4}-\d{2}-\d{2}$/.test(overtimeDraft.date);
+    let date = overtimeDraft.date;
+    if (dateless) {
+      let day = new Date();
+      for (let tries = 0; tries < 14 && isSundayOrHoliday(dateKey(day)); tries += 1) day = addDays(day, 1);
+      date = dateKey(day);
+    }
+    const pay = nextPayPeriod(date);
     const draftEntry: OvertimeEntry = {
-      id: "apercu", date: overtimeDraft.date, ...split, disposition: "paid", inputMode: "range",
+      id: "apercu", date, ...split, disposition: "paid", inputMode: "range",
       start: overtimeDraft.start, end: overtimeDraft.end, updatedAt: "",
     };
     const before = paidOvertimeForPayPeriod(pay.year, pay.month);
@@ -108,8 +118,9 @@ export function useOvertimePay({
       highRateMinutes: after.lines.find((line) => line.entryId === "apercu")?.highRateMinutes ?? 0,
       cappedMinutes: after.cappedMinutes - before.cappedMinutes,
       partTime: workQuota !== "full",
+      dateless,
     };
-  }, [overtimeDraft, overtimeEntries, paidOvertimeForPayPeriod, workQuota]);
+  }, [overtimeDraft, overtimeEntries, paidOvertimeForPayPeriod, workQuota, isSundayOrHoliday]);
 
   return { paidOvertimeForPayPeriod, overtimeEarlyCandidates, overtimeForPayMonth, overtimePayPreview };
 }

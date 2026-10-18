@@ -4339,13 +4339,15 @@ test("avec un profil de paie, « À payer » annonce le montant brut et le repor
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
   await page.getByRole("button", { name: "Déclarer des heures sup" }).click();
   const dialog = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
-  await dialog.getByLabel("Date").fill(dateKey(day));
+  // Les horaires d'abord : le montant s'annonce déjà, pour un jour de semaine.
   await setClockTime(dialog, "Heure de début", "18:00");
   await setClockTime(dialog, "Heure de fin", "20:00");
   await dialog.getByRole("button", { name: "À payer" }).click();
-
   // (1 801,73 + 54,05) × 12 / 1 820 = 12,24 €/h ; 2 h majorées à 1,25 = 30,59 €.
   const preview = dialog.locator(".overtime-pay-preview");
+  await expect(preview).toContainText(/≈ 30,59\s€ brut · un jour de semaine/);
+  await expect(preview).toContainText("Indiquez la date pour le mois de paie");
+  await dialog.getByLabel("Date").fill(dateKey(day));
   await expect(preview).toContainText(/≈ 30,59\s€ brut/);
   await expect(preview).toContainText(`paie de ${payMonth}`);
   await expect(preview).toContainText("Majorées à 1,25 jusqu’à 14 h dans le mois");

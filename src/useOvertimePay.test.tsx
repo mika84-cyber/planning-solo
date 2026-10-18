@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OvertimeEntry } from "./overtime";
 import { useOvertimePay } from "./useOvertimePay";
 import type { OvertimeDraft } from "./useWorkTimeUiState";
@@ -45,5 +45,23 @@ describe("paiement des heures supplémentaires (hook)", () => {
     const result = read(renderToStaticMarkup(<Probe entries={[]} draft={draft} />));
     expect(result.month).toBe(0);
     expect(result.preview).toMatchObject({ ready: true, amount: 3396, payYear: 2026, payMonth: 10, cappedMinutes: 0, partTime: false });
+  });
+
+  describe("horaires saisis avant la date", () => {
+    afterEach(() => vi.useRealTimers());
+
+    it("annonce déjà le montant d'un jour de semaine ordinaire", () => {
+      // Dimanche 18 octobre 2026 : le calcul prend le lundi 19, au taux de semaine.
+      vi.useFakeTimers({ now: new Date(2026, 9, 18, 10) });
+      const draft: OvertimeDraft = { date: "", start: "18:00", end: "20:00", disposition: "paid" };
+      const result = read(renderToStaticMarkup(<Probe entries={[]} draft={draft} />));
+      expect(result.preview).toMatchObject({ ready: true, amount: 3396, dateless: true, payYear: 2026, payMonth: 10 });
+    });
+
+    it("n'annonce rien sans horaires ou pour des heures à récupérer", () => {
+      vi.useFakeTimers({ now: new Date(2026, 9, 19, 10) });
+      expect(read(renderToStaticMarkup(<Probe entries={[]} draft={{ date: "", start: "18:00", end: "", disposition: "paid" }} />)).preview).toBeNull();
+      expect(read(renderToStaticMarkup(<Probe entries={[]} draft={{ date: "", start: "18:00", end: "20:00", disposition: "recovery" }} />)).preview).toBeNull();
+    });
   });
 });

@@ -145,6 +145,8 @@ export type OvertimePayPreview = {
   highRateMinutes: number;
   cappedMinutes: number;
   partTime: boolean;
+  /** Sans date encore : montant d'un jour de semaine ordinaire. */
+  dateless?: boolean;
 };
 
 export function OvertimeDialog({
@@ -257,17 +259,21 @@ export function OvertimeDialog({
               <p className="overtime-recovery-preview overtime-pay-preview">
                 <strong>
                   {payPreview.ready ? <b>≈ {euros(payPreview.amount)} brut</b> : <b>Montant à estimer</b>}
-                  <span> · paie de {MONTHS[payPreview.payMonth]} {payPreview.payYear}</span>
+                  {payPreview.dateless
+                    ? <span> · un jour de semaine</span>
+                    : <span> · paie de {MONTHS[payPreview.payMonth]} {payPreview.payYear}</span>}
                 </strong>
                 <small>
                   {!payPreview.ready
                     ? "Renseignez votre traitement dans Ma paie pour estimer le montant."
-                    : payPreview.partTime
+                    : payPreview.dateless
+                      ? "Indiquez la date pour le mois de paie : un dimanche ou un jour férié est mieux payé."
+                      : payPreview.partTime
                       ? "Temps partiel : payées au taux horaire, sans majoration."
                       : payPreview.highRateMinutes
                         ? `${minutesLabel(payPreview.highRateMinutes)} au-delà des 14 premières heures du mois : majorées à 1,27 au lieu de 1,25.`
                         : "Majorées à 1,25 jusqu’à 14 h dans le mois, puis à 1,27 ; dimanche, férié et nuit en plus."}
-                  {payPreview.cappedMinutes
+                  {payPreview.cappedMinutes && !payPreview.dateless
                     ? ` ${minutesLabel(payPreview.cappedMinutes)} au-delà du plafond de 25 h du mois : déclarées mais non payées.`
                     : ""}
                 </small>
