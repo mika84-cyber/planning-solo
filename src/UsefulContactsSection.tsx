@@ -110,8 +110,8 @@ function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]
   );
 }
 
-/** Les codes d'urgence à la radio : le code en pastille à contour rouge,
- *  puis ce qu'il annonce. */
+/** Les codes d'urgence à la radio : le code en rouge, puis ce qu'il
+ *  annonce. */
 function RadioCodeList({ codes }: { codes: UsefulRadioCode[] }) {
   return (
     <ul className="radio-code-list">

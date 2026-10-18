@@ -35,10 +35,9 @@
 .resource-accident-copy small { color: #8f5a48; font-size: 0.8rem; }
 .resource-accident-go { border-radius: 999px; padding: 8px 14px; background: #b4432c; color: #fff; font-size: 0.82rem; font-weight: 850; white-space: nowrap; }
 
-/* Codes urgences radio : le code dans une pastille à contour rouge clair,
-   ce qu'il annonce à côté. */
+/* Codes urgences radio : le code en rouge, ce qu'il annonce à côté. */
 .radio-code-intro { margin: 0 0 12px; color: var(--muted); font-size: 0.86rem; }
 .radio-code-list { display: grid; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
-.radio-code-list li { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 12px; border: 1px solid #ecc5c0; border-radius: 14px; padding: 10px 12px; background: #fff; }
-.radio-code-list b { justify-self: start; border: 1.5px solid #e2a29c; border-radius: 8px; padding: 3px 8px; background: #fff; color: #a3241c; font-size: 0.84rem; font-weight: 900; letter-spacing: 0.06em; white-space: nowrap; }
+.radio-code-list li { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 12px; border: 1px solid var(--border-soft, #e4e1dc); border-radius: 14px; padding: 10px 12px; background: #fff; }
+.radio-code-list b { justify-self: start; color: #a3241c; font-size: 0.84rem; font-weight: 900; letter-spacing: 0.06em; white-space: nowrap; }
 .radio-code-list span { color: var(--text); font-size: 0.92rem; font-weight: 700; line-height: 1.3; }
