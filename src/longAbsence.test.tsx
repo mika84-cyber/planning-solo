@@ -60,14 +60,11 @@ describe("absences de 31 jours et plus", () => {
 describe("infos congés", () => {
   it("explique le report, le fractionnement des agents d'accueil et les congés exceptionnels", () => {
     const html = renderToStaticMarkup(<LeaveInfoCard />);
-    // Un menu déroulant titré, puis trois lignes dépliables, chacune avec son
-    // titre et l'essentiel en une phrase.
-    expect(html).toContain('<details class="leave-info-card"><summary class="leave-info-title"><strong>Règles des congés</strong>');
-    expect(html.match(/<details class="leave-info-row /g)).toHaveLength(3);
-    expect(html).toContain("<strong>Report des congés</strong><small>30 avril · RTT au 31 décembre</small>");
-    expect(html).toContain("<strong>Jours de fractionnement</strong><small>+1 j dès 4 j hors saison</small>");
-    expect(html).toContain("<strong>Congés exceptionnels</strong><small>7 situations, sur justificatif</small>");
-    expect(html).not.toContain("Masquer les infos");
+    expect(html).toContain("<details class=\"leave-info-card\">");
+    expect(html).toContain("Report des congés");
+    // Un mémo à part, qui annonce des règles et non un solde.
+    expect(html).toContain("<strong>Règles des congés</strong>");
+    expect(html).toContain("À savoir");
     expect(html).toContain("Jusqu’au 30 avril suivant");
     expect(html).toContain("RTT : avant le 31 décembre");
     // Trois sortes de jours se reportent jusqu'au 30 avril suivant.

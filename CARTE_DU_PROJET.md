@@ -41,9 +41,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `netlify/lib/calendar-actions/save-request.mts`.
 - `src/annualCarryOver.ts` : report des CA jusqu'au 30 avril suivant, partagé
   avec la validation serveur des demandes.
-- `src/LeaveInfoCard.tsx` : menu déroulant « Règles des congés » au-dessus des
-  soldes, ouvert sur trois lignes dépliables chacune (report, fractionnement,
-  congés exceptionnels) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
+- `src/LeaveInfoCard.tsx` : ligne « Infos congés » au-dessus des soldes
+  (report, fractionnement, congés exceptionnels ; les congés reportables au
+  30 avril l'un sous l'autre) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
   absences de 31 jours et plus et courrier de dérogation.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
   session, renouvellement du jeton au retour et nouvelle tentative des appels
