@@ -676,6 +676,19 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   expect(openedBox?.width).toBeGreaterThan(boxes[0].width * 2.8);
 });
 
+test("les congés reportables au 30 avril s'affichent l'un sous l'autre", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await page.locator(".leave-info-card > summary").click();
+  const tags = page.getByRole("list", { name: "Congés reportables" }).getByRole("listitem");
+  await expect(tags).toHaveText(["Congés annuels", "Jours de fractionnement", "Fériés en récupération"]);
+  const boxes = await tags.evaluateAll((items) => items.map((item) => item.getBoundingClientRect().toJSON()));
+  for (let index = 1; index < boxes.length; index += 1) {
+    expect(boxes[index].y).toBeGreaterThanOrEqual(boxes[index - 1].y + boxes[index - 1].height - 1);
+    expect(Math.abs(boxes[index].x - boxes[0].x)).toBeLessThanOrEqual(1);
+  }
+});
+
 test("toutes les briques de congés tiennent dans une grille équilibrée, sans volet", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
