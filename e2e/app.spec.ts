@@ -1774,25 +1774,40 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.getByRole("button", { name: /^Mon planning avec mes congés/ })).toContainText("Groupe 2 · vos congés et absences");
   await groupPills.getByRole("button", { name: "Groupe 2" }).click();
   await expect(pdfScreen.getByRole("button", { name: /^Mon planning sans congés/ })).toBeVisible();
-  // L'année avance et recule d'un toucher ; pas d'année avant 2026.
-  const years = pdfScreen.getByRole("group", { name: "Année du PDF" });
-  await expect(years.locator("strong")).toHaveText("2026");
-  await expect(years.getByRole("button", { name: "Année précédente" })).toBeDisabled();
-  await years.getByRole("button", { name: "Année suivante" }).click();
-  await expect(years.locator("strong")).toHaveText("2027");
+  // L'année se choisit dans une liste déroulante, sans flèches ; la liste
+  // commence en 2026 et s'ouvre au niveau de la fenêtre, hors du dialogue.
+  const yearPicker = pdfScreen.getByRole("button", { name: "Année du PDF" });
+  await expect(yearPicker).toHaveText("2026");
+  await expect(pdfScreen.getByRole("button", { name: "Année précédente" })).toHaveCount(0);
+  await yearPicker.click();
+  const yearList = page.getByRole("listbox", { name: "Année du PDF" });
+  await expect(yearList.getByRole("option").first()).toHaveText("2026");
+  await yearList.getByRole("option", { name: "2027" }).click();
+  await expect(yearList).toHaveCount(0);
+  await expect(yearPicker).toHaveText("2027");
   await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-settings")).toHaveText(/^2027/);
-  await years.getByRole("button", { name: "Année précédente" }).click();
-  await expect(years.locator("strong")).toHaveText("2026");
+  await yearPicker.click();
+  await page.getByRole("listbox", { name: "Année du PDF" }).getByRole("option", { name: "2026" }).click();
+  await expect(yearPicker).toHaveText("2026");
   // Six années à partir de l’année en cours.
   const holidayFirstYear = Math.max(2026, new Date().getFullYear());
   await expect(pdfScreen.getByRole("button", { name: /^Fériés travaillés par groupe/ })).toContainText(`${holidayFirstYear}–${holidayFirstYear + 5} · pour échanger un férié entre groupes`);
-  // Une ligne par document, empilées, sans débordement ; les trois réglages
-  // tiennent sur une seule ligne, à la même largeur.
+  // Une ligne par document, empilées, sans débordement. Sur ordinateur, les
+  // trois réglages tiennent sur une seule ligne, à la même largeur ; sur
+  // téléphone, l'année prend toute une ligne, groupe et vacances la suivante.
   const docBoxes = await pdfScreen.locator(".pdf-doc").evaluateAll((docs) => docs.map((doc) => doc.getBoundingClientRect().toJSON()));
   for (let index = 1; index < docBoxes.length; index += 1) expect(docBoxes[index].y).toBeGreaterThan(docBoxes[index - 1].y + docBoxes[index - 1].height - 1);
   const settingBoxes = await pdfScreen.locator(".pdf-quick-setting").evaluateAll((tiles) => tiles.map((tile) => tile.getBoundingClientRect().toJSON()));
-  expect(Math.abs(settingBoxes[0].y - settingBoxes[2].y)).toBeLessThanOrEqual(1);
-  expect(Math.max(...settingBoxes.map(({ width }) => width)) - Math.min(...settingBoxes.map(({ width }) => width))).toBeLessThanOrEqual(1);
+  const settingsRow = await pdfScreen.locator(".pdf-quick-settings").boundingBox();
+  if ((page.viewportSize()?.width || 0) <= 720) {
+    expect(settingBoxes[0].width).toBeCloseTo(settingsRow?.width ?? 0, 0);
+    expect(settingBoxes[1].y).toBeGreaterThan(settingBoxes[0].y + settingBoxes[0].height - 1);
+    expect(Math.abs(settingBoxes[1].y - settingBoxes[2].y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(settingBoxes[1].width - settingBoxes[2].width)).toBeLessThanOrEqual(1);
+  } else {
+    expect(Math.abs(settingBoxes[0].y - settingBoxes[2].y)).toBeLessThanOrEqual(1);
+    expect(Math.max(...settingBoxes.map(({ width }) => width)) - Math.min(...settingBoxes.map(({ width }) => width))).toBeLessThanOrEqual(1);
+  }
   expect(await pdfScreen.evaluate((screen) => screen.scrollWidth <= screen.clientWidth + 1)).toBe(true);
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 });

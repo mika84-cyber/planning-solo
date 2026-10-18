@@ -19,6 +19,7 @@ export function ChoicePicker<T extends ChoiceValue>({
   layout = "grid",
   className = "",
   placeholder,
+  portal = false,
 }: {
   /** La chaîne vide vaut « rien de choisi » : le libellé d'attente prend
    *  alors la place, plutôt qu'une option que personne n'a retenue. */
@@ -31,6 +32,10 @@ export function ChoicePicker<T extends ChoiceValue>({
   /** Affiché quand la valeur courante ne correspond à aucune option : elle
    *  reste alors à choisir, sans figurer parmi les propositions. */
   placeholder?: string;
+  /** Rend toujours la liste au niveau de la fenêtre, même à la souris : à
+   *  poser quand le sélecteur vit dans une carte qui défile, sinon la liste
+   *  y serait coupée. */
+  portal?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [portalActive, setPortalActive] = useState(false);
@@ -169,7 +174,7 @@ export function ChoicePicker<T extends ChoiceValue>({
         onClick={() => {
           if (!open) {
             setPortalActive(
-              window.matchMedia("(max-width: 720px), (pointer: coarse)").matches,
+              portal || window.matchMedia("(max-width: 720px), (pointer: coarse)").matches,
             );
           }
           setOpen((current) => !current);

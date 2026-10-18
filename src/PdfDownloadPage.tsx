@@ -1,4 +1,5 @@
 import { type CSSProperties, type Dispatch, type ReactNode, type SetStateAction, useEffect, useState } from "react";
+import { ChoicePicker } from "./ChoicePicker";
 import { GROUP_OPTIONS, YEAR_OPTIONS, workedHolidaysYearRange } from "./planningLogic";
 import "./pdfDownloadPage.css";
 
@@ -44,8 +45,6 @@ export function PdfDownloadPage({
   onExport,
 }: PdfDownloadPageProps) {
   const holidayYears = workedHolidaysYearRange();
-  const firstYear = YEAR_OPTIONS[0].value;
-  const lastYear = YEAR_OPTIONS[YEAR_OPTIONS.length - 1].value;
   // Le groupe du PDF part du vôtre et le suit s'il change ailleurs, mais le
   // choisir ici ne touche pas à votre groupe.
   const [pdfGroup, setPdfGroup] = useState(group);
@@ -66,16 +65,17 @@ export function PdfDownloadPage({
       <section className="pdf-quick-settings" aria-label="Réglages du PDF">
         <div className="pdf-quick-setting pdf-quick-year">
           <span>Année</span>
-          {/* Une année de plus ou de moins d'un toucher. */}
-          <div className="pdf-year-stepper" role="group" aria-label="Année du PDF">
-            <button type="button" aria-label="Année précédente" disabled={year <= firstYear} onClick={() => onYearChange(year - 1)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6" /></svg>
-            </button>
-            <strong aria-live="polite">{year}</strong>
-            <button type="button" aria-label="Année suivante" disabled={year >= lastYear} onClick={() => onYearChange(year + 1)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6" /></svg>
-            </button>
-          </div>
+          {/* L'année se choisit dans la liste proposée, la même que celle du
+              calendrier ; la liste s'ouvre au niveau de la fenêtre pour ne pas
+              être coupée par le dialogue qui défile. */}
+          <ChoicePicker
+            value={year}
+            options={YEAR_OPTIONS}
+            onChange={onYearChange}
+            ariaLabel="Année du PDF"
+            className="pdf-year-picker"
+            portal
+          />
         </div>
         <div className="pdf-quick-setting pdf-quick-group" style={{ "--setting-tone": GROUP_TONES[pdfGroup] } as CSSProperties}>
           <span>Groupe</span>

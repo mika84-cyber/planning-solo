@@ -49,18 +49,18 @@
   .pdf-download-screen .pdf-quick-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* La tuile de l'année devient une barre basse : libellé à gauche, flèches et année à droite. */
   .pdf-download-screen .pdf-quick-year { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 0; padding: 6px 10px 6px 12px; }
-  .pdf-download-screen .pdf-quick-year .pdf-year-stepper { width: 132px; min-height: 0; }
+  .pdf-download-screen .pdf-quick-year .choice-picker { width: 132px; }
 }
 /* Dans la fenêtre, le titre laisse la place au bouton de fermeture. */
 .planning-pdf-dialog #pdf-download-title { padding-right: 52px; }
 
-/* Année : deux flèches rondes autour de l'année, à la couleur de la tuile. */
-.pdf-year-stepper { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; min-height: 30px; }
-.pdf-year-stepper strong { color: var(--text); font-size: 1.02rem; font-weight: 850; text-align: center; font-variant-numeric: tabular-nums; }
-.pdf-year-stepper button { display: grid; width: 26px; height: 26px; place-items: center; border: 0; border-radius: 50%; padding: 0; background: color-mix(in srgb, var(--setting-tone) 14%, var(--surface-high)); color: var(--setting-tone); cursor: pointer; transition: background .15s ease, color .15s ease; }
-.pdf-year-stepper button:hover:not(:disabled) { background: var(--setting-tone); color: #fff; }
-.pdf-year-stepper button:disabled { opacity: .35; cursor: default; }
-.pdf-year-stepper svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+/* Année : un menu déroulant sans cadre dans la tuile, l'année en gras et le
+   chevron à la couleur de la tuile ; la liste reprend celle du calendrier. */
+.pdf-quick-year .choice-picker-trigger { min-height: 30px; border: 0; border-radius: 10px; padding: 0 4px 0 2px; background: transparent; color: var(--text); font: inherit; font-size: 1.02rem; font-weight: 850; font-variant-numeric: tabular-nums; }
+.pdf-quick-year .choice-picker-trigger:hover { background: color-mix(in srgb, var(--setting-tone) 10%, transparent); }
+.pdf-quick-year .choice-picker-trigger[aria-expanded="true"] { background: color-mix(in srgb, var(--setting-tone) 14%, transparent); box-shadow: none; }
+.pdf-quick-year .choice-picker-trigger svg { width: 18px; stroke: var(--setting-tone); stroke-width: 2.4; }
+.choice-picker-menu.choice-picker-menu-portal.pdf-year-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 238px; }
 
 /* Groupe : trois pastilles, chacune à la couleur de son groupe ; la choisie est pleine. */
 .pdf-group-pills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; min-height: 30px; }
@@ -201,9 +201,6 @@
 @media (max-width: 380px) {
   .pdf-quick-setting { padding-inline: 8px; }
   .pdf-quick-switch { font-size: .9rem; }
-  .pdf-year-stepper { gap: 0; }
-  .pdf-year-stepper strong { font-size: .86rem; }
-  .pdf-year-stepper button { width: 20px; height: 20px; }
-  .pdf-year-stepper svg { width: 13px; height: 13px; }
+  .pdf-quick-year .choice-picker-trigger { font-size: .9rem; }
   .pdf-group-pills { gap: 3px; }
 }
