@@ -158,9 +158,12 @@ describe("fenêtres de temps de travail", () => {
     expect(mecenat).toContain('aria-label="Heure de fin — minutes"');
     expect(mecenat).not.toContain('min="09:00"');
     expect(mecenat).not.toContain('max="19:00"');
-    expect(mecenat).toContain("Avant 22 h");
-    expect(mecenat).toContain("Après 22 h");
-    expect(mecenat).not.toContain("De 7 h à 22 h");
+    // Les plages telles que l'arrêté du 15 décembre 2023 les écrit : une heure
+    // entre minuit et 7 h relève aussi du taux majoré.
+    expect(mecenat).toContain("De 7 h à 22 h");
+    expect(mecenat).toContain("De 22 h à 7 h");
+    expect(mecenat).not.toContain("Avant 22 h");
+    expect(mecenat).toContain("Barème de l’arrêté du 15 décembre 2023");
     expect(mecenat).toContain("Total brut");
     expect(solidarity).toContain("Ajouter des heures manuellement");
     expect(recovery).toContain("Ajouter une récupération");

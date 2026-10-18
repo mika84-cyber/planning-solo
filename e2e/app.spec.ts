@@ -287,10 +287,10 @@ async function openDayLeaveChooser(dialog: Locator) {
   return chooser;
 }
 
+/** Zone des soldes : toutes les briques y sont visibles d'emblée, sans volet. */
 async function openOtherLeaveBalances(page: Page) {
-  const balances = page.locator("details.other-leave-balances");
-  if ((await balances.getAttribute("open")) === null) await balances.locator("summary").click();
-  await expect(balances).toHaveAttribute("open", "");
+  const balances = page.locator(".leave-balances-direct .direct-balances-content");
+  await expect(balances.locator(":scope > .leave-balance-grid > button.strike")).toBeVisible();
   return balances;
 }
 
@@ -432,7 +432,8 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await openUsefulResource(page, "Contacts");
   await expectWhiteCard(".useful-contacts-screen.useful-contacts-root", accentSpine(page));
   await expect(page.locator(".resource-folder-list > button").first()).toHaveCSS("background-image", /linear-gradient/);
-  await expect(page.locator(".resource-folder-list > button")).toHaveCount(3);
+  // Quatre annuaires depuis l'arrivée des codes urgences radio.
+  await expect(page.locator(".resource-folder-list > button")).toHaveCount(4);
 
   await goToSection(page, "program");
   // Un chapitre réduit à son titre est teinté en entier ; les autres portent
@@ -675,49 +676,39 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   expect(openedBox?.width).toBeGreaterThan(boxes[0].width * 2.8);
 });
 
-test("les quatre soldes principaux et les autres congés restent en grilles équilibrées", async ({ page }) => {
+test("toutes les briques de congés tiennent dans une grille équilibrée, sans volet", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
-  const primaryCards = page.locator(".direct-balances-content > .leave-balance-grid > button");
-  await expect(primaryCards).toHaveCount(4);
-  // Deux lignes de deux cartes : les hauts sont regroupés à 2 px près, un
-  // arrondi de sous-pixel ne devant pas couper une ligne en deux.
-  const primaryRows = await primaryCards.evaluateAll((cards) =>
-    cards.map((card) => card.getBoundingClientRect().top).sort((a, b) => a - b)
-      .reduce<number[]>((rows, top) => (rows.length && top - rows[rows.length - 1] <= 2 ? rows : [...rows, top]), []),
-  );
-  expect(primaryRows).toHaveLength(2);
-
-  const otherBalances = page.locator("details.other-leave-balances");
-  expect((await otherBalances.locator("summary").boundingBox())?.height).toBeLessThanOrEqual(80);
-  await otherBalances.locator("summary").click();
-  const otherCards = otherBalances.locator(".leave-balance-grid > button");
-  await expect(otherCards).toHaveCount(6);
-  const layout = await otherCards.evaluateAll((cards) => ({
-    widths: cards.map((card) => card.getBoundingClientRect().width),
-    rows: [...new Set(cards.map((card) => Math.round(card.getBoundingClientRect().top)))],
-    containerWidth: cards[0]?.parentElement?.getBoundingClientRect().width || 0,
+  await expect(page.locator(".other-leave-balances")).toHaveCount(0);
+  const cards = page.locator(".direct-balances-content > .leave-balance-grid > button");
+  await expect(cards).toHaveCount(10);
+  // Les quatre soldes utiles d'abord, sur deux lignes de deux cartes ; les hauts
+  // sont regroupés à 2 px près, un arrondi de sous-pixel ne devant pas couper
+  // une ligne en deux.
+  await expect(cards.nth(0)).toHaveClass(/annual/);
+  await expect(cards.nth(3)).toHaveClass(/sick/);
+  const rows = (boxes: DOMRect[]) => boxes.map((box) => box.top).sort((a, b) => a - b)
+    .reduce<number[]>((found, top) => (found.length && top - found[found.length - 1] <= 2 ? found : [...found, top]), []);
+  const layout = await cards.evaluateAll((nodes) => ({
+    boxes: nodes.map((node) => node.getBoundingClientRect().toJSON() as DOMRect),
+    containerWidth: nodes[0]?.parentElement?.getBoundingClientRect().width || 0,
   }));
-  expect(layout.rows).toHaveLength(3);
-  expect(Math.max(...layout.widths)).toBeLessThan(layout.containerWidth * 0.6);
-  const [primaryFirstBox, otherFirstBox] = await Promise.all([
-    primaryCards.first().boundingBox(),
-    otherCards.first().boundingBox(),
-  ]);
-  expect(Math.abs(primaryFirstBox!.x - otherFirstBox!.x)).toBeLessThanOrEqual(1);
-  expect(Math.abs(primaryFirstBox!.width - otherFirstBox!.width)).toBeLessThanOrEqual(1);
-  const previousAbsencesButton = otherBalances.locator(".manual-adjustments-trigger");
-  // Les positions sont relues jusqu'à ce que la mise en page se stabilise :
-  // mesurée trop tôt, la grille bouge encore de quelques pixels.
+  expect(rows(layout.boxes.slice(0, 4))).toHaveLength(2);
+  expect(rows(layout.boxes)).toHaveLength(5);
+  const widths = layout.boxes.map((box) => box.width);
+  expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+  expect(Math.max(...widths)).toBeLessThan(layout.containerWidth * 0.6);
+  // « Reprendre mes absences précédentes » suit la grille, sur toute sa largeur.
+  const previousAbsencesButton = page.locator(".direct-balances-content > .manual-adjustments-trigger");
+  await expect(previousAbsencesButton).toBeVisible();
   await expect(async () => {
-    const [previousAbsencesBox, otherGridBox, openSummaryBox] = await Promise.all([
+    const [buttonBox, gridBox] = await Promise.all([
       previousAbsencesButton.boundingBox(),
-      otherBalances.locator(".leave-balance-grid").boundingBox(),
-      otherBalances.locator("summary").boundingBox(),
+      page.locator(".direct-balances-content > .leave-balance-grid").boundingBox(),
     ]);
-    expect(previousAbsencesBox?.height).toBeLessThanOrEqual(96);
-    expect(previousAbsencesBox?.width).toBeGreaterThan((otherGridBox?.width || 0) * 0.9);
-    expect(openSummaryBox!.y).toBeGreaterThan(previousAbsencesBox!.y + previousAbsencesBox!.height);
+    expect(buttonBox?.height).toBeLessThanOrEqual(96);
+    expect(buttonBox!.width).toBeGreaterThan(gridBox!.width * 0.9);
+    expect(buttonBox!.y).toBeGreaterThanOrEqual(gridBox!.y + gridBox!.height);
   }).toPass({ timeout: 10_000 });
 });
 
@@ -3934,10 +3925,22 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
 
   await assertVisibleMenus();
 
-  // La page des PDF n'a plus de menu déroulant : année et groupe se règlent
-  // d'un toucher, sans liste à ouvrir.
+  // Dans les plannings PDF, seule l'année se choisit dans une liste ; elle
+  // s'ouvre au-dessus du dialogue, entièrement visible.
   await openPlanningPdf(page);
-  await expect(page.locator(".pdf-download-screen .choice-picker-trigger")).toHaveCount(0);
+  const pdfYear = page.locator(".pdf-download-screen .choice-picker-trigger");
+  await expect(pdfYear).toHaveCount(1);
+  await pdfYear.click();
+  const pdfYearList = page.getByRole("listbox", { name: "Année du PDF" });
+  await expect(pdfYearList).toHaveCSS("position", "fixed");
+  const pdfListBox = await pdfYearList.boundingBox();
+  const pdfViewport = page.viewportSize();
+  expect(pdfListBox!.x).toBeGreaterThanOrEqual(8);
+  expect(pdfListBox!.x + pdfListBox!.width).toBeLessThanOrEqual(pdfViewport!.width - 8);
+  expect(pdfListBox!.y + pdfListBox!.height).toBeLessThanOrEqual(pdfViewport!.height - 8);
+  // Un second toucher sur l'année referme la liste ; Échap fermerait aussi la fenêtre.
+  await pdfYear.click();
+  await expect(pdfYearList).toHaveCount(0);
   await closePlanningPdf(page);
 
   await goToSection(page, "leave");
@@ -4065,7 +4068,7 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
   await swipeMainSection(page, 760, 120);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   await openOtherLeaveBalances(page);
-  // Même précaution que plus haut : le dépliage des autres soldes réorganise
+  // Même précaution que plus haut : l'arrivée sur la page réorganise encore
   // la grille, et une mesure prise pendant ce mouvement lit des positions
   // qui n'existent plus une fraction de seconde après.
   await expect(async () => {

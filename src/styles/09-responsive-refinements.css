@@ -1468,6 +1468,8 @@
   border-top: 1px solid var(--bg);
   padding: 9px 5px 0;
 }
+/* Source du barème, discrète sous le total. */
+.mecenat-preview > .mecenat-rate-source { grid-column: 1 / -1; padding: 0 5px; color: var(--muted); font-size: 11px; }
 .mecenat-preview > p strong {
   color: var(--muted);
   font-size: 18px;

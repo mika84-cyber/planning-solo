@@ -1,7 +1,7 @@
 import type { WorkQuota } from "./overtime";
 import { calculateRegulatoryMecenatVacation } from "./mecenatRegulation";
 import { matchEarlyPayment } from "./earlyPayment";
-export { MECENAT_REGULATORY_RATES } from "./mecenatRegulation";
+export { MECENAT_REGULATORY_RATES, mecenatRatesFor, mecenatRateLabels } from "./mecenatRegulation";
 
 export type MecenatEntry = {
   id: string;
@@ -16,14 +16,16 @@ export type MecenatEntry = {
   updatedAt: string;
 };
 
-/** Découpe une vacation aux bornes de 7 h, 22 h et minuit. La quotité est
- * acceptée explicitement pour documenter que le résultat n'en dépend jamais. */
+/** Découpe une vacation selon le barème du jour (7 h – 22 h depuis 2024). La
+ * quotité est acceptée explicitement pour documenter que le résultat n'en
+ * dépend jamais. */
 export function calculateMecenatVacation(
   start: string,
   end: string,
   _quota: WorkQuota,
+  date?: string,
 ) {
-  return calculateRegulatoryMecenatVacation(start, end);
+  return calculateRegulatoryMecenatVacation(start, end, date);
 }
 
 export function mecenatForPayMonth(

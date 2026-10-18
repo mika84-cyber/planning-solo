@@ -1287,8 +1287,9 @@ export default function Home() {
         mecenatDraft.start,
         mecenatDraft.end,
         workQuota,
+        mecenatDraft.date,
       ),
-    [mecenatDraft.start, mecenatDraft.end, workQuota],
+    [mecenatDraft.start, mecenatDraft.end, mecenatDraft.date, workQuota],
   );
   // Amplitude de 12 h, repos de 11 h et lundis : ce que ce mécénat ne respecte pas,
   // signalé dans la fenêtre sans empêcher l'inscription.

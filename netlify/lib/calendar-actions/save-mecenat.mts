@@ -24,7 +24,7 @@ export async function handleSaveMecenat(
   const paidEarly = body.payYear === performedYear && body.payMonth === performedMonth;
   const payYear = paidEarly ? performedYear : payPeriod.year;
   const payMonth = paidEarly ? performedMonth : payPeriod.month;
-  const calculation = calculateRegulatoryMecenatVacation(start, end);
+  const calculation = calculateRegulatoryMecenatVacation(start, end, date);
   if (
     !validId(id) ||
     !isValidDateKey(date) ||

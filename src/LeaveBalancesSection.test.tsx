@@ -13,7 +13,7 @@ const countedOnly = {
 };
 
 describe("LeaveBalancesSection", () => {
-  it("laisse les quatre soldes utiles visibles et replie les autres congés", () => {
+  it("montre toutes les briques de congés à la suite, sans volet à déplier", () => {
     const html = renderToStaticMarkup(
       <LeaveBalancesSection
         year={2026}
@@ -31,16 +31,15 @@ describe("LeaveBalancesSection", () => {
       />,
     );
 
-    const primaryBalances = html.slice(0, html.indexOf('<details class="other-leave-balances">'));
-    expect(primaryBalances).toContain("Congés annuels");
-    expect(primaryBalances).toContain("RTT");
-    expect(primaryBalances).toContain("Jour de fractionnement");
-    expect(primaryBalances).toContain("Maladie");
-    expect(primaryBalances).not.toContain("Garde d’enfant");
-    expect(html).toContain('<details class="other-leave-balances">');
-    expect(html).toContain("Autres congés");
-    expect(html).toContain("CET, garde d’enfant et absences particulières");
-    expect(html).toContain("6 catégories");
+    // Une seule grille, dans l'ordre : les quatre soldes utiles puis les autres.
+    expect(html).not.toContain("other-leave-balances");
+    expect(html).not.toContain("Autres congés");
+    expect(html).not.toContain("Refermer le volet");
+    expect(html.match(/class="leave-balance-grid"/g)).toHaveLength(1);
+    const labels = [...html.matchAll(/aria-label="Afficher le détail de ([^"]+)"/g)].map((match) => match[1]);
+    expect(labels).toHaveLength(10);
+    expect(labels.slice(0, 4)).toEqual(["Congés annuels", "RTT", "Jour de fractionnement", "Maladie"]);
+    expect(labels).toEqual(expect.arrayContaining(["Grève", "Accident de travail"]));
     expect(html).toContain("Reprendre mes absences précédentes");
     expect(html).toContain("Ajouter un historique sans renseigner chaque date");
     expect(html).toContain("Configurer");

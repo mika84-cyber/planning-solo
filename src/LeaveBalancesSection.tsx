@@ -133,45 +133,29 @@ export function LeaveBalancesSection({
             </button>
           ))}
           {countedBalanceButton("sick")}
+          {/* Toutes les briques à la suite, sans volet à déplier : CET, garde
+              d'enfant et absences particulières après les quatre principales. */}
+          {otherCountedTypes.map(countedBalanceButton)}
         </div>
-        <details className="other-leave-balances">
-          <summary>
-            <span className="leave-secondary-menu-icon" aria-hidden="true">•••</span>
-            <span className="leave-secondary-menu-copy">
-              <strong>Autres congés</strong>
-              <small>CET, garde d’enfant et absences particulières</small>
-            </span>
-            <b>{otherCountedTypes.length} catégories</b>
-            <i aria-hidden="true">⌄</i>
-            {/* Une fois ouvert, le même bouton se contente de dire qu'il referme. */}
-            <span className="other-leave-close">
-              Refermer le volet
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
-            </span>
-          </summary>
-          <div className="leave-balance-grid">
-            {otherCountedTypes.map(countedBalanceButton)}
-          </div>
-          <button
-            className="manual-adjustments-trigger"
-            type="button"
-            onClick={onOpenManualAdjustments}
-          >
-            <span className="manual-adjustments-icon" aria-hidden="true">
-              ↺
-            </span>
-            <span className="manual-adjustments-copy">
-              <strong>Reprendre mes absences précédentes</strong>
-              <small>Ajouter un historique sans renseigner chaque date</small>
-            </span>
-            <span className="manual-adjustments-summary">
-              {manualSundayLeaveTotal
-                ? `${manualSundayLeaveTotal} dimanche${s(manualSundayLeaveTotal)}`
-                : "Configurer"}
-              <i aria-hidden="true">›</i>
-            </span>
-          </button>
-        </details>
+        <button
+          className="manual-adjustments-trigger"
+          type="button"
+          onClick={onOpenManualAdjustments}
+        >
+          <span className="manual-adjustments-icon" aria-hidden="true">
+            ↺
+          </span>
+          <span className="manual-adjustments-copy">
+            <strong>Reprendre mes absences précédentes</strong>
+            <small>Ajouter un historique sans renseigner chaque date</small>
+          </span>
+          <span className="manual-adjustments-summary">
+            {manualSundayLeaveTotal
+              ? `${manualSundayLeaveTotal} dimanche${s(manualSundayLeaveTotal)}`
+              : "Configurer"}
+            <i aria-hidden="true">›</i>
+          </span>
+        </button>
       </div>
     </section>
   );

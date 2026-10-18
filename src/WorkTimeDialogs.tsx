@@ -1,7 +1,7 @@
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
-import { MECENAT_REGULATORY_RATES } from "./mecenat";
+import { mecenatRateLabels, mecenatRatesFor } from "./mecenat";
 import { defaultRecoveryMinutes, minutesLabel, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
 import { DAY_LABELS, MONTHS, getDayInfo } from "./planningLogic";
 
@@ -34,6 +34,9 @@ export function MecenatDialog({
   onSave: () => void;
 }) {
   if (!open) return null;
+  // Le barème du jour de la vacation : plages et taux de l'arrêté en vigueur.
+  const rates = mecenatRatesFor(draft.date);
+  const rateLabels = mecenatRateLabels(rates);
   return (
     <div
       className="modal-backdrop"
@@ -52,8 +55,8 @@ export function MecenatDialog({
         <span className="step-label">Ma paie</span>
         <h2 id="mecenat-title">Déclarer un mécénat</h2>
         <p>
-          Indiquez les horaires : Planning Solo sépare automatiquement les heures
-          avant et après 22 h, y compris après minuit.
+          Indiquez les horaires : Planning Solo sépare automatiquement le taux de
+          base et le taux majoré, y compris après minuit.
         </p>
         <div className="overtime-form">
           <label>
@@ -85,21 +88,22 @@ export function MecenatDialog({
           {calculation ? (
             <section className="mecenat-preview" aria-live="polite">
               <div>
-                <span>Avant 22 h</span>
+                <span>{rateLabels.day}</span>
                 <strong>
-                  {euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut
+                  {euros(rates.dayRateCents / 100)}/h brut
                 </strong>
               </div>
               <div>
-                <span>Après 22 h</span>
+                <span>{rateLabels.night}</span>
                 <strong>
-                  {euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut
+                  {euros(rates.nightRateCents / 100)}/h brut
                 </strong>
               </div>
               <p>
                 <span>Total brut</span>
                 <strong>{euros(calculation.grossAmountCents / 100)}</strong>
               </p>
+              <small className="mecenat-rate-source">Barème de l’{rates.source}</small>
             </section>
           ) : (
             <p className="allowance-note warn">

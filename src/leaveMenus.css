@@ -1,4 +1,4 @@
-.leave-secondary-grid:has(>.leave-tool-disclosure[open])>.leave-tool-disclosure:not([open]){display:none}.leave-balances-direct .other-leave-balances>summary{grid-template-columns:36px minmax(0,1fr) auto 18px;min-height:64px;padding:10px}.leave-secondary-menu-icon{display:grid;width:36px;height:36px;place-items:center;border-radius:11px;background:var(--bg);color: var(--muted);font-weight:900}.leave-secondary-menu-copy{min-width:0;overflow:hidden}.leave-balances-direct .other-leave-balances>.manual-adjustments-trigger{grid-template-columns:40px minmax(0,1fr) auto;width:calc(100% - 22px);margin:0 11px 11px}.leave-balances-direct .other-leave-balances .manual-adjustments-summary{grid-column:3;justify-self:end;white-space:nowrap}
+.leave-secondary-grid:has(>.leave-tool-disclosure[open])>.leave-tool-disclosure:not([open]){display:none}.leave-balances-direct .direct-balances-content>.manual-adjustments-trigger{grid-template-columns:40px minmax(0,1fr) auto;width:100%;margin:12px 0 0}.leave-balances-direct .direct-balances-content .manual-adjustments-summary{grid-column:3;justify-self:end;white-space:nowrap}
 
 .leave-primary-action-bar {
   box-sizing: border-box;
@@ -22,45 +22,30 @@
    version douce, à côté de l'action principale pleine. */
 .leave-primary-action-bar > .leave-open-form-action { border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 800; }
 
-.leave-balances-direct .other-leave-balances[open] {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow: visible;
-  border: 0;
-  background: transparent;
-}
-
-.leave-balances-direct .other-leave-balances[open] > summary {
-  order: 3;
-  display: flex;
-  justify-content: center;
-  min-height: 48px;
-  border: 1px solid var(--border-control);
-  border-radius: 999px;
-  padding: 8px 18px;
-  background: var(--surface);
-}
-.other-leave-balances > summary > .other-leave-close { display: none; }
-.leave-balances-direct .other-leave-balances[open] > summary > :not(.other-leave-close) { display: none; }
-.leave-balances-direct .other-leave-balances[open] > summary > .other-leave-close { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-strong); font-size: .9rem; font-weight: 800; }
-.other-leave-close svg { width: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-
-.leave-balances-direct .other-leave-balances[open] > .leave-balance-grid {
-  order: 1;
-  border: 0;
-  padding: 0;
-  background: transparent;
-}
-
-.leave-balances-direct .other-leave-balances[open] > .manual-adjustments-trigger {
-  order: 2;
-  width: 100%;
-  margin: 12px 0 0;
-}
 
 @media (max-width: 520px) {
   .leave-primary-action-bar {
     padding: 10px;
+  }
+}
+
+/* Grille unique des soldes : sur grand écran, les six cartes autrefois rangées
+   dans le volet « Autres congés » gardent le gabarit normal et l'ordre du
+   composant, comme dans ce volet. Sans cela, Accident de travail prendrait
+   toute une ligne et Divers, Grève et CET seraient replacés en fin de grille.
+   Le téléphone garde ses propres règles (Grève et Accident sur la dernière
+   rangée). */
+@media (min-width: 721px) {
+  .leave-balances-direct .direct-balances-content > .leave-balance-grid > button:is(.childcare, .exceptional, .other, .cet, .work_accident, .strike) {
+    display: block;
+    grid-column: auto;
+    min-width: 0;
+    height: 100%;
+    order: initial;
+  }
+  .leave-balances-direct .direct-balances-content > .leave-balance-grid > button.strike > :is(span, strong, small, em) {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: auto;
   }
 }

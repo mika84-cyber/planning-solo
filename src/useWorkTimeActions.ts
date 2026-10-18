@@ -393,7 +393,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
 
   async function saveMecenatEntry() {
     if (mecenatSaveInFlightRef.current) return;
-    const calculation = calculateMecenatVacation(mecenatDraft.start, mecenatDraft.end, workQuota);
+    const calculation = calculateMecenatVacation(mecenatDraft.start, mecenatDraft.end, workQuota, mecenatDraft.date);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(mecenatDraft.date) || !calculation) {
       notify("Vérifiez la date et les horaires du mécénat.");
       return;

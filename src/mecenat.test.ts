@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   MECENAT_REGULATORY_RATES,
   calculateMecenatVacation,
+  mecenatRateLabels,
+  mecenatRatesFor,
   mecenatForPayMonth,
   mecenatsPaidEarly,
   type MecenatEntry,
@@ -38,6 +40,34 @@ describe("calcul réglementaire des mécénats", () => {
 
   it("refuse une durée nulle", () => {
     expect(calculateMecenatVacation("19:00", "19:00", "full")).toBeNull();
+  });
+});
+
+describe("barème selon la date de la vacation", () => {
+  it("applique l'arrêté du 15 décembre 2023 depuis le 1er janvier 2024 : taux majoré dès 22 h", () => {
+    expect(calculateMecenatVacation("21:00", "23:00", "full", "2026-05-12")).toMatchObject({ dayMinutes: 60, nightMinutes: 60, grossAmountCents: 5790 });
+    expect(calculateMecenatVacation("21:00", "23:00", "full", "2024-01-01")).toMatchObject({ dayMinutes: 60, nightMinutes: 60 });
+    expect(mecenatRatesFor("2026-05-12").source).toBe("arrêté du 15 décembre 2023");
+  });
+
+  it("applique l'arrêté du 21 décembre 2018 avant 2024 : taux de base jusqu'à minuit", () => {
+    expect(calculateMecenatVacation("21:00", "23:00", "full", "2023-12-31")).toMatchObject({ dayMinutes: 120, nightMinutes: 0, grossAmountCents: 4580 });
+    expect(calculateMecenatVacation("23:00", "01:00", "full", "2023-06-10")).toMatchObject({ dayMinutes: 60, nightMinutes: 60, grossAmountCents: 5790 });
+    expect(mecenatRatesFor("2019-03-17").source).toBe("arrêté du 21 décembre 2018");
+  });
+
+  it("applique les taux de 2010 avant le 17 mars 2019", () => {
+    expect(calculateMecenatVacation("23:00", "01:00", "full", "2019-03-16")).toMatchObject({ dayMinutes: 60, nightMinutes: 60, grossAmountCents: 5560 });
+    expect(mecenatRatesFor("2015-01-01").source).toBe("arrêté du 18 mai 2010");
+  });
+
+  it("sans date, garde le barème en vigueur", () => {
+    expect(calculateMecenatVacation("21:00", "23:00", "full")).toMatchObject({ dayMinutes: 60, nightMinutes: 60 });
+  });
+
+  it("écrit les plages comme l'arrêté", () => {
+    expect(mecenatRateLabels()).toEqual({ day: "De 7 h à 22 h", night: "De 22 h à 7 h" });
+    expect(mecenatRateLabels(mecenatRatesFor("2020-01-01"))).toEqual({ day: "De 7 h à minuit", night: "De minuit à 7 h" });
   });
 });
 

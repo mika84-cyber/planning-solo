@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { euros } from "./appModel";
-import { MECENAT_REGULATORY_RATES, type MecenatEntry } from "./mecenat";
+import { MECENAT_REGULATORY_RATES, mecenatRateLabels, type MecenatEntry } from "./mecenat";
 import { minutesLabel, overtimePayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
@@ -182,8 +182,8 @@ export function LeaveManagementPage({
               <strong>{mecenatEntries.length} enregistré{s(mecenatEntries.length)}</strong>
             </div>
             <div className="mecenat-rate-summary" role="group" aria-label="Tarifs réglementaires des mécénats">
-              <article><span>Avant 22 h</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
-              <article><span>Après 22 h</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
+              <article><span>{mecenatRateLabels().day}</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
+              <article><span>{mecenatRateLabels().night}</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
             </div>
             <div className="overtime-actions"><button type="button" className="primary-action mecenat-action" onClick={onOpenMecenat}>Déclarer un mécénat</button></div>
             <button type="button" className="soft-detail-button overtime-history-toggle" onClick={onToggleMecenatHistory} aria-expanded={mecenatHistoryOpen}>
