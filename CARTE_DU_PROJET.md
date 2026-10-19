@@ -193,6 +193,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   écriture ou ouverture (pause de deux minutes après un échec).
 - `netlify/lib/calendarShared.mts` : types, validations et utilitaires partagés
   par les gestionnaires du calendrier.
+- `netlify/lib/recoveryBalance.mts` : solde d’heures de récupération côté
+  serveur, majorations comprises (fériés selon le groupe du profil), commun à
+  `save-request` et `delete-overtime`.
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,
   d’isolation et d’écriture de l’API calendrier.
 - `netlify/functions/feedback.mts` : stockage privé des retours, photos,

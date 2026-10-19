@@ -1040,6 +1040,37 @@ describe("API principale du calendrier", () => {
     ).toBe(false);
   });
 
+  it("supprime des heures récupérées tant que le solde majoré couvre les récupérations posées", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    // Deux soirées de 4 h en semaine, créditées 5 h chacune (× 1,25).
+    for (const [id, date] of [["overtime-lundi", "2026-11-02"], ["overtime-mardi", "2026-11-03"]]) {
+      const saved = await calendarHandler(request({
+        action: "save-overtime", id, date, minutes: 240, dayMinutes: 240, nightMinutes: 0,
+        disposition: "recovery", inputMode: "range", start: "18:00", end: "22:00",
+      }));
+      expect(saved.status).toBe(200);
+    }
+    const recovery = await calendarHandler(request({
+      action: "save-request", requestId: "request-recup-5h", requestKind: "recovery", group: 2, periods: [],
+      timed: [{ type: "recovery_hours", date: "2026-11-10", start: "09:00", end: "14:00" }],
+    }));
+    expect(recovery.status).toBe(200);
+
+    const second = await calendarHandler(request({ action: "delete-overtime", id: "overtime-mardi" }));
+    expect(second.status).toBe(200);
+    expect(data.has("user/user-a/overtime/overtime-mardi")).toBe(false);
+
+    // Une récupération annulée par un lot laisse une pierre tombale, sans durée :
+    // elle ne fausse pas le solde.
+    data.set("user/user-a/recovery-use/recup-annulee", { __calendar_tombstone: true });
+    const first = await calendarHandler(request({ action: "delete-overtime", id: "overtime-lundi" }));
+    expect(first.status).toBe(409);
+    expect(await first.json()).toEqual({
+      error: "Cette récupération a déjà été utilisée. Annulez d’abord les récupérations posées.",
+    });
+    expect(data.has("user/user-a/overtime/overtime-lundi")).toBe(true);
+  });
+
   it("n’accepte pas deux consommations simultanées du même solde", async () => {
     data.set("user/user-a/overtime/overtime-credit-concurrent", {
       id: "overtime-credit-concurrent",

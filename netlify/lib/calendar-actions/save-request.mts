@@ -1,10 +1,11 @@
 import { LeaveRequestValidationError, normalizeLeaveRequest } from "../../../src/leaveRequest.ts";
-import { overtimeRecoveryCreditMinutes, recoveryRequestMinutes, storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
+import { recoveryRequestMinutes } from "../../../src/overtime.ts";
 import { addDays, dateKey, fromKey, getDayInfo, LEAVE_ALLOWANCES } from "../../../src/planningLogic.ts";
 import { fractionAllowance, isOffSeasonDate } from "../../../src/fractionRules.ts";
 import { annualCharges } from "../../../src/annualCarryOver.ts";
-import { json, listBlobs, type CalendarEntry, type FormProfile, type LeavePeriod, type LeaveType, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
+import { json, listBlobs, type FormProfile, type LeavePeriod, type LeaveType, type RecoveryUse } from "../calendarShared.mts";
 import { acquireAtomicLock } from "../calendarAtomic.mts";
+import { readRecoveryBalance } from "../recoveryBalance.mts";
 import type { CalendarActionContext } from "./context.mts";
 
 type QuotaLeaveType = "annual" | "rtt" | "fraction";
@@ -63,9 +64,6 @@ export async function handleSaveRequest(
     body,
     store,
     scopedKey,
-    entryPrefix,
-    overtimePrefix,
-    recoveryUsePrefix,
     periodPrefix,
   } = context;
   let normalized: ReturnType<typeof normalizeLeaveRequest>;
@@ -164,30 +162,8 @@ export async function handleSaveRequest(
     }
   }
   if (normalized.requestKind === "recovery") {
-    const [profile, overtimeList, recoveryList, calendarList] = await Promise.all([
-      store.get(scopedKey("form-profile"), { type: "json" }) as Promise<FormProfile | null>,
-      listBlobs(store, overtimePrefix),
-      listBlobs(store, recoveryUsePrefix),
-      listBlobs(store, entryPrefix),
-    ]);
-    const quota = profile?.work_quota || "full";
-    const [overtimeValues, recoveryValues, calendarValues] = await Promise.all([
-      Promise.all(
-        overtimeList.blobs.map((blob) =>
-          store.get(blob.key, { type: "json" }) as Promise<OvertimeEntry | null>,
-        ),
-      ),
-      Promise.all(
-        recoveryList.blobs.map((blob) =>
-          store.get(blob.key, { type: "json" }) as Promise<RecoveryUse | null>,
-        ),
-      ),
-      Promise.all(
-        calendarList.blobs.map((blob) =>
-          store.get(blob.key, { type: "json" }) as Promise<CalendarEntry | null>,
-        ),
-      ),
-    ]);
+    const balance = await readRecoveryBalance(context, normalized.group);
+    const quota = balance.profile?.work_quota || "full";
     recoveryTargets = normalized.recoverySelections.map((selection) => ({
       key: scopedKey(`recovery-use/${selection.id}`),
       value: {
@@ -207,37 +183,15 @@ export async function handleSaveRequest(
     }));
     if (recoveryTargets.some(({ value }) => value.minutes < 1))
       return json({ error: "La durée d’une récupération est invalide" }, 400);
-    const earnedFromOvertime = overtimeValues
-      .filter((item): item is OvertimeEntry => Boolean(item))
-      .filter((item) => item.disposition === "recovery")
-      .reduce((total, item) => total + overtimeRecoveryCreditMinutes({
-        id: item.id,
-        date: item.date,
-        minutes: item.minutes,
-        dayMinutes: item.day_minutes,
-        nightMinutes: item.night_minutes,
-        disposition: item.disposition,
-        inputMode: item.input_mode,
-        start: item.start,
-        end: item.end,
-        updatedAt: item.updated_at,
-      }, (key) => {
-        const date = fromKey(key);
-        return date.getDay() === 0 || Boolean(getDayInfo(date, normalized.group).holiday);
-      }), 0);
-    const earnedFromHolidays = storedHolidayRecoveryCreditMinutes(calendarValues
-      .filter((item): item is CalendarEntry => Boolean(item))
-      .filter((item) => item.holiday_pay === "recovery"));
     const targetIds = new Set(recoveryTargets.map(({ value }) => value.id));
-    const usedOutsideRequest = recoveryValues
-      .filter((item): item is RecoveryUse => Boolean(item))
+    const usedOutsideRequest = balance.recoveryUses
       .filter((item) => !targetIds.has(item.id))
       .reduce((total, item) => total + item.minutes, 0);
     const requested = recoveryTargets.reduce(
       (total, { value }) => total + value.minutes,
       0,
     );
-    if (usedOutsideRequest + requested > earnedFromOvertime + earnedFromHolidays)
+    if (usedOutsideRequest + requested > balance.earned)
       return json(
         {
           error:

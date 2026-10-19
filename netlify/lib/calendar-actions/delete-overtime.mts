@@ -1,56 +1,20 @@
-import { storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
-import { json, listBlobs, validId, type CalendarEntry, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
+import { json, validId, type OvertimeEntry } from "../calendarShared.mts";
+import { readRecoveryBalance } from "../recoveryBalance.mts";
 import type { CalendarActionContext } from "./context.mts";
 export async function handleDeleteOvertime(
   context: CalendarActionContext,
 ): Promise<Response> {
-  const {
-    body,
-    store,
-    scopedKey,
-    entryPrefix,
-    overtimePrefix,
-    recoveryUsePrefix,
-  } = context;
+  const { body, store, scopedKey } = context;
   const id = typeof body.id === "string" ? body.id : "";
   if (!validId(id)) return json({ error: "Heure supplémentaire invalide" }, 400);
   const target = (await store.get(scopedKey(`overtime/${id}`), {
     type: "json",
   })) as OvertimeEntry | null;
   if (target?.disposition === "recovery") {
-    const [overtimeList, recoveryList, calendarList] = await Promise.all([
-      listBlobs(store, overtimePrefix),
-      listBlobs(store, recoveryUsePrefix),
-      listBlobs(store, entryPrefix),
-    ]);
-    const [overtimeValues, recoveryValues, calendarValues] = await Promise.all([
-      Promise.all(
-        overtimeList.blobs.map((blob) =>
-          store.get(blob.key, { type: "json" }) as Promise<OvertimeEntry | null>,
-        ),
-      ),
-      Promise.all(
-        recoveryList.blobs.map((blob) =>
-          store.get(blob.key, { type: "json" }) as Promise<RecoveryUse | null>,
-        ),
-      ),
-      Promise.all(
-        calendarList.blobs.map((blob) =>
-          store.get(blob.key, { type: "json" }) as Promise<CalendarEntry | null>,
-        ),
-      ),
-    ]);
-    const overtimeEarned = overtimeValues
-      .filter((item): item is OvertimeEntry => Boolean(item))
-      .filter((item) => item.disposition === "recovery")
-      .reduce((total, item) => total + item.minutes, 0);
-    const earned = overtimeEarned + storedHolidayRecoveryCreditMinutes(calendarValues
-      .filter((item): item is CalendarEntry => Boolean(item))
-      .filter((item) => item.holiday_pay === "recovery"));
-    const used = recoveryValues
-      .filter((item): item is RecoveryUse => Boolean(item))
-      .reduce((total, item) => total + item.minutes, 0);
-    if (earned - target.minutes < used)
+    // Le crédit retiré est celui que le solde comptait, majoration comprise.
+    const balance = await readRecoveryBalance(context);
+    const used = balance.recoveryUses.reduce((total, item) => total + item.minutes, 0);
+    if (balance.earned - balance.creditOf(target) < used)
       return json(
         {
           error:
