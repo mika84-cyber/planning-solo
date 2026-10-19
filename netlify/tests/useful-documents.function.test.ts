@@ -189,6 +189,25 @@ describe("documents utiles partagés", () => {
     expect(data.size).toBe(0);
   });
 
+  it("sert un document dont le nom porte « œ » ou des accents, puis sa nouvelle version", async () => {
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    const added = await usefulDocumentsHandler(post({ ...upload(), filename: "Fiche œuvre (été).pdf" }));
+    expect(added.status).toBe(201);
+    const { document } = await added.json() as { document: { id: string; href: string } };
+    const download = await usefulDocumentsHandler(new Request(`https://example.test${document.href}`));
+    expect(download.status).toBe(200);
+    expect(download.headers.get("content-disposition"))
+      .toBe("inline; filename=\"Fiche oeuvre (ete).pdf\"; filename*=UTF-8''Fiche%20%C5%93uvre%20%28%C3%A9t%C3%A9%29.pdf");
+
+    expect((await usefulDocumentsHandler(post({
+      action: "replace-document", documentId: document.id, filename: "Œuvres à voir.pdf", contentBase64: pdf,
+    }))).status).toBe(200);
+    const replaced = await usefulDocumentsHandler(new Request(`https://example.test${document.href}`));
+    expect(replaced.status).toBe(200);
+    expect(replaced.headers.get("content-disposition"))
+      .toBe("inline; filename=\"OEuvres a voir.pdf\"; filename*=UTF-8''%C5%92uvres%20%C3%A0%20voir.pdf");
+  });
+
   it("ajoute, liste et sert un PDF authentifié sans envoyer d’alerte par défaut", async () => {
     mockedGetUser.mockResolvedValue({ id: "admin", email: "ADMIN@example.test" } as never);
     const response = await usefulDocumentsHandler(post(upload()));

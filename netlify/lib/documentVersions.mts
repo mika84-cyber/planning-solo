@@ -15,10 +15,21 @@ export async function saveDocumentVersion(store: Store, id: string, previous: Do
   if (next) await store.setJSON(replacementKey(id), next);
   else await store.delete(replacementKey(id));
 }
+/** Un en-tête HTTP n'admet que des octets : le nom exact part encodé
+ *  (filename*, RFC 6266), précédé d'un nom ASCII pour les anciens lecteurs. */
+export function inlineContentDisposition(filename: string) {
+  const fallback = filename
+    .replace(/œ/g, 'oe').replace(/Œ/g, 'OE').replace(/æ/g, 'ae').replace(/Æ/g, 'AE')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '');
+  const encoded = encodeURIComponent(filename)
+    .replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `inline; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
 export function versionResponse(file: DocumentFileVersion) {
   return new Response(Buffer.from(file.contentBase64, 'base64'), { headers: {
     'content-type': file.contentType,
-    'content-disposition': `inline; filename="${file.filename.replace(/["\\]/g, '')}"`,
+    'content-disposition': inlineContentDisposition(file.filename),
     'cache-control': 'private, no-store',
   } });
 }

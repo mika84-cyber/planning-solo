@@ -5,7 +5,7 @@ import { currentUser } from "../lib/identityUser.mts";
 import { sendDocumentAnnouncementEmail } from "../lib/documentAnnouncementEmail.mts";
 import { isTrustedMutation } from "../lib/requestSecurity.mts";
 import { archive, futureDate, rememberDelivery, receiptKey, type Job, type Delivery, deliveryKey } from '../lib/adminTools.mts';
-import { currentReplacement, revisionPrefix, saveDocumentVersion, versionResponse, type DocumentFileVersion, type DocumentRevision } from '../lib/documentVersions.mts';
+import { currentReplacement, inlineContentDisposition, revisionPrefix, saveDocumentVersion, versionResponse, type DocumentFileVersion, type DocumentRevision } from '../lib/documentVersions.mts';
 
 type DocumentFolder = "expo" | "sap" | "brantome";
 type StoredDocument = {
@@ -164,7 +164,7 @@ export default async function usefulDocumentsHandler(request: Request) {
       if (replacement) return versionResponse(replacement);
       return new Response(Buffer.from(storedFile.contentBase64, "base64"), { headers: {
         "content-type": document.contentType,
-        "content-disposition": `inline; filename="${document.filename.replace(/["\\]/g, "")}"`,
+        "content-disposition": inlineContentDisposition(document.filename),
         "cache-control": "private, no-store",
       } });
     }
