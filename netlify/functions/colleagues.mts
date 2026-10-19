@@ -74,7 +74,8 @@ const blockedKey = (blockedId: string, blockerId: string) =>
 const exchangeToKey = (toId: string, id: string) => `colleagues/exchange/to/${encodeURIComponent(toId)}/${encodeURIComponent(id)}`;
 const exchangeFromKey = (fromId: string, id: string) => `colleagues/exchange/from/${encodeURIComponent(fromId)}/${encodeURIComponent(id)}`;
 const validDateKey = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
-const validTime = (value: unknown) => typeof value === "string" && /^(\d{2}:\d{2})?$/.test(value) ? value : "";
+/** Une heure « 09:15 », ou rien. */
+const validTime = (value: unknown) => typeof value === "string" && /^(([01]\d|2[0-3]):[0-5]\d)?$/.test(value) ? value : "";
 const identityDirectorySyncKey = "colleagues/meta/identity-directory-sync";
 const IDENTITY_DIRECTORY_SYNC_TTL_MS = 5 * 60 * 1000;
 const validUserId = (value: unknown): value is string =>
@@ -215,6 +216,18 @@ async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
     .map((entry) => isCalendarTombstone(entry) ? null : entry);
   const problem = await recipientExchangeProblem(store, request, entries);
   if (problem) return problem;
+  // Un échange déjà accepté puis modifié par l'expéditeur : ses anciennes
+  // journées sont libérées, seules les deux nouvelles le portent.
+  const previousDays = (await readMany<Record<string, unknown>>(store, userDataKey(request.toId, "entry/")))
+    .filter((entry) => entry.exchange_id === request.id && typeof entry.date === "string" &&
+      entry.date !== request.agreementDate && entry.date !== request.returnDate);
+  await Promise.all(previousDays.map((entry) => {
+    const key = userDataKey(request.toId, `entry/${entry.date}`);
+    const rest = Object.fromEntries(Object.entries(entry).filter(([field]) => !field.startsWith("exchange_")));
+    const kept = rest.note_text || rest.leave === true || rest.wish === true || rest.holiday_pay ||
+      rest.closure_override || rest.work_post;
+    return kept ? store.setJSON(key, { ...rest, updated_at: now }) : store.delete(key);
+  }));
   await Promise.all(days.map(([date, role, otherDate, start, end], index) => store.setJSON(userDataKey(request.toId, `entry/${date}`), {
     date, note_text: "", note_color: "#D3943D", note_updated_at: "", note_group_id: "", leave: false, wish: false,
     ...(entries[index] || {}),
@@ -589,14 +602,27 @@ export default async (request: Request) => {
       store.get(blockerKey(partnerId, user.id), { type: "json" }),
     ]);
     if (!partner || !partner.visible || blockedByPartner) return json({ error: "Ce collègue n’est pas disponible." }, 404);
-    const existing = (await store.get(exchangeFromKey(user.id, id), { type: "json" })) as ExchangeRequest | null;
-    await writeExchangeRequest(store, {
+    const [existing, received] = await Promise.all([
+      store.get(exchangeFromKey(user.id, id), { type: "json" }) as Promise<ExchangeRequest | null>,
+      store.get(exchangeToKey(partnerId, id), { type: "json" }) as Promise<ExchangeRequest | null>,
+    ]);
+    // La proposition d'un autre expéditeur n'est jamais remplacée.
+    if (received && received.fromId !== user.id) return json({ error: "Échange invalide." }, 409);
+    const proposal: ExchangeRequest = {
       id, fromId: user.id, fromName: sender.displayName, fromGroup, toId: partnerId, toName: partner.displayName,
       agreementDate: body.agreementDate, returnDate: body.returnDate,
       agreementStart: validTime(body.agreementStart), agreementEnd: validTime(body.agreementEnd),
       returnStart: validTime(body.returnStart), returnEnd: validTime(body.returnEnd),
       status: "pending", createdAt: existing?.createdAt || now, updatedAt: now,
-    });
+    };
+    // Renvoyé sans changement, un échange déjà accepté n'est pas redemandé.
+    const unchanged = existing?.status === "accepted" && existing.toId === partnerId &&
+      (["fromGroup", "agreementDate", "returnDate", "agreementStart", "agreementEnd", "returnStart", "returnEnd"] as const)
+        .every((field) => existing[field] === proposal[field]);
+    if (unchanged) return directoryResponse(store, user.id, user.email);
+    // Adressé à un autre collègue, l'échange disparaît des propositions du premier.
+    if (existing && existing.toId !== partnerId) await store.delete(exchangeToKey(existing.toId, id));
+    await writeExchangeRequest(store, proposal);
     return directoryResponse(store, user.id, user.email);
   }
 

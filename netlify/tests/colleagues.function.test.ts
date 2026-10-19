@@ -359,6 +359,74 @@ describe("partage des plannings entre collègues", () => {
     expect(data.get("user/user-b/entry/2026-11-19")).toMatchObject({ exchange_id: "exchange-controle", exchange_role: "given" });
   });
 
+  it("n’enregistre que des heures réelles dans une proposition d’échange", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît");
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "user-a@example.test" } as never);
+    expect((await colleaguesHandler(post({
+      action: "propose-exchange", id: "exchange-heures", partnerId: "user-b", group: 2,
+      agreementDate: "2026-11-03", returnDate: "2026-11-10",
+      agreementStart: "99:99", agreementEnd: "24:00", returnStart: "09:15", returnEnd: "7:30",
+    }))).status).toBe(200);
+    expect(data.get("colleagues/exchange/to/user-b/exchange-heures")).toMatchObject({
+      agreementStart: "", agreementEnd: "", returnStart: "09:15", returnEnd: "",
+    });
+  });
+
+  it("remplace les anciennes journées d’un échange accepté puis modifié, sans redemander un échange inchangé", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît");
+    data.set("user/user-b/form-profile", { full_name: "Benoît", group: "3" });
+    data.set("user/user-b/entry/2026-11-10", { date: "2026-11-10", note_text: "Dentiste", leave: false, wish: false, updated_at: "v1" });
+    const propose = (agreementDate: string, returnDate: string) => {
+      mockedGetUser.mockResolvedValue({ id: "user-a", email: "user-a@example.test" } as never);
+      return colleaguesHandler(post({
+        action: "propose-exchange", id: "exchange-modifie", partnerId: "user-b", group: 2,
+        agreementDate, returnDate, agreementStart: "10:00", agreementEnd: "18:00", returnStart: "", returnEnd: "",
+      }));
+    };
+    const accept = () => {
+      mockedGetUser.mockResolvedValue({ id: "user-b", email: "user-b@example.test" } as never);
+      return colleaguesHandler(post({ action: "respond-exchange", id: "exchange-modifie", response: "accept" }));
+    };
+    await propose("2026-11-03", "2026-11-10");
+    expect((await accept()).status).toBe(200);
+
+    // Le même échange, renvoyé sans changement, reste accepté.
+    await propose("2026-11-03", "2026-11-10");
+    expect(data.get("colleagues/exchange/to/user-b/exchange-modifie")).toMatchObject({ status: "accepted" });
+
+    // Alice déplace l'échange : Benoît le revalide, ses anciennes journées sont libérées.
+    await propose("2026-11-12", "2026-11-19");
+    expect(data.get("colleagues/exchange/to/user-b/exchange-modifie")).toMatchObject({ status: "pending" });
+    expect((await accept()).status).toBe(200);
+    expect(data.has("user/user-b/entry/2026-11-03")).toBe(false);
+    const freed = data.get("user/user-b/entry/2026-11-10") as Record<string, unknown>;
+    expect(freed).toMatchObject({ note_text: "Dentiste" });
+    expect(freed).not.toHaveProperty("exchange_id");
+    expect(data.get("user/user-b/entry/2026-11-12")).toMatchObject({ exchange_id: "exchange-modifie", exchange_role: "return" });
+    expect(data.get("user/user-b/entry/2026-11-19")).toMatchObject({ exchange_id: "exchange-modifie", exchange_role: "given" });
+  });
+
+  it("ne laisse pas un expéditeur écraser la proposition d’un autre, et retire celle d’un collègue remplacé", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît"); profile("user-c", "Chloé");
+    const proposal = (sender: string, partnerId: string) => {
+      mockedGetUser.mockResolvedValue({ id: sender, email: `${sender}@example.test` } as never);
+      return colleaguesHandler(post({
+        action: "propose-exchange", id: "exchange-commun", partnerId, group: 2,
+        agreementDate: "2026-11-03", returnDate: "2026-11-10",
+      }));
+    };
+    expect((await proposal("user-a", "user-b")).status).toBe(200);
+    const overwrite = await proposal("user-c", "user-b");
+    expect(overwrite.status).toBe(409);
+    expect(data.get("colleagues/exchange/to/user-b/exchange-commun")).toMatchObject({ fromId: "user-a" });
+    expect(data.has("colleagues/exchange/from/user-c/exchange-commun")).toBe(false);
+
+    // Alice adresse finalement l'échange à Chloé : Benoît ne le voit plus.
+    expect((await proposal("user-a", "user-c")).status).toBe(200);
+    expect(data.has("colleagues/exchange/to/user-b/exchange-commun")).toBe(false);
+    expect(data.get("colleagues/exchange/to/user-c/exchange-commun")).toMatchObject({ fromId: "user-a", status: "pending" });
+  });
+
   it("refuse d’inscrire un échange sur une journée déjà prise, et retient un refus", async () => {
     profile("user-a", "Alice"); profile("user-b", "Benoît");
     const request = {
