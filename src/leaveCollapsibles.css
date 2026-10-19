@@ -324,7 +324,8 @@
 .leave-info-icon svg { stroke-width: 1.8; stroke-linejoin: round; }
 .leave-info-kicker { color: var(--accent); font-size: .64rem; font-style: normal; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .leave-info-copy strong { color: var(--accent-strong); }
-.leave-info-copy small { color: color-mix(in srgb, var(--accent-strong) 70%, #fff); }
+/* Brun sourd : distinct du titre, et lisible sur le fond pâle (contraste 6:1). */
+.leave-info-copy small { color: #6b4a3c; }
 .leave-info-card > summary > em { border-color: color-mix(in srgb, var(--accent) 35%, transparent); background: #fff; color: var(--accent-strong); }
 .leave-info-content { border-top-color: #cfd8e3; background: #f3f6f9; }
 .leave-info-content .sunday-dates-close { border-color: #cfd8e3; color: #3f5670; }
