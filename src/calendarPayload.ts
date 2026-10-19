@@ -181,6 +181,8 @@ function entriesFromApi(value: unknown): Entries {
       exchangeOtherDate: /^\d{4}-\d{2}-\d{2}$/.test(text(raw.exchange_other_date))
         ? text(raw.exchange_other_date)
         : undefined,
+      exchangeStart: /^\d{2}:\d{2}$/.test(text(raw.exchange_start)) ? text(raw.exchange_start) : undefined,
+      exchangeEnd: /^\d{2}:\d{2}$/.test(text(raw.exchange_end)) ? text(raw.exchange_end) : undefined,
       updatedAt: text(raw.updated_at),
     };
   }

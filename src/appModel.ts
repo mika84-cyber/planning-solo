@@ -49,6 +49,9 @@ export type SharedEntry = {
   exchangePartner?: string;
   exchangePartnerGroup?: number;
   exchangeOtherDate?: string;
+  /** Horaires de cette journée d'échange (« 09:15 »), repris sur la demande. */
+  exchangeStart?: string;
+  exchangeEnd?: string;
   /** Version serveur utilisée pour détecter une modification concurrente. */
   updatedAt: string;
 };
@@ -87,6 +90,12 @@ export type WorkExchange = {
   partnerGroup: number;
   agreementDate: string;
   returnDate: string;
+  /** Horaires enregistrés de chaque journée ; vides pour un échange plus
+   *  ancien, le profil les propose alors. */
+  agreementStart?: string;
+  agreementEnd?: string;
+  returnStart?: string;
+  returnEnd?: string;
   updatedAt: string;
 };
 export type LeavePeriod = {

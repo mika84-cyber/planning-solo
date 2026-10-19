@@ -1469,6 +1469,8 @@ fieldset.leave-choices {
 .app-shell .xch-groups button { min-height: 32px; margin: 0; border: 1px solid #ddd2c4; border-radius: 999px; padding: 4px 14px; background: #fff; box-shadow: none; color: var(--muted); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
 .app-shell .xch-groups button.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
 .app-shell .xch-groups button:disabled { opacity: 0.4; }
+/* « Remplir la demande ensuite », juste au-dessus des boutons. */
+.xch-switch.xch-fill-form { margin: 0 0 10px; }
 .xch-recap { display: grid; margin: 0 0 12px; border-radius: 12px; padding: 9px 12px; background: #e9f0f4; color: #2f4f60; font-size: 0.84rem; font-weight: 750; }
 .xch-actions { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 8px; border-top: 1px solid #ece4d9; padding: 12px 0 14px; background: inherit; }
 .app-shell .xch-actions > button { margin: 0; }

@@ -49,6 +49,9 @@ export type CalendarEntry = {
   exchange_partner?: string;
   exchange_partner_group?: number;
   exchange_other_date?: string;
+  /** Horaires de cette journée d'échange (« 09:15 »), repris sur la demande. */
+  exchange_start?: string;
+  exchange_end?: string;
   updated_at: string;
 };
 export type LeavePeriod = {

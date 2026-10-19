@@ -234,18 +234,27 @@ describe("API principale du calendrier", () => {
       partnerGroup: 1,
       agreementDate: "2026-09-08",
       returnDate: "2026-09-01",
+      agreementStart: "09:15",
+      agreementEnd: "17:30",
+      returnStart: "10:00",
+      returnEnd: "18:00",
       expectedUpdatedAts: { "2026-09-01": "", "2026-09-08": "" },
     }));
     expect(save.status).toBe(200);
+    // Chaque journée garde ses horaires, pour les retrouver à la modification.
     expect(data.get("user/user-a/entry/2026-09-08")).toMatchObject({
       exchange_id: "exchange-2026-a",
       exchange_role: "given",
       exchange_other_date: "2026-09-01",
+      exchange_start: "09:15",
+      exchange_end: "17:30",
     });
     expect(data.get("user/user-a/entry/2026-09-01")).toMatchObject({
       exchange_id: "exchange-2026-a",
       exchange_role: "return",
       exchange_other_date: "2026-09-08",
+      exchange_start: "10:00",
+      exchange_end: "18:00",
     });
 
     const first = data.get("user/user-a/entry/2026-09-01") as { updated_at: string };
@@ -258,9 +267,12 @@ describe("API principale du calendrier", () => {
       expectedUpdatedAt: first.updated_at,
     }));
     expect(note.status).toBe(200);
+    // Une note posée ensuite ne fait pas perdre les horaires.
     expect(data.get("user/user-a/entry/2026-09-01")).toMatchObject({
       note_text: "À confirmer avec Camille",
       exchange_id: "exchange-2026-a",
+      exchange_start: "10:00",
+      exchange_end: "18:00",
     });
 
     const firstWithNote = data.get("user/user-a/entry/2026-09-01") as { updated_at: string };
@@ -278,7 +290,29 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/entry/2026-09-01")).toMatchObject({
       note_text: "À confirmer avec Camille",
     });
+    expect((data.get("user/user-a/entry/2026-09-01") as Record<string, unknown>).exchange_start).toBeUndefined();
     expect(data.has("user/user-a/entry/2026-09-08")).toBe(false);
+  });
+
+  it("enregistre les horaires modifiés d’un échange existant et ignore une heure mal formée", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const base = { action: "save-exchange", id: "exchange-horaires", partnerName: "Camille", partnerGroup: 1, agreementDate: "2026-09-08", returnDate: "2026-09-01" };
+    const first = await calendarHandler(request({ ...base, agreementStart: "09:00", agreementEnd: "17:00", returnStart: "09:00", returnEnd: "17:00", expectedUpdatedAts: { "2026-09-01": "", "2026-09-08": "" } }));
+    expect(first.status).toBe(200);
+    const given = data.get("user/user-a/entry/2026-09-08") as { updated_at: string };
+    const back = data.get("user/user-a/entry/2026-09-01") as { updated_at: string };
+    const second = await calendarHandler(request({
+      ...base,
+      previousAgreementDate: "2026-09-08",
+      previousReturnDate: "2026-09-01",
+      agreementStart: "09:15", agreementEnd: "17:30", returnStart: "25:00", returnEnd: "18:00",
+      expectedUpdatedAts: { "2026-09-08": given.updated_at, "2026-09-01": back.updated_at },
+    }));
+    expect(second.status).toBe(200);
+    expect(data.get("user/user-a/entry/2026-09-08")).toMatchObject({ exchange_start: "09:15", exchange_end: "17:30" });
+    const returned = data.get("user/user-a/entry/2026-09-01") as Record<string, unknown>;
+    expect(returned.exchange_start).toBeUndefined();
+    expect(returned.exchange_end).toBe("18:00");
   });
 
   it("enregistre un remplacement seul de férié sur sa seule date, puis le transforme en échange", async () => {

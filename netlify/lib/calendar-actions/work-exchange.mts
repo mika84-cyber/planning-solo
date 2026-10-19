@@ -22,6 +22,11 @@ function hasContent(entry: CalendarEntry) {
   );
 }
 
+/** Une heure « 09:15 », ou rien. */
+function clock(value: unknown) {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : "";
+}
+
 function expectedVersions(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     return {} as Record<string, string>;
@@ -129,6 +134,8 @@ export async function handleSaveExchange(context: CalendarActionContext) {
     delete entry.exchange_partner;
     delete entry.exchange_partner_group;
     delete entry.exchange_other_date;
+    delete entry.exchange_start;
+    delete entry.exchange_end;
     entry.updated_at = now;
     if (date === agreementDate || date === returnDate) {
       entry.exchange_id = id;
@@ -137,6 +144,11 @@ export async function handleSaveExchange(context: CalendarActionContext) {
       entry.exchange_partner_group = partnerGroup;
       const other = date === agreementDate ? returnDate : agreementDate;
       if (other) entry.exchange_other_date = other;
+      // Les horaires de la journée, tels que saisis dans la fenêtre d'échange.
+      const start = clock(date === agreementDate ? context.body.agreementStart : context.body.returnStart);
+      const end = clock(date === agreementDate ? context.body.agreementEnd : context.body.returnEnd);
+      if (start) entry.exchange_start = start;
+      if (end) entry.exchange_end = end;
     }
     next.set(date, entry);
   }
@@ -171,6 +183,8 @@ export async function handleDeleteExchange(context: CalendarActionContext) {
     delete entry.exchange_partner;
     delete entry.exchange_partner_group;
     delete entry.exchange_other_date;
+    delete entry.exchange_start;
+    delete entry.exchange_end;
     entry.updated_at = now;
     next.set(date, entry);
   }

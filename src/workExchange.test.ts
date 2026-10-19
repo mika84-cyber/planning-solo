@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { workedDayCount, type Entries } from "./appModel";
 import {
   emptyWorkExchangeDraft,
+  exchangeDraftFromExchange,
   exchangeEntryFields,
   holidaysForExchangeGive,
   holidaysForExchangeReturn,
@@ -90,6 +91,35 @@ describe("échanges de journées", () => {
     expect(workExchangeForDate(entries, "2026-08-09")).toMatchObject({
       agreementDate: "2026-08-03",
       returnDate: "2026-08-09",
+    });
+  });
+
+  it("garde les horaires de chaque journée et les rend à la modification", () => {
+    const draft = {
+      ...emptyWorkExchangeDraft(2),
+      id: "exchange-horaires",
+      partnerName: "Camille",
+      partnerGroup: 1,
+      agreementDate: "2026-11-19",
+      returnDate: "2026-10-04",
+      agreementStart: "09:15",
+      agreementEnd: "17:30",
+      returnStart: "10:00",
+      returnEnd: "18:00",
+    };
+    const fields = exchangeEntryFields(draft);
+    expect(fields["2026-11-19"]).toMatchObject({ exchangeStart: "09:15", exchangeEnd: "17:30" });
+    expect(fields["2026-10-04"]).toMatchObject({ exchangeStart: "10:00", exchangeEnd: "18:00" });
+    const entries = Object.fromEntries(Object.entries(fields).map(([date, value]) => [date, { ...value, updatedAt: "v" }])) as unknown as Entries;
+    const exchange = workExchangeForDate(entries, "2026-10-04")!;
+    // Les horaires enregistrés passent avant ceux du profil.
+    expect(exchangeDraftFromExchange(exchange, { start: "08:00", end: "16:00" })).toMatchObject({
+      agreementStart: "09:15", agreementEnd: "17:30", returnStart: "10:00", returnEnd: "18:00",
+    });
+    // Un échange plus ancien, sans horaires : ceux du profil.
+    const older = { ...exchange, agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "" };
+    expect(exchangeDraftFromExchange(older, { start: "08:00", end: "16:00" })).toMatchObject({
+      agreementStart: "08:00", agreementEnd: "16:00", returnStart: "08:00", returnEnd: "16:00",
     });
   });
 

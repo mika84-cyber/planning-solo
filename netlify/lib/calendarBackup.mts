@@ -131,6 +131,14 @@ export function sanitizeCalendarBackup(value: unknown) {
       exchange_other_date: isValidDateKey(item.exchange_other_date)
         ? item.exchange_other_date
         : undefined,
+      exchange_start:
+        typeof item.exchange_start === "string" && /^\d{2}:\d{2}$/.test(item.exchange_start)
+          ? item.exchange_start
+          : undefined,
+      exchange_end:
+        typeof item.exchange_end === "string" && /^\d{2}:\d{2}$/.test(item.exchange_end)
+          ? item.exchange_end
+          : undefined,
       updated_at:
         typeof item.updated_at === "string"
           ? item.updated_at

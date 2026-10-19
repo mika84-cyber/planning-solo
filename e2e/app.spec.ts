@@ -3522,6 +3522,23 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await page.locator(".day.exchange-return").click();
   await expect(page.getByText(new RegExp(`Vous la remplacez ce jour, Camille vous remplace le ${longDate(agreement)}`))).toBeVisible();
   await page.getByRole("button", { name: "Modifier ou supprimer l’échange" }).click();
+  // Les horaires saisis à la création sont retrouvés, pas ceux du profil.
+  const editDialog = page.getByRole("dialog", { name: "Modifier l’échange" });
+  const myHours = editDialog.getByRole("group", { name: "Horaires de la journée de votre cycle" });
+  await expect(myHours.getByLabel("De — heures")).toHaveValue("10");
+  await expect(editDialog.getByRole("group", { name: "Horaires de la journée de son cycle" }).getByLabel("À — heures")).toHaveValue("18");
+  // Une modification s'enregistre sans rouvrir la demande à remplir.
+  const fillForm = editDialog.getByRole("switch", { name: "Remplir la demande ensuite" });
+  await expect(fillForm).not.toBeChecked();
+  await myHours.getByLabel("De — heures").selectOption("9");
+  await myHours.getByLabel("De — minutes").selectOption("15");
+  await editDialog.getByRole("button", { name: "Enregistrer les modifications" }).click();
+  await expect(editDialog).toBeHidden();
+  await expect(page).not.toHaveURL(/\/formulaire\//);
+  await page.locator(".day.exchange-given").click();
+  await page.getByRole("button", { name: "Modifier ou supprimer l’échange" }).click();
+  await expect(myHours.getByLabel("De — heures")).toHaveValue("9");
+  await expect(myHours.getByLabel("De — minutes")).toHaveValue("15");
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Supprimer l’échange" }).click();
   await expect(page.locator(".day.exchange-day")).toHaveCount(0);

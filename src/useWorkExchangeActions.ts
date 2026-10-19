@@ -21,7 +21,8 @@ export const EXCHANGE_HANDOFF_KEY = "planning:exchange-handoff-v1";
 /* La démo garde ses échanges le temps de l'onglet : le formulaire s'ouvre
    dans la même page et l'échange doit être là au retour. */
 export const DEMO_EXCHANGES_KEY = "planning:demo-exchanges-v1";
-type StoredExchange = Pick<WorkExchangeDraft, "id" | "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">;
+type StoredExchange = Pick<WorkExchangeDraft, "id" | "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">
+  & Partial<Pick<WorkExchangeDraft, "agreementStart" | "agreementEnd" | "returnStart" | "returnEnd">>;
 
 export function readDemoExchanges(): StoredExchange[] {
   try {
@@ -62,6 +63,8 @@ function clearExchangeFields(entry: ReturnType<typeof emptyEntry>) {
   delete next.exchangePartner;
   delete next.exchangePartnerGroup;
   delete next.exchangeOtherDate;
+  delete next.exchangeStart;
+  delete next.exchangeEnd;
   return next;
 }
 
@@ -147,7 +150,8 @@ export function useWorkExchangeActions({
     return next;
   }
 
-  async function save() {
+  /** Enregistre l'échange ; `fillForm` ouvre ensuite la demande préremplie. */
+  async function save(fillForm = true) {
     // Hors d'un férié, ou avec un férié rendu, ce n'est pas un remplacement seul.
     const replacement = Boolean(draft.replacement);
     const dated = replacement ? { ...draft, returnDate: "" } : draft;
@@ -190,6 +194,10 @@ export function useWorkExchangeActions({
             partnerGroup: nextDraft.partnerGroup,
             agreementDate: nextDraft.agreementDate,
             returnDate: nextDraft.returnDate,
+            agreementStart: nextDraft.agreementStart,
+            agreementEnd: nextDraft.agreementEnd,
+            returnStart: nextDraft.returnDate ? nextDraft.returnStart : "",
+            returnEnd: nextDraft.returnDate ? nextDraft.returnEnd : "",
             previousAgreementDate: previous?.agreementDate || "",
             previousReturnDate: previous?.returnDate || "",
             expectedUpdatedAts: Object.fromEntries(
@@ -201,14 +209,15 @@ export function useWorkExchangeActions({
       showSuccess(replacement
         ? previous ? "Le remplacement a été modifié." : "Le remplacement a été enregistré."
         : previous ? "L’échange a été modifié sur ses deux dates." : "L’échange a été enregistré sur ses deux dates.");
-      const { id, partnerName, partnerGroup, agreementDate, returnDate } = nextDraft;
-      if (demoMode) storeDemoExchange(id, { id, partnerName, partnerGroup, agreementDate, returnDate });
+      const { id, partnerName, partnerGroup, agreementDate, returnDate, agreementStart, agreementEnd, returnStart, returnEnd } = nextDraft;
+      if (demoMode) storeDemoExchange(id, { id, partnerName, partnerGroup, agreementDate, returnDate, agreementStart, agreementEnd, returnStart, returnEnd });
       /* Le collègue a un compte dans l'annuaire : l'échange lui est proposé,
          pour qu'il l'accepte d'un geste et l'ait dans son planning. */
       if (!demoMode && returnDate) await proposeToColleague(nextDraft).catch(() => undefined);
       /* La demande s'ouvre aussitôt, remplie avec ces dates : la demande
-         d'échange, ou pour un férié la demande de remplacement. */
-      try {
+         d'échange, ou pour un férié la demande de remplacement. Sans elle,
+         l'échange reste enregistré dans le planning. */
+      if (fillForm) try {
         localStorage.setItem(EXCHANGE_HANDOFF_KEY, JSON.stringify({
           version: 1,
           sheet: getDayInfo(fromKey(agreementDate), group).holiday ? "ferie" : "echange",

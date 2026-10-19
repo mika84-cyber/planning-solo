@@ -147,9 +147,11 @@ async function removeExchangeRequest(store: Store, request: ExchangeRequest) {
  *  journée de l'expéditeur, se repose la sienne. */
 async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
   const now = new Date().toISOString();
-  const days: Array<[string, "return" | "given", string]> = [
-    [request.agreementDate, "return", request.returnDate],
-    [request.returnDate, "given", request.agreementDate],
+  // Pour le collègue, la journée cédée par l'expéditeur est celle qu'il
+  // rend, avec ses horaires ; et inversement.
+  const days: Array<[string, "return" | "given", string, string, string]> = [
+    [request.agreementDate, "return", request.returnDate, request.agreementStart, request.agreementEnd],
+    [request.returnDate, "given", request.agreementDate, request.returnStart, request.returnEnd],
   ];
   const entries = await Promise.all(days.map(([date]) =>
     store.get(userDataKey(request.toId, `entry/${date}`), { type: "json" }) as Promise<Record<string, unknown> | null>));
@@ -157,7 +159,7 @@ async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
     if (entry?.exchange_id && entry.exchange_id !== request.id) return "Une de vos journées appartient déjà à un autre échange.";
     if (entry?.leave === true) return "Une de vos journées comporte déjà un congé.";
   }
-  await Promise.all(days.map(([date, role, otherDate], index) => store.setJSON(userDataKey(request.toId, `entry/${date}`), {
+  await Promise.all(days.map(([date, role, otherDate, start, end], index) => store.setJSON(userDataKey(request.toId, `entry/${date}`), {
     date, note_text: "", note_color: "#D3943D", note_updated_at: "", note_group_id: "", leave: false, wish: false,
     ...(entries[index] || {}),
     exchange_id: request.id,
@@ -165,6 +167,8 @@ async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
     exchange_partner: request.fromName,
     exchange_partner_group: request.fromGroup,
     exchange_other_date: otherDate,
+    exchange_start: start || undefined,
+    exchange_end: end || undefined,
     updated_at: now,
   })));
   return "";

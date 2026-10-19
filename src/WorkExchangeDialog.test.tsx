@@ -46,6 +46,36 @@ describe("WorkExchangeDialog", () => {
     expect(html).toContain('aria-label="Horaires de la journée de votre cycle"');
     expect(html).toContain('aria-label="Horaires de la journée de son cycle"');
     expect(html).toContain("Valider l’échange");
+    // Un nouvel échange ouvre ensuite la demande à remplir, interrupteur activé.
+    expect(html).toMatch(/<input type="checkbox" role="switch" checked=""[^>]*\/><span>Remplir la demande ensuite<\/span>/);
+  });
+
+  it("modifie un échange enregistré sans rouvrir la demande, sauf si on le choisit", () => {
+    const html = renderToStaticMarkup(
+      <WorkExchangeDialog
+        open
+        group={3}
+        draft={{
+          id: "exchange-1",
+          partnerName: "Camille",
+          partnerGroup: 1,
+          agreementDate: "",
+          returnDate: "",
+          agreementStart: "09:15",
+          agreementEnd: "17:30",
+          returnStart: "09:15",
+          returnEnd: "17:30",
+        }}
+        setDraft={vi.fn()}
+        error=""
+        saving={false}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(html).toContain("Enregistrer les modifications");
+    expect(html).toMatch(/<input type="checkbox" role="switch"\/><span>Remplir la demande ensuite<\/span>/);
   });
 
   it("déduit de votre journée le groupe du collègue, seul choix possible", async () => {

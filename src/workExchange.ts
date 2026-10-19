@@ -9,8 +9,8 @@ export type WorkExchangeDraft = {
   partnerGroup: number;
   agreementDate: string;
   returnDate: string;
-  /** Horaires de chaque journée, repris sur la demande d'échange. Ils ne
-   *  sont pas enregistrés : le profil les propose à chaque ouverture. */
+  /** Horaires de chaque journée, repris sur la demande d'échange et
+   *  enregistrés avec elle ; le profil les propose pour un nouvel échange. */
   agreementStart: string;
   agreementEnd: string;
   returnStart: string;
@@ -74,7 +74,24 @@ export function workExchangeForDate(entries: Entries, date: string): WorkExchang
     partnerGroup: entry.exchangePartnerGroup,
     agreementDate: entry.exchangeRole === "given" ? date : entry.exchangeOtherDate || "",
     returnDate: entry.exchangeRole === "return" ? date : entry.exchangeOtherDate || "",
+    ...exchangeHoursFromEntries(
+      entries,
+      entry.exchangeRole === "given" ? date : entry.exchangeOtherDate || "",
+      entry.exchangeRole === "return" ? date : entry.exchangeOtherDate || "",
+    ),
     updatedAt: entry.updatedAt,
+  };
+}
+
+/** Les horaires enregistrés sur chacune des deux journées. */
+function exchangeHoursFromEntries(entries: Entries, agreementDate: string, returnDate: string) {
+  const given = agreementDate ? entries[agreementDate] : undefined;
+  const back = returnDate ? entries[returnDate] : undefined;
+  return {
+    agreementStart: given?.exchangeStart || "",
+    agreementEnd: given?.exchangeEnd || "",
+    returnStart: back?.exchangeStart || "",
+    returnEnd: back?.exchangeEnd || "",
   };
 }
 
@@ -185,19 +202,34 @@ export function exchangeDraftFromExchange(exchange: WorkExchange, schedule?: Sch
     partnerGroup: exchange.partnerGroup,
     agreementDate: exchange.agreementDate,
     returnDate: exchange.returnDate,
-    ...scheduleHours(schedule),
+    // Les horaires enregistrés avec l'échange ; à défaut (échange plus ancien),
+    // ceux du profil.
+    agreementStart: exchange.agreementStart || scheduleHours(schedule).agreementStart,
+    agreementEnd: exchange.agreementEnd || scheduleHours(schedule).agreementEnd,
+    returnStart: exchange.returnStart || scheduleHours(schedule).returnStart,
+    returnEnd: exchange.returnEnd || scheduleHours(schedule).returnEnd,
     replacement: !exchange.returnDate,
   };
 }
 
 /** Les champs d'échange des deux journées, pour le planning. */
-export function exchangeEntryFields(draft: Pick<WorkExchangeDraft, "id" | "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">) {
+export function exchangeEntryFields(
+  draft: Pick<WorkExchangeDraft, "id" | "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">
+    & Partial<Pick<WorkExchangeDraft, "agreementStart" | "agreementEnd" | "returnStart" | "returnEnd">>,
+) {
   const common = { exchangeId: draft.id, exchangePartner: draft.partnerName.trim(), exchangePartnerGroup: draft.partnerGroup };
+  const given = { exchangeStart: draft.agreementStart || undefined, exchangeEnd: draft.agreementEnd || undefined };
   // Remplacement seul : la journée cédée, sans journée rendue.
   if (!draft.returnDate)
-    return { [draft.agreementDate]: { ...common, exchangeRole: "given" as const, exchangeOtherDate: undefined } };
+    return { [draft.agreementDate]: { ...common, ...given, exchangeRole: "given" as const, exchangeOtherDate: undefined } };
   return {
-    [draft.agreementDate]: { ...common, exchangeRole: "given" as const, exchangeOtherDate: draft.returnDate },
-    [draft.returnDate]: { ...common, exchangeRole: "return" as const, exchangeOtherDate: draft.agreementDate },
+    [draft.agreementDate]: { ...common, ...given, exchangeRole: "given" as const, exchangeOtherDate: draft.returnDate },
+    [draft.returnDate]: {
+      ...common,
+      exchangeStart: draft.returnStart || undefined,
+      exchangeEnd: draft.returnEnd || undefined,
+      exchangeRole: "return" as const,
+      exchangeOtherDate: draft.agreementDate,
+    },
   };
 }

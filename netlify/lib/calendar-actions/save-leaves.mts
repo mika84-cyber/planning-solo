@@ -43,6 +43,8 @@ export async function handleSaveLeaves(
     exchange_partner: previous?.exchange_partner,
     exchange_partner_group: previous?.exchange_partner_group,
     exchange_other_date: previous?.exchange_other_date,
+    exchange_start: previous?.exchange_start,
+    exchange_end: previous?.exchange_end,
     updated_at: new Date().toISOString(),
   };
   if (

@@ -17,7 +17,8 @@ type Props = {
   error: string;
   saving: boolean;
   onClose: () => void;
-  onSave: () => void;
+  /** `fillForm` : ouvrir ensuite la demande à remplir et signer. */
+  onSave: (fillForm: boolean) => void;
   onDelete: () => void;
 };
 
@@ -49,6 +50,9 @@ export function WorkExchangeDialog({
   const [suggestionsOuvertes, setSuggestionsOuvertes] = useState(false);
   const [suggestionActive, setSuggestionActive] = useState(-1);
   const [holidayTab, setHolidayTab] = useState(false);
+  /* Après l'enregistrement, la demande à remplir s'ouvre ou non : oui pour un
+     nouvel échange, non quand on corrige un échange déjà enregistré. */
+  const [fillForm, setFillForm] = useState(true);
   const listeId = useId();
 
   /* L'onglet « Jour férié » s'ouvre de lui-même quand le jour cédé en est un,
@@ -56,7 +60,10 @@ export function WorkExchangeDialog({
   const [wasOpen, setWasOpen] = useState(false);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open) setHolidayTab(Boolean(draft.agreementDate && getDayInfo(fromKey(draft.agreementDate), group).holiday));
+    if (open) {
+      setHolidayTab(Boolean(draft.agreementDate && getDayInfo(fromKey(draft.agreementDate), group).holiday));
+      setFillForm(!draft.id);
+    }
   }
 
   /* L'annuaire des collègues sert déjà ailleurs : il donne le nom et le
@@ -377,6 +384,17 @@ export function WorkExchangeDialog({
           </p>
         ) : null}
         {error ? <p className="work-exchange-error" role="alert">{error}</p> : null}
+        {/* La demande peut se remplir plus tard : il suffit de rouvrir
+            l'échange et de réactiver l'interrupteur. */}
+        <label className="xch-switch xch-fill-form">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={fillForm}
+            onChange={(event) => setFillForm(event.target.checked)}
+          />
+          <span>Remplir la demande ensuite</span>
+        </label>
         <div className="xch-actions">
           {editing ? (
             <button className="xch-delete" type="button" onClick={onDelete} disabled={saving}>
@@ -384,7 +402,7 @@ export function WorkExchangeDialog({
             </button>
           ) : null}
           <button className="secondary-button" type="button" onClick={onClose}>Annuler</button>
-          <button className="save-button" type="button" onClick={onSave} disabled={saving}>
+          <button className="save-button" type="button" onClick={() => onSave(fillForm)} disabled={saving}>
             {saving ? "Synchronisation…" : editing ? "Enregistrer les modifications" : replacement ? "Valider le remplacement" : "Valider l’échange"}
           </button>
         </div>

@@ -3292,7 +3292,7 @@ export default function Home() {
             error={workExchangeUi.error}
             saving={workExchangeUi.saving}
             onClose={workExchangeUi.close}
-            onSave={() => void workExchangeUi.save()}
+            onSave={(fillForm) => void workExchangeUi.save(fillForm)}
             onDelete={() => void workExchangeUi.remove()}
           />
         </Suspense>
