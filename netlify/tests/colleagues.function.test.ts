@@ -293,6 +293,25 @@ describe("partage des plannings entre collègues", () => {
     expect(data.has("colleagues/exchange/to/user-b/exchange-1")).toBe(false);
   });
 
+  it("inscrit un échange accepté sur une journée vidée comme sur une journée vierge", async () => {
+    profile("user-a", "Alice"); profile("user-b", "Benoît");
+    const request = {
+      id: "exchange-vide", fromId: "user-a", fromName: "Alice", fromGroup: 2, toId: "user-b", toName: "Benoît",
+      agreementDate: "2026-11-03", returnDate: "2026-11-10", agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "",
+      status: "pending", createdAt: "2026-10-01", updatedAt: "2026-10-01",
+    };
+    data.set("colleagues/exchange/to/user-b/exchange-vide", request);
+    data.set("colleagues/exchange/from/user-a/exchange-vide", request);
+    // Une journée dont la note a été effacée garde une pierre tombale.
+    data.set("user/user-b/entry/2026-11-03", { __calendar_tombstone: true });
+    mockedGetUser.mockResolvedValue({ id: "user-b", email: "user-b@example.test" } as never);
+    const accepted = await colleaguesHandler(post({ action: "respond-exchange", id: "exchange-vide", response: "accept" }));
+    expect(accepted.status).toBe(200);
+    const day = data.get("user/user-b/entry/2026-11-03") as Record<string, unknown>;
+    expect(day).toMatchObject({ date: "2026-11-03", exchange_id: "exchange-vide", exchange_role: "return", leave: false });
+    expect(day).not.toHaveProperty("__calendar_tombstone");
+  });
+
   it("refuse d’inscrire un échange sur une journée déjà prise, et retient un refus", async () => {
     profile("user-a", "Alice"); profile("user-b", "Benoît");
     const request = {

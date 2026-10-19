@@ -349,6 +349,35 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/entry/2026-05-14")).toMatchObject({ exchange_role: "return", exchange_other_date: "2026-11-11" });
   });
 
+  it("pose un échange sur une journée vidée comme sur une journée vierge, puis le retire", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    await calendarHandler(request({ action: "save-entry", date: "2026-11-10", noteText: "Note" }));
+    await calendarHandler(request({ action: "save-entry", date: "2026-11-10", noteText: "" }));
+    expect(data.get("user/user-a/entry/2026-11-10")).toEqual({ __calendar_tombstone: true });
+
+    const save = await calendarHandler(request({
+      action: "save-exchange", id: "exchange-vide", partnerName: "Alex", partnerGroup: 2,
+      agreementDate: "2026-11-10", returnDate: "2026-11-20", expectedUpdatedAts: {},
+    }));
+    expect(save.status).toBe(200);
+    const read = await (await calendarHandler(new Request("https://example.test/api/calendar"))).json() as {
+      entries: Array<{ date: string; exchange_id?: string }>;
+    };
+    expect(read.entries.filter((entry) => entry.exchange_id === "exchange-vide").map((entry) => entry.date).sort())
+      .toEqual(["2026-11-10", "2026-11-20"]);
+    expect(data.get("user/user-a/entry/2026-11-10")).not.toHaveProperty("__calendar_tombstone");
+
+    const given = data.get("user/user-a/entry/2026-11-10") as { updated_at: string };
+    const returned = data.get("user/user-a/entry/2026-11-20") as { updated_at: string };
+    const remove = await calendarHandler(request({
+      action: "delete-exchange", id: "exchange-vide", agreementDate: "2026-11-10", returnDate: "2026-11-20",
+      expectedUpdatedAts: { "2026-11-10": given.updated_at, "2026-11-20": returned.updated_at },
+    }));
+    expect(remove.status).toBe(200);
+    expect(data.has("user/user-a/entry/2026-11-10")).toBe(false);
+    expect(data.has("user/user-a/entry/2026-11-20")).toBe(false);
+  });
+
   it("refuse une action inconnue sans toucher au stockage", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const response = await calendarHandler(request({ action: "action-inconnue" }));

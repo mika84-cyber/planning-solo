@@ -1,3 +1,4 @@
+import { isCalendarTombstone } from "../calendarAtomic.mts";
 import { isValidDateKey } from "../calendarValidation.mts";
 import { json, validId, type CalendarEntry } from "../calendarShared.mts";
 import type { CalendarActionContext } from "./context.mts";
@@ -43,9 +44,11 @@ async function loadAffected(
 ) {
   const rows = new Map<string, CalendarEntry | null>();
   for (const date of dates) {
-    const entry = await context.store.get(context.scopedKey(`entry/${date}`), {
+    const raw = await context.store.get(context.scopedKey(`entry/${date}`), {
       type: "json",
     }) as CalendarEntry | null;
+    // Une journée vidée garde une pierre tombale : elle compte comme vierge.
+    const entry = isCalendarTombstone(raw) ? null : raw;
     if ((expected[date] ?? "") !== (entry?.updated_at || ""))
       return { error: "Une des journées a été modifiée sur un autre appareil" as const };
     rows.set(date, entry);

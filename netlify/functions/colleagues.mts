@@ -6,6 +6,7 @@ import { sendColleagueSharingEmail } from "../lib/colleagueSharingEmail.mts";
 import { adminStore, readGroups } from '../lib/adminTools.mts';
 import { isMikaSharingAccount } from "../lib/sharedCalendarBridge.mts";
 import { userDataKey } from "../lib/userScopedStore.mts";
+import { isCalendarTombstone } from "../lib/calendarAtomic.mts";
 import { presenceShownToColleagues, type Entries, type LeavePeriod } from "../../src/appModel.ts";
 import { dailyMinutesForQuota, type WorkQuota } from "../../src/overtime.ts";
 import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES } from "../../src/grandPalaisClosures.ts";
@@ -153,8 +154,10 @@ async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
     [request.agreementDate, "return", request.returnDate, request.agreementStart, request.agreementEnd],
     [request.returnDate, "given", request.agreementDate, request.returnStart, request.returnEnd],
   ];
-  const entries = await Promise.all(days.map(([date]) =>
-    store.get(userDataKey(request.toId, `entry/${date}`), { type: "json" }) as Promise<Record<string, unknown> | null>));
+  // Une journée vidée garde une pierre tombale : elle compte comme vierge.
+  const entries = (await Promise.all(days.map(([date]) =>
+    store.get(userDataKey(request.toId, `entry/${date}`), { type: "json" }) as Promise<Record<string, unknown> | null>)))
+    .map((entry) => isCalendarTombstone(entry) ? null : entry);
   for (const entry of entries) {
     if (entry?.exchange_id && entry.exchange_id !== request.id) return "Une de vos journées appartient déjà à un autre échange.";
     if (entry?.leave === true) return "Une de vos journées comporte déjà un congé.";
