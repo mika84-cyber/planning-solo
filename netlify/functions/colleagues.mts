@@ -9,7 +9,9 @@ import { userDataKey } from "../lib/userScopedStore.mts";
 import { isCalendarTombstone } from "../lib/calendarAtomic.mts";
 import { presenceShownToColleagues, type Entries, type LeavePeriod } from "../../src/appModel.ts";
 import { dailyMinutesForQuota, type WorkQuota } from "../../src/overtime.ts";
-import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES } from "../../src/grandPalaisClosures.ts";
+import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES, grandPalaisExceptionalClosure } from "../../src/grandPalaisClosures.ts";
+import type { SharedGrandPalaisEvent } from "../../src/grandPalaisProgramTypes.ts";
+import { validateWorkExchange } from "../../src/workExchange.ts";
 
 type Store = ReturnType<typeof getStore>;
 type ShareStatus = "pending" | "accepted" | "automatic" | "blocked";
@@ -144,6 +146,59 @@ async function removeExchangeRequest(store: Store, request: ExchangeRequest) {
   ]);
 }
 
+/** Les règles d'un échange saisi à la main (`validateWorkExchange`), vues du
+ *  destinataire : il cède la journée que l'expéditeur reprend et travaille
+ *  celle que l'expéditeur cède. Son groupe, ses congés, ses récupérations et
+ *  les fermetures sont lus comme dans l'application. */
+async function recipientExchangeProblem(
+  store: Store,
+  request: ExchangeRequest,
+  days: Array<Record<string, unknown> | null>,
+) {
+  const [profile, periods, recoveryUses, approvedUpdates] = await Promise.all([
+    store.get(userDataKey(request.toId, "form-profile"), { type: "json" }) as Promise<{ group?: unknown } | null>,
+    readMany<{ from?: unknown; to?: unknown }>(store, userDataKey(request.toId, "period/")),
+    readMany<{ date?: unknown }>(store, userDataKey(request.toId, "recovery-use/")),
+    getStore({ name: "planning-solo-program", consistency: "strong" })
+      .get("approved", { type: "json" }) as Promise<SharedGrandPalaisEvent[] | null>,
+  ]);
+  const profileGroup = Number(profile?.group);
+  // Sans groupe enregistré, l'application affiche le groupe 2.
+  const group = [1, 2, 3].includes(profileGroup) ? profileGroup : 2;
+  if (request.fromGroup === group)
+    return `${request.fromName} est de votre groupe : cet échange ne correspond pas à vos cycles.`;
+  const dates = [request.agreementDate, request.returnDate];
+  const entries: Entries = {};
+  const occupiedDates = new Set<string>();
+  dates.forEach((date, index) => {
+    const day = days[index];
+    if (day) entries[date] = {
+      noteText: "", noteColor: "", noteUpdatedAt: "", noteGroupId: "",
+      leave: day.leave === true, wish: day.wish === true, holidayPay: "",
+      closureOverride: day.closure_override === "closed" || day.closure_override === "open" ? day.closure_override : "",
+      exchangeId: typeof day.exchange_id === "string" ? day.exchange_id : undefined,
+      updatedAt: "",
+    };
+    if (
+      entries[date]?.leave || entries[date]?.wish ||
+      periods.some((period) => typeof period.from === "string" && typeof period.to === "string" &&
+        period.from <= date && date <= period.to) ||
+      recoveryUses.some((item) => item.date === date)
+    ) occupiedDates.add(date);
+  });
+  // Fermeture ajoutée ou retirée à la main, sinon celle du Grand Palais.
+  const isExceptionallyClosed = (date: string) => {
+    const override = entries[date]?.closureOverride;
+    if (override) return override === "closed";
+    return Boolean(grandPalaisExceptionalClosure(date, approvedUpdates ?? []));
+  };
+  return validateWorkExchange({
+    id: request.id, partnerName: request.fromName, partnerGroup: request.fromGroup,
+    agreementDate: request.returnDate, returnDate: request.agreementDate,
+    agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "",
+  }, { group, entries, occupiedDates, isExceptionallyClosed });
+}
+
 /** Inscrit l'échange accepté dans le planning du collègue : il travaille la
  *  journée de l'expéditeur, se repose la sienne. */
 async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
@@ -158,10 +213,8 @@ async function applyExchangeToCalendar(store: Store, request: ExchangeRequest) {
   const entries = (await Promise.all(days.map(([date]) =>
     store.get(userDataKey(request.toId, `entry/${date}`), { type: "json" }) as Promise<Record<string, unknown> | null>)))
     .map((entry) => isCalendarTombstone(entry) ? null : entry);
-  for (const entry of entries) {
-    if (entry?.exchange_id && entry.exchange_id !== request.id) return "Une de vos journées appartient déjà à un autre échange.";
-    if (entry?.leave === true) return "Une de vos journées comporte déjà un congé.";
-  }
+  const problem = await recipientExchangeProblem(store, request, entries);
+  if (problem) return problem;
   await Promise.all(days.map(([date, role, otherDate, start, end], index) => store.setJSON(userDataKey(request.toId, `entry/${date}`), {
     date, note_text: "", note_color: "#D3943D", note_updated_at: "", note_group_id: "", leave: false, wish: false,
     ...(entries[index] || {}),

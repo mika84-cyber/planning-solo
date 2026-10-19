@@ -78,6 +78,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/workExchange.ts` et `src/useWorkExchangeActions.ts` : échanges complets
   entre collègues, toujours constitués d’une date cédée et d’une date rendue,
   sans ordre chronologique imposé et sans effet sur la paie ni les congés.
+  Un échange proposé par un collègue (`netlify/functions/colleagues.mts`,
+  `src/ColleagueRequestNotice.tsx`) est contrôlé à l’acceptation avec les mêmes
+  règles (`validateWorkExchange`, groupe du profil du destinataire).
 - `src/LeaveManagementPage.tsx` : composition de la page congés et
   récupérations.
 - `src/PayPage.tsx`, `src/PayAllowancesSection.tsx` et
