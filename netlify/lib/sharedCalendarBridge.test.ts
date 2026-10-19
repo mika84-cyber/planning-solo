@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  bridgeConfigured,
   isMikaSharingAccount,
   forwardNotificationRequest,
   mirrorSharedCalendarAction,
   noteChangeOperations,
+  postBridgeOperation,
   readAgnesSharedCalendar,
   sharedOperations,
   sharedPeriod,
@@ -58,6 +60,24 @@ describe("passerelle du calendrier partagé", () => {
       groupId: "note-agnes-1",
       date: "2026-09-04",
     }]);
+  });
+
+  it("n’envoie jamais le secret de liaison vers une adresse sans https", async () => {
+    setEnvironment({
+      PLANNING_SHARED_API_URL: "http://agnes.example.test/api/calendar",
+      PLANNING_SHARED_BRIDGE_SECRET: "secret-de-test",
+    });
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(bridgeConfigured()).toBe(false);
+    // La copie attend qu'une adresse sûre soit configurée.
+    await expect(postBridgeOperation({ action: "bridge-set-mika-away-day", date: "2026-09-01", away: true })).resolves.toBe("retry");
+    await expect(forwardNotificationRequest("GET")).resolves.toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
   });
 
   it("lit et écrit avec le secret uniquement dans l’en-tête serveur", async () => {

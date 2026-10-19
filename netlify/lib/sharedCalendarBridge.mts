@@ -16,9 +16,14 @@ function environment(name: string) {
 }
 
 function bridgeConfig() {
+  const url = environment("PLANNING_SHARED_API_URL") || DEFAULT_SHARED_API;
+  // Le secret de liaison ne part jamais en clair : sans https, rien ne part
+  // et les copies attendent qu'une adresse sûre soit configurée.
+  const secure = URL.canParse(url) && new URL(url).protocol === "https:";
+  if (!secure) console.error("Adresse du planning d’Agnès refusée : https obligatoire");
   return {
-    url: environment("PLANNING_SHARED_API_URL") || DEFAULT_SHARED_API,
-    secret: environment("PLANNING_SHARED_BRIDGE_SECRET") || "",
+    url,
+    secret: secure ? environment("PLANNING_SHARED_BRIDGE_SECRET") || "" : "",
   };
 }
 
