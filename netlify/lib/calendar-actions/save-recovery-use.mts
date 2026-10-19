@@ -1,19 +1,12 @@
 import { isValidDateKey } from "../calendarValidation.mts";
-import { storedHolidayRecoveryCreditMinutes } from "../../../src/overtime.ts";
-import { json, listBlobs, validId, type CalendarEntry, type OvertimeEntry, type RecoveryUse } from "../calendarShared.mts";
+import { json, validId, type RecoveryUse } from "../calendarShared.mts";
 import { acquireAtomicLock, readAtomic, writeAtomic } from "../calendarAtomic.mts";
+import { readRecoveryBalance } from "../recoveryBalance.mts";
 import type { CalendarActionContext } from "./context.mts";
 export async function handleSaveRecoveryUse(
   context: CalendarActionContext,
 ): Promise<Response> {
-  const {
-    body,
-    store,
-    scopedKey,
-    entryPrefix,
-    overtimePrefix,
-    recoveryUsePrefix,
-  } = context;
+  const { body, store, scopedKey } = context;
   const requestedId = typeof body.id === "string" ? body.id : "";
   const id = requestedId || crypto.randomUUID();
   const date = typeof body.date === "string" ? body.date : "";
@@ -23,43 +16,14 @@ export async function handleSaveRecoveryUse(
   const release = await acquireAtomicLock(store, scopedKey("lock/recovery-balance"));
   if (!release) return json({ error: "Le solde est en cours de modification. Réessayez." }, 409);
   try {
-  const [overtimeList, recoveryList, calendarList, previousVersion] = await Promise.all([
-    listBlobs(store, overtimePrefix),
-    listBlobs(store, recoveryUsePrefix),
-    listBlobs(store, entryPrefix),
+  const [balance, previousVersion] = await Promise.all([
+    readRecoveryBalance(context),
     readAtomic<RecoveryUse>(store, scopedKey(`recovery-use/${id}`)),
   ]);
   const previousUse = previousVersion.value;
-  const [overtimeValues, recoveryValues, calendarValues] = await Promise.all([
-    Promise.all(
-      overtimeList.blobs.map((blob) =>
-        store.get(blob.key, { type: "json" }) as Promise<OvertimeEntry | null>,
-      ),
-    ),
-    Promise.all(
-      recoveryList.blobs.map((blob) =>
-        store.get(blob.key, { type: "json" }) as Promise<RecoveryUse | null>,
-      ),
-    ),
-    Promise.all(
-      calendarList.blobs.map((blob) =>
-        store.get(blob.key, { type: "json" }) as Promise<CalendarEntry | null>,
-      ),
-    ),
-  ]);
-  const overtimeEarned = overtimeValues
-    .filter((item): item is OvertimeEntry => Boolean(item))
-    .filter((item) => item.disposition === "recovery")
-    .reduce((total, item) => total + item.minutes, 0);
-  const holidayEarned = storedHolidayRecoveryCreditMinutes(calendarValues
-    .filter((item): item is CalendarEntry => Boolean(item))
-    .filter((item) => item.holiday_pay === "recovery"));
-  const earned = overtimeEarned + holidayEarned;
-  const alreadyUsed = recoveryValues
-    .filter((item): item is RecoveryUse => Boolean(item))
-    .reduce((total, item) => total + item.minutes, 0);
+  const alreadyUsed = balance.recoveryUses.reduce((total, item) => total + item.minutes, 0);
   const usedAfterSave = alreadyUsed - (previousUse?.minutes || 0) + minutes;
-  if (usedAfterSave > earned)
+  if (usedAfterSave > balance.earned)
     return json({ error: "Le solde de récupération est insuffisant" }, 409);
   const entry: RecoveryUse = {
     id,

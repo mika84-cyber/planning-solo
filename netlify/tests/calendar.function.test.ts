@@ -1071,6 +1071,51 @@ describe("API principale du calendrier", () => {
     expect(data.has("user/user-a/overtime/overtime-lundi")).toBe(true);
   });
 
+  it("enregistre une récupération couverte par le solde majoré", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    // Une soirée de 4 h en semaine, créditée 5 h.
+    expect((await calendarHandler(request({
+      action: "save-overtime", id: "overtime-soiree", date: "2026-11-02", minutes: 240, dayMinutes: 240, nightMinutes: 0,
+      disposition: "recovery", inputMode: "range", start: "18:00", end: "22:00",
+    }))).status).toBe(200);
+
+    const saved = await calendarHandler(request({ action: "save-recovery-use", id: "recup-5h", date: "2026-11-10", minutes: 300, start: "09:00" }));
+    expect(saved.status).toBe(200);
+    expect(data.get("user/user-a/recovery-use/recup-5h")).toMatchObject({ minutes: 300 });
+    // Une récupération annulée par un lot (pierre tombale) ne fausse pas le solde.
+    data.set("user/user-a/recovery-use/recup-annulee", { __calendar_tombstone: true });
+    const beyond = await calendarHandler(request({ action: "save-recovery-use", id: "recup-1min", date: "2026-11-11", minutes: 1 }));
+    expect(beyond.status).toBe(409);
+    expect(await beyond.json()).toEqual({ error: "Le solde de récupération est insuffisant" });
+  });
+
+  it("ne supprime pas des heures pendant qu’une récupération les consomme", async () => {
+    data.set("user/user-a/overtime/overtime-credit-concurrent", {
+      id: "overtime-credit-concurrent", date: "2026-09-01", minutes: 480, day_minutes: 480, night_minutes: 0,
+      disposition: "recovery", input_mode: "duration", updated_at: "2026-09-01T10:00:00.000Z",
+    });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    // La suppression tarde un peu : sans verrou, la demande lirait entre-temps
+    // le crédit encore présent.
+    const deleteNow = store.delete.getMockImplementation();
+    store.delete.mockImplementation(async (key: string) => {
+      if (key.endsWith("overtime/overtime-credit-concurrent")) await new Promise((resolve) => setTimeout(resolve, 30));
+      data.delete(key);
+    });
+    const responses = await Promise.all([
+      calendarHandler(request({ action: "delete-overtime", id: "overtime-credit-concurrent" })),
+      calendarHandler(request({
+        action: "save-request", requestId: "request-pendant-suppression", requestKind: "recovery", group: 2,
+        periods: [{ from: "2026-09-23", to: "2026-09-23", type: "recovery_day" }], timed: [],
+      })),
+    ]).finally(() => { if (deleteNow) store.delete.mockImplementation(deleteNow); });
+
+    // L'une des deux attend l'autre, puis voit le solde changé et refuse.
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    const recoveryKept = [...data.keys()].some((key) => key.includes("recovery-use/request-pendant-suppression"));
+    expect(data.has("user/user-a/overtime/overtime-credit-concurrent")).toBe(recoveryKept);
+  });
+
   it("n’accepte pas deux consommations simultanées du même solde", async () => {
     data.set("user/user-a/overtime/overtime-credit-concurrent", {
       id: "overtime-credit-concurrent",

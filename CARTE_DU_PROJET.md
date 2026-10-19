@@ -198,7 +198,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   par les gestionnaires du calendrier.
 - `netlify/lib/recoveryBalance.mts` : solde d’heures de récupération côté
   serveur, majorations comprises (fériés selon le groupe du profil), commun à
-  `save-request` et `delete-overtime`.
+  `save-request`, `save-recovery-use` et `delete-overtime`, qui le lisent sous
+  le même verrou `lock/recovery-balance`.
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,
   d’isolation et d’écriture de l’API calendrier.
 - `netlify/functions/feedback.mts` : stockage privé des retours, photos,
