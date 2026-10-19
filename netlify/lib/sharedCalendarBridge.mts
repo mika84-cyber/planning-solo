@@ -38,6 +38,11 @@ export async function isMikaSharingAccount(email: string) {
   return hash === MIKA_EMAIL_HASH;
 }
 
+/** La liaison est-elle configurée sur ce site ? Sans secret, rien ne part. */
+export function bridgeConfigured() {
+  return Boolean(bridgeConfig().secret);
+}
+
 async function bridgeFetch(body?: Record<string, unknown>, timeoutMs = 4_000) {
   const { url, secret } = bridgeConfig();
   if (!secret) return null;
@@ -55,6 +60,26 @@ async function bridgeFetch(body?: Record<string, unknown>, timeoutMs = 4_000) {
     });
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+/** Une copie envoyée au planning d’Agnès : reçue, refusée pour de bon (la
+ *  renvoyer ne changerait rien : donnée invalide, action inconnue), ou à
+ *  retenter plus tard (site injoignable, trop lent, en erreur, secret refusé). */
+export async function postBridgeOperation(
+  operation: Record<string, unknown>,
+): Promise<"sent" | "rejected" | "retry"> {
+  try {
+    const response = await bridgeFetch(operation);
+    if (response?.ok) return "sent";
+    if (!response) return "retry";
+    const permanent = [400, 404, 409, 410, 413, 422].includes(response.status) ||
+      (response.status === 403 && (await response.json().catch(() => null) as { error?: unknown } | null)?.error ===
+        "La liaison ne peut écrire que les congés et les notes de Mika");
+    return permanent ? "rejected" : "retry";
+  } catch (error) {
+    console.error("Planning d’Agnès injoignable", error instanceof Error ? error.message : error);
+    return "retry";
   }
 }
 
@@ -225,21 +250,31 @@ export async function syncExistingSharedCalendar(
   }
 }
 
-/** Recopie sur le planning d'Agnès les notes de Mika qui viennent de changer,
- *  telles que les a relevées la comparaison avant/après l'écriture. */
-export async function mirrorMikaNoteChanges(
+/** Les copies, pour le planning d'Agnès, des notes de Mika qui viennent de
+ *  changer, telles que les a relevées la comparaison avant/après l'écriture. */
+export function noteChangeOperations(
   changes: Array<{ kind: "added" | "updated" | "deleted"; from: string; to: string; text: string }>,
+): Record<string, unknown>[] {
+  return changes.map((change) => change.kind === "deleted"
+    ? { action: "bridge-delete-mika-note", from: change.from, to: change.to }
+    : { action: "bridge-save-mika-note", from: change.from, to: change.to, noteText: change.text });
+}
+
+/** Les copies qu'une écriture demande : absences du jour, note d'Agnès à
+ *  supprimer et, si un congé a changé, toutes les périodes relues. */
+export async function sharedActionOperations(
+  body: Record<string, unknown>,
+  /** Les périodes de congé enregistrées, relues après l'écriture. */
+  readPeriods?: () => Promise<Array<Record<string, unknown>>>,
 ) {
-  try {
-    for (const change of changes) {
-      const response = await bridgeFetch(change.kind === "deleted"
-        ? { action: "bridge-delete-mika-note", from: change.from, to: change.to }
-        : { action: "bridge-save-mika-note", from: change.from, to: change.to, noteText: change.text });
-      if (response && !response.ok) throw new Error(`HTTP ${response.status}`);
-    }
-  } catch (error) {
-    console.error("Note non recopiée chez Agnès", error);
-  }
+  const operations = sharedOperations(body);
+  if (readPeriods && touchesSharedPeriods(body))
+    operations.push({
+      action: "bridge-sync-mika-calendar",
+      awayDates: [],
+      awayPeriods: (await readPeriods()).map(sharedPeriod).filter(Boolean),
+    });
+  return operations;
 }
 
 export async function mirrorSharedCalendarAction(
@@ -249,20 +284,11 @@ export async function mirrorSharedCalendarAction(
   readPeriods?: () => Promise<Array<Record<string, unknown>>>,
 ) {
   if (!enabled) return "disabled" as const;
-  const operations = sharedOperations(body);
-  const periodsChanged = Boolean(readPeriods) && touchesSharedPeriods(body);
-  if (!operations.length && !periodsChanged) return "ignored" as const;
   try {
+    const operations = await sharedActionOperations(body, readPeriods);
+    if (!operations.length) return "ignored" as const;
     for (const operation of operations) {
       const response = await bridgeFetch(operation);
-      if (!response?.ok) throw new Error(`HTTP ${response?.status || 0}`);
-    }
-    if (periodsChanged && readPeriods) {
-      const response = await bridgeFetch({
-        action: "bridge-sync-mika-calendar",
-        awayDates: [],
-        awayPeriods: (await readPeriods()).map(sharedPeriod).filter(Boolean),
-      });
       if (!response?.ok) throw new Error(`HTTP ${response?.status || 0}`);
     }
     return "shared" as const;

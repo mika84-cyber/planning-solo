@@ -17,6 +17,7 @@ const store = {
   get: vi.fn(async (key: string) => data.get(key) ?? null),
   getWithMetadata: vi.fn(getStoredWithMetadata),
   setJSON: vi.fn(setStoredJson),
+  set: vi.fn(async (key: string, value: unknown) => { data.set(key, value); }),
   delete: vi.fn(async (key: string) => { data.delete(key); }),
   list: vi.fn(({ prefix }: { prefix: string }) => ({
     async *[Symbol.asyncIterator]() {
@@ -616,8 +617,22 @@ describe("API principale du calendrier", () => {
       confirmation: "SUPPRIMER",
     }));
     expect(remove.status).toBe(200);
-    expect([...data.keys()].some((key) => key.startsWith("user/user-a/"))).toBe(false);
+    // Seul le repère de migration reste, pour que rien ne soit réimporté.
+    expect([...data.keys()].filter((key) => key.startsWith("user/user-a/"))).toEqual([
+      "user/user-a/migration/legacy-import-v1",
+    ]);
     expect(data.has("user/user-b/entry/2026-08-30")).toBe(true);
+  });
+
+  it("ne réimporte pas les anciennes données après l’effacement du compte qui les a reçues", async () => {
+    data.set("entry/2026-03-02", { date: "2026-03-02", note_text: "Ancienne note", leave: false, updated_at: "2025-12-01T00:00:00.000Z" });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const read = async () => (await (await calendarHandler(new Request("https://example.test/api/calendar"))).json()) as { entries: Array<{ note_text: string }> };
+    // Premier passage : le compte reçoit les anciennes données.
+    expect((await read()).entries.map((entry) => entry.note_text)).toEqual(["Ancienne note"]);
+    expect((await calendarHandler(request({ action: "delete-user-data", confirmation: "SUPPRIMER" }))).status).toBe(200);
+    // Après l’effacement, elles ne reviennent pas.
+    expect((await read()).entries).toEqual([]);
   });
 
   it("enregistre une demande de congé atomique avec ses identifiants stables", async () => {
@@ -698,6 +713,115 @@ describe("API principale du calendrier", () => {
     expect(await halfDay.json()).toEqual({
       error: "Vous n’avez plus de congés annuels disponibles.",
     });
+  });
+
+  it("recopie un lot une seule fois vers le planning d’Agnès, et rien d’un lot annulé", async () => {
+    const env: Record<string, string> = {
+      PLANNING_SHARED_OWNER_EMAIL: "mika@example.test",
+      PLANNING_SHARED_BRIDGE_SECRET: "secret-de-test",
+    };
+    const sent: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("Netlify", { env: { get: (name: string) => env[name] } });
+    vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
+      sent.push(JSON.parse(String(init?.body || "{}")));
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    }));
+    try {
+      mockedGetUser.mockResolvedValue({ id: "mika-id", email: "mika@example.test" } as never);
+      // La fiche du jour passe toujours par un lot.
+      const saved = await calendarHandler(request({
+        action: "batch",
+        operations: [{ action: "save-entry", date: "2026-11-02", noteText: "Dentiste", expectedUpdatedAt: "" }],
+      }));
+      expect(saved.status).toBe(200);
+      expect(sent.filter((item) => item.action === "bridge-save-mika-note")).toHaveLength(1);
+      expect(sent.filter((item) => item.action === "notify")).toHaveLength(1);
+      expect(sent.filter((item) => item.action === "bridge-set-mika-away-day")).toHaveLength(1);
+
+      // La seconde journée a changé ailleurs : le lot est annulé en entier, et
+      // la note de la première ne doit ni partir ni être annoncée.
+      sent.length = 0;
+      const refused = await calendarHandler(request({
+        action: "batch",
+        operations: [
+          { action: "save-entry", date: "2026-11-03", noteText: "Rendez-vous", expectedUpdatedAt: "" },
+          { action: "save-entry", date: "2026-11-04", noteText: "Conflit", expectedUpdatedAt: "2020-01-01T00:00:00.000Z" },
+        ],
+      }));
+      expect(refused.status).toBe(409);
+      expect(data.get("user/mika-id/entry/2026-11-03")).toEqual({ __calendar_tombstone: true });
+      expect(sent).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("rattrape à l’ouverture suivante une note que le planning d’Agnès n’a pas reçue", async () => {
+    const env: Record<string, string> = {
+      PLANNING_SHARED_OWNER_EMAIL: "mika@example.test",
+      PLANNING_SHARED_BRIDGE_SECRET: "secret-de-test",
+    };
+    let agnesUp = false;
+    const sent: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("Netlify", { env: { get: (name: string) => env[name] } });
+    vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
+      if (!agnesUp) throw new Error("Planning d’Agnès injoignable");
+      if (init?.body) sent.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ entries: [], periods: [] }), { status: 200, headers: { "content-type": "application/json" } });
+    }));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-19T10:00:00Z"));
+    try {
+      mockedGetUser.mockResolvedValue({ id: "mika-id", email: "mika@example.test" } as never);
+      // Agnès injoignable : la note de Mika s'enregistre quand même et attend.
+      const saved = await calendarHandler(request({ action: "save-entry", date: "2026-11-05", noteText: "Kiné" }));
+      expect(saved.status).toBe(200);
+      expect(data.get("user/mika-id/entry/2026-11-05")).toMatchObject({ note_text: "Kiné" });
+      expect([...data.keys()].filter((key) => key.startsWith("user/mika-id/shared-calendar-pending/"))).toHaveLength(2);
+
+      // Plus tard, Agnès répond : l'ouverture de l'application renvoie tout.
+      agnesUp = true;
+      vi.setSystemTime(new Date("2026-10-19T10:05:00Z"));
+      expect((await calendarHandler(new Request("https://example.test/api/calendar"))).status).toBe(200);
+      expect(sent.slice(0, 2)).toEqual([
+        { action: "bridge-set-mika-away-day", date: "2026-11-05", away: false },
+        { action: "bridge-save-mika-note", from: "2026-11-05", to: "2026-11-05", noteText: "Kiné" },
+      ]);
+      expect([...data.keys()].some((key) => key.startsWith("user/mika-id/shared-calendar-pending/"))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("refuse une demande plus longue que le solde restant, pas celle qui le solde exactement", async () => {
+    data.set("user/user-a/form-profile", {
+      manual_adjustments: {
+        "2026": { annual_used: 28, rtt_used: 14, fraction_used: 0, sunday_leave_jan_jun: 0, sunday_leave_jul_sep: 0, sunday_leave_oct_nov: 0, sunday_leave_dec: 0 },
+      },
+    });
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const workDays: string[] = [];
+    for (let date = fromKey("2026-09-01"); workDays.length < 3; date = addDays(date, 1)) {
+      const info = getDayInfo(date, 2);
+      if (!info.holiday && info.kind !== "off") workDays.push(dateKey(date));
+    }
+    const ask = (requestId: string, type: "annual" | "rtt", dates: string[]) => calendarHandler(request({
+      action: "save-request",
+      requestId,
+      requestKind: "leave",
+      group: 2,
+      periods: dates.map((date) => ({ from: date, to: date, type })),
+      timed: [],
+    }));
+    for (const [type, label] of [["rtt", "de RTT"], ["annual", "de congés annuels"]] as const) {
+      const tooMany = await ask(`request-short-${type}`, type, workDays);
+      expect(tooMany.status).toBe(409);
+      expect(await tooMany.json()).toEqual({ error: `Solde insuffisant : il ne reste que 1 jour ${label} pour cette demande.` });
+      expect(data.has(`user/user-a/period/request-short-${type}-1`)).toBe(false);
+    }
+    // Le dernier jour restant se pose sans difficulté.
+    expect((await ask("request-last-rtt", "rtt", [workDays[0]])).status).toBe(200);
   });
 
   it("accorde le fractionnement 2027 selon les CA posés hors mai–octobre", async () => {

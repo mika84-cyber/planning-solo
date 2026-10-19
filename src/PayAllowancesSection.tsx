@@ -74,9 +74,11 @@ type OvertimeForPayMonth = {
   totalMinutes: number;
   ready: boolean;
   amount: number;
-  /** Les minutes déclarées au-delà des vingt-cinq heures indemnisables du
-   *  mois : elles ne sont pas payées, et la ligne le dit. */
+  /** Les minutes déclarées au-delà des heures indemnisables du mois : elles
+   *  ne sont pas payées, et la ligne le dit. */
   cappedMinutes: number;
+  /** Le plafond du mois : 25 h à temps plein, ramené à la quotité sinon. */
+  capMinutes: number;
 };
 
 type MecenatForPayMonth = {
@@ -163,7 +165,7 @@ export function PayAllowancesSection({
     {
       label: "Heures supplémentaires payées",
       quantity: overtimeForPayMonth.cappedMinutes
-        ? `${minutesLabel(overtimeForPayMonth.totalMinutes)} déclarées · ${minutesLabel(overtimeForPayMonth.cappedMinutes)} au-delà du plafond de 25 h, non payées`
+        ? `${minutesLabel(overtimeForPayMonth.totalMinutes)} déclarées · ${minutesLabel(overtimeForPayMonth.cappedMinutes)} au-delà du plafond de ${minutesLabel(overtimeForPayMonth.capMinutes)}, non payées`
         : minutesLabel(overtimeForPayMonth.totalMinutes),
       amount: overtimeForPayMonth.ready ? overtimeForPayMonth.amount : null,
     },

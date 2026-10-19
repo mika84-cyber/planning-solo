@@ -3,7 +3,9 @@ import type { getStore } from "@netlify/blobs";
 type Store = ReturnType<typeof getStore>;
 
 export const LEGACY_OWNER_KEY = "migration/legacy-owner-v1";
-const MIGRATION_MARKER = "migration/legacy-import-v1";
+/** Repère, dans l’espace du compte, que l’import des anciennes données a
+ *  déjà eu lieu. */
+export const MIGRATION_MARKER = "migration/legacy-import-v1";
 
 type LegacyOwner = {
   user_id: string;

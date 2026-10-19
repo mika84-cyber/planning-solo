@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
+import { sickHalfPayDates, sickLeaveDates, sickLeaveSummaryForYear } from "./sickLeaveSummary";
 
 describe("sickLeaveSummaryForYear", () => {
   it("retient un arrêt fini au plus tard le 10 sur la paie du mois même", () => {
@@ -60,5 +60,40 @@ describe("sickLeaveSummaryForYear", () => {
     expect(corrected.byMonth[2].total).toBe(77.5);
     expect(corrected.byMonth[2].sources[0].slice.overridden).toBe(true);
     expect(corrected.byMonth[3].total).toBe(0);
+  });
+
+  it("passe à demi-traitement après trois mois d’arrêt", () => {
+    // 120 jours du 5 janvier au 4 mai 2026 : carence, 89 jours à 10 %, puis
+    // 30 jours à 50 %.
+    const sick = { id: "long", from: "2026-01-05", to: "2026-05-04", leaveType: "sick" as const, updatedAt: "" };
+    const summary = sickLeaveSummaryForYear([sick], 2026, 3_000, 0, 100);
+    expect(summary.arrets[0]).toMatchObject({ days: 120, reducedDays: 89, halfPayDays: 30 });
+    expect(summary.arrets[0].total).toBeCloseTo(100 + 89 * 10 + 30 * 50);
+    expect(summary.byMonth.reduce((sum, month) => sum + month.halfPayDays, 0)).toBe(30);
+    expect(summary.byMonth.reduce((sum, month) => sum + month.total, 0)).toBeCloseTo(summary.total);
+  });
+
+  it("compte les trois mois sur douze mois glissants, arrêts précédents compris", () => {
+    const periods = [
+      { id: "a", from: "2026-02-01", to: "2026-04-01", leaveType: "sick" as const, updatedAt: "" },
+      { id: "b", from: "2026-09-01", to: "2026-10-10", leaveType: "sick" as const, updatedAt: "" },
+    ];
+    const summary = sickLeaveSummaryForYear(periods, 2026, 3_000, 0, 100);
+    // 60 jours en février-mars, puis le 31e jour de septembre-octobre atteint
+    // les 90 jours : du 1er au 10 octobre, demi-traitement.
+    expect(summary.arrets[1]).toMatchObject({ from: "2026-09-01", reducedDays: 29, halfPayDays: 10 });
+    expect(summary.arrets[1].total).toBeCloseTo(100 + 29 * 10 + 10 * 50);
+    expect(sickHalfPayDates(sickLeaveDates(periods))).toEqual(new Set(
+      Array.from({ length: 10 }, (_, index) => `2026-10-${String(index + 1).padStart(2, "0")}`),
+    ));
+  });
+
+  it("oublie un arrêt sorti des douze derniers mois", () => {
+    const periods = [
+      { id: "old", from: "2025-01-01", to: "2025-04-30", leaveType: "sick" as const, updatedAt: "" },
+      { id: "new", from: "2026-06-01", to: "2026-06-10", leaveType: "sick" as const, updatedAt: "" },
+    ];
+    expect(sickLeaveSummaryForYear(periods, 2025, 3_000, 0, 100).arrets[0].halfPayDays).toBe(30);
+    expect(sickLeaveSummaryForYear(periods, 2026, 3_000, 0, 100).arrets[0]).toMatchObject({ halfPayDays: 0, reducedDays: 9 });
   });
 });

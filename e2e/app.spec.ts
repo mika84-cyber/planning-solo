@@ -5196,6 +5196,23 @@ test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
   await expect(request.getByRole("button", { name: /^Congé CET/ })).toContainText("3");
 });
 
+test("une demande plus longue que le solde restant ne peut pas être validée", async ({ page }) => {
+  // Avant 2027, le fractionnement vaut deux jours : trois jours le dépassent.
+  await page.clock.setFixedTime(new Date("2026-10-05T12:00:00"));
+  await prepareDemo(page);
+  const workDays = page.locator(".month-card .day.work");
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
+  await page.getByRole("dialog", { name: "Poser un congé" })
+    .getByRole("button", { name: /^Fractionnement/ })
+    .click();
+  const request = page.locator("#request-panel");
+  for (let index = 0; index < 3; index += 1) await workDays.nth(index).click();
+  await expect(request.getByLabel("Résumé avant validation"))
+    .toContainText(/Il ne vous reste|Vous n’avez plus de jours de fractionnement/);
+  await expect(request.getByRole("button", { name: "Enregistrer sans formulaire" })).toBeDisabled();
+  await expect(request.getByRole("button", { name: "Enregistrer et préparer le formulaire" })).toBeDisabled();
+});
+
 test("nettoyage et gestion d’un congé utilisent des actions directes", async ({ page }) => {
   await prepareDemo(page, true);
 

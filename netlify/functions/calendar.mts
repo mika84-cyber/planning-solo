@@ -9,9 +9,11 @@ import { handleCalendarAction } from "../lib/calendar-actions/index.mts";
 import { readCalendar } from "../lib/calendarRead.mts";
 import {
   isMikaSharingAccount,
-  mirrorMikaNoteChanges,
   mirrorSharedCalendarAction,
+  noteChangeOperations,
+  sharedActionOperations,
 } from "../lib/sharedCalendarBridge.mts";
+import { deliverSharedOperations } from "../lib/sharedBridgeQueue.mts";
 import {
   diffNotes,
   noteTargets,
@@ -65,8 +67,7 @@ async function calendarHandler(request: Request): Promise<Response> {
   const notesBefore = targets
     ? await readNoteSnapshot(store, scopedKey, entryPrefix, targets)
     : null;
-  const response = await handleCalendarAction({
-    body,
+  const actionContext = {
     request,
     user: { id: user.id, email: user.email },
     store,
@@ -76,8 +77,17 @@ async function calendarHandler(request: Request): Promise<Response> {
     overtimePrefix,
     recoveryUsePrefix,
     mecenatPrefix,
-    calendarHandler,
-  });
+  };
+  // Une opération d'un lot s'exécute seule : ni nouvelle authentification,
+  // ni recopie vers le planning d'Agnès. Le lot recopie une seule fois, plus
+  // bas, et seulement s'il a réussi en entier — un lot annulé ne laisse donc
+  // rien chez Agnès.
+  const runOperation = async (operationRequest: Request): Promise<Response> => {
+    const operation = await readCalendarBody(operationRequest);
+    if ("error" in operation) return json({ error: operation.error }, 400);
+    return handleCalendarAction({ ...actionContext, body: operation.body, request: operationRequest, runOperation });
+  };
+  const response = await handleCalendarAction({ ...actionContext, body, runOperation });
   if (response.ok && shareWithAgnes) {
     // Les congés de Mika, relus après l'écriture, pour le planning d'Agnès.
     const readPeriods = async () => {
@@ -86,20 +96,29 @@ async function calendarHandler(request: Request): Promise<Response> {
       return periods.filter((period): period is Record<string, unknown> =>
         Boolean(period) && typeof period === "object" && !isCalendarTombstone(period));
     };
-    const sharedStatus = await mirrorSharedCalendarAction(
-      shareWithAgnes,
-      body,
-      readPeriods,
-    );
-    if (body.action === "delete-shared-partner-note" && sharedStatus !== "shared")
-      return json({ error: "La note partagée n’a pas pu être supprimée" }, 502);
-  }
-  if (response.ok && targets && notesBefore) {
-    const notesAfter = await readNoteSnapshot(store, scopedKey, entryPrefix, targets);
-    const changes = diffNotes(notesBefore, notesAfter);
-    // La note d'abord sur le planning d'Agnès, puis le message qui l'annonce.
-    await mirrorMikaNoteChanges(changes);
-    await notifyNoteChanges(changes);
+    // Supprimer une note d'Agnès ne peut pas attendre : sans réponse de son
+    // planning, Mika le sait tout de suite.
+    if (body.action === "delete-shared-partner-note") {
+      const sharedStatus = await mirrorSharedCalendarAction(shareWithAgnes, body, readPeriods);
+      if (sharedStatus !== "shared")
+        return json({ error: "La note partagée n’a pas pu être supprimée" }, 502);
+      return response;
+    }
+    // L'écriture de Mika est faite : la copie ne doit jamais la faire échouer.
+    try {
+      const changes = targets && notesBefore
+        ? diffNotes(notesBefore, await readNoteSnapshot(store, scopedKey, entryPrefix, targets))
+        : [];
+      // Une copie qui n'aboutit pas attend la prochaine écriture ou ouverture.
+      const delivered = await deliverSharedOperations(store, scopedKey, [
+        ...(await sharedActionOperations(body, readPeriods)),
+        ...noteChangeOperations(changes),
+      ]);
+      // La note d'abord sur le planning d'Agnès, puis le message qui l'annonce.
+      if (delivered === "shared") await notifyNoteChanges(changes);
+    } catch (error) {
+      console.error("Copie vers le planning d’Agnès impossible", error instanceof Error ? error.message : error);
+    }
   }
   return response;
 }

@@ -257,7 +257,9 @@ describe("finitions d’interface", () => {
     // réel de contractuel déduit bien le jour de carence (voir
     // src/payMonth.test.ts). L'ancienne mention « impact à vérifier », qui
     // masquait le montant aux contractuels, ne doit pas revenir.
-    expect(app).toContain('detail: "carence et retenue de 10 %"');
+    expect(app).toContain(': "carence et retenue de 10 %"');
+    // Au-delà de trois mois d’arrêt, la ligne annonce le demi-traitement.
+    expect(app).toContain("carence, 10 % puis 50 % : ");
     expect(app).not.toContain("impact à vérifier selon le maintien de salaire");
   });
 

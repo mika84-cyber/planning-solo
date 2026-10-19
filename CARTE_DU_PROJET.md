@@ -186,6 +186,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’écriture du calendrier ; `index.mts` contient le dispatch explicite.
   `work-exchange.mts` enregistre ou supprime atomiquement les deux cases d’un
   échange et restaure leur état précédent en cas d’échec.
+- `netlify/lib/sharedCalendarBridge.mts` et `netlify/lib/sharedBridgeQueue.mts` :
+  copies des congés et notes de Mika vers le planning d’Agnès, une seule fois
+  par écriture (un lot annulé n’envoie rien) ; une copie qui n’aboutit pas
+  attend dans l’espace de Mika et repart, dans l’ordre, à la prochaine
+  écriture ou ouverture (pause de deux minutes après un échec).
 - `netlify/lib/calendarShared.mts` : types, validations et utilitaires partagés
   par les gestionnaires du calendrier.
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,

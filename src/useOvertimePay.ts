@@ -117,6 +117,7 @@ export function useOvertimePay({
       payMonth: pay.month,
       highRateMinutes: after.lines.find((line) => line.entryId === "apercu")?.highRateMinutes ?? 0,
       cappedMinutes: after.cappedMinutes - before.cappedMinutes,
+      capMinutes: after.capMinutes,
       partTime: workQuota !== "full",
       dateless,
     };

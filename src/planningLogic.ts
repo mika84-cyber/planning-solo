@@ -617,6 +617,11 @@ export type HolidayPay = "prime" | "recovery";
 
 /** Part retenue par jour d'arrêt maladie, au-delà du jour de carence. */
 export const SICK_DAILY_RATE = 0.1;
+/** Au-delà de trois mois d'arrêt sur douze mois glissants, la maladie
+ *  ordinaire passe à demi-traitement : la moitié de la journée est retenue. */
+export const SICK_HALF_PAY_RATE = 0.5;
+/** Les trois mois à 90 %, comptés en jours d'arrêt. */
+export const SICK_FULL_PAY_DAYS = 90;
 
 /** La retenue d'un arrêt maladie.
  *

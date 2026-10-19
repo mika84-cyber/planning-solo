@@ -27,6 +27,7 @@ type SickLeavesSummary = {
     to: string;
     days: number;
     reducedDays: number;
+    halfPayDays?: number;
     total: number;
   }>;
 };

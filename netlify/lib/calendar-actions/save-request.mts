@@ -48,6 +48,14 @@ function emptyBalanceMessage(type: QuotaLeaveType) {
   if (type === "rtt") return "Vous n’avez plus de RTT disponibles.";
   return "Vous n’avez plus de jours de fractionnement disponibles.";
 }
+
+/** Une demande ne pose jamais plus de jours qu'il n'en reste. */
+function shortageMessage(type: QuotaLeaveType, available: number) {
+  if (available <= 0) return emptyBalanceMessage(type);
+  const category = type === "annual" ? "de congés annuels" : type === "rtt" ? "de RTT" : "de fractionnement";
+  const amount = `${available.toLocaleString("fr-FR")} jour${available > 1 ? "s" : ""}`;
+  return `Solde insuffisant : il ne reste que ${amount} ${category} pour cette demande.`;
+}
 export async function handleSaveRequest(
   context: CalendarActionContext,
 ): Promise<Response> {
@@ -126,16 +134,16 @@ export async function handleSaveRequest(
     const requestedUsage = quotaUsageByYear(requestedPeriods);
     // Congés annuels : les restes d'une année se prennent jusqu'au 30 avril
     // suivant. Chaque jour est décompté sur l'année dont il consomme le solde,
-    // comme dans l'application ; la demande est refusée si cette année-là
-    // n'a plus rien.
+    // comme dans l'application ; la demande est refusée dès qu'elle dépasse
+    // ce qui reste à cette année-là.
     const annualAvailable = (year: number) =>
       LEAVE_ALLOWANCES.annual - (profile?.manual_adjustments?.[String(year)]?.annual_used || 0);
     const existingAnnual = annualCharges(existingPeriods, annualAvailable);
     const combinedAnnual = annualCharges([...existingPeriods, ...requestedPeriods], annualAvailable);
     for (const [year, total] of combinedAnnual.charged) {
       const before = existingAnnual.charged.get(year) || 0;
-      if (total > before && annualAvailable(year) - before <= 0)
-        return json({ error: emptyBalanceMessage("annual") }, 409);
+      if (total > before && total > annualAvailable(year))
+        return json({ error: shortageMessage("annual", annualAvailable(year) - before) }, 409);
     }
     // Les CA posés hors mai–octobre ouvrent le fractionnement de l'année
     // dont ils consomment le solde (jusqu'au 30 avril suivant compris).
@@ -151,7 +159,7 @@ export async function handleSaveRequest(
           ? fractionAllowance(Number(year), offSeasonAnnual(year))
           : LEAVE_ALLOWANCES[type];
         const remaining = allowance - manualUsed - (existingUsage[year]?.[type] || 0);
-        if (remaining <= 0) return json({ error: emptyBalanceMessage(type) }, 409);
+        if (categories[type] > remaining) return json({ error: shortageMessage(type, remaining) }, 409);
       }
     }
   }

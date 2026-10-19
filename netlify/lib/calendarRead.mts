@@ -10,6 +10,7 @@ import {
   listBlobs,
 } from "./calendarShared.mts";
 import { readAgnesSharedCalendar, syncExistingSharedCalendar } from "./sharedCalendarBridge.mts";
+import { deliverSharedOperations } from "./sharedBridgeQueue.mts";
 import { isCalendarTombstone } from "./calendarAtomic.mts";
 
 type CalendarReadContext = {
@@ -106,6 +107,10 @@ export async function readCalendar(
   cleanOvertime.sort((a, b) => a.date.localeCompare(b.date));
   cleanRecoveryUses.sort((a, b) => a.date.localeCompare(b.date));
   cleanMecenat.sort((a, b) => a.date.localeCompare(b.date));
+  // À l'ouverture, les copies restées en attente repartent vers Agnès.
+  if (shareWithAgnes)
+    await deliverSharedOperations(store, scopedKey, []).catch((error) =>
+      console.error("Rattrapage vers le planning d’Agnès impossible", error instanceof Error ? error.message : error));
   const backfillKey = scopedKey("shared-calendar-backfill-v2");
   const alreadyBackfilled = shareWithAgnes
     ? await store.get(backfillKey, { type: "text" })

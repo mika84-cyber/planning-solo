@@ -32,7 +32,10 @@ function itemsByYear(items: SelectedDay[]) {
   return [...groups.entries()];
 }
 
-export function zeroLeaveBalanceType(
+/** Le premier solde que la sélection dépasse, année par année. Un solde nul
+ *  comme un reste trop court bloquent la validation : on ne pose pas plus de
+ *  jours qu'il n'en reste. */
+export function exceededLeaveBalance(
   items: SelectedDay[],
   group: number,
   remaining: LeaveRemaining,
@@ -42,9 +45,10 @@ export function zeroLeaveBalanceType(
     const usage = requestLeaveBalanceUsage(yearItems, group);
     const yearRemaining = remainingByYear?.[year] ?? remaining;
     const type = QUOTA_BALANCE_TYPES.find((balanceType) =>
-      usage[balanceType] > 0 && (yearRemaining[balanceType] ?? Number.POSITIVE_INFINITY) <= 0,
+      usage[balanceType] > Math.max(0, yearRemaining[balanceType] ?? Number.POSITIVE_INFINITY),
     );
-    if (type) return type;
+    if (type)
+      return { type, available: Math.max(0, yearRemaining[type] ?? 0), selected: usage[type] };
   }
   return undefined;
 }

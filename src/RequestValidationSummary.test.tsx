@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { RequestValidationSummary, zeroLeaveBalanceType } from "./RequestValidationSummary";
+import { RequestValidationSummary, exceededLeaveBalance } from "./RequestValidationSummary";
 
 describe("résumé avant validation", () => {
   it("reste absent tant qu’aucune date n’est sélectionnée", () => {
@@ -155,28 +155,49 @@ describe("résumé avant validation", () => {
     expect(noFraction).toContain("Vous n’avez plus de jours de fractionnement disponibles.");
   });
 
+  it("bloque aussi une sélection plus longue que le solde restant", () => {
+    // Un RTT restant, trois demandés : la demande est bloquée, avec les chiffres.
+    expect(exceededLeaveBalance(
+      [{ date: "2026-08-11", type: "rtt" }, { date: "2026-08-12", type: "rtt" }, { date: "2026-08-13", type: "rtt" }],
+      2,
+      { rtt: 1 },
+    )).toEqual({ type: "rtt", available: 1, selected: 3 });
+    // Exactement le solde restant : la demande passe.
+    expect(exceededLeaveBalance(
+      [{ date: "2026-08-11", type: "annual" }],
+      2,
+      { annual: 1 },
+    )).toBeUndefined();
+    // Une demi-journée sur un reste d’une demi-journée passe aussi.
+    expect(exceededLeaveBalance(
+      [{ date: "2026-08-11", type: "half" }],
+      2,
+      { annual: 0.5 },
+    )).toBeUndefined();
+  });
+
   it("identifie les validations à bloquer lorsque le solde utile est nul", () => {
-    expect(zeroLeaveBalanceType(
+    expect(exceededLeaveBalance(
       [{ date: "2026-08-11", type: "annual" }],
       2,
       { annual: 0 },
-    )).toBe("annual");
-    expect(zeroLeaveBalanceType(
+    )?.type).toBe("annual");
+    expect(exceededLeaveBalance(
       [{ date: "2026-08-11", type: "half" }],
       2,
       { annual: 0 },
-    )).toBe("annual");
-    expect(zeroLeaveBalanceType(
+    )?.type).toBe("annual");
+    expect(exceededLeaveBalance(
       [{ date: "2026-08-11", type: "rtt" }],
       2,
       { rtt: 0 },
-    )).toBe("rtt");
-    expect(zeroLeaveBalanceType(
+    )?.type).toBe("rtt");
+    expect(exceededLeaveBalance(
       [{ date: "2026-08-11", type: "fraction" }],
       2,
       { fraction: 0 },
-    )).toBe("fraction");
-    expect(zeroLeaveBalanceType(
+    )?.type).toBe("fraction");
+    expect(exceededLeaveBalance(
       [{ date: "2026-08-09", type: "annual" }],
       2,
       { annual: 0 },
@@ -186,18 +207,18 @@ describe("résumé avant validation", () => {
   it("décompte une date de l’année suivante sur le solde de cette année-là", () => {
     // En 2026, plus aucun CA ; en 2027, le solde est revenu au maximum.
     const byYear = { "2026": { annual: 0 }, "2027": { annual: 25 } };
-    expect(zeroLeaveBalanceType(
+    expect(exceededLeaveBalance(
       [{ date: "2027-01-05", type: "annual" }],
       2,
       { annual: 0 },
       byYear,
     )).toBeUndefined();
-    expect(zeroLeaveBalanceType(
+    expect(exceededLeaveBalance(
       [{ date: "2026-12-30", type: "annual" }, { date: "2027-01-05", type: "annual" }],
       2,
       { annual: 0 },
       byYear,
-    )).toBe("annual");
+    )?.type).toBe("annual");
 
     const future = renderToStaticMarkup(
       <RequestValidationSummary

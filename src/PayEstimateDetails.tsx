@@ -210,7 +210,7 @@ export function PayEstimateDetails({
                 Base horaire : {euros(overtime.hourlyBase)}/h.{" "}
                 {workQuota === "full"
                   ? `14 premières heures : ${euros(overtime.hourlyBase * 1.25)}/h de jour, ${euros(overtime.hourlyBase * 1.25 * (5 / 3))}/h le dimanche ou un jour férié et ${euros(overtime.hourlyBase * 1.25 * 2)}/h de nuit. À partir de la 15e : ${euros(overtime.hourlyBase * 1.27)}/h de jour, ${euros(overtime.hourlyBase * 1.27 * (5 / 3))}/h le dimanche ou un jour férié et ${euros(overtime.hourlyBase * 1.27 * 2)}/h de nuit.`
-                  : "À temps partiel, le taux de base s’applique sans coefficient 1,25/1,27 ni majoration de nuit ou de dimanche/jour férié."}
+                  : "À temps partiel, l’heure vaut le taux d’un temps plein au même indice, sans coefficient 1,25/1,27 ni majoration de nuit ou de dimanche/jour férié ; le plafond de 25 h est ramené à la quotité."}
               </p>
               <div className="overtime-pay-lines">
                 {overtime.lines.map((line) => (

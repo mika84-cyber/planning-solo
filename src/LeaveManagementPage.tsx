@@ -34,7 +34,7 @@ type LeaveManagementPageProps = {
   recoveryEarningStates: Map<string, { earnedMinutes: number; remainingMinutes: number }>;
   overtimeHistoryOpen: boolean;
   /** Montant brut estimé des heures à payer d'une paie, et ce qui dépasse le plafond. */
-  paidOvertimeEstimate?: (year: number, month: number) => { ready: boolean; amount: number; cappedMinutes: number };
+  paidOvertimeEstimate?: (year: number, month: number) => { ready: boolean; amount: number; cappedMinutes: number; capMinutes: number };
   mecenatEntries: MecenatEntry[];
   mecenatHistoryOpen: boolean;
   isProgramAdmin: boolean;
@@ -135,7 +135,7 @@ export function LeaveManagementPage({
             </div>
             <div className="overtime-balance-summary overtime-balance-summary-primary">
               <article className="remaining"><span>À récupérer</span><strong>{minutesLabel(recoveryBalance.remaining)}</strong><small>Solde disponible</small></article>
-              <article><span>À payer</span><strong>{minutesLabel(nextPaidMinutes)}</strong><small>{nextPaidPeriod ? `${MONTHS[nextPaidPeriod.month]} ${nextPaidPeriod.year}${nextPaidEstimate?.ready && nextPaidEstimate.amount ? ` · ≈ ${euros(nextPaidEstimate.amount)} brut` : ""}` : "Aucune heure prévue"}</small>{nextPaidEstimate?.cappedMinutes ? <small className="overtime-capped-note">{minutesLabel(nextPaidEstimate.cappedMinutes)} au-delà du plafond de 25 h : non payées</small> : null}</article>
+              <article><span>À payer</span><strong>{minutesLabel(nextPaidMinutes)}</strong><small>{nextPaidPeriod ? `${MONTHS[nextPaidPeriod.month]} ${nextPaidPeriod.year}${nextPaidEstimate?.ready && nextPaidEstimate.amount ? ` · ≈ ${euros(nextPaidEstimate.amount)} brut` : ""}` : "Aucune heure prévue"}</small>{nextPaidEstimate?.cappedMinutes ? <small className="overtime-capped-note">{minutesLabel(nextPaidEstimate.cappedMinutes)} au-delà du plafond de {minutesLabel(nextPaidEstimate.capMinutes)} : non payées</small> : null}</article>
             </div>
             <div className="overtime-actions">
               <button type="button" className="primary-action" onClick={onOpenOvertime}>Déclarer des heures sup</button>

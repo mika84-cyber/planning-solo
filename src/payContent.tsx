@@ -41,6 +41,8 @@ type MonthPaySummary = {
   compensatedCount: number;
   sick: number;
   sickDays: number;
+  /** Jours d’arrêt retenus à demi-traitement (au-delà de trois mois). */
+  sickHalfPayDays?: number;
   strike: number;
   strikeDays: number;
   strikeDeductedDays: number;
@@ -273,7 +275,9 @@ export function buildPayContent({
       ? {
           key: "sick",
           label: `Arrêt maladie (${monthPay.sickDays} j)`,
-          detail: "carence et retenue de 10 %",
+          detail: monthPay.sickHalfPayDays
+            ? `carence, 10 % puis 50 % : ${monthPay.sickHalfPayDays} j à demi-traitement`
+            : "carence et retenue de 10 %",
           amount: -monthPay.sick,
         }
       : null,

@@ -190,7 +190,7 @@ describe("calcul IHTS", () => {
     expect(result.amount).toBeCloseTo(67.0374, 4);
   });
 
-  it("applique au temps partiel le taux de base sans majoration", () => {
+  it("applique au temps partiel le taux d’un temps plein au même indice, sans majoration", () => {
     const result = calculatePaidOvertime(
       [entry("night", 60, "paid", 60)],
       2026,
@@ -199,7 +199,12 @@ describe("calcul IHTS", () => {
       927.94,
       27.84,
     );
+    // Traitement et indemnité versés à mi-temps, ramenés au temps plein
+    // (décret n° 82-624, article 3) : une heure de nuit vaut le taux simple.
+    expect(result.hourlyBase).toBeCloseTo(((927.94 + 27.84) * 12) / 1820 / 0.5, 8);
     expect(result.amount).toBeCloseTo(result.hourlyBase, 8);
+    const threeQuarters = calculatePaidOvertime([entry("jour", 60, "paid")], 2026, 8, "three_quarters", 1500, 45);
+    expect(threeQuarters.hourlyBase).toBeCloseTo(((2000 + 60) * 12) / 1820, 8);
   });
 });
 
@@ -566,16 +571,16 @@ describe("plafond mensuel des heures payées", () => {
     expect(result.amount).toBeCloseTo(payee(25 * 60).amount, 8);
   });
 
-  it("applique aussi le plafond à temps partiel", () => {
-    const result = calculatePaidOvertime(
-      [entry("long", 30 * 60)],
-      2026,
-      8,
-      "half",
-      927.94,
-      27.84,
-    );
-    expect(result.cappedMinutes).toBe(5 * 60);
+  it("ramène le plafond de 25 h à la quotité à temps partiel", () => {
+    const half = calculatePaidOvertime([entry("long", 30 * 60)], 2026, 8, "half", 927.94, 27.84);
+    // Mi-temps : 12 h 30 payées au plus, 17 h 30 au-delà.
+    expect(half.capMinutes).toBe(12 * 60 + 30);
+    expect(half.cappedMinutes).toBe(17 * 60 + 30);
+    expect(half.amount).toBeCloseTo(half.hourlyBase * 12.5, 8);
+    const threeQuarters = calculatePaidOvertime([entry("long", 30 * 60)], 2026, 8, "three_quarters", 927.94, 27.84);
+    expect(threeQuarters.capMinutes).toBe(18 * 60 + 45);
+    expect(threeQuarters.cappedMinutes).toBe(11 * 60 + 15);
+    expect(calculatePaidOvertime([entry("long", 30 * 60)], 2026, 8, "full", 927.94, 27.84).capMinutes).toBe(25 * 60);
   });
 });
 

@@ -39,7 +39,8 @@ export function PayslipSettingsSections({
 }: Props) {
   return (
     <>
-        {/* La retenue (un jour de carence puis 10 %/jour) vaut pour les deux
+        {/* La retenue (un jour de carence puis 10 %/jour, 50 % au-delà de trois
+            mois d’arrêt sur douze mois) vaut pour les deux
             statuts : un bulletin réel de contractuel porte bien la ligne
             « Jour de carence », et le brut n'y tombe juste qu'en la retenant. */}
         {sickLeaves.arrets.length > 0 && (
@@ -57,6 +58,7 @@ export function PayslipSettingsSections({
                       <small>
                         {arret.days} jour{s(arret.days)} · carence +{" "}
                         {arret.reducedDays} à 10 %
+                        {arret.halfPayDays ? ` + ${arret.halfPayDays} à 50 %` : null}
                       </small>
                     </th>
                     <td className="negative">−{euros(arret.total)}</td>

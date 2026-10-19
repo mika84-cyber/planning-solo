@@ -78,6 +78,18 @@ export const WORK_QUOTA_OPTIONS: Array<{
   { value: "half", label: "Mi-temps", dailyMinutes: 3 * 60 + 45 },
 ];
 
+/** Quotité de travail : la part du temps plein, qui est aussi la part du
+ *  traitement versé à mi-temps et à trois-quarts temps. */
+export function workQuotity(quota: WorkQuota) {
+  return quota === "three_quarters" ? 0.75 : quota === "half" ? 0.5 : 1;
+}
+
+/** Plafond mensuel des heures payées : vingt-cinq heures à temps plein,
+ *  ramenées à la quotité à temps partiel (décret n° 82-624, article 3). */
+export function paidOvertimeMonthlyCapMinutes(quota: WorkQuota) {
+  return Math.round(PAID_OVERTIME_MONTHLY_CAP_MINUTES * workQuotity(quota));
+}
+
 export function dailyMinutesForQuota(quota: WorkQuota) {
   return (
     WORK_QUOTA_OPTIONS.find((option) => option.value === quota)?.dailyMinutes ??
@@ -412,7 +424,13 @@ export function overtimeRangeRecoveryPreview(
 }
 
 /** Calcule les IHTS des seules heures « À payer » du mois d'exécution.
- * Les minutes récupérées n'avancent jamais le seuil des quatorze heures. */
+ * Les minutes récupérées n'avancent jamais le seuil des quatorze heures.
+ *
+ * À temps partiel (décret n° 82-624, article 3, qui déroge aux articles 7 et
+ * 8 du décret n° 2002-60) : l'heure vaut le traitement annuel et l'indemnité
+ * de résidence d'un agent au même indice à temps plein, divisés par 1 820,
+ * sans aucune majoration ; le plafond de 25 h est ramené à la quotité. Le
+ * traitement enregistré étant celui versé, il est ramené au temps plein. */
 export function calculatePaidOvertime(
   entries: OvertimeEntry[],
   year: number,
@@ -443,13 +461,15 @@ export function calculatePaidOvertime(
       ),
     );
   const hourlyBase =
-    ((monthlyBaseSalary + monthlyResidenceAllowance) * 12) / 1820;
+    ((monthlyBaseSalary + monthlyResidenceAllowance) * 12) / 1820 / workQuotity(quota);
+  const capMinutes = paidOvertimeMonthlyCapMinutes(quota);
   if (!monthlyBaseSalary || !Number.isFinite(hourlyBase) || hourlyBase <= 0)
     return {
       ready: false as const,
       hourlyBase: 0,
       totalMinutes: paid.reduce((sum, entry) => sum + entry.minutes, 0),
       cappedMinutes: 0,
+      capMinutes,
       amount: 0,
       lines: [] as PaidOvertimeLine[],
     };
@@ -491,10 +511,7 @@ export function calculatePaidOvertime(
          déclaré, mais n'entrent ni dans le montant ni dans les tranches. */
       const payable = Math.max(
         0,
-        Math.min(
-          segment.minutes,
-          PAID_OVERTIME_MONTHLY_CAP_MINUTES - paidRankMinutes,
-        ),
+        Math.min(segment.minutes, capMinutes - paidRankMinutes),
       );
       cappedMinutes += segment.minutes - payable;
       if (quota !== "full") {
@@ -530,9 +547,11 @@ export function calculatePaidOvertime(
     ready: true as const,
     hourlyBase,
     totalMinutes: paidRankMinutes,
-    /** Les minutes déclarées au-delà des vingt-cinq heures du mois : l'écran
-     *  le dit plutôt que de les passer sous silence. */
+    /** Les minutes déclarées au-delà du plafond du mois : l'écran le dit
+     *  plutôt que de les passer sous silence. */
     cappedMinutes,
+    /** Le plafond du mois : 25 h à temps plein, moins à temps partiel. */
+    capMinutes,
     amount: lines.reduce((total, line) => total + line.amount, 0),
     lines,
   };
@@ -579,6 +598,7 @@ export function paidOvertimeOnPayslip(
       hourlyBase: usual.hourlyBase || early.hourlyBase,
       totalMinutes: usual.totalMinutes + early.totalMinutes,
       cappedMinutes: usual.cappedMinutes + early.cappedMinutes,
+      capMinutes: usual.capMinutes,
       amount: usual.amount + early.amount,
       lines: [...usual.lines, ...early.lines],
     } as ReturnType<typeof calculatePaidOvertime>),

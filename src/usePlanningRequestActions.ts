@@ -28,7 +28,7 @@ import {
   type LeaveType,
 } from "./planningLogic";
 import type { usePlanningUiState } from "./usePlanningUiState";
-import { leaveBalanceShortageMessage, requestLeaveBalanceUsage, zeroLeaveBalanceType, type LeaveRemainingByYear } from "./RequestValidationSummary";
+import { exceededLeaveBalance, leaveBalanceShortageMessage, type LeaveRemainingByYear } from "./RequestValidationSummary";
 
 type PlanningUiState = ReturnType<typeof usePlanningUiState>;
 
@@ -168,10 +168,9 @@ export function usePlanningRequestActions({
       }
     }
     if (requestKind === "leave" && !sickRequest) {
-      const emptyType = zeroLeaveBalanceType(selectedList, group, leaveRemaining, leaveRemainingByYear);
-      if (emptyType) {
-        const usage = requestLeaveBalanceUsage(selectedList, group);
-        notify(leaveBalanceShortageMessage(emptyType, 0, usage[emptyType]));
+      const exceeded = exceededLeaveBalance(selectedList, group, leaveRemaining, leaveRemainingByYear);
+      if (exceeded) {
+        notify(leaveBalanceShortageMessage(exceeded.type, exceeded.available, exceeded.selected));
         return;
       }
     }

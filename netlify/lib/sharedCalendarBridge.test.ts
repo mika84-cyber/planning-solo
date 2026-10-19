@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isMikaSharingAccount,
   forwardNotificationRequest,
-  mirrorMikaNoteChanges,
   mirrorSharedCalendarAction,
+  noteChangeOperations,
   readAgnesSharedCalendar,
   sharedOperations,
   sharedPeriod,
@@ -96,15 +96,11 @@ describe("passerelle du calendrier partagé", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("recopie chez Agnès les notes de Mika qui viennent de changer", async () => {
-    setEnvironment({ PLANNING_SHARED_BRIDGE_SECRET: "secret-de-test" });
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-    vi.stubGlobal("fetch", fetchMock);
-    await mirrorMikaNoteChanges([
+  it("prépare pour Agnès la copie des notes de Mika qui viennent de changer", () => {
+    expect(noteChangeOperations([
       { kind: "added", from: "2026-10-17", to: "2026-10-19", text: "Stage" },
       { kind: "deleted", from: "2026-10-20", to: "2026-10-20", text: "" },
-    ]);
-    expect(fetchMock.mock.calls.map(([, init]) => JSON.parse(String((init as RequestInit).body)))).toEqual([
+    ])).toEqual([
       { action: "bridge-save-mika-note", from: "2026-10-17", to: "2026-10-19", noteText: "Stage" },
       { action: "bridge-delete-mika-note", from: "2026-10-20", to: "2026-10-20" },
     ]);

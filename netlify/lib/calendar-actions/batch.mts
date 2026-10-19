@@ -34,7 +34,7 @@ async function affectedKeys(context: CalendarActionContext, operation: Record<st
 }
 
 export async function handleBatch(context: CalendarActionContext): Promise<Response> {
-  const { body, request, store, calendarHandler } = context;
+  const { body, request, store, runOperation } = context;
   const operations = Array.isArray(body.operations) ? body.operations as Record<string, unknown>[] : [];
   const forbidden = new Set(["batch", "restore-backup", "delete-user-data", "archive-legacy-data", "save-request", "save-periods", "delete-shared-partner-note"]);
   if (operations.length < 1 || operations.length > 400 || operations.some((item) => !item || typeof item !== "object" || forbidden.has(String(item.action)))) return json({ error: "Lot d’opérations invalide" }, 400);
@@ -53,7 +53,7 @@ export async function handleBatch(context: CalendarActionContext): Promise<Respo
     for (let index = 0; index < operations.length; index += 1) {
       const beforeEtags = new Map<string, string>();
       for (const key of operationKeys[index]) beforeEtags.set(key, (await readAtomic(store, key)).etag);
-      const response = await calendarHandler(new Request(request.url, { method: "POST", headers: request.headers, body: JSON.stringify(operations[index]) }));
+      const response = await runOperation(new Request(request.url, { method: "POST", headers: request.headers, body: JSON.stringify(operations[index]) }));
       const result = await response.json().catch(() => null);
       if (!response.ok) {
         const complete = await rollback();

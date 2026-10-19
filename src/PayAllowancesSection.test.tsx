@@ -32,7 +32,7 @@ const props = {
     strikeAutomaticDays: 1,
     strikePotentialDays: 0,
   },
-  overtimeForPayMonth: { totalMinutes: 120, ready: true, amount: 50, cappedMinutes: 0 },
+  overtimeForPayMonth: { totalMinutes: 120, ready: true, amount: 50, cappedMinutes: 0, capMinutes: 1500 },
   mecenatForPayMonth: { totalMinutes: 90, grossAmountCents: 3500 },
   strikeForPayMonth: { totalDeduction: 80 },
   isContractuel: false,
@@ -101,7 +101,7 @@ describe("PayAllowancesSection", () => {
   it("montre toujours les primes du mois, celles à zéro regroupées", () => {
     const html = renderToStaticMarkup(
       <PayAllowancesSection {...props}
-        overtimeForPayMonth={{ totalMinutes: 0, ready: true, amount: 0, cappedMinutes: 0 }} />,
+        overtimeForPayMonth={{ totalMinutes: 0, ready: true, amount: 0, cappedMinutes: 0, capMinutes: 1500 }} />,
     );
     expect(html).not.toContain("Ouvrir pour les détails");
     expect(html).toContain("Mois précédent");

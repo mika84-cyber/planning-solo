@@ -120,7 +120,7 @@ import { MonthCalendar } from "./PlanningView";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
-import { requestLeaveBalanceUsage, requestRecoveryMinutes, zeroLeaveBalanceType, type LeaveRemainingByYear } from "./RequestValidationSummary";
+import { exceededLeaveBalance, requestLeaveBalanceUsage, requestRecoveryMinutes, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -1593,6 +1593,7 @@ export default function Home() {
       compensatedCount: month?.compensatedCount || 0,
       sick: sick.total,
       sickDays: sick.days,
+      sickHalfPayDays: sick.halfPayDays,
       strike: strikeMonthDeduction,
       strikeDays: strikeForCurrentPayMonth.days.length,
       strikeDeductedDays:
@@ -1745,8 +1746,8 @@ export default function Home() {
     ])) as LeaveRemainingByYear,
     [selectedYears, now, periods, group, formProfile?.manualAdjustments],
   );
-  const leaveSelectionZeroBalance = requestKind === "leave" && Boolean(
-    zeroLeaveBalanceType(selectedList, group, leaveRemainingByType, leaveRemainingByYear),
+  const leaveSelectionOverBalance = requestKind === "leave" && Boolean(
+    exceededLeaveBalance(selectedList, group, leaveRemainingByType, leaveRemainingByYear),
   );
   const cetAnnualDaysTaken =
     leaveStats.balances.find((balance) => balance.type === "annual")?.used || 0;
@@ -3200,7 +3201,7 @@ export default function Home() {
         selectionBlocked={
           recoverySelectionInsufficient ||
           recoverySelectionIncomplete ||
-          leaveSelectionZeroBalance
+          leaveSelectionOverBalance
         }
         onCancel={cancelRequest}
         onSelectLeaveType={selectLeaveType}
