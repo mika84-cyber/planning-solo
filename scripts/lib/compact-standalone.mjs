@@ -2,8 +2,7 @@
 // retirés, syntaxe simplifiée. Dans les modules (app.js et ce qu'il importe),
 // les noms internes sont aussi raccourcis ; sheets.js et device.js, scripts
 // classiques, gardent les leurs : ils définissent des variables globales lues
-// par app.js. Le moteur PDF, déjà compacté, et le service worker sont laissés
-// tels quels.
+// par app.js. Le service worker est laissé tel quel.
 // Partagé par `minify-standalone.mjs` (site principal) et `build-congecp.mjs`
 // (site autonome Congé CP).
 import { readdir, readFile, writeFile } from "node:fs/promises";
@@ -11,7 +10,10 @@ import { join } from "node:path";
 import { minifySync } from "rolldown/utils";
 import { transform } from "lightningcss";
 
-const SKIP = new Set(["pdf-engine.js", "sw.js"]);
+// Le service worker du formulaire garde son texte : ses empreintes de cache
+// sont calculées ensuite. Le moteur PDF (jsPDF, déjà compacté) est repassé
+// sans renommage : sa syntaxe simplifiée gagne encore 8 Kio compressés.
+const SKIP = new Set(["sw.js"]);
 const MODULE_SYNTAX = /^\s*(?:import|export)\s/m;
 
 /** Compacte sur place les scripts et styles du dossier donné. */
