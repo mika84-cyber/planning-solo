@@ -1488,10 +1488,16 @@ document.getElementById('btnReset').addEventListener('click', function(){
 });
 
 /* ================= PDF ================= */
+/* Le moteur est pdf-lib seul (pdf-engine.js) : la feuille est dessinée
+   directement avec lui — fond, tampons, aplats, champs, croix, signatures —
+   puis l'observation et les justificatifs s'y ajoutent. Les mêmes
+   positions qu'avec jsPDF autrefois : le repère est converti (origine en
+   bas à gauche) et la ligne de base « au milieu » reprend sa formule
+   (milieu + 0,35 × corps, interligne 1,15). */
 var pdfEnginePromise = null;
-var PDF_ENGINE_VERSION = '20260807-v78';
+var PDF_ENGINE_VERSION = '20261020-v80';
 function loadPdfEngine(){
-  if(window.jspdf && window.PDFLib) return Promise.resolve();
+  if(window.PDFLib) return Promise.resolve();
   if(pdfEnginePromise) return pdfEnginePromise;
   pdfEnginePromise = new Promise(function(resolve,reject){
     var ancien=document.getElementById('pdfEngineScript');
@@ -1501,7 +1507,7 @@ function loadPdfEngine(){
     sc.src=new URL('./pdf-engine.js?v='+PDF_ENGINE_VERSION, window.location.href).href;
     sc.async=true;
     sc.onload=function(){
-      if(window.jspdf && window.PDFLib) resolve();
+      if(window.PDFLib) resolve();
       else { pdfEnginePromise=null; reject(new Error('Moteur PDF chargé mais incomplet')); }
     };
     sc.onerror=function(){
@@ -1521,76 +1527,121 @@ function valueOf(f, snap){
   var si=byName[f.src[0]], sv=snap ? ((snap.v&&snap.v[si])||'') : inputs[si].value;
   return part(sv, f.src[1]);
 }
-function buildPdf(snap){
-  pdfSnap = snap || null;
-  try{ return buildPdfPage(snap); } finally { pdfSnap = null; }
+/* Les octets d'une image : adresse (fond de la feuille) ou data URL (tampon,
+   signature). Le fond est relu une fois par adresse. */
+var pdfImageBytes = {};
+function pdfBytesOf(src){
+  if(pdfImageBytes[src]) return pdfImageBytes[src];
+  var promise;
+  if(src.indexOf('data:') === 0){
+    var b = atob(src.slice(src.indexOf(',')+1)), out = new Uint8Array(b.length);
+    for(var i=0;i<b.length;i++) out[i] = b.charCodeAt(i);
+    promise = Promise.resolve(out);
+  } else {
+    promise = fetch(new URL(src, window.location.href).href).then(function(r){
+      if(!r.ok) throw new Error('Fond de formulaire introuvable : '+src);
+      return r.arrayBuffer();
+    }).then(function(buf){ return new Uint8Array(buf); });
+  }
+  pdfImageBytes[src] = promise;
+  promise.catch(function(){ delete pdfImageBytes[src]; });
+  return promise;
 }
-function buildPdfPage(snap){
-  var jsPDF = window.jspdf.jsPDF;
-  var pdf = new jsPDF({ unit:'pt', format:[PW,PH], orientation:'portrait', compress:false });
-  var bgEl=document.getElementById('bg');
-  pdf.addImage(bgEl, M.bg.indexOf('.png') > 0 ? 'PNG' : 'JPEG', 0, 0, PW, PH, undefined, 'NONE');
-  (M.stamps || []).forEach(function(q){
-    pdf.addImage(q.d, 'PNG', q.b[0]*K, q.b[1]*K, (q.b[2]-q.b[0])*K, (q.b[3]-q.b[1])*K, undefined, 'NONE');
-  });
+/* Ce qu'un document partage entre ses feuilles : la police et les images
+   déjà incorporées (le fond, les tampons), pour ne les écrire qu'une fois. */
+async function pdfContext(doc){
+  var images = {};
+  return {
+    doc: doc,
+    font: await doc.embedFont(PDFLib.StandardFonts.HelveticaBold),
+    image: async function(src, png){
+      if(!images[src]){
+        var bytes = await pdfBytesOf(src);
+        images[src] = png ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+      }
+      return images[src];
+    }
+  };
+}
+function pdfColor(c){ return PDFLib.rgb(c[0]/255, c[1]/255, c[2]/255); }
+/* Les polices standard n'écrivent que le jeu WinAnsi : un caractère hors de
+   ce jeu est remplacé plutôt que de faire échouer le PDF. */
+function pdfText(font, v){
+  try{ font.encodeText(v); return v; }
+  catch(e){
+    return v.split('').map(function(ch){ try{ font.encodeText(ch); return ch; } catch(e2){ return '?'; } }).join('');
+  }
+}
+async function drawPdfPage(ctx, snap){
+  pdfSnap = snap || null;
+  try{ await drawPdfSheet(ctx, snap); } finally { pdfSnap = null; }
+}
+async function drawPdfSheet(ctx, snap){
+  var doc = ctx.doc, font = ctx.font;
+  var page = doc.addPage([PW, PH]);
+  /* Repère : y mesuré depuis le haut, comme à l'écran ; pdf-lib compte
+     depuis le bas. */
+  function top(y){ return PH - y; }
+  function image(img, x, y, w, h){ page.drawImage(img, { x:x, y:top(y+h), width:w, height:h }); }
+  function fill(x, y, w, h, c){ page.drawRectangle({ x:x, y:top(y+h), width:w, height:h, color:pdfColor(c), borderWidth:0 }); }
+  image(await ctx.image(M.bg, M.bg.indexOf('.png') > 0), 0, 0, PW, PH);
+  for(var qi = 0; qi < (M.stamps || []).length; qi++){
+    var q = M.stamps[qi];
+    image(await ctx.image(q.d, true), q.b[0]*K, q.b[1]*K, (q.b[2]-q.b[0])*K, (q.b[3]-q.b[1])*K);
+  }
   (M.patches || []).forEach(function(q){
-    pdf.setFillColor(q.p[0], q.p[1], q.p[2]);
-    pdf.rect(q.b[0]*K, q.b[1]*K, (q.b[2]-q.b[0])*K, (q.b[3]-q.b[1])*K, 'F');
+    fill(q.b[0]*K, q.b[1]*K, (q.b[2]-q.b[0])*K, (q.b[3]-q.b[1])*K, q.p);
   });
-  pdf.setFont('helvetica','bold');
   M.fields.forEach(function(f){
     if(!f.d) return;
     var v = valueOf(f, snap);
     if(!v) return;
+    v = pdfText(font, v);
     var fb=boxOf(f), x0=fb[0]*K, y0=(fb[1] + (f.dy || 0))*K, x1=fb[2]*K, y1=(fb[3] + (f.dy || 0))*K;
-    if(f.e){ pdf.setFillColor(f.p[0],f.p[1],f.p[2]); pdf.rect(x0,y0,x1-x0,y1-y0,'F'); }
+    if(f.e) fill(x0, y0, x1-x0, y1-y0, f.p);
     // largeur de centrage : toute la colonne (f.cx) si definie, sinon la zone propre du champ
     var cx0 = f.cx ? f.cx[0]*K : x0, cx1 = f.cx ? f.cx[1]*K : x1;
     var mx = (cx0+cx1)/2, availW = (cx1-cx0) - 10*K;
     var size = (y1-y0)*(f.r || 0.70);
     if(f.k === 'hour') size = (y1-y0)*0.70;
-    pdf.setFontSize(size);
-    while(size > 3 && pdf.getTextWidth(v) > availW){ size -= 0.25; pdf.setFontSize(size); }
-    var c = f.c || INK;
-    pdf.setTextColor(c[0],c[1],c[2]);
+    while(size > 3 && font.widthOfTextAtSize(v, size) > availW) size -= 0.25;
+    var width = font.widthOfTextAtSize(v, size);
+    var color = pdfColor(f.c || INK);
     var midY = (y0+y1)/2;
+    /* Ligne de base « au milieu » : le milieu plus 0,35 fois le corps. */
+    var x, baseline;
     /* Les heures s'asseyent sur la ligne de base imprimée du formulaire,
        comme à l'écran, pour rester alignées avec les « h » et les « à ». */
     if(f.k === 'hour' && f.bl){
-      pdf.text(v, mx, (f.bl + (f.dy || 0))*K, { baseline:'alphabetic', align:'center' });
+      x = mx - width/2; baseline = (f.bl + (f.dy || 0))*K;
     } else if(f.a === 'left'){
       // Même alignement que sur l'écran : les dates démarrent au début du trait pointillé.
       var lead = f.k === 'date' ? 16*K : 0;
-      pdf.text(v, x0+5*K-lead, midY, { baseline:'middle' });
+      x = x0+5*K-lead; baseline = midY + size*0.35;
     } else {
-      pdf.text(v, mx, midY, { baseline:'middle', align:'center' });
+      x = mx - width/2; baseline = midY + size*0.35;
     }
+    page.drawText(v, { x:x, y:top(baseline), size:size, font:font, color:color });
   });
   (M.checks || []).forEach(function(c){
     var checks=snap ? (snap.c||{}) : checkState;
     if(!checks[c.n]) return;               // la case est deja imprimee sur le formulaire
     var x0=c.b[0]*K, y0=c.b[1]*K, x1=c.b[2]*K, y1=c.b[3]*K;
     var mn = Math.min(x1-x0, y1-y0), m = mn*0.14;
-    pdf.setDrawColor(INK[0],INK[1],INK[2]);
-    pdf.setLineWidth(mn*0.20);
-    pdf.setLineCap('round');
-    pdf.line(x0+m, y0+m, x1-m, y1-m);
-    pdf.line(x1-m, y0+m, x0+m, y1-m);
-    pdf.setLineCap('butt');
+    var stroke = { thickness:mn*0.20, color:pdfColor(INK), lineCap:PDFLib.LineCapStyle.Round };
+    page.drawLine(Object.assign({ start:{x:x0+m, y:top(y0+m)}, end:{x:x1-m, y:top(y1-m)} }, stroke));
+    page.drawLine(Object.assign({ start:{x:x1-m, y:top(y0+m)}, end:{x:x0+m, y:top(y1-m)} }, stroke));
   });
   var sigData=snap ? snap.s : (hasInk?sig.toDataURL('image/png'):'');
   if(sigData){
     var SB = sheetModel().sig;
-    pdf.addImage(sigData, 'PNG',
-                 SB[0]*K, SB[1]*K, (SB[2]-SB[0])*K, (SB[3]-SB[1])*K, undefined, 'FAST');
+    image(await ctx.image(sigData, true), SB[0]*K, SB[1]*K, (SB[2]-SB[0])*K, (SB[3]-SB[1])*K);
   }
   var sig2Data=snap ? snap.s2 : (hasInk2?sig2.toDataURL('image/png'):'');
   if(sig2Data && M.sig2){
     var S2 = sig2Box();
-    pdf.addImage(sig2Data, 'PNG',
-                 S2[0]*K, S2[1]*K, (S2[2]-S2[0])*K, (S2[3]-S2[1])*K, undefined, 'FAST');
+    image(await ctx.image(sig2Data, true), S2[0]*K, S2[1]*K, (S2[2]-S2[0])*K, (S2[3]-S2[1])*K);
   }
-  return pdf;
 }
 /* ---------- controle de saisie avant enregistrement ---------- */
 function valeur(n){ var i = byName[n]; return i === undefined ? '' : inputs[i].value.trim(); }
@@ -1743,27 +1794,20 @@ function confirmerAvantPdf(){
   return ok;
 }
 async function buildPdfBytes(){
-  var base, doc;
+  var doc = await PDFLib.PDFDocument.create();
+  var ctx = await pdfContext(doc);
   if(pageCount>1){
     pageSnapshots[pageIndex]=capturePage();
     syncFerieSignatures();
-    doc=await PDFLib.PDFDocument.create();
-    for(var pi=0;pi<pageCount;pi++){
-      var src=await PDFLib.PDFDocument.load(buildPdf(pageSnapshots[pi]).output('arraybuffer'));
-      var copied=await doc.copyPages(src,src.getPageIndices()); copied.forEach(function(pg){doc.addPage(pg);});
-    }
-    base=await doc.save();
-  } else base=buildPdf().output('arraybuffer');
+    for(var pi=0;pi<pageCount;pi++) await drawPdfPage(ctx, pageSnapshots[pi]);
+  } else await drawPdfPage(ctx, null);
   var obsText = observation ? observation.value.trim() : '';
   var joints = (M.attach || []).filter(function(a){ return files[a.id] && attNeeded(a); });
-  if(!obsText && !joints.length) return base;
-
-  doc = await PDFLib.PDFDocument.load(base);
   if(obsText){
     /* L'observation reste sur le formulaire : elle est placée dans l'espace
        central libre entre les deux zones de signature, sans créer de page. */
     var obsPage = doc.getPages()[0];
-    var obsBold = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    var obsBold = ctx.font;
     var ps = obsPage.getSize();
     /* Sur la demande de congés, le cadre Observation reprend exactement
        la hauteur des deux cadres de signature. Il reste centré dans l'espace
@@ -1821,7 +1865,7 @@ async function buildPdfBytes(){
       y-=6.2;
     });
   }
-  var font = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+  var font = ctx.font;
   for(var i = 0; i < joints.length; i++){
     var a = joints[i], f = files[a.id];
     if(f.kind === 'pdf'){

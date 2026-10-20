@@ -281,10 +281,20 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/jspdfUnusedModule.ts` et l'alias de `vite.config.ts` : html2canvas,
   DOMPurify et canvg, optionnels dans jsPDF, ne sont pas livrés ; les méthodes
   `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
+- `public/formulaire/pdf-engine.js` : le moteur PDF du formulaire autonome,
+  pdf-lib seul (UMD, `window.PDFLib`), chargé au premier PDF demandé
+  (`loadPdfEngine`, `PDF_ENGINE_VERSION` pour le cache). Dans `app.js`,
+  `drawPdfSheet` dessine chaque feuille avec lui — fond, tampons, aplats,
+  champs, croix des cases, signatures — aux mêmes positions qu'avec jsPDF
+  autrefois (repère converti, ligne de base « au milieu » = milieu + 0,35 ×
+  corps) ; `buildPdfBytes` y ajoute l'observation et les justificatifs.
+  jsPDF n'est plus embarqué dans le formulaire (moteur 855 → 502 Kio bruts,
+  307 → 199 Kio compressés) ; seule l'application le charge encore, pour les
+  plannings PDF.
 - `scripts/minify-standalone.mjs` : compacte à la construction le formulaire
-  autonome (`public/formulaire`), copié tel quel par Vite. Le compactage
-  lui-même vit dans `scripts/lib/compact-standalone.mjs`, partagé avec la
-  construction du site Congé CP.
+  autonome (`public/formulaire`), copié tel quel par Vite, moteur PDF compris.
+  Le compactage lui-même vit dans `scripts/lib/compact-standalone.mjs`,
+  partagé avec la construction du site Congé CP.
 - `public/sw.js` : cache hors ligne et activation des mises à jour. À la
   construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
   version et remplit `PRECACHE` : code, styles, polices et images légères

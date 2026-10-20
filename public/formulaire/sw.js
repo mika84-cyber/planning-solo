@@ -1,5 +1,5 @@
 /* service worker : rend l'application installable et utilisable hors connexion */
-var VERSION = '79';
+var VERSION = '80';
 var CACHE = 'demandes-' + VERSION;
 var SHELL = ['./', './index.html', './device.js', './form.css', './sheets.js', './app.js',
              './form-value-utils.js', './form-calendar.js', './form-file-utils.js', './form-signature-controller.js',

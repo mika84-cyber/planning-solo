@@ -31,7 +31,10 @@ const budgets = {
   // morceau à part se compresse moins bien que le même code dans l'entrée.
   entryJavaScript: { raw: 625 * KIB, gzip: 181 * KIB },
   // Inclut aussi le moteur PDF autonome du formulaire, volontairement différé.
-  largestSecondaryJavaScript: { raw: 900 * KIB, gzip: 330 * KIB },
+  // Abaissé le 20 octobre 2026 de 900 / 330 à 510 / 205 Kio : le formulaire
+  // dessine ses feuilles avec pdf-lib seul, jsPDF n'y est plus embarqué
+  // (moteur 855 → 502 Kio bruts, 306,6 → 199,4 Kio compressés mesurés).
+  largestSecondaryJavaScript: { raw: 510 * KIB, gzip: 205 * KIB },
   // Relevé le 11 septembre 2026. La croissance vient des rubriques ajoutées
   // depuis la dernière mesure — outils d'administration, gestion des
   // documents, partage entre collègues — et de la refonte visuelle. Le
@@ -87,7 +90,12 @@ const budgets = {
   // l'administrateur : « Faire un échange » chargée à la demande (un morceau
   // de plus, le démarrage allégé de 4 Kio) et échange proposé au collègue
   // (2 396,8 / 786,2 Kio mesurés).
-  totalJavaScript: { raw: 2_400 * KIB, gzip: 787 * KIB },
+  // Le 20 octobre 2026, sans relever : App.tsx découpé en hooks (un surcoût
+  // de 1,7 Kio compressés, les noms d'options ne se raccourcissent pas),
+  // compensé par la recompaction du moteur PDF du formulaire ; puis abaissé
+  // de 2 400 / 787 à 2 050 / 680 Kio une fois jsPDF retiré de ce moteur
+  // (2 040,3 / 674,5 Kio mesurés).
+  totalJavaScript: { raw: 2_050 * KIB, gzip: 680 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
