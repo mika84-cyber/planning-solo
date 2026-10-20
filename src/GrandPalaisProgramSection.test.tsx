@@ -490,7 +490,7 @@ describe("programmation du Grand Palais", () => {
     expect(html).toContain("<dt>Adultes</dt><dd>32 €</dd>");
     expect(html).toContain("<dt>De minuit à 2h</dt><dd>27 €</dd>");
     expect(html).toContain("<dt>Moins de 3 ans</dt><dd>Gratuit</dd>");
-    expect(html).toContain('<small class="expo-price-note">Location des patins à glace incluse (tailles 25 à 50)</small>');
+    expect(html).toContain('<span class="expo-price-note">Location des patins à glace incluse (tailles 25 à 50)</span>');
     expect(html).toContain('href="https://www.grandpalais.fr/fr/programme/le-grand-palais-de-glace-2026" target="_blank" rel="noreferrer">Voir le site officiel</a>');
     expect(html).toContain('href="https://legrandpalaisdeglace.fr/billetterie/" target="_blank" rel="noopener noreferrer">Billetterie sur legrandpalaisdeglace.fr</a>');
     // Sans tarif sur la fiche officielle, le site tiers est celui des tarifs.
@@ -501,7 +501,7 @@ describe("programmation du Grand Palais", () => {
     // Une billetterie qui n'ouvre qu'à une date se lit sous « Tarifs », sans montant.
     const oli = GRAND_PALAIS_PROGRAM.gallery7.schedule[2026]![0];
     const oliHtml = renderToStaticMarkup(<ExpoCard entry={oli} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />);
-    expect(oliHtml).toContain('<p>Tarifs</p><small class="expo-price-note">Ouverture de la billetterie le 26 octobre 2026</small>');
+    expect(oliHtml).toContain('<p>Tarifs</p><span class="expo-price-note">Ouverture de la billetterie le 26 octobre 2026</span>');
     expect(oliHtml).toContain(">Voir les tarifs sur lemuseeimaginairedoli.com</a>");
     // Un lien de billetterie douteux n'est jamais rendu.
     for (const url of ["http://tickets.example/", "https://www.grandpalais.fr/billets", "https://user:pw@tickets.example/", "https://10.0.0.1/", "https://localhost/"])

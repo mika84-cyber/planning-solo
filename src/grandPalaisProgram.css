@@ -275,7 +275,7 @@
 .expo-price-group { display: block; margin: 0 0 2px; color: var(--venue-accent, var(--accent)); font-size: 0.72rem; font-weight: 800; }
 /* Une condition écrite sous les tarifs (location des patins incluse,
    billetterie qui ouvre à une date) : en retrait, sans peser. */
-.expo-price-note { display: block; margin-top: 5px; color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
+.expo-price-note { display: block; margin-top: 5px; color: var(--muted); font-size: 0.72rem; font-weight: 500; letter-spacing: 0; line-height: 1.4; text-transform: none; }
 /* La fiche officielle et le site de billetterie côte à côte, sur une ligne
    qui se replie quand la carte est étroite. */
 .expo-card-links { display: flex; flex-wrap: wrap; gap: 0 16px; }

@@ -696,7 +696,7 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
                 </dl>
               </Fragment>
             ))}
-            {entry.priceNote ? <small className="expo-price-note">{entry.priceNote}</small> : null}
+            {entry.priceNote ? <span className="expo-price-note">{entry.priceNote}</span> : null}
           </div>
         ) : null}
         {officialUrl || ticketingUrl ? (
