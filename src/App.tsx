@@ -37,9 +37,10 @@ import { parseDemoCompletedRequestJson } from "./demoCompletedRequest";
 import { ConnectionStatus } from "./ConnectionStatus";
 import { useAuthUiState } from "./useAuthUiState";
 import { usePayUiState } from "./usePayUiState";
-import { effectivePayProfile, usePayActions } from "./usePayActions";
+import { usePayActions } from "./usePayActions";
 import { usePayslipVerifications } from "./usePayslipVerifications";
-import { useOvertimePay } from "./useOvertimePay";
+import { usePayProfileValues } from "./usePayProfileValues";
+import { useMonthPayEstimate } from "./useMonthPayEstimate";
 import { DEMO_PAY_PROFILE, demoPayProfiles } from "./demoPayProfile";
 
 const homeDashboardModule = import("./HomeDashboard");
@@ -101,7 +102,6 @@ import { buildPayContent } from "./payContent";
 import {
   EMPTY_MANUAL_ADJUSTMENTS,
   computePayAllowances,
-  holidayRecoverySources,
 } from "./payAllowances";
 import { computeLeaveStats } from "./leaveStats";
 import { cetBalance } from "./cet";
@@ -152,10 +152,8 @@ import {
 } from "./calendarApi";
 import { parseCalendarSnapshot } from "./calendarPayload";
 import { matchesSearch } from "./searchMatching";
-import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import { AppleInstallNotice } from "./AppleInstallNotice";
 import { InstallAppNotice } from "./InstallAppNotice";
-import { monthGross, strikeDeduction } from "./payMonth";
 import {
   emptyEntry,
   groupNoteItemsByDate,
@@ -165,7 +163,6 @@ import {
   personalPresenceForDate,
   presenceShownToColleagues,
   rangeKeys,
-  roundCurrency,
   workedDayCount,
   workedDayCountBetween,
   type BalanceType,
@@ -187,29 +184,13 @@ import {
 import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
 import { useRequestArchive } from "./useRequestArchive";
+import { strikeEstimateForCalendarMonth } from "./strike";
+import { calculateMecenatVacation } from "./mecenat";
 import {
-  defaultNetRatiosForPeriod,
-  inspectNetRatioCalibration,
-  payCalibrationRegime,
-  readingsForCalibrationRegime,
-} from "./payslip";
-import { strikeEstimateForCalendarMonth, strikePayEstimate } from "./strike";
-import {
-  payEstimateReadiness,
-  type PayEstimateField,
-} from "./payEstimate";
-import {
-  calculateMecenatVacation,
-  mecenatForPayMonth,
-} from "./mecenat";
-import {
-  allocateRecoveryUses,
   DEFAULT_WORK_SCHEDULE,
   usableWorkSchedule,
   defaultRecoveryMinutes,
   dailyMinutesForQuota,
-  holidayRecoveryEntries,
-  monthlyRecoveryBalance,
   recoveryRequestMinutes,
   trainingRecoveryMinutes,
   workScheduleHalfTimes,
@@ -220,8 +201,6 @@ import {
 } from "./overtime";
 import { useToast } from "./useToast";
 import {
-  RESIDENCE_ALLOWANCE_RATE,
-  SUNDAY_ALLOWANCE,
   TYPE_LABELS,
   addDays,
   dateKey,
@@ -1275,16 +1254,15 @@ export default function Home() {
     return upcoming[0] ?? null;
   }, [now, mecenatEntries, overtimeEntries]);
 
-  // Au premier usage, le statut demandé est désormais « contractuel ». Dès
-  // qu'un choix est enregistré, la valeur persistée reprend naturellement la
-  // priorité lors des ouvertures suivantes.
-  const isContractuel = formProfile?.status !== "fonctionnaire";
-  // Seul un statut réellement choisi écarte l'IFSE et le CIA : tant que le
-  // statut n'est qu'une valeur de repli, une IFSE lue sur un bulletin reste
-  // comptée, au cas où la personne serait fonctionnaire.
-  const confirmedContractuel = formProfile?.status === "contractuel";
-  const workQuota: WorkQuota = formProfile?.workQuota || "full";
-  const workDayMinutes = dailyMinutesForQuota(workQuota);
+  const payProfileValues = usePayProfileValues({ formProfile, payProfiles, payView, payslipRateSamples });
+  const {
+    isContractuel, confirmedContractuel, workQuota, workDayMinutes, payYear, hasPayValue,
+    baseSalary, ifse, carenceDay, otherFixed, cia, ciaMonth, residenceAllowance,
+    viewedPayRegime, netRatioFixed, netRatioVariable, payslipRateCalibration,
+    navigo, mealVoucherDeduction, pasRate,
+    sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
+    deductionPayMonths,
+  } = payProfileValues;
   const mecenatDraftCalculation = useMemo(
     () =>
       calculateMecenatVacation(
@@ -1304,112 +1282,6 @@ export default function Home() {
     schedule: usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
     mecenats: mecenatEntries,
   });
-  const payYear = String(payView.getFullYear());
-  // Les réglages généraux restent disponibles pour tous les mois. Les valeurs
-  // annuelles ou datées ne remplacent que les champs propres à leur période ;
-  // le contrôle d'un bulletin reste, lui, filtré sur son mois plus bas.
-  const activePayProfile = effectivePayProfile(
-    payProfiles,
-    payYear,
-    payView.getMonth(),
-    formProfile || {},
-  );
-  const hasPayValue = (field: keyof PayProfile) =>
-    activePayProfile[field] !== undefined;
-  const baseSalary = activePayProfile.baseSalary ?? 0;
-  // Un contractuel n'a ni IFSE ni CIA.
-  const ifse = confirmedContractuel ? 0 : activePayProfile.ifse ?? 0;
-  const carenceDay = activePayProfile.carenceDay ?? 0;
-  // Pour une contractuelle, la seule ligne fixe confirmée est l'indemnité de
-  // résidence (3 % du traitement) : calculée toute seule plutôt que saisie,
-  // et pas la somme à cinq lignes propre à un fonctionnaire (résidence +
-  // SMIC comp. + ICHCSG + MGEN − transfert), dont rien ne dit qu'elle
-  // s'applique à elle. Une valeur déjà saisie à la main reste prioritaire,
-  // au cas où son bulletin réel montrerait autre chose.
-  const otherFixed =
-    activePayProfile.otherFixed ??
-    (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : 0);
-  const cia = confirmedContractuel ? 0 : activePayProfile.cia ?? 0;
-  const ciaMonth = activePayProfile.ciaMonth;
-  const residenceAllowance =
-    activePayProfile.residenceAllowance ??
-    (isContractuel ? baseSalary * RESIDENCE_ALLOWANCE_RATE : undefined);
-  const viewedPayRegime = payCalibrationRegime(
-    payView.getFullYear(),
-    payView.getMonth(),
-  );
-  const defaultNetRatios = defaultNetRatiosForPeriod(
-    payView.getFullYear(),
-    payView.getMonth(),
-    confirmedContractuel,
-  );
-  // Les profils antérieurs à ce champ ont tous été calibrés sous le régime
-  // collectif actuel : on les traite comme tels pour ne pas changer les
-  // estimations récentes déjà validées.
-  const storedNetRatioRegime =
-    activePayProfile.netRatioRegime ??
-    "culture-psc";
-  const storedNetRatioFixed = activePayProfile.netRatioFixed;
-  const storedNetRatioVariable = activePayProfile.netRatioVariable;
-  const netRatioFixed =
-    storedNetRatioRegime === viewedPayRegime &&
-    storedNetRatioFixed &&
-    storedNetRatioFixed > 0
-      ? storedNetRatioFixed
-      : defaultNetRatios.netRatioFixed;
-  const netRatioVariable =
-    storedNetRatioRegime === viewedPayRegime &&
-    storedNetRatioVariable &&
-    storedNetRatioVariable > 0
-      ? storedNetRatioVariable
-      : defaultNetRatios.netRatioVariable;
-  const payslipRateCalibration = inspectNetRatioCalibration(
-    readingsForCalibrationRegime(
-      payslipRateSamples.map((item) => item.reading),
-      viewedPayRegime,
-    ),
-  );
-  const navigo = activePayProfile.navigo ?? 0;
-  const mealVoucherDeduction =
-    activePayProfile.mealVoucherDeduction ??
-    0;
-  const pasRate = activePayProfile.pasRate ?? 0;
-  /** L'administration prélève le PAS sur une assiette « net imposable »
-   *  toujours un peu plus large que le net avant impôt reconstitué ici —
-   *  jamais détaillée sur le bulletin. Facteur correcteur calibré sur 3
-   *  bulletins réels (2026), stable à ± 0,7 point près sur les trois : sans
-   *  lui, appliquer le taux affiché tel quel sous-estime l'impôt retenu. */
-  const PAS_BASE_ADJUSTMENT = confirmedContractuel
-    // Contractuel : net imposable 2 322,05 € pour 2 171,39 € de net avant
-    // impôt sur un bulletin réel (juin 2026), la part employeur de la
-    // mutuelle et la CSG non déductible s'y ajoutant.
-    ? 1.069
-    : 1.057;
-  const sundayCarryover = formProfile?.sundayCarryover || 0;
-  const sundayCarryoverYear = formProfile?.sundayCarryoverYear;
-  const sundayCarryoverMonth = formProfile?.sundayCarryoverMonth;
-  const sundayCarryoverFromYear = formProfile?.sundayCarryoverFromYear;
-  const sundayCarryoverFromMonth = formProfile?.sundayCarryoverFromMonth;
-
-  /* Les arrêts maladie de l'année affichée.
-   *
-   *  Un arrêt vaut une carence, et un arrêt est une suite de jours consécutifs
-   *  — pas une période enregistrée : poser douze jours depuis « Choisir
-   *  plusieurs dates » crée douze périodes d'un jour, qui ne font pourtant
-   *  qu'un seul arrêt. Deux arrêts séparés dans le mois donnent bien deux
-   *  carences.
-   */
-  const deductionPayMonths = formProfile?.deductionPayMonths;
-  const sickLeaves = useMemo(() => {
-    return sickLeaveSummaryForYear(
-      periods,
-      payView.getFullYear(),
-      baseSalary,
-      ifse,
-      carenceDay,
-      deductionPayMonths,
-    );
-  }, [payView, periods, baseSalary, ifse, carenceDay, deductionPayMonths]);
 
   /* Le choix ne s'affiche que sur un férié effectivement travaillé : ni posé
      en congé, ni tombé sur un repos ou une formation — `getDayInfo` a déjà
@@ -1424,108 +1296,21 @@ export default function Home() {
     );
   }, [dayDate, group, dayPersonalLeave, periods]);
 
-  /* Les dimanches et fériés réellement travaillés d'une année, plus les
-   *  fériés compensés.
-   *
-   *  Un dimanche ne compte que s'il est prévu au cycle, non férié (les
-   *  dimanches fériés relèvent de l'autre indemnité) et non posé en congé. Un
-   *  férié ne compte que s'il est travaillé, ce que `getDayInfo` tranche déjà
-   *  en renvoyant « off » pour les fériés toujours fermés et ceux qui tombent
-   *  sur un repos ou une formation.
-   *
-   *  Un férié « compensé » est l'inverse : le cycle ne le fait pas travailler,
-   *  mais la veille était travaillée — c'est le décalage d'un jour entre les
-   *  deux maisons, Pompidou fermant le mardi et le Grand Palais le lundi. Ces
-   *  fériés-là sont payés en prime seule, sur la paie de février de l'année
-   *  suivante. C'est déjà la définition qui marque les fériés « offerts » sur
-   *  les plannings PDF.
-   */
-
-  /* Ce qui tombera sur chacune des douze paies de l'année affichée.
-   *
-   *  Deux décalages à respecter : les dimanches de décembre sont payés en
-   *  janvier de l'année suivante, et un férié est payé le mois suivant. La
-   *  paie de janvier porte donc du décembre de l'année précédente, qu'il faut
-   *  aller chercher.
-   */
-  const allowances = useMemo(
-    () =>
-      computePayAllowances({
-        year: payView.getFullYear(),
-        today: now,
-        entries,
-        periods,
-        group,
-        baseSalary,
-        manualAdjustments: formProfile?.manualAdjustments,
-        sundayCarryover,
-        sundayCarryoverYear,
-        sundayCarryoverMonth,
-        sundayCarryoverFromYear,
-        sundayCarryoverFromMonth,
-        recoveryUses,
-      }),
-    [
-    payView,
-    group,
-    entries,
-    periods,
-    baseSalary,
-    now,
-    sundayCarryover,
-    sundayCarryoverYear,
-    sundayCarryoverMonth,
-    sundayCarryoverFromYear,
-    sundayCarryoverFromMonth,
-    formProfile?.manualAdjustments,
-    recoveryUses,
-  ]);
-
-  const holidayRecoveryEarnings = useMemo(
-    () => holidayRecoveryEntries(holidayRecoverySources(entries, group, dateKey(now))),
-    [entries, group, now],
-  );
-  const unresolvedHolidayRecoveryCount = useMemo(
-    () => Object.values(entries).filter((entry) =>
-      entry.holidayPay === "recovery" && !entry.holidayRecoveryMinutes
-    ).length,
-    [entries],
-  );
-  const recoveryEarnings = useMemo(
-    () => [...overtimeEntries, ...holidayRecoveryEarnings],
-    [overtimeEntries, holidayRecoveryEarnings],
-  );
-  const recoveryBalance = useMemo(
-    () => monthlyRecoveryBalance(recoveryEarnings, recoveryUses, (key) => {
-      const date = fromKey(key);
-      return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
-    }),
-    [recoveryEarnings, recoveryUses, group],
-  );
+  const {
+    sickLeaves, allowances, holidayRecoveryEarnings, unresolvedHolidayRecoveryCount,
+    recoveryEarnings, recoveryBalance, recoveryEarningStates,
+    paidOvertimeForPayPeriod, overtimeEarlyCandidates, overtimeForPayMonth, overtimePayPreview,
+    mecenatForCurrentPayMonth, strikeForCurrentPayMonth, monthPay,
+    grossEstimateComplete, netEstimateMissing, netEstimateComplete, netCalculation, monthNet,
+  } = useMonthPayEstimate({
+    periods, entries, group, now, payView, formProfile, payProfiles,
+    recoveryUses, overtimeEntries, mecenatEntries, overtimeDraft, values: payProfileValues,
+  });
   const recoverySelectionInsufficient = requestKind === "recovery" &&
     requestRecoveryMinutes(selectedList, workQuota) > recoveryBalance.remaining;
   const recoverySelectionIncomplete = requestKind === "recovery" && selectedList.some((item) =>
     item.type.startsWith("recovery_") && requestRecoveryMinutes([item], workQuota) <= 0
   );
-  const recoveryEarningStates = useMemo(
-    () =>
-      new Map(
-        allocateRecoveryUses(recoveryEarnings, recoveryUses, (key) => {
-          const date = fromKey(key);
-          return date.getDay() === 0 || Boolean(getDayInfo(date, group).holiday);
-        }).map((item) => [
-          item.entryId,
-          item,
-        ]),
-      ),
-    [recoveryEarnings, recoveryUses, group],
-  );
-
-  // Le paiement des heures supplémentaires vit dans son propre hook, avec
-  // ses dépendances déclarées (voir src/useOvertimePay.ts).
-  const { paidOvertimeForPayPeriod, overtimeEarlyCandidates, overtimeForPayMonth, overtimePayPreview } = useOvertimePay({
-    overtimeEntries, payProfiles, formProfile, workQuota, group, payView, overtimeDraft,
-  });
 
   async function checkForAppUpdate() {
     if (checkingAppUpdate) return;
@@ -1547,148 +1332,6 @@ export default function Home() {
       window.setTimeout(() => window.location.reload(), 250);
     }
   }
-
-  const mecenatForCurrentPayMonth = useMemo(
-    () => mecenatForPayMonth(mecenatEntries, payView.getFullYear(), payView.getMonth()),
-    [mecenatEntries, payView],
-  );
-  const strikeForCurrentPayMonth = useMemo(
-    () =>
-      strikePayEstimate(
-        periods,
-        group,
-        payProfiles,
-        payView.getFullYear(),
-        payView.getMonth(),
-        { entries, recoveryUses },
-        deductionPayMonths,
-      ),
-    [periods, group, payProfiles, payView, entries, recoveryUses, deductionPayMonths],
-  );
-
-  /* La paie du mois affiché : les primes de ce mois-là, retenues déduites.
-     C'est la question qu'on se pose en ouvrant un mois. */
-  const monthPay = useMemo(() => {
-    if (!allowances || !sickLeaves) return null;
-    const index = payView.getMonth();
-    const month = allowances.monthly.find((slot) => slot.index === index);
-    // Maladie et grève se retiennent à l'identique quel que soit le statut
-    // (voir src/payMonth.ts) : seules l'IFSE et le CIA sont réservés aux
-    // fonctionnaires.
-    const sick = sickLeaves.byMonth[index];
-    const strikeMonthDeduction = strikeDeduction(
-      strikeForCurrentPayMonth.totalDeduction,
-    );
-    const sunday = month?.sunday || 0;
-    const holiday = month?.holiday || 0;
-    const compensated = month?.compensated || 0;
-    return {
-      index,
-      flat: SUNDAY_ALLOWANCE.monthlyFlat,
-      sunday,
-      sundayCount: month?.sundayCount || 0,
-      carryover: month?.carryover || 0,
-      reported: month?.reported || 0,
-      carriedFrom: month?.carriedFrom,
-      reportedTo: month?.reportedTo,
-      holiday,
-      holidayCount: month?.holidayCount || 0,
-      compensated,
-      compensatedCount: month?.compensatedCount || 0,
-      sick: sick.total,
-      sickDays: sick.days,
-      sickHalfPayDays: sick.halfPayDays,
-      strike: strikeMonthDeduction,
-      strikeDays: strikeForCurrentPayMonth.days.length,
-      strikeDeductedDays:
-        strikeForCurrentPayMonth.days.length +
-        strikeForCurrentPayMonth.automaticAdditionalDays.length,
-      strikeAutomaticDays: strikeForCurrentPayMonth.automaticAdditionalDays.length,
-      strikePotentialDays: strikeForCurrentPayMonth.potentialAdditionalDays.length,
-      cia: index === ciaMonth ? cia : 0,
-      ...monthGross({
-        baseSalary,
-        ifse,
-        otherFixed,
-        cia: index === ciaMonth ? cia : 0,
-        monthlyFlat: SUNDAY_ALLOWANCE.monthlyFlat,
-        sunday,
-        holiday,
-        compensated,
-        sickTotal: sick.total,
-        strikeDeduction: strikeMonthDeduction,
-        overtimeAmount: overtimeForPayMonth.amount,
-        mecenatGross: mecenatForCurrentPayMonth.grossAmountCents / 100,
-      }),
-    };
-  }, [
-    allowances,
-    sickLeaves,
-    payView,
-    baseSalary,
-    ifse,
-    otherFixed,
-    cia,
-    ciaMonth,
-    overtimeForPayMonth,
-    mecenatForCurrentPayMonth,
-    strikeForCurrentPayMonth,
-  ]);
-
-  /* Le forfait dominical existe même lorsque le traitement n'a jamais été
-   * renseigné. L'afficher seul comme « brut estimé » donnerait donc un
-   * montant précis mais trompeur. Le calcul reste intact et n'est présenté
-   * qu'une fois les éléments fixes indispensables connus. */
-  const availablePayEstimateFields = new Set<PayEstimateField>(
-    (["baseSalary", "ifse", "otherFixed", "carenceDay", "pasRate"] as const)
-      .filter((field) => hasPayValue(field)),
-  );
-  const estimateReadiness = payEstimateReadiness({
-    isContractuel,
-    availableFields: availablePayEstimateFields,
-    sickDays: monthPay?.sickDays || 0,
-  });
-  const strikeEstimateReady =
-    !(strikeForCurrentPayMonth.days.length + strikeForCurrentPayMonth.automaticAdditionalDays.length) ||
-    strikeForCurrentPayMonth.totalDeduction !== null;
-  const strikeMissing =
-    strikeForCurrentPayMonth.days.length + strikeForCurrentPayMonth.automaticAdditionalDays.length && !strikeEstimateReady
-      ? ["traitement et indemnité de résidence connus avant la grève"]
-      : [];
-  const grossEstimateComplete = estimateReadiness.grossReady && strikeEstimateReady;
-  const netEstimateMissing = [...estimateReadiness.netMissing, ...strikeMissing];
-  const netEstimateComplete = estimateReadiness.netReady && strikeEstimateReady;
-
-  /** Le net estimé du mois affiché : cotisations d'abord, avec deux taux —
-   *  le traitement porte la pension civile, les primes non —, puis l'impôt à
-   *  part, pour qu'un changement de taux se corrige sans tout recalibrer.
-   *  `null` tant que les taux ne sont pas renseignés. */
-  const netCalculation =
-    netEstimateComplete &&
-    monthPay &&
-    netRatioFixed > 0 &&
-    netRatioVariable > 0
-      ? (() => {
-          const netFromGross = roundCurrency(
-            monthPay.grossFixed * (netRatioFixed / 100) +
-            monthPay.grossVariable * (netRatioVariable / 100),
-          );
-          // Jamais prélevés en décembre, confirmé sur les bulletins de 2024
-          // et 2025 : la ligne « Titres repas carte » y est absente.
-          const mealVouchers = monthPay.index === 11 ? 0 : mealVoucherDeduction;
-          const netBeforeTax = roundCurrency(netFromGross + navigo - mealVouchers);
-          const incomeTax = roundCurrency(netBeforeTax * (pasRate / 100) * PAS_BASE_ADJUSTMENT);
-          return {
-            netFromGross,
-            estimatedContributions: roundCurrency(monthPay.gross - netFromGross),
-            mealVouchers,
-            netBeforeTax,
-            incomeTax,
-            net: roundCurrency(netBeforeTax - incomeTax),
-          };
-        })()
-      : null;
-  const monthNet = netCalculation?.net ?? null;
 
   const leaveStats = useMemo(
     () =>
