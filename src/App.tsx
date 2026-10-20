@@ -43,18 +43,9 @@ const WorkExchangeDialog = lazy(() => import("./WorkExchangeDialog").then((modul
 const BalanceDetailDialog = lazy(() =>
   import("./BalanceDetailDialog").then(({ BalanceDetailDialog: Component }) => ({ default: Component })),
 );
-const AnnualPdfActions = lazy(() =>
-  import("./AnnualPdfActions").then(({ AnnualPdfActions: Component }) => ({ default: Component })),
-);
 const planningRequestPanelsModule = () => import("./PlanningRequestPanels");
 const GroupChooserDialog = lazy(() =>
   planningRequestPanelsModule().then(({ GroupChooserDialog: Component }) => ({ default: Component })),
-);
-const NoteSelectionPanel = lazy(() =>
-  planningRequestPanelsModule().then(({ NoteSelectionPanel: Component }) => ({ default: Component })),
-);
-const RecoveryDatePickingPanel = lazy(() =>
-  planningRequestPanelsModule().then(({ RecoveryDatePickingPanel: Component }) => ({ default: Component })),
 );
 const WishConversionDialog = lazy(() =>
   planningRequestPanelsModule().then(({ WishConversionDialog: Component }) => ({ default: Component })),
@@ -62,18 +53,10 @@ const WishConversionDialog = lazy(() =>
 const RequestChooserDialog = lazy(() =>
   planningRequestPanelsModule().then(({ RequestChooserDialog: Component }) => ({ default: Component })),
 );
-// Les étapes 2 et 3 d'une demande : dans le morceau des écrans différés,
-// préparé au repos, et montées seulement pendant une demande.
-const RequestSelectionPanel = lazy(() =>
-  import("./deferredScreens").then(({ RequestSelectionPanel: Component }) => ({ default: Component })),
-);
 // La rubrique Ma paie construit son contenu à part : son morceau n'est
 // chargé qu'à son ouverture.
 const PaySectionScreen = lazy(() =>
   import("./deferredScreens").then(({ PaySectionScreen: Component }) => ({ default: Component })),
-);
-const SchoolVacationMonthSummary = lazy(() =>
-  import("./SchoolVacationUi").then(({ SchoolVacationMonthSummary: Component }) => ({ default: Component })),
 );
 import { useWorkTimeUiState } from "./useWorkTimeUiState";
 import { useWorkTimeActions } from "./useWorkTimeActions";
@@ -99,17 +82,14 @@ import { cetBalance } from "./cet";
 import { HomeSectionScreen } from "./HomeSectionScreen";
 import { LeaveSectionScreen } from "./LeaveSectionScreen";
 import { DocumentsSectionScreen } from "./DocumentsSectionScreen";
+import { PlanningWorkspace } from "./PlanningWorkspace";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import {
   AppHeader,
   AdaptiveNavigation,
   MainMenu,
 } from "./AppNavigation";
-import { PlanningCommandCenter } from "./PlanningCommandCenter";
-import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
 import { PlanningDayCell } from "./PlanningDayCell";
-import { MonthCalendar } from "./PlanningView";
-import { WorkExchangePanel } from "./WorkExchangePanel";
 import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
 import { requestRecoveryMinutes } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
@@ -118,7 +98,6 @@ import {
   DocumentAnnouncementNotice,
   FeedbackMessenger,
   FeedbackResolutionAlert,
-  PdfDownloadPage,
 } from "./appSections";
 import {
   getCalendar,
@@ -227,7 +206,7 @@ export default function Home() {
   const {
     setOvertimeDialogOpen, setSolidarityDialogOpen,
     setRecoveryDialogOpen,
-    recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode,
+    setRecoveryDatePicking, trainingRecoveryMode,
     setMecenatDialogOpen, setSavingMecenat,
     savingOvertime, setSavingOvertime, overtimeDraft,
     solidarityDraft, setSolidarityDraft, recoveryDraft, setRecoveryDraft,
@@ -236,18 +215,17 @@ export default function Home() {
   } = workTimeUi;
   const planningUi = usePlanningUiState();
   const {
-    dayDate, setDayDate, noteText, setNoteText, noteColor,
+    dayDate, setDayDate, setNoteText, noteColor,
     noteSelecting, noteDates,
     dayPersonalLeave,
-    savingDay, setSavingDay,
-    rangeLeaveType,
-    rangeSelecting, separateDates, wishMoment, separateWishMoments,
+    setSavingDay,
+    rangeSelecting, separateDates, separateWishMoments,
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople,
-    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, directDurationSave, setDirectDurationSave, timeDate,
-    requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
-    activeType, setActiveType, selections, setSelections, setTimeDate,
+    requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, directDurationSave, setDirectDurationSave, timeDate,
+    requestKind, setRequestKind, setSickRequest,
+    selections, setSelections, setTimeDate,
     setWarningDate,
   } = planningUi;
   const showLeaves = true;
@@ -295,13 +273,12 @@ export default function Home() {
     approvedGrandPalaisUpdates,
     mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
-    noteQuery, narrowScreen, pdfOpen, setPdfOpen,
+    noteQuery,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate,
     appUpdateAvailable, appUpdatePromptOpen, setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
     accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize,
-    showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf,
-    showSchoolVacations, setShowSchoolVacations, schoolZone, setSchoolZone, calendarSlide,
+    showSchoolVacations, schoolZone,
     allowancesSwipeStart,
   } = appShellUi;
   // Fermeture exceptionnelle d'un jour : celle ajoutée ou retirée à la main,
@@ -393,7 +370,7 @@ export default function Home() {
       ),
     [entries],
   );
-  const { pdfExporting, exportAnnualPlanning } = useAnnualPdfExport(
+  const annualPdfExport = useAnnualPdfExport(
     view,
     group,
     periods,
@@ -528,7 +505,6 @@ export default function Home() {
     userEmail,
   });
   const {
-    exchanges: workExchanges,
     openNew: openWorkExchange,
     openEdit: editWorkExchange,
   } = workExchangeUi;
@@ -541,7 +517,7 @@ export default function Home() {
     sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
     deductionPayMonths,
   } = payProfileValues;
-  const { monthWorkedDays, remainingWorkedDays, nextExtraWork, todayOverview } = useWorkedDaysOverview({
+  const workedDaysOverview = useWorkedDaysOverview({
     view, now, group, periods, entries, recoveryUses, formProfile, mecenatEntries, overtimeEntries,
     selections, workDayMinutes, exceptionalClosureFor,
   });
@@ -1112,7 +1088,7 @@ export default function Home() {
           formProfile={formProfile}
           entries={entries}
           ownNoteAuthorLabel={ownNoteAuthorLabel}
-          overview={{ todayOverview, nextExtraWork, totalLeaveRemaining, upcoming, hasAnyNote, noteSearchResults }}
+          overview={{ ...workedDaysOverview, totalLeaveRemaining, upcoming, hasAnyNote, noteSearchResults }}
           setup={{ missingCalculationProfile, missingHolidayChoices, missingPayValues }}
           shell={appShellUi}
           pay={payUi}
@@ -1175,208 +1151,35 @@ export default function Home() {
         workAccident={workAccident}
       />
 
-      <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
-      {showCalendarWorkspace ? (
-        <>
-      <PlanningCommandCenter
-        isHome={homeSection === "home"}
+      <PlanningWorkspace
+        now={now}
+        group={group}
         view={view}
         setView={setView}
+        showCalendarWorkspace={showCalendarWorkspace}
         workQuota={workQuota}
-        workedDays={{ month: monthWorkedDays, remaining: remainingWorkedDays }}
-        recoveryRangeSelecting={recoveryRangeSelecting}
-        recoveryDraft={recoveryDraft}
-        setRecoveryDraft={setRecoveryDraft}
-        recoveryRangeDates={recoveryRangeDates}
-        savingOvertime={savingOvertime}
-        onCancelRecoveryRange={cancelRecoveryRangeSelection}
-        onSaveRecoveryRange={() => void saveRecoveryRangeDates()}
-        rangeSelecting={rangeSelecting}
-        separatePeople={separatePeople}
-        wishMoment={wishMoment}
-        onWishMomentChange={chooseWishMoment}
-        rangeLeaveType={rangeLeaveType}
-        separateDates={separateDates}
-        savingRange={savingRange}
-        onCancelRange={cancelRangeSelection}
-        onSaveRange={() => void saveSeparateLeaveDates()}
-        calendarDeleteMode={calendarDeleteMode && narrowScreen}
-        calendarDeleteDates={calendarDeleteDates}
-        deletingMultipleDates={deletingMultipleDates}
-        onCancelCleanup={cancelCalendarCleanup}
-        onDeleteAbsences={() =>
-          void deleteMultiplePlanningDates(calendarDeleteDates, "absences")
-        }
-        onDeleteNotes={() =>
-          void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
-        }
-        onToday={goToday}
-        onExportPdf={homeSection === "home" ? () => setPdfDialogOpen(true) : undefined}
-        exportingPdf={false}
-        showSchoolVacations={showSchoolVacations}
-        schoolZone={schoolZone}
-        onShowSchoolVacationsChange={setShowSchoolVacations}
-        onSchoolZoneChange={setSchoolZone}
+        workedDays={workedDaysOverview}
+        monthSchoolVacations={monthSchoolVacations}
+        shell={appShellUi}
+        planning={planningUi}
+        workTime={workTimeUi}
+        request={{
+          selectedList, selectedCounts, leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
+          recoveryBalance, recoverySelectionInsufficient, recoverySelectionIncomplete,
+          cancelRequest, selectLeaveType, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
+        }}
+        cleanup={{
+          calendarDeleteMode, calendarDeleteDates, deletingMultipleDates,
+          startCalendarCleanup, cancelCalendarCleanup, deleteMultiplePlanningDates,
+        }}
+        pdf={{ pdfDialogOpen, setPdfDialogOpen, ...annualPdfExport }}
+        exchange={workExchangeUi}
+        renderDay={renderDay}
+        actions={{
+          openRequestChooser, chooseWishMoment, cancelRangeSelection, cancelNoteSelection, goToday, startMonthSwipe, endMonthSwipe,
+          cancelRecoveryRangeSelection, saveRecoveryRangeDates, saveNoteAcrossDates, saveSeparateLeaveDates,
+        }}
       />
-
-      {/* Les plannings PDF s'ouvrent depuis le calendrier de l'accueil. */}
-      {pdfDialogOpen ? (
-        <Suspense fallback={null}>
-          <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setPdfDialogOpen(false)}>
-            <section className="modal-card planning-pdf-dialog" role="dialog" aria-modal="true" aria-label="Plannings PDF">
-              <button className="modal-close" type="button" aria-label="Fermer" onClick={() => setPdfDialogOpen(false)}>×</button>
-              <PdfDownloadPage
-                narrowScreen={narrowScreen}
-                year={view.getFullYear()}
-                group={group}
-                showSchoolVacations={showSchoolVacationsOnPdf}
-                exporting={pdfExporting}
-                onYearChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-                onShowSchoolVacationsChange={setShowSchoolVacationsOnPdf}
-                onExport={(scope, includeSchoolVacations, pdfGroup) => void exportAnnualPlanning(scope, includeSchoolVacations, pdfGroup)}
-              />
-            </section>
-          </div>
-        </Suspense>
-      ) : null}
-
-      {/* Les trois exports annuels ne dépendent plus d'une vue annuelle
-          retirée : la rubrique PDF les porte à elle seule. */}
-      {homeSection === "pdf" && (
-        <Suspense fallback={null}>
-        <AnnualPdfActions
-          narrowScreen={narrowScreen}
-          pdfOpen={pdfOpen}
-          onTogglePdfOpen={() => setPdfOpen((current) => !current)}
-          showSchoolVacationsOnPdf={showSchoolVacationsOnPdf}
-          onToggleSchoolVacations={() =>
-            setShowSchoolVacationsOnPdf((current) => !current)
-          }
-          pdfExporting={pdfExporting}
-          group={group}
-          onExport={(scope, includeSchoolVacations) =>
-            void exportAnnualPlanning(scope, includeSchoolVacations)
-          }
-        />
-        </Suspense>
-      )}
-
-      {noteSelecting ? (
-        <Suspense fallback={null}>
-        <NoteSelectionPanel
-          open={noteSelecting}
-          noteColor={noteColor}
-          noteText={noteText}
-          noteDates={noteDates}
-          savingDay={savingDay}
-          onCancel={cancelNoteSelection}
-          onSave={saveNoteAcrossDates}
-        />
-        </Suspense>
-      ) : null}
-
-      {requestKind ? (
-        <Suspense fallback={null}>
-      <RequestSelectionPanel
-        requestKind={requestKind}
-        sickRequest={sickRequest}
-        activeType={activeType}
-        setActiveType={setActiveType}
-        selectedList={selectedList}
-        selectedCounts={selectedCounts}
-        group={group}
-        workQuota={workQuota}
-        recoveryBalanceRemaining={recoveryBalance.remaining}
-        leaveRemainingByType={leaveRemainingByType}
-        leaveRemainingByYear={leaveRemainingByYear}
-        currentYear={now.getFullYear()}
-        savingRequest={savingRequest}
-        selectionBlocked={
-          recoverySelectionInsufficient ||
-          recoverySelectionIncomplete ||
-          leaveSelectionOverBalance
-        }
-        onCancel={cancelRequest}
-        onSelectLeaveType={selectLeaveType}
-        onSelectRecoveryType={selectRecoveryType}
-        onValidateAndOpenForm={() => void validateAndOpenForm()}
-        onSaveToPlanning={() => void saveRequestToPlanning()}
-      />
-        </Suspense>
-      ) : null}
-
-      {recoveryDatePicking ? (
-        <Suspense fallback={null}>
-        <RecoveryDatePickingPanel
-          open={recoveryDatePicking}
-          onCancel={() => {
-            setRecoveryDatePicking(false);
-            setRecoveryDialogOpen(true);
-          }}
-        />
-        </Suspense>
-      ) : null}
-
-      <section className="planning-calendar-section" aria-label="Planning et congés">
-      <div className="planning-leave-panel">
-        <button
-          className="primary-action planning-leave-action"
-          type="button"
-          onClick={() => openRequestChooser("planning")}
-        >
-          Poser un congé
-        </button>
-        <button
-          className="planning-exchange-action"
-          type="button"
-          onClick={() => openWorkExchange()}
-        >
-          Faire un échange
-        </button>
-      </div>
-
-      {showSchoolVacations ? (
-        <Suspense fallback={null}>
-          <SchoolVacationMonthSummary zone={schoolZone} vacations={monthSchoolVacations} />
-        </Suspense>
-      ) : null}
-
-      <section
-        className={`month-card${calendarSlide ? ` calendar-${calendarSlide}` : ""}`}
-        onTouchStart={startMonthSwipe}
-        onTouchEnd={endMonthSwipe}
-      >
-        <MonthCalendar
-          year={view.getFullYear()}
-          month={view.getMonth()}
-          renderDay={renderDay}
-        />
-      </section>
-      {homeSection === "home" ? (
-        <WorkExchangePanel exchanges={workExchanges} group={group} today={dateKey(now)} onEdit={editWorkExchange} />
-      ) : null}
-      {homeSection === "home" ? (
-        <div className="planning-calendar-cleanup-row">
-          {calendarDeleteMode && !narrowScreen ? (
-            <CalendarCleanupPanel
-              selectedCount={calendarDeleteDates.length}
-              busy={deletingMultipleDates}
-              onCancel={cancelCalendarCleanup}
-              onDeleteAbsences={() => void deleteMultiplePlanningDates(calendarDeleteDates, "absences")}
-              onDeleteNotes={() => void deleteMultiplePlanningDates(calendarDeleteDates, "notes")}
-            />
-          ) : !calendarDeleteMode ? (
-            <CalendarCleanupTrigger
-              className="calendar-bulk-delete-button calendar-bulk-delete-below"
-              onStart={startCalendarCleanup}
-            />
-          ) : null}
-        </div>
-      ) : null}
-      </section>
-        </>
-      ) : null}
-      </div>
       {workExchangeUi.open ? (
         <Suspense fallback={null}>
           <WorkExchangeDialog
