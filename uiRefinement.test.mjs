@@ -1,5 +1,14 @@
+// Finitions d'interface : des décisions prises au fil des passes, verrouillées
+// pour qu'un retour en arrière se voie. Deux familles de contrôles :
+// - les feuilles de style sont lues en règles et déclarations
+//   (test-lib/cssRules.mjs) : un contrôle demande qu'un sélecteur ou qu'une
+//   déclaration existe, jamais que le texte d'un fichier ait telle forme ;
+// - les composants sont lus comme texte : ces contrôles disent ce qu'une page
+//   contient ou ne contient plus. Le rendu lui-même est vérifié par les tests
+//   de composants (*.test.tsx) et les parcours e2e.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { loadStylesheets } from "./test-lib/cssRules.mjs";
 
 const appRoot = readFileSync(new URL("./src/App.tsx", import.meta.url), "utf8");
 const appNavigation = readFileSync(new URL("./src/AppNavigation.tsx", import.meta.url), "utf8");
@@ -37,24 +46,21 @@ const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", i
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
 const app = [appRoot, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
-const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
-  .map(([, relativePath]) =>
-    readFileSync(
-      new URL(`./src/${relativePath.replace(/^\.\//, "")}`, import.meta.url),
-      "utf8",
-    ),
-  );
-const styles = [
-  stylesheetEntry,
-  ...importedStyles,
+// Les feuilles lues en règles et déclarations (test-lib/cssRules.mjs) : un
+// contrôle porte sur un sélecteur ou une déclaration, jamais sur le texte des
+// fichiers, qui peut être reformaté ou réparti autrement sans changer le rendu.
+const css = loadStylesheets([
+  ...[...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)].map(
+    ([, relativePath]) => new URL(`./src/${relativePath.replace(/^\.\//, "")}`, import.meta.url),
+  ),
   // La page Congés, importée par main.tsx juste après styles.css.
-  readFileSync(new URL("./src/styles/19-leave-page.css", import.meta.url), "utf8"),
-  readFileSync(new URL("./src/grandPalaisProgram.css", import.meta.url), "utf8"),
-  readFileSync(new URL("./src/payBulletin.css", import.meta.url), "utf8"),
-].join("\n");
+  new URL("./src/styles/19-leave-page.css", import.meta.url),
+  new URL("./src/grandPalaisProgram.css", import.meta.url),
+  new URL("./src/payBulletin.css", import.meta.url),
+]);
 const model = readFileSync(new URL("./src/appModel.ts", import.meta.url), "utf8");
 // Les en-têtes bicolores, chargés après toutes les autres feuilles.
-const pageHeaders = readFileSync(new URL("./src/pageHeaders.css", import.meta.url), "utf8");
+const headers = loadStylesheets([new URL("./src/pageHeaders.css", import.meta.url)]);
 const calendarApi = readFileSync(new URL("./src/calendarApi.ts", import.meta.url), "utf8");
 const planningPdf = readFileSync(new URL("./src/planningPdf.ts", import.meta.url), "utf8");
 const leaveForm = [
@@ -80,7 +86,7 @@ describe("finitions d’interface", () => {
     expect(appRoot.indexOf('className="install-app-button"')).toBeLessThan(
       appRoot.indexOf('{homeSection === "home" ? ('),
     );
-    expect(styles).not.toMatch(/\.install-app-button\s*\{[^}]*position:\s*fixed/s);
+    expect(css.declarations(".install-app-button").position).not.toBe("fixed");
   });
 
   it("diffère les pages secondaires et met le profil de paie en avant", () => {
@@ -88,9 +94,9 @@ describe("finitions d’interface", () => {
     expect(appSections).toContain('import("./PayEstimateDetails").then');
     expect(appSections).toContain('import("./ColleaguePlanningPage").then');
     expect(appSections).not.toContain('const payPageModule = import("./PayPage")');
-    expect(styles).toContain(".pay-app-screen:has(.pay-dashboard)");
-    expect(styles).toContain("animation: none;");
-    expect(styles).toContain(".pay-dashboard-profile-slot .pay-profile-symbol");
+    expect(css.mentions(".pay-app-screen:has(.pay-dashboard)")).toBe(true);
+    expect(css.declares("animation", "none")).toBe(true);
+    expect(css.mentions(".pay-dashboard-profile-slot .pay-profile-symbol")).toBe(true);
   });
 
   it("isole les mutations directes et les lots de suppression du planning", () => {
@@ -113,16 +119,16 @@ describe("finitions d’interface", () => {
   });
 
   it("hiérarchise les actions CET et met en valeur les heures de récupération", () => {
-    expect(styles).toContain(".cet-toolbar .secondary-button");
-    expect(styles).toContain("background: var(--surface);");
+    expect(css.mentions(".cet-toolbar .secondary-button")).toBe(true);
+    expect(css.declares("background", "var(--surface)")).toBe(true);
     expect(workTimeDialogs).toContain("Heures à poser");
     expect(app).toContain("Heures à poser pour chaque date");
-    expect(styles).toContain(".recovery-duration-field .recovery-duration-choice button.active");
+    expect(css.mentions(".recovery-duration-field .recovery-duration-choice button.active")).toBe(true);
   });
 
   it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
-    expect(styles).toContain(".cet-section-static .cet-heading-static {");
-    expect(styles).toContain(".leave-tool-disclosure > .overtime-balance-card,\n.leave-tool-disclosure > .cet-section {");
+    expect(css.hasRule(".cet-section-static .cet-heading-static")).toBe(true);
+    expect(css.hasRuleWithSelectors([".leave-tool-disclosure > .overtime-balance-card", ".leave-tool-disclosure > .cet-section"])).toBe(true);
     expect(app).toContain('<strong id="leave-request-archive-title">Demandes archivées</strong>');
     expect(cetSection).toContain('className="cet-section open cet-section-static"');
     expect(cetSection).toContain("alimentation du 15 novembre au 31 décembre");
@@ -130,7 +136,7 @@ describe("finitions d’interface", () => {
     expect(cetSection).not.toContain("Planning Solo vous aide à suivre et simuler votre CET");
     expect(cetSection).toContain('placeholder="0" value={initialBalanceInput}');
     expect(cetSection).toContain('setInitialBalanceInput(value)');
-    expect(styles).toContain(".leave-request-archive .request-archive-icon");
+    expect(css.mentions(".leave-request-archive .request-archive-icon")).toBe(true);
   });
 
   it("conserve le profil et la période de paie repliables", () => {
@@ -142,18 +148,18 @@ describe("finitions d’interface", () => {
   });
 
   it("anime le changement de mois sans gêner le défilement vertical", () => {
-    expect(styles).toContain("touch-action: pan-y");
-    expect(styles).toContain("@keyframes pay-month-out-left");
-    expect(styles).toContain("@keyframes pay-month-in-right");
+    expect(css.declares("touch-action", "pan-y")).toBe(true);
+    expect(css.hasKeyframes("pay-month-out-left")).toBe(true);
+    expect(css.hasKeyframes("pay-month-in-right")).toBe(true);
     expect(app).toContain("slideAllowancesMonth(deltaX < 0 ? 1 : -1)");
   });
 
   it("organise les cartes et commandes du planning pour le téléphone", () => {
-    expect(styles).not.toContain("today-group-card");
-    expect(styles).toContain("  .controls .worked-days {\n    grid-column: 1;\n    grid-row: 1;");
+    expect(css.anywhere("today-group-card")).toBe(false);
+    expect(css.anyRuleDeclares(".controls .worked-days", { "grid-column": "1", "grid-row": "1" })).toBe(true);
     // Le choix du groupe a quitté les commandes du planning.
-    expect(styles).not.toContain("planning-group-choice");
-    expect(styles).toContain(".calendar-toolbar.month-toolbar .today-button");
+    expect(css.anywhere("planning-group-choice")).toBe(false);
+    expect(css.mentions(".calendar-toolbar.month-toolbar .today-button")).toBe(true);
     expect(app).toContain("planning-workspace-shell");
   });
 
@@ -162,40 +168,40 @@ describe("finitions d’interface", () => {
     expect(app).toContain('myLeaveType === "childcare"');
     expect(app).toContain('myLeaveType === "sick"');
     expect(app).toContain('myLeaveType === "sick" ? "🤒"');
-    expect(styles).toContain(".day.leave-day.leave-exceptional");
-    expect(styles).toContain(".day.leave-day.leave-childcare");
-    expect(styles).toContain(".day.leave-day.leave-sick");
-    expect(styles).toContain(".day.half-morning::after");
+    expect(css.mentions(".day.leave-day.leave-exceptional")).toBe(true);
+    expect(css.mentions(".day.leave-day.leave-childcare")).toBe(true);
+    expect(css.mentions(".day.leave-day.leave-sick")).toBe(true);
+    expect(css.mentions(".day.half-morning::after")).toBe(true);
     // Chaque moitié couvre son côté de la case ; le trait noir est l'ombre
     // interne vérifiée ci-dessous, pas une bordure.
-    expect(styles).toContain(".day.half-morning::after {\n  left: -1px;\n  right: 50%;");
-    expect(styles).toContain(".day.half-afternoon::after {\n  right: -1px;\n  left: 50%;");
-    expect(styles).toContain("box-shadow: inset 0 0 0 2px #000");
-    expect(styles).toContain("box-sizing: border-box");
-    expect(styles).toContain("left: 0");
+    expect(css.anyRuleDeclares(".day.half-morning::after", { left: "-1px", right: "50%" })).toBe(true);
+    expect(css.anyRuleDeclares(".day.half-afternoon::after", { right: "-1px", left: "50%" })).toBe(true);
+    expect(css.declares("box-shadow", "inset 0 0 0 2px #000")).toBe(true);
+    expect(css.declares("box-sizing", "border-box")).toBe(true);
+    expect(css.declares("left", "0")).toBe(true);
   });
 
   it("présente les repères du jour en blocs, la journée en tête et le prochain férié travaillé", () => {
-    const refinements = readFileSync(new URL("./src/productRefinements.css", import.meta.url), "utf8");
-    const overview = readFileSync(new URL("./src/homeOverview.css", import.meta.url), "utf8");
+    const refinements = loadStylesheets([new URL("./src/productRefinements.css", import.meta.url)]);
+    const overview = loadStylesheets([new URL("./src/homeOverview.css", import.meta.url)]);
     const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
     // L'ancienne fiche en grille et la page d'éphéméride ne reviennent pas.
-    expect(styles).not.toContain(".today-overview-grid");
-    expect(refinements).not.toContain(".today-overview-grid");
+    expect(css.anywhere(".today-overview-grid")).toBe(false);
+    expect(refinements.mentions(".today-overview-grid")).toBe(false);
     expect(home).not.toContain("ephemeris");
     // Des lignes sur téléphone et sur le Z Fold ouvert (tactile, jusqu'à
     // 1100 px), des cartes côte à côte sur grand écran, cinq avec le férié.
-    expect(overview).toContain('grid-template-areas: "icon label value go" "icon note value go";');
-    expect(overview).toContain("@media (min-width: 1101px), (min-width: 721px) and (pointer: fine) {");
-    expect(overview).toContain("grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);");
+    expect(overview.declares("grid-template-areas", '"icon label value go" "icon note value go"')).toBe(true);
+    expect(overview.hasMedia("(min-width: 1101px), (min-width: 721px) and (pointer: fine)")).toBe(true);
+    expect(overview.declaresTogether({ "grid-auto-flow": "column", "grid-auto-columns": "minmax(0, 1fr)" })).toBe(true);
     expect(home).toContain("Prochain férié travaillé");
     // La journée garde le même format que les autres lignes : sa couleur
     // n'est que sur l'icône et le libellé, sans fond coloré ni pastille.
-    expect(overview).toContain(".today-status:is(.tone-leave, .tone-recovery) { --block-ink: #9a2c40;");
-    expect(overview).toContain(".today-status { --block-ink: #1d6b45; --block-soft: #e3f3e9; }");
-    expect(overview).not.toContain(".today-status .today-block-label");
-    expect(overview).not.toContain(".today-status > strong");
-    expect(overview).not.toContain("color-mix(in srgb, var(--block-ink) 8%, #fff)");
+    expect(overview.anyRuleDeclares(".today-status:is(.tone-leave, .tone-recovery)", { "--block-ink": "#9a2c40" })).toBe(true);
+    expect(overview.anyRuleDeclares(".today-status", { "--block-ink": "#1d6b45", "--block-soft": "#e3f3e9" })).toBe(true);
+    expect(overview.mentions(".today-status .today-block-label")).toBe(false);
+    expect(overview.mentions(".today-status > strong")).toBe(false);
+    expect(overview.usesValue("color-mix(in srgb, var(--block-ink) 8%, #fff)")).toBe(false);
     expect(home).toContain('<span className="today-block-label">Aujourd’hui</span>');
     expect(home).toContain("Prochain jour travaillé");
     expect(home).toContain("Congés restants");
@@ -230,21 +236,21 @@ describe("finitions d’interface", () => {
   it("tient la barre de navigation dans la palette et marque la rubrique courante", () => {
     // Elle était le seul élément froid d’une application chaude, avec des
     // couleurs écrites en dur : elle se lisait comme un bandeau rapporté.
-    expect(styles).not.toContain("#e4ecf7");
-    expect(styles).not.toContain("#304f79");
-    expect(styles).not.toContain("#4c5e76");
+    expect(css.anywhere("#e4ecf7")).toBe(false);
+    expect(css.anywhere("#304f79")).toBe(false);
+    expect(css.anywhere("#4c5e76")).toBe(false);
     // Le dock : chaque rubrique montre son nom ; la rubrique en cours passe en
     // pastille claire, avec un trait d'icône plus épais — la couleur seule ne
     // suffisait pas.
-    expect(styles).toContain(".section-dock > button.active { background: #fffdf9; color: var(--accent-strong); }");
-    expect(styles).toContain(".section-dock > button.active svg { stroke-width: 2.3; }");
+    expect(css.anyRuleDeclares(".section-dock > button.active", { background: "#fffdf9", color: "var(--accent-strong)" })).toBe(true);
+    expect(css.anyRuleDeclares(".section-dock > button.active svg", { "stroke-width": "2.3" })).toBe(true);
   });
 
   it("rend la navigation mensuelle des primes confortable sur téléphone", () => {
     // Le mois en titre, les deux flèches regroupées à droite.
     expect(app).toContain('className="variable-pay-head variable-pay-head-c"');
     expect(app).toContain('className="variable-pay-arrows"');
-    expect(styles).toContain(".variable-pay-head-c .variable-pay-arrows { display: inline-flex; gap: 8px; }");
+    expect(css.anyRuleDeclares(".variable-pay-head-c .variable-pay-arrows", { display: "inline-flex", gap: "8px" })).toBe(true);
   });
 
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {
@@ -290,21 +296,21 @@ describe("finitions d’interface", () => {
     expect((payDashboard.match(/className="pay-bulletin-today"/g) || []).length).toBe(1);
     expect((payEstimateDetails.match(/className="pay-today-button"/g) || []).length).toBe(1);
     expect(app).toContain("Aucun dimanche versé sur cette paie");
-    expect(styles).toContain(".pay-detail-sticky-header");
-    expect(styles).toContain("position: sticky");
+    expect(css.mentions(".pay-detail-sticky-header")).toBe(true);
+    expect(css.declares("position", "sticky")).toBe(true);
   });
 
   it("rend toute la zone de titre refermable et garde le mois dans la barre sticky", () => {
     expect(app).toContain('className="pay-detail-title-button"');
     expect(app).toContain('aria-label="Fermer cette page et revenir à Ma paie"');
-    expect(styles).toContain(".pay-detail-title-button");
+    expect(css.mentions(".pay-detail-title-button")).toBe(true);
   });
 
   it("affiche l’état du profil dans son action et agrandit le calendrier mobile", () => {
     expect(app).toContain('pay-profile-open-copy${netEstimateComplete ? " complete" : " missing"}');
     expect(app).not.toContain('"Informations manquantes"');
-    expect(styles).toContain(".pay-profile-open-copy.complete");
-    expect(styles).toContain("min-height: 54px");
+    expect(css.mentions(".pay-profile-open-copy.complete")).toBe(true);
+    expect(css.declares("min-height", "54px")).toBe(true);
   });
 
   it("laisse la quotité et le statut vides tant qu’ils n’ont pas été choisis", () => {
@@ -315,7 +321,7 @@ describe("finitions d’interface", () => {
     expect(payPage).toContain('placeholder="À renseigner"');
     expect(payPage).toContain("Quotité et statut à renseigner");
     expect(payPage).not.toContain('status={formProfile?.status || "contractuel"}');
-    expect(styles).toContain(".choice-picker-trigger.empty");
+    expect(css.mentions(".choice-picker-trigger.empty")).toBe(true);
   });
 
   it("ne rejoue jamais un lien d’authentification déjà consommé", () => {
@@ -353,17 +359,17 @@ describe("finitions d’interface", () => {
     // après « Congé », comme tous les types.
     expect(app).not.toContain("day-action-other");
     expect(app).not.toContain("saveOtherDateDirect");
-    expect(styles).toContain("transform: rotate(24deg)");
-    expect(styles).toContain(".other-pin-head");
-    expect(styles).toContain(".other-pin-needle");
-    expect(styles).toContain(".day.leave-day.leave-other,");
-    expect(styles).toContain("outline: 2px solid #000");
+    expect(css.declares("transform", "rotate(24deg)")).toBe(true);
+    expect(css.mentions(".other-pin-head")).toBe(true);
+    expect(css.mentions(".other-pin-needle")).toBe(true);
+    expect(css.mentions(".day.leave-day.leave-other")).toBe(true);
+    expect(css.declares("outline", "2px solid #000")).toBe(true);
   });
 
   it("colore l’action de suppression multiple", () => {
-    expect(styles).toContain(".calendar-bulk-delete-button {\n  width: fit-content;");
-    expect(styles).toContain("border: 1px solid var(--border-control);\n  border-radius: 999px;");
-    expect(styles).toContain("color: #a9243a");
+    expect(css.anyRuleDeclares(".calendar-bulk-delete-button", { width: "fit-content" })).toBe(true);
+    expect(css.declaresTogether({ border: "1px solid var(--border-control)", "border-radius": "999px" })).toBe(true);
+    expect(css.declares("color", "#a9243a")).toBe(true);
   });
 
   it("sépare chaque catégorie de solde entre congés pris et à venir", () => {
@@ -374,15 +380,15 @@ describe("finitions d’interface", () => {
     expect(app).toContain("balance-detail-${period.key}");
     expect(app).toContain("period.units.toLocaleString");
     expect(app).toContain("Aucun congé dans cette rubrique");
-    expect(styles).toContain(".balance-detail-month > summary");
-    expect(styles).toContain(".balance-detail-month[open]");
+    expect(css.mentions(".balance-detail-month > summary")).toBe(true);
+    expect(css.mentions(".balance-detail-month[open]")).toBe(true);
   });
 
   it("garde l’effacement multiple sous la grille, avec son libellé complet", () => {
     // L'ancien bouton de la barre du mois n'est plus rendu.
-    expect(styles).not.toContain("calendar-bulk-delete-mobile");
-    expect(styles).toContain(".planning-workspace-shell.framed .calendar-bulk-delete-below {\n  display: inline-flex;");
-    expect(styles).toContain(".calendar-cleanup-label-short {\n  display: none;");
+    expect(css.anywhere("calendar-bulk-delete-mobile")).toBe(false);
+    expect(css.anyRuleDeclares(".planning-workspace-shell.framed .calendar-bulk-delete-below", { display: "inline-flex" })).toBe(true);
+    expect(css.anyRuleDeclares(".calendar-cleanup-label-short", { display: "none" })).toBe(true);
   });
 
   it("attend l’accord de l’utilisateur avant d’actualiser l’application installée", () => {
@@ -405,16 +411,16 @@ describe("finitions d’interface", () => {
     expect(planningDialogs).toContain("Mettre à jour maintenant");
     expect(planningDialogs).toContain('className="save-button update-now-button"');
     expect(planningDialogs).toContain("La page ne sera actualisée qu’après votre confirmation");
-    expect(styles).toContain(".header-update-button.checking");
-    expect(styles).toContain(".update-available-modal .update-now-button");
-    expect(styles).toContain("background: #c52f42");
+    expect(css.mentions(".header-update-button.checking")).toBe(true);
+    expect(css.mentions(".update-available-modal .update-now-button")).toBe(true);
+    expect(css.declares("background", "#c52f42")).toBe(true);
   });
 
   it("affiche Divers en doré sans pastille dans le choix des absences", () => {
     expect(app).not.toContain('className="other-choice-dot"');
     // Le doré de Divers vient de sa famille de choix.
-    const requestChoiceFamilies = readFileSync(new URL("./src/requestChoiceFamilies.css", import.meta.url), "utf8");
-    expect(requestChoiceFamilies).toContain(".request-choice .request-choice-row.leave-choice-other { --leave-choice-accent: #d9ab2b; }");
+    const requestChoiceFamilies = loadStylesheets([new URL("./src/requestChoiceFamilies.css", import.meta.url)]);
+    expect(requestChoiceFamilies.anyRuleDeclares(".request-choice .request-choice-row.leave-choice-other", { "--leave-choice-accent": "#d9ab2b" })).toBe(true);
     expect(app).not.toContain("(Grève, décharge syndicale, fermeture exceptionnelle)");
   });
 
@@ -435,25 +441,25 @@ describe("finitions d’interface", () => {
 
   it("place les absences avant les notes avec deux actions de même taille", () => {
     expect(calendarCleanup.indexOf("Effacer les absences")).toBeLessThan(calendarCleanup.indexOf("Effacer les notes"));
-    expect(styles).toContain(".calendar-delete-actions .delete-absences-button,\n.calendar-delete-actions .delete-notes-button");
-    expect(styles).toContain("min-height: 46px");
+    expect(css.hasRuleWithSelectors([".calendar-delete-actions .delete-absences-button", ".calendar-delete-actions .delete-notes-button"])).toBe(true);
+    expect(css.declares("min-height", "46px")).toBe(true);
   });
 
   it("place Aujourd’hui sous la période sur téléphone", () => {
-    expect(styles).toContain("  .calendar-toolbar.month-toolbar .today-button {\n    grid-column: 1;\n    grid-row: 2;");
+    expect(css.anyRuleDeclares(".calendar-toolbar.month-toolbar .today-button", { "grid-column": "1", "grid-row": "2" })).toBe(true);
   });
 
   it("garde les détails des jours travaillés dans l’écran", () => {
-    expect(styles).toContain(".app-shell .controls .worked-days .worked-days-panel {\n  top: calc(100% + 8px);\n  right: 0;\n  bottom: auto;\n  left: 0;");
-    expect(styles).toContain("max-height: min(58dvh, 420px)");
+    expect(css.anyRuleDeclares(".app-shell .controls .worked-days .worked-days-panel", { top: "calc(100% + 8px)", right: "0", bottom: "auto", left: "0" })).toBe(true);
+    expect(css.declares("max-height", "min(58dvh, 420px)")).toBe(true);
   });
 
   it("affiche Divers en doré avec une punaise rouge", () => {
     expect(app).toContain('personalDay ? " personal-day" : ""');
     expect(app).toContain('className={`other-pin${compact ? " compact" : ""}`}');
-    expect(styles).toContain(".month-card .calendar-grid .day.leave-day.leave-other,\n.month-card .calendar-grid .day.personal-day {");
-    expect(styles).toContain("color: #d51f3b");
-    expect(styles).toContain("background: #f3d884 !important");
+    expect(css.hasRuleWithSelectors([".month-card .calendar-grid .day.leave-day.leave-other", ".month-card .calendar-grid .day.personal-day"])).toBe(true);
+    expect(css.declares("color", "#d51f3b")).toBe(true);
+    expect(css.declares("background", "#f3d884 !important")).toBe(true);
   });
 
   it("compacte le montant des fériés choisis et espace la navigation de paie", () => {
@@ -464,7 +470,7 @@ describe("finitions d’interface", () => {
     expect((payAllowancesSection.match(/holidayChoice\(item\)/g) || []).length).toBe(2);
     // Le détail du calcul : le mois entre ses deux flèches, comme la page principale.
     expect(payEstimateDetails).toContain('className="pay-detail-month-bar"');
-    expect(styles).toContain(".holiday-pay-amount {\n  width: fit-content;");
+    expect(css.anyRuleDeclares(".holiday-pay-amount", { width: "fit-content" })).toBe(true);
     expect((payEstimateDetails.match(/className="pay-detail-month-arrow"/g) || []).length).toBe(2);
   });
 
@@ -514,7 +520,7 @@ describe("finitions d’interface", () => {
     expect(model).toContain('label: "Prime + récup"');
     expect(model).not.toContain("Prime + 1 jour de récup");
     // Les trois choix d'un férié se touchent directement : plus de menu.
-    expect(styles).toContain(".holiday-pay-options { display: grid;");
+    expect(css.anyRuleDeclares(".holiday-pay-options", { display: "grid" })).toBe(true);
   });
 
   it("distingue la zone du planning mensuel du tableau toutes zones du PDF", () => {
@@ -525,20 +531,20 @@ describe("finitions d’interface", () => {
   });
 
   it("équilibre les commandes du planning sur grand écran", () => {
-    expect(styles).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
-    expect(styles).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(css.declares("grid-template-columns", "repeat(4, minmax(0, 1fr))")).toBe(true);
+    expect(css.declares("grid-template-columns", "repeat(3, minmax(0, 1fr))")).toBe(true);
     // La vue annuelle a été retirée : c'est la barre du mois qui se répartit
     // désormais, et plus la barre de l'année.
-    expect(styles).not.toContain("annual-toolbar");
-    expect(styles).toContain(".calendar-toolbar.month-toolbar .period-navigation");
-    expect(styles).toContain("grid-column: 1 / -1");
+    expect(css.anywhere("annual-toolbar")).toBe(false);
+    expect(css.mentions(".calendar-toolbar.month-toolbar .period-navigation")).toBe(true);
+    expect(css.declares("grid-column", "1 / -1")).toBe(true);
   });
 
   it("rend les cartes du tableau de bord de paie et les dernières absences immédiatement repérables", () => {
-    expect(styles).toContain(".pay-bulletin .pay-bulletin-layout");
-    expect(styles).toContain("border: 1px solid var(--border-card)");
+    expect(css.mentions(".pay-bulletin .pay-bulletin-layout")).toBe(true);
+    expect(css.declares("border", "1px solid var(--border-card)")).toBe(true);
     expect(app).toContain("recentBalanceDetailDates.has(detail.date)");
-    expect(styles).toContain(".recent-leave-date");
+    expect(css.mentions(".recent-leave-date")).toBe(true);
   });
 
   it("permet une note multi-jours et un crédit manuel de solidarité", () => {
@@ -552,8 +558,8 @@ describe("finitions d’interface", () => {
   it("regroupe les commandes de l’en-tête et harmonise le groupe", () => {
     expect(app).toContain('className="header-control-cluster"');
     expect(app).toContain("Prochain jour travaillé");
-    expect(styles).not.toContain(".planning-group-action-row");
-    expect(styles).toContain(".leave-request-archive");
+    expect(css.anywhere(".planning-group-action-row")).toBe(false);
+    expect(css.mentions(".leave-request-archive")).toBe(true);
   });
 
   it("retire le bouton d’actualisation circulaire de l’en-tête", () => {
@@ -574,7 +580,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain('label: "Congés déjà pris"');
     expect(app).toContain('label: "Congés à venir"');
     expect(app).toContain("manualSundayLeaveJanJun");
-    expect(styles).toContain(".manual-adjustments-modal");
+    expect(css.mentions(".manual-adjustments-modal")).toBe(true);
   });
 
   it("ne propose plus de mode d’emploi dans l’application", () => {
@@ -590,7 +596,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Annuler le congé");
     expect(app).not.toContain("Repasser en souhaité");
     expect(app).not.toContain("period-menu-trigger");
-    expect(styles).toContain(".period-direct-actions");
+    expect(css.mentions(".period-direct-actions")).toBe(true);
   });
 
   it("affiche un résumé des dates avant la validation", () => {
@@ -614,29 +620,29 @@ describe("finitions d’interface", () => {
     expect(appNavigation).not.toContain("Compte et réglages");
     expect(appNavigation).not.toContain("État de sauvegarde");
     expect(appNavigation).toContain("Mes données");
-    expect(styles).not.toContain(".main-menu-refresh");
+    expect(css.anywhere(".main-menu-refresh")).toBe(false);
     expect(appRoot).toContain("<UsefulResourcesHub");
     // Les plannings PDF s'ouvrent depuis le calendrier, dans une fenêtre.
     expect(appRoot).toContain("planning-pdf-dialog");
     expect(usefulResourcesHub).not.toContain('key: "pdf"');
     expect(usefulResourcesHub).toContain("useful-resources-screen");
     expect(app).not.toContain("Sauvegarde et restauration");
-    expect(styles).toContain(".main-menu-secondary .guide-menu-entry");
-    expect(styles).toContain('url("/menu-art-fast.webp")');
-    expect(styles).toContain(".main-menu-drawer > .main-menu-hero");
+    expect(css.mentions(".main-menu-secondary .guide-menu-entry")).toBe(true);
+    expect(css.usesValue("url(\"/menu-art-fast.webp\")")).toBe(true);
+    expect(css.mentions(".main-menu-drawer > .main-menu-hero")).toBe(true);
     expect(app).toContain('className="main-menu-index"');
     expect(app).toContain('className="main-menu-chevron"');
     expect(app).toContain("header-command-area");
     expect(app).toContain("header-update-button");
-    expect(styles).toContain(".header-update-button");
-    expect(styles).toContain(".header-update-dot");
+    expect(css.mentions(".header-update-button")).toBe(true);
+    expect(css.mentions(".header-update-dot")).toBe(true);
     expect(app).not.toContain("menu-update-button");
   });
 
   it("aère l’arrêt maladie", () => {
     expect(app).toContain("sick-request-panel");
-    expect(styles).toContain(".sick-request-options .request-option-group");
-    expect(styles).toContain("grid-template-columns: minmax(180px, 0.62fr) minmax(240px, 1.38fr)");
+    expect(css.mentions(".sick-request-options .request-option-group")).toBe(true);
+    expect(css.declares("grid-template-columns", "minmax(180px, 0.62fr) minmax(240px, 1.38fr)")).toBe(true);
   });
 
   it("ne garde aucune trace de la vue annuelle", () => {
@@ -649,28 +655,28 @@ describe("finitions d’interface", () => {
   });
 
   it("intègre l’œuvre en texture discrète dans l’en-tête", () => {
-    expect(styles).toContain('url("/header-art-fast.webp")');
-    expect(styles).toContain("rgba(255, 249, 232, 0.62)");
-    expect(styles).toContain("rgba(253, 250, 244, 0.3)");
-    expect(styles).toContain("border-color: var(--border-card)");
+    expect(css.usesValue("url(\"/header-art-fast.webp\")")).toBe(true);
+    expect(css.usesValue("rgba(255, 249, 232, 0.62)")).toBe(true);
+    expect(css.usesValue("rgba(253, 250, 244, 0.3)")).toBe(true);
+    expect(css.declares("border-color", "var(--border-card)")).toBe(true);
   });
 
   it("donne la même hauteur à tous les en-têtes, quelle que soit la page", () => {
-    expect(pageHeaders).toContain("height: 170px !important;\n  min-height: 170px !important;");
-    expect(pageHeaders).toContain("height: 156px !important; min-height: 156px !important;");
-    expect(styles).toContain("border-color: var(--border-card)");
+    expect(headers.declaresTogether({ height: "170px !important", "min-height": "170px !important" })).toBe(true);
+    expect(headers.declaresTogether({ height: "156px !important", "min-height": "156px !important" })).toBe(true);
+    expect(css.declares("border-color", "var(--border-card)")).toBe(true);
   });
 
   it("ne garde plus d’image derrière les titres d’en-tête, seulement dans le menu", () => {
     expect(app).toContain('className="app-shell"');
-    expect(styles).toContain('url("/menu-art-fast.webp")');
+    expect(css.usesValue("url(\"/menu-art-fast.webp\")")).toBe(true);
     // Deux aplats de couleur ; les anciennes couches d'image sont masquées.
-    expect(pageHeaders).toContain(":root .app-shell .top-header::after { display: none !important; }");
-    expect(pageHeaders).toContain("linear-gradient(112deg, var(--header-a) 0 57%");
-    expect(styles).not.toContain("/home-art.jpg");
-    expect(styles).not.toContain("/leave-art.jpg");
-    expect(styles).not.toContain("/pay-art.jpg");
-    expect(styles).not.toContain("/pdf-art.jpg");
+    expect(headers.anyRuleDeclares(":root .app-shell .top-header::after", { display: "none !important" })).toBe(true);
+    expect(headers.usesValue("linear-gradient(112deg, var(--header-a) 0 57%")).toBe(true);
+    expect(css.anywhere("/home-art.jpg")).toBe(false);
+    expect(css.anywhere("/leave-art.jpg")).toBe(false);
+    expect(css.anywhere("/pay-art.jpg")).toBe(false);
+    expect(css.anywhere("/pdf-art.jpg")).toBe(false);
   });
 
   it("permet de balayer les rubriques principales sur téléphone", () => {
@@ -687,61 +693,61 @@ describe("finitions d’interface", () => {
     // pas écrit en double dans les fichiers CSS.
     expect(app).toContain("<ThemeSwitch />");
     expect(main).toContain("initTheme();");
-    expect(styles).not.toContain('html[data-theme="dark"]');
-    expect(styles).toContain(".useful-form-download-label");
-    expect(styles).toContain("width: 42px;\n  height: 42px;");
+    expect(css.anywhere("html[data-theme=\"dark\"]")).toBe(false);
+    expect(css.mentions(".useful-form-download-label")).toBe(true);
+    expect(css.declaresTogether({ width: "42px", height: "42px" })).toBe(true);
   });
 
   it("renforce la lisibilité du menu et les contours de l’en-tête", () => {
-    expect(styles).toContain(".main-menu-copy strong { color: #fff;");
-    expect(styles).toContain(".main-menu-copy small { overflow: hidden; color: rgba(253, 250, 244, 0.9);");
-    expect(styles).toContain(".top-header .account-button,");
-    expect(styles).toContain("border: 1.5px solid var(--border-card)");
+    expect(css.anyRuleDeclares(".main-menu-copy strong", { color: "#fff" })).toBe(true);
+    expect(css.anyRuleDeclares(".main-menu-copy small", { overflow: "hidden", color: "rgba(253, 250, 244, 0.9)" })).toBe(true);
+    expect(css.mentions(".top-header .account-button")).toBe(true);
+    expect(css.declares("border", "1.5px solid var(--border-card)")).toBe(true);
   });
 
   it("centre l’image de chargement sur téléphone", () => {
-    expect(styles).toContain(".auth-splash-image {\n    object-fit: cover;\n    object-position: 46% 50%;");
+    expect(css.anyRuleDeclares(".auth-splash-image", { "object-fit": "cover", "object-position": "46% 50%" })).toBe(true);
   });
 
   it("dessine un liseré noir autour des en-têtes et de leurs onglets", () => {
-    expect(styles).toContain("border-color: var(--border-card)");
+    expect(css.declares("border-color", "var(--border-card)")).toBe(true);
     // La bascule Mois / Année a été retirée : ce sont les trois commandes
     // restantes de l'en-tête qui portent ce liseré sur les œuvres colorées.
-    expect(styles).not.toContain("view-switch");
-    expect(styles).toContain(".top-header .header-update-button {\n  border: 1.5px solid var(--border-card)");
+    expect(css.anywhere("view-switch")).toBe(false);
+    expect(css.anyRuleDeclares(".top-header .header-update-button", { border: "1.5px solid var(--border-card)" })).toBe(true);
   });
 
   it("harmonise les cadres principaux et secondaires de l’application", () => {
-    expect(styles).toContain("--app-frame-strong");
-    expect(styles).toContain("--app-frame-soft");
-    expect(styles).toContain(".cet-subsection,");
-    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button {\n  border: 1px solid color-mix(");
-    expect(styles).toContain(".request-option-group,");
+    expect(css.declaresProperty("--app-frame-strong")).toBe(true);
+    expect(css.declaresProperty("--app-frame-soft")).toBe(true);
+    expect(css.mentions(".cet-subsection")).toBe(true);
+    expect(css.declarations(".leave-balances-direct .leave-balance-grid button").border).toMatch(/^1px solid color-mix\(/);
+    expect(css.mentions(".request-option-group")).toBe(true);
   });
 
   it("garde l’ordre des tuiles de soldes sur les grands écrans", () => {
-    expect(styles).toContain("@media (min-width: 721px) {");
-    expect(styles).toContain(".leave-balance-grid > button:is(.childcare, .exceptional, .other, .cet, .work_accident, .strike) {");
-    expect(styles).toContain("order: initial;");
+    expect(css.hasMedia("(min-width: 721px)")).toBe(true);
+    expect(css.mentions(".leave-balance-grid > button:is(.childcare, .exceptional, .other, .cet, .work_accident, .strike)")).toBe(true);
+    expect(css.declares("order", "initial")).toBe(true);
     // Les anciens ordres forcés (Divers, Grève, CET) étaient annulés par cette règle.
-    expect(styles).not.toContain("button.strike { order: 2; }");
+    expect(css.declarations(".leave-balances-direct .leave-balance-grid button.strike", "(min-width: 721px)").order).toBeUndefined();
   });
 
   it("renforce la lisibilité des soldes sans retirer leurs couleurs", () => {
-    expect(styles).toContain("color-mix(in srgb, var(--balance-color) 58%, #2c2621)");
-    expect(styles).toContain(".leave-balances-direct .leave-balance-grid small {\n  color: var(--muted);");
-    expect(styles).toContain("color-mix(in srgb, var(--balance-color) 52%, var(--border-card))");
+    expect(css.usesValue("color-mix(in srgb, var(--balance-color) 58%, #2c2621)")).toBe(true);
+    expect(css.anyRuleDeclares(".leave-balances-direct .leave-balance-grid small", { color: "var(--muted)" })).toBe(true);
+    expect(css.usesValue("color-mix(in srgb, var(--balance-color) 52%, var(--border-card))")).toBe(true);
   });
 
   it("élargit uniquement l’en-tête sur les grands écrans", () => {
-    expect(styles).toContain("@media (min-width: 1200px)");
-    expect(styles).toContain("width: calc(100% + 64px)");
-    expect(styles).toContain("margin-left: -32px");
+    expect(css.hasMedia("(min-width: 1200px)")).toBe(true);
+    expect(css.declares("width", "calc(100% + 64px)")).toBe(true);
+    expect(css.declares("margin-left", "-32px")).toBe(true);
   });
 
   it("aligne l’action contextuelle en haut à droite de l’encadré Aujourd’hui", () => {
-    expect(styles).toContain(".today-overview-heading {\n  align-items: flex-start;");
-    expect(styles).toContain(".today-overview-heading .add-action {\n  align-self: flex-start;");
+    expect(css.anyRuleDeclares(".today-overview-heading", { "align-items": "flex-start" })).toBe(true);
+    expect(css.anyRuleDeclares(".today-overview-heading .add-action", { "align-self": "flex-start" })).toBe(true);
   });
 
   it("place le choix du groupe dans Aujourd’hui et la pose de congé avant le mois", () => {
@@ -750,8 +756,8 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain('className="today-group-card"');
     expect(app).toContain("primary-action planning-leave-action");
     expect(app).toContain('className="planning-leave-panel"');
-    expect(styles).toContain(".planning-leave-panel .planning-leave-action {");
-    expect(styles).toContain("width: 100% !important;");
+    expect(css.hasRule(".planning-leave-panel .planning-leave-action")).toBe(true);
+    expect(css.declares("width", "100% !important")).toBe(true);
   });
 
   it("retire les filtres Afficher et place la pose de congé contre le calendrier", () => {
@@ -777,7 +783,7 @@ describe("finitions d’interface", () => {
   it("donne à Congés et récupérations les bleus de son ancienne œuvre", () => {
     expect(app).toContain('homeSection === "leave"');
     expect(appNavigation).toContain('`top-header top-header-${section}`');
-    expect(pageHeaders).toContain(":root .app-shell .top-header-leave { --header-a: #0e2e41;");
+    expect(headers.anyRuleDeclares(":root .app-shell .top-header-leave", { "--header-a": "#0e2e41" })).toBe(true);
   });
 
   it("organise l’accueil de Ma paie autour du mois et des accès directs", () => {
@@ -791,8 +797,8 @@ describe("finitions d’interface", () => {
     expect(payDashboard).toContain("Primes et jours fériés");
     expect(payDashboard).toContain("Vérifier mon bulletin");
     expect(payDashboard).toContain("Affiner les valeurs manuellement si besoin");
-    expect(styles).toContain(".pay-bulletin .pay-bulletin-layout");
-    expect(styles).toContain(".pay-dashboard-settings");
+    expect(css.mentions(".pay-bulletin .pay-bulletin-layout")).toBe(true);
+    expect(css.mentions(".pay-dashboard-settings")).toBe(true);
   });
 
   it("présente les téléchargements PDF en une ligne de réglages puis une liste de documents", () => {
@@ -807,19 +813,19 @@ describe("finitions d’interface", () => {
   it("donne à Ma paie les couleurs de son ancienne œuvre", () => {
     expect(app).toContain('homeSection === "pay"');
     expect(appNavigation).toContain('`top-header top-header-${section}`');
-    expect(pageHeaders).toContain(":root .app-shell .top-header-pay { --header-a: #1c2a50;");
+    expect(headers.anyRuleDeclares(":root .app-shell .top-header-pay", { "--header-a": "#1c2a50" })).toBe(true);
   });
 
   it("réserve la galerie multicolore à l’en-tête des PDF", () => {
     expect(app).toContain('homeSection === "pdf"');
     expect(appNavigation).toContain('`top-header top-header-${section}`');
-    expect(styles).toContain(".top-header.top-header-pdf {");
-    expect(styles).toContain('url("/pdf-header-art-fast.webp")');
-    expect(styles).toContain('url("/pdf-header-art-fast.webp") center 70% / cover no-repeat');
+    expect(css.hasRule(".top-header.top-header-pdf")).toBe(true);
+    expect(css.usesValue("url(\"/pdf-header-art-fast.webp\")")).toBe(true);
+    expect(css.usesValue("url(\"/pdf-header-art-fast.webp\") center 70% / cover no-repeat")).toBe(true);
   });
 
   it("garde toutes les fenêtres au-dessus de l’en-tête fixe", () => {
-    expect(styles).toContain("z-index: 1250");
-    expect(styles).toContain("z-index: 1000");
+    expect(css.declares("z-index", "1250")).toBe(true);
+    expect(css.declares("z-index", "1000")).toBe(true);
   });
 });

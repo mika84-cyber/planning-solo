@@ -5,6 +5,7 @@
       "src/**/*.{ts,tsx}",
       "netlify/**/*.{ts,mts}",
       "scripts/**/*.{js,mjs}",
+      "test-lib/**/*.mjs",
       "*.test.mjs",
       "!public/**",
       "!dist/**",
