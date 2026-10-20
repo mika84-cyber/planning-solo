@@ -34,16 +34,13 @@ import { useWorkedDaysOverview } from "./useWorkedDaysOverview";
 import { useMecenatDraftCheck } from "./useMecenatDraftCheck";
 import { useDayDetailData } from "./useDayDetailData";
 import { DemoExpiredScreen } from "./DemoExpiredScreen";
+import { scrollWhenReady } from "./scrollWhenReady";
 
-const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 const DayDetailDialog = lazy(() => import("./DayDetailDialog").then((module) => ({ default: module.DayDetailDialog })));
 const LongAbsenceNotice = lazy(() => import("./LongAbsenceNotice").then((module) => ({ default: module.LongAbsenceNotice })));
 // « Faire un échange » ne sert qu'à la demande : chargée à l'ouverture.
 const WorkExchangeDialog = lazy(() => import("./WorkExchangeDialog").then((module) => ({ default: module.WorkExchangeDialog })));
-const HomeDashboard = lazy(() =>
-  homeDashboardModule.then(({ HomeDashboard: Component }) => ({ default: Component })),
-);
 const BalanceDetailDialog = lazy(() =>
   import("./BalanceDetailDialog").then(({ BalanceDetailDialog: Component }) => ({ default: Component })),
 );
@@ -100,7 +97,7 @@ import {
   computePayAllowances,
 } from "./payAllowances";
 import { cetBalance } from "./cet";
-import { UpcomingNoteList } from "./UpcomingNoteList";
+import { HomeSectionScreen } from "./HomeSectionScreen";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import {
   AppHeader,
@@ -171,18 +168,6 @@ import {
   type SelectionType,
   type SchoolVacation,
 } from "./planningLogic";
-
-/** Amène à l'endroit exact où l'information se saisit. L'écran visé se
- *  charge à la demande : viser l'ancre tout de suite la manquerait, on
- *  réessaie donc brièvement. */
-function scrollWhenReady(id: string, attempts = 20) {
-  const target = document.getElementById(id);
-  if (target) {
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-    return;
-  }
-  if (attempts > 0) window.setTimeout(() => scrollWhenReady(id, attempts - 1), 100);
-}
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
 
@@ -329,7 +314,7 @@ export default function Home() {
     approvedGrandPalaisUpdates,
     mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
-    noteQuery, setNoteQuery, narrowScreen, pdfOpen, setPdfOpen,
+    noteQuery, narrowScreen, pdfOpen, setPdfOpen,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate,
     appUpdateAvailable, appUpdatePromptOpen, setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
@@ -1143,94 +1128,21 @@ export default function Home() {
       </Suspense>
 
       {homeSection === "home" ? (
-        <Suspense fallback={<DeferredSection label="votre accueil" />}>
-        <HomeDashboard
+        <HomeSectionScreen
           now={now}
           group={group}
-          hasConfiguredGroup={Boolean(formProfile?.group)}
-          today={todayOverview}
-          totalLeaveRemaining={totalLeaveRemaining}
-          nextExtraWork={nextExtraWork}
-          setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
-          setupItems={[
-            {
-              id: "planning-group",
-              title: "Groupe de planning",
-              detail: formProfile?.group ? `Groupe ${group}` : "Jours de travail et de repos",
-              done: Boolean(formProfile?.group),
-              onAction: () => setGroupChooserOpen(true),
-            },
-            {
-              id: "pay-profile",
-              title: "Profil de calcul",
-              detail: missingCalculationProfile ? "Statut et quotité" : "Statut et quotité renseignés",
-              done: !missingCalculationProfile,
-              onAction: () => {
-                setHomeSection("pay");
-                setPayScreen("overview");
-                setPayProfileOpen(true);
-                setPayAdvancedOpen(false);
-                setPayProfileFocusRequested(true);
-              },
-            },
-            {
-              id: "holiday-choice",
-              title: `Jours fériés ${now.getFullYear()}`,
-              detail: missingHolidayChoices
-                ? `${missingHolidayChoices} à choisir`
-                : "Tous choisis",
-              done: !missingHolidayChoices,
-              onAction: () => {
-                setHomeSection("pay");
-                setPayScreen("allowances");
-                scrollWhenReady("holiday-choices");
-              },
-            },
-            {
-              id: "payslip-upload",
-              title: "Bulletin de paie",
-              detail: missingPayValues ? "Lu tout seul" : "Valeurs enregistrées",
-              done: !missingPayValues,
-              onAction: () => {
-                setHomeSection("pay");
-                setPayScreen("overview");
-                setPayVerificationRequested(true);
-              },
-            },
-          ]}
-          hasAnyNote={hasAnyNote}
-          noteQuery={noteQuery}
-          onNoteQueryChange={setNoteQuery}
-          noteSearchResults={noteSearchResults}
-          upcoming={upcoming}
-          renderNoteItems={(items, searching) => (
-            <UpcomingNoteList
-              items={items}
-              monthsOpen={searching}
-              authorColors={isProgramAdmin}
-              entries={entries}
-              ownNoteAuthorLabel={ownNoteAuthorLabel}
-              onOpenDate={(date) => {
-                setView(localDate(date.getFullYear(), date.getMonth(), 1));
-                            openDay(date);
-              }}
-              onDeleteOwnNotes={(dates) => void deleteMultiplePlanningDates(dates, "notes")}
-              onDeleteAgnesNote={(date) => void deleteAgnesNote(date)}
-            />
-          )}
-          onChooseGroup={() => setGroupChooserOpen(true)}
-          onOpenNextWork={(date) => {
-            // Le prochain jour travaillé s'ouvre directement sur sa fiche,
-            // dans son mois : changer seulement de mois ne montrait rien quand
-            // ce mois était déjà affiché.
-            setHomeSection("home");
-            setView(localDate(date.getFullYear(), date.getMonth(), 1));
-            openDay(date);
-          }}
-          onOpenLeave={() => setHomeSection("leave")}
-          onAddNote={beginQuickNote}
+          demoMode={demoMode}
+          userEmail={userEmail}
+          isProgramAdmin={isProgramAdmin}
+          formProfile={formProfile}
+          entries={entries}
+          ownNoteAuthorLabel={ownNoteAuthorLabel}
+          overview={{ todayOverview, nextExtraWork, totalLeaveRemaining, upcoming, hasAnyNote, noteSearchResults }}
+          setup={{ missingCalculationProfile, missingHolidayChoices, missingPayValues }}
+          shell={appShellUi}
+          pay={payUi}
+          actions={{ setView, openDay, beginQuickNote, deleteMultiplePlanningDates, deleteAgnesNote }}
         />
-        </Suspense>
       ) : null}
 
       {homeSection === "leave" ? (
