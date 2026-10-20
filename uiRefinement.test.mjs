@@ -44,7 +44,12 @@ const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions
 const planningRequestActions = readFileSync(new URL("./src/usePlanningRequestActions.ts", import.meta.url), "utf8");
 const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", import.meta.url), "utf8");
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
-const app = [appRoot, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+// Les calculs sortis d'App.tsx dans leurs hooks : lus avec lui, pour que les
+// contrôles qui portent sur un calcul suivent le code quand il est déplacé.
+const extractedHooks = ["usePayProfileValues", "useMonthPayEstimate", "useLeaveBalances", "useNoteLists"]
+  .map((name) => readFileSync(new URL(`./src/${name}.ts`, import.meta.url), "utf8"))
+  .join("\n");
+const app = [appRoot, extractedHooks, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 // Les feuilles lues en règles et déclarations (test-lib/cssRules.mjs) : un
 // contrôle porte sur un sélecteur ou une déclaration, jamais sur le texte des

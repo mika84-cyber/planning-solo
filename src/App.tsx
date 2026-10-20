@@ -41,6 +41,8 @@ import { usePayActions } from "./usePayActions";
 import { usePayslipVerifications } from "./usePayslipVerifications";
 import { usePayProfileValues } from "./usePayProfileValues";
 import { useMonthPayEstimate } from "./useMonthPayEstimate";
+import { remainingLeaveForYear, useLeaveBalances } from "./useLeaveBalances";
+import { useNoteLists } from "./useNoteLists";
 import { DEMO_PAY_PROFILE, demoPayProfiles } from "./demoPayProfile";
 
 const homeDashboardModule = import("./HomeDashboard");
@@ -124,7 +126,7 @@ import { MonthCalendar } from "./PlanningView";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
-import { exceededLeaveBalance, requestLeaveBalanceUsage, requestRecoveryMinutes, type LeaveRemainingByYear } from "./RequestValidationSummary";
+import { requestLeaveBalanceUsage, requestRecoveryMinutes } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -151,14 +153,11 @@ import {
   postCalendarBatch,
 } from "./calendarApi";
 import { parseCalendarSnapshot } from "./calendarPayload";
-import { matchesSearch } from "./searchMatching";
 import { AppleInstallNotice } from "./AppleInstallNotice";
 import { InstallAppNotice } from "./InstallAppNotice";
 import {
   emptyEntry,
-  groupNoteItemsByDate,
   noteDateLabel,
-  notePeriodFor,
   fullDayRecoveryMinutes,
   personalPresenceForDate,
   presenceShownToColleagues,
@@ -169,7 +168,6 @@ import {
   type FormProfile,
   type LeavePeriod,
   type ManualYearAdjustments,
-  type NoteListItem,
   type PayProfile,
   type PayStatus,
   type RequestKind,
@@ -201,16 +199,13 @@ import {
 } from "./overtime";
 import { useToast } from "./useToast";
 import {
-  TYPE_LABELS,
   addDays,
   dateKey,
   fromKey,
   getDayInfo,
   automaticHalfBalance,
   halfMomentFromStart,
-  leaveTypeLabel,
   localDate,
-  periodLabel,
   sameDate,
   schoolVacationsForZone,
   type CountedOnlyType,
@@ -232,26 +227,6 @@ function scrollWhenReady(id: string, attempts = 20) {
 }
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
-
-/** Soldes restants d'une année (CA, RTT, fractionnement). Le solde repart au
- *  1er janvier ; du 1er janvier au 30 avril, le reste des CA de l'année
- *  précédente s'ajoute aux CA. */
-function remainingLeaveForYear(
-  year: number,
-  today: Date,
-  periods: Parameters<typeof computeLeaveStats>[0]["periods"],
-  group: number,
-  manualAdjustments: Parameters<typeof computeLeaveStats>[0]["manualAdjustments"],
-) {
-  const stats = computeLeaveStats({ year, today, periods, group, manualAdjustments });
-  const todayKey = dateKey(today);
-  const carry = stats.annualCarry.fromPrevious;
-  const carried = carry && todayKey >= `${year}-01-01` && todayKey <= carry.deadline ? carry.remaining : 0;
-  return Object.fromEntries(stats.balances.map((balance) => [
-    balance.type,
-    balance.remaining + (balance.type === "annual" ? carried : 0),
-  ])) as LeaveRemainingByYear[string];
-}
 
 
 export default function Home() {
@@ -1333,266 +1308,22 @@ export default function Home() {
     }
   }
 
-  const leaveStats = useMemo(
-    () =>
-      computeLeaveStats({
-        year: absenceYear,
-        today: now,
-        periods,
-        group,
-        manualAdjustments: formProfile?.manualAdjustments,
-      }),
-    [periods, absenceYear, group, formProfile?.manualAdjustments, now],
-  );
+  const {
+    leaveStats, manualSundayLeaveTotal, totalLeaveRemaining, cetLeaveBalances,
+    leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
+    cetAnnualDaysTaken, cetPlannedLeaveDays,
+    balanceDetail, recentBalanceDetailDates, balanceDetailPeriods,
+  } = useLeaveBalances({
+    absenceYear, now, periods, group, manualAdjustments: formProfile?.manualAdjustments,
+    selectedList, requestKind, balanceDetailType,
+  });
 
-  const activeManualAdjustments =
-    formProfile?.manualAdjustments?.[String(absenceYear)] ??
-    EMPTY_MANUAL_ADJUSTMENTS;
-  const manualSundayLeaveTotal =
-    activeManualAdjustments.sundayLeaveJanJun +
-    activeManualAdjustments.sundayLeaveJulSep +
-    activeManualAdjustments.sundayLeaveOctNov +
-    activeManualAdjustments.sundayLeaveDec;
-
-  // Totaux des seuls congés à quota : la maladie n'y entre pas.
-  // Du 1er janvier au 30 avril, le reste des CA de l'année précédente
-  // s'ajoute ; avant, il est encore compté dans sa propre année.
-  const carryWindowOpen = Boolean(
-    leaveStats.annualCarry.fromPrevious &&
-      dateKey(now) >= `${absenceYear}-01-01` &&
-      dateKey(now) <= leaveStats.annualCarry.fromPrevious.deadline,
-  );
-  const carriedAnnualRemaining = carryWindowOpen && leaveStats.annualCarry.fromPrevious
-    ? leaveStats.annualCarry.fromPrevious.remaining
-    : 0;
-  const totalLeaveRemaining = leaveStats.balances.reduce(
-    (total, balance) => total + balance.remaining,
-    carriedAnnualRemaining,
-  );
-  const cetLeaveBalances = {
-    annual:
-      leaveStats.balances.find((balance) => balance.type === "annual")?.remaining || 0,
-    rtt:
-      leaveStats.balances.find((balance) => balance.type === "rtt")?.remaining || 0,
-    fraction:
-      leaveStats.balances.find((balance) => balance.type === "fraction")?.remaining || 0,
-  };
-  const leaveRemainingByType = Object.fromEntries(
-    leaveStats.balances.map((balance) => [
-      balance.type,
-      balance.remaining + (balance.type === "annual" ? carriedAnnualRemaining : 0),
-    ]),
-  ) as Partial<Record<BalanceType, number>>;
-  // Le solde repart au 1er janvier : chaque date compte sur le solde de son
-  // année, même posée à l'avance (une date de 2027 choisie en 2026).
-  const selectedYears = [...new Set(selectedList.map((item) => item.date.slice(0, 4)))].sort().join(",");
-  const leaveRemainingByYear = useMemo(
-    () => Object.fromEntries(selectedYears.split(",").filter(Boolean).map((yearKey) => [
-      yearKey,
-      remainingLeaveForYear(Number(yearKey), now, periods, group, formProfile?.manualAdjustments),
-    ])) as LeaveRemainingByYear,
-    [selectedYears, now, periods, group, formProfile?.manualAdjustments],
-  );
-  const leaveSelectionOverBalance = requestKind === "leave" && Boolean(
-    exceededLeaveBalance(selectedList, group, leaveRemainingByType, leaveRemainingByYear),
-  );
-  const cetAnnualDaysTaken =
-    leaveStats.balances.find((balance) => balance.type === "annual")?.used || 0;
-  const cetPlannedLeaveDays = useMemo(() => {
-    const dates = new Set<string>();
-    for (const period of periods) {
-      if (period.leaveType !== "cet") continue;
-      for (let date = fromKey(period.from); dateKey(date) <= period.to; date = addDays(date, 1)) {
-        const info = getDayInfo(date, period.group || group);
-        if (!info.holiday && info.kind !== "off") dates.add(dateKey(date));
-      }
-    }
-    return dates.size;
-  }, [periods, group]);
-  const balanceDetail = useMemo(() => {
-    if (!balanceDetailType) return null;
-    if (balanceDetailType !== "annual" && balanceDetailType !== "rtt" &&
-      balanceDetailType !== "fraction") {
-      const counted = leaveStats.countedOnly[balanceDetailType];
-      return {
-        title: TYPE_LABELS[balanceDetailType],
-        quota: false,
-        allowance: 0,
-        manualUsed: 0,
-        remaining: 0,
-        used: counted.used,
-        details: counted.details,
-      };
-    }
-    const balance = leaveStats.balances.find(
-      (item) => item.type === balanceDetailType,
-    );
-    return balance
-      ? { title: leaveTypeLabel(balance.type), quota: true, ...balance }
-      : null;
-  }, [balanceDetailType, leaveStats]);
-  const recentBalanceDetailDates = useMemo(
-    () =>
-      new Set(
-        (balanceDetail?.details ?? [])
-          .map((detail) => detail.date)
-          .sort((a, b) => b.localeCompare(a))
-          .slice(0, 3),
-      ),
-    [balanceDetail],
-  );
-  const balanceDetailPeriods = useMemo(() => {
-    const todayKey = dateKey(now);
-    const details = balanceDetail?.details ?? [];
-    return [
-      {
-        key: "taken",
-        label: "Congés déjà pris",
-        details: details
-          .filter((detail) => detail.date <= todayKey)
-          .sort((a, b) => b.date.localeCompare(a.date)),
-      },
-      {
-        key: "upcoming",
-        label: "Congés à venir",
-        details: details
-          .filter((detail) => detail.date > todayKey)
-          .sort((a, b) => a.date.localeCompare(b.date)),
-      },
-    ].map((period) => ({
-      ...period,
-      units: period.details.reduce((total, detail) => total + detail.units, 0),
-    }));
-  }, [balanceDetail, now]);
-
-  const agnesLeaveDates = useMemo(() => {
-    const dates = new Set(
-      Object.entries(partnerEntries)
-        .filter(([, entry]) => entry.agnesLeave)
-        .map(([date]) => date),
-    );
-    for (const period of partnerPeriods)
-      for (const date of rangeKeys(period.from, period.to)) dates.add(date);
-    return dates;
-  }, [partnerEntries, partnerPeriods]);
+  const { agnesLeaveDates, upcoming, hasAnyNote, noteSearchResults } = useNoteLists({
+    entries, partnerEntries, partnerPeriods, now, noteQuery, showNotes,
+  });
   const ownNoteAuthorLabel = partnerSharingStatus !== "disabled" || demoMode
     ? "Mika"
     : formProfile?.fullName.trim().split(/\s+/)[0] || "Moi";
-
-  const upcoming = useMemo(() => {
-    const todayKey = dateKey(now);
-    // Toutes les notes à venir, même au-delà d'un an : le calendrier les
-    // montre, la liste aussi.
-    const datedEntries = Object.entries(entries).filter(([key]) => key >= todayKey);
-    const items: NoteListItem[] = [];
-    /** Une note posée sur plusieurs jours d'affilée n'apparaît qu'une fois, à
-     *  son premier jour à venir. Chaque autre date du planning qui porte une
-     *  note a sa ligne : la liste montre les mêmes notes que le calendrier,
-     *  quel que soit l'ordre dans lequel le serveur les renvoie. Deux notes
-     *  d'un jour chacune restent deux notes, même au texte identique : seul
-     *  un même groupe (une note sur plusieurs jours) se réunit. */
-    const continuesPreviousDay = (source: Record<string, { noteText: string; noteGroupId: string }>, key: string) => {
-      const previous = source[dateKey(addDays(fromKey(key), -1))];
-      return key > todayKey && Boolean(source[key].noteGroupId) && previous?.noteText === source[key].noteText && previous.noteGroupId === source[key].noteGroupId;
-    };
-    if (showNotes) {
-      for (const [key, entry] of datedEntries) {
-        if (!entry.noteText || continuesPreviousDay(entries, key)) continue;
-        const notePeriod = notePeriodFor(entries, key, entry);
-        items.push({
-          // Une clé par jour : deux lignes ne partagent jamais la même.
-          key: `note-${key}`,
-          date: key,
-          label: entry.noteText,
-          detail: periodLabel(notePeriod.from, notePeriod.to),
-          kind: "note",
-          color: "#d65e68",
-          author: "mika",
-        });
-      }
-      for (const [key, entry] of Object.entries(partnerEntries)) {
-        if (
-          key < todayKey ||
-          entry.noteAuthor !== "agnes" ||
-          !entry.noteText ||
-          continuesPreviousDay(partnerEntries, key)
-        ) continue;
-        items.push({
-          key: `agnes-note-${key}`,
-          date: key,
-          label: entry.noteText,
-          detail: periodLabel(key, key),
-          kind: "note",
-          color: "#f2c84b",
-          author: "agnes",
-        });
-      }
-    }
-    return groupNoteItemsByDate(items
-      .sort(
-        (a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind),
-      )
-    );
-  }, [entries, now, partnerEntries]);
-
-  const hasAnyNote = useMemo(
-    () =>
-      Object.values(entries).some((entry) => entry.noteText) ||
-      Object.values(partnerEntries).some(
-        (entry) => entry.noteAuthor === "agnes" && entry.noteText,
-      ),
-    [entries, partnerEntries],
-  );
-
-  /** Recherche sur toutes les notes enregistrées, passées comme à venir
-      (contrairement à `upcoming`, borné aux 365 prochains jours). */
-  const noteSearchResults = useMemo(() => {
-    const query = noteQuery.trim();
-    if (!query) return [];
-    const items: NoteListItem[] = [];
-    const seenGroups = new Set<string>();
-    for (const [key, entry] of Object.entries(entries).sort(([a], [b]) =>
-      a.localeCompare(b),
-    )) {
-      if (!entry.noteText || !matchesSearch(entry.noteText, query))
-        continue;
-      if (entry.noteGroupId) {
-        if (seenGroups.has(entry.noteGroupId)) continue;
-        seenGroups.add(entry.noteGroupId);
-      }
-      const notePeriod = notePeriodFor(entries, key, entry);
-      items.push({
-        key: `search-${entry.noteGroupId || key}`,
-        date: key,
-        label: entry.noteText,
-        detail: periodLabel(notePeriod.from, notePeriod.to),
-        kind: "note",
-        color: "#d65e68",
-        author: "mika",
-      });
-    }
-    const seenPartnerGroups = new Set<string>();
-    for (const [key, entry] of Object.entries(partnerEntries).sort(([a], [b]) =>
-      a.localeCompare(b),
-    )) {
-      if (
-        entry.noteAuthor !== "agnes" ||
-        !matchesSearch(entry.noteText, query) ||
-        (entry.noteGroupId && seenPartnerGroups.has(entry.noteGroupId))
-      ) continue;
-      if (entry.noteGroupId) seenPartnerGroups.add(entry.noteGroupId);
-      items.push({
-        key: `search-agnes-${entry.noteGroupId || key}`,
-        date: key,
-        label: entry.noteText,
-        detail: periodLabel(key, key),
-        kind: "note",
-        color: "#f2c84b",
-        author: "agnes",
-      });
-    }
-    return groupNoteItemsByDate(items);
-  }, [entries, noteQuery, partnerEntries]);
 
   const todayOverview = useMemo(
     () =>
