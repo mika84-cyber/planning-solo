@@ -95,7 +95,12 @@ const budgets = {
   // compensé par la recompaction du moteur PDF du formulaire ; puis abaissé
   // de 2 400 / 787 à 2 050 / 680 Kio une fois jsPDF retiré de ce moteur
   // (2 040,3 / 674,5 Kio mesurés).
-  totalJavaScript: { raw: 2_050 * KIB, gzip: 680 * KIB },
+  // Relevé le 21 octobre 2026 de 2 050 à 2 055 Kio bruts, avec l'accord de
+  // l'administrateur : tarifs du Programme GP par grille nommée (session du
+  // matin, de l'après-midi, nocturne), gratuités, sites tiers de billetterie et
+  // reconnaissance d'un même événement sous deux titres (2 052,4 / 678 Kio
+  // mesurés). Le compressé reste sous son plafond de 680 Kio.
+  totalJavaScript: { raw: 2_055 * KIB, gzip: 680 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
