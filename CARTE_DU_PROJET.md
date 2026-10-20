@@ -6,10 +6,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 - `src/main.tsx` : montage React, import des styles, enregistrement et mise à
   jour du service worker.
-- `src/App.tsx` : orchestration générale (un peu moins de 2 000 lignes) :
-  les états partagés, les hooks d'actions et de calculs, puis le JSX des
-  rubriques. Les calculs et les effets vivent dans les hooks `src/use*.ts`
-  listés plus bas ; rechercher la fonctionnalité avant d'ouvrir une plage.
+- `src/App.tsx` : orchestration générale (environ 1 260 lignes) : les états
+  partagés, les hooks d'actions et de calculs, puis la coque (en-tête, menus,
+  bandeaux, messages) et l'appel des composants de rubrique listés plus bas
+  (`*SectionScreen`, `PlanningWorkspace`, `PlanningDialogLayer`,
+  `AppDialogLayer`). Les calculs et les effets vivent dans les hooks
+  `src/use*.ts` ; rechercher la fonctionnalité avant d'ouvrir une plage.
 - `src/styles.css` : point d’entrée de la cascade CSS. Ses imports numérotés
   dans `src/styles/` conservent l’ordre historique ; rechercher la classe dans
   ces fichiers sans réordonner les passes. `src/styles/README.md` documente le
@@ -85,6 +87,27 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   invités nommés, jamais par adresse.
 - `src/AppDialogLayer.tsx` : assemblage des dialogues, messages, confirmations
   et panneaux de gestion qui restent pilotés par l’orchestrateur.
+- Composants de rubrique sortis du JSX d’`App.tsx` en octobre 2026, même
+  code, même rendu. Chacun reçoit des objets de props regroupés — les états
+  d’un hook (`appShellUi`, `planningUi`, `workTimeUi`, `payUi`,
+  `calendarData`…) ou un objet `actions` — qu’il destructure sous les noms
+  d’origine ; les états et les mutations restent dans `App.tsx`.
+  `src/HomeSectionScreen.tsx` : l’accueil (tableau de bord, premières étapes,
+  notes à venir ; charge `HomeDashboard` dès le module).
+  `src/LeaveSectionScreen.tsx` : la page Congés (soldes, CET, heures,
+  absence longue, archive des demandes).
+  `src/PaySectionScreen.tsx` : Ma paie, livré avec les écrans différés ;
+  construit le contenu et la page pour `src/PayScreen.tsx`.
+  `src/DocumentsSectionScreen.tsx` : Documents et contacts, programmation GP
+  et plannings des collègues.
+  `src/PlanningWorkspace.tsx` : l’espace du planning (barre de commandes,
+  plannings PDF, panneaux d’une demande ou d’une sélection, calendrier du
+  mois, échanges, effacement groupé ; `renderDay` reste dans `App.tsx`).
+  `src/PlanningDialogLayer.tsx` : les fenêtres du planning (échange, choix
+  d’une demande, souhaits, groupe, fiche du jour, détail d’un solde), rendues
+  avant `AppDialogLayer`. `src/scrollWhenReady.ts` amène à une ancre d’un
+  écran chargé à la demande. Les contrôles textuels d’`uiRefinement.test.mjs`
+  et `formSecurity.test.mjs` lisent ces fichiers avec `App.tsx`.
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
 - `src/PlanningCommandCenter.tsx` et `src/PlanningDayCell.tsx` : commandes du
   calendrier et rendu interactif d’une journée.
@@ -162,7 +185,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/useNoteLists.ts` (notes à venir, recherche, congés d’Agnès),
   `src/usePartnerNoteActions.ts` (suppression d’une note d’Agnès). La
   rubrique Ma paie construit son contenu dans `src/PayScreen.tsx`, livré avec
-  les écrans différés ; `src/DemoExpiredScreen.tsx` est l’écran d’une démo
+  les écrans différés et appelé par `src/PaySectionScreen.tsx` ; `src/DemoExpiredScreen.tsx` est l’écran d’une démo
   expirée.
 - `src/useWorkTimeActions.ts` : validations, écritures et suppressions des
   heures supplémentaires, récupérations et mécénats.
