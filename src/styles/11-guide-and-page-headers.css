@@ -7,45 +7,6 @@
 
 .leave-choices button.recovery { --person-color: #e08a1e; }
 
-/* Le contour est dessiné entièrement dans la case et reprend l'arrondi réel
-   de celle-ci, quelle que soit sa taille : il suit exactement son tour. */
-/* Le liseré recouvre la bordure de la case : il épouse son bord extérieur. */
-.day:is(.half-morning, .half-afternoon),
-.mini-day:is(.half-morning, .half-afternoon) { overflow: visible; }
-/* Le ruban de note passe au-dessus du liseré, jusqu'au bord de la case,
-   bordé comme une case ordinaire du planning. */
-.day:is(.half-morning, .half-afternoon) > .note-band,
-.mini-day:is(.half-morning, .half-afternoon) > .note-band { z-index: 7; top: -1px; right: -1px; left: -1px; box-sizing: border-box; border: 1px solid; border-color: inherit; border-bottom: 0; border-top-left-radius: inherit; border-top-right-radius: inherit; }
-.day.half-morning::after,
-.day.half-afternoon::after,
-.mini-day.half-morning::after,
-.mini-day.half-afternoon::after {
-  top: -1px;
-  bottom: -1px;
-  box-sizing: border-box;
-  background: var(--leave);
-  /* Une ombre interne forme un liseré parfaitement continu jusque dans les
-     coins, même lorsque la petite case mobile rogne son contenu arrondi. */
-  border: 0;
-  box-shadow: inset 0 0 0 2px #000;
-}
-.day.half-morning::after,
-.mini-day.half-morning::after {
-  left: -1px;
-  right: 50%;
-  border-radius: inherit;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-.day.half-afternoon::after,
-.mini-day.half-afternoon::after {
-  right: -1px;
-  left: 50%;
-  border-radius: inherit;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
 .allowance-card { overflow: visible; }
 
 @media (max-width: 720px) {
@@ -157,17 +118,6 @@
   font-size: 12px;
 }
 
-/* Les pictogrammes d'absence restent immédiatement lisibles sans recouvrir le
-   numéro du jour ni les autres marqueurs. */
-.leave-calendar-marker-childcare,
-.leave-calendar-marker-sick {
-  right: 4px;
-  bottom: 3px;
-  font-size: 19px;
-}
-.leave-calendar-marker-childcare.compact,
-.leave-calendar-marker-sick.compact { font-size: 13px; }
-
 @media (max-width: 720px) {
   .pay-detail-sticky-header {
     grid-template-columns: 42px minmax(0, 1fr) 40px;
@@ -181,15 +131,6 @@
   .pay-detail-sticky-header h2 { font-size: 16px; }
   .pay-month-nav.compact { flex-wrap: wrap; }
   .pay-today-button { flex: 1 0 100%; }
-  .leave-calendar-marker-childcare,
-  .leave-calendar-marker-sick { font-size: 16px; }
-  /* Quelques pixels de hauteur supplémentaires rendent les cases plus faciles
-     à viser sans élargir le calendrier au-delà de l'écran. */
-  .month-card .calendar-grid .day,
-  .month-card .calendar-grid .day-blank {
-    min-height: 54px;
-    aspect-ratio: auto;
-  }
 }
 
 /* Les actions d'une absence sont immédiatement visibles dans la fiche du jour. */
@@ -506,64 +447,6 @@
   white-space: nowrap;
 }
 
-.leave-day.leave-other,
-.day.personal-day,
-.mini-day.personal-day {
-  background: var(--leave);
-  color: #3a332c;
-  box-shadow: inset 0 0 0 1px rgba(58, 51, 44, 0.42);
-}
-.day.leave-day.leave-other,
-.day.personal-day {
-  outline: 2px solid #000;
-  outline-offset: -2px;
-}
-.mini-day.leave-day.leave-other,
-.mini-day.personal-day {
-  outline: 1.5px solid #000;
-  outline-offset: -1.5px;
-}
-.other-pin {
-  position: absolute;
-  z-index: 6;
-  right: 3px;
-  bottom: 2px;
-  display: grid;
-  place-items: center;
-  width: 19px;
-  height: 19px;
-  color: #d51f3b;
-  pointer-events: none;
-  filter: drop-shadow(0 1px 1px rgba(73, 17, 25, 0.3));
-  transform: rotate(24deg);
-  transform-origin: 55% 60%;
-}
-.other-pin svg {
-  width: 19px;
-  height: 19px;
-  overflow: visible;
-}
-.other-pin-head { fill: #ef5361; stroke: #b6162f; stroke-width: 0.8; }
-.other-pin-body { fill: currentColor; stroke: #ad152b; stroke-width: 0.8; stroke-linejoin: round; }
-.other-pin-needle { fill: var(--border-control); stroke: var(--border-card); stroke-width: 0.55; }
-.other-pin-highlight { fill: none; stroke: rgba(255, 255, 255, 0.72); stroke-width: 1.1; stroke-linecap: round; }
-.other-pin.compact {
-  right: 1px;
-  bottom: 1px;
-  width: 11px;
-  height: 11px;
-}
-.other-pin.compact svg { width: 10px; height: 10px; }
-/* Divers en demi-journée : la punaise se loge au centre de la moitié posée,
-   à la taille de celle-ci. */
-.half-morning .other-pin,
-.half-afternoon .other-pin { top: 50%; right: auto; bottom: auto; left: 25%; width: clamp(12px, 36%, 30px); height: auto; aspect-ratio: 1; transform: translate(-50%, -50%) rotate(24deg); }
-.half-afternoon .other-pin { left: 75%; }
-.half-morning .other-pin.compact,
-.half-afternoon .other-pin.compact { width: min(36%, 11px); }
-.half-morning .other-pin svg,
-.half-afternoon .other-pin svg { width: 100%; height: 100%; }
-
 .calendar-bulk-delete-button,
 .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
   border-color: var(--border-control);
@@ -834,7 +717,6 @@
 .pdf-download-screen,
 .controls,
 .calendar-toolbar,
-.month-card,
 .request-panel,
 .request-option-group,
 .leave-balance-grid button {
@@ -1006,18 +888,6 @@
     width: 168px;
     min-height: 46px;
   }
-}
-
-.month-card .calendar-grid .day.training-recovery-day .training-recovery-label {
-  right: 5px;
-  bottom: 4px;
-  border: 0 !important;
-  border-radius: 0;
-  padding: 0;
-  background: transparent !important;
-  color: #111 !important;
-  box-shadow: none;
-  text-shadow: none;
 }
 
 /* En-tête de « Primes pour le mois » : le titre, puis le mois et ses deux

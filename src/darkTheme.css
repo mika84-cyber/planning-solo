@@ -7,13 +7,11 @@ html[data-theme="dark"] :is(.step-label, .eyebrow) { color: #e2a383; }
 
 /* Planning : un jour travaillé prend un beige coquille d'œuf, un jour de repos
    garde son noir, cerné d'un filet clair pour se détacher du fond. */
-html[data-theme="dark"] .calendar-grid .day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training),
-html[data-theme="dark"] .mini-grid .mini-day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training) { border-color: #c9bda6; background: #ece2cd; color: #2c2621; }
-html[data-theme="dark"] .calendar-grid .day.off,
-html[data-theme="dark"] .mini-grid .mini-day.off { border: 2px solid #9d8b7b !important; background: #0a0807; color: #c6b8ab; }
+html[data-theme="dark"] .calendar-grid .day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training) { border-color: #c9bda6; background: #ece2cd; color: #2c2621; }
+html[data-theme="dark"] .calendar-grid .day.off { border: 2px solid #9d8b7b !important; background: #0a0807; color: #c6b8ab; }
 /* Formation : case grise, chiffre sombre pour rester lisible. */
-html[data-theme="dark"] :is(.calendar-grid .day.training, .mini-grid .mini-day.training),
-html[data-theme="dark"] :is(.calendar-grid .day.training, .mini-grid .mini-day.training) :is(.date-number, span, b) { color: #211c18; }
+html[data-theme="dark"] .calendar-grid .day.training,
+html[data-theme="dark"] .calendar-grid .day.training :is(.date-number, span, b) { color: #211c18; }
 
 /* Soldes et choix de congés : la carte suit le fond sombre, mais le chiffre
    et le repère gardent la couleur du type de congé, éclaircie pour rester
@@ -50,14 +48,14 @@ html[data-theme="dark"] .section-dock > button.active { background: #f1e8df; col
 
 /* Échanges : le jour cédé garde le noir des repos, le jour repris le beige
    des jours travaillés ; le filet turquoise reste celui du mode clair. */
-html[data-theme="dark"] :is(.calendar-grid .day, .mini-grid .mini-day).exchange-day {
+html[data-theme="dark"] .calendar-grid .day.exchange-day {
   border-color: #5b86a0;
   background: linear-gradient(180deg, #ece2cd 58%, #bfe3e6 100%);
   color: #2c2621;
 }
 /* !important : la règle des jours travaillés, plus haut, est plus précise, et
    le jour cédé reste un jour « travail » de votre cycle. */
-html[data-theme="dark"] :is(.calendar-grid .day, .mini-grid .mini-day).exchange-given {
+html[data-theme="dark"] .calendar-grid .day.exchange-given {
   background: linear-gradient(180deg, #0a0807 58%, #173a3f 100%) !important;
   color: #f4ece2 !important;
 }

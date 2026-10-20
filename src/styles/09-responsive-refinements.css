@@ -713,8 +713,7 @@
     min-height: 44px;
   }
   .legend,
-  .summary span,
-  .weekdays span {
+  .summary span {
     font-size: max(10px, 0.68rem);
   }
 }
@@ -1061,8 +1060,7 @@
   background: linear-gradient(150deg, var(--surface-high) 0%, #fff 48%, var(--surface-high) 100%);
 }
 .planning-workspace-shell.framed .controls,
-.planning-workspace-shell.framed .calendar-toolbar,
-.planning-workspace-shell.framed .month-card { margin-bottom: 0; }
+.planning-workspace-shell.framed .calendar-toolbar { margin-bottom: 0; }
 
 .variable-pay-card > header[role="button"] {
   border-radius: 12px;
@@ -1075,11 +1073,6 @@
   outline: 3px solid rgba(122, 111, 95, 0.2);
   outline-offset: 3px;
 }
-
-.day.half-morning,
-.day.half-afternoon,
-.mini-day.half-morning,
-.mini-day.half-afternoon { overflow: hidden; }
 
 @media (max-width: 720px) {
   .planning-workspace-shell.framed {
@@ -1162,72 +1155,6 @@
 @keyframes pay-month-in-left { from { opacity: .35; transform: translateX(-18%); } }
 @keyframes pay-month-in-right { from { opacity: .35; transform: translateX(18%); } }
 
-/* ASA et garde d'enfant reprennent le bleu des congés annuels. */
-.day.leave-day.leave-exceptional,
-.day.leave-day.leave-childcare,
-.day.leave-day.leave-sick,
-.mini-grid .mini-day.leave-day.leave-exceptional,
-.mini-grid .mini-day.leave-day.leave-childcare,
-.mini-grid .mini-day.leave-day.leave-sick {
-  background: var(--leave);
-  color: #3a332c;
-  outline-color: #000;
-}
-
-.leave-calendar-marker {
-  position: absolute;
-  z-index: 4;
-  right: 5px;
-  bottom: 5px;
-  max-width: calc(100% - 12px);
-  color: #3a332c;
-  font-size: 10px;
-  font-weight: 950;
-  line-height: 1;
-  text-align: right;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.leave-calendar-marker-strike { color: #241b08; }
-.leave-calendar-marker.compact { right: 2px; bottom: 2px; font-size: 7px; }
-/* Demi-journée : la nature à la verticale, dans la moitié posée (ASA, CA,
-   RTT, FRA) ; le numéro du jour occupe l'autre moitié. */
-.half-morning .leave-calendar-marker-exceptional,
-.half-afternoon .leave-calendar-marker-exceptional,
-.half-morning .leave-calendar-marker-half,
-.half-afternoon .leave-calendar-marker-half { top: 50%; right: auto; bottom: auto; left: 25%; max-width: none; writing-mode: vertical-rl; transform: translate(-50%, -50%) rotate(180deg); }
-.half-afternoon .leave-calendar-marker-exceptional,
-.half-afternoon .leave-calendar-marker-half { left: 75%; }
-/* Souhait d'une demi-journée : la moitié verte reste sans mention, le
-   numéro du jour occupe l'autre moitié, séparée d'un trait noir. */
-.day.wish-morning .date-number,
-.day.wish-morning .holiday-date { left: 74%; }
-.day.wish-afternoon .date-number,
-.day.wish-afternoon .holiday-date { left: 26%; }
-
-/* Demi-journée : aplat sur la moitié posée et séparation noire centrale. */
-.day.half-morning::after,
-.day.half-afternoon::after,
-.mini-day.half-morning::after,
-.mini-day.half-afternoon::after {
-  z-index: 1;
-}
-.day.half-morning::after,
-.mini-day.half-morning::after {
-  border-right: 1px solid #000;
-}
-.day.half-afternoon::after,
-.mini-day.half-afternoon::after {
-  border-left: 1px solid #000;
-}
-.day.half-morning .date-number,
-.day.half-morning .holiday-date,
-.mini-day.half-morning .date-number,
-.mini-day.half-morning .holiday-date { left: 74%; }
-.day.half-afternoon .date-number,
-.day.half-afternoon .holiday-date,
-.mini-day.half-afternoon .date-number,
-.mini-day.half-afternoon .holiday-date { left: 26%; }
 
 @media (max-width: 720px) {
 
@@ -1355,46 +1282,6 @@
   font-size: 10px;
   font-weight: 800;
   cursor: pointer;
-}
-.day.hourly-recovery-day,
-.mini-day.hourly-recovery-day {
-  border-color: var(--border-card);
-  box-shadow: inset 0 -5px 0 #8fc6b7;
-}
-.day.hourly-recovery-day:not(.off):not(.leave-day):not(.recovery-day) {
-  background: linear-gradient(145deg, #fff 0%, #fff 100%);
-}
-.hourly-recovery-label {
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  left: 5px;
-  overflow: hidden;
-  color: #326d61;
-  font-size: 9px;
-  font-weight: 850;
-  line-height: 1;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Une formation prise sur le solde de récupération est immédiatement
-   identifiable : case corail pastel, liseré noir et repère REC. */
-.day.training-recovery-day,
-.mini-day.training-recovery-day {
-  border-color: #000;
-  background: #f3b3a6;
-  color: #4e211b;
-  box-shadow: none;
-}
-.day.training-recovery-day {
-  outline: 2px solid #000;
-  outline-offset: -2px;
-}
-.mini-day.training-recovery-day {
-  outline: 1.5px solid #000;
-  outline-offset: -1.5px;
 }
 .recovery-direct-actions {
   grid-template-columns: minmax(0, 1fr);

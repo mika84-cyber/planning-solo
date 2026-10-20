@@ -1,17 +1,5 @@
-/* Formulaires officiels et congés CET. */
-.day.leave-day.leave-cet,
-.mini-grid .mini-day.leave-day.leave-cet {
-  background: #bcb0a0;
-  color: #2c2621;
-  outline-color: #000;
-}
-.leave-calendar-marker-cet {
-  right: 5px;
-  bottom: 4px;
-  color: #2c2621;
-  font-size: 9px;
-  letter-spacing: 0.04em;
-}
+/* Formulaires officiels et congés CET. La case CET du planning est dans
+   06-planning-calendar.css. */
 .cet-leave-choice,
 .leave-choices .cet-day {
   border-color: var(--border-card) !important;

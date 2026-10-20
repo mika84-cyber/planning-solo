@@ -386,8 +386,7 @@
   box-shadow: none;
 }
 
-.planning-workspace-shell.framed .planning-calendar-section .planning-leave-panel,
-.planning-workspace-shell.framed .planning-calendar-section .month-card {
+.planning-workspace-shell.framed .planning-calendar-section .planning-leave-panel {
   width: 100%;
   margin-right: 0;
   margin-left: 0;
@@ -718,96 +717,6 @@
   }
 }
 
-/* Repère informatif uniquement : il n'intervient dans aucun calcul du jour. */
-.exceptional-closure-marker {
-  position: absolute;
-  z-index: 7;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  object-fit: contain;
-  background: var(--surface);
-  pointer-events: none;
-  filter: none;
-}
-
-.exceptional-closure-marker.compact {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-/* La date reste visible par-dessus le tampon CLOSED, en haut à gauche. */
-:root .exceptional-closure-date {
-  z-index: 10;
-  top: 6px;
-  left: 7px;
-  width: auto;
-  min-width: 24px;
-  height: 24px;
-  padding: 0;
-  transform: none;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #2c2621;
-  box-shadow: none;
-  font-size: clamp(10px, 1.25vw, 13px);
-  font-weight: 950;
-  line-height: 1;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.98),
-    1px 0 0 rgba(255, 255, 255, 0.9),
-    -1px 0 0 rgba(255, 255, 255, 0.9),
-    0 -1px 0 rgba(255, 255, 255, 0.9);
-}
-
-/* Une note reste visible dans une case CLOSED : le ruban passe au-dessus du
-   tampon et colle au bord supérieur, comme sur toutes les autres cases. */
-.exceptional-closure-day.has-note > .note-band {
-  z-index: 9;
-  top: 0;
-  right: 0;
-  left: 0;
-  border-radius: 0;
-}
-
-.mini-day.exceptional-closure-day.has-note > .note-band {
-  top: 0;
-  right: 0;
-  left: 0;
-  border-radius: 0;
-}
-
-:root .today .exceptional-closure-date {
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  text-shadow: none;
-  box-shadow: none;
-}
-
-:root .mini-day .exceptional-closure-date {
-  top: 2px;
-  left: 2px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0;
-  font-size: 8px;
-}
-
-@media (max-width: 720px) {
-  :root .day .exceptional-closure-date {
-    top: 4px;
-    left: 4px;
-    min-width: 20px;
-    height: 20px;
-    padding: 0;
-    font-size: 10px;
-  }
-}
-
 /* Planning : l’accès à aujourd’hui remplace le groupe dans les deux commandes
    principales. Le nettoyage est une action distincte, placée après la grille. */.planning-workspace-shell.framed .controls .planning-today-button {
   display: flex;
@@ -880,67 +789,6 @@
   font-weight: 900;
   cursor: pointer;
 }
-
-/* Un échange change la nature du jour : celui qu'on cède devient un vrai
-   repos (aplat noir), celui qu'on reprend un vrai jour travaillé (fond clair).
-   Le filet turquoise et le reflet en pied de case signalent l'échange. */
-:root .day.exchange-day,
-:root .mini-day.exchange-day {
-  border: 2px solid #5b86a0;
-  color: #2c2621;
-  background: linear-gradient(180deg, var(--surface) 58%, #dbe7ee 100%);
-  box-shadow: 0 4px 11px rgba(87, 78, 66, 0.14);
-}
-
-:root .day.exchange-given,
-:root .mini-day.exchange-given {
-  color: #fff;
-  background: linear-gradient(180deg, #2c2621 58%, #2b4a5c 100%);
-}
-
-:root .day.exchange-given .exchange-calendar-label {
-  color: #b8d2e2;
-}
-
-/* Le repère d'échange se tient dans le coin supérieur droit de la case,
-   assez petit pour ne pas concurrencer la date. */
-.exchange-calendar-marker {
-  position: absolute;
-  right: 3px;
-  top: 3px;
-  bottom: auto;
-  z-index: 5;
-  width: 24%;
-  height: 24%;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-.exchange-calendar-marker.compact {
-  right: 2px;
-  top: 2px;
-  bottom: auto;
-  width: 30%;
-  height: 30%;
-}
-/* Un jour à note : le ruban occupe le haut de la case, le repère d'échange
-   descend juste dessous au lieu de le couper. */
-.app-shell .day.has-note .exchange-calendar-marker { top: 12px; }
-.app-shell .mini-day.has-note .exchange-calendar-marker.compact { top: 7px; }
-
-.exchange-calendar-label {
-  position: absolute;
-  left: 5px;
-  bottom: 4px;
-  z-index: 4;
-  max-width: 60%;
-  color: #2c2621;
-  font-size: clamp(8px, 1.05vw, 11px);
-  font-weight: 950;
-  letter-spacing: 0.045em;
-}
-
-
 
 .work-exchange-cycle-calendar {
   margin-top: 8px;
@@ -1191,48 +1039,6 @@ fieldset.leave-choices {
 }
 
 @media (max-width: 720px) {
-  .day .exchange-calendar-marker:not(.compact) {
-    top: 2px;
-    right: 2px;
-    bottom: auto;
-    left: auto;
-    box-sizing: border-box;
-    width: 14px;
-    height: 14px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .app-shell .day.has-note .exchange-calendar-marker:not(.compact) { top: 9px; }
-
-  .day .exchange-calendar-label {
-    top: auto;
-    right: auto;
-    bottom: 2px;
-    left: 3px;
-    max-width: none;
-    overflow: visible;
-    font-size: clamp(6.5px, 1.8vw, 7.5px);
-    line-height: 1;
-    letter-spacing: -0.03em;
-    text-align: left;
-    white-space: nowrap;
-    transform: none;
-  }
-
-  .day.exchange-day .date-number,
-  .day.exchange-day .holiday-date {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 16px;
-    height: 16px;
-    font-size: 11px;
-    transform: translate(-50%, -50%);
-  }
-
   .work-exchange-list {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1384,13 +1190,8 @@ fieldset.leave-choices {
 :root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .payslip-file-drop, .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .choice-picker-menu button.active) {
   border: 1px solid var(--border-control);
 }
-/* Férié échangé : flèches et dollar sur une pastille blanche, lisible sur
-   une case sombre (jour cédé) comme claire. */
-.exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5b86a0; }
 /* Férié rendu : la liste des fériés possibles, un bouton par férié. */
 /* Échange : deux onglets (jour ordinaire ou férié) et les horaires de chaque journée. */
-.calendar-grid .day .exchange-calendar-marker.holiday-exchange,
-.mini-grid .mini-day .exchange-calendar-marker.holiday-exchange { box-sizing: border-box; border-radius: 50%; padding: 1px; background: #fff; box-shadow: 0 0 0 1px #5b86a0; }
 .work-exchange-list article.holiday-exchange header img { box-sizing: border-box; border-radius: 50%; padding: 2px; background: #fff; box-shadow: 0 0 0 1px #5b86a0; }
 
 /* « Pour bien démarrer » : liste de progression. Toutes les étapes restent

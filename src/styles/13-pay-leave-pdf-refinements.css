@@ -403,8 +403,7 @@
   }
   .planning-workspace-shell.framed .controls,
   .planning-workspace-shell.framed .calendar-toolbar,
-  .planning-workspace-shell.framed .planning-leave-panel,
-  .planning-workspace-shell.framed .month-card {
+  .planning-workspace-shell.framed .planning-leave-panel {
     border-radius: 17px;
     box-shadow: 0 5px 14px rgba(87, 78, 66, 0.055);
   }

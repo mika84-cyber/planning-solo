@@ -673,10 +673,6 @@
 .leave-request-archive + .overtime-balance-card { margin-top: 22px; }
 .overtime-balance-card { gap: 18px; padding: 20px; }
 .overtime-balance-card + .overtime-balance-card { margin-top: 18px; }
-.day.half-morning::after,
-.mini-day.half-morning::after { border-right-width: 2px; }
-.day.half-afternoon::after,
-.mini-day.half-afternoon::after { border-left-width: 2px; }
 
 @media (max-width: 720px) {
   .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }

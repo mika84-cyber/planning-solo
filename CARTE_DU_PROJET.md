@@ -12,6 +12,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   dans `src/styles/` conservent l’ordre historique ; rechercher la classe dans
   ces fichiers sans réordonner les passes. `src/styles/README.md` documente le
   découpage et les rares priorités `!important` encore nécessaires.
+- `src/styles/06-planning-calendar.css` : tout le calendrier du planning (mois,
+  grille, case du jour et ses repères), un bloc par composant ; ses retouches
+  sombres restent dans `src/darkTheme.css`.
 
 ## Composants d'interface autonomes
 

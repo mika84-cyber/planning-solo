@@ -164,8 +164,10 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".day.leave-day.leave-childcare");
     expect(styles).toContain(".day.leave-day.leave-sick");
     expect(styles).toContain(".day.half-morning::after");
-    expect(styles).toContain("border-right: 1px solid #000");
-    expect(styles).toContain("border-left: 1px solid #000");
+    // Chaque moitié couvre son côté de la case ; le trait noir est l'ombre
+    // interne vérifiée ci-dessous, pas une bordure.
+    expect(styles).toContain(".day.half-morning::after {\n  left: -1px;\n  right: 50%;");
+    expect(styles).toContain(".day.half-afternoon::after {\n  right: -1px;\n  left: 50%;");
     expect(styles).toContain("box-shadow: inset 0 0 0 2px #000");
     expect(styles).toContain("box-sizing: border-box");
     expect(styles).toContain("left: 0");
@@ -449,7 +451,7 @@ describe("finitions d’interface", () => {
   it("affiche Divers en doré avec une punaise rouge", () => {
     expect(app).toContain('personalDay ? " personal-day" : ""');
     expect(app).toContain('className={`other-pin${compact ? " compact" : ""}`}');
-    expect(styles).toContain(".leave-day.leave-other,\n.day.personal-day,");
+    expect(styles).toContain(".month-card .calendar-grid .day.leave-day.leave-other,\n.month-card .calendar-grid .day.personal-day {");
     expect(styles).toContain("color: #d51f3b");
     expect(styles).toContain("background: #f3d884 !important");
   });

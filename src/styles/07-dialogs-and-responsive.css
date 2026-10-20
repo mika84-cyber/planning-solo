@@ -468,66 +468,6 @@
     grid-column: 1/-1;
     gap: 7px 10px;
   }
-  .month-card {
-    padding: 7px;
-    border-radius: 18px;
-  }
-  .weekdays,
-  .calendar-grid {
-    gap: 4px;
-  }
-  .weekdays {
-    margin-bottom: 3px;
-  }
-  .weekdays span {
-    padding: 4px 0;
-  }
-  .day {
-    min-height: 0;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    padding: 3px;
-  }
-  .day-blank {
-    min-height: 0;
-    aspect-ratio: 1;
-  }
-  .date-number,
-  .holiday-date {
-    width: 22px;
-    height: 22px;
-    font-size: 12px;
-  }
-  .selection-label {
-    display: none;
-  }
-  .day .note-band {
-    height: 6px;
-  }
-  .day .note-band svg {
-    width: 6px;
-    height: 6px;
-    stroke-width: 2.3;
-  }
-  .day .note-band.note-band-half-afternoon {
-    padding-left: 3px;
-  }
-  .day .note-band.note-band-half-morning {
-    padding-right: 3px;
-  }
-  .leave-band {
-    right: 3px;
-    bottom: 3px;
-    left: 3px;
-    height: 5px;
-  }
-  .selection-corner {
-    width: 22px;
-    height: 22px;
-  }
-  .mini-day {
-    font-size: 9px;
-  }
   /* Les fenêtres s'ouvrent au milieu de l'écran, comme sur ordinateur. */
   .modal-backdrop {
     align-items: center;
@@ -591,11 +531,5 @@
   }
   .legend {
     grid-column: 1;
-  }
-  .date-number,
-  .holiday-date {
-    width: 20px;
-    height: 20px;
-    font-size: 11px;
   }
 }

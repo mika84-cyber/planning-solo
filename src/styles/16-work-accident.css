@@ -112,17 +112,8 @@
 
 /* La carte de suivi conclut les soldes sur grand écran. Sur téléphone, elle
    partage au contraire la dernière rangée avec Grève pour garder une grille
-   courte et régulière. */
-:root .day.work-accident-day {
-  border: 2px solid #000;
-  outline: 2px solid #000;
-  outline-offset: -2px;
-}
-:root .mini-day.work-accident-day {
-  border: 1.5px solid #000;
-  outline: 1.5px solid #000;
-  outline-offset: -1.5px;
-}
+   courte et régulière. La case du planning et ses repères (poste du jour,
+   accident) sont dans 06-planning-calendar.css. */
 /* Fiche du jour : le poste dans un encadré discret, en deux tuiles. */
 .day-work-post { min-width: 0; margin: 18px 0 14px; border: 1px solid #ece5db; border-radius: 18px; padding: 10px 12px 12px; background: #fbf8f4; }
 .day-work-post legend { float: left; display: flex; align-items: baseline; gap: 8px; width: 100%; margin: 0 0 8px; padding: 0; color: var(--muted); font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
@@ -132,35 +123,6 @@
 .day-work-post button b { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 12px; background: #fdecea; color: #c62828; font-size: .84rem; }
 .day-work-post button.active { border-color: #c62828; background: #fdf1f0; color: #9f1f1f; }
 .day-work-post button.active b { background: #c62828; color: #fff; }
-/* Poste du jour hors salles : A (accueil) ou B (billetterie) dans une petite
-   pastille ronde, aux couleurs de AC et BI dans la semaine des collègues :
-   vert pâle cerclé de vert. Ses couleurs sont rattachées à la case pour rester
-   les mêmes en thème sombre, comme les autres marqueurs de jour. */
-.work-post-marker { position: absolute; right: 2px; bottom: 2px; z-index: 6; display: grid; place-items: center; width: 15px; height: 15px; border: 1.5px solid; border-radius: 50%; font-size: 9px; font-weight: 600; line-height: 1; pointer-events: none; }
-:is(.day, .mini-day) .work-post-marker { border-color: #2f7a52; background: #e2f3e8; color: #174f33; }
-@media (min-width: 900px) { .day .work-post-marker { right: 6px; bottom: 6px; width: 22px; height: 22px; font-size: 12px; } }
-.mini-day .work-post-marker { width: 9px; height: 9px; border-width: 1px; font-size: 6px; }
-.day .work-accident-calendar-marker {
-  position: absolute;
-  right: -12px;
-  bottom: -3px;
-  z-index: 9;
-  width: 44px;
-  height: 40px;
-  object-fit: contain;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.42));
-  pointer-events: none;
-}
-.mini-day .work-accident-calendar-marker.compact {
-  position: absolute;
-  right: -6px;
-  bottom: -2px;
-  z-index: 9;
-  width: 23px;
-  height: 20px;
-  object-fit: contain;
-  pointer-events: none;
-}
 
 @media (max-width: 720px) {
   .work-accident-date-input > span {
@@ -177,12 +139,6 @@
   .work-accident-date-input:focus-within > span,
   .work-accident-date-input.has-value > span { display: none; }
   .work-accident-date-input:not(.has-value):not(:focus-within) input::-webkit-datetime-edit { color: transparent; }
-  .day .work-accident-calendar-marker {
-    right: -8px;
-    bottom: -2px;
-    width: 28px;
-    height: 28px;
-  }
   .leave-balances-direct .leave-balance-grid button.strike,
   .leave-balances-direct .leave-balance-grid button.work_accident {
     display: block;

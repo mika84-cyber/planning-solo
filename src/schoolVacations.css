@@ -2,10 +2,8 @@
    l'interrupteur, sur le bord gauche de chaque jour de vacances, sur toute sa
    hauteur (sous le bandeau d'une note). Les couleurs des cases ne changent
    pas, et les repères posés en bas de case gardent leur place. */
-.day.school-vacation-day,
-.mini-day.school-vacation-day { --vacation-tone: #7446d6; --vacation-bar: 6px; }
-.day.school-vacation-day::before,
-.mini-day.school-vacation-day::before {
+.day.school-vacation-day { --vacation-tone: #7446d6; --vacation-bar: 6px; }
+.day.school-vacation-day::before {
   position: absolute;
   z-index: 5;
   top: 0;
@@ -17,17 +15,14 @@
   pointer-events: none;
 }
 .day.school-vacation-day.has-note::before { top: 9px; }
-.mini-day.school-vacation-day { --vacation-bar: 3px; }
 /* Sur un jour sombre (repos), la barre s'éclaircit pour rester lisible. */
-.day.school-vacation-day.off,
-.mini-day.school-vacation-day.off { --vacation-tone: #c5abff; }
+.day.school-vacation-day.off { --vacation-tone: #c5abff; }
 /* Ce qui se pose contre le bord gauche se décale d'autant : l'étiquette
    d'échange, la fermeture, et le numéro d'une demi-journée d'après-midi
    (posé dans la moitié gauche). */
 .day.school-vacation-day.half-afternoon :is(.date-number, .holiday-date) { translate: calc(var(--vacation-bar) / 2) 0; }
 .day.school-vacation-day .exchange-calendar-label { left: calc(var(--vacation-bar) + 5px); }
-.day.school-vacation-day .exceptional-closure-marker,
-.mini-day.school-vacation-day .exceptional-closure-marker {
+.day.school-vacation-day .exceptional-closure-marker {
   inset: 2px 2px 2px calc(var(--vacation-bar) + 2px);
   width: calc(100% - var(--vacation-bar) - 4px);
   height: calc(100% - 4px);

@@ -55,3 +55,33 @@ La passe du 29 août a notamment :
 - retiré l'ancienne carte Groupe d'« Aujourd'hui », absente du DOM actuel ;
 - supprimé une première couleur verte d'« Aujourd'hui » immédiatement écrasée
   par la finition bleue.
+
+## Calendrier du planning
+
+`06-planning-calendar.css` réunit le mois, sa grille et la case du jour
+(`MonthCalendar`, `PlanningDayCell`) : un bloc par composant, les variantes
+téléphone regroupées en fin de fichier. Dans un bloc, l'ordre historique est
+gardé là où deux règles de même spécificité se disputent une propriété. Ne
+restent ailleurs que les feuilles chargées après lui : retouches sombres
+(`darkTheme.css`), vacances scolaires (`schoolVacations.css`) et notes
+partagées (`sharedNotes.css`).
+
+La conversion sombre (`src/darkStyles.ts`) recopie en fin de cascade les
+couleurs des règles dont le sélecteur ne nomme pas la case. Une couleur
+écrasée en clair peut donc encore servir en sombre : c'est le cas de
+`.leave-calendar-marker-cet`, volontairement placé avant le repère commun.
+Avant de retirer une couleur qui semble morte, vérifier aussi le rendu sombre.
+
+La passe du 20 octobre 2026 a ramené les 213 règles du calendrier, réparties
+dans douze feuilles, à 116 règles dans ce fichier, sans changement de rendu :
+styles calculés identiques élément par élément sur 170 états (clair et
+sombre, cinq largeurs, fiche du jour, menus, sélection, galerie de toutes les
+variantes de case). Elle a notamment :
+
+- retiré la vue compacte `.mini-day` et les repères `.compact`, que
+  `MonthCalendar` ne rend plus, ainsi que le ruban `.leave-band` ;
+- supprimé les bordures des demi-journées, annulées par `border: 0`, et les
+  anciens fonds des récupérations, recouverts par leurs `!important` ;
+- fusionné ou retiré les règles en double (grève posée et en sélection,
+  contour et fond de chaque récupération, étiquettes REC, pastille du férié
+  échangé).
