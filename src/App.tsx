@@ -9,7 +9,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type TouchEvent,
 } from "react";
 import {
   getUser,
@@ -43,6 +42,10 @@ import { usePayProfileValues } from "./usePayProfileValues";
 import { useMonthPayEstimate } from "./useMonthPayEstimate";
 import { remainingLeaveForYear, useLeaveBalances } from "./useLeaveBalances";
 import { useNoteLists } from "./useNoteLists";
+import { usePayMonthNavigation } from "./usePayMonthNavigation";
+import { useWorkProfileActions } from "./useWorkProfileActions";
+import { usePartnerNoteActions } from "./usePartnerNoteActions";
+import { useSectionNavigation } from "./useSectionNavigation";
 import { DEMO_PAY_PROFILE, demoPayProfiles } from "./demoPayProfile";
 
 const homeDashboardModule = import("./HomeDashboard");
@@ -116,8 +119,6 @@ import {
   AppHeader,
   AdaptiveNavigation,
   MainMenu,
-  MAIN_SECTION_ORDER,
-  type MainSection,
 } from "./AppNavigation";
 import { PlanningCommandCenter } from "./PlanningCommandCenter";
 import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
@@ -157,7 +158,6 @@ import { AppleInstallNotice } from "./AppleInstallNotice";
 import { InstallAppNotice } from "./InstallAppNotice";
 import {
   emptyEntry,
-  noteDateLabel,
   fullDayRecoveryMinutes,
   personalPresenceForDate,
   presenceShownToColleagues,
@@ -195,7 +195,6 @@ import {
   type RecoveryUse,
   type RecoveryRequestType,
   type WorkQuota,
-  type WorkSchedule,
 } from "./overtime";
 import { useToast } from "./useToast";
 import {
@@ -354,8 +353,8 @@ export default function Home() {
     payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
     payProfileFocusRequested, setPayProfileFocusRequested,
     payVerificationRequested, setPayVerificationRequested,
-    payMonthSlide, setPayMonthSlide,
-    payMonthSlideTimer, payslipCheck, setPayslipCheck, setPayslipError,
+    payMonthSlide,
+    payslipCheck, setPayslipCheck, setPayslipError,
     setPayslipImportBusy, setPayslipImportError,
     setPayslipImportResult, setPayslipImportMode,
     setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
@@ -368,7 +367,7 @@ export default function Home() {
   const {
     quickNoteMode,
     homeSection, setHomeSection, prefetchedContacts, setPrefetchedContacts,
-    approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
+    approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates,
     mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
     noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
@@ -589,14 +588,6 @@ export default function Home() {
     entries,
     (key) => Boolean(exceptionalClosureFor(key)),
     notify,
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: au démontage, on annule le dernier minuteur en cours, lu à ce moment-là.
-  useEffect(
-    () => () => {
-      if (payMonthSlideTimer.current)
-        window.clearTimeout(payMonthSlideTimer.current);
-    },
-    [],
   );
   const ignoreNextDayClick = useRef(false);
   const openedNotificationDate = useRef("");
@@ -1403,109 +1394,11 @@ export default function Home() {
     isExchangeDate: (key) => Boolean(entries[key]?.exchangeId),
     proposeHalfBalance: (key) => proposeHalfBalance(key, Object.values(selections)),
   });
-  function changePayMonth(delta: 1 | -1) {
-    setPayView((current) =>
-      localDate(current.getFullYear(), current.getMonth() + delta, 1),
-    );
-  }
-  function goPayToday() {
-    const today = new Date();
-    setPayView(localDate(today.getFullYear(), today.getMonth(), 1));
-  }
-  function changeWorkQuota(nextQuota: WorkQuota) {
-    const previousProfile = formProfile;
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: nextQuota,
-      workSchedule: formProfile?.workSchedule,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      deductionPayMonths: formProfile?.deductionPayMonths,
-      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
-      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
-      sundayCarryover: formProfile?.sundayCarryover,
-      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
-      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
-      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
-      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
-    };
-    setFormProfile(nextProfile);
-    if (demoMode)
-      return;
-    void postCalendar({
-      action: "save-form-profile",
-      fullName: nextProfile.fullName,
-      group: nextProfile.group,
-      signature: nextProfile.signature,
-      workQuota: nextQuota,
-    }).catch((error) => {
-      setFormProfile(previousProfile);
-      notify(
-        calendarErrorMessage(error, "La quotité n’a pas pu être enregistrée."),
-      );
-    });
-  }
-
-  /** Le profil garde la saisie telle quelle, même à moitié faite : sans cela
-   *  on ne pourrait jamais choisir l'heure de début avant celle de fin. Seule
-   *  une plage complète et cohérente part au serveur — il refuse une plage à
-   *  moitié remplie, et la saisie s'effaçait alors aussitôt. Deux champs vides
-   *  effacent les horaires. `announce` signale une plage à compléter, lors
-   *  de l'enregistrement explicite. */
-  async function changeWorkSchedule(nextSchedule: WorkSchedule | undefined, announce = false) {
-    const schedule = nextSchedule;
-    const previousProfile = formProfile;
-    const nextProfile: FormProfile = {
-      ...(formProfile || { fullName: "", group: String(group), signature: "" }),
-      workSchedule: schedule,
-    };
-    setFormProfile(nextProfile);
-    if (demoMode) return true;
-    const cleared = !schedule?.start && !schedule?.end;
-    const complete = Boolean(schedule?.start && schedule?.end && schedule.start < schedule.end);
-    if (!cleared && !complete) {
-      if (announce)
-        notify(schedule?.start && schedule?.end
-          ? "L’heure de fin doit suivre l’heure de début."
-          : "Indiquez l’heure de début et l’heure de fin.");
-      return !announce;
-    }
-    try {
-      await postCalendar({
-        action: "save-form-profile",
-        fullName: nextProfile.fullName,
-        group: nextProfile.group,
-        signature: nextProfile.signature,
-        workSchedule: cleared ? null : schedule,
-      });
-      return true;
-    } catch (error) {
-      setFormProfile(previousProfile);
-      notify(calendarErrorMessage(error, "Les horaires habituels n’ont pas pu être enregistrés."));
-      return false;
-    }
-  }
-
-  async function saveCalculationProfile() {
-    const saved = await changeWorkSchedule(formProfile?.workSchedule, true);
-    if (!saved) return;
-    setPayProfileOpen(false);
-  }
+  const { changePayMonth, goPayToday, slideAllowancesMonth, startAllowancesSwipe, endAllowancesSwipe } =
+    usePayMonthNavigation({ payUi, allowancesSwipeStart });
+  const { changeWorkQuota, changeWorkSchedule, saveCalculationProfile } = useWorkProfileActions({
+    demoMode, group, formProfile, setFormProfile, setPayProfileOpen, notify, post: postCalendar,
+  });
 
   const {
     saveOvertimeEntry,
@@ -1623,40 +1516,6 @@ export default function Home() {
 
 
 
-  function slideAllowancesMonth(delta: 1 | -1) {
-    if (
-      payMonthSlide ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      changePayMonth(delta);
-      return;
-    }
-    if (payMonthSlideTimer.current)
-      window.clearTimeout(payMonthSlideTimer.current);
-    setPayMonthSlide(delta > 0 ? "out-left" : "out-right");
-    payMonthSlideTimer.current = window.setTimeout(() => {
-      changePayMonth(delta);
-      setPayMonthSlide(delta > 0 ? "in-right" : "in-left");
-      payMonthSlideTimer.current = window.setTimeout(() => {
-        setPayMonthSlide("");
-        payMonthSlideTimer.current = null;
-      }, 190);
-    }, 150);
-  }
-  function startAllowancesSwipe(event: React.TouchEvent<HTMLElement>) {
-    const touch = event.changedTouches[0];
-    allowancesSwipeStart.current = { x: touch.clientX, y: touch.clientY };
-  }
-  function endAllowancesSwipe(event: React.TouchEvent<HTMLElement>) {
-    if (!allowancesSwipeStart.current) return;
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - allowancesSwipeStart.current.x;
-    const deltaY = touch.clientY - allowancesSwipeStart.current.y;
-    allowancesSwipeStart.current = null;
-    if (Math.abs(deltaX) < 55 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25)
-      return;
-    slideAllowancesMonth(deltaX < 0 ? 1 : -1);
-  }
   // Divers posé depuis une case : la durée validée l'enregistre aussitôt ;
   // fermer la fenêtre annule tout.
   const saveDirectDuration = useEffectEvent(() => {
@@ -1738,41 +1597,9 @@ export default function Home() {
       />
     );
   }
-  async function deleteAgnesNote(date: string) {
-      const partnerEntry = partnerEntries[date];
-      if (!partnerEntry?.noteText) return;
-      const groupedDates = partnerEntry.noteGroupId
-        ? Object.entries(partnerEntries)
-            .filter(([, entry]) => entry.noteGroupId === partnerEntry.noteGroupId && Boolean(entry.noteText))
-            .map(([key]) => key)
-        : [date];
-      const periodLabel = groupedDates.length > 1 ? " sur toute sa période" : "";
-      if (!window.confirm(
-        `Supprimer la note d’Agnès du ${noteDateLabel(date)}${periodLabel} ?`,
-      )) return;
-      try {
-        if (!demoMode) {
-          await postCalendar({
-            action: "delete-shared-partner-note",
-            date,
-            groupId: partnerEntry.noteGroupId || undefined,
-          });
-          await loadCalendar();
-        } else {
-          setPartnerEntries((current) => {
-            const next = { ...current };
-            for (const key of groupedDates) {
-              const entry = next[key];
-              if (!entry) continue;
-              next[key] = { ...entry, noteText: "", noteGroupId: "" };
-            }
-            return next;
-          });
-        }
-      } catch (error) {
-        notify(calendarErrorMessage(error, "La note d’Agnès n’a pas pu être supprimée."));
-      }
-  }
+  const { deleteAgnesNote } = usePartnerNoteActions({
+    demoMode, partnerEntries, setPartnerEntries, reloadCalendar: loadCalendar, notify, post: postCalendar,
+  });
 
   const payActions = usePayActions({
     demoMode,
@@ -1925,64 +1752,7 @@ export default function Home() {
   // vue Mois plutôt que d'agrandir sur place : c'est elle qui porte la barre
   // d'outils, donc « Poser un congé » et le reste restent accessibles.
 
-  function startSectionSwipe(event: TouchEvent<HTMLElement>) {
-    if (event.touches.length !== 1) return;
-    const target = event.target;
-    if (
-      target instanceof Element &&
-      target.closest(
-        "input, textarea, select, [role='dialog'], .modal-backdrop, .main-menu-backdrop, .main-menu-drawer, .choice-picker-menu, .month-card, .pay-dashboard-motion, .pay-dedicated-content, .pay-detail-sticky-header, .variable-pay-heading-actions",
-      )
-    ) {
-      sectionSwipeStartRef.current = null;
-      return;
-    }
-    const touch = event.touches[0];
-    sectionSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
-  }
-
-  function navigateFromShell(section: MainSection, record = true) {
-    if (section === homeSection) return;
-    if (record) history.pushState({ ...(history.state || {}), planningSection: section }, "", location.href);
-    setHomeSection(section);
-    if (section === "pay") setPayScreen("overview");
-    setMainMenuOpen(false);
-    setAccountMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: "auto" });
-  }
-
-  const navigateBackTo = useEffectEvent((section: MainSection) => navigateFromShell(section, false));
-  useEffect(() => {
-    if (!MAIN_SECTION_ORDER.includes(history.state?.planningSection))
-      history.replaceState({ ...(history.state || {}), planningSection: homeSection }, "", location.href);
-    const onPopState = (event: PopStateEvent) => {
-      if (mainMenuOpen) { setMainMenuOpen(false); return; }
-      if (accountMenuOpen) { setAccountMenuOpen(false); return; }
-      if (feedbackOpen) { setFeedbackOpen(false); return; }
-      const section = event.state?.planningSection;
-      if (MAIN_SECTION_ORDER.includes(section)) navigateBackTo(section);
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, [accountMenuOpen, feedbackOpen, homeSection, mainMenuOpen, setMainMenuOpen, setAccountMenuOpen, setFeedbackOpen]);
-
-  function finishSectionSwipe(event: TouchEvent<HTMLElement>) {
-    const start = sectionSwipeStartRef.current;
-    sectionSwipeStartRef.current = null;
-    if (!start || event.changedTouches.length !== 1) return;
-
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - start.x;
-    const deltaY = touch.clientY - start.y;
-    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.15) return;
-
-    const currentIndex = MAIN_SECTION_ORDER.indexOf(homeSection === "forms" ? "pdf" : homeSection);
-    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1;
-    const nextSection = MAIN_SECTION_ORDER[nextIndex];
-    if (!nextSection) return;
-
-    navigateFromShell(nextSection);
-  }
+  const { startSectionSwipe, finishSectionSwipe, navigateFromShell } = useSectionNavigation({ appShellUi, setPayScreen });
 
   const dayStoredPeriods = dayDate
     ? periods.filter((period) => dayDate >= period.from && dayDate <= period.to)

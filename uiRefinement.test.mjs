@@ -46,7 +46,10 @@ const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", i
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
 // Les calculs sortis d'App.tsx dans leurs hooks : lus avec lui, pour que les
 // contrôles qui portent sur un calcul suivent le code quand il est déplacé.
-const extractedHooks = ["usePayProfileValues", "useMonthPayEstimate", "useLeaveBalances", "useNoteLists"]
+const extractedHooks = [
+  "usePayProfileValues", "useMonthPayEstimate", "useLeaveBalances", "useNoteLists",
+  "usePayMonthNavigation", "useWorkProfileActions", "usePartnerNoteActions", "useSectionNavigation",
+]
   .map((name) => readFileSync(new URL(`./src/${name}.ts`, import.meta.url), "utf8"))
   .join("\n");
 const app = [appRoot, extractedHooks, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
