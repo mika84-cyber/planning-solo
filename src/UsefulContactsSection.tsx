@@ -44,10 +44,6 @@ function contactInitials(name: string) {
     .join("");
 }
 
-export function usefulContactId(contact: UsefulContact) {
-  return [contact.context || "contact", contact.name, contact.email || "", ...(contact.phones?.map((phone) => phone.number) ?? [])].join("|").toLocaleLowerCase("fr");
-}
-
 function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]; isAdmin: boolean; onEdit: (contact: UsefulContact) => void }) {
   return (
     <div className="useful-contact-list">

@@ -23,9 +23,19 @@ export const FeedbackResolutionAlert = lazy(() =>
 export const DocumentAnnouncementNotice = lazy(() =>
   import("./DocumentAnnouncementNotice").then(({ DocumentAnnouncementNotice: Component }) => ({ default: Component })),
 );
-export { LeaveBalancesSection } from "./LeaveBalancesSection";
-export { LeaveManagementPage } from "./LeaveManagementPage";
-export { PayAllowancesSection } from "./PayAllowancesSection";
+// La page Congés, ses soldes et les primes de la paie ne s'affichent qu'une
+// fois leur rubrique ouverte : ils se chargent hors du démarrage, dans le
+// morceau commun des écrans différés, préparé au repos.
+const deferredScreens = () => import("./deferredScreens");
+export const LeaveBalancesSection = lazy(() =>
+  deferredScreens().then(({ LeaveBalancesSection: Component }) => ({ default: Component })),
+);
+export const LeaveManagementPage = lazy(() =>
+  deferredScreens().then(({ LeaveManagementPage: Component }) => ({ default: Component })),
+);
+export const PayAllowancesSection = lazy(() =>
+  deferredScreens().then(({ PayAllowancesSection: Component }) => ({ default: Component })),
+);
 export const PayEstimateDetails = lazy(() =>
   import("./PayEstimateDetails").then(({ PayEstimateDetails: Component }) => ({ default: Component })),
 );
@@ -41,7 +51,9 @@ export const PayPage = lazy(() => {
 export const PayslipCheckSection = lazy(() =>
   payslipCheckModule().then(({ PayslipCheckSection: Component }) => ({ default: Component })),
 );
-export { PdfDownloadPage } from "./PdfDownloadPage";
+export const PdfDownloadPage = lazy(() =>
+  deferredScreens().then(({ PdfDownloadPage: Component }) => ({ default: Component })),
+);
 export const UsefulContactsSection = lazy(() =>
   import("./UsefulContactsSection").then(({ UsefulContactsSection: Component }) => ({ default: Component })),
 );

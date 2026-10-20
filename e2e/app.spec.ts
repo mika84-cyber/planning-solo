@@ -6096,6 +6096,9 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
   await goToSection(page, "pay");
   await page.getByRole("button", { name: /Primes et jours fériés/ }).click();
   const holidayCard = page.locator(".allowance-card").filter({ hasText: /Jours fériés 20\d\d/ });
+  // Les primes se chargent à part : la carte doit être là avant de regarder
+  // si les choix sont déjà ouverts.
+  await expect(holidayCard).toBeVisible();
   const options = holidayCard.locator(".holiday-pay-options").first();
   // Un férié encore à décider montre les trois choix ; sinon, un clic sur le
   // montant les ouvre directement.

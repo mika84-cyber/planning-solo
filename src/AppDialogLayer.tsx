@@ -1,6 +1,4 @@
-import type { ComponentProps } from "react";
-import { DataManagementDialog } from "./DataManagementDialog";
-import { ManualAdjustmentsDialog, RangeLeaveDialog } from "./LeaveDialogs";
+import { type ComponentProps, lazy, Suspense } from "react";
 import {
   AppUpdateDialog,
   DeletePeriodDialog,
@@ -10,13 +8,19 @@ import {
   TimeSelectionDialog,
   UndoToast,
 } from "./PlanningDialogs";
-import {
-  MecenatDialog,
-  OvertimeDialog,
-  RecoveryRangeDialog,
-  RecoveryUseDialog,
-  SolidarityHoursDialog,
-} from "./WorkTimeDialogs";
+/* Ces fenêtres ne s'affichent qu'à la demande : leur code se charge hors du
+   démarrage, dans le morceau commun des écrans différés (préparé au repos par
+   warmUpScreens), et chacune n'est montée que le temps où elle est ouverte —
+   fermée, elle ne rendait déjà rien. */
+const deferred = () => import("./deferredScreens");
+const ManualAdjustmentsDialog = lazy(() => deferred().then(({ ManualAdjustmentsDialog: Component }) => ({ default: Component })));
+const RangeLeaveDialog = lazy(() => deferred().then(({ RangeLeaveDialog: Component }) => ({ default: Component })));
+const MecenatDialog = lazy(() => deferred().then(({ MecenatDialog: Component }) => ({ default: Component })));
+const OvertimeDialog = lazy(() => deferred().then(({ OvertimeDialog: Component }) => ({ default: Component })));
+const SolidarityHoursDialog = lazy(() => deferred().then(({ SolidarityHoursDialog: Component }) => ({ default: Component })));
+const RecoveryRangeDialog = lazy(() => deferred().then(({ RecoveryRangeDialog: Component }) => ({ default: Component })));
+const RecoveryUseDialog = lazy(() => deferred().then(({ RecoveryUseDialog: Component }) => ({ default: Component })));
+const DataManagementDialog = lazy(() => deferred().then(({ DataManagementDialog: Component }) => ({ default: Component })));
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { usePlanningUiState } from "./usePlanningUiState";
 import type { useToast } from "./useToast";
@@ -165,8 +169,14 @@ export function AppDialogLayer({
 }: Props) {
   return (
     <>
-      <ManualAdjustmentsDialog {...manualAdjustments} />
+      {manualAdjustments.open ? (
+        <Suspense fallback={null}>
+          <ManualAdjustmentsDialog {...manualAdjustments} />
+        </Suspense>
+      ) : null}
 
+      {planning.rangeOpen ? (
+        <Suspense fallback={null}>
       <RangeLeaveDialog
         open={planning.rangeOpen}
         leaveType={planning.rangeLeaveType}
@@ -178,7 +188,11 @@ export function AppDialogLayer({
         onClose={() => planning.setRangeOpen(false)}
         onStartSelection={onStartRangeSelection}
       />
+        </Suspense>
+      ) : null}
 
+      {workTime.mecenatDialogOpen ? (
+        <Suspense fallback={null}>
       <MecenatDialog
         open={workTime.mecenatDialogOpen}
         draft={workTime.mecenatDraft}
@@ -189,7 +203,11 @@ export function AppDialogLayer({
         onClose={() => workTime.setMecenatDialogOpen(false)}
         onSave={onSaveMecenat}
       />
+        </Suspense>
+      ) : null}
 
+      {workTime.overtimeDialogOpen ? (
+        <Suspense fallback={null}>
       <OvertimeDialog
         open={workTime.overtimeDialogOpen}
         draft={workTime.overtimeDraft}
@@ -200,7 +218,11 @@ export function AppDialogLayer({
         onClose={() => workTime.setOvertimeDialogOpen(false)}
         onSave={onSaveOvertime}
       />
+        </Suspense>
+      ) : null}
 
+      {workTime.solidarityDialogOpen ? (
+        <Suspense fallback={null}>
       <SolidarityHoursDialog
         open={workTime.solidarityDialogOpen}
         draft={workTime.solidarityDraft}
@@ -209,7 +231,11 @@ export function AppDialogLayer({
         onClose={() => workTime.setSolidarityDialogOpen(false)}
         onSave={onSaveSolidarityHours}
       />
+        </Suspense>
+      ) : null}
 
+      {planning.recoveryRangeOpen ? (
+        <Suspense fallback={null}>
       <RecoveryRangeDialog
         open={planning.recoveryRangeOpen}
         kind={workTime.recoveryDraft.kind}
@@ -217,7 +243,11 @@ export function AppDialogLayer({
         onClose={onCloseRecoveryRange}
         onStartSelection={onStartRecoveryRangeSelection}
       />
+        </Suspense>
+      ) : null}
 
+      {workTime.recoveryDialogOpen ? (
+        <Suspense fallback={null}>
       <RecoveryUseDialog
         open={workTime.recoveryDialogOpen}
         draft={workTime.recoveryDraft}
@@ -231,6 +261,8 @@ export function AppDialogLayer({
         onSelectInCalendar={onSelectRecoveryInCalendar}
         onSave={onSaveRecoveryUse}
       />
+        </Suspense>
+      ) : null}
 
       <TimeSelectionDialog
         date={planning.timeDate}
@@ -271,6 +303,8 @@ export function AppDialogLayer({
         onUndo={toast.runUndo}
         onClose={toast.dismissUndo}
       />
+      {shell.dataManagementOpen ? (
+        <Suspense fallback={null}>
       <DataManagementDialog
         open={shell.dataManagementOpen}
         busy={shell.dataManagementBusy}
@@ -279,6 +313,8 @@ export function AppDialogLayer({
         onImport={onImportData}
         onDeleteAll={onDeleteAllData}
       />
+        </Suspense>
+      ) : null}
     </>
   );
 }

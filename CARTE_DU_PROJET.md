@@ -127,7 +127,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/WorkTimeHistory.tsx` : historiques des heures sup et des mécénats.
 - `src/appSections.ts` : point d’entrée des grandes pages ; les plus lourdes
   et les moins ouvertes (CET, programmation GP, paie, formulaires…) y sont
-  différées.
+  différées. `src/deferredScreens.ts` réunit en un seul morceau livré la page
+  Congés, les primes de la paie, les plannings PDF, les étapes d’une demande
+  et les fenêtres des heures, des congés et des données ; `src/warmUpScreens.ts`
+  prépare ces morceaux dès que l’application est au repos.
 - `src/use*UiState.ts` et `src/useCalendarDataState.ts` : états spécialisés de
   l’authentification, du planning, de la paie, des heures, de la coque et des
   données synchronisées ; `App.tsx` conserve leur orchestration commune.

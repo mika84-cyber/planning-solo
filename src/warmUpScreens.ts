@@ -12,6 +12,9 @@
 const SCREEN_MODULES: ReadonlyArray<() => Promise<unknown>> = [
   () => import("./DayDetailDialog"),
   () => import("./PlanningRequestPanels"),
+  // Page Congés, primes, plannings PDF, étapes d'une demande et fenêtres
+  // des heures, des congés et des données : un seul morceau.
+  () => import("./deferredScreens"),
   () => import("./SchoolVacationUi"),
   () => import("./BalanceDetailDialog"),
   () => import("./PayPage"),

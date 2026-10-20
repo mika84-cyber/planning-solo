@@ -90,9 +90,6 @@ export const HALF_BALANCE_OPTIONS: Array<{ value: HalfBalance; label: string }> 
   { value: "rtt", label: "RTT" },
   { value: "fraction", label: "Fractionnement" },
 ];
-export function isHalfBalance(value: unknown): value is HalfBalance {
-  return value === "annual" || isStoredHalfBalance(value);
-}
 /** Le solde proposé pour une nouvelle demi-journée : les congés annuels
  *  d'abord, les RTT quand il n'en reste plus, le fractionnement ensuite.
  *  `pending` compte ce que la demande en cours prend déjà sur chaque solde.
@@ -155,7 +152,6 @@ export const MONTHS = [
   "novembre",
   "décembre",
 ];
-export const SHORT_DAYS = ["L", "M", "M", "J", "V", "S", "D"];
 export const CYCLE_ANCHOR = Date.UTC(2026, 6, 31);
 export const CYCLE_ANCHOR_INDEX: Record<number, number> = { 1: 3, 2: 10, 3: 17 };
 export const CYCLE_TYPES: DayKind[] = [
@@ -512,29 +508,6 @@ export function wasPompidouHolidayWorked(date: Date, group: number) {
 }
 export function monthDays(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
-}
-
-/** Les tiers de l'année tels que le service les compte : quatre mois, puis
- *  cinq, puis trois. Ils ne sont donc pas de longueur égale, et un tiers ne
- *  vaut pas quatre mois glissants. */
-export const YEAR_THIRDS = [
-  { label: "1er tiers", firstMonth: 0, lastMonth: 3 },
-  { label: "2e tiers", firstMonth: 4, lastMonth: 8 },
-  { label: "3e tiers", firstMonth: 9, lastMonth: 11 },
-] as const;
-export type YearThird = (typeof YEAR_THIRDS)[number];
-
-export function yearThirdFor(month: number): YearThird {
-  return (
-    YEAR_THIRDS.find(
-      (third) => month >= third.firstMonth && month <= third.lastMonth,
-    ) ?? YEAR_THIRDS[0]
-  );
-}
-
-/** « janvier → avril » : situe le tiers sans avoir à en connaître le découpage. */
-export function yearThirdRange(third: YearThird) {
-  return `${MONTHS[third.firstMonth]} → ${MONTHS[third.lastMonth]}`;
 }
 
 /* ================= indemnités dominicale et de jour férié ================= */

@@ -3,7 +3,6 @@ import { carenceDatesFromLabels, isKnownEarningLabel, isPlausibleSundayRate, wit
 
 export const PAYSLIP_FILE_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
-export const PAYSLIP_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp";
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 // Environ 170 dpi pour une page A4 : suffisamment précis pour les petites

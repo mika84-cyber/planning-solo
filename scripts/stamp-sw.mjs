@@ -18,6 +18,20 @@ function collectFiles(dir) {
   return files;
 }
 
+/** Le service worker livré sans ses commentaires, son indentation ni ses
+ *  lignes vides. Le reste est le texte exact de public/sw.js, guillemets et
+ *  noms compris : les tests PWA, et quiconque inspecte le fichier publié,
+ *  retrouvent ses constantes telles quelles. Les explications restent dans
+ *  la source. */
+function compactServiceWorker(source) {
+  const lines = source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("//"));
+  return `${lines.join("\n")}\n`;
+}
+
 const files = collectFiles(distDir).sort();
 const hash = createHash("sha256");
 for (const file of files) {
@@ -50,7 +64,7 @@ const withPrecache = stamped.replace(/const PRECACHE = \[[^\]]*\];/, `const PREC
 if (withPrecache === stamped) {
   throw new Error("stamp-sw: PRECACHE constant not found in sw.js — check the pattern still matches public/sw.js");
 }
-writeFileSync(swPath, withPrecache);
+writeFileSync(swPath, compactServiceWorker(withPrecache));
 const precacheKb = Math.round(precache.reduce((sum, { size }) => sum + size, 0) / 1024);
 
 const formSwContent = readFileSync(formSwPath, "utf8");
@@ -63,7 +77,7 @@ if (stampedFormSw === formSwContent) {
     "stamp-sw: VERSION constant not found in dist/formulaire/sw.js",
   );
 }
-writeFileSync(formSwPath, stampedFormSw);
+writeFileSync(formSwPath, compactServiceWorker(stampedFormSw));
 console.log(
   `stamp-sw: CACHE = planning-solo-${digest}; formulaire = demandes-${digest}; ${precache.length} fichiers préchargés (${precacheKb} Ko)`,
 );

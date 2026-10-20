@@ -73,6 +73,11 @@ const WishConversionDialog = lazy(() =>
 const RequestChooserDialog = lazy(() =>
   planningRequestPanelsModule().then(({ RequestChooserDialog: Component }) => ({ default: Component })),
 );
+// Les étapes 2 et 3 d'une demande : dans le morceau des écrans différés,
+// préparé au repos, et montées seulement pendant une demande.
+const RequestSelectionPanel = lazy(() =>
+  import("./deferredScreens").then(({ RequestSelectionPanel: Component }) => ({ default: Component })),
+);
 const SchoolVacationMonthSummary = lazy(() =>
   import("./SchoolVacationUi").then(({ SchoolVacationMonthSummary: Component }) => ({ default: Component })),
 );
@@ -105,7 +110,6 @@ import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import { canChooseWorkPost } from "./workPost";
-import { RequestSelectionPanel } from "./RequestSelectionPanel";
 import {
   AppHeader,
   AdaptiveNavigation,
@@ -3184,6 +3188,8 @@ export default function Home() {
         </Suspense>
       ) : null}
 
+      {requestKind ? (
+        <Suspense fallback={null}>
       <RequestSelectionPanel
         requestKind={requestKind}
         sickRequest={sickRequest}
@@ -3209,6 +3215,8 @@ export default function Home() {
         onValidateAndOpenForm={() => void validateAndOpenForm()}
         onSaveToPlanning={() => void saveRequestToPlanning()}
       />
+        </Suspense>
+      ) : null}
 
       {recoveryDatePicking ? (
         <Suspense fallback={null}>

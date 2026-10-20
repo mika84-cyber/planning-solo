@@ -22,6 +22,13 @@ const budgets = {
   // cette hausse, seulement de l'interface. La prochaine évolution du
   // chargement initial devra se financer par un allègement, pas par un
   // troisième relèvement.
+  // Le 20 octobre 2026, sans toucher aux plafonds : la page Congés, les
+  // primes de la paie, les plannings PDF, les étapes d'une demande et les
+  // fenêtres des heures et des congés quittent le chargement initial pour un
+  // morceau commun préparé au repos (src/deferredScreens.ts), et le service
+  // worker est livré sans ses commentaires. Chargement initial 177,9 → 163,1
+  // Kio compressés ; le total, lui, ne bouge presque pas (786,8 / 787) : un
+  // morceau à part se compresse moins bien que le même code dans l'entrée.
   entryJavaScript: { raw: 625 * KIB, gzip: 181 * KIB },
   // Inclut aussi le moteur PDF autonome du formulaire, volontairement différé.
   largestSecondaryJavaScript: { raw: 900 * KIB, gzip: 330 * KIB },

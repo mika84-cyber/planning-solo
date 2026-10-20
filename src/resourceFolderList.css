@@ -19,9 +19,6 @@
 @media (min-width: 721px) {
   .useful-contacts-root > .resource-folder-stack { grid-area: directories; align-content: start; }
 }
-/* L'accident de travail garde son pictogramme, contenu dans le carré. */
-.app-shell .resource-folder-row .resource-folder-row-icon.work-accident-symbol { overflow: hidden; padding: 4px; }
-.app-shell .resource-folder-row .resource-folder-row-icon.work-accident-symbol img { position: static; width: 100%; height: 100%; max-width: none; margin: 0; object-fit: contain; transform: none; }
 
 /* Déclarer un accident de travail : un encadré à part, sous les dossiers. */
 .resource-accident { margin-top: 16px; }

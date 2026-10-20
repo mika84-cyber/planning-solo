@@ -1,6 +1,4 @@
 /* Accident de travail : parcours autonome depuis Formulaires utiles. */
-.work-accident-symbol { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid #bcb0a0; border-radius: var(--radius-control); color: var(--muted); background: var(--surface); }
-.work-accident-symbol img { display: block; width: 44px; height: 44px; object-fit: contain; }
 .useful-form-content-stack { display: grid; grid-area: folders; gap: 18px; width: 100%; }
 
 .work-accident-screen {
