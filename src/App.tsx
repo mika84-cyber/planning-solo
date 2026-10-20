@@ -20,7 +20,7 @@ import { usePayActions } from "./usePayActions";
 import { usePayslipVerifications } from "./usePayslipVerifications";
 import { usePayProfileValues } from "./usePayProfileValues";
 import { useMonthPayEstimate } from "./useMonthPayEstimate";
-import { remainingLeaveForYear, useLeaveBalances } from "./useLeaveBalances";
+import { useLeaveBalances } from "./useLeaveBalances";
 import { useNoteLists } from "./useNoteLists";
 import { usePayMonthNavigation } from "./usePayMonthNavigation";
 import { useWorkProfileActions } from "./useWorkProfileActions";
@@ -37,22 +37,6 @@ import { DemoExpiredScreen } from "./DemoExpiredScreen";
 import { scrollWhenReady } from "./scrollWhenReady";
 
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
-const DayDetailDialog = lazy(() => import("./DayDetailDialog").then((module) => ({ default: module.DayDetailDialog })));
-// « Faire un échange » ne sert qu'à la demande : chargée à l'ouverture.
-const WorkExchangeDialog = lazy(() => import("./WorkExchangeDialog").then((module) => ({ default: module.WorkExchangeDialog })));
-const BalanceDetailDialog = lazy(() =>
-  import("./BalanceDetailDialog").then(({ BalanceDetailDialog: Component }) => ({ default: Component })),
-);
-const planningRequestPanelsModule = () => import("./PlanningRequestPanels");
-const GroupChooserDialog = lazy(() =>
-  planningRequestPanelsModule().then(({ GroupChooserDialog: Component }) => ({ default: Component })),
-);
-const WishConversionDialog = lazy(() =>
-  planningRequestPanelsModule().then(({ WishConversionDialog: Component }) => ({ default: Component })),
-);
-const RequestChooserDialog = lazy(() =>
-  planningRequestPanelsModule().then(({ RequestChooserDialog: Component }) => ({ default: Component })),
-);
 // La rubrique Ma paie construit son contenu à part : son morceau n'est
 // chargé qu'à son ouverture.
 const PaySectionScreen = lazy(() =>
@@ -78,11 +62,11 @@ import {
   EMPTY_MANUAL_ADJUSTMENTS,
   computePayAllowances,
 } from "./payAllowances";
-import { cetBalance } from "./cet";
 import { HomeSectionScreen } from "./HomeSectionScreen";
 import { LeaveSectionScreen } from "./LeaveSectionScreen";
 import { DocumentsSectionScreen } from "./DocumentsSectionScreen";
 import { PlanningWorkspace } from "./PlanningWorkspace";
+import { PlanningDialogLayer } from "./PlanningDialogLayer";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import {
   AppHeader,
@@ -121,7 +105,6 @@ import {
 import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
 import { useRequestArchive } from "./useRequestArchive";
-import { strikeEstimateForCalendarMonth } from "./strike";
 import {
   DEFAULT_WORK_SCHEDULE,
   usableWorkSchedule,
@@ -223,7 +206,7 @@ export default function Home() {
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople,
-    requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, directDurationSave, setDirectDurationSave, timeDate,
+    setRequestChooser, requestChooserDate, setRequestChooserDate, directDurationSave, setDirectDurationSave, timeDate,
     requestKind, setRequestKind, setSickRequest,
     selections, setSelections, setTimeDate,
     setWarningDate,
@@ -268,10 +251,9 @@ export default function Home() {
   } = payUi;
   const appShellUi = useAppShellUiState();
   const {
-    quickNoteMode,
     homeSection, setHomeSection,
     approvedGrandPalaisUpdates,
-    mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
+    mainMenuOpen, setMainMenuOpen,
     feedbackOpen, setFeedbackOpen,
     noteQuery,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate,
@@ -504,10 +486,7 @@ export default function Home() {
     formProfile,
     userEmail,
   });
-  const {
-    openNew: openWorkExchange,
-    openEdit: editWorkExchange,
-  } = workExchangeUi;
+  const { openNew: openWorkExchange } = workExchangeUi;
 
 
   const payProfileValues = usePayProfileValues({ formProfile, payProfiles, payView, payslipRateSamples });
@@ -515,7 +494,6 @@ export default function Home() {
     isContractuel, workQuota, workDayMinutes,
     baseSalary, ifse, otherFixed, cia, ciaMonth,
     sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
-    deductionPayMonths,
   } = payProfileValues;
   const workedDaysOverview = useWorkedDaysOverview({
     view, now, group, periods, entries, recoveryUses, formProfile, mecenatEntries, overtimeEntries,
@@ -546,7 +524,6 @@ export default function Home() {
     totalLeaveRemaining,
     leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
     cetPlannedLeaveDays,
-    balanceDetail, recentBalanceDetailDates, balanceDetailPeriods,
   } = leaveBalances;
 
   const { agnesLeaveDates, upcoming, hasAnyNote, noteSearchResults } = useNoteLists({
@@ -908,10 +885,7 @@ export default function Home() {
 
   const { startSectionSwipe, finishSectionSwipe, navigateFromShell } = useSectionNavigation({ appShellUi, setPayScreen });
 
-  const {
-    dayHolidayChoiceVisible, dayStoredPeriods, dayRecoveryUses, dayOvertime,
-    dayExceptionalClosure, dayExchange, dayWorkPostVisible,
-  } = useDayDetailData({ dayDate, dayPersonalLeave, group, periods, entries, recoveryUses, overtimeEntries, exceptionalClosureFor });
+  const dayDetailData = useDayDetailData({ dayDate, dayPersonalLeave, group, periods, entries, recoveryUses, overtimeEntries, exceptionalClosureFor });
 
   if (publicDemoAccess.expired) return <DemoExpiredScreen />;
 
@@ -1180,173 +1154,27 @@ export default function Home() {
           cancelRecoveryRangeSelection, saveRecoveryRangeDates, saveNoteAcrossDates, saveSeparateLeaveDates,
         }}
       />
-      {workExchangeUi.open ? (
-        <Suspense fallback={null}>
-          <WorkExchangeDialog
-            open
-            demoMode={demoMode}
-            group={group}
-            draft={workExchangeUi.draft}
-            setDraft={workExchangeUi.setDraft}
-            error={workExchangeUi.error}
-            saving={workExchangeUi.saving}
-            onClose={workExchangeUi.close}
-            onSave={(fillForm) => void workExchangeUi.save(fillForm)}
-            onDelete={() => void workExchangeUi.remove()}
-          />
-        </Suspense>
-      ) : null}
-      {requestChooser ? (
-        <Suspense fallback={null}>
-        <RequestChooserDialog
-          open={requestChooser}
-          requestChooserDate={requestChooserDate}
-          balances={(() => {
-            // Soldes de l'année de la case touchée, ou de l'année en cours.
-            const year = Number((requestChooserDate || dateKey(now)).slice(0, 4));
-            return {
-              year,
-              otherYear: year !== now.getFullYear(),
-              leave: remainingLeaveForYear(year, now, periods, group, formProfile?.manualAdjustments),
-              recoveryMinutes: recoveryBalance.remaining,
-              cetDays: formProfile?.cetAccount?.enabled
-                ? Math.max(0, cetBalance(formProfile.cetAccount) - cetPlannedLeaveDays)
-                : null,
-            };
-          })()}
-          // « Transformer mes souhaits » ne s'offre que depuis une case souhaitée.
-          pendingWishCount={requestChooserDate && wishDates.has(requestChooserDate) ? pendingWishDates.length : 0}
-          onClose={() => setRequestChooser(false)}
-          onChoose={beginChosenRequest}
-          onChooseWish={() => {
-            const initialDate = requestChooserDate || undefined;
-            setRequestChooserDate(null);
-            beginWishSelection(initialDate);
-          }}
-          onConvertWishes={() => {
-            setRequestChooser(false);
-            setRequestChooserDate(null);
-            setWishConversionDates(pendingWishDates);
-          }}
-        />
-        </Suspense>
-      ) : null}
-
-      {wishConversionDates?.length ? (
-        <Suspense fallback={null}>
-        <WishConversionDialog
-          dates={wishConversionDates}
-          moments={Object.fromEntries(wishConversionDates.map((date) => [date, entries[date]?.wishMoment]))}
-          onClose={() => setWishConversionDates(null)}
-          onContinue={(types, cancelled) => {
-            setWishConversionDates(null);
-            if (Object.keys(types).length)
-              beginWishConversion(
-                Object.keys(types).sort(),
-                types,
-                Object.fromEntries(Object.keys(types).map((date) => [date, entries[date]?.wishMoment])),
-              );
-            // Les souhaits annulés sont retirés un à un du planning.
-            void (async () => {
-              for (const date of cancelled) await saveWishDateDirect(date, false);
-            })();
-          }}
-        />
-        </Suspense>
-      ) : null}
-
-      {groupChooserOpen ? (
-        <Suspense fallback={null}>
-        <GroupChooserDialog
-          open={groupChooserOpen}
-          group={group}
-          onClose={() => setGroupChooserOpen(false)}
-          onChange={(value) => {
-            changeGroup(value);
-            setGroupChooserOpen(false);
-          }}
-        />
-        </Suspense>
-      ) : null}
-
-      {/* La fiche du jour se charge à la première ouverture ; elle est
-          préchargée dès que l’application est prête. */}
-      {dayDate ? (
-        <Suspense fallback={null}>
-          <DayDetailDialog
-            planning={planningUi}
-            quickNoteMode={quickNoteMode}
-            entries={entries}
-            partnerEntries={partnerEntries}
-            dayExchange={dayExchange}
-            exchangeGroup={group}
-            dayStoredPeriods={dayStoredPeriods}
-            dayRecoveryUses={dayRecoveryUses}
-            dayOvertime={dayOvertime}
-            dayExceptionalClosure={Boolean(dayExceptionalClosure)}
-            dayHolidayChoiceVisible={dayHolidayChoiceVisible}
-            dayWorkPostVisible={dayWorkPostVisible}
-            baseSalary={baseSalary}
-            approvedGrandPalaisUpdates={approvedGrandPalaisUpdates}
-            noteEditorOpen={noteEditorOpen}
-            setNoteEditorOpen={setNoteEditorOpen}
-            noteFieldRef={noteFieldRef}
-            ownNoteAuthorLabel={ownNoteAuthorLabel}
-            editWorkExchange={editWorkExchange}
-            openRequestChooser={openRequestChooser}
-            saveWishDateDirect={saveWishDateDirect}
-            convertWishDate={(date) => {
-              setDayDate(null);
-              setWishConversionDates([date]);
-            }}
-            pendingWishCount={pendingWishDates.length}
-            convertAllWishes={() => {
-              setDayDate(null);
-              setWishConversionDates(pendingWishDates);
-            }}
-            saveDay={saveDay}
-            saveWorkPost={saveWorkPost}
-            beginMultipleDateSelectionFromDay={beginMultipleDateSelectionFromDay}
-            beginNoteDateSelection={beginNoteDateSelection}
-            editDayLeavePeriod={editDayLeavePeriod}
-            deleteRecoveryUse={deleteRecoveryUse}
-            deleteOvertimeEntry={deleteOvertimeEntry}
-            deleteAgnesNote={deleteAgnesNote}
-            appendNoteLine={appendNoteLine}
-          />
-        </Suspense>
-      ) : null}
-
-      {balanceDetail ? (
-        <Suspense fallback={null}>
-        <BalanceDetailDialog
-          balanceDetail={balanceDetail}
-          balanceDetailType={balanceDetailType}
-          balanceDetailPeriods={balanceDetailPeriods}
-          recentBalanceDetailDates={recentBalanceDetailDates}
-          absenceYear={absenceYear}
-          now={now}
-          onClose={() => setBalanceDetailType(null)}
-          onOpenDate={(date) => {
-            setBalanceDetailType(null);
-            setView(localDate(date.getFullYear(), date.getMonth(), 1));
-                    openDay(date);
-          }}
-          onOpenManualAdjustments={openManualAdjustments}
-          strikeEstimateFor={(year, monthIndex) =>
-            strikeEstimateForCalendarMonth(
-              periods,
-              group,
-              payProfiles,
-              year,
-              monthIndex,
-              { entries, recoveryUses },
-              deductionPayMonths,
-            )
-          }
-        />
-        </Suspense>
-      ) : null}
+      <PlanningDialogLayer
+        now={now}
+        group={group}
+        demoMode={demoMode}
+        absenceYear={absenceYear}
+        ownNoteAuthorLabel={ownNoteAuthorLabel}
+        setView={setView}
+        calendar={calendarData}
+        planning={planningUi}
+        shell={appShellUi}
+        exchange={workExchangeUi}
+        balances={{ ...leaveBalances, recoveryBalance, balanceDetailType, setBalanceDetailType }}
+        wishes={{ wishDates, pendingWishDates, wishConversionDates, setWishConversionDates }}
+        day={{ ...dayDetailData, noteEditorOpen, setNoteEditorOpen, noteFieldRef, appendNoteLine }}
+        pay={payProfileValues}
+        actions={{
+          openDay, beginWishSelection, beginWishConversion, beginMultipleDateSelectionFromDay, beginNoteDateSelection,
+          saveWishDateDirect, saveDay, saveWorkPost, editDayLeavePeriod, deleteRecoveryUse, deleteOvertimeEntry,
+          deleteAgnesNote, openManualAdjustments, changeGroup, openRequestChooser, beginChosenRequest,
+        }}
+      />
 
       <AppDialogLayer
         manualAdjustments={{

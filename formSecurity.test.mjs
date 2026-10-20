@@ -18,6 +18,7 @@ describe("formulaire de demande", () => {
     "src/PaySectionScreen.tsx",
     "src/DocumentsSectionScreen.tsx",
     "src/PlanningWorkspace.tsx",
+    "src/PlanningDialogLayer.tsx",
     "src/useApplicationStartup.ts",
     "src/AppNavigation.tsx",
     "src/PlanningRequestPanels.tsx",

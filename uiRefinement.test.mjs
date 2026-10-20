@@ -50,6 +50,7 @@ const leaveSectionScreen = readFileSync(new URL("./src/LeaveSectionScreen.tsx", 
 const paySectionScreen = readFileSync(new URL("./src/PaySectionScreen.tsx", import.meta.url), "utf8");
 const documentsSectionScreen = readFileSync(new URL("./src/DocumentsSectionScreen.tsx", import.meta.url), "utf8");
 const planningWorkspace = readFileSync(new URL("./src/PlanningWorkspace.tsx", import.meta.url), "utf8");
+const planningDialogLayer = readFileSync(new URL("./src/PlanningDialogLayer.tsx", import.meta.url), "utf8");
 // Les calculs sortis d'App.tsx dans leurs hooks : lus avec lui, pour que les
 // contrôles qui portent sur un calcul suivent le code quand il est déplacé.
 const extractedHooks = [
@@ -60,7 +61,7 @@ const extractedHooks = [
 ]
   .map((name) => readFileSync(new URL(`./src/${name}.ts`, import.meta.url), "utf8"))
   .join("\n");
-const app = [appRoot, extractedHooks, homeSectionScreen, leaveSectionScreen, paySectionScreen, documentsSectionScreen, planningWorkspace, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const app = [appRoot, extractedHooks, homeSectionScreen, leaveSectionScreen, paySectionScreen, documentsSectionScreen, planningWorkspace, planningDialogLayer, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 // Les feuilles lues en règles et déclarations (test-lib/cssRules.mjs) : un
 // contrôle porte sur un sélecteur ou une déclaration, jamais sur le texte des
