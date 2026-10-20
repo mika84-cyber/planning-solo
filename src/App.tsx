@@ -30,6 +30,10 @@ import { useApplicationStartup } from "./useApplicationStartup";
 import { useShellEffects } from "./useShellEffects";
 import { useSharedDataPrefetch } from "./useSharedDataPrefetch";
 import { useRequestTypeSelection } from "./useRequestTypeSelection";
+import { useWorkedDaysOverview } from "./useWorkedDaysOverview";
+import { useMecenatDraftCheck } from "./useMecenatDraftCheck";
+import { useDayDetailData } from "./useDayDetailData";
+import { DemoExpiredScreen } from "./DemoExpiredScreen";
 
 const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
@@ -92,10 +96,8 @@ import {
   computePayAllowances,
 } from "./payAllowances";
 import { cetBalance } from "./cet";
-import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
-import { canChooseWorkPost } from "./workPost";
 import {
   AppHeader,
   AdaptiveNavigation,
@@ -136,10 +138,7 @@ import { InstallAppNotice } from "./InstallAppNotice";
 import {
   emptyEntry,
   fullDayRecoveryMinutes,
-  personalPresenceForDate,
   presenceShownToColleagues,
-  workedDayCount,
-  workedDayCountBetween,
   type BalanceType,
   type ManualYearAdjustments,
   type RequestKind,
@@ -153,19 +152,16 @@ import { useConnectionStatus } from "./useConnectionStatus";
 import { useModalAccessibility } from "./useModalAccessibility";
 import { useRequestArchive } from "./useRequestArchive";
 import { strikeEstimateForCalendarMonth } from "./strike";
-import { calculateMecenatVacation } from "./mecenat";
 import {
   DEFAULT_WORK_SCHEDULE,
   usableWorkSchedule,
   defaultRecoveryMinutes,
-  dailyMinutesForQuota,
   trainingRecoveryMinutes,
 } from "./overtime";
 import { useToast } from "./useToast";
 import {
   dateKey,
   fromKey,
-  getDayInfo,
   localDate,
   sameDate,
   schoolVacationsForZone,
@@ -173,7 +169,6 @@ import {
   type SelectionType,
   type SchoolVacation,
 } from "./planningLogic";
-import { mecenatRuleViolations } from "./mecenatRules";
 
 /** Amène à l'endroit exact où l'information se saisit. L'écran visé se
  *  charge à la demande : viser l'ancre tout de suite la manquerait, on
@@ -571,56 +566,6 @@ export default function Home() {
   } = workExchangeUi;
 
 
-  // Les jours réellement travaillés du mois affiché : c'est le compte de la
-  // case du calendrier.
-  const monthWorkedDays = useMemo(
-    () =>
-      workedDayCount(
-        view.getFullYear(),
-        view.getMonth(),
-        view.getMonth(),
-        group,
-        periods,
-        entries,
-        recoveryUses,
-        dailyMinutesForQuota(formProfile?.workQuota || "full"),
-        (key) => Boolean(exceptionalClosureFor(key)),
-        (key) => entries[key]?.exchangeRole || "",
-      ),
-    [view, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
-  );
-  // Les jours réellement travaillés d'ici au 31 décembre : congés, fermetures
-  // et échanges déduits. Le volet de la case les annonce.
-  const remainingWorkedDays = useMemo(
-    () =>
-      workedDayCountBetween(
-        now,
-        localDate(now.getFullYear(), 11, 31),
-        group,
-        periods,
-        entries,
-        recoveryUses,
-        dailyMinutesForQuota(formProfile?.workQuota || "full"),
-        (key) => Boolean(exceptionalClosureFor(key)),
-        (key) => entries[key]?.exchangeRole || "",
-      ),
-    [now, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
-  );
-  // Le prochain mécénat ou les prochaines heures sup déclarées, à partir
-  // d'aujourd'hui : ce qui vient s'ajouter au planning habituel.
-  const nextExtraWork = useMemo(() => {
-    const todayKey = dateKey(now);
-    const upcoming = [
-      ...mecenatEntries.map((entry) => ({ kind: "mecenat" as const, date: entry.date, start: entry.start, end: entry.end })),
-      ...overtimeEntries
-        .filter((entry) => entry.inputMode === "range" && entry.start && entry.end)
-        .map((entry) => ({ kind: "overtime" as const, date: entry.date, start: entry.start ?? "", end: entry.end ?? "" })),
-    ]
-      .filter((item) => item.date >= todayKey)
-      .sort((left, right) => `${left.date}-${left.start}`.localeCompare(`${right.date}-${right.start}`));
-    return upcoming[0] ?? null;
-  }, [now, mecenatEntries, overtimeEntries]);
-
   const payProfileValues = usePayProfileValues({ formProfile, payProfiles, payView, payslipRateSamples });
   const {
     isContractuel, confirmedContractuel, workQuota, workDayMinutes, payYear, hasPayValue,
@@ -630,38 +575,13 @@ export default function Home() {
     sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
     deductionPayMonths,
   } = payProfileValues;
-  const mecenatDraftCalculation = useMemo(
-    () =>
-      calculateMecenatVacation(
-        mecenatDraft.start,
-        mecenatDraft.end,
-        workQuota,
-        mecenatDraft.date,
-      ),
-    [mecenatDraft.start, mecenatDraft.end, mecenatDraft.date, workQuota],
-  );
-  // Amplitude de 12 h, repos de 11 h et lundis : ce que ce mécénat ne respecte pas,
-  // signalé dans la fenêtre sans empêcher l'inscription.
-  // Aucun avertissement tant que la date et la plage horaire ne sont pas saisies.
-  const mecenatDraftComplete = Boolean(mecenatDraft.date && mecenatDraft.start && mecenatDraft.end);
-  const mecenatWarnings = !mecenatDraftComplete ? [] : mecenatRuleViolations(mecenatDraft, {
-    presenceFor: (key) => personalPresenceForDate(fromKey(key), group, periods, entries, recoveryUses, workDayMinutes, (closed) => Boolean(exceptionalClosureFor(closed))),
-    schedule: usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
-    mecenats: mecenatEntries,
+  const { monthWorkedDays, remainingWorkedDays, nextExtraWork, todayOverview } = useWorkedDaysOverview({
+    view, now, group, periods, entries, recoveryUses, formProfile, mecenatEntries, overtimeEntries,
+    selections, workDayMinutes, exceptionalClosureFor,
   });
-
-  /* Le choix ne s'affiche que sur un férié effectivement travaillé : ni posé
-     en congé, ni tombé sur un repos ou une formation — `getDayInfo` a déjà
-     écarté ces deux cas en renvoyant « off ». */
-  const dayHolidayChoiceVisible = useMemo(() => {
-    if (!dayDate) return false;
-    const info = getDayInfo(fromKey(dayDate), group);
-    if (!info.holiday || info.kind !== "work") return false;
-    if (dayPersonalLeave) return false;
-    return !periods.some(
-      (period) => dayDate >= period.from && dayDate <= period.to,
-    );
-  }, [dayDate, group, dayPersonalLeave, periods]);
+  const { mecenatDraftCalculation, mecenatWarnings } = useMecenatDraftCheck({
+    mecenatDraft, workQuota, workDayMinutes, group, periods, entries, recoveryUses, mecenatEntries, formProfile, exceptionalClosureFor,
+  });
 
   const {
     sickLeaves, allowances, holidayRecoveryEarnings, unresolvedHolidayRecoveryCount,
@@ -695,22 +615,6 @@ export default function Home() {
   const ownNoteAuthorLabel = partnerSharingStatus !== "disabled" || demoMode
     ? "Mika"
     : formProfile?.fullName.trim().split(/\s+/)[0] || "Moi";
-
-  const todayOverview = useMemo(
-    () =>
-      computeTodayOverview({
-        today: now,
-        group,
-        periods,
-        entries,
-        recoveryUses,
-        selections,
-        workDayMinutes,
-        isExceptionallyClosed: (key) => Boolean(exceptionalClosureFor(key)),
-        workSchedule: usableWorkSchedule(formProfile?.workSchedule),
-      }),
-    [now, group, periods, entries, recoveryUses, selections, workDayMinutes, exceptionalClosureFor, formProfile?.workSchedule],
-  );
 
   /* Ce qui manque encore à l'estimation de paie. Ces trois manques étaient
      annoncés à des endroits différents — une alerte pour les dimanches et
@@ -1134,45 +1038,12 @@ export default function Home() {
 
   const { startSectionSwipe, finishSectionSwipe, navigateFromShell } = useSectionNavigation({ appShellUi, setPayScreen });
 
-  const dayStoredPeriods = dayDate
-    ? periods.filter((period) => dayDate >= period.from && dayDate <= period.to)
-    : [];
-  const dayRecoveryUses = dayDate
-    ? recoveryUses.filter((entry) => entry.date === dayDate)
-    : [];
-  const dayOvertime = overtimeEntries.filter(
-    (entry) => entry.date === dayDate && entry.disposition === "recovery",
-  );
-  const dayExceptionalClosure = dayDate
-    ? exceptionalClosureFor(dayDate)
-    : undefined;
-  const dayExchange = dayDate ? workExchangeForDate(entries, dayDate) : null;
-  // Salles, accueil ou billetterie : seulement sur un jour travaillé.
-  const dayWorkPostVisible = dayDate
-    ? canChooseWorkPost({ date: dayDate, group, entries, periods, recoveryUses, closed: Boolean(dayExceptionalClosure) })
-    : false;
+  const {
+    dayHolidayChoiceVisible, dayStoredPeriods, dayRecoveryUses, dayOvertime,
+    dayExceptionalClosure, dayExchange, dayWorkPostVisible,
+  } = useDayDetailData({ dayDate, dayPersonalLeave, group, periods, entries, recoveryUses, overtimeEntries, exceptionalClosureFor });
 
-  if (publicDemoAccess.expired) {
-    return (
-      <main className="auth-shell">
-        <img
-          src="/grand-palais-verriere-fast.webp"
-          alt=""
-          className="auth-shell-image"
-          decoding="async"
-          fetchPriority="high"
-        />
-        <section className="auth-card">
-          <div className="auth-mark" aria-hidden="true"><span>31</span></div>
-          <p className="eyebrow">Planning Solo</p>
-          <h1>Essai terminé</h1>
-          <p className="auth-intro">
-            Ce lien de démonstration a expiré le 15 septembre 2026.
-          </p>
-        </section>
-      </main>
-    );
-  }
+  if (publicDemoAccess.expired) return <DemoExpiredScreen />;
 
   if (authStatus !== "ready") {
     return (

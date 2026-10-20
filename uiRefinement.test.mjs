@@ -51,6 +51,7 @@ const extractedHooks = [
   "usePayProfileValues", "useMonthPayEstimate", "useLeaveBalances", "useNoteLists",
   "usePayMonthNavigation", "useWorkProfileActions", "usePartnerNoteActions", "useSectionNavigation",
   "useApplicationStartup", "useShellEffects", "useSharedDataPrefetch", "useRequestTypeSelection",
+  "useWorkedDaysOverview", "useMecenatDraftCheck", "useDayDetailData",
 ]
   .map((name) => readFileSync(new URL(`./src/${name}.ts`, import.meta.url), "utf8"))
   .join("\n");
