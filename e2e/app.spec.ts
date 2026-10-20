@@ -3260,6 +3260,11 @@ test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa 
   await expect(adoptAi.getByRole("link", { name: "Voir les tarifs sur adoptai.artefact.com" }))
     .toHaveAttribute("href", "https://adoptai.artefact.com/content/inscription");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  // Les galeries d'exposition ne montrent que les tarifs payants.
+  await page.getByRole("tab", { name: /Galeries 3 et 4/ }).click();
+  const cezanne = page.locator(".grand-palais-venue-panel article").filter({ hasText: "Cezanne et nous" }).first();
+  await expect(cezanne.locator(".expo-price")).toContainText("Billet Liberté");
+  await expect(cezanne.locator(".expo-price")).not.toContainText("Gratuit");
 });
 
 test("l’audioguide Cézanne s’ouvre depuis la fiche de l’exposition, avec son code et son QR code", async ({ page }) => {

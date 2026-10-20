@@ -41,15 +41,17 @@ export type GrandPalaisProgramEntry = {
 
 /** Relevé sur la fiche officielle : plein, réduit, Billet Liberté (sans
  *  réservation jusqu'au 3 janvier 2027), puis à qui l'entrée est gratuite. */
-/** Même mention sur les fiches de Cezanne, de Girls et de Mika Ninagawa. */
-const UNDER_18_FREE: GrandPalaisPrice = { label: "Moins de 18 ans, demandeurs d’emploi, visiteurs en situation de handicap…", amount: 0 };
-
+/** Les galeries 3 et 4, 8 et 7 n'affichent que les tarifs payants : la
+ *  gratuité (moins de 18 ans, demandeurs d'emploi…) n'y est pas reprise, et
+ *  la carte la tait aussi si la veille la relit (PAID_ONLY_VENUES). */
 const CEZANNE_PRICES: GrandPalaisPrice[] = [
   { label: "Plein", amount: 19 },
   { label: "Réduit", amount: 16 },
   { label: "Billet Liberté", amount: 24 },
-  UNDER_18_FREE,
 ];
+
+/** Mention de la fiche de Mika Ninagawa (galeries 9 et 10). */
+const UNDER_18_FREE: GrandPalaisPrice = { label: "Moins de 18 ans, demandeurs d’emploi, visiteurs en situation de handicap…", amount: 0 };
 
 const EXTRA_CHILD = "Enfant supplémentaire de moins de 12 ans (avec un billet famille)";
 
@@ -221,7 +223,6 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           prices: [
             { label: "Plein", amount: 15 },
             { label: "Réduit", amount: 12 },
-            UNDER_18_FREE,
           ],
           startsOn: "2026-12-09",
           endsOn: "2027-03-21",

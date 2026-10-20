@@ -233,6 +233,10 @@ export function applyGrandPalaisSitePrices(
 }
 
 const PRIMARY_VENUES = ["galleries34", "gallery8", "gallery7", "childrenPalace"] as const;
+/** Les galeries d'exposition ne montrent que les tarifs payants : la gratuité
+ *  (moins de 18 ans, demandeurs d'emploi…) y est tue, même relue par la veille.
+ *  Ailleurs — Nef, galeries 9 et 10, Palais des enfants — elle se lit. */
+export const PAID_ONLY_VENUES = new Set(["galleries34", "gallery8", "gallery7"]);
 const OTHER_VENUES = ["nef", "gallery910"] as const;
 const INTEREXPO_VENUES = ["galleries34", "gallery8", "gallery7"] as const;
 
@@ -600,7 +604,8 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
   const countdown = status.label === "Prochainement" ? status.detail.replace(/^Commence /, "") : "";
   const upcomingCountdown = countdown ? countdown.charAt(0).toUpperCase() + countdown.slice(1) : "";
   // Un tarif qui ne valait que pour un jour passé n'a plus à être montré.
-  const visiblePrices = (entry.prices ?? []).filter((price) => !price.until || price.until >= today);
+  const visiblePrices = (entry.prices ?? []).filter((price) =>
+    (!price.until || price.until >= today) && !(price.amount === 0 && PAID_ONLY_VENUES.has(venueKey)));
   const priceGroups = groupGrandPalaisPrices(visiblePrices);
   const officialUrl = safeGrandPalaisUrl(entry.officialUrl);
   // Le site tiers qui porte la billetterie — et les tarifs eux-mêmes quand

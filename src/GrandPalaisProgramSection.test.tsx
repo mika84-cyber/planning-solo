@@ -478,6 +478,25 @@ describe("programmation du Grand Palais", () => {
     expect(nef(later, 2027)).toHaveLength(2);
   });
 
+  it("tait la gratuité dans les galeries 3 et 4, 8 et 7, et la dit ailleurs", () => {
+    const free = { label: "Moins de 18 ans, demandeurs d’emploi…", amount: 0 };
+    const paid = [{ label: "Plein", amount: 19 }, free];
+    const card = (venueKey: string) => renderToStaticMarkup(
+      <ExpoCard entry={{ title: "Expo", period: "2027", prices: paid }} venueKey={venueKey} today="2027-01-01" openingReady linkLabel="Voir" />,
+    );
+    for (const venueKey of ["galleries34", "gallery8", "gallery7"]) {
+      expect(card(venueKey)).toContain("<dt>Plein</dt><dd>19 €</dd>");
+      expect(card(venueKey)).not.toContain("Gratuit");
+    }
+    for (const venueKey of ["nef", "gallery910", "childrenPalace", "other:salon-seine"])
+      expect(card(venueKey)).toContain("<dt>Moins de 18 ans, demandeurs d’emploi…</dt><dd>Gratuit</dd>");
+    // Les données livrées suivent la même règle.
+    const freeIn = (venueKey: "galleries34" | "gallery8" | "gallery7" | "gallery910" | "childrenPalace") =>
+      Object.values(GRAND_PALAIS_PROGRAM[venueKey].schedule).flat().some((entry) => entry?.prices?.some((price) => price.amount === 0));
+    expect([freeIn("galleries34"), freeIn("gallery8"), freeIn("gallery7")]).toEqual([false, false, false]);
+    expect([freeIn("gallery910"), freeIn("childrenPalace")]).toEqual([true, true]);
+  });
+
   it("montre chaque grille de tarifs sous son nom, la gratuité, la condition et le site de billetterie", () => {
     const glace = GRAND_PALAIS_PROGRAM.nef.schedule[2026]!.find((entry) => entry.title === "Le Grand Palais de Glace 2026")!;
     const html = renderToStaticMarkup(
