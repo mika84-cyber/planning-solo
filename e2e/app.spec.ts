@@ -5237,6 +5237,10 @@ test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page 
 });
 
 test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
+  // Treize clics à la suite : seul, le parcours dure 5 à 13 s, mais sous la
+  // charge d'une suite complète sur WebKit chaque clic prend 2 à 4 s et le
+  // chargement de la page 17 s, ce qui dépassait parfois les 60 s communes.
+  test.setTimeout(120_000);
   await prepareDemo(page);
   const workDays = page.locator(".month-card .day.work");
   await page.locator(".planning-leave-panel .planning-leave-action").click();
