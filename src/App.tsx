@@ -38,7 +38,6 @@ import { scrollWhenReady } from "./scrollWhenReady";
 
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 const DayDetailDialog = lazy(() => import("./DayDetailDialog").then((module) => ({ default: module.DayDetailDialog })));
-const LongAbsenceNotice = lazy(() => import("./LongAbsenceNotice").then((module) => ({ default: module.LongAbsenceNotice })));
 // « Faire un échange » ne sert qu'à la demande : chargée à l'ouverture.
 const WorkExchangeDialog = lazy(() => import("./WorkExchangeDialog").then((module) => ({ default: module.WorkExchangeDialog })));
 const BalanceDetailDialog = lazy(() =>
@@ -98,6 +97,7 @@ import {
 } from "./payAllowances";
 import { cetBalance } from "./cet";
 import { HomeSectionScreen } from "./HomeSectionScreen";
+import { LeaveSectionScreen } from "./LeaveSectionScreen";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import {
   AppHeader,
@@ -114,15 +114,12 @@ import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
 import { requestRecoveryMinutes } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
-  CetSection,
   ColleaguePlanningPage,
   ColleagueRequestNotice,
   DocumentAnnouncementNotice,
   FeedbackMessenger,
   FeedbackResolutionAlert,
   GrandPalaisProgramSection,
-  LeaveBalancesSection,
-  LeaveManagementPage,
   PdfDownloadPage,
   UsefulContactsSection,
   UsefulFormsSection,
@@ -236,11 +233,10 @@ export default function Home() {
     setOvertimeDialogOpen, setSolidarityDialogOpen,
     setRecoveryDialogOpen,
     recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode,
-    overtimeHistoryOpen, setOvertimeHistoryOpen, setMecenatDialogOpen,
-    mecenatHistoryOpen, setMecenatHistoryOpen, setSavingMecenat,
-    savingOvertime, setSavingOvertime, overtimeDraft, setOvertimeDraft,
+    setMecenatDialogOpen, setSavingMecenat,
+    savingOvertime, setSavingOvertime, overtimeDraft,
     solidarityDraft, setSolidarityDraft, recoveryDraft, setRecoveryDraft,
-    mecenatDraft, setMecenatDraft, overtimeSaveInFlightRef, mecenatSaveInFlightRef,
+    mecenatDraft, overtimeSaveInFlightRef, mecenatSaveInFlightRef,
     lastOvertimeSubmissionRef, lastRecoverySubmissionRef, lastMecenatSubmissionRef,
   } = workTimeUi;
   const planningUi = usePlanningUiState();
@@ -267,13 +263,7 @@ export default function Home() {
     confirm,
     offerUndo,
   } = toastUi;
-  const {
-    archiveOpen,
-    setArchiveOpen,
-    archivedRequests,
-    openArchivedRequest,
-    deleteArchivedRequest,
-  } = useRequestArchive(authStatus, isProgramAdmin, userEmail, notify);
+  const requestArchive = useRequestArchive(authStatus, isProgramAdmin, userEmail, notify);
   const [balanceDetailType, setBalanceDetailType] = useState<
     BalanceType | CountedOnlyType | null
   >(null);
@@ -570,31 +560,32 @@ export default function Home() {
     mecenatDraft, workQuota, workDayMinutes, group, periods, entries, recoveryUses, mecenatEntries, formProfile, exceptionalClosureFor,
   });
 
-  const {
-    sickLeaves, allowances, holidayRecoveryEarnings, unresolvedHolidayRecoveryCount,
-    recoveryEarnings, recoveryBalance, recoveryEarningStates,
-    paidOvertimeForPayPeriod, overtimeEarlyCandidates, overtimeForPayMonth, overtimePayPreview,
-    mecenatForCurrentPayMonth, strikeForCurrentPayMonth, monthPay,
-    grossEstimateComplete, netEstimateMissing, netEstimateComplete, netCalculation, monthNet,
-  } = useMonthPayEstimate({
+  const monthPayEstimate = useMonthPayEstimate({
     periods, entries, group, now, payView, formProfile, payProfiles,
     recoveryUses, overtimeEntries, mecenatEntries, overtimeDraft, values: payProfileValues,
   });
+  const {
+    sickLeaves, allowances, recoveryBalance,
+    paidOvertimeForPayPeriod, overtimeEarlyCandidates, overtimeForPayMonth, overtimePayPreview,
+    mecenatForCurrentPayMonth, strikeForCurrentPayMonth, monthPay,
+    grossEstimateComplete, netEstimateMissing, netEstimateComplete, netCalculation, monthNet,
+  } = monthPayEstimate;
   const recoverySelectionInsufficient = requestKind === "recovery" &&
     requestRecoveryMinutes(selectedList, workQuota) > recoveryBalance.remaining;
   const recoverySelectionIncomplete = requestKind === "recovery" && selectedList.some((item) =>
     item.type.startsWith("recovery_") && requestRecoveryMinutes([item], workQuota) <= 0
   );
 
-  const {
-    leaveStats, manualSundayLeaveTotal, totalLeaveRemaining, cetLeaveBalances,
-    leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
-    cetAnnualDaysTaken, cetPlannedLeaveDays,
-    balanceDetail, recentBalanceDetailDates, balanceDetailPeriods,
-  } = useLeaveBalances({
+  const leaveBalances = useLeaveBalances({
     absenceYear, now, periods, group, manualAdjustments: formProfile?.manualAdjustments,
     selectedList, requestKind, balanceDetailType,
   });
+  const {
+    totalLeaveRemaining,
+    leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
+    cetPlannedLeaveDays,
+    balanceDetail, recentBalanceDetailDates, balanceDetailPeriods,
+  } = leaveBalances;
 
   const { agnesLeaveDates, upcoming, hasAnyNote, noteSearchResults } = useNoteLists({
     entries, partnerEntries, partnerPeriods, now, noteQuery, showNotes,
@@ -1146,96 +1137,23 @@ export default function Home() {
       ) : null}
 
       {homeSection === "leave" ? (
-        <Suspense fallback={<DeferredSection label="vos congés et récupérations" />}>
-        <LeaveManagementPage
-          onRequestLeave={() => openRequestChooser("general")}
-          onOpenBlankForm={openBlankForm}
-          onOpenHolidayAllowances={() => {
-            setHomeSection("pay");
-            setPayScreen("allowances");
-          }}
-          longAbsenceContent={
-            <Suspense fallback={null}>
-            <LongAbsenceNotice
-              periods={periods}
-              group={group}
-              todayKey={dateKey(now)}
-              sender={{ fullName: formProfile?.fullName || "" }}
-            />
-            </Suspense>
-          }
-          balancesContent={
-            <Suspense fallback={<DeferredSection label="vos soldes" />}>
-              <LeaveBalancesSection
-                year={absenceYear}
-                totalRemaining={totalLeaveRemaining}
-                balances={leaveStats.balances}
-                countedOnly={leaveStats.countedOnly}
-                manualSundayLeaveTotal={manualSundayLeaveTotal}
-                onYearChange={(year) => {
-                  setAbsenceYear(year);
-                  setBalanceDetailType(null);
-                }}
-                onSelectBalance={setBalanceDetailType}
-                onOpenManualAdjustments={openManualAdjustments}
-              />
-            </Suspense>
-          }
-          cetContent={
-            <Suspense fallback={<DeferredSection label="votre CET" />}>
-              <CetSection
-                account={formProfile?.cetAccount}
-                status={formProfile?.status || "contractuel"}
-                fullName={formProfile?.fullName || ""}
-                signature={formProfile?.signature || ""}
-                annualDaysTaken={cetAnnualDaysTaken}
-                plannedLeaveDays={cetPlannedLeaveDays}
-                remaining={cetLeaveBalances}
-                saving={savingCet}
-                onSave={saveCetAccount}
-                onRequestLeave={() => beginRequest("leave", undefined, "cet")}
-              />
-            </Suspense>
-          }
-          recoveryBalance={recoveryBalance}
-          paidOvertimeEstimate={(year, month) => paidOvertimeForPayPeriod(year, month)}
-          recoveryEarningsCount={recoveryEarnings.length}
-          unresolvedHolidayRecoveryCount={unresolvedHolidayRecoveryCount}
-          overtimeEntries={overtimeEntries}
-          holidayRecoveryEarnings={holidayRecoveryEarnings}
-          recoveryUses={recoveryUses}
-          recoveryEarningStates={recoveryEarningStates}
-          overtimeHistoryOpen={overtimeHistoryOpen}
-          mecenatEntries={mecenatEntries}
-          mecenatHistoryOpen={mecenatHistoryOpen}
+        <LeaveSectionScreen
+          now={now}
+          group={group}
           isProgramAdmin={isProgramAdmin}
-          archiveOpen={archiveOpen}
-          archivedRequests={archivedRequests}
-          onOpenOvertime={() => {
-            // La fenêtre s'ouvre vide, comme celle du mécénat.
-            setOvertimeDraft({ date: "", start: "", end: "", disposition: "" });
-            setOvertimeDialogOpen(true);
+          savingCet={savingCet}
+          calendar={calendarData}
+          balances={{ ...leaveBalances, absenceYear, setAbsenceYear, setBalanceDetailType }}
+          recovery={monthPayEstimate}
+          workTime={workTimeUi}
+          archive={requestArchive}
+          shell={appShellUi}
+          pay={payUi}
+          actions={{
+            openRequestChooser, openBlankForm, beginRequest, openManualAdjustments, saveCetAccount,
+            deleteOvertimeEntry, deleteRecoveryUse, deleteMecenatEntry,
           }}
-          onOpenSolidarity={() => {
-            // Toujours un solde déjà calculé, majoration comprise.
-            setSolidarityDraft((current) => ({ ...current, basis: "credited" }));
-            setSolidarityDialogOpen(true);
-          }}
-          onToggleOvertimeHistory={() => setOvertimeHistoryOpen((current) => !current)}
-          onDeleteOvertime={(entry) => void deleteOvertimeEntry(entry)}
-          onDeleteRecoveryUse={(entry) => void deleteRecoveryUse(entry)}
-          onOpenMecenat={() => {
-            // La fenêtre s'ouvre vide : ni date ni horaires préremplis.
-            setMecenatDraft({ date: "", start: "", end: "" });
-            setMecenatDialogOpen(true);
-          }}
-          onToggleMecenatHistory={() => setMecenatHistoryOpen((current) => !current)}
-          onDeleteMecenat={(entry) => void deleteMecenatEntry(entry)}
-          onToggleArchive={() => setArchiveOpen((current) => !current)}
-          onOpenArchivedRequest={openArchivedRequest}
-          onDeleteArchivedRequest={(request) => void deleteArchivedRequest(request)}
         />
-        </Suspense>
       ) : null}
       {homeSection === "pay" && allowances ? (
         <Suspense fallback={<DeferredSection label="votre paie" />}>

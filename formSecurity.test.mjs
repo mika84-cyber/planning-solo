@@ -14,6 +14,7 @@ describe("formulaire de demande", () => {
   const app = [
     "src/App.tsx",
     "src/HomeSectionScreen.tsx",
+    "src/LeaveSectionScreen.tsx",
     "src/useApplicationStartup.ts",
     "src/AppNavigation.tsx",
     "src/PlanningRequestPanels.tsx",
