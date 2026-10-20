@@ -6,8 +6,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 - `src/main.tsx` : montage React, import des styles, enregistrement et mise à
   jour du service worker.
-- `src/App.tsx` : orchestration générale, état partagé et écrans qui n'ont pas
-  encore été extraits. Rechercher la fonctionnalité avant d'ouvrir une plage.
+- `src/App.tsx` : orchestration générale (un peu moins de 2 000 lignes) :
+  les états partagés, les hooks d'actions et de calculs, puis le JSX des
+  rubriques. Les calculs et les effets vivent dans les hooks `src/use*.ts`
+  listés plus bas ; rechercher la fonctionnalité avant d'ouvrir une plage.
 - `src/styles.css` : point d’entrée de la cascade CSS. Ses imports numérotés
   dans `src/styles/` conservent l’ordre historique ; rechercher la classe dans
   ces fichiers sans réordonner les passes. `src/styles/README.md` documente le
@@ -137,6 +139,31 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/use*UiState.ts` et `src/useCalendarDataState.ts` : états spécialisés de
   l’authentification, du planning, de la paie, des heures, de la coque et des
   données synchronisées ; `App.tsx` conserve leur orchestration commune.
+- Hooks sortis d’`App.tsx` en octobre 2026, même code, mêmes mémos :
+  `src/useApplicationStartup.ts` (ouverture : démo sans compte, lien
+  d’authentification, planning gardé sur l’appareil, session, relecture du
+  planning et sa reprise au retour — rend `loadCalendar` et
+  `clearCalendarData`), `src/useShellEffects.ts` (écrans préparés au repos,
+  paramètres d’adresse, installation, largeur d’écran, mise à jour annoncée,
+  fermeture des menus, vérification des mises à jour),
+  `src/useSharedDataPrefetch.ts` (genres des collègues, programmation GP et
+  rôle d’administrateur, contacts, groupes), `src/useSectionNavigation.ts`
+  (menu, glissement, bouton Retour), `src/usePayProfileValues.ts` (valeurs du
+  profil de paie du mois affiché), `src/useMonthPayEstimate.ts` (maladie,
+  primes, crédits de récupération, heures sup, mécénats, grève, brut, net),
+  `src/usePayMonthNavigation.ts` (mois affiché dans Ma paie, glissement de la
+  carte des primes), `src/useWorkProfileActions.ts` (groupe, statut, quotité,
+  horaires habituels), `src/useLeaveBalances.ts` (soldes de l’année, report
+  au 30 avril, soldes par type et par année, CET, détail d’un solde),
+  `src/useRequestTypeSelection.ts` (type choisi au départ d’une demande),
+  `src/useWorkedDaysOverview.ts` (jours travaillés, prochain extra, aperçu du
+  jour), `src/useMecenatDraftCheck.ts` (mécénat en cours de saisie),
+  `src/useDayDetailData.ts` (ce que la fiche du jour montre),
+  `src/useNoteLists.ts` (notes à venir, recherche, congés d’Agnès),
+  `src/usePartnerNoteActions.ts` (suppression d’une note d’Agnès). La
+  rubrique Ma paie construit son contenu dans `src/PayScreen.tsx`, livré avec
+  les écrans différés ; `src/DemoExpiredScreen.tsx` est l’écran d’une démo
+  expirée.
 - `src/useWorkTimeActions.ts` : validations, écritures et suppressions des
   heures supplémentaires, récupérations et mécénats.
 - `src/demoPayProfile.ts` : profil de paie fictif de la démo de

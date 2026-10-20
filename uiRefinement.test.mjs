@@ -329,8 +329,8 @@ describe("finitions d’interface", () => {
   it("laisse la quotité et le statut vides tant qu’ils n’ont pas été choisis", () => {
     // Les calculs retiennent bien un temps plein contractuel par défaut,
     // mais l’afficher ferait passer pour renseigné ce qui reste à décider.
-    expect(appRoot).toContain("workQuota={formProfile?.workQuota}");
-    expect(appRoot).toContain("status={formProfile?.status}");
+    expect(appRoot).toContain("workQuota: formProfile?.workQuota,");
+    expect(appRoot).toContain("status: formProfile?.status,");
     expect(payPage).toContain('placeholder="À renseigner"');
     expect(payPage).toContain("Quotité et statut à renseigner");
     expect(payPage).not.toContain('status={formProfile?.status || "contractuel"}');

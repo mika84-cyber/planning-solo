@@ -71,6 +71,11 @@ const RequestChooserDialog = lazy(() =>
 const RequestSelectionPanel = lazy(() =>
   import("./deferredScreens").then(({ RequestSelectionPanel: Component }) => ({ default: Component })),
 );
+// La rubrique Ma paie construit son contenu à part : son morceau n'est
+// chargé qu'à son ouverture.
+const PayScreen = lazy(() =>
+  import("./deferredScreens").then(({ PayScreen: Component }) => ({ default: Component })),
+);
 const SchoolVacationMonthSummary = lazy(() =>
   import("./SchoolVacationUi").then(({ SchoolVacationMonthSummary: Component }) => ({ default: Component })),
 );
@@ -90,7 +95,6 @@ import { useAppShellUiState } from "./useAppShellUiState";
 import { useFeedbackMessaging } from "./useFeedbackMessaging";
 import { AppDialogLayer } from "./AppDialogLayer";
 import { DeferredSection } from "./DeferredSection";
-import { buildPayContent } from "./payContent";
 import {
   EMPTY_MANUAL_ADJUSTMENTS,
   computePayAllowances,
@@ -122,8 +126,6 @@ import {
   GrandPalaisProgramSection,
   LeaveBalancesSection,
   LeaveManagementPage,
-  PayAllowancesSection,
-  PayPage,
   PdfDownloadPage,
   UsefulContactsSection,
   UsefulFormsSection,
@@ -956,27 +958,6 @@ export default function Home() {
     beginRequest(kind, initialDate, requestedType);
   }
 
-  /** Le volet de vérification d'un bulletin, séparé des primes : on y va pour
-   *  contrôler, pas pour consulter. */
-  const allowancesContent = allowances ? (
-    <PayAllowancesSection
-      allowances={allowances}
-      monthPay={monthPay}
-      overtimeForPayMonth={overtimeForPayMonth}
-      mecenatForPayMonth={mecenatForCurrentPayMonth}
-      strikeForPayMonth={strikeForCurrentPayMonth}
-      isContractuel={isContractuel}
-      baseSalary={baseSalary}
-      month={payView.getMonth()}
-      year={payView.getFullYear()}
-      holidayChoiceEditing={holidayChoiceEditing}
-      onChangeMonth={changePayMonth}
-      onGoToday={goPayToday}
-      onEditHolidayChoice={setHolidayChoiceEditing}
-      onChooseHolidayPay={chooseHolidayPay}
-      onExchangeHoliday={(key) => openWorkExchange(key)}
-    />
-  ) : null;
   const payslipVerifications = usePayslipVerifications({
     accountId: demoMode ? "demo" : userEmail,
     demoMode,
@@ -985,53 +966,6 @@ export default function Home() {
     post: postCalendar,
     notify,
   });
-  const payContent =
-    homeSection === "pay"
-      ? buildPayContent({
-          payUi,
-          payActions,
-          allowances,
-          monthPay,
-          sickLeaves,
-          overtimeForPayMonth,
-          mecenatForCurrentPayMonth,
-          mecenatEntries,
-          onMarkMecenatsPaidEarly: (entries, year, month) => void markMecenatsPaidEarly(entries, year, month),
-          overtimeEarlyCandidates,
-          onMarkOvertimePaidEarly: (entries) => void markOvertimePaidEarly(entries),
-          strikeForCurrentPayMonth,
-          netCalculation,
-          monthNet,
-          grossEstimateComplete,
-          netEstimateMissing,
-          payProfiles,
-          payYear,
-          hasPayValue,
-          viewedPayRegime,
-          payslipRateCalibration,
-          isContractuel,
-          confirmedContractuel,
-          workQuota,
-          baseSalary,
-          residenceAllowance,
-          ifse,
-          otherFixed,
-          cia,
-          ciaMonth,
-          carenceDay,
-          navigo,
-          mealVoucherDeduction,
-          pasRate,
-          netRatioFixed,
-          netRatioVariable,
-          sundayCarryover,
-          sundayCarryoverMonth,
-          sundayCarryoverYear,
-          payslipVerifications,
-          changePayMonth,
-          goPayToday,
-        })
-      : null;
   // Le titre d'un mois de la vue Année l'ouvre en grand. On bascule sur la
   // vue Mois plutôt que d'agrandir sur place : c'est elle qui porte la barre
   // d'outils, donc « Poser un congé » et le reste restent accessibles.
@@ -1391,56 +1325,90 @@ export default function Home() {
         />
         </Suspense>
       ) : null}
-      {homeSection === "pay" && allowances && payContent ? (
+      {homeSection === "pay" && allowances ? (
         <Suspense fallback={<DeferredSection label="votre paie" />}>
-        <PayPage
-          screen={payScreen}
-          month={payView.getMonth()}
-          year={payView.getFullYear()}
-          profileOpen={payProfileOpen}
-          profileFocusRequested={payProfileFocusRequested}
-          settingsOpen={payAdvancedOpen}
-          workQuota={formProfile?.workQuota}
-          workSchedule={formProfile?.workSchedule}
-          status={formProfile?.status}
-          netEstimateComplete={netEstimateComplete}
-          missingFields={netEstimateMissing}
-          onCompleteEstimate={() => { setPaySettingsOpen(true); setPayAdvancedOpen(true); }}
-          gross={payContent.gross}
-          grossComplete={payContent.grossComplete}
-          net={payContent.net}
-          profileLabel={payContent.profileLabel}
-          reliability={payContent.reliability}
-          variables={payContent.variables}
-          calculation={payContent.calculation}
-          allowancesPending={payContent.allowancesPending}
-          verification={payContent.verification}
-          savedVerification={payContent.savedVerification}
-          verificationRequested={payVerificationRequested}
-          onVerificationShown={() => setPayVerificationRequested(false)}
-          deductionContent={payContent.deductionContent}
-          monthSlide={payMonthSlide}
-          allowancesContent={allowancesContent}
-          estimateContent={payContent.estimateContent}
-          verificationContent={payContent.verificationContent}
-          settingsContent={payContent.settingsContent}
-          onScreenChange={setPayScreen}
-          onToggleProfile={() => setPayProfileOpen((current) => !current)}
-          onProfileFocused={() => setPayProfileFocusRequested(false)}
-          onToggleSettings={() => {
-            // Les éléments de paie s'affichent d'emblée : un niveau de moins à ouvrir.
-            setPaySettingsOpen(true);
-            setPayAdvancedOpen((current) => !current);
+        <PayScreen
+          content={{
+            payUi,
+            payActions,
+            allowances,
+            monthPay,
+            sickLeaves,
+            overtimeForPayMonth,
+            mecenatForCurrentPayMonth,
+            mecenatEntries,
+            onMarkMecenatsPaidEarly: (entries, year, month) => void markMecenatsPaidEarly(entries, year, month),
+            overtimeEarlyCandidates,
+            onMarkOvertimePaidEarly: (entries) => void markOvertimePaidEarly(entries),
+            strikeForCurrentPayMonth,
+            netCalculation,
+            monthNet,
+            grossEstimateComplete,
+            netEstimateMissing,
+            payProfiles,
+            payYear,
+            hasPayValue,
+            viewedPayRegime,
+            payslipRateCalibration,
+            isContractuel,
+            confirmedContractuel,
+            workQuota,
+            baseSalary,
+            residenceAllowance,
+            ifse,
+            otherFixed,
+            cia,
+            ciaMonth,
+            carenceDay,
+            navigo,
+            mealVoucherDeduction,
+            pasRate,
+            netRatioFixed,
+            netRatioVariable,
+            sundayCarryover,
+            sundayCarryoverMonth,
+            sundayCarryoverYear,
+            payslipVerifications,
+            changePayMonth,
+            goPayToday,
           }}
-          onWorkQuotaChange={changeWorkQuota}
-          onWorkScheduleChange={changeWorkSchedule}
-          onStatusChange={changeStatus}
-          onSaveProfile={() => void saveCalculationProfile()}
-          onPreviousMonth={() => slideAllowancesMonth(-1)}
-          onNextMonth={() => slideAllowancesMonth(1)}
-          onToday={goPayToday}
-          onTouchStart={startAllowancesSwipe}
-          onTouchEnd={endAllowancesSwipe}
+          allowances={allowances}
+          holidayChoiceEditing={holidayChoiceEditing}
+          onEditHolidayChoice={setHolidayChoiceEditing}
+          onChooseHolidayPay={chooseHolidayPay}
+          onExchangeHoliday={(key) => openWorkExchange(key)}
+          page={{
+            screen: payScreen,
+            profileOpen: payProfileOpen,
+            profileFocusRequested: payProfileFocusRequested,
+            settingsOpen: payAdvancedOpen,
+            workQuota: formProfile?.workQuota,
+            workSchedule: formProfile?.workSchedule,
+            status: formProfile?.status,
+            netEstimateComplete: netEstimateComplete,
+            missingFields: netEstimateMissing,
+            onCompleteEstimate: () => { setPaySettingsOpen(true); setPayAdvancedOpen(true); },
+            verificationRequested: payVerificationRequested,
+            onVerificationShown: () => setPayVerificationRequested(false),
+            monthSlide: payMonthSlide,
+            onScreenChange: setPayScreen,
+            onToggleProfile: () => setPayProfileOpen((current) => !current),
+            onProfileFocused: () => setPayProfileFocusRequested(false),
+            onToggleSettings: () => {
+              // Les éléments de paie s'affichent d'emblée : un niveau de moins à ouvrir.
+              setPaySettingsOpen(true);
+              setPayAdvancedOpen((current) => !current);
+            },
+            onWorkQuotaChange: changeWorkQuota,
+            onWorkScheduleChange: changeWorkSchedule,
+            onStatusChange: changeStatus,
+            onSaveProfile: () => void saveCalculationProfile(),
+            onPreviousMonth: () => slideAllowancesMonth(-1),
+            onNextMonth: () => slideAllowancesMonth(1),
+            onToday: goPayToday,
+            onTouchStart: startAllowancesSwipe,
+            onTouchEnd: endAllowancesSwipe,
+          }}
         />
         </Suspense>
       ) : null}
