@@ -110,7 +110,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’une demande, souhaits, groupe, fiche du jour, détail d’un solde), rendues
   avant `AppDialogLayer`. `src/scrollWhenReady.ts` amène à une ancre d’un
   écran chargé à la demande. Les contrôles textuels d’`uiRefinement.test.mjs`
-  et `formSecurity.test.mjs` lisent ces fichiers avec `App.tsx`.
+  et `formSecurity.test.mjs` lisent ces fichiers avec `App.tsx` ;
+  `AppShellChrome`, `HomeSectionScreen` et `DocumentsSectionScreen` ont un
+  test de rendu (`renderToStaticMarkup`, rubriques différées remplacées par
+  des témoins ou rendues après leur chargement).
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
 - `src/PlanningCommandCenter.tsx` et `src/PlanningDayCell.tsx` : commandes du
   calendrier et rendu interactif d’une journée.
