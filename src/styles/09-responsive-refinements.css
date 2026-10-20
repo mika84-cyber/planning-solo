@@ -1,12 +1,3 @@
-/* Écran presque carré (ex: Samsung Z Fold 7 déplié, ~984x1092 CSS px) :
-   au lieu du mode "tablette étroite" hérité des breakpoints ci-dessus,
-   on profite de la largeur réelle disponible. */
-@media (min-width: 900px) and (max-width: 1180px) and (min-aspect-ratio: 4/5) and (max-aspect-ratio: 6/5) {
-  .leave-balance-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 /* Décision sur un congé souhaité : le choix précède le formulaire habituel,
    donc il s'affiche avant les champs de type et de période. */
 .wish-decision {
@@ -63,15 +54,6 @@
   justify-content: space-between;
   gap: 10px;
 }
-/* « restant » / « pris » accolés au chiffre, dans sa couleur : la mention
-   qualifie le nombre, elle n'est pas une ligne d'explication séparée. */
-.leave-balance-grid strong i {
-  margin-left: 5px;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 800;
-}
-
 /* État réseau et sauvegarde : une information courte, lisible sans masquer le
    planning. `aria-live` dans le composant fournit le même retour au lecteur
    d'écran. */
@@ -189,79 +171,6 @@
   color: #8a682f;
   font-size: 10px;
   font-weight: 800;
-}
-
-/* Les soldes sont une information de premier niveau dans la rubrique Congés :
-   ils restent visibles sans accordéon, tout en gardant une carte compacte. */
-.leave-balances-direct {
-  display: grid;
-  gap: 13px;
-  margin-bottom: 14px;
-  border-radius: 18px;
-  padding: 16px;
-  background: linear-gradient(145deg, #ffffff 0%, var(--surface-high) 100%);
-}
-.leave-balances-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
-  border: 1px solid var(--border-control);
-  border-radius: 12px;
-  padding: 11px 12px;
-  background: #fff;
-}
-.leave-balances-heading h3 {
-  margin: 2px 0 0;
-  font-size: 16px;
-  letter-spacing: -0.02em;
-}
-.leave-balances-heading > strong {
-  color: var(--accent);
-  font-size: 13px;
-}
-.direct-balances-content {
-  border: 1px solid var(--border-control);
-  border-radius: 18px;
-  padding: 10px;
-  background: var(--surface);
-}
-.leave-balances-direct .leave-balance-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.leave-balances-direct .leave-balance-grid button {
-  border: 1px solid color-mix(in srgb, var(--balance-color) 52%, var(--border-card));
-  border-left-width: 5px;
-  padding: 11px 12px;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.72);
-}
-.leave-balances-direct .leave-balance-grid strong {
-  margin-bottom: 5px;
-  border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
-  padding-bottom: 7px;
-  font-size: 23px;
-}
-.leave-balances-direct .leave-balance-grid span {
-  color: #2c2621;
-  font-size: 10px;
-  font-weight: 900;
-}
-.leave-balances-direct .leave-balance-grid strong {
-  color: color-mix(in srgb, var(--balance-color) 58%, #2c2621);
-  font-weight: 950;
-}
-.leave-balances-direct .leave-balance-grid strong i {
-  color: color-mix(in srgb, var(--balance-color) 48%, #3a332c);
-  font-weight: 900;
-}
-.leave-balances-direct .leave-balance-grid small {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
-}
-.leave-balances-direct .leave-balance-grid em {
-  color: color-mix(in srgb, var(--balance-color) 60%, #2c2621);
-  font-weight: 950;
 }
 
 /* Le groupe conserve une grille lisible. Les choix rares sont désormais
@@ -585,31 +494,6 @@
     min-height: 44px;
     padding: 0 14px;
   }
-  .leave-balances-direct {
-    gap: 10px;
-    border-radius: 18px;
-    padding: 12px;
-  }
-  .leave-balances-heading {
-    gap: 4px;
-  }
-  .leave-balances-heading h3 {
-    font-size: 15px;
-  }
-  .leave-balances-direct .leave-balance-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-  }
-  .leave-balances-direct .leave-balance-grid button {
-    min-width: 0;
-    padding: 10px;
-  }
-  .leave-balances-direct .leave-balance-grid strong {
-    font-size: 20px;
-  }
-  .leave-balances-direct .leave-balance-grid small {
-    line-height: 1.3;
-  }
   .pay-function-card {
     border-radius: 12px;
   }
@@ -786,71 +670,6 @@
 }
 
 /* Reprise annuelle des absences lors d'une arrivée en cours d'année. */
-.leave-year-tools {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: 14px;
-}
-.leave-year-tools > label {
-  display: grid;
-  gap: 4px;
-  min-width: 116px;
-}
-.leave-year-tools > label > span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 850;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.leave-year-tools > strong {
-  padding-bottom: 10px;
-  color: var(--accent);
-  font-size: 13px;
-}
-.leave-year-picker .choice-picker-trigger { min-height: 40px; }
-.manual-balance-note {
-  color: #7a5b16 !important;
-  font-weight: 750;
-}
-.manual-adjustments-trigger {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  border: 1px solid var(--border-card);
-  border-radius: 12px;
-  padding: 11px 13px;
-  background: linear-gradient(135deg, #fffaf0, #fff 70%);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
-.manual-adjustments-trigger:hover { border-color: var(--border-card); }
-.manual-adjustments-icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: #f6e9bd;
-  color: #6e5414;
-  font-size: 22px;
-}
-.manual-adjustments-trigger > span:nth-child(2) { display: grid; gap: 3px; }
-.manual-adjustments-trigger strong { font-size: 13px; }
-.manual-adjustments-trigger small { color: var(--muted); font-size: 10px; line-height: 1.35; }
-.manual-adjustments-summary {
-  border-radius: 999px;
-  padding: 6px 9px;
-  background: #f3ead1;
-  color: #70581d;
-  font-size: 10px;
-  font-weight: 850;
-  white-space: nowrap;
-}
 .manual-adjustments-modal { width: min(700px, calc(100vw - 28px)); }
 .manual-adjustments-backdrop { z-index: 1300; }
 .manual-adjustments-intro {
@@ -958,11 +777,6 @@
 }
 
 @media (max-width: 720px) {
-  .leave-balances-heading { align-items: stretch; flex-direction: column; }
-  .leave-year-tools { justify-content: space-between; align-items: flex-end; }
-  .leave-year-tools > label { min-width: 132px; }
-  .manual-adjustments-trigger { grid-template-columns: 40px minmax(0, 1fr); }
-  .manual-adjustments-summary { grid-column: 2; justify-self: start; }
   .manual-adjustments-modal { max-height: calc(100dvh - 24px); overflow-y: auto; }
   .manual-leave-inputs,
   .manual-sunday-inputs { grid-template-columns: 1fr; }
@@ -970,22 +784,6 @@
   .balance-detail-list article { grid-template-columns: minmax(0, 1fr) 74px; }
 }
 
-
-
-/* Sur grand écran, les actions Mécénat reprennent strictement l'encombrement
-   et l'alignement des actions Heures supplémentaires. Les couleurs propres à
-   la rubrique restent inchangées. */
-@media (min-width: 721px) {
-  .mecenat-balance-card .overtime-actions {
-    width: auto;
-    justify-self: start;
-  }
-  .mecenat-balance-card .overtime-actions .mecenat-action,
-  .mecenat-balance-card .overtime-history-toggle {
-    width: auto;
-    justify-self: start;
-  }
-}
 
 /* Derniers ajustements de composition des écrans spécialisés. */
 
@@ -1106,45 +904,6 @@
 .account-menu-data:hover {
   background: var(--surface);
 }
-.overtime-balance-card {
-  display: grid;
-  margin-bottom: 14px;
-  border: 1px solid var(--border-card);
-  border-radius: 18px;
-  background: linear-gradient(145deg, #fff 0%, #fff 100%);
-}
-.overtime-balance-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-.overtime-balance-heading h3 {
-  margin: 2px 0 4px;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-}
-.overtime-balance-heading p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-.overtime-balance-heading > strong {
-  flex: 0 0 auto;
-  color: #2c6a5e;
-  font-size: 14px;
-}
-.overtime-balance-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
-.overtime-balance-summary-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.overtime-balance-summary article small { color: var(--muted); font-size: 10px; }
-.overtime-balance-summary article { display: grid; gap: 4px; min-width: 0; border: 1px solid #e0e9e7; border-radius: 12px; padding: 12px; background: #fff; }
-.overtime-balance-summary article.remaining { border-color: var(--border-card); background: #fff; }
-.overtime-balance-summary span { color: var(--muted); font-size: 11px; font-weight: 750; }
-.overtime-balance-summary strong { color: #3a332c; font-size: 20px; }
-.overtime-actions { display: flex; gap: 8px; }
-.overtime-actions .secondary-button:disabled { opacity: .5; cursor: not-allowed; }
-.overtime-history-toggle { justify-self: start; }
-.overtime-history { display: grid; gap: 7px; border-top: 1px solid var(--border-card); padding-top: 12px; }
 .overtime-history article {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;
@@ -1194,35 +953,6 @@
 }
 .mecenat-pay-detail .overtime-pay-lines article {
   border-color: var(--bg);
-}
-.mecenat-balance-card {
-  border-color: var(--border-control);
-  background: linear-gradient(145deg, var(--surface-high) 0%, var(--surface-high) 100%);
-}
-.mecenat-rate-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-}
-.mecenat-rate-summary article {
-  display: grid;
-  gap: 3px;
-  border: 1px solid var(--border-control);
-  border-radius: 11px;
-  padding: 10px;
-  background: #fff;
-}
-.mecenat-rate-summary span {
-  color: var(--muted);
-  font-size: 10px;
-}
-.mecenat-rate-summary strong {
-  color: var(--muted);
-  font-size: 13px;
-}
-.mecenat-action {
-  border-color: var(--border-card);
-  background: #7a6f5f;
 }
 .mecenat-preview {
   display: grid;
@@ -1454,30 +1184,6 @@
   .payslip-actual-values > div {
     border-left: 0;
     padding-left: 0;
-  }
-  .overtime-balance-card {
-    border-radius: 18px;
-  }
-  .overtime-balance-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 5px;
-  }
-  .overtime-balance-summary {
-    gap: 5px;
-  }
-  .overtime-balance-summary article {
-    padding: 9px 7px;
-  }
-  .overtime-balance-summary strong {
-    font-size: 15px;
-  }
-  .overtime-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-  .overtime-actions button {
-    min-height: 46px;
   }
   .mecenat-preview {
     grid-template-columns: 1fr;

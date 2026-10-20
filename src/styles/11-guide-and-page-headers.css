@@ -622,13 +622,10 @@
 
 .today-overview,
 .home-notes-section,
-.leave-balances-direct,
-.overtime-balance-card,
 .pay-app-screen,
 .pdf-download-screen,
 .request-panel,
-.request-option-group,
-.leave-balance-grid button {
+.request-option-group {
   border-width: 1.5px;
   border-color: var(--border-card);
 }

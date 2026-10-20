@@ -501,12 +501,6 @@
 /* Raffinement mobile-first : actions contextuelles, profil de paie et
    sections plus ouvertes, avec la couleur portée par les fonds plutôt que
    par une succession de bordures. */
-.planning-leave-mobile { display: none; }
-.planning-leave-desktop,
-.planning-leave-annual {
-  min-height: 44px;
-  white-space: nowrap;
-}
 
 .leave-request-archive .request-archive-toggle {
   text-align: left;
@@ -561,11 +555,6 @@
 .pay-work-schedule label,.pay-work-time-field { display: grid; gap: 5px; color: var(--accent-strong); font-family: inherit; font-size: 12px; font-weight: 850; }
 .pay-work-schedule input { min-width: 0; height: 42px; border: 1px solid rgba(140, 61, 24, 0.2); border-radius: 12px; padding: 0 7px; background: var(--surface); color: var(--text); font: inherit; }
 .pay-work-time-picker{align-items:center;background:var(--surface);border:1px solid var(--border-card);border-radius:12px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);height:42px;overflow:hidden}.pay-work-time-picker:focus-within{border-color:var(--border-card);box-shadow:0 0 0 3px rgba(155, 142, 124,.12)}.pay-work-time-picker select{appearance:none;background:transparent;border:0;color:var(--text);font-family:inherit;font-size:15px;font-weight:850;height:100%;min-width:0;padding:0 8px;text-align:center}.pay-work-time-picker select:focus{outline:0}.pay-work-time-picker b{color:#9b8e7c;font-size:15px}
-@media (max-width: 720px) {
-  .mecenat-balance-card .overtime-actions,
-  .mecenat-balance-card .overtime-actions .mecenat-action,
-  .mecenat-balance-card .overtime-history-toggle { width: 100%; }
-}
 
 
 .variable-pay-heading-actions {
@@ -587,7 +576,6 @@
   line-height: 1.45;
 }
 .mecenat-rule-alert { display: grid; gap: 6px; border: 1px solid #ecd28a; border-left: 4px solid #c98a12; border-radius: 12px; padding: 11px 13px; background: #fdf6e3; color: #6b4a06; font-size: 12.5px; line-height: 1.45; } .mecenat-rule-alert ul { display: grid; gap: 5px; margin: 0; padding-left: 18px; } .mecenat-rule-alert small { font-weight: 700; }
-.overtime-capped-note { display: block; margin-top: 2px; color: #9a5b12; font-weight: 700; }
 /* Bulletin : un mécénat ou des heures sup attendus le mois suivant, déjà payés. */
 .mecenat-early-payment { display: grid; gap: 10px; margin: 12px 0; border: 1px solid #cfe3d6; border-left: 4px solid #2f8a5b; border-radius: 12px; padding: 12px 14px; background: #f3faf5; color: #2c2621; font-size: 12.5px; line-height: 1.45; }
 .mecenat-early-payment p { margin: 0; }
@@ -607,16 +595,7 @@
 }
 .home-notes-section { background: linear-gradient(145deg, #fffaf4, #fff 58%); }
 
-@media (max-width: 720px) {
-  .planning-leave-desktop { display: none; }
-  .planning-leave-mobile {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 46px;
-    padding: 0 14px;
-    white-space: nowrap;
-  }  .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; }
+@media (max-width: 720px) {  .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; }
   .pay-profile-settings-grid { grid-template-columns: 1fr; gap: 8px; }
   .pay-profile-settings-grid > label { grid-template-rows: auto minmax(46px, auto); gap: 4px; }
   .pay-work-schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pay-profile-save{justify-self:stretch;width:100%}
@@ -632,32 +611,19 @@
    raffinements historiques du thème. */
 .today-overview,
 .home-notes-section,
-.leave-balances-direct,
 .leave-request-archive,
-.overtime-balance-card,
 .pay-app-screen,
 .pdf-download-screen,
 .pay-profile-settings,
 .allowance-card { border-color: var(--section-outline); }
 .pay-profile-settings { display: block; padding: 0; }
 
-@media (max-width: 720px) {  .planning-leave-mobile { width: 100%; }
+@media (max-width: 720px) {
   .pay-profile-settings { display: block; padding: 0; }
   .variable-pay-heading-actions {
     align-items: center;
     flex-direction: row;
   }
-}
-
-/* Priorité finale pour la nouvelle composition mobile. */
-.leave-request-archive + .overtime-balance-card { margin-top: 22px; }
-.overtime-balance-card { gap: 18px; padding: 20px; }
-.overtime-balance-card + .overtime-balance-card { margin-top: 18px; }
-
-@media (max-width: 720px) {
-  .leave-request-archive + .overtime-balance-card { margin-top: 18px; }
-  .overtime-balance-card { gap: 16px; padding: 17px 14px; }
-  .overtime-balance-card + .overtime-balance-card { margin-top: 16px; }
 }
 
 /* Ajustements de lisibilité demandés sur la version de contrôle. */
@@ -668,24 +634,6 @@
 .balance-detail-list button.recent-leave-date span,
 .balance-detail-list button.recent-leave-date strong {
   color: #bd252d;
-}
-
-.overtime-actions {
-  flex-wrap: wrap;
-}
-.solidarity-hours-action {
-  min-height: 46px;
-  border-color: #c96c12 !important;
-  border-radius: 12px;
-  padding: 0 18px;
-  background: linear-gradient(135deg, #ed9638, #dc781d) !important;
-  color: #fff !important;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: 800;
-  line-height: 1.2;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(203, 103, 18, .2);
 }
 .solidarity-duration-grid {
   margin-top: 20px;
@@ -712,9 +660,6 @@
   .header-actions {
     align-items: center;
     gap: 6px;
-  }  .overtime-actions > button,
-  .solidarity-hours-action {
-    width: 100%;
   }
 }
 

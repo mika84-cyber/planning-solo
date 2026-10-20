@@ -232,9 +232,6 @@
   .upcoming-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .leave-balance-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 @media (max-width: 720px) {
   .auth-shell {
@@ -275,9 +272,6 @@
     order: 3;
   }  .primary-action {
     width: 100%;
-  }
-  .leave-balance-grid {
-    grid-template-columns: 1fr;
   }
   .request-panel {
     padding: 15px 13px;

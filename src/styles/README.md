@@ -129,3 +129,50 @@ cadrée). Elle a notamment :
   feuilles 11 et 12 posaient sur le cadre, `.controls` et la barre du mois ;
 - remplacé les six `!important` des jours travaillés par une seule règle :
   plus rien ne leur dispute la typographie.
+
+## Page Congés
+
+`19-leave-page.css` réunit la page Congés et récupérations
+(`LeaveManagementPage`, `LeaveBalancesSection`, `LeaveInfoCard`,
+`LongAbsenceNotice` et les volets de la zone d'outils) : barre d'actions,
+avis d'absence longue, soldes, mémo « Règles des congés », volets des heures
+supplémentaires, des mécénats et du CET, un bloc par composant, les variantes
+selon la largeur regroupées en fin de fichier. Elle remplace
+`leaveCollapsibles.css` et `leaveMenus.css` et se charge depuis `main.tsx`
+au même endroit, juste après `dataManagement.css` : à spécificité égale, ses
+règles l'emportent sur `styles.css`, `16-work-accident.css` et
+`dataManagement.css`, et cèdent à `productRefinements.css` (cadres, en-têtes et
+tailles de texte communs des rubriques) et à `darkTheme.css`. Restent
+ailleurs, volontairement :
+
+- le cœur du CET (`04-leave-cet.css`), dont les classes servent aussi à son
+  formulaire et aux choix de demande ;
+- les lignes d'historique des heures et des mécénats (`WorkTimeHistory`,
+  `.overtime-history article`, feuille 09), que la démonstration n'affiche pas ;
+- les demandes archivées et les listes communes à plusieurs rubriques
+  (bordure de la feuille 09, `.app-shell > …` de la feuille 14).
+
+Les sélecteurs `::-webkit-details-marker` des volets sont gardés même si
+Chromium ne les relève pas : Safari s'en sert pour masquer le triangle.
+
+La passe du 20 octobre 2026 a ramené ces 310 règles, réparties dans 15
+feuilles, à 203 règles dans ce fichier, sans changement de rendu : styles
+calculés identiques élément par élément sur 774 états (clair et sombre, treize
+largeurs de 360 à 1280 px, volets ouverts et historiques dépliés, survol,
+appui et focus forcés ; avis d'absence longue, son courrier, solde saisi sans
+date et heures au-delà du plafond injectés avec le balisage des composants).
+Elle a notamment :
+
+- retiré 171 déclarations qui ne gagnaient jamais, d'après le relevé des
+  déclarations gagnantes (copies sombres comprises), et une dizaine d'autres
+  qui redisaient une valeur déjà acquise ;
+- retiré les règles d'anciennes mises en page : cartes d'heures et de CET
+  enfants directs de la grille ou de la zone d'outils, ordres forcés des
+  tuiles, `em` des soldes, boutons `.planning-leave-mobile` et
+  `.planning-leave-desktop`, libellés « Ouvrir » / « Fermer » des volets ;
+- replié dans le bloc des heures la bordure et l'ombre que la liste commune
+  de la feuille 12 posait sur leurs cases, et retiré nos sélecteurs des
+  listes communes où ils ne gagnaient plus rien (feuilles 10, 11, 12, 17) ;
+- retiré quatre `!important` devenus inutiles : le solde saisi sans date a
+  désormais un sélecteur plus précis, et « Ajouter des heures manuellement »
+  se charge après les boutons secondaires.

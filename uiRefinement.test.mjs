@@ -47,6 +47,8 @@ const importedStyles = [...stylesheetEntry.matchAll(/@import\s+"([^"]+)"/g)]
 const styles = [
   stylesheetEntry,
   ...importedStyles,
+  // La page Congés, importée par main.tsx juste après styles.css.
+  readFileSync(new URL("./src/styles/19-leave-page.css", import.meta.url), "utf8"),
   readFileSync(new URL("./src/grandPalaisProgram.css", import.meta.url), "utf8"),
   readFileSync(new URL("./src/payBulletin.css", import.meta.url), "utf8"),
 ].join("\n");
@@ -119,8 +121,8 @@ describe("finitions d’interface", () => {
   });
 
   it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
-    expect(styles).toContain(".cet-section-static");
-    expect(styles).toContain("border-left: 6px solid var(--border-card)");
+    expect(styles).toContain(".cet-section-static .cet-heading-static {");
+    expect(styles).toContain(".leave-tool-disclosure > .overtime-balance-card,\n.leave-tool-disclosure > .cet-section {");
     expect(app).toContain('<strong id="leave-request-archive-title">Demandes archivées</strong>');
     expect(cetSection).toContain('className="cet-section open cet-section-static"');
     expect(cetSection).toContain("alimentation du 15 novembre au 31 décembre");
@@ -713,15 +715,16 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("--app-frame-strong");
     expect(styles).toContain("--app-frame-soft");
     expect(styles).toContain(".cet-subsection,");
-    expect(styles).toContain(".leave-balance-grid button,");
+    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button {\n  border: 1px solid color-mix(");
     expect(styles).toContain(".request-option-group,");
   });
 
-  it("aligne Divers avec Grève sur les grands écrans", () => {
+  it("garde l’ordre des tuiles de soldes sur les grands écrans", () => {
     expect(styles).toContain("@media (min-width: 721px) {");
-    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.other {\n    grid-column: auto;\n    order: 1;");
-    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.strike { order: 2; }");
-    expect(styles).toContain(".leave-balances-direct .leave-balance-grid button.cet { order: 3; }");
+    expect(styles).toContain(".leave-balance-grid > button:is(.childcare, .exceptional, .other, .cet, .work_accident, .strike) {");
+    expect(styles).toContain("order: initial;");
+    // Les anciens ordres forcés (Divers, Grève, CET) étaient annulés par cette règle.
+    expect(styles).not.toContain("button.strike { order: 2; }");
   });
 
   it("renforce la lisibilité des soldes sans retirer leurs couleurs", () => {

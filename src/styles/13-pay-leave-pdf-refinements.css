@@ -27,18 +27,12 @@
 }
 
 
-
 .top-header.top-header-pay .top-header-title h1,
 .top-header.top-header-pay .top-header-title .eyebrow {
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.96),
     0 0 10px rgba(255, 251, 240, 0.82);
 }
-
-
-
-
-
 
 
 /* Congés et récupérations : même traitement pictural que Ma paie. Le bleu,
@@ -69,8 +63,6 @@
 /* Congés : préserver l’œuvre telle qu’elle a été fournie. */
 
 
-
-
 /* Tableau de bord mensuel de Ma paie. Les informations prioritaires restent
    visibles sans ouvrir les réglages ni les pages de détail. */
 .pay-app-screen:has(.pay-dashboard) {
@@ -86,7 +78,6 @@
 }
 
 
-
 .pay-dashboard-settings {
   border: 1px solid var(--border-card);
   border-radius: var(--radius-panel);
@@ -94,16 +85,7 @@
 }
 
 
-
-
 .pay-dashboard-profile-slot .pay-profile-settings{margin:0;border:1px solid rgba(140,61,24,.28);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}.pay-dashboard-profile-slot .pay-profile-summary{min-height:96px;padding:13px 18px}.pay-dashboard-profile-slot .pay-profile-symbol{background:var(--action-primary);border-radius:var(--radius-control);color:#fff;display:grid;flex:0 0 44px;font-weight:900;height:44px;place-items:center}.pay-profile-open-copy{border-radius:999px;color:var(--accent-strong);font-size:11px;font-weight:850;padding:6px 9px;white-space:nowrap}.pay-profile-open-copy.complete{background:#fff;color:#216846}.pay-profile-open-copy.missing{background:#fff0d9;color:#8b4d13}
-
-
-
-
-
-
-
 
 
 /* Le montant est le point fort de l'écran, mais il n'a pas besoin d'une
@@ -198,39 +180,9 @@
   }
 }
 
-/* Finition téléphone des trois espaces pratiques. Les soldes de congés ne
-   sont volontairement pas ciblés : seule la zone d'outils qui les suit évolue. */
+/* Finition téléphone des espaces pratiques (la page Congés est dans
+   19-leave-page.css). */
 @media (max-width: 720px) {
-  .leave-tools-area {
-    width: calc(100% - 16px);
-    gap: 11px;
-    margin-top: 12px;
-    border-color: var(--border-card);
-    border-radius: 21px;
-    padding: 10px;
-    background:
-      radial-gradient(circle at 100% 0, rgba(122, 111, 95, 0.13), transparent 35%),
-      linear-gradient(160deg, var(--surface-high) 0%, #fffaf4 100%);
-    box-shadow: 0 9px 23px rgba(58, 51, 44, 0.09);
-  }
-
-
-
-
-  .leave-tools-area > .cet-section,
-  .leave-tools-area > .leave-request-archive,
-  .leave-secondary-grid > .overtime-balance-card {
-    border-radius: 18px;
-    box-shadow: 0 5px 14px rgba(87, 78, 66, 0.06);
-  }
-
-  .leave-secondary-grid > .overtime-balance-card:first-child {
-    border-top-width: 1px;
-  }
-
-  .leave-secondary-grid > .mecenat-balance-card {
-    border-top-width: 1px;
-  }
 
   /* Formulaires utiles : une mosaïque 2 × 2 réduit le défilement sans
      sacrifier les descriptions. Les écrans très étroits repassent en liste. */

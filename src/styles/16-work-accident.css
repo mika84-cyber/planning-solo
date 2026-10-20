@@ -104,16 +104,9 @@
 .work-accident-sources strong { width: 100%; color: var(--muted); }
 .work-accident-sources a { color: var(--muted); }
 
-.leave-balance-grid button.work_accident {
-  --balance-color: var(--muted);
-  grid-column: 1 / -1;
-  order: 10;
-}
-
-/* La carte de suivi conclut les soldes sur grand écran. Sur téléphone, elle
-   partage au contraire la dernière rangée avec Grève pour garder une grille
-   courte et régulière. La case du planning et ses repères (poste du jour,
-   accident) sont dans 06-planning-calendar.css. */
+/* La tuile Accident de travail des soldes est dans 19-leave-page.css ; la
+   case du planning et ses repères (poste du jour, accident) sont dans
+   06-planning-calendar.css. */
 /* Fiche du jour : le poste dans un encadré discret, en deux tuiles. */
 .day-work-post { min-width: 0; margin: 18px 0 14px; border: 1px solid #ece5db; border-radius: 18px; padding: 10px 12px 12px; background: #fbf8f4; }
 .day-work-post legend { float: left; display: flex; align-items: baseline; gap: 8px; width: 100%; margin: 0 0 8px; padding: 0; color: var(--muted); font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
@@ -139,32 +132,6 @@
   .work-accident-date-input:focus-within > span,
   .work-accident-date-input.has-value > span { display: none; }
   .work-accident-date-input:not(.has-value):not(:focus-within) input::-webkit-datetime-edit { color: transparent; }
-  .leave-balances-direct .leave-balance-grid button.strike,
-  .leave-balances-direct .leave-balance-grid button.work_accident {
-    display: block;
-    min-height: 0;
-    align-self: stretch;
-  }
-  .leave-balances-direct .leave-balance-grid button.strike {
-    grid-column: 1;
-    order: 10;
-  }
-  .leave-balances-direct .leave-balance-grid button.work_accident {
-    grid-column: 2;
-    order: 11;
-  }
-  .leave-balances-direct .leave-balance-grid button.strike > strong {
-    margin: 5px 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
-    padding-bottom: 7px;
-  }
-  .leave-balances-direct .leave-balance-grid button.strike > small,
-  .leave-balances-direct .leave-balance-grid button.strike > em {
-    grid-column: auto;
-    grid-row: auto;
-    justify-self: auto;
-  }
-  .leave-balances-direct .leave-balance-grid button.strike > em { margin-top: 7px; }
   .work-accident-screen { border-radius: 18px; padding: 13px; }
   .work-accident-header { grid-template-columns: minmax(0, 1fr); padding-left: 49px; }
   .work-accident-header h2 { font-size: 23px; }

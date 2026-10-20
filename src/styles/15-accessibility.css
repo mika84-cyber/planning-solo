@@ -1,14 +1,4 @@
 
-.overtime-balance-summary article.remaining > span {
-  color: var(--muted);
-}
-
-/* Les petits libellés des soldes utilisent une couleur commune suffisamment
-   sombre : les teintes de catégorie restent portées par le liseré et le fond. */
-.leave-balances-direct .leave-balance-grid button > em {
-  color: var(--muted);
-}
-
 .cet-actions .cet-rights-open-action {
   border-color: #8c3600;
   background: #a64000;

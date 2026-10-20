@@ -386,48 +386,6 @@ h1 {
   color: var(--muted);
   font-size: 12px;
 }
-.leave-balance-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 9px;
-}
-.leave-balance-grid button {
-  border: 0;
-  border-left: 5px solid var(--balance-color);
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: color-mix(in srgb, var(--balance-color) 8%, white);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    transform 140ms ease,
-    box-shadow 140ms ease;
-}
-.leave-balance-grid button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 7px 16px
-    color-mix(in srgb, var(--balance-color) 15%, transparent);
-}
-.leave-balance-grid button.annual {
-  --balance-color: var(--leave-annual);
-}
-.leave-balance-grid button.rtt {
-  --balance-color: var(--leave-rtt);
-}
-.leave-balance-grid button.fraction {
-  --balance-color: var(--leave-fraction);
-}
-.leave-balance-grid button.sick {
-  --balance-color: #c2557a;
-}
-.leave-balance-grid button.childcare {
-  --balance-color: #3f9a4a;
-}
-.leave-balance-grid button.exceptional {
-  --balance-color: #854d0e;
-}
 .request-actions {
   display: flex;
   flex-wrap: wrap;
@@ -505,34 +463,6 @@ h1 {
 #request-panel .request-cancel-link { justify-self: center; min-height: 40px; padding: 0 12px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.9rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 #request-panel .request-cancel-link:hover:not(:disabled) { color: var(--text); }
 #request-panel .request-bottom-stack .request-action-clarification { display: block; margin-top: 4px; color: var(--muted); font-size: 0.8rem; text-align: center; }
-.leave-balance-grid span,
-.leave-balance-grid small {
-  display: block;
-}
-.leave-balance-grid span {
-  color: var(--text);
-  font-size: 11px;
-  font-weight: 800;
-}
-.leave-balance-grid strong {
-  display: block;
-  margin: 5px 0 2px;
-  color: var(--balance-color);
-  font-size: 27px;
-  line-height: 1;
-}
-.leave-balance-grid small {
-  color: var(--muted);
-  font-size: 10px;
-}
-.leave-balance-grid em {
-  display: block;
-  margin-top: 7px;
-  color: var(--balance-color);
-  font-size: 9px;
-  font-style: normal;
-  font-weight: 800;
-}
 .balance-detail-summary {
   display: flex;
   align-items: center;

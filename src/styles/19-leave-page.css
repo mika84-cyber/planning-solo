@@ -1,0 +1,1122 @@
+/* Page Congés et récupérations (LeaveManagementPage) : barre d'actions, avis
+   d'absence longue, soldes, mémo « Règles des congés », zone d'outils
+   (heures supplémentaires, mécénats, CET) — un bloc par composant, les
+   variantes selon la largeur regroupées en fin de fichier. Ces règles
+   étaient réparties entre les feuilles 02 à 17, leaveCollapsibles.css et
+   leaveMenus.css. La feuille est importée par main.tsx juste après
+   styles.css, 16-work-accident.css et dataManagement.css : à spécificité
+   égale, elle l'emporte sur elles, et cède à productRefinements.css (cadres,
+   en-têtes et tailles de texte communs des rubriques) et à darkTheme.css.
+
+   Restent ailleurs : le cœur du CET (04-leave-cet.css, partagé avec ses
+   formulaires), les lignes d'historique (WorkTimeHistory, feuille 09), les
+   demandes archivées (communes à plusieurs rubriques) et les listes
+   communes à plusieurs rubriques. Attention à la conversion sombre
+   (src/darkStyles.ts) : elle recopie les couleurs de ces règles, dans le
+   même ordre, en fin de cascade. */
+
+/* ---- Barre d'actions ------------------------------------------------------ */
+
+/* « Formulaire vierge », pour une demande sans le parcours guidé : à côté de
+   « Poser un congé » et de même largeur, toujours en second plan. */
+.leave-primary-action-bar {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 clamp(14px, 2vw, 20px);
+}
+.leave-primary-action-bar > button {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  text-align: center;
+}
+.leave-primary-action-bar > .leave-open-form-action {
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+/* ---- Absence de 31 jours et plus ------------------------------------------ */
+
+/* Un rappel sobre et son courrier. */
+.long-absence-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 0 0 14px;
+  border: 1px solid #e9c7a4;
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: #fdf5ec;
+}
+.long-absence-notice p {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+}
+.long-absence-notice span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.long-absence-letter textarea {
+  width: 100%;
+  min-height: 320px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+/* ---- Soldes ---------------------------------------------------------------- */
+
+.leave-balances-direct {
+  display: grid;
+  gap: 13px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+}
+.leave-balances-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+.leave-balances-heading h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.leave-year-tools {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 14px;
+}
+.leave-year-tools > label {
+  display: grid;
+  gap: 4px;
+  min-width: 116px;
+}
+.leave-year-tools > label > span {
+  color: var(--muted);
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.leave-year-tools > strong {
+  padding-bottom: 10px;
+  color: var(--accent);
+  font-size: 13px;
+}
+.leave-year-picker .choice-picker-trigger {
+  min-height: 40px;
+}
+.direct-balances-content {
+  border-radius: 18px;
+}
+
+/* Les tuiles des soldes : deux colonnes de même hauteur, chacune dans la
+   couleur de son type de congé. */
+.leave-balance-grid {
+  display: grid;
+  gap: 9px;
+}
+.leave-balances-direct .direct-balances-content > .leave-balance-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+}
+.leave-balance-grid button {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--balance-color) 8%, white);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.leave-balances-direct .leave-balance-grid button {
+  border: 1px solid color-mix(in srgb, var(--balance-color) 52%, var(--border-card));
+  padding: 11px 12px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.72);
+}
+.leave-balance-grid button:hover {
+  transform: translateY(-1px);
+}
+.leave-balance-grid button.annual { --balance-color: var(--leave-annual); }
+.leave-balance-grid button.rtt { --balance-color: var(--leave-rtt); }
+.leave-balance-grid button.fraction { --balance-color: var(--leave-fraction); }
+.leave-balance-grid button.sick { --balance-color: #c2557a; }
+.leave-balance-grid button.childcare { --balance-color: #3f9a4a; }
+.leave-balance-grid button.exceptional { --balance-color: #854d0e; }
+.leave-balance-grid button.other { --balance-color: #d9ab2b; }
+.leave-balance-grid button.cet { --balance-color: #2f5fb3; }
+.leave-balance-grid button.work_accident { --balance-color: var(--muted); }
+.leave-balances-direct .leave-balance-grid button.strike { --balance-color: #f28b82; }
+.leave-balance-grid span,
+.leave-balance-grid small {
+  display: block;
+}
+.leave-balances-direct .leave-balance-grid span {
+  color: #2c2621;
+  font-weight: 900;
+}
+.leave-balance-grid strong {
+  display: block;
+  margin: 5px 0 2px;
+  line-height: 1;
+}
+.leave-balances-direct .leave-balance-grid strong {
+  margin-bottom: 5px;
+  border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
+  padding-bottom: 7px;
+  color: color-mix(in srgb, var(--balance-color) 58%, #2c2621);
+  font-size: 23px;
+  font-weight: 950;
+}
+/* « restant » / « pris » accolés au chiffre, dans sa couleur : la mention
+   qualifie le nombre, elle n'est pas une ligne d'explication séparée. */
+.leave-balance-grid strong i {
+  margin-left: 5px;
+  font-size: 12px;
+  font-style: normal;
+}
+.leave-balances-direct .leave-balance-grid strong i {
+  color: color-mix(in srgb, var(--balance-color) 48%, #3a332c);
+  font-weight: 900;
+}
+.leave-balances-direct .leave-balance-grid small {
+  color: var(--muted);
+  font-weight: 700;
+}
+/* Jours saisis sans date dans une reprise manuelle. */
+.leave-balances-direct .leave-balance-grid small.manual-balance-note {
+  color: #7a5b16;
+}
+
+/* Reprendre ses absences précédentes : une ligne sous les tuiles. */
+.manual-adjustments-trigger {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: linear-gradient(135deg, #fffaf0, #fff 70%);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.leave-balances-direct .direct-balances-content > .manual-adjustments-trigger {
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  width: 100%;
+  margin: 12px 0 0;
+}
+.manual-adjustments-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f6e9bd;
+  color: #6e5414;
+  font-size: 22px;
+}
+.manual-adjustments-trigger > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+.manual-adjustments-trigger strong {
+  font-size: 13px;
+}
+.manual-adjustments-trigger small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+.manual-adjustments-summary {
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: #f3ead1;
+  color: #70581d;
+  font-weight: 850;
+}
+.leave-balances-direct .direct-balances-content .manual-adjustments-summary {
+  grid-column: 3;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+/* ---- Règles des congés (LeaveInfoCard) ------------------------------------- */
+
+/* Une ligne au-dessus des soldes, en bleu ardoise froid, distinct des tuiles
+   de soldes : il s'agit de règles et non d'un décompte. Un fin liseré noir,
+   fermée comme ouverte, détache la carte des soldes ; le bandeau du titre
+   reprend le terracotta pâle de « Formulaire vierge ». */
+.leave-info-card {
+  margin: 0 0 12px;
+  overflow: hidden;
+  border: 1px solid #000;
+  border-radius: 12px;
+  background: #eef2f6;
+  box-shadow: none;
+}
+.leave-info-card > summary {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+.leave-info-card > summary::-webkit-details-marker {
+  display: none;
+}
+.leave-info-card > summary:hover {
+  background: color-mix(in srgb, var(--accent-soft) 88%, var(--accent));
+}
+.leave-info-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--accent);
+  color: #fff;
+}
+.leave-info-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.leave-info-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.leave-info-kicker {
+  color: var(--accent);
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.leave-info-copy strong {
+  color: var(--accent-strong);
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+/* Brun sourd : distinct du titre, et lisible sur le fond pâle (contraste 6:1). */
+.leave-info-copy small {
+  color: #6b4a3c;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.leave-info-card > summary > em {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 999px;
+  padding: 5px 11px;
+  background: #fff;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.leave-info-card > summary > em svg {
+  width: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.14s ease;
+}
+.leave-info-card[open] > summary > em svg {
+  transform: rotate(180deg);
+}
+.leave-info-card:not([open]) .leave-info-hide,
+.leave-info-card[open] .leave-info-show {
+  display: none;
+}
+
+/* Le détail : le report en terracotta, le fractionnement en vert, les congés
+   exceptionnels en violet, chacun avec son liseré et ses pastilles. */
+.leave-info-content {
+  border-top: 1px solid #cfd8e3;
+  padding: 12px;
+  background: #f3f6f9;
+}
+.leave-info-content .sunday-dates-close {
+  border-color: #cfd8e3;
+  color: #3f5670;
+}
+.leave-info-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 12px;
+}
+.leave-info-content section {
+  --info-accent: #b35a36;
+  --info-soft: #f7e3d8;
+  --info-ink: #8a3d22;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  border: 1px solid #e6ded3;
+  border-left: 4px solid var(--info-accent);
+  border-radius: 18px;
+  padding: 14px;
+  background: #fff;
+}
+.leave-info-content section.leave-info-fraction { --info-accent: #2f7a5e; --info-soft: #dff0e8; --info-ink: #1f5c45; }
+.leave-info-content section.leave-info-exceptional { --info-accent: #6a4fa3; --info-soft: #ebe5f6; --info-ink: #4d3780; }
+.leave-info-content h3 {
+  margin: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
+  color: var(--info-ink);
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+.leave-info-content p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.leave-info-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.leave-info-rows li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+  padding: 8px 0;
+}
+.leave-info-rows li + li {
+  border-top: 1px dashed #e6ded3;
+}
+.leave-info-rows li > span {
+  display: grid;
+  flex: 1 1 0;
+  gap: 1px;
+  min-width: 150px;
+}
+.leave-info-rows strong {
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+.leave-info-rows small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+.leave-info-rows b,
+.leave-info-steps b {
+  flex: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.leave-info-content section .leave-info-rows b,
+.leave-info-content section .leave-info-steps b {
+  background: var(--info-soft);
+  color: var(--info-ink);
+}
+.leave-info-months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.leave-info-months li {
+  border-radius: 6px;
+  padding: 5px 0;
+  background: #f4efe8;
+  color: #b3a697;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: center;
+}
+.leave-info-content section .leave-info-months li.counts {
+  background: var(--info-soft);
+  color: var(--info-ink);
+}
+.leave-info-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.leave-info-steps p {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  border: 1px solid #efe8de;
+  border-radius: 12px;
+  padding: 10px;
+}
+.leave-info-content section .leave-info-steps p {
+  border-color: color-mix(in srgb, var(--info-accent) 18%, #fff);
+  background: color-mix(in srgb, var(--info-soft) 35%, #fff);
+}
+.leave-info-steps strong {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+.leave-info-steps span {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+.leave-info-steps b {
+  margin-top: 4px;
+}
+.leave-info-content .leave-info-note {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+/* Report : une échéance par bloc, la date en éphéméride à gauche. */
+.leave-info-deadline {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+.leave-info-deadline + .leave-info-deadline {
+  border-top: 1px dashed #e6ded3;
+  padding-top: 10px;
+}
+.leave-info-date {
+  display: grid;
+  justify-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--info-accent) 30%, #fff);
+  border-radius: 10px;
+  background: #fff;
+  line-height: 1;
+}
+.leave-info-date b {
+  padding: 6px 0 3px;
+  color: var(--info-ink);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.leave-info-deadline .leave-info-date small {
+  width: 100%;
+  padding: 3px 0;
+  background: var(--info-accent);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.leave-info-deadline > span:last-child {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.leave-info-deadline strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+.leave-info-deadline small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+/* Congés reportables l'un sous l'autre, quelle que soit la largeur de l'écran. */
+.leave-info-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.leave-info-tags li {
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: var(--info-soft);
+  color: var(--info-ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+/* ---- Zone d'outils : heures, mécénats, CET -------------------------------- */
+
+/* Trois volets côte à côte ; celui qu'on ouvre prend toute la largeur et
+   masque les deux autres. */
+.leave-tools-area {
+  display: grid;
+  gap: 16px;
+  margin: 18px auto 0;
+  border: 1.5px solid var(--app-frame-strong);
+  border-radius: 29px;
+  padding: clamp(15px, 2.3vw, 24px);
+}
+.leave-tools-area > .leave-request-archive {
+  width: 100%;
+  margin: 0;
+  border-radius: 18px;
+}
+.leave-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+.leave-secondary-grid:has(> .leave-tool-disclosure[open]) > .leave-tool-disclosure:not([open]) {
+  display: none;
+}
+.leave-tool-disclosure {
+  --tool-ink: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-card);
+  border-radius: 18px;
+}
+.leave-tool-disclosure > summary {
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 258px;
+  padding: 13px;
+  color: #3a332c;
+  cursor: pointer;
+  list-style: none;
+}
+.leave-tool-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.leave-tool-illustration {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 100%;
+  height: clamp(164px, 17vw, 212px);
+  overflow: hidden;
+  border-radius: 18px;
+  /* Fond blanc pour les trois dessins : ils se détachent de l'encart crème. */
+  background: #fff;
+  color: var(--muted);
+}
+.leave-tool-illustration.mecenat {
+  color: #9b8e7c;
+}
+.leave-tool-illustration.cet {
+  color: #82601f;
+}
+.leave-tool-illustration img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+.leave-tool-copy {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: 7px;
+  min-width: 0;
+  text-align: center;
+}
+.leave-tool-copy strong {
+  max-width: 100%;
+  color: var(--tool-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+.leave-tool-disclosure > summary > b {
+  align-self: center;
+  margin-top: auto;
+  color: var(--tool-ink);
+  line-height: 1.2;
+  text-align: center;
+}
+.leave-tool-disclosure[open] {
+  grid-column: 1 / -1;
+}
+.leave-tool-disclosure[open] > summary {
+  min-height: 0;
+  border-bottom: 1px solid var(--border-control);
+}
+/* Carte ouverte : l'illustration garde toute sa place, centrée dans un cadre
+   de largeur mesurée, sans zoom ni rognage. */
+.leave-tool-disclosure[open] > summary .leave-tool-illustration {
+  width: min(100%, 380px);
+  height: 176px;
+  margin: 0 auto;
+}
+.leave-tool-disclosure[open] > summary .leave-tool-illustration img {
+  transform: none;
+}
+.leave-tool-disclosure[open] > summary .leave-tool-copy {
+  min-height: 0;
+}
+.leave-tool-disclosure[open] > summary > b {
+  margin-top: 0;
+}
+.leave-tool-disclosure > .overtime-balance-card,
+.leave-tool-disclosure > .cet-section {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ---- Heures supplémentaires et mécénats ------------------------------------ */
+
+.overtime-balance-card {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  background: linear-gradient(145deg, #fff 0%, #fff 100%);
+}
+.overtime-balance-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.overtime-balance-heading h3 {
+  margin: 2px 0 4px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.overtime-balance-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.overtime-balance-heading > strong {
+  flex: 0 0 auto;
+  color: #2c6a5e;
+  font-size: 14px;
+}
+.overtime-balance-summary {
+  display: grid;
+  gap: 8px;
+}
+.overtime-balance-summary-primary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.overtime-balance-summary article {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(58, 51, 44, 0.045);
+}
+.overtime-balance-summary article small {
+  color: var(--muted);
+}
+.overtime-balance-summary span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.overtime-balance-summary strong {
+  color: #3a332c;
+  font-size: 20px;
+}
+/* Heures au-delà du plafond de la paie du mois : non payées. */
+.overtime-capped-note {
+  display: block;
+  margin-top: 2px;
+}
+.overtime-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.solidarity-hours-action {
+  min-height: 46px;
+  border-color: #c96c12;
+  border-radius: 12px;
+  padding: 0 18px;
+  background: linear-gradient(135deg, #ed9638, #dc781d);
+  color: #fff;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(203, 103, 18, 0.2);
+}
+.overtime-history-toggle {
+  justify-self: start;
+}
+.overtime-history {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid var(--border-card);
+  padding-top: 12px;
+}
+
+/* Mécénats : distincts des heures supplémentaires, avec les tarifs
+   réglementaires du jour et de la nuit. */
+.mecenat-balance-card {
+  background: linear-gradient(145deg, var(--surface-high) 0%, var(--surface-high) 100%);
+}
+.mecenat-rate-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.mecenat-rate-summary article {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--border-control);
+  border-radius: 11px;
+  padding: 10px;
+  background: #fff;
+}
+.mecenat-rate-summary span {
+  color: var(--muted);
+}
+.mecenat-rate-summary strong {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---- CET dans la page ------------------------------------------------------ */
+
+/* Le CET, rubrique ouverte dans son volet : l'en-tête n'est plus un bouton. */
+.cet-section-static .cet-heading-static {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 84px;
+  border-bottom: 1px solid var(--border-card);
+  padding: 15px 17px;
+  background: transparent;
+  cursor: default;
+}
+.cet-section-static .cet-heading-static .cet-symbol {
+  width: 50px;
+  height: 50px;
+  border-color: var(--muted);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #9b8e7c, #7a6f5f);
+  box-shadow: 0 6px 14px rgba(122, 111, 95, 0.2), inset 0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+.cet-section-static .cet-heading-static strong {
+  color: #3a332c;
+  font-size: 1.15rem;
+}
+.cet-section-static .cet-heading-static small {
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.cet-section-static .cet-content {
+  border-top: 0;
+  padding: clamp(13px, 1.8vw, 18px);
+  background: #fff;
+}
+.cet-section-static .cet-callout p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ---- Variantes selon la largeur ------------------------------------------ */
+
+@media (min-width: 721px) {
+  /* Sur grand écran, chaque tuile occupe sa case, dans l'ordre du DOM. */
+  .leave-balances-direct .direct-balances-content > .leave-balance-grid > button:is(.childcare, .exceptional, .other, .cet, .work_accident, .strike) {
+    display: block;
+    grid-column: auto;
+    min-width: 0;
+    height: 100%;
+    order: initial;
+  }
+  .leave-balances-direct .direct-balances-content > .leave-balance-grid > button.strike > :is(span, strong, small, em) {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: auto;
+  }
+  /* Sur grand écran, les actions des mécénats reprennent strictement
+     l'encombrement et l'alignement de celles des heures supplémentaires. */
+  .mecenat-balance-card .overtime-actions,
+  .mecenat-balance-card .overtime-actions .mecenat-action,
+  .mecenat-balance-card .overtime-history-toggle {
+    width: auto;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .leave-balances-direct {
+    gap: 10px;
+  }
+  .leave-balances-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .leave-balances-heading h3 {
+    font-size: 15px;
+  }
+  .leave-year-tools {
+    justify-content: space-between;
+  }
+  .leave-year-tools > label {
+    min-width: 132px;
+  }
+  .leave-balances-direct .leave-balance-grid {
+    gap: 7px;
+  }
+  .leave-balances-direct .leave-balance-grid button {
+    min-width: 0;
+    padding: 10px;
+  }
+  .leave-balances-direct .leave-balance-grid strong {
+    font-size: 20px;
+  }
+  .leave-balances-direct .leave-balance-grid small {
+    line-height: 1.3;
+  }
+  /* Sur téléphone, Grève et Accident de travail ferment la grille, côte à côte. */
+  .leave-balances-direct .leave-balance-grid button.strike {
+    grid-template-columns: 1fr auto;
+    padding: 9px 12px;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike > span,
+  .leave-balances-direct .leave-balance-grid button.strike > strong,
+  .leave-balances-direct .leave-balance-grid button.strike > small {
+    margin: 0;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike,
+  .leave-balances-direct .leave-balance-grid button.work_accident {
+    display: block;
+    min-height: 0;
+    align-self: stretch;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike {
+    grid-column: 1;
+    order: 10;
+  }
+  .leave-balances-direct .leave-balance-grid button.work_accident {
+    grid-column: 2;
+    order: 11;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike > strong {
+    margin: 5px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
+    padding-bottom: 7px;
+  }
+  .leave-balances-direct .leave-balance-grid button.strike > small {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: auto;
+  }
+  .leave-tools-area {
+    gap: 11px;
+    margin-top: 12px;
+    border-radius: 21px;
+    padding: 10px;
+  }
+  .leave-tools-area > .leave-request-archive {
+    box-shadow: 0 5px 14px rgba(87, 78, 66, 0.06);
+  }
+  .leave-secondary-grid {
+    gap: 8px;
+  }
+  .leave-tool-disclosure > summary {
+    gap: 7px;
+    min-height: 272px;
+    padding: 8px;
+  }
+  .leave-tool-illustration {
+    height: clamp(124px, 36vw, 154px);
+    border-radius: 11px;
+  }
+  /* Sur téléphone, ces deux dessins gardent une large marge vide dans leur
+     case étroite : on les rapproche du bord sans les rogner. */
+  .leave-tool-illustration.work-time img { transform: scale(1.16); }
+  .leave-tool-illustration.mecenat img { transform: scale(1.06); }
+  .leave-tool-copy {
+    align-content: center;
+    min-height: 52px;
+  }
+  .leave-tool-copy strong {
+    font-size: clamp(0.85rem, 2.8vw, 1.05rem);
+  }
+  /* Deux lignes réservées au libellé du bas : s'il passe à la ligne sur une
+     carte, les titres des trois outils restent alignés. */
+  .leave-tool-disclosure > summary > b {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.4em;
+  }
+  .leave-tool-disclosure[open] > summary {
+    min-height: 0;
+    padding: 10px;
+  }
+  .leave-tool-disclosure[open] > summary .leave-tool-illustration {
+    width: min(100%, 320px);
+    height: 156px;
+  }
+  .overtime-balance-card {
+    gap: 16px;
+    padding: 17px 14px;
+  }
+  .overtime-actions > button,
+  .solidarity-hours-action,
+  .mecenat-balance-card .overtime-actions,
+  .mecenat-balance-card .overtime-actions .mecenat-action,
+  .mecenat-balance-card .overtime-history-toggle {
+    width: 100%;
+  }
+  .cet-section-static .cet-heading-static {
+    min-height: 76px;
+    padding: 12px;
+  }
+  .cet-section-static .cet-heading-static .cet-symbol {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+  .cet-section-static .cet-heading-static small {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .overtime-balance-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .overtime-balance-summary {
+    gap: 5px;
+  }
+  .overtime-balance-summary article {
+    padding: 9px 7px;
+  }
+  .overtime-balance-summary strong {
+    font-size: 15px;
+  }
+  .overtime-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .overtime-actions button {
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 600px) {
+  #leave-info-exceptional ~ .leave-info-rows li {
+    flex-wrap: nowrap;
+  }
+  .leave-info-card > summary > em {
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+  .leave-info-card > summary > em > span,
+  .leave-info-copy small {
+    display: none;
+  }
+  .leave-info-content {
+    padding: 10px;
+  }
+  .leave-info-content section {
+    padding: 12px;
+  }
+  .leave-info-deadline {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .leave-primary-action-bar {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 390px) {
+  .leave-secondary-grid {
+    gap: 6px;
+  }
+  .leave-tool-disclosure > summary {
+    min-height: 258px;
+    padding: 6px;
+  }
+  .leave-tool-illustration {
+    height: 130px;
+  }
+  .leave-tool-copy strong {
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  /* Z Fold ouvert : les trois cartes restent empilées, comme fermé. */
+  .leave-info-sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
+  /* Sur grand écran, le report et le fractionnement s'empilent à gauche, les
+     congés exceptionnels occupent la colonne de droite. */
+  .leave-info-sections {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-areas: "carry exceptional" "fraction exceptional";
+    align-items: start;
+  }
+  .leave-info-sections > .leave-info-carry { grid-area: carry; }
+  .leave-info-sections > .leave-info-fraction { grid-area: fraction; }
+  .leave-info-sections > .leave-info-exceptional { grid-area: exceptional; }
+}

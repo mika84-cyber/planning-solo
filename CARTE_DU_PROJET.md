@@ -18,6 +18,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/styles/14-planning-commands.css` : commandes du planning (cadre de la
   rubrique, barre du mois, Aujourd’hui, jours travaillés, effacement, choix
   d’un planning PDF), un bloc par composant, importé après la feuille 14.
+- `src/styles/19-leave-page.css` : page Congés (soldes, règles des congés,
+  absence longue, volets heures, mécénats et CET), importée par `main.tsx`
+  après `dataManagement.css`.
 
 ## Composants d'interface autonomes
 
