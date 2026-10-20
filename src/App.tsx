@@ -98,6 +98,7 @@ import {
 import { cetBalance } from "./cet";
 import { HomeSectionScreen } from "./HomeSectionScreen";
 import { LeaveSectionScreen } from "./LeaveSectionScreen";
+import { DocumentsSectionScreen } from "./DocumentsSectionScreen";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import {
   AppHeader,
@@ -109,20 +110,15 @@ import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup"
 import { PlanningDayCell } from "./PlanningDayCell";
 import { MonthCalendar } from "./PlanningView";
 import { WorkExchangePanel } from "./WorkExchangePanel";
-import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
 import { requestRecoveryMinutes } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
-  ColleaguePlanningPage,
   ColleagueRequestNotice,
   DocumentAnnouncementNotice,
   FeedbackMessenger,
   FeedbackResolutionAlert,
-  GrandPalaisProgramSection,
   PdfDownloadPage,
-  UsefulContactsSection,
-  UsefulFormsSection,
 } from "./appSections";
 import {
   getCalendar,
@@ -134,7 +130,6 @@ import { InstallAppNotice } from "./InstallAppNotice";
 import {
   emptyEntry,
   fullDayRecoveryMinutes,
-  presenceShownToColleagues,
   type BalanceType,
   type ManualYearAdjustments,
   type RequestKind,
@@ -296,7 +291,7 @@ export default function Home() {
   const appShellUi = useAppShellUiState();
   const {
     quickNoteMode,
-    homeSection, setHomeSection, prefetchedContacts,
+    homeSection, setHomeSection,
     approvedGrandPalaisUpdates,
     mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
@@ -727,7 +722,7 @@ export default function Home() {
     showSuccess: confirm,
     offerUndo,
   });
-  const { saveWorkAccident, deleteWorkAccident } = useWorkAccidentActions({
+  const workAccident = useWorkAccidentActions({
     demoMode,
     group,
     periods,
@@ -1165,43 +1160,20 @@ export default function Home() {
         </Suspense>
       ) : null}
 
-      {homeSection === "pdf" || homeSection === "forms" ? (
-        <Suspense fallback={<DeferredSection label="vos contacts et formulaires" />}>
-        <UsefulResourcesHub
-          forms={(
-            <UsefulFormsSection
-              key={adminRevision}
-              accountId={userEmail}
-              isAdmin={isProgramAdmin}
-              demoMode={demoMode}
-              today={dateKey(now)}
-              periods={periods}
-              onSaveWorkAccident={saveWorkAccident}
-              onDeleteWorkAccident={deleteWorkAccident}
-            />
-          )}
-          contacts={<UsefulContactsSection key={adminRevision} accountId={userEmail} initialData={adminRevision ? undefined : prefetchedContacts || undefined} isAdmin={isProgramAdmin} demoMode={demoMode} />}
-        />
-        </Suspense>
-      ) : null}
-      {homeSection === "program" ? (
-        <Suspense fallback={<DeferredSection label="la programmation GP" />}>
-          <GrandPalaisProgramSection guestPreview={guestPreview} isAdmin={isProgramAdmin} />
-        </Suspense>
-      ) : null}
-      {homeSection === "colleagues" ? (
-        <Suspense fallback={<DeferredSection label="les plannings de vos collègues" />}>
-          <ColleaguePlanningPage
-            key={adminRevision}
-            demoMode={demoMode}
-            initialName={formProfile?.fullName || ""}
-            accountId={userEmail}
-            ownGroup={group}
-            isAdmin={isProgramAdmin}
-            getOwnPresence={(date) => presenceShownToColleagues(date, group, periods, entries, recoveryUses, workDayMinutes, (key) => Boolean(exceptionalClosureFor(key)), usableWorkSchedule(formProfile?.workSchedule))}
-          />
-        </Suspense>
-      ) : null}
+      <DocumentsSectionScreen
+        now={now}
+        group={group}
+        demoMode={demoMode}
+        userEmail={userEmail}
+        isProgramAdmin={isProgramAdmin}
+        guestPreview={guestPreview}
+        adminRevision={adminRevision}
+        shell={appShellUi}
+        calendar={calendarData}
+        workDayMinutes={workDayMinutes}
+        exceptionalClosureFor={exceptionalClosureFor}
+        workAccident={workAccident}
+      />
 
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
       {showCalendarWorkspace ? (
