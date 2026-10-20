@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { FormProfile } from "./appModel";
+import type { FormProfile, PayStatus } from "./appModel";
 import { calendarErrorMessage } from "./calendarApi";
 import type { WorkQuota, WorkSchedule } from "./overtime";
 import type { PayCalendarPost } from "./usePayActions";
@@ -7,6 +7,7 @@ import type { PayCalendarPost } from "./usePayActions";
 type WorkProfileActionsOptions = {
   demoMode: boolean;
   group: number;
+  setGroup: Dispatch<SetStateAction<number>>;
   formProfile: FormProfile | null;
   setFormProfile: Dispatch<SetStateAction<FormProfile | null>>;
   setPayProfileOpen: (open: boolean) => void;
@@ -14,17 +15,121 @@ type WorkProfileActionsOptions = {
   post: PayCalendarPost;
 };
 
-/** La quotité et les horaires habituels du profil de calcul : enregistrés
- *  sur-le-champ, et rendus tels quels si le serveur refuse. */
+/** Le groupe, le statut, la quotité et les horaires habituels du profil de
+ *  calcul : enregistrés sur-le-champ, et rendus tels quels si le serveur
+ *  refuse. */
 export function useWorkProfileActions({
   demoMode,
   group,
+  setGroup,
   formProfile,
   setFormProfile,
   setPayProfileOpen,
   notify,
   post,
 }: WorkProfileActionsOptions) {
+  function changeGroup(nextGroup: number) {
+    const previousGroup = group;
+    const previousProfile = formProfile;
+    setGroup(nextGroup);
+    const nextProfile: FormProfile = {
+      fullName: formProfile?.fullName || "",
+      group: String(nextGroup),
+      signature: formProfile?.signature || "",
+      status: formProfile?.status,
+      workQuota: formProfile?.workQuota,
+      workSchedule: formProfile?.workSchedule,
+      baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
+      ifse: formProfile?.ifse,
+      carenceDay: formProfile?.carenceDay,
+      otherFixed: formProfile?.otherFixed,
+      cia: formProfile?.cia,
+      ciaMonth: formProfile?.ciaMonth,
+      netRatioFixed: formProfile?.netRatioFixed,
+      netRatioVariable: formProfile?.netRatioVariable,
+      navigo: formProfile?.navigo,
+      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
+      pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
+      deductionPayMonths: formProfile?.deductionPayMonths,
+      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
+      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
+      sundayCarryover: formProfile?.sundayCarryover,
+      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
+      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
+      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
+      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
+    };
+    setFormProfile(nextProfile);
+    if (demoMode)
+      return;
+    void post({
+        action: "save-form-profile",
+        fullName: nextProfile.fullName,
+        group: nextProfile.group,
+        signature: nextProfile.signature,
+      }).catch((error) => {
+        setGroup(previousGroup);
+        setFormProfile(previousProfile);
+        notify(
+          calendarErrorMessage(error, "Le groupe n’a pas pu être enregistré."),
+        );
+      });
+  }
+  /** IFSE, CIA et les primes automatiques (dimanche, férié, net estimé) sont
+   *  calées sur les règles d'un fonctionnaire. Passer sur « Contractuel »
+   *  ne touche à aucun montant déjà saisi : ça change seulement ce qui
+   *  s'affiche, au cas où ce statut serait choisi puis annulé. */
+  function changeStatus(nextStatus: PayStatus) {
+    const previousProfile = formProfile;
+    const nextProfile: FormProfile = {
+      fullName: formProfile?.fullName || "",
+      group: formProfile?.group || String(group),
+      signature: formProfile?.signature || "",
+      status: nextStatus,
+      workQuota: formProfile?.workQuota,
+      workSchedule: formProfile?.workSchedule,
+      baseSalary: formProfile?.baseSalary,
+      residenceAllowance: formProfile?.residenceAllowance,
+      ifse: formProfile?.ifse,
+      carenceDay: formProfile?.carenceDay,
+      otherFixed: formProfile?.otherFixed,
+      cia: formProfile?.cia,
+      ciaMonth: formProfile?.ciaMonth,
+      netRatioFixed: formProfile?.netRatioFixed,
+      netRatioVariable: formProfile?.netRatioVariable,
+      navigo: formProfile?.navigo,
+      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
+      pasRate: formProfile?.pasRate,
+      manualAdjustments: formProfile?.manualAdjustments,
+      cetAccount: formProfile?.cetAccount,
+      deductionPayMonths: formProfile?.deductionPayMonths,
+      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
+      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
+      sundayCarryover: formProfile?.sundayCarryover,
+      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
+      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
+      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
+      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
+    };
+    setFormProfile(nextProfile);
+    if (demoMode)
+      return;
+    void post({
+        action: "save-form-profile",
+        fullName: nextProfile.fullName,
+        group: nextProfile.group,
+        signature: nextProfile.signature,
+        status: nextStatus,
+      }).catch((error) => {
+        setFormProfile(previousProfile);
+        notify(
+          calendarErrorMessage(error, "Le statut n’a pas pu être enregistré."),
+        );
+      });
+  }
   function changeWorkQuota(nextQuota: WorkQuota) {
     const previousProfile = formProfile;
     const nextProfile: FormProfile = {
@@ -120,5 +225,5 @@ export function useWorkProfileActions({
     setPayProfileOpen(false);
   }
 
-  return { changeWorkQuota, changeWorkSchedule, saveCalculationProfile };
+  return { changeGroup, changeStatus, changeWorkQuota, changeWorkSchedule, saveCalculationProfile };
 }

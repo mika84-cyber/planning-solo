@@ -10,13 +10,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { saveSnapshotAdmin } from "./rememberedSession";
 import { AuthScreen } from "./AuthScreen";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
-import { getSharedGrandPalaisProgram } from "./grandPalaisProgramApi";
-import { getUsefulContacts } from "./contactsApi";
-import { getColleagueGroups, refreshColleagueGenders } from "./colleagueSharingApi";
-import { useColleagueGenders } from "./colleagueGenders";
 import { resolvePublicDemoAccess } from "./demoAccess";
 import { ConnectionStatus } from "./ConnectionStatus";
 import { useAuthUiState } from "./useAuthUiState";
@@ -32,6 +27,9 @@ import { useWorkProfileActions } from "./useWorkProfileActions";
 import { usePartnerNoteActions } from "./usePartnerNoteActions";
 import { useSectionNavigation } from "./useSectionNavigation";
 import { useApplicationStartup } from "./useApplicationStartup";
+import { useShellEffects } from "./useShellEffects";
+import { useSharedDataPrefetch } from "./useSharedDataPrefetch";
+import { useRequestTypeSelection } from "./useRequestTypeSelection";
 
 const homeDashboardModule = import("./HomeDashboard");
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
@@ -93,9 +91,7 @@ import {
   EMPTY_MANUAL_ADJUSTMENTS,
   computePayAllowances,
 } from "./payAllowances";
-import { computeLeaveStats } from "./leaveStats";
 import { cetBalance } from "./cet";
-import { warmUpScreens } from "./warmUpScreens";
 import { computeTodayOverview } from "./todayOverview";
 import { UpcomingNoteList } from "./UpcomingNoteList";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
@@ -112,7 +108,7 @@ import { MonthCalendar } from "./PlanningView";
 import { WorkExchangePanel } from "./WorkExchangePanel";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
 import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
-import { requestLeaveBalanceUsage, requestRecoveryMinutes } from "./RequestValidationSummary";
+import { requestRecoveryMinutes } from "./RequestValidationSummary";
 import { visibleAbsencePeriod } from "./absenceReplacement";
 import {
   CetSection,
@@ -131,7 +127,6 @@ import {
   UsefulFormsSection,
 } from "./appSections";
 import {
-  calendarErrorMessage,
   getCalendar,
   postCalendar,
   postCalendarBatch,
@@ -146,16 +141,12 @@ import {
   workedDayCount,
   workedDayCountBetween,
   type BalanceType,
-  type FormProfile,
   type ManualYearAdjustments,
-  type PayStatus,
   type RequestKind,
-  type SelectedDay,
 } from "./appModel";
 import { useAnnualPdfExport } from "./useAnnualPdfExport";
 import {
   canEnableInstallation,
-  setInstallMetadataEnabled,
   useInstallPrompt,
 } from "./useInstallPrompt";
 import { useConnectionStatus } from "./useConnectionStatus";
@@ -169,14 +160,12 @@ import {
   defaultRecoveryMinutes,
   dailyMinutesForQuota,
   trainingRecoveryMinutes,
-  workScheduleHalfTimes,
 } from "./overtime";
 import { useToast } from "./useToast";
 import {
   dateKey,
   fromKey,
   getDayInfo,
-  automaticHalfBalance,
   localDate,
   sameDate,
   schoolVacationsForZone,
@@ -283,9 +272,9 @@ export default function Home() {
     setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople,
-    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, requestSeedDate, directDurationSave, setDirectDurationSave, timeDate,
+    savingRange, requestChooser, setRequestChooser, requestChooserDate, setRequestChooserDate, directDurationSave, setDirectDurationSave, timeDate,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest,
-    activeType, setActiveType, selections, setSelections, setTimeDate, setTimeStart, setTimeEnd, setTimeHalfBalance,
+    activeType, setActiveType, selections, setSelections, setTimeDate,
     setWarningDate,
   } = planningUi;
   const showLeaves = true;
@@ -339,15 +328,15 @@ export default function Home() {
   const appShellUi = useAppShellUiState();
   const {
     quickNoteMode,
-    homeSection, setHomeSection, prefetchedContacts, setPrefetchedContacts,
-    approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates,
+    homeSection, setHomeSection, prefetchedContacts,
+    approvedGrandPalaisUpdates,
     mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
-    noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
-    accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,
-    appUpdateAvailable, setAppUpdateAvailable, appUpdatePromptOpen, setAppUpdatePromptOpen,
+    noteQuery, setNoteQuery, narrowScreen, pdfOpen, setPdfOpen,
+    accountMenuOpen, setAccountMenuOpen, checkingAppUpdate,
+    appUpdateAvailable, appUpdatePromptOpen, setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
-    accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize, setViewportSize,
+    accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize,
     showSchoolVacationsOnPdf, setShowSchoolVacationsOnPdf,
     showSchoolVacations, setShowSchoolVacations, schoolZone, setSchoolZone, calendarSlide,
     allowancesSwipeStart,
@@ -366,28 +355,7 @@ export default function Home() {
     [entries, approvedGrandPalaisUpdates],
   );
   const feedbackMessaging = useFeedbackMessaging(isProgramAdmin, demoMode, authStatus === "ready");
-  // Les écrans secondaires (fiche du jour, demandes, paie, formulaires…) sont
-  // chargés à part : on les prépare dès que l'app est prête et au repos.
-  useEffect(() => {
-    if (authStatus === "ready") warmUpScreens();
-  }, [authStatus]);
-
-  useEffect(() => {
-    const requestedView = new URLSearchParams(location.search).get("feedback");
-    if (authStatus !== "ready" || (requestedView !== "compose" && requestedView !== "inbox")) return;
-    if (requestedView === "inbox" && !isProgramAdmin) return;
-    setFeedbackOpen(true);
-    const url = new URL(location.href);
-    url.searchParams.delete("feedback");
-    history.replaceState(history.state, "", url);
-  }, [authStatus, isProgramAdmin, setFeedbackOpen]);
-  useEffect(() => {
-    if (authStatus !== "ready" || new URLSearchParams(location.search).get("section") !== "forms") return;
-    setHomeSection("forms");
-    const url = new URL(location.href);
-    url.searchParams.delete("section");
-    history.replaceState(history.state, "", url);
-  }, [authStatus, setHomeSection]);
+  const { checkForAppUpdate } = useShellEffects({ authStatus, isProgramAdmin, demoMode, installationEnabled, appShellUi });
   const visibleSchoolVacations = useMemo<SchoolVacation[]>(
     () => showSchoolVacations ? schoolVacationsForZone(schoolZone) : [],
     [schoolZone, showSchoolVacations],
@@ -433,108 +401,9 @@ export default function Home() {
     },
     clearBalanceDetail: () => setBalanceDetailType(null),
   });
-  useEffect(() => {
-    setInstallMetadataEnabled(installationEnabled);
-    return () => setInstallMetadataEnabled(false);
-  }, [installationEnabled]);
-
-  // Genres des collègues renseignés dans les groupes : relus à l'ouverture,
-  // ils accordent « vous le/la remplacez » dans les échanges.
-  useColleagueGenders();
-  useEffect(() => {
-    if (authStatus !== "ready" || demoMode || publicDemoAccess.active) return;
-    void refreshColleagueGenders().catch(() => undefined);
-  }, [authStatus, demoMode, publicDemoAccess.active]);
-
-  useEffect(() => {
-    if (authStatus !== "ready" || publicDemoAccess.active) return;
-    let active = true;
-    void getSharedGrandPalaisProgram()
-      .then((payload) => {
-        if (!active) return;
-        setApprovedGrandPalaisUpdates(payload.approved ?? []);
-        setIsProgramAdmin(import.meta.env.DEV && demoMode ? localDemoAdmin : payload.isAdmin);
-        if (!demoMode) saveSnapshotAdmin(payload.isAdmin === true);
-        setProgramAdminKnown(true);
-      })
-      .catch(() => {
-        if (!active) return;
-        // Sans réseau, le rôle gardé avec le planning reste en place.
-        setIsProgramAdmin((current) => demoMode ? import.meta.env.DEV && localDemoAdmin : current);
-        setProgramAdminKnown(true);
-      });
-    return () => { active = false; };
-  }, [authStatus, demoMode, localDemoAdmin, publicDemoAccess.active, setApprovedGrandPalaisUpdates, setIsProgramAdmin]);
-
-  useEffect(() => {
-    const expiresAt = import.meta.env.VITE_PUBLIC_DEMO_UNTIL;
-    if (publicDemoAccess.active && expiresAt)
-      localStorage.setItem("planning:public-demo-until", expiresAt);
-  }, [publicDemoAccess.active]);
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 720px)");
-    const update = () => setNarrowScreen(query.matches);
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, [setNarrowScreen]);
-  useEffect(() => {
-    if (authStatus !== "ready" || publicDemoAccess.active) return;
-    let active = true;
-    void getUsefulContacts()
-      .then((payload) => {
-        if (active) setPrefetchedContacts(payload);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [authStatus, publicDemoAccess.active, setPrefetchedContacts]);
-  useEffect(() => {
-    if (authStatus !== "ready" || publicDemoAccess.active) return;
-    void getColleagueGroups().catch(() => undefined);
-  }, [authStatus, publicDemoAccess.active]);
-  useEffect(() => {
-    const showUpdateAlert = () => {
-      setAppUpdateAvailable(true);
-      setAppUpdatePromptOpen(true);
-    };
-    window.addEventListener("planning-app-update-available", showUpdateAlert);
-    return () => window.removeEventListener("planning-app-update-available", showUpdateAlert);
-  }, [setAppUpdateAvailable, setAppUpdatePromptOpen]);
-  useEffect(() => {
-    if (!mainMenuOpen) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMainMenuOpen(false);
-    };
-    document.addEventListener("keydown", close);
-    return () => document.removeEventListener("keydown", close);
-  }, [mainMenuOpen, setMainMenuOpen]);
-  useEffect(() => {
-    if (!accountMenuOpen) return;
-    const close = (event: MouseEvent) => {
-      if (!accountMenuRef.current?.contains(event.target as Node))
-        setAccountMenuOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setAccountMenuOpen(false);
-      accountButtonRef.current?.focus();
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [accountMenuOpen, accountMenuRef, accountButtonRef, setAccountMenuOpen]);
-  useEffect(() => {
-    if (!viewportDebugEnabled) return;
-    const update = () =>
-      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [viewportDebugEnabled, setViewportSize]);
+  useSharedDataPrefetch({
+    authStatus, demoMode, publicDemoAccess, localDemoAdmin, setIsProgramAdmin, setProgramAdminKnown, appShellUi,
+  });
   // Un souhait couvert ensuite par un congé posé est réalisé : il ne
   // s'affiche plus comme souhait, ni dans le PDF ni dans les choix.
   const wishDates = useMemo(
@@ -662,108 +531,6 @@ export default function Home() {
     get: getCalendar,
     post: postCalendar,
   });
-  function changeGroup(nextGroup: number) {
-    const previousGroup = group;
-    const previousProfile = formProfile;
-    setGroup(nextGroup);
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: String(nextGroup),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: formProfile?.workQuota,
-      workSchedule: formProfile?.workSchedule,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      deductionPayMonths: formProfile?.deductionPayMonths,
-      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
-      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
-      sundayCarryover: formProfile?.sundayCarryover,
-      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
-      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
-      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
-      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
-    };
-    setFormProfile(nextProfile);
-    if (demoMode)
-      return;
-    void postCalendar({
-        action: "save-form-profile",
-        fullName: nextProfile.fullName,
-        group: nextProfile.group,
-        signature: nextProfile.signature,
-      }).catch((error) => {
-        setGroup(previousGroup);
-        setFormProfile(previousProfile);
-        notify(
-          calendarErrorMessage(error, "Le groupe n’a pas pu être enregistré."),
-        );
-      });
-  }
-  /** IFSE, CIA et les primes automatiques (dimanche, férié, net estimé) sont
-   *  calées sur les règles d'un fonctionnaire. Passer sur « Contractuel »
-   *  ne touche à aucun montant déjà saisi : ça change seulement ce qui
-   *  s'affiche, au cas où ce statut serait choisi puis annulé. */
-  function changeStatus(nextStatus: PayStatus) {
-    const previousProfile = formProfile;
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: nextStatus,
-      workQuota: formProfile?.workQuota,
-      workSchedule: formProfile?.workSchedule,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      deductionPayMonths: formProfile?.deductionPayMonths,
-      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
-      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
-      sundayCarryover: formProfile?.sundayCarryover,
-      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
-      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
-      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
-      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
-    };
-    setFormProfile(nextProfile);
-    if (demoMode)
-      return;
-    void postCalendar({
-        action: "save-form-profile",
-        fullName: nextProfile.fullName,
-        group: nextProfile.group,
-        signature: nextProfile.signature,
-        status: nextStatus,
-      }).catch((error) => {
-        setFormProfile(previousProfile);
-        notify(
-          calendarErrorMessage(error, "Le statut n’a pas pu être enregistré."),
-        );
-      });
-  }
   const selectedList = useMemo(
     () =>
       Object.values(selections).sort((a, b) => a.date.localeCompare(b.date)),
@@ -781,71 +548,9 @@ export default function Home() {
       ),
     [selectedList],
   );
-  function selectRecoveryType(type: SelectionType) {
-    setActiveType(type);
-    if (!requestSeedDate) return;
-    // Sans horaires enregistrés, les champs restent vides : mieux vaut une
-    // saisie à faire qu'une heure inventée qu'on oublierait de corriger.
-    const schedule = usableWorkSchedule(formProfile?.workSchedule);
-    const start = schedule?.start ?? "";
-    const end = schedule?.end ?? "";
-    setSelections((current) => {
-      return {
-        ...current,
-        [requestSeedDate]: { date: requestSeedDate, type, start, end },
-      };
-    });
-    setTimeStart(start);
-    setTimeEnd(end);
-    setTimeDate(requestSeedDate);
-  }
-  /** Solde d'une nouvelle demi-journée : CA d'abord, puis RTT, puis
-   *  fractionnement, dans l'année de la date et en déduisant ce que la demande
-   *  en cours prend déjà (hors la date elle-même). */
-  function proposeHalfBalance(key: string, pending: SelectedDay[] = []) {
-    const year = Number(key.slice(0, 4));
-    const stats = computeLeaveStats({
-      year,
-      today: now,
-      periods,
-      group,
-      manualAdjustments: formProfile?.manualAdjustments,
-    });
-    return automaticHalfBalance(
-      Object.fromEntries(stats.balances.map((balance) => [balance.type, balance.remaining])),
-      requestLeaveBalanceUsage(
-        pending.filter((item) => item.date !== key && item.date.startsWith(`${year}-`)),
-        group,
-      ),
-    );
-  }
-  function selectLeaveType(type: SelectionType) {
-    setActiveType(type);
-    if (!requestSeedDate) return;
-    // Mêmes horaires que ceux de la fenêtre « Matin ou après-midi ? » : sans
-    // horaires enregistrés, la journée type, pour que « Le matin » soit vrai.
-    const halfTimes = workScheduleHalfTimes(
-      usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE,
-      "morning",
-    );
-    const hasSchedule = Boolean(usableWorkSchedule(formProfile?.workSchedule));
-    setSelections((current) => {
-      if (!current[requestSeedDate]) return current;
-      return {
-        ...current,
-        [requestSeedDate]: type === "half"
-          ? hasSchedule
-            ? { date: requestSeedDate, type, start: halfTimes.start, end: halfTimes.end }
-            : { date: requestSeedDate, type, halfMoment: "morning" }
-          : { date: requestSeedDate, type },
-      };
-    });
-    if (type !== "half") return;
-    setTimeStart(halfTimes.start);
-    setTimeEnd(halfTimes.end);
-    setTimeHalfBalance(proposeHalfBalance(requestSeedDate, selectedList));
-    setTimeDate(requestSeedDate);
-  }
+  const { selectRecoveryType, proposeHalfBalance, selectLeaveType } = useRequestTypeSelection({
+    planningUi, formProfile, now, periods, group, selectedList,
+  });
 
   const workExchangeUi = useWorkExchangeActions({
     group,
@@ -974,27 +679,6 @@ export default function Home() {
     item.type.startsWith("recovery_") && requestRecoveryMinutes([item], workQuota) <= 0
   );
 
-  async function checkForAppUpdate() {
-    if (checkingAppUpdate) return;
-    setCheckingAppUpdate(true);
-    try {
-      if (!demoMode && "serviceWorker" in navigator) {
-        const registration =
-          (await navigator.serviceWorker.getRegistration()) ??
-          (await navigator.serviceWorker.register("/sw.js", {
-            updateViaCache: "none",
-          }));
-        await registration.update();
-        registration.waiting?.postMessage({ type: "SKIP_WAITING" });
-      }
-    } catch {
-      // Le rechargement ci-dessous reste utile même si le contrôle du service
-      // worker échoue (hors connexion, navigateur ancien ou cache corrompu).
-    } finally {
-      window.setTimeout(() => window.location.reload(), 250);
-    }
-  }
-
   const {
     leaveStats, manualSundayLeaveTotal, totalLeaveRemaining, cetLeaveBalances,
     leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
@@ -1092,8 +776,8 @@ export default function Home() {
   });
   const { changePayMonth, goPayToday, slideAllowancesMonth, startAllowancesSwipe, endAllowancesSwipe } =
     usePayMonthNavigation({ payUi, allowancesSwipeStart });
-  const { changeWorkQuota, changeWorkSchedule, saveCalculationProfile } = useWorkProfileActions({
-    demoMode, group, formProfile, setFormProfile, setPayProfileOpen, notify, post: postCalendar,
+  const { changeGroup, changeStatus, changeWorkQuota, changeWorkSchedule, saveCalculationProfile } = useWorkProfileActions({
+    demoMode, group, setGroup, formProfile, setFormProfile, setPayProfileOpen, notify, post: postCalendar,
   });
 
   const {

@@ -50,7 +50,7 @@ const applicationStartup = readFileSync(new URL("./src/useApplicationStartup.ts"
 const extractedHooks = [
   "usePayProfileValues", "useMonthPayEstimate", "useLeaveBalances", "useNoteLists",
   "usePayMonthNavigation", "useWorkProfileActions", "usePartnerNoteActions", "useSectionNavigation",
-  "useApplicationStartup",
+  "useApplicationStartup", "useShellEffects", "useSharedDataPrefetch", "useRequestTypeSelection",
 ]
   .map((name) => readFileSync(new URL(`./src/${name}.ts`, import.meta.url), "utf8"))
   .join("\n");
