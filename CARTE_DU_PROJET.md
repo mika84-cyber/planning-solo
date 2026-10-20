@@ -6,10 +6,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 - `src/main.tsx` : montage React, import des styles, enregistrement et mise à
   jour du service worker.
-- `src/App.tsx` : orchestration générale (environ 1 260 lignes) : les états
-  partagés, les hooks d'actions et de calculs, puis la coque (en-tête, menus,
-  bandeaux, messages) et l'appel des composants de rubrique listés plus bas
-  (`*SectionScreen`, `PlanningWorkspace`, `PlanningDialogLayer`,
+- `src/App.tsx` : orchestration générale (environ 1 180 lignes) : les états
+  partagés, les hooks d'actions et de calculs, puis les messages et alertes
+  et l'appel des composants de rubrique listés plus bas (`AppShellChrome`,
+  `*SectionScreen`, `PlanningWorkspace`, `PlanningDialogLayer`,
   `AppDialogLayer`). Les calculs et les effets vivent dans les hooks
   `src/use*.ts` ; rechercher la fonctionnalité avant d'ouvrir une plage.
 - `src/styles.css` : point d’entrée de la cascade CSS. Ses imports numérotés
@@ -92,6 +92,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’un hook (`appShellUi`, `planningUi`, `workTimeUi`, `payUi`,
   `calendarData`…) ou un objet `actions` — qu’il destructure sous les noms
   d’origine ; les états et les mutations restent dans `App.tsx`.
+  `src/AppShellChrome.tsx` : la coque (en-tête, navigation, propositions
+  d’installation, menu principal, aperçu invité et outils de
+  l’administrateur, rappel des jours fériés).
   `src/HomeSectionScreen.tsx` : l’accueil (tableau de bord, premières étapes,
   notes à venir ; charge `HomeDashboard` dès le module).
   `src/LeaveSectionScreen.tsx` : la page Congés (soldes, CET, heures,

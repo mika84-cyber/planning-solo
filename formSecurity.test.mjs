@@ -13,6 +13,7 @@ describe("formulaire de demande", () => {
   const netlifyConfig = readFileSync("netlify.toml", "utf8");
   const app = [
     "src/App.tsx",
+    "src/AppShellChrome.tsx",
     "src/HomeSectionScreen.tsx",
     "src/LeaveSectionScreen.tsx",
     "src/PaySectionScreen.tsx",

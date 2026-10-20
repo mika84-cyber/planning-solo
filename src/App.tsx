@@ -1,5 +1,3 @@
-import { HomeAdminMessage } from './HomeAdminMessage';
-import { clearColleagueGroupsCache } from './colleagueSharingApi';
 import {
   lazy,
   Suspense,
@@ -34,9 +32,8 @@ import { useWorkedDaysOverview } from "./useWorkedDaysOverview";
 import { useMecenatDraftCheck } from "./useMecenatDraftCheck";
 import { useDayDetailData } from "./useDayDetailData";
 import { DemoExpiredScreen } from "./DemoExpiredScreen";
-import { scrollWhenReady } from "./scrollWhenReady";
+import { AppShellChrome } from "./AppShellChrome";
 
-const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 // La rubrique Ma paie construit son contenu à part : son morceau n'est
 // chargé qu'à son ouverture.
 const PaySectionScreen = lazy(() =>
@@ -58,21 +55,13 @@ import { useAppShellUiState } from "./useAppShellUiState";
 import { useFeedbackMessaging } from "./useFeedbackMessaging";
 import { AppDialogLayer } from "./AppDialogLayer";
 import { DeferredSection } from "./DeferredSection";
-import {
-  EMPTY_MANUAL_ADJUSTMENTS,
-  computePayAllowances,
-} from "./payAllowances";
+import { EMPTY_MANUAL_ADJUSTMENTS } from "./payAllowances";
 import { HomeSectionScreen } from "./HomeSectionScreen";
 import { LeaveSectionScreen } from "./LeaveSectionScreen";
 import { DocumentsSectionScreen } from "./DocumentsSectionScreen";
 import { PlanningWorkspace } from "./PlanningWorkspace";
 import { PlanningDialogLayer } from "./PlanningDialogLayer";
 import { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
-import {
-  AppHeader,
-  AdaptiveNavigation,
-  MainMenu,
-} from "./AppNavigation";
 import { PlanningDayCell } from "./PlanningDayCell";
 import { exchangeEntryFields, workExchangeForDate } from "./workExchange";
 import { requestRecoveryMinutes } from "./RequestValidationSummary";
@@ -88,8 +77,6 @@ import {
   postCalendar,
   postCalendarBatch,
 } from "./calendarApi";
-import { AppleInstallNotice } from "./AppleInstallNotice";
-import { InstallAppNotice } from "./InstallAppNotice";
 import {
   emptyEntry,
   fullDayRecoveryMinutes,
@@ -240,7 +227,7 @@ export default function Home() {
   );
   const payUi = usePayUiState();
   const {
-    payView, setPayView, payScreen, setPayScreen, setPayProfileOpen,
+    payView, setPayView, setPayScreen, setPayProfileOpen,
     payslipCheck, setPayslipCheck, setPayslipError,
     setPayslipImportBusy, setPayslipImportError,
     setPayslipImportResult, setPayslipImportMode,
@@ -253,13 +240,11 @@ export default function Home() {
   const {
     homeSection, setHomeSection,
     approvedGrandPalaisUpdates,
-    mainMenuOpen, setMainMenuOpen,
     feedbackOpen, setFeedbackOpen,
     noteQuery,
-    accountMenuOpen, setAccountMenuOpen, checkingAppUpdate,
-    appUpdateAvailable, appUpdatePromptOpen, setAppUpdatePromptOpen,
+    setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
-    accountMenuRef, accountButtonRef, viewportDebugEnabled, viewportSize,
+    viewportDebugEnabled, viewportSize,
     showSchoolVacations, schoolZone,
     allowancesSwipeStart,
   } = appShellUi;
@@ -493,7 +478,7 @@ export default function Home() {
   const {
     isContractuel, workQuota, workDayMinutes,
     baseSalary, ifse, otherFixed, cia, ciaMonth,
-    sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
+    sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
   } = payProfileValues;
   const workedDaysOverview = useWorkedDaysOverview({
     view, now, group, periods, entries, recoveryUses, formProfile, mecenatEntries, overtimeEntries,
@@ -916,92 +901,24 @@ export default function Home() {
       onTouchStart={startSectionSwipe}
       onTouchEnd={finishSectionSwipe}
     >
-      <AppHeader
-        onOpenAdminTools={isProgramAdmin ? () => { setAccountMenuOpen(false); setAdminToolsOpen(true); } : undefined}
-        homeSection={homeSection}
-        payScreen={payScreen}
+      <AppShellChrome
+        now={now}
+        group={group}
+        demoMode={demoMode}
         userEmail={userEmail}
-        fullName={formProfile?.fullName || ""}
-        accountMenuOpen={accountMenuOpen}
-        mainMenuOpen={mainMenuOpen}
-        checkingAppUpdate={checkingAppUpdate}
-        appUpdateAvailable={appUpdateAvailable}
-        updateCallVisible={appUpdateAvailable && !appUpdatePromptOpen}
-        demoMode={demoMode}
-        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
+        isProgramAdmin={isProgramAdmin}
+        actualProgramAdmin={actualProgramAdmin}
+        programAdminKnown={programAdminKnown}
+        admin={{ guestPreview, setGuestPreview, adminToolsOpen, setAdminToolsOpen, setAdminRevision }}
+        installation={{ enabled: installationEnabled, installPrompt, installApp }}
+        shell={appShellUi}
+        pay={payUi}
+        calendar={calendarData}
+        allowanceValues={payProfileValues}
+        feedbackMessaging={feedbackMessaging}
         notify={notify}
-        accountMenuRef={accountMenuRef}
-        accountButtonRef={accountButtonRef}
-        onToggleAccount={() => setAccountMenuOpen((current) => !current)}
-        onDisconnect={() => {
-          setAccountMenuOpen(false);
-          void disconnect();
-        }}
-        onOpenMainMenu={() => {
-          history.pushState({ ...(history.state || {}), planningSection: homeSection, planningOverlay: "menu" }, "", location.href);
-          setMainMenuOpen(true);
-        }}
-        onCheckForUpdate={() => void checkForAppUpdate()}
+        actions={{ navigateFromShell, checkForAppUpdate, disconnect }}
       />
-      <AdaptiveNavigation
-        homeSection={homeSection}
-        onNavigate={(section) => navigateFromShell(section)}
-        onMore={() => {
-          history.pushState({ ...(history.state || {}), planningSection: homeSection, planningOverlay: "menu" }, "", location.href);
-          setMainMenuOpen(true);
-        }}
-        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
-      />
-      {/* Placé après la navigation : la marche à suivre s'affiche quelle que
-          soit la rubrique ouverte au lancement. */}
-      <AppleInstallNotice enabled={installationEnabled} />
-      {/* Les invités dont le navigateur sait installer l'application, et qui
-          ne l'ont pas encore fait, se la voient proposer d'un geste. */}
-      <InstallAppNotice
-        available={Boolean(installationEnabled && installPrompt && programAdminKnown && !isProgramAdmin)}
-        onInstall={() => void installApp()}
-      />
-      <MainMenu
-        open={mainMenuOpen}
-        onClose={() => setMainMenuOpen(false)}
-        onNavigate={(section) => navigateFromShell(section)}
-        currentSection={homeSection}
-        showInstallAction={demoMode || Boolean(installPrompt)}
-        canInstall={Boolean(installationEnabled && installPrompt)}
-        onInstall={() => void installApp()}
-        onOpenDataManagement={() => {
-          setMainMenuOpen(false);
-          setDataManagementOpen(true);
-        }}
-        onOpenFeedback={() => {
-          setMainMenuOpen(false);
-          setFeedbackOpen(true);
-        }}
-        isAdmin={isProgramAdmin}
-        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
-      />
-      {actualProgramAdmin && guestPreview && <div className="admin-preview-banner" role="status">Aperçu invité · Vos données<button type="button" onClick={() => setGuestPreview(false)}>Quitter l’aperçu</button></div>}
-      {isProgramAdmin && adminToolsOpen && <Suspense fallback={<p role="status">Ouverture des outils…</p>}><AdminToolsPanel demoMode={demoMode} onClose={() => setAdminToolsOpen(false)} onPreview={() => { setAdminToolsOpen(false); setGuestPreview(true); }} onChanged={() => { clearColleagueGroupsCache(); setAdminRevision(value => value + 1); }} /></Suspense>}
-      {homeSection === 'home' && <HomeAdminMessage
-        demoMode={demoMode}
-        hideHolidayReminder={isProgramAdmin}
-        holidayChoicesPending={(year) => {
-          // Les fériés de l'année du rappel encore sans prime ni récup choisie.
-          const yearAllowances = computePayAllowances({
-            year, today: now, entries, periods, group, baseSalary,
-            manualAdjustments: formProfile?.manualAdjustments,
-            sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth,
-            sundayCarryoverFromYear, sundayCarryoverFromMonth, recoveryUses,
-          });
-          return { worked: yearAllowances.holidayPending, compensated: yearAllowances.compensated.filter((item) => !item.choice).length };
-        }}
-        onOpenHolidayChoices={(year) => {
-          setHomeSection("pay");
-          setPayView(localDate(year, 0, 1));
-          setPayScreen("allowances");
-          scrollWhenReady("holiday-choices");
-        }}
-      />}
 
       {feedbackMessaging.resolutionNotice ? (
         <Suspense fallback={null}>
