@@ -17,8 +17,10 @@ export function checkDateLabel(value: string) {
   return `${day} à ${time.replace(/^0/, "")}`;
 }
 
+/** « Plein tarif 32,00 €, Réduit 26,00 € » ; une grille nommée garde son
+ *  nom devant chacun de ses tarifs : « Session du matin · Adultes 27,00 € ». */
 const priceList = (prices: GrandPalaisPrice[]) =>
-  prices.map((price) => `${price.label} ${price.amount ? euros(price.amount) : "gratuit"}`).join(", ");
+  prices.map((price) => `${price.group ? `${price.group} · ` : ""}${price.label} ${price.amount ? euros(price.amount) : "gratuit"}`).join(", ");
 
 const PROPOSAL_LABELS: Record<GrandPalaisCheckReport["proposals"][number]["kind"], string> = {
   new: "Nouveauté",

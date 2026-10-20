@@ -3,7 +3,7 @@ import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { GrandPalaisCheckPanel } from "./GrandPalaisCheckPanel";
 import { matchesSearch } from "./searchMatching";
-import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
+import { GRAND_PALAIS_PROGRAM, grandPalaisTitleKey } from "./grandPalaisProgramData";
 import type {
   GrandPalaisProgramData,
   GrandPalaisProgramEntry,
@@ -82,6 +82,43 @@ export function safeGrandPalaisUrl(value: string | undefined) {
   }
 }
 
+/** Le site tiers vers lequel la fiche officielle renvoie pour les tarifs ou
+ *  la billetterie : une adresse sûre, nommée, hors du site officiel (qui a
+ *  déjà son lien). Tout le reste est tu. */
+export function safeTicketingUrl(value: string | undefined) {
+  try {
+    const url = new URL(value ?? "");
+    // Un nom de domaine, pas une adresse IP ni un hôte local, sans identifiants.
+    return url.protocol === "https:" && !url.username && /^[\w-]+(?:\.[a-z][\w-]*)+$/i.test(url.hostname)
+      && !/(?:^|\.)grandpalais\.fr$/i.test(url.hostname)
+      ? url.href
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+/** « legrandpalaisdeglace.fr » : le nom d'un site tiers déjà vérifié. */
+export function ticketingHost(url: string) {
+  return new URL(url).hostname.replace(/^www\./, "");
+}
+
+/** Deux écritures du même événement : même fiche officielle, même titre, ou
+ *  des titres qui se contiennent (« Paris Photo 2026 » dans « Paris Photo
+ *  World Supreme ») à des dates qui se chevauchent. Sans cela, une mise à
+ *  jour acceptée sous un titre un peu différent s'ajoutait à l'entrée livrée
+ *  au lieu de la remplacer : deux cartes pour la même patinoire. */
+function isSameGrandPalaisEvent(
+  entry: GrandPalaisProgramEntry,
+  shared: { title: string; officialUrl: string; startDate: string; endDate: string },
+) {
+  if (entry.officialUrl === shared.officialUrl || entry.title.toLowerCase() === shared.title.toLowerCase()) return true;
+  const known = grandPalaisTitleKey(entry.title);
+  const candidate = grandPalaisTitleKey(shared.title);
+  return Boolean(known && candidate && (known.includes(candidate) || candidate.includes(known)))
+    && (!entry.startsOn || !entry.endsOn || (shared.startDate <= entry.endsOn && entry.startsOn <= shared.endDate));
+}
+
 
 function remotePeriod(event: SharedGrandPalaisEvent) {
   if (event.startDate === event.endDate) return `Date officielle : ${formatFrenchDate(event.startDate)}`;
@@ -107,17 +144,18 @@ export function mergeSharedGrandPalaisProgram(
     if (shared.venueKey === "exceptional-closure") continue;
     const officialUrl = safeGrandPalaisUrl(shared.url);
     if (!officialUrl) continue;
-    // Une fiche relue avant la publication de ses tarifs ne fait pas perdre
-    // ceux déjà connus pour la même exposition.
-    const knownPrices = Object.values(merged)
+    const identity = { title: shared.title, officialUrl, startDate: shared.startDate, endDate: shared.endDate };
+    // L'entrée livrée que cette mise à jour remplace : ses tarifs, si la
+    // fiche a été relue avant de les publier, son audioguide, son site de
+    // billetterie et sa condition de tarif, que le site ne dit pas, restent.
+    const replaced = Object.values(merged)
       .flatMap((venue) => Object.values(venue.schedule).flatMap((entries) => entries ?? []))
-      .find((entry) => entry.prices?.length && (entry.officialUrl === officialUrl || entry.title.toLowerCase() === shared.title.toLowerCase()))
-      ?.prices;
+      .filter((entry) => isSameGrandPalaisEvent(entry, identity));
+    const knownPrices = replaced.find((entry) => entry.prices?.length)?.prices;
+    const known = <K extends keyof GrandPalaisProgramEntry>(field: K) => replaced.find((entry) => entry[field])?.[field];
     for (const venue of Object.values(merged))
       for (const year of Object.keys(venue.schedule))
-        venue.schedule[Number(year)] = (venue.schedule[Number(year)] ?? []).filter((entry) =>
-          entry.officialUrl !== officialUrl && entry.title.toLowerCase() !== shared.title.toLowerCase(),
-        );
+        venue.schedule[Number(year)] = (venue.schedule[Number(year)] ?? []).filter((entry) => !isSameGrandPalaisEvent(entry, identity));
     if (shared.deleted) continue;
 
     const key = shared.venueKey;
@@ -126,6 +164,9 @@ export function mergeSharedGrandPalaisProgram(
       heading: shared.venueLabel,
       schedule: {},
     };
+    const ticketingUrl = safeTicketingUrl(shared.ticketingUrl) || known("ticketingUrl");
+    const audioguide = known("audioguide");
+    const priceNote = known("priceNote");
     const entry: GrandPalaisProgramEntry = {
       title: shared.title,
       ...(shared.details ? { details: shared.details } : {}),
@@ -134,6 +175,9 @@ export function mergeSharedGrandPalaisProgram(
       startsOn: shared.startDate,
       endsOn: shared.endDate,
       ...(shared.prices?.length ? { prices: shared.prices } : knownPrices ? { prices: knownPrices } : {}),
+      ...(ticketingUrl ? { ticketingUrl } : {}),
+      ...(audioguide ? { audioguide } : {}),
+      ...(priceNote ? { priceNote } : {}),
     };
     const firstYear = Number(shared.startDate.slice(0, 4));
     const lastYear = Number(shared.endDate.slice(0, 4));
@@ -146,12 +190,8 @@ export function mergeSharedGrandPalaisProgram(
   return merged;
 }
 
-/** Un titre réduit à ses mots : sans accents, chiffres ni ponctuation. */
-function titleWords(title: string) {
-  return title
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase().replace(/[^a-z]+/g, " ").trim();
-}
+/** Un titre réduit à ce qui le distingue, voir `grandPalaisTitleKey`. */
+const titleWords = grandPalaisTitleKey;
 
 /** Les tarifs relevés sur le site à chaque passage de la veille, appliqués
  *  aux événements du programme qui n'ont pas été validés depuis la veille :
@@ -520,17 +560,35 @@ export function priceLabel(value: number) {
   return `${value.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`;
 }
 
+/** Les tarifs rangés par grille, dans l'ordre de la fiche : les grilles
+ *  nommées (« Session du matin ») puis, sans nom, ceux qui valent pour
+ *  toutes — une gratuité, un billet unique. */
+export function groupGrandPalaisPrices(prices: GrandPalaisPrice[]) {
+  const groups: Array<{ name: string; prices: GrandPalaisPrice[] }> = [];
+  for (const price of prices) {
+    const name = price.group ?? "";
+    const last = groups[groups.length - 1];
+    if (last && last.name === name) last.prices.push(price);
+    else groups.push({ name, prices: [price] });
+  }
+  return groups;
+}
+
 /** Les tarifs d'une proposition sur une ligne : « À partir de 45 € »,
- *  « Plein 19 € · Réduit 16 € », « Gratuit ». */
+ *  « Plein 19 € · Réduit 16 € », « Gratuit », et par grille
+ *  « Session du matin : Adultes 27 €, Enfants 15 € · Nocturne : … ». */
 export function proposalPricesLabel(prices: GrandPalaisPrice[]) {
-  return prices
-    .map((price) => price.amount === 0 ? "Gratuit" : `${price.label} ${priceLabel(price.amount)}`)
+  const one = (price: GrandPalaisPrice) => price.amount === 0
+    ? (/^(?:gratuit|accès)$/i.test(price.label) ? "Gratuit" : `${price.label} gratuit`)
+    : `${price.label} ${priceLabel(price.amount)}`;
+  return groupGrandPalaisPrices(prices)
+    .map((group) => group.name ? `${group.name} : ${group.prices.map(one).join(", ")}` : group.prices.map(one).join(" · "))
     .join(" · ");
 }
 
 /** Une exposition : la salle, le titre, la période et le temps restant. Une
  *  exposition ouverte montre en plus où elle en est. */
-function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel }: {
+export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel }: {
   entry: GrandPalaisProgramEntry;
   venueKey: string;
   venueLabel?: string;
@@ -543,7 +601,14 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
   const upcomingCountdown = countdown ? countdown.charAt(0).toUpperCase() + countdown.slice(1) : "";
   // Un tarif qui ne valait que pour un jour passé n'a plus à être montré.
   const visiblePrices = (entry.prices ?? []).filter((price) => !price.until || price.until >= today);
+  const priceGroups = groupGrandPalaisPrices(visiblePrices);
   const officialUrl = safeGrandPalaisUrl(entry.officialUrl);
+  // Le site tiers qui porte la billetterie — et les tarifs eux-mêmes quand
+  // la fiche officielle n'en annonce aucun.
+  const ticketingUrl = safeTicketingUrl(entry.ticketingUrl);
+  const ticketingLabel = ticketingUrl
+    ? `${visiblePrices.length ? "Billetterie sur" : "Voir les tarifs sur"} ${ticketingHost(ticketingUrl)}`
+    : "";
   const [audioguideQrOpen, setAudioguideQrOpen] = useState(false);
   return (
     <article
@@ -609,24 +674,37 @@ function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, linkLabel 
         ) : null}
         {/* Les tarifs ferment la carte, juste avant le lien : on lit d'abord
             ce qu'est l'exposition, puis ce qu'elle coûte. */}
-        {visiblePrices.length ? (
+        {visiblePrices.length || entry.priceNote ? (
           <div className="expo-price">
             <p>Tarifs</p>
-            <dl>
-              {visiblePrices.map((price) => (
-                <Fragment key={price.label}>
-                  <dt>
-                    {/* « Gratuit : Gratuit » se lit « Accès : Gratuit ». */}
-                    {price.amount === 0 && /^gratuit$/i.test(price.label) ? "Accès" : price.label}
-                    {price.until ? <span> le {dayAndMonth(price.until)}</span> : null}
-                  </dt>
-                  <dd>{price.amount === 0 ? "Gratuit" : priceLabel(price.amount)}</dd>
-                </Fragment>
-              ))}
-            </dl>
+            {/* Chaque grille de la fiche sous son nom — session du matin,
+                de l'après-midi, nocturne — puis ce qui vaut pour toutes. */}
+            {priceGroups.map((group) => (
+              <Fragment key={group.name}>
+                {group.name ? <span className="expo-price-group">{group.name}</span> : null}
+                <dl>
+                  {group.prices.map((price) => (
+                    <Fragment key={price.label}>
+                      <dt>
+                        {/* « Gratuit : Gratuit » se lit « Accès : Gratuit ». */}
+                        {price.amount === 0 && /^gratuit$/i.test(price.label) ? "Accès" : price.label}
+                        {price.until ? <span> le {dayAndMonth(price.until)}</span> : null}
+                      </dt>
+                      <dd>{price.amount === 0 ? "Gratuit" : priceLabel(price.amount)}</dd>
+                    </Fragment>
+                  ))}
+                </dl>
+              </Fragment>
+            ))}
+            {entry.priceNote ? <small className="expo-price-note">{entry.priceNote}</small> : null}
           </div>
         ) : null}
-        {officialUrl ? <a href={officialUrl} target="_blank" rel="noreferrer">{linkLabel}</a> : null}
+        {officialUrl || ticketingUrl ? (
+          <span className="expo-card-links">
+            {officialUrl ? <a href={officialUrl} target="_blank" rel="noreferrer">{linkLabel}</a> : null}
+            {ticketingUrl ? <a href={ticketingUrl} target="_blank" rel="noopener noreferrer">{ticketingLabel}</a> : null}
+          </span>
+        ) : null}
       </div>
     </article>
   );
@@ -931,9 +1009,7 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
                 <article key={proposal.id}>
                   <small>{kindLabel} · {event.venueLabel}</small>
                   <strong>{event.title}{event.details ? ` · ${event.details}` : ""}</strong>
-                  <span>{event.startDate === event.endDate
-                    ? `Date officielle : ${formatFrenchDate(event.startDate)}`
-                    : `Du ${formatFrenchDate(event.startDate)} au ${formatFrenchDate(event.endDate)}`}
+                  <span>{remotePeriod(event)}
                     {/* Le tarif relevé se lit dès la proposition, avant l'accord. */}
                     {event.prices?.length ? ` · ${proposalPricesLabel(event.prices)}` : ""}</span>
                   <div>

@@ -268,6 +268,17 @@
 /* Le premier tarif, celui qu'on cherche en général, ressort par sa taille :
    la teinte du lieu ne passerait pas le contraste sur les fonds les plus pâles. */
 .expo-price dd:first-of-type { color: var(--text); }
+/* Plusieurs grilles sur une fiche (session du matin, de l'après-midi,
+   nocturne) : chacune sous son nom, dans la teinte de l'espace, séparée de
+   la précédente par un peu d'air plutôt que par un trait de plus. */
+.expo-price dl + .expo-price-group, .expo-price dl + dl { margin-top: 7px; }
+.expo-price-group { display: block; margin: 0 0 2px; color: var(--venue-accent, var(--accent)); font-size: 0.72rem; font-weight: 800; }
+/* Une condition écrite sous les tarifs (location des patins incluse,
+   billetterie qui ouvre à une date) : en retrait, sans peser. */
+.expo-price-note { display: block; margin-top: 5px; color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
+/* La fiche officielle et le site de billetterie côte à côte, sur une ligne
+   qui se replie quand la carte est étroite. */
+.expo-card-links { display: flex; flex-wrap: wrap; gap: 0 16px; }
 .expo-card-status em { border: 1px solid var(--border-control); border-radius: 999px; padding: 5px 10px; background: var(--surface); color: var(--muted); font-size: 0.72rem; font-style: normal; font-weight: 900; white-space: nowrap; }
 .useful-expo-timeline article[data-status="En cours"] .expo-card-status em::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); content: ""; }
 /* En-tête des expos : deux repères côte à côte, à la couleur de leur espace. */

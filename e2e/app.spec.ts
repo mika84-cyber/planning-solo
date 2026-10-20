@@ -3208,6 +3208,60 @@ test("le compte administrateur peut valider seul une mise à jour du Grand Palai
   await expect(page.getByRole("tab", { name: "Salon d’honneur", exact: true })).toBeVisible();
 });
 
+test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa gratuité et son site de billetterie", async ({ page }) => {
+  // Une mise à jour acceptée sous un autre titre et un jour de décalage,
+  // sans tarif : la veille l'avait proposée comme une nouveauté.
+  await page.route("**/api/gp-program", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        approved: [{
+          id: "glaces",
+          title: "Le Grand Palais des Glaces",
+          startDate: "2026-12-13",
+          endDate: "2027-01-06",
+          url: "https://www.grandpalais.fr/fr/programme/le-grand-palais-des-glaces",
+          venueKey: "nef",
+          venueLabel: "Nef",
+          approvedAt: "2026-10-20T20:00:00.000Z",
+        }],
+        pending: [],
+        isAdmin: false,
+        lastCheckedAt: "2026-10-20T22:05:00.000Z",
+      }),
+    });
+  });
+  await page.clock.setFixedTime(new Date("2026-11-20T12:00:00"));
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  await page.getByRole("tab", { name: "Par espace" }).click();
+  await page.getByRole("tab", { name: /Autres/ }).click();
+  await page.getByRole("tab", { name: "Nef", exact: true }).click();
+  const nef2026 = page.getByRole("region", { name: "Nef - 2026" });
+  const glace = nef2026.locator("article").filter({ hasText: /Grand Palais de(?:s)? Glace/ });
+  await expect(glace).toHaveCount(1);
+  await expect(glace).toContainText("Du 13 décembre 2026 au 6 janvier 2027");
+  // Les trois grilles de la fiche officielle, dans l'ordre, puis la gratuité.
+  await expect(glace.locator(".expo-price-group")).toHaveText(["Session du matin", "Session de l’après-midi", "Nocturne"]);
+  await expect(glace.locator(".expo-price dl").nth(1)).toContainText(/Adultes\s*32 €/);
+  await expect(glace.locator(".expo-price dl").nth(2)).toContainText(/De minuit à 2h\s*27 €/);
+  await expect(glace.locator(".expo-price dl").nth(3)).toContainText(/Moins de 3 ans\s*Gratuit/);
+  await expect(glace.locator(".expo-price-note")).toHaveText("Location des patins à glace incluse (tailles 25 à 50)");
+  const booking = glace.getByRole("link", { name: "Billetterie sur legrandpalaisdeglace.fr" });
+  await expect(booking).toHaveAttribute("href", "https://legrandpalaisdeglace.fr/billetterie/");
+  await expect(booking).toHaveAttribute("target", "_blank");
+  await expect(glace.getByRole("link", { name: "Voir sur le site du Grand Palais" })).toBeVisible();
+  // Le nom d'une grille prend la teinte de l'espace, sans encadré.
+  await expect(glace.locator(".expo-price-group").first()).toHaveCSS("color", "rgb(53, 116, 90)");
+  // Sans tarif sur la fiche officielle, la carte renvoie au site qui les porte.
+  const adoptAi = nef2026.locator("article").filter({ hasText: "Adopt AI" });
+  await expect(adoptAi.locator(".expo-price")).toHaveCount(0);
+  await expect(adoptAi.getByRole("link", { name: "Voir les tarifs sur adoptai.artefact.com" }))
+    .toHaveAttribute("href", "https://adoptai.artefact.com/content/inscription");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("l’audioguide Cézanne s’ouvre depuis la fiche de l’exposition, avec son code et son QR code", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
   await prepareDemo(page);

@@ -1,4 +1,4 @@
-import { GRAND_PALAIS_PROGRAM } from "../../src/grandPalaisProgramData.ts";
+import { GRAND_PALAIS_PROGRAM, grandPalaisTitleKey } from "../../src/grandPalaisProgramData.ts";
 import type {
   GrandPalaisCheckReport,
   GrandPalaisProgramProposal,
@@ -245,22 +245,18 @@ const BUILT_IN_PROGRAM_EVENTS = Object.values(GRAND_PALAIS_PROGRAM).flatMap((ven
     .map((entry) => ({
       startDate: entry!.startsOn as string,
       endDate: entry!.endsOn ?? "",
-      title: normalizedEventTitle(entry!.title),
+      title: grandPalaisTitleKey(entry!.title),
     })),
 );
-
-function normalizedEventTitle(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ").trim();
-}
 
 /** Évite de proposer les pages générales et les événements déjà livrés dans
  * le programme de l’application. */
 export function isGrandPalaisProposalRelevant(event: SharedGrandPalaisEvent) {
   if (/\/grand-palais-dete-2026(?:$|[?#])/i.test(event.url)) return false;
-  const title = normalizedEventTitle(event.title);
+  const title = grandPalaisTitleKey(event.title);
   // Le site officiel et l'application n'écrivent pas toujours un titre à
-  // l'identique — « Art Basel Paris 2026 » contre « Art Basel ». À date de
+  // l'identique — « Art Basel Paris 2026 » contre « Art Basel », « Le Grand
+  // Palais de Glace 2026 » contre « Le Grand Palais des Glaces ». À date de
   // début égale, on reconnaît l'entrée par son titre ou par sa date de fin.
   return !BUILT_IN_PROGRAM_EVENTS.some((known) =>
     event.startDate === known.startDate &&
@@ -361,6 +357,20 @@ export function extractGrandPalaisPrices(html: string): GrandPalaisPrice[] {
 
 const PRICE_AMOUNT = String.raw`(?:€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*€)`;
 
+/** À qui l'entrée est gratuite, tel que la fiche l'écrit mais lisible :
+ *  « - 3ans » devient « Moins de 3 ans », une liste trop longue s'arrête à
+ *  une virgule et le dit par des points de suspension. */
+function freeLabel(raw: string) {
+  let label = raw.replace(/^[\s:–-]+/, "").replace(/\s*(?:\.\.\.|…|\.)\s*$/, "").replace(/\s+/g, " ").replace(/'/g, "’").trim();
+  label = label.replace(/^(?:pour les |les )?(?:moins de |de |-\s*)?(\d+)\s*ans\b/i, "Moins de $1 ans");
+  label = label.replace(/^moins de (\d+) ans/i, "Moins de $1 ans");
+  if (label.length > 80) {
+    const cut = label.slice(0, 80).lastIndexOf(", ");
+    label = cut > 20 ? `${label.slice(0, cut)}…` : `${label.slice(0, 79).trim()}…`;
+  }
+  return label;
+}
+
 /** « la journée », « les 3 jours » : la durée d'un billet, sans article. */
 function priceQualifier(text: string) {
   return text.trim().replace(/^(?:(?:la|le|les)\s+|l['’]\s*)/i, "").trim();
@@ -369,17 +379,35 @@ function priceQualifier(text: string) {
 function pricesInBlock(block: string) {
   const prices: GrandPalaisPrice[] = [];
   const seen = new Set<string>();
-  const add = (label: string, amount: number) => {
-    if (!label || label.length > 80 || seen.has(label.toLowerCase())) return;
-    seen.add(label.toLowerCase());
-    prices.push({ label: label.charAt(0).toUpperCase() + label.slice(1), amount });
+  // Une fiche à plusieurs grilles les nomme sur leur ligne, deux-points sans
+  // montant : « Session du matin : », « Nocturne : ». Chaque tarif qui suit
+  // est de cette grille, jusqu'à la suivante.
+  const headings = [...block.matchAll(/\n[ \t]*([^\n:€]{3,60}?)[ \t]*:[ \t]*(?=\n)/g)]
+    .map((match) => ({ index: match.index ?? 0, name: match[1].trim() }))
+    .filter((heading) => !/^(?:tarifs?|prices?|gratuit|free)$/i.test(heading.name));
+  const groupAt = (index: number) => {
+    let name = "";
+    for (const heading of headings) if (heading.index < index) name = heading.name;
+    return name;
   };
-  const entry = new RegExp(String.raw`([^.;!?•\n]{2,80}?)\s*:\s*${PRICE_AMOUNT}`, "g");
+  // L'apostrophe droite de la page s'écrit typographique, comme dans
+  // l'application : « Session de l’après-midi ».
+  const add = (rawLabel: string, amount: number, rawGroup = "") => {
+    const label = rawLabel.replace(/'/g, "’");
+    const group = rawGroup.replace(/'/g, "’");
+    if (!label || label.length > 80 || seen.has(`${group}|${label}`.toLowerCase())) return;
+    seen.add(`${group}|${label}`.toLowerCase());
+    prices.push({ label: label.charAt(0).toUpperCase() + label.slice(1), amount, ...(group ? { group } : {}) });
+  };
+  // « Étienne Daho : à partir de 45 € » : le prix d'appel d'une soirée, nommé.
+  const entry = new RegExp(String.raw`([^.;!?•\n]{2,80}?)\s*:\s*(?:(à partir de|dès|from)\s*)?${PRICE_AMOUNT}`, "g");
   // Un même billet peut annoncer plusieurs durées sur sa ligne :
   // « Tarif adulte : 15 € la journée / 35 € les 3 jours ».
   const more = new RegExp(String.raw`^\s*([^/\n€:]{0,25}?)\s*\/\s*${PRICE_AMOUNT}\s*([^/\n€:]{0,25}?)\s*(?=\/|\n|$)`);
   for (let match = entry.exec(block); match; match = entry.exec(block)) {
-    const amount = Number((match[2] ?? match[3]).replace(",", "."));
+    const group = groupAt(match.index);
+    const from = match[2] ? ` · ${match[2].toLowerCase()}` : "";
+    const amount = Number((match[3] ?? match[4]).replace(",", "."));
     // Un tarif du Grand Palais tient largement sous cette borne : au-delà, la
     // lecture a attrapé autre chose qu'un prix.
     if (!Number.isFinite(amount) || amount <= 0 || amount > 500) continue;
@@ -391,6 +419,7 @@ function pricesInBlock(block: string) {
     label = label.replace(/^.*\b(?:tarifs|prices)\b\s*/i, "") || label;
     while (/^(?:tarifs?|prices?)\s+\S/i.test(label)) label = label.replace(/^(?:tarifs?|prices?)\s+/i, "");
     if (!label || label.length > 70) continue;
+    label += from;
     const durations: { amount: number; qualifier: string }[] = [];
     let rest = block.slice(entry.lastIndex);
     let qualifier = "";
@@ -401,18 +430,47 @@ function pricesInBlock(block: string) {
       rest = block.slice(entry.lastIndex);
     }
     if (durations.length && qualifier) {
-      add(`${label} · ${qualifier}`, amount);
+      add(`${label} · ${qualifier}`, amount, group);
       for (const duration of durations)
-        if (duration.amount > 0 && duration.amount <= 500) add(duration.qualifier ? `${label} · ${duration.qualifier}` : label, duration.amount);
-    } else add(label, amount);
+        if (duration.amount > 0 && duration.amount <= 500) add(duration.qualifier ? `${label} · ${duration.qualifier}` : label, duration.amount, group);
+    } else add(label, amount, group);
     if (prices.length >= 12) return prices;
   }
-  // « Gratuit » seul sur sa ligne, puis à qui : « Moins de 3 ans ».
+  // À qui l'entrée est gratuite, après les montants : « Gratuit » seul sur
+  // sa ligne puis « Moins de 3 ans », « Gratuit : - 3ans », ou « Billet
+  // gratuit » puis « - 18 ans, demandeurs d'emploi… ».
   if (prices.length) {
-    const free = block.match(/\n(?:gratuit|free)\n([^\n]{3,60})/i);
-    if (free && /\b(?:ans|enfants?|moins|under|children|demandeurs|étudiants|accompagnat)/i.test(free[1])) add(free[1].trim(), 0);
+    const free = block.match(/\n(?:billet gratuit|gratuit|free)\s*:?\s*\n?[ \t]*([^\n]{2,160})/i);
+    const who = free ? freeLabel(free[1]) : "";
+    if (who && /\b(?:ans|enfants?|moins|under|children|demandeurs|étudiants|accompagnat)/i.test(who)) add(who, 0);
   }
   return prices;
+}
+
+/** Le site tiers vers lequel la fiche renvoie pour réserver ou connaître les
+ *  tarifs : le lien « Réserver » qui quitte le site officiel, ou, dans la
+ *  rubrique « Tarifs », l'adresse écrite en toutes lettres (« Informations
+ *  et réservations sur le site adoptai.artefact.com »). Les logos des
+ *  partenaires, liens sans texte, ne comptent pas. */
+export function extractGrandPalaisTicketingUrl(html: string) {
+  const visible = html.replace(/<(script|style|noscript|template|nav|header|footer)\b[^>]*>[\s\S]*?<\/\1>/gi, " ");
+  const links = [...visible.matchAll(/<a\b[^>]*href=["'](https:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)]
+    .map((match) => ({ url: decodeHtml(match[1]), text: cleanText(match[2]) }))
+    .filter((link) => link.text && !/(?:^|\.)grandpalais(?:rmn)?\.fr$/i.test(hostOf(link.url)));
+  const host = (link: { url: string }) => hostOf(link.url).replace(/^www\./, "");
+  const booking = links.find((link) => /^(?:réserver|réservation|billetterie|tickets?)$/i.test(link.text))
+    ?? links.find((link) => /^(?:réserver|réservation|billetterie|acheter|buy tickets?|book|tickets?)\b/i.test(link.text))
+    ?? links.find((link) => /\b(?:réserv|billet|tarif|ticket|inscri)/i.test(link.text))
+    ?? links.find((link) => host(link) && link.text.toLowerCase() === host(link));
+  return booking?.url ?? "";
+}
+
+function hostOf(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
 }
 
 /** Le sous-titre de la fiche, deuxième ligne de son grand titre : l'artiste
@@ -456,6 +514,7 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
       venueLabel: "Rotonde d’Antin, Salon Seine et Palais des enfants",
     };
   const details = extractGrandPalaisSubtitle(html, title);
+  const ticketingUrl = extractGrandPalaisTicketingUrl(html);
   return {
     id: stableId(url),
     title,
@@ -466,6 +525,7 @@ export function extractGrandPalaisEvent(html: string, pageUrl: string): SharedGr
     venueKey: venue.venueKey,
     venueLabel: venue.venueLabel,
     prices: extractGrandPalaisPrices(html),
+    ...(ticketingUrl ? { ticketingUrl } : {}),
   };
 }
 
@@ -584,12 +644,14 @@ export function syncGrandPalaisPrices(
     const seen = currentById.get(event.id);
     const newPrices = Boolean(seen?.prices?.length) && !samePrices(event, seen!);
     const newDetails = Boolean(seen?.details) && seen!.details !== event.details;
-    if (!newPrices && !newDetails) return event;
+    const newTicketing = Boolean(seen?.ticketingUrl) && seen!.ticketingUrl !== event.ticketingUrl;
+    if (!newPrices && !newDetails && !newTicketing) return event;
     changed = true;
     return {
       ...event,
       ...(newPrices ? { prices: seen!.prices } : {}),
       ...(newDetails ? { details: seen!.details } : {}),
+      ...(newTicketing ? { ticketingUrl: seen!.ticketingUrl } : {}),
     };
   };
   const nextApproved = approved.map((event) => (event.deleted ? event : withPrices(event)));
@@ -683,9 +745,9 @@ export async function sendGrandPalaisAlertEmail(
     // · Étienne Daho », « À partir de 45 € ».
     const details = event.details ? ` · ${escapeHtml(event.details)}` : "";
     const prices = event.prices?.length
-      ? ` — ${event.prices.map((price) => price.amount === 0
-        ? "Gratuit"
-        : `${escapeHtml(price.label)} ${price.amount.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`).join(" · ")}`
+      ? ` — ${event.prices.map((price) => `${price.group ? `${escapeHtml(price.group)} · ` : ""}${price.amount === 0
+        ? (/^gratuit$/i.test(price.label) ? "Gratuit" : `${escapeHtml(price.label)} gratuit`)
+        : `${escapeHtml(price.label)} ${price.amount.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`}`).join(" · ")}`
       : "";
     return `<li><strong>${label} :</strong> ${escapeHtml(event.title)}${details} — ${escapeHtml(event.venueLabel)} (${escapeHtml(event.startDate)} au ${escapeHtml(event.endDate)})${prices}</li>`;
   }).join("");

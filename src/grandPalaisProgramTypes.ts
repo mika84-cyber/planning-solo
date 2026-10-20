@@ -1,7 +1,10 @@
 /** Un tarif publié : son nom tel quel, son montant en euros, et le dernier
  *  jour où il a cours quand il ne vaut que pour une date — un vernissage, une
- *  soirée. Passé ce jour, la carte ne le montre plus. */
-export type GrandPalaisPrice = { label: string; amount: number; until?: string };
+ *  soirée. Passé ce jour, la carte ne le montre plus. Quand la fiche annonce
+ *  plusieurs grilles (« Session du matin », « Nocturne »), chaque tarif porte
+ *  le nom de la sienne. Une gratuité se dit par un montant nul et, en nom, à
+ *  qui elle s'adresse (« Moins de 3 ans »). */
+export type GrandPalaisPrice = { label: string; amount: number; until?: string; group?: string };
 
 export type SharedGrandPalaisEvent = {
   id: string;
@@ -16,6 +19,9 @@ export type SharedGrandPalaisEvent = {
   /** Tarifs lus dans la rubrique « Tarifs » de la fiche officielle, dans leur
    *  ordre et sous leur nom. */
   prices?: GrandPalaisPrice[];
+  /** Le site tiers vers lequel la fiche officielle renvoie pour les tarifs
+   *  ou la billetterie, quand le Grand Palais ne les porte pas lui-même. */
+  ticketingUrl?: string;
   deleted?: boolean;
   approvedAt?: string;
 };

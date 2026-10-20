@@ -150,6 +150,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande (préparée au repos par
   `src/warmUpScreens.ts`), navigation par espace et périodes d’inter expos.
+  Les tarifs (`src/grandPalaisProgramData.ts`) sont ceux de la fiche
+  officielle, par grille nommée quand elle en a plusieurs (`group` :
+  session du matin, nocturne…), gratuité en montant nul, condition en
+  `priceNote` ; `ticketingUrl` est le site tiers qui porte la billetterie ou
+  les tarifs quand le Grand Palais ne les publie pas. `grandPalaisTitleKey`
+  reconnaît un même événement sous deux titres (« des Glaces » / « de
+  Glace 2026 ») : une mise à jour acceptée remplace l’entrée livrée au lieu
+  de la doubler.
 - `src/GrandPalaisCheckPanel.tsx` : « Veille du site », réservée à
   l’administrateur — date du dernier contrôle et contrôle lancé à la main.
   Côté serveur : `netlify/lib/grandPalaisCheck.mts` (un passage de veille),

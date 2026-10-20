@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyGrandPalaisSitePrices,
   BoundaryReportPanel,
+  ExpoCard,
   GRAND_PALAIS_PROGRAM,
   GrandPalaisProgramSection,
   calculateInterExhibitionPeriods,
@@ -18,10 +19,12 @@ import {
   grandPalaisVenuePalette,
   isGrandPalaisEntryCurrent,
   isGrandPalaisEntryVisible,
+  groupGrandPalaisPrices,
   mergeSharedGrandPalaisProgram,
   otherGrandPalaisVenueKeys,
   proposalPricesLabel,
   safeGrandPalaisUrl,
+  safeTicketingUrl,
 } from "./GrandPalaisProgramSection";
 
 describe("programmation du Grand Palais", () => {
@@ -289,6 +292,10 @@ describe("programmation du Grand Palais", () => {
       startsOn: "2026-09-24",
       endsOn: "2027-01-24",
     }));
+    // Ce que la fiche ne dit pas reste : l'audioguide, les tarifs déjà connus.
+    const cezanne = updated.galleries34.schedule[2026]!.find((entry) => entry.title === "Cezanne et nous");
+    expect(cezanne?.audioguide?.code).toBe("7268");
+    expect(cezanne?.prices?.[0]).toEqual({ label: "Plein", amount: 19 });
     expect(calculateInterExhibitionPeriods("2026-08-28", updated)).toContainEqual(expect.objectContaining({
       startsOn: "2026-08-31",
       endsOn: "2026-09-23",
@@ -425,6 +432,88 @@ describe("programmation du Grand Palais", () => {
     // Deux fiches aux mêmes dates : impossible de savoir laquelle, aucun tarif.
     const twins = entries(applyGrandPalaisSitePrices(GRAND_PALAIS_PROGRAM, [site, { ...site, title: "Autre salon du même week-end" }]))
       .find((entry) => entry.title === "Arabian Horse Championship");
-    expect(twins?.prices).toBeUndefined();
+    // L'entrée garde alors les tarifs livrés avec l'application.
+    expect(twins?.prices).not.toEqual(prices);
+    expect(twins?.prices?.[0]).toEqual({ label: "Adulte · journée", amount: 15 });
+  });
+
+  it("ne fait qu’une carte d’une mise à jour acceptée sous un titre un peu différent, cas du Grand Palais de Glace", () => {
+    const nef = (program: ReturnType<typeof mergeSharedGrandPalaisProgram>, year: number) =>
+      (program.nef.schedule[year] ?? []).filter((entry) => /palais de(?:s)? glace/i.test(entry.title));
+    expect(nef(GRAND_PALAIS_PROGRAM, 2026)).toHaveLength(1);
+    // Dates décalées d'un jour, pluriel différent, sans tarif : l'entrée livrée
+    // est remplacée, pas doublée, et ses tarifs, son site de billetterie et sa
+    // condition restent.
+    const shared = {
+      id: "glaces",
+      title: "Le Grand Palais des Glaces",
+      startDate: "2026-12-13",
+      endDate: "2027-01-06",
+      url: "https://www.grandpalais.fr/fr/programme/le-grand-palais-des-glaces",
+      venueKey: "nef",
+      venueLabel: "Nef",
+    };
+    const merged = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [shared]);
+    expect(nef(merged, 2026)).toHaveLength(1);
+    expect(nef(merged, 2027)).toHaveLength(1);
+    expect(nef(merged, 2026)[0]).toMatchObject({
+      title: "Le Grand Palais des Glaces",
+      startsOn: "2026-12-13",
+      ticketingUrl: "https://legrandpalaisdeglace.fr/billetterie/",
+      priceNote: "Location des patins à glace incluse (tailles 25 à 50)",
+    });
+    expect(nef(merged, 2026)[0].prices).toHaveLength(9);
+    // Les tarifs relus sur la fiche remplacent ceux livrés ; un site de
+    // billetterie relu aussi, s'il est sûr.
+    const reread = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{
+      ...shared,
+      prices: [{ label: "Adultes", amount: 27, group: "Session du matin" }],
+      ticketingUrl: "http://piege.example/",
+    }]);
+    expect(nef(reread, 2026)[0].prices).toEqual([{ label: "Adultes", amount: 27, group: "Session du matin" }]);
+    expect(nef(reread, 2026)[0].ticketingUrl).toBe("https://legrandpalaisdeglace.fr/billetterie/");
+    // Deux titres qui se ressemblent mais à des dates sans rapport : deux événements.
+    const later = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{ ...shared, id: "2027", startDate: "2027-12-11", endDate: "2028-01-05" }]);
+    expect(nef(later, 2026)).toHaveLength(1);
+    expect(nef(later, 2027)).toHaveLength(2);
+  });
+
+  it("montre chaque grille de tarifs sous son nom, la gratuité, la condition et le site de billetterie", () => {
+    const glace = GRAND_PALAIS_PROGRAM.nef.schedule[2026]!.find((entry) => entry.title === "Le Grand Palais de Glace 2026")!;
+    const html = renderToStaticMarkup(
+      <ExpoCard entry={glace} venueKey="nef" venueLabel="Nef" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />,
+    );
+    expect(html.match(/<span class="expo-price-group">([^<]+)<\/span>/g)?.map((m) => m.replace(/<[^>]+>/g, "")))
+      .toEqual(["Session du matin", "Session de l’après-midi", "Nocturne"]);
+    // Une liste par grille, puis une pour ce qui vaut pour toutes.
+    expect(html.match(/<dl>/g)).toHaveLength(4);
+    expect(html).toContain("<dt>Adultes</dt><dd>32 €</dd>");
+    expect(html).toContain("<dt>De minuit à 2h</dt><dd>27 €</dd>");
+    expect(html).toContain("<dt>Moins de 3 ans</dt><dd>Gratuit</dd>");
+    expect(html).toContain('<small class="expo-price-note">Location des patins à glace incluse (tailles 25 à 50)</small>');
+    expect(html).toContain('href="https://www.grandpalais.fr/fr/programme/le-grand-palais-de-glace-2026" target="_blank" rel="noreferrer">Voir le site officiel</a>');
+    expect(html).toContain('href="https://legrandpalaisdeglace.fr/billetterie/" target="_blank" rel="noopener noreferrer">Billetterie sur legrandpalaisdeglace.fr</a>');
+    // Sans tarif sur la fiche officielle, le site tiers est celui des tarifs.
+    const adoptAi = GRAND_PALAIS_PROGRAM.nef.schedule[2026]!.find((entry) => entry.title === "Adopt AI")!;
+    const adoptHtml = renderToStaticMarkup(<ExpoCard entry={adoptAi} venueKey="nef" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />);
+    expect(adoptHtml).not.toContain("expo-price");
+    expect(adoptHtml).toContain(">Voir les tarifs sur adoptai.artefact.com</a>");
+    // Une billetterie qui n'ouvre qu'à une date se lit sous « Tarifs », sans montant.
+    const oli = GRAND_PALAIS_PROGRAM.gallery7.schedule[2026]![0];
+    const oliHtml = renderToStaticMarkup(<ExpoCard entry={oli} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />);
+    expect(oliHtml).toContain('<p>Tarifs</p><small class="expo-price-note">Ouverture de la billetterie le 26 octobre 2026</small>');
+    expect(oliHtml).toContain(">Voir les tarifs sur lemuseeimaginairedoli.com</a>");
+    // Un lien de billetterie douteux n'est jamais rendu.
+    for (const url of ["http://tickets.example/", "https://www.grandpalais.fr/billets", "https://user:pw@tickets.example/", "https://10.0.0.1/", "https://localhost/"])
+      expect(safeTicketingUrl(url)).toBe("");
+    expect(renderToStaticMarkup(<ExpoCard entry={{ ...adoptAi, ticketingUrl: "http://tickets.example/" }} venueKey="nef" today="2026-11-20" openingReady linkLabel="Voir" />))
+      .not.toContain("tickets.example");
+    // Les grilles se lisent aussi sur une ligne, pour une proposition.
+    expect(groupGrandPalaisPrices(glace.prices!).map((group) => [group.name, group.prices.length])).toEqual([
+      ["Session du matin", 3], ["Session de l’après-midi", 3], ["Nocturne", 2], ["", 1],
+    ]);
+    expect(proposalPricesLabel(glace.prices!)).toBe(
+      "Session du matin : Adultes 27 €, Enfants 15 €, Seniors (65 ans et +) 22 € · Session de l’après-midi : Adultes 32 €, Enfants 18 €, Seniors (65 ans et +) 26 € · Nocturne : De 20h à 2h 39 €, De minuit à 2h 27 € · Moins de 3 ans gratuit",
+    );
   });
 });

@@ -23,8 +23,14 @@ export type GrandPalaisProgramEntry = {
    *  tant que le Grand Palais ne les publie pas : mieux vaut aucun tarif qu'un
    *  prix inventé. */
   prices?: GrandPalaisPrice[];
+  /** Une condition écrite sous les tarifs de la fiche : location des patins
+   *  incluse, billetterie qui n'ouvre qu'à une date. */
+  priceNote?: string;
   uncertain?: boolean;
   officialUrl?: string;
+  /** Le site tiers vers lequel le Grand Palais renvoie pour les tarifs ou la
+   *  billetterie : la carte l'affiche, en plus de la fiche officielle. */
+  ticketingUrl?: string;
   startsOn?: string;
   endsOn?: string;
   currentlyOpen?: boolean;
@@ -33,12 +39,71 @@ export type GrandPalaisProgramEntry = {
   audioguide?: { url: string; code: string; languages: string; qr: string };
 };
 
+/** Relevé sur la fiche officielle : plein, réduit, Billet Liberté (sans
+ *  réservation jusqu'au 3 janvier 2027), puis à qui l'entrée est gratuite. */
+/** Même mention sur les fiches de Cezanne, de Girls et de Mika Ninagawa. */
+const UNDER_18_FREE: GrandPalaisPrice = { label: "Moins de 18 ans, demandeurs d’emploi, visiteurs en situation de handicap…", amount: 0 };
+
+const CEZANNE_PRICES: GrandPalaisPrice[] = [
+  { label: "Plein", amount: 19 },
+  { label: "Réduit", amount: 16 },
+  { label: "Billet Liberté", amount: 24 },
+  UNDER_18_FREE,
+];
+
+const EXTRA_CHILD = "Enfant supplémentaire de moins de 12 ans (avec un billet famille)";
+
+const TRANSPARENCE_PRICES: GrandPalaisPrice[] = [
+  { label: "Plein", amount: 13 },
+  { label: "Abonné", amount: 8 },
+  { label: "Moins de 2 ans, demandeurs d’emploi, visiteurs en situation de handicap…", amount: 0 },
+];
+
+/** La patinoire de la Nef : trois grilles sur la fiche officielle (matin,
+ *  après-midi, nocturne), gratuite pour les moins de 3 ans. Le titre, les
+ *  dates et la fiche sont ceux du site : la veille nocturne reconnaît ainsi
+ *  l'entrée et ne la propose pas une seconde fois. */
+const GRAND_PALAIS_DE_GLACE_2026: GrandPalaisProgramEntry = {
+  title: "Le Grand Palais de Glace 2026",
+  period: "Du 12 décembre 2026 au 6 janvier 2027",
+  startsOn: "2026-12-12",
+  endsOn: "2027-01-06",
+  officialUrl: "https://www.grandpalais.fr/fr/programme/le-grand-palais-de-glace-2026",
+  ticketingUrl: "https://legrandpalaisdeglace.fr/billetterie/",
+  prices: [
+    { group: "Session du matin", label: "Adultes", amount: 27 },
+    { group: "Session du matin", label: "Enfants", amount: 15 },
+    { group: "Session du matin", label: "Seniors (65 ans et +)", amount: 22 },
+    { group: "Session de l’après-midi", label: "Adultes", amount: 32 },
+    { group: "Session de l’après-midi", label: "Enfants", amount: 18 },
+    { group: "Session de l’après-midi", label: "Seniors (65 ans et +)", amount: 26 },
+    { group: "Nocturne", label: "De 20h à 2h", amount: 39 },
+    { group: "Nocturne", label: "De minuit à 2h", amount: 27 },
+    { label: "Moins de 3 ans", amount: 0 },
+  ],
+  priceNote: "Location des patins à glace incluse (tailles 25 à 50)",
+};
+
 const CEZANNE_AUDIOGUIDE = {
   url: "https://audioguide.grandpalais.fr/bypass",
   code: "7268",
   languages: "Français et anglais",
   qr: "/useful-forms/audioguide-cezanne-qr.png",
 };
+
+/** Un titre réduit à ce qui le distingue : sans accents, chiffres, ponctuation,
+ *  mots-outils ni pluriels. « Le Grand Palais des Glaces » et « Le Grand Palais
+ *  de Glace 2026 » donnent la même clé : la fiche officielle et l'application
+ *  n'écrivent pas toujours un titre à l'identique, et deux écritures du même
+ *  événement ne doivent jamais donner deux cartes. */
+export function grandPalaisTitleKey(title: string) {
+  return title
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z]+/g, " ")
+    .replace(/\b(?:les?|la|l|des?|du|d|et|aux?|une?|en|the|of|and|with|an?)\b/g, " ")
+    .replace(/\b([a-z]{3,})s\b/g, "$1")
+    .trim().replace(/ +/g, " ");
+}
 
 export type GrandPalaisVenue = {
   label: string;
@@ -59,10 +124,7 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           period: "Du 23 septembre 2026 au 17 janvier 2027",
           details: "J-R Touzet · X. Rey · C. Bernardi · M. Gauthier",
           officialUrl: "https://www.grandpalais.fr/fr/programme/cezanne-et-nous",
-          prices: [
-            { label: "Plein", amount: 19 },
-            { label: "Réduit", amount: 16 },
-          ],
+          prices: CEZANNE_PRICES,
           startsOn: "2026-09-23",
           endsOn: "2027-01-17",
           audioguide: CEZANNE_AUDIOGUIDE,
@@ -73,6 +135,8 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           title: "Cezanne et nous",
           period: "Jusqu’au 17 janvier 2027",
           details: "J-R Touzet · X. Rey · C. Bernardi · M. Gauthier",
+          officialUrl: "https://www.grandpalais.fr/fr/programme/cezanne-et-nous",
+          prices: CEZANNE_PRICES,
           startsOn: "2026-09-23",
           endsOn: "2027-01-17",
           audioguide: CEZANNE_AUDIOGUIDE,
@@ -157,6 +221,7 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           prices: [
             { label: "Plein", amount: 15 },
             { label: "Réduit", amount: 12 },
+            UNDER_18_FREE,
           ],
           startsOn: "2026-12-09",
           endsOn: "2027-03-21",
@@ -172,6 +237,11 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
         {
           title: "Le Musée Imaginaire d’Oli",
           period: "Du 2 décembre 2026 au 21 février 2027",
+          officialUrl: "https://www.grandpalais.fr/fr/programme/le-musee-imaginaire-doli",
+          // La fiche officielle n'annonce pas de tarif : elle renvoie au site
+          // de l'exposition, dont la billetterie ouvre le 26 octobre 2026.
+          ticketingUrl: "https://lemuseeimaginairedoli.com",
+          priceNote: "Ouverture de la billetterie le 26 octobre 2026",
           startsOn: "2026-12-02",
           endsOn: "2027-02-21",
         },
@@ -186,14 +256,47 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
         { title: "SIBCA - Salon de l’Immobilier Bas Carbone", period: "Du 1er au 3 septembre 2026", startsOn: "2026-09-01", endsOn: "2026-09-03" },
         { title: "Sommet international sur l’espace", period: "Les 9 et 10 septembre 2026", startsOn: "2026-09-09", endsOn: "2026-09-10" },
         { title: "Fine Arts Paris", period: "Du 19 au 23 septembre 2026", startsOn: "2026-09-19", endsOn: "2026-09-23", officialUrl: "https://www.grandpalais.fr/fr/programme/fine-arts-paris-2026", prices: [{ label: "Plein", amount: 30 }, { label: "Réduit", amount: 25 }, { label: "Demi-tarif", amount: 15 }] },
-        { title: "Art Basel", period: "Du 23 au 25 octobre 2026", startsOn: "2026-10-23", endsOn: "2026-10-25", officialUrl: "https://www.grandpalais.fr/fr/programme/art-basel-paris-2026", prices: [{ label: "Billet jour", amount: 47 }, { label: "Billet jour, réduit", amount: 30 }, { label: "Billet soirée", amount: 40, until: "2026-10-23" }, { label: "Vernissage", amount: 120, until: "2026-10-22" }] },
-        { title: "Paris Photo World Supreme", period: "Du 12 au 15 novembre 2026", startsOn: "2026-11-12", endsOn: "2026-11-15" },
-        { title: "Arabian Horse Championship", period: "Du 25 au 27 novembre 2026", startsOn: "2026-11-25", endsOn: "2026-11-27" },
-        { title: "Adopt AI", period: "Les 3 et 4 décembre 2026", startsOn: "2026-12-03", endsOn: "2026-12-04" },
-        { title: "Le Grand Palais des Glaces", period: "Du 13 décembre 2026 au 6 janvier 2027", startsOn: "2026-12-13", endsOn: "2027-01-06" },
+        { title: "Art Basel", period: "Du 23 au 25 octobre 2026", startsOn: "2026-10-23", endsOn: "2026-10-25", officialUrl: "https://www.grandpalais.fr/fr/programme/art-basel-paris-2026", ticketingUrl: "https://www.artbasel.com/paris/tickets", prices: [{ label: "Billet jour", amount: 47 }, { label: "Billet jour, réduit", amount: 30 }, { label: "Billet soirée", amount: 40, until: "2026-10-23" }, { label: "Vernissage", amount: 120, until: "2026-10-22" }] },
+        {
+          title: "Paris Photo World Supreme",
+          period: "Du 12 au 15 novembre 2026",
+          startsOn: "2026-11-12",
+          endsOn: "2026-11-15",
+          officialUrl: "https://www.grandpalais.fr/fr/programme/paris-photo-2026",
+          ticketingUrl: "https://www.parisphoto.com/fr-fr.html",
+          prices: [
+            { label: "Semaine", amount: 36 },
+            { label: "Week-end", amount: 41 },
+            { label: "Soirée", amount: 26 },
+            { label: "Réduit étudiant", amount: 26 },
+          ],
+        },
+        {
+          title: "Arabian Horse Championship",
+          period: "Du 25 au 27 novembre 2026",
+          startsOn: "2026-11-25",
+          endsOn: "2026-11-27",
+          officialUrl: "https://www.grandpalais.fr/fr/programme/championnat-du-monde-du-cheval-arabe",
+          ticketingUrl: "https://gcarabianstour.com/",
+          prices: [
+            { label: "Adulte · journée", amount: 15 },
+            { label: "Adulte · 3 jours", amount: 35 },
+            { label: "Enfant · journée", amount: 5 },
+            { label: "Enfant · 3 jours", amount: 12 },
+            { label: "Famille · journée", amount: 30 },
+            { label: "Famille · 3 jours", amount: 75 },
+            { label: `${EXTRA_CHILD} · journée`, amount: 5 },
+            { label: `${EXTRA_CHILD} · 3 jours`, amount: 12 },
+            { label: "Moins de 3 ans", amount: 0 },
+          ],
+        },
+        // La fiche officielle n'annonce pas de tarif : « Informations et
+        // réservations sur le site adoptai.artefact.com ».
+        { title: "Adopt AI", period: "Les 3 et 4 décembre 2026", startsOn: "2026-12-03", endsOn: "2026-12-04", officialUrl: "https://www.grandpalais.fr/fr/programme/adopt-ai-2026", ticketingUrl: "https://adoptai.artefact.com/content/inscription" },
+        GRAND_PALAIS_DE_GLACE_2026,
       ],
       2027: [
-        { title: "Le Grand Palais des Glaces", period: "Jusqu’au 6 janvier 2027", startsOn: "2026-12-13", endsOn: "2027-01-06" },
+        { ...GRAND_PALAIS_DE_GLACE_2026, period: "Jusqu’au 6 janvier 2027" },
         { title: "Art Basel Paris", period: "Du 20 au 24 octobre 2027", uncertain: true, startsOn: "2027-10-20", endsOn: "2027-10-24" },
       ],
       2028: [
@@ -219,10 +322,11 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
         {
           title: "Mika Ninagawa with EiM - Alive with Shadows",
           period: "Du 16 décembre 2026 au 21 mars 2027",
-          officialUrl: "https://www.grandpalais.fr/en/program/mika-ninagawa-eim-alive-shadows",
+          officialUrl: "https://www.grandpalais.fr/fr/programme/mika-ninagawa-eim-alive-shadows",
           prices: [
             { label: "Plein", amount: 15 },
             { label: "Réduit", amount: 12 },
+            UNDER_18_FREE,
           ],
           startsOn: "2026-12-16",
           endsOn: "2027-03-21",
@@ -247,10 +351,7 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           title: "Transparence",
           period: "Du 20 juin 2025 au 29 août 2027",
           officialUrl: "https://www.grandpalais.fr/fr/programme/transparence",
-          prices: [
-            { label: "Plein", amount: 13 },
-            { label: "Abonné", amount: 8 },
-          ],
+          prices: TRANSPARENCE_PRICES,
           startsOn: "2025-06-20",
           endsOn: "2027-08-29",
         },
@@ -260,10 +361,7 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           title: "Transparence",
           period: "Jusqu’au 29 août 2027",
           officialUrl: "https://www.grandpalais.fr/fr/programme/transparence",
-          prices: [
-            { label: "Plein", amount: 13 },
-            { label: "Abonné", amount: 8 },
-          ],
+          prices: TRANSPARENCE_PRICES,
           startsOn: "2025-06-20",
           endsOn: "2027-08-29",
         },

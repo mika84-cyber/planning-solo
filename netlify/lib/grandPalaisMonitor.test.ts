@@ -4,6 +4,7 @@ import {
   detectGrandPalaisChanges,
   extractGrandPalaisEvent,
   extractGrandPalaisPrices,
+  extractGrandPalaisTicketingUrl,
   extractGrandPalaisExceptionalClosures,
   extractGrandPalaisProgramLinks,
   extractGrandPalaisProgramPageLinks,
@@ -66,6 +67,8 @@ describe("surveillance de la programmation du Grand Palais", () => {
     )).toEqual([
       { label: "Plein", amount: 19 },
       { label: "Réduit", amount: 16 },
+      // À qui l'entrée est gratuite, après les montants, en français lisible.
+      { label: "Moins de 18 ans, demandeurs d’emploi", amount: 0 },
     ]);
     // Un salon annonce plus de deux billets : tous sont repris.
     expect(extractGrandPalaisPrices(
@@ -118,6 +121,67 @@ describe("surveillance de la programmation du Grand Palais", () => {
       { label: "Enfant supplémentaire de moins de 12 ans (avec un billet famille) · 3 jours", amount: 12 },
       { label: "Moins de 3 ans", amount: 0 },
     ]);
+  });
+
+  it("lit chaque grille d’une fiche à plusieurs sessions, sa gratuité et son site de billetterie, cas du Grand Palais de Glace", () => {
+    const html = '<nav><a href="https://billetterie.grandpalais.fr/">Billetterie</a></nav>'
+      + '<p><span class="icon-map-pin"></span>&nbsp;Nef</p>'
+      + '<a href="https://legrandpalaisdeglace.fr/" target="_blank">legrandpalaisdeglace.fr</a>'
+      + '<div role="button"><span class="cp-accordion--title">Tarifs</span></div><div>'
+      + "<p><strong>Session du matin :&nbsp;</strong></p><ul><li>Adultes : 27 €</li><li>Enfants : 15 €&nbsp;</li><li>Seniors (65 ans et +) : 22 €</li></ul>"
+      + "<p><strong>Session de l'après-midi :&nbsp;</strong></p><ul><li>Adultes : 32 €</li><li>Enfants : 18 €&nbsp;</li><li>Seniors (65 ans et +) : 26 €</li></ul>"
+      + "<p><strong>Nocturne</strong> :&nbsp;</p><ul><li>De 20h à 2h : 39 €&nbsp;</li><li>De minuit à 2h : 27 €</li></ul>"
+      + "<p>Gratuit : - 3ans</p><p>Le tarif inclut la location de patins à glace.</p></div>"
+      + '<a class="cp-button" href="https://legrandpalaisdeglace.fr/billetterie/" target=_blank> Réserver <span class="icon icon-external-link"></span></a>'
+      + '<a href="https://www.chanel.com/fr/"><img alt=""></a>';
+    expect(extractGrandPalaisPrices(html)).toEqual([
+      { label: "Adultes", amount: 27, group: "Session du matin" },
+      { label: "Enfants", amount: 15, group: "Session du matin" },
+      { label: "Seniors (65 ans et +)", amount: 22, group: "Session du matin" },
+      { label: "Adultes", amount: 32, group: "Session de l’après-midi" },
+      { label: "Enfants", amount: 18, group: "Session de l’après-midi" },
+      { label: "Seniors (65 ans et +)", amount: 26, group: "Session de l’après-midi" },
+      { label: "De 20h à 2h", amount: 39, group: "Nocturne" },
+      { label: "De minuit à 2h", amount: 27, group: "Nocturne" },
+      { label: "Moins de 3 ans", amount: 0 },
+    ]);
+    // Le « Réserver » qui quitte le site officiel : ni la billetterie du
+    // Grand Palais, ni le logo d'un partenaire (lien sans texte).
+    expect(extractGrandPalaisTicketingUrl(html)).toBe("https://legrandpalaisdeglace.fr/billetterie/");
+    // La fiche entière le porte, et la veille le reprend sans validation.
+    const event = extractGrandPalaisEvent(`${eventPage({ name: "Le Grand Palais de Glace 2026", startDate: "2026-12-12", endDate: "2027-01-06", url: "https://www.grandpalais.fr/fr/programme/le-grand-palais-de-glace-2026", venue: "Nef" })}${html}`, "https://www.grandpalais.fr/fr/programme/le-grand-palais-de-glace-2026");
+    expect(event?.ticketingUrl).toBe("https://legrandpalaisdeglace.fr/billetterie/");
+    const accepted = { ...event!, prices: event!.prices!.slice(0, 3), ticketingUrl: undefined };
+    const synced = syncGrandPalaisPrices([accepted], [], [event!]);
+    expect(synced.changed).toBe(true);
+    expect(synced.approved[0].prices).toHaveLength(9);
+    expect(synced.approved[0].ticketingUrl).toBe("https://legrandpalaisdeglace.fr/billetterie/");
+    // Déjà livré avec l'application sous ce titre, ou sous l'ancien : rien à proposer.
+    expect(isGrandPalaisProposalRelevant(event!)).toBe(false);
+    expect(isGrandPalaisProposalRelevant({ ...event!, title: "Le Grand Palais des Glaces" })).toBe(false);
+  });
+
+  it("renvoie au site tiers quand la fiche n’annonce pas de tarif, cas d’Adopt AI, et à aucun lien douteux", () => {
+    const adoptAi = '<div role="button">Tarifs</div><p>Informations et réservations sur le site <a href="https://adoptai.artefact.com/" target="_blank">adoptai.artefact.com</a></p>'
+      + '<a href="https://adoptai.artefact.com/content/inscription">Réserver</a>';
+    expect(extractGrandPalaisPrices(adoptAi)).toEqual([]);
+    expect(extractGrandPalaisTicketingUrl(adoptAi)).toBe("https://adoptai.artefact.com/content/inscription");
+    // Sans bouton « Réserver », l'adresse écrite en toutes lettres suffit.
+    expect(extractGrandPalaisTicketingUrl('<p>Infos sur <a href="https://www.parisphoto.com/fr-fr.html">parisphoto.com</a></p>'))
+      .toBe("https://www.parisphoto.com/fr-fr.html");
+    // « S'inscrire pour être informé sur le site … » : la billetterie à venir.
+    expect(extractGrandPalaisTicketingUrl('<a href="https://lemuseeimaginairedoli.com" target="_blank"><span>S\'inscrire</span> pour être informé sur le site <span>lemuseeimaginairedoli.com</span></a>'))
+      .toBe("https://lemuseeimaginairedoli.com");
+    // Une boutique, un article, un lien sans https ou un partenaire : rien.
+    expect(extractGrandPalaisTicketingUrl('<a href="https://www.boutiquesdemusees.fr/x">Accéder à la boutique</a>'
+      + '<a href="http://tickets.example/">Réserver</a><a href="https://www.leparisien.fr/"></a>')).toBe("");
+    // Le prix d'appel de chaque soirée d'un festival, nommé.
+    expect(extractGrandPalaisPrices("<div>Tarifs</div><p><strong>Ludovico Einaudi : </strong>à partir de 59 €</p><p><strong>Étienne Daho</strong> : à partir de 45 €</p>"))
+      .toEqual([{ label: "Ludovico Einaudi · à partir de", amount: 59 }, { label: "Étienne Daho · à partir de", amount: 45 }]);
+    // La liste des gratuités, longue sur la fiche de Cezanne, s'arrête à une virgule.
+    expect(extractGrandPalaisPrices("<div>Tarifs</div><p><strong>Tarif plein&nbsp;</strong>: 19&nbsp;€</p>"
+      + "<p><strong>Billet gratuit</strong><br>-&nbsp;18 ans, demandeurs d'emploi, visiteurs en situation de handicap, scolaires, Pass GrandPalais...<br>Réservation conseillée.</p>"))
+      .toEqual([{ label: "Plein", amount: 19 }, { label: "Moins de 18 ans, demandeurs d’emploi, visiteurs en situation de handicap…", amount: 0 }]);
   });
 
   it("relève l’artiste et le prix d’appel d’un concert, cas de COLLECTOR 2027", () => {
