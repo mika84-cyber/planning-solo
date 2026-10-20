@@ -76,6 +76,8 @@ function accentSpine(_page: Page) {
 }
 
 const CHAPTER_TINT = "rgb(248, 235, 224)";
+// Les projets qui émulent un téléphone : Pixel 7 sous Chromium, iPhone 14 sous WebKit.
+const PHONE_PROJECTS = new Set(["mobile", "iphone"]);
 
 async function workedDaysOnHome(page: Page) {
   const resume = await page.locator(".worked-days-trigger span").first().innerText();
@@ -998,7 +1000,7 @@ async function swipeMainSection(page: Page, fromX: number, toX: number) {
 test("le partage de planning reste lisible et privé sur tous les écrans", async ({ page }, testInfo) => {
   // Les absences de démo d'Agnès sont datées de septembre 2026.
   await page.clock.setFixedTime(new Date("2026-09-01T12:00:00"));
-  await page.setViewportSize(testInfo.project.name === "mobile" ? { width: 344, height: 882 } : { width: 1280, height: 900 });
+  await page.setViewportSize(PHONE_PROJECTS.has(testInfo.project.name) ? { width: 344, height: 882 } : { width: 1280, height: 900 });
   await prepareDemo(page);
   const referenceHeaderHeight = (await page.locator('.top-header:visible').boundingBox())!.height;
   await goToSection(page, "colleagues");
@@ -2386,7 +2388,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   const today = new Date();
   const todayKey = dateKey(today);
   const periodEnd = new Date(Math.max(addDays(today, 6).getTime(), rttWorkDate.getTime()));
-  if (testInfo.project.name === "mobile") {
+  if (PHONE_PROJECTS.has(testInfo.project.name)) {
     await expect(page.locator(".work-accident-date-input > span")).toHaveText(["jj/mm/aaaa", "jj/mm/aaaa"]);
     await expect(page.locator(".work-accident-date-input > span").first()).toBeVisible();
   }
@@ -2403,7 +2405,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   await expect(workAccidentMarker).toBeVisible();
   await expect(todayCell).toHaveAttribute("aria-label", /accident de travail/);
   await expect(todayCell).toHaveCSS("border-top-color", "rgb(0, 0, 0)");
-  if (testInfo.project.name === "mobile") {
+  if (PHONE_PROJECTS.has(testInfo.project.name)) {
     await expect(workAccidentMarker).toHaveCSS("right", "-8px");
     await expect(workAccidentMarker).toHaveCSS("bottom", "-2px");
     // Mesure réessayée : sous charge parallèle, la grille du calendrier

@@ -358,8 +358,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - Sécurité du formulaire : `formSecurity.test.mjs`.
 - Finitions demandées : `uiRefinement.test.mjs`.
 - Composants extraits : tests `*.test.tsx` portant le même nom.
-- Parcours réels dans Chromium : `e2e/app.spec.ts`, exécuté sur ordinateur et
-  mobile avec Playwright.
+- Parcours réels avec Playwright : `e2e/app.spec.ts`, exécuté sur ordinateur,
+  mobile (Pixel 7) et Z Fold sous Chromium, et sur iPhone 14 sous WebKit
+  (projet `iphone`, moteur installé par `npx playwright install webkit`).
 
 ## Commandes de validation
 

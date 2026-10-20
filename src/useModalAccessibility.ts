@@ -15,6 +15,15 @@ export function useModalAccessibility() {
     let activeDialog: HTMLElement | null = null;
     let previousFocus: HTMLElement | null = null;
     let previousOverflow = "";
+    // Safari ne donne pas le focus au bouton touché ou cliqué : quand la
+    // fenêtre s'ouvre, l'élément actif est alors la page elle-même. On retient
+    // donc le dernier élément focalisable touché hors d'une fenêtre, pour y
+    // revenir à la fermeture, comme sur les autres navigateurs.
+    let lastPointerTarget: HTMLElement | null = null;
+    const pointerdown = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>(FOCUSABLE) : null;
+      if (target && !target.closest('[aria-modal="true"]')) lastPointerTarget = target;
+    };
 
     const activate = () => {
       const dialogs = [...document.querySelectorAll<HTMLElement>('[aria-modal="true"]')];
@@ -28,7 +37,8 @@ export function useModalAccessibility() {
         return;
       }
       if (!activeDialog) {
-        previousFocus = document.activeElement as HTMLElement | null;
+        const active = document.activeElement as HTMLElement | null;
+        previousFocus = active && active !== document.body ? active : lastPointerTarget;
         previousOverflow = document.body.style.overflow;
       }
       activeDialog = next;
@@ -74,10 +84,12 @@ export function useModalAccessibility() {
     const observer = new MutationObserver(activate);
     observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener("keydown", keydown);
+    document.addEventListener("pointerdown", pointerdown, true);
     activate();
     return () => {
       observer.disconnect();
       document.removeEventListener("keydown", keydown);
+      document.removeEventListener("pointerdown", pointerdown, true);
       document.body.style.overflow = previousOverflow;
     };
   }, []);

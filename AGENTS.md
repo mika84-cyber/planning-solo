@@ -14,7 +14,7 @@ par défaut.
 5. Après une modification, lancez le test ciblé, puis `npm test`,
    `npm run check` et `npm run build` si le changement touche la production.
    Pour un parcours d’interface, ajoutez ou adaptez aussi un scénario dans
-   `e2e/` puis lancez `npm run test:e2e` (ordinateur et mobile).
+   `e2e/` puis lancez `npm run test:e2e` (ordinateur, mobile et iPhone).
 6. `uiRefinement.test.mjs` contient encore des contrôles textuels : lorsqu'un
    affichage est déplacé vers un composant, mettez le test à jour et ajoutez si
    possible un test de rendu du composant.

@@ -35,6 +35,12 @@ export default defineConfig({
       use: { ...devices["Pixel 7"] },
     },
     {
+      // Safari sur iPhone : le moteur WebKit, où les écarts avec Chromium
+      // (champs date et heure, fenêtres, gestes) se voient.
+      name: "iphone",
+      use: { ...devices["iPhone 14"] },
+    },
+    {
       name: "z-fold",
       grep: /Z Fold ouvert/,
       use: {
