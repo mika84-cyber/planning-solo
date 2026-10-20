@@ -47,6 +47,7 @@ const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta
 const applicationStartup = readFileSync(new URL("./src/useApplicationStartup.ts", import.meta.url), "utf8");
 const homeSectionScreen = readFileSync(new URL("./src/HomeSectionScreen.tsx", import.meta.url), "utf8");
 const leaveSectionScreen = readFileSync(new URL("./src/LeaveSectionScreen.tsx", import.meta.url), "utf8");
+const paySectionScreen = readFileSync(new URL("./src/PaySectionScreen.tsx", import.meta.url), "utf8");
 // Les calculs sortis d'App.tsx dans leurs hooks : lus avec lui, pour que les
 // contrôles qui portent sur un calcul suivent le code quand il est déplacé.
 const extractedHooks = [
@@ -57,7 +58,7 @@ const extractedHooks = [
 ]
   .map((name) => readFileSync(new URL(`./src/${name}.ts`, import.meta.url), "utf8"))
   .join("\n");
-const app = [appRoot, extractedHooks, homeSectionScreen, leaveSectionScreen, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
+const app = [appRoot, extractedHooks, homeSectionScreen, leaveSectionScreen, paySectionScreen, appNavigation, homeDashboard, payPage, payDashboard, payAllowancesSection, pdfDownloadPage, leaveManagementPage, planningCommandCenter, schoolVacationUi, planningDayCell, usefulResourcesHub, payslipCheckSection, appDialogLayer, dayDetailDialog, balanceDetailDialog, requestSelectionPanel, planningRequestPanels, annualPdfActions, payContent, payAllowances, leaveStats, todayOverview, upcomingNoteList, profileAdjustmentActions, grandPalaisProgramData, workTimeActions, payActions, authenticationActions, accountDataActions, planningEntryActions].join("\n");
 const stylesheetEntry = readFileSync(new URL("./src/styles.css", import.meta.url), "utf8");
 // Les feuilles lues en règles et déclarations (test-lib/cssRules.mjs) : un
 // contrôle porte sur un sélecteur ou une déclaration, jamais sur le texte des
@@ -331,8 +332,8 @@ describe("finitions d’interface", () => {
   it("laisse la quotité et le statut vides tant qu’ils n’ont pas été choisis", () => {
     // Les calculs retiennent bien un temps plein contractuel par défaut,
     // mais l’afficher ferait passer pour renseigné ce qui reste à décider.
-    expect(appRoot).toContain("workQuota: formProfile?.workQuota,");
-    expect(appRoot).toContain("status: formProfile?.status,");
+    expect(paySectionScreen).toContain("workQuota: formProfile?.workQuota,");
+    expect(paySectionScreen).toContain("status: formProfile?.status,");
     expect(payPage).toContain('placeholder="À renseigner"');
     expect(payPage).toContain("Quotité et statut à renseigner");
     expect(payPage).not.toContain('status={formProfile?.status || "contractuel"}');

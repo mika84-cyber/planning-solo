@@ -11,7 +11,7 @@ export { LeaveBalancesSection } from "./LeaveBalancesSection";
 export { ManualAdjustmentsDialog, RangeLeaveDialog } from "./LeaveDialogs";
 export { LeaveManagementPage } from "./LeaveManagementPage";
 export { PayAllowancesSection } from "./PayAllowancesSection";
-export { PayScreen } from "./PayScreen";
+export { PaySectionScreen } from "./PaySectionScreen";
 export { PdfDownloadPage } from "./PdfDownloadPage";
 export { RequestSelectionPanel } from "./RequestSelectionPanel";
 export {

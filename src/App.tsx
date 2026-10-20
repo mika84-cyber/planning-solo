@@ -69,8 +69,8 @@ const RequestSelectionPanel = lazy(() =>
 );
 // La rubrique Ma paie construit son contenu à part : son morceau n'est
 // chargé qu'à son ouverture.
-const PayScreen = lazy(() =>
-  import("./deferredScreens").then(({ PayScreen: Component }) => ({ default: Component })),
+const PaySectionScreen = lazy(() =>
+  import("./deferredScreens").then(({ PaySectionScreen: Component }) => ({ default: Component })),
 );
 const SchoolVacationMonthSummary = lazy(() =>
   import("./SchoolVacationUi").then(({ SchoolVacationMonthSummary: Component }) => ({ default: Component })),
@@ -284,17 +284,13 @@ export default function Home() {
   );
   const payUi = usePayUiState();
   const {
-    payView, setPayView, payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
-    payProfileFocusRequested, setPayProfileFocusRequested,
-    payVerificationRequested, setPayVerificationRequested,
-    payMonthSlide,
+    payView, setPayView, payScreen, setPayScreen, setPayProfileOpen,
     payslipCheck, setPayslipCheck, setPayslipError,
     setPayslipImportBusy, setPayslipImportError,
     setPayslipImportResult, setPayslipImportMode,
     setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
     payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
     setPayslipResultDetailsOpen,
-    setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,
     payDrafts, setPayDrafts, setSavingPay,
   } = payUi;
   const appShellUi = useAppShellUiState();
@@ -545,10 +541,8 @@ export default function Home() {
 
   const payProfileValues = usePayProfileValues({ formProfile, payProfiles, payView, payslipRateSamples });
   const {
-    isContractuel, confirmedContractuel, workQuota, workDayMinutes, payYear, hasPayValue,
-    baseSalary, ifse, carenceDay, otherFixed, cia, ciaMonth, residenceAllowance,
-    viewedPayRegime, netRatioFixed, netRatioVariable, payslipRateCalibration,
-    navigo, mealVoucherDeduction, pasRate,
+    isContractuel, workQuota, workDayMinutes,
+    baseSalary, ifse, otherFixed, cia, ciaMonth,
     sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
     deductionPayMonths,
   } = payProfileValues;
@@ -565,10 +559,7 @@ export default function Home() {
     recoveryUses, overtimeEntries, mecenatEntries, overtimeDraft, values: payProfileValues,
   });
   const {
-    sickLeaves, allowances, recoveryBalance,
-    paidOvertimeForPayPeriod, overtimeEarlyCandidates, overtimeForPayMonth, overtimePayPreview,
-    mecenatForCurrentPayMonth, strikeForCurrentPayMonth, monthPay,
-    grossEstimateComplete, netEstimateMissing, netEstimateComplete, netCalculation, monthNet,
+    sickLeaves, allowances, recoveryBalance, paidOvertimeForPayPeriod, overtimePayPreview,
   } = monthPayEstimate;
   const recoverySelectionInsufficient = requestKind === "recovery" &&
     requestRecoveryMinutes(selectedList, workQuota) > recoveryBalance.remaining;
@@ -656,8 +647,7 @@ export default function Home() {
     isExchangeDate: (key) => Boolean(entries[key]?.exchangeId),
     proposeHalfBalance: (key) => proposeHalfBalance(key, Object.values(selections)),
   });
-  const { changePayMonth, goPayToday, slideAllowancesMonth, startAllowancesSwipe, endAllowancesSwipe } =
-    usePayMonthNavigation({ payUi, allowancesSwipeStart });
+  const payMonthNavigation = usePayMonthNavigation({ payUi, allowancesSwipeStart });
   const { changeGroup, changeStatus, changeWorkQuota, changeWorkSchedule, saveCalculationProfile } = useWorkProfileActions({
     demoMode, group, setGroup, formProfile, setFormProfile, setPayProfileOpen, notify, post: postCalendar,
   });
@@ -911,7 +901,6 @@ export default function Home() {
     notify,
     post: postCalendar,
   });
-  const { chooseHolidayPay } = payActions;
 
   function openRequestChooser(
     _origin: "general" | "planning" = "general",
@@ -1157,87 +1146,20 @@ export default function Home() {
       ) : null}
       {homeSection === "pay" && allowances ? (
         <Suspense fallback={<DeferredSection label="votre paie" />}>
-        <PayScreen
-          content={{
-            payUi,
-            payActions,
-            allowances,
-            monthPay,
-            sickLeaves,
-            overtimeForPayMonth,
-            mecenatForCurrentPayMonth,
-            mecenatEntries,
-            onMarkMecenatsPaidEarly: (entries, year, month) => void markMecenatsPaidEarly(entries, year, month),
-            overtimeEarlyCandidates,
-            onMarkOvertimePaidEarly: (entries) => void markOvertimePaidEarly(entries),
-            strikeForCurrentPayMonth,
-            netCalculation,
-            monthNet,
-            grossEstimateComplete,
-            netEstimateMissing,
-            payProfiles,
-            payYear,
-            hasPayValue,
-            viewedPayRegime,
-            payslipRateCalibration,
-            isContractuel,
-            confirmedContractuel,
-            workQuota,
-            baseSalary,
-            residenceAllowance,
-            ifse,
-            otherFixed,
-            cia,
-            ciaMonth,
-            carenceDay,
-            navigo,
-            mealVoucherDeduction,
-            pasRate,
-            netRatioFixed,
-            netRatioVariable,
-            sundayCarryover,
-            sundayCarryoverMonth,
-            sundayCarryoverYear,
-            payslipVerifications,
-            changePayMonth,
-            goPayToday,
-          }}
+        <PaySectionScreen
+          payUi={payUi}
+          payActions={payActions}
+          profile={payProfileValues}
+          estimate={monthPayEstimate}
           allowances={allowances}
+          calendar={calendarData}
+          payslipVerifications={payslipVerifications}
+          navigation={payMonthNavigation}
           holidayChoiceEditing={holidayChoiceEditing}
           onEditHolidayChoice={setHolidayChoiceEditing}
-          onChooseHolidayPay={chooseHolidayPay}
-          onExchangeHoliday={(key) => openWorkExchange(key)}
-          page={{
-            screen: payScreen,
-            profileOpen: payProfileOpen,
-            profileFocusRequested: payProfileFocusRequested,
-            settingsOpen: payAdvancedOpen,
-            workQuota: formProfile?.workQuota,
-            workSchedule: formProfile?.workSchedule,
-            status: formProfile?.status,
-            netEstimateComplete: netEstimateComplete,
-            missingFields: netEstimateMissing,
-            onCompleteEstimate: () => { setPaySettingsOpen(true); setPayAdvancedOpen(true); },
-            verificationRequested: payVerificationRequested,
-            onVerificationShown: () => setPayVerificationRequested(false),
-            monthSlide: payMonthSlide,
-            onScreenChange: setPayScreen,
-            onToggleProfile: () => setPayProfileOpen((current) => !current),
-            onProfileFocused: () => setPayProfileFocusRequested(false),
-            onToggleSettings: () => {
-              // Les éléments de paie s'affichent d'emblée : un niveau de moins à ouvrir.
-              setPaySettingsOpen(true);
-              setPayAdvancedOpen((current) => !current);
-            },
-            onWorkQuotaChange: changeWorkQuota,
-            onWorkScheduleChange: changeWorkSchedule,
-            onStatusChange: changeStatus,
-            onSaveProfile: () => void saveCalculationProfile(),
-            onPreviousMonth: () => slideAllowancesMonth(-1),
-            onNextMonth: () => slideAllowancesMonth(1),
-            onToday: goPayToday,
-            onTouchStart: startAllowancesSwipe,
-            onTouchEnd: endAllowancesSwipe,
+          actions={{
+            markMecenatsPaidEarly, markOvertimePaidEarly,
+            changeWorkQuota, changeWorkSchedule, changeStatus, saveCalculationProfile, openWorkExchange,
           }}
         />
         </Suspense>
