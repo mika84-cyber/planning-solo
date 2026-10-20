@@ -1,0 +1,693 @@
+/* Commandes du planning (PlanningCommandCenter et le bouton d'effacement de
+   CalendarCleanup) : cadre de la rubrique, barre du mois, jours travaillés,
+   effacement et choix d'un planning. Ces règles étaient réparties entre 02
+   et 14 ; elles sont réunies ici, un bloc par composant, juste après la
+   feuille 14. Elles l'emportent donc, à spécificité égale, sur les feuilles
+   02 à 14, et restent avant 15, 17 et productRefinements.css, dont les
+   bordures, fonds et marges de rubrique gardent la main.
+
+   Hors accueil (une demande ouverte depuis une autre rubrique), le planning
+   n'a pas la classe framed : les règles sans .planning-workspace-shell.framed
+   dessinent cette vue. Les flèches .period-step servent aussi à la page
+   Collègues, qui les retouche dans colleaguePlanning.css. Attention à la
+   conversion sombre (src/darkStyles.ts) : elle recopie les couleurs de ces
+   règles dans le même ordre, en fin de cascade. */
+
+/* ---- Cadre de la rubrique ------------------------------------------------ */
+
+/* Sur l'accueil, la rubrique pose deux cartes : les commandes et le mois. Le
+   bord gauche reste ouvert. Largeur et marges latérales viennent de
+   .app-shell > .planning-workspace-shell (feuille 14). */
+.planning-workspace-shell.framed {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  border: 1.5px solid var(--app-frame-strong);
+  border-left: 0;
+  border-radius: 18px;
+  padding: 20px 20px 20px 0;
+  background: none;
+  box-shadow: var(--app-subtle-shadow);
+}
+.planning-workspace-shell.framed .planning-command-section,
+.planning-workspace-shell.framed .planning-calendar-section {
+  box-sizing: border-box;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  border: 1.5px solid var(--border-card);
+  border-radius: 27px;
+  padding: clamp(11px, 1.5vw, 16px);
+  background: var(--surface-high);
+  box-shadow: 0 17px 38px rgba(67, 52, 40, 0.11);
+}
+.planning-workspace-shell.framed .home-planning-heading .home-content-heading {
+  min-height: 0;
+}
+.planning-workspace-shell.framed .home-planning-heading .step-label {
+  color: var(--accent);
+  letter-spacing: 0.14em;
+}
+.planning-workspace-shell.framed .home-planning-heading h2 {
+  margin-top: 3px;
+  color: var(--text);
+}
+/* Les commandes du mois sont posées à même la page : la période en tête,
+   puis le compteur des jours travaillés. */
+.planning-settings-body {
+  display: grid;
+  gap: 6px;
+}
+
+@media (max-width: 720px) {
+  /* Sur téléphone, les deux cartes se posent directement sur la page. */
+  .planning-workspace-shell.framed {
+    gap: 10px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .planning-workspace-shell.framed .planning-command-section,
+  .planning-workspace-shell.framed .planning-calendar-section {
+    border-radius: 18px;
+    padding: 10px;
+  }
+  .planning-workspace-shell.framed .home-planning-heading h2 {
+    font-size: 1.2rem;
+  }
+}
+
+/* ---- Choisir un planning (PDF) ------------------------------------------- */
+
+/* Une flèche dessinée en CSS dit que le bouton ouvre un choix. */
+.app-shell .planning-export-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.planning-workspace-shell.framed .planning-export-pdf {
+  width: auto;
+  min-height: 32px;
+  padding: 5px 12px;
+  font-size: 0.72rem;
+}
+.planning-export-pdf::after {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin: -3px 1px 0 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+/* ---- Barre du mois ------------------------------------------------------- */
+
+/* Hors accueil, la barre garde son propre cadre. */
+.calendar-toolbar {
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+  border: 1.5px solid var(--border-card);
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+/* La période vient en tête : on arrive ici pour lire un mois. */
+.planning-settings-body .calendar-toolbar.month-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  order: -1;
+}
+.planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+  width: 100%;
+  margin-bottom: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* La période se manipule d'un bloc : deux flèches rondes encadrent le mois et
+   l'année. Avancer d'un mois ne demande pas d'ouvrir un menu. */
+.period-navigation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(145px, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.planning-workspace-shell.framed .planning-settings-body .period-navigation {
+  display: flex;
+  grid-column: 1 / -1;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0 0;
+}
+/* Flèches du mois : le terracotta des boutons ; le violet reste aux vacances
+   scolaires. */
+.period-step {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(44, 38, 33, 0.3);
+  border-radius: 50%;
+  padding: 0;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(131, 69, 44, 0.28);
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+.period-step:hover {
+  background: var(--accent-strong);
+}
+.period-step svg {
+  width: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Mois et année : deux pastilles distinctes, chacune avec son chevron, dans
+   la police des titres. La pastille ouverte (ou survolée) fonce son
+   contour. Le nom du mois est long : la taille suit la place disponible. */
+.period-pickers {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.period-pickers > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.period-navigation .choice-picker-trigger {
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  border-color: transparent;
+  padding: 0 10px;
+  background: var(--surface-high);
+  font-size: clamp(14px, 3.9vw, 17px);
+  font-weight: 850;
+  text-transform: capitalize;
+}
+.period-navigation .choice-picker-trigger svg {
+  width: 15px;
+}
+.period-navigation .choice-picker-trigger:hover,
+.period-navigation .choice-picker-trigger[aria-expanded="true"] {
+  border-color: var(--border-control);
+  color: var(--accent);
+}
+.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(44, 38, 33, 0.3);
+  border-radius: 12px;
+  padding: 0 16px;
+  background: #fbf6ef;
+  box-shadow: none;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 3.4vw, 1.15rem);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-transform: capitalize;
+}
+.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger svg {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  display: block;
+  width: 12px;
+  transform: translateY(-50%);
+  opacity: 0.75;
+}
+.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger:is(:hover, [aria-expanded="true"]) {
+  border-color: rgba(44, 38, 33, 0.8);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.planning-workspace-shell.framed .month-toolbar :is(.toolbar-month-picker, .toolbar-year-picker, .today-button, .choice-picker-trigger) {
+  width: 100%;
+}
+
+/* Menus du mois et de l'année : trois colonnes, ancrés au bord de leur
+   pastille sur ordinateur, au niveau de la fenêtre (portail) sur téléphone
+   et écran tactile. */
+.toolbar-month-picker .choice-picker-menu,
+.choice-picker-menu.choice-picker-menu-portal.toolbar-month-picker {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 286px;
+}
+.toolbar-year-picker .choice-picker-menu,
+.choice-picker-menu.choice-picker-menu-portal.toolbar-year-picker {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 238px;
+}
+.month-toolbar .toolbar-month-picker .choice-picker-menu {
+  left: 0;
+  transform: none;
+}
+.month-toolbar .toolbar-year-picker .choice-picker-menu {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+.toolbar-month-picker .choice-picker-menu button,
+.toolbar-year-picker .choice-picker-menu button {
+  min-width: 0;
+}
+
+/* Revenir au mois courant : le second geste le plus fréquent, sur sa propre
+   ligne juste avant le compteur. */
+.today-button {
+  height: 42px;
+  border-radius: 12px;
+  padding: 0 13px;
+  background: var(--surface-high);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.planning-workspace-shell.framed .month-toolbar .today-button {
+  min-width: 0;
+}
+.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button {
+  grid-column: 1;
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border-control);
+  border-radius: 12px;
+  padding: 9px 14px;
+  background: var(--surface);
+  box-shadow: 0 3px 10px rgba(87, 78, 66, 0.055);
+  color: var(--accent-strong);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+}
+.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button:hover {
+  background: var(--accent-soft);
+}
+
+@media (max-width: 720px) {
+  .calendar-toolbar {
+    padding: 9px;
+  }
+  .period-navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .calendar-toolbar.month-toolbar .period-navigation {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 100%;
+  }
+  .today-button {
+    height: 44px;
+  }
+  .calendar-toolbar.month-toolbar .today-button {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+  }
+  .planning-workspace-shell.framed .month-toolbar :is(.toolbar-month-picker, .toolbar-year-picker, .today-button, .choice-picker-trigger) {
+    min-width: 0;
+  }
+}
+
+/* Tablette et écran presque carré (Z Fold déplié) : la période se resserre. */
+@media (min-width: 640px) and (max-width: 1000px), (min-width: 900px) and (max-width: 1180px) and (min-aspect-ratio: 4/5) and (max-aspect-ratio: 6/5) {
+  .period-navigation {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+  .calendar-toolbar .today-button {
+    width: auto;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+}
+
+@media (min-width: 721px) {
+  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+/* Sur ordinateur et sur le Fold ouvert, les pastilles et Aujourd'hui ont la
+   même hauteur. */
+@media (min-width: 1101px), (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
+  .planning-workspace-shell.framed .month-toolbar :is(.toolbar-month-picker, .toolbar-year-picker, .today-button, .choice-picker-trigger) {
+    min-width: 0;
+    min-height: 46px;
+    height: 46px;
+  }
+}
+
+/* ---- Jours travaillés ---------------------------------------------------- */
+
+/* Hors accueil, les réglages forment une carte. */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 14px;
+  border: 1.5px solid var(--border-card);
+  border-radius: 18px;
+  padding: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.planning-workspace-shell.framed .controls {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  margin-bottom: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.planning-workspace-shell.framed .planning-settings-body .controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 0;
+  padding: 0;
+}
+.planning-workspace-shell.framed .planning-settings-body .controls > * {
+  grid-template-rows: auto;
+}
+
+/* Le compteur ouvre un volet par-dessus le calendrier plutôt que de pousser
+   la rangée. */
+.worked-days {
+  display: grid;
+  flex: 1 1 190px;
+  gap: 6px;
+  min-width: 190px;
+}
+.planning-workspace-shell.framed .controls .worked-days {
+  grid-column: 1;
+  grid-row: 1;
+  order: 1;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+.worked-days-stepper {
+  position: relative;
+  height: 46px;
+  border: 1px solid var(--section-outline);
+  border-radius: 12px;
+  padding: 4px;
+  background: linear-gradient(135deg, var(--surface-high) 0%, #fff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.planning-workspace-shell.framed .controls .worked-days-stepper {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+/* Le libellé reste réellement centré, indépendamment de la flèche placée à
+   droite. */
+.worked-days-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-align: center;
+  cursor: pointer;
+}
+.planning-workspace-shell.framed .controls .worked-days-trigger {
+  border: 1px solid var(--border-control);
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(87, 78, 66, 0.055);
+}
+.planning-workspace-shell.framed .controls .worked-days-stepper,
+.planning-workspace-shell.framed .controls .worked-days-trigger {
+  width: 100%;
+  height: 46px;
+  min-height: 46px;
+}
+.worked-days-trigger > span {
+  white-space: nowrap;
+}
+.worked-days-trigger svg {
+  position: absolute;
+  right: 8px;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.16s ease;
+}
+.worked-days-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* Le volet s'ouvre sous la case, sur toute sa largeur, et donne en trois
+   chiffres ce qu'il reste d'ici au 31 décembre. */
+.worked-days-panel {
+  position: absolute;
+  z-index: 120;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+.app-shell .controls .worked-days .worked-days-panel {
+  top: calc(100% + 8px);
+  right: 0;
+  bottom: auto;
+  left: 0;
+  display: block;
+  width: auto;
+  border: 1px solid #e3d6c8;
+  border-radius: 18px;
+  padding: 12px 14px 14px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(58, 51, 44, 0.16);
+}
+.worked-days-panel small {
+  line-height: 1.2;
+}
+.worked-days-remaining h5 {
+  margin: 0 0 10px;
+  color: #9a4a2e;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.worked-days-remaining ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.worked-days-remaining li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 0 4px;
+}
+.worked-days-remaining li + li {
+  border-left: 1px solid #efe6db;
+}
+.worked-days-remaining li b {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.worked-days-remaining li.worked-days-remaining-main b {
+  color: #9a4a2e;
+}
+.worked-days-remaining li small {
+  color: #6b5d50;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+  }
+  .planning-workspace-shell.framed .controls {
+    width: 100%;
+    gap: 10px;
+    border-radius: 17px;
+  }
+  .controls .worked-days {
+    grid-column: 1;
+    grid-row: 1;
+    order: initial;
+    width: 100%;
+    min-width: 0;
+  }
+  .controls .worked-days-stepper {
+    min-width: 0;
+  }
+  .worked-days-trigger {
+    gap: 5px;
+  }
+  .controls .worked-days-trigger {
+    padding: 0 7px;
+  }
+  .worked-days-panel {
+    box-sizing: border-box;
+    max-height: min(58dvh, 420px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .worked-days-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Sur grand écran, aucune carte parente ne rogne le volet. */
+@media (min-width: 721px) {
+  .planning-workspace-shell.framed .planning-command-section,
+  .planning-workspace-shell.framed .controls,
+  .planning-workspace-shell.framed .controls .worked-days,
+  .planning-workspace-shell.framed .controls .worked-days-stepper {
+    overflow: visible;
+  }
+  .planning-workspace-shell.framed .worked-days-panel {
+    gap: 9px;
+  }
+  .planning-workspace-shell.framed .worked-days-panel small {
+    line-height: 1.35;
+  }
+}
+
+@media (min-width: 1101px) {
+  .planning-workspace-shell.framed .worked-days-panel {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---- Effacer plusieurs dates ou notes ------------------------------------ */
+
+/* L'effacement multiple reste disponible sans prendre le poids visuel des
+   commandes de navigation : une action distincte, placée après la grille. */
+.calendar-bulk-delete-button {
+  width: fit-content;
+  min-height: 2.6rem;
+  margin: 0.7rem 0 0;
+  border: 1px solid var(--border-control);
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  box-shadow: none;
+  color: #a9243a;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.calendar-bulk-delete-button:hover,
+.calendar-bulk-delete-button:focus-visible {
+  outline: 2px solid rgba(190, 45, 68, 0.16);
+  outline-offset: 2px;
+}
+.planning-workspace-shell.framed .planning-calendar-cleanup-row {
+  display: flex;
+  width: 100%;
+}
+.planning-workspace-shell.framed .calendar-bulk-delete-below {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 46px;
+  margin: 2px 0 0;
+  border: 2px solid var(--border-card);
+}
+.calendar-cleanup-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.calendar-cleanup-label-short {
+  display: none;
+}
+
+/* Hors accueil, le téléphone n'affiche pas l'effacement multiple. */
+@media (max-width: 720px) {
+  .calendar-bulk-delete-button {
+    display: none;
+    width: 100%;
+  }
+}
+
+@media (min-width: 721px) {
+  .planning-workspace-shell.framed .calendar-bulk-delete-below {
+    align-self: stretch;
+  }
+}

@@ -9,28 +9,6 @@
 
 .allowance-card { overflow: visible; }
 
-@media (max-width: 720px) {
-  .planning-group-choice .choice-picker-trigger,
-  .worked-days-trigger {
-    justify-content: center;
-    gap: 5px;
-    padding-right: 6px;
-    padding-left: 6px;
-    font-size: 12px;
-  }
-}
-
-/* Le libellé reste réellement centré, indépendamment de la flèche placée à
-   droite. La même géométrie s'applique au téléphone et au grand écran. */
-.worked-days-trigger {
-  position: relative;
-  justify-content: center;
-  text-align: center;
-}
-.worked-days-trigger svg {
-  position: absolute;
-  right: 8px;
-}
 
 /* Un peu de respiration entre les intitulés de rubrique et leurs données. */
 .allowance-overview { gap: 16px; }
@@ -262,18 +240,6 @@
   outline-offset: 2px;
 }
 
-.calendar-bulk-delete-button {
-  width: fit-content;
-  min-height: 2.6rem;
-  margin: 0.7rem 0 0;
-  padding: 0.65rem 1rem;
-  border: 1px solid var(--border-card);
-  border-radius: 999px;
-  font: inherit;
-  font-weight: 750;
-  cursor: pointer;
-}
-
 .calendar-delete-panel {
   display: flex;
   align-items: center;
@@ -316,8 +282,7 @@
     flex-direction: column;
   }
 
-  .calendar-delete-actions > button,
-.calendar-bulk-delete-button {
+  .calendar-delete-actions > button {
     width: 100%;
   }
 }
@@ -447,28 +412,6 @@
   white-space: nowrap;
 }
 
-.calendar-bulk-delete-button,
-.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
-  border-color: var(--border-control);
-  background: var(--surface-high);
-  color: #a9243a;
-  box-shadow: none;
-}
-.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
-  padding-inline: 3px;
-  font-size: 10.5px;
-  letter-spacing: -0.015em;
-  white-space: nowrap;
-}
-.calendar-bulk-delete-button:hover,
-.calendar-bulk-delete-button:focus-visible,
-.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile:hover,
-.calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile:focus-visible {
-  border-color: var(--border-control);
-  background: var(--surface-high);
-  outline: 2px solid rgba(190, 45, 68, 0.16);
-  outline-offset: 2px;
-}
 
 .balance-detail-months {
   display: grid;
@@ -543,41 +486,10 @@
 
 
 @media (max-width: 720px) {
-  .worked-days-panel {
-    right: auto;
-    left: 0;
-    top: auto;
-    bottom: calc(100% + 8px);
-    box-sizing: border-box;
-    width: min(400px, calc(100vw - 52px));
-    max-height: min(58dvh, 420px);
-    overflow-y: auto;
-  }
-
-  .calendar-toolbar.month-toolbar {
-    display: grid;
-    grid-template-columns: minmax(112px, 0.72fr) minmax(0, 1.28fr);
-    gap: 8px;
-  }
-  .calendar-toolbar.month-toolbar .today-button {
-    width: 100%;
-    min-width: 0;
-    min-height: 50px;
-  }
-  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
-    width: 100%;
-    min-width: 0;
-    min-height: 50px;
-  }
 
   .holiday-pay-amount { width: fit-content; }
 }
 
-@media (max-width: 360px) {
-  .worked-days-panel {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
 /* En-tête plus respirant : les commandes principales occupent une vraie zone
    et la mise à jour reste disponible juste sous Mois / Année / menu. */
@@ -710,13 +622,10 @@
 
 .today-overview,
 .home-notes-section,
-.planning-workspace-shell.framed,
 .leave-balances-direct,
 .overtime-balance-card,
 .pay-app-screen,
 .pdf-download-screen,
-.controls,
-.calendar-toolbar,
 .request-panel,
 .request-option-group,
 .leave-balance-grid button {

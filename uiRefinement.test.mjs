@@ -148,9 +148,9 @@ describe("finitions d’interface", () => {
 
   it("organise les cartes et commandes du planning pour le téléphone", () => {
     expect(styles).not.toContain("today-group-card");
-    expect(styles).toContain(".controls .worked-days { grid-column: 1");
-    expect(styles).toContain(".controls .planning-group-choice { grid-column: 2");
-    expect(styles).toContain(".controls > .planning-leave-mobile { grid-column: 1 / -1");
+    expect(styles).toContain("  .controls .worked-days {\n    grid-column: 1;\n    grid-row: 1;");
+    // Le choix du groupe a quitté les commandes du planning.
+    expect(styles).not.toContain("planning-group-choice");
     expect(styles).toContain(".calendar-toolbar.month-toolbar .today-button");
     expect(app).toContain("planning-workspace-shell");
   });
@@ -359,8 +359,8 @@ describe("finitions d’interface", () => {
   });
 
   it("colore l’action de suppression multiple", () => {
-    expect(styles).toContain(".calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {");
-    expect(styles).toContain("background: var(--surface-high)");
+    expect(styles).toContain(".calendar-bulk-delete-button {\n  width: fit-content;");
+    expect(styles).toContain("border: 1px solid var(--border-control);\n  border-radius: 999px;");
     expect(styles).toContain("color: #a9243a");
   });
 
@@ -376,10 +376,11 @@ describe("finitions d’interface", () => {
     expect(styles).toContain(".balance-detail-month[open]");
   });
 
-  it("garde l’effacement multiple sur une seule ligne", () => {
-    expect(styles).toContain(".calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {");
-    expect(styles).toContain("white-space: nowrap");
-    expect(styles).toContain("font-size: 10.5px");
+  it("garde l’effacement multiple sous la grille, avec son libellé complet", () => {
+    // L'ancien bouton de la barre du mois n'est plus rendu.
+    expect(styles).not.toContain("calendar-bulk-delete-mobile");
+    expect(styles).toContain(".planning-workspace-shell.framed .calendar-bulk-delete-below {\n  display: inline-flex;");
+    expect(styles).toContain(".calendar-cleanup-label-short {\n  display: none;");
   });
 
   it("attend l’accord de l’utilisateur avant d’actualiser l’application installée", () => {
@@ -436,15 +437,12 @@ describe("finitions d’interface", () => {
     expect(styles).toContain("min-height: 46px");
   });
 
-  it("aligne Aujourd’hui et le nettoyage sur la même rangée mobile", () => {
-    expect(styles).toContain(".calendar-toolbar.month-toolbar .today-button");
-    expect(styles).toContain(".calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile");
-    expect(styles).toContain("grid-row: 2");
+  it("place Aujourd’hui sous la période sur téléphone", () => {
+    expect(styles).toContain("  .calendar-toolbar.month-toolbar .today-button {\n    grid-column: 1;\n    grid-row: 2;");
   });
 
   it("garde les détails des jours travaillés dans l’écran", () => {
-    expect(styles).toContain(".worked-days-panel {\n    right: auto;\n    left: 0;");
-    expect(styles).toContain("width: min(400px, calc(100vw - 52px))");
+    expect(styles).toContain(".app-shell .controls .worked-days .worked-days-panel {\n  top: calc(100% + 8px);\n  right: 0;\n  bottom: auto;\n  left: 0;");
     expect(styles).toContain("max-height: min(58dvh, 420px)");
   });
 
@@ -552,7 +550,7 @@ describe("finitions d’interface", () => {
   it("regroupe les commandes de l’en-tête et harmonise le groupe", () => {
     expect(app).toContain('className="header-control-cluster"');
     expect(app).toContain("Prochain jour travaillé");
-    expect(styles).toContain(".planning-group-action-row .choice-picker");
+    expect(styles).not.toContain(".planning-group-action-row");
     expect(styles).toContain(".leave-request-archive");
   });
 

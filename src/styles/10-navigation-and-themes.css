@@ -61,14 +61,12 @@
 }
 @keyframes menu-fade-in { from { opacity: 0; } }
 @keyframes menu-slide-in { from { transform: translateX(-100%); } }
-.home-notes-section,
-.home-planning-heading {
+.home-notes-section {
   margin-top: 22px;
   padding: 22px;
   border: 1px solid var(--border-card);
   border-radius: 18px;
 }
-.home-planning-heading { margin-bottom: 14px; padding-bottom: 18px; }
 .home-content-heading {
   display: flex;
   align-items: center;
@@ -94,8 +92,7 @@
 .leave-request-archive .request-archive-toggle { width: 100%; }
 @media (max-width: 720px) {
   .main-menu-button { display: grid !important; flex-basis: 42px; border-radius: 12px; }
-  .home-notes-section,
-  .home-planning-heading { margin-top: 14px; padding: 17px; border-radius: 18px; }
+  .home-notes-section { margin-top: 14px; padding: 17px; border-radius: 18px; }
   .home-content-heading { align-items: flex-start; }
   .home-content-heading h2 { font-size: 1.25rem; }
   .home-content-heading > button { padding: 0 12px; }
@@ -129,18 +126,6 @@
 }
 @keyframes menu-slide-in-right {
   from { transform: translateX(100%); }
-}
-.planning-group-action-row {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(145px, auto);
-  align-items: center;
-  gap: 8px;
-}
-.planning-group-leave-action {
-  width: auto;
-  min-height: 46px;
-  padding: 0 16px;
-  white-space: nowrap;
 }
 .group-choice-modal { max-width: 480px; }
 /* Choix du groupe : trois tuiles identiques, le numéro dans la police des
@@ -265,7 +250,6 @@
     border-radius: 18px;
     padding: 18px 14px calc(22px + env(safe-area-inset-bottom));
   }
-  .planning-group-leave-action { width: 100%; }
   .group-choice-grid { gap: 8px; }
   .group-choice-grid button { min-height: 96px; }
 }
@@ -523,7 +507,6 @@
   min-height: 44px;
   white-space: nowrap;
 }
-.month-toolbar { flex-wrap: wrap; }
 
 .leave-request-archive .request-archive-toggle {
   text-align: left;
@@ -619,12 +602,10 @@
 .holiday-recovery-history { background: #fff !important; }
 
 /* Palette plus chaleureuse et moins de rectangles fermés. */
-.home-notes-section,
-.home-planning-heading {
+.home-notes-section {
   box-shadow: none;
 }
 .home-notes-section { background: linear-gradient(145deg, #fffaf4, #fff 58%); }
-.home-planning-heading { background: linear-gradient(145deg, var(--surface-high), #fff 58%); }
 
 @media (max-width: 720px) {
   .planning-leave-desktop { display: none; }
@@ -651,7 +632,6 @@
    raffinements historiques du thème. */
 .today-overview,
 .home-notes-section,
-.home-planning-heading,
 .leave-balances-direct,
 .leave-request-archive,
 .overtime-balance-card,
@@ -675,11 +655,6 @@
 .overtime-balance-card + .overtime-balance-card { margin-top: 18px; }
 
 @media (max-width: 720px) {
-  .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .controls .worked-days { grid-column: 1; grid-row: 1; order: initial; }
-  .controls .planning-group-choice { grid-column: 2; grid-row: 1; order: initial; }
-  .controls > .planning-leave-mobile { grid-column: 1 / -1; grid-row: 2; }
-  .planning-group-action-row { grid-template-columns: minmax(0, 1fr); }
   .leave-request-archive + .overtime-balance-card { margin-top: 18px; }
   .overtime-balance-card { gap: 16px; padding: 17px 14px; }
   .overtime-balance-card + .overtime-balance-card { margin-top: 16px; }
@@ -689,16 +664,6 @@
 .auth-splash-image,
 .auth-shell-image { object-position: 50% 50%; }
 
-.planning-group-choice .choice-picker-trigger,
-.worked-days-trigger {
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: 0;
-}
-.planning-group-choice .choice-picker-trigger > span,
-.worked-days-trigger > span { white-space: nowrap; }
 
 .balance-detail-list button.recent-leave-date span,
 .balance-detail-list button.recent-leave-date strong {
@@ -731,25 +696,6 @@
   font-size: 13px;
 }
 
-@media (min-width: 721px) {
-  .planning-workspace-shell.framed .controls > .worked-days,
-  .planning-workspace-shell.framed .controls .worked-days-stepper {
-    width: 100%;
-    min-width: 0;
-  }
-  .planning-workspace-shell.framed .planning-group-action-row {
-    grid-template-columns: minmax(0, 1fr);
-    width: 100%;
-  }
-  .planning-workspace-shell.framed .planning-group-action-row .choice-picker {
-    width: 100%;
-  }
-  .planning-workspace-shell.framed .month-toolbar .today-button,
-  .planning-workspace-shell.framed .month-toolbar .planning-leave-desktop {
-    width: 100%;
-    min-width: 0;
-  }
-}
 
 @media (max-width: 720px) {
   .top-header {
@@ -772,16 +718,4 @@
   }
 }
 
-/* Calendrier : le volet de la case des jours travaillés s'ouvre sous elle, sur
-   toute sa largeur, et donne en trois chiffres ce qu'il reste d'ici au
-   31 décembre. */
-.app-shell .controls .worked-days .worked-days-panel { top: calc(100% + 8px); bottom: auto; left: 0; right: 0; display: block; width: auto; border: 1px solid #e3d6c8; border-radius: 18px; padding: 12px 14px 14px; background: #fff; box-shadow: 0 12px 28px rgba(58, 51, 44, .16); }
-.worked-days-remaining h5 { margin: 0 0 10px; color: #9a4a2e; font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
-.worked-days-remaining ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
-.worked-days-remaining li { display: grid; justify-items: center; gap: 2px; padding: 0 4px; }
-.worked-days-remaining li + li { border-left: 1px solid #efe6db; }
-.worked-days-remaining li b { color: var(--text); font-family: var(--font-display); font-size: 1.7rem; font-weight: 600; line-height: 1; }
-.worked-days-remaining li.worked-days-remaining-main b { color: #9a4a2e; }
-.worked-days-remaining li small { color: #6b5d50; font-size: .7rem; font-weight: 700; text-align: center; }
-.worked-days-remaining p { margin: 10px 0 0; color: #6b5d50; font-size: .72rem; font-weight: 600; text-align: center; }
 

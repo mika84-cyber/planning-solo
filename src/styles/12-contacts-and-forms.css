@@ -332,18 +332,6 @@
     white-space: normal;
     line-height: 1.15;
   }
-  .calendar-toolbar.month-toolbar .period-navigation {
-    grid-column: 1 / -1;
-    grid-row: 1;
-  }
-  .calendar-toolbar.month-toolbar .today-button {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
-    grid-column: 2;
-    grid-row: 2;
-  }
 }
 
 /* Toutes les rubriques reprennent exactement le gabarit de l'en-tête
@@ -511,7 +499,6 @@
 
 .today-overview,
 .home-notes-section,
-.planning-workspace-shell.framed,
 .leave-balances-direct,
 .overtime-balance-card,
 .pay-app-screen,
@@ -892,36 +879,6 @@
     flex-basis: 270px;
     width: min(270px, 38%);
     min-width: 220px;
-  }
-}
-
-
-/* Sur ordinateur, Mois, Année et Aujourd'hui partagent exactement la ligne
-   et occupent chacun un tiers de l'espace disponible. */
-@media (min-width: 1101px) {
-
-  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
-  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
-  .planning-workspace-shell.framed .month-toolbar .today-button,
-  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger {
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    height: 46px;
-  }
-}
-
-/* Le Fold ouvert reprend la même ligne équilibrée que l'ordinateur. */
-@media (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
-
-  .planning-workspace-shell.framed .month-toolbar .toolbar-month-picker,
-  .planning-workspace-shell.framed .month-toolbar .toolbar-year-picker,
-  .planning-workspace-shell.framed .month-toolbar .today-button,
-  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger {
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    height: 46px;
   }
 }
 

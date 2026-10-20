@@ -15,6 +15,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/styles/06-planning-calendar.css` : tout le calendrier du planning (mois,
   grille, case du jour et ses repères), un bloc par composant ; ses retouches
   sombres restent dans `src/darkTheme.css`.
+- `src/styles/14-planning-commands.css` : commandes du planning (cadre de la
+  rubrique, barre du mois, Aujourd’hui, jours travaillés, effacement, choix
+  d’un planning PDF), un bloc par composant, importé après la feuille 14.
 
 ## Composants d'interface autonomes
 

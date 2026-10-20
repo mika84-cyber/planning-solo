@@ -5,25 +5,6 @@
   .leave-balance-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .calendar-toolbar {
-    display: grid;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
-  .period-navigation {
-    grid-column: auto;
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
-    min-width: 0;
-  }
-  .calendar-toolbar .today-button {
-    width: auto;
-    padding-right: 10px;
-    padding-left: 10px;
-  }
-  .calendar-toolbar.month-toolbar {
-    grid-template-columns: minmax(280px, 1fr) auto minmax(165px, 220px);
-  }
 }
 
 /* Décision sur un congé souhaité : le choix précède le formulaire habituel,
@@ -604,15 +585,6 @@
     min-height: 44px;
     padding: 0 14px;
   }
-  .controls [aria-label="Choix du groupe"] {
-    text-align: center;
-  }
-  .controls [aria-label="Choix du groupe"] .choice-picker-trigger {
-    justify-content: center;
-    padding-right: 34px;
-    padding-left: 34px;
-    text-align: center;
-  }
   .leave-balances-direct {
     gap: 10px;
     border-radius: 18px;
@@ -730,10 +702,6 @@
 }
 
 /* Finitions des actions de nettoyage et des formulaires mobiles. */
-.calendar-bulk-delete-mobile {
-  display: none;
-}
-
 .calendar-delete-actions .delete-notes-button,
 .calendar-delete-actions .delete-absences-button {
   flex: 1 1 calc(50% - 0.35rem);
@@ -795,22 +763,6 @@
 }
 
 @media (max-width: 720px) {
-  .calendar-bulk-delete-button {
-    display: none;
-  }
-
-  .calendar-toolbar.month-toolbar .calendar-bulk-delete-mobile {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border-card);
-    border-radius: 12px;
-    padding: 0.45rem 0.65rem;
-    background: var(--surface);
-    color: var(--muted);
-    font: inherit;
-    font-weight: 800;
-  }
 
   .calendar-delete-actions .delete-notes-button,
   .calendar-delete-actions .delete-absences-button {
@@ -1019,20 +971,6 @@
 }
 
 
-/* Les deux commandes ont exactement la même métrique typographique. La
-   spécificité volontaire neutralise l'ancien style plus grand du sélecteur. */
-.controls .worked-days .worked-days-trigger {
-  font-family: inherit !important;
-  font-size: 13px !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0 !important;
-}
-.controls .worked-days .worked-days-trigger > span {
-  font: inherit !important;
-  white-space: nowrap;
-}
-
 
 /* Sur grand écran, les actions Mécénat reprennent strictement l'encombrement
    et l'alignement des actions Heures supplémentaires. Les couleurs propres à
@@ -1049,18 +987,7 @@
   }
 }
 
-/* Derniers ajustements de composition du planning et des écrans spécialisés. */
-.planning-workspace-shell.framed {
-  display: grid;
-  gap: 14px;
-  margin-top: 18px;
-  border: 1px solid var(--section-outline);
-  border-radius: 18px;
-  padding: 20px;
-  background: linear-gradient(150deg, var(--surface-high) 0%, #fff 48%, var(--surface-high) 100%);
-}
-.planning-workspace-shell.framed .controls,
-.planning-workspace-shell.framed .calendar-toolbar { margin-bottom: 0; }
+/* Derniers ajustements de composition des écrans spécialisés. */
 
 .variable-pay-card > header[role="button"] {
   border-radius: 12px;
@@ -1074,19 +1001,6 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 720px) {
-  .planning-workspace-shell.framed {
-    margin-top: 14px;
-  }
-  .controls {
-    align-items: stretch;
-  }
-  .controls > .planning-leave-mobile {
-    min-height: 48px;
-  }
-  .controls .worked-days-stepper { min-width: 0; }
-  .controls .worked-days-trigger { padding: 0 7px; font-size: 11px; }
-}
 
 /* Ajustements de finition : liserés structurants, commandes compactes et
    calendrier mobile organisé comme un écran d'application. */
@@ -1094,7 +1008,6 @@
 
 .today-overview,
 .home-notes-section,
-.home-planning-heading,
 .leave-balances-direct,
 .leave-request-archive,
 .overtime-balance-card,
@@ -1158,17 +1071,6 @@
 
 @media (max-width: 720px) {
 
-  .controls {
-    display: grid;
-  }
-  .controls .worked-days { width: 100%; min-width: 0; }
-  .controls .planning-group-choice { width: 100%; min-width: 0; }
-  .planning-group-leave-action,
-  .planning-leave-mobile { min-height: 46px; }
-  .calendar-toolbar.month-toolbar .period-navigation,
-  .calendar-toolbar.month-toolbar .today-button {
-    width: 100%;
-  }
 
   .leave-request-archive { width: 100%; }
   .pay-profile-summary { min-height: 68px; padding: 12px 14px; }

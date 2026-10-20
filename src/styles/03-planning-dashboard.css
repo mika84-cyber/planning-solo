@@ -3,11 +3,3 @@
 .today-overview {
   border-left-color: var(--accent);
 }
-
-@media (max-width: 720px) {
-
-  .planning-workspace-shell.framed .planning-command-section .controls,
-  .planning-workspace-shell.framed .planning-command-section .calendar-toolbar.month-toolbar {
-    width: 100%;
-  }
-}

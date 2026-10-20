@@ -85,3 +85,47 @@ variantes de case). Elle a notamment :
 - fusionné ou retiré les règles en double (grève posée et en sélection,
   contour et fond de chaque récupération, étiquettes REC, pastille du férié
   échangé).
+
+## Commandes du planning
+
+`14-planning-commands.css` réunit les commandes du planning
+(`PlanningCommandCenter`, le bouton d'effacement de `CalendarCleanup`) : cadre
+de la rubrique, choix d'un planning PDF, barre du mois (flèches, mois, année,
+Aujourd'hui), jours travaillés et effacement multiple, un bloc par composant.
+Il est importé juste après `14-planning-final.css` : à spécificité égale, ses
+règles l'emportent donc sur celles des feuilles 02 à 14, et cèdent aux
+feuilles chargées ensuite. Restent ailleurs, volontairement :
+
+- les listes communes à plusieurs rubriques : `.app-shell > .planning-workspace-shell`
+  (largeur et marges, feuille 14), la bordure des boutons terracotta
+  (`:root :is(… .today-button …)`, feuille 14) et le fond blanc des rubriques
+  (feuille 17) ;
+- les finitions de `productRefinements.css` (bordure, marges intérieures et
+  en-tête des rubriques, fond `#fbf6ef` d'Aujourd'hui, des jours travaillés et
+  de l'effacement), plus spécifiques ou chargées après ;
+- le bandeau « Poser un congé » (`.planning-leave-panel`, feuille 14 et
+  `planningCalendarRefinement.css`).
+
+Les règles sans `.planning-workspace-shell.framed` dessinent la vue hors
+accueil (demande ouverte depuis une autre rubrique), où le planning n'est pas
+cadré. Les flèches `.period-step` servent aussi à la page Collègues, retouchée
+dans `colleaguePlanning.css`.
+
+La passe du 20 octobre 2026 a ramené ces 220 règles, réparties dans 14
+feuilles, à 93 règles dans ce fichier, sans changement de rendu : styles
+calculés identiques élément par élément sur 462 états (clair et sombre, onze
+largeurs de 360 à 1280 px, survol, appui et focus forcés, vues cadrée et non
+cadrée). Elle a notamment :
+
+- relevé, élément par élément, la déclaration gagnante de chaque propriété
+  (y compris les copies de la conversion sombre), puis retiré les 269
+  déclarations qui ne gagnaient jamais et une vingtaine d'autres qui
+  redisaient une valeur déjà acquise ;
+- retiré le choix du groupe (`.planning-group-*`), les libellés et `select`
+  de `.controls`, les cases `article` du volet des jours travaillés et le
+  bouton d'effacement de la barre du mois (`.calendar-bulk-delete-mobile`),
+  qui ne sont plus rendus ;
+- replié dans leurs blocs les bordures et ombres que les listes communes des
+  feuilles 11 et 12 posaient sur le cadre, `.controls` et la barre du mois ;
+- remplacé les six `!important` des jours travaillés par une seule règle :
+  plus rien ne leur dispute la typographie.

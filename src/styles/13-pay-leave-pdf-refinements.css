@@ -388,25 +388,6 @@
     font-size: 10.5px;
   }
 
-  .planning-workspace-shell.framed {
-    gap: 10px;
-    margin: 10px auto 0;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .planning-workspace-shell.framed .home-planning-heading {
-    border-radius: 0;
-  }
-  .planning-workspace-shell.framed .controls,
-  .planning-workspace-shell.framed .calendar-toolbar,
-  .planning-workspace-shell.framed .planning-leave-panel {
-    border-radius: 17px;
-    box-shadow: 0 5px 14px rgba(87, 78, 66, 0.055);
-  }
 
   .pay-profile-symbol {
     width: 38px;
@@ -420,32 +401,6 @@
 }
 
 @media (max-width: 720px) {
-  /* Les deux groupes de commandes du planning deviennent deux cartes
-     clairement séparées, sans ajouter de hauteur inutile. */
-  .planning-workspace-shell.framed .controls,
-  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    border: 0;
-    background: none;
-  }
-
-  .planning-workspace-shell.framed .controls {
-    border-left: 0;
-  }
-
-  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    border-left: 0;
-  }
-
-  .planning-workspace-shell.framed .controls .choice-picker-trigger,
-  .planning-workspace-shell.framed .controls .worked-days-trigger,
-  .planning-workspace-shell.framed .month-toolbar .choice-picker-trigger,
-  .planning-workspace-shell.framed .month-toolbar .today-button,
-  .planning-workspace-shell.framed .month-toolbar .calendar-bulk-delete-mobile {
-    min-height: 46px;
-    border-radius: 12px;
-    background-color: var(--surface);
-  }
-
   .payslip-guide-step > .payslip-import-actions {
     grid-column: 1 / -1;
     width: 100%;
