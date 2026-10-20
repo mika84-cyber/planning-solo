@@ -44,11 +44,13 @@ const planningEntryActions = readFileSync(new URL("./src/usePlanningEntryActions
 const planningRequestActions = readFileSync(new URL("./src/usePlanningRequestActions.ts", import.meta.url), "utf8");
 const absenceReplacement = readFileSync(new URL("./src/absenceReplacement.ts", import.meta.url), "utf8");
 const planningLogic = readFileSync(new URL("./src/planningLogic.ts", import.meta.url), "utf8");
+const applicationStartup = readFileSync(new URL("./src/useApplicationStartup.ts", import.meta.url), "utf8");
 // Les calculs sortis d'App.tsx dans leurs hooks : lus avec lui, pour que les
 // contrôles qui portent sur un calcul suivent le code quand il est déplacé.
 const extractedHooks = [
   "usePayProfileValues", "useMonthPayEstimate", "useLeaveBalances", "useNoteLists",
   "usePayMonthNavigation", "useWorkProfileActions", "usePartnerNoteActions", "useSectionNavigation",
+  "useApplicationStartup",
 ]
   .map((name) => readFileSync(new URL(`./src/${name}.ts`, import.meta.url), "utf8"))
   .join("\n");
@@ -338,10 +340,10 @@ describe("finitions d’interface", () => {
     // Le jeton reste dans l’adresse après usage : au rechargement suivant,
     // l’application le rejouait et échouait sur un jeton mort, ce qui
     // renvoyait à l’écran de connexion après un mot de passe pourtant changé.
-    expect(appRoot).toContain("const lienAuthentification =");
-    expect(appRoot).toContain("const nettoyerLien = () =>");
-    expect(appRoot).toContain("nettoyerLien();");
-    expect(appRoot).toContain("Ce lien a déjà été utilisé ou a expiré");
+    expect(applicationStartup).toContain("const lienAuthentification =");
+    expect(applicationStartup).toContain("const nettoyerLien = () =>");
+    expect(applicationStartup).toContain("nettoyerLien();");
+    expect(applicationStartup).toContain("Ce lien a déjà été utilisé ou a expiré");
   });
 
   it("n'affiche aucun brut trompeur tant que le profil de paie est incomplet", () => {
