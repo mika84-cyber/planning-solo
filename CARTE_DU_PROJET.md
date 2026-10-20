@@ -153,7 +153,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Les tarifs (`src/grandPalaisProgramData.ts`) sont ceux de la fiche
   officielle, par grille nommée quand elle en a plusieurs (`group` :
   session du matin, nocturne…), gratuité en montant nul — tue dans les
-  galeries 3 et 4, 8 et 7 (`PAID_ONLY_VENUES`), dite ailleurs —, condition en
+  galeries et au Palais des enfants (`PAID_ONLY_VENUES`), dite dans la Nef —,
+  condition en
   `priceNote` ; `ticketingUrl` est le site tiers qui porte la billetterie ou
   les tarifs quand le Grand Palais ne les publie pas. `grandPalaisTitleKey`
   reconnaît un même événement sous deux titres (« des Glaces » / « de

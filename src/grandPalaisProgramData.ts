@@ -41,24 +41,21 @@ export type GrandPalaisProgramEntry = {
 
 /** Relevé sur la fiche officielle : plein, réduit, Billet Liberté (sans
  *  réservation jusqu'au 3 janvier 2027), puis à qui l'entrée est gratuite. */
-/** Les galeries 3 et 4, 8 et 7 n'affichent que les tarifs payants : la
- *  gratuité (moins de 18 ans, demandeurs d'emploi…) n'y est pas reprise, et
- *  la carte la tait aussi si la veille la relit (PAID_ONLY_VENUES). */
+/** Les galeries d'exposition (3 et 4, 8, 7, 9 et 10) et le Palais des enfants
+ *  n'affichent que les tarifs payants : la gratuité (moins de 18 ans,
+ *  demandeurs d'emploi…) n'y est pas reprise, et la carte la tait aussi si
+ *  la veille la relit (PAID_ONLY_VENUES). La Nef, elle, la dit. */
 const CEZANNE_PRICES: GrandPalaisPrice[] = [
   { label: "Plein", amount: 19 },
   { label: "Réduit", amount: 16 },
   { label: "Billet Liberté", amount: 24 },
 ];
 
-/** Mention de la fiche de Mika Ninagawa (galeries 9 et 10). */
-const UNDER_18_FREE: GrandPalaisPrice = { label: "Moins de 18 ans, demandeurs d’emploi, visiteurs en situation de handicap…", amount: 0 };
-
 const EXTRA_CHILD = "Enfant supplémentaire de moins de 12 ans (avec un billet famille)";
 
 const TRANSPARENCE_PRICES: GrandPalaisPrice[] = [
   { label: "Plein", amount: 13 },
   { label: "Abonné", amount: 8 },
-  { label: "Moins de 2 ans, demandeurs d’emploi, visiteurs en situation de handicap…", amount: 0 },
 ];
 
 /** La patinoire de la Nef : trois grilles sur la fiche officielle (matin,
@@ -327,7 +324,6 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           prices: [
             { label: "Plein", amount: 15 },
             { label: "Réduit", amount: 12 },
-            UNDER_18_FREE,
           ],
           startsOn: "2026-12-16",
           endsOn: "2027-03-21",

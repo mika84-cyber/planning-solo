@@ -233,10 +233,11 @@ export function applyGrandPalaisSitePrices(
 }
 
 const PRIMARY_VENUES = ["galleries34", "gallery8", "gallery7", "childrenPalace"] as const;
-/** Les galeries d'exposition ne montrent que les tarifs payants : la gratuité
- *  (moins de 18 ans, demandeurs d'emploi…) y est tue, même relue par la veille.
- *  Ailleurs — Nef, galeries 9 et 10, Palais des enfants — elle se lit. */
-export const PAID_ONLY_VENUES = new Set(["galleries34", "gallery8", "gallery7"]);
+/** Les galeries d'exposition et le Palais des enfants ne montrent que les
+ *  tarifs payants : la gratuité (moins de 18 ans, demandeurs d'emploi…) y est
+ *  tue, même relue par la veille. Ailleurs — la Nef, les espaces ajoutés —
+ *  elle se lit. */
+export const PAID_ONLY_VENUES = new Set(["galleries34", "gallery8", "gallery7", "gallery910", "childrenPalace"]);
 const OTHER_VENUES = ["nef", "gallery910"] as const;
 const INTEREXPO_VENUES = ["galleries34", "gallery8", "gallery7"] as const;
 
