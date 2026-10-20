@@ -189,18 +189,6 @@
   padding: clamp(20px, 4vw, 38px);
   animation: none;
 }
-.native-screen-heading { max-width: 720px; }
-.native-screen-heading.compact { margin: 16px 0 24px; }
-.native-screen-heading h2 {
-  margin: 6px 0 8px;
-  color: #3a332c;
-  font-size: clamp(1.5rem, 4vw, 2.1rem);
-}
-.native-screen-heading p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.55;
-}
 .native-back-button {
   min-height: 46px;
   display: inline-flex;
@@ -215,29 +203,6 @@
   cursor: pointer;
 }
 .native-back-button span { font-size: 1.45rem; }
-.section-back-hit-area {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.section-back-hit-area:focus-visible { outline: 3px solid currentColor; }
-.section-back-arrow {
-  position: absolute;
-  top: 50%;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 18px;
-  transform: translateY(-50%);
-}
-.pay-dedicated-content { animation: none; }
-.pay-dedicated-content.request-archive-content { padding: 0; }
-.variable-pay-card { margin-bottom: 16px; }
-.variable-pay-card header h3 { margin: 4px 0 0; }
 @media (max-width: 720px) {
   .top-header {
     padding-top: 11px;
@@ -272,174 +237,15 @@
   position: relative;
   z-index: 1;
 }
-
-.useful-forms-screen {
-  width: min(1120px, calc(100% - 32px));
-  margin: 18px auto 0;
-  border: 1.5px solid var(--app-frame-strong);
-  border-radius: 28px;
-  padding: 22px;
-  background: linear-gradient(155deg, #fff0df, var(--surface-high) 54%, #fff);
-  box-shadow: inset 0 6px #a66c2f, 0 18px 38px rgba(91, 61, 36, 0.13);
-}
-
-.useful-forms-folder-screen { padding-top: 0; overflow: hidden; }
-.useful-forms-folder-header {
-  --folder-accent: #9b8e7c;
-  position: relative;
-  min-height: 126px;
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  column-gap: 16px;
-  align-items: center;
-  margin: 0 -22px 20px;
-  border-bottom: 1.5px solid color-mix(in srgb, var(--folder-accent) 52%, #fff);
-  padding: 24px 22px;
-  background: color-mix(in srgb, var(--folder-accent) 12%, #fff);
-}
-.useful-forms-folder-header > div { grid-column: 2; min-width: 0; }
 .useful-forms-folder-header .section-back-arrow,
 .work-accident-header .section-back-arrow {
   left: 22px;
   background: var(--surface);
 }
-.useful-forms-folder-header.tone-expo { --folder-accent: #2f7f74; }
-.useful-forms-folder-header.tone-sap { --folder-accent: #5368a8; }
-.useful-forms-folder-header.tone-brantome { --folder-accent: #b9781e; }
-.useful-forms-folder-header h2 { margin: 3px 0; color: #2c2621; font-size: 24px; }
-.useful-forms-folder-header small { color: var(--folder-accent); font-weight: 850; }
-.useful-form-download-list { display: grid; gap: 11px; }
-.useful-form-download-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 13px;
-  border: 1.5px solid var(--app-frame-soft);
-  border-radius: 18px;
-  padding: 13px 14px;
-  background: var(--surface-high);
-}
-.resource-search-field { display: grid; gap: 5px; }
-.resource-search-field > span { color: var(--muted); font-size: 11px; font-weight: 850; }
-.resource-search-field input { min-height: 44px; border: 1px solid var(--border-control); border-radius: 12px; padding: 0 13px; background: var(--surface); font: inherit; }
-.useful-form-file-icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--muted);
-}
-.useful-form-file-icon svg,
-.useful-form-download-card > a svg {
-  width: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-.useful-form-file-copy { display: grid; gap: 3px; }
-.useful-form-file-copy small { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .06em; }
-.useful-form-file-copy strong { color: #2c2621; font-size: 14px; line-height: 1.3; }
-.useful-form-file-copy .useful-form-send-to { font-size: 12px; font-weight: 600; letter-spacing: 0; }
-@media (max-width: 600px) { .useful-form-file-copy .useful-form-send-to { display: grid; justify-items: start; } }
-.useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
-/* Intitulés « Document(s) » et « Audioguide(s) » d'un dossier qui réunit les
-   deux : petites capitales discrètes suivies d'un filet. */
-.useful-form-list-heading { display: flex; grid-column: 1 / -1; align-items: center; gap: 10px; margin: 6px 2px 0; color: var(--muted); font-family: inherit; font-size: .74rem; line-height: 1.2; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.useful-form-list-heading::after { flex: 1; height: 1px; background: var(--border-soft); content: ""; }
-.useful-form-list-heading:first-child, .useful-form-local-notice + .useful-form-list-heading { margin-top: 0; }
-/* Audioguides d'exposition : même carte que les fiches, code d'accès en vue. */
-.useful-audioguide-icon { background: #fbeadf; color: #a4502f; }
-/* Dossier d'une exposition : la fiche prend aussi une pastille colorée, et
-   occupe toute la largeur comme l'audioguide qui la suit. */
-.useful-form-download-list:has(> .useful-audioguide-card) > .useful-form-download-card { grid-column: 1 / -1; }
-.useful-form-download-list:has(> .useful-audioguide-card) .useful-form-file-icon:not(.useful-audioguide-icon) { background: #e4eef8; color: #2f5f8f; }
-/* Toujours sous les fiches, sur toute la largeur de la liste, et ses deux
-   boutons côte à côte sous le texte. */
-.useful-form-download-list > .useful-audioguide-card { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr); }
-.useful-audioguide-actions { display: flex; grid-column: 1 / -1; gap: 8px; }
-.useful-audioguide-actions > * { flex: 1 1 0; min-width: 0; border: 1px solid #a4502f; border-radius: 12px; padding: 10px 8px; background: #a4502f; color: #fff; font: inherit; font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
-.useful-audioguide-actions button { background: #fff; color: #a4502f; }
-@media (min-width: 721px) { .useful-form-download-list > .useful-audioguide-card { grid-template-columns: auto minmax(0, 1fr) auto; } .useful-audioguide-actions { grid-column: auto; } .useful-audioguide-actions > * { flex: 0 0 auto; padding: 10px 14px; white-space: nowrap; } }
-.useful-form-file-copy .useful-audioguide-code { font-size: 12px; font-weight: 600; letter-spacing: 0; }
-.useful-audioguide-code b { margin-left: 4px; color: var(--text); font-size: 14px; letter-spacing: .18em; }
-.useful-audioguide-qr { display: grid; justify-items: center; gap: 8px; grid-column: 1 / -1; margin: 4px 0 0; border-radius: 18px; padding: 12px; background: #fff; }
-.useful-audioguide-qr img { width: min(240px, 70vw); height: auto; image-rendering: pixelated; }
-.useful-audioguide-qr figcaption { color: var(--muted); font-size: 12.5px; }
-.useful-audioguide-qr b { margin-left: 4px; color: var(--text); font-size: 18px; letter-spacing: .2em; }
 /* Très grand écran : le titre en bandeau, les dossiers en deux colonnes. */
 @media (min-width: 1400px) {
-  .app-shell .useful-resource-panel > .useful-forms-screen:not(.useful-forms-folder-screen) { grid-template-areas: "intro" "search" "folders"; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
-  .app-shell .useful-forms-root > .native-screen-heading { max-width: none; }
   .app-shell .useful-forms-root .useful-form-work-accident-entry { grid-column: 1 / -1; }
 }
-.useful-form-download-card > a {
-  width: 42px;
-  height: 42px;
-  min-height: 42px;
-  flex: 0 0 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  border: 1px solid var(--border-card);
-  border-radius: 11px;
-  padding: 0;
-  background: #7a6f5f;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 850;
-  text-decoration: none;
-}
-.useful-form-download-card > a svg { width: 17px; }
-.useful-form-download-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.useful-form-local-notice {
-  margin: 0;
-  border: 1px solid #d3a45d;
-  border-radius: 11px;
-  padding: 10px 12px;
-  background: #fff8e8;
-  color: #704a12;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.45;
-}
-.useful-form-download-error {
-  margin: 2px 0 0;
-  border: 1px solid #d98a95;
-  border-radius: 11px;
-  padding: 10px 12px;
-  background: #fff1f3;
-  color: #9b2538;
-  font-size: 12px;
-  font-weight: 750;
-}
-.useful-forms-empty {
-  min-height: 240px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 8px;
-  border: 1.5px dashed var(--border-card);
-  border-radius: 17px;
-  padding: 28px;
-  background: #fff;
-  color: var(--muted);
-  text-align: center;
-}
-.useful-forms-empty > span { font-size: 34px; }
-.useful-forms-empty p { margin: 0; color: #657b77; font-size: 12px; }
 
 /* Le mode d’emploi est volontairement la dernière commande du menu. */
 .main-menu-drawer {
@@ -461,30 +267,6 @@
   .top-header.top-header-forms .main-menu-button {
     position: relative;
     z-index: 2;
-  }
-  .useful-forms-screen {
-    width: calc(100% - 20px);
-    margin-top: 12px;
-    border-radius: 18px;
-    padding: 14px;
-  }
-  .useful-forms-folder-screen { padding-top: 0; }
-  .useful-forms-folder-header {
-    min-height: 112px;
-    margin: 0 -14px 14px;
-    column-gap: 12px;
-    padding: 18px 14px;
-  }
-  .useful-forms-folder-header .section-back-arrow { left: 12px; }
-  .useful-forms-folder-header h2 { font-size: 20px; }
-  .useful-form-download-card {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-    padding: 11px;
-  }
-  .useful-form-download-card > a {
-    grid-column: 3;
-    width: 42px;
-    align-self: center;
   }
 }
 
@@ -515,57 +297,6 @@
 }
 .request-archive-summary small { font-size: 11px; font-weight: 750; }
 
-.pay-profile-settings {
-  grid-template-columns: minmax(190px, .8fr) minmax(360px, 1.2fr);
-  align-items: center;
-  gap: clamp(20px, 4vw, 46px);
-  margin-top: 26px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #fff 0%, #fff 54%, #fdf7ef 100%);
-}
-.pay-profile-settings h3 { margin: 4px 0 7px; }
-.pay-profile-settings p { margin: 0; color: var(--muted); line-height: 1.5; }
-.pay-profile-settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
-  gap: 14px;
-}
-.pay-profile-settings-grid > label {
-  display: grid;
-  grid-template-rows: auto minmax(46px, auto) minmax(18px, auto);
-  align-content: start;
-  gap: 7px;
-  min-width: 0;
-}
-.pay-profile-settings-grid > label > span { color: var(--accent-strong); font-size: 12px; font-weight: 850; }
-.pay-profile-settings-grid small { color: var(--muted); }
-.pay-profile-picker,
-.pay-profile-picker .choice-picker-trigger { width: 100%; }
-.pay-profile-picker .choice-picker-trigger {
-  min-height: 46px;
-  border-color: var(--border-card);
-  background: #fff;
-  font-size: 15px;
-  font-weight: 850;
-}
-.pay-work-schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; border: 1px solid var(--border-card); border-radius: 18px; padding: 12px; background: #fff; }.pay-profile-save{grid-column:1/-1;justify-self:end;min-width:180px}
-.pay-work-schedule legend { padding: 0 5px; color: var(--accent-strong); font-family: inherit; font-size: 12px; font-weight: 850; }
-.pay-work-schedule > small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
-.pay-work-schedule label,.pay-work-time-field { display: grid; gap: 5px; color: var(--accent-strong); font-family: inherit; font-size: 12px; font-weight: 850; }
-.pay-work-schedule input { min-width: 0; height: 42px; border: 1px solid rgba(140, 61, 24, 0.2); border-radius: 12px; padding: 0 7px; background: var(--surface); color: var(--text); font: inherit; }
-.pay-work-time-picker{align-items:center;background:var(--surface);border:1px solid var(--border-card);border-radius:12px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);height:42px;overflow:hidden}.pay-work-time-picker:focus-within{border-color:var(--border-card);box-shadow:0 0 0 3px rgba(155, 142, 124,.12)}.pay-work-time-picker select{appearance:none;background:transparent;border:0;color:var(--text);font-family:inherit;font-size:15px;font-weight:850;height:100%;min-width:0;padding:0 8px;text-align:center}.pay-work-time-picker select:focus{outline:0}.pay-work-time-picker b{color:#9b8e7c;font-size:15px}
-
-
-.variable-pay-heading-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.variable-pay-heading-actions { align-items: flex-end; }
-.pay-dedicated-content { touch-action: pan-y; }
-
 .mecenat-next-month-note {
   margin: 0;
   border-radius: 12px;
@@ -576,17 +307,6 @@
   line-height: 1.45;
 }
 .mecenat-rule-alert { display: grid; gap: 6px; border: 1px solid #ecd28a; border-left: 4px solid #c98a12; border-radius: 12px; padding: 11px 13px; background: #fdf6e3; color: #6b4a06; font-size: 12.5px; line-height: 1.45; } .mecenat-rule-alert ul { display: grid; gap: 5px; margin: 0; padding-left: 18px; } .mecenat-rule-alert small { font-weight: 700; }
-/* Bulletin : un mécénat ou des heures sup attendus le mois suivant, déjà payés. */
-.mecenat-early-payment { display: grid; gap: 10px; margin: 12px 0; border: 1px solid #cfe3d6; border-left: 4px solid #2f8a5b; border-radius: 12px; padding: 12px 14px; background: #f3faf5; color: #2c2621; font-size: 12.5px; line-height: 1.45; }
-.mecenat-early-payment p { margin: 0; }
-.mecenat-early-payment p strong { display: block; margin-bottom: 2px; color: #1d6b45; font-size: 13px; }
-.mecenat-early-payment ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.mecenat-early-payment li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; border: 1px solid #e3ece6; border-radius: 10px; padding: 8px 10px; background: #fff; }
-.mecenat-early-payment li > span { flex: 1 1 auto; min-width: 0; }
-.mecenat-early-payment li > strong { font-variant-numeric: tabular-nums; }
-.mecenat-early-payment li.matched { border-color: #9fd1b2; }
-.mecenat-early-payment li button { min-height: 34px; padding: 6px 12px; }
-.mecenat-early-payment > button { justify-self: start; }
 .holiday-recovery-history { background: #fff !important; }
 
 /* Palette plus chaleureuse et moins de rectangles fermés. */
@@ -595,16 +315,12 @@
 }
 .home-notes-section { background: linear-gradient(145deg, #fffaf4, #fff 58%); }
 
-@media (max-width: 720px) {  .pay-profile-settings { grid-template-columns: 1fr; gap: 16px; }
-  .pay-profile-settings-grid { grid-template-columns: 1fr; gap: 8px; }
-  .pay-profile-settings-grid > label { grid-template-rows: auto minmax(46px, auto); gap: 4px; }
-  .pay-work-schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pay-profile-save{justify-self:stretch;width:100%}
+@media (max-width: 720px) {
   .request-archive-summary {
     grid-column: 1 / -1;
     justify-content: space-between;
     padding-left: 53px;
   }
-  .variable-pay-card header { align-items: flex-start; }
 }
 
 /* Cascade finale des finitions ci-dessus : ces règles doivent rester après les
@@ -616,20 +332,10 @@
 .pdf-download-screen,
 .pay-profile-settings,
 .allowance-card { border-color: var(--section-outline); }
-.pay-profile-settings { display: block; padding: 0; }
-
-@media (max-width: 720px) {
-  .pay-profile-settings { display: block; padding: 0; }
-  .variable-pay-heading-actions {
-    align-items: center;
-    flex-direction: row;
-  }
-}
 
 /* Ajustements de lisibilité demandés sur la version de contrôle. */
 .auth-splash-image,
 .auth-shell-image { object-position: 50% 50%; }
-
 
 .balance-detail-list button.recent-leave-date span,
 .balance-detail-list button.recent-leave-date strong {
@@ -643,7 +349,6 @@
   color: var(--muted);
   font-size: 13px;
 }
-
 
 @media (max-width: 720px) {
   .top-header {
@@ -662,5 +367,4 @@
     gap: 6px;
   }
 }
-
 

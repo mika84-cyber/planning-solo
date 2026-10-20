@@ -250,7 +250,9 @@ describe("finitions d’interface", () => {
     // Le mois en titre, les deux flèches regroupées à droite.
     expect(app).toContain('className="variable-pay-head variable-pay-head-c"');
     expect(app).toContain('className="variable-pay-arrows"');
-    expect(css.anyRuleDeclares(".variable-pay-head-c .variable-pay-arrows", { display: "inline-flex", gap: "8px" })).toBe(true);
+    // Les flèches encadrent le mois : elles se fondent dans sa rangée (display: contents).
+    expect(css.anyRuleDeclares(".variable-pay-head-c .variable-pay-arrows", { gap: "8px" })).toBe(true);
+    expect(css.anyRuleDeclares(".variable-pay-head-c .variable-pay-month .variable-pay-arrows", { display: "contents" })).toBe(true);
   });
 
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {

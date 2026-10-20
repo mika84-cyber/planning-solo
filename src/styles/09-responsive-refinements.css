@@ -84,19 +84,6 @@
   background: #fff;
   color: #176a50;
 }
-.pay-year-notice {
-  display: grid;
-  gap: 9px;
-  margin: 4px 0 12px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.pay-year-notice p { margin: 0; }
-.pay-year-notice .secondary-button { justify-self: start; min-height: 40px; border: 1px solid var(--border-card); border-radius: 12px; padding: 0 14px; background: var(--surface-high); color: var(--accent-strong); font-weight: 850; }
-.pay-year-notice strong {
-  color: var(--text);
-}
 
 /* Accueil recentré sur ce qui est utile maintenant. Les rubriques suivantes
    n'affichent qu'un niveau de détail à la fois. */
@@ -210,14 +197,6 @@
   line-height: 1.25;
   text-align: left;
 }
-
-.allowance-overview {
-  display: grid;
-  border: 1px solid var(--border-card);
-  border-radius: 18px;
-  padding: 15px;
-  background: var(--surface);
-}
 .soft-detail-button {
   min-height: 38px;
   border: 1px solid var(--border-card);
@@ -229,256 +208,8 @@
   font-weight: 850;
   cursor: pointer;
 }
-.allowance-summary-alert {
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 9px;
-  border: 1px solid var(--border-card);
-  border-radius: 12px;
-  padding: 9px 11px;
-  background: #fff;
-  color: #6c5835;
-  text-align: left;
-  cursor: pointer;
-}
-.allowance-summary-alert > span {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #b99a63;
-  color: #fff;
-  font-weight: 900;
-}
-.allowance-summary-alert strong {
-  font-size: 12px;
-}
-.allowance-summary-alert small {
-  color: #857252;
-  font-size: 10px;
-  font-weight: 800;
-}
-.allowance-detail-stack {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.allowance-detail-stack > .allowance-card:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-.payslip-detected-period {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 9px;
-  border: 1px solid var(--border-card);
-  border-radius: 11px;
-  padding: 9px 12px;
-  background: #fff;
-  color: #35675e;
-  font-size: 11px;
-}
-.pay-function-card > header > div {
-  display: grid;
-  gap: 2px;
-}
-.pay-function-card > header h3 {
-  margin: 0;
-  font-size: 17px;
-}
-.pay-function-card > header .step-label {
-  color: #9b8e7c;
-  font-size: 9px;
-  letter-spacing: 0.065em;
-  text-transform: uppercase;
-}
-.payslip-verify-card {
-  border-color: var(--border-card);
-  background: #fff;
-}
-.payslip-verify-card::before {
-  background: #82afa2 !important;
-}
-.pay-elements-card {
-  border-color: var(--border-control);
-  background: var(--surface-high);
-}
-.pay-elements-card::before {
-  background: #bcb0a0 !important;
-}
 .pay-month-nav.compact {
   gap: 4px;
-}
-.payslip-detected-period strong {
-  font-size: 12px;
-  text-transform: capitalize;
-}
-.payslip-actual-values {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 7px;
-  border: 1px solid var(--border-control);
-  border-radius: 11px;
-  padding: 8px 10px;
-  background: var(--surface-high);
-}
-.payslip-actual-values > span {
-  margin-right: auto;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-.payslip-actual-values > div {
-  display: grid;
-  gap: 1px;
-  border-left: 1px solid var(--border-control);
-  padding-left: 10px;
-}
-.payslip-actual-values small {
-  color: var(--muted);
-  font-size: 9px;
-}
-.payslip-actual-values strong {
-  color: var(--muted);
-  font-size: 12px;
-}
-.payslip-period-fallback {
-  display: grid;
-  grid-template-columns: minmax(170px, 1fr) minmax(130px, auto) minmax(110px, auto) auto;
-  align-items: center;
-  gap: 8px;
-  margin-top: 9px;
-  border: 1px solid #e2c99f;
-  border-radius: 12px;
-  padding: 10px;
-  background: #fff9ef;
-}
-.payslip-period-fallback strong,
-.payslip-period-fallback small {
-  display: block;
-}
-.payslip-period-fallback small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.payslip-guide-step {
-  display: grid;
-  grid-template-columns: 32px minmax(150px, 1fr) minmax(150px, auto);
-  align-items: center;
-  gap: 11px;
-  margin-top: 9px;
-  border: 1px solid var(--bg);
-  border-radius: 12px;
-  padding: 11px;
-  background: var(--surface-high);
-  opacity: 0.68;
-}
-.payslip-guide-step.active {
-  border-color: var(--border-control);
-  background: var(--surface-high);
-  opacity: 1;
-}
-.payslip-guide-number {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--bg);
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 900;
-}
-.payslip-guide-step > div:not(.choice-picker) {
-  display: grid;
-  gap: 3px;
-}
-.payslip-guide-step strong {
-  font-size: 12px;
-}
-.payslip-guide-step small {
-  color: var(--muted);
-  font-size: 10px;
-}
-.payslip-month-picker {
-  width: 180px;
-}
-.payslip-guide-step .payslip-drop {
-  min-width: 180px;
-  margin: 0;
-}
-.payslip-result-summary {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
-  border: 1px solid var(--border-control);
-  border-radius: 18px;
-  padding: 13px;
-  background: var(--surface-high);
-}
-.payslip-result-summary.ok {
-  border-color: var(--border-card);
-  background: #fff;
-}
-.payslip-result-summary.warning {
-  border-color: #df9c9c;
-  background: #fff4f4;
-}
-.payslip-result-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 20px;
-  font-weight: 900;
-}
-.payslip-result-summary.ok .payslip-result-icon {
-  background: #26815d;
-}
-.payslip-result-summary.warning .payslip-result-icon {
-  background: #c64d4d;
-}
-.payslip-result-summary > div {
-  display: grid;
-  gap: 4px;
-}
-.payslip-result-summary > div strong {
-  font-size: 16px;
-}
-.payslip-result-summary > div small {
-  color: var(--muted);
-  font-size: 10px;
-}
-.pay-settings-summary {
-  display: grid;
-  gap: 4px;
-  width: 100%;
-  border: 1px dashed var(--border-control);
-  border-radius: 12px;
-  padding: 12px;
-  background: var(--surface-high);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
-.pay-settings-summary strong {
-  font-size: 12px;
-}
-.pay-settings-summary span {
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.4;
 }
 
 /* Repère clavier commun à tous les composants, y compris ceux ajoutés plus
@@ -494,12 +225,6 @@
     min-height: 44px;
     padding: 0 14px;
   }
-  .pay-function-card {
-    border-radius: 12px;
-  }
-  .pay-function-card > header {
-    align-items: flex-start;
-  }
   .request-option-groups {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
@@ -514,54 +239,7 @@
   .request-option-group .type-tabs button {
     font-size: 11px;
   }
-  .allowance-overview {
-    padding: 11px;
-  }
   .soft-detail-button {
-    width: 100%;
-  }
-  .allowance-summary-alert {
-    grid-template-columns: 24px minmax(0, 1fr);
-  }
-  .allowance-summary-alert small {
-    display: none;
-  }
-  .allowance-detail-stack {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .allowance-detail-stack > .allowance-card:last-child:nth-child(odd) {
-    grid-column: auto;
-  }
-  .payslip-period-fallback {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .payslip-period-fallback > div,
-  .payslip-period-fallback > button {
-    grid-column: 1 / -1;
-  }
-  .payslip-period-fallback > button {
-    width: 100%;
-  }
-  .payslip-guide-step {
-    grid-template-columns: 32px minmax(0, 1fr);
-    padding: 10px;
-  }
-  .payslip-guide-step > .choice-picker,
-  .payslip-guide-step > .payslip-drop {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-width: 0;
-  }
-  .payslip-result-summary {
-    grid-template-columns: 38px minmax(0, 1fr);
-    gap: 9px;
-  }
-  .payslip-result-icon {
-    width: 38px;
-    height: 38px;
-  }
-  .payslip-result-summary .secondary-button {
-    grid-column: 1 / -1;
     width: 100%;
   }
   .type-tabs button,
@@ -784,22 +462,6 @@
   .balance-detail-list article { grid-template-columns: minmax(0, 1fr) 74px; }
 }
 
-
-/* Derniers ajustements de composition des écrans spécialisés. */
-
-.variable-pay-card > header[role="button"] {
-  border-radius: 12px;
-  padding: 4px;
-  cursor: pointer;
-  transition: background 150ms ease, box-shadow 150ms ease;
-}
-.variable-pay-card > header[role="button"]:hover { background: #fff; }
-.variable-pay-card > header[role="button"]:focus-visible {
-  outline: 3px solid rgba(122, 111, 95, 0.2);
-  outline-offset: 3px;
-}
-
-
 /* Ajustements de finition : liserés structurants, commandes compactes et
    calendrier mobile organisé comme un écran d'application. */
 :root { --section-outline: var(--border-card); }
@@ -820,68 +482,14 @@
   width: 100%;
   justify-self: stretch;
 }
-
-.pay-profile-settings {
-  overflow: visible;
-}
-.pay-profile-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  width: 100%;
-  min-height: 74px;
-  border: 0;
-  border-radius: 21px;
-  padding: 13px 18px;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.pay-profile-summary > span { display: grid; gap: 3px; }
-.pay-profile-summary strong { color: var(--text); font-size: 17px; }
-.pay-profile-summary small { color: var(--muted); font-weight: 750; }
-.pay-profile-summary > i {
-  color: var(--muted);
-  font-size: 22px;
-  font-style: normal;
-  transition: transform 170ms ease;
-}
-.pay-profile-settings.open .pay-profile-summary > i { transform: rotate(180deg); }
-.pay-profile-settings-grid { padding: 2px 18px 18px; }
-
-.variable-pay-card header h3 {
-  color: var(--muted);
-  font-size: clamp(1.7rem, 4vw, 2.25rem);
-  letter-spacing: -0.045em;
-}
-
-.pay-dedicated-content.pay-month-out-left { animation: pay-month-out-left 150ms ease-in forwards; }
-.pay-dedicated-content.pay-month-out-right { animation: pay-month-out-right 150ms ease-in forwards; }
-.pay-dedicated-content.pay-month-in-left { animation: pay-month-in-left 190ms ease-out; }
-.pay-dedicated-content.pay-month-in-right { animation: pay-month-in-right 190ms ease-out; }
 @keyframes pay-month-out-left { to { opacity: .35; transform: translateX(-18%); } }
 @keyframes pay-month-out-right { to { opacity: .35; transform: translateX(18%); } }
 @keyframes pay-month-in-left { from { opacity: .35; transform: translateX(-18%); } }
 @keyframes pay-month-in-right { from { opacity: .35; transform: translateX(18%); } }
 
-
 @media (max-width: 720px) {
 
-
   .leave-request-archive { width: 100%; }
-  .pay-profile-summary { min-height: 68px; padding: 12px 14px; }
-  .pay-profile-settings-grid { padding: 2px 14px 16px; }
-  .variable-pay-card > header { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  .variable-pay-heading-actions { width: 100%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pay-dedicated-content.pay-month-out-left,
-  .pay-dedicated-content.pay-month-out-right,
-  .pay-dedicated-content.pay-month-in-left,
-  .pay-dedicated-content.pay-month-in-right { animation: none; }
 }
 
 /* Quotité et heures supplémentaires */
@@ -947,13 +555,6 @@
 .recovery-direct-actions {
   grid-template-columns: minmax(0, 1fr);
 }
-.mecenat-pay-detail {
-  border-color: var(--border-control);
-  background: var(--surface-high);
-}
-.mecenat-pay-detail .overtime-pay-lines article {
-  border-color: var(--bg);
-}
 .mecenat-preview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -992,47 +593,6 @@
 .mecenat-preview > p strong {
   color: var(--muted);
   font-size: 18px;
-}
-.overtime-pay-detail {
-  display: grid;
-  gap: 9px;
-  margin-top: 12px;
-  border: 1px solid var(--border-card);
-  border-radius: 12px;
-  padding: 12px;
-  background: #fff;
-}
-.overtime-pay-detail-heading,
-.overtime-pay-lines article {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.overtime-pay-detail-heading > div,
-.overtime-pay-lines article > div {
-  display: grid;
-  gap: 2px;
-}
-.overtime-pay-detail-heading span,
-.overtime-pay-lines span {
-  color: var(--muted);
-  font-size: 10px;
-}
-.overtime-pay-detail > p {
-  margin: 0;
-  color: #52645f;
-  font-size: 10px;
-  line-height: 1.5;
-}
-.overtime-pay-lines {
-  display: grid;
-  gap: 5px;
-}
-.overtime-pay-lines article {
-  border-top: 1px solid var(--border-card);
-  padding-top: 7px;
-  font-size: 11px;
 }
 .overtime-modal {
   width: min(620px, calc(100vw - 24px));
@@ -1175,16 +735,6 @@
 }
 
 @media (max-width: 680px) {
-  .payslip-actual-values {
-    display: grid;
-  }
-  .payslip-actual-values > span {
-    grid-column: 1 / -1;
-  }
-  .payslip-actual-values > div {
-    border-left: 0;
-    padding-left: 0;
-  }
   .mecenat-preview {
     grid-template-columns: 1fr;
   }

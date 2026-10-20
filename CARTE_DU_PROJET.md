@@ -21,6 +21,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/styles/19-leave-page.css` : page Congés (soldes, règles des congés,
   absence longue, volets heures, mécénats et CET), importée par `main.tsx`
   après `dataManagement.css`.
+- `src/styles/14-pay-page.css` et `src/styles/14-documents-contacts.css` :
+  Ma paie, puis Documents et contacts et les plannings PDF, un bloc par
+  composant, importées après `14-planning-commands.css`.
 
 ## Composants d'interface autonomes
 

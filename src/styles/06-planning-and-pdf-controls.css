@@ -429,18 +429,6 @@
    blanc posé au clic : `--status-index` (0 ou 1, posé en ligne depuis
    App.tsx) déplace la pastille en pourcentage de sa propre largeur, donc
    sans jamais recalculer de pixels si une troisième option s'ajoutait. */
-/* Choix d'une compensation de férié directement dans la ligne du tableau :
-   un déclencheur qui n'occupe que la place de son texte, pas toute la
-   colonne, avec les options en liste plutôt qu'en grille (deux options
-   assez longues pour ne pas tenir côte à côte sans se serrer), et le
-   montant sous le choix plutôt qu'à côté — les deux tiennent mal sur une
-   même ligne à cette largeur. */
-.holiday-pay-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-}
 .leave-type-picker .choice-picker-menu {
   width: min(360px, calc(100vw - 58px));
 }

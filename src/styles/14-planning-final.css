@@ -62,15 +62,6 @@
   transform: none;
 }
 
-/* Le liseré identifie seulement l'entrée principale de l'annuaire. Les pages
-   Pompidou, GP-RMN et les fiches de service restent sans accent latéral. */
-.useful-contacts-screen.useful-contacts-root {
-  border-left: 6px solid var(--accent);
-  background:
-    linear-gradient(90deg, rgba(122, 111, 95, 0.07), transparent 15%),
-    linear-gradient(145deg, var(--surface-high), #fff 56%, #fff8ef);
-}
-
 /* Le texte d'introduction du CET occupe toute la largeur de l'encart. */
 .cet-content .cet-callout p {
   display: block;
@@ -80,53 +71,6 @@
 /* Corrections finales des trois compositions signalées : les dossiers
    utilisent bien la grande colonne, les outils partagent un liseré latéral
    et les deux sélecteurs du planning ont exactement la même géométrie. */
-@media (min-width: 721px) {
-  .useful-contacts-root {
-    display: grid;
-    grid-template-columns: minmax(215px, 0.72fr) minmax(0, 2fr);
-    grid-template-areas: "intro search" "intro directories";
-    align-items: stretch;
-    gap: clamp(20px, 3vw, 34px);
-    padding: clamp(22px, 3vw, 34px);
-  }
-  .useful-contacts-root > .native-screen-heading { grid-area: intro; display: flex; flex-direction: column; justify-content: center; margin: 0; }
-  .useful-contacts-root > .resource-search-field { grid-area: search; align-self: start; }
-  .useful-forms-screen:not(.useful-forms-folder-screen) {
-    grid-template-areas:
-      "intro search"
-      "intro folders";
-    grid-template-columns: minmax(215px, 0.72fr) minmax(0, 2fr);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading {
-    grid-area: intro;
-  }
-
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .resource-search-field {
-    grid-area: search;
-    width: 100%;
-  }
-
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .useful-form-content-stack {
-    grid-area: folders;
-    width: 100%;
-  }
-
-}
-
-@media (min-width: 721px) and (max-width: 900px) {
-  .useful-contacts-root { grid-template-areas: "intro" "search" "directories"; grid-template-columns: minmax(0, 1fr); }
-  .useful-forms-screen:not(.useful-forms-folder-screen) {
-    grid-template-areas:
-      "intro"
-      "search"
-      "folders";
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-  }
-}
-
 
 .useful-expo-schedule {
   display: grid;
@@ -158,7 +102,6 @@
   color: var(--muted);
   line-height: 1.48;
 }
-
 
 .useful-expo-timeline {
   position: relative;
@@ -339,7 +282,6 @@
 .exchange-cycle-day.selected { border-color: var(--accent-strong); color: #fff; background: var(--accent); box-shadow: 0 4px 10px rgba(152, 84, 56, 0.3); opacity: 1; }
 .work-exchange-cycle-calendar > small { display: block; min-height: 0; margin-top: 7px; font-size: 0.64rem; }
 
-
 .work-exchange-panel {
   margin-top: 14px;
   border: 2px solid var(--border-card);
@@ -508,7 +450,6 @@
 .work-exchange-history[open] > summary::before { transform: rotate(45deg); }
 .work-exchange-history > .work-exchange-list { margin-top: 10px; opacity: 0.88; }
 
-
 fieldset.leave-choices {
   min-width: 0;
   border: 0;
@@ -547,20 +488,7 @@ fieldset.leave-choices {
   display: block;
 }
 
-.useful-resources-screen > .useful-forms-screen,
-.useful-resources-screen > .useful-contacts-screen {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow-card);
-}
-
 @media (min-width: 1100px) {
-  .useful-resources-screen {
-    align-items: start;
-  }
 
   .useful-resources-screen:has(.useful-forms-folder-screen, .work-accident-screen) {
     grid-template-columns: minmax(0, 1fr);
@@ -592,7 +520,6 @@ fieldset.leave-choices {
 .alert-fix-action{display:grid;gap:5px;width:100%;border:1px solid rgba(168,57,47,.3);border-radius:12px;padding:11px 12px;background:#fffaf8;text-align:left;cursor:pointer}
 .alert-fix-action:hover{border-color:#a8392f;background:#fff4f1}
 .alert-fix-action>b{color:#8f2b22}
-
 
 /* L'action de mise à jour suit désormais le même gabarit que les rubriques. */
 
@@ -644,11 +571,6 @@ fieldset.leave-choices {
 .work-exchange-suggestion-group.group-1 { background: #fdf0ec; color: #844a3b; }
 .work-exchange-suggestion-group.group-2 { background: #fff3e3; color: #7c542f; }
 .work-exchange-suggestion-group.group-3 { background: #eaf3e6; color: #3f6536; }
-
-/* Boutons terracotta : un liseré sombre très léger, comme les cases de l’accueil. */
-:root :is(.primary-action:not(.warning-button):not(.danger), .validate-button, .save-button, .today-button, .colleague-invite, .colleague-profile-save, .colleague-received-person button:not(.secondary), .payslip-file-drop, .home-add-note, .auth-submit, .document-share-dialog button, .grand-palais-view-picker button.active, .school-zone-picker button.active, .choice-picker-menu button.active) {
-  border: 1px solid var(--border-control);
-}
 /* Férié rendu : la liste des fériés possibles, un bouton par férié. */
 /* Échange : deux onglets (jour ordinaire ou férié) et les horaires de chaque journée. */
 .work-exchange-list article.holiday-exchange header img { box-sizing: border-box; border-radius: 50%; padding: 2px; background: #fff; box-shadow: 0 0 0 1px #5b86a0; }
@@ -685,7 +607,6 @@ fieldset.leave-choices {
 /* Plannings PDF, ouverts depuis le calendrier : la page dans une fenêtre. */
 .app-shell .modal-card.planning-pdf-dialog { width: min(760px, calc(100% - 24px)); max-width: none; max-height: calc(100dvh - 32px); overflow-y: auto; padding: 0; }
 .planning-pdf-dialog > .modal-close { position: sticky; top: 10px; z-index: 3; float: right; margin: 10px 10px -44px 0; }
-.planning-pdf-dialog > .pdf-download-screen { margin: 0; border: 0; box-shadow: none; }
 
 /* « Faire un échange » : même fenêtre pour une journée et un férié. */
 .app-shell .modal-card.work-exchange-dialog { width: min(560px, calc(100vw - 24px)); padding-bottom: 0; }

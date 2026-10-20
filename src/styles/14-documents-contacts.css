@@ -1,0 +1,1232 @@
+/* Documents et contacts (UsefulResourcesHub, UsefulFormsSection,
+   UsefulContactsSection, VisitorQrLinks, les dialogues d'ajout, de
+   modification et de partage d'un document ou d'un contact) et les plannings
+   PDF (PdfDownloadPage, dans sa fenêtre ouverte depuis le calendrier) — un
+   bloc par composant, les variantes selon la largeur regroupées en fin de
+   fichier. Ces règles étaient réparties entre les feuilles 08 à 17 ; la
+   feuille est importée juste après 14-pay-page.css : à spécificité égale, elle
+   l'emporte sur les feuilles 02 à 14, et cède aux feuilles chargées ensuite
+   (resourceFolderList.css, usefulDocumentAdmin.css, pdfDownloadPage.css,
+   productRefinements.css, darkTheme.css).
+
+   Restent ailleurs : les listes communes à plusieurs rubriques (cadres et
+   fonds des feuilles 09 à 17), l'accident de travail (16-work-accident.css)
+   et les finitions de productRefinements.css. Attention à la conversion
+   sombre (src/darkStyles.ts) : elle recopie les couleurs de ces règles, dans
+   le même ordre, en fin de cascade. */
+
+/* ---- Onglets, cadre et en-têtes des rubriques ------------------------------ */
+
+.pdf-download-screen .native-screen-heading p,
+.useful-forms-screen .native-screen-heading p,
+.useful-contacts-screen .native-screen-heading p,
+.pdf-download-screen small,
+.useful-forms-screen small,
+.useful-contacts-screen small,
+.useful-forms-screen em {
+  color: var(--secondary-muted);
+  opacity: 1;
+}
+
+.native-screen-heading { max-width: 720px; }
+
+.native-screen-heading h2 { margin: 6px 0 8px; color: #3a332c; font-size: clamp(1.5rem, 4vw, 2.1rem); }
+
+.native-screen-heading p { line-height: 1.55; }
+
+.useful-resources-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  margin-top: clamp(20px, 3vw, 30px);
+  padding-bottom: clamp(24px, 4vw, 42px);
+}
+
+.useful-resource-intro>p:last-child {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: clamp(13px, 1.5vw, 15px);
+  line-height: 1.5;
+}
+
+.useful-resource-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.useful-resource-tab {
+  position: relative;
+  display: grid;
+  align-items: stretch;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.useful-resource-tab.resource-contacts { background: var(--surface-high); }
+
+.useful-resource-tab:focus-visible { outline: 3px solid #7a6f5f; outline-offset: 3px; }
+
+.useful-resource-tab-copy { display: grid; place-items: center; text-align: center; }
+
+.useful-resource-tab-copy strong {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  letter-spacing: 0.035em;
+  line-height: 1;
+}
+
+.useful-resource-tab-copy strong::before {
+  width: 42px;
+  height: 3px;
+  border-radius: 999px;
+  background: #a36f32;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  content: "";
+}
+
+.resource-contacts .useful-resource-tab-copy strong::before { background: var(--muted); }
+
+.has-active-resource .useful-resource-tab-copy strong::before { display: none; }
+
+.useful-resources-screen.has-active-resource { gap: 20px; }
+
+.useful-resource-back:focus-visible { outline: 3px solid rgba(122, 111, 95, 0.3); outline-offset: 2px; }
+
+.has-active-resource .useful-resource-tabs { width: 100%; margin: 0 auto; }
+
+.has-active-resource .useful-resource-tab { grid-template-columns: minmax(0, 1fr); padding: 0; }
+
+.has-active-resource .resource-forms { color: #704a25; }
+
+.has-active-resource .resource-contacts { color: var(--text); }
+
+.useful-resource-panel>.useful-forms-screen,
+.useful-resource-panel>.useful-contacts-screen {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.useful-resource-panel>.useful-forms-root,
+.useful-resource-panel>.useful-contacts-root {
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-panel);
+}
+
+.useful-resource-panel>.useful-forms-root { box-shadow: 0 12px 30px rgba(89, 64, 36, 0.11); }
+
+.useful-resource-panel>.useful-contacts-root {
+  background: linear-gradient(90deg, rgba(122, 111, 95, 0.07), transparent 15%),
+    linear-gradient(145deg, var(--surface-high), #fff 56%, #f7f4ee);
+  box-shadow: 0 12px 30px rgba(58, 51, 44, 0.11);
+}
+
+.useful-resource-panel>.useful-forms-screen.useful-forms-root,
+.useful-resource-panel>.useful-contacts-screen.useful-contacts-root {
+  width: 100%;
+  max-width: none;
+}
+
+.useful-resource-panel .useful-form-content-stack {
+  width: calc(100% - clamp(12px, 2vw, 22px));
+  margin: 18px auto 0;
+  gap: 14px;
+}
+
+/* Les rubriques documentaires suivent les mêmes surfaces blanches que le
+  reste de l'application. Les pictogrammes gardent leur couleur propre. */
+.useful-resource-panel>.useful-forms-root,
+.useful-resource-panel>.useful-contacts-root {
+  background: #fff;
+}
+
+/* Rubrique ouverte : les trois onglets deviennent un sélecteur segmenté,
+  comme les vues des expositions. Seul l'onglet choisi est coloré ; plus de
+  mention « Ouvrir / Ouvert », qui redisait la même chose. */
+.has-active-resource .useful-resource-tabs {
+  gap: 3px;
+  border: 1px solid var(--section-outline);
+  border-radius: 12px;
+  padding: 4px;
+  background: #f4ede4;
+  box-shadow: inset 0 1px 2px rgba(44, 38, 33, .06);
+}
+
+.has-active-resource .useful-resource-tab {
+  grid-template-rows: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.has-active-resource .useful-resource-tab:hover:not([aria-selected="true"]) {
+  background: rgba(255, 255, 255, .7);
+}
+
+.has-active-resource .useful-resource-tab-copy {
+  place-content: center;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 4px;
+  background: transparent;
+}
+
+.has-active-resource .useful-resource-tab-copy strong {
+  color: var(--muted);
+  font-family: inherit;
+  font-size: clamp(.8rem, 3.4vw, .9rem);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.has-active-resource .useful-resource-tab[aria-selected="true"] {
+  background: var(--accent);
+  box-shadow: 0 2px 6px rgba(143, 72, 45, .28);
+}
+
+.has-active-resource .useful-resource-tab[aria-selected="true"] .useful-resource-tab-copy strong {
+  color: #fff;
+}
+
+.useful-resource-tab.resource-forms { --tile-tint: #e3efe7; --tile-ink: #2f7a52; }
+
+.useful-resource-tab.resource-contacts { --tile-tint: #e4ebf5; --tile-ink: #3a5f8f; }
+
+/* ---- Formulaires utiles ---------------------------------------------------- */
+
+/* Finition commune des pages secondaires : même rythme, même lisibilité et
+  mêmes profondeurs, tout en conservant la couleur propre à chaque rubrique. */
+.pdf-download-screen,
+.useful-forms-screen,
+.useful-contacts-screen {
+  --secondary-muted: #7a6f5f;
+}
+
+.useful-forms-screen {
+  border: 1.5px solid var(--app-frame-strong);
+  border-radius: 28px;
+  padding: 22px;
+  background: linear-gradient(155deg, #fff0df, var(--surface-high) 54%, #fff);
+  box-shadow: inset 0 6px #a66c2f, 0 18px 38px rgba(91, 61, 36, 0.13);
+}
+
+.useful-forms-folder-screen { padding-top: 0; overflow: hidden; }
+
+.useful-forms-folder-header {
+  position: relative;
+  min-height: 126px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  column-gap: 16px;
+  align-items: center;
+  margin: 0 -22px 20px;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--folder-accent) 52%, #fff);
+  padding: 24px 22px;
+  background: color-mix(in srgb, var(--folder-accent) 12%, #fff);
+}
+
+.useful-forms-folder-header>div { grid-column: 2; min-width: 0; }
+
+.useful-forms-folder-header.tone-expo { --folder-accent: #2f7f74; }
+
+.useful-forms-folder-header.tone-sap { --folder-accent: #5368a8; }
+
+.useful-forms-folder-header.tone-brantome { --folder-accent: #b9781e; }
+
+.useful-forms-folder-header h2 { margin: 3px 0; color: #2c2621; font-size: 24px; }
+
+.useful-forms-folder-header small { color: var(--folder-accent); font-weight: 850; }
+
+.useful-form-download-list { display: grid; gap: 11px; }
+
+.useful-form-download-card {
+  display: grid;
+  align-items: center;
+  gap: 13px;
+  border-radius: 18px;
+  padding: 13px 14px;
+}
+
+.resource-search-field { display: grid; gap: 5px; }
+
+.resource-search-field>span { color: var(--muted); font-size: 11px; font-weight: 850; }
+
+.resource-search-field input {
+  min-height: 44px;
+  border: 1px solid var(--border-control);
+  border-radius: 12px;
+  padding: 0 13px;
+  background: var(--surface);
+  font: inherit;
+}
+
+.useful-form-file-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.useful-form-file-icon svg,
+.useful-form-download-card>a svg {
+  width: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.useful-form-file-copy { display: grid; gap: 3px; }
+
+.useful-form-file-copy small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.useful-form-file-copy strong { font-size: 14px; line-height: 1.3; }
+
+.useful-form-file-copy .useful-form-send-to { font-size: 12px; font-weight: 600; letter-spacing: 0; }
+
+.useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
+
+/* Intitulés « Document(s) » et « Audioguide(s) » d'un dossier qui réunit les
+  deux : petites capitales discrètes suivies d'un filet. */
+.useful-form-list-heading {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 2px 0;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: .74rem;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.useful-form-list-heading::after {
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+  content: "";
+}
+
+.useful-form-list-heading:first-child,
+.useful-form-local-notice+.useful-form-list-heading {
+  margin-top: 0;
+}
+
+/* Dossier d'une exposition : la fiche prend aussi une pastille colorée, et
+  occupe toute la largeur comme l'audioguide qui la suit. */
+.useful-form-download-list:has(>.useful-audioguide-card)>.useful-form-download-card {
+  grid-column: 1 / -1;
+}
+
+.useful-form-download-list:has(>.useful-audioguide-card) .useful-form-file-icon:not(.useful-audioguide-icon) {
+  background: #e4eef8;
+  color: #2f5f8f;
+}
+
+/* Toujours sous les fiches, sur toute la largeur de la liste, et ses deux
+  boutons côte à côte sous le texte. */
+.useful-form-download-list>.useful-audioguide-card {
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.useful-form-file-copy .useful-audioguide-code { font-size: 12px; font-weight: 600; letter-spacing: 0; }
+
+.useful-form-download-card>a {
+  min-height: 42px;
+  flex: 0 0 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border: 1px solid var(--border-card);
+  border-radius: 11px;
+  padding: 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.useful-form-download-card>a svg { width: 17px; }
+
+.useful-form-download-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.useful-form-local-notice {
+  margin: 0;
+  border: 1px solid #d3a45d;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #fff8e8;
+  color: #704a12;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.useful-form-download-error {
+  margin: 2px 0 0;
+  border: 1px solid #d98a95;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #fff1f3;
+  color: #9b2538;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.useful-forms-empty {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  border: 1.5px dashed var(--border-card);
+  border-radius: 17px;
+  padding: 28px;
+  background: #fff;
+  color: var(--muted);
+  text-align: center;
+}
+
+.useful-forms-empty>span { font-size: 34px; }
+
+.useful-forms-empty p { margin: 0; color: #657b77; font-size: 12px; }
+
+/* Rubriques pratiques : quatrième dossier équilibré, image lisible et
+  annuaire tactile sans surcharger les écrans étroits. */
+.useful-forms-folder-header.tone-tickets { --folder-accent: #9a5a86; }
+
+.useful-form-information-image {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border-radius: 18px;
+  padding: clamp(8px, 2vw, 20px);
+  background: var(--surface);
+}
+
+.useful-form-information-image img { display: block; height: auto; object-fit: fill; }
+
+.useful-form-information-image img { width: min(100%, 900px); }
+
+.useful-contact-category-grid>button:nth-child(1),
+.useful-form-download-list>article:nth-of-type(6n+1) {
+  --contact-category-accent: var(--sage);
+  --contact-category-text: #2f5f59;
+  --contact-category-background: linear-gradient(135deg, #e8f3f1, #f8fcfb);
+}
+
+.useful-contact-category-grid>button:nth-child(2),
+.useful-form-download-list>article:nth-of-type(6n+2) {
+  --contact-category-accent: #d48b3c;
+  --contact-category-text: #8a4b12;
+  --contact-category-background: linear-gradient(135deg, #fff0dd, #fffaf3);
+}
+
+.useful-contact-category-grid>button:nth-child(3),
+.useful-form-download-list>article:nth-of-type(6n+3) {
+  --contact-category-accent: #c45f87;
+  --contact-category-text: #843657;
+  --contact-category-background: linear-gradient(135deg, #ffe8f1, #fff8fb);
+}
+
+.useful-contact-category-grid>button:nth-child(4),
+.useful-form-download-list>article:nth-of-type(6n+4) {
+  --contact-category-accent: #4c9b79;
+  --contact-category-text: #21694d;
+  --contact-category-background: linear-gradient(135deg, #e4f7ee, #f8fdfa);
+}
+
+.useful-contact-category-grid>button:nth-child(5),
+.useful-form-download-list>article:nth-of-type(6n+5) {
+  --contact-category-accent: #8a6a43;
+  --contact-category-text: #6b5128;
+  --contact-category-background: linear-gradient(135deg, #f7efe1, #fdfaf4);
+}
+
+.useful-contact-category-grid>button:nth-child(6),
+.useful-form-download-list>article:nth-of-type(6n+6) {
+  --contact-category-accent: #d56f52;
+  --contact-category-text: #91412b;
+  --contact-category-background: linear-gradient(135deg, #ffebe4, #fff9f6);
+}
+
+/* Boutons terracotta : un liseré sombre très léger, comme les cases de
+  l’accueil. */
+:root :is(.primary-action:not(.warning-button):not(.danger),.validate-button,.save-button,.today-button,.colleague-invite,.colleague-profile-save,.colleague-received-person button:not(.secondary),.payslip-file-drop,.home-add-note,.auth-submit,.document-share-dialog button,.grand-palais-view-picker button.active,.school-zone-picker button.active,.choice-picker-menu button.active) {
+  border: 1px solid var(--border-control);
+}
+
+/* Documents d'un dossier de formulaires : même présentation que les rubriques
+  de Contacts Pompidou — liseré de couleur à gauche, fond pastel, titre et
+  bouton à la couleur du liseré, six teintes en boucle. */
+.useful-form-download-list>.useful-form-download-card {
+  border: 1px solid var(--border-card);
+  border-left: 6px solid var(--contact-category-accent);
+  background: var(--contact-category-background);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--contact-category-accent) 14%, transparent);
+}
+
+.useful-form-download-list>.useful-form-download-card .useful-form-file-copy strong {
+  color: var(--contact-category-text);
+}
+
+.useful-form-download-list>.useful-form-download-card .useful-form-file-copy>small:first-child {
+  color: color-mix(in srgb, var(--contact-category-text) 72%, #7a6f5f);
+}
+
+.useful-form-download-list>.useful-form-download-card>.useful-form-file-icon:not(.useful-audioguide-icon) {
+  background: rgba(255, 255, 255, .7);
+  color: var(--contact-category-text);
+}
+
+.useful-form-download-list>.useful-form-download-card>a {
+  border-color: transparent;
+  background: var(--contact-category-text);
+}
+
+/* ---- Contacts utiles ------------------------------------------------------- */
+
+.useful-contact-load-state {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 120px;
+  border: 1.5px dashed var(--border-control);
+  border-radius: 18px;
+  padding: 20px;
+  background: var(--surface-high);
+  color: var(--muted);
+  text-align: center;
+}
+
+.useful-contact-load-state>span { color: var(--muted); font-size: 22px; letter-spacing: 0.18em; }
+
+.useful-contact-load-state p { margin: 0; }
+
+.useful-contact-load-state button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 18px;
+  background: #7a6f5f;
+  color: #fff;
+  font-weight: 900;
+}
+
+.useful-contact-load-state.error {
+  border-style: solid;
+  border-color: #e1b1a8;
+  background: #fff7f5;
+  color: #8f3529;
+}
+
+.section-back-hit-area {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.section-back-hit-area:focus-visible { outline: 3px solid currentColor; }
+
+.section-back-arrow {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 18px;
+  transform: translateY(-50%);
+}
+
+/* Audioguides d'exposition : même carte que les fiches, code d'accès en vue. */
+.useful-audioguide-icon { background: #fbeadf; color: #a4502f; }
+
+.useful-audioguide-actions { display: flex; grid-column: 1 / -1; gap: 8px; }
+
+.useful-audioguide-actions>* {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid #a4502f;
+  border-radius: 12px;
+  padding: 10px 8px;
+  background: #a4502f;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.useful-audioguide-actions button { background: #fff; color: #a4502f; }
+
+.useful-audioguide-code b {
+  margin-left: 4px;
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: .18em;
+}
+
+.useful-audioguide-qr {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  border-radius: 18px;
+  padding: 12px;
+  background: #fff;
+}
+
+.useful-audioguide-qr img { width: min(240px, 70vw); height: auto; image-rendering: pixelated; }
+
+.useful-audioguide-qr figcaption { color: var(--muted); font-size: 12.5px; }
+
+.useful-audioguide-qr b {
+  margin-left: 4px;
+  color: var(--text);
+  font-size: 18px;
+  letter-spacing: .2em;
+}
+
+.useful-contact-card>.useful-contact-actions { margin-top: 4px; }
+
+.contact-admin-edit {
+  position: absolute;
+  top: 10px;
+  right: 62px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-control);
+  border-radius: 11px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.contact-admin-add {
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 12px;
+  border: 1.5px dashed #bcb0a0;
+  border-radius: 12px;
+  background: var(--surface-high);
+  color: var(--muted);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.useful-contacts-screen { position: relative; overflow: hidden; }
+
+.useful-contacts-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(122, 111, 95, 0.13) 0.7px, transparent 0.7px);
+  background-size: 17px 17px;
+  opacity: 0.25;
+}
+
+.useful-contacts-screen>* { position: relative; z-index: 1; }
+
+.useful-contact-category-grid>button {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.useful-contact-category-grid>button:hover {
+  border-color: var(--muted);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 32px rgba(87, 78, 66, 0.16), inset 0 1px #fff;
+}
+
+.useful-contact-category-grid>button:nth-child(3n+2) {
+  background: linear-gradient(135deg, #fff, #fff8ef);
+}
+
+.useful-contact-category-grid>button:nth-child(3n) { background: linear-gradient(135deg, #fff, #fff); }
+
+.useful-contacts-subheader {
+  border: 1px solid var(--border-card);
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(87, 78, 66, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.useful-contact-card { position: relative; overflow: hidden; }
+
+.useful-contact-identity>span:first-child {
+  flex: 0 0 44px;
+  border: 1px solid var(--border-card);
+  background: linear-gradient(145deg, var(--bg), var(--surface-high));
+  color: var(--muted);
+  box-shadow: inset 0 1px #fff;
+  font-size: 13px;
+}
+
+.useful-contact-card:nth-child(even) .useful-contact-identity>span:first-child {
+  border-color: rgba(175, 107, 45, 0.2);
+  background: linear-gradient(145deg, #ffead5, #fff7ed);
+  color: #9a571e;
+}
+
+.useful-contact-identity strong { font-size: 14px; line-height: 1.25; }
+
+.useful-contact-actions { align-items: stretch; }
+
+.useful-contact-actions a.useful-contact-email {
+  border-color: var(--border-control);
+  background: linear-gradient(135deg, var(--surface-high), var(--surface-high));
+  color: var(--muted);
+}
+
+.useful-contact-actions a.useful-contact-email:hover { background: var(--surface); }
+
+.useful-contact-phone small { letter-spacing: 0.05em; }
+
+.useful-contact-phone b { color: #3a332c; white-space: nowrap; }
+
+.useful-contact-phone-actions a { box-shadow: 0 4px 10px rgba(122, 111, 95, 0.19); }
+
+.useful-contact-phone-actions a:last-child:not(:first-child) {
+  box-shadow: 0 4px 10px rgba(61, 138, 111, 0.18);
+}
+
+.useful-contacts-screen {
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-panel);
+  padding: 22px;
+  background: linear-gradient(145deg, #fff, var(--surface-card) 56%, #fff);
+  box-shadow: inset 0 5px #7a6f5f, var(--shadow-card);
+}
+
+.useful-contact-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.useful-contact-category-grid>button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  padding: 17px;
+  color: #3a332c;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.useful-contact-category-grid button>span:first-child { display: grid; gap: 5px; }
+
+.useful-contact-category-grid strong { font-size: 16px; }
+
+.useful-contact-category-grid small { font-size: 11px; line-height: 1.4; }
+
+.useful-contact-category-grid i { font-size: 26px; font-style: normal; }
+
+.useful-contacts-subheader { position: relative; border-bottom: 1px solid var(--border-control); }
+
+.useful-contacts-subheader .section-back-arrow { left: 0; }
+
+.useful-contacts-subheader h2 { margin: 3px 0 0; color: #3a332c; }
+
+.useful-contact-list { display: grid; gap: 11px; }
+
+.useful-contact-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border-control);
+  background: var(--surface);
+}
+
+.useful-contact-identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #3a332c;
+}
+
+.useful-contact-identity>span {
+  flex: 0 0 35px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.useful-contact-actions {
+  min-width: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.useful-contact-actions a {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--border-control);
+  border-radius: 12px;
+  background: var(--surface-high);
+  text-decoration: none;
+}
+
+.useful-contact-actions small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.useful-contact-actions b { overflow-wrap: anywhere; font-size: 12px; }
+
+.useful-contact-group-email {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: -7px 0 14px;
+  border: 1.5px solid var(--border-card);
+  border-radius: 18px;
+  padding: 12px 15px;
+  color: var(--muted);
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--surface), var(--surface-high));
+  box-shadow: 0 7px 18px rgba(87, 78, 66, 0.09);
+}
+
+.useful-contact-group-email>span:first-child {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 18px;
+  background: #7a6f5f;
+}
+
+.useful-contact-group-email>span:last-child { display: grid; gap: 3px; min-width: 0; }
+
+.useful-contact-group-email strong { font-size: 13px; }
+
+.useful-contact-group-email small { color: var(--muted); font-size: 10px; }
+
+.useful-contact-group-email:hover { background: var(--surface); }
+
+.useful-contact-card {
+  border-left: 5px solid var(--border-card);
+  border-radius: 17px;
+  padding: 15px 16px;
+  box-shadow: none;
+}
+
+.useful-contact-card:nth-child(even) { border-left-color: #d7924e; }
+
+.useful-contact-identity>span:first-child {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+  border-radius: 18px;
+}
+
+.useful-contact-identity>span:last-child {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  display: grid;
+  place-items: initial;
+  gap: 3px;
+  background: transparent;
+}
+
+.useful-contact-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+
+.useful-contact-actions a.useful-contact-email {
+  width: auto;
+  min-width: 0;
+  grid-column: auto;
+  padding: 10px 12px;
+}
+
+.useful-contact-actions a.useful-contact-email { align-content: center; }
+
+.useful-contact-phone {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(112px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border-control);
+  border-radius: 12px;
+  padding: 8px 9px 8px 11px;
+  background: var(--surface-high);
+}
+
+.useful-contact-phone>span:first-child { min-width: 0; display: grid; gap: 2px; }
+
+.useful-contact-phone-actions { display: flex; gap: 5px; }
+
+.useful-contact-phone-actions a {
+  width: auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: #7a6f5f;
+  color: #fff !important;
+  font-size: 10px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.useful-contact-phone-actions a:last-child:not(:first-child) { background: #3d8a6f; }
+
+/* Le mail commun du bureau reste une brique compacte ; seul son intitulé
+  bénéficie d'une ligne continue, y compris sur les petits écrans. */
+.useful-contact-card-single-line-label {
+  width: min(100%, 760px);
+  max-width: 100%;
+  grid-template-columns: minmax(370px, 1fr) minmax(240px, 320px);
+}
+
+.useful-contact-card-single-line-label .useful-contact-identity strong { white-space: nowrap; }
+
+/* Contacts Pompidou : chaque service conserve la même structure, avec un
+  pastel et un accent propres pour faciliter le repérage visuel. */
+.useful-contact-category-grid>button {
+  border-left: 6px solid var(--contact-category-accent, var(--border-card));
+  background: var(--contact-category-background, linear-gradient(135deg, var(--surface-high), #fff));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--contact-category-accent, #9b8e7c) 14%, transparent);
+}
+
+.useful-contact-category-grid>button strong,
+.useful-contact-category-grid>button i {
+  color: var(--contact-category-text, var(--muted));
+}
+
+.useful-contact-category-grid>button small {
+  color: color-mix(in srgb, var(--contact-category-text, var(--muted)) 72%, #7a6f5f);
+}
+
+/* Téléphones standards et Fold fermé : l’œuvre descend dans la zone libre,
+  gagne en présence et reste entièrement cadrée à gauche des commandes. */
+.useful-contacts-subheader {
+  display: grid;
+  grid-template-columns: 48px minmax(0,1fr);
+  align-items: center;
+  gap: 14px;
+  margin: 2px 0 20px;
+  padding: 14px 16px;
+}
+
+.useful-contacts-subheader .section-back-hit-area {
+  position: static;
+  inset: auto;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border-control);
+  border-radius: 18px;
+  background: linear-gradient(145deg,var(--surface-high),var(--surface));
+  box-shadow: 0 5px 13px rgba(87, 78, 66,.1);
+}
+
+.useful-contacts-subheader .section-back-arrow {
+  position: static;
+  width: auto;
+  height: auto;
+  transform: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+}
+
+.useful-contact-card {
+  grid-template-columns: minmax(190px,.55fr) minmax(0,1.45fr);
+  align-items: start;
+}
+
+.useful-contact-card>.useful-contact-identity { grid-column: 1; grid-row: 1; padding-right: 0; }
+
+.useful-contact-card>.useful-contact-actions { grid-column: 2; grid-row: 1/span 2; }
+
+.useful-contact-card-tools {
+  display: flex;
+  grid-column: 1;
+  grid-row: 2;
+  align-items: center;
+  align-self: end;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.useful-contact-card-tools .contact-admin-edit,
+.useful-contact-card-tools .resource-favorite-button {
+  position: static;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  border: 1px solid var(--border-control);
+  border-radius: 12px;
+  padding: 0;
+  background: linear-gradient(145deg,#fff,var(--surface-high));
+  box-shadow: 0 4px 11px rgba(87, 78, 66,.09);
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---- Plannings PDF --------------------------------------------------------- */
+
+/* Plannings PDF : le parcours est présenté en deux étapes immédiatement
+  repérables, avec des réglages compacts et trois choix de document distincts. */
+.pdf-download-screen { display: grid; align-content: start; }
+
+.pdf-download-intro h2 { margin-bottom: 7px; }
+
+/* Dernière passe PDF : ces règles restent volontairement après les anciens
+  ajustements Fold afin que le nouvel atelier soit identique sur tout support. */
+.pdf-download-screen { gap: 15px; border-radius: 30px; }
+
+.pdf-download-intro { max-width: none; }
+
+.planning-pdf-dialog>.pdf-download-screen { margin: 0; border: 0; box-shadow: none; }
+
+/* ---- Variantes selon la largeur ------------------------------------------ */
+
+@media (min-width: 721px) {
+  .useful-forms-screen:not(.useful-forms-folder-screen)>.native-screen-heading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .useful-forms-screen:not(.useful-forms-folder-screen)>.native-screen-heading h2 {
+    font-size: clamp(1.65rem, 3vw, 2.25rem);
+    line-height: 1.08;
+  }
+  .useful-contacts-root>.native-screen-heading {
+    grid-area: intro;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .useful-forms-screen:not(.useful-forms-folder-screen)>.native-screen-heading { grid-area: intro; }
+  .useful-forms-screen,
+  .useful-contacts-screen {
+    gap: 18px;
+  }
+  .useful-form-download-list>.useful-audioguide-card { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .useful-forms-screen:not(.useful-forms-folder-screen) {
+    display: grid;
+    align-items: stretch;
+    gap: clamp(20px, 3vw, 34px);
+  }
+  .useful-forms-folder-screen .useful-form-download-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .useful-forms-folder-screen .useful-form-local-notice,
+  .useful-forms-folder-screen .useful-form-download-error {
+    grid-column: 1 / -1;
+  }
+  .useful-contacts-root>.resource-search-field { grid-area: search; align-self: start; }
+  .useful-forms-screen:not(.useful-forms-folder-screen) {
+    grid-template-areas: "intro search"
+        "intro folders";
+    grid-template-columns: minmax(215px, 0.72fr) minmax(0, 2fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .useful-forms-screen:not(.useful-forms-folder-screen)>.resource-search-field {
+    grid-area: search;
+    width: 100%;
+  }
+  .useful-forms-screen:not(.useful-forms-folder-screen)>.useful-form-content-stack {
+    grid-area: folders;
+    width: 100%;
+  }
+  .useful-audioguide-actions { grid-column: auto; }
+  .useful-audioguide-actions>* { flex: 0 0 auto; padding: 10px 14px; white-space: nowrap; }
+  .useful-contacts-root {
+    display: grid;
+    grid-template-columns: minmax(215px, 0.72fr) minmax(0, 2fr);
+    grid-template-areas: "intro search" "intro directories";
+    align-items: stretch;
+    gap: clamp(20px, 3vw, 34px);
+  }
+  .pdf-download-screen>section { border-radius: 18px; }
+}
+
+@media (max-width: 720px) {
+  .useful-forms-screen:not(.useful-forms-folder-screen)>.native-screen-heading h2 {
+    margin: 3px 0 4px;
+    font-size: 1.25rem;
+  }
+  .useful-forms-screen:not(.useful-forms-folder-screen)>.native-screen-heading p {
+    font-size: 11px;
+    line-height: 1.42;
+  }
+  .useful-resources-screen { margin-top: 18px; padding-bottom: 30px; }
+  .has-active-resource .useful-resource-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .has-active-resource .useful-resource-tab { grid-template-columns: minmax(0, 1fr); }
+  .pdf-download-screen,
+  .useful-forms-screen,
+  .useful-contacts-screen {
+    gap: 10px;
+  }
+  .useful-forms-folder-screen { padding-top: 0; }
+  .useful-forms-folder-header {
+    min-height: 112px;
+    margin: 0 -14px 14px;
+    column-gap: 12px;
+    padding: 18px 14px;
+  }
+  .useful-forms-folder-header .section-back-arrow { left: 12px; }
+  .useful-forms-folder-header h2 { font-size: 20px; }
+  .useful-form-download-card { padding: 11px; }
+  .useful-form-download-card>a { align-self: center; }
+  .useful-forms-folder-screen {
+    border-radius: 21px;
+    padding-right: 10px;
+    padding-bottom: 12px;
+    padding-left: 10px;
+  }
+  .useful-forms-folder-header {
+    margin-right: -10px;
+    margin-left: -10px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .useful-form-download-list { gap: 9px; }
+  .useful-form-download-card { border-radius: 18px; }
+  .useful-contact-card>.useful-contact-identity { min-height: 44px; }
+  .useful-contact-card>.useful-contact-actions { margin-top: 0; }
+  .useful-contacts-screen { border-radius: 18px; padding: 14px; }
+  .useful-contact-category-grid { grid-template-columns: 1fr; gap: 10px; }
+  .useful-contact-card { gap: 10px; }
+  .useful-contact-actions { justify-content: stretch; }
+  .useful-contacts-subheader .section-back-arrow { left: 12px; }
+  .useful-contact-card { padding: 13px; }
+  .useful-contact-actions { grid-template-columns: 1fr; }
+  .useful-contact-actions a.useful-contact-email { width: 100%; }
+  .useful-contacts-screen .useful-contacts-subheader {
+    grid-template-columns: 46px minmax(0,1fr);
+    gap: 12px;
+    padding: 13px;
+  }
+  .useful-contacts-screen .useful-contacts-subheader .section-back-hit-area { width: 46px; height: 46px; }
+  .useful-contacts-screen .useful-contact-card { grid-template-columns: 1fr; }
+  .useful-contacts-screen .useful-contact-card>.useful-contact-actions { grid-column: 1; grid-row: 2; }
+  .useful-contacts-screen .useful-contact-card-tools {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    grid-column: auto;
+    grid-row: auto;
+    margin-top: 0;
+  }
+  .useful-contacts-screen .useful-contact-card>.useful-contact-identity { padding-right: 96px; }
+  .useful-contact-card-single-line-label { width: 100%; grid-template-columns: minmax(0, 1fr); }
+  .useful-contact-card-single-line-label .useful-contact-identity { gap: 7px; }
+  .useful-contact-card-single-line-label .useful-contact-identity>span:first-child {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    border-radius: 11px;
+  }
+  .useful-contact-card-single-line-label .useful-contact-identity strong {
+    font-size: clamp(9px, 3vw, 12px);
+    letter-spacing: -0.02em;
+  }
+  /* Atelier PDF mobile : les réglages restent immédiatement visibles et les
+    trois documents deviennent de vraies actions horizontales homogènes. */
+  .pdf-download-screen { width: 100%; gap: 11px; border-radius: 21px; }
+  .pdf-download-intro h2 { margin: 3px 0 4px; font-size: 1.28rem; line-height: 1.16; }
+  .pdf-download-intro p { font-size: 11px; line-height: 1.42; }
+}
+
+@media (max-width: 600px) {
+  .useful-form-file-copy .useful-form-send-to { display: grid; justify-items: start; }
+}
+
+@media (max-width: 390px) {
+  .useful-contact-phone { grid-template-columns: 1fr; }
+  .useful-contact-phone-actions,
+  .useful-contact-phone-actions a {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1100px) {
+  .useful-resources-screen { align-items: start; }
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .useful-forms-screen:not(.useful-forms-folder-screen) {
+    grid-template-areas: "intro"
+        "search"
+        "folders";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+  .useful-contacts-root {
+    grid-template-areas: "intro" "search" "directories";
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

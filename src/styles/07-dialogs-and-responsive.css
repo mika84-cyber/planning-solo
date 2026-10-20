@@ -1,10 +1,3 @@
-/* Trois noms de mois en liste n'ont pas besoin des 360px prévus pour les
-   types de congé (des libellés bien plus longs) : à cette largeur-là, sur un
-   déclencheur étroit (128px) et centré, le menu débordait de sa propre carte
-   de 70px. */
-.cia-month-picker .choice-picker-menu {
-  width: min(150px, calc(100vw - 40px));
-}
 .note-meta {
   margin: 8px 0 0 !important;
   color: var(--muted) !important;

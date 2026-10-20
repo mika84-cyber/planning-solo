@@ -3,230 +3,6 @@
 .top-header.top-header-contacts {
   --section-accent: var(--sage);
 }
-.useful-contact-card > .useful-contact-actions { margin-top: 4px; }
-.contact-admin-edit { position: absolute; top: 10px; right: 62px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--border-control); border-radius: 11px; padding: 0; background: var(--surface); color: var(--accent); font-size: 20px; font-weight: 800; cursor: pointer; }
-.contact-admin-add { width: 100%; min-height: 44px; margin: 0 0 12px; border: 1.5px dashed #bcb0a0; border-radius: 12px; background: var(--surface-high); color: var(--muted); font-weight: 850; cursor: pointer; }
-
-@media (max-width: 720px) {
-  .useful-contact-card > .useful-contact-identity { min-height: 44px; }
-  .useful-contact-card > .useful-contact-actions { margin-top: 0; }
-}
-
-.useful-contacts-screen {
-  position: relative;
-  overflow: hidden;
-}
-.useful-contacts-screen::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(122, 111, 95, 0.13) 0.7px, transparent 0.7px);
-  background-size: 17px 17px;
-  opacity: 0.25;
-}
-.useful-contacts-screen > * { position: relative; z-index: 1; }
-
-.useful-contact-category-grid > button {
-  border-color: var(--border-card);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.useful-contact-category-grid > button:hover {
-  border-color: var(--muted);
-  transform: translateY(-2px);
-  box-shadow: 0 15px 32px rgba(87, 78, 66, 0.16), inset 0 1px #fff;
-}
-.useful-contact-category-grid > button:nth-child(3n + 2) {
-  background: linear-gradient(135deg, #fff, #fff8ef);
-}
-.useful-contact-category-grid > button:nth-child(3n) {
-  background: linear-gradient(135deg, #fff, #fff);
-}
-.useful-contacts-subheader {
-  border: 1px solid var(--border-card);
-  border-radius: 17px;
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(87, 78, 66, 0.08);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-.useful-contact-card {
-  position: relative;
-  overflow: hidden;
-  border-color: var(--border-card);
-}
-.useful-contact-identity > span:first-child {
-  flex: 0 0 44px;
-  border: 1px solid var(--border-card);
-  background: linear-gradient(145deg, var(--bg), var(--surface-high));
-  color: var(--muted);
-  box-shadow: inset 0 1px #fff;
-  font-size: 13px;
-}
-.useful-contact-card:nth-child(even) .useful-contact-identity > span:first-child {
-  border-color: rgba(175, 107, 45, 0.2);
-  background: linear-gradient(145deg, #ffead5, #fff7ed);
-  color: #9a571e;
-}
-.useful-contact-identity strong { font-size: 14px; line-height: 1.25; }
-.useful-contact-identity small { color: #9b8e7c; font-size: 10px; font-weight: 700; }
-.useful-contact-actions {
-  align-items: stretch;
-}
-.useful-contact-actions a.useful-contact-email {
-  border-color: var(--border-control);
-  background: linear-gradient(135deg, var(--surface-high), var(--surface-high));
-  color: var(--muted);
-}
-.useful-contact-actions a.useful-contact-email:hover { background: var(--surface); }
-.useful-contact-phone small { color: #9b8e7c; font-size: 9px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
-.useful-contact-phone b { color: #3a332c; font-size: 12px; white-space: nowrap; }
-.useful-contact-phone-actions a {
-  box-shadow: 0 4px 10px rgba(122, 111, 95, 0.19);
-}
-.useful-contact-phone-actions a:last-child:not(:first-child) {
-  box-shadow: 0 4px 10px rgba(61, 138, 111, 0.18);
-}
-
-/* Rubriques pratiques : quatrième dossier équilibré, image lisible et
-   annuaire tactile sans surcharger les écrans étroits. */
-
-.useful-forms-folder-header.tone-tickets { --folder-accent: #9a5a86; }
-.useful-form-information-image {
-  display: grid;
-  place-items: center;
-  margin: 0;
-  border-radius: 18px;
-  padding: clamp(8px, 2vw, 20px);
-  background: var(--surface);
-}
-.useful-form-information-image img {
-  display: block;
-  height: auto;
-  object-fit: fill;
-}
-
-.useful-contacts-screen {
-  width: min(1120px, calc(100% - 32px));
-  margin: 18px auto 0;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-panel);
-  padding: 22px;
-  background: linear-gradient(145deg, #fff, var(--surface-card) 56%, #fff);
-  box-shadow: inset 0 5px #7a6f5f, var(--shadow-card);
-}
-
-.useful-contact-category-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
-}
-
-.useful-contact-category-grid > button {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-card);
-  padding: 17px;
-  background: var(--surface);
-  color: #3a332c;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: var(--shadow-card);
-}
-
-.useful-contact-category-grid button > span:first-child {
-  display: grid;
-  gap: 5px;
-}
-
-.useful-contact-category-grid strong { font-size: 16px; }
-
-.useful-contact-category-grid small {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.useful-contact-category-grid i {
-  color: var(--muted);
-  font-size: 26px;
-  font-style: normal;
-}
-.useful-contacts-subheader {
-  position: relative;
-  border-bottom: 1px solid var(--border-control);
-}
-.useful-contacts-subheader .section-back-arrow {
-  left: 0;
-}
-.useful-contacts-subheader h2 { margin: 3px 0 0; color: #3a332c; }
-.useful-contact-list { display: grid; gap: 11px; }
-.useful-contact-card {
-  display: grid;
-  gap: 14px;
-  border: 1px solid var(--border-control);
-  background: var(--surface);
-}
-.useful-contact-identity {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #3a332c;
-}
-.useful-contact-identity > span {
-  width: 35px;
-  height: 35px;
-  flex: 0 0 35px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-control);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 950;
-}
-.useful-contact-actions {
-  min-width: 0;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.useful-contact-actions a {
-  min-width: 145px;
-  display: grid;
-  gap: 2px;
-  border: 1px solid var(--border-control);
-  border-radius: 12px;
-  padding: 8px 11px;
-  background: var(--surface-high);
-  color: var(--muted);
-  text-decoration: none;
-}
-.useful-contact-actions small { color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; }
-.useful-contact-actions b { overflow-wrap: anywhere; font-size: 12px; }
-
-@media (max-width: 720px) {
-  .useful-contacts-screen {
-    width: calc(100% - 20px);
-    margin-top: 12px;
-    border-radius: 18px;
-    padding: 14px;
-  }
-  
-  .useful-contact-category-grid { grid-template-columns: 1fr; gap: 10px; }
-  .useful-contact-card { gap: 10px; }
-  .useful-contact-actions { justify-content: stretch; }
-  .useful-contact-actions a,
-  .useful-contact-actions a.useful-contact-email { width: 100%; min-width: 0; }
-}
 
 /* En-têtes plus vivants : la zone du titre reste douce, tandis que l'œuvre
    retrouve davantage de couleur et de contraste sur le reste du bandeau. */
@@ -292,19 +68,6 @@
   min-width: 178px;
 }
 
-
-.allowance-table tr.holiday-cancelled {
-  color: #7a5360;
-  background: #fff5f6;
-}
-
-.allowance-table tr.holiday-cancelled td strong {
-  color: #a32138;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .planning-leave-panel {
   justify-content: center;
   margin-bottom: 12px;
@@ -349,55 +112,8 @@
   }
 }
 
-
 /* Formulaires utiles : uniquement sur les grands écrans, l'introduction
    devient une colonne-guide et les quatre dossiers respirent dans une grille 2 × 2. */
-@media (min-width: 721px) {
-  .useful-forms-screen:not(.useful-forms-folder-screen) {
-    display: grid;
-    align-items: stretch;
-    gap: clamp(20px, 3vw, 34px);
-    border-radius: 27px;
-    padding: clamp(22px, 3vw, 34px);
-    background:
-      radial-gradient(circle at 0 0, rgba(76, 139, 128, 0.13), transparent 33%),
-      radial-gradient(circle at 100% 100%, rgba(192, 119, 55, 0.1), transparent 35%),
-      #fff;
-    box-shadow: 0 14px 34px rgba(58, 51, 44, 0.09);
-  }
-
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    margin: 0;
-    border-right: 1px solid var(--border-card);
-    padding: 12px clamp(18px, 2.5vw, 30px) 12px 2px;
-  }
-
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading h2 {
-    font-size: clamp(1.65rem, 3vw, 2.25rem);
-    line-height: 1.08;
-  }
-
-  .useful-forms-folder-screen .useful-form-download-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .useful-forms-folder-screen .useful-form-local-notice,
-  .useful-forms-folder-screen .useful-form-download-error {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (min-width: 721px) and (max-width: 900px) {
-
-  .useful-forms-screen:not(.useful-forms-folder-screen) > .native-screen-heading {
-    border-right: 0;
-    border-bottom: 1px solid var(--border-card);
-    padding: 2px 2px 18px;
-  }
-}
 
 /* La continuité de grève reste un diagnostic de paie : elle explique les
    intervalles sans recolorer ni requalifier les journées du planning. */
@@ -735,7 +451,6 @@
    traitement neutre des autres options. Sa couleur rose reste réservée au
    planning et aux rubriques de suivi. */
 
-
 /* Dans la fiche d'une date, Divers et CET gardent des encadrés neutres : la
    couleur sert uniquement de repère sur leur liseré vertical. */
 
@@ -753,7 +468,6 @@
 
 .leave-choices .cet-day i,
 .leave-choices .closure-day i { opacity: 0.8; }
-
 
 .strike-request-options .request-option-group,
 .strike-request-options .type-tabs button {
@@ -813,7 +527,6 @@
     );
 }
 
-
 /* L'image Accueil ne change pas : seul le détourage lumineux des lettres est
    renforcé pour les isoler du dessin. */
 .top-header-home .top-header-title h1 {
@@ -846,104 +559,12 @@
   position: relative;
   z-index: 2;
 }
-.useful-contact-group-email {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin: -7px 0 14px;
-  border: 1.5px solid var(--border-card);
-  border-radius: 18px;
-  padding: 12px 15px;
-  color: var(--muted);
-  text-decoration: none;
-  background: linear-gradient(135deg, var(--surface), var(--surface-high));
-  box-shadow: 0 7px 18px rgba(87, 78, 66, 0.09);
-}
-.useful-contact-group-email > span:first-child {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 18px;
-  background: #7a6f5f;
-}
-.useful-contact-group-email > span:last-child {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-.useful-contact-group-email strong { font-size: 13px; }
-.useful-contact-group-email small { color: var(--muted); font-size: 10px; }
-.useful-contact-group-email:hover { background: var(--surface); }
 .top-header-contacts .top-header-title h1,
 .top-header-contacts .top-header-title .eyebrow { color: #fff; text-shadow: 0 2px 11px rgba(44, 38, 33, 0.58); }
-.useful-form-information-image img { width: min(100%, 900px); }
-.useful-contact-card {
-  border-left: 5px solid var(--border-card);
-  border-radius: 17px;
-  padding: 15px 16px;
-  box-shadow: none;
-}
-.useful-contact-card:nth-child(even) { border-left-color: #d7924e; }
-.useful-contact-identity > span:first-child { width: 44px; height: 44px; flex-basis: 44px; border-radius: 18px; }
-.useful-contact-identity > span:last-child { width: auto; height: auto; min-width: 0; display: grid; place-items: initial; gap: 3px; background: transparent; }
-.useful-contact-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-.useful-contact-actions a.useful-contact-email { width: auto; min-width: 0; grid-column: auto; padding: 10px 12px; }
-.useful-contact-actions a.useful-contact-email { align-content: center; }
-.useful-contact-phone {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(112px, 1fr) auto;
-  align-items: center;
-  gap: 9px;
-  border: 1px solid var(--border-control);
-  border-radius: 12px;
-  padding: 8px 9px 8px 11px;
-  background: var(--surface-high);
-}
-.useful-contact-phone > span:first-child { min-width: 0; display: grid; gap: 2px; }
-.useful-contact-phone-actions { display: flex; gap: 5px; }
-.useful-contact-phone-actions a {
-  width: auto;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: 0;
-  border-radius: 9px;
-  padding: 8px 10px;
-  background: #7a6f5f;
-  color: #fff !important;
-  font-size: 10px;
-  font-weight: 850;
-  text-decoration: none;
-}
-.useful-contact-phone-actions a:last-child:not(:first-child) { background: #3d8a6f; }
-
-@media (max-width: 720px) {
-  .useful-contacts-subheader { margin-top: 1px; }
-  .useful-contacts-subheader .section-back-arrow { left: 12px; }
-  .useful-contact-card { padding: 13px; }
-  .useful-contact-actions { grid-template-columns: 1fr; }
-  .useful-contact-actions a.useful-contact-email { width: 100%; }
-  .useful-contacts-screen .useful-contacts-subheader{grid-template-columns:46px minmax(0,1fr);gap:12px;padding:13px}.useful-contacts-screen .useful-contacts-subheader .section-back-hit-area{width:46px;height:46px}.useful-contacts-screen .useful-contact-card{grid-template-columns:1fr}.useful-contacts-screen .useful-contact-card>.useful-contact-actions{grid-column:1;grid-row:2}.useful-contacts-screen .useful-contact-card-tools{position:absolute;top:12px;right:12px;grid-column:auto;grid-row:auto;margin-top:0}.useful-contacts-screen .useful-contact-card>.useful-contact-identity{padding-right:96px}
-}
 
 /* Sur un téléphone large ou en paysage, le titre raccourci libère une vraie
    scène centrale : l’œuvre l’occupe presque entièrement sans toucher les
    commandes placées à droite. */
-
-
-@media (max-width: 390px) {
-  .useful-contact-phone { grid-template-columns: 1fr; }
-  .useful-contact-phone-actions,
-  .useful-contact-phone-actions a { width: 100%; }
-}
 
 .multi-type-request-help{display:grid;gap:3px;margin:14px 0 0;border:1px solid var(--border-control);border-radius:12px;padding:10px 12px;background:linear-gradient(145deg,var(--surface-high),var(--surface-high));color: var(--muted);font-size:11.5px;line-height:1.45}.multi-type-request-help strong{color: var(--muted)}.balance-detail-taken>summary{background:var(--surface);color: var(--muted)}.balance-detail-upcoming>summary{background:#fff;color:#23764e}.balance-detail-taken>summary:hover,.balance-detail-taken>summary:focus-visible{background:var(--bg)}.balance-detail-upcoming>summary:hover,.balance-detail-upcoming>summary:focus-visible{background:#fff}
 
@@ -1003,7 +624,6 @@
   }
 }
 
-
 .day-recovery-details i.recovery {
   background: #f3b3a6;
   box-shadow: inset 0 0 0 1px #000;
@@ -1028,119 +648,3 @@
   text-align: center;
   white-space: normal;
 }
-
-/* Le mail commun du bureau reste une brique compacte ; seul son intitulé
-   bénéficie d'une ligne continue, y compris sur les petits écrans. */
-.useful-contact-card-single-line-label {
-  width: min(100%, 760px);
-  max-width: 100%;
-  grid-template-columns: minmax(370px, 1fr) minmax(240px, 320px);
-}
-
-.useful-contact-card-single-line-label .useful-contact-identity strong {
-  white-space: nowrap;
-}
-
-@media (max-width: 720px) {
-  .useful-contact-card-single-line-label {
-    width: 100%;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .useful-contact-card-single-line-label .useful-contact-identity {
-    gap: 7px;
-  }
-
-  .useful-contact-card-single-line-label .useful-contact-identity > span:first-child {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
-    border-radius: 11px;
-  }
-
-  .useful-contact-card-single-line-label .useful-contact-identity strong {
-    font-size: clamp(9px, 3vw, 12px);
-    letter-spacing: -0.02em;
-  }
-}
-
-/* Contacts Pompidou : chaque service conserve la même structure, avec un
-   pastel et un accent propres pour faciliter le repérage visuel. */
-.useful-contact-category-grid > button {
-  border-left: 6px solid var(--contact-category-accent, var(--border-card));
-  background: var(--contact-category-background, linear-gradient(135deg, var(--surface-high), #fff));
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--contact-category-accent, #9b8e7c) 14%, transparent);
-}
-
-.useful-contact-category-grid > button strong,
-.useful-contact-category-grid > button i {
-  color: var(--contact-category-text, var(--muted));
-}
-
-.useful-contact-category-grid > button small {
-  color: color-mix(in srgb, var(--contact-category-text, var(--muted)) 72%, #7a6f5f);
-}
-
-.useful-contact-category-grid > button:nth-child(1),
-.useful-form-download-list > article:nth-of-type(6n + 1) {
-  --contact-category-accent: var(--sage);
-  --contact-category-text: #2f5f59;
-  --contact-category-background: linear-gradient(135deg, #e8f3f1, #f8fcfb);
-}
-.useful-contact-category-grid > button:nth-child(2),
-.useful-form-download-list > article:nth-of-type(6n + 2) {
-  --contact-category-accent: #d48b3c;
-  --contact-category-text: #8a4b12;
-  --contact-category-background: linear-gradient(135deg, #fff0dd, #fffaf3);
-}
-.useful-contact-category-grid > button:nth-child(3),
-.useful-form-download-list > article:nth-of-type(6n + 3) {
-  --contact-category-accent: #c45f87;
-  --contact-category-text: #843657;
-  --contact-category-background: linear-gradient(135deg, #ffe8f1, #fff8fb);
-}
-.useful-contact-category-grid > button:nth-child(4),
-.useful-form-download-list > article:nth-of-type(6n + 4) {
-  --contact-category-accent: #4c9b79;
-  --contact-category-text: #21694d;
-  --contact-category-background: linear-gradient(135deg, #e4f7ee, #f8fdfa);
-}
-.useful-contact-category-grid > button:nth-child(5),
-.useful-form-download-list > article:nth-of-type(6n + 5) {
-  --contact-category-accent: #8a6a43;
-  --contact-category-text: #6b5128;
-  --contact-category-background: linear-gradient(135deg, #f7efe1, #fdfaf4);
-}
-.useful-contact-category-grid > button:nth-child(6),
-.useful-form-download-list > article:nth-of-type(6n + 6) {
-  --contact-category-accent: #d56f52;
-  --contact-category-text: #91412b;
-  --contact-category-background: linear-gradient(135deg, #ffebe4, #fff9f6);
-}
-
-/* Téléphones standards et Fold fermé : l’œuvre descend dans la zone libre,
-   gagne en présence et reste entièrement cadrée à gauche des commandes. */
-
-.useful-contacts-subheader{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:14px;margin:2px 0 20px;padding:14px 16px}.useful-contacts-subheader .section-back-hit-area{position:static;inset:auto;display:grid;place-items:center;width:48px;height:48px;border:1px solid var(--border-control);border-radius:18px;background:linear-gradient(145deg,var(--surface-high),var(--surface));box-shadow:0 5px 13px rgba(87, 78, 66,.1)}.useful-contacts-subheader .section-back-arrow{position:static;width:auto;height:auto;transform:none;background:transparent;color:var(--muted);font-size:22px}.useful-contact-card{grid-template-columns:minmax(190px,.55fr) minmax(0,1.45fr);align-items:start}.useful-contact-card>.useful-contact-identity{grid-column:1;grid-row:1;padding-right:0}.useful-contact-card>.useful-contact-actions{grid-column:2;grid-row:1/span 2}.useful-contact-card-tools{display:flex;grid-column:1;grid-row:2;align-items:center;align-self:end;gap:7px;margin-top:12px}.useful-contact-card-tools .contact-admin-edit,.useful-contact-card-tools .resource-favorite-button{position:static;display:grid;place-items:center;width:42px;height:42px;margin:0;border:1px solid var(--border-control);border-radius:12px;padding:0;background:linear-gradient(145deg,#fff,var(--surface-high));box-shadow:0 4px 11px rgba(87, 78, 66,.09);color: var(--muted);font-size:18px;line-height:1;cursor:pointer}.useful-contact-card-tools .resource-favorite-button[aria-pressed=true]{border-color:#e0bd69;background:#fff5d9;color:#c17a00}
-
-
-/* Fériés : les choix de compensation en boutons, sous la ligne du férié —
-   ouverts tant que rien n'est décidé, et d'un clic sur le montant ensuite. */
-.holiday-pay-pending { display: inline-block; border: 1px dashed #c9a796; border-radius: 0.8rem; padding: 6px 10px; color: #9a4a2e; font-size: 0.78rem; font-weight: 800; }
-.holiday-pay-amount.editing { outline: 2px solid rgba(23, 104, 79, 0.35); outline-offset: 2px; }
-.allowance-table tr.holiday-pay-options-row > td { padding-top: 0; text-align: left; }
-.holiday-pay-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
-.app-shell .holiday-pay-options button { display: grid; gap: 1px; min-height: 0; margin: 0; border: 1px solid #d8cdbf; border-radius: 12px; padding: 7px 8px; background: #fff; box-shadow: none; color: var(--text); font: inherit; text-align: center; cursor: pointer; }
-.holiday-pay-options button span { font-size: 0.8rem; font-weight: 800; }
-.holiday-pay-options button small { color: #6b5d50; font-size: 0.7rem; font-weight: 700; }
-.app-shell .holiday-pay-options button.selected { border-color: #17684f; background: #eaf5f0; color: #17684f; }
-.app-shell .holiday-pay-options button.exchange { border-color: #5b86a0; background: #e9f0f4; color: #2f4f60; }
-/* Choix des fériés : fond terracotta léger, intitulés en noir ; le choix
-   en cours se reconnaît à son cadre terracotta. « À décider » en terracotta. */
-.app-shell .holiday-pay-options button,
-.app-shell .holiday-pay-options button.exchange,
-.app-shell .holiday-pay-options button.selected { background: #fbf2ec; border-color: #ecd5c8; color: var(--text); }
-.app-shell .holiday-pay-options button span { color: var(--text); }
-.app-shell .holiday-pay-options button:hover { border-color: #d4ae9b; }
-.app-shell .holiday-pay-options button.selected { border: 2px solid #9a4a2e; }
-.holiday-pay-pending { border-color: #c9a796; color: #9a4a2e; }

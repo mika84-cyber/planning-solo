@@ -176,3 +176,48 @@ Elle a notamment :
 - retiré quatre `!important` devenus inutiles : le solde saisi sans date a
   désormais un sélecteur plus précis, et « Ajouter des heures manuellement »
   se charge après les boutons secondaires.
+
+## Ma paie et Documents et contacts
+
+Deux feuilles de plus, importées juste après `14-planning-commands.css`, un
+bloc par composant et les variantes selon la largeur en fin de fichier :
+
+- `14-pay-page.css` : Ma paie (`PayPage`, `PayDashboard`,
+  `PayAllowancesSection`, `PayEstimateDetails`, `PayslipCheckSection` et
+  leurs cartes) — écran et tableau de bord, profil et réglages, primes et
+  fériés, dimanches, détail du calcul, contrôle du bulletin. Le bulletin
+  simplifié (`payBulletin.css`), les totaux (`payTotals.css`) et les sources
+  de retenue (`deductionSources.css`) restent des feuilles chargées avec leur
+  composant.
+- `14-documents-contacts.css` : Documents et contacts (`UsefulResourcesHub`,
+  `UsefulFormsSection`, `UsefulContactsSection`, `VisitorQrLinks`, les
+  dialogues d'ajout, de modification et de partage) et les plannings PDF
+  (`PdfDownloadPage`). L'accident de travail reste dans
+  `16-work-accident.css`.
+
+Ces deux passes du 20 octobre 2026 ont été produites par un générateur
+(`banc-visuel-css/merge-css.mjs`, dans les notes partagées de session) à
+partir du relevé des déclarations gagnantes : une règle entièrement perdante
+dans tous les états relevés est retirée, sauf si sa famille n'est pas montrée
+par la démonstration (états de saisie, de lecture OCR, de calibration, données
+absentes), auquel cas elle est gardée entière. Ma paie : 486 règles dans 14
+feuilles → 414 dans une, 16 retirées, styles calculés identiques sur 324
+états (profil de démonstration, neuf largeurs de 360 à 1280 px, bulletin lu).
+Documents et contacts : 329 règles dans 11 feuilles → 245 dans une, 53
+retirées (dont l'ancien écran d'entrée des documents, jamais rendu : intro,
+retour, vignettes d'onglet), styles calculés identiques sur 354 états
+(treize largeurs, plannings PDF, accueil et Congés compris).
+
+Trois pièges de plus, rencontrés sur ces passes :
+
+- une règle d'une famille déjà capturée peut sembler morte faute d'un état
+  intermédiaire (les services de l'annuaire Pompidou, cliqués avant d'être
+  capturés) ou d'une pseudo-classe forcée (les liens n'étaient pas survolés) ;
+- deux règles de même spécificité dans deux sections différentes (`.allowance-table th`
+  puis `.sunday-done-table th`) doivent garder leur ordre d'origine : les
+  sections suivent la cascade, pas l'alphabet ;
+- regrouper les `@media` en fin de fichier fait passer leurs règles après des
+  règles sans condition qui, à l'origine, venaient plus tard et l'emportaient
+  (`gap: 15px` du cadre PDF, marge du sous-en-tête des contacts) : une
+  déclaration gardée pour une autre rubrique de sa liste, ou pour un état non
+  montré, peut ainsi ressusciter. Seul l'oracle des styles calculés le voit.
