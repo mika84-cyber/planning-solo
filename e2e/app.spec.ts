@@ -2222,7 +2222,8 @@ test("l’administrateur partage un document et l’alerte invitée ouvre la bon
   expect(Math.abs(box!.y + box!.height / 2 - viewport.height / 2)).toBeLessThan(3);
   const directDownload = page.waitForEvent('download');
   await alert.getByRole("button", { name: "Télécharger maintenant" }).click();
-  expect((await directDownload).suggestedFilename()).toBe('Consignes de la nouvelle exposition.pdf');
+  // WebKit sous Linux (la CI) remplace les espaces du nom par « _ ».
+  expect((await directDownload).suggestedFilename().replaceAll("_", " ")).toBe('Consignes de la nouvelle exposition.pdf');
   await expect(alert).toHaveCount(0);
   await page.goto("/?local-test=1&preview-feedback-role=user&demo-document-alert=1");
   const laterAlert = page.getByRole("alertdialog", { name: "Consignes de la nouvelle exposition" });
