@@ -37,7 +37,7 @@ jobs:
           retention-days: 14
 
   e2e:
-    name: Parcours ordinateur, mobile et Z Fold
+    name: Parcours ordinateur, mobile, iPhone et Z Fold
     needs: unit-build-security
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -48,7 +48,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
       - name: Conserver le rapport Playwright
         if: always()
