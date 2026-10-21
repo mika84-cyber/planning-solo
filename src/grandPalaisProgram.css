@@ -273,6 +273,8 @@
    la précédente par un peu d'air plutôt que par un trait de plus. */
 .expo-price dl + .expo-price-group, .expo-price dl + dl { margin-top: 7px; }
 .expo-price-group { display: block; margin: 0 0 2px; color: var(--venue-accent, var(--accent)); font-size: 0.72rem; font-weight: 800; }
+/* Ses horaires à côté de son nom, plus discrets. */
+.expo-price-hours { margin-left: 2px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 /* Une condition écrite sous les tarifs (location des patins incluse,
    billetterie qui ouvre à une date) : en retrait, sans peser. */
 .expo-price-note { display: block; margin-top: 5px; color: var(--muted); font-size: 0.72rem; font-weight: 500; letter-spacing: 0; line-height: 1.4; text-transform: none; }

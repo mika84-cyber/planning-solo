@@ -442,8 +442,8 @@ describe("programmation du Grand Palais", () => {
       (program.nef.schedule[year] ?? []).filter((entry) => /palais de(?:s)? glace/i.test(entry.title));
     expect(nef(GRAND_PALAIS_PROGRAM, 2026)).toHaveLength(1);
     // Dates décalées d'un jour, pluriel différent, sans tarif : l'entrée livrée
-    // est remplacée, pas doublée, et ses tarifs, son site de billetterie et sa
-    // condition restent.
+    // est remplacée, pas doublée, et ses tarifs, son site de billetterie, sa
+    // condition et les horaires de ses sessions restent.
     const shared = {
       id: "glaces",
       title: "Le Grand Palais des Glaces",
@@ -461,6 +461,7 @@ describe("programmation du Grand Palais", () => {
       startsOn: "2026-12-13",
       ticketingUrl: "https://legrandpalaisdeglace.fr/billetterie/",
       priceNote: "Location des patins à glace incluse (tailles 25 à 50)",
+      priceGroupHours: { "Session du matin": "10h – 13h", "Session de l’après-midi": "14h – 19h" },
     });
     expect(nef(merged, 2026)[0].prices).toHaveLength(9);
     // Les tarifs relus sur la fiche remplacent ceux livrés ; un site de
@@ -502,8 +503,12 @@ describe("programmation du Grand Palais", () => {
     const html = renderToStaticMarkup(
       <ExpoCard entry={glace} venueKey="nef" venueLabel="Nef" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />,
     );
-    expect(html.match(/<span class="expo-price-group">([^<]+)<\/span>/g)?.map((m) => m.replace(/<[^>]+>/g, "")))
-      .toEqual(["Session du matin", "Session de l’après-midi", "Nocturne"]);
+    // Les horaires d'une session se lisent à côté de son nom ; la nocturne
+    // dit déjà les siens dans ses tarifs.
+    expect(html.match(/<span class="expo-price-group">.*?<\/span>(?=<dl>)/g)?.map((m) => m.replace(/<[^>]+>/g, "")))
+      .toEqual(["Session du matin 10h – 13h", "Session de l’après-midi 14h – 19h", "Nocturne"]);
+    expect(html).toContain('<span class="expo-price-group">Session du matin <span class="expo-price-hours">10h – 13h</span></span>');
+    expect(html).toContain('<span class="expo-price-group">Nocturne</span>');
     // Une liste par grille, puis une pour ce qui vaut pour toutes.
     expect(html.match(/<dl>/g)).toHaveLength(4);
     expect(html).toContain("<dt>Adultes</dt><dd>32 €</dd>");

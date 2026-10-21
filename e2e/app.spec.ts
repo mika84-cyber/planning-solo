@@ -3247,8 +3247,10 @@ test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa 
   const glace = nef2026.locator("article").filter({ hasText: /Grand Palais de(?:s)? Glace/ });
   await expect(glace).toHaveCount(1);
   await expect(glace).toContainText("Du 13 décembre 2026 au 6 janvier 2027");
-  // Les trois grilles de la fiche officielle, dans l'ordre, puis la gratuité.
-  await expect(glace.locator(".expo-price-group")).toHaveText(["Session du matin", "Session de l’après-midi", "Nocturne"]);
+  // Les trois grilles de la fiche officielle, dans l'ordre, les horaires des
+  // sessions à côté de leur nom, puis la gratuité.
+  await expect(glace.locator(".expo-price-group")).toHaveText(["Session du matin 10h – 13h", "Session de l’après-midi 14h – 19h", "Nocturne"]);
+  await expect(glace.locator(".expo-price-hours")).toHaveText(["10h – 13h", "14h – 19h"]);
   await expect(glace.locator(".expo-price dl").nth(1)).toContainText(/Adultes\s*32 €/);
   await expect(glace.locator(".expo-price dl").nth(2)).toContainText(/De minuit à 2h\s*27 €/);
   await expect(glace.locator(".expo-price dl").nth(3)).toContainText(/Moins de 3 ans\s*Gratuit/);

@@ -167,6 +167,7 @@ export function mergeSharedGrandPalaisProgram(
     const ticketingUrl = safeTicketingUrl(shared.ticketingUrl) || known("ticketingUrl");
     const audioguide = known("audioguide");
     const priceNote = known("priceNote");
+    const priceGroupHours = known("priceGroupHours");
     const entry: GrandPalaisProgramEntry = {
       title: shared.title,
       ...(shared.details ? { details: shared.details } : {}),
@@ -178,6 +179,7 @@ export function mergeSharedGrandPalaisProgram(
       ...(ticketingUrl ? { ticketingUrl } : {}),
       ...(audioguide ? { audioguide } : {}),
       ...(priceNote ? { priceNote } : {}),
+      ...(priceGroupHours ? { priceGroupHours } : {}),
     };
     const firstYear = Number(shared.startDate.slice(0, 4));
     const lastYear = Number(shared.endDate.slice(0, 4));
@@ -684,10 +686,16 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
           <div className="expo-price">
             <p>Tarifs</p>
             {/* Chaque grille de la fiche sous son nom — session du matin,
-                de l'après-midi, nocturne — puis ce qui vaut pour toutes. */}
+                de l'après-midi, nocturne —, ses horaires à côté, puis ce qui
+                vaut pour toutes. */}
             {priceGroups.map((group) => (
               <Fragment key={group.name}>
-                {group.name ? <span className="expo-price-group">{group.name}</span> : null}
+                {group.name ? (
+                  <span className="expo-price-group">
+                    {group.name}
+                    {entry.priceGroupHours?.[group.name] ? <>{" "}<span className="expo-price-hours">{entry.priceGroupHours[group.name]}</span></> : null}
+                  </span>
+                ) : null}
                 <dl>
                   {group.prices.map((price) => (
                     <Fragment key={price.label}>

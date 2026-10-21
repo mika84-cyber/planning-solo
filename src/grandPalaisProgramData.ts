@@ -26,6 +26,11 @@ export type GrandPalaisProgramEntry = {
   /** Une condition écrite sous les tarifs de la fiche : location des patins
    *  incluse, billetterie qui n'ouvre qu'à une date. */
   priceNote?: string;
+  /** Les horaires d'une grille, écrits à côté de son nom : « Session du
+   *  matin » → « 10h – 13h ». La fiche les donne à part, sous « Horaires » :
+   *  la veille ne les relit pas, ils restent quand une mise à jour remplace
+   *  l'entrée. */
+  priceGroupHours?: Record<string, string>;
   uncertain?: boolean;
   officialUrl?: string;
   /** Le site tiers vers lequel le Grand Palais renvoie pour les tarifs ou la
@@ -81,6 +86,7 @@ const GRAND_PALAIS_DE_GLACE_2026: GrandPalaisProgramEntry = {
     { label: "Moins de 3 ans", amount: 0 },
   ],
   priceNote: "Location des patins à glace incluse (tailles 25 à 50)",
+  priceGroupHours: { "Session du matin": "10h – 13h", "Session de l’après-midi": "14h – 19h" },
 };
 
 const CEZANNE_AUDIOGUIDE = {
