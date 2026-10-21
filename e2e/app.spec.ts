@@ -6157,6 +6157,43 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
   expect(checkRequested).toBe(true);
 });
 
+test("un contrôle du site en maintenance se dit aussitôt, sans rester sur « Lecture en cours »", async ({ page }) => {
+  const requestedAt = "2026-10-21T17:46:50.000Z";
+  let checkRequested = false;
+  await page.route("**/api/gp-program", async (route) => {
+    const isPost = route.request().method() === "POST";
+    if (isPost) checkRequested = true;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        approved: [],
+        pending: [],
+        isAdmin: true,
+        lastCheckedAt: "2026-10-20T22:05:00.000Z",
+        ...(isPost ? { checkRequestedAt: requestedAt } : {}),
+        // La fonction d'arrière-plan a noté l'échec : le site répond 503.
+        ...(checkRequested && !isPost ? {
+          lastCheckFailure: {
+            requestedAt,
+            at: "2026-10-21T17:46:53.000Z",
+            message: "Le site du Grand Palais est indisponible pour le moment (erreur 503, souvent une maintenance) : réessayez plus tard.",
+          },
+        } : {}),
+      }),
+    });
+  });
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  const panel = page.locator(".grand-palais-check-panel");
+  await panel.getByRole("button", { name: "Contrôler maintenant" }).click();
+  await expect(panel).toContainText("Lecture en cours");
+  // La première relecture vient après 4 s : bien avant l'abandon à 4 min.
+  await expect(panel.getByRole("alert")).toContainText("erreur 503, souvent une maintenance", { timeout: 10_000 });
+  await expect(panel).not.toContainText("Lecture en cours");
+  await expect(panel.getByRole("button", { name: "Contrôler maintenant" })).toBeEnabled();
+});
+
 test("un férié travaillé propose prime seule, prime + récup ou un échange avec le bon groupe", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "pay");

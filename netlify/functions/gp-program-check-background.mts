@@ -1,5 +1,11 @@
 import { getStore } from "@netlify/blobs";
-import { CHECK_REQUEST_KEY, runGrandPalaisCheck } from "../lib/grandPalaisCheck.mts";
+import {
+  CHECK_FAILURE_KEY,
+  CHECK_REQUEST_KEY,
+  grandPalaisCheckFailureMessage,
+  runGrandPalaisCheck,
+} from "../lib/grandPalaisCheck.mts";
+import type { GrandPalaisCheckFailure } from "../../src/grandPalaisProgramTypes.ts";
 
 /** Délai pendant lequel une demande de contrôle reste valable. */
 const REQUEST_VALIDITY_MS = 5 * 60_000;
@@ -23,5 +29,13 @@ export default async function checkGrandPalaisProgramNow() {
     await runGrandPalaisCheck();
   } catch (error) {
     console.error("Contrôle manuel du Grand Palais impossible", error instanceof Error ? error.message : error);
+    // Sans trace de l'échec, la veille attendait en vain une nouvelle date
+    // de contrôle : « Lecture en cours… » restait affiché quatre minutes.
+    const failure: GrandPalaisCheckFailure = {
+      requestedAt: request!.at!,
+      at: new Date().toISOString(),
+      message: grandPalaisCheckFailureMessage(error),
+    };
+    await store.setJSON(CHECK_FAILURE_KEY, failure).catch(() => undefined);
   }
 }

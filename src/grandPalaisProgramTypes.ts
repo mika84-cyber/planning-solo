@@ -73,6 +73,15 @@ export type GrandPalaisCheckReport = {
   proposals: Array<{ kind: GrandPalaisProgramProposal["kind"]; title: string; venueLabel: string }>;
 };
 
+/** Un contrôle lancé à la main qui n'a pas pu lire le site : la veille le
+ *  dit aussitôt au lieu de laisser l'administrateur attendre. */
+export type GrandPalaisCheckFailure = {
+  /** La demande de contrôle à laquelle cet échec répond. */
+  requestedAt: string;
+  at: string;
+  message: string;
+};
+
 export type GrandPalaisProgramPayload = {
   approved: SharedGrandPalaisEvent[];
   pending: GrandPalaisProgramProposal[];
@@ -82,4 +91,8 @@ export type GrandPalaisProgramPayload = {
   sitePrices?: GrandPalaisSitePrices[];
   /** Pour l'administrateur : le compte rendu du dernier contrôle. */
   lastCheckReport?: GrandPalaisCheckReport;
+  /** Pour l'administrateur : le dernier contrôle manuel qui a échoué. */
+  lastCheckFailure?: GrandPalaisCheckFailure;
+  /** Réponse au lancement d'un contrôle : l'heure de la demande notée. */
+  checkRequestedAt?: string;
 };

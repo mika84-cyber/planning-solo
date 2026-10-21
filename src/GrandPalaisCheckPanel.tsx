@@ -3,8 +3,10 @@ import { euros } from "./appModel";
 import { getSharedGrandPalaisProgram, runGrandPalaisCheckNow } from "./grandPalaisProgramApi";
 import type { GrandPalaisCheckReport, GrandPalaisPrice, GrandPalaisProgramPayload } from "./grandPalaisProgramTypes";
 
-/** Délai entre deux relectures pendant un contrôle lancé à la main. */
+/** Délai entre deux relectures pendant un contrôle lancé à la main ; la
+ *  première vient plus tôt, un site injoignable se sachant en une seconde. */
 const POLL_MS = 10_000;
+const FIRST_POLL_MS = 4_000;
 /** Au-delà, le contrôle est considéré comme n'ayant pas abouti. */
 const GIVE_UP_MS = 4 * 60_000;
 
@@ -82,6 +84,20 @@ function CheckWhen({ label }: { label: string }) {
   return <>{label.slice(0, at + 3)}<span className="gp-watch-time">{label.slice(at + 3)}</span></>;
 }
 
+/** Où en est le contrôle lancé à `requestedAt` : terminé dès que la date du
+ *  dernier contrôle dépasse `before`, échoué si le serveur a noté un échec
+ *  pour cette demande, sinon toujours en cours (`null`). */
+export function checkProgress(
+  payload: Pick<GrandPalaisProgramPayload, "lastCheckedAt" | "lastCheckFailure">,
+  { before, requestedAt }: { before: string; requestedAt?: string },
+): { status: "done" } | { status: "failed"; message: string } | null {
+  if ((payload.lastCheckedAt || "") > before) return { status: "done" };
+  const failure = payload.lastCheckFailure;
+  if (requestedAt && failure?.requestedAt === requestedAt && typeof failure.message === "string")
+    return { status: "failed", message: failure.message };
+  return null;
+}
+
 /** Le résultat du dernier contrôle en quelques mots. */
 function checkResultLabel(report?: GrandPalaisCheckReport) {
   if (!report) return "";
@@ -120,8 +136,11 @@ export function GrandPalaisCheckPanel({
     setMessage("");
     const before = lastCheckedAt || "";
     const startedAt = Date.now();
+    let requestedAt: string | undefined;
     try {
-      onPayload(await runGrandPalaisCheckNow());
+      const started = await runGrandPalaisCheckNow();
+      requestedAt = started.checkRequestedAt;
+      onPayload(started);
     } catch (error) {
       setStatus("failed");
       setMessage(error instanceof Error ? error.message : "Le contrôle n’a pas pu être lancé.");
@@ -130,10 +149,11 @@ export function GrandPalaisCheckPanel({
     const poll = async () => {
       try {
         const payload = await getSharedGrandPalaisProgram();
-        if ((payload.lastCheckedAt || "") > before) {
+        const progress = checkProgress(payload, { before, requestedAt });
+        if (progress) {
           onPayload(payload);
-          setStatus("done");
-          setMessage("Contrôle terminé.");
+          setStatus(progress.status);
+          setMessage(progress.status === "done" ? "Contrôle terminé." : progress.message);
           return;
         }
       } catch {}
@@ -144,7 +164,7 @@ export function GrandPalaisCheckPanel({
       }
       timer.current = window.setTimeout(() => void poll(), POLL_MS);
     };
-    timer.current = window.setTimeout(() => void poll(), POLL_MS);
+    timer.current = window.setTimeout(() => void poll(), FIRST_POLL_MS);
   };
 
   const currentReport = report && report.checkedAt === lastCheckedAt ? report : undefined;

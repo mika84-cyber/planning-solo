@@ -165,7 +165,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Côté serveur : `netlify/lib/grandPalaisCheck.mts` (un passage de veille),
   `netlify/functions/gp-program-monitor.mts` (chaque nuit à minuit) et
   `netlify/functions/gp-program-check-background.mts` (à la demande, déposée
-  par `/api/gp-program`).
+  par `/api/gp-program`). Un contrôle manuel qui ne peut pas lire le site
+  (maintenance, erreur 503…) est noté dans `last-check-failure` ; le panneau
+  le lit (`checkProgress`) et dit la cause dès la relecture suivante.
 - `src/VisitorQrLinks.tsx` : QR codes de réclamation et d’objet perdu, dans
   Contacts → « Pour les visiteurs ».
 - `src/WorkTimeHistory.tsx` : historiques des heures sup et des mécénats.

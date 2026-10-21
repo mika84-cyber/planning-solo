@@ -26,6 +26,23 @@ export const CHECK_REQUEST_KEY = "check-request";
 /** Clé du compte rendu du dernier contrôle, montré dans « Veille du site ». */
 export const CHECK_REPORT_KEY = "last-check-report";
 
+/** Clé du dernier contrôle manuel qui n'a pas pu lire le site. */
+export const CHECK_FAILURE_KEY = "last-check-failure";
+
+/** Ce que l'administrateur lit quand le contrôle échoue : la cause en clair
+ *  (site en maintenance, trop lent…), pas le message technique. */
+export function grandPalaisCheckFailureMessage(error: unknown) {
+  const text = error instanceof Error ? error.message : "";
+  const status = Number(/\((\d{3})\)/.exec(text)?.[1]);
+  if (status >= 500)
+    return `Le site du Grand Palais est indisponible pour le moment (erreur ${status}, souvent une maintenance) : réessayez plus tard.`;
+  if (status)
+    return `Le site du Grand Palais a refusé la lecture (erreur ${status}) : réessayez plus tard.`;
+  if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError"))
+    return "Le site du Grand Palais met trop de temps à répondre : réessayez plus tard.";
+  return "Le contrôle n’a pas abouti : le site du Grand Palais n’a pas pu être lu. Réessayez plus tard.";
+}
+
 /** Un passage de la veille : lit le site, met les tarifs à jour, garde les
  *  autres changements en attente d'accord et prévient l'administrateur.
  *  Partagé par le passage de minuit et le contrôle lancé à la main. */

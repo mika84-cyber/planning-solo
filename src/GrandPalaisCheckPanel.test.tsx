@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { CheckReport, GrandPalaisCheckPanel } from "./GrandPalaisCheckPanel";
+import { CheckReport, checkProgress, GrandPalaisCheckPanel } from "./GrandPalaisCheckPanel";
 
 const report = {
   checkedAt: "2026-10-09T22:00:00.000Z",
@@ -50,5 +50,22 @@ describe("veille du site du Grand Palais", () => {
     // Rien à lire : pas de bloc sous la ligne.
     expect(clear).not.toContain("gp-watch-body");
     expect(renderToStaticMarkup(<GrandPalaisCheckPanel onPayload={vi.fn()} />)).toContain("Aucun contrôle pour l’instant");
+  });
+
+  it("un contrôle lancé à la main s'arrête dès que le serveur note son échec", () => {
+    const before = "2026-10-20T22:05:00.000Z";
+    const requestedAt = "2026-10-21T17:46:50.000Z";
+    const failure = { requestedAt, at: "2026-10-21T17:46:53.000Z", message: "Le site du Grand Palais est indisponible pour le moment." };
+    // Rien de neuf : la lecture continue.
+    expect(checkProgress({ lastCheckedAt: before }, { before, requestedAt })).toBeNull();
+    // Le site en maintenance : l'échec de cette demande se dit tout de suite.
+    expect(checkProgress({ lastCheckedAt: before, lastCheckFailure: failure }, { before, requestedAt }))
+      .toEqual({ status: "failed", message: failure.message });
+    // L'échec d'une demande précédente ne compte pas.
+    expect(checkProgress({ lastCheckedAt: before, lastCheckFailure: { ...failure, requestedAt: "2026-10-21T16:43:52.000Z" } }, { before, requestedAt }))
+      .toBeNull();
+    // Une nouvelle date de contrôle l'emporte.
+    expect(checkProgress({ lastCheckedAt: "2026-10-21T17:48:00.000Z", lastCheckFailure: failure }, { before, requestedAt }))
+      .toEqual({ status: "done" });
   });
 });
