@@ -85,7 +85,7 @@ const GRAND_PALAIS_DE_GLACE_2026: GrandPalaisProgramEntry = {
 
 const CEZANNE_AUDIOGUIDE = {
   url: "https://audioguide.grandpalais.fr/bypass",
-  code: "7268",
+  code: "1622",
   languages: "Français et anglais",
   qr: "/useful-forms/audioguide-cezanne-qr.png",
 };

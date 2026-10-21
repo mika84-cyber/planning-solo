@@ -294,7 +294,7 @@ describe("programmation du Grand Palais", () => {
     }));
     // Ce que la fiche ne dit pas reste : l'audioguide, les tarifs déjà connus.
     const cezanne = updated.galleries34.schedule[2026]!.find((entry) => entry.title === "Cezanne et nous");
-    expect(cezanne?.audioguide?.code).toBe("7268");
+    expect(cezanne?.audioguide?.code).toBe("1622");
     expect(cezanne?.prices?.[0]).toEqual({ label: "Plein", amount: 19 });
     expect(calculateInterExhibitionPeriods("2026-08-28", updated)).toContainEqual(expect.objectContaining({
       startsOn: "2026-08-31",

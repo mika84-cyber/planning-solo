@@ -3272,7 +3272,7 @@ test("l’audioguide Cézanne s’ouvre depuis la fiche de l’exposition, avec 
   await prepareDemo(page);
   await goToSection(page, "program");
   const guide = page.locator(".expo-card").filter({ hasText: "Cezanne et nous" }).first().locator(".expo-audioguide");
-  await expect(guide).toContainText("7268");
+  await expect(guide).toContainText("1622");
   // Le QR code reste visible en vignette ; un toucher l’agrandit.
   await expect(guide.locator(".expo-audioguide-qr img")).toBeVisible();
   // La durée de l’exposition se lit en texte (« Encore … »), sans barre de progression.
