@@ -1332,6 +1332,10 @@ test("un échange proposé par un collègue s’accepte d’un geste et s’insc
   await expect(card.locator("header")).toContainText("Camille DurandGroupe 1");
   await expect(card.locator("li.exchange-return p")).toContainText("Vous la remplacez");
   await expect(card.locator("li.exchange-given p")).toContainText("Camille Durand vous remplace");
+  // La carte occupe toute la largeur de l'encadré, même sur grand écran.
+  const listBox = await page.locator(".work-exchange-list").first().boundingBox();
+  const cardBox = await card.boundingBox();
+  expect(Math.abs(cardBox!.width - listBox!.width)).toBeLessThan(1);
 });
 
 test("une invitation acceptée propose le partage en retour", async ({ page }) => {
