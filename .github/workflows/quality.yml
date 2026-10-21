@@ -58,3 +58,26 @@ jobs:
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 14
+
+  pwa:
+    name: Application installable (service worker)
+    needs: unit-build-security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:pwa
+      - name: Conserver le rapport Playwright
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-pwa
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
