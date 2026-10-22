@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  isIncompletePayslipReading,
   isPayslipImage,
   mergePayslipPageReadings,
+  missingPayslipPage,
   readPayslipOcrText,
 } from "./payslipOcr";
 
@@ -166,6 +168,19 @@ describe("lecture locale d’une photo de bulletin", () => {
       { month: 5, year: 2026, sundaysBeyondTen: 0, holidayPay: 131.02 },
     ]);
     expect(merged.holidayPay).toBe(393.07);
+  });
+
+  it("sait quelle page d’un bulletin photographié manque encore", () => {
+    const page1 = { sundaysBeyondTen: 0, month: 8, year: 2026, baseSalary: 1855.88, gross: 2700.02 };
+    const page2 = { sundaysBeyondTen: 0, month: 8, year: 2026, netBeforeTax: 2167.3 };
+    expect(isIncompletePayslipReading(page1)).toBe(true);
+    expect(missingPayslipPage(page1)).toBe(2);
+    expect(isIncompletePayslipReading(page2)).toBe(true);
+    expect(missingPayslipPage(page2)).toBe(1);
+    expect(isIncompletePayslipReading(undefined)).toBe(true);
+    expect(missingPayslipPage(undefined)).toBe(1);
+    const whole = mergePayslipPageReadings([page1, page2]);
+    expect(isIncompletePayslipReading(whole)).toBe(false);
   });
 
   it("accepte les formats d’image réellement lisibles par le navigateur", () => {

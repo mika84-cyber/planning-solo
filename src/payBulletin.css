@@ -172,3 +172,20 @@
 .payslip-second-button { position: relative; display: inline-flex; align-items: center; justify-content: center; justify-self: start; min-height: 40px; margin-top: 4px; border: 1px solid #2c2621; border-radius: 12px; padding: 0 14px; background: #fff; color: #2c2621; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
 .payslip-second-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .payslip-second-button:hover { background: #f6efe8; }
+/* Photographier le bulletin : l'appareil photo du téléphone s'ouvre
+   directement ; les deux pages se prennent l'une après l'autre. Le bouton
+   reste second, derrière « Choisir PDF ou photo ». */
+.payslip-photo-drop { gap: 8px; border-color: var(--border-control); background: var(--surface); color: var(--text); }
+.payslip-photo-drop:hover { border-color: var(--muted); background: var(--surface); color: var(--text); filter: brightness(0.97); }
+.payslip-photo-drop svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+/* L'autre page attendue : l'étape suivante du même parcours. */
+.payslip-page-step { margin-top: 10px; }
+.payslip-page-step .payslip-import-actions .text-button { justify-self: start; padding: 4px 0; }
+/* Devant un écart du bulletin : la phrase, l'explication probable et le
+   geste qui va avec, dans l'encadré des indications. */
+.payslip-gap-choices { display: grid; gap: 8px; margin-top: 12px; }
+.payslip-gap-choices h4 { margin: 0; color: #8a3d22; font-size: 0.86rem; font-weight: 800; }
+.payslip-gap-choice { display: grid; gap: 8px; border: 1px solid #e3d6c8; border-left: 4px solid #a4502f; border-radius: 14px; padding: 10px 12px; background: #fbf7f2; }
+.payslip-gap-choice p { margin: 0; color: #5b4c3f; font-size: 0.82rem; line-height: 1.45; }
+.payslip-gap-choice p strong { display: block; margin-bottom: 2px; color: #2c2621; font-size: 0.86rem; }
+.payslip-gap-choice > div { display: flex; flex-wrap: wrap; gap: 6px; }

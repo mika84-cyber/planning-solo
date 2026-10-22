@@ -387,7 +387,63 @@ export function isPayslipImage(file: File) {
   return file.type.startsWith("image/") || /\.(?:jpe?g|png|webp)$/i.test(file.name);
 }
 
+/** Les photos seules : l'appareil photo du téléphone s'ouvre directement. */
+export const PAYSLIP_PHOTO_ACCEPT = "image/jpeg,image/png,image/webp";
+
+/** Un bulletin tient sur deux pages : les rubriques et le cumul brut sur la
+ *  première, le net à payer sur la seconde. Une lecture à qui l'une des deux
+ *  manque attend l'autre photo. */
+export function isIncompletePayslipReading(reading: PayslipReading | undefined) {
+  return !reading || reading.gross === undefined || reading.netBeforeTax === undefined || reading.baseSalary === undefined;
+}
+
+/** La page qui manque à une lecture incomplète : « 2 » quand le net n'a
+ *  pas été lu, « 1 » quand c'est le brut ou le traitement. */
+export function missingPayslipPage(reading: PayslipReading | undefined): 1 | 2 {
+  return reading && reading.gross !== undefined && reading.baseSalary !== undefined ? 2 : 1;
+}
+
 type OcrWorker = Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>>;
+
+/** Le moteur reste prêt une minute après la dernière photo : la seconde
+ *  page d'un bulletin, photographiée juste après la première, se lit sans
+ *  attendre qu'il redémarre. Passé ce délai, ou quand l'application passe
+ *  en arrière-plan, il libère sa mémoire. */
+const OCR_WORKER_IDLE_MS = 60_000;
+let idleWorker: { worker: OcrWorker; timer: ReturnType<typeof setTimeout> } | null = null;
+
+async function releaseIdleWorker() {
+  const kept = idleWorker;
+  idleWorker = null;
+  if (!kept) return;
+  clearTimeout(kept.timer);
+  await kept.worker.terminate().catch(() => undefined);
+}
+
+if (typeof document !== "undefined")
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") void releaseIdleWorker();
+  });
+
+async function acquirePayslipOcrWorker() {
+  const kept = idleWorker;
+  idleWorker = null;
+  if (kept) {
+    clearTimeout(kept.timer);
+    return kept.worker;
+  }
+  return createPayslipOcrWorker();
+}
+
+function keepPayslipOcrWorker(worker: OcrWorker) {
+  void releaseIdleWorker();
+  idleWorker = {
+    worker,
+    timer: setTimeout(() => {
+      if (idleWorker?.worker === worker) void releaseIdleWorker();
+    }, OCR_WORKER_IDLE_MS),
+  };
+}
 
 async function createPayslipOcrWorker(
   onOcrProgress?: (progress: number) => void,
@@ -506,13 +562,14 @@ export function mergePayslipPageReadings(
   return merged;
 }
 
-/** Lit tout un lot avec un seul worker OCR, puis libère immédiatement sa
- * mémoire. Les photos et leur texte ne sont ni téléversés ni conservés. */
+/** Lit tout un lot avec un seul worker OCR, gardé prêt une minute pour la
+ * page suivante. Les photos et leur texte ne sont ni téléversés ni
+ * conservés. */
 export async function readPayslipFiles(files: File[]): Promise<PayslipFileResult[]> {
   let worker: OcrWorker | undefined;
   const results: PayslipFileResult[] = [];
   try {
-    if (files.some(isPayslipImage)) worker = await createPayslipOcrWorker();
+    if (files.some(isPayslipImage)) worker = await acquirePayslipOcrWorker();
     for (const file of files) {
       try {
         results.push({ file, reading: await readPayslipWithWorker(file, worker) });
@@ -530,6 +587,10 @@ export async function readPayslipFiles(files: File[]): Promise<PayslipFileResult
       : "Le moteur de reconnaissance de la photo n’a pas pu démarrer.";
     return files.map((file) => ({ file, error: message }));
   } finally {
-    await worker?.terminate();
+    // Une photo qui a échoué (délai dépassé, moteur en défaut) ne laisse pas
+    // un moteur peut-être encore occupé à la page suivante.
+    if (worker && results.some((result) => result.error && isPayslipImage(result.file)))
+      await worker.terminate().catch(() => undefined);
+    else if (worker) keepPayslipOcrWorker(worker);
   }
 }

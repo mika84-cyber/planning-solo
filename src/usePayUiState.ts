@@ -42,6 +42,8 @@ export function usePayUiState() {
   const [payslipImportResult, setPayslipImportResult] = useState<PayslipImportResult | null>(null);
   const [payslipImportMode, setPayslipImportMode] = useState<"verify" | "calibrate" | null>(null);
   const [payslipNeedsPeriod, setPayslipNeedsPeriod] = useState(false);
+  /** Une première photo lue, à laquelle manque l'autre page du bulletin. */
+  const [payslipPhotoPending, setPayslipPhotoPending] = useState(false);
   const [payslipFallbackMonth, setPayslipFallbackMonth] = useState(0);
   const [payslipFallbackYear, setPayslipFallbackYear] = useState(2026);
   const [payslipRateSamples, setPayslipRateSamples] = useState<Array<{ name: string; reading: PayslipReading }>>([]);
@@ -71,7 +73,8 @@ export function usePayUiState() {
     payMonthSlideTimer, payslipCheck, setPayslipCheck, payslipError, setPayslipError,
     payslipImportBusy, setPayslipImportBusy, payslipImportError, setPayslipImportError,
     payslipImportResult, setPayslipImportResult, payslipImportMode, setPayslipImportMode,
-    payslipNeedsPeriod, setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
+    payslipNeedsPeriod, setPayslipNeedsPeriod, payslipPhotoPending, setPayslipPhotoPending,
+    payslipFallbackMonth, setPayslipFallbackMonth,
     payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
     payslipHelpOpen, setPayslipHelpOpen, payslipResultDetailsOpen, setPayslipResultDetailsOpen,
     paySettingsOpen, setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,

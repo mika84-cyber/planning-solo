@@ -12,6 +12,7 @@ import type { RecoveryUse } from "./overtime";
 import { holidayRecoveryMinutesForQuota } from "./overtime";
 import {
   calculateNetRatios,
+  defaultNetRatiosForPeriod,
   fixedExtraTotal,
   isAutomaticExtraLine,
   payCalibrationRegime,
@@ -20,6 +21,7 @@ import {
   type PayslipReading,
 } from "./payslip";
 import {
+  isIncompletePayslipReading,
   isPayslipImage,
   mergePayslipPageReadings,
   readPayslipFiles,
@@ -130,6 +132,7 @@ type PayActionsOptions = {
   setPayslipImportResult: SetState<PayslipImportResult | null>;
   setPayslipError: SetState<string>;
   setPayslipNeedsPeriod: SetState<boolean>;
+  setPayslipPhotoPending: SetState<boolean>;
   setPayslipImportBusy: SetState<boolean>;
   setPayslipResultDetailsOpen: SetState<boolean>;
   baseSalary: number;
@@ -366,6 +369,7 @@ export function usePayActions(options: PayActionsOptions) {
     setPayslipImportResult,
     setPayslipError,
     setPayslipNeedsPeriod,
+    setPayslipPhotoPending,
     setPayslipImportBusy,
     setPayslipResultDetailsOpen,
     baseSalary,
@@ -382,8 +386,11 @@ export function usePayActions(options: PayActionsOptions) {
     post,
   } = options;
   const payYear = String(payView.getFullYear());
-  async function savePayAmount(field: PayDraftKey) {
-    const value = parsedPayDraft(payDrafts[field]);
+  /** Enregistre un montant du profil à partir du mois affiché : celui saisi
+   *  dans le champ, ou, devant un écart du bulletin, celui que le bulletin
+   *  porte (`explicitValue`). */
+  async function savePayAmount(field: PayDraftKey, explicitValue?: number) {
+    const value = explicitValue ?? parsedPayDraft(payDrafts[field]);
     if (!Number.isFinite(value) || value < 0) {
       notify("Montant invalide.");
       return;
@@ -640,6 +647,9 @@ export function usePayActions(options: PayActionsOptions) {
     files: File[],
     mode: "verify" | "calibrate" = "verify",
     previousPages: PayslipReading[] = [],
+    // Les photos déjà lues suffisent : la personne dit qu'il n'y a pas
+    // d'autre page, et la vérification se termine avec ce qu'on a.
+    { completePhotos = false }: { completePhotos?: boolean } = {},
   ) {
     setPayslipImportMode(mode);
     setPayslipImportError("");
@@ -651,9 +661,10 @@ export function usePayActions(options: PayActionsOptions) {
     if (mode === "verify" && !previousPages.length) {
       setPayslipCheck(null);
       setPayslipResultDetailsOpen(false);
+      setPayslipPhotoPending(false);
     }
-    if (!files.length) return;
-    const includesPhoto = files.some(isPayslipImage);
+    if (!files.length && !(completePhotos && previousPages.length)) return;
+    const includesPhoto = files.some(isPayslipImage) || completePhotos;
     if (mode === "calibrate" && files.length < 2) {
       setPayslipImportError(
         "Choisissez au moins deux bulletins de mois différents pour affiner les taux.",
@@ -679,7 +690,7 @@ export function usePayActions(options: PayActionsOptions) {
     try {
       let items: PayslipCheck[] = [];
       const failures: string[] = [];
-      for (const result of await readPayslipFiles(files)) {
+      for (const result of files.length ? await readPayslipFiles(files) : []) {
         if (result.reading) {
           items.push({
             name: result.file.name,
@@ -690,18 +701,20 @@ export function usePayActions(options: PayActionsOptions) {
           failures.push(result.error || "Fichier illisible.");
         }
       }
-      if (!items.length) {
+      if (!items.length && !(completePhotos && previousPages.length)) {
         setPayslipImportError(
           failures[0] || "Aucun de ces fichiers n’a pu être ouvert.",
         );
         return;
       }
       const pages = mode === "verify" ? [...previousPages, ...items.map((item) => item.reading)] : [];
-      if (mode === "verify" && pages.length > 1) {
+      // Les pages lues ne font qu'un bulletin ; une seule photo, déclarée
+      // complète, reste ce bulletin.
+      if (mode === "verify" && (pages.length > 1 || (completePhotos && !items.length))) {
         try {
           items = [{
-            name: `Bulletin (${pages.length} pages)`,
-            reading: mergePayslipPageReadings(pages),
+            name: `Bulletin (${pages.length} page${s(pages.length)})`,
+            reading: pages.length > 1 ? mergePayslipPageReadings(pages) : pages[0],
           }];
         } catch (error) {
           setPayslipImportError(
@@ -833,7 +846,12 @@ export function usePayActions(options: PayActionsOptions) {
         nextRateSamples.map((item) => item.reading),
         targetNetRatioRegime,
       );
-      const calculatedRates = calculateNetRatios(compatibleRateReadings);
+      // Dès le premier bulletin, les taux de départ du statut se calent sur
+      // le net réel ; des bulletins aux primes différentes les séparent.
+      const calculatedRates = calculateNetRatios(
+        compatibleRateReadings,
+        defaultNetRatiosForPeriod(Number(targetPayYear), targetPayMonth, formProfile?.status === "contractuel"),
+      );
       const ignoredRateSampleCount =
         nextRateSamples.length - compatibleRateReadings.length;
       const automaticSundayReport = (() => {
@@ -874,6 +892,19 @@ export function usePayActions(options: PayActionsOptions) {
         );
         return;
       }
+      // Un bulletin photographié fait deux pages : tant qu'il en manque une,
+      // rien n'est demandé ni enregistré ; on attend l'autre photo (ou que
+      // la personne dise qu'il n'y en a pas).
+      if (
+        includesPhoto &&
+        mode === "verify" &&
+        !completePhotos &&
+        isIncompletePayslipReading(bestForCheck?.reading)
+      ) {
+        setPayslipPhotoPending(true);
+        return;
+      }
+      setPayslipPhotoPending(false);
       if (includesPhoto) {
         const detected = [
           ...applied.map((field) => {
@@ -1143,6 +1174,8 @@ export function usePayActions(options: PayActionsOptions) {
     importPayslips,
     /** Ajoute une ou plusieurs pages au bulletin qui vient d'être vérifié. */
     addPayslipPages: (files: File[]) => importPayslips(files, "verify", payslipPagesRef.current),
+    /** Termine la vérification d'un bulletin photographié avec les pages déjà lues. */
+    finishPayslipPhotos: () => importPayslips([], "verify", payslipPagesRef.current, { completePhotos: true }),
     applyPayslipFallbackPeriod,
     grossForMonth,
   };

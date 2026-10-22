@@ -77,6 +77,9 @@ export type PayContentInput = {
   onMarkMecenatsPaidEarly: (entries: MecenatEntry[], year: number, month: number) => void;
   overtimeEarlyCandidates: PayslipCheckSectionProps["overtimeEarlyCandidates"];
   onMarkOvertimePaidEarly: PayslipCheckSectionProps["onMarkOvertimePaidEarly"];
+  onDeferMecenats: PayslipCheckSectionProps["onDeferMecenats"];
+  onChangeStatus: PayslipCheckSectionProps["onChangeStatus"];
+  onOpenHolidayChoices: PayslipCheckSectionProps["onOpenHolidayChoices"];
   strikeForCurrentPayMonth: StrikePayEstimate;
   netCalculation: NetCalculation | null;
   monthNet: number | null;
@@ -125,6 +128,9 @@ export function buildPayContent({
   onMarkMecenatsPaidEarly,
   overtimeEarlyCandidates,
   onMarkOvertimePaidEarly,
+  onDeferMecenats,
+  onChangeStatus,
+  onOpenHolidayChoices,
   strikeForCurrentPayMonth,
   netCalculation,
   monthNet,
@@ -167,6 +173,7 @@ export function buildPayContent({
     payslipImportError,
     payslipImportResult,
     payslipNeedsPeriod,
+    payslipPhotoPending,
     payslipFallbackMonth,
     setPayslipFallbackMonth,
     payslipFallbackYear,
@@ -183,6 +190,7 @@ export function buildPayContent({
   const {
     importPayslips,
     addPayslipPages,
+    finishPayslipPhotos,
     applyPayslipFallbackPeriod,
     grossForMonth,
     reportMissingSundays,
@@ -624,6 +632,8 @@ export function buildPayContent({
     check: payslipCheck,
     checkError: payslipError,
     needsPeriod: payslipNeedsPeriod,
+    photoPending: payslipPhotoPending,
+    onFinishPhotos: () => void finishPayslipPhotos(),
     fallbackMonth: payslipFallbackMonth,
     setFallbackMonth: setPayslipFallbackMonth,
     fallbackYear: payslipFallbackYear,
@@ -644,6 +654,11 @@ export function buildPayContent({
     onMarkMecenatsPaidEarly,
     overtimeEarlyCandidates,
     onMarkOvertimePaidEarly,
+    onDeferMecenats,
+    onChangeStatus,
+    onOpenHolidayChoices,
+    onApplyPayslipValue: (field, value) => void savePayAmount(field, value),
+    holidayPending: allowances.holidayPending,
     onReportMissingSundays: (year, month, missingSundays) =>
       void reportMissingSundays(year, month, missingSundays),
     nextSundayPayout: nextSundayPayoutSlot,

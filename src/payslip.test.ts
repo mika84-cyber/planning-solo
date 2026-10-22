@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_NET_RATIO_FIXED,
+  DEFAULT_NET_RATIO_VARIABLE,
   calculateNetRatios,
   carenceDateFromLabel,
   defaultNetRatiosForPeriod,
@@ -301,6 +303,18 @@ describe("lecture du nombre de dimanches", () => {
     expect(reading.extraLines).toEqual([{ label: "Prime nouvelle", amount: 40, recall: false }]);
     // Sans ligne inconnue, rien n'est demandé.
     expect(readPayslip([...header, ...juin2026]).extraLines).toBeUndefined();
+    // Même en-tête pour une contractuelle : son statut et son indemnité de
+    // caisse ne deviennent pas des lignes inconnues.
+    const contractuelle = header.map((token) => token === "Fonctionnaire Titulaire" ? "Contractuel CDI" : token);
+    const contractuelReading = readPayslip([
+      ...contractuelle,
+      "1.00", "300.00", "Traitement de Base", "2141.41", "2141.41",
+      "3.00", "308.00", "Indemnité de Résidence", "2141.41", "64.24",
+      "1.00", "454.04", "Indemnité de caisse", "57.00", "57.00",
+      "CUMUL BRUT", "2262.65",
+    ]);
+    expect(contractuelReading.extraLines).toBeUndefined();
+    expect(contractuelReading).toMatchObject({ baseSalary: 2141.41, residenceAllowance: 64.24, otherFixed: 121.24, gross: 2262.65 });
   });
 
   it("relève les lignes inconnues, rappel et arrêt maladie à part", () => {
@@ -445,6 +459,34 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
         },
       ]),
     ).toEqual({ netRatioFixed: 79.41, netRatioVariable: 89.92 });
+  });
+
+  it("cale les deux taux sur le net dès le premier bulletin, en gardant leur rapport de départ", () => {
+    const first = { gross: 2450, baseSalary: 1850, netBeforeTax: 1950, sundaysBeyondTen: 0 };
+    const fallback = { netRatioFixed: DEFAULT_NET_RATIO_FIXED, netRatioVariable: DEFAULT_NET_RATIO_VARIABLE };
+    // Taux de départ : 1 850 × 79,41 % + 600 × 89,92 % = 2 008,61 € de net
+    // pour 1 950 € réels : les deux taux baissent de 2,9 %.
+    const rates = calculateNetRatios([first], fallback)!;
+    expect(rates).toEqual({ netRatioFixed: 77.09, netRatioVariable: 87.3 });
+    expect(rates.netRatioVariable / rates.netRatioFixed).toBeCloseTo(DEFAULT_NET_RATIO_VARIABLE / DEFAULT_NET_RATIO_FIXED, 3);
+    // Le net de ce bulletin est retrouvé au centime près.
+    expect(1850 * rates.netRatioFixed / 100 + 600 * rates.netRatioVariable / 100).toBeCloseTo(1950, 0);
+    expect(inspectNetRatioCalibration([first], fallback)).toMatchObject({ rates, usableCount: 1, reason: "approximate" });
+    // Deux bulletins trop semblables : toujours calés ensemble, au plus près
+    // des deux.
+    const twin = { ...first, gross: 2460, netBeforeTax: 1958.99 };
+    expect(inspectNetRatioCalibration([first, twin], fallback)).toMatchObject({ reason: "approximate" });
+    const together = calculateNetRatios([first, twin], fallback)!;
+    expect(together.netRatioFixed).toBeCloseTo(77.09, 1);
+    expect(together.netRatioVariable).toBeCloseTo(87.3, 1);
+    // Un bulletin aux primes différentes sépare enfin les deux taux.
+    const primed = { gross: 2950, baseSalary: 1850, netBeforeTax: 2388.06 - 64.8 + 82.4, sundaysBeyondTen: 4 };
+    expect(inspectNetRatioCalibration([first, primed], fallback).reason).toBe("ready");
+    // Sans taux de départ, un seul bulletin ne donne rien, comme avant.
+    expect(calculateNetRatios([first])).toBeUndefined();
+    // Un net absurde (le double du brut) ne donne pas de taux.
+    expect(calculateNetRatios([{ ...first, netBeforeTax: 4900 }], fallback)).toBeUndefined();
+    expect(inspectNetRatioCalibration([{ ...first, netBeforeTax: 4900 }], fallback).reason).toBe("need-more-readable");
   });
 
   it("demande au moins deux bulletins différenciés pour séparer les taux", () => {

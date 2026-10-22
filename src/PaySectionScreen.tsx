@@ -1,4 +1,5 @@
 import { PayScreen } from "./PayScreen";
+import { scrollWhenReady } from "./scrollWhenReady";
 import type { useCalendarDataState } from "./useCalendarDataState";
 import type { useMonthPayEstimate } from "./useMonthPayEstimate";
 import type { usePayActions } from "./usePayActions";
@@ -27,7 +28,7 @@ type Props = {
   /** Férié dont le choix prime ou récupération est en cours de modification. */
   holidayChoiceEditing: string | null;
   onEditHolidayChoice: (key: string | null) => void;
-  actions: Pick<ReturnType<typeof useWorkTimeActions>, "markMecenatsPaidEarly" | "markOvertimePaidEarly">
+  actions: Pick<ReturnType<typeof useWorkTimeActions>, "markMecenatsPaidEarly" | "deferMecenats" | "markOvertimePaidEarly">
     & Pick<ReturnType<typeof useWorkProfileActions>, "changeWorkQuota" | "changeWorkSchedule" | "changeStatus" | "saveCalculationProfile">
     & { openWorkExchange: ReturnType<typeof useWorkExchangeActions>["openNew"] };
 };
@@ -62,7 +63,7 @@ export function PaySectionScreen({
   } = payUi;
   const { changePayMonth, goPayToday, slideAllowancesMonth, startAllowancesSwipe, endAllowancesSwipe } = navigation;
   const {
-    markMecenatsPaidEarly, markOvertimePaidEarly,
+    markMecenatsPaidEarly, deferMecenats, markOvertimePaidEarly,
     changeWorkQuota, changeWorkSchedule, changeStatus, saveCalculationProfile, openWorkExchange,
   } = actions;
   const { chooseHolidayPay } = payActions;
@@ -78,8 +79,16 @@ export function PaySectionScreen({
             mecenatForCurrentPayMonth,
             mecenatEntries,
             onMarkMecenatsPaidEarly: (entries, year, month) => void markMecenatsPaidEarly(entries, year, month),
+            onDeferMecenats: (entries, year, month) => void deferMecenats(entries, year, month),
             overtimeEarlyCandidates,
             onMarkOvertimePaidEarly: (entries) => void markOvertimePaidEarly(entries),
+            // Devant un écart du bulletin : le statut, ou les choix de
+            // compensation des fériés, se corrigent sans quitter la paie.
+            onChangeStatus: changeStatus,
+            onOpenHolidayChoices: () => {
+              setPayScreen("allowances");
+              scrollWhenReady("holiday-choices");
+            },
             strikeForCurrentPayMonth,
             netCalculation,
             monthNet,

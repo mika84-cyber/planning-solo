@@ -4,12 +4,15 @@ import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s } from "./planningLogic";
 import { minutesLabel, type OvertimeEntry } from "./overtime";
 import { matchEarlyPayment } from "./earlyPayment";
-import { mecenatsPaidEarly, type MecenatEntry } from "./mecenat";
+import { mecenatForPayMonth, mecenatsPaidEarly, type MecenatEntry } from "./mecenat";
+import { payslipGapChoices, type PayslipGapAction } from "./payslipGapChoices";
 import { isMecenatLabel, isOvertimeLabel, usesAverageNetRatios } from "./payslip";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 import {
   isPayslipImage,
+  missingPayslipPage,
   PAYSLIP_FILE_ACCEPT,
+  PAYSLIP_PHOTO_ACCEPT,
 } from "./payslipOcr";
 import { describePayslipGap, explainPayslipGap, type PayslipReviewCheck } from "./payslipReview";
 
@@ -54,6 +57,7 @@ function PayslipIssueList({ issues, title }: { issues: PayslipReviewCheck[]; tit
 type Props = Pick<
   PayslipCheckSectionProps,
   "verificationRecords" | "onSaveVerification" | "onRemoveVerification" | "importBusy" | "importMode" | "importError" | "importResult" | "onImport" |
+  "photoPending" | "onFinishPhotos" | "onApplyPayslipValue" | "onDeferMecenats" | "onChangeStatus" | "onOpenHolidayChoices" | "holidayPending" |
   "check" | "checkError" | "needsPeriod" | "fallbackMonth" | "setFallbackMonth" |
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "unplannedCarence" | "resultDetailsOpen" |
@@ -195,6 +199,8 @@ export function PayslipVerificationCard({
   check: payslipCheck,
   checkError: payslipError,
   needsPeriod: payslipNeedsPeriod,
+  photoPending,
+  onFinishPhotos,
   fallbackMonth: payslipFallbackMonth,
   setFallbackMonth: setPayslipFallbackMonth,
   fallbackYear: payslipFallbackYear,
@@ -213,6 +219,11 @@ export function PayslipVerificationCard({
   onMarkMecenatsPaidEarly,
   overtimeEarlyCandidates,
   onMarkOvertimePaidEarly,
+  onApplyPayslipValue,
+  onDeferMecenats,
+  onChangeStatus,
+  onOpenHolidayChoices,
+  holidayPending = 0,
   onReportMissingSundays: reportMissingSundays,
   nextSundayPayout: nextSundayPayoutSlot,
   sundayCarryover,
@@ -238,6 +249,30 @@ export function PayslipVerificationCard({
       }}
     />
   );
+  /** Photographier une page : sur un téléphone, l'appareil photo s'ouvre
+   *  directement ; les deux pages du bulletin se prennent l'une après l'autre. */
+  const payslipPhotoButton = (mode: "add-page" | "verify", label: string) => (
+    <label className="payslip-drop payslip-photo-drop">
+      <input
+        type="file"
+        accept={PAYSLIP_PHOTO_ACCEPT}
+        capture="environment"
+        disabled={payslipImportBusy}
+        onChange={(event) => {
+          const files = Array.from(event.target.files || []);
+          event.target.value = "";
+          if (!files.length) return;
+          setActiveImportSource("photo");
+          void importPayslips(files, mode);
+        }}
+      />
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3.5l2-3h5l2 3H20v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+      <span>{payslipImportBusy && activeImportSource === "photo" ? "Reconnaissance de la photo…" : label}</span>
+    </label>
+  );
+  /** La page qui manque au bulletin photographié : la seconde (le net) ou
+   *  la première (les rubriques et le brut). */
+  const missingPage = photoPending ? missingPayslipPage(payslipCheck?.reading) : null;
   // La décision du mois vient du compte (ou de l'appareil, en démo) : elle
   // suit d'un appareil à l'autre.
   const savedDecision = payslipVerificationFor(verificationRecords, allowances.year, displayedMonth);
@@ -263,6 +298,32 @@ export function PayslipVerificationCard({
   const earlyOvertime = bulletinOvertimeCents && overtimeEarlyCandidates
     ? matchEarlyPayment(overtimeEarlyCandidates(allowances.year, displayedMonth), (item) => item.cents, overtimeSurplusCents)
     : null;
+  // Devant chaque écart, le geste qui l'explique sans doute : seuls ceux que
+  // l'écran sait exécuter sont proposés.
+  const gapChoices = (payslipReview?.issues || [])
+    .map((issue) => ({
+      issue,
+      choices: payslipGapChoices(issue, {
+        year: allowances.year,
+        month: displayedMonth,
+        mecenatLines: mecenatForPayMonth(mecenatEntries, allowances.year, displayedMonth).lines,
+        bulletinMecenatCents,
+        nextSundayPayout: nextSundayPayoutSlot(allowances.year, displayedMonth),
+        holidayPending,
+      }).filter(({ action }) =>
+        action.kind === "save-amount" || action.kind === "report-sundays" ||
+        (action.kind === "defer-mecenats" && Boolean(onDeferMecenats)) ||
+        (action.kind === "set-status" && Boolean(onChangeStatus)) ||
+        (action.kind === "open-holiday-choices" && Boolean(onOpenHolidayChoices))),
+    }))
+    .filter(({ choices }) => choices.length);
+  const runGapAction = (action: PayslipGapAction) => {
+    if (action.kind === "save-amount") onApplyPayslipValue(action.field, action.value);
+    else if (action.kind === "defer-mecenats") onDeferMecenats?.(action.entries, action.year, action.month);
+    else if (action.kind === "report-sundays") reportMissingSundays(allowances.year, displayedMonth, action.count);
+    else if (action.kind === "set-status") onChangeStatus?.(action.status);
+    else onOpenHolidayChoices?.();
+  };
   const comparableGross =
     checkMatchesDisplayedPeriod && payslipCheck &&
     payslipCheck.reading.gross !== undefined
@@ -380,7 +441,7 @@ export function PayslipVerificationCard({
               <span className="payslip-guide-number">1</span>
               <div>
                 <strong>Choisir le bulletin à vérifier</strong>
-                <small>La netteté, la lumière, le cadrage et l’inclinaison de la photo sont contrôlés avant la lecture.</small>
+                <small>Un bulletin fait deux pages : photographiez-les l’une après l’autre, ou choisissez les deux photos ensemble. Netteté, lumière, cadrage et inclinaison sont contrôlés avant la lecture.</small>
               </div>
               <div className="payslip-import-actions">
                 <label className="payslip-drop payslip-file-drop">
@@ -405,8 +466,30 @@ export function PayslipVerificationCard({
                       : "Choisir PDF ou photo"}
                   </span>
                 </label>
+                {payslipPhotoButton("verify", "Photographier la page 1")}
               </div>
             </div>
+            {/* Une page lue, l'autre attendue : la suite du parcours, sans
+                rien demander ni enregistrer avant que le bulletin soit entier. */}
+            {missingPage && payslipCheck ? (
+              <div className="payslip-guide-step active payslip-page-step" role="status" aria-label={`Page ${missingPage} du bulletin`}>
+                <span className="payslip-guide-number">2</span>
+                <div>
+                  <strong>{missingPage === 2 ? "Page 1 lue · photographiez la page 2" : "Page 2 lue · photographiez la page 1"}</strong>
+                  <small>{missingPage === 2 ? "Le bas du bulletin, avec le net à payer." : "Le haut du bulletin, avec les rubriques et le cumul brut."}</small>
+                </div>
+                <div className="payslip-import-actions">
+                  {payslipPhotoButton("add-page", `Photographier la page ${missingPage}`)}
+                  <label className="payslip-second-button">
+                    {payslipFileInput("add-page")}
+                    Choisir dans la galerie
+                  </label>
+                  <button type="button" className="text-button" disabled={payslipImportBusy} onClick={onFinishPhotos}>
+                    Il n’y a pas d’autre page
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {checkMatchesDisplayedPeriod && payslipCheck ? (
               <>
                 <div className="payslip-detected-period" role="status">
@@ -502,7 +585,7 @@ export function PayslipVerificationCard({
             {payslipError && (!payslipCheck || payslipNeedsPeriod || checkMatchesDisplayedPeriod) ? (
               <p className="allowance-note warn">{payslipError}</p>
             ) : null}
-            {checkMatchesDisplayedPeriod && payslipCheck ? (
+            {checkMatchesDisplayedPeriod && payslipCheck && !photoPending ? (
             <>
               {payslipReview ? (
                 <div className={`payslip-result-summary ${payslipReview.tone}`}>
@@ -538,6 +621,25 @@ export function PayslipVerificationCard({
                   )}
                 </div>
               ) : null}
+              {/* Chaque écart avec le geste qui l'explique sans doute : un
+                  bouton, et l'estimation suit. */}
+              {gapChoices.length ? (
+                <section className="payslip-gap-choices" aria-label="Que s’est-il passé ?">
+                  <h4>Que s’est-il passé ?</h4>
+                  {gapChoices.map(({ issue, choices }) => (
+                    <article className="payslip-gap-choice" key={`choice-${issue.key}`}>
+                      <p><strong>{describePayslipGap(issue)}</strong>{choices[0].detail}</p>
+                      <div>
+                        {choices.map((choice) => (
+                          <button type="button" className="secondary-button" key={choice.id} onClick={() => runGapAction(choice.action)}>
+                            {choice.label}
+                          </button>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                </section>
+              ) : null}
               {/* Une autre photo ou page du même bulletin, prise après coup :
                   elle s'ajoute à la lecture déjà faite. */}
               <label className="payslip-add-page">
@@ -546,17 +648,18 @@ export function PayslipVerificationCard({
                 <strong>{payslipImportBusy ? "Lecture de la page…" : "Ajouter une page"}</strong>
                 <small>Une autre photo ou page du même bulletin</small>
               </label>
-              {/* Un seul bulletin ne suffit pas à calculer les taux de la
-                  personne : tant que l'estimation repose sur des valeurs
-                  moyennes, on l'invite simplement à en vérifier un second. */}
-              {rateCalibration.reason !== "ready" && usesAverageNetRatios(netRatioFixed, netRatioVariable) ? (
+              {/* Dès le premier bulletin, les deux taux sont calés sur le net
+                  réel ; tant qu'un bulletin aux primes différentes ne les a pas
+                  séparés, on invite simplement à en vérifier un autre. */}
+              {rateCalibration.reason !== "ready" ? (
                 <section className="payslip-second-hint" aria-label="Pour un net encore plus juste">
                   <strong>Pour un net encore plus juste</strong>
                   <p>
-                    Avec un seul bulletin, l’application estime vos cotisations avec des valeurs
-                    moyennes. Vérifiez un deuxième bulletin, maintenant ou lors d’une prochaine
-                    visite, d’un autre mois où vos primes sont différentes (plus ou moins de
-                    dimanches, par exemple) : elle calculera vos propres taux.
+                    {rateCalibration.reason === "approximate"
+                      ? `Vos taux de cotisations sont calés sur ${rateCalibration.usableCount > 1 ? "vos bulletins, dont les primes se ressemblent" : "ce seul bulletin"}. Vérifiez un bulletin, maintenant ou lors d’une prochaine visite, d’un autre mois où vos primes sont différentes (plus ou moins de dimanches, un férié) : l’application distinguera alors le taux du traitement de celui des primes.`
+                      : usesAverageNetRatios(netRatioFixed, netRatioVariable)
+                        ? "Le brut, le traitement ou le net avant impôt de ce bulletin n’a pas été lu : l’application estime vos cotisations avec des valeurs moyennes. Ajoutez la page qui manque, ou vérifiez un bulletin lisible, maintenant ou lors d’une prochaine visite : elle calera ses taux sur votre net."
+                        : "Les bulletins lus ne permettent pas d’affiner vos taux de cotisations : vérifiez un bulletin lisible, maintenant ou lors d’une prochaine visite, d’un autre mois où vos primes sont différentes."}
                   </p>
                   <label className="payslip-second-button">
                     {payslipFileInput("verify")}

@@ -146,12 +146,17 @@ export function oneOffExtraTotal(lines: PayslipExtraLine[] | undefined) {
   return Math.round(total * 100) / 100;
 }
 
+export type NetRatios = { netRatioFixed: number; netRatioVariable: number };
+
 export type NetRatioCalibration = {
-  rates?: { netRatioFixed: number; netRatioVariable: number };
+  rates?: NetRatios;
   totalCount: number;
   usableCount: number;
   missing: Array<"gross" | "baseSalary" | "netBeforeTax">;
-  reason: "ready" | "need-more-readable" | "not-enough-variation" | "inconsistent";
+  /** « ready » : les deux taux, séparés grâce à des bulletins aux primes
+   *  différentes ; « approximate » : calés sur un seul bulletin, ou sur des
+   *  bulletins trop semblables, en gardant le rapport des taux de départ. */
+  reason: "ready" | "approximate" | "need-more-readable" | "not-enough-variation" | "inconsistent";
 };
 
 /** Les cotisations ont changé avec l'entrée en vigueur du contrat collectif
@@ -580,8 +585,13 @@ function readOtherFixed(tokens: string[]): number | undefined {
  * varient. Le calcul résout y = fixe × tauxFixe + variable × tauxPrime par
  * moindres carrés. Deux bulletins identiques ne suffisent pas : il faut une
  * variation réelle des primes pour séparer les deux effets. */
-export function calculateNetRatios(readings: PayslipReading[]) {
-  const rows = readings.flatMap((reading) => {
+type NetRatioRow = { fixed: number; variable: number; netFromGross: number };
+
+/** Ce qu'un bulletin apporte au calcul : la part fixe du brut (traitement,
+ *  IFSE, éléments fixes, moins la carence), la part variable (le reste) et
+ *  le net ramené au brut (sans le Navigo, retenue des titres repas rajoutée). */
+function netRatioRows(readings: PayslipReading[]): NetRatioRow[] {
+  return readings.flatMap((reading) => {
     if (
       reading.gross === undefined ||
       reading.baseSalary === undefined ||
@@ -602,6 +612,34 @@ export function calculateNetRatios(readings: PayslipReading[]) {
       ? [{ fixed, variable, netFromGross }]
       : [];
   });
+}
+
+const plausibleRate = (rate: number) => Number.isFinite(rate) && rate >= 40 && rate <= 105;
+const roundRate = (rate: number) => Math.round(rate * 100) / 100;
+
+/** Un seul bulletin, ou des bulletins trop semblables, ne séparent pas les
+ *  deux taux : on garde alors le rapport des taux de départ (ceux du statut
+ *  et du régime), et on les ajuste ensemble pour retrouver le net réel —
+ *  exactement sur un bulletin, au plus près sur plusieurs. Le net de la
+ *  personne est ainsi suivi dès son premier bulletin, et chaque bulletin
+ *  suivant resserre l'ajustement. */
+function proportionalNetRatios(rows: NetRatioRow[], fallback: NetRatios) {
+  if (!rows.length) return undefined;
+  const predicted = rows.map((row) =>
+    (row.fixed * fallback.netRatioFixed + row.variable * fallback.netRatioVariable) / 100);
+  const numerator = rows.reduce((sum, row, index) => sum + row.netFromGross * predicted[index], 0);
+  const denominator = predicted.reduce((sum, value) => sum + value * value, 0);
+  if (denominator < 1) return undefined;
+  const scale = numerator / denominator;
+  const fixed = fallback.netRatioFixed * scale;
+  const variable = fallback.netRatioVariable * scale;
+  if (!plausibleRate(fixed) || !plausibleRate(variable)) return undefined;
+  return { netRatioFixed: roundRate(fixed), netRatioVariable: roundRate(variable) };
+}
+
+/** Les deux taux séparés par moindres carrés, quand les bulletins le
+ *  permettent (voir calculateNetRatios). */
+function separateNetRatios(rows: NetRatioRow[]) {
   if (rows.length < 2) return undefined;
   // Deux mois presque identiques rendent les deux taux mathématiquement
   // séparables en théorie, mais le moindre centime d'arrondi peut alors les
@@ -622,24 +660,24 @@ export function calculateNetRatios(readings: PayslipReading[]) {
   if (Math.abs(determinant) < 1) return undefined;
   const fixed = ((fy * vv - vy * fv) / determinant) * 100;
   const variable = ((vy * ff - fy * fv) / determinant) * 100;
-  if (
-    !Number.isFinite(fixed) ||
-    !Number.isFinite(variable) ||
-    fixed < 40 ||
-    fixed > 105 ||
-    variable < 40 ||
-    variable > 105
-  )
-    return undefined;
-  return {
-    netRatioFixed: Math.round(fixed * 100) / 100,
-    netRatioVariable: Math.round(variable * 100) / 100,
-  };
+  if (!plausibleRate(fixed) || !plausibleRate(variable)) return undefined;
+  return { netRatioFixed: roundRate(fixed), netRatioVariable: roundRate(variable) };
 }
 
-/** Donne à l'interface la raison exacte d'un calcul encore impossible. */
+/** Les deux taux net avant impôt de la personne, d'après ses bulletins :
+ *  séparés dès que deux mois aux primes différentes le permettent, sinon
+ *  calés ensemble sur son net à partir des taux de départ (`fallback`,
+ *  ceux de son statut), dès le premier bulletin. */
+export function calculateNetRatios(readings: PayslipReading[], fallback?: NetRatios) {
+  const rows = netRatioRows(readings);
+  return separateNetRatios(rows) ?? (fallback ? proportionalNetRatios(rows, fallback) : undefined);
+}
+
+/** Donne à l'interface les taux obtenus et la raison exacte d'un calcul
+ *  encore approché, ou impossible. */
 export function inspectNetRatioCalibration(
   readings: PayslipReading[],
+  fallback?: NetRatios,
 ): NetRatioCalibration {
   const usable = readings.filter(
     (reading) =>
@@ -650,34 +688,16 @@ export function inspectNetRatioCalibration(
   const missing = (["gross", "baseSalary", "netBeforeTax"] as const).filter(
     (field) => !readings.some((reading) => reading[field] !== undefined),
   );
-  const rates = calculateNetRatios(readings);
-  if (rates)
-    return {
-      rates,
-      totalCount: readings.length,
-      usableCount: usable.length,
-      missing,
-      reason: "ready",
-    };
-  if (usable.length < 2)
-    return {
-      totalCount: readings.length,
-      usableCount: usable.length,
-      missing,
-      reason: "need-more-readable",
-    };
-  const exposureRatios = usable.map((reading) => {
-    const fixed =
-      reading.baseSalary! +
-      (reading.ifse || 0) +
-      (reading.otherFixed || 0) -
-      (reading.carenceDay || 0);
-    return (reading.gross! - fixed) / fixed;
-  });
+  const rows = netRatioRows(readings);
+  const summary = { totalCount: readings.length, usableCount: usable.length, missing };
+  const separate = separateNetRatios(rows);
+  if (separate) return { ...summary, rates: separate, reason: "ready" };
+  const proportional = fallback ? proportionalNetRatios(rows, fallback) : undefined;
+  if (proportional) return { ...summary, rates: proportional, reason: "approximate" };
+  if (usable.length < 2) return { ...summary, reason: "need-more-readable" };
+  const exposureRatios = rows.map((row) => row.variable / row.fixed);
   return {
-    totalCount: readings.length,
-    usableCount: usable.length,
-    missing,
+    ...summary,
     reason:
       Math.max(...exposureRatios) - Math.min(...exposureRatios) < 0.01
         ? "not-enough-variation"

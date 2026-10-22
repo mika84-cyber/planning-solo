@@ -443,21 +443,34 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     }
   }
 
-  /** Un bulletin vérifié montre que ces mécénats, prévus sur la paie
-   *  suivante, ont déjà été payés : ils passent sur le mois du bulletin et
-   *  quittent l'estimation du mois d'après. */
-  async function markMecenatsPaidEarly(entries: MecenatEntry[], payYear: number, payMonth: number) {
+  /** Ces mécénats passent sur une autre paie : celle du bulletin qui les a
+   *  déjà payés, ou la suivante quand le bulletin attendu ne les porte pas. */
+  async function moveMecenatsToPayMonth(entries: MecenatEntry[], payYear: number, payMonth: number, done: (count: number) => string) {
     if (!entries.length) return;
     try {
       const moved = entries.map((entry) => ({ ...entry, payYear, payMonth, updatedAt: new Date().toISOString() }));
       if (!demoMode) for (const entry of moved) await post<MecenatResponse>(mecenatSavePayload(entry));
       const byId = new Map(moved.map((entry) => [entry.id, entry]));
       setMecenatEntries((current) => current.map((item) => byId.get(item.id) ?? item));
-      const plural = moved.length > 1;
-      confirmMessage(`${plural ? `${moved.length} mécénats confirmés payés` : "Mécénat confirmé payé"} sur ce bulletin : retiré${plural ? "s" : ""} de la paie du mois suivant.`);
+      confirmMessage(done(moved.length));
     } catch (error) {
       notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être mis à jour."));
     }
+  }
+
+  /** Un bulletin vérifié montre que ces mécénats, prévus sur la paie
+   *  suivante, ont déjà été payés : ils passent sur le mois du bulletin et
+   *  quittent l'estimation du mois d'après. */
+  async function markMecenatsPaidEarly(entries: MecenatEntry[], payYear: number, payMonth: number) {
+    await moveMecenatsToPayMonth(entries, payYear, payMonth, (count) =>
+      `${count > 1 ? `${count} mécénats confirmés payés` : "Mécénat confirmé payé"} sur ce bulletin : retiré${count > 1 ? "s" : ""} de la paie du mois suivant.`);
+  }
+
+  /** Le bulletin attendu ne paie pas ces mécénats : ils sont reportés sur
+   *  la paie suivante, et quittent l'estimation de ce mois. */
+  async function deferMecenats(entries: MecenatEntry[], payYear: number, payMonth: number) {
+    await moveMecenatsToPayMonth(entries, payYear, payMonth, (count) =>
+      `${count > 1 ? `${count} mécénats reportés` : "Mécénat reporté"} sur la paie suivante : retiré${count > 1 ? "s" : ""} de ce bulletin.`);
   }
 
   /** Un bulletin vérifié montre que ces heures « à payer » sont déjà réglées :
@@ -479,6 +492,6 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     saveOvertimeEntry, saveSolidarityHours, deleteOvertimeEntry,
     saveRecoveryUse, beginRecoveryRangeSelection, cancelRecoveryRangeSelection,
     saveRecoveryRangeDates, deleteRecoveryUse, saveMecenatEntry, deleteMecenatEntry,
-    markMecenatsPaidEarly, markOvertimePaidEarly,
+    markMecenatsPaidEarly, deferMecenats, markOvertimePaidEarly,
   };
 }

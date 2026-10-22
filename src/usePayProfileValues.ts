@@ -102,6 +102,7 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
       combinePayslipRateReadings(formProfile?.payslipRateSamples, payslipRateSamples).map((item) => item.reading),
       viewedPayRegime,
     ),
+    defaultNetRatios,
   );
   const navigo = activePayProfile.navigo ?? 0;
   const mealVoucherDeduction =

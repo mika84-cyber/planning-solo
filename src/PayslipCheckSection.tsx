@@ -53,6 +53,10 @@ export type PayslipCheckSectionProps = {
   check: PayslipCheck | null;
   checkError: string;
   needsPeriod: boolean;
+  /** Une première photo lue : l'autre page du bulletin est attendue. */
+  photoPending: boolean;
+  /** « Il n'y a pas d'autre page » : la vérification se termine avec ce qui est lu. */
+  onFinishPhotos: () => void;
   fallbackMonth: number;
   setFallbackMonth: (month: number) => void;
   fallbackYear: number;
@@ -76,6 +80,13 @@ export type PayslipCheckSectionProps = {
    *  leur montant : un bulletin qui en paie plus a pu les régler en avance. */
   overtimeEarlyCandidates?: (year: number, month: number) => Array<{ entry: OvertimeEntry; cents: number }>;
   onMarkOvertimePaidEarly?: (entries: OvertimeEntry[]) => void;
+  /** Devant un écart du bulletin, les gestes proposés (voir payslipGapChoices). */
+  onApplyPayslipValue: (field: PayDraftKey, value: number) => void;
+  onDeferMecenats?: (entries: MecenatEntry[], year: number, month: number) => void;
+  onChangeStatus?: (status: "fonctionnaire" | "contractuel") => void;
+  onOpenHolidayChoices?: () => void;
+  /** Fériés travaillés dont la compensation reste à décider. */
+  holidayPending?: number;
   onReportMissingSundays: (year: number, month: number, missing: number) => void;
   nextSundayPayout: (year: number, month: number) => { year: number; month: number } | null;
   sundayCarryover: number;
@@ -124,6 +135,8 @@ export function PayslipCheckSection({
   check: payslipCheck,
   checkError: payslipError,
   needsPeriod: payslipNeedsPeriod,
+  photoPending,
+  onFinishPhotos,
   fallbackMonth: payslipFallbackMonth,
   setFallbackMonth: setPayslipFallbackMonth,
   fallbackYear: payslipFallbackYear,
@@ -144,6 +157,11 @@ export function PayslipCheckSection({
   onMarkMecenatsPaidEarly,
   overtimeEarlyCandidates,
   onMarkOvertimePaidEarly,
+  onApplyPayslipValue,
+  onDeferMecenats,
+  onChangeStatus,
+  onOpenHolidayChoices,
+  holidayPending,
   onReportMissingSundays: reportMissingSundays,
   nextSundayPayout: nextSundayPayoutSlot,
   sundayCarryover,
@@ -193,6 +211,8 @@ export function PayslipCheckSection({
       check={payslipCheck}
       checkError={payslipError}
       needsPeriod={payslipNeedsPeriod}
+      photoPending={photoPending}
+      onFinishPhotos={onFinishPhotos}
       fallbackMonth={payslipFallbackMonth}
       setFallbackMonth={setPayslipFallbackMonth}
       fallbackYear={payslipFallbackYear}
@@ -211,6 +231,11 @@ export function PayslipCheckSection({
       onMarkMecenatsPaidEarly={onMarkMecenatsPaidEarly}
       overtimeEarlyCandidates={overtimeEarlyCandidates}
       onMarkOvertimePaidEarly={onMarkOvertimePaidEarly}
+      onApplyPayslipValue={onApplyPayslipValue}
+      onDeferMecenats={onDeferMecenats}
+      onChangeStatus={onChangeStatus}
+      onOpenHolidayChoices={onOpenHolidayChoices}
+      holidayPending={holidayPending}
       onReportMissingSundays={reportMissingSundays}
       nextSundayPayout={nextSundayPayoutSlot}
       sundayCarryover={sundayCarryover}
@@ -263,14 +288,17 @@ export function PayslipCheckSection({
               </p>
             ) : null}
             {/* Les montants d'un bulletin vérifié sont gardés dans le compte :
-                le second peut venir lors d'une autre visite. */}
+                les suivants peuvent venir lors d'autres visites. */}
             <p className="allowance-note">
-              Pour affiner aussi le taux net du traitement et celui des
-              primes, vérifiez un second bulletin, d’un autre mois où vos
-              primes diffèrent (plus ou moins de dimanches, par exemple).
-              Vérifiez-les un par un, le même jour ou plus tard : les montants
-              du premier restent gardés dans votre compte. Plusieurs fichiers
-              choisis ensemble sont lus comme les pages d’un seul bulletin.
+              Dès le premier bulletin, l’application cale ses deux taux net
+              avant impôt (traitement et primes) sur votre net réel. Chaque
+              bulletin vérifié ensuite les affine ; un bulletin d’un autre mois
+              où vos primes diffèrent (plus ou moins de dimanches, par exemple)
+              lui permet de distinguer le taux du traitement de celui des
+              primes. Vérifiez-les un par un, le même jour ou plus tard : les
+              montants de chaque bulletin restent gardés dans votre compte.
+              Plusieurs fichiers choisis ensemble sont lus comme les pages d’un
+              seul bulletin.
             </p>
             <p className="allowance-note">
               Le PDF est lu uniquement sur cet appareil et n’est jamais

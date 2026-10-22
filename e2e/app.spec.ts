@@ -1553,21 +1553,25 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
   const result = page.locator(".allowance-note").filter({ hasText: /champs? rempli/ });
 
   // Première visite : septembre seul. Ses montants sont gardés dans le
-  // compte ; un seul bulletin ne suffit pas encore aux taux.
+  // compte, et les deux taux de départ (79,41 % et 89,92 %) se calent déjà
+  // ensemble sur son net : 1 800 € pour 1 873,11 € attendus, soit −3,9 %.
   await page.goto("/");
   await goToSection(page, "pay");
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-septembre.pdf", mimeType: "application/pdf", buffer: payslip("Septembre 2026", "2300.00", "1800.00") });
   await expect(result).toContainText("Traitement de base (1 855,88");
-  await expect(result).not.toContainText("Taux net avant impôt");
-  await expect(page.getByRole("region", { name: "Pour un net encore plus juste" })).toContainText("lors d’une prochaine visite");
+  await expect(result).toContainText("Taux net avant impôt — traitement (76,31 %)");
+  await expect(result).toContainText("Taux net avant impôt — primes (86,41 %)");
+  const hint = page.getByRole("region", { name: "Pour un net encore plus juste" });
+  await expect(hint).toContainText("calés sur ce seul bulletin");
+  await expect(hint).toContainText("lors d’une prochaine visite");
   expect(profileSaves.at(-1)?.payslipRateSamples).toEqual({
     "2026-09": { year: 2026, month: 8, gross: 2300, netBeforeTax: 1800, baseSalary: 1855.88 },
   });
-  expect(profileSaves.at(-1)).not.toHaveProperty("netRatioFixedBp");
+  expect(profileSaves.at(-1)).toMatchObject({ netRatioFixedBp: 7631, netRatioVariableBp: 8641, netRatioRegime: "culture-psc" });
 
   // Seconde visite, après rechargement : juillet s'ajoute à septembre, gardé
-  // dans le compte, et les deux taux sont enfin calculés.
+  // dans le compte, et ses primes différentes séparent enfin les deux taux.
   await page.reload();
   await goToSection(page, "pay");
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
@@ -1576,6 +1580,117 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
   await expect(result).toContainText("Taux net avant impôt — primes (80 %)");
   expect(profileSaves.at(-1)).toMatchObject({ netRatioFixedBp: 7784, netRatioVariableBp: 8000, netRatioRegime: "culture-psc" });
   await expect(page.getByRole("region", { name: "Pour un net encore plus juste" })).toHaveCount(0);
+});
+
+/** Une photo de bulletin dessinée : les lignes données, en grand, sur une
+ *  feuille blanche assez grande pour ne pas être jugée « trop petite ». */
+async function payslipPhoto(page: Page, lines: string[]) {
+  const base64 = await page.evaluate((text) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 2100;
+    canvas.height = 2800;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "black";
+    context.font = "700 72px Arial";
+    text.forEach((line, index) => context.fillText(line, 120, 220 + index * 210));
+    return canvas.toDataURL("image/png").split(",")[1];
+  }, lines);
+  return { name: `IMG_${lines.length}.png`, mimeType: "image/png", buffer: Buffer.from(base64, "base64") };
+}
+
+test("un bulletin photographié se lit page après page, et ne conclut qu’une fois entier", async ({ page }) => {
+  test.setTimeout(180_000);
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  const detectedDialogs: string[] = [];
+  page.on("dialog", async (dialog) => {
+    if (dialog.message().includes("Vérifiez les valeurs détectées")) detectedDialogs.push(dialog.message());
+    await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  // Le bouton photo ouvre l'appareil ; il annonce la page 1.
+  const camera = page.locator(".payslip-guide-step").first().locator(".payslip-photo-drop input");
+  await expect(camera).toHaveAttribute("capture", "environment");
+  await expect(page.locator(".payslip-guide-step").first()).toContainText("Un bulletin fait deux pages");
+  await camera.setInputFiles(await payslipPhoto(page, ["BULLETIN DE PAIE", "Septembre 2026", "Traitement de Base 1 855,88", "IFSE 415,00", "CUMUL BRUT 2 962,07"]));
+  // Page 1 lue : la période et le brut s'affichent, la page 2 est attendue,
+  // et rien n'a encore été demandé ni conclu.
+  const nextPage = page.getByRole("status", { name: "Page 2 du bulletin" });
+  await expect(nextPage).toContainText("Page 1 lue · photographiez la page 2", { timeout: 90_000 });
+  await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026");
+  await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
+  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toHaveCount(0);
+  expect(detectedDialogs).toHaveLength(0);
+  // Page 2 : le net rejoint la lecture, les valeurs sont confirmées une
+  // seule fois, et la vérification se conclut.
+  await nextPage.locator(".payslip-photo-drop input").setInputFiles(await payslipPhoto(page, ["Septembre 2026", "NET A PAYER AVANT IMPOT 2 311,42"]));
+  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toBeVisible({ timeout: 90_000 });
+  await expect(nextPage).toHaveCount(0);
+  await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
+  await expect(page.locator(".payslip-actual-values")).toContainText("2 311,42 €");
+  expect(detectedDialogs).toHaveLength(1);
+  // Les espaces de « 1 855,88 € » sont insécables : on ne les épelle pas.
+  expect(detectedDialogs[0]).toMatch(/Traitement de base : 1.855,88.€/);
+});
+
+test("devant un écart du bulletin, le geste qui l’explique est proposé : passer en fonctionnaire", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  // Le profil se dit contractuel…
+  await page.getByRole("button", { name: "Profil · réglages" }).click();
+  const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
+  await payProfile.getByRole("button", { name: "Choisir le statut" }).click();
+  await page.getByRole("option", { name: "Contractuel" }).click();
+  await expect(payProfile.getByRole("button", { name: "Choisir le statut" })).toContainText("Contractuel");
+  // … et le bulletin porte une IFSE (avec le forfait des dimanches, que
+  // l'estimation attend chaque mois).
+  const tokens = [
+    "Septembre 2026",
+    "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88",
+    "1.00", "454.02", "Indem trav dominical régulier", "89.59", "89.59",
+    "0.00", "641.28", "IFSE", "416.66", "416.66",
+    "CUMUL BRUT", "2362.13",
+    "NET A PAYER AVANT IMPOT", "1870.00",
+  ];
+  const pdf = ["%PDF-1.4", "stream", ...tokens.map((token) => `(${token}) Tj`), "endstream", "%%EOF"].join("\n");
+  page.on("dialog", (dialog) => void dialog.dismiss());
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-septembre.pdf", mimeType: "application/pdf", buffer: Buffer.from(pdf, "latin1") });
+  const choices = page.getByRole("region", { name: "Que s’est-il passé ?" });
+  await expect(choices).toContainText("IFSE ou CIA sur le bulletin");
+  await expect(choices).toContainText("Un contractuel ne perçoit ni IFSE ni CIA");
+  await choices.getByRole("button", { name: "Passer mon statut en Fonctionnaire" }).click();
+  // Le statut change ; l'IFSE, que le profil contractuel n'avait pas
+  // retenue, devient à son tour un écart avec son geste : l'enregistrer.
+  await expect(payProfile.getByRole("button", { name: "Choisir le statut" })).toContainText("Fonctionnaire");
+  await expect(choices).not.toContainText("IFSE ou CIA sur le bulletin");
+  await expect(choices).toContainText("IFSE : 416,66 € de plus que prévu");
+  await choices.getByRole("button", { name: "Enregistrer 416,66 € dans le profil" }).click();
+  // Plus aucun écart : l'estimation suit le bulletin.
+  await expect(choices).toHaveCount(0);
+  await expect(page.locator(".payslip-gap-sentences")).toHaveCount(0);
+  await expect(page.locator(".payslip-result-summary")).toContainText("aucun écart");
+});
+
+test("une seule photo, déclarée complète, se vérifie telle quelle", async ({ page }) => {
+  test.setTimeout(150_000);
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  const detectedDialogs: string[] = [];
+  page.on("dialog", async (dialog) => {
+    if (dialog.message().includes("Vérifiez les valeurs détectées")) detectedDialogs.push(dialog.message());
+    await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  await page.locator(".payslip-file-drop input").setInputFiles(await payslipPhoto(page, ["BULLETIN DE PAIE", "Septembre 2026", "Traitement de Base 1 855,88", "CUMUL BRUT 2 962,07"]));
+  const nextPage = page.getByRole("status", { name: "Page 2 du bulletin" });
+  await expect(nextPage).toBeVisible({ timeout: 90_000 });
+  await nextPage.getByRole("button", { name: "Il n’y a pas d’autre page" }).click();
+  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toBeVisible({ timeout: 30_000 });
+  await expect(nextPage).toHaveCount(0);
+  expect(detectedDialogs).toHaveLength(1);
 });
 
 test("une photo de bulletin est reconnue localement", async ({ page }) => {

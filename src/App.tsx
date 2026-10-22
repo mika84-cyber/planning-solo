@@ -231,7 +231,7 @@ export default function Home() {
     payslipCheck, setPayslipCheck, setPayslipError,
     setPayslipImportBusy, setPayslipImportError,
     setPayslipImportResult, setPayslipImportMode,
-    setPayslipNeedsPeriod, payslipFallbackMonth, setPayslipFallbackMonth,
+    setPayslipNeedsPeriod, setPayslipPhotoPending, payslipFallbackMonth, setPayslipFallbackMonth,
     payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
     setPayslipResultDetailsOpen,
     payDrafts, setPayDrafts, setSavingPay,
@@ -597,6 +597,7 @@ export default function Home() {
     saveMecenatEntry,
     deleteMecenatEntry,
     markMecenatsPaidEarly,
+    deferMecenats,
     markOvertimePaidEarly,
   } = useWorkTimeActions({
     demoMode,
@@ -819,6 +820,7 @@ export default function Home() {
     setPayslipImportResult,
     setPayslipError,
     setPayslipNeedsPeriod,
+    setPayslipPhotoPending,
     setPayslipImportBusy,
     setPayslipResultDetailsOpen,
     baseSalary,
@@ -1020,7 +1022,7 @@ export default function Home() {
           holidayChoiceEditing={holidayChoiceEditing}
           onEditHolidayChoice={setHolidayChoiceEditing}
           actions={{
-            markMecenatsPaidEarly, markOvertimePaidEarly,
+            markMecenatsPaidEarly, deferMecenats, markOvertimePaidEarly,
             changeWorkQuota, changeWorkSchedule, changeStatus, saveCalculationProfile, openWorkExchange,
           }}
         />

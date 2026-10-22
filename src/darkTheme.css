@@ -129,3 +129,6 @@ html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .meal,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .meal::before { background: #d9a27e; }
 /* Règles des congés : le liseré noir devient clair sur fond sombre. */
 html[data-theme="dark"] .leave-info-card { border-color: rgba(255, 255, 255, 0.55); }
+html[data-theme="dark"] .payslip-gap-choice { border-color: #4a3a2d; border-left-color: #c9754f; background: #2a241f; }
+html[data-theme="dark"] .payslip-gap-choice p { color: #d8cfc4; }
+html[data-theme="dark"] .payslip-gap-choice p strong, html[data-theme="dark"] .payslip-gap-choices h4 { color: #f0c3ad; }

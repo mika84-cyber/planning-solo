@@ -261,10 +261,27 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   carence, Navigo, titres repas — jamais le fichier ni son texte), gardés
   dans le profil sous « AAAA-MM » (`payslip_rate_samples`, ajoutés mois par
   mois par `save-form-profile`, 24 au plus). `importPayslips` les réunit à
-  ceux de la visite : deux bulletins vérifiés à deux visites différentes
-  affinent les taux. En démo, ils ne durent que la visite.
+  ceux de la visite. `calculateNetRatios(readings, fallback)` cale les deux
+  taux dès le premier bulletin : séparés par moindres carrés quand deux mois
+  aux primes différentes le permettent, sinon ajustés ensemble, dans le
+  rapport des taux de départ du statut, pour retrouver le net réel
+  (`inspectNetRatioCalibration` dit « ready » ou « approximate »). Chaque
+  bulletin vérifié ensuite affine. En démo, ils ne durent que la visite.
+- `src/payslipGapChoices.ts` : devant un écart du bulletin, le geste qui
+  l'explique sans doute (taux PAS ou montant du bulletin à enregistrer,
+  mécénat attendu non payé à reporter sur la paie suivante, dimanches non
+  payés à reporter, statut à passer en fonctionnaire, compensation des
+  fériés à revoir) ; `PayslipVerificationCard` l'affiche sous « Que s'est-il
+  passé ? » et les actions de paie l'exécutent (`savePayAmount(field, value)`,
+  `deferMecenats`, `changeStatus`, écran des primes).
 - `src/payslipOcr.ts` : reconnaissance locale des photos de bulletins avec le
-  moteur et le modèle français auto-hébergés dans `public/ocr/` ; la feuille
+  moteur et le modèle français auto-hébergés dans `public/ocr/`. Un bulletin
+  fait deux pages : le bouton « Photographier » ouvre l'appareil
+  (`capture="environment"`), une lecture incomplète
+  (`isIncompletePayslipReading`) attend l'autre page sans rien demander ni
+  enregistrer (`payslipPhotoPending`, « Il n'y a pas d'autre page » →
+  `finishPayslipPhotos`), et le moteur reste prêt une minute pour la page
+  suivante. La feuille
   est d'abord redressée (inclinaison mesurée par `payslipSkewDegrees` de
   `src/payslipImageQuality.ts`), et le code de rubrique (« 641.28 ») n'est
   jamais lu comme un montant.
