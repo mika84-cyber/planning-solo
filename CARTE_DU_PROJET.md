@@ -267,6 +267,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   rapport des taux de départ du statut, pour retrouver le net réel
   (`inspectNetRatioCalibration` dit « ready » ou « approximate »). Chaque
   bulletin vérifié ensuite affine. En démo, ils ne durent que la visite.
+- `src/sundayReport.ts` : le report automatique de dimanches décidé à la
+  lecture d'un bulletin ; relu, le même mois repart du compte entier, et la
+  nouvelle lecture ajuste ou retire le report que la précédente avait
+  provoqué (`importPayslips`, message « venu d'une lecture précédente »).
 - `src/payslipGapChoices.ts` : devant un écart du bulletin, le geste qui
   l'explique sans doute (taux PAS ou montant du bulletin à enregistrer,
   mécénat attendu non payé à reporter sur la paie suivante, dimanches non

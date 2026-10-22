@@ -27,6 +27,7 @@ import {
   readPayslipFiles,
 } from "./payslipOcr";
 import { shouldReportMissingPayslipField } from "./payslipReview";
+import { sundayReportAfterReading } from "./sundayReport";
 import {
   combinePayslipRateReadings,
   mergePayslipRateSamples,
@@ -38,7 +39,6 @@ import {
   SUNDAY_ALLOWANCE,
   localDate,
   s,
-  unpaidSundays,
   type HolidayPay,
 } from "./planningLogic";
 import { strikePayEstimate } from "./strike";
@@ -862,26 +862,34 @@ export function usePayActions(options: PayActionsOptions) {
           bestForCheck.reading.year !== allowances?.year
         )
           return null;
+        const { year: fromYear, month: fromMonth } = bestForCheck.reading;
+        // Le report qu'une lecture précédente de ce même mois avait provoqué :
+        // relu, le mois repart du compte entier, et cette lecture décide seule.
+        const reported =
+          formProfile?.sundayCarryover &&
+          formProfile.sundayCarryoverFromYear === fromYear &&
+          formProfile.sundayCarryoverFromMonth === fromMonth
+            ? formProfile.sundayCarryover
+            : 0;
         const expected =
-          allowances.monthly.find(
-            (slot) => slot.index === bestForCheck.reading.month,
-          )?.sundayCount || 0;
-        const count = unpaidSundays(
+          allowances.monthly.find((slot) => slot.index === fromMonth)?.sundayCount || 0;
+        const decision = sundayReportAfterReading({
           expected,
-          bestForCheck.reading.sundaysBeyondTen,
-        );
-        const target = nextSundayPayoutSlot(
-          bestForCheck.reading.year,
-          bestForCheck.reading.month,
-        );
-        return count > 0 && target
-          ? {
-              count,
-              fromYear: bestForCheck.reading.year,
-              fromMonth: bestForCheck.reading.month,
-              target,
-            }
-          : null;
+          reported,
+          paid: bestForCheck.reading.sundaysBeyondTen,
+        });
+        const target = nextSundayPayoutSlot(fromYear, fromMonth)
+          ?? (formProfile?.sundayCarryoverYear !== undefined && formProfile.sundayCarryoverMonth !== undefined
+            ? { year: formProfile.sundayCarryoverYear, month: formProfile.sundayCarryoverMonth }
+            : null);
+        if (decision.kind === "keep" || !target) return null;
+        return {
+          count: decision.kind === "report" ? decision.count : 0,
+          previous: reported,
+          fromYear,
+          fromMonth,
+          target,
+        };
       })();
       const applied = importFields.filter(
         (field) => found[field.key] !== undefined,
@@ -1134,13 +1142,19 @@ export function usePayActions(options: PayActionsOptions) {
           [
             ...attachedByPayslip,
             automaticSundayReport
-              ? `${automaticSundayReport.count} dimanche${s(
-                  automaticSundayReport.count,
-                )} non payé${s(automaticSundayReport.count)} retiré${s(
-                  automaticSundayReport.count,
-                )} automatiquement du net de ${MONTHS[automaticSundayReport.fromMonth]} et reporté${s(
-                  automaticSundayReport.count,
-                )} sur ${MONTHS[automaticSundayReport.target.month]}.`
+              ? automaticSundayReport.count === 0
+                ? `Le report de ${automaticSundayReport.previous} dimanche${s(automaticSundayReport.previous)} de ${MONTHS[automaticSundayReport.fromMonth]} vers ${MONTHS[automaticSundayReport.target.month]}, venu d’une lecture précédente, est retiré : ce bulletin les paie.`
+                : `${automaticSundayReport.count} dimanche${s(
+                    automaticSundayReport.count,
+                  )} non payé${s(automaticSundayReport.count)} retiré${s(
+                    automaticSundayReport.count,
+                  )} automatiquement du net de ${MONTHS[automaticSundayReport.fromMonth]} et reporté${s(
+                    automaticSundayReport.count,
+                  )} sur ${MONTHS[automaticSundayReport.target.month]}${
+                    automaticSundayReport.previous && automaticSundayReport.previous !== automaticSundayReport.count
+                      ? ` (au lieu de ${automaticSundayReport.previous} d’après la lecture précédente)`
+                      : ""
+                  }.`
               : undefined,
             // Dit seulement quand il explique des taux pas encore affinés :
             // un ancien bulletin gardé ne doit pas le répéter à chaque fois.

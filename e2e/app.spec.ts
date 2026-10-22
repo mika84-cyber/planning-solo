@@ -1674,6 +1674,35 @@ test("devant un écart du bulletin, le geste qui l’explique est proposé : pas
   await expect(page.locator(".payslip-result-summary")).toContainText("aucun écart");
 });
 
+test("relire un bulletin mal lu retire le report de dimanches que la première lecture avait provoqué", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  page.on("dialog", (dialog) => void dialog.dismiss());
+  const pdf = (tokens: string[]) => Buffer.from(["%PDF-1.4", "stream", ...tokens.map((token) => `(${token}) Tj`), "endstream", "%%EOF"].join("\n"), "latin1");
+  const october = ["Octobre 2026", "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88"];
+  const footer = ["CUMUL BRUT", "2600.00", "NET A PAYER AVANT IMPOT", "2100.00"];
+  const adjustment = page.locator(".allowance-note.positive");
+  // Première lecture, sans la ligne des dimanches : la paie d'octobre les
+  // attendait, ils sont reportés sur décembre.
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "octobre.pdf", mimeType: "application/pdf", buffer: pdf([...october, ...footer]) });
+  await expect(adjustment).toContainText(/dimanches? non payés? retirés? automatiquement du net de octobre et reportés? sur décembre/);
+  const reported = Number(/(\d+) dimanche/.exec(await adjustment.innerText())![1]);
+  expect(reported).toBeGreaterThan(0);
+  // Le mois n'en attend plus aucun : la comparaison dit 0 pour 0.
+  const sundaysRow = page.locator("table.allowance-table tr").filter({ hasText: "Dimanches payés" });
+  await expect(sundaysRow).toContainText("concorde");
+  await expect(sundaysRow.locator("td")).toHaveText(["0", "0"]);
+  // Relu, le bulletin paie bien ces dimanches : le report disparaît, et le
+  // mois les attend de nouveau, payés.
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "octobre-relu.pdf", mimeType: "application/pdf", buffer: pdf([
+    ...october, "Indemnité trav. dom > 10 dim", "54.93", (reported * 54.93).toFixed(2), ...footer,
+  ]) });
+  await expect(adjustment).toContainText(`Le report de ${reported} dimanche${reported > 1 ? "s" : ""} de octobre vers décembre, venu d’une lecture précédente, est retiré : ce bulletin les paie.`);
+  await expect(sundaysRow).toContainText("concorde");
+  await expect(sundaysRow.locator("td")).toHaveText([String(reported), String(reported)]);
+});
+
 test("une seule photo, déclarée complète, se vérifie telle quelle", async ({ page }) => {
   test.setTimeout(150_000);
   await prepareDemo(page);
