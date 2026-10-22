@@ -334,6 +334,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/jspdfUnusedModule.ts` et l'alias de `vite.config.ts` : html2canvas,
   DOMPurify et canvg, optionnels dans jsPDF, ne sont pas livrés ; les méthodes
   `html()` et `addSvgAsImage()` de jsPDF sont donc indisponibles.
+- `src/jspdfPngInflate.ts`, même alias : pako, que fast-png (décodeur PNG de
+  jsPDF) n'utilise que pour décompresser, cède la place à fflate, déjà livré
+  avec jsPDF (−43 Kio bruts) ; l'encodeur PNG de fast-png n'est pas livré.
 - `public/formulaire/pdf-engine.js` : le moteur PDF du formulaire autonome,
   pdf-lib seul (UMD, `window.PDFLib`), chargé au premier PDF demandé
   (`loadPdfEngine`, `PDF_ENGINE_VERSION` pour le cache). Dans `app.js`,

@@ -21,12 +21,17 @@ export default defineConfig({
   ],
   resolve: {
     // Modules optionnels de jsPDF jamais utilisés : voir src/jspdfUnusedModule.ts.
-    alias: Object.fromEntries(
-      ["html2canvas", "dompurify", "canvg"].map((name) => [
-        name,
-        fileURLToPath(new URL("./src/jspdfUnusedModule.ts", import.meta.url)),
-      ]),
-    ),
+    // pako, que son décodeur PNG utilise, cède la place à fflate : voir
+    // src/jspdfPngInflate.ts.
+    alias: {
+      ...Object.fromEntries(
+        ["html2canvas", "dompurify", "canvg"].map((name) => [
+          name,
+          fileURLToPath(new URL("./src/jspdfUnusedModule.ts", import.meta.url)),
+        ]),
+      ),
+      pako: fileURLToPath(new URL("./src/jspdfPngInflate.ts", import.meta.url)),
+    },
   },
   // Uniquement pour les liens de démo Cloudflare créés depuis le PC : Vite
   // refuse sinon le nom d'hôte externe avant même de servir l'application.
