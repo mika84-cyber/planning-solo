@@ -6,7 +6,8 @@
  * d'exiger les deux dans la même visite.
  *
  * Jamais le fichier ni son texte : seulement les quelques montants du calcul.
- * Partagé par l'application et par la fonction Netlify qui les garde.
+ * Partagé par l'application et par la fonction Netlify qui les garde. Écrit
+ * sobrement : il fait partie du chargement initial.
  */
 import type { PayslipReading } from "./payslip";
 
@@ -29,58 +30,37 @@ export type PayslipRateSamples = Record<string, PayslipRateSample>;
 /** Deux ans de bulletins : bien assez pour le calcul, sans laisser grossir
  *  le profil. Les plus anciens laissent la place aux nouveaux. */
 const MAX_SAMPLES = 24;
-const MAX_AMOUNT = 1_000_000;
+/** Les trois premiers sont indispensables au calcul, et jamais nuls. */
+const FIELDS = ["gross", "netBeforeTax", "baseSalary", "ifse", "otherFixed", "carenceDay", "navigo", "mealVoucherDeduction"] as const;
 
-const OPTIONAL_FIELDS = ["ifse", "otherFixed", "carenceDay", "navigo", "mealVoucherDeduction"] as const;
+const periodKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, "0")}`;
 
-function periodKey(year: number, month: number) {
-  return `${year}-${String(month + 1).padStart(2, "0")}`;
-}
-
-/** Un montant au centime près ; `undefined` s'il n'en est pas un. */
-function amount(value: unknown, positive = false) {
-  if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > MAX_AMOUNT) return undefined;
-  if (positive && value <= 0) return undefined;
-  return Math.round(value * 100) / 100;
-}
-
-/** Les montants utiles d'un bulletin lu ; `null` s'il n'en porte pas assez
- *  (mois, cumul brut, traitement et net avant impôt) pour le calcul. */
-export function payslipRateSampleFromReading(reading: PayslipReading): PayslipRateSample | null {
-  const { year, month } = reading;
-  if (!Number.isInteger(year) || !Number.isInteger(month)) return null;
-  if ((year as number) < 2000 || (year as number) > 2100 || (month as number) < 0 || (month as number) > 11) return null;
-  const gross = amount(reading.gross, true);
-  const netBeforeTax = amount(reading.netBeforeTax, true);
-  const baseSalary = amount(reading.baseSalary, true);
-  if (gross === undefined || netBeforeTax === undefined || baseSalary === undefined) return null;
-  const sample: PayslipRateSample = { year: year as number, month: month as number, gross, netBeforeTax, baseSalary };
-  for (const field of OPTIONAL_FIELDS) {
-    const value = amount(reading[field]);
-    if (value !== undefined) sample[field] = value;
+/** Les montants utiles d'un bulletin lu, au centime ; `null` s'il n'en porte
+ *  pas assez (mois, cumul brut, net avant impôt, traitement) pour le calcul. */
+export function payslipRateSampleFromReading({ year, month, ...reading }: PayslipReading): PayslipRateSample | null {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || year! < 2000 || year! > 2100 || month! < 0 || month! > 11) return null;
+  const sample: Record<string, number> = { year: year!, month: month! };
+  for (const [index, field] of FIELDS.entries()) {
+    const value = reading[field];
+    if (typeof value === "number" && Math.abs(value) <= 1e6 && (index > 2 || value > 0))
+      sample[field] = Math.round(value * 100) / 100;
+    else if (index < 3) return null;
   }
-  return sample;
+  return sample as PayslipRateSample;
 }
 
 /** Ne garde que des bulletins bien formés, rangés sous leur propre mois,
- *  les plus récents d'abord quand il faut en laisser. */
+ *  les plus récents quand il faut en laisser. */
 export function sanitizePayslipRateSamples(value: unknown): PayslipRateSamples {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const samples: PayslipRateSamples = {};
-  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
-    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(key) || !raw || typeof raw !== "object") continue;
-    const year = Number(key.slice(0, 4));
-    const month = Number(key.slice(5, 7)) - 1;
-    const sample = payslipRateSampleFromReading({
-      ...(raw as Partial<PayslipReading>),
-      year,
-      month,
-      sundaysBeyondTen: 0,
-    });
-    if (sample) samples[key] = sample;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return samples;
+  for (const [period, raw] of Object.entries(value)) {
+    const sample = /^\d{4}-(0[1-9]|1[0-2])$/.test(period) && raw && typeof raw === "object"
+      ? payslipRateSampleFromReading({ ...raw, year: +period.slice(0, 4), month: +period.slice(5) - 1, sundaysBeyondTen: 0 })
+      : null;
+    if (sample) samples[period] = sample;
   }
-  const keys = Object.keys(samples).sort();
-  for (const key of keys.slice(0, Math.max(0, keys.length - MAX_SAMPLES))) delete samples[key];
+  for (const period of Object.keys(samples).sort().slice(0, -MAX_SAMPLES)) delete samples[period];
   return samples;
 }
 
@@ -97,17 +77,8 @@ export function payslipRateSamplesFromReadings(readings: PayslipReading[]): Pays
 
 /** Les bulletins déjà gardés, puis les nouveaux : pour un même mois, le
  *  dernier bulletin vérifié remplace l'ancien. */
-export function mergePayslipRateSamples(stored: unknown, added: unknown): PayslipRateSamples {
-  return sanitizePayslipRateSamples({
-    ...sanitizePayslipRateSamples(stored),
-    ...sanitizePayslipRateSamples(added),
-  });
-}
-
-/** Un bulletin gardé, sous la forme d'une lecture prête pour le calcul. */
-export function readingFromPayslipRateSample(sample: PayslipRateSample): PayslipReading {
-  return { ...sample, sundaysBeyondTen: 0 };
-}
+export const mergePayslipRateSamples = (stored: unknown, added: unknown) =>
+  sanitizePayslipRateSamples({ ...sanitizePayslipRateSamples(stored), ...sanitizePayslipRateSamples(added) });
 
 type NamedReading = { name: string; reading: PayslipReading };
 
@@ -119,9 +90,9 @@ export function combinePayslipRateReadings<T extends NamedReading>(
   session: T[],
 ): Array<T | NamedReading> {
   const byPeriod = new Map<string, T | NamedReading>();
-  for (const [key, sample] of Object.entries(sanitizePayslipRateSamples(stored)).sort(([a], [b]) => a.localeCompare(b))) {
-    byPeriod.set(key, { name: `Bulletin ${key}`, reading: readingFromPayslipRateSample(sample) });
-  }
+  const kept = sanitizePayslipRateSamples(stored);
+  for (const period of Object.keys(kept).sort())
+    byPeriod.set(period, { name: `Bulletin ${period}`, reading: { ...kept[period], sundaysBeyondTen: 0 } });
   for (const item of session) {
     const { year, month } = item.reading;
     byPeriod.set(year !== undefined && month !== undefined ? periodKey(year, month) : `file-${item.name}`, item);
