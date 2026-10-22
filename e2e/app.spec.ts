@@ -1505,6 +1505,79 @@ test("une page s'ajoute après coup au bulletin déjà vérifié", async ({ page
   await expect(page.locator(".payslip-actual-values")).toContainText("1 855,88");
 });
 
+test("deux bulletins vérifiés à deux visites différentes affinent les taux net", async ({ page }) => {
+  // Un vrai compte (hors démo), resté connecté ; le serveur est simulé et
+  // garde le profil de paie d'une visite à l'autre, comme le ferait le compte.
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const base64url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const token = `${base64url({ alg: "HS256", typ: "JWT" })}.${base64url({ sub: "u-taux", email: "agent@example.test", exp })}.signature`;
+  await page.addInitScript(({ accessToken, expiresAt }) => {
+    localStorage.setItem("gotrue.user", JSON.stringify({
+      id: "u-taux",
+      email: "agent@example.test",
+      url: `${location.origin}/.netlify/identity`,
+      audience: "",
+      token: { access_token: accessToken, token_type: "bearer", expires_in: 3600, refresh_token: "r1", expires_at: expiresAt * 1000 },
+    }));
+    localStorage.setItem("planning:install-notice-dismissed-v1", "1");
+    document.cookie = `nf_jwt=${accessToken}; path=/`;
+  }, { accessToken: token, expiresAt: exp });
+  let profile: Record<string, unknown> = { full_name: "", group: "2", signature: "", status: "fonctionnaire", work_quota: "full" };
+  const profileSaves: Array<Record<string, unknown>> = [];
+  await page.route("**/api/**", (route) => route.fulfill({ status: 503, json: { error: "Indisponible" } }));
+  await page.route("**/api/calendar", async (route) => {
+    const request = route.request();
+    if (request.method() !== "POST") {
+      await route.fulfill({ json: { email: "agent@example.test", entries: [], form_profile: profile } });
+      return;
+    }
+    const body = request.postDataJSON() as Record<string, unknown>;
+    if (body.action === "save-form-profile") {
+      profileSaves.push(body);
+      const samples = body.payslipRateSamples as Record<string, unknown> | undefined;
+      if (samples)
+        profile = { ...profile, payslip_rate_samples: { ...(profile.payslip_rate_samples as object | undefined), ...samples } };
+    }
+    await route.fulfill({ json: { ok: true, form_profile: profile } });
+  });
+  page.on("dialog", (dialog) => void dialog.dismiss());
+  // Un bulletin PDF minimal : le traitement, le cumul brut et le net avant
+  // impôt. Les primes (cumul brut moins traitement) diffèrent d'un mois à
+  // l'autre : 444,12 € en septembre, 744,12 € en juillet.
+  const payslip = (month: string, gross: string, net: string) => Buffer.from([
+    "%PDF-1.4", "stream",
+    ...[month, "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88", "CUMUL BRUT", gross, "NET A PAYER AVANT IMPOT", net]
+      .map((token) => `(${token}) Tj`),
+    "endstream", "%%EOF",
+  ].join("\n"), "latin1");
+  const result = page.locator(".allowance-note").filter({ hasText: /champs? rempli/ });
+
+  // Première visite : septembre seul. Ses montants sont gardés dans le
+  // compte ; un seul bulletin ne suffit pas encore aux taux.
+  await page.goto("/");
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-septembre.pdf", mimeType: "application/pdf", buffer: payslip("Septembre 2026", "2300.00", "1800.00") });
+  await expect(result).toContainText("Traitement de base (1 855,88");
+  await expect(result).not.toContainText("Taux net avant impôt");
+  await expect(page.getByRole("region", { name: "Pour un net encore plus juste" })).toContainText("lors d’une prochaine visite");
+  expect(profileSaves.at(-1)?.payslipRateSamples).toEqual({
+    "2026-09": { year: 2026, month: 8, gross: 2300, netBeforeTax: 1800, baseSalary: 1855.88 },
+  });
+  expect(profileSaves.at(-1)).not.toHaveProperty("netRatioFixedBp");
+
+  // Seconde visite, après rechargement : juillet s'ajoute à septembre, gardé
+  // dans le compte, et les deux taux sont enfin calculés.
+  await page.reload();
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-juillet.pdf", mimeType: "application/pdf", buffer: payslip("Juillet 2026", "2600.00", "2040.00") });
+  await expect(result).toContainText("Taux net avant impôt — traitement (77,84 %)");
+  await expect(result).toContainText("Taux net avant impôt — primes (80 %)");
+  expect(profileSaves.at(-1)).toMatchObject({ netRatioFixedBp: 7784, netRatioVariableBp: 8000, netRatioRegime: "culture-psc" });
+  await expect(page.getByRole("region", { name: "Pour un net encore plus juste" })).toHaveCount(0);
+});
+
 test("une photo de bulletin est reconnue localement", async ({ page }) => {
   test.setTimeout(120_000);
   await prepareDemo(page);

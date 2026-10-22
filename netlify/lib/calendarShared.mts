@@ -1,5 +1,6 @@
 import type { getStore } from "@netlify/blobs";
 import type { PayslipVerificationRecords } from "../../src/payslipVerificationRecords.ts";
+import type { PayslipRateSamples } from "../../src/payslipRateSamples.ts";
 import { isValidDateKey } from "./calendarValidation.mts";
 
 export const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
@@ -185,6 +186,9 @@ export type FormProfile = {
   deduction_pay_months?: Record<string, string>;
   /** Décisions après vérification des bulletins, sous « AAAA-MM ». */
   payslip_verifications?: PayslipVerificationRecords;
+  /** Montants des bulletins vérifiés (jamais le fichier), sous « AAAA-MM »,
+   *  qui affinent les deux taux net avant impôt d'une visite à l'autre. */
+  payslip_rate_samples?: PayslipRateSamples;
   updated_at: string;
 };
 

@@ -7,6 +7,7 @@ import {
   readingsForCalibrationRegime,
   type PayslipReading,
 } from "./payslip";
+import { combinePayslipRateReadings } from "./payslipRateSamples";
 import { RESIDENCE_ALLOWANCE_RATE } from "./planningLogic";
 import { effectivePayProfile } from "./usePayActions";
 
@@ -15,8 +16,9 @@ type PayProfileValuesInput = {
   payProfiles: Record<string, PayProfile>;
   /** Le mois de paie affiché dans Ma paie. */
   payView: Date;
-  /** Les bulletins lus, pour calibrer les taux de net. */
-  payslipRateSamples: Array<{ reading: PayslipReading }>;
+  /** Les bulletins lus pendant cette visite, pour calibrer les taux de net ;
+   *  ceux des visites précédentes viennent du profil. */
+  payslipRateSamples: Array<{ name: string; reading: PayslipReading }>;
 };
 
 /**
@@ -97,7 +99,7 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
       : defaultNetRatios.netRatioVariable;
   const payslipRateCalibration = inspectNetRatioCalibration(
     readingsForCalibrationRegime(
-      payslipRateSamples.map((item) => item.reading),
+      combinePayslipRateReadings(formProfile?.payslipRateSamples, payslipRateSamples).map((item) => item.reading),
       viewedPayRegime,
     ),
   );

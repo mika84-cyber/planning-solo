@@ -2,6 +2,7 @@ import { json, sanitizeCetAccount, type FormProfile, type ManualYearAdjustments 
 import type { CalendarActionContext } from "./context.mts";
 import { sanitizeDeductionPayMonths } from "../calendarValidation.mts";
 import { sanitizePayslipVerifications } from "../../../src/payslipVerificationRecords.ts";
+import { mergePayslipRateSamples } from "../../../src/payslipRateSamples.ts";
 import { readAtomic, writeAtomic } from "../calendarAtomic.mts";
 export async function handleSaveFormProfile(
   context: CalendarActionContext,
@@ -195,6 +196,7 @@ export async function handleSaveFormProfile(
     cet_account: previousProfile?.cet_account,
     deduction_pay_months: previousProfile?.deduction_pay_months,
     payslip_verifications: previousProfile?.payslip_verifications,
+    payslip_rate_samples: previousProfile?.payslip_rate_samples,
     updated_at: new Date().toISOString(),
   };
   // La table est renvoyée entière par l'écran qui la modifie ; les autres
@@ -218,6 +220,21 @@ export async function handleSaveFormProfile(
     )
       return json({ error: "Vérifications de bulletin invalides" }, 400);
     formProfile.payslip_verifications = sanitizePayslipVerifications(body.payslipVerifications);
+  }
+  // Les montants d'un bulletin vérifié s'ajoutent à ceux déjà gardés, mois
+  // par mois : un autre appareil qui a vérifié un autre mois entre-temps ne
+  // perd pas le sien. Les autres appels ne les envoient pas.
+  if (body.payslipRateSamples !== undefined) {
+    if (
+      !body.payslipRateSamples ||
+      typeof body.payslipRateSamples !== "object" ||
+      Array.isArray(body.payslipRateSamples)
+    )
+      return json({ error: "Montants de bulletin invalides" }, 400);
+    formProfile.payslip_rate_samples = mergePayslipRateSamples(
+      previousProfile?.payslip_rate_samples,
+      body.payslipRateSamples,
+    );
   }
   if (body.cetAccount !== undefined) {
     const cetAccount = sanitizeCetAccount(body.cetAccount);

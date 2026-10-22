@@ -25,6 +25,11 @@ import {
   readPayslipFiles,
 } from "./payslipOcr";
 import { shouldReportMissingPayslipField } from "./payslipReview";
+import {
+  combinePayslipRateReadings,
+  mergePayslipRateSamples,
+  payslipRateSamplesFromReadings,
+} from "./payslipRateSamples";
 import { inspectPayslipPhotos } from "./payslipImageQuality";
 import {
   MONTHS,
@@ -177,6 +182,11 @@ export function payProfileBase(
     sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
     sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
     sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
+    // Gardés dans le compte et renvoyés par leurs seuls écrans : un autre
+    // enregistrement ne doit pas les faire disparaître de l'écran, ni faire
+    // renvoyer ensuite une table des décisions amputée des mois précédents.
+    payslipVerifications: formProfile?.payslipVerifications,
+    payslipRateSamples: formProfile?.payslipRateSamples,
   };
 }
 
@@ -809,15 +819,16 @@ export function usePayActions(options: PayActionsOptions) {
           },
         ];
       });
-      const rateSamplesByPeriod = new Map<string, PayslipCheck>();
-      for (const item of [...payslipRateSamples, ...items]) {
-        const period =
-          item.reading.year !== undefined && item.reading.month !== undefined
-            ? `${item.reading.year}-${item.reading.month}`
-            : `file-${item.name}`;
-        rateSamplesByPeriod.set(period, item);
-      }
-      const nextRateSamples = Array.from(rateSamplesByPeriod.values());
+      // Les bulletins vérifiés lors des visites précédentes, gardés dans le
+      // compte, comptent avec ceux de cette visite : septembre vérifié
+      // aujourd'hui et août demain suffisent à affiner les deux taux.
+      const nextRateSamples = combinePayslipRateReadings(
+        formProfile?.payslipRateSamples,
+        [...payslipRateSamples, ...items],
+      );
+      const addedRateSamples = payslipRateSamplesFromReadings(
+        items.map(({ reading }) => reading),
+      );
       const compatibleRateReadings = readingsForCalibrationRegime(
         nextRateSamples.map((item) => item.reading),
         targetNetRatioRegime,
@@ -947,6 +958,10 @@ export function usePayActions(options: PayActionsOptions) {
         sundayCarryoverFromMonth:
           automaticSundayReport?.fromMonth ??
           formProfile?.sundayCarryoverFromMonth,
+        payslipRateSamples: mergePayslipRateSamples(
+          formProfile?.payslipRateSamples,
+          addedRateSamples,
+        ),
       };
       if (!demoMode) {
         const body: Record<string, unknown> = {
@@ -1004,6 +1019,9 @@ export function usePayActions(options: PayActionsOptions) {
           body.netRatioRegime = targetNetRatioRegime;
         }
         if (attachedByPayslip.length) body.deductionPayMonths = deductionPayMonths;
+        // Seuls les montants utiles au calcul des taux, jamais le fichier.
+        if (Object.keys(addedRateSamples).length)
+          body.payslipRateSamples = addedRateSamples;
         if (automaticSundayReport) {
           body.sundayCarryover = automaticSundayReport.count;
           body.sundayCarryoverYear = automaticSundayReport.target.year;
@@ -1093,7 +1111,9 @@ export function usePayActions(options: PayActionsOptions) {
                   automaticSundayReport.count,
                 )} sur ${MONTHS[automaticSundayReport.target.month]}.`
               : undefined,
-            ignoredRateSampleCount > 0
+            // Dit seulement quand il explique des taux pas encore affinés :
+            // un ancien bulletin gardé ne doit pas le répéter à chaque fois.
+            ignoredRateSampleCount > 0 && !calculatedRates
               ? `${ignoredRateSampleCount} bulletin${s(ignoredRateSampleCount)} d’un ancien régime de cotisations n’${
                   ignoredRateSampleCount > 1 ? "ont" : "a"
                 } pas été mélangé${s(ignoredRateSampleCount)} à la calibration.`

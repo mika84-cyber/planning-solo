@@ -1,5 +1,6 @@
 import { isValidDateKey, sanitizeDeductionPayMonths } from "./calendarValidation.mts";
 import { sanitizePayslipVerifications } from "../../src/payslipVerificationRecords.ts";
+import { sanitizePayslipRateSamples } from "../../src/payslipRateSamples.ts";
 
 const ID_RE = /^[a-zA-Z0-9-]{8,80}$/;
 const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
@@ -381,6 +382,7 @@ export function sanitizeCalendarBackup(value: unknown) {
       cet_account: cetAccount,
       deduction_pay_months: sanitizeDeductionPayMonths(raw.deduction_pay_months),
       payslip_verifications: sanitizePayslipVerifications(raw.payslip_verifications),
+      payslip_rate_samples: sanitizePayslipRateSamples(raw.payslip_rate_samples),
       sunday_carryover: optionalNumber(raw.sunday_carryover, 100),
       sunday_carryover_year: optionalNumber(raw.sunday_carryover_year, 2100),
       sunday_carryover_month: optionalNumber(raw.sunday_carryover_month, 11),
