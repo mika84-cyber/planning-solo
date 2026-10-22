@@ -71,6 +71,27 @@ describe("lecture locale d’une photo de bulletin", () => {
     });
   });
 
+  it("ne prend jamais un code de rubrique pour un montant manqué par l’OCR", () => {
+    // Lignes reconnues sur une photo penchée du bulletin de septembre 2026 :
+    // la colonne « A payer » de l'IFSE est illisible (« ana »).
+    const reading = readPayslipOcrText(`
+      Septembre 2026
+      300.00 |Traitement de Base 1.00
+      641.28 |IFSE                         ana
+      641.29 [Transfert primes/points        13.92           1.00         -13.92
+      884.71 |PAS - Taux
+      CUMUL BRUT 2700.02
+    `);
+    // Ni l'IFSE à 641,28 € (son code), ni le montant de la rubrique suivante.
+    expect(reading.ifse).toBeUndefined();
+    // Un traitement de 1 € ou un taux d'impôt de 884,71 % : lectures ratées.
+    expect(reading.baseSalary).toBeUndefined();
+    expect(reading.pasRate).toBeUndefined();
+    expect(reading.gross).toBe(2700.02);
+    // Le code ôté, la ligne garde ses montants.
+    expect(readPayslipOcrText("641.28 |IFSE 416.66 0.00 416.66").ifse).toBe(416.66);
+  });
+
   it("lit aussi les fériés, le forfait des dimanches et un taux revalorisé", () => {
     const reading = readPayslipOcrText(`
       Bulletin de paie Juin 2026

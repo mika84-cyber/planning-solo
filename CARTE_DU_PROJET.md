@@ -257,7 +257,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/payEstimate.ts` : disponibilité de l'estimation de paie.
 - `src/payslip.ts` / `src/payslipReview.ts` : lecture et contrôle du bulletin.
 - `src/payslipOcr.ts` : reconnaissance locale des photos de bulletins avec le
-  moteur et le modèle français auto-hébergés dans `public/ocr/`.
+  moteur et le modèle français auto-hébergés dans `public/ocr/` ; la feuille
+  est d'abord redressée (inclinaison mesurée par `payslipSkewDegrees` de
+  `src/payslipImageQuality.ts`), et le code de rubrique (« 641.28 ») n'est
+  jamais lu comme un montant.
 - `src/leaveRequest.ts` : préparation des demandes de congés.
 - `src/cet.ts` : barèmes Centre Pompidou, plafonds, éligibilité et calculs CET.
 - `src/cetFormsPdf.ts` : génération différée des demandes CET à vérifier, signer et envoyer à la RH.
@@ -368,6 +371,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - Mécénats : `src/mecenat.test.ts`, `src/mecenatRules.test.ts`,
   `src/earlyMecenatPayment.test.tsx`.
 - API et stockage : `src/calendarApi.test.ts`, `netlify/lib/*.test.ts`.
+- Semaine partagée des collègues, de l'enregistrement à la lecture (EX, AC,
+  BI, F, A, 1/2) : `netlify/tests/colleagueSharedWeek.function.test.ts`.
 - PDF : `src/pdfSmoke.test.ts`.
 - Sécurité du formulaire : `formSecurity.test.mjs`.
 - Finitions demandées : `uiRefinement.test.mjs`.

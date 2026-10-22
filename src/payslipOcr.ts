@@ -1,5 +1,6 @@
 import type { PayslipExtraLine, PayslipReading } from "./payslip";
 import { carenceDatesFromLabels, isKnownEarningLabel, isPlausibleSundayRate, withExtraLines, extractPayslipTokens, readPayslip } from "./payslip";
+import { payslipSkewDegrees } from "./payslipImageQuality";
 
 export const PAYSLIP_FILE_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
@@ -8,6 +9,9 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 // Environ 170 dpi pour une page A4 : suffisamment précis pour les petites
 // lignes d’un bulletin, tout en évitant d’analyser les 12 à 50 Mpx du téléphone.
 const MAX_OCR_IMAGE_SIDE = 2000;
+// La feuille redressée garde assez de détail pour les bandes agrandies
+// ci-dessous, sans dépasser ce qu'un téléphone dessine sans peine.
+const MAX_STRAIGHTENED_SIDE = 3000;
 const OCR_START_TIMEOUT_MS = 45_000;
 const OCR_RECOGNITION_TIMEOUT_MS = 60_000;
 
@@ -45,6 +49,26 @@ async function canvasToPayslipBlob(canvas: HTMLCanvasElement) {
   );
 }
 
+/** Une feuille photographiée un peu de travers : la droite de chaque ligne
+ *  descend (ou monte) de quelques pour cent de la hauteur, et son montant
+ *  tomberait dans une autre bande que son libellé. On la remet d'aplomb. */
+function straightenedPayslip(bitmap: ImageBitmap): ImageBitmap | HTMLCanvasElement {
+  const skew = payslipSkewDegrees(bitmap);
+  if (Math.abs(skew) < 1) return bitmap;
+  const scale = Math.min(1, MAX_STRAIGHTENED_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) return bitmap;
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.translate(canvas.width / 2, canvas.height / 2);
+  context.rotate((-skew * Math.PI) / 180);
+  context.drawImage(bitmap, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+  return canvas;
+}
+
 async function preparePayslipImage(file: File): Promise<PreparedPayslipImage> {
   if (typeof createImageBitmap !== "function" || typeof document === "undefined") {
     return { source: file, rotateAuto: true };
@@ -64,25 +88,26 @@ async function preparePayslipImage(file: File): Promise<PreparedPayslipImage> {
   }
 
   try {
-    const longestSide = Math.max(bitmap.width, bitmap.height);
+    const image = straightenedPayslip(bitmap);
+    const longestSide = Math.max(image.width, image.height);
     const ratio = Math.min(1, MAX_OCR_IMAGE_SIDE / longestSide);
     const fullCanvas = document.createElement("canvas");
-    fullCanvas.width = Math.max(1, Math.round(bitmap.width * ratio));
-    fullCanvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+    fullCanvas.width = Math.max(1, Math.round(image.width * ratio));
+    fullCanvas.height = Math.max(1, Math.round(image.height * ratio));
     const fullContext = fullCanvas.getContext("2d");
     if (!fullContext) return { source: file, rotateAuto: true };
     fullContext.fillStyle = "#fff";
     fullContext.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
     fullContext.filter = "grayscale(1) contrast(1.25) brightness(1.05)";
-    fullContext.drawImage(bitmap, 0, 0, fullCanvas.width, fullCanvas.height);
+    fullContext.drawImage(image, 0, 0, fullCanvas.width, fullCanvas.height);
     const fullSource = await canvasToPayslipBlob(fullCanvas);
 
     // Sur une photo verticale, une seule image compacte réunit les quatre
     // zones utiles des bulletins : période, rémunération, retenues et net.
     // Les lignes sont plus grandes et l’OCR ignore les zones sans intérêt.
-    if (bitmap.height >= bitmap.width * 1.15) {
-      const sourceX = bitmap.width * 0.07;
-      const sourceWidth = bitmap.width * 0.89;
+    if (image.height >= image.width * 1.15) {
+      const sourceX = image.width * 0.07;
+      const sourceWidth = image.width * 0.89;
       const focusedWidth = Math.min(
         1800,
         Math.max(1200, Math.round(sourceWidth * 1.35)),
@@ -95,7 +120,7 @@ async function preparePayslipImage(file: File): Promise<PreparedPayslipImage> {
         [0.7, 0.83],
       ] as const;
       const heights = bands.map(([from, to]) =>
-        Math.round((to - from) * bitmap.height * focusedWidth / sourceWidth));
+        Math.round((to - from) * image.height * focusedWidth / sourceWidth));
       const focusedCanvas = document.createElement("canvas");
       focusedCanvas.width = focusedWidth;
       focusedCanvas.height = heights.reduce((sum, height) => sum + height, 0) + gap * 3;
@@ -107,11 +132,11 @@ async function preparePayslipImage(file: File): Promise<PreparedPayslipImage> {
         let destinationY = 0;
         bands.forEach(([from, to], index) => {
           focusedContext.drawImage(
-            bitmap,
+            image,
             sourceX,
-            bitmap.height * from,
+            image.height * from,
             sourceWidth,
-            bitmap.height * (to - from),
+            image.height * (to - from),
             0,
             destinationY,
             focusedWidth,
@@ -164,6 +189,17 @@ function amountsIn(line: string) {
     .filter((amount): amount is number => amount !== undefined);
 }
 
+/** Le code de rubrique (« 641.28 ») ouvre la ligne, devant le libellé, avec
+ *  pour un rappel ou une carence son mois et « R » ou « C » : ce n'est jamais
+ *  un montant. Pris pour tel quand l'OCR a manqué la colonne « A payer », il
+ *  donnait une IFSE de 641,28 €. */
+const RUBRIC_CODE = /^\s*(?:(?:\d{1,2}\/\d{4}\s+)?[RC]\s+)?\d{3}[.,]\d{2}(?=\s*[|[(]?\s*[A-Za-zÀ-ÿ])/;
+
+/** Les montants d'une ligne de rubrique, sans son code. */
+function rowAmounts(line: string) {
+  return amountsIn(line.replace(RUBRIC_CODE, " "));
+}
+
 function linesFor(text: string) {
   return text
     .split(/[\r\n]+/)
@@ -183,7 +219,10 @@ function lastAmountNear(lines: string[], labels: string[], maxOffset = 1) {
   const index = matchingLineIndexes(lines, labels)[0];
   if (index === undefined) return undefined;
   for (let offset = 0; offset <= maxOffset; offset++) {
-    const amounts = amountsIn(lines[index + offset] || "");
+    const line = lines[index + offset] || "";
+    // Des montants passés à la ligne, oui ; ceux de la rubrique suivante, non.
+    if (offset > 0 && RUBRIC_CODE.test(line)) break;
+    const amounts = rowAmounts(line);
     if (amounts.length) return amounts[amounts.length - 1];
   }
   return undefined;
@@ -237,7 +276,7 @@ function ocrExtraLines(lines: string[]): PayslipExtraLine[] | undefined {
   const found = lines.slice(0, cumul).flatMap((line) => {
     const match = /^(?:\d{1,2}\/\d{4}\s+([RC])\s+)?\d{3}[.,]\d{2}\s+([^\d−–—-][^\d]*?)\s+[-−–—]?\d/.exec(line);
     if (!match || isKnownEarningLabel(match[2])) return [];
-    const amount = amountsIn(line.replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1);
+    const amount = rowAmounts(line.replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1);
     return amount === undefined ? [] : [{
       label: match[2].trim(),
       amount,
@@ -247,6 +286,12 @@ function ocrExtraLines(lines: string[]): PayslipExtraLine[] | undefined {
   });
   return found.length ? found : undefined;
 }
+
+/** Une lecture ratée plutôt qu'une valeur à proposer : un traitement de
+ *  quelques euros (le taux « 1,00 » de la ligne), un taux d'impôt au-delà du
+ *  barème, qui s'arrête à 43 % (le code « 884,71 » de la ligne). */
+const plausibleBaseSalary = (value: number | undefined) => value !== undefined && value >= 100 ? value : undefined;
+const plausiblePasRate = (value: number | undefined) => value !== undefined && value >= 0 && value <= 50 ? value : undefined;
 
 /** Lecture prudente des lignes produites par l’OCR d’une photo de bulletin.
  * Les montants sont pris dans la dernière colonne de chaque ligne reconnue ;
@@ -263,13 +308,13 @@ export function readPayslipOcrText(text: string): PayslipReading {
     lastAmountNear(lines, ["Transfert primes/points"]),
   ].filter((amount): amount is number => amount !== undefined);
   const carence = matchingLineIndexes(lines, ["Jour de carence"])
-    .map((index) => amountsIn(lines[index]).at(-1))
+    .map((index) => rowAmounts(lines[index]).at(-1))
     .filter((amount): amount is number => amount !== undefined)
     .reduce((sum, amount) => sum + Math.abs(amount), 0);
   // Taux puis montant sur la même ligne : le compte suit le taux lu, pour
   // rester juste après une revalorisation (54,93 € à défaut).
   const sundayIndex = matchingLineIndexes(lines, ["Indemnité trav. dom > 10 dim"])[0];
-  const sundayAmounts = sundayIndex === undefined ? [] : amountsIn(lines[sundayIndex]);
+  const sundayAmounts = sundayIndex === undefined ? [] : rowAmounts(lines[sundayIndex]);
   const sundayAmount = sundayAmounts.at(-1) ?? lastAmountNear(lines, ["Indemnité trav. dom > 10 dim"]);
   const sundayRate = sundayAmounts.length >= 2 && isPlausibleSundayRate(Math.abs(sundayAmounts[0]))
     ? Math.abs(sundayAmounts[0])
@@ -283,7 +328,7 @@ export function readPayslipOcrText(text: string): PayslipReading {
   // suit, lu alors comme « 2 026 131,02 » : on l'écarte avant la lecture.
   const sumLast = (indexes: number[]) => {
     const amounts = indexes
-      .map((index) => amountsIn(lines[index].replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1))
+      .map((index) => rowAmounts(lines[index].replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1))
       .filter((amount): amount is number => amount !== undefined);
     return amounts.length
       ? Math.round(amounts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
@@ -297,7 +342,7 @@ export function readPayslipOcrText(text: string): PayslipReading {
       "NET A PAYER AVANT IMPOT",
       "NET AVANT IMPOT",
     ], 3),
-    baseSalary: lastAmountNear(lines, ["Traitement de Base"]),
+    baseSalary: plausibleBaseSalary(lastAmountNear(lines, ["Traitement de Base"])),
     residenceAllowance,
     ifse: lastAmountNear(lines, ["IFSE"]),
     sundaysBeyondTen:
@@ -319,15 +364,15 @@ export function readPayslipOcrText(text: string): PayslipReading {
     carenceDates: carenceDatesFromLabels(
       matchingLineIndexes(lines, ["Jour de carence"]).map((index) => lines[index]),
     ),
-    pasRate: lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]) ?? (() => {
+    pasRate: plausiblePasRate(lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]) ?? (() => {
       // « PAS prélèvement à la source » : assiette, taux, montant.
       const index = matchingLineIndexes(lines, ["PAS prélèvement à la source"])[0];
-      const amounts = index === undefined ? [] : amountsIn(lines[index]);
+      const amounts = index === undefined ? [] : rowAmounts(lines[index]);
       const [base, rate, paid] = amounts.slice(-3);
       if (amounts.length >= 3 && base >= 100 && Math.abs((base * rate) / 100 - paid) < 0.1) return rate;
       const [lineBase, linePaid] = amounts.slice(-2);
       return amounts.length >= 2 && lineBase >= 100 ? Math.round((Math.abs(linePaid) / lineBase) * 10000) / 100 : undefined;
-    })(),
+    })()),
     ...withExtraLines(
       fixedParts.length
         ? Math.round(fixedParts.reduce((sum, amount) => sum + amount, 0) * 100) / 100

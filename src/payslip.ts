@@ -516,14 +516,24 @@ const hasWords = (token: string) => /[A-Za-zÀ-ÿ]{3,}/.test(token);
 /** Les lignes de rémunération, avant « CUMUL BRUT », que l'application ne
  *  connaît pas. Chaque ligne s'écrit [taux, code, libellé, base, montant] ;
  *  les deux nombres qui suivent le montant sont le taux et le code de la
- *  ligne suivante. Un rappel porte « R » et son mois avant le code. */
+ *  ligne suivante. Un rappel porte « R » et son mois avant le code.
+ *
+ *  Devant le code vient donc un nombre (le taux, ou le montant de la ligne
+ *  précédente) ou l'origine « R » ou « C ». L'en-tête du bulletin ne s'y
+ *  conforme pas : son temps de travail, « 100.00 », a l'allure d'un code,
+ *  mais l'emploi le précède, et le statut qui le suit (« Fonctionnaire
+ *  Titulaire ») n'est pas une ligne de paie. Aucune ligne, enfin, ne dépasse
+ *  le brut du mois. */
 function readExtraLines(tokens: string[]): PayslipExtraLine[] | undefined {
   const cumul = tokens.findIndex((token) => normalizedLabel(token) === "CUMUL BRUT");
   if (cumul === -1) return undefined;
+  const gross = parseAmount(tokens[cumul + 1]);
   const lines: PayslipExtraLine[] = [];
   for (let index = 1; index < cumul; index++) {
     const label = tokens[index].trim();
     if (!hasWords(label) || !PAYSLIP_CODE.test(tokens[index - 1]?.trim() || "")) continue;
+    const beforeCode = tokens[index - 2]?.trim();
+    if (beforeCode !== undefined && parseAmount(beforeCode) === undefined && beforeCode !== "R" && beforeCode !== "C") continue;
     const run: number[] = [];
     let next = index + 1;
     for (; next < cumul + 1 && run.length < 6; next++) {
@@ -535,6 +545,7 @@ function readExtraLines(tokens: string[]): PayslipExtraLine[] | undefined {
     const own = followedByLine && run.length >= 3 && PAYSLIP_CODE.test(tokens[next - 1].trim()) ? run.slice(0, -2) : run;
     const amount = own.at(-1);
     if (amount === undefined || isKnownEarningLabel(label)) continue;
+    if (gross !== undefined && Math.abs(amount) > Math.abs(gross)) continue;
     const origin = [tokens[index - 2], tokens[index - 3]].map((token) => token?.trim());
     const recall = origin.includes("R");
     const sick = origin.includes("C");

@@ -273,6 +273,36 @@ describe("lecture du nombre de dimanches", () => {
       expect(readPayslip(bulletin).extraLines).toBeUndefined();
   });
 
+  it("ne prend pas l’en-tête du bulletin pour une ligne inconnue", () => {
+    // L'en-tête du bulletin de septembre 2026, dans l'ordre du PDF (identité,
+    // adresse et banque remplacées) : le temps de travail « 100.00 » a
+    // l'allure d'un code, et le statut puis les codes bancaires qui le
+    // suivent donnaient « Fonctionnaire Titulaire » : 30 004,00 €.
+    const header = [
+      "Période          du", "au", "Septembre 2026", "M. DUPONT Camille", "Matricule", "Matricule",
+      "Guichet", "Banque", "Domiciliation", "N° de compte", "Mode de règlement", "N°Insee",
+      "Nbre heures", "Tps travail", "Statut", "Ind. maj", "Ind. brut", "Echelon", "Grp/Cat",
+      "Serv.", "Fonction", "Emploi", "S.F.T.", "Date d'emission", "Origine", "Part patronale",
+      "A déduire", "A payer", "Taux", "Base", "Rubriques", "Code",
+      "1 RUE DE L'EXEMPLE", "75000", "PARIS", "01/09/2026", "30/09/2026", "151.67",
+      "1000000000000 00", "12345", "Cat. C", "Adjt Tech acc surv mag prl 2 cl", "7", "377",
+      "AGENT D'ACCUEIL ET DE SURVEILLANCE", "100.00", "Fonctionnaire Titulaire", "416",
+      "09040202", "00818", "30004", "BANQUE EXEMPLE", "00000000000", "Virement", "27",
+      "08-DPU-SAP-PO-accueil et surveillance", "0",
+    ];
+    const reading = readPayslip([
+      ...header,
+      "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88",
+      "3.00", "308.00", "Indemnité de Résidence", "1855.88", "55.68",
+      "1.00", "455.10", "Prime nouvelle", "40.00", "40.00",
+      "CUMUL BRUT", "1951.56",
+    ]);
+    expect(reading).toMatchObject({ month: 8, year: 2026, baseSalary: 1855.88, gross: 1951.56 });
+    expect(reading.extraLines).toEqual([{ label: "Prime nouvelle", amount: 40, recall: false }]);
+    // Sans ligne inconnue, rien n'est demandé.
+    expect(readPayslip([...header, ...juin2026]).extraLines).toBeUndefined();
+  });
+
   it("relève les lignes inconnues, rappel et arrêt maladie à part", () => {
     const reading = readPayslip([
       "1.00", "300.00", "Traitement de Base", "2141.41", "2141.41",
