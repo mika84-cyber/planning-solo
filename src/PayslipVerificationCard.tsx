@@ -554,9 +554,9 @@ export function PayslipVerificationCard({
                   <strong>Pour un net encore plus juste</strong>
                   <p>
                     Avec un seul bulletin, l’application estime vos cotisations avec des valeurs
-                    moyennes. Vérifiez maintenant un deuxième bulletin, d’un autre mois où vos primes
-                    sont différentes (plus ou moins de dimanches, par exemple) : elle calculera vos
-                    propres taux.
+                    moyennes. Vérifiez un deuxième bulletin, maintenant ou lors d’une prochaine
+                    visite, d’un autre mois où vos primes sont différentes (plus ou moins de
+                    dimanches, par exemple) : elle calculera vos propres taux.
                   </p>
                   <label className="payslip-second-button">
                     {payslipFileInput("verify")}

@@ -171,4 +171,23 @@ describe("usePayActions — conversions et payloads sûrs", () => {
     // l'estimation jusqu'au prochain rechargement.
     expect(base).toMatchObject({ sundayCarryover: 2, sundayCarryoverYear: 2026, sundayCarryoverMonth: 9 });
   });
+
+  it("garde les bulletins vérifiés et leurs montants quand un autre réglage est enregistré", () => {
+    const sample = { year: 2026, month: 8, gross: 2450, netBeforeTax: 1938.46, baseSalary: 1850 };
+    const verification = {
+      status: "ok" as const, year: 2026, month: 8, sourceName: "bulletin.pdf", note: "", issues: [],
+      unavailableCount: 0, verifiedCount: 5, updatedAt: "2026-10-02T08:00:00.000Z",
+    };
+    const base = payProfileBase({
+      fullName: "Agent Test",
+      group: "2",
+      signature: "",
+      payslipRateSamples: { "2026-09": sample },
+      payslipVerifications: { "2026-09": verification },
+    }, 2);
+    // Sans eux, le bulletin vérifié la veille ne compterait plus pour les
+    // taux, et la décision « Tout est OK » suivante effacerait les autres.
+    expect(base.payslipRateSamples).toEqual({ "2026-09": sample });
+    expect(base.payslipVerifications).toEqual({ "2026-09": verification });
+  });
 });

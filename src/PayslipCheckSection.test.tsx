@@ -100,6 +100,15 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Éléments de paie");
   });
 
+  it("explique comment affiner les taux net en deux visites", () => {
+    const html = renderToStaticMarkup(<PayslipCheckSection {...baseProps} part="settings" />);
+    expect(html).toContain("vérifiez un second bulletin, d’un autre mois où vos");
+    expect(html).toContain("Vérifiez-les un par un, le même jour ou plus tard");
+    expect(html).toContain("du premier restent gardés dans votre compte");
+    expect(html).toContain("lus comme les pages d’un seul bulletin");
+    expect(html).not.toContain("Deux bulletins de mois");
+  });
+
   it("propose de créer explicitement le profil de l’année affichée", () => {
     const html = renderToStaticMarkup(<PayslipCheckSection {...baseProps} part="settings" payYear="2027" hasPayProfile={false} />);
     expect(html).toContain("Utiliser ces valeurs pour 2027");

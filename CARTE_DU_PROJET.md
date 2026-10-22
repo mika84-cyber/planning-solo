@@ -256,6 +256,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   a réglés dès le mois même.
 - `src/payEstimate.ts` : disponibilité de l'estimation de paie.
 - `src/payslip.ts` / `src/payslipReview.ts` : lecture et contrôle du bulletin.
+- `src/payslipRateSamples.ts` : montants d’un bulletin vérifié qui servent aux
+  deux taux net avant impôt (brut, net, traitement, IFSE, éléments fixes,
+  carence, Navigo, titres repas — jamais le fichier ni son texte), gardés
+  dans le profil sous « AAAA-MM » (`payslip_rate_samples`, ajoutés mois par
+  mois par `save-form-profile`, 24 au plus). `importPayslips` les réunit à
+  ceux de la visite : deux bulletins vérifiés à deux visites différentes
+  affinent les taux. En démo, ils ne durent que la visite.
 - `src/payslipOcr.ts` : reconnaissance locale des photos de bulletins avec le
   moteur et le modèle français auto-hébergés dans `public/ocr/` ; la feuille
   est d'abord redressée (inclinaison mesurée par `payslipSkewDegrees` de

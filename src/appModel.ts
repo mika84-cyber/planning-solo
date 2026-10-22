@@ -14,6 +14,7 @@ import {
 import type { WorkQuota, WorkSchedule } from "./overtime";
 import type { CetAccount } from "./cet";
 import type { PayslipVerificationRecords } from "./payslipVerificationRecords";
+import type { PayslipRateSamples } from "./payslipRateSamples";
 
 export type ViewMode = "month" | "year";
 export type RequestKind = "leave" | "recovery" | "other" | "strike";
@@ -169,6 +170,9 @@ export type FormProfile = {
   deductionPayMonths?: Record<string, string>;
   /** « Tout est OK » ou anomalie signalée, bulletin par bulletin. */
   payslipVerifications?: PayslipVerificationRecords;
+  /** Montants des bulletins vérifiés qui affinent les taux net avant impôt,
+   *  d'une visite à l'autre (voir payslipRateSamples.ts). */
+  payslipRateSamples?: PayslipRateSamples;
 };
 export type SelectedDay = {
   date: string;

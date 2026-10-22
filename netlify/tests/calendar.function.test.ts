@@ -1412,6 +1412,39 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/form-profile")).toMatchObject({ payslip_verifications: {} });
   });
 
+  it("garde d'une visite à l'autre les montants des bulletins qui affinent les taux", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const september = { year: 2026, month: 8, gross: 2450, netBeforeTax: 1938.46, baseSalary: 1850, ifse: 425 };
+    const response = await calendarHandler(request({
+      action: "save-form-profile",
+      payslipRateSamples: {
+        "2026-09": { ...september, extraLines: [{ label: "Prime", amount: 40 }], pasRate: 4 },
+        "2026-13": september,
+        "2026-10": { ...september, gross: "beaucoup" },
+      },
+    }));
+    expect(response.status).toBe(200);
+    type Stored = { payslip_rate_samples: Record<string, Record<string, unknown>> };
+    // Seuls les montants du calcul sont gardés, sous leur mois.
+    expect((data.get("user/user-a/form-profile") as Stored).payslip_rate_samples).toEqual({
+      "2026-09": september,
+    });
+    // Un autre écran qui enregistre le profil sans eux ne les efface pas.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "" }));
+    // Le bulletin d'août, vérifié un autre jour, s'ajoute à celui de septembre.
+    const august = { year: 2026, month: 7, gross: 2950, netBeforeTax: 2388.06, baseSalary: 1850, ifse: 425 };
+    await calendarHandler(request({ action: "save-form-profile", payslipRateSamples: { "2026-08": august } }));
+    expect((data.get("user/user-a/form-profile") as Stored).payslip_rate_samples).toEqual({
+      "2026-08": august,
+      "2026-09": september,
+    });
+    // Le profil relu par l'application les rend.
+    const read = await calendarHandler(new Request("https://example.test/api/calendar"));
+    expect(await read.json()).toMatchObject({
+      form_profile: { payslip_rate_samples: { "2026-08": august, "2026-09": september } },
+    });
+  });
+
   it("garde la signature du téléphone quand un autre écran enregistre le profil", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const signature = "data:image/png;base64,AAAA";
@@ -1646,6 +1679,8 @@ describe("API principale du calendrier", () => {
       { action: "save-form-profile", signature: "", deductionPayMonths: null },
       { action: "save-form-profile", signature: "", payslipVerifications: ["2026-09"] },
       { action: "save-form-profile", signature: "", payslipVerifications: null },
+      { action: "save-form-profile", signature: "", payslipRateSamples: ["2026-09"] },
+      { action: "save-form-profile", signature: "", payslipRateSamples: null },
       {
         action: "save-form-profile",
         signature: "",

@@ -255,15 +255,23 @@ export function PayslipCheckSection({
               de base (votre rémunération hors primes), le montant exact d’un
               jour de carence lors d’un arrêt maladie, et quelques lignes
               fixes plus rares (indemnité de résidence…). Un bulletin peut
-              remplir ces valeurs automatiquement. Deux bulletins de mois
-              différents permettent aussi d’affiner séparément le taux du
-              traitement et celui des primes.
+              remplir ces valeurs automatiquement.
             </p>
             {!isContractuel ? (
               <p className="allowance-note">
                 Pour un fonctionnaire, s’y ajoutent l’IFSE et le CIA.
               </p>
             ) : null}
+            {/* Les montants d'un bulletin vérifié sont gardés dans le compte :
+                le second peut venir lors d'une autre visite. */}
+            <p className="allowance-note">
+              Pour affiner aussi le taux net du traitement et celui des
+              primes, vérifiez un second bulletin, d’un autre mois où vos
+              primes diffèrent (plus ou moins de dimanches, par exemple).
+              Vérifiez-les un par un, le même jour ou plus tard : les montants
+              du premier restent gardés dans votre compte. Plusieurs fichiers
+              choisis ensemble sont lus comme les pages d’un seul bulletin.
+            </p>
             <p className="allowance-note">
               Le PDF est lu uniquement sur cet appareil et n’est jamais
               conservé. Seules les valeurs utiles à vos estimations sont
