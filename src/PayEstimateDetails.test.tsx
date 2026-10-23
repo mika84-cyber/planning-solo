@@ -65,11 +65,15 @@ describe("détail mensuel de la paie", () => {
     expect(html).toContain("Cotisations estimées");
     expect(html).toContain("Net avant prélèvement à la source");
     expect(html).toContain("Prélèvement à la source");
-    expect(html).toContain("Total des ajouts variables");
-    expect(html).toContain("Total des retenues");
-    expect(html).toContain("Net estimé final");
-    // Chaque total se touche pour afficher son calcul.
-    expect(html).toContain("Touchez une case pour voir son calcul.");
+    // Le calcul en bref, lu comme une opération : brut, dont primes ; moins
+    // retenues ; égale net. Chaque ligne se touche pour afficher son calcul.
+    expect(html).toContain("Le calcul en bref");
+    expect(html).toMatch(/<li><button[^>]*><i class="pay-total-sign" aria-hidden="true"><\/i><span class="pay-total-label">Brut du mois<small>traitement, indemnités et primes<\/small><\/span><b>2.500,00.€<\/b>/);
+    expect(html).toMatch(/<li class="part"><button[^>]*><i class="pay-total-sign" aria-hidden="true">dont<\/i><span class="pay-total-label">Primes du mois/);
+    expect(html).toMatch(/<i class="pay-total-sign" aria-hidden="true">−<\/i><span class="pay-total-label">Retenues<small>cotisations, impôt, absences/);
+    expect(html).toMatch(/<li class="net"><button[^>]*><i class="pay-total-sign" aria-hidden="true">=<\/i><span class="pay-total-label">Net estimé<small>ce qui arrive sur votre compte<\/small><\/span><b>1.980,00.€<\/b>/);
+    expect(html).not.toContain("Touchez une case pour voir son calcul.");
+    expect(html).not.toContain("Net estimé final");
     expect(html.match(/aria-controls="pay-total-explain"/g)).toHaveLength(4);
     expect(html.match(/Voir le calcul/g)).toHaveLength(4);
   });

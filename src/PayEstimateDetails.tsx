@@ -314,15 +314,15 @@ function PayTotalsExplained({
       steps: [
         ...termsOf(calculation.grossComposition),
         ...calculation.grossDeductions.map((row) => ({ label: row.label, amount: row.amount, sign: "−" as const })),
-        { label: "Total brut", amount: brut, sign: "=" },
+        { label: "Brut du mois", amount: brut, sign: "=" },
       ],
     },
     variable: {
-      title: "Comment sont calculés les ajouts variables",
+      title: "Comment sont calculées les primes du mois",
       intro: "Ce qui change d’un mois à l’autre. Ces montants sont déjà compris dans le brut et supportent moins de cotisations que le traitement.",
       steps: [
         ...termsOf(calculation.grossComposition.filter((row) => VARIABLE_KEYS.includes(row.key))),
-        { label: "Total des ajouts variables", amount: calculation.variableAdditions, sign: "=" },
+        { label: "Primes du mois", amount: calculation.variableAdditions, sign: "=" },
       ],
     },
     deductions: {
@@ -345,14 +345,14 @@ function PayTotalsExplained({
           amount: calculation.incomeTax,
           sign: "−",
         },
-        { label: "Total des retenues", amount: calculation.totalDeductions === null ? null : -calculation.totalDeductions, sign: "=" },
+        { label: "Retenues", amount: calculation.totalDeductions === null ? null : -calculation.totalDeductions, sign: "=" },
       ],
     },
     net: {
       title: "Comment est calculé le net estimé",
       intro: "Ce qui arrive sur votre compte : le brut, moins les cotisations, puis moins l’impôt.",
       steps: [
-        { label: "Total brut", amount: brut, sign: "" },
+        { label: "Brut du mois", amount: brut, sign: "" },
         { label: "Cotisations sociales", amount: calculation.estimatedContributions, sign: "−" },
         ...(calculation.navigo ? [{ label: "Remboursement Navigo", amount: calculation.navigo, sign: "+" as const }] : []),
         ...(calculation.mealVoucherDeduction ? [{ label: "Titres repas", amount: calculation.mealVoucherDeduction, sign: "−" as const }] : []),
@@ -362,37 +362,44 @@ function PayTotalsExplained({
       ],
     },
   };
-  const cards: Array<{ key: TotalKey; label: string; value: string; note: string }> = [
-    { key: "gross", label: "Total brut", value: brut === null ? "À compléter" : euros(brut), note: "avant cotisations et impôt" },
-    { key: "variable", label: "Total des ajouts variables", value: euros(calculation.variableAdditions), note: "déjà compris dans le brut" },
+  /* Le calcul en bref, lu comme une opération : le brut, dont les primes du
+     mois ; moins les retenues ; égale le net. Chaque ligne se touche pour
+     afficher son calcul, ligne à ligne, dessous. */
+  const rows: Array<{ key: TotalKey; sign: string; label: string; value: string; note: string }> = [
+    { key: "gross", sign: "", label: "Brut du mois", value: brut === null ? "À compléter" : euros(brut), note: "traitement, indemnités et primes" },
+    { key: "variable", sign: "dont", label: "Primes du mois", value: euros(calculation.variableAdditions), note: "déjà comprises dans le brut" },
     {
       key: "deductions",
-      label: "Total des retenues",
-      value: calculation.totalDeductions === null ? "À compléter" : `−${euros(calculation.totalDeductions)}`,
+      sign: "−",
+      label: "Retenues",
+      value: calculation.totalDeductions === null ? "À compléter" : euros(calculation.totalDeductions),
       note: "cotisations, impôt, absences",
     },
-    { key: "net", label: "Net estimé final", value: net === null ? "À compléter" : euros(net), note: "ce que vous recevez" },
+    { key: "net", sign: "=", label: "Net estimé", value: net === null ? "À compléter" : euros(net), note: "ce qui arrive sur votre compte" },
   ];
   const explanation = open ? explanations[open] : null;
   return (
     <>
-      <p className="pay-totals-hint">Touchez une case pour voir son calcul.</p>
-      <section className="pay-calculation-totals" aria-label="Totaux du calcul">
-        {cards.map((card) => (
-          <article key={card.key} className={`${card.key === "net" ? "net" : ""}${open === card.key ? " open" : ""}`.trim() || undefined}>
-            <button
-              type="button"
-              aria-expanded={open === card.key}
-              aria-controls="pay-total-explain"
-              onClick={() => setOpen((current) => (current === card.key ? null : card.key))}
-            >
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-              <small>{card.note}</small>
-              <em>{open === card.key ? "Masquer le calcul" : "Voir le calcul"}<i aria-hidden="true">›</i></em>
-            </button>
-          </article>
-        ))}
+      <h3 className="pay-totals-kicker">Le calcul en bref</h3>
+      <section className="pay-calculation-totals" aria-label="Le calcul en bref">
+        <ol>
+          {rows.map((row) => (
+            <li key={row.key} className={[row.key === "net" ? "net" : "", row.key === "variable" ? "part" : "", open === row.key ? "open" : ""].filter(Boolean).join(" ") || undefined}>
+              <button
+                type="button"
+                aria-expanded={open === row.key}
+                aria-controls="pay-total-explain"
+                onClick={() => setOpen((current) => (current === row.key ? null : row.key))}
+              >
+                <i className="pay-total-sign" aria-hidden="true">{row.sign}</i>
+                <span className="pay-total-label">{row.label}<small>{row.note}</small></span>
+                <b>{row.value}</b>
+                <i className="pay-total-chevron" aria-hidden="true">›</i>
+                <span className="pay-total-sr">{open === row.key ? "Masquer le calcul" : "Voir le calcul"}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
       </section>
       {explanation ? (
         <section id="pay-total-explain" className="pay-total-explain" aria-label={explanation.title}>

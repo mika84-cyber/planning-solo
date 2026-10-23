@@ -1290,34 +1290,6 @@
   color: var(--muted);
 }
 
-.pay-calculation-totals {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
-  margin-top: 14px;
-}
-
-.pay-calculation-totals article {
-  display: grid;
-  gap: 3px;
-  border: 1px solid var(--border-card);
-  border-radius: 12px;
-  padding: 11px;
-  background: #fff;
-}
-
-.pay-calculation-totals span,
-.pay-calculation-totals small {
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.pay-calculation-totals strong { font-size: 1rem; }
-
-.pay-calculation-totals article.net { border-color: var(--border-card); background: #fff; }
-
-.pay-calculation-totals article.net strong { color: var(--muted); }
-
 /* ---- Contrôle du bulletin -------------------------------------------------- */
 
 /* Le choix de fichier passe par un label : l'input natif est masqué, mais il
@@ -1816,7 +1788,6 @@
   .pay-function-card { border-radius: 12px; }
   .pay-function-card>header { align-items: flex-start; }
   .pay-calculation-section { padding: 11px; }
-  .pay-calculation-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .payslip-period-fallback { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .payslip-period-fallback>div,
   .payslip-period-fallback>button {

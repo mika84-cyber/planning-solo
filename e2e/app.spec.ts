@@ -5738,7 +5738,7 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await expect(page.getByRole("rowheader", { name: /^Indemnité de résidence/ })).toBeVisible();
   await expect(page.getByRole("rowheader", { name: /^IFSE/ })).toBeVisible();
   await expect(page.getByText("Net avant prélèvement à la source", { exact: true })).toBeVisible();
-  await expect(page.getByText("Net estimé final", { exact: true })).toBeVisible();
+  await expect(page.locator(".pay-calculation-totals li.net")).toContainText("Net estimé");
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await expect(monthHeading).toHaveText("Octobre 2026");
 
@@ -5874,14 +5874,16 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   // Un seul titre (le bandeau) ; dessous, le mois entre ses deux flèches.
   await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toHaveCount(0);
   await expect(page.locator(".pay-detail-screen .pay-bulletin-month-nav").getByRole("button", { name: "Mois suivant" })).toBeVisible();
-  const calculationTotals = page.locator(".pay-calculation-totals article");
+  // Le calcul en bref : quatre lignes, lues comme une opération, le net
+  // souligné d'un trait comme le total des lignes de la paie.
+  const calculationTotals = page.locator(".pay-calculation-totals li");
   await expect(calculationTotals).toHaveCount(4);
-  await expect(calculationTotals.first()).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
-  await expect(calculationTotals.first()).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(calculationTotals.locator(".pay-total-sign")).toHaveText(["", "dont", "−", "="]);
+  await expect(calculationTotals.last()).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
   // Une simple estimation avec le profil de l'année n'est plus annoncée.
   await expect(page.getByText("Valeurs enregistrées pour cette année")).toHaveCount(0);
   // Chaque case se touche pour afficher son calcul, ligne à ligne.
-  await expect(page.getByText("Touchez une case pour voir son calcul.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Le calcul en bref" })).toBeVisible();
   const netCard = calculationTotals.last().getByRole("button");
   await netCard.click();
   await expect(netCard).toHaveAttribute("aria-expanded", "true");
