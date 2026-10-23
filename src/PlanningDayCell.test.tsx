@@ -101,6 +101,20 @@ describe("PlanningDayCell", () => {
     expect(html).toContain(">9</span>");
   });
 
+  it("garde la nature d'un congé posé un jour de fermeture", () => {
+    const html = renderToStaticMarkup(
+      <PlanningDayCell
+        {...baseProps}
+        leavePeriod={{ id: "leave-closed", from: "2026-09-09", to: "2026-09-09", leaveType: "rtt", updatedAt: "" }}
+        exceptionalClosure={{ label: "Fermeture exceptionnelle" }}
+      />,
+    );
+    expect(html).toContain("exceptional-closure-day");
+    expect(html).toContain("exceptional-closure-marker");
+    expect(html).toMatch(/leave-calendar-marker leave-calendar-marker-rtt" aria-hidden="true">RTT<\/span>/);
+    expect(html).toContain("RTT, Fermeture exceptionnelle");
+  });
+
   it("conserve le bandeau de note dans une case de fermeture", () => {
     const html = renderToStaticMarkup(
       <PlanningDayCell

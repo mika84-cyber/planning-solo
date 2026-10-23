@@ -132,3 +132,6 @@ html[data-theme="dark"] .leave-info-card { border-color: rgba(255, 255, 255, 0.5
 html[data-theme="dark"] .payslip-gap-choice { border-color: #4a3a2d; border-left-color: #c9754f; background: #2a241f; }
 html[data-theme="dark"] .payslip-gap-choice p { color: #d8cfc4; }
 html[data-theme="dark"] .payslip-gap-choice p strong, html[data-theme="dark"] .payslip-gap-choices h4 { color: #f0c3ad; }
+/* Congé posé un jour de fermeture : sa nature (CA, RTT…) reste lisible
+   par-dessus le tampon CLOSED, en clair détouré de sombre, sans encadré. */
+html[data-theme="dark"] .calendar-grid .day.exceptional-closure-day > .leave-calendar-marker { color: #f3ede6; text-shadow: 0 1px 0 #1d1916, 1px 0 0 #1d1916, -1px 0 0 #1d1916, 0 -1px 0 #1d1916; }

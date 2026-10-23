@@ -3278,6 +3278,22 @@ test("le tampon de fermeture conserve la date lisible sur ordinateur et téléph
   expect(Math.abs(dayBox!.height - markerBox!.height)).toBeLessThanOrEqual(2);
 });
 
+test("un congé posé un jour de fermeture garde sa nature par-dessus le tampon", async ({ page }) => {
+  // Le 24 octobre 2026, fermeture exceptionnelle, un congé annuel posé ce jour-là.
+  await page.clock.setFixedTime(new Date("2026-10-24T09:00:00"));
+  await prepareDemo(page, true);
+  const closedLeaveDay = page.locator(".month-card .day.today.exceptional-closure-day.leave-annual");
+  await expect(closedLeaveDay).toBeVisible();
+  const marker = closedLeaveDay.locator(".leave-calendar-marker");
+  await expect(marker).toHaveText("CA");
+  await expect(marker).toHaveCSS("z-index", "9");
+  // La pastille passe au-dessus du tampon (les deux ignorent le pointeur,
+  // d'où une comparaison des plans plutôt qu'un elementFromPoint).
+  await expect(closedLeaveDay.locator(".exceptional-closure-marker")).toHaveCSS("z-index", "7");
+  await marker.scrollIntoViewIfNeeded();
+  await expect(marker).toBeVisible();
+});
+
 test("les vacances scolaires restent facultatives et respectent la zone choisie", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("planning:school-vacations-v1", "1");
