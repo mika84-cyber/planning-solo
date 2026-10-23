@@ -263,7 +263,9 @@
 .expo-price > p { margin: 0 0 3px; color: var(--accent); font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .expo-price dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin: 0; align-items: baseline; }
 .expo-price dt { color: var(--muted); font-size: 0.76rem; font-weight: 700; }
-.expo-price dt span { font-weight: 600; opacity: 0.85; }
+/* La date d'un tarif d'un jour (« le 12 novembre ») : même teinte que le
+   libellé, sans transparence, pour garder le contraste sur les fonds teintés. */
+.expo-price dt span { font-weight: 600; }
 .expo-price dd { margin: 0; color: var(--text); font-size: 0.84rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 /* Le premier tarif, celui qu'on cherche en général, ressort par sa taille :
    la teinte du lieu ne passerait pas le contraste sur les fonds les plus pâles. */
