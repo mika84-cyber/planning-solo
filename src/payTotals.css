@@ -7,10 +7,12 @@
 .pay-totals-kicker { margin: 14px 0 2px; color: #9a4a2e; font-family: inherit; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .pay-calculation-totals { display: block; margin: 0; }
 .pay-calculation-totals ol { display: grid; margin: 2px 0 0; padding: 0; list-style: none; }
-.pay-calculation-totals li { position: relative; }
-.pay-calculation-totals li::before { content: ""; position: absolute; top: 0; bottom: 0; left: 10px; width: 2px; background: #f1e9de; }
-.pay-calculation-totals li:first-child::before { top: 50%; }
-.pay-calculation-totals li:last-child::before { bottom: 50%; }
+/* Le fil ne relie que les étapes : les lignes d'un calcul déplié n'en ont pas. */
+.pay-calculation-totals > ol > li { position: relative; }
+.pay-calculation-totals > ol > li::before { content: ""; position: absolute; top: 0; bottom: 0; left: 10px; width: 2px; background: #f1e9de; }
+.pay-calculation-totals > ol > li:first-child::before { top: 50%; }
+.pay-calculation-totals > ol > li:last-child::before { bottom: 50%; }
+.pay-calculation-totals .pay-total-explain li::before { content: none; }
 .app-shell .pay-calculation-totals li > button { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; min-height: 0; margin: 0; border: 0; border-radius: 10px; padding: 8px 2px 8px 0; background: none; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .app-shell .pay-calculation-totals li > button:hover,
 .app-shell .pay-calculation-totals li.open > button { background: #fbf6f2; }
