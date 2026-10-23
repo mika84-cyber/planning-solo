@@ -5876,7 +5876,7 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   await expect(page.locator(".pay-detail-screen .pay-bulletin-month-nav").getByRole("button", { name: "Mois suivant" })).toBeVisible();
   // Du brut au net : une étape par ligne, reliées par un fil, les retenues
   // en rose, le net en terracotta pour fermer la cascade.
-  const calculationTotals = page.locator(".pay-calculation-totals li");
+  const calculationTotals = page.locator(".pay-calculation-totals > ol > li");
   await expect(calculationTotals).toHaveCount(6);
   await expect(calculationTotals.locator(".pay-total-label")).toContainText(["Brut du mois", "dont primes du mois", "Cotisations sociales", "Net avant impôt", "Impôt sur le revenu", "Net estimé"]);
   await expect(calculationTotals.nth(2).locator(".pay-total-dot")).toHaveCSS("background-color", "rgb(232, 138, 160)");

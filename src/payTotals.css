@@ -35,6 +35,13 @@
 .pay-calculation-totals li.net { margin-top: 4px; }
 .pay-calculation-totals li.net .pay-total-label { font-size: 0.95rem; font-weight: 850; }
 .pay-calculation-totals li.net .pay-total-value b { color: #8a3d22; font-size: 1.15rem; font-weight: 850; }
+/* Le calcul d'une étape : il prolonge sa ligne, dans le même bloc crème,
+   aligné sur son texte ; la ligne ouverte perd ses coins du bas, le calcul
+   ses coins du haut, et le fil passe dessous. */
+.app-shell .pay-calculation-totals li.open > button { border-radius: 10px 10px 0 0; }
+.pay-calculation-totals li > .pay-total-explain { position: relative; z-index: 1; margin: 0 0 8px; border: 0; border-radius: 0 0 10px 10px; padding: 2px 12px 12px 30px; background: #fbf6f2; }
+.pay-calculation-totals li > .pay-total-explain h4 { font-size: 0.88rem; }
+.pay-calculation-totals li > .pay-total-explain > p { margin: 3px 0 6px; }
 .pay-total-explain { margin-top: 10px; border: 1px solid #ead5c9; border-left: 4px solid #9a4a2e; border-radius: 12px; padding: 12px 14px; background: #fbf6f2; }
 .pay-total-explain h4 { margin: 0; color: var(--text); font-size: 0.95rem; font-weight: 850; }
 .pay-total-explain > p { margin: 4px 0 8px; color: var(--muted); font-size: 0.8rem; line-height: 1.45; }

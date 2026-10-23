@@ -381,7 +381,7 @@ function PayTotalsExplained({
   /* Le fil du brut au net : une étape par ligne, les retenues en rose, le
      Navigo en vert, les paliers (primes comprises, net avant impôt) en
      retrait ; le net ferme la cascade. Chaque ligne se touche pour afficher
-     son calcul, ligne à ligne, dessous — et le dit sous son montant. */
+     son calcul, ligne à ligne, juste sous elle — et le dit sous son montant. */
   const rows: Array<{ key: TotalKey; kind: "" | "sub" | "minus" | "plus" | "net"; label: string; note?: string; value: string }> = [
     {
       key: "gross",
@@ -436,31 +436,32 @@ function PayTotalsExplained({
                   <em>{open === row.key ? "Masquer le calcul" : "Voir le calcul"}<i aria-hidden="true">›</i></em>
                 </span>
               </button>
+              {/* Le calcul de l'étape, juste sous sa ligne. */}
+              {open === row.key && explanation ? (
+                <section id="pay-total-explain" className="pay-total-explain" aria-label={explanation.title}>
+                  <h4>{explanation.title}</h4>
+                  <p>{explanation.intro}</p>
+                  <ol>
+                    {explanation.steps.map((step) => (
+                      <li key={`${step.sign}${step.label}`} className={step.sign === "=" ? "total" : undefined}>
+                        <span>
+                          {step.label}
+                          {step.detail ? <small>{step.detail}</small> : null}
+                        </span>
+                        <b>
+                          {step.amount === null
+                            ? "à compléter"
+                            : `${step.sign === "+" || step.sign === "−" ? `${step.sign} ` : step.amount < 0 ? "− " : ""}${euros(Math.abs(step.amount))}`}
+                        </b>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              ) : null}
             </li>
           ))}
         </ol>
       </section>
-      {explanation ? (
-        <section id="pay-total-explain" className="pay-total-explain" aria-label={explanation.title}>
-          <h4>{explanation.title}</h4>
-          <p>{explanation.intro}</p>
-          <ol>
-            {explanation.steps.map((step) => (
-              <li key={`${step.sign}${step.label}`} className={step.sign === "=" ? "total" : undefined}>
-                <span>
-                  {step.label}
-                  {step.detail ? <small>{step.detail}</small> : null}
-                </span>
-                <b>
-                  {step.amount === null
-                    ? "à compléter"
-                    : `${step.sign === "+" || step.sign === "−" ? `${step.sign} ` : step.amount < 0 ? "− " : ""}${euros(Math.abs(step.amount))}`}
-                </b>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
     </>
   );
 }
