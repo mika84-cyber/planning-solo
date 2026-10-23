@@ -92,6 +92,7 @@ const serviceWorker = readFileSync(new URL("./public/sw.js", import.meta.url), "
 const calendarCleanup = readFileSync(new URL("./src/CalendarCleanup.tsx", import.meta.url), "utf8");
 const leaveBalancesSection = readFileSync(new URL("./src/LeaveBalancesSection.tsx", import.meta.url), "utf8");
 const payEstimateDetails = readFileSync(new URL("./src/PayEstimateDetails.tsx", import.meta.url), "utf8");
+const payMonthNav = readFileSync(new URL("./src/PayMonthNav.tsx", import.meta.url), "utf8");
 const appSections = readFileSync(new URL("./src/appSections.ts", import.meta.url), "utf8");
 const leaveDialogs = readFileSync(new URL("./src/LeaveDialogs.tsx", import.meta.url), "utf8");
 const workTimeDialogs = readFileSync(new URL("./src/WorkTimeDialogs.tsx", import.meta.url), "utf8");
@@ -245,7 +246,10 @@ describe("finitions d’interface", () => {
   });
 
   it("actualise les libellés demandés dans les primes", () => {
-    expect(app).toContain("Primes pour le mois");
+    // Les primes s'ouvrent sur le même navigateur de mois que Ma paie
+    // (rendu vérifié dans PayMonthNav.test.tsx et PayAllowancesSection.test.tsx).
+    expect(app).not.toContain("Primes pour le mois");
+    expect(payAllowancesSection).toContain("<PayMonthNav");
     expect(app).not.toContain("Jours fériés dans l’année");
     expect(app).not.toContain('className="step-label">Période de paie');
     expect(app).not.toContain("Jours fériés concernés");
@@ -265,12 +269,14 @@ describe("finitions d’interface", () => {
   });
 
   it("rend la navigation mensuelle des primes confortable sur téléphone", () => {
-    // Le mois en titre, les deux flèches regroupées à droite.
-    expect(app).toContain('className="variable-pay-head variable-pay-head-c"');
-    expect(app).toContain('className="variable-pay-arrows"');
-    // Les flèches encadrent le mois : elles se fondent dans sa rangée (display: contents).
-    expect(css.anyRuleDeclares(".variable-pay-head-c .variable-pay-arrows", { gap: "8px" })).toBe(true);
-    expect(css.anyRuleDeclares(".variable-pay-head-c .variable-pay-month .variable-pay-arrows", { display: "contents" })).toBe(true);
+    // Le mois entre ses deux flèches rondes, le même bloc sur les trois
+    // écrans de Ma paie ; l'ancien en-tête des primes n'existe plus.
+    expect(app).not.toContain('className="variable-pay-head');
+    expect(app).not.toContain("variable-pay-arrows");
+    expect(css.mentions(".variable-pay-head-c")).toBe(false);
+    expect(css.mentions(".variable-pay-arrows")).toBe(false);
+    expect(css.anyRuleDeclares(".pay-bulletin-month-nav", { "grid-template-columns": "40px minmax(0, 1fr) 40px" })).toBe(true);
+    expect(css.anyRuleDeclares(".app-shell .pay-bulletin-month-nav .pay-bulletin-month-arrow", { width: "40px" })).toBe(true);
   });
 
   it("propose l’arrêt maladie séparément et le retire du congé professionnel", () => {
@@ -309,12 +315,16 @@ describe("finitions d’interface", () => {
 
   it("garde le titre des catégories de paie accessible et permet de revenir aujourd’hui", () => {
     expect(app).toContain('className="pay-detail-sticky-header"');
-    expect(app).toContain('aria-label="Fermer cette page"');
+    // Un seul retour, la flèche : plus de croix qui faisait double emploi.
+    expect(app).not.toContain('aria-label="Fermer cette page"');
+    expect(app).not.toContain("pay-detail-close");
     expect(app).toContain('className={`pay-profile-open-copy');
     expect(app).toContain('{netEstimateComplete ? "Profil complet" : "À compléter"}');
     expect(app).not.toContain('profileOpen ? "Replier"');
-    expect((payDashboard.match(/className="pay-bulletin-today"/g) || []).length).toBe(1);
-    expect((payEstimateDetails.match(/className="pay-today-button"/g) || []).length).toBe(1);
+    // « Revenir à aujourd’hui » vit dans le navigateur commun, une seule fois.
+    expect((payMonthNav.match(/className="pay-bulletin-today"/g) || []).length).toBe(1);
+    expect(payDashboard).not.toContain("pay-bulletin-today");
+    expect(payEstimateDetails).not.toContain("pay-today-button");
     expect(app).toContain("Aucun dimanche versé sur cette paie");
     expect(css.mentions(".pay-detail-sticky-header")).toBe(true);
     expect(css.declares("position", "sticky")).toBe(true);
@@ -488,10 +498,11 @@ describe("finitions d’interface", () => {
     expect(payAllowancesSection).toContain("holiday-pay-options");
     expect(payAllowancesSection).toContain("<span>Échanger</span>");
     expect((payAllowancesSection.match(/holidayChoice\(item\)/g) || []).length).toBe(2);
-    // Le détail du calcul : le mois entre ses deux flèches, comme la page principale.
-    expect(payEstimateDetails).toContain('className="pay-detail-month-bar"');
+    // Le détail du calcul : le même navigateur de mois que la page principale.
+    expect(payEstimateDetails).toContain("<PayMonthNav");
+    expect(payEstimateDetails).not.toContain("pay-detail-month-bar");
+    expect(css.mentions(".pay-detail-month-bar")).toBe(false);
     expect(css.anyRuleDeclares(".holiday-pay-amount", { width: "fit-content" })).toBe(true);
-    expect((payEstimateDetails.match(/className="pay-detail-month-arrow"/g) || []).length).toBe(2);
   });
 
   it("donne le même liseré aux tableaux Planning et Couleurs des deux PDF", () => {
@@ -807,7 +818,8 @@ describe("finitions d’interface", () => {
   });
 
   it("organise l’accueil de Ma paie autour du mois et des accès directs", () => {
-    expect(payDashboard).toContain('className="pay-bulletin-month"');
+    expect(payDashboard).toContain("<PayMonthNav");
+    expect(payMonthNav).toContain('className="pay-bulletin-month pay-bulletin-month-nav"');
     expect(payDashboard).toContain("Net estimé");
     expect(payDashboard).toContain("Détail du calcul");
     expect(payDashboard).not.toContain("Actions utiles");
@@ -816,9 +828,17 @@ describe("finitions d’interface", () => {
     expect(appRoot).not.toContain('actionLabel: "Choisir le PDF"');
     expect(payDashboard).toContain("Primes et jours fériés");
     expect(payDashboard).toContain("Vérifier mon bulletin");
-    expect(payDashboard).toContain("Affiner les valeurs manuellement si besoin");
+    // Trois entrées de même facture après le bouton du mois ; le profil et
+    // ses éléments se déplient d'un geste, sans volet « Affiner… ».
+    expect(payDashboard).toContain('className="pay-bulletin-more"');
+    expect(payDashboard).toContain("Profil et réglages");
+    expect(payDashboard).not.toContain("Profil · réglages");
+    expect(app).not.toContain("Affiner les valeurs manuellement si besoin");
+    expect(app).not.toContain("pay-dashboard-settings-toggle");
     expect(css.mentions(".pay-bulletin .pay-bulletin-layout")).toBe(true);
-    expect(css.mentions(".pay-dashboard-settings")).toBe(true);
+    expect(css.mentions(".pay-bulletin .pay-bulletin-more")).toBe(true);
+    expect(css.mentions(".pay-dashboard-settings-slot")).toBe(true);
+    expect(css.mentions(".pay-dashboard-settings-toggle")).toBe(false);
   });
 
   it("présente les téléchargements PDF en une ligne de réglages puis une liste de documents", () => {

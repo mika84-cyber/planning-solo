@@ -17,7 +17,7 @@ type PayScreenProps = {
    *  profil, animation du mois et actions. */
   page: Omit<
     PayPageProps,
-    | "month" | "year" | "gross" | "grossComplete" | "net" | "profileLabel" | "reliability" | "variables"
+    | "month" | "year" | "gross" | "grossComplete" | "net" | "reliability" | "variables"
     | "calculation" | "allowancesPending" | "verification" | "savedVerification" | "deductionContent"
     | "allowancesContent" | "estimateContent" | "verificationContent" | "settingsContent"
   >;
@@ -70,7 +70,6 @@ export function PayScreen({
       gross={payContent.gross}
       grossComplete={payContent.grossComplete}
       net={payContent.net}
-      profileLabel={payContent.profileLabel}
       reliability={payContent.reliability}
       variables={payContent.variables}
       calculation={payContent.calculation}

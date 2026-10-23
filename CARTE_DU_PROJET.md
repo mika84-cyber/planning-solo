@@ -126,7 +126,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   règles (`validateWorkExchange`, groupe du profil du destinataire).
 - `src/LeaveManagementPage.tsx` : composition de la page congés et
   récupérations.
-- `src/PayPage.tsx`, `src/PayAllowancesSection.tsx` et
+- `src/PayPage.tsx`, `src/PayDashboard.tsx` (Ma paie : le mois et le net,
+  les lignes de la paie, le bouton « Vérifier le bulletin », puis trois
+  entrées de même facture — primes et jours fériés, détail du calcul, profil
+  et réglages, ce dernier déplié sur place avec ses éléments de paie, sans
+  volet intermédiaire), `src/PayMonthNav.tsx` (le navigateur de mois commun
+  aux trois écrans), `src/PayAllowancesSection.tsx` et
   `src/PayslipCheckSection.tsx` : navigation paie, primes et composition du
   contrôle du bulletin ; `src/SundayDetailsList.tsx`, chargé à l’ouverture,
   détaille les dimanches par paie, reports compris. Le contrôle délègue les blocs autonomes à

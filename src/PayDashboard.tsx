@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
 import type { PayCalculationBreakdown, PayCalculationRow } from "./PayEstimateDetails";
-import { MONTHS, s } from "./planningLogic";
+import { s } from "./planningLogic";
+import { PayMonthNav } from "./PayMonthNav";
 import "./payBulletin.css";
 
 export type PayDashboardVariable = {
@@ -23,7 +24,8 @@ type PayDashboardProps = {
   gross: number;
   grossComplete: boolean;
   net: number | null;
-  profileLabel: string;
+  /** Ce que dit le profil (quotité, statut), sous « Profil et réglages ». */
+  profileRecap: string;
   missingFields?: string[];
   onCompleteEstimate?: () => void;
   reliability: {
@@ -57,8 +59,8 @@ type PayDashboardProps = {
   onToday: () => void;
   onOpenEstimateDetails: () => void;
   onOpenAllowances: () => void;
-  onToggleSettings: () => void;
-  /** « Profil · réglages » s'ouvre : le profil de paie se déplie avec. */
+  /** « Profil et réglages » s'ouvre : le profil de paie et ses éléments se
+   *  déplient avec, d'un seul geste. */
   onOpenTools?: () => void;
   /** Et se referme avec lui, réglages compris. */
   onCloseTools?: () => void;
@@ -127,7 +129,7 @@ export function PayDashboard({
   gross,
   grossComplete,
   net,
-  profileLabel,
+  profileRecap,
   missingFields = [],
   onCompleteEstimate,
   reliability,
@@ -149,7 +151,6 @@ export function PayDashboard({
   onToday,
   onOpenEstimateDetails,
   onOpenAllowances,
-  onToggleSettings,
   onOpenTools,
   onCloseTools,
 }: PayDashboardProps) {
@@ -157,9 +158,15 @@ export function PayDashboard({
   const [verifyFocus, setVerifyFocus] = useState<{ pickFile: boolean } | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
   const showTools = toolsOpen || profileOpen || settingsOpen;
-  const monthLabel = MONTHS[month].charAt(0).toUpperCase() + MONTHS[month].slice(1);
-  const today = new Date();
-  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const toggleTools = () => {
+    if (showTools) {
+      setToolsOpen(false);
+      onCloseTools?.();
+    } else {
+      setToolsOpen(true);
+      onOpenTools?.();
+    }
+  };
 
   /* « Vérifier le bulletin » propose aussitôt le PDF ou les photos : la
      vérification ne s'affiche qu'une fois un fichier choisi. Sans champ de
@@ -351,21 +358,9 @@ export function PayDashboard({
     <div className="pay-dashboard pay-bulletin">
       <div className="pay-bulletin-layout">
         <section className="pay-bulletin-hero" aria-labelledby="pay-dashboard-title">
-          {/* Le mois en tête de la carte du net, une flèche de chaque côté ;
-              « Revenir à aujourd’hui » ne paraît que loin du mois en cours. */}
-          <div className="pay-bulletin-month" role="group" aria-label="Choisir le mois de paie">
-            <button type="button" className="pay-bulletin-month-arrow" onClick={onPreviousMonth} aria-label="Mois précédent">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-            </button>
-            <div className="pay-bulletin-month-title">
-              <span className="pay-bulletin-kicker">Paie de</span>
-              <h2 id="pay-dashboard-title">{monthLabel} {year}</h2>
-              {isCurrentMonth ? null : <button type="button" className="pay-bulletin-today" onClick={onToday}>Revenir à aujourd’hui</button>}
-            </div>
-            <button type="button" className="pay-bulletin-month-arrow" onClick={onNextMonth} aria-label="Mois suivant">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
-            </button>
-          </div>
+          {/* Le mois en tête de la carte du net : le même navigateur que sur
+              les primes et le détail du calcul. */}
+          <PayMonthNav month={month} year={year} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday} titleId="pay-dashboard-title" />
           <span className="pay-bulletin-kicker">Net estimé</span>
           <p className={`pay-bulletin-net${net === null ? " is-missing" : ""}`}>{net === null ? "À compléter" : euros(net)}</p>
           <p className="pay-bulletin-gross">{grossComplete ? `sur ${euros(gross)} de brut` : "Brut à compléter"}</p>
@@ -457,43 +452,13 @@ export function PayDashboard({
             </p>
           ) : null}
           {deductionContent}
-          {/* Les primes de l'année, puis le détail du calcul, côte à côte
-              sous les lignes qu'ils expliquent. */}
-          <div className="pay-bulletin-links">
-            <button type="button" className="pay-bulletin-shortcut" onClick={onOpenAllowances}>
-              <span>
-                <strong>Primes et jours fériés</strong>
-                <small>Dimanches, fériés, heures sup</small>
-                {allowancesPending ? <em>{allowancesPending} férié{s(allowancesPending)} à décider</em> : null}
-              </span>
-              <i aria-hidden="true">›</i>
-            </button>
-            <button type="button" className="pay-bulletin-shortcut" onClick={onOpenEstimateDetails}>
-              <span>
-                <strong>Détail du calcul</strong>
-                <small>Brut, cotisations, impôt</small>
-              </span>
-              <i aria-hidden="true">›</i>
-            </button>
-          </div>
-          <p className="pay-bulletin-note">{profileLabel}</p>
         </section>
       </div>
 
+      {/* Le geste du mois, seul et en pleine largeur : vérifier le bulletin. */}
       <div className="pay-bulletin-actions">
         <button type="button" className={`pay-bulletin-action primary${verifyOpen ? " open" : ""}`} aria-expanded={verifyOpen} aria-controls="pay-dashboard-verification" onClick={() => (verifyOpen ? setVerifyOpen(false) : openVerification(true))}>
           Vérifier le bulletin
-        </button>
-        <button type="button" className={`pay-bulletin-action${showTools ? " open" : ""}`} aria-expanded={showTools} onClick={() => {
-          if (showTools) {
-            setToolsOpen(false);
-            onCloseTools?.();
-          } else {
-            setToolsOpen(true);
-            onOpenTools?.();
-          }
-        }}>
-          Profil · réglages
         </button>
       </div>
 
@@ -514,23 +479,40 @@ export function PayDashboard({
         {verificationContent}
       </section>
 
+      {/* Pour aller plus loin, trois entrées de même facture : les primes de
+          l'année et le détail du calcul ouvrent leur page ; le profil et les
+          réglages se déplient ici même, d'un seul geste. */}
+      <section className="pay-bulletin-more" aria-label="Pour aller plus loin">
+        <div className="pay-bulletin-links">
+          <button type="button" className="pay-bulletin-shortcut" onClick={onOpenAllowances}>
+            <span>
+              <strong>Primes et jours fériés</strong>
+              <small>Dimanches, fériés, heures sup</small>
+              {allowancesPending ? <em>{allowancesPending} férié{s(allowancesPending)} à décider</em> : null}
+            </span>
+            <i aria-hidden="true">›</i>
+          </button>
+          <button type="button" className="pay-bulletin-shortcut" onClick={onOpenEstimateDetails}>
+            <span>
+              <strong>Détail du calcul</strong>
+              <small>Brut, cotisations, impôt</small>
+            </span>
+            <i aria-hidden="true">›</i>
+          </button>
+          <button type="button" className={`pay-bulletin-shortcut${showTools ? " open" : ""}`} aria-expanded={showTools} aria-controls="pay-dashboard-tools" onClick={toggleTools}>
+            <span>
+              <strong>Profil et réglages</strong>
+              <small>{profileRecap}</small>
+            </span>
+            <i aria-hidden="true">›</i>
+          </button>
+        </div>
+      </section>
+
       {showTools ? (
-        <div className="pay-bulletin-footer">
+        <div id="pay-dashboard-tools" className="pay-bulletin-footer">
           <div className="pay-dashboard-profile-slot">{profileContent}</div>
-          <section id="pay-dashboard-settings" className={`pay-dashboard-settings${settingsOpen ? " open" : ""}`}>
-            <button
-              type="button"
-              className="pay-dashboard-settings-toggle"
-              onClick={onToggleSettings}
-              aria-expanded={settingsOpen}
-              aria-controls="pay-dashboard-settings-content"
-            >
-              <span><span className="step-label">Moins souvent modifié</span><strong>Affiner les valeurs manuellement si besoin</strong></span>
-              <span>{settingsOpen ? "Replier" : "Ouvrir"}</span>
-              <i aria-hidden="true">⌄</i>
-            </button>
-            {settingsOpen ? <div id="pay-dashboard-settings-content" className="pay-dashboard-settings-content">{settingsContent}</div> : null}
-          </section>
+          {settingsOpen ? <div className="pay-dashboard-settings-slot">{settingsContent}</div> : null}
         </div>
       ) : null}
     </div>

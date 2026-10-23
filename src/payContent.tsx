@@ -529,7 +529,8 @@ export function buildPayContent({
     grossComposition: [
       {
         key: "base",
-        label: isContractuel ? "Traitement de base" : "Traitement indiciaire",
+        // Le nom de la ligne du bulletin, pour tous les statuts.
+        label: "Traitement de base",
         detail: "montant mensuel enregistré",
         amount: hasPayValue("baseSalary") ? baseSalary : null,
       },
@@ -742,9 +743,6 @@ export function buildPayContent({
     gross: monthPay.gross,
     grossComplete: grossEstimateComplete,
     net: monthNet,
-    profileLabel: payProfiles[payYear]
-      ? `Estimation réalisée avec votre profil de paie ${payYear}.`
-      : "Estimation réalisée avec les dernières valeurs connues.",
     reliability: payReliability,
     variables,
     calculation: payCalculation,

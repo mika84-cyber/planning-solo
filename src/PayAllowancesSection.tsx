@@ -1,8 +1,8 @@
 import { Fragment, Suspense, lazy, useState } from "react";
+import { PayMonthNav } from "./PayMonthNav";
 import { HOLIDAY_PAY_OPTIONS, euros } from "./appModel";
 import { minutesLabel } from "./overtime";
 import {
-  MONTHS,
   SUNDAY_ALLOWANCE,
   SUNDAY_TIERS,
   holidayAllowance,
@@ -190,8 +190,6 @@ export function PayAllowancesSection({
   );
 
   /* Le montant choisi ; un clic ouvre directement les choix, sous la ligne. */
-  const today = new Date();
-  const isCurrentPayMonth = today.getFullYear() === year && today.getMonth() === month;
   const holidayChoice = (item: HolidayAllowanceItem) => {
     const editing = holidayChoiceEditing === item.key;
     if (!item.choice)
@@ -248,25 +246,10 @@ export function PayAllowancesSection({
   return (
     <>
       <section className="allowance-card variable-pay-card" aria-labelledby="variable-pay-title">
-        {/* Une pastille par prime, verte si elle rapporte, grise sinon ; un
-            appui affiche son détail. Le total ferme la carte. */}
-        <header className="variable-pay-head variable-pay-head-c">
-          <span className="step-label">Primes pour le mois</span>
-          <div className="variable-pay-month">
-            <h3 id="variable-pay-title">{MONTHS[month].charAt(0).toUpperCase() + MONTHS[month].slice(1)} {year}</h3>
-            <span className="variable-pay-arrows">
-              <button type="button" className="pay-nav-arrow" onClick={() => onChangeMonth(-1)} aria-label="Mois précédent">
-                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-              </button>
-              <button type="button" className="pay-nav-arrow" onClick={() => onChangeMonth(1)} aria-label="Mois suivant">
-                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
-              </button>
-            </span>
-          </div>
-          {isCurrentPayMonth ? null : (
-            <button type="button" className="pay-today-button variable-pay-today" onClick={onGoToday}>Revenir à aujourd’hui</button>
-          )}
-        </header>
+        {/* Le même navigateur de mois que Ma paie ; puis une pastille par
+            prime, verte si elle rapporte, grise sinon ; un appui affiche son
+            détail. Le total ferme la carte. */}
+        <PayMonthNav month={month} year={year} onPreviousMonth={() => onChangeMonth(-1)} onNextMonth={() => onChangeMonth(1)} onToday={onGoToday} heading="h3" titleId="variable-pay-title" />
         <div className="variable-pay-pills" role="group" aria-label="Primes de cette paie">
           {variableRows.map((row) => (
             <button

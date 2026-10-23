@@ -1,7 +1,9 @@
 /* Ma paie en bulletin simplifié : la carte du net (le mois en tête), la
-   carte des lignes de la paie, puis deux boutons (vérifier le bulletin,
-   profil et réglages). Les règles sont préfixées par `.pay-bulletin` pour
-   passer devant les anciens styles du tableau de bord. */
+   carte des lignes de la paie, le bouton « Vérifier le bulletin », puis
+   trois entrées de même facture (primes, détail du calcul, profil et
+   réglages). Les règles sont préfixées par `.pay-bulletin` pour passer
+   devant les anciens styles du tableau de bord ; celles du navigateur de
+   mois (`.pay-bulletin-month-nav`) servent aussi aux primes et au détail du calcul. */
 .pay-dashboard.pay-bulletin { display: grid; gap: 10px; }
 
 /* Mise en page : une colonne, deux sur grand écran. */
@@ -13,8 +15,10 @@
 /* Les deux cartes. */
 .pay-bulletin .pay-bulletin-hero,
 .pay-bulletin .pay-bulletin-lines,
+.pay-bulletin .pay-bulletin-more,
 .pay-bulletin .pay-bulletin-panel { border: 1px solid #e6dccf; border-radius: 18px; padding: 14px 16px; background: #fff; }
-.pay-bulletin .pay-bulletin-kicker { display: block; margin: 0 0 6px; color: #9a4a2e; font-family: inherit; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.pay-bulletin .pay-bulletin-kicker,
+.pay-bulletin-month-nav .pay-bulletin-kicker { display: block; margin: 0 0 6px; color: #9a4a2e; font-family: inherit; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 
 /* Le net. */
 .pay-bulletin .pay-bulletin-net { margin: 0; color: var(--text); font-size: clamp(1.75rem, 7vw, 2rem); font-weight: 750; line-height: 1.05; font-variant-numeric: tabular-nums; }
@@ -83,7 +87,6 @@
 .pay-bulletin .pay-bulletin-total { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0 0; padding: 9px 0 0; border-top: 1.5px solid #2c2621; font-size: 0.92rem; font-weight: 850; }
 .pay-bulletin .pay-bulletin-total b { font-weight: 850; }
 .pay-bulletin .pay-bulletin-total-note { margin: 4px 0 0; color: #9a4a2e; font-size: 0.74rem; font-weight: 650; }
-.pay-bulletin .pay-bulletin-note { margin: 10px 0 0; color: var(--muted); font-size: 0.72rem; }
 
 /* L'état de l'estimation, sous le brut. */
 .pay-bulletin .pay-bulletin-status { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
@@ -97,8 +100,8 @@
 .app-shell .pay-bulletin .pay-bulletin-chip.alert { border-color: #f1c4cd; background: #fdf3f5; color: #a5283a; }
 .app-shell .pay-bulletin .pay-bulletin-chip.pending { border-color: #e6cbbd; background: #fbf5f1; color: #9a4a2e; }
 
-/* Les deux boutons. */
-.pay-bulletin .pay-bulletin-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Le bouton du mois, en pleine largeur. */
+.pay-bulletin .pay-bulletin-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
 .app-shell .pay-bulletin .pay-bulletin-action { min-height: 44px; margin: 0; border: 1px solid #e3d6c8; border-radius: 12px; padding: 10px 12px; background: #fff; box-shadow: none; color: var(--text); font: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer; }
 .app-shell .pay-bulletin .pay-bulletin-action.primary { border-color: #8a3d22; background: #8a3d22; color: #fff; }
 .app-shell .pay-bulletin .pay-bulletin-action.open:not(.primary) { border-color: #2c2621; }
@@ -122,36 +125,34 @@
 .app-shell .pay-bulletin .pay-profile-open-copy { font-size: 0.72rem; white-space: nowrap; }
 .pay-bulletin .pay-bulletin-panel > :not(h3):not(p) { margin: 0; border: 0; border-radius: 0; padding: 0; background: none; box-shadow: none; }
 
-/* Détail du calcul et Primes et jours fériés, côte à côte sous les lignes. */
-.pay-bulletin .pay-bulletin-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin-top: 12px; }
-/* Sur téléphone, l'une sous l'autre : chaque titre tient sur une ligne. */
-@media (max-width: 560px) {
-  .pay-bulletin .pay-bulletin-links { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-}
+/* Pour aller plus loin : trois entrées l'une sous l'autre, de même facture ;
+   la dernière se déplie sur place (sa flèche pivote). */
+.pay-bulletin .pay-bulletin-links { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .app-shell .pay-bulletin .pay-bulletin-shortcut { display: grid; grid-template-columns: minmax(0, 1fr) 10px; align-items: center; gap: 8px; width: 100%; min-height: 0; margin: 0; border: 1px solid #2c2621; border-radius: 12px; padding: 10px 12px; background: #fbf7f2; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .app-shell .pay-bulletin .pay-bulletin-shortcut:hover { border-color: #000; }
 .pay-bulletin .pay-bulletin-shortcut > span { display: grid; justify-items: start; gap: 2px; min-width: 0; }
 .pay-bulletin .pay-bulletin-shortcut strong { overflow: hidden; max-width: 100%; color: #8a3d22; font-size: 0.86rem; font-weight: 850; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .pay-bulletin .pay-bulletin-shortcut small { color: #6b5d50; font-size: 0.72rem; font-weight: 600; line-height: 1.3; }
 .pay-bulletin .pay-bulletin-shortcut em { margin-top: 4px; border-radius: 999px; padding: 2px 8px; background: #fff; color: var(--text); font-size: 0.7rem; font-style: normal; font-weight: 800; white-space: nowrap; box-shadow: inset 0 0 0 1px #d8cdbf; }
-.pay-bulletin .pay-bulletin-shortcut i { color: #9a4a2e; font-size: 1.2rem; font-style: normal; line-height: 1; }
+.pay-bulletin .pay-bulletin-shortcut i { color: #9a4a2e; font-size: 1.2rem; font-style: normal; line-height: 1; transition: transform 160ms ease; }
+.pay-bulletin .pay-bulletin-shortcut[aria-expanded="true"] { background: #fff; }
+.pay-bulletin .pay-bulletin-shortcut[aria-expanded="true"] i { transform: rotate(90deg); }
 
-/* Le mois : en tête de la carte du net, une flèche de chaque côté, un filet
-   dessous. */
-.pay-bulletin .pay-bulletin-month { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 8px; margin: -2px 0 12px; border-bottom: 1px solid #efe6db; padding: 0 0 12px; }
-.app-shell .pay-bulletin .pay-bulletin-month-arrow { display: grid; place-items: center; width: 40px; height: 40px; min-height: 0; margin: 0; border: 1px solid #e3d6c8; border-radius: 50%; padding: 0; background: #fff; box-shadow: none; color: #5b4c3f; cursor: pointer; }
-.app-shell .pay-bulletin .pay-bulletin-month-arrow:hover { border-color: #c9a796; color: #8a3d22; }
-.pay-bulletin .pay-bulletin-month-arrow svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.pay-bulletin .pay-bulletin-month-title { display: grid; justify-items: center; gap: 1px; min-width: 0; text-align: center; }
-.pay-bulletin .pay-bulletin-month-title .pay-bulletin-kicker { margin: 0; }
-.pay-bulletin .pay-bulletin-month-title h2 { margin: 0; color: var(--text); font-family: inherit; font-size: 1.25rem; font-weight: 850; }
-.app-shell .pay-bulletin .pay-bulletin-today { min-height: 0; margin: 2px 0 0; border: 0; padding: 0; background: none; box-shadow: none; color: #9a4a2e; font: inherit; font-size: 0.76rem; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+/* Le mois : en tête de la carte du net, des primes et du détail du calcul,
+   une flèche de chaque côté, un filet dessous. */
+.pay-bulletin-month-nav { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 8px; margin: -2px 0 12px; border-bottom: 1px solid #efe6db; padding: 0 0 12px; }
+.app-shell .pay-bulletin-month-nav .pay-bulletin-month-arrow { display: grid; place-items: center; width: 40px; height: 40px; min-height: 0; margin: 0; border: 1px solid #e3d6c8; border-radius: 50%; padding: 0; background: #fff; box-shadow: none; color: #5b4c3f; cursor: pointer; }
+.app-shell .pay-bulletin-month-nav .pay-bulletin-month-arrow:hover { border-color: #c9a796; color: #8a3d22; }
+.pay-bulletin-month-nav .pay-bulletin-month-arrow svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.pay-bulletin-month-nav .pay-bulletin-month-title { display: grid; justify-items: center; gap: 1px; min-width: 0; text-align: center; }
+.pay-bulletin-month-nav .pay-bulletin-month-title .pay-bulletin-kicker { margin: 0; }
+.pay-bulletin-month-nav .pay-bulletin-month-title :is(h2, h3) { margin: 0; color: var(--text); font-family: inherit; font-size: 1.25rem; font-weight: 850; }
+.app-shell .pay-bulletin-month-nav .pay-bulletin-today { min-height: 0; margin: 2px 0 0; border: 0; padding: 0; background: none; box-shadow: none; color: #9a4a2e; font: inherit; font-size: 0.76rem; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 
 /* Primes et jours fériés : les mêmes cartes claires et les mêmes bandeaux
    que la page principale (vert des primes, terracotta de ce qui reste à
    décider). */
 .app-shell .pay-dedicated-content.allowances :is(.variable-pay-card, .allowance-detail-stack > .allowance-card) { border: 1px solid #e6dccf; border-radius: 18px; background: #fff; box-shadow: none; }
-.app-shell .pay-dedicated-content.allowances .variable-pay-head .step-label { color: #9a4a2e; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; border: 0; border-radius: 8px; padding: 7px 10px; background: #ecf7f1; color: #1d6b45; }
 .app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header > span { display: inline-flex; align-items: center; gap: 6px; color: inherit; font-family: inherit; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
 .app-shell .pay-dedicated-content.allowances .allowance-detail-stack > .allowance-card > header > span::before { width: 8px; height: 8px; border-radius: 2px; background: #5fb28e; content: ""; }

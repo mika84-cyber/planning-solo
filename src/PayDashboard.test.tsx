@@ -8,7 +8,7 @@ const baseProps = {
   gross: 2_600,
   grossComplete: true,
   net: 2_080,
-  profileLabel: "Estimation réalisée avec votre profil de paie 2026.",
+  profileRecap: "Temps plein · Fonctionnaire",
   reliability: { tone: "estimated" as const, label: "Estimation", detail: "Profil annuel" },
   variables: [{ key: "sundays", label: "Dimanches (2)", quantity: "2 × 60 €", amount: 120 }],
   profileContent: <div>Mon profil de paie · toujours visible</div>,
@@ -20,7 +20,6 @@ const baseProps = {
   onToday: vi.fn(),
   onOpenEstimateDetails: vi.fn(),
   onOpenAllowances: vi.fn(),
-  onToggleSettings: vi.fn(),
 };
 
 describe("PayDashboard", () => {
@@ -45,22 +44,26 @@ describe("PayDashboard", () => {
     expect(html).toContain("Paie de");
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-label="Mois suivant"');
-    // Vérification, profil et réglages derrière leurs deux boutons.
+    // Le geste du mois, seul : vérifier le bulletin.
     expect(html).toContain("Vérifier le bulletin");
-    expect(html).toContain("Profil · réglages");
-    // Le détail du calcul et les primes de l'année, côte à côte.
+    expect(html).not.toContain("Profil · réglages");
+    // Puis trois entrées de même facture, le profil résumé sous la sienne.
+    expect(html.match(/class="pay-bulletin-shortcut/g)).toHaveLength(3);
+    expect(html).toMatch(/Profil et réglages<\/strong><small>Temps plein · Fonctionnaire</);
+    expect(html).not.toContain("Affiner les valeurs manuellement");
     expect(html).toContain("Détail du calcul");
     expect(html.match(/Primes et jours fériés/g)).toHaveLength(1);
     expect(renderToStaticMarkup(<PayDashboard {...baseProps} allowancesPending={4} />)).toContain("4 fériés à décider");
     expect(html).not.toContain("Mon profil de paie · toujours visible");
     expect(html.indexOf("Net estimé")).toBeLessThan(html.indexOf("Les lignes de la paie"));
     expect(html.indexOf("Les lignes de la paie")).toBeLessThan(html.indexOf("Vérifier le bulletin"));
+    expect(html.indexOf("Vérifier le bulletin")).toBeLessThan(html.indexOf("Primes et jours fériés"));
   });
 
   it("regroupe les lignes du calcul et ouvre le détail des primes", () => {
     const calculation = {
       grossComposition: [
-        { key: "base", label: "Traitement indiciaire", detail: "", amount: 1801.73 },
+        { key: "base", label: "Traitement de base", detail: "", amount: 1801.73 },
         { key: "residence", label: "Indemnité de résidence", detail: "", amount: 54.05 },
         { key: "ifse", label: "IFSE", detail: "", amount: 416.66 },
         { key: "sunday-flat", label: "Forfait mensuel de dimanches", detail: "", amount: 89.59 },
@@ -86,7 +89,7 @@ describe("PayDashboard", () => {
       { key: "mealVoucher", label: "Titres repas", quantity: "jamais prélevés en décembre", amount: 72 },
     ];
     const html = renderToStaticMarkup(<PayDashboard {...baseProps} calculation={calculation} variables={variables} />);
-    expect(html).toContain("Traitement indiciaire");
+    expect(html).toContain("Traitement de base");
     // Les indemnités sur une ligne, chaque montant dans le détail ; le
     // forfait des dimanches rejoint les primes, comme dans le détail du calcul.
     expect(html).toContain("résidence 54,05 · IFSE 416,66");
@@ -137,8 +140,9 @@ describe("PayDashboard", () => {
     expect(html).toContain('aria-label="Choisir le mois de paie"');
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-controls="pay-dashboard-verification"');
-    // Les réglages ouverts déplient la zone profil · réglages.
-    expect(html).toContain('aria-expanded="true"');
+    // Les réglages ouverts déplient profil et éléments, d'un seul geste.
+    expect(html).toMatch(/aria-expanded="true" aria-controls="pay-dashboard-tools"/);
     expect(html).toContain("Mon profil de paie");
+    expect(html).toContain("Réglages détaillés");
   });
 });

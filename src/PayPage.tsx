@@ -28,7 +28,6 @@ type PayPageProps = {
   gross: number;
   grossComplete: boolean;
   net: number | null;
-  profileLabel: string;
   missingFields?: string[];
   onCompleteEstimate?: () => void;
   reliability: { tone: "exact" | "estimated" | "incomplete"; label: string; detail: string };
@@ -65,7 +64,7 @@ type PayPageProps = {
 
 export function PayPage({
   screen, month, year, profileOpen, profileFocusRequested, settingsOpen, workQuota, workSchedule, status,
-  netEstimateComplete, gross, grossComplete, net, profileLabel,
+  netEstimateComplete, gross, grossComplete, net,
   missingFields, onCompleteEstimate,
   reliability, variables, calculation, allowancesPending, verification, savedVerification, verificationRequested, onVerificationShown,
   deductionContent, monthSlide, allowancesContent, estimateContent,
@@ -148,12 +147,17 @@ export function PayPage({
           <PayDashboard
             key={`${year}-${month}`}
             month={month} year={year} gross={gross} grossComplete={grossComplete}
-            net={net} profileLabel={profileLabel} reliability={reliability}
+            net={net} profileRecap={profileRecap} reliability={reliability}
             missingFields={missingFields} onCompleteEstimate={() => { setFocusMissing(true); onCompleteEstimate?.(); }}
             variables={variables} calculation={calculation} allowancesPending={allowancesPending}
             verification={verification} savedVerification={savedVerification}
             verificationRequested={verificationRequested} onVerificationShown={onVerificationShown}
-            onOpenTools={() => { if (!profileOpen) onToggleProfile(); }}
+            // « Profil et réglages » déplie le profil et ses éléments d'un
+            // seul geste, et les replie ensemble.
+            onOpenTools={() => {
+              if (!profileOpen) onToggleProfile();
+              if (!settingsOpen) onToggleSettings();
+            }}
             onCloseTools={() => {
               if (profileOpen) onToggleProfile();
               if (settingsOpen) onToggleSettings();
@@ -163,7 +167,6 @@ export function PayPage({
             onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday}
             onOpenEstimateDetails={() => onScreenChange("payslip")}
             onOpenAllowances={() => onScreenChange("allowances")}
-            onToggleSettings={onToggleSettings}
           />
         </div>
       ) : (
@@ -175,7 +178,6 @@ export function PayPage({
               <h2>{screen === "allowances" ? "Primes et jours fériés" : "Détail du calcul"}</h2>
               <small>{MONTHS[month]} {year}</small>
             </button>
-            <button className="pay-detail-close" type="button" onClick={() => onScreenChange("overview")} aria-label="Fermer cette page">×</button>
           </header>
           <div className={`pay-dedicated-content${screen === "allowances" ? " request-archive-content allowances" : ""}${monthSlide ? ` pay-month-${monthSlide}` : ""}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             {screen === "allowances" ? allowancesContent : estimateContent}

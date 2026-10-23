@@ -77,7 +77,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .leave-balances-direct,
   .leave-tools-area,
   .pay-missing-guidance,
-  .pay-dashboard-settings,
   .pay-profile-settings,
   .pdf-download-screen,
   .cet-callout,
@@ -120,7 +119,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .leave-tools-area,
   .leave-type-field,
   .pay-missing-guidance,
-  .pay-dashboard-settings,
   .pay-dashboard-profile-slot .pay-profile-settings,
   .pdf-download-screen,
   .useful-resource-panel > .useful-forms-root,
@@ -216,10 +214,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Un bloc replié reste blanc : la bande teintée n'apparaît que sur l'en-tête
    d'un bloc ouvert. Quand plusieurs blocs repliés se suivent, ils ne forment
    plus une pile de pavés colorés. */
-.app-shell.app-shell :is(
-  .pay-dashboard-settings > .pay-dashboard-settings-toggle,
-  .pay-dashboard-profile-slot .pay-profile-settings > .pay-profile-summary
-)[aria-expanded="true"] { background: var(--chapter-tint); }
+.app-shell.app-shell .pay-dashboard-profile-slot .pay-profile-settings > .pay-profile-summary[aria-expanded="true"] { background: var(--chapter-tint); }
 
 /* Sous-chapitres : encarts crème, sans bordure ni ombre. */
 .app-shell.app-shell :is(

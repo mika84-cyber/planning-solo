@@ -68,7 +68,9 @@ describe("PayAllowancesSection", () => {
   it("rend le mois, toutes les primes variables et les fériés sans changer les libellés", () => {
     const html = renderToStaticMarkup(<PayAllowancesSection {...props} />);
 
-    expect(html).toContain("Primes pour le mois");
+    // Le même navigateur de mois que Ma paie, en tête de la carte.
+    expect(html).toContain("Paie de");
+    expect(html).toContain('aria-label="Choisir le mois de paie"');
     expect(html).toContain("Juillet 2026");
     expect(html).toContain("Heures sup");
     expect(html).toContain("Mécénats");

@@ -3,6 +3,7 @@ import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
 import { minutesLabel, type WorkQuota } from "./overtime";
 import { MONTHS, fromKey, longDate } from "./planningLogic";
+import { PayMonthNav } from "./PayMonthNav";
 import "./payTotals.css";
 
 export type PayCalculationRow = {
@@ -95,26 +96,11 @@ export function PayEstimateDetails({
   onNextMonth,
   onToday,
 }: PayEstimateDetailsProps) {
-  const today = new Date();
-  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === monthIndex;
   return (
     <section className="allowance-card allowance-card-lead">
-      {/* Le bandeau du haut nomme déjà la page : ici, seulement le mois et
-          ses deux flèches, comme sur la page principale. */}
-      <div className="pay-detail-month-bar" role="group" aria-label="Choisir le mois de paie">
-        <button type="button" className="pay-detail-month-arrow" onClick={onPreviousMonth} aria-label="Mois précédent">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-        </button>
-        <div className="pay-detail-month-title">
-          <strong>{MONTHS[monthIndex].charAt(0).toUpperCase() + MONTHS[monthIndex].slice(1)} {year}</strong>
-          {isCurrentMonth ? null : (
-            <button type="button" className="pay-today-button" onClick={onToday}>Revenir à aujourd’hui</button>
-          )}
-        </div>
-        <button type="button" className="pay-detail-month-arrow" onClick={onNextMonth} aria-label="Mois suivant">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
-        </button>
-      </div>
+      {/* Le bandeau du haut nomme déjà la page : ici, le mois et ses deux
+          flèches, le même navigateur que sur la page principale. */}
+      <PayMonthNav month={monthIndex} year={year} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday} heading="h3" />
       {reliability.quiet ? null : <div className={`pay-reliability ${reliability.tone}`} role="status">
         <span aria-hidden="true">
           {reliability.tone === "exact" ? "✓" : reliability.tone === "incomplete" ? "!" : "≈"}

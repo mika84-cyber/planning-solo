@@ -391,10 +391,10 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(page.locator(".pay-bulletin-hero .pay-bulletin-month")).toBeVisible();
   await expectWhiteCard(".pay-bulletin-hero");
   await expectWhiteCard(".pay-bulletin-lines");
-  await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(2);
+  await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(3);
   // La vérification (repliée jusqu'au choix d'un bulletin) reste sur blanc.
   await expect(page.locator(".pay-bulletin-panel")).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  await page.getByRole("button", { name: "Profil · réglages" }).click();
+  await page.getByRole("button", { name: "Profil et réglages" }).click();
   const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
   await expect(payProfile).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
   // Ouvert d'emblée, le profil a son en-tête teinté ; replié, il redevient blanc.
@@ -1639,7 +1639,7 @@ test("devant un écart du bulletin, le geste qui l’explique est proposé : pas
   await prepareDemo(page);
   await goToSection(page, "pay");
   // Le profil se dit contractuel…
-  await page.getByRole("button", { name: "Profil · réglages" }).click();
+  await page.getByRole("button", { name: "Profil et réglages" }).click();
   const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
   await payProfile.getByRole("button", { name: "Choisir le statut" }).click();
   await page.getByRole("option", { name: "Contractuel" }).click();
@@ -1938,7 +1938,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await payslipChooser;
   await expect(page.getByRole("heading", { name: "Vérifier mon bulletin" })).toBeHidden();
   // « Profil · réglages » déplie d'emblée le profil de paie.
-  await page.getByRole("button", { name: "Profil · réglages" }).click();
+  await page.getByRole("button", { name: "Profil et réglages" }).click();
   const profileSummary = payScreen.locator(".pay-profile-summary");
   await expect(profileSummary).toBeVisible();
   await expect(profileSummary.locator(".pay-profile-symbol")).toBeVisible();
@@ -1947,10 +1947,10 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await profileSummary.click();
   await expect(profileSummary).toHaveAttribute("aria-expanded", "false");
   await expect(payScreen.locator(".pay-profile-open-copy")).toHaveText(/Profil complet|À compléter/);
-  const paySettings = page.getByRole("button", { name: /Affiner les valeurs manuellement/ });
-  await expect(paySettings).toHaveAttribute("aria-expanded", "false");
+  // Les éléments de paie suivent le profil, sans volet de plus à ouvrir.
+  await expect(payScreen.locator(".pay-elements-card")).toBeVisible();
+  await expect(payScreen.getByRole("button", { name: /Affiner les valeurs manuellement/ })).toHaveCount(0);
   await expect(payScreen.getByRole("button", { name: /déclarer.*heures supplémentaires/i })).toHaveCount(0);
-  await paySettings.click();
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     const dashboardWidth = await payScreen.locator(".pay-dashboard").evaluate((node) => node.getBoundingClientRect().width);
     expect(dashboardWidth).toBeLessThanOrEqual(page.viewportSize()!.width);
@@ -5715,15 +5715,12 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await expect(monthHeading).toHaveText("Août 2026");
   // Août n'a que le forfait des dimanches, compté avec les primes.
   await expect(payDashboard.getByText("Forfait dimanches", { exact: true })).toBeVisible();
-  await payDashboard.getByRole("button", { name: "Profil · réglages" }).click();
+  await payDashboard.getByRole("button", { name: "Profil et réglages" }).click();
   await expect(payDashboard.getByText("Profil utilisé pour les calculs", { exact: true })).toBeVisible();
 
-  const settingsToggle = payDashboard.getByRole("button", { name: /Affiner les valeurs manuellement/ });
-  await settingsToggle.click();
-  await expect(settingsToggle).toHaveAttribute("aria-expanded", "true");
+  // Le profil et ses éléments de paie, dépliés d'un seul geste.
   await expect(payDashboard.getByText("Mon profil de paie", { exact: true })).toBeVisible();
-  await settingsToggle.click();
-  await expect(settingsToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(payDashboard.getByRole("heading", { name: "Éléments de paie" })).toBeVisible();
 
   await nextMonth.click();
   await expect(monthHeading).toHaveText("Septembre 2026");
@@ -5737,7 +5734,7 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await payDashboard.getByRole("button", { name: /^Détail du calcul/ }).click();
   await expect(page.getByRole("heading", { name: "Composition du brut" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Retenues et passage au net" })).toBeVisible();
-  await expect(page.getByRole("rowheader", { name: /^Traitement indiciaire/ })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: /^Traitement de base/ })).toBeVisible();
   await expect(page.getByRole("rowheader", { name: /^Indemnité de résidence/ })).toBeVisible();
   await expect(page.getByRole("rowheader", { name: /^IFSE/ })).toBeVisible();
   await expect(page.getByText("Net avant prélèvement à la source", { exact: true })).toBeVisible();
@@ -5812,10 +5809,7 @@ test("le profil de paie d’une nouvelle année peut être confirmé sans modifi
   const nextMonth = dashboard.getByRole("button", { name: "Mois suivant" });
   for (let month = 0; month < 5; month += 1) await nextMonth.click();
   await expect(dashboard.locator(".pay-bulletin-month h2")).toHaveText("Janvier 2027");
-  await dashboard.getByRole("button", { name: "Profil · réglages" }).click();
-  const settingsToggle = dashboard.getByRole("button", { name: /Affiner les valeurs manuellement/ });
-  await settingsToggle.click();
-  await expect(settingsToggle).toHaveAttribute("aria-expanded", "true");
+  await dashboard.getByRole("button", { name: "Profil et réglages" }).click();
   const confirm = dashboard.getByRole("button", { name: "Utiliser ces valeurs pour 2027" });
   await expect(confirm).toBeVisible();
   await expect(confirm).toHaveCSS("border-top-width", "1px");
@@ -5864,9 +5858,11 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   expect(nextBox!.x).toBeGreaterThanOrEqual(monthBox!.x + monthBox!.width);
   expect(previousBox!.x - cardBox!.x).toBeLessThan(36);
   expect(cardBox!.x + cardBox!.width - (nextBox!.x + nextBox!.width)).toBeLessThan(36);
+  // Les flèches sont centrées sur le bloc « Paie de » + mois : à peine plus
+  // bas que le mois seul.
   expect(Math.abs(
     previousBox!.y + previousBox!.height / 2 - (monthBox!.y + monthBox!.height / 2),
-  )).toBeLessThan(6);
+  )).toBeLessThan(14);
   const pill = card.locator(".variable-pay-pill").first();
   await pill.click();
   await expect(pill).toHaveAttribute("aria-pressed", "true");
@@ -5877,7 +5873,7 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Détail du calcul");
   // Un seul titre (le bandeau) ; dessous, le mois entre ses deux flèches.
   await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toHaveCount(0);
-  await expect(page.locator(".pay-detail-month-bar").getByRole("button", { name: "Mois suivant" })).toBeVisible();
+  await expect(page.locator(".pay-detail-screen .pay-bulletin-month-nav").getByRole("button", { name: "Mois suivant" })).toBeVisible();
   const calculationTotals = page.locator(".pay-calculation-totals article");
   await expect(calculationTotals).toHaveCount(4);
   await expect(calculationTotals.first()).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
