@@ -14,6 +14,7 @@ export const GRAND_PALAIS_EXCEPTIONAL_CLOSURES: GrandPalaisExceptionalClosure[] 
   { date: "2026-09-09", label: "Fermeture exceptionnelle du Grand Palais" },
   { date: "2026-09-10", label: "Fermeture exceptionnelle du Grand Palais" },
   { date: "2026-09-26", label: "Fermeture exceptionnelle du Grand Palais" },
+  { date: "2026-10-24", label: "Fermeture exceptionnelle du Grand Palais" },
 ];
 
 const CLOSURE_BY_DATE = new Map(

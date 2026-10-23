@@ -5,12 +5,16 @@ import {
 } from "./grandPalaisClosures";
 
 describe("fermetures exceptionnelles du Grand Palais", () => {
-  it("repère les trois fermetures complètes de septembre 2026", () => {
+  it("repère les trois fermetures complètes de septembre 2026 et celle du 24 octobre", () => {
     expect(GRAND_PALAIS_EXCEPTIONAL_CLOSURES.map((item) => item.date)).toEqual([
       "2026-09-09",
       "2026-09-10",
       "2026-09-26",
+      "2026-10-24",
     ]);
+    expect(grandPalaisExceptionalClosure("2026-10-24")?.label).toBe(
+      "Fermeture exceptionnelle du Grand Palais",
+    );
     expect(grandPalaisExceptionalClosure("2026-09-10")?.label).toBe(
       "Fermeture exceptionnelle du Grand Palais",
     );
