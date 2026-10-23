@@ -6217,9 +6217,12 @@ test("l’ajout manuel reprend un solde déjà calculé, majoration comprise, te
 });
 
 test("un mécénat hors des règles du temps de travail est signalé sans empêcher l’inscription", async ({ page }) => {
-  // Un jour travaillé du groupe de démonstration, suivi d'un autre jour travaillé.
+  // Un jour travaillé du groupe de démonstration (hors fermeture
+  // exceptionnelle), suivi d'un autre jour travaillé.
+  const closures = new Set(GRAND_PALAIS_EXCEPTIONAL_CLOSURES.map((item) => item.date));
+  const worked = (date: Date) => getDayInfo(date, 2).kind === "work" && !closures.has(dateKey(date));
   let day = addDays(new Date(), 1);
-  while (getDayInfo(day, 2).kind !== "work" || getDayInfo(addDays(day, 1), 2).kind !== "work") day = addDays(day, 1);
+  while (!worked(day) || !worked(addDays(day, 1))) day = addDays(day, 1);
 
   await prepareDemo(page);
   await goToSection(page, "leave");
