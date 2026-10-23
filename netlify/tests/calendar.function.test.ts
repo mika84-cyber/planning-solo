@@ -1443,6 +1443,11 @@ describe("API principale du calendrier", () => {
     expect(await read.json()).toMatchObject({
       form_profile: { payslip_rate_samples: { "2026-08": august, "2026-09": september } },
     });
+    // Un bulletin mal lu se retire : seul son mois disparaît.
+    const removed = await calendarHandler(request({ action: "save-form-profile", removePayslipRateSamples: ["2026-08"] }));
+    expect(removed.status).toBe(200);
+    expect((data.get("user/user-a/form-profile") as Stored).payslip_rate_samples).toEqual({ "2026-09": september });
+    expect((await calendarHandler(request({ action: "save-form-profile", removePayslipRateSamples: "2026-09" }))).status).toBe(400);
   });
 
   it("garde la signature du téléphone quand un autre écran enregistre le profil", async () => {

@@ -325,7 +325,7 @@ function PayTotalsExplained({
       note: calculation.grossDeductions.length ? "traitement, indemnités et primes, moins les absences" : "traitement, indemnités et primes",
       value: brut === null ? "À compléter" : euros(brut),
     },
-    { key: "variable", kind: "sub", label: "dont primes du mois", value: euros(variableAdditions) },
+    { key: "variable", kind: "sub", label: "Dont primes du mois", value: euros(variableAdditions) },
     {
       key: "contributions",
       kind: "minus",

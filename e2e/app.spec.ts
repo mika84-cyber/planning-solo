@@ -1537,10 +1537,14 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
       const samples = body.payslipRateSamples as Record<string, unknown> | undefined;
       if (samples)
         profile = { ...profile, payslip_rate_samples: { ...(profile.payslip_rate_samples as object | undefined), ...samples } };
+      const removed = body.removePayslipRateSamples as string[] | undefined;
+      if (removed)
+        profile = { ...profile, payslip_rate_samples: Object.fromEntries(Object.entries(profile.payslip_rate_samples as object).filter(([period]) => !removed.includes(period))) };
     }
     await route.fulfill({ json: { ok: true, form_profile: profile } });
   });
-  page.on("dialog", (dialog) => void dialog.dismiss());
+  // Les questions sont refusées, sauf la confirmation d'un bulletin à retirer.
+  page.on("dialog", (dialog) => void (dialog.message().startsWith("Retirer le bulletin") ? dialog.accept() : dialog.dismiss()));
   // Un bulletin PDF minimal : le traitement, le cumul brut et le net avant
   // impôt. Les primes (cumul brut moins traitement) diffèrent d'un mois à
   // l'autre : 444,12 € en septembre, 744,12 € en juillet.
@@ -1580,6 +1584,24 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
   await expect(result).toContainText("Taux net avant impôt — primes (80 %)");
   expect(profileSaves.at(-1)).toMatchObject({ netRatioFixedBp: 7784, netRatioVariableBp: 8000, netRatioRegime: "culture-psc" });
   await expect(page.getByRole("region", { name: "Pour un net encore plus juste" })).toHaveCount(0);
+
+  // Un bulletin mal lu, rangé sous août : son net ne ressemble à rien. Il
+  // est gardé, mais écarté du calcul : les taux ne bougent pas.
+  await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-aout.pdf", mimeType: "application/pdf", buffer: payslip("Août 2026", "2300.00", "1300.00") });
+  await expect(result).toContainText("Taux net avant impôt — traitement (77,84 %)");
+  // Le profil montre les bulletins qui calent les taux ; celui d'août se retire.
+  await page.locator(".pay-bulletin-shortcut", { hasText: "Profil et réglages" }).click();
+  const elements = page.locator(".pay-elements-card");
+  if ((await elements.locator(".payslip-rate-samples").count()) === 0)
+    await elements.getByRole("button", { name: /^(Voir|À compléter)$/ }).click();
+  const samplesList = page.getByRole("region", { name: "Bulletins qui calent vos taux" });
+  await expect(samplesList.locator("li")).toHaveCount(3);
+  await expect(samplesList).toContainText("1 bulletin écarté : il ne concorde pas avec les autres.");
+  await expect(samplesList.locator("li.rejected")).toContainText("Août 2026");
+  await samplesList.getByRole("button", { name: "Retirer le bulletin de août 2026" }).click();
+  await expect(samplesList.locator("li")).toHaveCount(2);
+  await expect(samplesList).not.toContainText("Août 2026");
+  expect(profileSaves.at(-1)).toMatchObject({ removePayslipRateSamples: ["2026-08"], netRatioFixedBp: 7784, netRatioVariableBp: 8000 });
 });
 
 /** Une photo de bulletin dessinée : les lignes données, en grand, sur une
@@ -4839,7 +4861,7 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   await other.click();
 
   await expect(page.getByRole("heading", { name: "Sélectionnez vos dates Divers" })).toBeVisible();
-  await page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work)").first().click();
+  await page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work):not(.exceptional-closure-day)").first().click();
   // La durée se choisit à la date : journée entière par défaut.
   await page.locator(".time-modal").getByRole("button", { name: "Valider" }).click();
   const summary = page.getByLabel("Résumé avant validation");
@@ -4928,7 +4950,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
     );
   });
   expect(strikeElementsOverlap).toBe(false);
-  const strikeDay = page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work)").first();
+  const strikeDay = page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work):not(.exceptional-closure-day)").first();
   const strikeDate = await strikeDay.getAttribute("aria-label");
   await strikeDay.click();
   await expect(page.getByRole("heading", { name: "Ajoutez une journée de grève" })).toHaveCount(0);
@@ -5903,7 +5925,7 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   // en rose, le net en terracotta pour fermer la cascade.
   const calculationTotals = page.locator(".pay-calculation-totals > ol > li");
   await expect(calculationTotals).toHaveCount(6);
-  await expect(calculationTotals.locator(".pay-total-label")).toContainText(["Brut du mois", "dont primes du mois", "Cotisations sociales", "Net avant impôt", "Impôt sur le revenu", "Net estimé"]);
+  await expect(calculationTotals.locator(".pay-total-label")).toContainText(["Brut du mois", "Dont primes du mois", "Cotisations sociales", "Net avant impôt", "Impôt sur le revenu", "Net estimé"]);
   await expect(calculationTotals.nth(2).locator(".pay-total-dot")).toHaveCSS("background-color", "rgb(232, 138, 160)");
   await expect(calculationTotals.last().locator(".pay-total-dot")).toHaveCSS("background-color", "rgb(138, 61, 34)");
   // Une simple estimation avec le profil de l'année n'est plus annoncée.

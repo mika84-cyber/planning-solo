@@ -33,7 +33,9 @@ const MAX_SAMPLES = 24;
 /** Les trois premiers sont indispensables au calcul, et jamais nuls. */
 const FIELDS = ["gross", "netBeforeTax", "baseSalary", "ifse", "otherFixed", "carenceDay", "navigo", "mealVoucherDeduction"] as const;
 
-const periodKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, "0")}`;
+/** Le mois d'un bulletin, « AAAA-MM », sous lequel ses montants sont gardés. */
+export const payslipPeriodKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, "0")}`;
+const periodKey = payslipPeriodKey;
 
 /** Les montants utiles d'un bulletin lu, au centime ; `null` s'il n'en porte
  *  pas assez (mois, cumul brut, net avant impôt, traitement) pour le calcul. */

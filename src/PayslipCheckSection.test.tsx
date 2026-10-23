@@ -85,6 +85,7 @@ const baseProps = {
   onCreatePayProfile: vi.fn(async () => undefined),
   ciaMonth: undefined,
   onSaveCiaMonth: vi.fn(),
+  onRemoveRateSample: vi.fn(),
 };
 
 describe("PayslipCheckSection", () => {

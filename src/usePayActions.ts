@@ -31,6 +31,7 @@ import { sundayReportAfterReading } from "./sundayReport";
 import {
   combinePayslipRateReadings,
   mergePayslipRateSamples,
+  payslipPeriodKey,
   payslipRateSamplesFromReadings,
 } from "./payslipRateSamples";
 import { inspectPayslipPhotos } from "./payslipImageQuality";
@@ -439,6 +440,56 @@ export function usePayActions(options: PayActionsOptions) {
       notify(`Profil de paie ${payYear} actualisé.`);
     } catch {
       notify("Le profil annuel n’a pas pu être enregistré. Réessayez.");
+    }
+  }
+
+  /** Retire un bulletin mal lu des taux : ses montants ne comptent plus, et
+   *  les deux taux se recalent sur les bulletins qui restent — ou reviennent
+   *  aux taux de départ du statut s'il n'en reste aucun. */
+  async function removePayslipRateSample(period: string) {
+    const year = payView.getFullYear();
+    const month = payView.getMonth();
+    const regime = payCalibrationRegime(year, month);
+    const stored = { ...(formProfile?.payslipRateSamples || {}) };
+    delete stored[period];
+    const session = payslipRateSamples.filter(({ reading }) =>
+      reading.year === undefined || reading.month === undefined || payslipPeriodKey(reading.year, reading.month) !== period);
+    const fallback = defaultNetRatiosForPeriod(year, month, formProfile?.status === "contractuel");
+    const rates = calculateNetRatios(
+      readingsForCalibrationRegime(combinePayslipRateReadings(stored, session).map((item) => item.reading), regime),
+      fallback,
+    ) ?? fallback;
+    const nextProfile: FormProfile = {
+      ...payProfileBase(formProfile, group),
+      ...rates,
+      netRatioRegime: regime,
+      payslipRateSamples: stored,
+    };
+    try {
+      if (!demoMode)
+        await post({
+          action: "save-form-profile",
+          payYear: year,
+          payMonth: month,
+          fullName: nextProfile.fullName,
+          group: nextProfile.group,
+          signature: nextProfile.signature,
+          removePayslipRateSamples: [period],
+          netRatioFixedBp: Math.round(rates.netRatioFixed * 100),
+          netRatioVariableBp: Math.round(rates.netRatioVariable * 100),
+          netRatioRegime: regime,
+        });
+      setFormProfile(nextProfile);
+      setPayslipRateSamples(session);
+      const monthKey = `${payYear}-${String(month + 1).padStart(2, "0")}`;
+      setPayProfiles((current) => ({
+        ...current,
+        [payYear]: { ...(current[payYear] || {}), ...rates, netRatioRegime: regime },
+        ...(current[monthKey] ? { [monthKey]: { ...current[monthKey], ...rates, netRatioRegime: regime } } : {}),
+      }));
+      // La liste et les deux taux se mettent à jour sous les yeux : pas de message.
+    } catch {
+      notify("Le bulletin n’a pas pu être retiré. Réessayez.");
     }
   }
 
@@ -1180,6 +1231,7 @@ export function usePayActions(options: PayActionsOptions) {
     savePayAmount,
     saveAnnualPayProfile,
     saveCiaMonth,
+    removePayslipRateSample,
     nextSundayPayoutSlot,
     reportMissingSundays,
     clearSundayCarryover,

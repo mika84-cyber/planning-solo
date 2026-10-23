@@ -23,7 +23,9 @@
 .pay-calculation-totals li.net .pay-total-dot { background: #8a3d22; }
 .pay-calculation-totals .pay-total-label { display: grid; gap: 1px; min-width: 0; font-size: 0.9rem; font-weight: 700; }
 .pay-calculation-totals .pay-total-label small { color: var(--muted); font-size: 0.72rem; font-weight: 550; line-height: 1.3; }
-.pay-calculation-totals li.sub .pay-total-label { color: var(--muted); font-size: 0.84rem; font-weight: 650; }
+/* Les paliers (primes du mois, net avant impôt) restent en retrait par la
+   taille et le point creux, pas par le gris : ils se lisent comme le reste. */
+.pay-calculation-totals li.sub .pay-total-label { color: var(--text); font-size: 0.84rem; font-weight: 650; }
 /* À droite, le montant ; dessous, « Voir le calcul › » en toutes lettres :
    on sait d'un coup d'œil que chaque étape se déplie. */
 .pay-calculation-totals .pay-total-value { display: grid; justify-items: end; gap: 1px; }
@@ -31,12 +33,15 @@
 .pay-calculation-totals li.minus .pay-total-value b { color: #a5283a; }
 .pay-calculation-totals li.plus .pay-total-value b { color: #1d6b45; }
 .pay-calculation-totals li.sub .pay-total-value b { font-size: 0.9rem; font-weight: 700; }
-.pay-calculation-totals .pay-total-value em { display: inline-flex; align-items: center; gap: 2px; color: #9a4a2e; font-size: 0.68rem; font-style: normal; font-weight: 800; white-space: nowrap; }
+/* « Voir le calcul » en gris, plus léger : il se distingue des montants,
+   qui gardent seuls la couleur (noir, rose des retenues, vert du Navigo). */
+.pay-calculation-totals .pay-total-value em { display: inline-flex; align-items: center; gap: 2px; color: var(--muted); font-size: 0.68rem; font-style: normal; font-weight: 650; white-space: nowrap; }
 .pay-calculation-totals .pay-total-value em i { font-size: 0.95rem; font-style: normal; line-height: 1; transition: transform 0.15s ease; }
 .pay-calculation-totals li.open .pay-total-value em i { transform: rotate(90deg); }
 .pay-calculation-totals li.net { margin-top: 4px; }
 .pay-calculation-totals li.net .pay-total-label { font-size: 0.95rem; font-weight: 850; }
-.pay-calculation-totals li.net .pay-total-value b { color: #8a3d22; font-size: 1.15rem; font-weight: 850; }
+/* Le net en noir, plus grand : il ne se confond plus avec le rose des retenues. */
+.pay-calculation-totals li.net .pay-total-value b { color: var(--text); font-size: 1.2rem; font-weight: 850; }
 /* Le calcul d'une étape : il prolonge sa ligne, dans le même bloc crème,
    aligné sur son texte ; la ligne ouverte perd ses coins du bas, le calcul
    ses coins du haut, et le fil passe dessous. */

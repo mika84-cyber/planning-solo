@@ -2,12 +2,13 @@ import type { FormProfile, PayProfile } from "./appModel";
 import { dailyMinutesForQuota, type WorkQuota } from "./overtime";
 import {
   defaultNetRatiosForPeriod,
+  incoherentNetRatioReadings,
   inspectNetRatioCalibration,
   payCalibrationRegime,
   readingsForCalibrationRegime,
   type PayslipReading,
 } from "./payslip";
-import { combinePayslipRateReadings } from "./payslipRateSamples";
+import { combinePayslipRateReadings, payslipPeriodKey } from "./payslipRateSamples";
 import { RESIDENCE_ALLOWANCE_RATE } from "./planningLogic";
 import { effectivePayProfile } from "./usePayActions";
 
@@ -97,13 +98,29 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
     storedNetRatioVariable > 0
       ? storedNetRatioVariable
       : defaultNetRatios.netRatioVariable;
-  const payslipRateCalibration = inspectNetRatioCalibration(
-    readingsForCalibrationRegime(
-      combinePayslipRateReadings(formProfile?.payslipRateSamples, payslipRateSamples).map((item) => item.reading),
-      viewedPayRegime,
-    ),
-    defaultNetRatios,
+  const calibrationReadings = readingsForCalibrationRegime(
+    combinePayslipRateReadings(formProfile?.payslipRateSamples, payslipRateSamples).map((item) => item.reading),
+    viewedPayRegime,
   );
+  // Les bulletins qui calent les taux, montrés dans le profil : un bulletin
+  // mal lu s'y repère (écarté, ou à retirer) au lieu de fausser les taux.
+  const rejectedReadings = incoherentNetRatioReadings(calibrationReadings, defaultNetRatios);
+  const payslipRateCalibration = {
+    ...inspectNetRatioCalibration(calibrationReadings, defaultNetRatios),
+    samples: calibrationReadings
+      .flatMap((reading, index) =>
+        reading.year !== undefined && reading.month !== undefined && reading.gross !== undefined && reading.netBeforeTax !== undefined
+          ? [{
+              period: payslipPeriodKey(reading.year, reading.month),
+              year: reading.year,
+              month: reading.month,
+              gross: reading.gross,
+              netBeforeTax: reading.netBeforeTax,
+              rejected: rejectedReadings.has(index),
+            }]
+          : [])
+      .sort((a, b) => b.period.localeCompare(a.period)),
+  };
   const navigo = activePayProfile.navigo ?? 0;
   const mealVoucherDeduction =
     activePayProfile.mealVoucherDeduction ??

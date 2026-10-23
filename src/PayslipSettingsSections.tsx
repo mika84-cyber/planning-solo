@@ -2,6 +2,7 @@ import { ChoicePicker } from "./ChoicePicker";
 import { euros } from "./appModel";
 import { MONTHS, periodLabel, s } from "./planningLogic";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
+import { PayslipRateSampleList } from "./PayslipRateSampleList";
 
 type Props = Pick<
   PayslipCheckSectionProps,
@@ -9,7 +10,8 @@ type Props = Pick<
   "setPaySettingsOpen" | "missing" | "missingFields" | "baseSalary" | "ifse" |
   "carenceDay" | "otherFixed" | "cia" | "netRatioFixed" | "netRatioVariable" |
   "navigo" | "mealVoucherDeduction" | "pasRate" | "payDrafts" |
-  "setPayDrafts" | "savingPay" | "onSavePayAmount" | "ciaMonth" | "onSaveCiaMonth"
+  "setPayDrafts" | "savingPay" | "onSavePayAmount" | "ciaMonth" | "onSaveCiaMonth" |
+  "rateCalibration" | "onRemoveRateSample"
 >;
 
 export function PayslipSettingsSections({
@@ -36,6 +38,8 @@ export function PayslipSettingsSections({
   onSavePayAmount: savePayAmount,
   ciaMonth,
   onSaveCiaMonth: saveCiaMonth,
+  rateCalibration,
+  onRemoveRateSample,
 }: Props) {
   return (
     <>
@@ -266,6 +270,7 @@ export function PayslipSettingsSections({
           </div>
           )}
           </div>
+          <PayslipRateSampleList samples={rateCalibration.samples ?? []} onRemove={onRemoveRateSample} />
             </>
           ) : (
             <button

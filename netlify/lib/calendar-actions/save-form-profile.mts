@@ -236,6 +236,15 @@ export async function handleSaveFormProfile(
       body.payslipRateSamples,
     );
   }
+  // Un bulletin mal lu, retiré par la personne : ses montants ne comptent
+  // plus dans les taux. Seuls les mois nommés disparaissent.
+  if (body.removePayslipRateSamples !== undefined) {
+    if (!Array.isArray(body.removePayslipRateSamples) || !body.removePayslipRateSamples.every((period: unknown) => typeof period === "string"))
+      return json({ error: "Bulletins à retirer invalides" }, 400);
+    const kept = mergePayslipRateSamples(formProfile.payslip_rate_samples, {});
+    for (const period of body.removePayslipRateSamples as string[]) delete kept[period];
+    formProfile.payslip_rate_samples = kept;
+  }
   if (body.cetAccount !== undefined) {
     const cetAccount = sanitizeCetAccount(body.cetAccount);
     if (!cetAccount) return json({ error: "Compte épargne-temps invalide" }, 400);

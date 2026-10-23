@@ -6,6 +6,7 @@ import {
   carenceDateFromLabel,
   defaultNetRatiosForPeriod,
   fixedExtraTotal,
+  incoherentNetRatioReadings,
   inspectNetRatioCalibration,
   isAutomaticExtraLine,
   oneOffExtraTotal,
@@ -487,6 +488,25 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
     // Un net absurde (le double du brut) ne donne pas de taux.
     expect(calculateNetRatios([{ ...first, netBeforeTax: 4900 }], fallback)).toBeUndefined();
     expect(inspectNetRatioCalibration([{ ...first, netBeforeTax: 4900 }], fallback).reason).toBe("need-more-readable");
+  });
+
+  it("écarte un bulletin mal lu, qui fausserait les deux taux", () => {
+    const fallback = { netRatioFixed: DEFAULT_NET_RATIO_FIXED, netRatioVariable: DEFAULT_NET_RATIO_VARIABLE };
+    const september = { year: 2026, month: 8, gross: 2450, baseSalary: 1850, netBeforeTax: 1950, sundaysBeyondTen: 0 };
+    // Une mauvaise lecture rangée sous août : un net qui ne ressemble à rien.
+    const misread = { year: 2026, month: 7, gross: 2950, baseSalary: 1850, netBeforeTax: 1500, sundaysBeyondTen: 0 };
+    expect([...incoherentNetRatioReadings([september, misread], fallback)]).toEqual([1]);
+    // Les taux restent ceux de septembre seul, et le calcul le dit.
+    expect(calculateNetRatios([september, misread], fallback)).toEqual(calculateNetRatios([september], fallback));
+    expect(inspectNetRatioCalibration([september, misread], fallback)).toMatchObject({ reason: "approximate", rejectedCount: 1, totalCount: 2, usableCount: 1 });
+    // Dès trois bulletins, un bulletin à 8 % des autres est écarté aussi,
+    // même s'il reste proche des taux de départ.
+    const october = { ...september, month: 9, gross: 2950, netBeforeTax: 2388.06 - 64.8 + 82.4 };
+    const july = { ...september, month: 6, gross: 2700, netBeforeTax: 2120 };
+    const drifting = { ...september, month: 5, netBeforeTax: 1950 * 1.08 };
+    expect([...incoherentNetRatioReadings([september, october, july, drifting], fallback)]).toEqual([3]);
+    // Sans taux de départ, rien n'est écarté.
+    expect(incoherentNetRatioReadings([september, misread]).size).toBe(0);
   });
 
   it("demande au moins deux bulletins différenciés pour séparer les taux", () => {

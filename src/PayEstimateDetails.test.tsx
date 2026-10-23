@@ -71,7 +71,7 @@ describe("détail mensuel de la paie", () => {
     // se touche pour afficher son calcul.
     expect(html).toContain("Du brut au net");
     expect(html).toMatch(/<li><button[^>]*><i class="pay-total-dot" aria-hidden="true"><\/i><span class="pay-total-label">Brut du mois<small>traitement, indemnités et primes<\/small><\/span><span class="pay-total-value"><b>2.500,00.€<\/b><em>Voir le calcul<i aria-hidden="true">›<\/i><\/em><\/span>/);
-    expect(html).toMatch(/<li class="sub"><button[^>]*><i class="pay-total-dot"[^>]*><\/i><span class="pay-total-label">dont primes du mois<\/span>/);
+    expect(html).toMatch(/<li class="sub"><button[^>]*><i class="pay-total-dot"[^>]*><\/i><span class="pay-total-label">Dont primes du mois<\/span>/);
     expect(html).toMatch(/<li class="minus"><button[^>]*><i class="pay-total-dot"[^>]*><\/i><span class="pay-total-label">Cotisations sociales<small>retraite, CSG et CRDS<\/small><\/span><span class="pay-total-value"><b>− /);
     expect(html).toMatch(/<li class="sub"><button[^>]*><i class="pay-total-dot"[^>]*><\/i><span class="pay-total-label">Net avant impôt<\/span>/);
     expect(html).toMatch(/<li class="minus"><button[^>]*><i class="pay-total-dot"[^>]*><\/i><span class="pay-total-label">Impôt sur le revenu<small>prélèvement à la source · /);

@@ -114,6 +114,8 @@ export type PayslipCheckSectionProps = {
   onCreatePayProfile: () => Promise<void>;
   ciaMonth?: number;
   onSaveCiaMonth: (month: number) => void;
+  /** Retire un bulletin mal lu des taux (sous son mois « AAAA-MM »). */
+  onRemoveRateSample: (period: string) => void;
 };
 
 export function PayslipCheckSection({
@@ -187,6 +189,7 @@ export function PayslipCheckSection({
   onCreatePayProfile,
   ciaMonth,
   onSaveCiaMonth: saveCiaMonth,
+  onRemoveRateSample,
   rateCalibration: payslipRateCalibration,
 }: PayslipCheckSectionProps) {
   const [creatingPayProfile, setCreatingPayProfile] = useState(false);
@@ -342,6 +345,8 @@ export function PayslipCheckSection({
           onSavePayAmount={savePayAmount}
           ciaMonth={ciaMonth}
           onSaveCiaMonth={saveCiaMonth}
+          rateCalibration={payslipRateCalibration}
+          onRemoveRateSample={onRemoveRateSample}
         />
       </div>
   );

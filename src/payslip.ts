@@ -157,6 +157,22 @@ export type NetRatioCalibration = {
    *  différentes ; « approximate » : calés sur un seul bulletin, ou sur des
    *  bulletins trop semblables, en gardant le rapport des taux de départ. */
   reason: "ready" | "approximate" | "need-more-readable" | "not-enough-variation" | "inconsistent";
+  /** Bulletins écartés du calcul car incohérents (voir incoherentNetRatioReadings). */
+  rejectedCount?: number;
+  /** Les bulletins gardés qui calent les taux, du plus récent au plus ancien,
+   *  pour les montrer dans le profil et retirer un bulletin mal lu. */
+  samples?: NetRatioSample[];
+};
+
+/** Un bulletin qui cale les taux, sous son mois « AAAA-MM ». */
+export type NetRatioSample = {
+  period: string;
+  year: number;
+  month: number;
+  gross: number;
+  netBeforeTax: number;
+  /** Écarté du calcul : il ne concorde pas avec les autres. */
+  rejected: boolean;
 };
 
 /** Les cotisations ont changé avec l'entrée en vigueur du contrat collectif
@@ -664,21 +680,62 @@ function separateNetRatios(rows: NetRatioRow[]) {
   return { netRatioFixed: roundRate(fixed), netRatioVariable: roundRate(variable) };
 }
 
+/** Un bulletin mal lu (un montant pris pour un autre, un mauvais mois)
+ *  fausserait les deux taux : séparés, ils collent exactement à chaque
+ *  bulletin, au faux comme au vrai, et l'erreur retombe sur les mois aux
+ *  primes différentes. On écarte donc un bulletin dont le net s'éloigne de
+ *  plus de 12 % de ce que donnent les taux de départ du statut, ou, dès
+ *  trois bulletins, de plus de 6 % de ce que disent les autres. Un vrai
+ *  bulletin reste à quelques points de l'un comme des autres. */
+const MAX_GAP_FROM_STATUS = 0.12;
+const MAX_GAP_FROM_OTHERS = 0.06;
+
+/** Les positions, dans `readings`, des bulletins écartés du calcul. */
+export function incoherentNetRatioReadings(readings: PayslipReading[], fallback?: NetRatios) {
+  const rejected = new Set<number>();
+  if (!fallback) return rejected;
+  const ratios = readings.map((reading) => {
+    const row = netRatioRows([reading])[0];
+    if (!row) return undefined;
+    const predicted = (row.fixed * fallback.netRatioFixed + row.variable * fallback.netRatioVariable) / 100;
+    return predicted > 0 ? row.netFromGross / predicted : undefined;
+  });
+  ratios.forEach((ratio, index) => {
+    if (ratio !== undefined && Math.abs(ratio - 1) > MAX_GAP_FROM_STATUS) rejected.add(index);
+  });
+  const kept = ratios.filter((ratio, index): ratio is number => ratio !== undefined && !rejected.has(index)).sort((a, b) => a - b);
+  if (kept.length >= 3) {
+    const middle = kept.length / 2;
+    const median = kept.length % 2 ? kept[Math.floor(middle)] : (kept[middle - 1] + kept[middle]) / 2;
+    ratios.forEach((ratio, index) => {
+      if (ratio !== undefined && !rejected.has(index) && Math.abs(ratio / median - 1) > MAX_GAP_FROM_OTHERS) rejected.add(index);
+    });
+  }
+  return rejected;
+}
+
+const coherentReadings = (readings: PayslipReading[], fallback?: NetRatios) => {
+  const rejected = incoherentNetRatioReadings(readings, fallback);
+  return { kept: readings.filter((_, index) => !rejected.has(index)), rejectedCount: rejected.size };
+};
+
 /** Les deux taux net avant impôt de la personne, d'après ses bulletins :
  *  séparés dès que deux mois aux primes différentes le permettent, sinon
  *  calés ensemble sur son net à partir des taux de départ (`fallback`,
  *  ceux de son statut), dès le premier bulletin. */
 export function calculateNetRatios(readings: PayslipReading[], fallback?: NetRatios) {
-  const rows = netRatioRows(readings);
+  const rows = netRatioRows(coherentReadings(readings, fallback).kept);
   return separateNetRatios(rows) ?? (fallback ? proportionalNetRatios(rows, fallback) : undefined);
 }
 
 /** Donne à l'interface les taux obtenus et la raison exacte d'un calcul
  *  encore approché, ou impossible. */
 export function inspectNetRatioCalibration(
-  readings: PayslipReading[],
+  allReadings: PayslipReading[],
   fallback?: NetRatios,
 ): NetRatioCalibration {
+  const screened = coherentReadings(allReadings, fallback);
+  const readings = screened.kept;
   const usable = readings.filter(
     (reading) =>
       reading.gross !== undefined &&
@@ -686,10 +743,15 @@ export function inspectNetRatioCalibration(
       reading.netBeforeTax !== undefined,
   );
   const missing = (["gross", "baseSalary", "netBeforeTax"] as const).filter(
-    (field) => !readings.some((reading) => reading[field] !== undefined),
+    (field) => !allReadings.some((reading) => reading[field] !== undefined),
   );
   const rows = netRatioRows(readings);
-  const summary = { totalCount: readings.length, usableCount: usable.length, missing };
+  const summary = {
+    totalCount: allReadings.length,
+    usableCount: usable.length,
+    missing,
+    ...(screened.rejectedCount ? { rejectedCount: screened.rejectedCount } : {}),
+  };
   const separate = separateNetRatios(rows);
   if (separate) return { ...summary, rates: separate, reason: "ready" };
   const proportional = fallback ? proportionalNetRatios(rows, fallback) : undefined;

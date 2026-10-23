@@ -280,6 +280,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   rapport des taux de départ du statut, pour retrouver le net réel
   (`inspectNetRatioCalibration` dit « ready » ou « approximate »). Chaque
   bulletin vérifié ensuite affine. En démo, ils ne durent que la visite.
+  `incoherentNetRatioReadings` écarte du calcul un bulletin mal lu (net à
+  plus de 12 % des taux de départ, ou, dès trois bulletins, à plus de 6 % des
+  autres). Le profil liste ces bulletins (`PayslipRateSampleList.tsx`, sous
+  les éléments de paie, écartés signalés) ; « Retirer » envoie
+  `removePayslipRateSamples` et recale les taux
+  (`removePayslipRateSample` dans `usePayActions`).
 - `src/sundayReport.ts` : le report automatique de dimanches décidé à la
   lecture d'un bulletin ; relu, le même mois repart du compte entier, et la
   nouvelle lecture ajuste ou retire le report que la précédente avait

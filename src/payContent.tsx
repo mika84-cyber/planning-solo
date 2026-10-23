@@ -702,6 +702,7 @@ export function buildPayContent({
     }),
     ciaMonth,
     onSaveCiaMonth: (month) => void saveCiaMonth(month),
+    onRemoveRateSample: (period) => void payActions.removePayslipRateSample(period),
   };
 
   // Chaque tranche de maladie ou de grève retenue sur cette paie, chiffrée.
