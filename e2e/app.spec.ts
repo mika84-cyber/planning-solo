@@ -5874,16 +5874,17 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   // Un seul titre (le bandeau) ; dessous, le mois entre ses deux flèches.
   await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toHaveCount(0);
   await expect(page.locator(".pay-detail-screen .pay-bulletin-month-nav").getByRole("button", { name: "Mois suivant" })).toBeVisible();
-  // Le calcul en bref : quatre lignes, lues comme une opération, le net
-  // souligné d'un trait comme le total des lignes de la paie.
+  // Du brut au net : une étape par ligne, reliées par un fil, les retenues
+  // en rose, le net en terracotta pour fermer la cascade.
   const calculationTotals = page.locator(".pay-calculation-totals li");
-  await expect(calculationTotals).toHaveCount(4);
-  await expect(calculationTotals.locator(".pay-total-sign")).toHaveText(["", "dont", "−", "="]);
-  await expect(calculationTotals.last()).toHaveCSS("border-top-color", "rgb(44, 38, 33)");
+  await expect(calculationTotals).toHaveCount(6);
+  await expect(calculationTotals.locator(".pay-total-label")).toContainText(["Brut du mois", "dont primes du mois", "Cotisations sociales", "Net avant impôt", "Impôt sur le revenu", "Net estimé"]);
+  await expect(calculationTotals.nth(2).locator(".pay-total-dot")).toHaveCSS("background-color", "rgb(232, 138, 160)");
+  await expect(calculationTotals.last().locator(".pay-total-dot")).toHaveCSS("background-color", "rgb(138, 61, 34)");
   // Une simple estimation avec le profil de l'année n'est plus annoncée.
   await expect(page.getByText("Valeurs enregistrées pour cette année")).toHaveCount(0);
   // Chaque case se touche pour afficher son calcul, ligne à ligne.
-  await expect(page.getByRole("heading", { name: "Le calcul en bref" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Du brut au net" })).toBeVisible();
   const netCard = calculationTotals.last().getByRole("button");
   await netCard.click();
   await expect(netCard).toHaveAttribute("aria-expanded", "true");

@@ -274,7 +274,7 @@ export function PayEstimateDetails({
   );
 }
 
-type TotalKey = "gross" | "variable" | "deductions" | "net";
+type TotalKey = "gross" | "variable" | "contributions" | "mealVouchers" | "navigo" | "netBeforeTax" | "tax" | "net";
 type ExplainStep = {
   label: string;
   detail?: string;
@@ -288,8 +288,10 @@ const VARIABLE_KEYS = ["sunday-flat", "sundays", "holidays", "compensated", "ove
 const percent = (value: number) => `${value.toLocaleString("fr-FR")} %`;
 
 /**
- * Les quatre totaux du mois. Chaque case s'ouvre sur son calcul : les
- * montants qui la composent, dans l'ordre, jusqu'au total affiché.
+ * Du brut au net, étape par étape : le brut (dont les primes du mois), moins
+ * les cotisations, les titres repas s'il y en a, plus le Navigo s'il est
+ * remboursé, le net avant impôt, moins l'impôt, le net. Chaque étape s'ouvre
+ * sur son calcul : les montants qui la composent, jusqu'au total affiché.
  */
 function PayTotalsExplained({
   gross,
@@ -304,12 +306,21 @@ function PayTotalsExplained({
 }) {
   const [open, setOpen] = useState<TotalKey | null>(null);
   const brut = grossEstimateComplete ? gross : null;
-  const fixedPart = gross - calculation.variableAdditions;
+  const { variableAdditions, estimatedContributions, netBeforeTax, incomeTax, navigo, mealVoucherDeduction, pasRate, netRatioFixed, netRatioVariable } = calculation;
+  const fixedPart = gross - variableAdditions;
+  const round = (value: number) => Math.round(value * 100) / 100;
   const termsOf = (rows: PayCalculationRow[]): ExplainStep[] =>
     rows.map((row, index) => ({ label: row.label, amount: row.amount, sign: index ? "+" : "" }));
+  const toNetBeforeTax: ExplainStep[] = [
+    { label: "Brut du mois", amount: brut, sign: "" },
+    { label: "Cotisations sociales", amount: estimatedContributions, sign: "−" },
+    ...(mealVoucherDeduction ? [{ label: "Titres repas", amount: mealVoucherDeduction, sign: "−" as const }] : []),
+    ...(navigo ? [{ label: "Remboursement Navigo", amount: navigo, sign: "+" as const }] : []),
+    { label: "Net avant impôt", amount: netBeforeTax, sign: "=" },
+  ];
   const explanations: Record<TotalKey, { title: string; intro: string; steps: ExplainStep[] }> = {
     gross: {
-      title: "Comment est calculé le total brut",
+      title: "Comment est calculé le brut du mois",
       intro: "Votre traitement, vos indemnités et vos primes du mois, moins ce qui est retenu pour une absence (maladie, grève).",
       steps: [
         ...termsOf(calculation.grossComposition),
@@ -322,77 +333,103 @@ function PayTotalsExplained({
       intro: "Ce qui change d’un mois à l’autre. Ces montants sont déjà compris dans le brut et supportent moins de cotisations que le traitement.",
       steps: [
         ...termsOf(calculation.grossComposition.filter((row) => VARIABLE_KEYS.includes(row.key))),
-        { label: "Primes du mois", amount: calculation.variableAdditions, sign: "=" },
+        { label: "Primes du mois", amount: variableAdditions, sign: "=" },
       ],
     },
-    deductions: {
-      title: "Comment est calculé le total des retenues",
-      intro: "Tout ce qui est retiré du brut avant d’arriver sur votre compte.",
+    contributions: {
+      title: "Comment sont calculées les cotisations sociales",
+      intro: `Retraite, CSG et CRDS. On garde ${percent(netRatioFixed)} de la partie fixe du brut et ${percent(netRatioVariable)} des primes du mois : le reste part en cotisations.`,
       steps: [
-        ...calculation.grossDeductions.map((row) => ({ label: row.label, detail: "retenue sur le brut", amount: row.amount, sign: "−" as const })),
-        {
-          label: "Cotisations sociales",
-          detail: `On garde ${percent(calculation.netRatioFixed)} de la partie fixe (${euros(fixedPart)}) et ${percent(calculation.netRatioVariable)} des ajouts variables (${euros(calculation.variableAdditions)}) : le reste part en cotisations.`,
-          amount: calculation.estimatedContributions,
-          sign: "−",
-        },
-        ...(calculation.mealVoucherDeduction
-          ? [{ label: "Titres repas", detail: "votre part du mois", amount: calculation.mealVoucherDeduction, sign: "−" as const }]
-          : []),
-        {
-          label: "Impôt sur le revenu",
-          detail: `Prélèvement à la source : ${percent(calculation.pasRate)} du net imposable.`,
-          amount: calculation.incomeTax,
-          sign: "−",
-        },
-        { label: "Retenues", amount: calculation.totalDeductions === null ? null : -calculation.totalDeductions, sign: "=" },
+        { label: "Sur la partie fixe", detail: `${percent(round(100 - netRatioFixed))} de ${euros(fixedPart)}`, amount: round((fixedPart * (100 - netRatioFixed)) / 100), sign: "" },
+        { label: "Sur les primes du mois", detail: `${percent(round(100 - netRatioVariable))} de ${euros(variableAdditions)}`, amount: round((variableAdditions * (100 - netRatioVariable)) / 100), sign: "+" },
+        { label: "Cotisations sociales", amount: estimatedContributions, sign: "=" },
+      ],
+    },
+    mealVouchers: {
+      title: "Les titres repas",
+      intro: "Votre part du mois, retenue sur le net — jamais en décembre.",
+      steps: [{ label: "Titres repas", amount: mealVoucherDeduction, sign: "=" }],
+    },
+    navigo: {
+      title: "Le Navigo remboursé",
+      intro: "La part de l’abonnement remboursée par l’employeur, ajoutée au net telle quelle, hors cotisations et impôt.",
+      steps: [{ label: "Remboursement Navigo", amount: navigo, sign: "=" }],
+    },
+    netBeforeTax: {
+      title: "Comment est calculé le net avant impôt",
+      intro: "Le brut, moins les cotisations et les titres repas, plus le Navigo remboursé.",
+      steps: toNetBeforeTax,
+    },
+    tax: {
+      title: "Comment est calculé l’impôt sur le revenu",
+      intro: `Le prélèvement à la source : votre taux enregistré, ${percent(pasRate)}, appliqué au net imposable — un peu plus large que le net avant impôt, car une part des cotisations reste imposable.`,
+      steps: [
+        { label: "Net avant impôt", amount: netBeforeTax, sign: "" },
+        { label: `Impôt à ${percent(pasRate)}`, detail: "sur le net imposable", amount: incomeTax, sign: "=" },
       ],
     },
     net: {
       title: "Comment est calculé le net estimé",
       intro: "Ce qui arrive sur votre compte : le brut, moins les cotisations, puis moins l’impôt.",
       steps: [
-        { label: "Brut du mois", amount: brut, sign: "" },
-        { label: "Cotisations sociales", amount: calculation.estimatedContributions, sign: "−" },
-        ...(calculation.navigo ? [{ label: "Remboursement Navigo", amount: calculation.navigo, sign: "+" as const }] : []),
-        ...(calculation.mealVoucherDeduction ? [{ label: "Titres repas", amount: calculation.mealVoucherDeduction, sign: "−" as const }] : []),
-        { label: "Net avant impôt", amount: calculation.netBeforeTax, sign: "=" },
-        { label: `Impôt (${percent(calculation.pasRate)})`, amount: calculation.incomeTax, sign: "−" },
+        ...toNetBeforeTax,
+        { label: `Impôt (${percent(pasRate)})`, amount: incomeTax, sign: "−" },
         { label: "Net estimé", amount: net, sign: "=" },
       ],
     },
   };
-  /* Le calcul en bref, lu comme une opération : le brut, dont les primes du
-     mois ; moins les retenues ; égale le net. Chaque ligne se touche pour
-     afficher son calcul, ligne à ligne, dessous. */
-  const rows: Array<{ key: TotalKey; sign: string; label: string; value: string; note: string }> = [
-    { key: "gross", sign: "", label: "Brut du mois", value: brut === null ? "À compléter" : euros(brut), note: "traitement, indemnités et primes" },
-    { key: "variable", sign: "dont", label: "Primes du mois", value: euros(calculation.variableAdditions), note: "déjà comprises dans le brut" },
+  /* Le fil du brut au net : une étape par ligne, les retenues en rose, le
+     Navigo en vert, les paliers (primes comprises, net avant impôt) en
+     retrait ; le net ferme la cascade. Chaque ligne se touche pour afficher
+     son calcul, ligne à ligne, dessous. */
+  const rows: Array<{ key: TotalKey; kind: "" | "sub" | "minus" | "plus" | "net"; label: string; note?: string; value: string }> = [
     {
-      key: "deductions",
-      sign: "−",
-      label: "Retenues",
-      value: calculation.totalDeductions === null ? "À compléter" : euros(calculation.totalDeductions),
-      note: "cotisations, impôt, absences",
+      key: "gross",
+      kind: "",
+      label: "Brut du mois",
+      note: calculation.grossDeductions.length ? "traitement, indemnités et primes, moins les absences" : "traitement, indemnités et primes",
+      value: brut === null ? "À compléter" : euros(brut),
     },
-    { key: "net", sign: "=", label: "Net estimé", value: net === null ? "À compléter" : euros(net), note: "ce qui arrive sur votre compte" },
+    { key: "variable", kind: "sub", label: "dont primes du mois", value: euros(variableAdditions) },
+    {
+      key: "contributions",
+      kind: "minus",
+      label: "Cotisations sociales",
+      note: "retraite, CSG et CRDS",
+      value: estimatedContributions === null ? "À compléter" : `− ${euros(estimatedContributions)}`,
+    },
+    ...(mealVoucherDeduction
+      ? [{ key: "mealVouchers" as const, kind: "minus" as const, label: "Titres repas", note: "votre part du mois", value: `− ${euros(mealVoucherDeduction)}` }]
+      : []),
+    ...(navigo
+      ? [{ key: "navigo" as const, kind: "plus" as const, label: "Navigo remboursé", note: "ajouté au net", value: `+ ${euros(navigo)}` }]
+      : []),
+    { key: "netBeforeTax", kind: "sub", label: "Net avant impôt", value: netBeforeTax === null ? "À compléter" : euros(netBeforeTax) },
+    {
+      key: "tax",
+      kind: "minus",
+      label: "Impôt sur le revenu",
+      note: `prélèvement à la source · ${percent(pasRate)}`,
+      value: incomeTax === null ? "À compléter" : `− ${euros(incomeTax)}`,
+    },
+    { key: "net", kind: "net", label: "Net estimé", note: "ce qui arrive sur votre compte", value: net === null ? "À compléter" : euros(net) },
   ];
   const explanation = open ? explanations[open] : null;
   return (
     <>
-      <h3 className="pay-totals-kicker">Le calcul en bref</h3>
-      <section className="pay-calculation-totals" aria-label="Le calcul en bref">
+      <h3 className="pay-totals-kicker">Du brut au net</h3>
+      <section className="pay-calculation-totals" aria-label="Du brut au net">
         <ol>
           {rows.map((row) => (
-            <li key={row.key} className={[row.key === "net" ? "net" : "", row.key === "variable" ? "part" : "", open === row.key ? "open" : ""].filter(Boolean).join(" ") || undefined}>
+            <li key={row.key} className={[row.kind, open === row.key ? "open" : ""].filter(Boolean).join(" ") || undefined}>
               <button
                 type="button"
                 aria-expanded={open === row.key}
                 aria-controls="pay-total-explain"
                 onClick={() => setOpen((current) => (current === row.key ? null : row.key))}
               >
-                <i className="pay-total-sign" aria-hidden="true">{row.sign}</i>
-                <span className="pay-total-label">{row.label}<small>{row.note}</small></span>
+                <i className="pay-total-dot" aria-hidden="true" />
+                <span className="pay-total-label">{row.label}{row.note ? <small>{row.note}</small> : null}</span>
                 <b>{row.value}</b>
                 <i className="pay-total-chevron" aria-hidden="true">›</i>
                 <span className="pay-total-sr">{open === row.key ? "Masquer le calcul" : "Voir le calcul"}</span>
