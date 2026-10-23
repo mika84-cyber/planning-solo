@@ -381,7 +381,7 @@ function PayTotalsExplained({
   /* Le fil du brut au net : une étape par ligne, les retenues en rose, le
      Navigo en vert, les paliers (primes comprises, net avant impôt) en
      retrait ; le net ferme la cascade. Chaque ligne se touche pour afficher
-     son calcul, ligne à ligne, dessous. */
+     son calcul, ligne à ligne, dessous — et le dit sous son montant. */
   const rows: Array<{ key: TotalKey; kind: "" | "sub" | "minus" | "plus" | "net"; label: string; note?: string; value: string }> = [
     {
       key: "gross",
@@ -430,9 +430,11 @@ function PayTotalsExplained({
               >
                 <i className="pay-total-dot" aria-hidden="true" />
                 <span className="pay-total-label">{row.label}{row.note ? <small>{row.note}</small> : null}</span>
-                <b>{row.value}</b>
-                <i className="pay-total-chevron" aria-hidden="true">›</i>
-                <span className="pay-total-sr">{open === row.key ? "Masquer le calcul" : "Voir le calcul"}</span>
+                {/* Le montant, et dessous, en toutes lettres, ce qu'un appui fait. */}
+                <span className="pay-total-value">
+                  <b>{row.value}</b>
+                  <em>{open === row.key ? "Masquer le calcul" : "Voir le calcul"}<i aria-hidden="true">›</i></em>
+                </span>
               </button>
             </li>
           ))}
