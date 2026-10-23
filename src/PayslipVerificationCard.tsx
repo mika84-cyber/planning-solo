@@ -30,27 +30,18 @@ function formatReviewValue(row: PayslipReviewCheck, value: number) {
   return euros(value);
 }
 
-function PayslipIssueList({ issues, title }: { issues: PayslipReviewCheck[]; title?: string }) {
+/* Chaque écart en une phrase, suivie de son explication possible — une seule
+   fois, en tête du résultat ; les montants sont dans le tableau dessous. */
+function PayslipGapList({ issues, label }: { issues: PayslipReviewCheck[]; label?: string }) {
   return (
-    <section className="payslip-mismatch-list" aria-label={title || "Détail des anomalies enregistrées"}>
-      {title ? <div className="payslip-mismatch-heading"><span>Comparaison détaillée</span><h3>{title}</h3></div> : null}
-      {issues.map((row) => {
-        const found = row.found as number;
-        const difference = found - row.expected;
-        return (
-          <article className="payslip-mismatch-item" key={`mismatch-${row.key}`}>
-            <h4>{row.label}</h4>
-            <p className="payslip-mismatch-sentence">{describePayslipGap(row)}</p>
-            <div className="payslip-mismatch-values">
-              <span><small>Attendu</small><strong>{formatReviewValue(row, row.expected)}</strong></span>
-              <span><small>Trouvé</small><strong>{formatReviewValue(row, found)}</strong></span>
-              <span><small>Différence</small><strong>{difference > 0 ? "+" : ""}{formatReviewValue(row, difference)}</strong></span>
-            </div>
-            <p><strong>Explication possible :</strong> {explainPayslipGap(row)}</p>
-          </article>
-        );
-      })}
-    </section>
+    <ul className="payslip-gap-sentences" aria-label={label}>
+      {issues.map((row) => (
+        <li key={`gap-${row.key}`}>
+          <b>{describePayslipGap(row)}</b>
+          <span>{explainPayslipGap(row)}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -420,7 +411,7 @@ export function PayslipVerificationCard({
                   <div>
                     <p className="allowance-note">{savedDecision.verifiedCount} ligne{s(savedDecision.verifiedCount)} vérifiée{s(savedDecision.verifiedCount)} · {savedDecision.unavailableCount} non vérifiable{s(savedDecision.unavailableCount)}</p>
                     {savedDecision.issues.length ? (
-                      <PayslipIssueList issues={savedDecision.issues} />
+                      <PayslipGapList issues={savedDecision.issues} label="Détail des anomalies enregistrées" />
                     ) : (
                       <p className="allowance-note warn">Anomalie signalée. Aucun écart n’a été identifié automatiquement sur les lignes comparables.</p>
                     )}
@@ -560,7 +551,9 @@ export function PayslipVerificationCard({
             ) : null}
             {payslipImportMode === "verify" && payslipImportResult && (payslipNeedsPeriod || checkMatchesDisplayedPeriod) ? (
               <>
-                <p className="allowance-note">
+                {/* Ce qui a été lu, dit sans alarme : une ligne absente est
+                    normale sur une page seule. Le rouge est réservé aux écarts. */}
+                <p className="allowance-note payslip-import-note">
                   {payslipImportResult.applied.length} champ
                   {s(payslipImportResult.applied.length)} rempli
                   {s(payslipImportResult.applied.length)} :{" "}
@@ -570,13 +563,13 @@ export function PayslipVerificationCard({
                   .
                 </p>
                 {payslipImportResult.missing.length ? (
-                  <p className="allowance-note warn">
+                  <p className="allowance-note payslip-import-note">
                     Pas trouvé sur ces bulletins :{" "}
                     {payslipImportResult.missing.join(", ")}.
                   </p>
                 ) : null}
                 {payslipImportResult.adjustment ? (
-                  <p className="allowance-note positive">
+                  <p className="allowance-note payslip-import-note payslip-import-adjustment">
                     {payslipImportResult.adjustment}
                   </p>
                 ) : null}
@@ -598,16 +591,12 @@ export function PayslipVerificationCard({
                       {payslipReview.verified.length} ligne{s(payslipReview.verified.length)} vérifiée{s(payslipReview.verified.length)}
                       {` · ${payslipReview.unavailable.length} non vérifiable${s(payslipReview.unavailable.length)}`}
                     </small>
-                    {/* L'essentiel d'abord : chaque écart en une phrase, avant le détail chiffré. */}
-                    {payslipReview.issues.length ? (
-                      <ul className="payslip-gap-sentences">
-                        {payslipReview.issues.map((row) => <li key={`gap-${row.key}`}>{describePayslipGap(row)}</li>)}
-                      </ul>
-                    ) : null}
+                    {/* L'essentiel d'abord : chaque écart en une phrase, avec son
+                        explication ; les montants sont dans le tableau dessous. */}
+                    {payslipReview.issues.length ? <PayslipGapList issues={payslipReview.issues} /> : null}
                   </div>
-                  {payslipReview.tone === "warning" ? (
-                    <strong className="payslip-details-visible">Écarts détaillés ci-dessous</strong>
-                  ) : (
+                  {/* Avec un écart, le tableau est toujours affiché ; sinon il se déplie. */}
+                  {payslipReview.tone === "warning" ? null : (
                     <button
                       type="button"
                       className="secondary-button"
@@ -638,42 +627,6 @@ export function PayslipVerificationCard({
                       </div>
                     </article>
                   ))}
-                </section>
-              ) : null}
-              {/* Une autre photo ou page du même bulletin, prise après coup :
-                  elle s'ajoute à la lecture déjà faite. */}
-              <label className="payslip-add-page">
-                {payslipFileInput("add-page")}
-                <span aria-hidden="true">＋</span>
-                <strong>{payslipImportBusy ? "Lecture de la page…" : "Ajouter une page"}</strong>
-                <small>Une autre photo ou page du même bulletin</small>
-              </label>
-              {/* Dès le premier bulletin, les deux taux sont calés sur le net
-                  réel ; tant qu'un bulletin aux primes différentes ne les a pas
-                  séparés, on invite simplement à en vérifier un autre. */}
-              {rateCalibration.reason !== "ready" ? (
-                <section className="payslip-second-hint" aria-label="Pour un net encore plus juste">
-                  <strong>Pour un net encore plus juste</strong>
-                  <p>
-                    {rateCalibration.reason === "approximate"
-                      ? `Vos taux de cotisations sont calés sur ${rateCalibration.usableCount > 1 ? "vos bulletins, dont les primes se ressemblent" : "ce seul bulletin"}. Vérifiez un bulletin, maintenant ou lors d’une prochaine visite, d’un autre mois où vos primes sont différentes (plus ou moins de dimanches, un férié) : l’application distinguera alors le taux du traitement de celui des primes.`
-                      : usesAverageNetRatios(netRatioFixed, netRatioVariable)
-                        ? "Le brut, le traitement ou le net avant impôt de ce bulletin n’a pas été lu : l’application estime vos cotisations avec des valeurs moyennes. Ajoutez la page qui manque, ou vérifiez un bulletin lisible, maintenant ou lors d’une prochaine visite : elle calera ses taux sur votre net."
-                        : "Les bulletins lus ne permettent pas d’affiner vos taux de cotisations : vérifiez un bulletin lisible, maintenant ou lors d’une prochaine visite, d’un autre mois où vos primes sont différentes."}
-                  </p>
-                  <label className="payslip-second-button">
-                    {payslipFileInput("verify")}
-                    Vérifier un autre bulletin
-                  </label>
-                </section>
-              ) : null}
-              {payslipReview ? (
-                <section className="payslip-review-decision" aria-label="Conclusion de la vérification">
-                  <div><span>Votre conclusion</span><strong>Valider le contrôle du bulletin</strong></div>
-                  <div className="payslip-decision-options">
-                    <button type="button" className="payslip-decision-ok" onClick={() => recordDecision("ok")}><span aria-hidden="true">✓</span><strong>Tout est OK</strong></button>
-                    <button type="button" className="payslip-decision-attention" onClick={() => recordDecision("attention")}><span aria-hidden="true">!</span><strong>Signaler une anomalie</strong></button>
-                  </div>
                 </section>
               ) : null}
               {unplannedPayslipCarence ? (
@@ -715,9 +668,6 @@ export function PayslipVerificationCard({
                   nextMonthLabel={nextMonthLabel}
                   onConfirm={(entries) => onMarkMecenatsPaidEarly(entries, allowances.year, displayedMonth)}
                 />
-              ) : null}
-              {payslipReview?.issues.length ? (
-                <PayslipIssueList issues={payslipReview.issues} title="Tous les points qui ne coïncident pas" />
               ) : null}
               {payslipResultDetailsOpen || payslipReview?.tone === "warning" ? (
                 <>
@@ -817,6 +767,44 @@ export function PayslipVerificationCard({
                 );
               })()}
                 </>
+              ) : null}
+              {/* Après le détail, ce qu'on peut encore faire — une page, un autre
+                  bulletin — puis la conclusion, une fois tout vu. */}
+              {/* Une autre photo ou page du même bulletin, prise après coup :
+                  elle s'ajoute à la lecture déjà faite. */}
+              <label className="payslip-add-page">
+                {payslipFileInput("add-page")}
+                <span aria-hidden="true">＋</span>
+                <strong>{payslipImportBusy ? "Lecture de la page…" : "Ajouter une page"}</strong>
+                <small>Une autre photo ou page du même bulletin</small>
+              </label>
+              {/* Dès le premier bulletin, les deux taux sont calés sur le net
+                  réel ; tant qu'un bulletin aux primes différentes ne les a pas
+                  séparés, on invite simplement à en vérifier un autre. */}
+              {rateCalibration.reason !== "ready" ? (
+                <section className="payslip-second-hint" aria-label="Pour un net encore plus juste">
+                  <strong>Pour un net encore plus juste</strong>
+                  <p>
+                    {rateCalibration.reason === "approximate"
+                      ? `Vos taux de cotisations sont calés sur ${rateCalibration.usableCount > 1 ? "vos bulletins, dont les primes se ressemblent" : "ce seul bulletin"}. Vérifiez un bulletin, maintenant ou lors d’une prochaine visite, d’un autre mois où vos primes sont différentes (plus ou moins de dimanches, un férié) : l’application distinguera alors le taux du traitement de celui des primes.`
+                      : usesAverageNetRatios(netRatioFixed, netRatioVariable)
+                        ? "Le brut, le traitement ou le net avant impôt de ce bulletin n’a pas été lu : l’application estime vos cotisations avec des valeurs moyennes. Ajoutez la page qui manque, ou vérifiez un bulletin lisible, maintenant ou lors d’une prochaine visite : elle calera ses taux sur votre net."
+                        : "Les bulletins lus ne permettent pas d’affiner vos taux de cotisations : vérifiez un bulletin lisible, maintenant ou lors d’une prochaine visite, d’un autre mois où vos primes sont différentes."}
+                  </p>
+                  <label className="payslip-second-button">
+                    {payslipFileInput("verify")}
+                    Vérifier un autre bulletin
+                  </label>
+                </section>
+              ) : null}
+              {payslipReview ? (
+                <section className="payslip-review-decision" aria-label="Conclusion de la vérification">
+                  <div><span>Votre conclusion</span><strong>Valider le contrôle du bulletin</strong></div>
+                  <div className="payslip-decision-options">
+                    <button type="button" className="payslip-decision-ok" onClick={() => recordDecision("ok")}><span aria-hidden="true">✓</span><strong>Tout est OK</strong></button>
+                    <button type="button" className="payslip-decision-attention" onClick={() => recordDecision("attention")}><span aria-hidden="true">!</span><strong>Signaler une anomalie</strong></button>
+                  </div>
+                </section>
               ) : null}
             </>
           ) : null}

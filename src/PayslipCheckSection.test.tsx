@@ -301,7 +301,13 @@ describe("PayslipCheckSection", () => {
       />,
     );
 
-    expect(html).toContain("Écarts détaillés ci-dessous");
+    // Chaque écart une seule fois, en phrase, avec son explication ; les
+    // montants sont dans le tableau, et la conclusion vient après lui.
+    expect(html).not.toContain("Écarts détaillés ci-dessous");
+    expect(html).not.toContain("Comparaison détaillée");
+    expect(html).toContain("Le brut peut varier si une prime");
+    expect(html.split("Cumul brut : 30,00").length).toBe(2);
+    expect(html.indexOf("Conclusion de la vérification")).toBeGreaterThan(html.indexOf("<table"));
     expect(html).toContain("Taux d’imposition (PAS)");
     expect(html).toContain("0,4 %");
     expect(html).toContain("Dimanches payés");

@@ -59,12 +59,13 @@ describe("détail mensuel de la paie", () => {
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-label="Mois suivant"');
     expect(html).toContain("Valeurs vérifiées avec le bulletin");
-    expect(html).toContain("Composition du brut");
-    expect(html).toContain("Traitement indiciaire");
-    expect(html).toContain("Retenues et passage au net");
-    expect(html).toContain("Cotisations estimées");
-    expect(html).toContain("Net avant prélèvement à la source");
-    expect(html).toContain("Prélèvement à la source");
+    // Sous la cascade, plus de tableaux qui répètent ses montants avec un
+    // autre vocabulaire : la composition du brut et le passage au net sont
+    // les calculs de ses étapes.
+    expect(html).not.toContain("Composition du brut");
+    expect(html).not.toContain("Retenues et passage au net");
+    expect(html).not.toContain("Cotisations estimées");
+    expect(html).not.toContain("Net avant prélèvement à la source");
     // Du brut au net, étape par étape : le brut (dont primes), moins les
     // cotisations, le net avant impôt, moins l'impôt, le net. Chaque étape
     // se touche pour afficher son calcul.

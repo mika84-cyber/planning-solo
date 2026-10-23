@@ -1681,7 +1681,7 @@ test("relire un bulletin mal lu retire le report de dimanches que la première l
   const pdf = (tokens: string[]) => Buffer.from(["%PDF-1.4", "stream", ...tokens.map((token) => `(${token}) Tj`), "endstream", "%%EOF"].join("\n"), "latin1");
   const october = ["Octobre 2026", "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88"];
   const footer = ["CUMUL BRUT", "2600.00", "NET A PAYER AVANT IMPOT", "2100.00"];
-  const adjustment = page.locator(".allowance-note.positive");
+  const adjustment = page.locator(".payslip-import-adjustment");
   // Première lecture, sans la ligne des dimanches : la paie d'octobre les
   // attendait, ils sont reportés sur décembre.
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
@@ -4987,13 +4987,16 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
 
   await goToSection(page, "pay");
   await page.getByRole("button", { name: /^Détail du calcul/ }).click();
-  const strikePayRow = page.getByRole("row").filter({ hasText: "Grève (1 journée retenue)" });
+  // La retenue est dans le calcul du brut, première étape de la cascade.
+  const grossStep = page.locator(".pay-calculation-totals > ol > li").first();
+  const strikePayRow = page.locator(".pay-calculation-totals .pay-total-explain li").filter({ hasText: "Grève (1 journée retenue)" });
   // La règle du 10 peut renvoyer la retenue sur la paie suivante selon le jour.
   await expect(async () => {
+    if ((await grossStep.getAttribute("class")) !== "open") await grossStep.getByRole("button").click();
     if (!(await strikePayRow.count())) await page.getByRole("button", { name: "Mois suivant" }).click();
     await expect(strikePayRow).toHaveCount(1, { timeout: 1500 });
   }).toPass({ timeout: 10_000 });
-  await expect(strikePayRow).toContainText("-61,86");
+  await expect(strikePayRow).toContainText(/−\s?61,86/);
   await expect(strikePayRow).toContainText("retenue au 1/30");
 
   await goToSection(page, "leave");
@@ -5013,7 +5016,8 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
 
   await goToSection(page, "pay");
   await page.getByRole("button", { name: /^Détail du calcul/ }).click();
-  await expect(page.getByRole("row").filter({ hasText: /^Grève/ })).toHaveCount(0);
+  await page.locator(".pay-calculation-totals > ol > li").first().getByRole("button").click();
+  await expect(page.locator(".pay-calculation-totals .pay-total-explain li").filter({ hasText: /^Grève/ })).toHaveCount(0);
 });
 
 test("une grève se pose depuis une case par « Congé »", async ({ page }) => {
@@ -5133,11 +5137,13 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
   if (Number(scenario.last.slice(8, 10)) > 10)
     await page.getByRole("button", { name: "Mois suivant" }).click();
   await page.getByRole("button", { name: /^Détail du calcul/ }).click();
-  const strikePayRow = page.getByRole("row").filter({
+  // La retenue est dans le calcul du brut, première étape de la cascade.
+  await page.locator(".pay-calculation-totals > ol > li").first().getByRole("button").click();
+  const strikePayRow = page.locator(".pay-calculation-totals .pay-total-explain li").filter({
     hasText: `Grève (${retainedDays} journées retenues)`,
   });
   await expect(strikePayRow).toContainText(`${intermediateCount} repos noir`);
-  await expect(strikePayRow).toContainText(`-${expectedDeduction}`);
+  await expect(strikePayRow.locator("b")).toContainText(`− ${expectedDeduction} €`);
 });
 
 test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ page }) => {
@@ -5732,12 +5738,15 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   await expect(payDashboard.getByText(/dont 1 reporté/)).toBeVisible();
 
   await payDashboard.getByRole("button", { name: /^Détail du calcul/ }).click();
-  await expect(page.getByRole("heading", { name: "Composition du brut" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Retenues et passage au net" })).toBeVisible();
-  await expect(page.getByRole("rowheader", { name: /^Traitement de base/ })).toBeVisible();
-  await expect(page.getByRole("rowheader", { name: /^Indemnité de résidence/ })).toBeVisible();
-  await expect(page.getByRole("rowheader", { name: /^IFSE/ })).toBeVisible();
-  await expect(page.getByText("Net avant prélèvement à la source", { exact: true })).toBeVisible();
+  // Sous la cascade, plus de tableaux doublons : la composition du brut est
+  // le calcul de sa première étape.
+  await expect(page.getByRole("heading", { name: "Composition du brut" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Retenues et passage au net" })).toHaveCount(0);
+  await page.locator(".pay-calculation-totals > ol > li").first().getByRole("button").click();
+  const grossCalculation = page.locator(".pay-calculation-totals .pay-total-explain");
+  await expect(grossCalculation).toContainText("Traitement de base");
+  await expect(grossCalculation).toContainText("Indemnité de résidence");
+  await expect(grossCalculation).toContainText("IFSE");
   await expect(page.locator(".pay-calculation-totals li.net")).toContainText("Net estimé");
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await expect(monthHeading).toHaveText("Octobre 2026");

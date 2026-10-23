@@ -110,75 +110,10 @@ export function PayEstimateDetails({
           <small>{reliability.detail}</small>
         </p>
       </div>}
-      {/* Les quatre totaux d'abord ; un appui sur une case explique son
-          calcul, ligne à ligne. Le détail complet suit. */}
+      {/* Du brut au net ; chaque étape s'ouvre sur son calcul (composition
+          du brut, cotisations, passage au net). Rien n'est répété dessous :
+          suivent les heures sup et les mécénats, avec leurs lignes. */}
       <PayTotalsExplained gross={gross} grossEstimateComplete={grossEstimateComplete} net={net} calculation={calculation} />
-      <section className="pay-calculation-section" aria-labelledby="gross-composition-title">
-        <h3 id="gross-composition-title">Composition du brut</h3>
-        <table className="allowance-table pay-calculation-table">
-          <tbody>
-            {calculation.grossComposition.map((row) => (
-              <tr key={row.key}>
-                <th scope="row">
-                  {row.label}
-                  <small>{row.detail}</small>
-                </th>
-                <td
-                  className={
-                    row.amount !== null && row.amount < 0
-                      ? "negative"
-                      // Le vert pour les primes seulement, comme sur la page
-                      // principale : le fixe reste en noir.
-                      : row.amount !== null && row.amount > 0 && VARIABLE_KEYS.includes(row.key)
-                        ? "positive"
-                        : ""
-                  }
-                >
-                  {row.amount === null ? "À compléter" : euros(row.amount)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="pay-calculation-gross-before">
-          Brut du mois : <strong>{euros(calculation.grossBeforeDeductions)}</strong>
-        </p>
-        {calculation.grossDeductions.length ? (
-          <>
-            <h4>Retenues appliquées au brut</h4>
-            <table className="allowance-table pay-calculation-table">
-              <tbody>
-                {calculation.grossDeductions.map((row) => (
-                  <tr key={row.key}>
-                    <th scope="row">{row.label}<small>{row.detail}</small></th>
-                    <td className="negative">{row.amount === null ? "À vérifier" : `-${euros(row.amount)}`}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        ) : null}
-      </section>
-
-      <section className="pay-calculation-section" aria-labelledby="net-breakdown-title">
-        <h3 id="net-breakdown-title">Retenues et passage au net</h3>
-        <table className="allowance-table pay-calculation-table">
-          <tbody>
-            <tr>
-              <th scope="row">Cotisations estimées<small>retraite, CSG et CRDS</small></th>
-              <td className="negative">{calculation.estimatedContributions === null ? "À compléter" : `−${euros(calculation.estimatedContributions)}`}</td>
-            </tr>
-            {calculation.navigo ? <tr><th scope="row">Remboursement Navigo<small>ajouté après cotisations</small></th><td className="positive">+{euros(calculation.navigo)}</td></tr> : null}
-            {calculation.mealVoucherDeduction ? <tr><th scope="row">Titres repas<small>retenue du mois</small></th><td className="negative">−{euros(calculation.mealVoucherDeduction)}</td></tr> : null}
-            <tr className="pay-calculation-subtotal"><th scope="row">Net avant prélèvement à la source</th><td>{calculation.netBeforeTax === null ? "À compléter" : euros(calculation.netBeforeTax)}</td></tr>
-            <tr>
-              <th scope="row">Prélèvement à la source<small>Taux enregistré : {calculation.pasRate.toLocaleString("fr-FR")} %</small></th>
-              <td className="negative">{calculation.incomeTax === null ? "À compléter" : `−${euros(calculation.incomeTax)}`}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
       {overtime.totalMinutes ? (
         <div className="overtime-pay-detail">
           <div className="overtime-pay-detail-heading">
@@ -310,7 +245,7 @@ function PayTotalsExplained({
   const fixedPart = gross - variableAdditions;
   const round = (value: number) => Math.round(value * 100) / 100;
   const termsOf = (rows: PayCalculationRow[]): ExplainStep[] =>
-    rows.map((row, index) => ({ label: row.label, amount: row.amount, sign: index ? "+" : "" }));
+    rows.map((row, index) => ({ label: row.label, detail: row.detail, amount: row.amount, sign: index ? "+" : "" }));
   const toNetBeforeTax: ExplainStep[] = [
     { label: "Brut du mois", amount: brut, sign: "" },
     { label: "Cotisations sociales", amount: estimatedContributions, sign: "−" },
@@ -324,7 +259,7 @@ function PayTotalsExplained({
       intro: "Votre traitement, vos indemnités et vos primes du mois, moins ce qui est retenu pour une absence (maladie, grève).",
       steps: [
         ...termsOf(calculation.grossComposition),
-        ...calculation.grossDeductions.map((row) => ({ label: row.label, amount: row.amount, sign: "−" as const })),
+        ...calculation.grossDeductions.map((row) => ({ label: row.label, detail: row.detail, amount: row.amount, sign: "−" as const })),
         { label: "Brut du mois", amount: brut, sign: "=" },
       ],
     },

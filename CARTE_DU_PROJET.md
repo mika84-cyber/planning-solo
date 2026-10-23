@@ -40,8 +40,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   compte épargne-temps.
 - `src/CetFormDialog.tsx` : saisie guidée des formulaires officiels d’ouverture,
   d’alimentation et d’indemnisation du CET.
-- `src/PayEstimateDetails.tsx` : détail de la paie du mois, navigation,
-  heures supplémentaires et mécénats.
+- `src/PayEstimateDetails.tsx` : détail de la paie du mois — la cascade « Du
+  brut au net », dont chaque étape s'ouvre sur son calcul (composition du
+  brut, cotisations, passage au net), sans tableau qui la répète dessous —,
+  navigation, heures supplémentaires et mécénats.
 - `src/WorkTimeDialogs.tsx` : saisie des heures supplémentaires, récupérations,
   mécénats et crédits manuels.
 - `src/LeaveDialogs.tsx` : reprise des absences antérieures et sélection manuelle
@@ -137,7 +139,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   détaille les dimanches par paie, reports compris. Le contrôle délègue les blocs autonomes à
   `src/PayslipVerificationCard.tsx`, `src/PayslipCalibrationCard.tsx` et
   `src/PayslipSettingsSections.tsx` (résultat, calibration, arrêts et
-  paramètres), sans changer la structure DOM attendue par les styles.
+  paramètres), sans changer la structure DOM attendue par les styles. Le
+  résultat d'un bulletin se lit dans l'ordre : le verdict avec chaque écart
+  en une phrase et son explication (une seule fois), « Que s'est-il
+  passé ? », le tableau Ligne / Bulletin / Appli, puis « Ajouter une page »,
+  « Vérifier un autre bulletin » et, en dernier, la conclusion. Ce qui a été
+  lu (champs remplis, lignes absentes) est dit sans alarme : le rouge est
+  réservé aux écarts.
 - `src/PdfDownloadPage.tsx` : page de téléchargement des documents.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte

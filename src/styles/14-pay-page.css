@@ -1255,41 +1255,6 @@
 
 .pay-function-card>header { margin-bottom: 10px; }
 
-.pay-calculation-section {
-  margin-top: 16px;
-  border: 1px solid var(--bg);
-  border-radius: 18px;
-  padding: 13px;
-  background: #fff;
-}
-
-.pay-calculation-section h3 { margin: 0 0 8px; color: #3a332c; font-size: 1rem; }
-
-.pay-calculation-section h4 { margin: 14px 0 5px; color: #7b3f35; font-size: .78rem; }
-
-.pay-calculation-gross-before {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 9px 0 0;
-  border-top: 1px solid var(--bg);
-  padding-top: 9px;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.pay-calculation-gross-before strong { color: #3a332c; white-space: nowrap; }
-
-/* Le filet du sous-total sur la rangée entière : posé sur chaque case, il se
-  décalait entre l’intitulé (en grille) et le montant (cellule). */
-.pay-calculation-subtotal { border-top: 2px solid var(--border-control); }
-
-.pay-calculation-subtotal th,
-.pay-calculation-subtotal td {
-  border-top: 0 !important;
-  color: var(--muted);
-}
-
 /* ---- Contrôle du bulletin -------------------------------------------------- */
 
 /* Le choix de fichier passe par un label : l'input natif est masqué, mais il
@@ -1469,68 +1434,9 @@
   La teinte foncée le distingue du bouton, qui porte l'accent ordinaire. */
 .payslip-actual-values { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-.payslip-mismatch-list {
-  background: #fff8f5;
-  border: 1px solid #e5a68f;
-  border-radius: 18px;
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 15px;
-}
-
-.payslip-mismatch-heading span {
-  color: #a74625;
-  font-size: .68rem;
-  font-weight: 900;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-}
-
-.payslip-mismatch-item {
-  background: var(--surface);
-  border: 1px solid #ebc4b6;
-  border-left: 5px solid #d36842;
-  border-radius: 18px;
-  padding: 13px;
-}
-
-.payslip-mismatch-item h4 { color: #46251c; margin: 0 0 9px; }
-
-.payslip-mismatch-values { display: grid; gap: 7px; grid-template-columns: repeat(3,minmax(0,1fr)); }
-
-.payslip-mismatch-values span {
-  background: #fff8f4;
-  border-radius: 9px;
-  display: grid;
-  gap: 2px;
-  padding: 8px;
-}
-
-.payslip-mismatch-values small {
-  color: #815548;
-  font-size: .65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.payslip-mismatch-values strong { color: #592d21; }
-
-.payslip-mismatch-item p {
-  color: #68483e;
-  font-size: .8rem;
-  line-height: 1.4;
-  margin: 10px 0 0;
-}
-
-.payslip-details-visible {
-  border-radius: 999px;
-  padding: 7px 10px;
-  background: #fff0d6;
-  color: #84500f;
-  font-size: 10px;
-  text-align: center;
-}
+/* Ce qui a été lu, dit sans alarme : une ligne absente est normale sur une
+  page seule. Le rouge est réservé aux écarts. */
+.payslip-verify-card .payslip-import-note { color: var(--muted); font-weight: 550; }
 
 .payslip-review-decision {
   background: var(--surface-high);
@@ -1787,7 +1693,6 @@
   .variable-pay-card .pay-month-nav.compact { display: block; flex: 0 0 168px; width: 168px; }
   .pay-function-card { border-radius: 12px; }
   .pay-function-card>header { align-items: flex-start; }
-  .pay-calculation-section { padding: 11px; }
   .payslip-period-fallback { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .payslip-period-fallback>div,
   .payslip-period-fallback>button {
@@ -1805,9 +1710,6 @@
   .payslip-result-icon { width: 38px; height: 38px; }
   .payslip-result-summary .secondary-button { grid-column: 1 / -1; width: 100%; }
   .payslip-actual-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .payslip-mismatch-values { grid-template-columns: 1fr; }
-  .payslip-mismatch-list { padding: 11px; }
-  .payslip-mismatch-item { padding: 11px; }
   .payslip-decision-options { grid-template-columns: 1fr; }
   .payslip-anomaly-details summary { grid-template-columns: minmax(0,1fr) 20px; }
   .payslip-anomaly-details summary strong { grid-column: 1; }
