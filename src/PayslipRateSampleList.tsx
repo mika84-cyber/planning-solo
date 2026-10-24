@@ -1,4 +1,5 @@
 import { euros } from "./appModel";
+import { useConfirm } from "./confirmDialog";
 import type { NetRatioSample } from "./payslip";
 import { MONTHS, s } from "./planningLogic";
 
@@ -15,6 +16,7 @@ export function PayslipRateSampleList({
   samples: NetRatioSample[];
   onRemove: (period: string) => void;
 }) {
+  const confirmAction = useConfirm();
   if (!samples.length) return null;
   const rejected = samples.filter((sample) => sample.rejected).length;
   return (
@@ -42,7 +44,12 @@ export function PayslipRateSampleList({
                 type="button"
                 className="text-button"
                 onClick={() => {
-                  if (window.confirm(`Retirer le bulletin de ${label} du calcul de vos taux ?`)) onRemove(sample.period);
+                  void confirmAction({
+                    title: `Retirer le bulletin de ${label} ?`,
+                    message: "Ses montants ne compteront plus dans vos taux, qui se recaleront sur les autres bulletins.",
+                    confirmLabel: "Retirer",
+                    tone: "danger",
+                  }).then((ok) => { if (ok) onRemove(sample.period); });
                 }}
                 aria-label={`Retirer le bulletin de ${label}`}
               >

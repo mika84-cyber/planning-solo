@@ -49,7 +49,7 @@ type Options = {
   demoMode: boolean;
   isExceptionallyClosed: (date: string) => boolean;
   showSuccess: (message: string) => void;
-  confirmAction?: (message: string) => boolean;
+  confirmAction?: (message: string) => boolean | Promise<boolean>;
   formProfile?: FormProfile | null;
   userEmail?: string;
   /** Ouvre la demande d'échange préremplie ; remplaçable dans les tests. */
@@ -249,7 +249,7 @@ export function useWorkExchangeActions({
 
   async function remove() {
     const previous = exchanges.find((item) => item.id === draft.id);
-    if (!previous || (!demoMode && !confirmAction(previous.returnDate ? "Supprimer les deux journées de cet échange ?" : "Supprimer ce remplacement ?"))) return;
+    if (!previous || (!demoMode && !(await confirmAction(previous.returnDate ? "Supprimer les deux journées de cet échange ?" : "Supprimer ce remplacement ?")))) return;
     const affected = [previous.agreementDate, previous.returnDate].filter(Boolean);
     setSaving(true);
     setError("");

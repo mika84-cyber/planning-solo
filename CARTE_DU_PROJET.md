@@ -145,7 +145,20 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   passé ? », le tableau Ligne / Bulletin / Appli, puis « Ajouter une page »,
   « Vérifier un autre bulletin » et, en dernier, la conclusion. Ce qui a été
   lu (champs remplis, lignes absentes) est dit sans alarme : le rouge est
-  réservé aux écarts.
+  réservé aux écarts. Le brut et le net lus tiennent en une ligne sous la
+  période reconnue (`.payslip-read-values`), sans tuiles.
+- `src/confirmDialog.tsx` : la question posée dans l'application à la place
+  de `window.confirm` — `useConfirmDialog` (état, dans App), `ConfirmDialog`
+  (rendue par `AppDialogLayer` dans un `<dialog>` natif ouvert en modal : la
+  couche supérieure du navigateur, au-dessus des outils administrateur et de
+  la messagerie), `useConfirm` (contexte, pour tout composant)
+  et `browserConfirm` (repli sans fenêtre montée). Les hooks d'actions la
+  reçoivent en option `confirmAction` ; les boutons se nomment d'après le
+  geste (« Supprimer », « Élément fixe », « Analyser quand même »). La fenêtre
+  de message (« Impossible de continuer ») ne sert qu'aux refus ; une réussite
+  passe par le toast (`showSuccess`).
+- `src/useAdminUiState.ts` : états d'interface de l'administrateur (aperçu
+  invité, panneau d'outils, relecture, statut connu), hors d'App.tsx.
 - `src/PdfDownloadPage.tsx` : page de téléchargement des documents.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
@@ -285,7 +298,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   autres). Le profil liste ces bulletins (`PayslipRateSampleList.tsx`, sous
   les éléments de paie, écartés signalés) ; « Retirer » envoie
   `removePayslipRateSamples` et recale les taux
-  (`removePayslipRateSample` dans `usePayActions`).
+  (`removePayslipRateSample` dans `usePayActions`). Un bulletin retiré, ou
+  relu pour le même mois, emporte les montants que lui seul avait posés dans
+  le profil (`amountsPosedOnlyBy` ; le serveur efface un montant reçu à
+  `null`).
 - `src/sundayReport.ts` : le report automatique de dimanches décidé à la
   lecture d'un bulletin ; relu, le même mois repart du compte entier, et la
   nouvelle lecture ajuste ou retire le report que la précédente avait
@@ -335,6 +351,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   serveur, majorations comprises (fériés selon le groupe du profil), commun à
   `save-request`, `save-recovery-use` et `delete-overtime`, qui le lisent sous
   le même verrou `lock/recovery-balance`.
+- `e2e/app.spec.ts` : `isPlainWorkDay(date, group)` choisit un jour travaillé
+  ordinaire (ni férié, ni fermeture) pour les scénarios qui partent
+  d'aujourd'hui, afin qu'ils ne dépendent pas de la date où ils tournent.
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,
   d’isolation et d’écriture de l’API calendrier.
 - `netlify/functions/feedback.mts` : stockage privé des retours, photos,

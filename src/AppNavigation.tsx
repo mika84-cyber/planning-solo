@@ -101,6 +101,7 @@ type AppHeaderProps = {
   demoMode: boolean;
   unreadFeedbackCount: number;
   notify: (text: string) => void;
+  showSuccess?: (text: string) => void;
   accountMenuRef: RefObject<HTMLDivElement | null>;
   accountButtonRef: RefObject<HTMLButtonElement | null>;
   onToggleAccount: () => void;
@@ -123,6 +124,7 @@ export function AppHeader({
   demoMode,
   unreadFeedbackCount,
   notify,
+  showSuccess,
   accountMenuRef,
   accountButtonRef,
   onToggleAccount,
@@ -169,7 +171,7 @@ export function AppHeader({
         <div className="header-control-cluster">
           <div className="header-actions">
             <Suspense fallback={null}>
-              <NoteReminderButton demoMode={demoMode} notify={notify} />
+              <NoteReminderButton demoMode={demoMode} notify={notify} showSuccess={showSuccess} />
             </Suspense>
             {/* La mise à jour reste à portée de doigt, au gabarit des autres
                 commandes ; une pastille signale une version prête. */}

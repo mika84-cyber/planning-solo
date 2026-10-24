@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { noteDateLabel, type PartnerCalendarEntries } from "./appModel";
 import { calendarErrorMessage } from "./calendarApi";
 import type { PayCalendarPost } from "./usePayActions";
+import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 
 type PartnerNoteActionsOptions = {
   demoMode: boolean;
@@ -9,6 +10,7 @@ type PartnerNoteActionsOptions = {
   setPartnerEntries: Dispatch<SetStateAction<PartnerCalendarEntries>>;
   reloadCalendar: () => Promise<void>;
   notify: (message: string) => void;
+  confirmAction?: ConfirmAction;
   post: PayCalendarPost;
 };
 
@@ -20,6 +22,7 @@ export function usePartnerNoteActions({
   setPartnerEntries,
   reloadCalendar,
   notify,
+  confirmAction = browserConfirm,
   post,
 }: PartnerNoteActionsOptions) {
   async function deleteAgnesNote(date: string) {
@@ -31,9 +34,11 @@ export function usePartnerNoteActions({
             .map(([key]) => key)
         : [date];
       const periodLabel = groupedDates.length > 1 ? " sur toute sa période" : "";
-      if (!window.confirm(
-        `Supprimer la note d’Agnès du ${noteDateLabel(date)}${periodLabel} ?`,
-      )) return;
+      if (!(await confirmAction({
+        title: `Supprimer la note d’Agnès du ${noteDateLabel(date)}${periodLabel} ?`,
+        confirmLabel: "Supprimer",
+        tone: "danger",
+      }))) return;
       try {
         if (!demoMode) {
           await post({

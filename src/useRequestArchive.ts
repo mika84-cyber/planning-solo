@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 import type { AuthStatus } from "./appModel";
 
 export type ArchivedRequest = {
@@ -101,6 +102,7 @@ export function useRequestArchive(
   enabled: boolean,
   accountEmail: string,
   notify: (text: string) => void,
+  confirmAction: ConfirmAction = browserConfirm,
 ) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archivedRequests, setArchivedRequests] = useState<ArchivedRequest[]>(
@@ -143,7 +145,7 @@ export function useRequestArchive(
   }
 
   async function deleteArchivedRequest(request: ArchivedRequest) {
-    if (!window.confirm(`Supprimer définitivement « ${request.name} » ?`))
+    if (!(await confirmAction({ title: `Supprimer définitivement « ${request.name} » ?`, confirmLabel: "Supprimer", tone: "danger" })))
       return;
     try {
       await removeArchivedRequest(request.id);

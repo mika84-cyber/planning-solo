@@ -1,4 +1,5 @@
 import { type RefObject } from "react";
+import { useConfirm } from "./confirmDialog";
 import { ChoicePicker } from "./ChoicePicker";
 import "./dayActionGrid.css";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
@@ -130,6 +131,7 @@ export function DayDetailDialog({
   deleteAgnesNote,
   appendNoteLine,
 }: DayDetailDialogProps) {
+  const confirmAction = useConfirm();
   const {
     dayDate,
     setDayDate,
@@ -587,11 +589,15 @@ export function DayDetailDialog({
               className="delete-button"
               type="button"
               onClick={() => {
-                if (!window.confirm(
-                  `Supprimer votre note du ${noteDateLabel(dayDate)}${noteGroupId ? " sur toute sa période" : ""} ?`,
-                )) return;
-                setNoteText("");
-                setNoteEditorOpen(true);
+                void confirmAction({
+                  title: `Supprimer votre note du ${noteDateLabel(dayDate)}${noteGroupId ? " sur toute sa période" : ""} ?`,
+                  confirmLabel: "Supprimer",
+                  tone: "danger",
+                }).then((ok) => {
+                  if (!ok) return;
+                  setNoteText("");
+                  setNoteEditorOpen(true);
+                });
               }}
             >
               {noteGroupId ? "Effacer toute la période" : "Effacer la note"}

@@ -99,6 +99,8 @@ import {
   trainingRecoveryMinutes,
 } from "./overtime";
 import { useToast } from "./useToast";
+import { useAdminUiState } from "./useAdminUiState";
+import { ConfirmProvider, useConfirmDialog } from "./confirmDialog";
 import {
   dateKey,
   fromKey,
@@ -152,13 +154,11 @@ export default function Home() {
     inviteToken, setInviteToken, authBusy, setAuthBusy,
     authError, setAuthError, authNotice, setAuthNotice,
   } = useAuthUiState();
-  const [guestPreview, setGuestPreview] = useState(false);
-  const [adminToolsOpen, setAdminToolsOpen] = useState(false);
-  const [adminRevision, setAdminRevision] = useState(0);
+  const {
+    guestPreview, setGuestPreview, adminToolsOpen, setAdminToolsOpen,
+    adminRevision, setAdminRevision, programAdminKnown, setProgramAdminKnown,
+  } = useAdminUiState();
   const isProgramAdmin = actualProgramAdmin && !guestPreview;
-  // Le statut d'administrateur arrive avec la programmation GP : tant qu'il
-  // n'est pas connu, rien de réservé aux invités ne s'affiche.
-  const [programAdminKnown, setProgramAdminKnown] = useState(false);
   const installationEnabled = canEnableInstallation(
     authStatus,
     demoMode,
@@ -201,12 +201,16 @@ export default function Home() {
   const showLeaves = true;
   const showNotes = true;
   const toastUi = useToast();
+  // Les questions (supprimer ? retirer ? élément fixe ?) : une fenêtre de
+  // l'application, plus la boîte du navigateur.
+  const confirmDialog = useConfirmDialog();
+  const confirmAction = confirmDialog.confirm;
   const {
     notify,
     confirm,
     offerUndo,
   } = toastUi;
-  const requestArchive = useRequestArchive(authStatus, isProgramAdmin, userEmail, notify);
+  const requestArchive = useRequestArchive(authStatus, isProgramAdmin, userEmail, notify, confirmAction);
   const [balanceDetailType, setBalanceDetailType] = useState<
     BalanceType | CountedOnlyType | null
   >(null);
@@ -287,6 +291,7 @@ export default function Home() {
     saveStrikeDateDirect,
     saveWishDateDirect,
   } = usePlanningEntryActions({
+    confirmAction,
     entries,
     periods,
     recoveryUses,
@@ -432,6 +437,7 @@ export default function Home() {
   } = useAccountDataActions({
     setBusy: setDataManagementBusy,
     setOpen: setDataManagementOpen,
+    confirmAction,
     loadCalendar,
     notify,
     showSuccess: confirm,
@@ -461,6 +467,7 @@ export default function Home() {
 
   const workExchangeUi = useWorkExchangeActions({
     group,
+    confirmAction,
     entries,
     setEntries,
     periods,
@@ -637,6 +644,7 @@ export default function Home() {
     handoffKey: HANDOFF_KEY,
     notify,
     confirmMessage: confirm,
+    confirmAction,
     post: postCalendar,
     postBatch: postCalendarBatch,
   });
@@ -784,11 +792,13 @@ export default function Home() {
     );
   }
   const { deleteAgnesNote } = usePartnerNoteActions({
-    demoMode, partnerEntries, setPartnerEntries, reloadCalendar: loadCalendar, notify, post: postCalendar,
+    demoMode, partnerEntries, setPartnerEntries, reloadCalendar: loadCalendar, notify, confirmAction, post: postCalendar,
   });
 
   const payActions = usePayActions({
     demoMode,
+    confirmAction,
+    showSuccess: confirm,
     group,
     payView,
     setPayView,
@@ -898,6 +908,7 @@ export default function Home() {
   }
 
   return (
+    <ConfirmProvider value={confirmAction}>
     <main
       className="app-shell"
       onTouchStart={startSectionSwipe}
@@ -919,6 +930,7 @@ export default function Home() {
         allowanceValues={payProfileValues}
         feedbackMessaging={feedbackMessaging}
         notify={notify}
+        showSuccess={confirm}
         actions={{ navigateFromShell, checkForAppUpdate, disconnect }}
       />
 
@@ -1109,6 +1121,7 @@ export default function Home() {
         workTime={workTimeUi}
         shell={appShellUi}
         toast={toastUi}
+        confirmDialog={confirmDialog}
         group={group}
         workQuota={workQuota}
         workSchedule={usableWorkSchedule(formProfile?.workSchedule) ?? DEFAULT_WORK_SCHEDULE}
@@ -1179,5 +1192,6 @@ export default function Home() {
         </div>
       )}
     </main>
+    </ConfirmProvider>
   );
 }

@@ -150,7 +150,6 @@ export function PayslipCheckSection({
   unplannedCarence: unplannedPayslipCarence,
   resultDetailsOpen: payslipResultDetailsOpen,
   setResultDetailsOpen: setPayslipResultDetailsOpen,
-  grossForMonth,
   baseSalary,
   ifse,
   overtime: overtimeForPayMonth,
@@ -227,7 +226,6 @@ export function PayslipCheckSection({
       unplannedCarence={unplannedPayslipCarence}
       resultDetailsOpen={payslipResultDetailsOpen}
       setResultDetailsOpen={setPayslipResultDetailsOpen}
-      grossForMonth={grossForMonth}
       overtime={overtimeForPayMonth}
       mecenat={mecenatForCurrentPayMonth}
       mecenatEntries={mecenatEntries}

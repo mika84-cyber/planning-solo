@@ -14,6 +14,15 @@ import {
 import { workedDayCount } from "../src/appModel";
 import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES } from "../src/grandPalaisClosures";
 
+/** Un jour travaillé ordinaire du groupe : ni férié, ni fermeture
+ *  exceptionnelle. Les scénarios qui partent d'aujourd'hui ne dépendent
+ *  ainsi pas de la date où ils tournent. */
+const CLOSED_DATES = new Set(GRAND_PALAIS_EXCEPTIONAL_CLOSURES.map((closure) => closure.date));
+function isPlainWorkDay(date: Date, group: number) {
+  const info = getDayInfo(date, group);
+  return info.kind === "work" && !info.holiday && !CLOSED_DATES.has(dateKey(date));
+}
+
 /* Les horaires des deux journées d'un échange : ils remplissent la demande. */
 async function setExchangeHours(dialog: Locator) {
   for (const name of ["Horaires de la journée de votre cycle", "Horaires de la journée de son cycle"]) {
@@ -78,6 +87,23 @@ function accentSpine(_page: Page) {
 const CHAPTER_TINT = "rgb(248, 235, 224)";
 // Les projets qui émulent un téléphone : Pixel 7 sous Chromium, iPhone 14 sous WebKit.
 const PHONE_PROJECTS = new Set(["mobile", "iphone"]);
+
+/** Répond à la question posée dans l'application (la fenêtre de confirmation
+ *  qui a remplacé la boîte du navigateur) : le second bouton accepte. */
+async function answerConfirm(page: Page, accept = true, expectedText?: string | RegExp) {
+  const modal = page.locator(".confirm-modal");
+  await expect(modal).toBeVisible();
+  if (expectedText) await expect(modal).toContainText(expectedText);
+  await modal.locator(".modal-actions button").nth(accept ? 1 : 0).click();
+  await expect(modal).toHaveCount(0);
+}
+
+/** Une photo jugée peu nette s'analyse quand même ; sinon on attend `next`. */
+async function analyseAnyway(page: Page, next: Locator) {
+  const quality = page.getByRole("alertdialog", { name: "La lecture risque d’être moins fiable" });
+  await expect(quality.or(next).first()).toBeVisible({ timeout: 90_000 });
+  if (await quality.count()) await quality.getByRole("button", { name: "Analyser quand même" }).click();
+}
 
 async function workedDaysOnHome(page: Page) {
   const resume = await page.locator(".worked-days-trigger span").first().innerText();
@@ -186,8 +212,8 @@ test('le rappel des jours fériés part des outils administrateur et mène les i
   const panel = page.getByRole('dialog', { name: 'Outils administrateur' });
   await panel.locator('summary').filter({ hasText: 'Rappel des jours fériés' }).click();
   await expect(panel.getByLabel('Année')).toHaveValue(String(year));
-  page.once('dialog', dialog => dialog.accept());
   await panel.getByRole('button', { name: `Envoyer le rappel ${year}` }).click();
+  await answerConfirm(page, true, `Envoyer le rappel des jours fériés ${year} ?`);
   await expect(panel.locator('.admin-toast.is-success')).toContainText(`Rappel des jours fériés ${year} envoyé`);
   // L'administrateur ne le reçoit pas ; un invité le voit sur son accueil.
   await panel.getByRole('button', { name: 'Voir comme un invité' }).click();
@@ -896,7 +922,7 @@ function currentMonthStrikeScenario(kind: "annual" | "rest") {
     const end = addDays(date, gap);
     if (end.getMonth() !== now.getMonth()) return false;
     if (!(dateKey(end) < today || dateKey(date) > today)) return false;
-    if (getDayInfo(date, group).kind !== "work" || getDayInfo(end, group).kind !== "work")
+    if (!isPlainWorkDay(date, group) || !isPlainWorkDay(end, group))
       return false;
     const between = Array.from({ length: gap - 1 }, (_, index) => addDays(date, index + 1));
     // Des CA posés uniquement sur des repos ne sont pas décomptés : il faut au
@@ -1027,11 +1053,11 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   }
   const directoryVisibility = page.getByRole("button", { name: "Masquer mon nom dans l’annuaire" });
   await expect(directoryVisibility).toContainText("Visible");
-  page.once("dialog", (dialog) => dialog.accept());
   await directoryVisibility.click();
+  await answerConfirm(page);
   await expect(page.getByRole("button", { name: "Afficher mon nom dans l’annuaire" })).toContainText("Masqué");
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Afficher mon nom dans l’annuaire" }).click();
+  await answerConfirm(page);
   await expect(page.getByRole("button", { name: "Masquer mon nom dans l’annuaire" })).toContainText("Visible");
   const profileRow = page.locator(".colleague-profile-row");
   await expect(profileRow).toHaveCSS("border-top-width", "0px");
@@ -1091,30 +1117,24 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   // « Voir » vit dans « Plannings reçus », replié par défaut.
   await expect(page.getByRole("button", { name: "Voir", exact: true, includeHidden: true })).toHaveCount(1);
   const samirRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Samir" });
-  page.once("dialog", async (dialog) => {
-    expect(dialog.message()).toContain("Bloquer Samir");
-    await dialog.dismiss();
-  });
   await samirRow.getByRole("button", { name: "Bloquer" }).click();
+  await answerConfirm(page, false, "Bloquer Samir");
   await expect(page.getByRole("heading", { name: "Gérer mes blocages" })).toHaveCount(0);
-  page.once("dialog", async (dialog) => dialog.accept());
   await samirRow.getByRole("button", { name: "Bloquer" }).click();
+  await answerConfirm(page);
   await expect(page.getByRole("heading", { name: "Gérer mes blocages" })).toBeVisible();
   // Les blocages se gèrent dans la page : on referme la fenêtre pour débloquer.
   await shareDialog.getByRole("button", { name: "Fermer" }).click();
   await expect(shareDialog).toHaveCount(0);
   await expect(shareMenu).toBeFocused();
-  page.once("dialog", async (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Débloquer" }).click();
+  await answerConfirm(page);
   await expect(page.getByRole("button", { name: "Modifier", exact: true })).toBeDisabled();
   await shareMenu.click();
   await expect(shareDialog).toBeVisible();
   const camilleRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Camille" });
-  page.once("dialog", async (dialog) => {
-    expect(dialog.message()).toContain("Envoyer votre planning à Camille");
-    await dialog.accept();
-  });
   await camilleRow.getByRole("button", { name: "Envoyer", exact: true }).click();
+  await answerConfirm(page, true, "Envoyer votre planning à Camille");
   const sharedRow = chooseCard.locator(".colleague-person-row").filter({ hasText: "Camille" });
   await expect(sharedRow.getByText("Planning partagé", { exact: true })).toBeVisible();
   await expect(sharedRow.getByRole("button", { name: "Arrêter la diffusion" })).toBeVisible();
@@ -1206,12 +1226,12 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(page.getByRole("button", { name: "Télécharger en PDF" })).toHaveCount(0);
   await expect(page.locator(".colleague-planning-tool")).toHaveCount(1);
   await page.getByRole("button", { name: "Retour à mes collègues" }).click();
-  page.once("dialog", async (dialog) => dialog.accept());
   await receivedCard.getByRole("button", { name: "Supprimer l’accès" }).click();
+  await answerConfirm(page);
   await expect(receivedCard.getByText("Aucun planning partagé pour le moment.")).toBeVisible();
   await shareMenu.click();
-  page.once("dialog", async (dialog) => dialog.accept());
   await sharedRow.getByRole("button", { name: "Arrêter la diffusion" }).click();
+  await answerConfirm(page);
   await expect(sharedRow.getByRole("button", { name: "Envoyer", exact: true })).toBeVisible();
   await expect(sharedRow.getByText("Planning partagé", { exact: true })).toHaveCount(0);
   await page.keyboard.press("Escape");
@@ -1277,17 +1297,11 @@ test("l’aide au partage reste dépliée, puis les réglages s’ouvrent depuis
   await expect(identity.locator(".colleague-identity-status")).toHaveText("Visible");
   // La pastille « Visible » est aussi l'interrupteur : elle masque le nom de
   // l'annuaire, puis le rend de nouveau visible.
-  page.once("dialog", (dialog) => {
-    expect(dialog.message()).toContain("Masquer votre nom dans l’annuaire");
-    dialog.accept();
-  });
   await identity.getByRole("button", { name: "Visible dans l’annuaire : masquer mon nom" }).click();
+  await answerConfirm(page, true, "Masquer votre nom dans l’annuaire");
   await expect(identity.locator(".colleague-identity-status")).toHaveText("Masqué");
-  page.once("dialog", (dialog) => {
-    expect(dialog.message()).toContain("Rendre « Mika » visible dans l’annuaire");
-    dialog.accept();
-  });
   await identity.getByRole("button", { name: "Masqué dans l’annuaire : afficher mon nom" }).click();
+  await answerConfirm(page, true, "Rendre « Mika » visible dans l’annuaire");
   await expect(identity.locator(".colleague-identity-status")).toHaveText("Visible");
   await expect(page.locator(".colleague-settings-disclosure")).toHaveCount(0);
   await expect(page.locator(".colleague-profile-card")).toHaveCount(0);
@@ -1385,7 +1399,7 @@ test("une demi-journée reste le prochain jour travaillé et y est précisée", 
 test("Aujourd’hui conserve le groupe pendant la demi-journée travaillée", async ({ page }) => {
   const searchStart = localDate(2026, 8, 1);
   const workDay = Array.from({ length: 40 }, (_, index) => addDays(searchStart, index))
-    .find((date) => getDayInfo(date, 2).kind === "work" && coWorkingGroupsForDate(date, 2).length > 0);
+    .find((date) => isPlainWorkDay(date, 2) && coWorkingGroupsForDate(date, 2).length > 0);
   if (!workDay) throw new Error("Aucune journée commune trouvée");
   const colleagueGroup = coWorkingGroupsForDate(workDay, 2)[0];
   await page.clock.setFixedTime(workDay);
@@ -1471,20 +1485,12 @@ test("une ligne inconnue du bulletin demande si elle est fixe ou ponctuelle", as
     "CUMUL BRUT", "1895.88",
   ];
   const pdf = ["%PDF-1.4", "stream", ...tokens.map((token) => `(${token}) Tj`), "endstream", "%%EOF"].join("\n");
-  const question = new Promise<string>((resolve) => {
-    page.on("dialog", async (dialog) => {
-      const message = dialog.message();
-      if (message.includes("ne connaît pas")) {
-        await dialog.accept();
-        resolve(message);
-      } else {
-        await dialog.dismiss();
-      }
-    });
-  });
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-juin.pdf", mimeType: "application/pdf", buffer: Buffer.from(pdf, "latin1") });
-  expect(await question).toContain("« Prime nouvelle » : 40,00");
+  // La question se pose dans l'application, avec ses deux réponses nommées.
+  const question = page.getByRole("alertdialog", { name: "Une ligne que l’application ne connaît pas" });
+  await expect(question).toContainText("« Prime nouvelle » : 40,00");
+  await question.getByRole("button", { name: "Élément fixe" }).click();
   await expect(page.getByText(/Prime nouvelle \(40,00\s€, ajoutée aux autres éléments fixes\)/)).toBeVisible();
 });
 
@@ -1498,11 +1504,11 @@ test("une page s'ajoute après coup au bulletin déjà vérifié", async ({ page
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "page-1.pdf", mimeType: "application/pdf", buffer: pdf(["Juin 2026", "1.00", "300.00", "Traitement de Base", "1855.88", "1855.88", "CUMUL BRUT", "1855.88"]) });
   const addPage = page.locator(".payslip-add-page");
   await expect(addPage).toContainText("Ajouter une page");
-  await expect(page.locator(".payslip-actual-values")).not.toContainText("Net avant impôt");
+  await expect(page.locator(".payslip-read-values")).not.toContainText("net avant impôt");
   // Seconde page, ajoutée après coup : le net rejoint la même lecture.
   await addPage.locator("input").setInputFiles({ name: "page-2.pdf", mimeType: "application/pdf", buffer: pdf(["Juin 2026", "NET A PAYER AVANT IMPOT", "1500.00"]) });
-  await expect(page.locator(".payslip-actual-values")).toContainText("1 500,00");
-  await expect(page.locator(".payslip-actual-values")).toContainText("1 855,88");
+  await expect(page.locator(".payslip-read-values")).toContainText("1 500,00");
+  await expect(page.locator(".payslip-read-values")).toContainText("1 855,88");
 });
 
 test("deux bulletins vérifiés à deux visites différentes affinent les taux net", async ({ page }) => {
@@ -1543,8 +1549,7 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
     }
     await route.fulfill({ json: { ok: true, form_profile: profile } });
   });
-  // Les questions sont refusées, sauf la confirmation d'un bulletin à retirer.
-  page.on("dialog", (dialog) => void (dialog.message().startsWith("Retirer le bulletin") ? dialog.accept() : dialog.dismiss()));
+  page.on("dialog", (dialog) => void dialog.dismiss());
   // Un bulletin PDF minimal : le traitement, le cumul brut et le net avant
   // impôt. Les primes (cumul brut moins traitement) diffèrent d'un mois à
   // l'autre : 444,12 € en septembre, 744,12 € en juillet.
@@ -1599,6 +1604,7 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
   await expect(samplesList).toContainText("1 bulletin écarté : il ne concorde pas avec les autres.");
   await expect(samplesList.locator("li.rejected")).toContainText("Août 2026");
   await samplesList.getByRole("button", { name: "Retirer le bulletin de août 2026" }).click();
+  await page.getByRole("alertdialog", { name: "Retirer le bulletin de août 2026 ?" }).getByRole("button", { name: "Retirer" }).click();
   await expect(samplesList.locator("li")).toHaveCount(2);
   await expect(samplesList).not.toContainText("Août 2026");
   expect(profileSaves.at(-1)).toMatchObject({ removePayslipRateSamples: ["2026-08"], netRatioFixedBp: 7784, netRatioVariableBp: 8000 });
@@ -1626,11 +1632,8 @@ test("un bulletin photographié se lit page après page, et ne conclut qu’une 
   test.setTimeout(180_000);
   await prepareDemo(page);
   await goToSection(page, "pay");
-  const detectedDialogs: string[] = [];
-  page.on("dialog", async (dialog) => {
-    if (dialog.message().includes("Vérifiez les valeurs détectées")) detectedDialogs.push(dialog.message());
-    await dialog.accept();
-  });
+  // Les valeurs lues se confirment dans une fenêtre de l'application.
+  const photoValues = page.getByRole("alertdialog", { name: "Valeurs lues sur la photo" });
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   // Le bouton photo ouvre l'appareil ; il annonce la page 1.
   const camera = page.locator(".payslip-guide-step").first().locator(".payslip-photo-drop input");
@@ -1640,21 +1643,25 @@ test("un bulletin photographié se lit page après page, et ne conclut qu’une 
   // Page 1 lue : la période et le brut s'affichent, la page 2 est attendue,
   // et rien n'a encore été demandé ni conclu.
   const nextPage = page.getByRole("status", { name: "Page 2 du bulletin" });
+  await analyseAnyway(page, nextPage);
   await expect(nextPage).toContainText("Page 1 lue · photographiez la page 2", { timeout: 90_000 });
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026");
-  await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
+  await expect(page.locator(".payslip-read-values")).toContainText("2 962,07 €");
   await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toHaveCount(0);
-  expect(detectedDialogs).toHaveLength(0);
+  await expect(photoValues).toHaveCount(0);
   // Page 2 : le net rejoint la lecture, les valeurs sont confirmées une
   // seule fois, et la vérification se conclut.
   await nextPage.locator(".payslip-photo-drop input").setInputFiles(await payslipPhoto(page, ["Septembre 2026", "NET A PAYER AVANT IMPOT 2 311,42"]));
-  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toBeVisible({ timeout: 90_000 });
-  await expect(nextPage).toHaveCount(0);
-  await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
-  await expect(page.locator(".payslip-actual-values")).toContainText("2 311,42 €");
-  expect(detectedDialogs).toHaveLength(1);
+  await analyseAnyway(page, photoValues);
+  await expect(photoValues).toBeVisible({ timeout: 90_000 });
   // Les espaces de « 1 855,88 € » sont insécables : on ne les épelle pas.
-  expect(detectedDialogs[0]).toMatch(/Traitement de base : 1.855,88.€/);
+  await expect(photoValues).toContainText(/Traitement de base : 1.855,88.€/);
+  await photoValues.getByRole("button", { name: "Enregistrer dans mon profil" }).click();
+  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toBeVisible({ timeout: 30_000 });
+  await expect(nextPage).toHaveCount(0);
+  await expect(photoValues).toHaveCount(0);
+  await expect(page.locator(".payslip-read-values")).toContainText("2 962,07 €");
+  await expect(page.locator(".payslip-read-values")).toContainText("2 311,42 €");
 });
 
 test("devant un écart du bulletin, le geste qui l’explique est proposé : passer en fonctionnaire", async ({ page }) => {
@@ -1729,19 +1736,18 @@ test("une seule photo, déclarée complète, se vérifie telle quelle", async ({
   test.setTimeout(150_000);
   await prepareDemo(page);
   await goToSection(page, "pay");
-  const detectedDialogs: string[] = [];
-  page.on("dialog", async (dialog) => {
-    if (dialog.message().includes("Vérifiez les valeurs détectées")) detectedDialogs.push(dialog.message());
-    await dialog.accept();
-  });
+  const photoValues = page.getByRole("alertdialog", { name: "Valeurs lues sur la photo" });
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles(await payslipPhoto(page, ["BULLETIN DE PAIE", "Septembre 2026", "Traitement de Base 1 855,88", "CUMUL BRUT 2 962,07"]));
   const nextPage = page.getByRole("status", { name: "Page 2 du bulletin" });
+  await analyseAnyway(page, nextPage);
   await expect(nextPage).toBeVisible({ timeout: 90_000 });
   await nextPage.getByRole("button", { name: "Il n’y a pas d’autre page" }).click();
+  await expect(photoValues).toBeVisible({ timeout: 30_000 });
+  await photoValues.getByRole("button", { name: "Enregistrer dans mon profil" }).click();
   await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toBeVisible({ timeout: 30_000 });
   await expect(nextPage).toHaveCount(0);
-  expect(detectedDialogs).toHaveLength(1);
+  await expect(photoValues).toHaveCount(0);
 });
 
 test("une photo de bulletin est reconnue localement", async ({ page }) => {
@@ -1774,33 +1780,28 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
   await expect(photoInput).toHaveAttribute("accept", /image\/jpeg/);
   await expect(photoInput).toHaveAttribute("multiple", "");
   await expect(page.getByText(/choisissez les 2 photos ensemble/)).toHaveCount(0);
-  const detectedValuesDialog = new Promise<void>((resolve, reject) => {
-    page.on("dialog", async (dialog) => {
-      try {
-        if (dialog.message().includes("La lecture risque d’être moins fiable")) {
-          await dialog.accept();
-          return;
-        }
-        expect(dialog.message()).toContain("Vérifiez les valeurs détectées");
-        await dialog.accept();
-        resolve();
-      } catch (error) { reject(error); }
-    });
-  });
   await photoInput.setInputFiles({
     name: "bulletin-photo.png",
     mimeType: "image/png",
     buffer: Buffer.from(imageBase64, "base64"),
   });
-  await detectedValuesDialog;
+  // Une photo jugée peu nette s'analyse quand même ; puis les valeurs lues
+  // s'enregistrent depuis la fenêtre de l'application.
+  const quality = page.getByRole("alertdialog", { name: "La lecture risque d’être moins fiable" });
+  const photoValues = page.getByRole("alertdialog", { name: "Valeurs lues sur la photo" });
+  await expect(quality.or(photoValues).first()).toBeVisible({ timeout: 90_000 });
+  if (await quality.count()) await quality.getByRole("button", { name: "Analyser quand même" }).click();
+  await expect(photoValues).toBeVisible({ timeout: 90_000 });
+  await expect(photoValues).toContainText("Vérifiez");
+  await photoValues.getByRole("button", { name: "Enregistrer dans mon profil" }).click();
 
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026", { timeout: 90_000 });
-  await expect(page.locator(".payslip-actual-values")).toContainText("2 962,07 €");
+  await expect(page.locator(".payslip-read-values")).toContainText("2 962,07 €");
   const payMonthNavigation = page.locator(".pay-bulletin-month");
   await payMonthNavigation.getByRole("button", { name: "Mois suivant" }).click();
   await expect(page.locator("#pay-dashboard-title")).toHaveText("Octobre 2026");
   await expect(page.locator(".payslip-detected-period")).toHaveCount(0);
-  await expect(page.locator(".payslip-actual-values")).toHaveCount(0);
+  await expect(page.locator(".payslip-read-values")).toHaveCount(0);
   await expect(page.getByText(/champs remplis : Traitement de base/)).toHaveCount(0);
   await payMonthNavigation.getByRole("button", { name: "Mois précédent" }).click();
   await expect(page.locator("#pay-dashboard-title")).toHaveText("Septembre 2026");
@@ -2084,12 +2085,12 @@ test("la messagerie interne reste privée, compacte et utilisable avec une photo
   await page.getByPlaceholder("Écrivez le message qui apparaîtra sur son compte…").fill("Merci, cette amélioration sera ajoutée.");
   await page.getByRole("button", { name: "Envoyer la réponse" }).click();
   await expect(page.getByRole("region", { name: "Réponses déjà envoyées" }).getByText("Merci, cette amélioration sera ajoutée.")).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Marquer comme résolu" }).click();
+  await answerConfirm(page, true, "Marquer ce message comme résolu ?");
   await expect(page.getByText("✓ Résolu")).toBeVisible();
   await expect(page.getByText("Envoyer un retour")).toHaveCount(0);
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Effacer", exact: true }).click();
+  await answerConfirm(page, true, "Effacer définitivement ce message ?");
   await expect(page.getByText("Aucun message pour le moment.")).toBeVisible();
 
   await page.goto("/?local-test=1&preview-feedback-role=user&feedback=compose");
@@ -2538,7 +2539,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   // enchaîner quatre repos : on cherche jusqu'à J+10, et la période d'accident
   // s'allonge au besoin pour le contenir, quel que soit le jour du test.
   const rttWorkDate = Array.from({ length: 8 }, (_, index) => addDays(now, index + 3))
-    .find((date) => getDayInfo(date, 2).kind === "work");
+    .find((date) => isPlainWorkDay(date, 2));
   if (!rttWorkDate) throw new Error("Aucun jour RTT ouvré trouvé dans la période d’accident");
   await page.addInitScript(({ rttKey }) => {
     const from = new Date();
@@ -3743,9 +3744,9 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
     (_, index) => localDate(now.getFullYear(), now.getMonth(), index + 1),
   );
   const returned = dates.find((date) =>
-    getDayInfo(date, 2).kind === "off" && getDayInfo(date, 1).kind === "work");
+    getDayInfo(date, 2).kind === "off" && isPlainWorkDay(date, 1));
   const agreement = dates.find((date) => returned && date > returned &&
-    getDayInfo(date, 2).kind === "work" && getDayInfo(date, 1).kind === "off");
+    isPlainWorkDay(date, 2) && getDayInfo(date, 1).kind === "off");
   if (!agreement || !returned) throw new Error("Aucun échange complet trouvé dans le mois de test");
 
   await prepareDemo(page);
@@ -3871,7 +3872,7 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
 test("un mercredi de formation s’échange, depuis l’onglet Journée, contre un mercredi de formation du collègue", async ({ page }) => {
   const now = new Date();
   const days = Array.from({ length: 60 }, (_, index) => localDate(now.getFullYear(), now.getMonth(), index + 1));
-  const mine = days.find((date) => getDayInfo(date, 2).kind === "training" && getDayInfo(date, 1).kind === "work");
+  const mine = days.find((date) => getDayInfo(date, 2).kind === "training" && isPlainWorkDay(date, 1));
   if (!mine) throw new Error("Aucun mercredi de formation du groupe 2 trouvé");
   await prepareDemo(page);
   await page.getByRole("button", { name: "Faire un échange" }).click();
@@ -4741,8 +4742,8 @@ test("les heures supp en récupération s’effacent depuis la fiche du jour", a
   const dayDialog = page.getByRole("dialog", { name: /2026/ });
   await expect(dayDialog).toContainText("Heures supp enregistrées ce jour");
   await expect(dayDialog).toContainText("2 h mises en récupération");
-  page.once("dialog", (confirm) => void confirm.accept());
   await dayDialog.getByRole("button", { name: "Effacer les heures supp" }).click();
+  await page.getByRole("alertdialog", { name: "Supprimer cette déclaration d’heures supplémentaires ?" }).getByRole("button", { name: "Supprimer" }).click();
   await expect(page.getByText("Heures supp enregistrées ce jour")).toHaveCount(0);
 });
 
@@ -4787,8 +4788,8 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
   const deleteButtonBox = await deleteButton.boundingBox();
   expect(deleteButtonBox?.width ?? 0).toBeGreaterThan(180);
 
-  page.once("dialog", (dialog) => void dialog.accept());
   await deleteButton.click();
+  await answerConfirm(page, true, "Annuler cette utilisation de récupération ?");
   await expect(page.locator(".training-recovery-day")).toHaveCount(0);
 });
 
@@ -5076,7 +5077,7 @@ test("une absence qui déborde après le 10 est retenue sur la paie suivante, et
   const day = (date: number) => dateKey(localDate(now.getFullYear(), now.getMonth(), date));
   const strikeDate = Array.from({ length: 12 }, (_, index) =>
     localDate(now.getFullYear(), now.getMonth(), 15 + index),
-  ).find((date) => date.getMonth() === now.getMonth() && getDayInfo(date, 2).kind === "work")!;
+  ).find((date) => date.getMonth() === now.getMonth() && isPlainWorkDay(date, 2))!;
   await page.addInitScript((periods) => {
     localStorage.setItem(
       "planning:demo-completed-request-v1",
@@ -6134,16 +6135,16 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
   expect(await background("mika")).toBe("rgb(244, 250, 223)");
   expect(await background("agnes")).toBe("rgb(253, 239, 244)");
 
-  page.once("dialog", async (dialog) => dialog.accept());
   await personalNotes.first().getByRole("button", { name: /Supprimer la note de Mika du/ }).click();
+  await answerConfirm(page, true, "Effacer les notes sur 1 date");
   await expect(mikaDeleteButtons).toHaveCount(1);
 
-  page.once("dialog", async (dialog) => dialog.dismiss());
   await agnesDeleteButtons.first().click();
+  await answerConfirm(page, false, "Supprimer la note d’Agnès du");
   await expect(agnesDeleteButtons).toHaveCount(2);
 
-  page.once("dialog", async (dialog) => dialog.accept());
   await agnesDeleteButtons.first().click();
+  await answerConfirm(page, true, "Supprimer la note d’Agnès du");
   await expect(agnesDeleteButtons).toHaveCount(1);
 
   // Une recherche ouvre les mois qui contiennent ses résultats.

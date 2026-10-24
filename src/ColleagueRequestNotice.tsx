@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useConfirm } from "./confirmDialog";
 import { colleagueObjectPronoun } from "./colleaguePronoun";
 import { getColleagueDirectory, updateColleagueSharing, type ColleagueExchangeRequest, type ColleagueShare } from "./colleagueSharingApi";
 import { addDays, dateKey, fromKey, getDayInfo, longDate } from "./planningLogic";
@@ -175,9 +176,10 @@ export function ColleagueRequestNotice({ demoMode, onOpen, onExchangeAccepted }:
     };
   }, [demoMode]);
 
+  const confirmAction = useConfirm();
   const respond = async (response: "accept" | "reject") => {
     if (!request) return;
-    if (response === "reject" && !window.confirm(`Confirmer : refuser le planning partagé par ${request.ownerName} ?`)) return;
+    if (response === "reject" && !(await confirmAction({ title: `Refuser le planning partagé par ${request.ownerName} ?`, confirmLabel: "Refuser", tone: "danger" }))) return;
     setBusy(true);
     try {
       const updatedDirectory = demoMode
@@ -215,7 +217,7 @@ export function ColleagueRequestNotice({ demoMode, onOpen, onExchangeAccepted }:
   };
   const respondExchange = async (response: "accept" | "decline") => {
     if (!exchangeRequest) return;
-    if (response === "decline" && !window.confirm(`Confirmer : refuser l’échange proposé par ${exchangeRequest.fromName} ?`)) return;
+    if (response === "decline" && !(await confirmAction({ title: `Refuser l’échange proposé par ${exchangeRequest.fromName} ?`, confirmLabel: "Refuser", tone: "danger" }))) return;
     setBusy(true);
     setExchangeError("");
     try {

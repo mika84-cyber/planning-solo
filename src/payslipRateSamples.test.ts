@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculateNetRatios, type PayslipReading } from "./payslip";
 import {
+  amountsPosedOnlyBy,
   combinePayslipRateReadings,
   mergePayslipRateSamples,
   payslipRateSampleFromReading,
@@ -123,5 +124,19 @@ describe("montants gardés des bulletins vérifiés", () => {
     ]);
     expect(combined.map((item) => item.name)).toEqual(["septembre-corrige.pdf", "sans-mois.pdf"]);
     expect(combined[0].reading.netBeforeTax).toBe(1940);
+  });
+
+  it("retrouve les montants qu'un bulletin seul avait posés dans le profil", () => {
+    const misread = { year: 2026, month: 7, gross: 2950, netBeforeTax: 1500, baseSalary: 1855.88, ifse: 416.66, otherFixed: 641.28, navigo: 68.1 };
+    const kept = { year: 2026, month: 8, gross: 2300, netBeforeTax: 1800, baseSalary: 1855.88, ifse: 416.66 };
+    const profile = { baseSalary: 1855.88, ifse: 416.66, otherFixed: 641.28, navigo: 68.1, carenceDay: 75 };
+    // Le traitement et l'IFSE sont confirmés par septembre ; la carence ne
+    // vient pas de ce bulletin : seuls les autres éléments fixes (un code de
+    // rubrique pris pour un montant) et le Navigo partent avec lui.
+    expect(amountsPosedOnlyBy(misread, profile, [kept])).toEqual(["otherFixed", "navigo"]);
+    // Relu, le même mois porte un Navigo : lui reste, les éléments fixes s'effacent.
+    expect(amountsPosedOnlyBy(misread, profile, [kept], { navigo: 68.1 })).toEqual(["otherFixed"]);
+    // Un montant modifié à la main depuis ne lui appartient plus.
+    expect(amountsPosedOnlyBy(misread, { ...profile, otherFixed: 54.05 }, [kept])).toEqual(["navigo"]);
   });
 });

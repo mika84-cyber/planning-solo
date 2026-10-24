@@ -54,6 +54,7 @@ type Props = {
   >;
   feedbackMessaging: Pick<ReturnType<typeof useFeedbackMessaging>, "unreadCount">;
   notify: ReturnType<typeof useToast>["notify"];
+  showSuccess: ReturnType<typeof useToast>["confirm"];
   actions: Pick<ReturnType<typeof useSectionNavigation>, "navigateFromShell">
     & Pick<ReturnType<typeof useShellEffects>, "checkForAppUpdate">
     & Pick<ReturnType<typeof useAuthenticationActions>, "disconnect">;
@@ -67,7 +68,7 @@ type Props = {
  */
 export function AppShellChrome({
   now, group, demoMode, userEmail, isProgramAdmin, actualProgramAdmin, programAdminKnown,
-  admin, installation, shell, pay, calendar, allowanceValues, feedbackMessaging, notify, actions,
+  admin, installation, shell, pay, calendar, allowanceValues, feedbackMessaging, notify, showSuccess, actions,
 }: Props) {
   const { guestPreview, setGuestPreview, adminToolsOpen, setAdminToolsOpen, setAdminRevision } = admin;
   const { enabled: installationEnabled, installPrompt, installApp } = installation;
@@ -98,6 +99,7 @@ export function AppShellChrome({
         demoMode={demoMode}
         unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
         notify={notify}
+        showSuccess={showSuccess}
         accountMenuRef={accountMenuRef}
         accountButtonRef={accountButtonRef}
         onToggleAccount={() => setAccountMenuOpen((current) => !current)}

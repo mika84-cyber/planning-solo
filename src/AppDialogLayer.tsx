@@ -8,6 +8,7 @@ import {
   TimeSelectionDialog,
   UndoToast,
 } from "./PlanningDialogs";
+import { ConfirmDialog, type ConfirmRequest } from "./confirmDialog";
 /* Ces fenêtres ne s'affichent qu'à la demande : leur code se charge hors du
    démarrage, dans le morceau commun des écrans différés (préparé au repos par
    warmUpScreens), et chacune n'est montée que le temps où elle est ouverte —
@@ -104,6 +105,7 @@ type Props = {
   workTime: WorkTimeDialogsState;
   shell: ShellDialogsState;
   toast: ToastDialogsState;
+  confirmDialog: { request: ConfirmRequest | null; answer: (ok: boolean) => void };
   group: number;
   workQuota?: WorkQuota;
   workSchedule?: WorkSchedule;
@@ -143,6 +145,7 @@ export function AppDialogLayer({
   workTime,
   shell,
   toast,
+  confirmDialog,
   group,
   workQuota = "full",
   workSchedule = DEFAULT_WORK_SCHEDULE,
@@ -291,6 +294,7 @@ export function AppDialogLayer({
       />
 
       <MessageDialog message={toast.message} onClose={toast.dismiss} />
+      <ConfirmDialog request={confirmDialog.request} onAnswer={confirmDialog.answer} />
       <AppUpdateDialog
         open={shell.appUpdatePromptOpen}
         checking={shell.checkingAppUpdate}

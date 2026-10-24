@@ -29,12 +29,15 @@ import {
 import { shouldReportMissingPayslipField } from "./payslipReview";
 import { sundayReportAfterReading } from "./sundayReport";
 import {
+  amountsPosedOnlyBy,
   combinePayslipRateReadings,
   mergePayslipRateSamples,
   payslipPeriodKey,
   payslipRateSamplesFromReadings,
+  type PosedAmountField,
 } from "./payslipRateSamples";
 import { inspectPayslipPhotos } from "./payslipImageQuality";
+import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 import {
   MONTHS,
   SUNDAY_ALLOWANCE,
@@ -150,6 +153,10 @@ type PayActionsOptions = {
   periods: LeavePeriod[];
   recoveryUses: RecoveryUse[];
   notify: (message: string) => void;
+  /** Un message de réussite, discret (toast). */
+  showSuccess?: (message: string) => void;
+  /** La question posée dans l'application (photo peu nette, ligne inconnue…). */
+  confirmAction?: ConfirmAction;
   post: PayCalendarPost;
 };
 
@@ -192,6 +199,27 @@ export function payProfileBase(
     payslipVerifications: formProfile?.payslipVerifications,
     payslipRateSamples: formProfile?.payslipRateSamples,
   };
+}
+
+/** La clé envoyée au serveur pour chaque montant ; `null` l'efface. */
+const AMOUNT_BODY_KEYS: Record<PosedAmountField, string> = {
+  baseSalary: "baseSalaryCents",
+  ifse: "ifseCents",
+  otherFixed: "otherFixedCents",
+  carenceDay: "carenceCents",
+  navigo: "navigoCents",
+  mealVoucherDeduction: "mealVoucherDeductionCents",
+};
+
+/** Efface des montants du profil de l'année et de ses mois : ils venaient
+ *  d'un bulletin mal lu, remplacé ou retiré. */
+function withoutAmounts(profiles: Record<string, PayProfile>, year: string, fields: PosedAmountField[]) {
+  if (!fields.length) return profiles;
+  const next = { ...profiles };
+  for (const key of Object.keys(next))
+    if (key === year || key.startsWith(`${year}-`))
+      next[key] = { ...next[key], ...Object.fromEntries(fields.map((field) => [field, undefined])) };
+  return next;
 }
 
 function payValuesFromProfile(profile: FormProfile | null): PayProfile {
@@ -384,6 +412,8 @@ export function usePayActions(options: PayActionsOptions) {
     periods,
     recoveryUses,
     notify,
+    showSuccess = notify,
+    confirmAction = browserConfirm,
     post,
   } = options;
   const payYear = String(payView.getFullYear());
@@ -437,7 +467,7 @@ export function usePayActions(options: PayActionsOptions) {
         await post(annualPayProfilePayload(Number(payYear), nextProfile, values));
       }
       setPayProfiles((current) => ({ ...current, [payYear]: values }));
-      notify(`Profil de paie ${payYear} actualisé.`);
+      showSuccess(`Profil de paie ${payYear} actualisé.`);
     } catch {
       notify("Le profil annuel n’a pas pu être enregistré. Réessayez.");
     }
@@ -451,7 +481,13 @@ export function usePayActions(options: PayActionsOptions) {
     const month = payView.getMonth();
     const regime = payCalibrationRegime(year, month);
     const stored = { ...(formProfile?.payslipRateSamples || {}) };
+    const removed = stored[period];
     delete stored[period];
+    // Les montants que ce seul bulletin avait posés dans le profil s'en vont
+    // avec lui : une mauvaise lecture ne laisse rien derrière elle.
+    const clearedAmounts = removed
+      ? amountsPosedOnlyBy(removed, effectivePayProfile(payProfiles, year, month, formProfile || {}), Object.values(stored))
+      : [];
     const session = payslipRateSamples.filter(({ reading }) =>
       reading.year === undefined || reading.month === undefined || payslipPeriodKey(reading.year, reading.month) !== period);
     const fallback = defaultNetRatiosForPeriod(year, month, formProfile?.status === "contractuel");
@@ -464,6 +500,7 @@ export function usePayActions(options: PayActionsOptions) {
       ...rates,
       netRatioRegime: regime,
       payslipRateSamples: stored,
+      ...Object.fromEntries(clearedAmounts.map((field) => [field, undefined])),
     };
     try {
       if (!demoMode)
@@ -475,6 +512,7 @@ export function usePayActions(options: PayActionsOptions) {
           group: nextProfile.group,
           signature: nextProfile.signature,
           removePayslipRateSamples: [period],
+          ...Object.fromEntries(clearedAmounts.map((field) => [AMOUNT_BODY_KEYS[field], null])),
           netRatioFixedBp: Math.round(rates.netRatioFixed * 100),
           netRatioVariableBp: Math.round(rates.netRatioVariable * 100),
           netRatioRegime: regime,
@@ -482,11 +520,11 @@ export function usePayActions(options: PayActionsOptions) {
       setFormProfile(nextProfile);
       setPayslipRateSamples(session);
       const monthKey = `${payYear}-${String(month + 1).padStart(2, "0")}`;
-      setPayProfiles((current) => ({
+      setPayProfiles((current) => withoutAmounts({
         ...current,
         [payYear]: { ...(current[payYear] || {}), ...rates, netRatioRegime: regime },
         ...(current[monthKey] ? { [monthKey]: { ...current[monthKey], ...rates, netRatioRegime: regime } } : {}),
-      }));
+      }, payYear, clearedAmounts));
       // La liste et les deux taux se mettent à jour sous les yeux : pas de message.
     } catch {
       notify("Le bulletin n’a pas pu être retiré. Réessayez.");
@@ -728,9 +766,12 @@ export function usePayActions(options: PayActionsOptions) {
         const details = qualityReports.flatMap(({ file, issues }) =>
           issues.map((issue) => `${file.name} : ${issue.label} — ${issue.advice}`),
         );
-        const continueAnyway = window.confirm(
-          `La lecture risque d’être moins fiable :\n\n${details.join("\n")}\n\nChoisissez Annuler pour reprendre la photo, ou OK pour l’analyser quand même.`,
-        );
+        const continueAnyway = await confirmAction({
+          title: "La lecture risque d’être moins fiable",
+          message: details.join("\n"),
+          confirmLabel: "Analyser quand même",
+          cancelLabel: "Reprendre la photo",
+        });
         if (!continueAnyway) {
           setPayslipImportError(`Photo à reprendre. ${details.join(" ")}`);
           return;
@@ -783,9 +824,12 @@ export function usePayActions(options: PayActionsOptions) {
         const lines = item.reading.extraLines || [];
         for (const line of lines) {
           if (isAutomaticExtraLine(line) || line.fixed !== undefined) continue;
-          line.fixed = window.confirm(
-            `Le bulletin porte une ligne que l’application ne connaît pas :\n\n« ${line.label} » : ${euros(line.amount)}\n\nOK : c’est un élément fixe, versé chaque mois. Il s’ajoute aux autres éléments fixes.\nAnnuler : c’est ponctuel, compté pour ce mois seulement.`,
-          );
+          line.fixed = await confirmAction({
+            title: "Une ligne que l’application ne connaît pas",
+            message: `« ${line.label} » : ${euros(line.amount)}\nÉlément fixe, versé chaque mois ? Il s’ajoutera aux autres éléments fixes. Sinon, ponctuel : compté pour ce mois seulement.`,
+            confirmLabel: "Élément fixe",
+            cancelLabel: "Ponctuel",
+          });
         }
         const fixedExtra = fixedExtraTotal(lines);
         if (fixedExtra) {
@@ -893,6 +937,15 @@ export function usePayActions(options: PayActionsOptions) {
       const addedRateSamples = payslipRateSamplesFromReadings(
         items.map(({ reading }) => reading),
       );
+      // Un mois relu remplace sa première lecture : les montants que celle-ci
+      // seule avait posés, et que la nouvelle ne porte pas, s'effacent.
+      const storedSamples = formProfile?.payslipRateSamples || {};
+      const clearedAmounts = Object.keys(addedRateSamples).flatMap((period) => {
+        const previous = storedSamples[period];
+        if (!previous) return [];
+        const others = Object.entries(storedSamples).filter(([key]) => key !== period).map(([, sample]) => sample);
+        return amountsPosedOnlyBy(previous, effectivePayProfile(payProfiles, targetPayYear, targetPayMonth, formProfile || {}), others, found);
+      });
       const compatibleRateReadings = readingsForCalibrationRegime(
         nextRateSamples.map((item) => item.reading),
         targetNetRatioRegime,
@@ -972,9 +1025,12 @@ export function usePayActions(options: PayActionsOptions) {
           }),
           ...(calculatedRates ? ["Taux d’estimation affinés"] : []),
         ];
-        const confirmed = window.confirm(
-          `Photo analysée sur cet appareil. Vérifiez les valeurs détectées :\n\n${detected.join("\n")}\n\nLes enregistrer dans votre profil de paie ?`,
-        );
+        const confirmed = await confirmAction({
+          title: "Valeurs lues sur la photo",
+          message: `Photo analysée sur cet appareil. Vérifiez :\n${detected.join("\n")}`,
+          confirmLabel: "Enregistrer dans mon profil",
+          cancelLabel: "Ne pas enregistrer",
+        });
         if (!confirmed) {
           setPayslipImportError("Les valeurs détectées sur la photo n’ont pas été enregistrées.");
           return;
@@ -1052,6 +1108,7 @@ export function usePayActions(options: PayActionsOptions) {
           formProfile?.payslipRateSamples,
           addedRateSamples,
         ),
+        ...Object.fromEntries(clearedAmounts.map((field) => [field, undefined])),
       };
       if (!demoMode) {
         const body: Record<string, unknown> = {
@@ -1099,6 +1156,7 @@ export function usePayActions(options: PayActionsOptions) {
           );
         if (found.pasRate !== undefined)
           body.pasRateBp = Math.round(found.pasRate * 100);
+        for (const field of clearedAmounts) body[AMOUNT_BODY_KEYS[field]] = null;
         if (calculatedRates) {
           body.netRatioFixedBp = Math.round(
             calculatedRates.netRatioFixed * 100,
@@ -1153,7 +1211,7 @@ export function usePayActions(options: PayActionsOptions) {
               : {}),
           };
         }
-        return next;
+        return withoutAmounts(next, targetPayYear, clearedAmounts);
       });
       setPayslipImportResult({
         applied: [

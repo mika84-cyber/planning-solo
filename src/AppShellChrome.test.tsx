@@ -50,6 +50,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
   },
   feedbackMessaging: { unreadCount: 0 },
   notify: noop,
+  showSuccess: noop,
   actions: { navigateFromShell: noop, checkForAppUpdate: noop, disconnect: noop },
 };
 

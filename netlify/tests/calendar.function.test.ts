@@ -1412,6 +1412,14 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/form-profile")).toMatchObject({ payslip_verifications: {} });
   });
 
+  it("efface un montant du profil quand l'application envoie null", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "", ifseCents: 41666 }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ ifse_cents: 41666 });
+    await calendarHandler(request({ action: "save-form-profile", ifseCents: null }));
+    expect((data.get("user/user-a/form-profile") as { ifse_cents?: number }).ifse_cents).toBeUndefined();
+  });
+
   it("garde d'une visite à l'autre les montants des bulletins qui affinent les taux", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const september = { year: 2026, month: 8, gross: 2450, netBeforeTax: 1938.46, baseSalary: 1850, ifse: 425 };

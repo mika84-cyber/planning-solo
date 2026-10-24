@@ -1,4 +1,5 @@
 import type { Dispatch, RefObject, SetStateAction } from "react";
+import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 import { calendarErrorMessage } from "./calendarApi";
 import { createClientId } from "./clientId";
 import { calculateMecenatVacation, type MecenatEntry } from "./mecenat";
@@ -74,6 +75,7 @@ type WorkTimeActionsOptions = {
   handoffKey: string;
   notify: (message: string) => void;
   confirmMessage: (message: string) => void;
+  confirmAction?: ConfirmAction;
   post: WorkTimePostCalendar;
   postBatch: WorkTimePostBatch;
 };
@@ -157,7 +159,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     setOvertimeDialogOpen, setSolidarityDialogOpen, setRecoveryDialogOpen,
     setMecenatDialogOpen, setHomeSection, overtimeSaveInFlightRef,
     mecenatSaveInFlightRef, lastOvertimeSubmissionRef, lastRecoverySubmissionRef,
-    lastMecenatSubmissionRef, handoffKey, notify, confirmMessage, post, postBatch,
+    lastMecenatSubmissionRef, handoffKey, notify, confirmMessage, confirmAction = browserConfirm, post, postBatch,
   } = options;
   const recoveryCreditFor = (entry: OvertimeEntry) =>
     overtimeRecoveryCreditMinutes(entry, (key) => {
@@ -256,7 +258,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
       notify("Cette récupération a déjà été utilisée. Annulez d’abord les récupérations posées correspondantes.");
       return;
     }
-    if (!window.confirm("Supprimer cette déclaration d’heures supplémentaires ?")) return;
+    if (!(await confirmAction({ title: "Supprimer cette déclaration d’heures supplémentaires ?", confirmLabel: "Supprimer", tone: "danger" }))) return;
     try {
       if (!demoMode) await post({ action: "delete-overtime", id: entry.id });
       setOvertimeEntries((current) => current.filter((item) => item.id !== entry.id));
@@ -381,7 +383,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
   }
 
   async function deleteRecoveryUse(entry: RecoveryUse) {
-    if (!window.confirm("Annuler cette utilisation de récupération ?")) return;
+    if (!(await confirmAction({ title: "Annuler cette utilisation de récupération ?", message: "Les heures reviendront dans votre solde.", confirmLabel: "Annuler la récupération", cancelLabel: "Conserver", tone: "danger" }))) return;
     try {
       if (!demoMode) await post({ action: "delete-recovery-use", id: entry.id });
       setRecoveryUses((current) => current.filter((item) => item.id !== entry.id));
@@ -433,7 +435,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
   }
 
   async function deleteMecenatEntry(entry: MecenatEntry) {
-    if (!window.confirm("Supprimer ce mécénat ?")) return;
+    if (!(await confirmAction({ title: "Supprimer ce mécénat ?", confirmLabel: "Supprimer", tone: "danger" }))) return;
     try {
       if (!demoMode) await post({ action: "delete-mecenat", id: entry.id });
       setMecenatEntries((current) => current.filter((item) => item.id !== entry.id));

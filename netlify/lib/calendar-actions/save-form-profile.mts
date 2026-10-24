@@ -89,6 +89,8 @@ export async function handleSaveFormProfile(
   const rejected: string[] = [];
   const amountCents = (sent: unknown, previous: number | undefined) => {
     if (sent === undefined) return previous;
+    // `null` : l'application retire un montant (posé par un bulletin mal lu).
+    if (sent === null) return undefined;
     const value = Number(sent);
     if (!Number.isFinite(value) || value < 0 || value > 100000000) {
       rejected.push("montant");

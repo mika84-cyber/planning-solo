@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 import {
   calendarErrorMessage,
   postCalendar,
@@ -154,6 +155,7 @@ type PlanningEntryActionsOptions = {
   cancelRequest: () => void;
   notify: (message: string) => void;
   showSuccess: (message: string) => void;
+  confirmAction?: ConfirmAction;
   setDeletingMultipleDates: Dispatch<SetStateAction<boolean>>;
   closeCalendarCleanup: () => void;
   clearBalanceDetail: () => void;
@@ -186,6 +188,7 @@ export function usePlanningEntryActions({
   cancelRequest,
   notify,
   showSuccess,
+  confirmAction = browserConfirm,
   setDeletingMultipleDates,
   closeCalendarCleanup,
   clearBalanceDetail,
@@ -343,9 +346,11 @@ export function usePlanningEntryActions({
     const selected = new Set(dates);
     if (!selected.size) return;
     const label = target === "notes" ? "les notes" : "les absences et récupérations";
-    if (!window.confirm(
-      `Effacer ${label} sur ${selected.size} date${s(selected.size)} sélectionnée${s(selected.size)} ?`,
-    )) return;
+    if (!(await confirmAction({
+      title: `Effacer ${label} sur ${selected.size} date${s(selected.size)} sélectionnée${s(selected.size)} ?`,
+      confirmLabel: "Effacer",
+      tone: "danger",
+    }))) return;
 
     setDeletingMultipleDates(true);
     try {

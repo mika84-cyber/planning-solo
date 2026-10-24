@@ -53,7 +53,7 @@ type Props = Pick<
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "unplannedCarence" | "resultDetailsOpen" |
   "rateCalibration" | "netRatioFixed" | "netRatioVariable" |
-  "setResultDetailsOpen" | "grossForMonth" | "overtime" |
+  "setResultDetailsOpen" | "overtime" |
   "mecenat" | "mecenatEntries" | "onMarkMecenatsPaidEarly" | "overtimeEarlyCandidates" |
   "onMarkOvertimePaidEarly" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
   "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover"
@@ -203,7 +203,6 @@ export function PayslipVerificationCard({
   unplannedCarence: unplannedPayslipCarence,
   resultDetailsOpen: payslipResultDetailsOpen,
   setResultDetailsOpen: setPayslipResultDetailsOpen,
-  grossForMonth,
   overtime: overtimeForPayMonth,
   mecenat: mecenatForCurrentPayMonth,
   mecenatEntries = [],
@@ -315,15 +314,6 @@ export function PayslipVerificationCard({
     else if (action.kind === "set-status") onChangeStatus?.(action.status);
     else onOpenHolidayChoices?.();
   };
-  const comparableGross =
-    checkMatchesDisplayedPeriod && payslipCheck &&
-    payslipCheck.reading.gross !== undefined
-      ? {
-          expected: grossForMonth(displayedMonth),
-          found: payslipCheck.reading.gross,
-          gap: Math.abs(payslipCheck.reading.gross - grossForMonth(displayedMonth)),
-        }
-      : null;
   const recordDecision = (status: PayslipVerificationStatus) => {
     const record: PayslipVerificationRecord = {
       status,
@@ -487,37 +477,16 @@ export function PayslipVerificationCard({
                   <span>Période reconnue</span>
                   <strong>{MONTHS[displayedMonth]} {allowances.year}</strong>
                 </div>
-                {comparableGross || payslipCheck.reading.netBeforeTax !== undefined ? (
-                  <div className="payslip-actual-values" role="group" aria-label="Valeurs réellement lues sur le bulletin">
-                    <span>{comparableGross ? "Comparaison du montant brut" : "Valeurs du bulletin"}</span>
-                    {comparableGross ? (
-                      <>
-                        <div>
-                          <small>Attendu</small>
-                          <strong>{euros(comparableGross.expected)}</strong>
-                        </div>
-                        <div>
-                          <small>Trouvé</small>
-                          <strong>{euros(comparableGross.found)}</strong>
-                        </div>
-                        <div>
-                          <small>Écart</small>
-                          <strong className={comparableGross.gap >= 0.05 ? "negative" : ""}>{euros(comparableGross.gap)}</strong>
-                        </div>
-                      </>
-                    ) : payslipCheck.reading.gross !== undefined ? (
-                      <div>
-                        <small>Brut réel</small>
-                        <strong>{euros(payslipCheck.reading.gross)}</strong>
-                      </div>
-                    ) : null}
-                    {payslipCheck.reading.netBeforeTax !== undefined ? (
-                      <div>
-                        <small>Net avant impôt réel</small>
-                        <strong>{euros(payslipCheck.reading.netBeforeTax)}</strong>
-                      </div>
-                    ) : null}
-                  </div>
+                {/* Ce qui a été lu, en une ligne : le brut et le net avant impôt du
+                    bulletin. Les écarts sont dans le tableau, plus bas. */}
+                {payslipCheck.reading.gross !== undefined || payslipCheck.reading.netBeforeTax !== undefined ? (
+                  <p className="payslip-read-values">
+                    Lu sur le bulletin :{" "}
+                    {[
+                      payslipCheck.reading.gross !== undefined ? `brut ${euros(payslipCheck.reading.gross)}` : "",
+                      payslipCheck.reading.netBeforeTax !== undefined ? `net avant impôt ${euros(payslipCheck.reading.netBeforeTax)}` : "",
+                    ].filter(Boolean).join(" · ")}
+                  </p>
                 ) : null}
               </>
             ) : null}

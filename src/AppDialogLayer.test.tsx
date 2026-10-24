@@ -89,6 +89,7 @@ const baseProps = {
     setDataManagementOpen: noop,
     dataManagementBusy: false,
   },
+  confirmDialog: { request: null, answer: vi.fn() },
   toast: {
     message: null,
     dismiss: noop,

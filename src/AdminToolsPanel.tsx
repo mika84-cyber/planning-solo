@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useConfirm } from './confirmDialog';
 import { createPortal } from 'react-dom';
 import type { ColleagueGroup } from './colleagueGroups';
 import { matchesSearch } from './searchMatching';
@@ -35,6 +36,7 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
   const dialog = useRef<HTMLDialogElement>(null);
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [status, setStatus] = useState('');
+  const confirmAction = useConfirm();
   const [message, setMessage] = useState(''); const [until, setUntil] = useState('');
   const [member, setMember] = useState(''); const [group, setGroup] = useState(1); const [search, setSearch] = useState('');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -95,7 +97,7 @@ export function AdminToolsPanel({ demoMode, onClose, onPreview, onChanged }: { d
       <details><summary>Rappel des jours fériés{data.holidayReminder ? ` · ${data.holidayReminder.year} envoyé` : ''}</summary>
         <p>Le rappel apparaît sur l’accueil des autres comptes dès que vous l’envoyez : il les invite à choisir le traitement de leurs jours fériés de l’année (prime seule, prime + récup ou échange), avec un bouton qui ouvre directement « Primes et jours fériés ». Il disparaît pour chacun dès que tous ses fériés sont choisis, et au plus tard le 31 décembre.</p>
         {data.holidayReminder ? <p className="admin-member-selected">Rappel des jours fériés {data.holidayReminder.year} envoyé le {formatDate(data.holidayReminder.sentAt)}.</p> : null}
-        <form onSubmit={event => { event.preventDefault(); if (window.confirm(`Envoyer aux autres comptes le rappel des jours fériés ${reminderYear} ?`)) void act({ action: 'holiday-reminder', year: reminderYear }); }}>
+        <form onSubmit={event => { event.preventDefault(); void confirmAction({ title: `Envoyer le rappel des jours fériés ${reminderYear} ?`, message: 'Il apparaîtra sur l’accueil des autres comptes.', confirmLabel: 'Envoyer' }).then(ok => { if (ok) void act({ action: 'holiday-reminder', year: reminderYear }); }); }}>
           <label>Année<select value={reminderYear} onChange={event => setReminderYear(Number(event.target.value))}>{[thisYear, thisYear + 1].map(value => <option key={value} value={value}>{value}</option>)}</select></label>
           <div><button type="submit" disabled={busy}>Envoyer le rappel {reminderYear}</button>{data.holidayReminder && <button type="button" disabled={busy} onClick={() => void act({ action: 'holiday-reminder', year: null })}>Retirer le rappel</button>}</div>
         </form>

@@ -37,7 +37,7 @@ type AccountDataActionsOptions = {
   showSuccess: (message: string) => void;
   get: AccountCalendarGet;
   post: AccountCalendarPost;
-  confirmAction?: (message: string) => boolean;
+  confirmAction?: (message: string) => boolean | Promise<boolean>;
   promptAction?: (message: string) => string | null;
   downloadJson?: (filename: string, content: string) => void;
   now?: () => Date;
@@ -109,9 +109,9 @@ export function useAccountDataActions({
       return;
     }
     if (
-      !confirmAction(
+      !(await confirmAction(
         "Restaurer cette sauvegarde remplacera le planning et le profil actuels. Continuer ?",
-      )
+      ))
     )
       return;
     setBusy(true);
@@ -130,9 +130,9 @@ export function useAccountDataActions({
 
   async function archiveLegacyData() {
     if (
-      !confirmAction(
+      !(await confirmAction(
         "Archiver les anciennes clés globales dans votre espace privé ? Une copie récupérable sera conservée.",
-      )
+      ))
     )
       return;
     setBusy(true);

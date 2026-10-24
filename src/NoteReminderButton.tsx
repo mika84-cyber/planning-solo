@@ -4,17 +4,20 @@ import { useNotifications } from "./useNotifications";
 type NoteReminderButtonProps = {
   demoMode: boolean;
   notify: (text: string) => void;
+  /** Un message de réussite, discret (toast) ; sinon `notify`. */
+  showSuccess?: (text: string) => void;
 };
 
 export default function NoteReminderButton({
   demoMode,
   notify,
+  showSuccess,
 }: NoteReminderButtonProps) {
   const {
     notificationState,
     notificationBusy,
     enableNotifications,
-  } = useNotifications("ready", demoMode, notify);
+  } = useNotifications("ready", demoMode, notify, showSuccess);
   const activationStarted = useRef(false);
 
   useEffect(() => {

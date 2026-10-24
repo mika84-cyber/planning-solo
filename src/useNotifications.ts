@@ -46,6 +46,7 @@ export function useNotifications(
   authStatus: AuthStatus,
   demoMode: boolean,
   notify: (text: string) => void,
+  showSuccess: (text: string) => void = notify,
 ) {
   const [notificationState, setNotificationState] =
     useState<NotificationState>("unsupported");
@@ -154,7 +155,7 @@ export function useNotifications(
       });
       if (!saved.ok) throw new Error("Abonnement non enregistré");
       setNotificationState("on");
-      if (!silent) notify("Rappels activés : vous serez prévenu la veille des notes à 20 h.");
+      if (!silent) showSuccess("Rappels activés : vous serez prévenu la veille des notes à 20 h.");
     } catch {
       setNotificationState("off");
       if (!silent) notify("Les notifications n’ont pas pu être activées. Réessayez.");
@@ -181,7 +182,7 @@ export function useNotifications(
         await subscription.unsubscribe();
       }
       setNotificationState("off");
-      notify("Les rappels de notes sont désactivés sur cet appareil.");
+      showSuccess("Les rappels de notes sont désactivés sur cet appareil.");
     } catch {
       notify("Les notifications n’ont pas pu être désactivées.");
     } finally {

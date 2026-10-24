@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useConfirm } from "./confirmDialog";
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { GrandPalaisCheckPanel } from "./GrandPalaisCheckPanel";
@@ -933,8 +934,9 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
     }
   };
 
+  const confirmAction = useConfirm();
   const clearHealth = async () => {
-    if (!window.confirm("Effacer le contrôle des alertes ? Il sera refait lundi à minuit.")) return;
+    if (!(await confirmAction({ title: "Effacer le contrôle des alertes ?", message: "Il sera refait lundi à minuit.", confirmLabel: "Effacer", tone: "danger" }))) return;
     setHealthBusy(true);
     setHealthError("");
     try {

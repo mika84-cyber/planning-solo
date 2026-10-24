@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "./confirmDialog";
 import { getDayInfo, MONTHS } from "./planningLogic";
 import { WORK_POSTS, type PersonalPresence, type WorkPost } from "./appModel";
 import { ColleagueGroupsDialog, ColleagueGroupsDirectory } from "./ColleagueGroupsDirectory";
@@ -508,8 +509,9 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
     } finally { setBusy(false); }
   };
 
+  const confirmAction = useConfirm();
   const confirmMutation = (message: string, payload: Record<string, unknown>) => {
-    if (window.confirm(message)) void mutate(payload);
+    void confirmAction(message).then((ok) => { if (ok) void mutate(payload); });
   };
 
   const openPlanning = async (ownerId: string) => {

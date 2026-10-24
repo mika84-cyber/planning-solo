@@ -24,6 +24,29 @@ export type PayslipRateSample = {
   mealVoucherDeduction?: number;
 };
 
+/** Les montants du profil qu'un bulletin peut poser (voir amountsPosedOnlyBy). */
+export const POSED_AMOUNT_FIELDS = ["baseSalary", "ifse", "otherFixed", "carenceDay", "navigo", "mealVoucherDeduction"] as const;
+export type PosedAmountField = (typeof POSED_AMOUNT_FIELDS)[number];
+
+/**
+ * Les montants qu'un bulletin, remplacé ou retiré, avait posés dans le profil
+ * et que rien d'autre ne confirme : ni la nouvelle lecture (`stillRead`), ni
+ * un autre bulletin gardé. À effacer avec lui, pour qu'une mauvaise lecture
+ * ne laisse pas de trace. Une IFSE identique sur un autre bulletin reste.
+ */
+export function amountsPosedOnlyBy(
+  sample: PayslipRateSample,
+  profile: Partial<Record<PosedAmountField, number>>,
+  others: PayslipRateSample[],
+  stillRead: Partial<Record<PosedAmountField, number>> = {},
+): PosedAmountField[] {
+  return POSED_AMOUNT_FIELDS.filter((field) => {
+    const value = sample[field];
+    return value !== undefined && stillRead[field] === undefined && profile[field] === value
+      && !others.some((other) => other[field] === value);
+  });
+}
+
 /** Un bulletin par mois, rangé sous « AAAA-MM ». */
 export type PayslipRateSamples = Record<string, PayslipRateSample>;
 

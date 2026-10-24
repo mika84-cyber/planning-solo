@@ -209,6 +209,21 @@
 .message-modal .modal-actions {
   justify-content: flex-end;
 }
+/* La question de l'application : un <dialog> natif, dans la couche
+   supérieure du navigateur. Le cadre est celui des autres fenêtres. */
+dialog.confirm-dialog {
+  max-width: min(92vw, 440px);
+  margin: auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+dialog.confirm-dialog::backdrop {
+  background: rgba(44, 38, 33, 0.55);
+}
+dialog.confirm-dialog .modal-card {
+  margin: 0;
+}
 @media (max-width: 1000px) {
   .annual-pdf-actions {
     align-items: stretch;

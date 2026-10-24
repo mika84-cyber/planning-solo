@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useConfirm } from "./confirmDialog";
 import {
   deleteFeedback,
   broadcastFeedback,
@@ -96,6 +97,7 @@ export function FeedbackMessenger({
   onUnreadCountChange,
 }: FeedbackMessengerProps) {
   const [message, setMessage] = useState("");
+  const confirmAction = useConfirm();
   const [anonymous, setAnonymous] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
@@ -208,7 +210,7 @@ export function FeedbackMessenger({
   }
 
   async function resolveSelected() {
-    if (!selected || selected.resolvedAt || !window.confirm("Marquer ce message comme résolu et prévenir son auteur ?")) return;
+    if (!selected || selected.resolvedAt || !(await confirmAction({ title: "Marquer ce message comme résolu ?", message: "Son auteur en sera prévenu.", confirmLabel: "Marquer résolu" }))) return;
     setBusy(true);
     setError("");
     try {
@@ -242,7 +244,7 @@ export function FeedbackMessenger({
   }
 
   async function deleteSelected() {
-    if (!selected || !window.confirm("Effacer définitivement ce message de votre messagerie ?")) return;
+    if (!selected || !(await confirmAction({ title: "Effacer définitivement ce message ?", confirmLabel: "Effacer", tone: "danger" }))) return;
     setBusy(true);
     setError("");
     try {
