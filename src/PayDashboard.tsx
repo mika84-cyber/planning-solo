@@ -332,8 +332,9 @@ export function PayDashboard({
 
   const lineAmount = (line: BulletinLine) =>
     line.pending || (line.amount === null ? "à compléter" : signed(line.amount, line.sign));
-  const lineAria = (line: BulletinLine) =>
-    `${line.label} : ${lineAmount(line)}${line.onOpen ? ". Voir le détail" : ""}`;
+  const lineAria = (line: BulletinLine) => `${line.label} : ${lineAmount(line)}. Voir le détail`;
+  // La part de chaque groupe dans le brut, pour sa barre.
+  const share = (total: number) => (gross > 0 ? Math.min(100, Math.round((Math.abs(total) / gross) * 100)) : 0);
 
   /* L'état de l'estimation, sous le net : comparée au bulletin quand il a
      été ajouté (un appui ouvre la vérification), ou incomplète ; rien pour
@@ -414,6 +415,9 @@ export function PayDashboard({
                 <span>{group.title}</span>
                 {group.lines.length && !(group.total === 0 && group.lines.some((line) => line.pending)) ? <b>{signed(group.total, group.sign)}</b> : null}
               </p>
+              {/* Sous le titre, une fine barre dit la part du groupe dans le
+                  brut : les proportions se voient sans lire les chiffres. */}
+              {gross > 0 ? <span className="pay-bulletin-group-bar" aria-hidden="true"><i style={{ width: `${share(group.total)}%` }} /></span> : null}
               {group.lines.length ? (
                 <ul className="pay-bulletin-list">
                   {group.lines.map((line) => {
@@ -424,17 +428,17 @@ export function PayDashboard({
                           <span>{line.label}</span>
                           {line.detail ? <small>{line.detail}</small> : null}
                         </span>
+                        {/* Chaque ligne s'ouvre sur son calcul — le sien, ou celui du
+                            brut : un simple chevron le dit. */}
                         <b className={line.pending ? "pending" : line.waived ? "waived" : line.sign}>
                           {line.waived ? <s>{amount}</s> : amount}
                         </b>
-                        <i aria-hidden="true">{line.onOpen ? "›" : ""}</i>
+                        <i aria-hidden="true">›</i>
                       </>
                     );
                     return (
                       <li key={line.key}>
-                        {line.onOpen
-                          ? <button type="button" className="pay-bulletin-line" onClick={line.onOpen} aria-label={lineAria(line)}>{content}</button>
-                          : <div className="pay-bulletin-line">{content}</div>}
+                        <button type="button" className="pay-bulletin-line" onClick={line.onOpen ?? onOpenEstimateDetails} aria-label={lineAria(line)}>{content}</button>
                       </li>
                     );
                   })}

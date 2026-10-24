@@ -16,6 +16,17 @@ export type MecenatEntry = {
   updatedAt: string;
 };
 
+/** Une date d'inscription à un mécénat, en attente : retenue, elle devient un
+ *  mécénat déclaré ; sinon elle s'efface. */
+export type MecenatSignup = {
+  id: string;
+  date: string;
+  /** Les horaires prévus (« 19:00 »), ou vides si on ne les connaît pas encore. */
+  start: string;
+  end: string;
+  updatedAt: string;
+};
+
 /** Découpe une vacation selon le barème du jour (7 h – 22 h depuis 2024). La
  * quotité est acceptée explicitement pour documenter que le résultat n'en
  * dépend jamais. */

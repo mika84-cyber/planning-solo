@@ -24,7 +24,7 @@ type Props = {
   group: number;
   isProgramAdmin: boolean;
   savingCet: boolean;
-  calendar: Pick<CalendarData, "periods" | "formProfile" | "overtimeEntries" | "mecenatEntries" | "recoveryUses">;
+  calendar: Pick<CalendarData, "periods" | "formProfile" | "overtimeEntries" | "mecenatEntries" | "mecenatSignups" | "recoveryUses">;
   /** Soldes de l'année choisie, CET compris, et l'année elle-même. */
   balances: Pick<
     ReturnType<typeof useLeaveBalances>,
@@ -43,7 +43,7 @@ type Props = {
     ReturnType<typeof useWorkTimeUiState>,
     | "setOvertimeDraft" | "setOvertimeDialogOpen" | "setSolidarityDraft" | "setSolidarityDialogOpen"
     | "overtimeHistoryOpen" | "setOvertimeHistoryOpen" | "setMecenatDraft" | "setMecenatDialogOpen"
-    | "mecenatHistoryOpen" | "setMecenatHistoryOpen"
+    | "mecenatHistoryOpen" | "setMecenatHistoryOpen" | "mecenatSignupsOpen" | "setMecenatSignupsOpen"
   >;
   archive: Pick<
     ReturnType<typeof useRequestArchive>,
@@ -51,7 +51,7 @@ type Props = {
   >;
   shell: Pick<ReturnType<typeof useAppShellUiState>, "setHomeSection">;
   pay: Pick<ReturnType<typeof usePayUiState>, "setPayScreen">;
-  actions: Pick<ReturnType<typeof useWorkTimeActions>, "deleteOvertimeEntry" | "deleteRecoveryUse" | "deleteMecenatEntry">
+  actions: Pick<ReturnType<typeof useWorkTimeActions>, "deleteOvertimeEntry" | "deleteRecoveryUse" | "deleteMecenatEntry" | "addMecenatSignup" | "deleteMecenatSignup" | "retainMecenatSignup">
     & Pick<ReturnType<typeof usePlanningRequestActions>, "openBlankForm">
     & Pick<ReturnType<typeof usePlanningInteractionActions>, "beginRequest">
     & Pick<ReturnType<typeof useProfileAdjustmentActions>, "openManualAdjustments" | "saveCetAccount">
@@ -66,7 +66,7 @@ type Props = {
 export function LeaveSectionScreen({
   now, group, isProgramAdmin, savingCet, calendar, balances, recovery, workTime, archive, shell, pay, actions,
 }: Props) {
-  const { periods, formProfile, overtimeEntries, mecenatEntries, recoveryUses } = calendar;
+  const { periods, formProfile, overtimeEntries, mecenatEntries, mecenatSignups, recoveryUses } = calendar;
   const {
     leaveStats, manualSundayLeaveTotal, totalLeaveRemaining, cetLeaveBalances, cetAnnualDaysTaken, cetPlannedLeaveDays,
     absenceYear, setAbsenceYear, setBalanceDetailType,
@@ -78,14 +78,14 @@ export function LeaveSectionScreen({
   const {
     setOvertimeDraft, setOvertimeDialogOpen, setSolidarityDraft, setSolidarityDialogOpen,
     overtimeHistoryOpen, setOvertimeHistoryOpen, setMecenatDraft, setMecenatDialogOpen,
-    mecenatHistoryOpen, setMecenatHistoryOpen,
+    mecenatHistoryOpen, setMecenatHistoryOpen, mecenatSignupsOpen, setMecenatSignupsOpen,
   } = workTime;
   const { archiveOpen, setArchiveOpen, archivedRequests, openArchivedRequest, deleteArchivedRequest } = archive;
   const { setHomeSection } = shell;
   const { setPayScreen } = pay;
   const {
     openRequestChooser, openBlankForm, beginRequest, openManualAdjustments, saveCetAccount,
-    deleteOvertimeEntry, deleteRecoveryUse, deleteMecenatEntry,
+    deleteOvertimeEntry, deleteRecoveryUse, deleteMecenatEntry, addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
   } = actions;
   return (
         <Suspense fallback={<DeferredSection label="vos congés et récupérations" />}>
@@ -150,6 +150,8 @@ export function LeaveSectionScreen({
           overtimeHistoryOpen={overtimeHistoryOpen}
           mecenatEntries={mecenatEntries}
           mecenatHistoryOpen={mecenatHistoryOpen}
+          mecenatSignups={mecenatSignups}
+          mecenatSignupsOpen={mecenatSignupsOpen}
           isProgramAdmin={isProgramAdmin}
           archiveOpen={archiveOpen}
           archivedRequests={archivedRequests}
@@ -173,6 +175,10 @@ export function LeaveSectionScreen({
           }}
           onToggleMecenatHistory={() => setMecenatHistoryOpen((current) => !current)}
           onDeleteMecenat={(entry) => void deleteMecenatEntry(entry)}
+          onToggleMecenatSignups={() => setMecenatSignupsOpen((current) => !current)}
+          onAddMecenatSignup={(date, start, end) => void addMecenatSignup(date, start, end)}
+          onRetainMecenatSignup={retainMecenatSignup}
+          onDeleteMecenatSignup={(signup) => void deleteMecenatSignup(signup)}
           onToggleArchive={() => setArchiveOpen((current) => !current)}
           onOpenArchivedRequest={openArchivedRequest}
           onDeleteArchivedRequest={(request) => void deleteArchivedRequest(request)}

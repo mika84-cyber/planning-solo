@@ -7,6 +7,8 @@ import { handleArchiveLegacyData } from "./archive-legacy-data.mts";
 import { handleSaveFormProfile } from "./save-form-profile.mts";
 import { handleSaveMecenat } from "./save-mecenat.mts";
 import { handleDeleteMecenat } from "./delete-mecenat.mts";
+import { handleSaveMecenatSignup } from "./save-mecenat-signup.mts";
+import { handleDeleteMecenatSignup } from "./delete-mecenat-signup.mts";
 import { handleSaveOvertime } from "./save-overtime.mts";
 import { handleDeleteOvertime } from "./delete-overtime.mts";
 import { handleSaveRecoveryUse } from "./save-recovery-use.mts";
@@ -35,6 +37,8 @@ const actionHandlers: Record<string, CalendarActionHandler> = {
   "save-form-profile": handleSaveFormProfile,
   "save-mecenat": handleSaveMecenat,
   "delete-mecenat": handleDeleteMecenat,
+  "save-mecenat-signup": handleSaveMecenatSignup,
+  "delete-mecenat-signup": handleDeleteMecenatSignup,
   "save-overtime": handleSaveOvertime,
   "delete-overtime": handleDeleteOvertime,
   "save-recovery-use": handleSaveRecoveryUse,

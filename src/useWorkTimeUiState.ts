@@ -43,6 +43,7 @@ export function useWorkTimeUiState() {
   const [overtimeHistoryOpen, setOvertimeHistoryOpen] = useState(false);
   const [mecenatDialogOpen, setMecenatDialogOpen] = useState(false);
   const [mecenatHistoryOpen, setMecenatHistoryOpen] = useState(false);
+  const [mecenatSignupsOpen, setMecenatSignupsOpen] = useState(false);
   const [savingMecenat, setSavingMecenat] = useState(false);
   const [savingOvertime, setSavingOvertime] = useState(false);
   // Rien n'est prérempli : date, horaires et destination se choisissent.
@@ -62,16 +63,18 @@ export function useWorkTimeUiState() {
   const lastOvertimeSubmissionRef = useRef({ key: "", at: 0 });
   const lastRecoverySubmissionRef = useRef({ key: "", at: 0 });
   const lastMecenatSubmissionRef = useRef({ key: "", at: 0 });
+  // La date d'inscription retenue : une fois le mécénat déclaré, elle s'efface.
+  const retainedSignupRef = useRef<string | null>(null);
 
   return {
     overtimeDialogOpen, setOvertimeDialogOpen, solidarityDialogOpen, setSolidarityDialogOpen,
     recoveryDialogOpen, setRecoveryDialogOpen, recoveryCalendarVisible, setRecoveryCalendarVisible,
     recoveryDatePicking, setRecoveryDatePicking, trainingRecoveryMode, setTrainingRecoveryMode,
     overtimeHistoryOpen, setOvertimeHistoryOpen, mecenatDialogOpen, setMecenatDialogOpen,
-    mecenatHistoryOpen, setMecenatHistoryOpen, savingMecenat, setSavingMecenat,
+    mecenatHistoryOpen, setMecenatHistoryOpen, mecenatSignupsOpen, setMecenatSignupsOpen, savingMecenat, setSavingMecenat,
     savingOvertime, setSavingOvertime, overtimeDraft, setOvertimeDraft,
     solidarityDraft, setSolidarityDraft, recoveryDraft, setRecoveryDraft,
     mecenatDraft, setMecenatDraft, overtimeSaveInFlightRef, mecenatSaveInFlightRef,
-    lastOvertimeSubmissionRef, lastRecoverySubmissionRef, lastMecenatSubmissionRef,
+    lastOvertimeSubmissionRef, lastRecoverySubmissionRef, lastMecenatSubmissionRef, retainedSignupRef,
   };
 }

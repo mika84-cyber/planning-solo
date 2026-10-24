@@ -317,38 +317,44 @@ function PayTotalsExplained({
      Navigo en vert, les paliers (primes comprises, net avant impôt) en
      retrait ; le net ferme la cascade. Chaque ligne se touche pour afficher
      son calcul, ligne à ligne, juste sous elle — et le dit sous son montant. */
-  const rows: Array<{ key: TotalKey; kind: "" | "sub" | "minus" | "plus" | "net"; label: string; note?: string; value: string }> = [
+  const rows: Array<{ key: TotalKey; kind: "" | "sub" | "minus" | "plus" | "net"; label: string; note?: string; value: string; amount: number | null }> = [
     {
       key: "gross",
       kind: "",
       label: "Brut du mois",
       note: calculation.grossDeductions.length ? "traitement, indemnités et primes, moins les absences" : "traitement, indemnités et primes",
       value: brut === null ? "À compléter" : euros(brut),
+      amount: brut,
     },
-    { key: "variable", kind: "sub", label: "Dont primes du mois", value: euros(variableAdditions) },
+    { key: "variable", kind: "sub", label: "Dont primes du mois", value: euros(variableAdditions), amount: variableAdditions },
     {
       key: "contributions",
       kind: "minus",
       label: "Cotisations sociales",
       note: "retraite, CSG et CRDS",
       value: estimatedContributions === null ? "À compléter" : `− ${euros(estimatedContributions)}`,
+      amount: estimatedContributions,
     },
     ...(mealVoucherDeduction
-      ? [{ key: "mealVouchers" as const, kind: "minus" as const, label: "Titres repas", note: "votre part du mois", value: `− ${euros(mealVoucherDeduction)}` }]
+      ? [{ key: "mealVouchers" as const, kind: "minus" as const, label: "Titres repas", note: "votre part du mois", value: `− ${euros(mealVoucherDeduction)}`, amount: mealVoucherDeduction }]
       : []),
     ...(navigo
-      ? [{ key: "navigo" as const, kind: "plus" as const, label: "Navigo remboursé", note: "ajouté au net", value: `+ ${euros(navigo)}` }]
+      ? [{ key: "navigo" as const, kind: "plus" as const, label: "Navigo remboursé", note: "ajouté au net", value: `+ ${euros(navigo)}`, amount: navigo }]
       : []),
-    { key: "netBeforeTax", kind: "sub", label: "Net avant impôt", value: netBeforeTax === null ? "À compléter" : euros(netBeforeTax) },
+    { key: "netBeforeTax", kind: "sub", label: "Net avant impôt", value: netBeforeTax === null ? "À compléter" : euros(netBeforeTax), amount: netBeforeTax },
     {
       key: "tax",
       kind: "minus",
       label: "Impôt sur le revenu",
       note: `prélèvement à la source · ${percent(pasRate)}`,
       value: incomeTax === null ? "À compléter" : `− ${euros(incomeTax)}`,
+      amount: incomeTax,
     },
-    { key: "net", kind: "net", label: "Net estimé", note: "ce qui arrive sur votre compte", value: net === null ? "À compléter" : euros(net) },
+    { key: "net", kind: "net", label: "Net estimé", note: "ce qui arrive sur votre compte", value: net === null ? "À compléter" : euros(net), amount: net },
   ];
+  // La part de chaque étape dans le brut, pour sa barre : le brut entier, puis
+  // ce qu'on en retire et ce qu'il en reste.
+  const share = (amount: number | null) => (brut ? Math.min(100, Math.round((Math.abs(amount ?? 0) / brut) * 100)) : 0);
   const explanation = open ? explanations[open] : null;
   return (
     <>
@@ -363,13 +369,15 @@ function PayTotalsExplained({
                 aria-controls="pay-total-explain"
                 onClick={() => setOpen((current) => (current === row.key ? null : row.key))}
               >
-                <i className="pay-total-dot" aria-hidden="true" />
                 <span className="pay-total-label">{row.label}{row.note ? <small>{row.note}</small> : null}</span>
                 {/* Le montant, et dessous, en toutes lettres, ce qu'un appui fait. */}
                 <span className="pay-total-value">
                   <b>{row.value}</b>
                   <em>{open === row.key ? "Masquer le calcul" : "Voir le calcul"}<i aria-hidden="true">›</i></em>
                 </span>
+                {/* Sous l'étape, sa part du brut en une fine barre, comme pour
+                    les groupes des lignes de la paie. */}
+                {brut ? <span className="pay-total-bar" aria-hidden="true"><i style={{ width: `${share(row.amount)}%` }} /></span> : null}
               </button>
               {/* Le calcul de l'étape, juste sous sa ligne. */}
               {open === row.key && explanation ? (

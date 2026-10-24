@@ -54,23 +54,27 @@
 
 /* Les lignes de la paie, en trois groupes (fixe, primes, retenues), chacun
    avec son liseré ; celui des retenues reprend le rose de la frise. */
-.pay-bulletin .pay-bulletin-group { margin-top: 12px; }
-/* L'en-tête d'un groupe : un bandeau teinté, son sous-total aligné sur la
-   colonne des montants des lignes (même grille, flèche comprise). */
-.pay-bulletin .pay-bulletin-group-head { display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; align-items: center; gap: 10px; margin: 0 0 3px; border-radius: 8px; padding: 6px 0 6px 8px; background: #f5f0ea; color: #5b4c3f; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
-.pay-bulletin .pay-bulletin-group.variable .pay-bulletin-group-head { background: #ecf7f1; color: #1d6b45; }
-.pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-head { background: #fcf0f2; color: #a5283a; }
-.pay-bulletin .pay-bulletin-group-head span { display: inline-flex; align-items: center; gap: 6px; }
-.pay-bulletin .pay-bulletin-group-head span::before { width: 8px; height: 8px; border-radius: 2px; content: ""; }
-.pay-bulletin .pay-bulletin-group.fixed .pay-bulletin-group-head span::before { background: #b3a08f; }
-.pay-bulletin .pay-bulletin-group.variable .pay-bulletin-group-head span::before { background: #5fb28e; }
-.pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-head span::before { background: #e88aa0; }
-.pay-bulletin .pay-bulletin-group-head b { color: inherit; font-size: 0.86rem; font-weight: 850; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.pay-bulletin .pay-bulletin-list { display: grid; margin: 0; padding: 0 0 0 11px; border-left: 2px solid #eadbd2; list-style: none; }
-.pay-bulletin .pay-bulletin-group.variable .pay-bulletin-list { border-left-color: #cbe8d9; }
-.pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-list { border-left-color: #f5d3db; }
-.pay-bulletin .pay-bulletin-list > li + li { border-top: 1px solid #f1e9de; }
-.app-shell .pay-bulletin .pay-bulletin-line { display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; align-items: center; gap: 10px; width: 100%; min-height: 0; margin: 0; border: 0; border-radius: 0; padding: 7px 0; background: none; box-shadow: none; color: var(--text); font: inherit; font-size: 0.86rem; text-align: left; }
+/* Chaque groupe dans un encadré : un liseré noir léger, et un fond de sa
+   couleur — crème pour le fixe, vert d'eau pour les primes, rose pâle pour
+   les retenues. */
+.pay-bulletin .pay-bulletin-group { margin-top: 10px; border: 1px solid rgba(44, 38, 33, 0.4); border-radius: 14px; padding: 10px 12px 4px; background: #fdfbf8; }
+.pay-bulletin .pay-bulletin-group.variable { background: #f6fbf8; }
+.pay-bulletin .pay-bulletin-group.withheld { background: #fdf6f8; }
+/* L'en-tête d'un groupe : son nom dans la police des titres, son sous-total
+   au bout de la ligne, et dessous une fine barre qui dit sa part du brut —
+   plus de bandeau teinté ni de filet vertical. */
+.pay-bulletin .pay-bulletin-group-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 0; padding: 0; color: var(--text); font-size: 0.86rem; }
+.pay-bulletin .pay-bulletin-group-head span { font-family: var(--font-display); font-size: 1.02rem; font-weight: 700; }
+.pay-bulletin .pay-bulletin-group-head b { font-size: 0.95rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pay-bulletin .pay-bulletin-group.variable .pay-bulletin-group-head b { color: #1d6b45; }
+.pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-head b { color: #a5283a; }
+.pay-bulletin .pay-bulletin-group-bar { display: block; height: 6px; margin: 7px 0 2px; border-radius: 999px; background: #efe8df; overflow: hidden; }
+.pay-bulletin .pay-bulletin-group-bar i { display: block; height: 100%; border-radius: 999px; background: #b3a08f; }
+.pay-bulletin .pay-bulletin-group.variable .pay-bulletin-group-bar i { background: #5fb28e; }
+.pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-bar i { background: #e88aa0; }
+.pay-bulletin .pay-bulletin-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.pay-bulletin .pay-bulletin-list > li + li { border-top: 1px solid rgba(44, 38, 33, 0.07); }
+.app-shell .pay-bulletin .pay-bulletin-line { display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; align-items: center; gap: 10px; width: 100%; min-height: 0; margin: 0; border: 0; border-radius: 0; padding: 8px 0; background: none; box-shadow: none; color: var(--text); font: inherit; font-size: 0.86rem; text-align: left; }
 .app-shell .pay-bulletin button.pay-bulletin-line { cursor: pointer; }
 .app-shell .pay-bulletin button.pay-bulletin-line:hover > .pay-bulletin-line-text > span { color: #8a3d22; }
 .pay-bulletin .pay-bulletin-line-text { display: grid; gap: 1px; min-width: 0; }
@@ -83,9 +87,10 @@
 .pay-bulletin .pay-bulletin-line b.minus { color: #a5283a; }
 .pay-bulletin .pay-bulletin-line b.pending { border: 1px solid #e0c3b4; border-radius: 999px; padding: 2px 9px; background: #fff; color: #9a4a2e; font-size: 0.72rem; font-weight: 800; }
 .pay-bulletin .pay-bulletin-line b.waived { color: var(--muted); font-weight: 600; }
-.pay-bulletin .pay-bulletin-empty { margin: 0; padding: 6px 0 6px 11px; border-left: 2px solid #cbe8d9; color: var(--muted); font-size: 0.8rem; }
-.pay-bulletin .pay-bulletin-total { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0 0; padding: 9px 0 0; border-top: 1.5px solid #2c2621; font-size: 0.92rem; font-weight: 850; }
-.pay-bulletin .pay-bulletin-total b { font-weight: 850; }
+.pay-bulletin .pay-bulletin-empty { margin: 0; padding: 6px 0; color: var(--muted); font-size: 0.8rem; }
+.pay-bulletin .pay-bulletin-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 14px 0 0; padding: 10px 0 0; border-top: 2px solid #2c2621; font-size: 0.95rem; font-weight: 850; }
+.pay-bulletin .pay-bulletin-total span { font-family: var(--font-display); font-size: 1.02rem; font-weight: 700; }
+.pay-bulletin .pay-bulletin-total b { font-size: 1.25rem; font-weight: 850; }
 .pay-bulletin .pay-bulletin-total-note { margin: 4px 0 0; color: #9a4a2e; font-size: 0.74rem; font-weight: 650; }
 
 /* L'état de l'estimation, sous le brut. */

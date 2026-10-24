@@ -52,6 +52,7 @@ describe("parseCalendarSnapshot", () => {
     expect(snapshot.overtimeEntries[0].disposition).toBe("paid");
     expect(snapshot.recoveryUses[0].kind).toBe("training");
     expect(snapshot.mecenatEntries[0].grossAmountCents).toBe(7500);
+    expect(snapshot.mecenatSignups).toEqual([]);
     expect(snapshot.partnerSharingStatus).toBe("connected");
     expect(snapshot.partnerEntries["2026-09-06"]).toMatchObject({
       noteText: "Déjeuner avec Agnès",

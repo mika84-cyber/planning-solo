@@ -110,6 +110,14 @@ describe("PayDashboard", () => {
     expect(html).toContain("Fixe");
     expect(html).toContain("Primes du mois");
     expect(html).toContain("Retenues");
+    // Sous chaque titre, la part du groupe dans le brut (2 600 €) ; chaque
+    // ligne est un bouton qui s'ouvre sur son détail, et le dit.
+    expect(html).toMatch(/Fixe<\/span><b>2.272,44<\/b><\/p><span class="pay-bulletin-group-bar" aria-hidden="true"><i style="width:87%"><\/i>/);
+    expect(html).toMatch(/Retenues<\/span><b>− 612,49<\/b><\/p><span class="pay-bulletin-group-bar" aria-hidden="true"><i style="width:24%">/);
+    // L'espace des milliers est insécable : on ne l'épelle pas.
+    expect(html).toMatch(/aria-label="Traitement de base : 1.801,73\. Voir le détail"/);
+    expect((html.match(/<i aria-hidden="true">›<\/i><\/button>/g) || []).length).toBeGreaterThanOrEqual(7);
+    expect(html).not.toContain('<div class="pay-bulletin-line">');
     // La frise dit la part du brut qui va au net, aux cotisations, à l'impôt.
     expect(html).toMatch(/de brut<\/p>/);
     expect(html).toMatch(/<li class="net"><span>Net<\/span><b>\d+\s%<\/b>/);

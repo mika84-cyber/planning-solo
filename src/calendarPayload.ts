@@ -13,7 +13,7 @@ import { cetAccountFromApi } from "./cet";
 import { sanitizeDeductionPayMonths } from "./deductionPayMonth";
 import { sanitizePayslipVerifications } from "./payslipVerificationRecords";
 import { sanitizePayslipRateSamples } from "./payslipRateSamples";
-import type { MecenatEntry } from "./mecenat";
+import type { MecenatEntry, MecenatSignup } from "./mecenat";
 import type { OvertimeEntry, RecoveryUse } from "./overtime";
 import { halfBalanceFromApi, type HalfMoment, type HolidayPay, type LeaveType } from "./planningLogic";
 
@@ -307,6 +307,14 @@ function mecenatFromApi(value: unknown): MecenatEntry[] {
   });
 }
 
+function mecenatSignupsFromApi(value: unknown): MecenatSignup[] {
+  return records(value).flatMap((raw) => {
+    const id = text(raw.id);
+    const date = text(raw.date);
+    return id && /^\d{4}-\d{2}-\d{2}$/.test(date) ? [{ id, date, start: text(raw.start), end: text(raw.end), updatedAt: text(raw.updated_at) }] : [];
+  });
+}
+
 export type CalendarSnapshot = {
   email: string;
   entries: Entries;
@@ -316,6 +324,7 @@ export type CalendarSnapshot = {
   overtimeEntries: OvertimeEntry[];
   recoveryUses: RecoveryUse[];
   mecenatEntries: MecenatEntry[];
+  mecenatSignups: MecenatSignup[];
   partnerEntries: PartnerCalendarEntries;
   partnerPeriods: PartnerLeavePeriod[];
   partnerSharingStatus: PartnerSharingStatus;
@@ -342,6 +351,7 @@ export function parseCalendarSnapshot(value: unknown): CalendarSnapshot {
     overtimeEntries: overtimeFromApi(raw.overtime_entries),
     recoveryUses: recoveryUsesFromApi(raw.recovery_uses),
     mecenatEntries: mecenatFromApi(raw.mecenat_entries),
+    mecenatSignups: mecenatSignupsFromApi(raw.mecenat_signups),
     partnerEntries: partnerEntriesFromApi(sharedCalendar.entries),
     partnerPeriods: partnerPeriodsFromApi(sharedCalendar.periods),
     partnerSharingStatus:

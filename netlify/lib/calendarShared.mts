@@ -309,6 +309,15 @@ export type MecenatEntry = {
   pay_month: number;
   updated_at: string;
 };
+/** Une date d'inscription à un mécénat, en attente d'être retenue ou effacée. */
+export type MecenatSignup = {
+  id: string;
+  date: string;
+  /** Les horaires prévus (« 19:00 »), s'ils sont déjà connus. */
+  start?: string;
+  end?: string;
+  updated_at: string;
+};
 /** Le choix de compensation d'un férié travaillé.
  *
  *  Absent du corps de la requête, il n'est pas touché : les écritures qui ne

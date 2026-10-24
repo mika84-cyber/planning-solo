@@ -5922,13 +5922,13 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   // Un seul titre (le bandeau) ; dessous, le mois entre ses deux flèches.
   await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toHaveCount(0);
   await expect(page.locator(".pay-detail-screen .pay-bulletin-month-nav").getByRole("button", { name: "Mois suivant" })).toBeVisible();
-  // Du brut au net : une étape par ligne, reliées par un fil, les retenues
-  // en rose, le net en terracotta pour fermer la cascade.
+  // Du brut au net : une étape par ligne, chacune avec sa barre de part du
+  // brut — rose pour les retenues, terracotta pour le net qui ferme la cascade.
   const calculationTotals = page.locator(".pay-calculation-totals > ol > li");
   await expect(calculationTotals).toHaveCount(6);
   await expect(calculationTotals.locator(".pay-total-label")).toContainText(["Brut du mois", "Dont primes du mois", "Cotisations sociales", "Net avant impôt", "Impôt sur le revenu", "Net estimé"]);
-  await expect(calculationTotals.nth(2).locator(".pay-total-dot")).toHaveCSS("background-color", "rgb(232, 138, 160)");
-  await expect(calculationTotals.last().locator(".pay-total-dot")).toHaveCSS("background-color", "rgb(138, 61, 34)");
+  await expect(calculationTotals.nth(2)).toHaveClass(/minus/);
+  await expect(calculationTotals.last()).toHaveClass(/net/);
   // Une simple estimation avec le profil de l'année n'est plus annoncée.
   await expect(page.getByText("Valeurs enregistrées pour cette année")).toHaveCount(0);
   // Chaque case se touche pour afficher son calcul, ligne à ligne.
@@ -6253,6 +6253,47 @@ test("l’ajout manuel reprend un solde déjà calculé, majoration comprise, te
   await dialog.getByRole("button", { name: "Ajouter au solde" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText("20 h ajoutées au solde de récupération")).toBeVisible();
+});
+
+test("une date d’inscription à un mécénat se retient en déclaration, ou s’efface", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  const card = page.locator(".mecenat-balance-card");
+  await card.getByRole("button", { name: "Mes dates d’inscription" }).click();
+  const signups = page.getByRole("region", { name: "Mes dates d’inscription" });
+  await expect(signups).toContainText("Aucune date d’inscription pour l’instant.");
+  // Deux dates notées : elles s'affichent dans l'ordre, et le bouton les compte.
+  const first = addDays(new Date(), 12);
+  const second = addDays(new Date(), 5);
+  for (const date of [first, second]) {
+    await signups.getByLabel("Date d’inscription").fill(dateKey(date));
+    await setClockTime(signups, "Heure de début", "19:00");
+    await setClockTime(signups, "Heure de fin", "22:00");
+    await signups.getByRole("button", { name: "Ajouter" }).click();
+  }
+  await expect(signups.locator("li").first()).toContainText("19:00 → 22:00");
+  await expect(signups.locator("li")).toHaveCount(2);
+  await expect(signups.locator("li").first()).toContainText(String(second.getDate()));
+  await expect(card.getByRole("button", { name: "Masquer mes dates d’inscription" })).toBeVisible();
+  // Retenue : la déclaration s'ouvre, la date déjà remplie ; enregistrée,
+  // la date quitte les inscriptions et le mécénat rejoint l'historique.
+  await signups.locator("li").first().getByRole("button", { name: /^Retenir/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Déclarer un mécénat" });
+  await expect(dialog.locator('input[type="date"]')).toHaveValue(dateKey(second));
+  // Les horaires notés à l'inscription sont déjà là.
+  await expect(dialog.getByLabel("Heure de début — heures")).toHaveValue("19");
+  await expect(dialog.getByLabel("Heure de fin — heures")).toHaveValue("22");
+  await dialog.getByRole("button", { name: "Enregistrer le mécénat" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(signups.locator("li")).toHaveCount(1);
+  await expect(signups.locator("li").first()).toContainText(String(first.getDate()));
+  await expect(card.locator(".overtime-balance-heading strong")).toContainText("1 enregistré");
+  // Effacée, après confirmation : plus aucune date en attente.
+  await signups.locator("li").first().getByRole("button", { name: /^Effacer/ }).click();
+  await answerConfirm(page, true, "Effacer cette date d’inscription ?");
+  await expect(signups).toContainText("Aucune date d’inscription pour l’instant.");
+  await expect(card.getByRole("button", { name: "Mes dates d’inscription" })).toBeVisible();
 });
 
 test("un mécénat hors des règles du temps de travail est signalé sans empêcher l’inscription", async ({ page }) => {

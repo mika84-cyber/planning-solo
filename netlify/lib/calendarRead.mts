@@ -4,6 +4,7 @@ import {
   type FormProfile,
   type LeavePeriod,
   type MecenatEntry,
+  type MecenatSignup,
   type OvertimeEntry,
   type RecoveryUse,
   json,
@@ -22,6 +23,7 @@ type CalendarReadContext = {
   overtimePrefix: string;
   recoveryUsePrefix: string;
   mecenatPrefix: string;
+  mecenatSignupPrefix: string;
   shareWithAgnes: boolean;
   /** Prénom et nom du compte Netlify, pour préremplir les formulaires. */
   accountName?: string;
@@ -39,6 +41,7 @@ export async function readCalendar(
     overtimePrefix,
     recoveryUsePrefix,
     mecenatPrefix,
+    mecenatSignupPrefix,
     shareWithAgnes,
     accountName = "",
   } = context;
@@ -48,6 +51,7 @@ export async function readCalendar(
     listedOvertime,
     listedRecoveryUses,
     listedMecenat,
+    listedSignups,
     formProfile,
     sharedCalendar,
   ] = await Promise.all([
@@ -56,6 +60,7 @@ export async function readCalendar(
     listBlobs(store, overtimePrefix),
     listBlobs(store, recoveryUsePrefix),
     listBlobs(store, mecenatPrefix),
+    listBlobs(store, mecenatSignupPrefix),
     store.get(scopedKey("form-profile"), {
       type: "json",
     }) as Promise<FormProfile | null>,
@@ -102,6 +107,11 @@ export async function readCalendar(
   const cleanMecenat = mecenatEntries.filter(
     (item): item is MecenatEntry => Boolean(item) && !isCalendarTombstone(item),
   );
+  const signups = await Promise.all(listedSignups.blobs.map((blob) => store.get(blob.key, { type: "json" })));
+  const cleanSignups = signups.filter(
+    (item): item is MecenatSignup => Boolean(item) && !isCalendarTombstone(item),
+  );
+  cleanSignups.sort((a, b) => a.date.localeCompare(b.date));
   cleanEntries.sort((a, b) => a.date.localeCompare(b.date));
   cleanPeriods.sort((a, b) => a.from.localeCompare(b.from));
   cleanOvertime.sort((a, b) => a.date.localeCompare(b.date));
@@ -131,6 +141,7 @@ export async function readCalendar(
     overtime_entries: cleanOvertime,
     recovery_uses: cleanRecoveryUses,
     mecenat_entries: cleanMecenat,
+    mecenat_signups: cleanSignups,
     form_profile: formProfile && !isCalendarTombstone(formProfile) ? formProfile : null,
     shared_calendar: sharedCalendar,
   });

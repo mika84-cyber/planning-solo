@@ -276,6 +276,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats, au
   barème du jour de la vacation (décret n° 2010-147, arrêté du 18 mai 2010
   modifié ; depuis 2024, 22,90 € de 7 h à 22 h et 35 € de 22 h à 7 h).
+- Dates d'inscription aux mécénats (`MecenatSignup`, `user/<id>/mecenat-signup/`,
+  actions `save-mecenat-signup` / `delete-mecenat-signup`, lues dans
+  `mecenat_signups`) : dans la carte Mécénats, « Mes dates d'inscription »
+  (`src/MecenatSignupList.tsx`) ajoute une date et ses horaires s'ils sont
+  connus, la retient (la déclaration s'ouvre, date et horaires remplis ; une fois le mécénat enregistré, la date s'efface —
+  `retainedSignupRef`) ou l'efface. Hors sauvegarde exportée.
 - `src/mecenatRules.ts` : amplitude de 12 h, repos de 11 h et lundis, signalés
   sans bloquer l’inscription d’un mécénat.
 - `src/earlyPayment.ts` : mécénats et heures « à payer » qu’un bulletin vérifié

@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from "react";
+import { MecenatSignupList } from "./MecenatSignupList";
 import { euros } from "./appModel";
-import { MECENAT_REGULATORY_RATES, mecenatRateLabels, type MecenatEntry } from "./mecenat";
+import { MECENAT_REGULATORY_RATES, mecenatRateLabels, type MecenatEntry, type MecenatSignup } from "./mecenat";
 import { minutesLabel, overtimePayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
@@ -37,6 +38,8 @@ type LeaveManagementPageProps = {
   paidOvertimeEstimate?: (year: number, month: number) => { ready: boolean; amount: number; cappedMinutes: number; capMinutes: number };
   mecenatEntries: MecenatEntry[];
   mecenatHistoryOpen: boolean;
+  mecenatSignups: MecenatSignup[];
+  mecenatSignupsOpen: boolean;
   isProgramAdmin: boolean;
   archiveOpen: boolean;
   archivedRequests: ArchivedRequest[];
@@ -54,6 +57,10 @@ type LeaveManagementPageProps = {
   onOpenMecenat: () => void;
   onToggleMecenatHistory: () => void;
   onDeleteMecenat: (entry: MecenatEntry) => void;
+  onToggleMecenatSignups: () => void;
+  onAddMecenatSignup: (date: string, start: string, end: string) => void;
+  onRetainMecenatSignup: (signup: MecenatSignup) => void;
+  onDeleteMecenatSignup: (signup: MecenatSignup) => void;
   onToggleArchive: () => void;
   onOpenArchivedRequest: (request: ArchivedRequest) => void;
   onDeleteArchivedRequest: (request: ArchivedRequest) => void;
@@ -73,6 +80,8 @@ export function LeaveManagementPage({
   overtimeHistoryOpen,
   mecenatEntries,
   mecenatHistoryOpen,
+  mecenatSignups,
+  mecenatSignupsOpen,
   isProgramAdmin,
   archiveOpen,
   archivedRequests,
@@ -88,6 +97,10 @@ export function LeaveManagementPage({
   onOpenMecenat,
   onToggleMecenatHistory,
   onDeleteMecenat,
+  onToggleMecenatSignups,
+  onAddMecenatSignup,
+  onRetainMecenatSignup,
+  onDeleteMecenatSignup,
   onToggleArchive,
   onOpenArchivedRequest,
   onDeleteArchivedRequest,
@@ -186,6 +199,13 @@ export function LeaveManagementPage({
               <article><span>{mecenatRateLabels().night}</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
             </div>
             <div className="overtime-actions"><button type="button" className="primary-action mecenat-action" onClick={onOpenMecenat}>Déclarer un mécénat</button></div>
+            {/* Les dates où l'on s'est inscrit, à retenir (déclarer) ou à effacer. */}
+            <button type="button" className="soft-detail-button overtime-history-toggle mecenat-signups-toggle" onClick={onToggleMecenatSignups} aria-expanded={mecenatSignupsOpen}>
+              {mecenatSignupsOpen ? "Masquer mes dates d’inscription" : `Mes dates d’inscription${mecenatSignups.length ? ` (${mecenatSignups.length})` : ""}`}
+            </button>
+            {mecenatSignupsOpen ? (
+              <MecenatSignupList signups={mecenatSignups} onAdd={onAddMecenatSignup} onRetain={onRetainMecenatSignup} onDelete={onDeleteMecenatSignup} />
+            ) : null}
             <button type="button" className="soft-detail-button overtime-history-toggle" onClick={onToggleMecenatHistory} aria-expanded={mecenatHistoryOpen}>
               {mecenatHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
             </button>

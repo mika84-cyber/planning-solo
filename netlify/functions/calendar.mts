@@ -37,6 +37,7 @@ async function calendarHandler(request: Request): Promise<Response> {
   const overtimePrefix = scopedKey("overtime/");
   const recoveryUsePrefix = scopedKey("recovery-use/");
   const mecenatPrefix = scopedKey("mecenat/");
+  const mecenatSignupPrefix = scopedKey("mecenat-signup/");
   if (request.method === "GET")
     return readCalendar({
       email: user.email,
@@ -47,6 +48,7 @@ async function calendarHandler(request: Request): Promise<Response> {
       overtimePrefix,
       recoveryUsePrefix,
       mecenatPrefix,
+      mecenatSignupPrefix,
       shareWithAgnes,
       accountName: accountDisplayName(user),
     });

@@ -124,7 +124,8 @@ html[data-theme="dark"] .colleague-week-legend .colleague-week-cell.partial.lege
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar { background: #2a2420; }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .contributions,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .contributions::before,
-html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-head span::before { background: #d9849a; }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-group-bar { background: #3a322c; }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-bar i { background: #d9849a; }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .meal,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .meal::before { background: #d9a27e; }
 /* Règles des congés : le liseré noir devient clair sur fond sombre. */
@@ -135,3 +136,6 @@ html[data-theme="dark"] .payslip-gap-choice p strong, html[data-theme="dark"] .p
 /* Congé posé un jour de fermeture : sa nature (CA, RTT…) reste lisible
    par-dessus le tampon CLOSED, en clair détouré de sombre, sans encadré. */
 html[data-theme="dark"] .calendar-grid .day.exceptional-closure-day > .leave-calendar-marker { color: #f3ede6; text-shadow: 0 1px 0 #1d1916, 1px 0 0 #1d1916, -1px 0 0 #1d1916, 0 -1px 0 #1d1916; }
+/* Les encadrés des lignes de la paie et de la cascade : liseré clair léger. */
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-group,
+html[data-theme="dark"] .pay-calculation-totals > ol > li { border-color: rgba(243, 237, 230, 0.38); }

@@ -48,7 +48,7 @@ type ApplicationStartupOptions = {
   calendarData: Pick<
     CalendarDataState,
     "setEntries" | "setPeriods" | "setFormProfile" | "setPayProfiles" | "setOvertimeEntries"
-    | "setRecoveryUses" | "setMecenatEntries" | "setPartnerEntries" | "setPartnerPeriods" | "setPartnerSharingStatus"
+    | "setRecoveryUses" | "setMecenatEntries" | "setMecenatSignups" | "setPartnerEntries" | "setPartnerPeriods" | "setPartnerSharingStatus"
   >;
   setNow: Dispatch<SetStateAction<Date>>;
   setView: Dispatch<SetStateAction<Date>>;
@@ -79,7 +79,7 @@ export function useApplicationStartup({
   } = authUi;
   const {
     setEntries, setPeriods, setFormProfile, setPayProfiles, setOvertimeEntries,
-    setRecoveryUses, setMecenatEntries, setPartnerEntries, setPartnerPeriods, setPartnerSharingStatus,
+    setRecoveryUses, setMecenatEntries, setMecenatSignups, setPartnerEntries, setPartnerPeriods, setPartnerSharingStatus,
   } = calendarData;
 
   const initializeApplication = useEffectEvent(async () => {
@@ -329,6 +329,7 @@ export function useApplicationStartup({
     setOvertimeEntries(data.overtimeEntries);
     setRecoveryUses(data.recoveryUses);
     setMecenatEntries(data.mecenatEntries);
+    setMecenatSignups(data.mecenatSignups);
     setPartnerEntries(data.partnerEntries);
     setPartnerPeriods(data.partnerPeriods);
     setPartnerSharingStatus(data.partnerSharingStatus);
@@ -341,6 +342,7 @@ export function useApplicationStartup({
     setOvertimeEntries([]);
     setRecoveryUses([]);
     setMecenatEntries([]);
+    setMecenatSignups([]);
     setFormProfile(null);
     setPayProfiles({});
     setPartnerEntries({});

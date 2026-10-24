@@ -170,6 +170,7 @@ export default function Home() {
     entries, setEntries, periods, setPeriods, formProfile, setFormProfile,
     payProfiles, setPayProfiles, overtimeEntries, setOvertimeEntries,
     recoveryUses, setRecoveryUses, mecenatEntries, setMecenatEntries,
+    mecenatSignups, setMecenatSignups,
     partnerEntries, setPartnerEntries, partnerPeriods, partnerSharingStatus,
   } = calendarData;
   const workTimeUi = useWorkTimeUiState();
@@ -180,7 +181,7 @@ export default function Home() {
     setMecenatDialogOpen, setSavingMecenat,
     savingOvertime, setSavingOvertime, overtimeDraft,
     solidarityDraft, setSolidarityDraft, recoveryDraft, setRecoveryDraft,
-    mecenatDraft, overtimeSaveInFlightRef, mecenatSaveInFlightRef,
+    mecenatDraft, setMecenatDraft, retainedSignupRef, overtimeSaveInFlightRef, mecenatSaveInFlightRef,
     lastOvertimeSubmissionRef, lastRecoverySubmissionRef, lastMecenatSubmissionRef,
   } = workTimeUi;
   const planningUi = usePlanningUiState();
@@ -602,7 +603,7 @@ export default function Home() {
     saveRecoveryRangeDates,
     deleteRecoveryUse,
     saveMecenatEntry,
-    deleteMecenatEntry,
+    deleteMecenatEntry, addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
     markMecenatsPaidEarly,
     deferMecenats,
     markOvertimePaidEarly,
@@ -616,6 +617,10 @@ export default function Home() {
     setOvertimeEntries,
     setRecoveryUses,
     setMecenatEntries,
+    mecenatSignups,
+    setMecenatSignups,
+    setMecenatDraft,
+    retainedSignupRef,
     overtimeDraft,
     solidarityDraft,
     setSolidarityDraft,
@@ -1017,6 +1022,7 @@ export default function Home() {
           actions={{
             openRequestChooser, openBlankForm, beginRequest, openManualAdjustments, saveCetAccount,
             deleteOvertimeEntry, deleteRecoveryUse, deleteMecenatEntry,
+            addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
           }}
         />
       ) : null}

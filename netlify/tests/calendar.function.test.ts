@@ -199,6 +199,8 @@ describe("API principale du calendrier", () => {
       "save-form-profile",
       "save-mecenat",
       "delete-mecenat",
+      "save-mecenat-signup",
+      "delete-mecenat-signup",
       "save-overtime",
       "delete-overtime",
       "save-recovery-use",
@@ -563,6 +565,18 @@ describe("API principale du calendrier", () => {
     await post({ action: "delete-recovery-use", id: "recovery-20260829" });
     await post({ action: "delete-overtime", id: "overtime-20260828" });
     await post({ action: "delete-mecenat", id: "mecenat-20260830" });
+    // Une date d'inscription à un mécénat : gardée, relue, puis effacée.
+    await post({ action: "save-mecenat-signup", id: "signup-20260912", date: "2026-09-12", start: "19:00", end: "22:30" });
+    expect(data.get("user/user-a/mecenat-signup/signup-20260912")).toMatchObject({ date: "2026-09-12", start: "19:00", end: "22:30" });
+    const readBack = await calendarHandler(new Request("https://example.test/api/calendar"));
+    expect(await readBack.json()).toMatchObject({ mecenat_signups: [{ id: "signup-20260912", date: "2026-09-12", start: "19:00", end: "22:30" }] });
+    // Sans horaires, ou avec des horaires mal formés, la date seule est gardée.
+    await post({ action: "save-mecenat-signup", id: "signup-20260913", date: "2026-09-13", start: "soir" });
+    expect(data.get("user/user-a/mecenat-signup/signup-20260913")).toEqual(expect.not.objectContaining({ start: expect.anything() }));
+    await post({ action: "delete-mecenat-signup", id: "signup-20260913" });
+    expect((await calendarHandler(request({ action: "save-mecenat-signup", date: "2026-13-40" }))).status).toBe(400);
+    await post({ action: "delete-mecenat-signup", id: "signup-20260912" });
+    expect(data.has("user/user-a/mecenat-signup/signup-20260912")).toBe(false);
 
     expect(data.has("user/user-a/period/bulk-period-2026")).toBe(false);
     expect(data.has("user/user-a/overtime/overtime-20260828")).toBe(false);

@@ -2,7 +2,7 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 import { calendarErrorMessage } from "./calendarApi";
 import { createClientId } from "./clientId";
-import { calculateMecenatVacation, type MecenatEntry } from "./mecenat";
+import { calculateMecenatVacation, type MecenatEntry, type MecenatSignup } from "./mecenat";
 import {
   defaultRecoveryMinutes,
   trainingRecoveryMinutes,
@@ -47,6 +47,10 @@ type WorkTimeActionsOptions = {
   setOvertimeEntries: SetState<OvertimeEntry[]>;
   setRecoveryUses: SetState<RecoveryUse[]>;
   setMecenatEntries: SetState<MecenatEntry[]>;
+  mecenatSignups: MecenatSignup[];
+  setMecenatSignups: SetState<MecenatSignup[]>;
+  setMecenatDraft: SetState<MecenatDraft>;
+  retainedSignupRef: { current: string | null };
   overtimeDraft: OvertimeDraft;
   solidarityDraft: SolidarityDraft;
   setSolidarityDraft: SetState<SolidarityDraft>;
@@ -152,6 +156,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
   const {
     demoMode, userEmail, group, formProfile, workQuota,
     recoveryBalanceRemaining, setOvertimeEntries, setRecoveryUses, setMecenatEntries,
+    mecenatSignups, setMecenatSignups, setMecenatDraft, retainedSignupRef,
     overtimeDraft, solidarityDraft, setSolidarityDraft, recoveryDraft, mecenatDraft,
     trainingRecoveryMode, recoveryRangeDates, setRecoveryRangeDates,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, setRecoveryRangeOpen,
@@ -425,6 +430,10 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
         current.some((item) => item.id === localEntry.id) ? current : [...current, localEntry],
       );
       setMecenatDialogOpen(false);
+      // La date d'inscription retenue a donné ce mécénat : elle quitte la liste.
+      const retained = mecenatSignups.find((signup) => signup.id === retainedSignupRef.current);
+      retainedSignupRef.current = null;
+      if (retained) await removeMecenatSignup(retained);
       confirmMessage(`Mécénat enregistré : ${euros(localEntry.grossAmountCents / 100)} brut, intégré automatiquement à la paie du mois suivant.`);
     } catch (error) {
       notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être enregistré."));
@@ -443,6 +452,53 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     } catch (error) {
       notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être supprimé."));
     }
+  }
+
+  async function removeMecenatSignup(signup: MecenatSignup) {
+    if (!demoMode) await post({ action: "delete-mecenat-signup", id: signup.id });
+    setMecenatSignups((current) => current.filter((item) => item.id !== signup.id));
+  }
+
+  /** Une date à laquelle on s'est inscrit pour un mécénat, à retenir ou à
+   *  effacer plus tard. */
+  async function addMecenatSignup(date: string, start = "", end = "") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      notify("Choisissez une date valide.");
+      return;
+    }
+    // Les deux heures, ou aucune : une seule ne dit rien.
+    const hours = start && end ? { start, end } : { start: "", end: "" };
+    if (mecenatSignups.some((signup) => signup.date === date && signup.start === hours.start)) {
+      notify("Cette date est déjà dans vos inscriptions.");
+      return;
+    }
+    const signup: MecenatSignup = { id: createClientId("signup"), date, ...hours, updatedAt: new Date().toISOString() };
+    try {
+      if (!demoMode) {
+        const result = await post<{ mecenat_signup?: { updated_at?: string } }>({ action: "save-mecenat-signup", id: signup.id, date, ...hours });
+        signup.updatedAt = result.mecenat_signup?.updated_at || signup.updatedAt;
+      }
+      setMecenatSignups((current) => [...current, signup].sort((a, b) => a.date.localeCompare(b.date)));
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La date d’inscription n’a pas pu être enregistrée."));
+    }
+  }
+
+  async function deleteMecenatSignup(signup: MecenatSignup) {
+    if (!(await confirmAction({ title: "Effacer cette date d’inscription ?", confirmLabel: "Effacer", tone: "danger" }))) return;
+    try {
+      await removeMecenatSignup(signup);
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La date d’inscription n’a pas pu être effacée."));
+    }
+  }
+
+  /** La date retenue : la déclaration s'ouvre, date et horaires déjà remplis ;
+   *  une fois le mécénat enregistré, la date d'inscription s'efface. */
+  function retainMecenatSignup(signup: MecenatSignup) {
+    retainedSignupRef.current = signup.id;
+    setMecenatDraft({ date: signup.date, start: signup.start, end: signup.end });
+    setMecenatDialogOpen(true);
   }
 
   /** Ces mécénats passent sur une autre paie : celle du bulletin qui les a
@@ -493,7 +549,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
   return {
     saveOvertimeEntry, saveSolidarityHours, deleteOvertimeEntry,
     saveRecoveryUse, beginRecoveryRangeSelection, cancelRecoveryRangeSelection,
-    saveRecoveryRangeDates, deleteRecoveryUse, saveMecenatEntry, deleteMecenatEntry,
+    saveRecoveryRangeDates, deleteRecoveryUse, saveMecenatEntry, deleteMecenatEntry, addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
     markMecenatsPaidEarly, deferMecenats, markOvertimePaidEarly,
   };
 }
