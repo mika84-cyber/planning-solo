@@ -243,8 +243,10 @@ export function AppHeader({
         </div>
       </div>
       {/* « Que cherchez-vous ? » : au même endroit dans chaque en-tête, en bas
-          à gauche, quelle que soit la longueur du titre. */}
-      {onOpenHelp ? (
+          à gauche, quelle que soit la longueur du titre. Une mise à jour en
+          attente prend sa place, en bas de l'en-tête : la pastille revient
+          une fois la mise à jour faite. */}
+      {onOpenHelp && !updateCallVisible ? (
         <button type="button" className="header-help-button" aria-haspopup="dialog" onClick={onOpenHelp}>
           <span className="header-help-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>

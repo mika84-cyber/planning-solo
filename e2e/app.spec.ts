@@ -6429,6 +6429,8 @@ test("une mise à jour ignorée laisse un bouton « Faire la mise à jour » dan
   await expect(call).toHaveCount(0);
   await page.getByRole("button", { name: "Plus tard" }).click();
   await expect(call).toBeVisible();
+  // Il prend la place de « Que cherchez-vous ? », qui ne le recouvre pas.
+  await expect(page.locator("header.top-header > .header-help-button")).toHaveCount(0);
   // Au milieu de l'image, sans chevaucher les boutons ronds.
   const [header, button, controls] = await Promise.all([
     page.locator("header.top-header").boundingBox(),

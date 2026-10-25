@@ -89,6 +89,8 @@ describe("AppShellChrome", () => {
       <AppShellChrome {...baseProps} shell={{ ...baseProps.shell, appUpdateAvailable: true }} />,
     );
     expect(call).toContain("Faire la mise à jour");
+    // La mise à jour en attente prend la place de « Que cherchez-vous ? ».
+    expect(call).not.toContain("header-help-button");
     const prompted = renderToStaticMarkup(
       <AppShellChrome {...baseProps} shell={{ ...baseProps.shell, appUpdateAvailable: true, appUpdatePromptOpen: true }} />,
     );
