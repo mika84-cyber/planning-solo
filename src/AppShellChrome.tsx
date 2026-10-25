@@ -108,7 +108,7 @@ export function AppShellChrome({
       case "radio": return open("pdf", "radio-codes");
       case "form": return open("pdf", "forms");
       case "work-accident": return open("pdf", "work-accident");
-      case "expo-dates": return open("program", "program-upcoming");
+      case "expo-dates": return open("program", "program-space");
       case "expo-folder": return open("pdf", "expo-folder");
       case "interexpo": return open("program", "program-interexpo");
       case "allowances": return openPay("allowances");

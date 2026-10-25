@@ -144,7 +144,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   (`requestHelpTarget` / `useHelpTarget`), lu par `UsefulResourcesHub`,
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,
   dossier Expo),
-  `GrandPalaisProgramSection` (onglets) et `LeaveManagementPage` (heures et
+  `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
+  « Par espace ») et `LeaveManagementPage` (heures et
   mécénats, CET). Une demande non servie s’oublie après 8 s.
 - `src/PlanningCommandCenter.tsx` et `src/PlanningDayCell.tsx` : commandes du
   calendrier et rendu interactif d’une journée.
@@ -205,6 +206,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande (préparée au repos par
   `src/warmUpScreens.ts`), navigation par espace et périodes d’inter expos.
+  « Par espace » montre une exposition à cheval sur deux années une seule
+  fois (`venueYearGroups`, même titre et mêmes dates) ; une exposition « À
+  confirmer » mais datée donne déjà son délai (« Dans 4 mois… »).
   Les tarifs (`src/grandPalaisProgramData.ts`) sont ceux de la fiche
   officielle, par grille nommée quand elle en a plusieurs (`group` :
   session du matin, nocturne…) et ses horaires à côté de son nom

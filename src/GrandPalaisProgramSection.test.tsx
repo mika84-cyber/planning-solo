@@ -25,9 +25,22 @@ import {
   proposalPricesLabel,
   safeGrandPalaisUrl,
   safeTicketingUrl,
+  venueYearGroups,
 } from "./GrandPalaisProgramSection";
 
 describe("programmation du Grand Palais", () => {
+  it("ne montre qu'une fois, dans son année de début, une exposition à cheval sur deux années", () => {
+    const groups = venueYearGroups(GRAND_PALAIS_PROGRAM.galleries34, [2026, 2027], "2026-10-26");
+    const cezanne = groups.flatMap((group) => group.entries.filter((entry) => entry.title === "Cezanne et nous").map(() => group.year));
+    expect(cezanne).toEqual([2026]);
+    expect(groups.find((group) => group.year === 2026)?.entries[0].period).toBe("Du 23 septembre 2026 au 17 janvier 2027");
+    // L'année suivante garde ses autres expositions.
+    expect(groups.find((group) => group.year === 2027)?.entries.map((entry) => entry.title)).toContain("Chagall");
+    // Un événement annuel du même nom reste dans chaque année.
+    const nef = venueYearGroups(GRAND_PALAIS_PROGRAM.nef, [2027, 2028, 2029], "2026-10-26");
+    expect(nef.filter((group) => group.entries.some((entry) => entry.title === "Art Basel Paris")).map((group) => group.year)).toEqual([2027, 2028, 2029]);
+  });
+
   it("bascule à 00 h 05 heure de Paris en été comme en hiver, pour tous les espaces", () => {
     for (const [before, after] of [["2026-09-22T22:04:59Z", "2026-09-22T22:05:00Z"], ["2026-01-22T23:04:59Z", "2026-01-22T23:05:00Z"]]) {
       const early = grandPalaisClock(new Date(before));
@@ -153,9 +166,17 @@ describe("programmation du Grand Palais", () => {
     expect(grandPalaisEntryStatus({
       title: "À venir", period: "", startsOn: "2026-09-05", endsOn: "2026-09-12",
     }, "2026-09-02")).toEqual({ label: "Prochainement", detail: "Commence dans 3 jours" });
+    // À confirmer, mais datée : le délai se donne déjà.
     expect(grandPalaisEntryStatus({
       title: "Prévisionnelle", period: "", uncertain: true, startsOn: "2026-09-05", endsOn: "2026-09-12",
-    }, "2026-09-02")).toEqual({ label: "À confirmer", detail: "" });
+    }, "2026-09-02")).toEqual({ label: "À confirmer", detail: "Commence dans 3 jours" });
+    expect(grandPalaisEntryStatus({ title: "Sans date", period: "Printemps 2027", uncertain: true }, "2026-09-02"))
+      .toEqual({ label: "À confirmer", detail: "" });
+    const duchamp = renderToStaticMarkup(
+      <ExpoCard entry={{ title: "Marcel Duchamp", period: "Du 23 mars au 1er août 2027", uncertain: true, startsOn: "2027-03-23", endsOn: "2027-08-01" }} venueKey="galleries34" today="2026-10-26" openingReady linkLabel="Voir" />,
+    );
+    expect(duchamp).toContain("<em>À confirmer</em>");
+    expect(duchamp).toContain('class="expo-card-status expo-card-countdown"><em>Dans 4 mois et 25 jours</em>');
   });
 
   it("retire automatiquement une exposition dont la date de fin est dépassée", () => {

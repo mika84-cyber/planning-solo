@@ -11,6 +11,7 @@ import type {
   GrandPalaisProgramData,
   GrandPalaisProgramEntry,
   GrandPalaisProgramYear,
+  GrandPalaisVenue,
   GrandPalaisVenueKey,
 } from "./grandPalaisProgramData";
 import type {
@@ -487,6 +488,30 @@ function leadInDates(item: { startsOn: string; endsOn: string }, today: string) 
   return `du ${leadInDay(item.startsOn, today, acrossYears)} au ${leadInDay(item.endsOn, today)}`;
 }
 
+/** Les expositions d'un espace, année par année. Une exposition à cheval sur
+ *  deux années (même titre, mêmes dates) n'y figure qu'une fois : dans
+ *  l'année où elle commence, avec sa période complète. Un événement qui
+ *  revient chaque année sous le même titre (Art Basel) reste dans chacune. */
+export function venueYearGroups(
+  venue: GrandPalaisVenue,
+  years: readonly GrandPalaisProgramYear[],
+  today: string,
+) {
+  const shown = new Set<string>();
+  return years
+    .map((year) => ({
+      year,
+      entries: (venue.schedule[year] ?? []).filter((entry) => {
+        if (!isGrandPalaisEntryVisible(entry, today)) return false;
+        const key = `${grandPalaisTitleKey(entry.title)}|${entry.startsOn ?? entry.period}|${entry.endsOn ?? ""}`;
+        if (shown.has(key)) return false;
+        shown.add(key);
+        return true;
+      }),
+    }))
+    .filter((group) => group.entries.length);
+}
+
 function venueYears(
   venueKey: string,
   today = new Date().toISOString().slice(0, 10),
@@ -538,8 +563,15 @@ export function grandPalaisEntryStatus(
   today = new Date().toISOString().slice(0, 10),
   openingReady = true,
 ) {
-  if (entry.uncertain || (!entry.startsOn && entry.currentlyOpen !== true))
-    return { label: "À confirmer", detail: "" };
+  if (!entry.startsOn && entry.currentlyOpen !== true) return { label: "À confirmer", detail: "" };
+  // À confirmer, mais avec des dates : on dit déjà dans combien de temps.
+  if (entry.uncertain) {
+    if (!entry.startsOn || entry.startsOn <= today) return { label: "À confirmer", detail: "" };
+    return {
+      label: "À confirmer",
+      detail: dayDistance(today, entry.startsOn) === 1 ? "Commence demain" : `Commence dans ${delayLabel(today, entry.startsOn)}`,
+    };
+  }
   if (isGrandPalaisEntryCurrent(entry, today, openingReady)) {
     const remaining = entry.endsOn ? Math.max(0, dayDistance(today, entry.endsOn)) : null;
     return {
@@ -607,7 +639,8 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
   linkLabel: string;
 }) {
   const status = grandPalaisEntryStatus(entry, today, openingReady);
-  const countdown = status.label === "Prochainement" ? status.detail.replace(/^Commence /, "") : "";
+  // Le compte à rebours d'une exposition à venir, même encore à confirmer.
+  const countdown = status.detail.startsWith("Commence ") ? status.detail.replace(/^Commence /, "") : "";
   const upcomingCountdown = countdown ? countdown.charAt(0).toUpperCase() + countdown.slice(1) : "";
   // Un tarif qui ne valait que pour un jour passé n'a plus à être montré.
   const visiblePrices = (entry.prices ?? []).filter((price) =>
@@ -635,7 +668,7 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
             ses dates : trop long pour tenir en haut à côté de la salle. */}
         <div className="expo-card-top">
           {venueLabel ? <span className="useful-expo-venue">{venueLabel}</span> : null}
-          {upcomingCountdown ? null : (
+          {upcomingCountdown && status.label !== "À confirmer" ? null : (
             <span className="expo-card-status">
               <em>{status.label}</em>
             </span>
@@ -826,6 +859,7 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
   useHelpTarget((target) => {
     const view: ProgramView | null = target === "program-now" ? "now"
       : target === "program-upcoming" ? "upcoming"
+      : target === "program-space" ? "space"
       : target === "program-interexpo" ? "interexpo" : null;
     if (!view) return false;
     setProgramView(view);
@@ -848,12 +882,9 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
   const years = useMemo(() => venueYears(selectedVenueKey, today, program), [selectedVenueKey, today, program]);
   const normalizedSearch = searchQuery.trim();
   // Une recherche a son propre panneau : chaque onglet montre tout son contenu.
-  // Un espace se lit année par année : chaque année en liste, ses expositions dessous.
-  const yearGroups = years
-    .map((year) => ({ year, entries: (venue.schedule[year] ?? []).filter((entry) => isGrandPalaisEntryVisible(entry, today)) }))
-    .filter((group) => group.entries.length);
-  // Une exposition à cheval sur deux années figure dans les deux listes, mais
-  // ne compte qu'une fois, comme dans le badge du choix de l'espace.
+  // Un espace se lit année par année : chaque année en liste, ses expositions
+  // dessous, une exposition à cheval sur deux années une seule fois.
+  const yearGroups = venueYearGroups(venue, years, today);
   const venueTotal = new Set(yearGroups.flatMap((group) => group.entries.map((entry) => entry.title))).size;
   // Choisir un espace mène directement à ses expositions, sans descendre soi-même.
   const venuePanelRef = useRef<HTMLElement | null>(null);

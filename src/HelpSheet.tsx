@@ -39,7 +39,7 @@ const QUESTIONS: Record<"find" | "pay" | "declare", Question[]> = {
     { id: "phone", icon: "phone", tone: "blue", question: "Un numéro de téléphone", where: "Docs · Contacts" },
     { id: "form", icon: "form", tone: "blue", question: "Un formulaire", where: "Docs · Formulaires" },
     { id: "planning-pdf", icon: "download", tone: "blue", question: "Télécharger un planning", where: "Plannings en PDF" },
-    { id: "expo-dates", icon: "expo", tone: "teal", question: "Les dates d’une exposition", where: "Expos · À venir" },
+    { id: "expo-dates", icon: "expo", tone: "teal", question: "Les dates d’une exposition", where: "Expos · Par espace" },
     // L'exposition des Galeries 3 et 4 vient ici (voir GalleryExpoRow).
     { id: "interexpo", icon: "inter", tone: "teal", question: "Les dates d’inter-expos", where: "Expos · Inter-expos" },
     { id: "radio", icon: "radio", tone: "red", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio" },

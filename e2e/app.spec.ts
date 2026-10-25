@@ -6552,6 +6552,10 @@ test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la
   await help.click();
   await sheet.getByRole("button", { name: /Ouvrir ou alimenter mon CET/ }).click();
   await expect(page.locator("details.cet-disclosure")).toHaveAttribute("open", "");
+  // Les dates d'une exposition : l'onglet « Par espace ».
+  await help.click();
+  await sheet.getByRole("button", { name: /Les dates d’une exposition/ }).click();
+  await expect(page.getByRole("heading", { name: "Choisir un espace" })).toBeVisible();
   // Un onglet des Expos.
   await help.click();
   await sheet.getByRole("button", { name: /Les dates d’inter-expos/ }).click();

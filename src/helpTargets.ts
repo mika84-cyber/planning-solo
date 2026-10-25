@@ -14,6 +14,7 @@ export type HelpTarget =
   | "expo-folder"
   | "program-now"
   | "program-upcoming"
+  | "program-space"
   | "program-interexpo"
   | "overtime-mecenat"
   | "cet";
