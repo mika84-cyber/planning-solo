@@ -110,7 +110,7 @@ type AppHeaderProps = {
   onOpenMainMenu: () => void;
   onCheckForUpdate: () => void;
   onOpenAdminTools?: () => void;
-  /** « Besoin d'aide ? » : ouvre la fenêtre des questions. */
+  /** « Que cherchez-vous ? » : ouvre la fenêtre des questions. */
   onOpenHelp?: () => void;
 };
 
@@ -157,6 +157,13 @@ export function AppHeader({
             <><span className="header-title-line">Documents et</span>{" "}<span className="header-title-line">contacts</span></>
           ) : headerTitle(homeSection, payScreen)}
         </h1>
+        {/* Sous le nom de la page, une pastille crème à ses couleurs. */}
+        {onOpenHelp ? (
+          <button type="button" className="header-help-button" aria-haspopup="dialog" onClick={onOpenHelp}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
+            Que cherchez-vous ?
+          </button>
+        ) : null}
       </div>
       {/* Mise à jour en attente : un bouton bien visible au milieu de l'image
           de l'en-tête, jusqu'à ce qu'elle soit faite. */}
@@ -242,12 +249,6 @@ export function AppHeader({
           </button>
         </div>
       </div>
-      {/* En bas à droite de chaque en-tête, aux couleurs de la page. */}
-      {onOpenHelp ? (
-        <button type="button" className="header-help-button" aria-haspopup="dialog" onClick={onOpenHelp}>
-          Besoin d’aide ?
-        </button>
-      ) : null}
     </header>
   );
 }

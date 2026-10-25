@@ -203,7 +203,7 @@ function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: Hel
 }
 
 /**
- * « Que cherchez-vous ? » : la fenêtre ouverte par « Besoin d'aide ? » dans
+ * « Que cherchez-vous ? » : la fenêtre ouverte par la pastille du même nom dans
  * l'en-tête de chaque page. Trois groupes de questions ; chacune ouvre
  * directement la page, l'onglet ou la sous-page qui y répond.
  */

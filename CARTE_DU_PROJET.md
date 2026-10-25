@@ -130,10 +130,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   test de rendu (`renderToStaticMarkup`, rubriques différées remplacées par
   des témoins ou rendues après leur chargement).
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
-- « Besoin d’aide ? » : une petite pastille de texte en bas à droite de
-  l’en-tête de chaque page (`AppHeader`, style dans `src/pageHeaders.css`),
-  même surface que les trois commandes du haut, le texte à la couleur foncée
-  de l’en-tête. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
+- « Que cherchez-vous ? » : une petite pastille crème, loupe et texte, sous
+  le nom de chaque page dans l’en-tête (`AppHeader`, style dans
+  `src/pageHeaders.css`), même surface que les trois commandes du haut, le
+  texte à la couleur foncée de l’en-tête. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
   demande) : « Que cherchez-vous ? », trois groupes (Trouver, Ma paie,
   Déclarer). L’exposition des Galeries 3 et 4 (`galleryExpoFor`) y a deux
   lignes à son nom : sa fiche d’expo, le PDF du dossier Expo téléchargé d’un

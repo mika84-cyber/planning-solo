@@ -6521,10 +6521,10 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
   expect(checkRequested).toBe(true);
 });
 
-test("« Besoin d’aide ? » ouvre, de n’importe quelle page, la page ou la sous-page qui répond", async ({ page }) => {
+test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la sous-page qui répond", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
-  const help = page.locator("header.top-header").getByRole("button", { name: "Besoin d’aide ?" });
+  const help = page.locator("header.top-header").getByRole("button", { name: "Que cherchez-vous ?" });
   const sheet = page.getByRole("dialog", { name: "Que cherchez-vous ?" });
   // Une sous-page d'une autre rubrique : les codes radio, dans Contacts.
   await help.click();
