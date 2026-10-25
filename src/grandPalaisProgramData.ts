@@ -185,13 +185,9 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           uncertain: true,
         },
       ],
+      // Projet #10 se termine début janvier 2029 : il ne figure qu'en 2028,
+      // l'année où il commence.
       2029: [
-        {
-          title: "Projet #10",
-          period: "Jusqu’au début janvier 2029",
-          details: "Calendrier prévisionnel",
-          uncertain: true,
-        },
         {
           title: "Jean Arp & Sophie Taeuber-Arp",
           period: "De mars à juillet 2029",

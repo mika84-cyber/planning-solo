@@ -54,6 +54,22 @@ type UsefulFormsFolder = {
   image?: { src: string; alt: string };
 };
 
+/** Télécharge un document sous le nom donné (formulaires utiles, fiche
+ *  d'expo de « Que cherchez-vous ? »). Lève une erreur si le serveur refuse. */
+export async function downloadUsefulFile(href: string, name: string) {
+  const response = await fetch(href, { credentials: "same-origin" });
+  if (!response.ok) throw new Error(`Téléchargement impossible (${response.status})`);
+  const objectUrl = URL.createObjectURL(await response.blob());
+  const downloadLink = window.document.createElement("a");
+  downloadLink.href = objectUrl;
+  downloadLink.download = name;
+  downloadLink.rel = "noopener";
+  window.document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+}
+
 export function getUsefulFormAction(format: UsefulFormDocument["format"], secureContext: boolean) {
   return !secureContext && format === "PDF" ? "preview" : "download";
 }
@@ -247,18 +263,7 @@ export function UsefulFormsSection({
     setDownloadError("");
 
     try {
-      const response = await fetch(event.currentTarget.href, { credentials: "same-origin" });
-      if (!response.ok) throw new Error(`Téléchargement impossible (${response.status})`);
-
-      const objectUrl = URL.createObjectURL(await response.blob());
-      const downloadLink = window.document.createElement("a");
-      downloadLink.href = objectUrl;
-      downloadLink.download = file;
-      downloadLink.rel = "noopener";
-      window.document.body.appendChild(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+      await downloadUsefulFile(event.currentTarget.href, file);
     } catch {
       setDownloadError("Le téléchargement n’a pas pu démarrer. Vérifiez votre connexion puis réessayez.");
     } finally {

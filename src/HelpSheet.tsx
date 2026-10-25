@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { NAVIGATION_ICON_PATHS } from "./AppNavigation";
 import { GRAND_PALAIS_PROGRAM, grandPalaisTitleKey } from "./grandPalaisProgramData";
 import type { GrandPalaisProgramEntry } from "./grandPalaisProgramData";
 import "./helpSheet.css";
-import { getUsefulFormAction, usefulFormFoldersForDate } from "./UsefulFormsSection";
+import { downloadUsefulFile, getUsefulFormAction, usefulFormFoldersForDate } from "./UsefulFormsSection";
 import { getSharedUsefulDocuments } from "./usefulDocumentsApi";
 
 /** Ce que chaque question ouvre ; App.tsx fait le chemin. */
@@ -16,7 +17,7 @@ const ICONS: Record<string, ReactNode> = {
   phone: icon(<path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" />),
   form: icon(<><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4M10 12h5M10 16h5" /></>),
   download: icon(<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" />),
-  expo: icon(<path d="M4 20h16M6 20V10M10 20V10M14 20V10M18 20V10M3 10l9-6 9 6" />),
+  expo: icon(<path d={NAVIGATION_ICON_PATHS.program} />),
   picture: icon(<><rect x="4" y="4" width="16" height="16" rx="2" /><path d="m4 15 4-4 4 4 3-3 5 5" /><circle cx="15.5" cy="8.5" r="1.3" /></>),
   inter: icon(<><rect x="3" y="7" width="7" height="10" rx="1" /><rect x="14" y="7" width="7" height="10" rx="1" /><path d="M10 12h4" /></>),
   radio: icon(<><rect x="7" y="7" width="10" height="14" rx="2" /><path d="M14 7V3M10 11h4M10 14.5h4" /></>),
@@ -27,7 +28,7 @@ const ICONS: Record<string, ReactNode> = {
   accident: icon(<><path d="M12 4 3 20h18z" /><path d="M12 10v4.5M12 17.2v.3" /></>),
   leave: icon(<><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4" /></>),
   share: icon(<path d="M10 14 21 3M21 3l-6.5 18-3.5-7-7-3.5z" />),
-  sun: icon(<path d="M12 3.5v1.5M5.6 6.6l1.1 1.1M18.4 6.6l-1.1 1.1M3 13h2m14 0h2M8 13a4 4 0 0 1 8 0M3 17.5c1.5 0 1.5 1 3 1s1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1" />),
+  sun: icon(<path d={NAVIGATION_ICON_PATHS.leave} />),
   swap: icon(<path d="M7 7h12l-3.5-3.5M17 17H5l3.5 3.5" />),
   piggy: icon(<><path d="M5 11a7 6 0 0 1 12.5-3.3L20 7l-.6 3.3A6 6 0 0 1 18 15v4h-3v-2h-4v2H8v-3.4A6 6 0 0 1 5 11Z" /><path d="M10 8h3" /></>),
   headphones: icon(<><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3.5" y="14" width="4" height="6" rx="1.5" /><rect x="16.5" y="14" width="4" height="6" rx="1.5" /></>),
@@ -87,21 +88,8 @@ export function expoSheetFor(title: string, documents: ExpoDocument[]) {
 }
 
 async function downloadDocument(href: string, name: string) {
-  if (getUsefulFormAction("PDF", window.isSecureContext) === "preview") {
-    window.open(href, "_blank", "noopener");
-    return;
-  }
-  const response = await fetch(href, { credentials: "same-origin" });
-  if (!response.ok) throw new Error(String(response.status));
-  const objectUrl = URL.createObjectURL(await response.blob());
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.download = name;
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+  if (getUsefulFormAction("PDF", window.isSecureContext) === "preview") window.open(href, "_blank", "noopener");
+  else await downloadUsefulFile(href, name);
 }
 
 function QuestionRow({ item, onChoose }: { item: Question; onChoose: (id: HelpChoice) => void }) {
