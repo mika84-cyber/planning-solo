@@ -21,6 +21,7 @@ describe("fenêtre d'aide", () => {
       "Un numéro de téléphone",
       "Un formulaire",
       "Télécharger un planning",
+      "Partager mon planning avec un(e) collègue",
       "Les dates d’une exposition",
       "Fiche d’expo · Cezanne et nous",
       "Audioguide · Cezanne et nous",
@@ -31,7 +32,7 @@ describe("fenêtre d'aide", () => {
     const group = (label: string, next: string) => html.slice(html.indexOf(`aria-label="${label}"`), next ? html.indexOf(next) : undefined);
     const titles = (part: string) => [...part.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
     expect(titles(group("Ma paie", "Déclarer</h3>"))).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie"]);
-    expect(titles(group("Déclarer", ""))).toEqual(["Un mécénat ou des heures supp", "Une absence ou un échange", "Ouvrir ou alimenter mon CET", "Un accident de travail"]);
+    expect(titles(group("Déclarer", ""))).toEqual(["Poser un congé", "Échanger un jour avec un collègue", "Un mécénat ou des heures supp", "Une absence ou un échange", "Ouvrir ou alimenter mon CET", "Un accident de travail"]);
     expect(html).not.toContain("help-sheet-lead");
   });
 

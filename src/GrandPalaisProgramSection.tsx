@@ -856,18 +856,14 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
   const [healthBusy, setHealthBusy] = useState(false);
   const [healthError, setHealthError] = useState("");
   const [programView, setProgramView] = useState<ProgramView>("now");
-  // La fenêtre d'aide ouvre directement l'onglet voulu.
+  // La fenêtre d'aide ouvre directement l'onglet voulu et y descend : les
+  // dates d'une exposition au choix des espaces, les inter-expos au détail
+  // des expositions et des périodes.
   useHelpTarget((target) => {
-    const view: ProgramView | null = target === "program-now" ? "now"
-      : target === "program-upcoming" ? "upcoming"
-      : target === "program-space" ? "space"
-      : target === "program-interexpo" ? "interexpo" : null;
-    if (!view) return false;
+    if (target !== "program-space" && target !== "program-interexpo") return false;
+    const view = target === "program-space" ? "space" : "interexpo";
     setProgramView(view);
-    // Les dates d'une exposition : le choix des espaces ; les inter-expos :
-    // le détail des expositions et des périodes.
-    if (view === "space") scrollWhenReady("grand-palais-spaces");
-    if (view === "interexpo") scrollWhenReady("grand-palais-interexpo");
+    scrollWhenReady(`grand-palais-${view === "space" ? "spaces" : "interexpo"}`);
     return true;
   });
   const [searchQuery, setSearchQuery] = useState("");

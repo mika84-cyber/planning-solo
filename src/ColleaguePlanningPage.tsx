@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useHelpTarget } from "./helpTargets";
 import { useConfirm } from "./confirmDialog";
 import { getDayInfo, MONTHS } from "./planningLogic";
 import { WORK_POSTS, type PersonalPresence, type WorkPost } from "./appModel";
@@ -418,6 +419,13 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const [groupsOpen, setGroupsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  // « Partager mon planning » depuis « Que cherchez-vous ? » : la liste des
+  // collègues s'ouvre directement.
+  useHelpTarget((target) => {
+    if (target !== "colleague-share") return false;
+    setShareOpen(true);
+    return true;
+  });
   const [weekOffset, setWeekOffset] = useState(0);
   const [tomorrowFailed, setTomorrowFailed] = useState<string[]>([]);
   const [tomorrowAttempt, setTomorrowAttempt] = useState(0);

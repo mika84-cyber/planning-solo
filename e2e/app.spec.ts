@@ -6525,6 +6525,8 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
 });
 
 test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la sous-page qui répond", async ({ page }) => {
+  // Une dizaine de raccourcis parcourus l'un après l'autre : plus que la minute ordinaire.
+  test.setTimeout(120_000);
   await prepareDemo(page);
   await goToSection(page, "leave");
   const help = page.locator("header.top-header").getByRole("button", { name: "Que cherchez-vous ?" });
@@ -6551,6 +6553,21 @@ test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la
   await help.click();
   await sheet.getByRole("button", { name: /^Fiche d’expo · / }).click();
   await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
+  // Poser un congé, faire un échange : leurs fenêtres s'ouvrent directement.
+  await help.click();
+  await sheet.getByRole("button", { name: /^Poser un congé/ }).click();
+  await expect(page.getByRole("dialog", { name: "Poser un congé" })).toBeVisible();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: "Fermer" }).click();
+  await help.click();
+  await sheet.getByRole("button", { name: /^Échanger un jour avec un collègue/ }).click();
+  await expect(page.getByRole("dialog", { name: "Faire un échange" })).toBeVisible();
+  await page.getByRole("dialog", { name: "Faire un échange" }).getByRole("button", { name: "Fermer" }).click();
+  // Partager mon planning : la liste des collègues du planning partagé.
+  await help.click();
+  await sheet.getByRole("button", { name: /^Partager mon planning/ }).click();
+  await expect(page.getByRole("dialog", { name: "Partager mon planning" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toBeVisible();
+  await page.keyboard.press("Escape");
   // Un volet de Congés : le CET s'ouvre.
   await help.click();
   await sheet.getByRole("button", { name: /Ouvrir ou alimenter mon CET/ }).click();

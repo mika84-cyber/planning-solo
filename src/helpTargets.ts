@@ -12,12 +12,11 @@ export type HelpTarget =
   | "forms"
   | "work-accident"
   | "expo-folder"
-  | "program-now"
-  | "program-upcoming"
   | "program-space"
   | "program-interexpo"
   | "overtime-mecenat"
-  | "cet";
+  | "cet"
+  | "colleague-share";
 
 const HELP_TARGET_EVENT = "planning:help-target";
 /** Une demande non servie s'oublie : elle ne doit pas rouvrir un onglet plus

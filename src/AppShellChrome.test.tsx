@@ -51,7 +51,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
   feedbackMessaging: { unreadCount: 0 },
   notify: noop,
   showSuccess: noop,
-  help: { openPlanningPdf: noop, openBlankForm: noop },
+  help: { openPlanningPdf: noop, openBlankForm: noop, requestLeave: noop, openExchange: noop },
   actions: { navigateFromShell: noop, checkForAppUpdate: noop, disconnect: noop },
 };
 

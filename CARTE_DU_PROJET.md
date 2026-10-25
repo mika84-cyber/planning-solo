@@ -146,7 +146,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   (`requestHelpTarget` / `useHelpTarget`), lu par `UsefulResourcesHub`,
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,
   dossier Expo),
-  `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
+  `ColleaguePlanningPage` (« Partager mon planning » ouvre la liste des
+  collègues), `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
   « Par espace » et descendent au choix des espaces, les inter-expos au
   détail des périodes) et `LeaveManagementPage` (heures et
   mécénats, CET). Une demande non servie s’oublie après 8 s.

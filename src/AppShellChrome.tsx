@@ -60,7 +60,7 @@ type Props = {
   showSuccess: ReturnType<typeof useToast>["confirm"];
   /** Ce que la fenêtre d'aide ouvre hors des pages : les plannings PDF de
    *  l'accueil et le formulaire de demande vierge. */
-  help: { openPlanningPdf: () => void; openBlankForm: () => void };
+  help: { openPlanningPdf: () => void; openBlankForm: () => void; requestLeave: () => void; openExchange: () => void };
   actions: Pick<ReturnType<typeof useSectionNavigation>, "navigateFromShell">
     & Pick<ReturnType<typeof useShellEffects>, "checkForAppUpdate">
     & Pick<ReturnType<typeof useAuthenticationActions>, "disconnect">;
@@ -124,6 +124,15 @@ export function AppShellChrome({
         help.openPlanningPdf();
         return;
       case "request-form": return help.openBlankForm();
+      case "share-planning": return open("colleagues", "colleague-share");
+      case "request-leave":
+        open("home");
+        help.requestLeave();
+        return;
+      case "exchange":
+        open("home");
+        help.openExchange();
+        return;
     }
   };
   return (
