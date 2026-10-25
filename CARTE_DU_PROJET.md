@@ -130,8 +130,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   test de rendu (`renderToStaticMarkup`, rubriques différées remplacées par
   des témoins ou rendues après leur chargement).
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
-- « Que cherchez-vous ? » : une petite pastille crème, loupe et texte, sous
-  le nom de chaque page dans l’en-tête (`AppHeader`, style dans
+- « Que cherchez-vous ? » : une petite pastille crème au même endroit de
+  chaque en-tête, en bas à gauche, le titre centré au-dessus — loupe dans un
+  rond, flèche au bout, entière dans la partie foncée avant la diagonale (`AppHeader`, style dans
   `src/pageHeaders.css`), même surface que les trois commandes du haut, le
   texte à la couleur foncée de l’en-tête. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
   demande) : « Que cherchez-vous ? », trois groupes (Trouver, Ma paie,

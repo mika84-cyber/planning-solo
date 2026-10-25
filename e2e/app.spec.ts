@@ -2320,8 +2320,9 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   expect(Math.abs(formsScreenBox.width - resourcesScreenBox.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
   expect(Math.abs(formsHeaderBox.width - homeHeaderBox.width)).toBeLessThan(0.5);
-  // La hauteur commune des en-têtes : 170 px sur téléphone, 150 puis 156 en grand.
-  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 600 ? 170 : (page.viewportSize()?.width ?? 1000) <= 720 ? 150 : 156))).toBeLessThan(0.5);
+  // La hauteur commune des en-têtes : 170 px sur téléphone, 176 en grand pour
+  // laisser un titre de deux lignes au-dessus de « Que cherchez-vous ? ».
+  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 600 ? 170 : 176))).toBeLessThan(0.5);
   await expect(formsHeader.locator(".header-update-button")).toHaveCount(1);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     // Le même corps de titre sur toutes les pages, sur deux lignes au besoin.

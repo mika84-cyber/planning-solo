@@ -147,7 +147,8 @@ html[data-theme="dark"] .app-shell .pay-bulletin .pay-bulletin-shortcut + .pay-b
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-shortcut em { background: #3d2a22; color: #f0c3ad; }
 
 /* « Que cherchez-vous ? » : texte clair sur la surface sombre des commandes. */
-html[data-theme="dark"] .app-shell .top-header .top-header-title .header-help-button { color: #f3eee8; }
+html[data-theme="dark"] .app-shell .top-header > .header-help-button { color: #f3eee8; }
+html[data-theme="dark"] .header-help-mark { background: #f3eee8; color: var(--header-a); }
 /* La fenêtre d'aide : titres de groupe éclaircis, icônes gardant leur
    teinte. */
 html[data-theme="dark"] .help-sheet h3 { color: color-mix(in srgb, var(--help-accent) 25%, #ecd9cc); }

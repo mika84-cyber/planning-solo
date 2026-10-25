@@ -157,13 +157,6 @@ export function AppHeader({
             <><span className="header-title-line">Documents et</span>{" "}<span className="header-title-line">contacts</span></>
           ) : headerTitle(homeSection, payScreen)}
         </h1>
-        {/* Sous le nom de la page, une pastille crème à ses couleurs. */}
-        {onOpenHelp ? (
-          <button type="button" className="header-help-button" aria-haspopup="dialog" onClick={onOpenHelp}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
-            Que cherchez-vous ?
-          </button>
-        ) : null}
       </div>
       {/* Mise à jour en attente : un bouton bien visible au milieu de l'image
           de l'en-tête, jusqu'à ce qu'elle soit faite. */}
@@ -249,6 +242,17 @@ export function AppHeader({
           </button>
         </div>
       </div>
+      {/* « Que cherchez-vous ? » : au même endroit dans chaque en-tête, en bas
+          à gauche, quelle que soit la longueur du titre. */}
+      {onOpenHelp ? (
+        <button type="button" className="header-help-button" aria-haspopup="dialog" onClick={onOpenHelp}>
+          <span className="header-help-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
+          </span>
+          Que cherchez-vous ?
+          <span className="header-help-go" aria-hidden="true">›</span>
+        </button>
+      ) : null}
     </header>
   );
 }

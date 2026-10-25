@@ -62,8 +62,9 @@ describe("AppShellChrome", () => {
     expect(html).toContain('data-section="home"');
     expect(html).toContain('aria-label="Navigation principale"');
     expect(html).toContain('data-section="home" class="active" aria-current="page"');
-    // « Que cherchez-vous ? » sous le nom de la page ; la fenêtre reste fermée.
-    expect(html).toMatch(/<\/h1><button type="button" class="header-help-button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true">.*?<\/svg>Que cherchez-vous \?<\/button><\/div>/);
+    // « Que cherchez-vous ? » au même endroit de chaque en-tête, hors du
+    // titre ; la fenêtre reste fermée.
+    expect(html).toMatch(/<button type="button" class="header-help-button" aria-haspopup="dialog"><span class="header-help-mark" aria-hidden="true"><svg .*?<\/svg><\/span>Que cherchez-vous \?<span class="header-help-go" aria-hidden="true">›<\/span><\/button><\/header>/);
     expect(html).not.toContain("help-sheet");
     // Fermés : ni menu principal, ni aperçu invité, ni proposition d’installation.
     expect(html).not.toContain("Menu principal");
