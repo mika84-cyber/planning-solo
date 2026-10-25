@@ -70,8 +70,8 @@ export function WorkAccidentSection({
       </header>
 
       <div className="work-accident-status" role="group" aria-label="Votre statut">
-        <button type="button" className={status === "contractuel" ? "active" : ""} onClick={() => setStatus("contractuel")}>Contractuel</button>
-        <button type="button" className={status === "fonctionnaire" ? "active" : ""} onClick={() => setStatus("fonctionnaire")}>Fonctionnaire</button>
+        <button type="button" className={status === "contractuel" ? "active" : ""} aria-pressed={status === "contractuel"} onClick={() => setStatus("contractuel")}>Contractuel</button>
+        <button type="button" className={status === "fonctionnaire" ? "active" : ""} aria-pressed={status === "fonctionnaire"} onClick={() => setStatus("fonctionnaire")}>Fonctionnaire</button>
       </div>
 
       <section className="work-accident-card work-accident-primary-documents">

@@ -6559,10 +6559,14 @@ test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la
   await help.click();
   await sheet.getByRole("button", { name: /Les dates d’une exposition/ }).click();
   await expect(page.getByRole("heading", { name: "Choisir un espace" })).toBeVisible();
+  // La page descend d'elle-même jusqu'au choix des espaces.
+  await expect(page.locator("#grand-palais-spaces")).toBeInViewport();
   // Un onglet des Expos.
   await help.click();
   await sheet.getByRole("button", { name: /Les dates d’inter-expos/ }).click();
   await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();
+  // … et jusqu'au détail des expositions et des inter-expos.
+  await expect(page.locator("#grand-palais-interexpo")).toBeInViewport();
   // Un écran de Ma paie, et la fenêtre se ferme d'un toucher sur la croix.
   await help.click();
   await sheet.getByRole("button", { name: /Le détail de mes primes/ }).click();

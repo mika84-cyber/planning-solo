@@ -24,17 +24,24 @@
 }
 .work-accident-header h2 { margin: 2px 0 4px; font-size: clamp(25px, 4vw, 38px); line-height: 1.05; }
 .work-accident-header p { margin: 0; color: var(--muted); }
+/* Contractuel / Fonctionnaire : un sélecteur en pilule. Le statut choisi se
+   détache en blanc, texte foncé, liseré et point d'accent ; l'autre reste en
+   retrait, avec un point vide. */
 .work-accident-status {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 4px;
   margin-bottom: 16px;
-  border-radius: 18px;
-  padding: 6px;
-  background: var(--surface);
+  border: 1px solid rgba(44, 38, 33, 0.22);
+  border-radius: 999px;
+  padding: 4px;
+  background: #efe7de;
 }
-.work-accident-status button { min-height: 44px; border: 1.5px solid transparent; border-radius: 12px; color: var(--muted); font-weight: 800; background: transparent; }
-.work-accident-status button.active { border-color: var(--border-card); color: var(--border-card); background: var(--surface); box-shadow: 0 5px 14px var(--border-card); }
+.work-accident-status button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; margin: 0; border: 0; border-radius: 999px; padding: 0 12px; color: var(--muted); font: inherit; font-weight: 750; background: transparent; box-shadow: none; cursor: pointer; transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
+.work-accident-status button::before { content: ""; flex: none; width: 9px; height: 9px; border: 1.5px solid currentColor; border-radius: 50%; opacity: 0.55; }
+.work-accident-status button.active { color: var(--text); font-weight: 800; background: #fff; box-shadow: 0 0 0 1.5px rgba(44, 38, 33, 0.55), 0 6px 14px -8px rgba(44, 38, 33, 0.55); }
+.work-accident-status button.active::before { border-color: var(--accent); background: var(--accent); opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .work-accident-status button { transition: none; } }
 .work-accident-urgent {
   margin-bottom: 16px;
   border: 1.5px solid #d94848;

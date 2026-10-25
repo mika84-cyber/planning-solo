@@ -8,9 +8,14 @@ describe("fenêtre d'aide", () => {
     const html = renderToStaticMarkup(<HelpSheet today="2026-10-26" section="leave" onChoose={vi.fn()} onClose={vi.fn()} />);
     expect(html).toMatch(/^<dialog class="help-sheet" data-section="leave" aria-label="Que cherchez-vous \?">/);
     expect(html).toContain('<h2 id="help-sheet-title">Que cherchez-vous ?</h2>');
-    expect(html.indexOf("<h3>Trouver</h3>")).toBeLessThan(html.indexOf("<h3>Ma paie</h3>"));
-    expect(html.indexOf("<h3>Ma paie</h3>")).toBeLessThan(html.indexOf("<h3>Déclarer</h3>"));
-    const find = html.slice(html.indexOf('aria-label="Trouver"'), html.indexOf("<h3>Ma paie</h3>"));
+    // Une couleur par groupe : Trouver, Ma paie, Déclarer.
+    expect(html).toContain('<h3 class="help-sheet-group-title group-find">Trouver</h3><ul class="help-sheet-group group-find" aria-label="Trouver">');
+    expect(html).toContain('<ul class="help-sheet-group group-pay" aria-label="Ma paie">');
+    expect(html).toContain('<ul class="help-sheet-group group-declare" aria-label="Déclarer">');
+    expect(html).not.toContain("tone-");
+    expect(html.indexOf("Trouver</h3>")).toBeLessThan(html.indexOf("Ma paie</h3>"));
+    expect(html.indexOf("Ma paie</h3>")).toBeLessThan(html.indexOf("Déclarer</h3>"));
+    const find = html.slice(html.indexOf('aria-label="Trouver"'), html.indexOf("Ma paie</h3>"));
     const questions = [...find.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
     expect(questions).toEqual([
       "Un numéro de téléphone",
@@ -22,8 +27,12 @@ describe("fenêtre d'aide", () => {
       "Les dates d’inter-expos",
       "Un code radio d’urgence",
     ]);
-    for (const question of ["Le détail de mes primes", "Vérifier un bulletin", "Comprendre ma paie", "Un mécénat ou des heures sup", "Un accident de travail", "Une absence ou un échange", "Ouvrir ou alimenter mon CET"])
-      expect(html).toContain(`<strong>${question}</strong>`);
+    // Ma paie et Déclarer, dans l'ordre demandé.
+    const group = (label: string, next: string) => html.slice(html.indexOf(`aria-label="${label}"`), next ? html.indexOf(next) : undefined);
+    const titles = (part: string) => [...part.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
+    expect(titles(group("Ma paie", "Déclarer</h3>"))).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie"]);
+    expect(titles(group("Déclarer", ""))).toEqual(["Un mécénat ou des heures supp", "Une absence ou un échange", "Ouvrir ou alimenter mon CET", "Un accident de travail"]);
+    expect(html).not.toContain("help-sheet-lead");
   });
 
   it("donne à l'exposition des Galeries 3 et 4 deux lignes : sa fiche et son audioguide", () => {

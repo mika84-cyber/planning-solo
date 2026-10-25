@@ -11,8 +11,6 @@ export type HelpChoice =
   | "allowances" | "payslip-check" | "pay-detail"
   | "overtime-mecenat" | "work-accident" | "request-form" | "cet";
 
-type Tone = "blue" | "teal" | "green" | "terra" | "red";
-
 const icon = (path: ReactNode) => <svg viewBox="0 0 24 24" aria-hidden="true">{path}</svg>;
 const ICONS: Record<string, ReactNode> = {
   phone: icon(<path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" />),
@@ -32,28 +30,28 @@ const ICONS: Record<string, ReactNode> = {
   headphones: icon(<><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3.5" y="14" width="4" height="6" rx="1.5" /><rect x="16.5" y="14" width="4" height="6" rx="1.5" /></>),
 };
 
-type Question = { id: HelpChoice; icon: string; tone: Tone; question: string; where: string };
+type Question = { id: HelpChoice; icon: string; question: string; where: string };
 
 const QUESTIONS: Record<"find" | "pay" | "declare", Question[]> = {
   find: [
-    { id: "phone", icon: "phone", tone: "blue", question: "Un numéro de téléphone", where: "Docs · Contacts" },
-    { id: "form", icon: "form", tone: "blue", question: "Un formulaire", where: "Docs · Formulaires" },
-    { id: "planning-pdf", icon: "download", tone: "blue", question: "Télécharger un planning", where: "Plannings en PDF" },
-    { id: "expo-dates", icon: "expo", tone: "teal", question: "Les dates d’une exposition", where: "Expos · Par espace" },
+    { id: "phone", icon: "phone", question: "Un numéro de téléphone", where: "Docs · Contacts" },
+    { id: "form", icon: "form", question: "Un formulaire", where: "Docs · Formulaires" },
+    { id: "planning-pdf", icon: "download", question: "Télécharger un planning", where: "Plannings en PDF" },
+    { id: "expo-dates", icon: "expo", question: "Les dates d’une exposition", where: "Expos · Par espace" },
     // L'exposition des Galeries 3 et 4 vient ici (voir GalleryExpoRow).
-    { id: "interexpo", icon: "inter", tone: "teal", question: "Les dates d’inter-expos", where: "Expos · Inter-expos" },
-    { id: "radio", icon: "radio", tone: "red", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio" },
+    { id: "interexpo", icon: "inter", question: "Les dates d’inter-expos", where: "Expos · Inter-expos" },
+    { id: "radio", icon: "radio", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio" },
   ],
   pay: [
-    { id: "allowances", icon: "prime", tone: "green", question: "Le détail de mes primes", where: "Ma paie · Primes et jours fériés" },
-    { id: "payslip-check", icon: "check", tone: "green", question: "Vérifier un bulletin", where: "Ma paie · Vérifier le bulletin" },
-    { id: "pay-detail", icon: "calc", tone: "green", question: "Comprendre ma paie", where: "Ma paie · Détail du calcul" },
+    { id: "payslip-check", icon: "check", question: "Vérifier un bulletin", where: "Ma paie · Vérifier le bulletin" },
+    { id: "allowances", icon: "prime", question: "Le détail de mes primes", where: "Ma paie · Primes et jours fériés" },
+    { id: "pay-detail", icon: "calc", question: "Comprendre ma paie", where: "Ma paie · Détail du calcul" },
   ],
   declare: [
-    { id: "overtime-mecenat", icon: "clock", tone: "terra", question: "Un mécénat ou des heures sup", where: "Congés · Heures et mécénats" },
-    { id: "work-accident", icon: "accident", tone: "red", question: "Un accident de travail", where: "Docs · Accident de travail" },
-    { id: "request-form", icon: "leave", tone: "terra", question: "Une absence ou un échange", where: "Formulaire de demande" },
-    { id: "cet", icon: "piggy", tone: "terra", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET" },
+    { id: "overtime-mecenat", icon: "clock", question: "Un mécénat ou des heures supp", where: "Congés · Heures et mécénats" },
+    { id: "request-form", icon: "leave", question: "Une absence ou un échange", where: "Formulaire de demande" },
+    { id: "cet", icon: "piggy", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET" },
+    { id: "work-accident", icon: "accident", question: "Un accident de travail", where: "Docs · Accident de travail" },
   ],
 };
 
@@ -104,7 +102,7 @@ function QuestionRow({ item, onChoose }: { item: Question; onChoose: (id: HelpCh
   return (
     <li>
       <button type="button" className="help-sheet-row" onClick={() => onChoose(item.id)}>
-        <span className={`help-sheet-icon tone-${item.tone}`}>{ICONS[item.icon]}</span>
+        <span className="help-sheet-icon">{ICONS[item.icon]}</span>
         <span className="help-sheet-copy"><strong>{item.question}</strong><small>{item.where}</small></span>
         <span className="help-sheet-chevron" aria-hidden="true">›</span>
       </button>
@@ -123,7 +121,7 @@ export function AudioguideRow({ title, audioguide, initiallyOpen = false }: {
   return (
     <li className="help-sheet-audioguide">
       <button type="button" className="help-sheet-row" aria-expanded={open} aria-controls="help-sheet-audioguide-qr" onClick={() => setOpen((current) => !current)}>
-        <span className="help-sheet-icon tone-teal">{ICONS.headphones}</span>
+        <span className="help-sheet-icon">{ICONS.headphones}</span>
         <span className="help-sheet-copy">
           <strong>Audioguide · {title}</strong>
           <small>{open ? "Faites scanner le QR code" : "QR code et code d’accès"}</small>
@@ -188,7 +186,7 @@ function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: Hel
           disabled={downloadState === "busy"}
           onClick={() => (sheet ? void download() : onChoose("expo-folder"))}
         >
-          <span className="help-sheet-icon tone-teal">{sheet ? ICONS.download : ICONS.picture}</span>
+          <span className="help-sheet-icon">{sheet ? ICONS.download : ICONS.picture}</span>
           <span className="help-sheet-copy">
             <strong>Fiche d’expo · {entry.title}</strong>
             <small>{downloadState === "busy" ? "Téléchargement…" : sheet ? `${label} · PDF` : "Docs · Formulaire Expo"}</small>
@@ -236,19 +234,18 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
           <h2 id="help-sheet-title">Que cherchez-vous ?</h2>
           <button type="button" className="help-sheet-close" aria-label="Fermer" onClick={onClose}>×</button>
         </header>
-        <p className="help-sheet-lead">Touchez une question : la bonne page s’ouvre.</p>
-        <h3>Trouver</h3>
-        <ul aria-label="Trouver">
+        <h3 className="help-sheet-group-title group-find">Trouver</h3>
+        <ul className="help-sheet-group group-find" aria-label="Trouver">
           {QUESTIONS.find.slice(0, 4).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
           <GalleryExpoRow today={today} onChoose={onChoose} />
           {QUESTIONS.find.slice(4).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
         </ul>
-        <h3>Ma paie</h3>
-        <ul aria-label="Ma paie">
+        <h3 className="help-sheet-group-title group-pay">Ma paie</h3>
+        <ul className="help-sheet-group group-pay" aria-label="Ma paie">
           {QUESTIONS.pay.map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
         </ul>
-        <h3>Déclarer</h3>
-        <ul aria-label="Déclarer">
+        <h3 className="help-sheet-group-title group-declare">Déclarer</h3>
+        <ul className="help-sheet-group group-declare" aria-label="Déclarer">
           {QUESTIONS.declare.map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
         </ul>
       </div>

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } fr
 import { proposalChanges } from "./grandPalaisProposalChanges";
 import { useConfirm } from "./confirmDialog";
 import { useHelpTarget } from "./helpTargets";
+import { scrollWhenReady } from "./scrollWhenReady";
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { GrandPalaisCheckPanel } from "./GrandPalaisCheckPanel";
@@ -863,6 +864,10 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
       : target === "program-interexpo" ? "interexpo" : null;
     if (!view) return false;
     setProgramView(view);
+    // Les dates d'une exposition : le choix des espaces ; les inter-expos :
+    // le détail des expositions et des périodes.
+    if (view === "space") scrollWhenReady("grand-palais-spaces");
+    if (view === "interexpo") scrollWhenReady("grand-palais-interexpo");
     return true;
   });
   const [searchQuery, setSearchQuery] = useState("");
@@ -1113,7 +1118,7 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
         <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label>
       </div>
 
-      {programView === "space" && !searchResults ? <section className="grand-palais-venue-navigation" aria-labelledby="grand-palais-spaces-title">
+      {programView === "space" && !searchResults ? <section className="grand-palais-venue-navigation" id="grand-palais-spaces" aria-labelledby="grand-palais-spaces-title">
         <div className="grand-palais-venue-navigation-heading">
           <span className="step-label">Les galeries</span>
           <h3 id="grand-palais-spaces-title">Choisir un espace</h3>
@@ -1191,7 +1196,7 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
           </div>
         </section>
       ) : programView === "interexpo" ? (
-        <section className="useful-expo-schedule grand-palais-program-panel grand-palais-interexpo-panel" aria-labelledby="grand-palais-interexpo-title">
+        <section className="useful-expo-schedule grand-palais-program-panel grand-palais-interexpo-panel" id="grand-palais-interexpo" aria-labelledby="grand-palais-interexpo-title">
           <div className="useful-expo-schedule-heading">
             <span className="step-label">Galeries 3–4 · 8 · 7</span>
             <h3 id="grand-palais-interexpo-title">Périodes d’inter expos</h3>

@@ -149,14 +149,16 @@ html[data-theme="dark"] .pay-bulletin .pay-bulletin-shortcut em { background: #3
 /* « Que cherchez-vous ? » : texte clair sur la surface sombre des commandes. */
 html[data-theme="dark"] .app-shell .top-header > .header-help-button { color: #f3eee8; }
 html[data-theme="dark"] .header-help-mark { background: #f3eee8; color: var(--header-a); }
-/* La fenêtre d'aide : titres de groupe éclaircis, icônes gardant leur
-   teinte. */
-html[data-theme="dark"] .help-sheet h3 { color: color-mix(in srgb, var(--help-accent) 25%, #ecd9cc); }
-html[data-theme="dark"] .help-sheet-icon.tone-blue { background: rgba(110, 160, 210, 0.18); color: #8fbce0; }
-html[data-theme="dark"] .help-sheet-icon.tone-teal { background: rgba(90, 170, 160, 0.18); color: #8ccbc4; }
-html[data-theme="dark"] .help-sheet-icon.tone-green { background: rgba(90, 170, 120, 0.18); color: #93d0a8; }
-html[data-theme="dark"] .help-sheet-icon.tone-terra { background: rgba(200, 120, 90, 0.2); color: #e3a487; }
-html[data-theme="dark"] .help-sheet-icon.tone-red { background: rgba(220, 100, 110, 0.2); color: #f09aa4; }
+/* La fenêtre d'aide : chaque groupe garde sa couleur, éclaircie, sur un fond
+   à peine teinté. */
+html[data-theme="dark"] .group-find { --g: #8fbce0; --g-line: rgba(143, 188, 224, 0.35); --g-bg: rgba(110, 160, 210, 0.08); --g-icon: rgba(110, 160, 210, 0.18); }
+html[data-theme="dark"] .group-pay { --g: #93d0a8; --g-line: rgba(147, 208, 168, 0.35); --g-bg: rgba(90, 170, 120, 0.08); --g-icon: rgba(90, 170, 120, 0.18); }
+html[data-theme="dark"] .group-declare { --g: #e3a487; --g-line: rgba(227, 164, 135, 0.35); --g-bg: rgba(200, 120, 90, 0.08); --g-icon: rgba(200, 120, 90, 0.2); }
+html[data-theme="dark"] .help-sheet li + li { border-top-color: var(--g-line); }
+html[data-theme="dark"] .help-sheet-chevron { color: var(--g); opacity: 0.7; }
 /* Le QR code reste noir sur blanc pour être scanné ; le code s'éclaircit. */
 html[data-theme="dark"] .help-sheet-qr img { border-color: #3a322c; background: #fff; }
-html[data-theme="dark"] .help-sheet-qr-code b { color: #8ccbc4; }
+
+/* Contractuel / Fonctionnaire en sombre : le statut choisi ressort en clair. */
+html[data-theme="dark"] .work-accident-status { border-color: rgba(243, 238, 232, 0.2); background: rgba(255, 255, 255, 0.05); }
+html[data-theme="dark"] .work-accident-status button.active { color: #f3eee8; background: #3a322c; box-shadow: 0 0 0 1.5px rgba(243, 238, 232, 0.55), 0 6px 14px -8px rgba(0, 0, 0, 0.7); }

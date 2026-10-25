@@ -135,8 +135,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   rond, flèche au bout, entière dans la partie foncée avant la diagonale (`AppHeader`, style dans
   `src/pageHeaders.css`), même surface que les trois commandes du haut, le
   texte à la couleur foncée de l’en-tête. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
-  demande) : « Que cherchez-vous ? », trois groupes (Trouver, Ma paie,
-  Déclarer). L’exposition des Galeries 3 et 4 (`galleryExpoFor`) y a deux
+  demande) : « Que cherchez-vous ? », trois groupes chacun à sa couleur
+  (Trouver en bleu, Ma paie en vert, Déclarer en terracotta : titre, liseré,
+  fond pâle, icônes), une fine bande aux couleurs de l’en-tête en haut. L’exposition des Galeries 3 et 4 (`galleryExpoFor`) y a deux
   lignes à son nom : sa fiche d’expo, le PDF du dossier Expo téléchargé d’un
   toucher (`expoSheetFor`, sinon le dossier s’ouvre), et son audioguide
   (`AudioguideRow`), qui déplie sur place le QR code à scanner et le code
@@ -146,7 +147,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,
   dossier Expo),
   `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
-  « Par espace ») et `LeaveManagementPage` (heures et
+  « Par espace » et descendent au choix des espaces, les inter-expos au
+  détail des périodes) et `LeaveManagementPage` (heures et
   mécénats, CET). Une demande non servie s’oublie après 8 s.
 - `src/PlanningCommandCenter.tsx` et `src/PlanningDayCell.tsx` : commandes du
   calendrier et rendu interactif d’une journée.
