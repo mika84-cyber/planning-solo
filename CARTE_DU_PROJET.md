@@ -193,7 +193,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   passe par le toast (`showSuccess`).
 - `src/useAdminUiState.ts` : états d'interface de l'administrateur (aperçu
   invité, panneau d'outils, relecture, statut connu), hors d'App.tsx.
-- `src/PdfDownloadPage.tsx` : page de téléchargement des documents.
+- `src/PdfDownloadPage.tsx` : page de téléchargement des documents. L'année
+  se choisit en pastilles (l'année en cours et les deux suivantes,
+  `pdfYears`), « Plus » ouvre les années suivantes ; les vacances en
+  pastilles Non / Oui, tuile rose.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
   centrée des nouveaux documents, lecture et ajout administrateur.

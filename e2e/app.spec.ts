@@ -2010,7 +2010,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.locator(".pdf-step-number")).toHaveCount(0);
   await expect(pdfScreen.locator(".pdf-quick-setting")).toHaveCount(3);
   await expect(pdfScreen.locator(".pdf-doc")).toHaveCount(4);
-  await expect(pdfScreen.getByRole("switch", { name: "Ajouter les vacances scolaires au planning" })).toHaveAttribute("aria-checked", "false");
+  await expect(pdfScreen.getByRole("group", { name: "Vacances scolaires sur le PDF" }).getByRole("button", { name: "Non" })).toHaveAttribute("aria-pressed", "true");
   await expect(pdfScreen).not.toContainText("Pour faciliter les échanges sur jours fériés");
   // Du plus personnel au plus général, avec des intitulés explicites.
   await expect(pdfScreen.locator(".pdf-doc strong")).toHaveText([
@@ -2034,21 +2034,23 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.getByRole("button", { name: /^Mon planning avec mes congés/ })).toContainText("Groupe 2 · vos congés et absences");
   await groupPills.getByRole("button", { name: "Groupe 2" }).click();
   await expect(pdfScreen.getByRole("button", { name: /^Mon planning sans congés/ })).toBeVisible();
-  // L'année se choisit dans une liste déroulante, sans flèches ; la liste
-  // commence en 2026 et s'ouvre au niveau de la fenêtre, hors du dialogue.
-  const yearPicker = pdfScreen.getByRole("button", { name: "Année du PDF" });
-  await expect(yearPicker).toHaveText("2026");
-  await expect(pdfScreen.getByRole("button", { name: "Année précédente" })).toHaveCount(0);
-  await yearPicker.click();
-  const yearList = page.getByRole("listbox", { name: "Année du PDF" });
-  await expect(yearList.getByRole("option").first()).toHaveText("2026");
-  await yearList.getByRole("option", { name: "2027" }).click();
-  await expect(yearList).toHaveCount(0);
-  await expect(yearPicker).toHaveText("2027");
-  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-settings")).toHaveText(/^2027/);
-  await yearPicker.click();
-  await page.getByRole("listbox", { name: "Année du PDF" }).getByRole("option", { name: "2026" }).click();
-  await expect(yearPicker).toHaveText("2026");
+  // L'année se choisit en pastilles, comme le groupe : trois années à partir
+  // de l'année en cours, la choisie en plein.
+  const yearPills = pdfScreen.getByRole("group", { name: "Année du PDF" });
+  const firstPdfYear = Math.max(2026, new Date().getFullYear());
+  await expect(yearPills.locator(":scope > button")).toHaveText([String(firstPdfYear), String(firstPdfYear + 1), String(firstPdfYear + 2)]);
+  await expect(yearPills.getByRole("button", { name: "Autre année du PDF" })).toHaveText("Plus");
+  await expect(yearPills.getByRole("button", { name: String(firstPdfYear) })).toHaveAttribute("aria-pressed", "true");
+  await yearPills.getByRole("button", { name: String(firstPdfYear + 1) }).click();
+  await expect(yearPills.getByRole("button", { name: String(firstPdfYear + 1) })).toHaveAttribute("aria-pressed", "true");
+  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-settings")).toHaveText(new RegExp(`^${firstPdfYear + 1}`));
+  // Au-delà, « Plus » ouvre la liste des années suivantes.
+  await yearPills.getByRole("button", { name: "Autre année du PDF" }).click();
+  await page.getByRole("listbox", { name: "Autre année du PDF" }).getByRole("option", { name: String(firstPdfYear + 4) }).click();
+  await expect(yearPills.getByRole("button", { name: "Autre année du PDF" })).toHaveText(String(firstPdfYear + 4));
+  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-settings")).toHaveText(new RegExp(`^${firstPdfYear + 4}`));
+  await yearPills.getByRole("button", { name: String(firstPdfYear) }).click();
+  await expect(yearPills.getByRole("button", { name: String(firstPdfYear) })).toHaveAttribute("aria-pressed", "true");
   // Six années à partir de l’année en cours.
   const holidayFirstYear = Math.max(2026, new Date().getFullYear());
   await expect(pdfScreen.getByRole("button", { name: /^Fériés travaillés par groupe/ })).toContainText(`${holidayFirstYear}–${holidayFirstYear + 5} · pour échanger un férié entre groupes`);
@@ -4309,22 +4311,14 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
 
   await assertVisibleMenus();
 
-  // Dans les plannings PDF, seule l'année se choisit dans une liste ; elle
-  // s'ouvre au-dessus du dialogue, entièrement visible.
+  // Dans les plannings PDF, les années en pastilles et « Plus » tiennent
+  // entières dans leur tuile.
   await openPlanningPdf(page);
-  const pdfYear = page.locator(".pdf-download-screen .choice-picker-trigger");
-  await expect(pdfYear).toHaveCount(1);
-  await pdfYear.click();
-  const pdfYearList = page.getByRole("listbox", { name: "Année du PDF" });
-  await expect(pdfYearList).toHaveCSS("position", "fixed");
-  const pdfListBox = await pdfYearList.boundingBox();
-  const pdfViewport = page.viewportSize();
-  expect(pdfListBox!.x).toBeGreaterThanOrEqual(8);
-  expect(pdfListBox!.x + pdfListBox!.width).toBeLessThanOrEqual(pdfViewport!.width - 8);
-  expect(pdfListBox!.y + pdfListBox!.height).toBeLessThanOrEqual(pdfViewport!.height - 8);
-  // Un second toucher sur l'année referme la liste ; Échap fermerait aussi la fenêtre.
-  await pdfYear.click();
-  await expect(pdfYearList).toHaveCount(0);
+  const [yearTile, yearPillsBox] = await Promise.all([
+    page.locator(".pdf-download-screen .pdf-quick-year").boundingBox(),
+    page.locator(".pdf-download-screen .pdf-year-pills").boundingBox(),
+  ]);
+  expect(yearPillsBox!.x + yearPillsBox!.width).toBeLessThanOrEqual(yearTile!.x + yearTile!.width);
   await closePlanningPdf(page);
 
   await goToSection(page, "leave");

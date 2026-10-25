@@ -29,7 +29,7 @@
   background: color-mix(in srgb, var(--setting-tone) 13%, var(--surface-high));
 }
 .pdf-quick-group { --setting-tone: #6f6455; }
-.pdf-quick-vacation { --setting-tone: #d39b16; }
+.pdf-quick-vacation { --setting-tone: #c4527c; }
 .pdf-quick-setting > span {
   padding-left: 2px;
   color: color-mix(in srgb, var(--setting-tone) 75%, var(--text));
@@ -47,19 +47,30 @@
    sous 400 px où elle manquait selon l'appareil. */
 @media (max-width: 720px) {
   .pdf-download-screen .pdf-quick-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* La tuile de l'année devient une barre basse : libellé à gauche, flèches et année à droite. */
-  .pdf-download-screen .pdf-quick-year { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 0; padding: 6px 10px 6px 12px; }
-  .pdf-download-screen .pdf-quick-year .choice-picker { width: 132px; }
+  /* La tuile de l'année devient une barre basse : libellé à gauche, les
+     années en pastilles à droite. */
+  .pdf-download-screen .pdf-quick-year { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 0; padding: 6px 6px 6px 12px; }
+  /* Les quatre pastilles se partagent la place laissée par le libellé,
+     sans jamais déborder de la tuile. */
+  .pdf-download-screen .pdf-year-pills { display: flex; flex: 1 1 auto; justify-content: flex-end; min-width: 0; }
+  .pdf-download-screen .pdf-year-pills > :is(button, .choice-picker) { flex: 1 1 0; min-width: 0; max-width: 66px; }
+  .pdf-download-screen .pdf-year-pills button { padding: 0 4px; }
+  .pdf-download-screen .pdf-year-more .choice-picker-trigger { padding: 0 4px; }
 }
 /* Dans la fenêtre, le titre laisse la place au bouton de fermeture. */
 .planning-pdf-dialog #pdf-download-title { padding-right: 52px; }
 
-/* Année : un menu déroulant sans cadre dans la tuile, l'année en gras et le
-   chevron à la couleur de la tuile ; la liste reprend celle du calendrier. */
-.pdf-quick-year .choice-picker-trigger { min-height: 30px; border: 0; border-radius: 10px; padding: 0 4px 0 2px; background: transparent; color: var(--text); font: inherit; font-size: 1.02rem; font-weight: 850; font-variant-numeric: tabular-nums; }
-.pdf-quick-year .choice-picker-trigger:hover { background: color-mix(in srgb, var(--setting-tone) 10%, transparent); }
-.pdf-quick-year .choice-picker-trigger[aria-expanded="true"] { background: color-mix(in srgb, var(--setting-tone) 14%, transparent); box-shadow: none; }
-.pdf-quick-year .choice-picker-trigger svg { width: 18px; stroke: var(--setting-tone); stroke-width: 2.4; }
+/* Année : des pastilles comme celles des groupes, au bleu de la tuile ;
+   l'année choisie en plein. */
+.pdf-year-pills { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 4px; min-height: 30px; }
+.pdf-year-pills button { min-width: 0; height: 30px; border: 1.5px solid color-mix(in srgb, var(--setting-tone) 60%, #fff); border-radius: 999px; padding: 0; background: var(--surface-high); color: var(--setting-tone); font: inherit; font-size: .86rem; font-weight: 850; font-variant-numeric: tabular-nums; cursor: pointer; }
+.pdf-year-pills button:hover:not(.active) { background: color-mix(in srgb, var(--setting-tone) 12%, var(--surface-high)); }
+.pdf-year-pills button.active { border-color: var(--setting-tone); background: var(--setting-tone); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--setting-tone) 35%, transparent); }
+/* « Plus » : la même pastille, qui ouvre la liste des années suivantes et
+   montre en plein l'année choisie au-delà des trois premières. */
+.pdf-year-more .choice-picker-trigger { justify-content: center; gap: 3px; width: 100%; min-height: 0; height: 30px; border: 1.5px dashed color-mix(in srgb, var(--setting-tone) 60%, #fff); border-radius: 999px; padding: 0 8px; background: var(--surface-high); color: var(--setting-tone); font: inherit; font-size: .86rem; font-weight: 850; font-variant-numeric: tabular-nums; box-shadow: none; }
+.pdf-year-more .choice-picker-trigger svg { width: 14px; stroke: currentColor; stroke-width: 2.4; }
+.pdf-year-more.active .choice-picker-trigger { border-style: solid; border-color: var(--setting-tone); background: var(--setting-tone); color: #fff; }
 .choice-picker-menu.choice-picker-menu-portal.pdf-year-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 238px; }
 
 /* Groupe : trois pastilles, chacune à la couleur de son groupe ; la choisie est pleine. */
@@ -68,50 +79,11 @@
 .pdf-group-pills button:hover:not(.active) { background: color-mix(in srgb, var(--pill-tone) 12%, var(--surface-high)); }
 .pdf-group-pills button.active { background: var(--pill-tone); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--pill-tone) 35%, transparent); }
 
-/* Vacances : un interrupteur dont la zone de toucher couvre toute la tuile. */
-.pdf-quick-switch {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  width: 100%;
-  min-width: 0;
-  min-height: 30px;
-  border: 0;
-  border-radius: 0;
-  padding: 0 2px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 1.02rem;
-  font-weight: 850;
-  box-shadow: none;
-  cursor: pointer;
-}
-.pdf-quick-switch::before { position: absolute; inset: 0; border-radius: 12px; content: ""; }
-.pdf-quick-switch > i {
-  position: relative;
-  flex: 0 0 auto;
-  width: 34px;
-  height: 20px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 35%, var(--surface-high));
-  transition: background .15s;
-}
-.pdf-quick-switch > i::after {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 2px #0003;
-  content: "";
-  transition: transform .15s;
-}
-.pdf-quick-switch.active > i { background: var(--setting-tone); }
-.pdf-quick-switch.active > i::after { transform: translateX(14px); }
+/* Vacances : Non / Oui en pastilles, à la couleur de la tuile. */
+.pdf-vacation-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-height: 30px; }
+.pdf-vacation-pills button { min-width: 0; height: 30px; border: 1.5px solid color-mix(in srgb, var(--setting-tone) 60%, #fff); border-radius: 999px; padding: 0; background: var(--surface-high); color: color-mix(in srgb, var(--setting-tone) 70%, var(--text)); font: inherit; font-size: .86rem; font-weight: 850; cursor: pointer; }
+.pdf-vacation-pills button:hover:not(.active) { background: color-mix(in srgb, var(--setting-tone) 12%, var(--surface-high)); }
+.pdf-vacation-pills button.active { border-color: var(--setting-tone); background: var(--setting-tone); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--setting-tone) 35%, transparent); }
 
 /* Séparation : un filet noir très léger, effilé aux deux bouts, avec
    « Documents » en petites capitales au milieu. */
@@ -200,7 +172,6 @@
 }
 @media (max-width: 380px) {
   .pdf-quick-setting { padding-inline: 8px; }
-  .pdf-quick-switch { font-size: .9rem; }
-  .pdf-quick-year .choice-picker-trigger { font-size: .9rem; }
+  .pdf-year-pills button, .pdf-year-more .choice-picker-trigger, .pdf-vacation-pills button { font-size: .8rem; }
   .pdf-group-pills { gap: 3px; }
 }

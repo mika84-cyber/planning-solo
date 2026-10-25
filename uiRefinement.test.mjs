@@ -556,7 +556,7 @@ describe("finitions d’interface", () => {
 
   it("distingue la zone du planning mensuel du tableau toutes zones du PDF", () => {
     expect(pdfDownloadPage).not.toContain("schoolVacationZone");
-    expect(pdfDownloadPage).toContain("Ajouter les vacances scolaires au planning");
+    // Les vacances Non / Oui se vérifient par le rendu (PdfDownloadPage.test.tsx).
     expect(schoolVacationUi).toContain("SCHOOL_ZONE_OPTIONS");
     expect(schoolVacationUi).toContain("Zone scolaire affichée");
   });

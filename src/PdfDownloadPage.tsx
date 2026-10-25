@@ -21,6 +21,17 @@ const DOC_ICONS: Record<PdfScope, ReactNode> = {
   "worked-holidays": <svg viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z" /></svg>,
 };
 
+/** Les années d'un PDF : l'année en cours et les deux suivantes en
+ *  pastilles (jamais avant la première année du calendrier), les autres dans
+ *  « Plus ». */
+export function pdfYears(today = new Date()) {
+  const first = Math.max(YEAR_OPTIONS[0].value, today.getFullYear());
+  return {
+    pills: [first, first + 1, first + 2],
+    more: YEAR_OPTIONS.filter((option) => option.value > first + 2),
+  };
+}
+
 type PdfDownloadPageProps = {
   narrowScreen: boolean;
   year: number;
@@ -45,6 +56,7 @@ export function PdfDownloadPage({
   onExport,
 }: PdfDownloadPageProps) {
   const holidayYears = workedHolidaysYearRange();
+  const years = pdfYears();
   // Le groupe du PDF part du vôtre et le suit s'il change ailleurs, mais le
   // choisir ici ne touche pas à votre groupe.
   const [pdfGroup, setPdfGroup] = useState(group);
@@ -65,17 +77,31 @@ export function PdfDownloadPage({
       <section className="pdf-quick-settings" aria-label="Réglages du PDF">
         <div className="pdf-quick-setting pdf-quick-year">
           <span>Année</span>
-          {/* L'année se choisit dans la liste proposée, la même que celle du
-              calendrier ; la liste s'ouvre au niveau de la fenêtre pour ne pas
-              être coupée par le dialogue qui défile. */}
-          <ChoicePicker
-            value={year}
-            options={YEAR_OPTIONS}
-            onChange={onYearChange}
-            ariaLabel="Année du PDF"
-            className="pdf-year-picker"
-            portal
-          />
+          {/* Trois années en pastilles, à partir de l'année en cours, comme
+              les groupes juste en dessous ; « Plus » ouvre la liste des
+              suivantes et montre l'année choisie au-delà. */}
+          <div className="pdf-year-pills" role="group" aria-label="Année du PDF">
+            {years.pills.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={year === value ? "active" : undefined}
+                aria-pressed={year === value}
+                onClick={() => onYearChange(value)}
+              >
+                {value}
+              </button>
+            ))}
+            <ChoicePicker
+              value={years.more.some((option) => option.value === year) ? year : ""}
+              options={years.more}
+              onChange={onYearChange}
+              ariaLabel="Autre année du PDF"
+              placeholder="Plus"
+              className={`pdf-year-more${years.more.some((option) => option.value === year) ? " active" : ""}`}
+              portal
+            />
+          </div>
         </div>
         <div className="pdf-quick-setting pdf-quick-group" style={{ "--setting-tone": GROUP_TONES[pdfGroup] } as CSSProperties}>
           <span>Groupe</span>
@@ -98,17 +124,20 @@ export function PdfDownloadPage({
         </div>
         <div className="pdf-quick-setting pdf-quick-vacation">
           <span>Vacances</span>
-          <button
-            type="button"
-            role="switch"
-            className={showSchoolVacations ? "pdf-quick-switch active" : "pdf-quick-switch"}
-            aria-checked={showSchoolVacations}
-            aria-label="Ajouter les vacances scolaires au planning"
-            onClick={() => onShowSchoolVacationsChange((current) => !current)}
-          >
-            <b>{showSchoolVacations ? "Oui" : "Non"}</b>
-            <i aria-hidden="true" />
-          </button>
+          {/* Non / Oui en pastilles, comme les années et les groupes. */}
+          <div className="pdf-vacation-pills" role="group" aria-label="Vacances scolaires sur le PDF">
+            {([false, true] as const).map((value) => (
+              <button
+                key={String(value)}
+                type="button"
+                className={showSchoolVacations === value ? "active" : undefined}
+                aria-pressed={showSchoolVacations === value}
+                onClick={() => onShowSchoolVacationsChange(value)}
+              >
+                {value ? "Oui" : "Non"}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
       {/* Un filet discret sépare les réglages des documents. */}

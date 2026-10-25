@@ -100,7 +100,12 @@ const budgets = {
   // matin, de l'après-midi, nocturne), gratuités, sites tiers de billetterie et
   // reconnaissance d'un même événement sous deux titres (2 052,4 / 678 Kio
   // mesurés). Le compressé reste sous son plafond de 680 Kio.
-  totalJavaScript: { raw: 2_055 * KIB, gzip: 680 * KIB },
+  // Relevé le 26 octobre 2026 de 680 à 682 Kio compressés, avec l'accord de
+  // l'administrateur : « Que cherchez-vous ? » (fenêtre d'aide, ses
+  // raccourcis, fiche d'expo et audioguide) et les années du PDF en pastilles
+  // avec « Plus » ; le code devenu inutile a d'abord été retiré (679,9 Kio
+  // mesurés, et un peu plus sur le serveur de GitHub).
+  totalJavaScript: { raw: 2_055 * KIB, gzip: 682 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
