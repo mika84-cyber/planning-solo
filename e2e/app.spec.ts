@@ -6521,6 +6521,38 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
   expect(checkRequested).toBe(true);
 });
 
+test("« Besoin d’aide ? » ouvre, de n’importe quelle page, la page ou la sous-page qui répond", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  const help = page.locator("header.top-header").getByRole("button", { name: "Besoin d’aide ?" });
+  const sheet = page.getByRole("dialog", { name: "Que cherchez-vous ?" });
+  // Une sous-page d'une autre rubrique : les codes radio, dans Contacts.
+  await help.click();
+  await expect(sheet.getByRole("list", { name: "Trouver" }).getByRole("button")).not.toHaveCount(0);
+  await sheet.getByRole("button", { name: /Un code radio d’urgence/ }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Codes urgences radio" })).toBeVisible();
+  // La fiche d'expo sans PDF en ligne : le dossier Formulaire Expo.
+  await help.click();
+  await sheet.getByRole("button", { name: /^Fiche d’expo · / }).click();
+  await expect(page.getByRole("heading", { name: "Formulaire Expo" })).toBeVisible();
+  // Un volet de Congés : le CET s'ouvre.
+  await help.click();
+  await sheet.getByRole("button", { name: /Ouvrir ou alimenter mon CET/ }).click();
+  await expect(page.locator("details.cet-disclosure")).toHaveAttribute("open", "");
+  // Un onglet des Expos.
+  await help.click();
+  await sheet.getByRole("button", { name: /Les dates d’inter-expos/ }).click();
+  await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();
+  // Un écran de Ma paie, et la fenêtre se ferme d'un toucher sur la croix.
+  await help.click();
+  await sheet.getByRole("button", { name: /Le détail de mes primes/ }).click();
+  await expect(page.locator("header.top-header h1")).toHaveText("Primes et jours fériés");
+  await help.click();
+  await sheet.getByRole("button", { name: "Fermer" }).click();
+  await expect(sheet).toBeHidden();
+});
+
 test("un contrôle du site en maintenance se dit aussitôt, sans rester sur « Lecture en cours »", async ({ page }) => {
   const requestedAt = "2026-10-21T17:46:50.000Z";
   let checkRequested = false;

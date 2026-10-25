@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useHelpTarget } from "./helpTargets";
 
 type ResourceTab = "forms" | "contacts";
 
@@ -28,6 +29,16 @@ export function UsefulResourcesHub({ forms, contacts, initialTab = "forms" }: Us
     window.addEventListener("popstate", restoreTab);
     return () => window.removeEventListener("popstate", restoreTab);
   }, []);
+  // La fenêtre d'aide ouvre le bon onglet ; une sous-page (codes radio,
+  // accident) est ensuite servie par l'onglet lui-même.
+  useHelpTarget((target) => {
+    const tab: ResourceTab | null = target === "contacts" || target === "radio-codes" ? "contacts"
+      : target === "forms" || target === "work-accident" || target === "expo-folder" ? "forms" : null;
+    if (!tab) return false;
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "auto" });
+    return target === "contacts" || target === "forms";
+  });
 
   return (
     <section className="useful-resources-screen has-active-resource" aria-label="Documents et contacts">

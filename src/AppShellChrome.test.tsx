@@ -38,7 +38,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
     setDataManagementOpen: noop,
     setFeedbackOpen: noop,
   },
-  pay: { payScreen: "overview", setPayScreen: noop, setPayView: noop },
+  pay: { payScreen: "overview", setPayScreen: noop, setPayView: noop, setPayVerificationRequested: noop },
   calendar: { entries: {}, periods: [], formProfile: null, recoveryUses: [] },
   allowanceValues: {
     baseSalary: 1800,
@@ -51,6 +51,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
   feedbackMessaging: { unreadCount: 0 },
   notify: noop,
   showSuccess: noop,
+  help: { openPlanningPdf: noop, openBlankForm: noop },
   actions: { navigateFromShell: noop, checkForAppUpdate: noop, disconnect: noop },
 };
 
@@ -61,6 +62,9 @@ describe("AppShellChrome", () => {
     expect(html).toContain('data-section="home"');
     expect(html).toContain('aria-label="Navigation principale"');
     expect(html).toContain('data-section="home" class="active" aria-current="page"');
+    // « Besoin d'aide ? » en bas de l'en-tête ; la fenêtre reste fermée.
+    expect(html).toContain('<button type="button" class="header-help-button" aria-haspopup="dialog">Besoin d’aide ?</button></header>');
+    expect(html).not.toContain("Que cherchez-vous");
     // Fermés : ni menu principal, ni aperçu invité, ni proposition d’installation.
     expect(html).not.toContain("Menu principal");
     expect(html).not.toContain("Quitter l’aperçu");

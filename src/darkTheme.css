@@ -145,3 +145,14 @@ html[data-theme="dark"] .pay-calculation-totals li > .pay-total-explain { backgr
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-links { border-color: rgba(243, 237, 230, 0.38); background: #221d1a; }
 html[data-theme="dark"] .app-shell .pay-bulletin .pay-bulletin-shortcut + .pay-bulletin-shortcut { border-top-color: #3a322c; }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-shortcut em { background: #3d2a22; color: #f0c3ad; }
+
+/* « Besoin d'aide ? » : texte clair sur la surface sombre des commandes. */
+html[data-theme="dark"] .app-shell .top-header > .header-help-button { color: #f3eee8; }
+/* La fenêtre d'aide : titres de groupe éclaircis, icônes gardant leur
+   teinte. */
+html[data-theme="dark"] .help-sheet h3 { color: color-mix(in srgb, var(--help-accent) 25%, #ecd9cc); }
+html[data-theme="dark"] .help-sheet-icon.tone-blue { background: rgba(110, 160, 210, 0.18); color: #8fbce0; }
+html[data-theme="dark"] .help-sheet-icon.tone-teal { background: rgba(90, 170, 160, 0.18); color: #8ccbc4; }
+html[data-theme="dark"] .help-sheet-icon.tone-green { background: rgba(90, 170, 120, 0.18); color: #93d0a8; }
+html[data-theme="dark"] .help-sheet-icon.tone-terra { background: rgba(200, 120, 90, 0.2); color: #e3a487; }
+html[data-theme="dark"] .help-sheet-icon.tone-red { background: rgba(220, 100, 110, 0.2); color: #f09aa4; }

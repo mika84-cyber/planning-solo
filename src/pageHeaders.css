@@ -51,3 +51,13 @@
 @media (min-width: 721px) {
   :root .app-shell .top-header { height: 156px !important; min-height: 156px !important; padding: 18px 22px 22px !important; }
 }
+
+/* « Besoin d'aide ? » : une petite pastille de texte en bas à droite de
+   chaque en-tête, sous le menu. La même surface et le même contour que les
+   trois commandes du haut ; le texte prend la couleur foncée de l'en-tête de
+   la page. */
+:root .app-shell .top-header > .header-help-button { position: absolute !important; z-index: 3 !important; right: 16px; bottom: 16px; display: inline-flex; align-items: center; width: auto; height: 30px; min-height: 0; margin: 0; border: 1.5px solid var(--border-card); border-radius: 999px; padding: 0 12px; background-color: color-mix(in srgb, var(--section-accent) 10%, #fffdf8); color: var(--header-a); font: inherit; font-size: 0.74rem; font-weight: 800; line-height: 1; letter-spacing: 0.01em; white-space: nowrap; box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.45); cursor: pointer; }
+:root .app-shell .top-header > .header-help-button:focus-visible { outline: 3px solid rgba(255, 255, 255, 0.75); outline-offset: 2px; }
+@media (min-width: 721px) {
+  :root .app-shell .top-header > .header-help-button { right: 22px; bottom: 20px; }
+}

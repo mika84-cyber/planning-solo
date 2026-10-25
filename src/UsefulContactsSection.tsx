@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { useHelpTarget } from "./helpTargets";
 import "./resourceFolderList.css";
 import { changeUsefulContact, getUsefulContacts } from "./contactsApi";
 import { ContactEditDialog } from "./ContactEditDialog";
@@ -128,6 +129,13 @@ type UsefulContactsSectionProps = {
 export function UsefulContactsSection({ initialData, isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
   const [directory, setDirectory] = useState<"pompidou" | "gprmn" | "visitors" | "radio" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
+  // « Un code radio d'urgence » ouvre la sous-page ; « Un numéro » revient à
+  // la liste des annuaires.
+  useHelpTarget((target) => {
+    if (target === "radio-codes") { setDirectory("radio"); setPompidouSection(null); return true; }
+    if (target === "contacts") { setDirectory(null); setPompidouSection(null); }
+    return false;
+  });
   const [contacts, setContacts] = useState<UsefulContactsPayload | null>(initialData || null);
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);

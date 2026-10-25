@@ -1,4 +1,5 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
+import { useHelpTarget } from "./helpTargets";
 import { MecenatSignupList } from "./MecenatSignupList";
 import { euros } from "./appModel";
 import { MECENAT_REGULATORY_RATES, mecenatRateLabels, type MecenatEntry, type MecenatSignup } from "./mecenat";
@@ -118,6 +119,18 @@ export function LeaveManagementPage({
     ? paidPeriods.filter((period) => period.year === nextPaidPeriod.year && period.month === nextPaidPeriod.month).reduce((sum, period) => sum + period.minutes, 0)
     : 0;
   const nextPaidEstimate = nextPaidPeriod ? paidOvertimeEstimate?.(nextPaidPeriod.year, nextPaidPeriod.month) : undefined;
+  // La fenêtre d'aide amène aux heures et mécénats, ou ouvre le CET.
+  const toolsRef = useRef<HTMLElement>(null);
+  const cetRef = useRef<HTMLDetailsElement>(null);
+  useHelpTarget((target) => {
+    const element = target === "cet" ? cetRef.current : target === "overtime-mecenat" ? toolsRef.current : null;
+    if (!element) return false;
+    if (element instanceof HTMLDetailsElement) element.open = true;
+    // Les soldes au-dessus se chargent à part : on attend qu'ils aient pris
+    // leur place avant de descendre.
+    window.setTimeout(() => element.scrollIntoView({ behavior: "smooth", block: "start" }), 350);
+    return true;
+  });
   return (
     <>
       <div className="planning-leave-panel leave-primary-action-bar">
@@ -130,7 +143,7 @@ export function LeaveManagementPage({
       </div>
       {longAbsenceContent}
       {balancesContent}
-      <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET">
+      <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET" ref={toolsRef}>
         <div className="leave-secondary-grid">
           <details className="leave-tool-disclosure">
             <summary>
@@ -217,7 +230,7 @@ export function LeaveManagementPage({
             ) : null}
           </section>
           </details>
-          <details className="leave-tool-disclosure cet-disclosure">
+          <details className="leave-tool-disclosure cet-disclosure" ref={cetRef}>
             <summary>
               <span className="leave-tool-illustration cet" aria-hidden="true"><img src="/leave-tools/leave-tool-cet.webp" alt="" /></span>
               <span className="leave-tool-copy"><strong>Mon CET</strong></span>

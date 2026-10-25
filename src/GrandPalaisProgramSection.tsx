@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { proposalChanges } from "./grandPalaisProposalChanges";
 import { useConfirm } from "./confirmDialog";
+import { useHelpTarget } from "./helpTargets";
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
 import { GrandPalaisCheckPanel } from "./GrandPalaisCheckPanel";
@@ -821,6 +822,15 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
   const [healthBusy, setHealthBusy] = useState(false);
   const [healthError, setHealthError] = useState("");
   const [programView, setProgramView] = useState<ProgramView>("now");
+  // La fenêtre d'aide ouvre directement l'onglet voulu.
+  useHelpTarget((target) => {
+    const view: ProgramView | null = target === "program-now" ? "now"
+      : target === "program-upcoming" ? "upcoming"
+      : target === "program-interexpo" ? "interexpo" : null;
+    if (!view) return false;
+    setProgramView(view);
+    return true;
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const program = useMemo(
     () => applyGrandPalaisSitePrices(

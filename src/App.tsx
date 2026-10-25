@@ -936,6 +936,7 @@ export default function Home() {
         feedbackMessaging={feedbackMessaging}
         notify={notify}
         showSuccess={confirm}
+        help={{ openPlanningPdf: () => setPdfDialogOpen(true), openBlankForm }}
         actions={{ navigateFromShell, checkForAppUpdate, disconnect }}
       />
 

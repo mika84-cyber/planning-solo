@@ -1,0 +1,44 @@
+/* « Que cherchez-vous ? » : un panneau qui monte du bas de l'écran sur
+   téléphone, une fenêtre centrée sur ordinateur. Les titres de groupe
+   prennent la couleur de l'en-tête de la page ouverte. */
+.help-sheet { --help-accent: #5a2232; position: fixed; inset: auto 0 0; width: 100%; max-width: none; height: auto; max-height: 90dvh; margin: 0; border: 0; padding: 0; background: transparent; color: var(--text); overflow: visible; }
+.help-sheet[data-section="leave"] { --help-accent: #0e2e41; }
+.help-sheet[data-section="pay"] { --help-accent: #1c2a50; }
+.help-sheet:is([data-section="pdf"], [data-section="forms"]) { --help-accent: #6b4b1a; }
+.help-sheet[data-section="program"] { --help-accent: #2c380c; }
+.help-sheet[data-section="colleagues"] { --help-accent: #6b3a26; }
+.help-sheet::backdrop { background: rgba(28, 22, 18, 0.45); }
+.help-sheet[open] .help-sheet-panel { animation: help-sheet-rise 220ms ease-out; }
+@keyframes help-sheet-rise { from { transform: translateY(24px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .help-sheet[open] .help-sheet-panel { animation: none; } }
+.help-sheet-panel { max-height: 90dvh; overflow: auto; overscroll-behavior: contain; border-radius: 24px 24px 0 0; padding: 10px 16px calc(22px + env(safe-area-inset-bottom)); background: #fbf8f4; box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2); }
+.help-sheet-grip { display: block; width: 40px; height: 4px; margin: 0 auto 10px; border-radius: 4px; background: #d9cdc2; }
+.help-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.help-sheet-head h2 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: 1.32rem; }
+.app-shell .help-sheet .help-sheet-close, .help-sheet .help-sheet-close { flex: none; display: grid; place-items: center; width: 36px; height: 36px; min-height: 0; margin: 0; border: 1px solid rgba(44, 38, 33, 0.3); border-radius: 50%; padding: 0; background: #fff; color: var(--text); font-size: 1.2rem; line-height: 1; box-shadow: none; cursor: pointer; }
+.help-sheet-lead { margin: 2px 0 0; color: var(--muted); font-size: 0.84rem; }
+.help-sheet h3 { margin: 16px 0 6px; color: var(--help-accent); font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.help-sheet ul { margin: 0; padding: 0; overflow: hidden; border: 1px solid rgba(44, 38, 33, 0.4); border-radius: 16px; background: #fff; list-style: none; }
+.help-sheet li + li { border-top: 1px solid #efe6dc; }
+.app-shell .help-sheet .help-sheet-row, .help-sheet .help-sheet-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 0; margin: 0; border: 0; border-radius: 0; padding: 10px 12px; background: transparent; color: var(--text); font: inherit; text-align: left; box-shadow: none; cursor: pointer; }
+.help-sheet .help-sheet-row:hover { background: #fbf6f1; }
+.help-sheet .help-sheet-row:focus-visible { outline: 3px solid color-mix(in srgb, var(--help-accent) 40%, transparent); outline-offset: -3px; }
+.help-sheet-icon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; }
+.help-sheet svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.help-sheet-icon.tone-blue { background: #e6f0f8; color: #2f6a95; }
+.help-sheet-icon.tone-teal { background: #e3f0ef; color: #2f6e6a; }
+.help-sheet-icon.tone-green { background: #e5f2e9; color: #2f6e4a; }
+.help-sheet-icon.tone-terra { background: #f6e9e1; color: #8a3d22; }
+.help-sheet-icon.tone-red { background: #f8e4e6; color: #a5283a; }
+.help-sheet-copy { flex: 1 1 auto; min-width: 0; }
+.help-sheet-copy strong { display: block; font-size: 0.92rem; font-weight: 750; line-height: 1.25; }
+.help-sheet-copy small { display: block; margin-top: 1px; color: var(--muted); font-size: 0.76rem; }
+.help-sheet-chevron { flex: none; color: #b3a598; font-size: 1.25rem; }
+.app-shell .help-sheet a.help-sheet-row, .help-sheet a.help-sheet-row { text-decoration: none; }
+.help-sheet .help-sheet-row:disabled { cursor: progress; opacity: 0.7; }
+.help-sheet-error { display: block; padding: 0 12px 10px 58px; color: #a5283a; font-size: 0.76rem; font-weight: 700; }
+@media (min-width: 721px) {
+  .help-sheet { inset: 0; width: min(480px, calc(100vw - 32px)); height: fit-content; margin: auto; }
+  .help-sheet-panel { max-height: 86dvh; border-radius: 24px; padding-bottom: 22px; }
+  .help-sheet-grip { display: none; }
+}

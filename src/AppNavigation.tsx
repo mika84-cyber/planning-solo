@@ -110,6 +110,8 @@ type AppHeaderProps = {
   onOpenMainMenu: () => void;
   onCheckForUpdate: () => void;
   onOpenAdminTools?: () => void;
+  /** « Besoin d'aide ? » : ouvre la fenêtre des questions. */
+  onOpenHelp?: () => void;
 };
 
 export function AppHeader({
@@ -133,6 +135,7 @@ export function AppHeader({
   onOpenMainMenu,
   onCheckForUpdate,
   onOpenAdminTools,
+  onOpenHelp,
 }: AppHeaderProps) {
   const updateLabel = checkingAppUpdate
     ? "Mise à jour en cours…"
@@ -239,6 +242,12 @@ export function AppHeader({
           </button>
         </div>
       </div>
+      {/* En bas à droite de chaque en-tête, aux couleurs de la page. */}
+      {onOpenHelp ? (
+        <button type="button" className="header-help-button" aria-haspopup="dialog" onClick={onOpenHelp}>
+          Besoin d’aide ?
+        </button>
+      ) : null}
     </header>
   );
 }

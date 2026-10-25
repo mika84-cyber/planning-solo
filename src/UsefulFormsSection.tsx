@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
+import { useHelpTarget } from "./helpTargets";
 import "./resourceFolderList.css";
 import type { LeavePeriod } from "./appModel";
 import {
@@ -184,6 +185,14 @@ export function UsefulFormsSection({
   demoMode = false,
 }: UsefulFormsSectionProps = {}) {
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
+  // « Un accident de travail » ouvre la déclaration, une fiche d'expo le
+  // dossier Expo ; « Un formulaire » revient à la liste des dossiers.
+  useHelpTarget((target) => {
+    if (target === "work-accident") { setActiveFolder("work-accident"); return true; }
+    if (target === "expo-folder") { setActiveFolder("expo"); return true; }
+    if (target === "forms") setActiveFolder(null);
+    return false;
+  });
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState("");
   const [shownQr, setShownQr] = useState("");

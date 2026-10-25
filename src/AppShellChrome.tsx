@@ -1,11 +1,13 @@
-import { type Dispatch, lazy, type SetStateAction, Suspense } from "react";
+import { type Dispatch, lazy, type SetStateAction, Suspense, useState } from "react";
 import { AdaptiveNavigation, AppHeader, MainMenu } from "./AppNavigation";
 import { AppleInstallNotice } from "./AppleInstallNotice";
 import { clearColleagueGroupsCache } from "./colleagueSharingApi";
 import { HomeAdminMessage } from "./HomeAdminMessage";
 import { InstallAppNotice } from "./InstallAppNotice";
+import type { HelpChoice } from "./HelpSheet";
+import { type HelpTarget, requestHelpTarget } from "./helpTargets";
 import { computePayAllowances } from "./payAllowances";
-import { localDate } from "./planningLogic";
+import { dateKey, localDate } from "./planningLogic";
 import { scrollWhenReady } from "./scrollWhenReady";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useAuthenticationActions } from "./useAuthenticationActions";
@@ -18,6 +20,7 @@ import type { useSectionNavigation } from "./useSectionNavigation";
 import type { useShellEffects } from "./useShellEffects";
 import type { useToast } from "./useToast";
 
+const HelpSheet = lazy(() => import("./HelpSheet"));
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 
 type Props = {
@@ -44,7 +47,7 @@ type Props = {
     | "checkingAppUpdate" | "appUpdateAvailable" | "appUpdatePromptOpen" | "accountMenuRef" | "accountButtonRef"
     | "setDataManagementOpen" | "setFeedbackOpen"
   >;
-  pay: Pick<ReturnType<typeof usePayUiState>, "payScreen" | "setPayScreen" | "setPayView">;
+  pay: Pick<ReturnType<typeof usePayUiState>, "payScreen" | "setPayScreen" | "setPayView" | "setPayVerificationRequested">;
   calendar: Pick<ReturnType<typeof useCalendarDataState>, "entries" | "periods" | "formProfile" | "recoveryUses">;
   /** Ce que le rappel des fériés recalcule pour une année : salaire de base
    *  et reports de dimanches. */
@@ -55,6 +58,9 @@ type Props = {
   feedbackMessaging: Pick<ReturnType<typeof useFeedbackMessaging>, "unreadCount">;
   notify: ReturnType<typeof useToast>["notify"];
   showSuccess: ReturnType<typeof useToast>["confirm"];
+  /** Ce que la fenêtre d'aide ouvre hors des pages : les plannings PDF de
+   *  l'accueil et le formulaire de demande vierge. */
+  help: { openPlanningPdf: () => void; openBlankForm: () => void };
   actions: Pick<ReturnType<typeof useSectionNavigation>, "navigateFromShell">
     & Pick<ReturnType<typeof useShellEffects>, "checkForAppUpdate">
     & Pick<ReturnType<typeof useAuthenticationActions>, "disconnect">;
@@ -68,7 +74,7 @@ type Props = {
  */
 export function AppShellChrome({
   now, group, demoMode, userEmail, isProgramAdmin, actualProgramAdmin, programAdminKnown,
-  admin, installation, shell, pay, calendar, allowanceValues, feedbackMessaging, notify, showSuccess, actions,
+  admin, installation, shell, pay, calendar, allowanceValues, feedbackMessaging, notify, showSuccess, help, actions,
 }: Props) {
   const { guestPreview, setGuestPreview, adminToolsOpen, setAdminToolsOpen, setAdminRevision } = admin;
   const { enabled: installationEnabled, installPrompt, installApp } = installation;
@@ -83,6 +89,43 @@ export function AppShellChrome({
     baseSalary, sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
   } = allowanceValues;
   const { navigateFromShell, checkForAppUpdate, disconnect } = actions;
+  const [helpOpen, setHelpOpen] = useState(false);
+  // Chaque question de la fenêtre d'aide : la page, puis l'onglet ou la
+  // sous-page que l'écran visé ouvre de lui-même (helpTargets).
+  const chooseHelp = (choice: HelpChoice) => {
+    setHelpOpen(false);
+    const open = (section: Parameters<typeof navigateFromShell>[0], target?: HelpTarget) => {
+      navigateFromShell(section);
+      window.scrollTo({ top: 0, behavior: "auto" });
+      if (target) requestHelpTarget(target);
+    };
+    const openPay = (screen: "allowances" | "payslip" | "overview") => {
+      open("pay");
+      setPayScreen(screen);
+    };
+    switch (choice) {
+      case "phone": return open("pdf", "contacts");
+      case "radio": return open("pdf", "radio-codes");
+      case "form": return open("pdf", "forms");
+      case "work-accident": return open("pdf", "work-accident");
+      case "expo-dates": return open("program", "program-upcoming");
+      case "expo-folder": return open("pdf", "expo-folder");
+      case "interexpo": return open("program", "program-interexpo");
+      case "allowances": return openPay("allowances");
+      case "pay-detail": return openPay("payslip");
+      case "payslip-check":
+        openPay("overview");
+        pay.setPayVerificationRequested(true);
+        return;
+      case "overtime-mecenat": return open("leave", "overtime-mecenat");
+      case "cet": return open("leave", "cet");
+      case "planning-pdf":
+        open("home");
+        help.openPlanningPdf();
+        return;
+      case "request-form": return help.openBlankForm();
+    }
+  };
   return (
     <>
       <AppHeader
@@ -112,7 +155,16 @@ export function AppShellChrome({
           setMainMenuOpen(true);
         }}
         onCheckForUpdate={() => void checkForAppUpdate()}
+        onOpenHelp={() => {
+          setAccountMenuOpen(false);
+          setHelpOpen(true);
+        }}
       />
+      {helpOpen ? (
+        <Suspense fallback={null}>
+          <HelpSheet today={dateKey(now)} section={homeSection} onChoose={chooseHelp} onClose={() => setHelpOpen(false)} />
+        </Suspense>
+      ) : null}
       <AdaptiveNavigation
         homeSection={homeSection}
         onNavigate={(section) => navigateFromShell(section)}
