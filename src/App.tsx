@@ -1029,6 +1029,8 @@ export default function Home() {
       {homeSection === "pay" && allowances ? (
         <Suspense fallback={<DeferredSection label="votre paie" />}>
         <PaySectionScreen
+          now={now}
+          group={group}
           payUi={payUi}
           payActions={payActions}
           profile={payProfileValues}

@@ -41,12 +41,19 @@ describe("veille du site du Grand Palais", () => {
     );
     expect(html).toContain("Dernier contrôle");
     expect(html).toMatch(/gp-watch-result is-pending">1 mise à jour ajoutée · 1 à valider</);
-    expect(html).toContain('aria-label="Contrôler maintenant"');
+    expect(html).toContain('aria-label="Contrôler maintenant">Contrôler maintenant</button>');
+    // Du nouveau : le point du radar s'allume.
+    expect(html).toContain("grand-palais-check-panel gp-watch has-news");
     const clear = renderToStaticMarkup(
       <GrandPalaisCheckPanel lastCheckedAt={report.checkedAt} report={{ ...report, prices: [], proposals: [] }} onPayload={vi.fn()} />,
     );
-    expect(clear).toMatch(/gp-watch-result is-clear">.*Rien de nouveau</);
-    expect(clear).toContain("<br/>Contrôle automatique chaque nuit à minuit");
+    expect(clear).toMatch(/gp-watch-result is-clear">Rien de nouveau</);
+    // Le radar, sans point allumé quand rien n'a changé.
+    expect(clear).toContain('class="gp-watch-scope" aria-hidden="true"');
+    expect(clear).not.toContain("has-news");
+    expect(clear).toContain("<small>Dernier contrôle</small>");
+    expect(clear).not.toContain("chaque nuit");
+    expect(clear).not.toContain("Prochain passage");
     // Rien à lire : pas de bloc sous la ligne.
     expect(clear).not.toContain("gp-watch-body");
     expect(renderToStaticMarkup(<GrandPalaisCheckPanel onPayload={vi.fn()} />)).toContain("Aucun contrôle pour l’instant");

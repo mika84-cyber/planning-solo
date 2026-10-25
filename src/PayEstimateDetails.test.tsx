@@ -76,11 +76,12 @@ describe("détail mensuel de la paie", () => {
     expect(html).toMatch(/<li class="sub"><button[^>]*><span class="pay-total-label">Net avant impôt<\/span>/);
     expect(html).toMatch(/<li class="minus"><button[^>]*><span class="pay-total-label">Impôt sur le revenu<small>prélèvement à la source · /);
     expect(html).toMatch(/<li class="net"><button[^>]*><span class="pay-total-label">Net estimé<small>ce qui arrive sur votre compte<\/small><\/span><span class="pay-total-value"><b>1.980,00.€<\/b>/);
-    // Sous chaque étape, sa part du brut (2 500 €) : le brut entier, les
-    // cotisations 19 %, le net 79 %.
-    expect(html).toMatch(/Brut du mois[^]*?<span class="pay-total-bar" aria-hidden="true"><i style="width:100%"><\/i><\/span><\/button>/);
-    expect(html).toMatch(/Cotisations sociales[^]*?<span class="pay-total-bar" aria-hidden="true"><i style="width:19%">/);
-    expect(html).toMatch(/Net estimé[^]*?<span class="pay-total-bar" aria-hidden="true"><i style="width:79%">/);
+    // Trois groupes : ce que vous gagnez, ce qui est retenu, ce qui vous reste.
+    expect(html).toMatch(/<div class="pay-total-group earn"><p class="pay-total-group-head">Ce que vous gagnez<\/p><ol><li><button[^>]*><span class="pay-total-label">Brut du mois/);
+    expect(html).toMatch(/<div class="pay-total-group take"><p class="pay-total-group-head">Ce qui est retenu<\/p><ol><li class="minus"><button[^>]*><span class="pay-total-label">Cotisations sociales/);
+    expect(html).toMatch(/<div class="pay-total-group keep"><p class="pay-total-group-head">Ce qui vous reste<\/p><ol><li class="plus"><button[^>]*><span class="pay-total-label">Navigo remboursé/);
+    expect(html).toMatch(/Titres repas[^]*Impôt sur le revenu[^]*Ce qui vous reste/);
+    expect(html).not.toContain("pay-total-bar");
     expect(html).not.toContain("pay-total-dot");
     expect(html).not.toContain("Touchez une case pour voir son calcul.");
     expect(html).not.toContain("Net estimé final");

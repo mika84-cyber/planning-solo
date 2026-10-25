@@ -45,7 +45,7 @@ export function grandPalaisCheckFailureMessage(error: unknown) {
 
 /** Un passage de la veille : lit le site, met les tarifs à jour, garde les
  *  autres changements en attente d'accord et prévient l'administrateur.
- *  Partagé par le passage de minuit et le contrôle lancé à la main. */
+ *  Lancé à la main depuis Programme GP, par la fonction d'arrière-plan. */
 export async function runGrandPalaisCheck() {
   const store = getStore({ name: "planning-solo-program", consistency: "strong" });
   const [state, storedPending, dismissed, storedApproved, previousSitePrices] = await Promise.all([

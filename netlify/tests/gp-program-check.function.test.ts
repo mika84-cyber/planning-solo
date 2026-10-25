@@ -29,9 +29,13 @@ import {
   sendGrandPalaisAlertEmail,
 } from "../lib/grandPalaisMonitor.mts";
 import { sendSharedPlanningNotification } from "../lib/sharedCalendarBridge.mts";
-import monitorGrandPalaisProgram, {
-  config,
-} from "../functions/gp-program-monitor.mts";
+import { runGrandPalaisCheck } from "../lib/grandPalaisCheck.mts";
+
+// Le contrôle ne se lance plus qu'à la main ; on lit son compte rendu comme
+// la fonction d'arrière-plan le reçoit.
+async function monitorGrandPalaisProgram() {
+  return new Response(JSON.stringify(await runGrandPalaisCheck()), { headers: { "content-type": "application/json; charset=utf-8" } });
+}
 
 const mockedCollect = vi.mocked(collectGrandPalaisEvents);
 const mockedDetect = vi.mocked(detectGrandPalaisChanges);
@@ -58,7 +62,7 @@ const nextState = {
   events: [event],
 };
 
-describe("surveillance planifiée du programme Grand Palais", () => {
+describe("contrôle du programme Grand Palais", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-28T22:05:00Z"));
@@ -75,22 +79,7 @@ describe("surveillance planifiée du programme Grand Palais", () => {
 
   afterEach(() => { vi.useRealTimers(); });
 
-  it.each(["2026-08-28T23:05:00Z", "2026-01-28T22:05:00Z", "2026-03-29T23:05:00Z", "2026-10-25T22:05:00Z"])("ignore le créneau UTC hors minuit à Paris : %s", async (date) => {
-    vi.setSystemTime(new Date(date));
-    expect(await (await monitorGrandPalaisProgram()).json()).toMatchObject({ skipped: true });
-    expect(store.get).not.toHaveBeenCalled();
-    expect(mockedCollect).not.toHaveBeenCalled();
-  });
-
-  it.each(["2026-01-28T23:05:00Z", "2026-08-28T22:05:00Z", "2026-03-29T22:05:00Z", "2026-10-25T23:05:00Z"])("collecte à 00h05 heure de Paris : %s", async (date) => {
-    vi.setSystemTime(new Date(date));
-    mockedCollect.mockResolvedValue([]);
-    mockedDetect.mockReturnValue({ state: nextState, proposals: [] } as never);
-    await monitorGrandPalaisProgram();
-    expect(mockedCollect).toHaveBeenCalledTimes(1);
-  });
-
-  it("collecte, conserve et signale les nouvelles propositions chaque jour", async () => {
+  it("collecte, conserve et signale les nouvelles propositions", async () => {
     stored.set("monitor-state", { lastCheckedAt: "2026-08-28T06:00:00.000Z", events: [] });
     stored.set("pending", []);
     mockedCollect.mockResolvedValue([event] as never);
@@ -99,7 +88,6 @@ describe("surveillance planifiée du programme Grand Palais", () => {
 
     const response = await monitorGrandPalaisProgram();
 
-    expect(config).toEqual({ schedule: "5 22,23 * * *" });
     expect(store.get).toHaveBeenCalledWith("monitor-state", { type: "json" });
     expect(store.get).toHaveBeenCalledWith("pending", { type: "json" });
     expect(stored.get("monitor-state")).toEqual(nextState);

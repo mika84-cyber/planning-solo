@@ -110,11 +110,11 @@ function checkResultLabel(report?: GrandPalaisCheckReport) {
 }
 
 /**
- * Veille du site du Grand Palais, pour l'administrateur : une bande d'une
- * ligne, au bleu ardoise de l'en-tête — le résultat en pastille à côté du
- * titre, la date du dernier contrôle dessous, un bouton rond pour en lancer
- * un tout de suite. Le contrôle tourne en arrière-plan ; la bande relit la
- * programmation jusqu'à voir la date changer, puis affiche le compte rendu.
+ * Veille du site du Grand Palais, pour l'administrateur : un petit radar
+ * crème et terracotta — la date du dernier contrôle en grand, ce qu'il a
+ * trouvé, et « Contrôler maintenant » : la veille ne tourne qu'à la main. Le
+ * contrôle tourne en arrière-plan ; le panneau relit la programmation jusqu'à
+ * voir la date changer, puis affiche le compte rendu.
  */
 export function GrandPalaisCheckPanel({
   lastCheckedAt,
@@ -171,29 +171,34 @@ export function GrandPalaisCheckPanel({
   const result = checkResultLabel(currentReport);
   const running = status === "running";
   const buttonLabel = running ? "Contrôle en cours…" : "Contrôler maintenant";
+  const pending = !running && Boolean(result) && result !== "rien de nouveau";
   return (
-    <section className="grand-palais-check-panel gp-watch" aria-labelledby="grand-palais-check-title">
+    <section
+      className={`grand-palais-check-panel gp-watch${running ? " is-running" : ""}${pending ? " has-news" : ""}`}
+      aria-labelledby="grand-palais-check-title"
+    >
       <div className="gp-watch-row">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.6" /><path d="M12 12 18 6" /><path d="M7.8 16.2a6 6 0 1 1 8.4 0" /><path d="M5 19a10 10 0 1 1 14 0" /></svg>
+        {/* Le radar : son faisceau tourne lentement, plus vite pendant une
+            lecture ; un point s'allume quand le contrôle a trouvé du nouveau. */}
+        <span className="gp-watch-scope" aria-hidden="true"><i /></span>
         <div className="gp-watch-text">
-          <h3 id="grand-palais-check-title">
-            Veille du site
-            {running ? <span className="gp-watch-result">Lecture en cours…</span>
-              : result ? (
-                <span className={`gp-watch-result ${result === "rien de nouveau" ? "is-clear" : "is-pending"}`}>
-                  {result === "rien de nouveau" ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg> : null}
-                  {result === "rien de nouveau" ? "Rien de nouveau" : result}
-                </span>
-              ) : null}
-          </h3>
-          <small>
-            {lastCheckedAt ? <>Dernier contrôle <CheckWhen label={checkWhenLabel(lastCheckedAt).replace(/^./, (letter) => letter.toLocaleLowerCase("fr"))} /></> : "Aucun contrôle pour l’instant"}
-            <br />Contrôle automatique chaque nuit à minuit
-          </small>
+          <h3 id="grand-palais-check-title">Veille du site</h3>
+          {lastCheckedAt ? (
+            <>
+              <small>Dernier contrôle</small>
+              <strong className="gp-watch-when"><CheckWhen label={checkWhenLabel(lastCheckedAt)} /></strong>
+            </>
+          ) : <small>Aucun contrôle pour l’instant</small>}
+          {running ? <span className="gp-watch-result">Lecture en cours…</span>
+            : result ? (
+              <span className={`gp-watch-result ${result === "rien de nouveau" ? "is-clear" : "is-pending"}`}>
+                {result === "rien de nouveau" ? "Rien de nouveau" : result}
+              </span>
+            ) : null}
+          <button type="button" className="grand-palais-check-button" disabled={running} aria-label={buttonLabel} onClick={() => void runCheck()}>
+            {buttonLabel}
+          </button>
         </div>
-        <button type="button" className="grand-palais-check-button" disabled={running} aria-label={buttonLabel} title={buttonLabel} onClick={() => void runCheck()}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></svg>
-        </button>
       </div>
       {running || message || (currentReport && result !== "rien de nouveau") ? (
         <div className="gp-watch-body">

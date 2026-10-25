@@ -13,7 +13,7 @@ export const MAIN_SECTION_ORDER = [
 ] as const;
 
 export type MainSection = (typeof MAIN_SECTION_ORDER)[number] | "forms";
-export type PayScreen = "overview" | "allowances" | "payslip";
+export type PayScreen = "overview" | "allowances" | "payslip" | "year";
 
 function NavigationIcon({ section }: { section: MainSection | "more" | "feedback" | "update" | "data" | "install" | "guide" | "holidays" }) {
   const paths: Record<string, string> = {
@@ -77,6 +77,7 @@ function headerTitle(section: MainSection, payScreen: PayScreen) {
   if (section === "colleagues") return "Planning partagé";
   if (payScreen === "allowances") return "Primes et jours fériés";
   if (payScreen === "payslip") return "Détail du calcul";
+  if (payScreen === "year") return "L’année en un coup d’œil";
   return "Ma paie";
 }
 

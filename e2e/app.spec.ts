@@ -417,7 +417,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(page.locator(".pay-bulletin-hero .pay-bulletin-month")).toBeVisible();
   await expectWhiteCard(".pay-bulletin-hero");
   await expectWhiteCard(".pay-bulletin-lines");
-  await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(3);
+  await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(4);
   // La vérification (repliée jusqu'au choix d'un bulletin) reste sur blanc.
   await expect(page.locator(".pay-bulletin-panel")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await page.getByRole("button", { name: "Profil et réglages" }).click();
@@ -1186,8 +1186,17 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(weekTable.locator("tbody th[scope=row]")).toHaveText(["Mika", "Agnès"]);
   await expect(weekTable.locator("tbody .colleague-week-cell")).toHaveCount(14);
   expect(await dayBoard.locator(".colleague-week-shell").evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
-  await expect(dayBoard.getByRole("button", { name: "Semaine précédente" })).toBeDisabled();
+  // Les semaines passées se consultent aussi ; « Revenir à cette semaine »
+  // y ramène, et n'apparaît qu'en dehors d'elle.
+  const today = dayBoard.getByRole("button", { name: "Revenir à cette semaine" });
+  await expect(today).toHaveCount(0);
   const firstWeekTitle = await dayBoard.locator("#colleague-tomorrow-title").innerText();
+  await dayBoard.getByRole("button", { name: "Semaine précédente" }).click();
+  await expect(dayBoard.locator("#colleague-tomorrow-title")).not.toHaveText(firstWeekTitle);
+  await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).toHaveCount(0);
+  await today.click();
+  await expect(dayBoard.locator("#colleague-tomorrow-title")).toHaveText(firstWeekTitle);
+  await expect(today).toHaveCount(0);
   await dayBoard.getByRole("button", { name: "Semaine suivante" }).click();
   await expect(dayBoard.locator("#colleague-tomorrow-title")).not.toHaveText(firstWeekTitle);
   await expect(weekTable.locator(".colleague-tomorrow-group th.is-today")).toHaveCount(0);
@@ -3429,6 +3438,26 @@ test("une fermeture exceptionnelle peut être ajoutée puis retirée manuellemen
   await expect(day.locator(".exceptional-closure-marker")).toHaveCount(0);
 });
 
+test("une modification repérée par la veille montre l’ancien et le nouveau tarif", async ({ page }) => {
+  const before = { id: "event-glace", title: "Grand Palais de Glace", startDate: "2026-12-06", endDate: "2027-01-04", url: "https://www.grandpalais.fr/fr/programme/glace", venueKey: "nef", venueLabel: "Nef", prices: [{ group: "Session du matin", label: "Plein tarif", amount: 15 }] };
+  const after = { ...before, endDate: "2027-01-11", prices: [{ group: "Session du matin", label: "Plein tarif", amount: 17 }] };
+  await page.route("**/api/gp-program", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+    approved: [before],
+    pending: [{ id: "proposal-glace", kind: "changed", detectedAt: "2026-10-25T00:02:00.000Z", previous: before, next: after }],
+    isAdmin: true,
+    lastCheckedAt: "2026-10-25T00:02:00.000Z",
+  }) }));
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  const changes = page.getByRole("list", { name: "Ce qui a changé" });
+  await expect(changes.locator("li")).toHaveCount(2);
+  await expect(changes.locator("li").first()).toContainText("Fin");
+  await expect(changes.locator("li").first()).toContainText("4 janvier 2027→11 janvier 2027");
+  await expect(changes.locator("li").last()).toContainText("Session du matin · Plein tarif");
+  await expect(changes.locator("li").last().locator("s")).toHaveText("15 €");
+  await expect(changes.locator("li").last()).toContainText("17 €");
+});
+
 test("le compte administrateur peut valider seul une mise à jour du Grand Palais", async ({ page }) => {
   const event = {
     id: "event-salon",
@@ -5027,7 +5056,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await goToSection(page, "pay");
   await page.getByRole("button", { name: /^Détail du calcul/ }).click();
   // La retenue est dans le calcul du brut, première étape de la cascade.
-  const grossStep = page.locator(".pay-calculation-totals > ol > li").first();
+  const grossStep = page.locator(".pay-calculation-totals .pay-total-group > ol > li").first();
   const strikePayRow = page.locator(".pay-calculation-totals .pay-total-explain li").filter({ hasText: "Grève (1 journée retenue)" });
   // La règle du 10 peut renvoyer la retenue sur la paie suivante selon le jour.
   await expect(async () => {
@@ -5055,7 +5084,7 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
 
   await goToSection(page, "pay");
   await page.getByRole("button", { name: /^Détail du calcul/ }).click();
-  await page.locator(".pay-calculation-totals > ol > li").first().getByRole("button").click();
+  await page.locator(".pay-calculation-totals .pay-total-group > ol > li").first().getByRole("button").click();
   await expect(page.locator(".pay-calculation-totals .pay-total-explain li").filter({ hasText: /^Grève/ })).toHaveCount(0);
 });
 
@@ -5177,7 +5206,7 @@ test("des repos noirs entre deux grèves sont inclus automatiquement dans la ret
     await page.getByRole("button", { name: "Mois suivant" }).click();
   await page.getByRole("button", { name: /^Détail du calcul/ }).click();
   // La retenue est dans le calcul du brut, première étape de la cascade.
-  await page.locator(".pay-calculation-totals > ol > li").first().getByRole("button").click();
+  await page.locator(".pay-calculation-totals .pay-total-group > ol > li").first().getByRole("button").click();
   const strikePayRow = page.locator(".pay-calculation-totals .pay-total-explain li").filter({
     hasText: `Grève (${retainedDays} journées retenues)`,
   });
@@ -5781,7 +5810,7 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
   // le calcul de sa première étape.
   await expect(page.getByRole("heading", { name: "Composition du brut" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Retenues et passage au net" })).toHaveCount(0);
-  await page.locator(".pay-calculation-totals > ol > li").first().getByRole("button").click();
+  await page.locator(".pay-calculation-totals .pay-total-group > ol > li").first().getByRole("button").click();
   const grossCalculation = page.locator(".pay-calculation-totals .pay-total-explain");
   await expect(grossCalculation).toContainText("Traitement de base");
   await expect(grossCalculation).toContainText("Indemnité de résidence");
@@ -5821,6 +5850,26 @@ test("Ma paie couvre août, septembre et octobre avec un calcul détaillé", asy
     expect(overflow, JSON.stringify(overflowingElements)).toBeLessThanOrEqual(1);
   }
   expect(consoleErrors).toEqual([]);
+});
+
+test("l’année en un coup d’œil résume les douze paies et ouvre le détail d’un mois", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-24T12:00:00"));
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: /^L’année en un coup d’œil/ }).click();
+  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("L’année en un coup d’œil");
+  const year = page.getByRole("region", { name: "L’année 2026" });
+  await expect(year.locator(".pay-year-totals li")).toHaveCount(4);
+  await expect(year.locator(".pay-year-totals li.net")).toContainText("Net perçu");
+  await expect(year.locator(".pay-year-bar")).toHaveCount(12);
+  await expect(year.locator(".pay-year-table tbody tr")).toHaveCount(12);
+  // Les mois à venir sont des estimations, plus claires.
+  await expect(year.locator(".pay-year-table tbody tr.future")).toHaveCount(2);
+  // Un mois s'ouvre sur son détail du calcul.
+  await year.getByRole("button", { name: "Septembre 2026 : voir le détail du calcul" }).click();
+  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Détail du calcul");
+  await expect(page.locator(".pay-detail-sticky-header small")).toHaveText("septembre 2026");
+  await expect(page.locator(".pay-calculation-totals li.net")).toContainText("Net estimé");
 });
 
 test("le mois de paie reste indépendant du planning", async ({ page }) => {
@@ -5922,11 +5971,12 @@ test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ pa
   // Un seul titre (le bandeau) ; dessous, le mois entre ses deux flèches.
   await expect(page.getByText("Détail de la paie du mois affiché", { exact: true })).toHaveCount(0);
   await expect(page.locator(".pay-detail-screen .pay-bulletin-month-nav").getByRole("button", { name: "Mois suivant" })).toBeVisible();
-  // Du brut au net : une étape par ligne, chacune avec sa barre de part du
-  // brut — rose pour les retenues, terracotta pour le net qui ferme la cascade.
-  const calculationTotals = page.locator(".pay-calculation-totals > ol > li");
+  // Du brut au net, en trois groupes : ce que vous gagnez, ce qui est
+  // retenu, ce qui vous reste ; le net ferme la cascade.
+  const calculationTotals = page.locator(".pay-calculation-totals .pay-total-group > ol > li");
   await expect(calculationTotals).toHaveCount(6);
-  await expect(calculationTotals.locator(".pay-total-label")).toContainText(["Brut du mois", "Dont primes du mois", "Cotisations sociales", "Net avant impôt", "Impôt sur le revenu", "Net estimé"]);
+  await expect(calculationTotals.locator(".pay-total-label")).toContainText(["Brut du mois", "Dont primes du mois", "Cotisations sociales", "Impôt sur le revenu", "Net avant impôt", "Net estimé"]);
+  await expect(page.locator(".pay-total-group-head")).toHaveText(["Ce que vous gagnez", "Ce qui est retenu", "Ce qui vous reste"]);
   await expect(calculationTotals.nth(2)).toHaveClass(/minus/);
   await expect(calculationTotals.last()).toHaveClass(/net/);
   // Une simple estimation avec le profil de l'année n'est plus annoncée.

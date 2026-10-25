@@ -59,12 +59,29 @@ type PayDashboardProps = {
   onToday: () => void;
   onOpenEstimateDetails: () => void;
   onOpenAllowances: () => void;
+  /** L'année en un coup d'œil : net, primes, mécénats, impôt sur douze mois. */
+  onOpenYear?: () => void;
   /** « Profil et réglages » s'ouvre : le profil de paie et ses éléments se
    *  déplient avec, d'un seul geste. */
   onOpenTools?: () => void;
   /** Et se referme avec lui, réglages compris. */
   onCloseTools?: () => void;
 };
+
+/** La pastille ronde de chaque entrée de « Pour aller plus loin » : son
+ *  icône sur la couleur de son sujet. */
+function ShortcutIcon({ tone }: { tone: "allowances" | "calculation" | "year" | "profile" }) {
+  return (
+    <b className={`pay-bulletin-shortcut-icon ${tone}`} aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        {tone === "allowances" ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></> : null}
+        {tone === "calculation" ? <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18h8" /></> : null}
+        {tone === "year" ? <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> : null}
+        {tone === "profile" ? <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></> : null}
+      </svg>
+    </b>
+  );
+}
 
 const number = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -151,6 +168,7 @@ export function PayDashboard({
   onToday,
   onOpenEstimateDetails,
   onOpenAllowances,
+  onOpenYear,
   onOpenTools,
   onCloseTools,
 }: PayDashboardProps) {
@@ -483,12 +501,14 @@ export function PayDashboard({
         {verificationContent}
       </section>
 
-      {/* Pour aller plus loin, trois entrées de même facture : les primes de
-          l'année et le détail du calcul ouvrent leur page ; le profil et les
-          réglages se déplient ici même, d'un seul geste. */}
+      {/* Pour aller plus loin : quatre entrées réunies dans une seule liste,
+          chacune avec sa pastille de couleur. Les primes, le détail du calcul
+          et l'année ouvrent leur page ; le profil et les réglages se déplient
+          ici même, d'un seul geste. */}
       <section className="pay-bulletin-more" aria-label="Pour aller plus loin">
         <div className="pay-bulletin-links">
           <button type="button" className="pay-bulletin-shortcut" onClick={onOpenAllowances}>
+            <ShortcutIcon tone="allowances" />
             <span>
               <strong>Primes et jours fériés</strong>
               <small>Dimanches, fériés, heures sup</small>
@@ -497,13 +517,25 @@ export function PayDashboard({
             <i aria-hidden="true">›</i>
           </button>
           <button type="button" className="pay-bulletin-shortcut" onClick={onOpenEstimateDetails}>
+            <ShortcutIcon tone="calculation" />
             <span>
               <strong>Détail du calcul</strong>
               <small>Brut, cotisations, impôt</small>
             </span>
             <i aria-hidden="true">›</i>
           </button>
+          {onOpenYear ? (
+            <button type="button" className="pay-bulletin-shortcut" onClick={onOpenYear}>
+              <ShortcutIcon tone="year" />
+              <span>
+                <strong>L’année en un coup d’œil</strong>
+                <small>Net, primes, mécénats, impôt · {year}</small>
+              </span>
+              <i aria-hidden="true">›</i>
+            </button>
+          ) : null}
           <button type="button" className={`pay-bulletin-shortcut${showTools ? " open" : ""}`} aria-expanded={showTools} aria-controls="pay-dashboard-tools" onClick={toggleTools}>
+            <ShortcutIcon tone="profile" />
             <span>
               <strong>Profil et réglages</strong>
               <small>{profileRecap}</small>

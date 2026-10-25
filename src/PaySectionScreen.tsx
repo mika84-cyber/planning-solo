@@ -1,4 +1,8 @@
 import { PayScreen } from "./PayScreen";
+import { useState } from "react";
+import { PayYearOverview } from "./PayYearOverview";
+import { useYearPayOverview } from "./useYearPayOverview";
+import { localDate } from "./planningLogic";
 import { scrollWhenReady } from "./scrollWhenReady";
 import type { useCalendarDataState } from "./useCalendarDataState";
 import type { useMonthPayEstimate } from "./useMonthPayEstimate";
@@ -14,6 +18,8 @@ import type { useWorkTimeActions } from "./useWorkTimeActions";
 type MonthPayEstimate = ReturnType<typeof useMonthPayEstimate>;
 
 type Props = {
+  now: Date;
+  group: number;
   payUi: ReturnType<typeof usePayUiState>;
   payActions: ReturnType<typeof usePayActions>;
   /** Valeurs du profil de paie du mois affiché. */
@@ -21,7 +27,7 @@ type Props = {
   /** L'estimation du mois ; ses primes, déjà calculées, arrivent à part. */
   estimate: Omit<MonthPayEstimate, "allowances">;
   allowances: NonNullable<MonthPayEstimate["allowances"]>;
-  calendar: Pick<ReturnType<typeof useCalendarDataState>, "formProfile" | "payProfiles" | "mecenatEntries">;
+  calendar: Pick<ReturnType<typeof useCalendarDataState>, "formProfile" | "payProfiles" | "mecenatEntries" | "entries" | "periods" | "recoveryUses">;
   payslipVerifications: ReturnType<typeof usePayslipVerifications>;
   /** Mois affiché et glissement de la carte des primes. */
   navigation: ReturnType<typeof usePayMonthNavigation>;
@@ -39,10 +45,10 @@ type Props = {
  * seulement à l'ouverture de la rubrique, une fois les primes calculées.
  */
 export function PaySectionScreen({
-  payUi, payActions, profile, estimate, allowances, calendar, payslipVerifications, navigation,
+  now, group, payUi, payActions, profile, estimate, allowances, calendar, payslipVerifications, navigation,
   holidayChoiceEditing, onEditHolidayChoice, actions,
 }: Props) {
-  const { formProfile, payProfiles, mecenatEntries } = calendar;
+  const { formProfile, payProfiles, mecenatEntries, entries, periods, recoveryUses } = calendar;
   const {
     isContractuel, confirmedContractuel, workQuota, payYear, hasPayValue,
     baseSalary, ifse, carenceDay, otherFixed, cia, ciaMonth, residenceAllowance,
@@ -51,12 +57,12 @@ export function PaySectionScreen({
     sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth,
   } = profile;
   const {
-    sickLeaves, overtimeForPayMonth, overtimeEarlyCandidates, mecenatForCurrentPayMonth,
+    sickLeaves, overtimeForPayMonth, overtimeEarlyCandidates, mecenatForCurrentPayMonth, paidOvertimeForPayPeriod,
     strikeForCurrentPayMonth, monthPay, grossEstimateComplete, netEstimateMissing, netEstimateComplete,
     netCalculation, monthNet,
   } = estimate;
   const {
-    payScreen, setPayScreen, payProfileOpen, setPayProfileOpen,
+    payScreen, setPayScreen, setPayView, payProfileOpen, setPayProfileOpen,
     payProfileFocusRequested, setPayProfileFocusRequested,
     payVerificationRequested, setPayVerificationRequested,
     payMonthSlide, setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,
@@ -67,6 +73,21 @@ export function PaySectionScreen({
     changeWorkQuota, changeWorkSchedule, changeStatus, saveCalculationProfile, openWorkExchange,
   } = actions;
   const { chooseHolidayPay } = payActions;
+  // L'année en un coup d'œil : celle du mois affiché, changeable sur place.
+  const [yearView, setYearView] = useState(() => payUi.payView.getFullYear());
+  const yearOverview = useYearPayOverview({
+    year: yearView,
+    now,
+    group,
+    periods,
+    entries,
+    recoveryUses,
+    mecenatEntries,
+    formProfile,
+    payProfiles,
+    values: profile,
+    paidOvertimeForPayPeriod,
+  });
   return (
         <PayScreen
           content={{
@@ -126,6 +147,17 @@ export function PaySectionScreen({
           onEditHolidayChoice={onEditHolidayChoice}
           onChooseHolidayPay={chooseHolidayPay}
           onExchangeHoliday={(key) => openWorkExchange(key)}
+          yearContent={
+            <PayYearOverview
+              overview={yearOverview}
+              onYearChange={setYearView}
+              onOpenMonth={(month) => {
+                // Un mois s'ouvre sur son détail du calcul.
+                setPayView(localDate(yearView, month, 1));
+                setPayScreen("payslip");
+              }}
+            />
+          }
           page={{
             screen: payScreen,
             profileOpen: payProfileOpen,

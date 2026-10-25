@@ -1,13 +1,15 @@
-# Mise à jour automatique de la programmation GP
+# Mise à jour de la programmation GP
 
-La fonction Netlify `gp-program-monitor` s’exécute une fois par jour. Elle lit
-les métadonnées publiques du site officiel du Grand Palais, puis compare le
-relevé avec celui de la veille.
+Le contrôle se lance à la main, avec « Contrôler maintenant » dans la veille
+du site (Programme GP, compte administrateur). Il n’y a plus de passage
+automatique. La fonction d’arrière-plan `gp-program-check-background` lit les
+métadonnées publiques du site officiel du Grand Palais, puis compare le relevé
+avec celui du contrôle précédent.
 
 - Le premier passage crée seulement la référence initiale.
 - Une nouveauté ou une modification crée une proposition.
-- Un retrait du site doit être constaté deux jours consécutifs avant d’être
-  proposé, afin d’éviter les faux retraits temporaires.
+- Un retrait du site doit être constaté à deux contrôles consécutifs avant
+  d’être proposé, afin d’éviter les faux retraits temporaires.
 - Seul le compte dont l’adresse correspond à `PROGRAM_ADMIN_EMAIL` reçoit et
   voit les propositions.
 - Une proposition acceptée est enregistrée dans Netlify Blobs et devient

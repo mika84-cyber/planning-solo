@@ -7,7 +7,7 @@ import { PAY_STATUS_OPTIONS, type PayStatus } from "./appModel";
 import { WORK_QUOTA_OPTIONS, type WorkQuota, type WorkSchedule } from "./overtime";
 import { MONTHS } from "./planningLogic";
 
-export type PayScreen = "overview" | "allowances" | "payslip";
+export type PayScreen = "overview" | "allowances" | "payslip" | "year";
 
 type PayPageProps = {
   screen: PayScreen;
@@ -45,6 +45,8 @@ type PayPageProps = {
   monthSlide: string;
   allowancesContent: ReactNode;
   estimateContent: ReactNode;
+  /** L'année en un coup d'œil : net, primes, mécénats, impôt sur douze mois. */
+  yearContent: ReactNode;
   verificationContent: ReactNode;
   settingsContent: ReactNode;
   onScreenChange: (screen: PayScreen) => void;
@@ -67,7 +69,7 @@ export function PayPage({
   netEstimateComplete, gross, grossComplete, net,
   missingFields, onCompleteEstimate,
   reliability, variables, calculation, allowancesPending, verification, savedVerification, verificationRequested, onVerificationShown,
-  deductionContent, monthSlide, allowancesContent, estimateContent,
+  deductionContent, monthSlide, allowancesContent, estimateContent, yearContent,
   verificationContent, settingsContent, onScreenChange, onToggleProfile, onProfileFocused,
   onToggleSettings, onWorkQuotaChange, onWorkScheduleChange, onStatusChange, onPreviousMonth,
   onSaveProfile, onNextMonth, onToday, onTouchStart, onTouchEnd,
@@ -167,6 +169,7 @@ export function PayPage({
             onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday}
             onOpenEstimateDetails={() => onScreenChange("payslip")}
             onOpenAllowances={() => onScreenChange("allowances")}
+            onOpenYear={() => onScreenChange("year")}
           />
         </div>
       ) : (
@@ -175,12 +178,12 @@ export function PayPage({
             <button className="native-back-button" type="button" onClick={() => onScreenChange("overview")} aria-label="Revenir au tableau de bord de paie"><span aria-hidden="true">←</span></button>
             <button type="button" className="pay-detail-title-button" onClick={() => onScreenChange("overview")} aria-label="Fermer cette page et revenir à Ma paie">
               <span className="step-label">Ma paie</span>
-              <h2>{screen === "allowances" ? "Primes et jours fériés" : "Détail du calcul"}</h2>
-              <small>{MONTHS[month]} {year}</small>
+              <h2>{screen === "allowances" ? "Primes et jours fériés" : screen === "year" ? "L’année en un coup d’œil" : "Détail du calcul"}</h2>
+              <small>{screen === "year" ? "Net, primes, mécénats, impôt" : `${MONTHS[month]} ${year}`}</small>
             </button>
           </header>
           <div className={`pay-dedicated-content${screen === "allowances" ? " request-archive-content allowances" : ""}${monthSlide ? ` pay-month-${monthSlide}` : ""}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-            {screen === "allowances" ? allowancesContent : estimateContent}
+            {screen === "allowances" ? allowancesContent : screen === "year" ? yearContent : estimateContent}
           </div>
         </div>
       )}

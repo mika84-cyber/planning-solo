@@ -138,4 +138,10 @@ html[data-theme="dark"] .payslip-gap-choice p strong, html[data-theme="dark"] .p
 html[data-theme="dark"] .calendar-grid .day.exceptional-closure-day > .leave-calendar-marker { color: #f3ede6; text-shadow: 0 1px 0 #1d1916, 1px 0 0 #1d1916, -1px 0 0 #1d1916, 0 -1px 0 #1d1916; }
 /* Les encadrés des lignes de la paie et de la cascade : liseré clair léger. */
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-group,
-html[data-theme="dark"] .pay-calculation-totals > ol > li { border-color: rgba(243, 237, 230, 0.38); }
+html[data-theme="dark"] .pay-total-group { border-color: rgba(243, 237, 230, 0.38); }
+html[data-theme="dark"] .pay-total-group > ol > li { border-top-color: #3a322c; }
+html[data-theme="dark"] .pay-calculation-totals li > .pay-total-explain { background: rgba(0, 0, 0, 0.18); }
+/* « Pour aller plus loin » : la liste réunie, son liseré et ses filets. */
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-links { border-color: rgba(243, 237, 230, 0.38); background: #221d1a; }
+html[data-theme="dark"] .app-shell .pay-bulletin .pay-bulletin-shortcut + .pay-bulletin-shortcut { border-top-color: #3a322c; }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-shortcut em { background: #3d2a22; color: #f0c3ad; }

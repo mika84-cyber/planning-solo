@@ -97,6 +97,8 @@ export function colleagueBoardTitle(offset: number, reference = new Date()) {
 /** On peut regarder jusqu'à deux mois devant soi. */
 const BOARD_MAX_OFFSET = 60;
 const BOARD_MAX_WEEK_OFFSET = 8;
+/** Les semaines passées restent consultables : trois mois en arrière. */
+const BOARD_MIN_WEEK_OFFSET = -13;
 
 /** Lundi de la semaine consultée : la semaine en cours, puis les suivantes. */
 export function colleagueWeekStart(weekOffset: number, reference = new Date()) {
@@ -719,13 +721,21 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
       {/* Ce qui sert chaque jour vient en premier : qui travaille, jour par jour. */}
       {boardVisible ? <section className="colleague-card colleague-tomorrow colleague-day-board" aria-labelledby="colleague-tomorrow-title">
         <header className="colleague-tomorrow-heading">
-          <div><p className="eyebrow">En un coup d’œil</p><h4 id="colleague-tomorrow-title">{boardMode === "day" ? colleagueBoardTitle(boardOffset) : colleagueWeekTitle(weekOffset)}</h4></div>
+          <div>
+            <p className="eyebrow">En un coup d’œil</p>
+            <h4 id="colleague-tomorrow-title">{boardMode === "day" ? colleagueBoardTitle(boardOffset) : colleagueWeekTitle(weekOffset)}</h4>
+            {/* Hors de la semaine en cours, un lien discret sous le titre y
+                ramène, comme « Revenir à aujourd'hui » dans Ma paie. */}
+            {boardMode === "week" && weekOffset !== 0 ? (
+              <button className="colleague-today-step" type="button" onClick={() => setWeekOffset(0)}>Revenir à cette semaine</button>
+            ) : null}
+          </div>
           <div className="colleague-day-steps">
             {boardMode === "day" ? <>
               <button className="period-step" type="button" aria-label="Jour précédent" disabled={boardOffset <= 0} onClick={() => setBoardOffset((offset) => Math.max(0, offset - 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button>
               <button className="period-step" type="button" aria-label="Jour suivant" disabled={boardOffset >= BOARD_MAX_OFFSET} onClick={() => setBoardOffset((offset) => Math.min(BOARD_MAX_OFFSET, offset + 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button>
             </> : <>
-              <button className="period-step" type="button" aria-label="Semaine précédente" disabled={weekOffset <= 0} onClick={() => setWeekOffset((offset) => Math.max(0, offset - 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button>
+              <button className="period-step" type="button" aria-label="Semaine précédente" disabled={weekOffset <= BOARD_MIN_WEEK_OFFSET} onClick={() => setWeekOffset((offset) => Math.max(BOARD_MIN_WEEK_OFFSET, offset - 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg></button>
               <button className="period-step" type="button" aria-label="Semaine suivante" disabled={weekOffset >= BOARD_MAX_WEEK_OFFSET} onClick={() => setWeekOffset((offset) => Math.min(BOARD_MAX_WEEK_OFFSET, offset + 1))}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg></button>
             </>}
           </div>

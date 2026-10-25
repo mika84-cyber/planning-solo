@@ -40,6 +40,19 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   compte épargne-temps.
 - `src/CetFormDialog.tsx` : saisie guidée des formulaires officiels d’ouverture,
   d’alimentation et d’indemnisation du CET.
+- `src/grandPalaisProposalChanges.ts` : ce qui a changé entre la version
+  gardée d'une exposition et celle lue par la veille (titre, précision,
+  dates, espace, chaque tarif ajouté, retiré ou modifié) ; une proposition
+  « Informations modifiées » l'affiche ancien → nouveau.
+- `src/PayYearOverview.tsx` : « L'année en un coup d'œil », quatrième carte de
+  Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,
+  dans la langue des lignes de la paie), le net mois par mois en barres, les
+  douze mois en tableau, chacun ouvrant son détail du calcul. Les chiffres
+  viennent de `src/yearPayOverview.ts` (calcul pur, mêmes formules que la
+  paie du mois) alimenté par `src/useYearPayOverview.ts` (profil de paie
+  effectif de chaque mois, primes de l'année, maladie, grève, heures sup,
+  mécénats) ; un mois dont le bulletin a été vérifié prend le brut et le net
+  avant impôt réels gardés dans le compte. Écran `year` de `PayPage`.
 - `src/PayEstimateDetails.tsx` : détail de la paie du mois — la cascade « Du
   brut au net », dont chaque étape s'ouvre sur son calcul (composition du
   brut, cotisations, passage au net), sans tableau qui la répète dessous —,
@@ -189,11 +202,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Glace 2026 ») : une mise à jour acceptée remplace l’entrée livrée au lieu
   de la doubler.
 - `src/GrandPalaisCheckPanel.tsx` : « Veille du site », réservée à
-  l’administrateur — date du dernier contrôle et contrôle lancé à la main.
-  Côté serveur : `netlify/lib/grandPalaisCheck.mts` (un passage de veille),
-  `netlify/functions/gp-program-monitor.mts` (chaque nuit à minuit) et
-  `netlify/functions/gp-program-check-background.mts` (à la demande, déposée
-  par `/api/gp-program`). Un contrôle manuel qui ne peut pas lire le site
+  l’administrateur — un petit radar crème et terracotta (faisceau qui tourne,
+  point allumé quand le contrôle a trouvé du nouveau), date du dernier
+  contrôle en grand, état, et « Contrôler maintenant ».
+  Côté serveur : `netlify/lib/grandPalaisCheck.mts` (un passage de veille)
+  et `netlify/functions/gp-program-check-background.mts` (à la demande,
+  déposée par `/api/gp-program`). Il n’y a plus de passage automatique :
+  l’administrateur lance chaque contrôle. Un contrôle manuel qui ne peut pas lire le site
   (maintenance, erreur 503…) est noté dans `last-check-failure` ; le panneau
   le lit (`checkProgress`) et dit la cause dès la relecture suivante.
 - `src/VisitorQrLinks.tsx` : QR codes de réclamation et d’objet perdu, dans

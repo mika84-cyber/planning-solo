@@ -290,6 +290,10 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-day-board .colleague-tomorrow-heading { align-items: center; }
 .colleague-day-steps { display: flex; flex: none; gap: 8px; }
 .colleague-day-steps .period-step:disabled { box-shadow: none; cursor: default; opacity: .35; }
+/* « Revenir à cette semaine » : un lien discret sous le titre, violet comme
+   les flèches, qui ne prend pas de place à côté d'elles. */
+.colleague-sharing-page button.colleague-today-step { display: inline-flex; min-height: 0; margin: 3px 0 0; border: 0; padding: 0; background: none; box-shadow: none; color: #7255ad; font: inherit; font-size: .78rem; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.colleague-sharing-page button.colleague-today-step:hover { color: var(--accent-strong); }
 
 /* Planning d'un collègue : le mois et l'année comme sur votre planning, en
    capitales espacées reliées par un trait violet, entre deux flèches violettes. */

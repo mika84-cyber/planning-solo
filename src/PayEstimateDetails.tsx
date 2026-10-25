@@ -352,58 +352,68 @@ function PayTotalsExplained({
     },
     { key: "net", kind: "net", label: "Net estimé", note: "ce qui arrive sur votre compte", value: net === null ? "À compléter" : euros(net), amount: net },
   ];
-  // La part de chaque étape dans le brut, pour sa barre : le brut entier, puis
-  // ce qu'on en retire et ce qu'il en reste.
-  const share = (amount: number | null) => (brut ? Math.min(100, Math.round((Math.abs(amount ?? 0) / brut) * 100)) : 0);
   const explanation = open ? explanations[open] : null;
+  /* Trois groupes, dans la langue des lignes de la paie : ce que vous gagnez
+     (le brut, dont les primes), ce qui est retenu (cotisations, titres repas,
+     impôt), ce qui vous reste (le Navigo remboursé, le net avant impôt, le
+     net). Chaque ligne s'ouvre toujours sur son calcul, juste sous elle. */
+  const groups: Array<{ key: "earn" | "take" | "keep"; title: string; keys: TotalKey[] }> = [
+    { key: "earn", title: "Ce que vous gagnez", keys: ["gross", "variable"] },
+    { key: "take", title: "Ce qui est retenu", keys: ["contributions", "mealVouchers", "tax"] },
+    { key: "keep", title: "Ce qui vous reste", keys: ["navigo", "netBeforeTax", "net"] },
+  ];
+  const renderRow = (row: (typeof rows)[number]) => (
+    <li key={row.key} className={[row.kind, open === row.key ? "open" : ""].filter(Boolean).join(" ") || undefined}>
+      <button
+        type="button"
+        aria-expanded={open === row.key}
+        aria-controls="pay-total-explain"
+        onClick={() => setOpen((current) => (current === row.key ? null : row.key))}
+      >
+        <span className="pay-total-label">{row.label}{row.note ? <small>{row.note}</small> : null}</span>
+        {/* Le montant, et dessous, en toutes lettres, ce qu'un appui fait. */}
+        <span className="pay-total-value">
+          <b>{row.value}</b>
+          <em>{open === row.key ? "Masquer le calcul" : "Voir le calcul"}<i aria-hidden="true">›</i></em>
+        </span>
+      </button>
+      {/* Le calcul de l'étape, juste sous sa ligne. */}
+      {open === row.key && explanation ? (
+        <section id="pay-total-explain" className="pay-total-explain" aria-label={explanation.title}>
+          <h4>{explanation.title}</h4>
+          <p>{explanation.intro}</p>
+          <ol>
+            {explanation.steps.map((step) => (
+              <li key={`${step.sign}${step.label}`} className={step.sign === "=" ? "total" : undefined}>
+                <span>
+                  {step.label}
+                  {step.detail ? <small>{step.detail}</small> : null}
+                </span>
+                <b>
+                  {step.amount === null
+                    ? "à compléter"
+                    : `${step.sign === "+" || step.sign === "−" ? `${step.sign} ` : step.amount < 0 ? "− " : ""}${euros(Math.abs(step.amount))}`}
+                </b>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+    </li>
+  );
   return (
     <>
       <h3 className="pay-totals-kicker">Du brut au net</h3>
       <section className="pay-calculation-totals" aria-label="Du brut au net">
-        <ol>
-          {rows.map((row) => (
-            <li key={row.key} className={[row.kind, open === row.key ? "open" : ""].filter(Boolean).join(" ") || undefined}>
-              <button
-                type="button"
-                aria-expanded={open === row.key}
-                aria-controls="pay-total-explain"
-                onClick={() => setOpen((current) => (current === row.key ? null : row.key))}
-              >
-                <span className="pay-total-label">{row.label}{row.note ? <small>{row.note}</small> : null}</span>
-                {/* Le montant, et dessous, en toutes lettres, ce qu'un appui fait. */}
-                <span className="pay-total-value">
-                  <b>{row.value}</b>
-                  <em>{open === row.key ? "Masquer le calcul" : "Voir le calcul"}<i aria-hidden="true">›</i></em>
-                </span>
-                {/* Sous l'étape, sa part du brut en une fine barre, comme pour
-                    les groupes des lignes de la paie. */}
-                {brut ? <span className="pay-total-bar" aria-hidden="true"><i style={{ width: `${share(row.amount)}%` }} /></span> : null}
-              </button>
-              {/* Le calcul de l'étape, juste sous sa ligne. */}
-              {open === row.key && explanation ? (
-                <section id="pay-total-explain" className="pay-total-explain" aria-label={explanation.title}>
-                  <h4>{explanation.title}</h4>
-                  <p>{explanation.intro}</p>
-                  <ol>
-                    {explanation.steps.map((step) => (
-                      <li key={`${step.sign}${step.label}`} className={step.sign === "=" ? "total" : undefined}>
-                        <span>
-                          {step.label}
-                          {step.detail ? <small>{step.detail}</small> : null}
-                        </span>
-                        <b>
-                          {step.amount === null
-                            ? "à compléter"
-                            : `${step.sign === "+" || step.sign === "−" ? `${step.sign} ` : step.amount < 0 ? "− " : ""}${euros(Math.abs(step.amount))}`}
-                        </b>
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-              ) : null}
-            </li>
-          ))}
-        </ol>
+        {groups.map((group) => {
+          const groupRows = group.keys.flatMap((key) => rows.filter((row) => row.key === key));
+          return groupRows.length ? (
+            <div key={group.key} className={`pay-total-group ${group.key}`}>
+              <p className="pay-total-group-head">{group.title}</p>
+              <ol>{groupRows.map(renderRow)}</ol>
+            </div>
+          ) : null;
+        })}
       </section>
     </>
   );

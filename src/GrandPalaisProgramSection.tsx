@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { proposalChanges } from "./grandPalaisProposalChanges";
 import { useConfirm } from "./confirmDialog";
 import "./grandPalaisProgram.css";
 import { clearBoundaryReport, getSharedGrandPalaisProgram, reviewGrandPalaisProposal } from "./grandPalaisProgramApi";
@@ -1021,13 +1022,31 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
               const kindLabel = event.venueKey === "exceptional-closure" ? "Fermeture exceptionnelle"
                 : proposal.kind === "new" ? "Nouvelle exposition"
                 : proposal.kind === "changed" ? "Informations modifiées" : "Exposition retirée du site";
+              // Une modification dit ce qui a changé, ancien → nouveau : on
+              // décide sans avoir à se souvenir de l'ancien prix.
+              const changes = proposal.kind === "changed" && proposal.previous && proposal.next
+                ? proposalChanges(proposal.previous, proposal.next)
+                : [];
               return (
                 <article key={proposal.id}>
                   <small>{kindLabel} · {event.venueLabel}</small>
                   <strong>{event.title}{event.details ? ` · ${event.details}` : ""}</strong>
-                  <span>{remotePeriod(event)}
-                    {/* Le tarif relevé se lit dès la proposition, avant l'accord. */}
-                    {event.prices?.length ? ` · ${proposalPricesLabel(event.prices)}` : ""}</span>
+                  {changes.length ? (
+                    <ul className="grand-palais-proposal-changes" aria-label="Ce qui a changé">
+                      {changes.map((change) => (
+                        <li key={change.label}>
+                          <span>{change.label}</span>
+                          {change.before === null ? <b className="added">ajouté : {change.after}</b>
+                            : change.after === null ? <b className="removed">retiré : <s>{change.before}</s></b>
+                            : <b><s>{change.before}</s><i aria-hidden="true">→</i>{change.after}</b>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span>{remotePeriod(event)}
+                      {/* Le tarif relevé se lit dès la proposition, avant l'accord. */}
+                      {event.prices?.length ? ` · ${proposalPricesLabel(event.prices)}` : ""}</span>
+                  )}
                   <div>
                     <button type="button" disabled={reviewBusy === proposal.id} onClick={() => void reviewProposal(proposal, "accept")}>Accepter</button>
                     <button type="button" disabled={reviewBusy === proposal.id} onClick={() => void reviewProposal(proposal, "ignore")}>Ignorer</button>

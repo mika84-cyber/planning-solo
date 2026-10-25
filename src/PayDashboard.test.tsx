@@ -20,6 +20,7 @@ const baseProps = {
   onToday: vi.fn(),
   onOpenEstimateDetails: vi.fn(),
   onOpenAllowances: vi.fn(),
+  onOpenYear: vi.fn(),
 };
 
 describe("PayDashboard", () => {
@@ -46,9 +47,14 @@ describe("PayDashboard", () => {
     expect(html).toContain('aria-label="Mois suivant"');
     // Le geste du mois, seul : vérifier le bulletin.
     expect(html).toContain("Vérifier le bulletin");
+    expect(html).toContain("L’année en un coup d’œil");
     expect(html).not.toContain("Profil · réglages");
     // Puis trois entrées de même facture, le profil résumé sous la sienne.
-    expect(html.match(/class="pay-bulletin-shortcut/g)).toHaveLength(3);
+    expect(html.match(/class="pay-bulletin-shortcut"/g)).toHaveLength(4);
+    // Chaque entrée a sa pastille, de la couleur de son sujet.
+    expect(html).toContain('<b class="pay-bulletin-shortcut-icon allowances" aria-hidden="true">');
+    expect(html).toContain('<b class="pay-bulletin-shortcut-icon year" aria-hidden="true">');
+    expect(html).toContain('<b class="pay-bulletin-shortcut-icon profile" aria-hidden="true">');
     expect(html).toMatch(/Profil et réglages<\/strong><small>Temps plein · Fonctionnaire</);
     expect(html).not.toContain("Affiner les valeurs manuellement");
     expect(html).toContain("Détail du calcul");
