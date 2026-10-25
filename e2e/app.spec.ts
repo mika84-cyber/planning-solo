@@ -6532,6 +6532,18 @@ test("« Besoin d’aide ? » ouvre, de n’importe quelle page, la page ou la s
   await sheet.getByRole("button", { name: /Un code radio d’urgence/ }).click();
   await expect(sheet).toBeHidden();
   await expect(page.getByRole("heading", { name: "Codes urgences radio" })).toBeVisible();
+  // L'audioguide de l'exposition des Galeries 3 et 4, quand elle en a un :
+  // le QR code et le code d'accès se déplient dans la fenêtre.
+  await help.click();
+  const audioguide = sheet.getByRole("button", { name: /^Audioguide · / });
+  if (await audioguide.count()) {
+    await audioguide.click();
+    await expect(audioguide).toHaveAttribute("aria-expanded", "true");
+    await expect(sheet.getByRole("img", { name: /^QR code de l’audioguide / })).toBeVisible();
+    await expect(sheet.locator(".help-sheet-qr-code b")).toHaveText(/^\d+$/);
+  }
+  await sheet.getByRole("button", { name: "Fermer" }).click();
+  await expect(sheet).toBeHidden();
   // La fiche d'expo sans PDF en ligne : le dossier Formulaire Expo.
   await help.click();
   await sheet.getByRole("button", { name: /^Fiche d’expo · / }).click();

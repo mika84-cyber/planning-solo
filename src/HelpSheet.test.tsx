@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { expoSheetFor, galleryExpoFor, HelpSheet } from "./HelpSheet";
+import { AudioguideRow, expoSheetFor, galleryExpoFor, HelpSheet } from "./HelpSheet";
 import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 
 describe("fenêtre d'aide", () => {
@@ -31,8 +31,20 @@ describe("fenêtre d'aide", () => {
     // Pas de fiche PDF connue avant la lecture du dossier Expo : la ligne
     // ouvre le dossier.
     expect(html).toContain("<strong>Fiche d’expo · Cezanne et nous</strong><small>Docs · Formulaire Expo</small>");
-    expect(html).toMatch(/<a class="help-sheet-row" href="https:\/\/audioguide\.grandpalais\.fr\/bypass" target="_blank" rel="noopener noreferrer">/);
-    expect(html).toContain("<strong>Audioguide · Cezanne et nous</strong><small>Code d’accès 1622, copié en l’ouvrant</small>");
+    // L'audioguide se déplie sur place, sans renvoyer vers le site.
+    expect(html).not.toContain("audioguide.grandpalais.fr");
+    expect(html).toContain('aria-expanded="false" aria-controls="help-sheet-audioguide-qr"');
+    expect(html).toContain("<strong>Audioguide · Cezanne et nous</strong><small>QR code et code d’accès</small>");
+  });
+
+  it("déplie le QR code de l'audioguide à scanner, avec son code d'accès", () => {
+    const html = renderToStaticMarkup(
+      <AudioguideRow title="Cezanne et nous" audioguide={{ code: "1622", languages: "Français et anglais", qr: "/useful-forms/audioguide-cezanne-qr.png" }} initiallyOpen />,
+    );
+    expect(html).toContain('aria-expanded="true"');
+    expect(html).toContain('<img src="/useful-forms/audioguide-cezanne-qr.png" alt="QR code de l’audioguide Cezanne et nous" width="168" height="168"/>');
+    expect(html).toContain("Code d’accès <b>1622</b>");
+    expect(html).toContain("<small>Français et anglais</small>");
   });
 
   it("prend l'exposition en cours des Galeries 3 et 4, ou la suivante pendant une inter-expo", () => {

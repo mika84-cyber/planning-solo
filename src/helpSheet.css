@@ -34,9 +34,15 @@
 .help-sheet-copy strong { display: block; font-size: 0.92rem; font-weight: 750; line-height: 1.25; }
 .help-sheet-copy small { display: block; margin-top: 1px; color: var(--muted); font-size: 0.76rem; }
 .help-sheet-chevron { flex: none; color: #b3a598; font-size: 1.25rem; }
-.app-shell .help-sheet a.help-sheet-row, .help-sheet a.help-sheet-row { text-decoration: none; }
 .help-sheet .help-sheet-row:disabled { cursor: progress; opacity: 0.7; }
 .help-sheet-error { display: block; padding: 0 12px 10px 58px; color: #a5283a; font-size: 0.76rem; font-weight: 700; }
+/* L'audioguide déplié : le QR code sur fond blanc, assez grand pour être
+   scanné, le code d'accès en gros dessous. */
+.help-sheet-qr { display: grid; justify-items: center; gap: 6px; padding: 4px 12px 16px; }
+.help-sheet-qr img { width: 168px; height: 168px; border: 1px solid #d9e7e5; border-radius: 12px; padding: 8px; background: #fff; image-rendering: pixelated; }
+.help-sheet-qr-code { color: var(--text); font-size: 0.9rem; font-weight: 700; }
+.help-sheet-qr-code b { margin-left: 4px; color: #2f6e6a; font-size: 1.25rem; font-weight: 850; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+.help-sheet-qr small { color: var(--muted); font-size: 0.76rem; }
 @media (min-width: 721px) {
   .help-sheet { inset: 0; width: min(480px, calc(100vw - 32px)); height: fit-content; margin: auto; }
   .help-sheet-panel { max-height: 86dvh; border-radius: 24px; padding-bottom: 22px; }

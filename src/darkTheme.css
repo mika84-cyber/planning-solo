@@ -156,3 +156,6 @@ html[data-theme="dark"] .help-sheet-icon.tone-teal { background: rgba(90, 170, 1
 html[data-theme="dark"] .help-sheet-icon.tone-green { background: rgba(90, 170, 120, 0.18); color: #93d0a8; }
 html[data-theme="dark"] .help-sheet-icon.tone-terra { background: rgba(200, 120, 90, 0.2); color: #e3a487; }
 html[data-theme="dark"] .help-sheet-icon.tone-red { background: rgba(220, 100, 110, 0.2); color: #f09aa4; }
+/* Le QR code reste noir sur blanc pour être scanné ; le code s'éclaircit. */
+html[data-theme="dark"] .help-sheet-qr img { border-color: #3a322c; background: #fff; }
+html[data-theme="dark"] .help-sheet-qr-code b { color: #8ccbc4; }

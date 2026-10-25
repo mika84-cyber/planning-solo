@@ -17,11 +17,13 @@ async function expectNoSeriousAccessibilityViolation(page: Page, context: string
   // Auditer une page encore en train d'apparaître fausse le contrôle de
   // contraste : axe compose la couleur du texte avec un fond encore
   // semi-transparent. On attend donc la fin du chargement différé et des
-  // animations d'entrée avant de mesurer.
+  // animations d'entrée avant de mesurer — pas celle d'une animation sans fin,
+  // comme le faisceau du radar de la veille, qui ne s'arrête jamais.
   await expect(page.locator(".deferred-section-loading")).toHaveCount(0);
   await page
     .waitForFunction(
-      () => document.getAnimations().every((animation) => animation.playState !== "running"),
+      () => document.getAnimations().every((animation) =>
+        animation.playState !== "running" || animation.effect?.getTiming().iterations === Number.POSITIVE_INFINITY),
       null,
       { timeout: 5000 },
     )
@@ -48,6 +50,8 @@ async function openMainMenu(page: Page) {
 }
 
 test("les parcours essentiels ne présentent pas de violation d’accessibilité grave", async ({ page }) => {
+  // Sept pages auditées l'une après l'autre : plus que la minute ordinaire.
+  test.setTimeout(120_000);
   await prepareDemo(page);
   await expectNoSeriousAccessibilityViolation(page, "sur l’accueil");
 

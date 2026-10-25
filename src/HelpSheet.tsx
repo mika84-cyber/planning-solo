@@ -112,6 +112,35 @@ function QuestionRow({ item, onChoose }: { item: Question; onChoose: (id: HelpCh
   );
 }
 
+/** L'audioguide : un toucher déplie, dans la fenêtre même, le QR code à
+ *  faire scanner et le code d'accès — sans quitter l'application. */
+export function AudioguideRow({ title, audioguide, initiallyOpen = false }: {
+  title: string;
+  audioguide: { code: string; languages: string; qr: string };
+  initiallyOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(initiallyOpen);
+  return (
+    <li className="help-sheet-audioguide">
+      <button type="button" className="help-sheet-row" aria-expanded={open} aria-controls="help-sheet-audioguide-qr" onClick={() => setOpen((current) => !current)}>
+        <span className="help-sheet-icon tone-teal">{ICONS.headphones}</span>
+        <span className="help-sheet-copy">
+          <strong>Audioguide · {title}</strong>
+          <small>{open ? "Faites scanner le QR code" : "QR code et code d’accès"}</small>
+        </span>
+        <span className="help-sheet-chevron" aria-hidden="true">{open ? "−" : "+"}</span>
+      </button>
+      {open ? (
+        <div className="help-sheet-qr" id="help-sheet-audioguide-qr">
+          <img src={audioguide.qr} alt={`QR code de l’audioguide ${title}`} width="168" height="168" />
+          <span className="help-sheet-qr-code">Code d’accès <b>{audioguide.code}</b></span>
+          <small>{audioguide.languages}</small>
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
 /** L'exposition des Galeries 3 et 4, en deux lignes : sa fiche d'exposition
  *  (le PDF du dossier Expo) et son audioguide. */
 function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: HelpChoice) => void }) {
@@ -168,26 +197,7 @@ function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: Hel
         </button>
         {downloadState === "failed" ? <small className="help-sheet-error" role="alert">Le téléchargement n’a pas pu démarrer. Réessayez.</small> : null}
       </li>
-      {/* L'audioguide : sa page s'ouvre et le code d'accès est copié, il ne
-          reste qu'à le coller. */}
-      {entry.audioguide ? (
-        <li className="help-sheet-audioguide">
-          <a
-            className="help-sheet-row"
-            href={entry.audioguide.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => void navigator.clipboard?.writeText(entry.audioguide!.code).catch(() => undefined)}
-          >
-            <span className="help-sheet-icon tone-teal">{ICONS.headphones}</span>
-            <span className="help-sheet-copy">
-              <strong>Audioguide · {entry.title}</strong>
-              <small>Code d’accès {entry.audioguide.code}, copié en l’ouvrant</small>
-            </span>
-            <span className="help-sheet-chevron" aria-hidden="true">›</span>
-          </a>
-        </li>
-      ) : null}
+      {entry.audioguide ? <AudioguideRow title={entry.title} audioguide={entry.audioguide} /> : null}
     </>
   );
 }
