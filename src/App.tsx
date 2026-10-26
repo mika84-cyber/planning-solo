@@ -462,8 +462,8 @@ export default function Home() {
       ),
     [selectedList],
   );
-  const { selectRecoveryType, proposeHalfBalance, selectLeaveType, selectLeaveMoment, leaveDay } = useRequestTypeSelection({
-    planningUi, formProfile, now, periods, group, selectedList,
+  const { selectRecoveryType, selectLeaveType, selectLeaveMoment, selectLeaveHours, leaveDay } = useRequestTypeSelection({
+    planningUi, formProfile,
   });
 
   const workExchangeUi = useWorkExchangeActions({
@@ -586,7 +586,6 @@ export default function Home() {
     saveStrikeDateDirect,
     notify,
     isExchangeDate: (key) => Boolean(entries[key]?.exchangeId),
-    proposeHalfBalance: (key) => proposeHalfBalance(key, Object.values(selections)),
     leaveDay: (key, type) => leaveDay(key, type),
   });
   const payMonthNavigation = usePayMonthNavigation({ payUi, allowancesSwipeStart });
@@ -853,10 +852,14 @@ export default function Home() {
     post: postCalendar,
   });
 
+  // « Poser un congé » depuis « Que cherchez-vous ? » : le congé choisi,
+  // on arrive directement sur les jours du planning.
+  const requestFromHelp = useRef(false);
   function openRequestChooser(
     _origin: "general" | "planning" = "general",
     initialDate?: string,
   ) {
+    requestFromHelp.current = false;
     setRequestChooserDate(initialDate || null);
     setRequestChooser(true);
   }
@@ -871,7 +874,9 @@ export default function Home() {
       void saveStrikeDateDirect(initialDate);
       return;
     }
-    beginRequest(kind, initialDate, requestedType);
+    const landing = requestFromHelp.current ? "calendar" : "panel";
+    requestFromHelp.current = false;
+    beginRequest(kind, initialDate, requestedType, landing);
   }
 
   const payslipVerifications = usePayslipVerifications({
@@ -937,7 +942,7 @@ export default function Home() {
         feedbackMessaging={feedbackMessaging}
         notify={notify}
         showSuccess={confirm}
-        help={{ openPlanningPdf: () => setPdfDialogOpen(true), openBlankForm, requestLeave: () => openRequestChooser("planning"), openExchange: () => openWorkExchange() }}
+        help={{ openPlanningPdf: () => setPdfDialogOpen(true), openBlankForm, requestLeave: () => { openRequestChooser("planning"); requestFromHelp.current = true; }, openExchange: () => openWorkExchange() }}
         actions={{ navigateFromShell, checkForAppUpdate, disconnect }}
       />
 
@@ -1081,7 +1086,7 @@ export default function Home() {
         request={{
           selectedList, selectedCounts, leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
           recoveryBalance, recoverySelectionInsufficient, recoverySelectionIncomplete,
-          cancelRequest, selectLeaveType, selectLeaveMoment, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
+          cancelRequest, selectLeaveType, selectLeaveMoment, selectLeaveHours, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
         }}
         cleanup={{
           calendarDeleteMode, calendarDeleteDates, deletingMultipleDates,

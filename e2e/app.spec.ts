@@ -3159,7 +3159,8 @@ test("un congé souhaité se pose aussi le matin ou l’après-midi et se transf
   await expect(workDays.nth(-1)).toHaveClass(/wish-day wish-afternoon/);
   await expect(workDays.nth(-1)).toHaveAttribute("aria-label", /congé souhaité l’après-midi/);
 
-  // Transformé, le souhait du matin devient une demi-journée de RTT le matin.
+  // Transformé en RTT, qui ne se pose pas en demi-journée, le souhait du
+  // matin devient une journée entière.
   await pick(-2);
   await expect(page.locator(".wish-decision")).toContainText("Congé souhaité le matin");
   await page.getByRole("button", { name: "Transformer en congé" }).click();
@@ -3169,12 +3170,14 @@ test("un congé souhaité se pose aussi le matin ou l’après-midi et se transf
   // ne propose que son annulation.
   await expect(conversion.getByRole("combobox").locator("option")).toHaveText(["Autre", "Annuler le souhait"]);
   await conversion.locator(".wish-conversion-list li").getByRole("button", { name: /^RTT/ }).click();
-  await expect(conversion.locator(".wish-conversion-summary")).toHaveText("1 demi-journée RTT");
+  await expect(conversion.locator(".wish-conversion-summary")).toHaveText("1 RTT");
   await conversion.getByRole("button", { name: "Continuer" }).click();
   const request = page.locator("#request-panel");
-  await expect(request.getByLabel("Résumé avant validation")).toContainText(/demi-journée/i);
+  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
+  await expect(request.getByLabel("Résumé avant validation")).not.toContainText(/demi-journée/i);
   await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
-  await expect(workDays.nth(-2)).toHaveAttribute("aria-label", /Demi-journée matin · RTT/);
+  await expect(workDays.nth(-2)).toHaveAttribute("aria-label", /RTT/);
+  await expect(workDays.nth(-2)).not.toHaveAttribute("aria-label", /Demi-journée/);
   await expect(workDays.nth(-2)).not.toHaveClass(/wish-day/);
 });
 
@@ -3559,10 +3562,11 @@ test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa 
   await expect(glace.getByRole("link", { name: "Voir sur le site du Grand Palais" })).toBeVisible();
   // Le nom d'une grille prend la teinte de l'espace, sans encadré.
   await expect(glace.locator(".expo-price-group").first()).toHaveCSS("color", "rgb(53, 116, 90)");
-  // Sans tarif sur la fiche officielle, la carte renvoie au site qui les porte.
+  // Adopt AI : les tarifs relevés sur son site d'inscription, et le lien vers lui.
   const adoptAi = nef2026.locator("article").filter({ hasText: "Adopt AI" });
-  await expect(adoptAi.locator(".expo-price")).toHaveCount(0);
-  await expect(adoptAi.getByRole("link", { name: "Voir les tarifs sur adoptai.artefact.com" }))
+  await expect(adoptAi.locator(".expo-price")).toContainText(/Accès 2 jours\s*510 €/);
+  await expect(adoptAi.locator(".expo-price-note")).toHaveText("Tarifs « Last Chance », TTC ; ensuite 690 € les 2 jours, 500 € la journée");
+  await expect(adoptAi.getByRole("link", { name: "Billetterie sur adoptai.artefact.com" }))
     .toHaveAttribute("href", "https://adoptai.artefact.com/content/inscription");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   // Les galeries d'exposition ne montrent que les tarifs payants.
@@ -5348,7 +5352,7 @@ test("la demande guide sans masquer les options avancées", async ({ page }) => 
   await expect(advanced.getByRole("button", { name: /Congé CET/ })).toBeVisible();
 });
 
-test("un CA choisi depuis une case se pose en journée entière, le matin ou l’après-midi", async ({ page }) => {
+test("un CA choisi depuis une case se pose en journée entière, ou le matin ou l’après-midi aux heures choisies", async ({ page }) => {
   await prepareDemo(page);
   await page.locator(".month-card .day.work").first().click();
   await page.getByRole("dialog", { name: /2026/ })
@@ -5363,40 +5367,43 @@ test("un CA choisi depuis une case se pose en journée entière, le matin ou l�
   await duration.getByRole("button", { name: "Après-midi" }).click();
   await expect(duration.getByRole("button", { name: "Après-midi" })).toHaveAttribute("aria-pressed", "true");
   // La date déjà choisie passe d'elle-même en demi-journée.
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("Congés en demi-journée");
+  const summary = request.getByLabel("Résumé avant validation");
+  await expect(summary).toContainText("Congés en demi-journée");
+  // Les heures posées se saisissent sous la durée, et la date les prend.
+  const hours = request.getByRole("group", { name: "Heures posées l’après-midi" });
+  await hours.getByRole("combobox", { name: "Début — heures" }).selectOption("14");
+  await hours.getByRole("combobox", { name: "Fin — heures" }).selectOption("17");
+  await expect(summary).toContainText("14:00 → 17:00");
   await duration.getByRole("button", { name: "Journée", exact: true }).click();
-  await expect(request.getByLabel("Résumé avant validation")).not.toContainText("demi-journée");
+  await expect(request.getByRole("group", { name: "Heures posées l’après-midi" })).toHaveCount(0);
+  await expect(summary).not.toContainText("demi-journée");
 });
 
-test("une demi-journée de RTT est décomptée des RTT, pas des congés annuels", async ({ page }) => {
+test("les RTT et le fractionnement se posent en journée entière", async ({ page }) => {
   await prepareDemo(page);
-  const day = page.locator(".month-card .day.work").first();
-  await day.click();
+  await page.locator(".month-card .day.work").first().click();
   await page.getByRole("dialog", { name: /2026/ })
     .getByRole("button", { name: /^Congé/ })
     .click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const request = page.locator("#request-panel");
-  // RTT, puis « Matin » : la date devient une demi-journée tirée des RTT.
-  // Sans horaires enregistrés dans le profil, le moment seul suffit.
-  await request.getByRole("button", { name: /^RTT/ }).click();
-  await request.getByRole("group", { name: "Durée du congé" }).getByRole("button", { name: "Matin" }).click();
-
+  const duration = request.getByRole("group", { name: "Durée du congé" });
+  await expect(duration).toBeVisible();
+  // Ni demi-journée de RTT, ni de fractionnement : la durée disparaît.
   const summary = request.getByLabel("Résumé avant validation");
-  await expect(summary).toContainText("RTT en demi-journée");
-  await expect(summary).toContainText("14,5 RTT restants");
-  await expect(summary).not.toContainText("CA restants");
-
-  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
-  await expect(day).toHaveAttribute("aria-label", /Demi-journée matin · RTT/);
-  await expect(day).toHaveClass(/half-rtt/);
-
-  await goToSection(page, "leave");
-  await expect(page.locator(".leave-balance-grid button.rtt")).toContainText("0,5");
-  await expect(page.locator(".leave-balance-grid button.annual")).not.toContainText("0,5");
+  await request.getByRole("button", { name: /^RTT/ }).click();
+  await expect(duration).toHaveCount(0);
+  await expect(summary).toContainText("RTT");
+  await expect(summary).not.toContainText("demi-journée");
+  await request.getByRole("button", { name: /^Jour de fractionnement/ }).click();
+  await expect(duration).toHaveCount(0);
+  await expect(summary).not.toContainText("demi-journée");
+  // De retour aux congés annuels, la durée revient.
+  await request.getByRole("button", { name: /^Congés annuels/ }).click();
+  await expect(duration).toBeVisible();
 });
 
-test("sans CA restant, une demi-journée de CA est bloquée et s’enregistre en RTT", async ({ page }) => {
+test("sans CA restant, une demi-journée de CA est bloquée ; en RTT, elle devient une journée entière", async ({ page }) => {
   await page.addInitScript(() => {
     const year = String(new Date().getFullYear());
     localStorage.setItem("planning:e2e-pay-profile", JSON.stringify({
@@ -5425,11 +5432,12 @@ test("sans CA restant, une demi-journée de CA est bloquée et s’enregistre en
   const request = page.locator("#request-panel");
   await request.getByRole("group", { name: "Durée du congé" }).getByRole("button", { name: "Matin" }).click();
   // Plus de CA : la demi-journée de CA ne s'enregistre pas ; passée en RTT,
-  // elle garde son moment et s'enregistre.
+  // qui ne se pose pas en demi-journée, elle devient une journée entière.
   const save = request.getByRole("button", { name: "Enregistrer sans formulaire" });
   await expect(save).toBeDisabled();
   await request.getByRole("button", { name: /^RTT/ }).click();
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT en demi-journée");
+  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
+  await expect(request.getByLabel("Résumé avant validation")).not.toContainText("demi-journée");
   await expect(save).toBeEnabled();
 });
 
@@ -6563,6 +6571,12 @@ test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la
   await sheet.getByRole("button", { name: /^Poser un congé/ }).click();
   await expect(page.getByRole("dialog", { name: "Poser un congé" })).toBeVisible();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: "Fermer" }).click();
+  // Le congé choisi, on arrive directement sur les jours du planning.
+  await help.click();
+  await sheet.getByRole("button", { name: /^Poser un congé/ }).click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  await expect(page.locator(".planning-calendar-section .month-card")).toBeInViewport({ ratio: 0.6 });
+  await page.locator("#request-panel").getByRole("button", { name: "Annuler la demande" }).first().click();
   await help.click();
   await sheet.getByRole("button", { name: /^Échanger un jour avec un collègue/ }).click();
   await expect(page.getByRole("dialog", { name: "Faire un échange" })).toBeVisible();

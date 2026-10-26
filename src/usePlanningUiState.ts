@@ -1,4 +1,4 @@
-import type { LeaveMoment } from "./planningLogic";
+import type { LeaveHours, LeaveMoment } from "./planningLogic";
 import { useState } from "react";
 import type { WishMoment, LeavePeriod, RequestKind, SelectedDay } from "./appModel";
 import type {
@@ -64,6 +64,8 @@ export function usePlanningUiState() {
   // CA, RTT, fractionnement : journée entière, matin ou après-midi, pour les
   // dates touchées ensuite.
   const [leaveMoment, setLeaveMoment] = useState<LeaveMoment>("full");
+  // Les heures posées le matin ou l'après-midi.
+  const [leaveHours, setLeaveHours] = useState<LeaveHours>({ start: "", end: "" });
   const [selections, setSelections] = useState<Record<string, SelectedDay>>({});
   const [timeDate, setTimeDate] = useState<string | null>(null);
   const [timeStart, setTimeStart] = useState("09:15");
@@ -91,7 +93,7 @@ export function usePlanningUiState() {
     savingRange, setSavingRange, requestChooser, setRequestChooser,
     requestChooserDate, setRequestChooserDate, requestSeedDate, setRequestSeedDate, directDurationSave, setDirectDurationSave,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
-    activeType, setActiveType, leaveMoment, setLeaveMoment, selections, setSelections, timeDate, setTimeDate,
+    activeType, setActiveType, leaveMoment, setLeaveMoment, leaveHours, setLeaveHours, selections, setSelections, timeDate, setTimeDate,
     timeStart, setTimeStart, timeEnd, setTimeEnd, timeHalfBalance, setTimeHalfBalance, warningDate, setWarningDate,
   };
 }

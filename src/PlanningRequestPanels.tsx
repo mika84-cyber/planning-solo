@@ -311,7 +311,8 @@ function wishDateLabel(key: string) {
 }
 
 /** Décompte lisible : « 3 CA · 1 RTT · 2 gardés en souhait ». Un souhait
- *  du matin ou de l'après-midi compte comme une demi-journée de sa nature. */
+ *  du matin ou de l'après-midi transformé en CA compte comme une
+ *  demi-journée ; en RTT ou en fractionnement, une journée entière. */
 export function wishConversionSummary(
   choices: Record<string, WishChoice | undefined>,
   total = Object.keys(choices).length,
@@ -323,7 +324,7 @@ export function wishConversionSummary(
     if (!choice) continue;
     chosen += 1;
     const short = WISH_CHOICES.find((item) => item.choice === choice)?.short || choice;
-    const key = moments[date] ? `demi-journée ${short}` : short;
+    const key = moments[date] && choice === "annual" ? `demi-journée ${short}` : short;
     counts.set(key, (counts.get(key) || 0) + 1);
   }
   const order = [

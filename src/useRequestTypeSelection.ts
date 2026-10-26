@@ -1,49 +1,66 @@
-import type { FormProfile, LeavePeriod, SelectedDay } from "./appModel";
-import { computeLeaveStats } from "./leaveStats";
+import type { FormProfile, SelectedDay } from "./appModel";
 import { DEFAULT_WORK_SCHEDULE, usableWorkSchedule, workScheduleHalfTimes } from "./overtime";
-import { automaticHalfBalance, DURATION_LEAVE_TYPES, halfBalanceOf, type LeaveMoment, type SelectionType, type StoredHalfBalance } from "./planningLogic";
-import { requestLeaveBalanceUsage } from "./RequestValidationSummary";
+import { DURATION_LEAVE_TYPES, halfBalanceOf, type LeaveHours, type LeaveMoment, type SelectionType } from "./planningLogic";
 import type { usePlanningUiState } from "./usePlanningUiState";
 
 type RequestTypeSelectionOptions = {
   planningUi: Pick<
     ReturnType<typeof usePlanningUiState>,
-    "activeType" | "setActiveType" | "leaveMoment" | "setLeaveMoment" | "requestSeedDate" | "setSelections" | "setTimeStart" | "setTimeEnd" | "setTimeDate" | "setTimeHalfBalance"
+    "activeType" | "setActiveType" | "leaveMoment" | "setLeaveMoment" | "leaveHours" | "setLeaveHours" | "requestSeedDate" | "setSelections" | "setTimeStart" | "setTimeEnd" | "setTimeDate" | "setTimeHalfBalance"
   >;
   formProfile: FormProfile | null;
-  now: Date;
-  periods: LeavePeriod[];
-  group: number;
-  /** Les dates déjà choisies dans la demande en cours. */
-  selectedList: SelectedDay[];
 };
 
+/** Des heures utilisables : les deux, la fin après le début. */
+export function validLeaveHours(hours: LeaveHours) {
+  return Boolean(hours.start && hours.end && hours.start < hours.end);
+}
+
+/** Une date de congé annuel : journée entière, ou demi-journée aux heures
+ *  choisies (le moment seul tant qu'elles ne sont pas saisies). RTT et
+ *  fractionnement se posent en journée entière. */
+export function durationLeaveDay(date: string, type: SelectionType, moment: LeaveMoment, hours: LeaveHours): SelectedDay {
+  if (!(DURATION_LEAVE_TYPES as readonly string[]).includes(type) || moment === "full") return { date, type };
+  return validLeaveHours(hours)
+    ? { date, type: "half", start: hours.start, end: hours.end }
+    : { date, type: "half", halfMoment: moment };
+}
+
 /** Le type choisi au départ d'une demande depuis une case : il remplit la
- *  date de départ avec les horaires habituels, et propose le solde d'une
- *  demi-journée. */
-export function useRequestTypeSelection({ planningUi, formProfile, now, periods, group, selectedList }: RequestTypeSelectionOptions) {
-  const { activeType, setActiveType, leaveMoment, setLeaveMoment, requestSeedDate, setSelections, setTimeStart, setTimeEnd, setTimeDate, setTimeHalfBalance } = planningUi;
-  const isDurationLeave = (type: SelectionType): type is (typeof DURATION_LEAVE_TYPES)[number] =>
-    (DURATION_LEAVE_TYPES as readonly string[]).includes(type);
-  /** Une date de CA, RTT ou fractionnement : journée entière, ou demi-journée
-   *  aux horaires habituels (le moment seul, sans horaires enregistrés), tirée
-   *  du même solde. */
-  function leaveDay(date: string, type: SelectionType, moment: LeaveMoment = leaveMoment): SelectedDay {
-    if (!isDurationLeave(type) || moment === "full") return { date, type };
-    const balance = type === "annual" ? {} : { halfBalance: type as StoredHalfBalance };
+ *  date de départ avec les horaires habituels. Les congés annuels se posent
+ *  aussi le matin ou l'après-midi, aux heures choisies. */
+export function useRequestTypeSelection({ planningUi, formProfile }: RequestTypeSelectionOptions) {
+  const { activeType, setActiveType, leaveMoment, setLeaveMoment, leaveHours, setLeaveHours, requestSeedDate, setSelections, setTimeStart, setTimeEnd, setTimeDate, setTimeHalfBalance } = planningUi;
+  const isDurationLeave = (type: SelectionType) => (DURATION_LEAVE_TYPES as readonly string[]).includes(type);
+  /** Les heures habituelles d'une moitié de journée ; sans horaires
+   *  enregistrés, rien : mieux vaut une saisie à faire qu'une heure inventée. */
+  function usualHours(moment: LeaveMoment): LeaveHours {
     const schedule = usableWorkSchedule(formProfile?.workSchedule);
-    if (!schedule) return { date, type: "half", halfMoment: moment, ...balance };
-    const times = workScheduleHalfTimes(schedule, moment);
-    return { date, type: "half", start: times.start, end: times.end, ...balance };
+    if (moment === "full" || !schedule) return { start: "", end: "" };
+    return workScheduleHalfTimes(schedule, moment);
   }
-  /** Changer la durée change aussi les dates déjà choisies de ce congé. */
-  function selectLeaveMoment(moment: LeaveMoment) {
-    setLeaveMoment(moment);
+  const leaveDay = (date: string, type: SelectionType, moment: LeaveMoment = leaveMoment, hours: LeaveHours = leaveHours) =>
+    durationLeaveDay(date, type, moment, hours);
+  /** Les dates déjà choisies de ce congé suivent la durée et les heures. */
+  function applyToSelections(moment: LeaveMoment, hours: LeaveHours) {
     if (!isDurationLeave(activeType)) return;
     setSelections((current) => Object.fromEntries(Object.entries(current).map(([key, item]) => {
       const same = item.type === activeType || (item.type === "half" && halfBalanceOf(item) === activeType);
-      return [key, same ? leaveDay(key, activeType, moment) : item];
+      return [key, same ? leaveDay(key, activeType, moment, hours) : item];
     })));
+  }
+  /** Changer la durée reprend les heures habituelles de ce moment. */
+  function selectLeaveMoment(moment: LeaveMoment) {
+    const hours = usualHours(moment);
+    setLeaveMoment(moment);
+    setLeaveHours(hours);
+    applyToSelections(moment, hours);
+  }
+  /** Les heures posées le matin ou l'après-midi ; les dates déjà choisies
+   *  les prennent dès qu'elles se suivent. */
+  function selectLeaveHours(hours: LeaveHours) {
+    setLeaveHours(hours);
+    if (validLeaveHours(hours)) applyToSelections(leaveMoment, hours);
   }
   function selectRecoveryType(type: SelectionType) {
     setActiveType(type);
@@ -62,26 +79,6 @@ export function useRequestTypeSelection({ planningUi, formProfile, now, periods,
     setTimeStart(start);
     setTimeEnd(end);
     setTimeDate(requestSeedDate);
-  }
-  /** Solde d'une nouvelle demi-journée : CA d'abord, puis RTT, puis
-   *  fractionnement, dans l'année de la date et en déduisant ce que la demande
-   *  en cours prend déjà (hors la date elle-même). */
-  function proposeHalfBalance(key: string, pending: SelectedDay[] = []) {
-    const year = Number(key.slice(0, 4));
-    const stats = computeLeaveStats({
-      year,
-      today: now,
-      periods,
-      group,
-      manualAdjustments: formProfile?.manualAdjustments,
-    });
-    return automaticHalfBalance(
-      Object.fromEntries(stats.balances.map((balance) => [balance.type, balance.remaining])),
-      requestLeaveBalanceUsage(
-        pending.filter((item) => item.date !== key && item.date.startsWith(`${year}-`)),
-        group,
-      ),
-    );
   }
   function selectLeaveType(type: SelectionType) {
     setActiveType(type);
@@ -107,9 +104,10 @@ export function useRequestTypeSelection({ planningUi, formProfile, now, periods,
     if (type !== "half") return;
     setTimeStart(halfTimes.start);
     setTimeEnd(halfTimes.end);
-    setTimeHalfBalance(proposeHalfBalance(requestSeedDate, selectedList));
+    // Une demi-journée est prise sur les congés annuels.
+    setTimeHalfBalance("annual");
     setTimeDate(requestSeedDate);
   }
 
-  return { selectRecoveryType, proposeHalfBalance, selectLeaveType, selectLeaveMoment, leaveDay };
+  return { selectRecoveryType, selectLeaveType, selectLeaveMoment, selectLeaveHours, leaveDay };
 }

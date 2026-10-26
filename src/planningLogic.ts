@@ -85,28 +85,16 @@ export function isStoredHalfBalance(value: unknown): value is StoredHalfBalance 
 export function isCountedOnlyHalfBalance(value: unknown): value is "exceptional" | "other" {
   return value === "exceptional" || value === "other";
 }
-export const HALF_BALANCE_OPTIONS: Array<{ value: HalfBalance; label: string }> = [
-  { value: "annual", label: "Congés annuels" },
-  { value: "rtt", label: "RTT" },
-  { value: "fraction", label: "Fractionnement" },
-];
-/** Le solde proposé pour une nouvelle demi-journée : les congés annuels
- *  d'abord, les RTT quand il n'en reste plus, le fractionnement ensuite.
- *  `pending` compte ce que la demande en cours prend déjà sur chaque solde.
- *  Si tout est épuisé, ce sont les congés annuels, et le contrôle des soldes
- *  signalera le manque. */
-export function automaticHalfBalance(
-  remaining: Partial<Record<HalfBalance, number>>,
-  pending: Partial<Record<HalfBalance, number>> = {},
-): HalfBalance {
-  const order: HalfBalance[] = ["annual", "rtt", "fraction"];
-  return order.find((type) => (remaining[type] ?? 0) - (pending[type] ?? 0) >= 0.5) ?? "annual";
-}
 /** Le solde d'une demi-journée : celui enregistré, sinon les congés annuels. */
 /** Les congés qui se posent en journée entière ou en demi-journée, au choix
- *  dans le panneau de la demande. */
-export const DURATION_LEAVE_TYPES = ["annual", "rtt", "fraction"] as const;
+ *  dans le panneau de la demande : les congés annuels seulement. RTT et
+ *  fractionnement se posent en journée entière ; une demi-journée de RTT ou
+ *  de fractionnement enregistrée avant reste décomptée de son solde. */
+export const DURATION_LEAVE_TYPES = ["annual"] as const;
 export type LeaveMoment = "full" | HalfMoment;
+/** Les heures posées d'une demi-journée de congés annuels, « HH:MM » ; vides
+ *  tant qu'elles ne sont pas saisies. */
+export type LeaveHours = { start: string; end: string };
 
 export function halfBalanceOf(item: { halfBalance?: string }): HalfBalance {
   return isStoredHalfBalance(item.halfBalance) ? item.halfBalance : "annual";

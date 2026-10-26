@@ -5,7 +5,6 @@ import { parseDemoCompletedRequestJson } from "./demoCompletedRequest";
 import { normalizeLeaveRequest } from "./leaveRequest";
 import { computeLeaveStats } from "./leaveStats";
 import {
-  automaticHalfBalance,
   dateKey,
   getDayInfo,
   halfBalanceFromApi,
@@ -38,26 +37,11 @@ function balances(periods: LeavePeriod[]) {
   return Object.fromEntries(stats.balances.map((balance) => [balance.type, balance.used]));
 }
 
-describe("demi-journées de RTT et de fractionnement", () => {
+describe("demi-journées de RTT et de fractionnement enregistrées avant", () => {
   it("prend une demi-journée sur les congés annuels tant que rien d’autre n’est choisi", () => {
     expect(halfBalanceOf({})).toBe("annual");
     expect(halfBalanceOf({ halfBalance: "rtt" })).toBe("rtt");
     expect(balances([half("a", workDays[0])])).toEqual({ annual: 0.5, rtt: 0, fraction: 0 });
-  });
-
-  it("propose les CA, puis les RTT quand il n'y a plus de CA, puis le fractionnement", () => {
-    expect(automaticHalfBalance({ annual: 3, rtt: 15, fraction: 2 })).toBe("annual");
-    expect(automaticHalfBalance({ annual: 0.5, rtt: 15, fraction: 2 })).toBe("annual");
-    expect(automaticHalfBalance({ annual: 0, rtt: 15, fraction: 2 })).toBe("rtt");
-    expect(automaticHalfBalance({ annual: 0, rtt: 0, fraction: 2 })).toBe("fraction");
-    // Tout est épuisé : les CA, et le contrôle des soldes signalera le manque.
-    expect(automaticHalfBalance({ annual: 0, rtt: 0, fraction: 0 })).toBe("annual");
-  });
-
-  it("tient compte des demi-journées déjà choisies dans la même demande", () => {
-    // Il reste une demi-journée de CA, déjà prise par une autre date de la demande.
-    expect(automaticHalfBalance({ annual: 0.5, rtt: 15, fraction: 2 }, { annual: 0.5 })).toBe("rtt");
-    expect(automaticHalfBalance({ annual: 0, rtt: 0.5, fraction: 2 }, { rtt: 0.5 })).toBe("fraction");
   });
 
   it("décompte une demi-journée du solde choisi, et de lui seul", () => {

@@ -36,10 +36,6 @@ type PlanningDialogsState = Pick<
   | "setRangeLeaveType"
   | "rangeHalfMoment"
   | "setRangeHalfMoment"
-  | "rangeHalfBalance"
-  | "setRangeHalfBalance"
-  | "timeHalfBalance"
-  | "setTimeHalfBalance"
   | "timeDate"
   | "setTimeDate"
   | "activeType"
@@ -186,8 +182,6 @@ export function AppDialogLayer({
         setLeaveType={planning.setRangeLeaveType}
         halfMoment={planning.rangeHalfMoment}
         setHalfMoment={planning.setRangeHalfMoment}
-        halfBalance={planning.rangeHalfBalance}
-        setHalfBalance={planning.setRangeHalfBalance}
         onClose={() => planning.setRangeOpen(false)}
         onStartSelection={onStartRangeSelection}
       />
@@ -275,8 +269,6 @@ export function AppDialogLayer({
         workSchedule={workSchedule}
         onStartChange={planning.setTimeStart}
         onEndChange={planning.setTimeEnd}
-        halfBalance={planning.timeHalfBalance}
-        onHalfBalanceChange={planning.setTimeHalfBalance}
         onClose={() => planning.setTimeDate(null)}
         onConfirm={onConfirmTime}
       />

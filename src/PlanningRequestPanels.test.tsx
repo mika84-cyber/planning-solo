@@ -7,6 +7,8 @@ describe("transformation des congés souhaités", () => {
     expect(wishConversionSummary({ a: "annual", b: "rtt", c: "annual", d: "fraction", e: "cet" })).toBe("2 CA · 1 RTT · 1 FRA · 1 CET");
     expect(wishConversionSummary({ a: "annual", b: undefined, c: undefined })).toBe("1 CA · 2 gardés en souhait");
     expect(wishConversionSummary({ a: "half:morning", b: "half:afternoon", c: "cet" })).toBe("2 demi-journée · 1 CET");
+    // Un souhait du matin : demi-journée en CA, journée entière en RTT.
+    expect(wishConversionSummary({ a: "annual", b: "rtt" }, 2, { a: "morning", b: "morning" })).toBe("1 RTT · 1 demi-journée CA");
   });
 
   it("donne à chaque nature la couleur de son type", () => {

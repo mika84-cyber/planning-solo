@@ -14,7 +14,6 @@ import {
   halfBalanceOf,
   halfMomentFromStart,
   localDate,
-  type HalfBalance,
   type LeaveType,
   type MultiDatePerson,
   type SelectionType,
@@ -22,6 +21,18 @@ import {
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { usePlanningUiState } from "./usePlanningUiState";
 import type { useWorkTimeUiState } from "./useWorkTimeUiState";
+
+/** Fait défiler jusqu'à l'élément dès qu'il est affiché : le panneau de la
+ *  demande se charge à la demande et n'existe pas encore au premier usage. */
+function scrollWhenShown(find: () => Element | null | undefined, frames = 90) {
+  if (typeof document === "undefined") return;
+  const element = find();
+  if (element) {
+    element.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (frames > 0) window.requestAnimationFrame(() => scrollWhenShown(find, frames - 1));
+}
 
 type PlanningUiState = ReturnType<typeof usePlanningUiState>;
 type AppShellUiState = ReturnType<typeof useAppShellUiState>;
@@ -97,11 +108,8 @@ type PlanningInteractionActionsOptions = {
   saveStrikeDateDirect: (date: string) => Promise<void>;
   notify: (message: string) => void;
   isExchangeDate?: (date: string) => boolean;
-  /** Solde proposé pour une nouvelle demi-journée à cette date : CA, puis
-   *  RTT, puis fractionnement, selon ce qu'il reste. */
-  proposeHalfBalance?: (date: string) => HalfBalance;
-  /** CA, RTT ou fractionnement : la date en journée entière ou en
-   *  demi-journée, selon la durée choisie dans le panneau. */
+  /** Congés annuels : la date en journée entière ou en demi-journée, selon
+   *  la durée et les heures choisies dans le panneau. */
   leaveDay?: (date: string, type: SelectionType) => SelectedDay;
 };
 
@@ -123,7 +131,6 @@ export function usePlanningInteractionActions({
   saveStrikeDateDirect,
   notify,
   isExchangeDate = () => false,
-  proposeHalfBalance = () => "annual",
   leaveDay = (date, type) => ({ date, type }),
 }: PlanningInteractionActionsOptions) {
   const {
@@ -225,7 +232,8 @@ export function usePlanningInteractionActions({
     setDayWish(Boolean(entry?.wish));
     setDayHolidayPay(entry?.holidayPay || "");
     setDayLeaveType("annual");
-    setDayHalfBalance(proposeHalfBalance(key));
+    // Une demi-journée est prise sur les congés annuels.
+    setDayHalfBalance("annual");
     setLeaveRangeEnabled(false);
     setLeaveRangeFrom(key);
     setLeaveRangeTo(key);
@@ -281,7 +289,7 @@ export function usePlanningInteractionActions({
       return;
     }
     setRangeLeaveType(initialType);
-    setRangeHalfBalance(proposeHalfBalance(initialDate || dateKey(new Date())));
+    setRangeHalfBalance("annual");
     setRangePrefillDate(initialDate || null);
     setEditingPeriodId(null);
     setEditingLegacyPeriod(null);
@@ -338,18 +346,17 @@ export function usePlanningInteractionActions({
    *  l'après-midi (solde proposé comme ailleurs : CA, puis RTT, puis FRA). */
   function wishConversionSelection(date: string, choice: WishChoice, wishMoment?: WishMoment): SelectedDay {
     const [type, choiceMoment] = choice.split(":") as [SelectionType, WishMoment | undefined];
-    // Un souhait du matin ou de l'après-midi devient une demi-journée de la
-    // nature choisie (CA, RTT ou FRA), au même moment.
-    if (wishMoment && !choiceMoment && (type === "annual" || type === "rtt" || type === "fraction")) {
+    // Un souhait du matin ou de l'après-midi devient une demi-journée de
+    // congés annuels, au même moment ; en RTT ou en fractionnement, qui ne se
+    // posent pas en demi-journée, une journée entière.
+    if (wishMoment && !choiceMoment && type === "annual") {
       const times = workScheduleHalfTimes(workSchedule ?? DEFAULT_WORK_SCHEDULE, wishMoment);
-      return { date, type: "half", ...halfTiming(times.start, times.end), ...(type !== "annual" ? { halfBalance: type } : {}) };
+      return { date, type: "half", ...halfTiming(times.start, times.end) };
     }
     const moment = choiceMoment;
     if (!moment) return { date, type };
     const times = workScheduleHalfTimes(workSchedule ?? DEFAULT_WORK_SCHEDULE, moment);
-    const timing = halfTiming(times.start, times.end);
-    const balance = proposeHalfBalance(date);
-    return { date, type: "half", ...timing, ...(balance !== "annual" ? { halfBalance: balance } : {}) };
+    return { date, type: "half", ...halfTiming(times.start, times.end) };
   }
   function beginWishConversion(
     dates: string[],
@@ -405,10 +412,14 @@ export function usePlanningInteractionActions({
       80,
     );
   }
+  /** `landing` : où la demande s'ouvre — sur son panneau (type, durée,
+   *  boutons), ou directement sur les jours du planning, pour qui vient de
+   *  choisir son congé depuis « Que cherchez-vous ? ». */
   function beginRequest(
     kind: RequestKind,
     initialDate?: string,
     requestedType?: SelectionType,
+    landing: "panel" | "calendar" = "panel",
   ) {
     setRequestKind(kind);
     const start = buildPlanningRequestStart({
@@ -420,6 +431,7 @@ export function usePlanningInteractionActions({
     });
     setActiveType(start.initialType);
     planningUi.setLeaveMoment("full");
+    planningUi.setLeaveHours({ start: "", end: "" });
     setSickRequest(start.sickRequest);
     const seedDate = Object.keys(start.selections)[0] || null;
     // Divers : la date touchée ouvre d'abord le choix journée entière, matin
@@ -440,13 +452,13 @@ export function usePlanningInteractionActions({
     setWarningDate(start.warningDate);
     setHomeSection("home");
     setRequestChooser(false);
-    window.setTimeout(
-      () =>
-        document
-          .getElementById("request-panel")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      0,
-    );
+    scrollWhenShown(() => {
+      // Le panneau de la demande d'abord : les jours se placent sous lui.
+      const panel = document.getElementById("request-panel");
+      if (!panel || landing === "panel") return panel;
+      const leavePanel = document.querySelector(".planning-calendar-section .planning-leave-panel");
+      return leavePanel?.nextElementSibling ?? document.querySelector(".planning-calendar-section .month-card");
+    });
   }
 
   function recordSelection(key: string) {
@@ -480,7 +492,7 @@ export function usePlanningInteractionActions({
       const usualTimes = workScheduleHalfTimes(workSchedule ?? DEFAULT_WORK_SCHEDULE, "morning");
       setTimeStart(existing?.start || usualTimes.start);
       setTimeEnd(existing?.end || usualTimes.end);
-      setTimeHalfBalance(existing ? halfBalanceOf(existing) : proposeHalfBalance(key));
+      setTimeHalfBalance(existing ? halfBalanceOf(existing) : "annual");
       setTimeDate(key);
       return;
     }

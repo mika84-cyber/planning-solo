@@ -150,7 +150,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   collègues), `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
   « Par espace » et descendent au choix des espaces, les inter-expos au
   détail des périodes) et `LeaveManagementPage` (heures et
-  mécénats, CET). Une demande non servie s’oublie après 8 s.
+  mécénats, CET). Une demande non servie s’oublie après 8 s. « Poser un
+  congé » ouvre le choix du congé ; le congé choisi, on arrive directement
+  sur les jours du planning (`requestFromHelp` dans `App`, `beginRequest`
+  avec `landing` « calendar »).
 - `src/PlanningCommandCenter.tsx` et `src/PlanningDayCell.tsx` : commandes du
   calendrier et rendu interactif d’une journée.
 - `src/WorkExchangeDialog.tsx`, `src/WorkExchangePanel.tsx`,
@@ -274,9 +277,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   horaires habituels), `src/useLeaveBalances.ts` (soldes de l’année, report
   au 30 avril, soldes par type et par année, CET, détail d’un solde),
   `src/useRequestTypeSelection.ts` (type choisi au départ d’une demande ;
-  CA, RTT et fractionnement en journée entière, matin ou après-midi :
-  `leaveMoment`, `selectLeaveMoment`, `leaveDay`, sélecteur « Durée du
-  congé » de `RequestSelectionPanel`),
+  les congés annuels en journée entière, le matin ou l’après-midi, aux heures
+  saisies sous la durée — `leaveMoment`, `leaveHours`, `selectLeaveMoment`,
+  `selectLeaveHours`, `durationLeaveDay`, sélecteur « Durée du congé » de
+  `RequestSelectionPanel` ; RTT et fractionnement ne se posent qu’en journée
+  entière, et une demi-journée est toujours prise sur les congés annuels :
+  plus de choix « Prise sur » dans les fenêtres),
   `src/useWorkedDaysOverview.ts` (jours travaillés, prochain extra, aperçu du
   jour), `src/useMecenatDraftCheck.ts` (mécénat en cours de saisie),
   `src/useDayDetailData.ts` (ce que la fiche du jour montre),
@@ -306,7 +312,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   périodes ; les lots réseau principaux sont construits par des helpers purs.
 - `src/usePlanningInteractionActions.ts` : ouverture des fiches, sélections
   jour/plage, préparation des demandes et navigation tactile du calendrier,
-  sans rendu JSX dans l’orchestrateur.
+  sans rendu JSX dans l’orchestrateur. `beginRequest` fait défiler jusqu'au
+  panneau de la demande, ou jusqu'aux jours du planning, une fois le panneau
+  affiché (`scrollWhenShown` : il se charge à la demande et n'existe pas
+  encore au premier usage).
 - `src/usePlanningRequestActions.ts` : validation des demandes préparées,
   contrôle des soldes/capacités du formulaire, enregistrement direct des
   absences sans PDF et transfert typé vers le formulaire autonome.

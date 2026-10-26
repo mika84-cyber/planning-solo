@@ -539,15 +539,28 @@ describe("programmation du Grand Palais", () => {
     expect(html).toContain('href="https://www.grandpalais.fr/fr/programme/le-grand-palais-de-glace-2026" target="_blank" rel="noreferrer">Voir le site officiel</a>');
     expect(html).toContain('href="https://legrandpalaisdeglace.fr/billetterie/" target="_blank" rel="noopener noreferrer">Billetterie sur legrandpalaisdeglace.fr</a>');
     // Sans tarif sur la fiche officielle, le site tiers est celui des tarifs.
-    const adoptAi = GRAND_PALAIS_PROGRAM.nef.schedule[2026]!.find((entry) => entry.title === "Adopt AI")!;
-    const adoptHtml = renderToStaticMarkup(<ExpoCard entry={adoptAi} venueKey="nef" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />);
-    expect(adoptHtml).not.toContain("expo-price");
-    expect(adoptHtml).toContain(">Voir les tarifs sur adoptai.artefact.com</a>");
+    const withoutPrices = { title: "Salon", period: "Les 3 et 4 décembre 2026", startsOn: "2026-12-03", endsOn: "2026-12-04", officialUrl: "https://www.grandpalais.fr/fr/programme/salon", ticketingUrl: "https://salon.example.com/inscription" };
+    const salonHtml = renderToStaticMarkup(<ExpoCard entry={withoutPrices} venueKey="nef" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />);
+    expect(salonHtml).not.toContain("expo-price");
+    expect(salonHtml).toContain(">Voir les tarifs sur salon.example.com</a>");
     // Une billetterie qui n'ouvre qu'à une date se lit sous « Tarifs », sans montant.
+    const notYetOpen = { ...withoutPrices, ticketingUrl: "https://expo.example.com", priceNote: "Ouverture de la billetterie le 26 octobre 2026" };
+    const notYetHtml = renderToStaticMarkup(<ExpoCard entry={notYetOpen} venueKey="gallery7" today="2026-10-20" openingReady linkLabel="Voir le site officiel" />);
+    expect(notYetHtml).toContain('<p>Tarifs</p><span class="expo-price-note">Ouverture de la billetterie le 26 octobre 2026</span>');
+    expect(notYetHtml).toContain(">Voir les tarifs sur expo.example.com</a>");
+    // Adopt AI : les tarifs du site d'inscription, et la phase dont ils sont.
+    const adoptAi = GRAND_PALAIS_PROGRAM.nef.schedule[2026]!.find((entry) => entry.title === "Adopt AI")!;
+    const adoptHtml = renderToStaticMarkup(<ExpoCard entry={adoptAi} venueKey="nef" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />).replace(/[  ]/g, " ");
+    expect(adoptHtml).toContain("<dt>Accès 2 jours</dt><dd>510 €</dd>");
+    expect(adoptHtml).toContain("<dt>Accès 1 jour (jeudi 3 ou vendredi 4)</dt><dd>349 €</dd>");
+    expect(adoptHtml).toContain("Tarifs « Last Chance », TTC");
+    expect(adoptHtml).toContain(">Billetterie sur adoptai.artefact.com</a>");
+    // Le Musée imaginaire d'Oli : quatre tarifs payants, et la gratuité des
+    // moins de 5 ans en note.
     const oli = GRAND_PALAIS_PROGRAM.gallery7.schedule[2026]![0];
-    const oliHtml = renderToStaticMarkup(<ExpoCard entry={oli} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />);
-    expect(oliHtml).toContain('<p>Tarifs</p><span class="expo-price-note">Ouverture de la billetterie le 26 octobre 2026</span>');
-    expect(oliHtml).toContain(">Voir les tarifs sur lemuseeimaginairedoli.com</a>");
+    const oliHtml = renderToStaticMarkup(<ExpoCard entry={oli} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />).replace(/[  ]/g, " ");
+    expect(oliHtml).toContain("<dt>Plein</dt><dd>22 €</dd><dt>Réduit</dt><dd>17 €</dd><dt>12-17 ans</dt><dd>13 €</dd><dt>5-11 ans</dt><dd>10 €</dd>");
+    expect(oliHtml).toContain('<span class="expo-price-note">Gratuit pour les moins de 5 ans</span>');
     // Un lien de billetterie douteux n'est jamais rendu.
     for (const url of ["http://tickets.example/", "https://www.grandpalais.fr/billets", "https://user:pw@tickets.example/", "https://10.0.0.1/", "https://localhost/"])
       expect(safeTicketingUrl(url)).toBe("");

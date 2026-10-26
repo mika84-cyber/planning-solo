@@ -238,10 +238,18 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           title: "Le Musée Imaginaire d’Oli",
           period: "Du 2 décembre 2026 au 21 février 2027",
           officialUrl: "https://www.grandpalais.fr/fr/programme/le-musee-imaginaire-doli",
-          // La fiche officielle n'annonce pas de tarif : elle renvoie au site
-          // de l'exposition, dont la billetterie ouvre le 26 octobre 2026.
+          // La fiche officielle n'annonce pas de tarif : relevés sur la
+          // billetterie du site de l'exposition, ouverte le 26 octobre 2026.
+          // Une galerie tait ses gratuités (PAID_ONLY_VENUES) : celle des
+          // moins de 5 ans, voulue par l'administrateur, se dit en note.
           ticketingUrl: "https://lemuseeimaginairedoli.com",
-          priceNote: "Ouverture de la billetterie le 26 octobre 2026",
+          prices: [
+            { label: "Plein", amount: 22 },
+            { label: "Réduit", amount: 17 },
+            { label: "12-17 ans", amount: 13 },
+            { label: "5-11 ans", amount: 10 },
+          ],
+          priceNote: "Gratuit pour les moins de 5 ans",
           startsOn: "2026-12-02",
           endsOn: "2027-02-21",
         },
@@ -291,8 +299,27 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           ],
         },
         // La fiche officielle n'annonce pas de tarif : « Informations et
-        // réservations sur le site adoptai.artefact.com ».
-        { title: "Adopt AI", period: "Les 3 et 4 décembre 2026", startsOn: "2026-12-03", endsOn: "2026-12-04", officialUrl: "https://www.grandpalais.fr/fr/programme/adopt-ai-2026", ticketingUrl: "https://adoptai.artefact.com/content/inscription" },
+        // réservations sur le site adoptai.artefact.com ». Relevés sur sa page
+        // d'inscription le 26 octobre 2026, phase « Last Chance », TTC ; le
+        // prix normal, barré, vient après.
+        {
+          title: "Adopt AI",
+          period: "Les 3 et 4 décembre 2026",
+          startsOn: "2026-12-03",
+          endsOn: "2026-12-04",
+          officialUrl: "https://www.grandpalais.fr/fr/programme/adopt-ai-2026",
+          ticketingUrl: "https://adoptai.artefact.com/content/inscription",
+          prices: [
+            { label: "Accès 2 jours", amount: 510 },
+            { label: "Accès 1 jour (jeudi 3 ou vendredi 4)", amount: 349 },
+            { label: "VIP · 2 jours", amount: 2049 },
+            { label: "CEO Pass · 2 jours", amount: 5000 },
+            { label: "Corporate Lab · 2 jours", amount: 990 },
+            { label: "Corporate Lab · équipe de 6, 2 jours", amount: 5940 },
+            { label: "Adopt AI Tour · 15 pass et visite de 2 h", amount: 9600 },
+          ],
+          priceNote: "Tarifs « Last Chance », TTC ; ensuite 690 € les 2 jours, 500 € la journée",
+        },
         GRAND_PALAIS_DE_GLACE_2026,
       ],
       2027: [

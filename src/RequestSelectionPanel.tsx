@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { RequestValidationSummary, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import type { RequestKind, SelectedDay } from "./appModel";
+import { ClockTimePicker } from "./ClockTimePicker";
 import type { WorkQuota } from "./overtime";
 import {
   DURATION_LEAVE_TYPES,
+  type LeaveHours,
   type LeaveMoment,
   TYPE_COLORS,
   TYPE_LABELS,
@@ -30,9 +32,12 @@ export type RequestSelectionPanelProps = {
   selectionBlocked: boolean;
   onCancel: () => void;
   onSelectLeaveType: (type: SelectionType) => void;
-  /** CA, RTT, fractionnement : journée entière, matin ou après-midi. */
+  /** Congés annuels : journée entière, matin ou après-midi, et les heures
+   *  posées d'une demi-journée. */
   leaveMoment?: LeaveMoment;
   onSelectLeaveMoment?: (moment: LeaveMoment) => void;
+  leaveHours?: LeaveHours;
+  onChangeLeaveHours?: (hours: LeaveHours) => void;
   onSelectRecoveryType: (type: SelectionType) => void;
   onValidateAndOpenForm: () => void;
   onSaveToPlanning: () => void;
@@ -58,6 +63,8 @@ export function RequestSelectionPanel({
   onSelectLeaveType,
   leaveMoment = "full",
   onSelectLeaveMoment,
+  leaveHours = { start: "", end: "" },
+  onChangeLeaveHours,
   onSelectRecoveryType,
   onValidateAndOpenForm,
   onSaveToPlanning,
@@ -197,8 +204,9 @@ export function RequestSelectionPanel({
                 </button>
               ))}
             </div>
-            {/* CA, RTT, fractionnement : en journée entière ou en
-                demi-journée, pour les dates touchées ensuite. */}
+            {/* Congés annuels : en journée entière ou en demi-journée, pour
+                les dates touchées ensuite ; le matin ou l'après-midi, aux
+                heures choisies. RTT et fractionnement : journée entière. */}
             {(DURATION_LEAVE_TYPES as readonly string[]).includes(activeType) && onSelectLeaveMoment ? (
               <div className="leave-moment-tabs" role="group" aria-label="Durée du congé" style={{ "--type-color": TYPE_COLORS[activeType] } as CSSProperties}>
                 <span className="leave-moment-label" aria-hidden="true">Durée</span>
@@ -207,6 +215,15 @@ export function RequestSelectionPanel({
                     {label}
                   </button>
                 ))}
+                {leaveMoment !== "full" && onChangeLeaveHours ? (
+                  <div className="leave-moment-hours" role="group" aria-label={leaveMoment === "morning" ? "Heures posées le matin" : "Heures posées l’après-midi"}>
+                    <ClockTimePicker label="Début" value={leaveHours.start} onChange={(start) => onChangeLeaveHours({ ...leaveHours, start })} allowEmpty />
+                    <ClockTimePicker label="Fin" value={leaveHours.end} onChange={(end) => onChangeLeaveHours({ ...leaveHours, end })} allowEmpty />
+                    {leaveHours.start && leaveHours.end && leaveHours.end <= leaveHours.start ? (
+                      <small role="alert">L’heure de fin doit suivre l’heure de début.</small>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </section>

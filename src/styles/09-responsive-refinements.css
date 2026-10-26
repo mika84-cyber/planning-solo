@@ -780,3 +780,10 @@
 .leave-moment-tabs button { min-width: 0; min-height: 38px; margin: 0; border: 1.5px solid color-mix(in srgb, var(--type-color) 55%, #fff); border-radius: 999px; padding: 0 8px; background: var(--surface-high, #fff); color: color-mix(in srgb, var(--type-color) 45%, var(--text)); font: inherit; font-size: .86rem; font-weight: 800; box-shadow: none; cursor: pointer; }
 .leave-moment-tabs button:hover:not(.active) { background: color-mix(in srgb, var(--type-color) 10%, var(--surface-high, #fff)); }
 .leave-moment-tabs button.active { border-color: color-mix(in srgb, var(--type-color) 55%, #1f2a33); background: color-mix(in srgb, var(--type-color) 55%, #1f2a33); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--type-color) 35%, transparent); }
+/* Le matin ou l'après-midi : les heures posées, sous la durée. */
+.leave-moment-hours { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+.leave-moment-hours .clock-time-field { gap: 4px; }
+.leave-moment-hours .clock-time-field > span:first-child { font-size: .68rem; }
+.leave-moment-hours .clock-time-picker { min-height: 42px; border: 1.5px solid color-mix(in srgb, var(--type-color) 45%, #fff); border-radius: 12px; box-shadow: none; }
+.leave-moment-hours .clock-time-picker select { height: 42px; font-size: 16px; }
+.leave-moment-hours small { grid-column: 1 / -1; color: #a5283a; font-size: .78rem; font-weight: 750; }
