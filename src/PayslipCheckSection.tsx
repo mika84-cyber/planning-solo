@@ -4,6 +4,7 @@ import type { NetRatioCalibration } from "./payslip";
 import type { MecenatEntry } from "./mecenat";
 import type { OvertimeEntry } from "./overtime";
 import type { PayslipReviewSummary } from "./payslipReview";
+import type { PayslipGapExplanation } from "./payslipGapExplanation";
 import type {
   PayDraftKey,
   PayslipCheck,
@@ -65,6 +66,11 @@ export type PayslipCheckSectionProps = {
   allowances: AllowancesSummary;
   displayedMonth: number;
   review: PayslipReviewSummary | null;
+  /** D'où vient l'écart, du brut jusqu'au net, quand le bulletin se compare. */
+  gapExplanation?: PayslipGapExplanation | null;
+  /** Le nom et la signature de l'agent, pour le courrier à la hiérarchie. */
+  fullName?: string;
+  signature?: string;
   unplannedCarence: boolean;
   resultDetailsOpen: boolean;
   setResultDetailsOpen: Dispatch<SetStateAction<boolean>>;
@@ -147,6 +153,9 @@ export function PayslipCheckSection({
   allowances,
   displayedMonth,
   review: payslipReview,
+  gapExplanation,
+  fullName,
+  signature,
   unplannedCarence: unplannedPayslipCarence,
   resultDetailsOpen: payslipResultDetailsOpen,
   setResultDetailsOpen: setPayslipResultDetailsOpen,
@@ -223,6 +232,9 @@ export function PayslipCheckSection({
       allowances={allowances}
       displayedMonth={displayedMonth}
       review={payslipReview}
+      gapExplanation={gapExplanation}
+      fullName={fullName}
+      signature={signature}
       unplannedCarence={unplannedPayslipCarence}
       resultDetailsOpen={payslipResultDetailsOpen}
       setResultDetailsOpen={setPayslipResultDetailsOpen}

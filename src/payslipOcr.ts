@@ -335,6 +335,17 @@ export function readPayslipOcrText(text: string): PayslipReading {
       : undefined;
   };
 
+  // « PAS prélèvement à la source » : assiette, taux, montant.
+  const pasLine = (() => {
+    const index = matchingLineIndexes(lines, ["PAS prélèvement à la source"])[0];
+    const amounts = index === undefined ? [] : rowAmounts(lines[index]);
+    const [base, rate, paid] = amounts.slice(-3);
+    if (amounts.length >= 3 && base >= 100 && Math.abs((base * rate) / 100 - paid) < 0.1) return { rate, amount: Math.abs(paid) };
+    const [lineBase, linePaid] = amounts.slice(-2);
+    return amounts.length >= 2 && lineBase >= 100
+      ? { rate: Math.round((Math.abs(linePaid) / lineBase) * 10000) / 100, amount: Math.abs(linePaid) }
+      : undefined;
+  })();
   return {
     gross: lastAmountNear(lines, ["CUMUL BRUT", "ICUMUL BRUT"]),
     netBeforeTax: lastAmountNear(lines, [
@@ -347,7 +358,7 @@ export function readPayslipOcrText(text: string): PayslipReading {
     ifse: lastAmountNear(lines, ["IFSE"]),
     sundaysBeyondTen:
       sundayAmount !== undefined && Math.abs(sundayAmount) >= sundayRate
-        ? Math.max(0, Math.round(Math.abs(sundayAmount) / sundayRate))
+        ? Math.max(0, Math.round((Math.abs(sundayAmount) / sundayRate) * 2) / 2)
         : 0,
     cia: lastAmountNear(lines, ["CIA"]),
     // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
@@ -364,15 +375,8 @@ export function readPayslipOcrText(text: string): PayslipReading {
     carenceDates: carenceDatesFromLabels(
       matchingLineIndexes(lines, ["Jour de carence"]).map((index) => lines[index]),
     ),
-    pasRate: plausiblePasRate(lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]) ?? (() => {
-      // « PAS prélèvement à la source » : assiette, taux, montant.
-      const index = matchingLineIndexes(lines, ["PAS prélèvement à la source"])[0];
-      const amounts = index === undefined ? [] : rowAmounts(lines[index]);
-      const [base, rate, paid] = amounts.slice(-3);
-      if (amounts.length >= 3 && base >= 100 && Math.abs((base * rate) / 100 - paid) < 0.1) return rate;
-      const [lineBase, linePaid] = amounts.slice(-2);
-      return amounts.length >= 2 && lineBase >= 100 ? Math.round((Math.abs(linePaid) / lineBase) * 10000) / 100 : undefined;
-    })()),
+    pasRate: plausiblePasRate(lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]) ?? pasLine?.rate),
+    incomeTax: pasLine?.amount,
     ...withExtraLines(
       fixedParts.length
         ? Math.round(fixedParts.reduce((sum, amount) => sum + amount, 0) * 100) / 100

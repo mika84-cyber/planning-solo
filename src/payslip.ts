@@ -57,6 +57,9 @@ export type PayslipReading = {
   /** Ligne « PAS - Taux » : le taux lui-même, pas une assiette — une seule
    *  valeur suit le libellé, contrairement aux lignes de cotisation. */
   pasRate?: number;
+  /** Ligne « PAS prélèvement à la source » : l'impôt prélevé ce mois, son
+   *  dernier montant. Le net versé est le net avant impôt moins celui-ci. */
+  incomeTax?: number;
   /** Somme des lignes fixes présentes (Indemnité de Résidence, Indemnité comp. au
    *  SMIC, ICHCSG, Aide employeur options MGEN, moins Transfert
    *  primes/points) — la même formule que l'infobulle du champ « Autres
@@ -411,16 +414,20 @@ function amountAfterPrefix(tokens: string[], prefix: string, offset: number) {
  *  assiette et son montant (« PAS prélèvement à la source 2322.05 74.31 ») :
  *  le taux s'en déduit, ou se lit s'il est écrit entre les deux. */
 function readPasRate(tokens: string[]) {
-  const written = amountAfter(tokens, "PAS - Taux");
-  if (written !== undefined) return written;
+  return amountAfter(tokens, "PAS - Taux") ?? readPasLine(tokens)?.rate;
+}
+
+/** La ligne « PAS prélèvement à la source » : son assiette, son taux, écrit
+ *  entre les deux nombres ou déduit, et l'impôt prélevé. */
+function readPasLine(tokens: string[]) {
   const expected = normalizedLabel("PAS prélèvement à la source");
   const index = tokens.findIndex((token) => normalizedLabel(token).startsWith(expected));
   if (index === -1) return undefined;
   const [base, second, third] = [1, 2, 3].map((offset) => parseAmount(tokens[index + offset]));
   if (base === undefined || second === undefined || base < 100) return undefined;
-  if (third !== undefined && Math.abs((base * second) / 100 - third) < 0.05) return second;
+  if (third !== undefined && Math.abs((base * second) / 100 - third) < 0.05) return { rate: second, amount: Math.abs(third) };
   const rate = Math.round((Math.abs(second) / base) * 10000) / 100;
-  return rate > 0 && rate < 50 ? rate : undefined;
+  return rate > 0 && rate < 50 ? { rate, amount: Math.abs(second) } : undefined;
 }
 
 /** La date d'un « Jour de carence », telle que son libellé la porte :
@@ -788,7 +795,8 @@ function readSundaysBeyondTen(tokens: string[]): number {
   const amount = parseAmount(tokens[index + 2]);
   if (rate === undefined || !isPlausibleSundayRate(rate)) return 0;
   if (amount === undefined) return 0;
-  return Math.round(Math.abs(amount) / rate);
+  // Par moitié : une demi-journée posée un dimanche n'en paie qu'un demi.
+  return Math.round((Math.abs(amount) / rate) * 2) / 2;
 }
 
 /** Le férié travaillé s'écrit « Indem trav j férié ac public » ou, pour un
@@ -815,6 +823,7 @@ export function readPayslip(tokens: string[]): PayslipReading {
       tokens.filter((token) => normalizedLabel(token).startsWith("JOUR DE CARENCE")),
     ),
     pasRate: readPasRate(tokens),
+    incomeTax: readPasLine(tokens)?.amount,
     // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
     holidayPay: sumLineAmounts(tokens, isHolidayLine) ?? 0,
     sundayFlat: sumLineAmounts(tokens, (label) => normalizedLabel(label).startsWith("INDEM TRAV DOMINICAL REGULIER")),

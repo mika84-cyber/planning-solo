@@ -105,7 +105,12 @@ const budgets = {
   // raccourcis, fiche d'expo et audioguide) et les années du PDF en pastilles
   // avec « Plus » ; le code devenu inutile a d'abord été retiré (679,9 Kio
   // mesurés, et un peu plus sur le serveur de GitHub).
-  totalJavaScript: { raw: 2_055 * KIB, gzip: 682 * KIB },
+  // Relevé le 26 octobre 2026 à 2 080 / 690 Kio, avec l'accord de
+  // l'administrateur : « Vérifier mon bulletin » explique l'écart du brut
+  // jusqu'au net, corrige le mois accepté et rédige le courrier à la
+  // hiérarchie ; l'ancien relevé d'anomalies est retiré (2 077,0 / 688,3 Kio
+  // mesurés).
+  totalJavaScript: { raw: 2_080 * KIB, gzip: 690 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

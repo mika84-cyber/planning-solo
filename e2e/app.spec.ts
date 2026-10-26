@@ -1656,7 +1656,7 @@ test("un bulletin photographié se lit page après page, et ne conclut qu’une 
   await expect(nextPage).toContainText("Page 1 lue · photographiez la page 2", { timeout: 90_000 });
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026");
   await expect(page.locator(".payslip-read-values")).toContainText("2 962,07 €");
-  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Que voulez-vous faire ?" })).toHaveCount(0);
   await expect(photoValues).toHaveCount(0);
   // Page 2 : le net rejoint la lecture, les valeurs sont confirmées une
   // seule fois, et la vérification se conclut.
@@ -1666,7 +1666,7 @@ test("un bulletin photographié se lit page après page, et ne conclut qu’une 
   // Les espaces de « 1 855,88 € » sont insécables : on ne les épelle pas.
   await expect(photoValues).toContainText(/Traitement de base : 1.855,88.€/);
   await photoValues.getByRole("button", { name: "Enregistrer dans mon profil" }).click();
-  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("region", { name: "Que voulez-vous faire ?" })).toBeVisible({ timeout: 30_000 });
   await expect(nextPage).toHaveCount(0);
   await expect(photoValues).toHaveCount(0);
   await expect(page.locator(".payslip-read-values")).toContainText("2 962,07 €");
@@ -1696,9 +1696,9 @@ test("devant un écart du bulletin, le geste qui l’explique est proposé : pas
   page.on("dialog", (dialog) => void dialog.dismiss());
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-septembre.pdf", mimeType: "application/pdf", buffer: Buffer.from(pdf, "latin1") });
-  const choices = page.getByRole("region", { name: "Que s’est-il passé ?" });
+  const choices = page.getByRole("region", { name: "D’où vient l’écart" });
   await expect(choices).toContainText("IFSE ou CIA sur le bulletin");
-  await expect(choices).toContainText("Un contractuel ne perçoit ni IFSE ni CIA");
+  await expect(choices).toContainText("Un contractuel n’en perçoit pas");
   await choices.getByRole("button", { name: "Passer mon statut en Fonctionnaire" }).click();
   // Le statut change ; l'IFSE, que le profil contractuel n'avait pas
   // retenue, devient à son tour un écart avec son geste : l'enregistrer.
@@ -1706,10 +1706,9 @@ test("devant un écart du bulletin, le geste qui l’explique est proposé : pas
   await expect(choices).not.toContainText("IFSE ou CIA sur le bulletin");
   await expect(choices).toContainText("IFSE : 416,66 € de plus que prévu");
   await choices.getByRole("button", { name: "Enregistrer 416,66 € dans le profil" }).click();
-  // Plus aucun écart : l'estimation suit le bulletin.
-  await expect(choices).toHaveCount(0);
-  await expect(page.locator(".payslip-gap-sentences")).toHaveCount(0);
-  await expect(page.locator(".payslip-result-summary")).toContainText("aucun écart");
+  // Plus aucune ligne en cause : l'IFSE suit le bulletin.
+  await expect(page.locator(".payslip-gap-result")).toBeVisible();
+  await expect(page.locator(".payslip-gap-result")).not.toContainText("IFSE");
 });
 
 test("relire un bulletin mal lu retire le report de dimanches que la première lecture avait provoqué", async ({ page }) => {
@@ -1724,10 +1723,12 @@ test("relire un bulletin mal lu retire le report de dimanches que la première l
   // attendait, ils sont reportés sur décembre.
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "octobre.pdf", mimeType: "application/pdf", buffer: pdf([...october, ...footer]) });
-  await expect(adjustment).toContainText(/dimanches? non payés? retirés? automatiquement du net de octobre et reportés? sur décembre/);
+  await expect(adjustment).toContainText(/dimanches? non payés? retirés? automatiquement du net d’octobre et reportés? sur décembre/);
   const reported = Number(/(\d+) dimanche/.exec(await adjustment.innerText())![1]);
   expect(reported).toBeGreaterThan(0);
-  // Le mois n'en attend plus aucun : la comparaison dit 0 pour 0.
+  // Le mois n'en attend plus aucun : la comparaison dit 0 pour 0, dans le
+  // tableau ligne à ligne, déplié sur demande.
+  await page.locator(".payslip-verify-card").getByRole("button", { name: /^Voir( le détail)?$/ }).click();
   const sundaysRow = page.locator("table.allowance-table tr").filter({ hasText: "Dimanches payés" });
   await expect(sundaysRow).toContainText("concorde");
   await expect(sundaysRow.locator("td")).toHaveText(["0", "0"]);
@@ -1736,7 +1737,8 @@ test("relire un bulletin mal lu retire le report de dimanches que la première l
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "octobre-relu.pdf", mimeType: "application/pdf", buffer: pdf([
     ...october, "Indemnité trav. dom > 10 dim", "54.93", (reported * 54.93).toFixed(2), ...footer,
   ]) });
-  await expect(adjustment).toContainText(`Le report de ${reported} dimanche${reported > 1 ? "s" : ""} de octobre vers décembre, venu d’une lecture précédente, est retiré : ce bulletin les paie.`);
+  await expect(adjustment).toContainText(`Le report de ${reported} dimanche${reported > 1 ? "s" : ""} d’octobre vers décembre, venu d’une lecture précédente, est retiré : ce bulletin les paie.`);
+  await page.locator(".payslip-verify-card").getByRole("button", { name: /^Voir( le détail)?$/ }).click();
   await expect(sundaysRow).toContainText("concorde");
   await expect(sundaysRow.locator("td")).toHaveText([String(reported), String(reported)]);
 });
@@ -1754,7 +1756,7 @@ test("une seule photo, déclarée complète, se vérifie telle quelle", async ({
   await nextPage.getByRole("button", { name: "Il n’y a pas d’autre page" }).click();
   await expect(photoValues).toBeVisible({ timeout: 30_000 });
   await photoValues.getByRole("button", { name: "Enregistrer dans mon profil" }).click();
-  await expect(page.getByRole("region", { name: "Conclusion de la vérification" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("region", { name: "Que voulez-vous faire ?" })).toBeVisible({ timeout: 30_000 });
   await expect(nextPage).toHaveCount(0);
   await expect(photoValues).toHaveCount(0);
 });
@@ -1815,28 +1817,36 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
   await payMonthNavigation.getByRole("button", { name: "Mois précédent" }).click();
   await expect(page.locator("#pay-dashboard-title")).toHaveText("Septembre 2026");
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026");
-  const decision = page.getByRole("region", { name: "Conclusion de la vérification" });
-  await decision.getByRole("button", { name: "Tout est OK" }).click();
+  const decision = page.getByRole("region", { name: "Que voulez-vous faire ?" });
+  await decision.getByRole("button", { name: /^(C’est normal : corriger ma paie|Tout est juste : valider)/ }).click();
   const greenCheck = page.getByRole("button", { name: "Revoir la vérification de septembre 2026" });
   await expect(greenCheck).toBeVisible();
-  await expect(page.locator(".payslip-result-summary")).toHaveCount(0);
+  await expect(page.locator(".payslip-gap-result")).toHaveCount(0);
   await expect(page.locator(".payslip-detected-period")).toHaveCount(0);
 
+  // « C'est une erreur » : l'anomalie est gardée et le courrier s'ouvre.
   await greenCheck.click();
-  await decision.getByRole("button", { name: "Signaler une anomalie" }).click();
-  await expect(page.getByLabel("Anomalies ou observations")).toHaveCount(0);
+  await decision.getByRole("button", { name: /^(C’est une erreur : écrire à ma hiérarchie|Signaler une anomalie à ma hiérarchie)/ }).click();
+  const letter = page.getByRole("dialog", { name: "Écrire à ma hiérarchie" });
+  await expect(letter).toBeVisible();
+  await expect(letter.getByLabel("Destinataire")).toHaveValue("Service des ressources humaines");
+  await expect(letter.getByRole("article", { name: "Aperçu du courrier" })).toContainText("Objet : écart sur mon bulletin de paie de septembre 2026");
+  await letter.getByLabel("Un mot de votre part (facultatif)").fill("Merci de votre retour.");
+  await expect(letter.getByRole("article", { name: "Aperçu du courrier" })).toContainText("Merci de votre retour.");
+  const download = page.waitForEvent("download");
+  await letter.getByRole("button", { name: "Télécharger le PDF" }).click();
+  expect((await download).suggestedFilename()).toBe("courrier-bulletin-2026-09.pdf");
+  await letter.getByRole("button", { name: "Fermer" }).click();
+  await expect(letter).toHaveCount(0);
+  // Le courrier se rouvre depuis l'anomalie gardée, avec le mot écrit.
   const savedAttention = page.getByRole("region", { name: "Résultat du bulletin signalé" });
   await expect(savedAttention.getByRole("img", { name: "Anomalie signalée pour septembre 2026" })).toHaveText("✓");
   const anomalyDetails = savedAttention.locator(".payslip-anomaly-details");
   await expect(anomalyDetails).not.toHaveAttribute("open", "");
-  await expect(anomalyDetails.getByText("septembre 2026")).toBeVisible();
   await anomalyDetails.locator("summary").click();
-  await expect(anomalyDetails).toHaveAttribute("open", "");
-  await expect(anomalyDetails.getByRole("button", { name: "E-mail" })).toBeVisible();
-  await expect(anomalyDetails.getByRole("button", { name: "WhatsApp" })).toBeVisible();
-  const download = page.waitForEvent("download");
-  await anomalyDetails.getByRole("button", { name: "Télécharger le PDF" }).click();
-  expect((await download).suggestedFilename()).toBe("anomalies-bulletin-2026-09.pdf");
+  await expect(anomalyDetails).toContainText("Votre mot : Merci de votre retour.");
+  await anomalyDetails.getByRole("button", { name: "Voir le courrier" }).click();
+  await expect(letter.getByLabel("Un mot de votre part (facultatif)")).toHaveValue("Merci de votre retour.");
 });
 
 test("menu, contact administrateur, paie et PDF restent accessibles", async ({ page }) => {

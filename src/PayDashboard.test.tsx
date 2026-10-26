@@ -142,6 +142,26 @@ describe("PayDashboard", () => {
     expect(ok).toMatch(/id="pay-dashboard-verification"[^>]*hidden/);
   });
 
+  it("affiche le net payé quand l’écart avec le bulletin est accepté", () => {
+    const html = renderToStaticMarkup(
+      <PayDashboard
+        {...baseProps}
+        net={2200.17}
+        gross={2795.02}
+        savedVerification="ok"
+        verification={{ tone: "warning", label: "3 points à vérifier" }}
+        acceptedGap={{ expected: 2224.24, gap: -24.07, cause: "un demi-dimanche non payé" }}
+      />,
+    ).replace(/[  ]/g, " ");
+    expect(html).toContain("Net payé");
+    expect(html).not.toContain("Net estimé");
+    expect(html).toContain("sur 2 795,02 € de brut · bulletin d’octobre");
+    // L'écart accepté l'emporte sur le résultat du bulletin encore ouvert.
+    expect(html).toContain("Bulletin vérifié · écart accepté");
+    expect(html).not.toContain("Bulletin : 3 points à vérifier");
+    expect(html).toContain("Prévu 2 224,24 € · un demi-dimanche non payé (− 24,07 €).");
+  });
+
   it("ne montre plus le bloc d'actions utiles", () => {
     const html = renderToStaticMarkup(<PayDashboard {...baseProps} />);
     expect(html).not.toContain("Actions utiles");

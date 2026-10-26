@@ -54,4 +54,24 @@ describe("décisions de vérification gardées dans le compte", () => {
     expect(merged["2026-10"]).toEqual(october);
     expect(mergePayslipVerifications({ "2026-09": later }, { "2026-09": okSeptember })["2026-09"].status).toBe("attention");
   });
+  it("garde l’écart expliqué, ligne à ligne, et le destinataire du courrier", () => {
+    const gap = {
+      level: "net" as const,
+      expected: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 52.95, net: 2224.24 },
+      actual: { gross: 2795.02, netBeforeTax: 2252.55, incomeTax: 52.38, net: 2200.17 },
+      gap: -24.07,
+      lines: [
+        { key: "sundays", title: "Un demi-dimanche non payé", detail: "6,5 payés", amount: -27.46, kind: "cause" as const, found: 6.5, expected: 7 },
+        { key: "contributions", title: "Moins de cotisations", detail: "prélevées sur ce demi-dimanche", amount: 2.82, kind: "follow" as const },
+      ],
+    };
+    const records = sanitizePayslipVerifications({
+      "2026-10": { ...okSeptember, month: 9, gap, recipient: "Service des ressources humaines" },
+      "2026-11": { ...okSeptember, month: 10, gap: { ...gap, lines: [{ ...gap.lines[0], kind: "autre" }], expected: { gross: "beaucoup" } } },
+    });
+    expect(records["2026-10"].gap).toEqual(gap);
+    expect(records["2026-10"].recipient).toBe("Service des ressources humaines");
+    expect(records["2026-11"].gap).toEqual({ ...gap, expected: {}, lines: [] });
+    expect(sanitizePayslipVerifications({ "2026-09": okSeptember })["2026-09"]).not.toHaveProperty("gap");
+  });
 });

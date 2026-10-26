@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode, type TouchEventHandler } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { ClockTimePicker } from "./ClockTimePicker";
-import { PayDashboard, type PayDashboardVariable, type PayDashboardVerification } from "./PayDashboard";
+import { PayDashboard, type PayDashboardAcceptedGap, type PayDashboardVariable, type PayDashboardVerification } from "./PayDashboard";
 import type { PayCalculationBreakdown } from "./PayEstimateDetails";
 import { PAY_STATUS_OPTIONS, type PayStatus } from "./appModel";
 import { WORK_QUOTA_OPTIONS, type WorkQuota, type WorkSchedule } from "./overtime";
@@ -38,6 +38,7 @@ type PayPageProps = {
   /** Comparaison avec le bulletin du mois affiché. */
   verification?: PayDashboardVerification;
   savedVerification?: "ok" | "attention";
+  acceptedGap?: PayDashboardAcceptedGap;
   /** L'accueil demande d'ouvrir la vérification du bulletin. */
   verificationRequested?: boolean;
   onVerificationShown?: () => void;
@@ -68,7 +69,7 @@ export function PayPage({
   screen, month, year, profileOpen, profileFocusRequested, settingsOpen, workQuota, workSchedule, status,
   netEstimateComplete, gross, grossComplete, net,
   missingFields, onCompleteEstimate,
-  reliability, variables, calculation, allowancesPending, verification, savedVerification, verificationRequested, onVerificationShown,
+  reliability, variables, calculation, allowancesPending, verification, savedVerification, acceptedGap, verificationRequested, onVerificationShown,
   deductionContent, monthSlide, allowancesContent, estimateContent, yearContent,
   verificationContent, settingsContent, onScreenChange, onToggleProfile, onProfileFocused,
   onToggleSettings, onWorkQuotaChange, onWorkScheduleChange, onStatusChange, onPreviousMonth,
@@ -152,7 +153,7 @@ export function PayPage({
             net={net} profileRecap={profileRecap} reliability={reliability}
             missingFields={missingFields} onCompleteEstimate={() => { setFocusMissing(true); onCompleteEstimate?.(); }}
             variables={variables} calculation={calculation} allowancesPending={allowancesPending}
-            verification={verification} savedVerification={savedVerification}
+            verification={verification} savedVerification={savedVerification} acceptedGap={acceptedGap}
             verificationRequested={verificationRequested} onVerificationShown={onVerificationShown}
             // « Profil et réglages » déplie le profil et ses éléments d'un
             // seul geste, et les replie ensemble.

@@ -139,6 +139,8 @@ export function PaySectionScreen({
             sundayCarryoverMonth,
             sundayCarryoverYear,
             payslipVerifications,
+            fullName: formProfile?.fullName,
+            signature: formProfile?.signature,
             changePayMonth,
             goPayToday,
           }}

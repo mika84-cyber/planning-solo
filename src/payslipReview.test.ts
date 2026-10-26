@@ -14,6 +14,9 @@ describe("écart expliqué en une phrase", () => {
   it("compte les dimanches manquants ou en trop", () => {
     expect(plain(describePayslipGap({ key: "sundays", label: "Dimanches payés", found: 1, expected: 3 }))).toBe("2 dimanches non payés");
     expect(plain(describePayslipGap({ key: "sundays", label: "Dimanches payés", found: 2, expected: 1 }))).toBe("1 dimanche payé en plus");
+    // Par moitié : une demi-journée posée un dimanche.
+    expect(plain(describePayslipGap({ key: "sundays", label: "Dimanches payés", found: 6.5, expected: 7 }))).toBe("Un demi-dimanche non payé");
+    expect(plain(describePayslipGap({ key: "sundays", label: "Dimanches payés", found: 5, expected: 6.5 }))).toBe("1,5 dimanche non payé");
   });
 
   it("dit le sens et le montant de l’écart pour une ligne en euros", () => {

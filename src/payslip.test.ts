@@ -235,6 +235,11 @@ describe("lecture du nombre de dimanches", () => {
     expect(readPayslip(juillet2026).sundaysBeyondTen).not.toBe(1);
   });
 
+  it("compte un demi-dimanche, comme le bulletin d’octobre 2026", () => {
+    // 6,5 × 54,93 = 357,05 : arrondi à l'entier, il aurait passé pour 7.
+    expect(readPayslip(["Indemnité trav. dom > 10 dim", "54.93", "357.05"]).sundaysBeyondTen).toBe(6.5);
+  });
+
   it("vaut 0 quand la ligne est absente, sans le signaler comme une erreur", () => {
     expect(readPayslip(juin2026).sundaysBeyondTen).toBe(0);
   });
@@ -268,7 +273,7 @@ describe("lecture du nombre de dimanches", () => {
       "3.20", "884.70", "PAS prélèvement à la source", "2322.05", "74.31",
       "1.00", "977.01", "Titres repas", "4.95", "99.00",
     ]);
-    expect(reading).toMatchObject({ navigo: 62.42, mealVoucherDeduction: 99, pasRate: 3.2 });
+    expect(reading).toMatchObject({ navigo: 62.42, mealVoucherDeduction: 99, pasRate: 3.2, incomeTax: 74.31 });
   });
 
   it("ne prend aucune ligne connue des bulletins réels pour une ligne inconnue", () => {
@@ -658,6 +663,12 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
 
   it("relève le taux de PAS, une ligne à un seul nombre", () => {
     expect(readPayslip(mars2024).pasRate).toBe(1.9);
+  });
+
+  it("relève l'impôt prélevé, pour retrouver le net versé", () => {
+    expect(readPayslip(mars2024).incomeTax).toBe(41.8);
+    expect(readPayslip(["PAS prélèvement à la source", "2380.97", "2.20", "52.38"])).toMatchObject({ pasRate: 2.2, incomeTax: 52.38 });
+    expect(readPayslip(janvier2026).incomeTax).toBeUndefined();
   });
 
   it("ne renvoie rien pour les lignes absentes du bulletin", () => {

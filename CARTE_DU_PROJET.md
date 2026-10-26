@@ -174,10 +174,17 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/PayslipVerificationCard.tsx`, `src/PayslipCalibrationCard.tsx` et
   `src/PayslipSettingsSections.tsx` (résultat, calibration, arrêts et
   paramètres), sans changer la structure DOM attendue par les styles. Le
-  résultat d'un bulletin se lit dans l'ordre : le verdict avec chaque écart
-  en une phrase et son explication (une seule fois), « Que s'est-il
-  passé ? », le tableau Ligne / Bulletin / Appli, puis « Ajouter une page »,
-  « Vérifier un autre bulletin » et, en dernier, la conclusion. Ce qui a été
+  résultat d'un bulletin (`src/PayslipGapResult.tsx`) se lit dans l'ordre :
+  ce qui manque (ou est en plus) sur le net, le trio Prévu / Payé / Écart,
+  « D'où vient l'écart » ligne à ligne jusqu'au net (chaque cause avec son
+  geste en lien, ou « ✓ enregistré dans votre profil / reporté sur … »
+  quand la lecture l'a déjà pris en compte), « N lignes identiques au
+  centime · Voir » qui déplie le tableau Ligne / Bulletin / Appli, puis
+  « Que voulez-vous faire ? » : « C'est normal : corriger ma paie » (le mois
+  prend les montants du bulletin) ou « C'est une erreur : écrire à ma
+  hiérarchie » (le courrier passe devant quand une partie de l'écart reste
+  inexpliquée). Viennent ensuite « Ajouter une page » et « Vérifier un autre
+  bulletin ». Ce qui a été
   lu (champs remplis, lignes absentes) est dit sans alarme : le rouge est
   réservé aux écarts. Le brut et le net lus tiennent en une ligne sous la
   période reconnue (`.payslip-read-values`), sans tuiles.
@@ -339,6 +346,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   a réglés dès le mois même.
 - `src/payEstimate.ts` : disponibilité de l'estimation de paie.
 - `src/payslip.ts` / `src/payslipReview.ts` : lecture et contrôle du bulletin.
+  Les dimanches au-delà du 10e se lisent par moitié (357,05 € à 54,93 € =
+  6,5, pas 7), sur PDF comme sur photo, et leur contrôle tolère moins d'un
+  demi ; un report d'un demi-dimanche se garde tel quel côté serveur.
 - `src/payslipRateSamples.ts` : montants d’un bulletin vérifié qui servent aux
   deux taux net avant impôt (brut, net, traitement, IFSE, éléments fixes,
   carence, Navigo, titres repas — jamais le fichier ni son texte), gardés
@@ -366,10 +376,32 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/payslipGapChoices.ts` : devant un écart du bulletin, le geste qui
   l'explique sans doute (taux PAS ou montant du bulletin à enregistrer,
   mécénat attendu non payé à reporter sur la paie suivante, dimanches non
-  payés à reporter, statut à passer en fonctionnaire, compensation des
-  fériés à revoir) ; `PayslipVerificationCard` l'affiche sous « Que s'est-il
-  passé ? » et les actions de paie l'exécutent (`savePayAmount(field, value)`,
-  `deferMecenats`, `changeStatus`, écran des primes).
+  payés à reporter, demi compris, statut à passer en fonctionnaire,
+  compensation des fériés à revoir) ; `PayslipVerificationCard` l'affiche en
+  lien sur la cause, d'après l'écart tel qu'il reste, et les actions de paie
+  l'exécutent (`savePayAmount(field, value)`, `deferMecenats`,
+  `changeStatus`, écran des primes).
+- `src/payslipGapExplanation.ts` : `explainPayslipGapChain` remonte de
+  chaque ligne qui diffère (chiffrée sur le brut ; dimanches par moitié)
+  aux cotisations prélevées dessus (taux fixe ou variable de l'estimation),
+  aux titres repas et Navigo, puis à l'impôt, jusqu'au net versé : la somme
+  des lignes est l'écart au centime, un reste devient une ligne
+  « inexpliquée », quelques centimes sans cause ne sont qu'un arrondi
+  (`matches`). La lecture d'un bulletin met le profil à jour : l'écart
+  s'explique donc contre l'estimation gardée juste avant
+  (`PayEstimateSnapshot`, `payEstimateSnapshot` de `usePayUiState`, pris par
+  `onImport` dans `payContent`). L'impôt prélevé se lit sur la ligne « PAS
+  prélèvement à la source » (`incomeTax`).
+- `src/payslipAcceptedGap.ts` : un écart accepté (décision « ok » gardée
+  avec `gap` dans `payslip_verifications`) fait prendre au mois les
+  montants du bulletin, en valeurs absolues (`correctedPayMonth`) ; Ma paie
+  affiche alors « Net payé », « Bulletin vérifié · écart accepté » et ce qui
+  était prévu (`acceptedGapSummary`).
+- `src/payslipGapLetter.ts` / `src/PayslipLetterSheet.tsx` : le courrier à
+  la hiérarchie (destinataire, mot facultatif, nom et signature du profil),
+  avec l'écart, ses causes, un tableau attendu / bulletin et la demande de
+  régularisation ; aperçu, PDF (`courrier-bulletin-AAAA-MM.pdf`) ou envoi
+  par e-mail. Il remplace l'ancien relevé d'anomalies.
 - `src/payslipOcr.ts` : reconnaissance locale des photos de bulletins avec le
   moteur et le modèle français auto-hébergés dans `public/ocr/`. Un bulletin
   fait deux pages : le bouton « Photographier » ouvre l'appareil
@@ -492,7 +524,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - CET : `src/cet.test.ts` et `src/CetSection.test.tsx`.
 - Formulaires CET : `src/cetFormsPdf.test.ts`.
 - Paie : `src/payEstimate.test.ts`, `src/payslip.test.ts`,
-  `src/payslipReview.test.ts`.
+  `src/payslipReview.test.ts`, `src/payslipGapExplanation.test.ts`,
+  `src/payslipAcceptedGap.test.ts`, `src/payslipGapLetter.test.ts`,
+  `src/PayslipLetterSheet.test.tsx`, `src/PayslipCheckSection.test.tsx`.
 - Heures : `src/overtime.test.ts`, `src/useOvertimePay.test.tsx`.
 - Mécénats : `src/mecenat.test.ts`, `src/mecenatRules.test.ts`,
   `src/earlyMecenatPayment.test.tsx`.

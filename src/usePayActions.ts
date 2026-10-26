@@ -43,6 +43,7 @@ import {
   SUNDAY_ALLOWANCE,
   localDate,
   s,
+  sundayCountLabel,
   type HolidayPay,
 } from "./planningLogic";
 import { strikePayEstimate } from "./strike";
@@ -60,6 +61,9 @@ import type {
   PayslipCheck,
   PayslipImportResult,
 } from "./usePayUiState";
+
+/** « d’octobre », « de mars ». */
+const ofMonthName = (month: number) => (/^[aeiou]/.test(MONTHS[month]) ? `d’${MONTHS[month]}` : `de ${MONTHS[month]}`);
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -1252,14 +1256,12 @@ export function usePayActions(options: PayActionsOptions) {
             ...attachedByPayslip,
             automaticSundayReport
               ? automaticSundayReport.count === 0
-                ? `Le report de ${automaticSundayReport.previous} dimanche${s(automaticSundayReport.previous)} de ${MONTHS[automaticSundayReport.fromMonth]} vers ${MONTHS[automaticSundayReport.target.month]}, venu d’une lecture précédente, est retiré : ce bulletin les paie.`
-                : `${automaticSundayReport.count} dimanche${s(
-                    automaticSundayReport.count,
-                  )} non payé${s(automaticSundayReport.count)} retiré${s(
-                    automaticSundayReport.count,
-                  )} automatiquement du net de ${MONTHS[automaticSundayReport.fromMonth]} et reporté${s(
-                    automaticSundayReport.count,
-                  )} sur ${MONTHS[automaticSundayReport.target.month]}${
+                ? `Le report de ${sundayCountLabel(automaticSundayReport.previous)} dimanche${automaticSundayReport.previous >= 2 ? "s" : ""} ${ofMonthName(automaticSundayReport.fromMonth)} vers ${MONTHS[automaticSundayReport.target.month]}, venu d’une lecture précédente, est retiré : ce bulletin les paie.`
+                : `${automaticSundayReport.count === 0.5 ? "Un demi-dimanche" : `${sundayCountLabel(automaticSundayReport.count)} dimanche${automaticSundayReport.count >= 2 ? "s" : ""}`} non payé${
+                    automaticSundayReport.count >= 2 ? "s" : ""
+                  } retiré${automaticSundayReport.count >= 2 ? "s" : ""} automatiquement du net ${ofMonthName(automaticSundayReport.fromMonth)} et reporté${
+                    automaticSundayReport.count >= 2 ? "s" : ""
+                  } sur ${MONTHS[automaticSundayReport.target.month]}${
                     automaticSundayReport.previous && automaticSundayReport.previous !== automaticSundayReport.count
                       ? ` (au lieu de ${automaticSundayReport.previous} d’après la lecture précédente)`
                       : ""

@@ -1,4 +1,5 @@
 import { euros } from "./appModel";
+import { sundayCountLabel } from "./planningLogic";
 
 export type PayslipReviewCheck = {
   key: string;
@@ -34,8 +35,6 @@ const PAYSLIP_GAP_EXPLANATIONS: Record<string, string> = {
   carence: "Un jour de carence apparaît sur le bulletin alors qu’aucun arrêt maladie correspondant n’est enregistré dans l’application.",
 };
 
-const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? "s" : ""}`;
-
 /**
  * L'écart dit en une phrase simple, plutôt qu'un montant brut : « 2 dimanches
  * non payés », « IFSE : 30,00 € de moins que prévu ». Ne s'applique qu'à une
@@ -46,10 +45,11 @@ export function describePayslipGap(check: PayslipReviewCheck) {
   const difference = check.found - check.expected;
   const gap = Math.abs(difference);
   if (check.key === "sundays") {
-    const count = Math.round(gap);
-    return difference < 0
-      ? `${plural(count, "dimanche")} non payé${count > 1 ? "s" : ""}`
-      : `${plural(count, "dimanche")} payé${count > 1 ? "s" : ""} en plus`;
+    // Par moitié : une demi-journée posée un dimanche n'en laisse qu'un demi.
+    const count = Math.round(gap * 2) / 2;
+    const several = count >= 2 ? "s" : "";
+    const subject = count === 0.5 ? "Un demi-dimanche" : `${sundayCountLabel(count)} dimanche${several}`;
+    return `${subject} ${difference < 0 ? `non payé${several}` : `payé${several} en plus`}`;
   }
   if (check.key === "status") {
     return `IFSE ou CIA sur le bulletin (${euros(check.found)}) alors que votre statut est « Contractuel »`;

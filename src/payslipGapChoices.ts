@@ -10,7 +10,7 @@ import { euros } from "./appModel";
 import { matchEarlyPayment } from "./earlyPayment";
 import type { MecenatEntry } from "./mecenat";
 import type { PayslipReviewCheck } from "./payslipReview";
-import { MONTHS, s } from "./planningLogic";
+import { MONTHS, s, sundayCountLabel } from "./planningLogic";
 import type { PayDraftKey } from "./usePayUiState";
 
 export type PayslipGapAction =
@@ -99,12 +99,13 @@ export function payslipGapChoices(issue: PayslipReviewCheck, context: PayslipGap
   }
 
   if (issue.key === "sundays" && found !== undefined && found < expected && context.nextSundayPayout) {
-    const count = Math.round(expected - found);
+    const count = Math.round((expected - found) * 2) / 2;
     const target = context.nextSundayPayout;
+    const several = count >= 2 ? "s" : "";
     return [{
       id: "report-sundays",
-      label: `Reporter ${count} dimanche${s(count)} sur ${monthLabel(target.year, target.month)}`,
-      detail: "Pas encore payé" + s(count) + ", sans doute pour un délai de traitement : l’estimation les attendra sur la paie primée suivante.",
+      label: `Reporter ${count === 0.5 ? "le demi-dimanche" : `${sundayCountLabel(count)} dimanche${several}`} sur ${monthLabel(target.year, target.month)}`,
+      detail: `Pas encore payé${several}, sans doute pour un délai de traitement : l’estimation ${several ? "les" : "l’"}attendra sur la paie primée suivante.`,
       action: { kind: "report-sundays", count },
     }];
   }

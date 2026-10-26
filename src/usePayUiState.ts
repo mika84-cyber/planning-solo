@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { PayslipReading } from "./payslip";
+import type { PayEstimateSnapshot } from "./payslipGapExplanation";
 import type { PayScreen } from "./PayPage";
 import { localDate } from "./planningLogic";
 
@@ -49,6 +50,8 @@ export function usePayUiState() {
   const [payslipRateSamples, setPayslipRateSamples] = useState<Array<{ name: string; reading: PayslipReading }>>([]);
   const [payslipHelpOpen, setPayslipHelpOpen] = useState(false);
   const [payslipResultDetailsOpen, setPayslipResultDetailsOpen] = useState(false);
+  // L'estimation du mois juste avant la lecture de son bulletin.
+  const [payEstimateSnapshot, setPayEstimateSnapshot] = useState<PayEstimateSnapshot | null>(null);
   const [paySettingsOpen, setPaySettingsOpen] = useState(false);
   const [payAdvancedOpen, setPayAdvancedOpen] = useState(false);
   const [payDrafts, setPayDrafts] = useState<Record<PayDraftKey, string>>({
@@ -77,6 +80,7 @@ export function usePayUiState() {
     payslipFallbackMonth, setPayslipFallbackMonth,
     payslipFallbackYear, setPayslipFallbackYear, payslipRateSamples, setPayslipRateSamples,
     payslipHelpOpen, setPayslipHelpOpen, payslipResultDetailsOpen, setPayslipResultDetailsOpen,
+    payEstimateSnapshot, setPayEstimateSnapshot,
     paySettingsOpen, setPaySettingsOpen, payAdvancedOpen, setPayAdvancedOpen,
     payDrafts, setPayDrafts, savingPay, setSavingPay,
   };

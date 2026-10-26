@@ -46,6 +46,10 @@ describe("choix proposés devant un écart du bulletin", () => {
     const [choice] = payslipGapChoices({ key: "sundays", label: "Dimanches payés", found: 2, expected: 4, tolerance: 1 }, context);
     expect(choice.label).toBe("Reporter 2 dimanches sur décembre 2026");
     expect(choice.action).toEqual({ kind: "report-sundays", count: 2 });
+    // Un demi-dimanche se reporte aussi, par moitié.
+    const [half] = payslipGapChoices({ key: "sundays", label: "Dimanches payés", found: 6.5, expected: 7, tolerance: 0.25 }, context);
+    expect(half.label).toBe("Reporter le demi-dimanche sur décembre 2026");
+    expect(half.action).toEqual({ kind: "report-sundays", count: 0.5 });
     // Plus de dimanches payés que prévu, ou pas de paie primée connue : rien.
     expect(payslipGapChoices({ key: "sundays", label: "Dimanches payés", found: 5, expected: 4 }, context)).toEqual([]);
     expect(payslipGapChoices({ key: "sundays", label: "Dimanches payés", found: 2, expected: 4 }, { ...context, nextSundayPayout: null })).toEqual([]);

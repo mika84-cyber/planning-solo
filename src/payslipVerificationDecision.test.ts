@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   loadPayslipVerification,
-  payslipAnomalyReportLines,
   removePayslipVerification,
   savePayslipVerification,
   type PayslipVerificationRecord,
@@ -37,21 +36,5 @@ describe("décision de vérification du bulletin", () => {
     expect(loadPayslipVerification("mika@example.test", 2026, 7)).toBeNull();
     removePayslipVerification("mika@example.test", 2026, 8);
     expect(loadPayslipVerification("mika@example.test", 2026, 8)).toBeNull();
-  });
-
-  it("prépare le PDF avec les anomalies et les compteurs utiles", () => {
-    expect(payslipAnomalyReportLines(attentionRecord)).toEqual([
-      "Bulletin : bulletin-septembre.pdf",
-      "Lignes vérifiées : 4",
-      "Lignes non vérifiables : 2",
-      "Dimanches payés — bulletin : 1 ; attendu : 2",
-      "Observation : Le montant du dimanche manque.",
-    ]);
-  });
-
-  it("explique un signalement manuel sans inventer d’écart", () => {
-    expect(payslipAnomalyReportLines({ ...attentionRecord, note: "", issues: [] })).toContain(
-      "Anomalie signalée manuellement — aucun écart n’a été identifié automatiquement.",
-    );
   });
 });

@@ -20,7 +20,7 @@ type PayScreenProps = {
   page: Omit<
     PayPageProps,
     | "month" | "year" | "gross" | "grossComplete" | "net" | "reliability" | "variables"
-    | "calculation" | "allowancesPending" | "verification" | "savedVerification" | "deductionContent"
+    | "calculation" | "allowancesPending" | "verification" | "savedVerification" | "acceptedGap" | "deductionContent"
     | "allowancesContent" | "estimateContent" | "yearContent" | "verificationContent" | "settingsContent"
   >;
 };
@@ -79,6 +79,7 @@ export function PayScreen({
       allowancesPending={payContent.allowancesPending}
       verification={payContent.verification}
       savedVerification={payContent.savedVerification}
+      acceptedGap={payContent.acceptedGap}
       deductionContent={payContent.deductionContent}
       allowancesContent={allowancesContent}
       estimateContent={payContent.estimateContent}

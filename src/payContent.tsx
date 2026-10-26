@@ -22,6 +22,8 @@ import {
   isUnplannedPayslipCarence,
   summarizePayslipReview,
 } from "./payslipReview";
+import { explainPayslipGapChain, type PayEstimateSnapshot } from "./payslipGapExplanation";
+import { acceptedGapSummary, correctedPayMonth } from "./payslipAcceptedGap";
 import { euros, type PayCalibrationRegime, type PayProfile } from "./appModel";
 import { MONTHS, SUNDAY_ALLOWANCE, s, sundayCountLabel } from "./planningLogic";
 
@@ -110,6 +112,9 @@ export type PayContentInput = {
   sundayCarryoverMonth: number | undefined;
   sundayCarryoverYear: number | undefined;
   payslipVerifications: ReturnType<typeof usePayslipVerifications>;
+  /** Le nom et la signature de l'agent, pour le courrier à la hiérarchie. */
+  fullName?: string;
+  signature?: string;
   changePayMonth: (delta: 1 | -1) => void;
   goPayToday: () => void;
 };
@@ -159,6 +164,8 @@ export function buildPayContent({
   sundayCarryoverMonth,
   sundayCarryoverYear,
   payslipVerifications,
+  fullName,
+  signature,
   changePayMonth,
   goPayToday,
 }: PayContentInput) {
@@ -180,6 +187,8 @@ export function buildPayContent({
     setPayslipFallbackYear,
     payslipResultDetailsOpen,
     setPayslipResultDetailsOpen,
+    payEstimateSnapshot,
+    setPayEstimateSnapshot,
     payslipRateSamples,
     paySettingsOpen,
     setPaySettingsOpen,
@@ -451,7 +460,8 @@ export function buildPayContent({
           label: "Dimanches payés",
           found: payslipCheck.reading.sundaysBeyondTen,
           expected: payslipExpectedSundays,
-          tolerance: 1,
+          // Les dimanches se comptent par moitié : un demi manquant est un écart.
+          tolerance: 0.25,
         },
         ...(unplannedPayslipCarence
           ? [
@@ -485,6 +495,86 @@ export function buildPayContent({
             ]
           : []),
       ])
+    : null;
+  // L'estimation du mois affiché, ligne par ligne : gardée juste avant la
+  // lecture d'un bulletin, qui met le profil à jour.
+  const estimateNow: PayEstimateSnapshot | null = grossEstimateComplete
+    ? {
+        year: allowances.year,
+        month: payView.getMonth(),
+        gross: Math.round(grossForMonth(payView.getMonth()) * 100) / 100,
+        netBeforeTax: netCalculation?.netBeforeTax,
+        incomeTax: netCalculation?.incomeTax,
+        expected: {
+          base: baseSalary,
+          ...(residenceAllowance !== undefined ? { residence: residenceAllowance } : {}),
+          ifse,
+          "other-fixed": otherFixed,
+          cia: monthPay.cia,
+          navigo,
+          "meal-vouchers": netCalculation?.mealVouchers ?? 0,
+          "pas-rate": pasRate,
+          holidays: monthPay.holiday,
+          "sunday-flat": SUNDAY_ALLOWANCE.monthlyFlat,
+          sundays: allowances.monthly.find((slot) => slot.index === payView.getMonth())?.sundayCount || 0,
+        },
+        netRatioFixed,
+        netRatioVariable,
+      }
+    : null;
+  const snapshot = comparablePayslip && payEstimateSnapshot?.year === allowances.year && payEstimateSnapshot.month === payslipMonth
+    ? payEstimateSnapshot
+    : null;
+  const currentChecks = payslipReview ? [...payslipReview.verified, ...payslipReview.unavailable] : [];
+  const stillDiffers = new Set(payslipReview?.issues.map((issue) => issue.key) ?? []);
+  // Ce que la lecture a déjà corrigé : l'estimation d'avant attendait
+  // autre chose, celle d'après suit le bulletin.
+  const sundayTarget = nextSundayPayoutSlot(allowances.year, payslipMonth);
+  const appliedByReading = snapshot
+    ? Object.fromEntries(
+        currentChecks
+          .filter((check) => check.found !== undefined && !stillDiffers.has(check.key) && snapshot.expected[check.key] !== undefined &&
+            Math.abs((check.found as number) - snapshot.expected[check.key]) >= (check.tolerance ?? 0.05))
+          .map((check) => [
+            check.key,
+            check.key === "sundays"
+              // Moins payés que prévu : reportés ; plus : le report d'avant est retiré.
+              ? (check.found as number) > snapshot.expected.sundays
+                ? "report retiré : ce bulletin les paie"
+                : sundayTarget ? `reporté sur ${MONTHS[sundayTarget.month]} ${sundayTarget.year}` : "pris en compte"
+              : check.key === "pas-rate" ? "nouveau taux enregistré" : "enregistré dans votre profil",
+          ]),
+      )
+    : undefined;
+  // D'où vient l'écart, pas à pas, du brut jusqu'au net versé : contre
+  // l'estimation d'avant la lecture quand elle a été gardée.
+  const payslipGapExplanation = payslipReview && comparablePayslip
+    ? explainPayslipGapChain({
+        checks: snapshot
+          ? currentChecks.map((check) => ({ ...check, expected: snapshot.expected[check.key] ?? check.expected }))
+          : currentChecks,
+        expected: snapshot ?? {
+          gross: Math.round(grossForMonth(payslipMonth) * 100) / 100,
+          netBeforeTax: netCalculation?.netBeforeTax,
+          incomeTax: netCalculation?.incomeTax,
+        },
+        applied: appliedByReading,
+        actual: {
+          gross: payslipCheck.reading.gross,
+          netBeforeTax: payslipCheck.reading.netBeforeTax,
+          incomeTax: payslipCheck.reading.incomeTax,
+        },
+        netRatioFixed: snapshot?.netRatioFixed ?? netRatioFixed,
+        netRatioVariable: snapshot?.netRatioVariable ?? netRatioVariable,
+        oneOff: payslipRecallExtras
+          ? {
+              amount: payslipRecallExtras,
+              labels: (payslipCheck.reading.extraLines || [])
+                .filter((line) => line.recall || line.fixed === false)
+                .map((line) => line.label),
+            }
+          : undefined,
+      })
     : null;
   const payReliability = !grossEstimateComplete
     ? {
@@ -596,15 +686,30 @@ export function buildPayContent({
       : null,
   };
 
+  const variables: PayDashboardVariable[] = monthPayRows.map((row) => ({
+    key: row.key,
+    label: row.label,
+    quantity: row.detail,
+    amount: row.amount,
+  }));
+  // Un écart accepté : le mois prend les montants du bulletin.
+  const savedPayslipVerification = payslipVerificationFor(payslipVerifications.records, payView.getFullYear(), payView.getMonth());
+  const acceptedGap = savedPayslipVerification?.status === "ok" && savedPayslipVerification.gap && Math.abs(savedPayslipVerification.gap.gap) >= 0.01
+    ? savedPayslipVerification.gap
+    : null;
+  const monthFigures = acceptedGap
+    ? correctedPayMonth({ gross: monthPay.gross, net: monthNet, calculation: payCalculation, variables }, acceptedGap)
+    : { gross: monthPay.gross, net: monthNet, calculation: payCalculation, variables };
+
   const payEstimateDetails = (
     <Suspense fallback={<DeferredSection label="la paie" />}>
     <PayEstimateDetails
       monthIndex={monthPay.index}
       year={allowances.year}
-      gross={monthPay.gross}
+      gross={monthFigures.gross}
       grossEstimateComplete={grossEstimateComplete}
-      net={monthNet}
-      calculation={payCalculation}
+      net={monthFigures.net}
+      calculation={monthFigures.calculation}
       overtime={overtimeForPayMonth}
       workQuota={workQuota}
       mecenat={mecenatForCurrentPayMonth}
@@ -629,7 +734,13 @@ export function buildPayContent({
     importMode: payslipImportMode,
     importError: payslipImportError,
     importResult: payslipImportResult,
-    onImport: (files, importMode) => void (importMode === "add-page" ? addPayslipPages(files) : importPayslips(files, importMode)),
+    onImport: (files, importMode) => {
+      // La première lecture du mois garde l'estimation d'avant ; une relecture
+      // du même mois la laisse telle quelle.
+      if (importMode === "verify" && estimateNow && !(payEstimateSnapshot?.year === estimateNow.year && payEstimateSnapshot.month === estimateNow.month))
+        setPayEstimateSnapshot(estimateNow);
+      void (importMode === "add-page" ? addPayslipPages(files) : importPayslips(files, importMode));
+    },
     check: payslipCheck,
     checkError: payslipError,
     needsPeriod: payslipNeedsPeriod,
@@ -643,6 +754,9 @@ export function buildPayContent({
     allowances,
     displayedMonth: payView.getMonth(),
     review: payslipReview,
+    gapExplanation: payslipGapExplanation,
+    fullName,
+    signature,
     unplannedCarence: unplannedPayslipCarence,
     resultDetailsOpen: payslipResultDetailsOpen,
     setResultDetailsOpen: setPayslipResultDetailsOpen,
@@ -733,23 +847,17 @@ export function buildPayContent({
     />
   );
 
-  const variables: PayDashboardVariable[] = monthPayRows.map((row) => ({
-    key: row.key,
-    label: row.label,
-    quantity: row.detail,
-    amount: row.amount,
-  }));
-
   return {
-    gross: monthPay.gross,
+    gross: monthFigures.gross,
     grossComplete: grossEstimateComplete,
-    net: monthNet,
+    net: monthFigures.net,
     reliability: payReliability,
-    variables,
-    calculation: payCalculation,
+    variables: monthFigures.variables,
+    calculation: monthFigures.calculation,
     allowancesPending: allowances.holidayPending,
     verification: payslipReview ? { tone: payslipReview.tone, label: payslipReview.verdict } : undefined,
-    savedVerification: payslipVerificationFor(payslipVerifications.records, payView.getFullYear(), payView.getMonth())?.status,
+    savedVerification: savedPayslipVerification?.status,
+    acceptedGap: acceptedGap ? acceptedGapSummary(acceptedGap) : undefined,
     deductionContent,
     estimateContent: payEstimateDetails,
     verificationContent: (

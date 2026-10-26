@@ -98,6 +98,9 @@
 
 /* L'état de l'estimation, sous le brut. */
 .pay-bulletin .pay-bulletin-status { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+/* Un écart accepté : ce qui était prévu, et pourquoi le bulletin diffère. */
+.pay-bulletin .pay-bulletin-accepted { margin: 10px auto 0; max-width: 34ch; color: #6b5d50; font-size: 0.8rem; line-height: 1.4; text-align: center; }
+.pay-bulletin .pay-bulletin-accepted span { display: block; }
 .app-shell .pay-bulletin .pay-bulletin-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 0; margin: 0; border: 1px solid #e3d6c8; border-radius: 999px; padding: 3px 10px; background: #fff; box-shadow: none; color: #5b4c3f; font: inherit; font-size: 0.74rem; font-weight: 750; line-height: 1.35; }
 .pay-bulletin .pay-bulletin-chip::before { flex: none; width: 7px; height: 7px; border-radius: 50%; background: currentColor; content: ""; opacity: 0.85; }
 .pay-bulletin .pay-bulletin-chip i { margin-left: 2px; font-style: normal; }

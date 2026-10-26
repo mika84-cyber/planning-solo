@@ -163,7 +163,7 @@ export async function handleSaveFormProfile(
         ? previousProfile?.sunday_carryover
         : Number.isFinite(Number(body.sundayCarryover)) &&
             Number(body.sundayCarryover) >= 0
-          ? Math.round(Number(body.sundayCarryover))
+          ? Math.round(Number(body.sundayCarryover) * 2) / 2
           : previousProfile?.sunday_carryover,
     sunday_carryover_year:
       body.sundayCarryoverYear === undefined

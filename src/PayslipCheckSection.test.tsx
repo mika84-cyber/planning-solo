@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { PayslipCheckSection } from "./PayslipCheckSection";
+import { explainPayslipGapChain } from "./payslipGapExplanation";
+import type { PayslipReviewCheck } from "./payslipReview";
 
 const payDrafts = {
   baseSalary: "",
@@ -167,27 +169,33 @@ describe("PayslipCheckSection", () => {
     expect(reversed).toContain("rubriques et le cumul brut");
   });
 
-  it("propose, devant un écart, le geste qui l’explique", () => {
+  it("propose, devant chaque cause de l’écart, le geste qui l’explique", () => {
     const onApplyPayslipValue = vi.fn();
     const onChangeStatus = vi.fn();
     const check = { name: "bulletin.pdf", reading: { sundaysBeyondTen: 0, month: 7, year: 2026, gross: 2500, netBeforeTax: 1990, baseSalary: 1900, pasRate: 2.2, ifse: 416.66 } };
-    const issues = [
+    const issues: PayslipReviewCheck[] = [
       { key: "pas-rate", label: "Taux d’imposition (PAS)", found: 2.2, expected: 1.7, tolerance: 0.01 },
       { key: "status", label: "IFSE ou CIA", found: 416.66, expected: 0 },
       { key: "net-before-tax", label: "Net avant impôt", found: 1990, expected: 2010, tolerance: 0.5 },
     ];
     const review = { verdict: "3 points à vérifier", tone: "warning" as const, issues, verified: issues, unavailable: [] };
+    const gapExplanation = explainPayslipGapChain({
+      checks: issues,
+      expected: { gross: 2083.34, netBeforeTax: 2010, incomeTax: 34.17 },
+      actual: { gross: 2500, netBeforeTax: 1990, incomeTax: 43.78 },
+      netRatioFixed: 79.41,
+      netRatioVariable: 89.92,
+    });
     const html = renderToStaticMarkup(
-      <PayslipCheckSection {...baseProps} check={check} review={review} onApplyPayslipValue={onApplyPayslipValue} onChangeStatus={onChangeStatus} />,
+      <PayslipCheckSection {...baseProps} check={check} review={review} gapExplanation={gapExplanation} onApplyPayslipValue={onApplyPayslipValue} onChangeStatus={onChangeStatus} />,
     );
-    expect(html).toContain('aria-label="Que s’est-il passé ?"');
+    expect(html).toContain('aria-label="D’où vient l’écart"');
     expect(html).toContain("Appliquer le taux du bulletin : 2,2 %");
-    expect(html).toContain("Les impôts l’ont sans doute actualisé");
     expect(html).toContain("Passer mon statut en Fonctionnaire");
-    // Le net sans geste simple n'a pas de bouton ; sans quoi exécuter le
-    // changement de statut, le bouton ne se montre pas.
-    expect(html.match(/payslip-gap-choice"/g)).toHaveLength(2);
-    const withoutStatus = renderToStaticMarkup(<PayslipCheckSection {...baseProps} check={check} review={review} />);
+    // Les gestes sont des liens sur leur cause ; l'ancienne liste disparaît.
+    expect(html.match(/payslip-gap-link"/g)?.length).toBe(3);
+    expect(html).not.toContain("Que s’est-il passé ?");
+    const withoutStatus = renderToStaticMarkup(<PayslipCheckSection {...baseProps} check={check} review={review} gapExplanation={gapExplanation} />);
     expect(withoutStatus).not.toContain("Passer mon statut en Fonctionnaire");
     expect(withoutStatus).toContain("Appliquer le taux du bulletin : 2,2 %");
   });
@@ -240,8 +248,8 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Comparaison disponible");
     expect(html).toContain("Cumul brut");
     expect(html).toContain("bulletin-aout.pdf");
-    expect(html).toContain("Tout est OK");
-    expect(html).toContain("Signaler une anomalie");
+    expect(html).toContain("Tout est juste : valider");
+    expect(html).toContain("Signaler une anomalie à ma hiérarchie");
   });
 
   it("ne reporte pas les détails d’un bulletin sur un autre mois", () => {
@@ -276,45 +284,50 @@ describe("PayslipCheckSection", () => {
     expect(html).not.toContain("dimanche en attente pour octobre 2026");
   });
 
-  it("détaille automatiquement toutes les différences reconnues", () => {
-    const html = renderToStaticMarkup(
-      <PayslipCheckSection
-        {...baseProps}
-        check={{
-          name: "bulletin-aout.pdf",
-          reading: { month: 7, year: 2026, sundaysBeyondTen: 1, gross: 2470, pasRate: 2.1 },
-        }}
-        review={{
-          verdict: "3 points à vérifier",
-          tone: "warning",
-          issues: [
-            { key: "gross", label: "Cumul brut", found: 2470, expected: 2500 },
-            { key: "pas-rate", label: "Taux d’imposition (PAS)", found: 2.1, expected: 2.5 },
-            { key: "sundays", label: "Dimanches payés", found: 1, expected: 2, tolerance: 1 },
-          ],
-          verified: [
-            { key: "gross", label: "Cumul brut", found: 2470, expected: 2500 },
-            { key: "pas-rate", label: "Taux d’imposition (PAS)", found: 2.1, expected: 2.5 },
-            { key: "sundays", label: "Dimanches payés", found: 1, expected: 2, tolerance: 1 },
-          ],
-          unavailable: [],
-        }}
-      />,
-    );
-
-    // Chaque écart une seule fois, en phrase, avec son explication ; les
-    // montants sont dans le tableau, et la conclusion vient après lui.
-    expect(html).not.toContain("Écarts détaillés ci-dessous");
-    expect(html).not.toContain("Comparaison détaillée");
-    expect(html).toContain("Le brut peut varier si une prime");
-    expect(html.split("Cumul brut : 30,00").length).toBe(2);
-    expect(html.indexOf("Conclusion de la vérification")).toBeGreaterThan(html.indexOf("<table"));
-    expect(html).toContain("Taux d’imposition (PAS)");
-    expect(html).toContain("0,4 %");
-    expect(html).toContain("Dimanches payés");
-    expect(html).toContain("Signaler une anomalie");
-    expect(html).not.toContain("Anomalies ou observations");
-    expect(html).not.toContain("Enregistrer les anomalies");
+  it("explique l’écart du net pas à pas, puis propose de corriger ou d’écrire", () => {
+    const checks: PayslipReviewCheck[] = [
+      { key: "gross", label: "Cumul brut", found: 2795.02, expected: 2822.48 },
+      { key: "net-before-tax", label: "Net avant impôt", found: 2252.55, expected: 2277.19, tolerance: 0.5 },
+      { key: "base", label: "Traitement de base", found: 1934.94, expected: 1934.94 },
+      { key: "pas-rate", label: "Taux d’imposition (PAS)", found: 2.2, expected: 2.2, tolerance: 0.01 },
+      { key: "sundays", label: "Dimanches payés", found: 6.5, expected: 7, tolerance: 0.25 },
+    ];
+    const issues = checks.filter((check) => ["gross", "net-before-tax", "sundays"].includes(check.key));
+    const props = {
+      ...baseProps,
+      displayedMonth: 9,
+      allowances: { year: 2026, monthly: [{ index: 9, sundayCount: 7 }] },
+      nextSundayPayout: vi.fn(() => ({ year: 2026, month: 11 })),
+      check: { name: "bulletin-octobre.pdf", reading: { month: 9, year: 2026, sundaysBeyondTen: 6.5, gross: 2795.02, netBeforeTax: 2252.55, incomeTax: 52.38 } },
+      review: { verdict: "3 points à vérifier", tone: "warning" as const, issues, verified: checks, unavailable: [] },
+      gapExplanation: explainPayslipGapChain({
+        checks,
+        expected: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 52.95 },
+        actual: { gross: 2795.02, netBeforeTax: 2252.55, incomeTax: 52.38 },
+        netRatioFixed: 79.5,
+        netRatioVariable: 89.7,
+      }),
+    };
+    const html = renderToStaticMarkup(<PayslipCheckSection {...props} />).replace(/[\u00a0\u202f]/g, " ");
+    expect(html).toContain("Bulletin lu · octobre 2026");
+    expect(html).toContain("Il manque 24,07 € sur votre net");
+    expect(html).toMatch(/Prévu<\/dt><dd>2 224,24 €[\s\S]*Payé<\/dt><dd>2 200,17 €[\s\S]*Écart<\/dt><dd>− 24,07 €/);
+    expect(html).toContain("Un demi-dimanche non payé");
+    expect(html).toContain("Reporter le demi-dimanche sur décembre 2026");
+    expect(html).toContain("Moins de cotisations");
+    expect(html).toContain("prélevées sur ce demi-dimanche");
+    expect(html).toContain("Moins d’impôt");
+    expect(html).toContain("Tout l’écart est expliqué");
+    expect(html).toContain("2 lignes identiques au centime");
+    // Le tableau ligne à ligne ne se déplie que sur demande.
+    expect(html).not.toContain("<table");
+    expect(html).toContain("C’est normal : corriger ma paie");
+    expect(html).toContain("Octobre prend les montants du bulletin : net 2 200,17 €, dimanches 6,5.");
+    expect(html).toContain("C’est une erreur : écrire à ma hiérarchie");
+    expect(html).not.toContain("Conclusion de la vérification");
+    const open = renderToStaticMarkup(<PayslipCheckSection {...props} resultDetailsOpen />);
+    expect(open).toContain("<table");
+    expect(open.indexOf("<table")).toBeLessThan(open.indexOf("Que voulez-vous faire ?"));
   });
 
   it("conserve les arrêts maladie et l'édition des paramètres", () => {

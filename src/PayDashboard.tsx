@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
 import type { PayCalculationBreakdown, PayCalculationRow } from "./PayEstimateDetails";
-import { s } from "./planningLogic";
+import { MONTHS, s } from "./planningLogic";
 import { PayMonthNav } from "./PayMonthNav";
 import "./payBulletin.css";
 
@@ -10,6 +10,14 @@ export type PayDashboardVariable = {
   label: string;
   quantity: string;
   amount: number | null;
+};
+
+/** Un écart avec le bulletin accepté : le mois affiche ce qui a été payé,
+ *  et rappelle ce qui était prévu. */
+export type PayDashboardAcceptedGap = {
+  expected?: number;
+  gap: number;
+  cause: string;
 };
 
 /** Résultat de la comparaison avec le bulletin du mois affiché. */
@@ -43,6 +51,8 @@ type PayDashboardProps = {
   verification?: PayDashboardVerification;
   /** « Tout est OK » ou anomalie signalée pour ce mois, gardé dans le compte. */
   savedVerification?: "ok" | "attention";
+  /** L'écart accepté du mois, quand le bulletin a été vérifié. */
+  acceptedGap?: PayDashboardAcceptedGap;
   /** Demande venue d'ailleurs (l'accueil) d'ouvrir la vérification. */
   verificationRequested?: boolean;
   onVerificationShown?: () => void;
@@ -94,6 +104,11 @@ const INDEMNITY_NAMES: Record<string, string> = {
   "other-fixed": "autres",
 };
 const PRIME_KEYS = ["sundays", "holidays", "compensated", "cia", "overtime", "mecenat"];
+/** Les lignes du bulletin sans place dans l'estimation (rappel, retenue
+ *  ponctuelle), ajoutées quand l'écart est accepté. */
+const isPayslipLine = (key: string) => key.startsWith("payslip-");
+/** « d’octobre », « de mars ». */
+const ofMonth = (index: number) => (/^[aeiou]/.test(MONTHS[index]) ? `d’${MONTHS[index]}` : `de ${MONTHS[index]}`);
 const DEDUCTION_KEYS = ["sick", "strike"];
 
 /** Un montant encore inconnu : à vérifier (valeur manquante) ou à décider
@@ -155,6 +170,7 @@ export function PayDashboard({
   allowancesPending = 0,
   verification,
   savedVerification,
+  acceptedGap,
   verificationRequested = false,
   onVerificationShown,
   deductionContent,
@@ -216,6 +232,8 @@ export function PayDashboard({
     if (hasVerification) setVerifyOpen(true);
   }, [hasVerification]);
   const savedStatus = savedVerification ?? null;
+  // Le mois a pris les montants du bulletin.
+  const paidFigures = Boolean(acceptedGap) && savedStatus === "ok";
   // « Ajouter un bulletin de paie » depuis l'accueil.
   useEffect(() => {
     if (!verificationRequested) return;
@@ -261,13 +279,13 @@ export function PayDashboard({
   const primeLines: BulletinLine[] = [
     ...(flatRow ? [{ key: "sunday-flat", label: "Forfait dimanches", detail: "le même chaque mois", amount: flatRow.amount, sign: "plus" as const }] : []),
     ...variables
-      .filter((item) => PRIME_KEYS.includes(item.key))
+      .filter((item) => PRIME_KEYS.includes(item.key) || isPayslipLine(item.key))
       .map((item) => ({
         key: item.key,
         label: item.label,
         detail: item.quantity,
         amount: item.amount,
-        sign: "plus" as const,
+        sign: (item.amount ?? 0) < 0 ? "minus" as const : "plus" as const,
         pending: pendingOf(item),
         onOpen: onOpenAllowances,
       })),
@@ -340,7 +358,7 @@ export function PayDashboard({
   const lineTotal = (lines: BulletinLine[], groupSign: Sign) =>
     lines
       .filter((line) => !line.waived)
-      .reduce((total, line) => total + (groupSign === "minus" && line.sign === "plus" ? -1 : 1) * Math.abs(line.amount ?? 0), 0);
+      .reduce((total, line) => total + ((groupSign === "minus" && line.sign === "plus") || (groupSign === "plus" && line.sign === "minus") ? -1 : 1) * Math.abs(line.amount ?? 0), 0);
   const groups: BulletinGroup[] = [
     ...(fixedLines.length ? [{ key: "fixed" as const, title: "Fixe", total: lineTotal(fixedLines, ""), sign: "" as const, lines: fixedLines }] : []),
     { key: "variable", title: "Primes du mois", total: lineTotal(primeLines, "plus"), sign: "plus", lines: primeLines },
@@ -357,7 +375,9 @@ export function PayDashboard({
   /* L'état de l'estimation, sous le net : comparée au bulletin quand il a
      été ajouté (un appui ouvre la vérification), ou incomplète ; rien pour
      une simple estimation. */
-  const status = verification
+  const status = acceptedGap && savedVerification === "ok"
+    ? { tone: "ok", text: "Bulletin vérifié · écart accepté" }
+    : verification
     ? verification.tone === "ok"
       ? { tone: "ok", text: "Vérifiée avec le bulletin" }
       : verification.tone === "partial"
@@ -380,9 +400,9 @@ export function PayDashboard({
           {/* Le mois en tête de la carte du net : le même navigateur que sur
               les primes et le détail du calcul. */}
           <PayMonthNav month={month} year={year} onPreviousMonth={onPreviousMonth} onNextMonth={onNextMonth} onToday={onToday} titleId="pay-dashboard-title" />
-          <span className="pay-bulletin-kicker">Net estimé</span>
+          <span className="pay-bulletin-kicker">{paidFigures ? "Net payé" : "Net estimé"}</span>
           <p className={`pay-bulletin-net${net === null ? " is-missing" : ""}`}>{net === null ? "À compléter" : euros(net)}</p>
-          <p className="pay-bulletin-gross">{grossComplete ? `sur ${euros(gross)} de brut` : "Brut à compléter"}</p>
+          <p className="pay-bulletin-gross">{grossComplete ? `sur ${euros(gross)} de brut${paidFigures ? ` · bulletin ${ofMonth(month)}` : ""}` : "Brut à compléter"}</p>
           {/* Une simple estimation ne s'annonce pas : la pastille ne paraît que
               s'il y a quelque chose à savoir (bulletin, données, attente). */}
           {status || pendingCount ? (
@@ -394,6 +414,15 @@ export function PayDashboard({
               ) : status ? <span className={`pay-bulletin-chip ${status.tone}`}>{status.text}</span> : null}
               {pendingCount ? <span className="pay-bulletin-chip pending">{pendingCount} montant{s(pendingCount)} en attente</span> : null}
             </div>
+          ) : null}
+          {/* L'écart accepté : ce qui était prévu, et pourquoi le bulletin
+              diffère ; les lignes ci-dessous reprennent le bulletin. */}
+          {paidFigures && acceptedGap ? (
+            <p className="pay-bulletin-accepted">
+              {acceptedGap.expected !== undefined ? `Prévu ${euros(acceptedGap.expected)} · ` : ""}
+              {acceptedGap.cause} ({acceptedGap.gap < 0 ? "−" : "+"} {euros(Math.abs(acceptedGap.gap))}).
+              <span> Les lignes ci-dessous reprennent le bulletin.</span>
+            </p>
           ) : null}
           {split && splitTotal > 0 ? (
             <div className="pay-bulletin-mix">
@@ -465,7 +494,7 @@ export function PayDashboard({
             </div>
           ))}
           <p className="pay-bulletin-total">
-            <span>Net estimé</span>
+            <span>{paidFigures ? "Net payé" : "Net estimé"}</span>
             <b>{net === null ? "à compléter" : number.format(net)}</b>
           </p>
           {pendingCount ? (
