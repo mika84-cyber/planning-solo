@@ -1858,6 +1858,18 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
   await expect(letter.getByRole("button", { name: "Revenir au texte proposé" })).toBeVisible();
 });
 
+test("les commandes de l’en-tête reçoivent le toucher sur chaque page, malgré le titre", async ({ page }) => {
+  await prepareDemo(page);
+  // Le titre s'étend sur toute la largeur de l'en-tête : un essai de clic
+  // (sans cliquer) vérifie que rien ne recouvre la mise à jour ni le compte.
+  for (const section of ["home", "leave", "pay", "documents", "program", "colleagues"] as const) {
+    await goToSection(page, section);
+    await expect(page.locator(".top-header")).toBeVisible();
+    await page.getByRole("button", { name: /Vérifier les mises à jour|Faire la mise à jour/ }).click({ trial: true });
+    await page.getByRole("button", { name: "Compte" }).click({ trial: true });
+  }
+});
+
 test("menu, contact administrateur, paie et PDF restent accessibles", async ({ page }) => {
   await prepareDemo(page);
   await expect(page.locator(".deferred-section-loading")).toHaveCount(0);

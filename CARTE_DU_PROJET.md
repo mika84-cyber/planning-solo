@@ -134,7 +134,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   chaque en-tête, en bas à gauche, le titre centré au-dessus — loupe dans un
   rond, flèche au bout, entière dans la partie foncée avant la diagonale (`AppHeader`, style dans
   `src/pageHeaders.css`), même surface que les trois commandes du haut, le
-  texte à la couleur foncée de l’en-tête. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
+  texte à la couleur foncée de l’en-tête. Sur téléphone, la zone des
+  commandes de l’en-tête est en `display: contents` : chaque commande (mise à
+  jour, compte, menu) passe elle-même devant le titre, qui s’étend sur toute
+  la largeur (`pageHeaders.css`), sinon le titre intercepte le toucher. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
   demande) : « Que cherchez-vous ? », trois groupes chacun à sa couleur
   (Trouver en bleu, Ma paie en vert, Déclarer en terracotta : titre, liseré,
   fond pâle, icônes), une fine bande aux couleurs de l’en-tête en haut. L’exposition des Galeries 3 et 4 (`galleryExpoFor`) y a deux
