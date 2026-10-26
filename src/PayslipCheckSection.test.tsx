@@ -219,7 +219,7 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Utiliser cette période");
   });
 
-  it("conserve le verdict et le tableau détaillé d'un bulletin reconnu", () => {
+  it("conserve le verdict d'un bulletin reconnu, sans tableau ligne à ligne", () => {
     const html = renderToStaticMarkup(
       <PayslipCheckSection
         {...baseProps}
@@ -240,14 +240,14 @@ describe("PayslipCheckSection", () => {
           verified: [{ key: "gross", label: "Cumul brut", found: 2500, expected: 2500 }],
           unavailable: [],
         }}
-        resultDetailsOpen
       />,
     );
 
     expect(html).toContain("Période reconnue");
     expect(html).toContain("Comparaison disponible");
-    expect(html).toContain("Cumul brut");
-    expect(html).toContain("bulletin-aout.pdf");
+    // Seul ce qui ne va pas se dit : pas de tableau des lignes justes.
+    expect(html).not.toContain("<table");
+    expect(html).not.toContain("Voir le détail");
     expect(html).toContain("Tout est juste : valider");
     expect(html).toContain("Signaler une anomalie à ma hiérarchie");
   });
@@ -325,7 +325,6 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Octobre prend les montants du bulletin : net 2 200,17 €, dimanches 6,5.");
     expect(html).toContain("C’est une erreur : écrire à ma hiérarchie");
     expect(html).not.toContain("Conclusion de la vérification");
-    expect(renderToStaticMarkup(<PayslipCheckSection {...props} resultDetailsOpen />)).not.toContain("<table");
   });
 
   it("conserve les arrêts maladie et l'édition des paramètres", () => {

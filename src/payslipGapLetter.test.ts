@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { payslipLetter, payslipLetterPdfName } from "./payslipGapLetter";
+import { letterParagraphs, payslipLetter, payslipLetterPdfName } from "./payslipGapLetter";
 import type { PayslipGapRecord } from "./payslipVerificationRecords";
 
 const plain = (text: string) => text.replace(/[  ]/g, " ");
@@ -25,10 +25,13 @@ describe("payslipLetter", () => {
     expect(letter.place).toBe("Paris, le 3 novembre 2026");
     expect(letter.recipient).toBe("Service des ressources humaines");
     expect(letter.subject).toBe("Objet : écart sur mon bulletin de paie d’octobre 2026");
-    expect(letter.paragraphs.map(plain)).toEqual([
+    expect(letterParagraphs(letter.body).map(plain)).toEqual([
+      "Madame, Monsieur,",
       "Mon bulletin de paie d’octobre 2026 m’a versé 2 200,17 € net, alors que 2 224,24 € étaient attendus, soit un écart de 24,07 €.",
       "L’indemnité de travail dominical porte 6,5 dimanches, alors que 7 dimanches étaient dus : il manque un demi-dimanche, soit 27,46 € brut.",
       "Merci de votre aide.",
+      "Je vous remercie de bien vouloir vérifier ce point et procéder à la régularisation sur une prochaine paie.",
+      "Je vous prie d’agréer, Madame, Monsieur, l’expression de mes salutations distinguées.",
     ]);
     expect(letter.table.map((row) => ({ ...row, expected: plain(row.expected), found: plain(row.found) }))).toEqual([
       { label: "Dimanches au-delà du 10e", expected: "7 · 384,51 €", found: "6,5 · 357,05 €" },
@@ -36,7 +39,6 @@ describe("payslipLetter", () => {
       { label: "Net avant impôt", expected: "2 277,19 €", found: "2 252,55 €" },
       { label: "Net à payer", expected: "2 224,24 €", found: "2 200,17 €" },
     ]);
-    expect(letter.request).toBe("Je vous remercie de bien vouloir vérifier ce point et procéder à la régularisation sur une prochaine paie.");
     expect(letter.signature).toBe("Camille Exemple");
   });
 
@@ -46,7 +48,7 @@ describe("payslipLetter", () => {
       year: 2026, month: 2, date: new Date("2026-04-02T10:00:00"), recipient: "Mme Martin", message: "", fullName: "",
     });
     expect(letter.subject).toBe("Objet : écart sur mon bulletin de paie de mars 2026");
-    expect(plain(letter.paragraphs[1])).toBe("Une différence de 20,00 € sur le brut ne correspond à aucune ligne que j’aie pu identifier.");
+    expect(plain(letterParagraphs(letter.body)[2])).toBe("Une différence de 20,00 € sur le brut ne correspond à aucune ligne que j’aie pu identifier.");
     expect(letter.recipient).toBe("Mme Martin");
   });
 
@@ -59,11 +61,26 @@ describe("payslipLetter", () => {
       ] },
       year: 2026, month: 9, date: new Date("2026-11-03T10:00:00"), recipient: "", message: "", fullName: "",
     });
-    expect(letter.paragraphs.map(plain)).toEqual([
+    expect(letterParagraphs(letter.body).slice(1, 3).map(plain)).toEqual([
       "Mon bulletin de paie d’octobre 2026 m’a versé 2 200,17 € net, alors que 2 224,24 € étaient attendus, soit un écart de 24,07 €.",
       "Mécénats : 171,75 € versés, 202,00 € attendus — 7 h 30 payées au taux de jour (22,90 €) : la majoration de nuit de 2 h 30 manque. Or l’article 2 de l’arrêté du 18 mai 2010, modifié par l’arrêté du 15 décembre 2023, fixe un taux majoré de 35,00 € par heure effectuée de 22 heures à 7 heures du matin.",
     ]);
     expect(letter.table.map((row) => row.label)).toEqual(["Mécénats", "Brut", "Net avant impôt", "Net à payer"]);
+  });
+
+  it("garde l’objet et le texte que la personne a réécrits", () => {
+    const letter = payslipLetter({
+      gap, year: 2026, month: 9, date: new Date("2026-11-03T10:00:00"),
+      recipient: "", message: "Ce mot n’y est plus.", fullName: "",
+      subject: "Objet : demi-dimanche d’octobre", body: "Madame,\n\nIl me manque un demi-dimanche.\n\n\nCordialement.",
+    });
+    expect(letter.subject).toBe("Objet : demi-dimanche d’octobre");
+    expect(letterParagraphs(letter.body)).toEqual(["Madame,", "Il me manque un demi-dimanche.", "Cordialement."]);
+    // Le détail de l'écart reste, sous la signature.
+    expect(letter.table.map((row) => row.label)).toContain("Net à payer");
+    // Vides, l'objet et le texte proposés reviennent.
+    expect(payslipLetter({ gap, year: 2026, month: 9, date: new Date(), recipient: "", message: "", fullName: "", subject: " ", body: "" }).subject)
+      .toBe("Objet : écart sur mon bulletin de paie d’octobre 2026");
   });
 
   it("nomme le PDF d’après le mois du bulletin", () => {

@@ -1,7 +1,8 @@
 /** Le courrier à la hiérarchie quand l'écart du bulletin est une erreur :
- *  daté, avec l'objet, l'écart du net, chaque cause en une phrase, un
- *  tableau attendu / bulletin et la demande de régularisation. Le même texte
- *  sert à l'aperçu et au PDF. */
+ *  daté, avec l'objet, l'écart du net, chaque cause en une phrase et la
+ *  demande de régularisation, puis le détail attendu / bulletin sous la
+ *  signature. L'objet et le texte se modifient ; le même courrier sert à
+ *  l'aperçu, au PDF et à l'e-mail. */
 import { euros } from "./appModel";
 import type { PayslipGapRecord, PayslipGapRecordLine } from "./payslipVerificationRecords";
 import { MONTHS, SUNDAY_ALLOWANCE, sundayCountLabel } from "./planningLogic";
@@ -16,19 +17,27 @@ export type PayslipLetterInput = {
   recipient: string;
   message: string;
   fullName: string;
+  /** L'objet et le texte réécrits par la personne : ils remplacent ceux
+   *  que l'application propose. */
+  subject?: string;
+  body?: string;
 };
 
 export type PayslipLetter = {
   place: string;
   recipient: string;
   subject: string;
-  salutation: string;
-  paragraphs: string[];
+  /** De « Madame, Monsieur » à la formule de politesse, paragraphes séparés
+   *  par une ligne vide. */
+  body: string;
   table: Array<{ label: string; expected: string; found: string }>;
-  request: string;
-  closing: string;
   signature: string;
 };
+
+/** Les paragraphes d'un texte : séparés par une ligne vide. */
+export function letterParagraphs(body: string) {
+  return body.split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean);
+}
 
 const LINE_LABELS: Record<string, string> = {
   base: "Traitement de base",
@@ -108,16 +117,19 @@ export function payslipLetter(input: PayslipLetterInput): PayslipLetter {
     const found = gap.actual[key];
     return expected !== undefined && found !== undefined ? [{ label, expected: euros(expected), found: euros(found) }] : [];
   };
+  const proposedBody = [
+    "Madame, Monsieur,",
+    opening,
+    ...reasons.map((line) => sentence(line, net)),
+    ...(input.message.trim() ? [input.message.trim()] : []),
+    `Je vous remercie de bien vouloir vérifier ${reasons.length > 1 ? "ces points" : "ce point"} et procéder à la régularisation sur une prochaine paie.`,
+    "Je vous prie d’agréer, Madame, Monsieur, l’expression de mes salutations distinguées.",
+  ].join("\n\n");
   return {
     place: `Paris, le ${input.date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`,
     recipient: input.recipient.trim() || DEFAULT_LETTER_RECIPIENT,
-    subject: `Objet : écart sur mon bulletin de paie ${when}`,
-    salutation: "Madame, Monsieur,",
-    paragraphs: [
-      opening,
-      ...reasons.map((line) => sentence(line, net)),
-      ...(input.message.trim() ? [input.message.trim()] : []),
-    ],
+    subject: input.subject?.trim() || `Objet : écart sur mon bulletin de paie ${when}`,
+    body: input.body?.trim() || proposedBody,
     table: [
       ...compared.map((line) => ({
         label: LINE_LABELS[line.key] ?? line.title,
@@ -127,8 +139,6 @@ export function payslipLetter(input: PayslipLetterInput): PayslipLetter {
       ...total("Brut", "gross"),
       ...(net ? [...total("Net avant impôt", "netBeforeTax"), ...total("Net à payer", "net")] : []),
     ],
-    request: `Je vous remercie de bien vouloir vérifier ${reasons.length > 1 ? "ces points" : "ce point"} et procéder à la régularisation sur une prochaine paie.`,
-    closing: "Je vous prie d’agréer, Madame, Monsieur, l’expression de mes salutations distinguées.",
     signature: input.fullName.trim(),
   };
 }
@@ -163,9 +173,18 @@ export async function createPayslipLetterPdf(letter: PayslipLetter, signatureIma
   write(letter.recipient, { align: "right", gap: 2 });
   write(letter.place, { align: "right", gap: 10 });
   write(letter.subject, { bold: true, gap: 6 });
-  write(letter.salutation);
-  for (const paragraph of letter.paragraphs) write(paragraph);
+  for (const paragraph of letterParagraphs(letter.body)) write(paragraph);
+  y += 4;
+  if (signatureImage?.startsWith("data:image/")) {
+    const properties = doc.getImageProperties(signatureImage);
+    const ratio = Math.min(42 / properties.width, 16 / properties.height);
+    doc.addImage(signatureImage, signatureImage.startsWith("data:image/png") ? "PNG" : "JPEG", left + width - properties.width * ratio, y, properties.width * ratio, properties.height * ratio);
+    y += properties.height * ratio + 4;
+  }
+  if (letter.signature) write(letter.signature, { align: "right", gap: 10 });
+  // Le détail de l'écart, sous la signature.
   if (letter.table.length) {
+    write("Détail de l’écart", { bold: true, gap: 2 });
     y += 1;
     const columns = [left, left + 88, left + width];
     doc.setFontSize(10);
@@ -183,16 +202,6 @@ export async function createPayslipLetterPdf(letter: PayslipLetter, signatureIma
       doc.text(clean(row.expected), columns[1], y, { align: "right" });
       doc.text(clean(row.found), columns[2], y, { align: "right" });
     }
-    y += 10;
   }
-  write(letter.request);
-  write(letter.closing, { gap: 8 });
-  if (signatureImage?.startsWith("data:image/")) {
-    const properties = doc.getImageProperties(signatureImage);
-    const ratio = Math.min(42 / properties.width, 16 / properties.height);
-    doc.addImage(signatureImage, signatureImage.startsWith("data:image/png") ? "PNG" : "JPEG", left + width - properties.width * ratio, y, properties.width * ratio, properties.height * ratio);
-    y += properties.height * ratio + 4;
-  }
-  if (letter.signature) write(letter.signature, { align: "right" });
   return doc.output("blob");
 }

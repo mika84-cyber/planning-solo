@@ -26,7 +26,21 @@ describe("PayslipLetterSheet", () => {
     expect(html).toContain("<th scope=\"row\">Dimanches au-delà du 10e</th><td>7 · 384,51 €</td><td>6,5 · 357,05 €</td>");
     expect(html).toContain("Camille Exemple");
     expect(html).toContain("Télécharger le PDF");
+    expect(html).toContain(">Modifier le texte</button>");
+    expect(html).not.toContain("Revenir au texte proposé");
     expect(html).toContain("Envoyer par e-mail");
+  });
+
+  it("montre le texte réécrit, et propose d’y revenir", () => {
+    const html = renderToStaticMarkup(
+      <PayslipLetterSheet gap={gap} year={2026} month={9} fullName="Camille Exemple" subject="Objet : demi-dimanche" body={"Madame,\n\nIl me manque un demi-dimanche."} onSave={vi.fn()} onClose={vi.fn()} />,
+    );
+    expect(html).toContain('<p class="subject">Objet : demi-dimanche</p><p>Madame,</p><p>Il me manque un demi-dimanche.</p>');
+    expect(html).toContain("Revenir au texte proposé");
+    // Le texte réécrit remplace le mot facultatif.
+    expect(html).not.toContain("Un mot de votre part");
+    // Le détail de l'écart, sous la signature.
+    expect(html.indexOf("Détail de l’écart")).toBeGreaterThan(html.indexOf('class="sign"'));
   });
 
   it("demande le nom quand le profil ne le connaît pas", () => {

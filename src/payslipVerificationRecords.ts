@@ -55,6 +55,9 @@ export type PayslipVerificationRecord = {
   gap?: PayslipGapRecord;
   /** À qui le courrier s'adresse, quand une anomalie est signalée. */
   recipient?: string;
+  /** L'objet et le texte du courrier, quand la personne les a réécrits. */
+  letterSubject?: string;
+  letterBody?: string;
 };
 
 /** Une décision par mois, rangée sous « AAAA-MM ». */
@@ -152,6 +155,8 @@ export function sanitizePayslipVerifications(value: unknown): PayslipVerificatio
     const month = Number(key.slice(5, 7)) - 1;
     const gap = sanitizeGap(record.gap);
     const recipient = text(record.recipient, 200);
+    const letterSubject = text(record.letterSubject, 200);
+    const letterBody = text(record.letterBody, 6000);
     records[key] = {
       status: record.status,
       year,
@@ -166,6 +171,8 @@ export function sanitizePayslipVerifications(value: unknown): PayslipVerificatio
       updatedAt: text(record.updatedAt, 40),
       ...(gap ? { gap } : {}),
       ...(recipient ? { recipient } : {}),
+      ...(letterSubject ? { letterSubject } : {}),
+      ...(letterBody ? { letterBody } : {}),
     };
   }
   const keys = Object.keys(records).sort();

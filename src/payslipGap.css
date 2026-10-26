@@ -108,3 +108,12 @@
 /* Un écart inexpliqué : le courrier passe devant, l'acceptation se fait discrète. */
 .payslip-gap-options.letter-first .payslip-gap-option.letter { border-color: #8a3d22; background: #fdf7f3; }
 .payslip-gap-options.letter-first .payslip-gap-option.accept { border-color: rgba(44, 38, 33, 0.4); background: #fff; }
+
+/* Le courrier réécrit : l'objet et le texte, en grand. */
+.payslip-letter-editor { display: grid; gap: 10px; }
+.payslip-letter-editor textarea { min-height: 18rem; font-size: 0.9rem; line-height: 1.45; }
+.payslip-letter-hint { margin-top: -4px; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
+.payslip-letter-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.payslip-letter-edit-actions button { min-height: 40px; padding: 6px 14px; border: 1.5px solid rgba(44, 38, 33, 0.35); border-radius: 999px; background: #fff; color: var(--text); font: inherit; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
+.payslip-letter-edit-actions .primary { border-color: #8a3d22; background: #8a3d22; color: #fff; }
+.payslip-letter-paper caption { padding: 10px 0 2px; color: #2c2621; font-weight: 800; text-align: left; }

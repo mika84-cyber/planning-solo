@@ -1832,7 +1832,15 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
   await expect(letter.getByLabel("Destinataire")).toHaveValue("Service des ressources humaines");
   await expect(letter.getByRole("article", { name: "Aperçu du courrier" })).toContainText("Objet : écart sur mon bulletin de paie de septembre 2026");
   await letter.getByLabel("Un mot de votre part (facultatif)").fill("Merci de votre retour.");
-  await expect(letter.getByRole("article", { name: "Aperçu du courrier" })).toContainText("Merci de votre retour.");
+  const paper = letter.getByRole("article", { name: "Aperçu du courrier" });
+  await expect(paper).toContainText("Merci de votre retour.");
+  // Le texte se réécrit, mot compris, et part tel quel.
+  await letter.getByRole("button", { name: "Modifier le texte" }).click();
+  const text = letter.getByRole("textbox", { name: "Texte du courrier" });
+  await expect(text).toHaveValue(/Merci de votre retour\./);
+  await text.fill(`${await text.inputValue()}\n\nJe joins l’état de service.`);
+  await letter.getByRole("button", { name: "Voir le courrier" }).click();
+  await expect(paper).toContainText("Je joins l’état de service.");
   const download = page.waitForEvent("download");
   await letter.getByRole("button", { name: "Télécharger le PDF" }).click();
   expect((await download).suggestedFilename()).toBe("courrier-bulletin-2026-09.pdf");
@@ -1846,7 +1854,8 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
   await anomalyDetails.locator("summary").click();
   await expect(anomalyDetails).toContainText("Votre mot : Merci de votre retour.");
   await anomalyDetails.getByRole("button", { name: "Voir le courrier" }).click();
-  await expect(letter.getByLabel("Un mot de votre part (facultatif)")).toHaveValue("Merci de votre retour.");
+  await expect(paper).toContainText("Je joins l’état de service.");
+  await expect(letter.getByRole("button", { name: "Revenir au texte proposé" })).toBeVisible();
 });
 
 test("menu, contact administrateur, paie et PDF restent accessibles", async ({ page }) => {

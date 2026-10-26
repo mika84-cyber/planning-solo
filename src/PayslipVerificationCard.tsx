@@ -28,12 +28,6 @@ import {
 /** Un signalement sans écart chiffré : le courrier part de rien. */
 const NO_GAP: PayslipGapRecord = { level: "net", expected: {}, actual: {}, gap: 0, lines: [] };
 
-function formatReviewValue(row: PayslipReviewCheck, value: number) {
-  if (row.key === "sundays") return value.toLocaleString("fr-FR");
-  if (row.key === "pas-rate") return `${value.toLocaleString("fr-FR")} %`;
-  return euros(value);
-}
-
 /* Chaque écart en une phrase, suivie de son explication possible — une seule
    fois, en tête du résultat ; les montants sont dans le tableau dessous. */
 function PayslipGapList({ issues, label }: { issues: PayslipReviewCheck[]; label?: string }) {
@@ -55,10 +49,10 @@ type Props = Pick<
   "photoPending" | "onFinishPhotos" | "onApplyPayslipValue" | "onDeferMecenats" | "onChangeStatus" | "onOpenHolidayChoices" | "holidayPending" |
   "check" | "checkError" | "needsPeriod" | "fallbackMonth" | "setFallbackMonth" |
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
-  "displayedMonth" | "review" | "gapExplanation" | "fullName" | "signature" | "unplannedCarence" | "resultDetailsOpen" |
+  "displayedMonth" | "review" | "gapExplanation" | "fullName" | "signature" | "unplannedCarence" |
   "rateCalibration" | "netRatioFixed" | "netRatioVariable" |
-  "setResultDetailsOpen" | "overtime" |
-  "mecenat" | "mecenatEntries" | "onMarkMecenatsPaidEarly" | "overtimeEarlyCandidates" |
+  "overtime" |
+  "mecenatEntries" | "onMarkMecenatsPaidEarly" | "overtimeEarlyCandidates" |
   "onMarkOvertimePaidEarly" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
   "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover"
 >;
@@ -199,10 +193,7 @@ export function PayslipVerificationCard({
   fullName = "",
   signature,
   unplannedCarence: unplannedPayslipCarence,
-  resultDetailsOpen: payslipResultDetailsOpen,
-  setResultDetailsOpen: setPayslipResultDetailsOpen,
   overtime: overtimeForPayMonth,
-  mecenat: mecenatForCurrentPayMonth,
   mecenatEntries = [],
   onMarkMecenatsPaidEarly,
   overtimeEarlyCandidates,
@@ -347,73 +338,6 @@ export function PayslipVerificationCard({
     : payslipGapExplanation.level === "net" && payslipGapExplanation.actual.net !== undefined
       ? `${monthName} prend les montants du bulletin : net ${euros(payslipGapExplanation.actual.net)}${paidSundays !== undefined ? `, dimanches ${sundayCountLabel(paidSundays)}` : ""}.`
       : `${monthName} prend le brut du bulletin : ${euros(payslipGapExplanation.actual.gross ?? 0)}.`;
-  // Le détail ligne à ligne, déplié sur demande.
-  const resultDetails = payslipCheck && payslipReview ? (
-    <>
-      <table className="allowance-table">
-        <thead>
-          <tr>
-            <th scope="col">Ligne</th>
-            <th scope="col">Bulletin</th>
-            <th scope="col">Appli</th>
-          </tr>
-        </thead>
-        <tbody>
-          {payslipReview ? [...payslipReview.verified, ...payslipReview.unavailable].map((row) => {
-            const gap =
-              row.found === undefined
-                ? null
-                : Math.abs(row.found - row.expected);
-            const tolerance = row.tolerance ?? 0.05;
-            return (
-              <tr key={row.key}>
-                <th scope="row">
-                  {row.label}
-                  {gap === null ? (
-                    <small>absent du bulletin</small>
-                  ) : gap < tolerance ? (
-                    <small>concorde</small>
-                  ) : (
-                    <small className="gap">
-                      écart de {formatReviewValue(row, gap)}
-                    </small>
-                  )}
-                </th>
-                <td>
-                  {row.found === undefined ? "—" : formatReviewValue(row, row.found)}
-                </td>
-                <td className={gap !== null && gap >= tolerance ? "pending" : ""}>
-                  {formatReviewValue(row, row.expected)}
-                </td>
-              </tr>
-            );
-          }) : null}
-        </tbody>
-      </table>
-      {overtimeForPayMonth.totalMinutes || bulletinOvertimeCents ? (
-        <p className="allowance-note">
-          {bulletinOvertimeCents
-            ? `Heures supplémentaires lues sur ce bulletin : ${euros(bulletinOvertimeCents / 100)}, pour ${euros(overtimeForPayMonth.amount)} attendus${overtimeForPayMonth.totalMinutes ? ` (${minutesLabel(overtimeForPayMonth.totalMinutes)})` : ""}${Math.abs(overtimeSurplusCents) <= 100 ? " : cela concorde." : "."}`
-            : `${minutesLabel(overtimeForPayMonth.totalMinutes)} sont attendues sur ce bulletin pour un montant brut estimé de ${euros(overtimeForPayMonth.amount)}, mais aucune ligne d’heures supplémentaires n’y a été trouvée : vérifiez-la sur le bulletin.`}
-        </p>
-      ) : null}
-      {mecenatForCurrentPayMonth.totalMinutes ? (
-        <p className="allowance-note">
-          {minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} de mécénat
-          sont attendues sur ce bulletin pour {euros(
-            mecenatForCurrentPayMonth.grossAmountCents / 100,
-          )} brut. La ligne du PDF n’est pas reconnue de façon assez
-          fiable : vérifiez-la visuellement sur le bulletin.
-        </p>
-      ) : null}
-      <p className="allowance-note">
-        {payslipCheck.name} · comparé à{" "}
-        {MONTHS[displayedMonth]} {allowances.year}
-        . Un écart de quelques centimes vient des arrondis ; au-delà, il
-        y a une vraie différence à comprendre.
-      </p>
-    </>
-  ) : null;
   const unknownLines = (payslipCheck?.reading.extraLines || []).filter((line) => !line.sick && !isComputedVariableLabel(line.label));
   // Ce que le bulletin apprend d'autre, avant de conclure.
   const resultNotices = payslipCheck ? (
@@ -649,16 +573,7 @@ export function PayslipVerificationCard({
                       </small>
                       {payslipReview.issues.length ? <PayslipGapList issues={payslipReview.issues} /> : null}
                     </div>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => setPayslipResultDetailsOpen((current) => !current)}
-                      aria-expanded={payslipResultDetailsOpen}
-                    >
-                      {payslipResultDetailsOpen ? "Masquer le détail" : "Voir le détail"}
-                    </button>
                   </div>
-                  {payslipResultDetailsOpen ? resultDetails : null}
                   {resultNotices}
                   <PayslipDecisionOptions
                     hasGap={false}
@@ -727,7 +642,16 @@ export function PayslipVerificationCard({
               signatureImage={signature}
               recipient={savedDecision.recipient}
               message={savedDecision.note}
-              onSave={(recipient, note) => onSaveVerification({ ...savedDecision, recipient, note, updatedAt: new Date().toISOString() })}
+              subject={savedDecision.letterSubject}
+              body={savedDecision.letterBody}
+              onSave={(draft) => onSaveVerification({
+                ...savedDecision,
+                recipient: draft.recipient,
+                note: draft.message,
+                letterSubject: draft.subject || undefined,
+                letterBody: draft.body || undefined,
+                updatedAt: new Date().toISOString(),
+              })}
               onClose={() => setLetterOpen(false)}
             />
           ) : null}

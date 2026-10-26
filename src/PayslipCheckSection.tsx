@@ -19,7 +19,6 @@ type AllowancesSummary = {
 };
 
 type OvertimeSummary = { totalMinutes: number; amount: number };
-type MecenatSummary = { totalMinutes: number; grossAmountCents: number };
 type SickLeavesSummary = {
   total: number;
   arrets: Array<{
@@ -72,13 +71,10 @@ export type PayslipCheckSectionProps = {
   fullName?: string;
   signature?: string;
   unplannedCarence: boolean;
-  resultDetailsOpen: boolean;
-  setResultDetailsOpen: Dispatch<SetStateAction<boolean>>;
   grossForMonth: (month: number) => number;
   baseSalary: number;
   ifse: number;
   overtime: OvertimeSummary;
-  mecenat: MecenatSummary;
   /** Tous les mécénats, pour retrouver ceux qu'un bulletin a payés en avance. */
   mecenatEntries?: MecenatEntry[];
   onMarkMecenatsPaidEarly?: (entries: MecenatEntry[], year: number, month: number) => void;
@@ -157,12 +153,9 @@ export function PayslipCheckSection({
   fullName,
   signature,
   unplannedCarence: unplannedPayslipCarence,
-  resultDetailsOpen: payslipResultDetailsOpen,
-  setResultDetailsOpen: setPayslipResultDetailsOpen,
   baseSalary,
   ifse,
   overtime: overtimeForPayMonth,
-  mecenat: mecenatForCurrentPayMonth,
   mecenatEntries,
   onMarkMecenatsPaidEarly,
   overtimeEarlyCandidates,
@@ -236,10 +229,7 @@ export function PayslipCheckSection({
       fullName={fullName}
       signature={signature}
       unplannedCarence={unplannedPayslipCarence}
-      resultDetailsOpen={payslipResultDetailsOpen}
-      setResultDetailsOpen={setPayslipResultDetailsOpen}
       overtime={overtimeForPayMonth}
-      mecenat={mecenatForCurrentPayMonth}
       mecenatEntries={mecenatEntries}
       onMarkMecenatsPaidEarly={onMarkMecenatsPaidEarly}
       overtimeEarlyCandidates={overtimeEarlyCandidates}

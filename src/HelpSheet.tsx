@@ -56,7 +56,7 @@ const QUESTIONS: Record<"find" | "pay" | "declare", Question[]> = {
     { id: "request-leave", icon: "sun", question: "Poser un congé", where: "Accueil · Choix des dates" },
     { id: "exchange", icon: "swap", question: "Échanger un jour avec un collègue", where: "Accueil · Faire un échange" },
     { id: "overtime-mecenat", icon: "clock", question: "Un mécénat ou des heures supp", where: "Congés · Heures et mécénats" },
-    { id: "request-form", icon: "leave", question: "Une absence ou un échange", where: "Formulaire de demande" },
+    { id: "request-form", icon: "leave", question: "Ouvrir un formulaire d’absence ou de remplacement vierge", where: "Formulaire de demande" },
     { id: "cet", icon: "piggy", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET" },
     { id: "work-accident", icon: "accident", question: "Un accident de travail", where: "Docs · Accident de travail" },
   ],

@@ -418,9 +418,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   était prévu (`acceptedGapSummary`).
 - `src/payslipGapLetter.ts` / `src/PayslipLetterSheet.tsx` : le courrier à
   la hiérarchie (destinataire, mot facultatif, nom et signature du profil),
-  avec l'écart, ses causes, un tableau attendu / bulletin et la demande de
-  régularisation ; aperçu, PDF (`courrier-bulletin-AAAA-MM.pdf`) ou envoi
-  par e-mail. Il remplace l'ancien relevé d'anomalies.
+  avec l'écart, ses causes et la demande de régularisation, puis le détail
+  attendu / bulletin sous la signature ; aperçu, PDF
+  (`courrier-bulletin-AAAA-MM.pdf`) ou envoi par e-mail. « Modifier le
+  texte » ouvre l'objet et le texte (`body`, paragraphes séparés par une
+  ligne vide) à la réécriture ; gardés avec l'anomalie (`letterSubject`,
+  `letterBody`), ils se rouvrent tels quels, et « Revenir au texte proposé »
+  les rend. Il remplace l'ancien relevé d'anomalies. Le résultat de la
+  vérification n'a plus de tableau ligne à ligne.
 - `src/payslipOcr.ts` : reconnaissance locale des photos de bulletins avec le
   moteur et le modèle français auto-hébergés dans `public/ocr/`. Un bulletin
   fait deux pages : le bouton « Photographier » ouvre l'appareil
