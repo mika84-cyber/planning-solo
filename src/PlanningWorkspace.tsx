@@ -3,7 +3,8 @@ import { PdfDownloadPage } from "./appSections";
 import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
 import { PlanningCommandCenter } from "./PlanningCommandCenter";
 import { MonthCalendar } from "./PlanningView";
-import { dateKey, localDate, type SchoolVacation } from "./planningLogic";
+import { LeaveDurationControl } from "./LeaveDurationControl";
+import { DURATION_LEAVE_TYPES, TYPE_COLORS, dateKey, localDate, type SchoolVacation } from "./planningLogic";
 import type { useAnnualPdfExport } from "./useAnnualPdfExport";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useLeaveBalances } from "./useLeaveBalances";
@@ -14,7 +15,7 @@ import type { usePlanningEntryActions } from "./usePlanningEntryActions";
 import type { usePlanningInteractionActions } from "./usePlanningInteractionActions";
 import type { usePlanningRequestActions } from "./usePlanningRequestActions";
 import type { usePlanningUiState } from "./usePlanningUiState";
-import type { useRequestTypeSelection } from "./useRequestTypeSelection";
+import { leaveHoursFor, type useRequestTypeSelection } from "./useRequestTypeSelection";
 import type { useWorkedDaysOverview } from "./useWorkedDaysOverview";
 import type { useWorkExchangeActions } from "./useWorkExchangeActions";
 import type { useWorkTimeActions } from "./useWorkTimeActions";
@@ -261,7 +262,7 @@ export function PlanningWorkspace({
         onSelectLeaveType={selectLeaveType}
         leaveMoment={leaveMoment}
         onSelectLeaveMoment={selectLeaveMoment}
-        leaveHours={leaveHours}
+        leaveHours={leaveHoursFor(leaveHours, leaveMoment)}
         onChangeLeaveHours={selectLeaveHours}
         onSelectRecoveryType={selectRecoveryType}
         onValidateAndOpenForm={() => void validateAndOpenForm()}
@@ -283,6 +284,22 @@ export function PlanningWorkspace({
       ) : null}
 
       <section className="planning-calendar-section" aria-label="Planning et congés">
+      {/* Pendant une demande de congés annuels, la durée des dates qu'on va
+          toucher, juste au-dessus d'elles : une journée entière et une
+          demi-journée se posent dans la même demande. */}
+      {requestKind === "leave" && !sickRequest && (DURATION_LEAVE_TYPES as readonly string[]).includes(activeType) ? (
+        <div className="planning-request-duration">
+          <LeaveDurationControl
+            moment={leaveMoment}
+            hours={leaveHoursFor(leaveHours, leaveMoment)}
+            color={TYPE_COLORS[activeType]}
+            label="Dates touchées"
+            ariaLabel="Durée des dates touchées"
+            onSelectMoment={selectLeaveMoment}
+            onChangeHours={selectLeaveHours}
+          />
+        </div>
+      ) : (
       <div className="planning-leave-panel">
         <button
           className="primary-action planning-leave-action"
@@ -299,6 +316,7 @@ export function PlanningWorkspace({
           Faire un échange
         </button>
       </div>
+      )}
 
       {showSchoolVacations ? (
         <Suspense fallback={null}>

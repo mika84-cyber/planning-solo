@@ -7,6 +7,7 @@ import type {
 import type { Entries, RequestKind, SelectedDay, WishMoment } from "./appModel";
 import type { WishChoice } from "./PlanningRequestPanels";
 import { DEFAULT_WORK_SCHEDULE, splitOvertimeRange, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
+import { durationLeaveDay, usualHalfHours } from "./useRequestTypeSelection";
 import {
   dateKey,
   fromKey,
@@ -17,6 +18,9 @@ import {
   type LeaveType,
   type MultiDatePerson,
   type SelectionType,
+  type LeaveMoment,
+  emptyLeaveHours,
+  type LeaveHours,
 } from "./planningLogic";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { usePlanningUiState } from "./usePlanningUiState";
@@ -414,12 +418,16 @@ export function usePlanningInteractionActions({
   }
   /** `landing` : où la demande s'ouvre — sur son panneau (type, durée,
    *  boutons), ou directement sur les jours du planning, pour qui vient de
-   *  choisir son congé depuis « Que cherchez-vous ? ». */
+   *  choisir son congé depuis « Que cherchez-vous ? ». `moment` et `hours` :
+   *  la durée d'un CA choisie avec lui (le matin, l'après-midi) et ses heures,
+   *  saisies dans la fenêtre, sinon les habituelles. */
   function beginRequest(
     kind: RequestKind,
     initialDate?: string,
     requestedType?: SelectionType,
     landing: "panel" | "calendar" = "panel",
+    moment: LeaveMoment = "full",
+    hours?: LeaveHours,
   ) {
     setRequestKind(kind);
     const start = buildPlanningRequestStart({
@@ -430,8 +438,9 @@ export function usePlanningInteractionActions({
       workQuota,
     });
     setActiveType(start.initialType);
-    planningUi.setLeaveMoment("full");
-    planningUi.setLeaveHours({ start: "", end: "" });
+    const halfHours = moment === "full" ? { start: "", end: "" } : hours ?? usualHalfHours(workSchedule, moment);
+    planningUi.setLeaveMoment(moment);
+    planningUi.setLeaveHours({ ...emptyLeaveHours(), ...(moment === "full" ? {} : { [moment]: halfHours }) });
     setSickRequest(start.sickRequest);
     const seedDate = Object.keys(start.selections)[0] || null;
     // Divers : la date touchée ouvre d'abord le choix journée entière, matin
@@ -440,7 +449,7 @@ export function usePlanningInteractionActions({
     const askDuration = Boolean(seedDate) && start.initialType === "other";
     const nextSelections = (kind === "recovery" || askDuration) && seedDate
       ? {}
-      : start.selections;
+      : Object.fromEntries(Object.entries(start.selections).map(([key, item]) => [key, durationLeaveDay(key, item.type, moment, halfHours)]));
     setDirectDurationSave(askDuration);
     if (askDuration && seedDate) {
       setTimeStart("");

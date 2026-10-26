@@ -95,6 +95,10 @@ export type LeaveMoment = "full" | HalfMoment;
 /** Les heures posées d'une demi-journée de congés annuels, « HH:MM » ; vides
  *  tant qu'elles ne sont pas saisies. */
 export type LeaveHours = { start: string; end: string };
+/** Les heures posées, pour le matin et pour l'après-midi : chacune garde les
+ *  siennes quand on change de durée. */
+export type LeaveHoursByMoment = Record<HalfMoment, LeaveHours>;
+export const emptyLeaveHours = (): LeaveHoursByMoment => ({ morning: { start: "", end: "" }, afternoon: { start: "", end: "" } });
 
 export function halfBalanceOf(item: { halfBalance?: string }): HalfBalance {
   return isStoredHalfBalance(item.halfBalance) ? item.halfBalance : "annual";

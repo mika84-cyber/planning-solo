@@ -1,19 +1,41 @@
 import type { FormProfile, SelectedDay } from "./appModel";
-import { DEFAULT_WORK_SCHEDULE, usableWorkSchedule, workScheduleHalfTimes } from "./overtime";
-import { DURATION_LEAVE_TYPES, halfBalanceOf, type LeaveHours, type LeaveMoment, type SelectionType } from "./planningLogic";
+import { DEFAULT_WORK_SCHEDULE, usableWorkSchedule, workScheduleHalfTimes, type WorkSchedule } from "./overtime";
+import {
+  DURATION_LEAVE_TYPES,
+  halfMomentFromStart,
+  type HalfMoment,
+  type LeaveHours,
+  type LeaveHoursByMoment,
+  type LeaveMoment,
+  type SelectionType,
+} from "./planningLogic";
 import type { usePlanningUiState } from "./usePlanningUiState";
 
 type RequestTypeSelectionOptions = {
   planningUi: Pick<
     ReturnType<typeof usePlanningUiState>,
-    "activeType" | "setActiveType" | "leaveMoment" | "setLeaveMoment" | "leaveHours" | "setLeaveHours" | "requestSeedDate" | "setSelections" | "setTimeStart" | "setTimeEnd" | "setTimeDate" | "setTimeHalfBalance"
+    "setActiveType" | "leaveMoment" | "setLeaveMoment" | "leaveHours" | "setLeaveHours" | "requestSeedDate" | "setSelections" | "setTimeStart" | "setTimeEnd" | "setTimeDate" | "setTimeHalfBalance"
   >;
   formProfile: FormProfile | null;
 };
 
+const NO_HOURS: LeaveHours = { start: "", end: "" };
+
 /** Des heures utilisables : les deux, la fin après le début. */
 export function validLeaveHours(hours: LeaveHours) {
   return Boolean(hours.start && hours.end && hours.start < hours.end);
+}
+
+/** Les heures habituelles d'une moitié de journée ; sans horaires
+ *  enregistrés, rien : mieux vaut une saisie à faire qu'une heure inventée. */
+export function usualHalfHours(workSchedule: WorkSchedule | undefined, moment: HalfMoment): LeaveHours {
+  const schedule = usableWorkSchedule(workSchedule);
+  return schedule ? workScheduleHalfTimes(schedule, moment) : NO_HOURS;
+}
+
+/** Les heures posées pour cette durée : aucune en journée entière. */
+export function leaveHoursFor(hours: LeaveHoursByMoment, moment: LeaveMoment): LeaveHours {
+  return moment === "full" ? NO_HOURS : hours[moment];
 }
 
 /** Une date de congé annuel : journée entière, ou demi-journée aux heures
@@ -26,41 +48,38 @@ export function durationLeaveDay(date: string, type: SelectionType, moment: Leav
     : { date, type: "half", halfMoment: moment };
 }
 
+/** La moitié de journée d'une date choisie : dite, ou déduite de son heure de début. */
+function momentOf(item: SelectedDay): HalfMoment | null {
+  if (item.type !== "half") return null;
+  return item.halfMoment ?? (item.start ? halfMomentFromStart(item.start) : null);
+}
+
 /** Le type choisi au départ d'une demande depuis une case : il remplit la
  *  date de départ avec les horaires habituels. Les congés annuels se posent
- *  aussi le matin ou l'après-midi, aux heures choisies. */
+ *  aussi le matin ou l'après-midi, aux heures choisies : la durée vaut pour
+ *  les dates touchées ensuite, et une journée entière et une demi-journée se
+ *  posent dans la même demande. */
 export function useRequestTypeSelection({ planningUi, formProfile }: RequestTypeSelectionOptions) {
-  const { activeType, setActiveType, leaveMoment, setLeaveMoment, leaveHours, setLeaveHours, requestSeedDate, setSelections, setTimeStart, setTimeEnd, setTimeDate, setTimeHalfBalance } = planningUi;
-  const isDurationLeave = (type: SelectionType) => (DURATION_LEAVE_TYPES as readonly string[]).includes(type);
-  /** Les heures habituelles d'une moitié de journée ; sans horaires
-   *  enregistrés, rien : mieux vaut une saisie à faire qu'une heure inventée. */
-  function usualHours(moment: LeaveMoment): LeaveHours {
-    const schedule = usableWorkSchedule(formProfile?.workSchedule);
-    if (moment === "full" || !schedule) return { start: "", end: "" };
-    return workScheduleHalfTimes(schedule, moment);
-  }
-  const leaveDay = (date: string, type: SelectionType, moment: LeaveMoment = leaveMoment, hours: LeaveHours = leaveHours) =>
+  const { setActiveType, leaveMoment, setLeaveMoment, leaveHours, setLeaveHours, requestSeedDate, setSelections, setTimeStart, setTimeEnd, setTimeDate, setTimeHalfBalance } = planningUi;
+  const leaveDay = (date: string, type: SelectionType, moment: LeaveMoment = leaveMoment, hours: LeaveHours = leaveHoursFor(leaveHours, moment)) =>
     durationLeaveDay(date, type, moment, hours);
-  /** Les dates déjà choisies de ce congé suivent la durée et les heures. */
-  function applyToSelections(moment: LeaveMoment, hours: LeaveHours) {
-    if (!isDurationLeave(activeType)) return;
-    setSelections((current) => Object.fromEntries(Object.entries(current).map(([key, item]) => {
-      const same = item.type === activeType || (item.type === "half" && halfBalanceOf(item) === activeType);
-      return [key, same ? leaveDay(key, activeType, moment, hours) : item];
-    })));
-  }
-  /** Changer la durée reprend les heures habituelles de ce moment. */
+  /** Changer la durée ne vaut que pour les dates touchées ensuite ; le matin
+   *  et l'après-midi gardent chacun leurs heures, les habituelles tant
+   *  qu'elles ne sont pas saisies. */
   function selectLeaveMoment(moment: LeaveMoment) {
-    const hours = usualHours(moment);
     setLeaveMoment(moment);
-    setLeaveHours(hours);
-    applyToSelections(moment, hours);
+    if (moment === "full") return;
+    const known = leaveHours[moment];
+    if (!known.start && !known.end) setLeaveHours({ ...leaveHours, [moment]: usualHalfHours(formProfile?.workSchedule, moment) });
   }
-  /** Les heures posées le matin ou l'après-midi ; les dates déjà choisies
-   *  les prennent dès qu'elles se suivent. */
+  /** Les heures posées le matin ou l'après-midi ; les demi-journées déjà
+   *  choisies de ce moment les prennent dès qu'elles se suivent. */
   function selectLeaveHours(hours: LeaveHours) {
-    setLeaveHours(hours);
-    if (validLeaveHours(hours)) applyToSelections(leaveMoment, hours);
+    if (leaveMoment === "full") return;
+    setLeaveHours({ ...leaveHours, [leaveMoment]: hours });
+    if (!validLeaveHours(hours)) return;
+    setSelections((current) => Object.fromEntries(Object.entries(current).map(([key, item]) =>
+      [key, momentOf(item) === leaveMoment ? { ...item, halfMoment: undefined, start: hours.start, end: hours.end } : item])));
   }
   function selectRecoveryType(type: SelectionType) {
     setActiveType(type);

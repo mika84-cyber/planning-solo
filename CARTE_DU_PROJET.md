@@ -232,7 +232,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   session du matin, nocturne…) et ses horaires à côté de son nom
   (`priceGroupHours`, gardés quand une mise à jour remplace l’entrée),
   gratuité en montant nul — tue dans les
-  galeries et au Palais des enfants (`PAID_ONLY_VENUES`), dite dans la Nef —,
+  galeries et au Palais des enfants (`PAID_ONLY_VENUES`), dite dans la Nef,
+  ou dans une galerie quand la fiche le demande (`showFreePrices`, le Musée
+  imaginaire d’Oli : la billetterie vend le billet des moins de 5 ans) —,
   condition en
   `priceNote` ; `ticketingUrl` est le site tiers qui porte la billetterie ou
   les tarifs quand le Grand Palais ne les publie pas. `grandPalaisTitleKey`
@@ -283,7 +285,21 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `selectLeaveHours`, `durationLeaveDay`, sélecteur « Durée du congé » de
   `RequestSelectionPanel` ; RTT et fractionnement ne se posent qu’en journée
   entière, et une demi-journée est toujours prise sur les congés annuels :
-  plus de choix « Prise sur » dans les fenêtres),
+  plus de choix « Prise sur » dans les fenêtres). La durée se choisit aussi
+  d’un toucher sous la ligne CA de « Que voulez-vous poser ? »
+  (`AnnualDurationChoice` : `request-choice-moments`, puis, pour le matin ou
+  l’après-midi, les heures à saisir avant les dates, `request-choice-hours`,
+  proposées aux habituelles ; `onChoose(kind, type, moment, hours)` →
+  `beginRequest(…, moment, hours)`, qui pose la date de départ). La durée
+  vaut pour les dates touchées ensuite — une journée entière et une
+  demi-journée se posent dans la même demande — et le même sélecteur
+  (`LeaveDurationControl`) se retrouve au-dessus du planning pendant la
+  demande (`planning-request-duration`) ; matin et après-midi gardent chacun
+  leurs heures (`LeaveHoursByMoment`, `leaveHoursFor`), et les heures
+  saisies s’appliquent aux demi-journées déjà choisies de ce moment. Sur le
+  formulaire, les journées vont dans « Congés annuels », les demi-journées
+  dans « Congés en 1/2 journées » (`public/formulaire/app.js`, `buckets`).
+  L’explication du panneau tient en une ligne,
   `src/useWorkedDaysOverview.ts` (jours travaillés, prochain extra, aperçu du
   jour), `src/useMecenatDraftCheck.ts` (mécénat en cours de saisie),
   `src/useDayDetailData.ts` (ce que la fiche du jour montre),

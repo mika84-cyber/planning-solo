@@ -110,6 +110,8 @@ import {
   type CountedOnlyType,
   type SelectionType,
   type SchoolVacation,
+  type LeaveMoment,
+  type LeaveHours,
 } from "./planningLogic";
 
 const HANDOFF_KEY = "planning:form-handoff-v1";
@@ -864,7 +866,7 @@ export default function Home() {
     setRequestChooser(true);
   }
 
-  function beginChosenRequest(kind: RequestKind, requestedType: SelectionType) {
+  function beginChosenRequest(kind: RequestKind, requestedType: SelectionType, moment?: LeaveMoment, hours?: LeaveHours) {
     const initialDate = requestChooserDate || undefined;
     setRequestChooserDate(null);
     // La grève s'ajoute d'un toucher : depuis une case, elle est enregistrée
@@ -876,7 +878,7 @@ export default function Home() {
     }
     const landing = requestFromHelp.current ? "calendar" : "panel";
     requestFromHelp.current = false;
-    beginRequest(kind, initialDate, requestedType, landing);
+    beginRequest(kind, initialDate, requestedType, landing, moment, hours);
   }
 
   const payslipVerifications = usePayslipVerifications({

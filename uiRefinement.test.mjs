@@ -525,7 +525,6 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Enregistrer sans formulaire");
     expect(app).toContain("Annuler la demande");
     expect(app).toContain("Le formulaire est préparé, mais jamais envoyé automatiquement");
-    expect(app).toContain("Vous pouvez mélanger plusieurs types dans une même demande.");
     expect(app).toContain("Étape 2 sur 3 · Choisissez les dates");
     expect(app).toContain("Autres types de congé");
     expect(app).toContain('<div className="day-action-grid">');

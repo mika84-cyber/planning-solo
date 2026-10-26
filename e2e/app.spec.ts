@@ -5373,19 +5373,42 @@ test("un CA choisi depuis une case se pose en journée entière, ou le matin ou 
   // La durée se choisit sous le type : journée entière par défaut.
   const duration = request.getByRole("group", { name: "Durée du congé" });
   await expect(duration.getByRole("button", { name: "Journée", exact: true })).toHaveAttribute("aria-pressed", "true");
+  const summary = request.getByLabel("Résumé avant validation");
+  await expect(summary).toContainText("Congés annuels");
+  // « Après-midi » vaut pour les dates touchées ensuite, aux heures saisies
+  // dessous ; la date déjà choisie reste une journée : les deux se mélangent.
   await duration.getByRole("button", { name: "Après-midi" }).click();
   await expect(duration.getByRole("button", { name: "Après-midi" })).toHaveAttribute("aria-pressed", "true");
-  // La date déjà choisie passe d'elle-même en demi-journée.
-  const summary = request.getByLabel("Résumé avant validation");
-  await expect(summary).toContainText("Congés en demi-journée");
-  // Les heures posées se saisissent sous la durée, et la date les prend.
   const hours = request.getByRole("group", { name: "Heures posées l’après-midi" });
   await hours.getByRole("combobox", { name: "Début — heures" }).selectOption("14");
   await hours.getByRole("combobox", { name: "Fin — heures" }).selectOption("17");
+  await page.locator(".month-card .day.work").nth(1).click();
+  await expect(summary).toContainText("Congés annuels");
+  await expect(summary).toContainText("Congés en demi-journée");
   await expect(summary).toContainText("14:00 → 17:00");
   await duration.getByRole("button", { name: "Journée", exact: true }).click();
   await expect(request.getByRole("group", { name: "Heures posées l’après-midi" })).toHaveCount(0);
-  await expect(summary).not.toContainText("demi-journée");
+  // Puis d'un toucher sous la ligne CA de « Que voulez-vous poser ? » : les
+  // heures d'abord, la date touchée est déjà une demi-journée du matin, et
+  // la durée se retrouve au-dessus du planning, pour les dates suivantes.
+  await request.getByRole("button", { name: "Annuler la demande" }).first().click();
+  await page.locator(".month-card .day.work").first().click();
+  await page.getByRole("dialog", { name: /2026/ }).getByRole("button", { name: /^Congé/ }).click();
+  await chooser.getByRole("group", { name: "Durée du CA" }).getByRole("button", { name: "Matin" }).click();
+  const chooserHours = chooser.getByRole("group", { name: "Heures du CA le matin" });
+  await expect(chooserHours.getByRole("button", { name: "Choisir les dates" })).toBeDisabled();
+  await chooserHours.getByRole("combobox", { name: "Début — heures" }).selectOption("9");
+  await chooserHours.getByRole("combobox", { name: "Fin — heures" }).selectOption("13");
+  await chooserHours.getByRole("button", { name: "Choisir les dates" }).click();
+  await expect(duration.getByRole("button", { name: "Matin" })).toHaveAttribute("aria-pressed", "true");
+  await expect(summary).toContainText("Congés en demi-journée");
+  await expect(summary).toContainText("09:00 → 13:00");
+  const nearCalendar = page.getByRole("group", { name: "Durée des dates touchées" });
+  await expect(nearCalendar.getByRole("button", { name: "Matin" })).toHaveAttribute("aria-pressed", "true");
+  await nearCalendar.getByRole("button", { name: "Journée", exact: true }).click();
+  await page.locator(".month-card .day.work").nth(1).click();
+  await expect(summary).toContainText("Congés annuels");
+  await expect(summary).toContainText("Congés en demi-journée");
 });
 
 test("les RTT et le fractionnement se posent en journée entière", async ({ page }) => {
@@ -5569,7 +5592,7 @@ test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
     .getByRole("button", { name: /^CA / })
     .click();
   const request = page.locator("#request-panel");
-  await expect(request).toContainText("Vous pouvez mélanger plusieurs types dans une même demande.");
+  await expect(request).toContainText("une même demande peut en mélanger plusieurs");
   for (let index = 0; index < 3; index += 1) await workDays.nth(index).click();
   await request.getByRole("button", { name: "RTT", exact: true }).click();
   for (let index = 3; index < 5; index += 1) await workDays.nth(index).click();

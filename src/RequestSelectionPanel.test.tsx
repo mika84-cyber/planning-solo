@@ -26,8 +26,11 @@ describe("panneau de la demande", () => {
     const html = renderToStaticMarkup(
       <RequestSelectionPanel {...baseProps} activeType="annual" leaveMoment="morning" onSelectLeaveMoment={vi.fn()} leaveHours={{ start: "09:15", end: "13:30" }} onChangeLeaveHours={vi.fn()} />,
     );
-    // Plus de type « Congés en demi-journée » à part.
+    // Plus de type « Congés en demi-journée » à part ; l'explication tient
+    // en une ligne, pour que la durée reste à portée de main.
     expect(html).not.toContain("Congés en demi-journée");
+    expect(html).toContain("Touchez les dates dans le planning. Vous pouvez changer de type entre deux dates");
+    expect(html).not.toContain("Vous pouvez mélanger plusieurs types");
     expect(html).toContain('role="group" aria-label="Durée du congé"');
     expect(html).toMatch(/aria-pressed="false">Journée<\/button><button type="button" class="active" aria-pressed="true">Matin<\/button>/);
     expect(html).toContain(">Après-midi</button>");

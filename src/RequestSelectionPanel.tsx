@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { RequestValidationSummary, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import type { RequestKind, SelectedDay } from "./appModel";
-import { ClockTimePicker } from "./ClockTimePicker";
+import { LeaveDurationControl } from "./LeaveDurationControl";
 import type { WorkQuota } from "./overtime";
 import {
   DURATION_LEAVE_TYPES,
@@ -148,8 +148,7 @@ export function RequestSelectionPanel({
       </div>
       {requestKind === "leave" && !sickRequest ? (
         <p className="multi-type-request-help">
-          <strong>Vous pouvez mélanger plusieurs types dans une même demande.</strong>
-          Choisissez un type, touchez ses dates dans le planning, puis changez de type si nécessaire.
+          Touchez les dates dans le planning. Vous pouvez changer de type entre deux dates : une même demande peut en mélanger plusieurs.
         </p>
       ) : null}
       {requestKind === "other" ? null : requestKind === "strike" ? (
@@ -208,23 +207,7 @@ export function RequestSelectionPanel({
                 les dates touchées ensuite ; le matin ou l'après-midi, aux
                 heures choisies. RTT et fractionnement : journée entière. */}
             {(DURATION_LEAVE_TYPES as readonly string[]).includes(activeType) && onSelectLeaveMoment ? (
-              <div className="leave-moment-tabs" role="group" aria-label="Durée du congé" style={{ "--type-color": TYPE_COLORS[activeType] } as CSSProperties}>
-                <span className="leave-moment-label" aria-hidden="true">Durée</span>
-                {([["full", "Journée"], ["morning", "Matin"], ["afternoon", "Après-midi"]] as const).map(([moment, label]) => (
-                  <button type="button" key={moment} className={leaveMoment === moment ? "active" : undefined} aria-pressed={leaveMoment === moment} onClick={() => onSelectLeaveMoment(moment)}>
-                    {label}
-                  </button>
-                ))}
-                {leaveMoment !== "full" && onChangeLeaveHours ? (
-                  <div className="leave-moment-hours" role="group" aria-label={leaveMoment === "morning" ? "Heures posées le matin" : "Heures posées l’après-midi"}>
-                    <ClockTimePicker label="Début" value={leaveHours.start} onChange={(start) => onChangeLeaveHours({ ...leaveHours, start })} allowEmpty />
-                    <ClockTimePicker label="Fin" value={leaveHours.end} onChange={(end) => onChangeLeaveHours({ ...leaveHours, end })} allowEmpty />
-                    {leaveHours.start && leaveHours.end && leaveHours.end <= leaveHours.start ? (
-                      <small role="alert">L’heure de fin doit suivre l’heure de début.</small>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
+              <LeaveDurationControl moment={leaveMoment} hours={leaveHours} color={TYPE_COLORS[activeType]} onSelectMoment={onSelectLeaveMoment} onChangeHours={onChangeLeaveHours} />
             ) : null}
           </section>
           <details className="request-advanced-types" open={(["childcare", "exceptional", "cet"] as SelectionType[]).includes(activeType)}>

@@ -1,7 +1,8 @@
 import { type ComponentProps, type Dispatch, lazy, type SetStateAction, Suspense } from "react";
 import type { BalanceType, RequestKind } from "./appModel";
 import { cetBalance } from "./cet";
-import { type CountedOnlyType, dateKey, localDate, type SelectionType } from "./planningLogic";
+import { type CountedOnlyType, dateKey, localDate, type LeaveHours, type LeaveMoment, type SelectionType } from "./planningLogic";
+import { usualHalfHours } from "./useRequestTypeSelection";
 import { strikeEstimateForCalendarMonth } from "./strike";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useCalendarDataState } from "./useCalendarDataState";
@@ -95,7 +96,7 @@ type Props = {
     & Pick<ReturnType<typeof useWorkProfileActions>, "changeGroup">
     & {
       openRequestChooser: (origin?: "general" | "planning", initialDate?: string) => void;
-      beginChosenRequest: (kind: RequestKind, requestedType: SelectionType) => void;
+      beginChosenRequest: (kind: RequestKind, requestedType: SelectionType, moment?: LeaveMoment, hours?: LeaveHours) => void;
     };
 };
 
@@ -171,6 +172,7 @@ export function PlanningDialogLayer({
           pendingWishCount={requestChooserDate && wishDates.has(requestChooserDate) ? pendingWishDates.length : 0}
           onClose={() => setRequestChooser(false)}
           onChoose={beginChosenRequest}
+          usualHalfHours={(moment) => usualHalfHours(formProfile?.workSchedule, moment)}
           onChooseWish={() => {
             const initialDate = requestChooserDate || undefined;
             setRequestChooserDate(null);

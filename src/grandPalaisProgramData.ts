@@ -26,6 +26,9 @@ export type GrandPalaisProgramEntry = {
   /** Une condition écrite sous les tarifs de la fiche : location des patins
    *  incluse, billetterie qui n'ouvre qu'à une date. */
   priceNote?: string;
+  /** Dans une galerie, qui tait d'ordinaire ses gratuités, la gratuité se
+   *  lit ici comme un tarif, parce que la billetterie la vend comme un billet. */
+  showFreePrices?: boolean;
   /** Les horaires d'une grille, écrits à côté de son nom : « Session du
    *  matin » → « 10h – 13h ». La fiche les donne à part, sous « Horaires » :
    *  la veille ne les relit pas, ils restent quand une mise à jour remplace
@@ -239,17 +242,18 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           period: "Du 2 décembre 2026 au 21 février 2027",
           officialUrl: "https://www.grandpalais.fr/fr/programme/le-musee-imaginaire-doli",
           // La fiche officielle n'annonce pas de tarif : relevés sur la
-          // billetterie du site de l'exposition, ouverte le 26 octobre 2026.
-          // Une galerie tait ses gratuités (PAID_ONLY_VENUES) : celle des
-          // moins de 5 ans, voulue par l'administrateur, se dit en note.
+          // billetterie du site de l'exposition, ouverte le 26 octobre 2026,
+          // qui vend le billet des moins de 5 ans à 0 € : il se lit comme
+          // les autres, à la demande de l'administrateur.
           ticketingUrl: "https://lemuseeimaginairedoli.com",
           prices: [
             { label: "Plein", amount: 22 },
             { label: "Réduit", amount: 17 },
             { label: "12-17 ans", amount: 13 },
             { label: "5-11 ans", amount: 10 },
+            { label: "Moins de 5 ans", amount: 0 },
           ],
-          priceNote: "Gratuit pour les moins de 5 ans",
+          showFreePrices: true,
           startsOn: "2026-12-02",
           endsOn: "2027-02-21",
         },

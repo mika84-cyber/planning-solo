@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
-import { WishConversionDialog, wishChoiceType, wishConversionSummary } from "./PlanningRequestPanels";
+import { describe, expect, it, vi } from "vitest";
+import { RequestChooserDialog, WishConversionDialog, wishChoiceType, wishConversionSummary } from "./PlanningRequestPanels";
 
 describe("transformation des congés souhaités", () => {
   it("résume les natures choisies et compte les lignes laissées vides comme gardées", () => {
@@ -38,5 +38,17 @@ describe("transformation des congés souhaités", () => {
     );
     expect(html).toContain("Annuler le souhait");
     expect(html).not.toContain("Demi-journée · matin");
+  });
+});
+
+describe("fenêtre « Que voulez-vous poser ? »", () => {
+  it("propose la durée d’un CA sous sa ligne, d’un toucher", () => {
+    const onChoose = vi.fn();
+    const html = renderToStaticMarkup(
+      <RequestChooserDialog open requestChooserDate={null} onClose={vi.fn()} onChoose={onChoose} />,
+    );
+    expect(html).toMatch(/<strong>CA<\/strong>[\s\S]*?<div class="request-choice-moments leave-choice-annual" role="group" aria-label="Durée du CA"><button type="button">Journée<\/button><button type="button">Matin<\/button><button type="button">Après-midi<\/button><\/div>[\s\S]*?<strong>RTT<\/strong>/);
+    // RTT et fractionnement se posent en journée : pas de durée sous eux.
+    expect(html.match(/request-choice-moments/g)).toHaveLength(1);
   });
 });

@@ -512,11 +512,16 @@ describe("programmation du Grand Palais", () => {
     }
     for (const venueKey of ["nef", "other:salon-seine"])
       expect(card(venueKey)).toContain("<dt>Moins de 18 ans, demandeurs d’emploi…</dt><dd>Gratuit</dd>");
-    // Les données livrées suivent la même règle.
+    // Les données livrées suivent la même règle, sauf la fiche qui demande
+    // à dire sa gratuité (showFreePrices : la billetterie la vend en billet).
     const freeIn = (venueKey: "galleries34" | "gallery8" | "gallery7" | "gallery910" | "childrenPalace" | "nef") =>
-      Object.values(GRAND_PALAIS_PROGRAM[venueKey].schedule).flat().some((entry) => entry?.prices?.some((price) => price.amount === 0));
+      Object.values(GRAND_PALAIS_PROGRAM[venueKey].schedule).flat()
+        .some((entry) => !entry?.showFreePrices && entry?.prices?.some((price) => price.amount === 0));
     expect([freeIn("galleries34"), freeIn("gallery8"), freeIn("gallery7"), freeIn("gallery910"), freeIn("childrenPalace")]).toEqual([false, false, false, false, false]);
     expect(freeIn("nef")).toBe(true);
+    const shown = { title: "Expo", period: "2027", prices: paid, showFreePrices: true };
+    expect(renderToStaticMarkup(<ExpoCard entry={shown} venueKey="gallery7" today="2027-01-01" openingReady linkLabel="Voir" />))
+      .toContain("<dd>Gratuit</dd>");
   });
 
   it("montre chaque grille de tarifs sous son nom, la gratuité, la condition et le site de billetterie", () => {
@@ -555,12 +560,13 @@ describe("programmation du Grand Palais", () => {
     expect(adoptHtml).toContain("<dt>Accès 1 jour (jeudi 3 ou vendredi 4)</dt><dd>349 €</dd>");
     expect(adoptHtml).toContain("Tarifs « Last Chance », TTC");
     expect(adoptHtml).toContain(">Billetterie sur adoptai.artefact.com</a>");
-    // Le Musée imaginaire d'Oli : quatre tarifs payants, et la gratuité des
-    // moins de 5 ans en note.
+    // Le Musée imaginaire d'Oli : quatre tarifs payants et, galerie ou non,
+    // la gratuité des moins de 5 ans comme un tarif.
     const oli = GRAND_PALAIS_PROGRAM.gallery7.schedule[2026]![0];
     const oliHtml = renderToStaticMarkup(<ExpoCard entry={oli} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />).replace(/[  ]/g, " ");
     expect(oliHtml).toContain("<dt>Plein</dt><dd>22 €</dd><dt>Réduit</dt><dd>17 €</dd><dt>12-17 ans</dt><dd>13 €</dd><dt>5-11 ans</dt><dd>10 €</dd>");
-    expect(oliHtml).toContain('<span class="expo-price-note">Gratuit pour les moins de 5 ans</span>');
+    expect(oliHtml).toContain("<dt>5-11 ans</dt><dd>10 €</dd><dt>Moins de 5 ans</dt><dd>Gratuit</dd>");
+    expect(oliHtml).not.toContain("expo-price-note");
     // Un lien de billetterie douteux n'est jamais rendu.
     for (const url of ["http://tickets.example/", "https://www.grandpalais.fr/billets", "https://user:pw@tickets.example/", "https://10.0.0.1/", "https://localhost/"])
       expect(safeTicketingUrl(url)).toBe("");

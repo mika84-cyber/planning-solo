@@ -94,3 +94,22 @@
   .request-choice .request-family-absence { grid-area: absence; }
   .request-choice .request-choice-families .request-wish-choices { grid-area: wish; align-self: start; }
 }
+
+/* Sous la ligne CA : sa durée, en pastilles de la couleur du congé. */
+.request-choice .request-choice-moments { --leave-choice-accent: var(--leave-annual); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 14px 10px 37px; border-bottom: 1px solid color-mix(in srgb, var(--border-control) 55%, transparent); }
+.request-choice .request-choice-moments button { min-width: 0; min-height: 34px; margin: 0; border: 1.5px solid color-mix(in srgb, var(--leave-choice-accent) 55%, #fff); border-radius: 999px; padding: 0 6px; background: var(--surface-high, #fff); color: color-mix(in srgb, var(--leave-choice-accent) 45%, var(--text)); font: inherit; font-size: .82rem; font-weight: 800; white-space: nowrap; box-shadow: none; cursor: pointer; }
+.request-choice .request-choice-moments button:hover { background: color-mix(in srgb, var(--leave-choice-accent) 12%, var(--surface-high, #fff)); }
+.request-choice .request-choice-moments button:focus-visible { outline: 2px solid var(--leave-choice-accent); outline-offset: 2px; }
+
+/* Le matin ou l'après-midi choisi : ses heures, avant les dates. */
+.request-choice .request-choice-hours { --leave-choice-accent: var(--leave-annual); display: grid; gap: 8px; padding: 2px 14px 12px 37px; border-bottom: 1px solid color-mix(in srgb, var(--border-control) 55%, transparent); }
+.request-choice .request-choice-hours > p { margin: 0; color: var(--text); font-size: .86rem; font-weight: 750; }
+.request-choice .request-choice-hours-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.request-choice .request-choice-hours .clock-time-field > span:first-child { font-size: .66rem; }
+.request-choice .request-choice-hours .clock-time-picker { min-height: 42px; border: 1.5px solid color-mix(in srgb, var(--leave-choice-accent) 45%, #fff); border-radius: 12px; box-shadow: none; }
+.request-choice .request-choice-hours .clock-time-picker select { height: 42px; font-size: 16px; }
+.request-choice .request-choice-hours small { color: #a5283a; font-size: .78rem; font-weight: 750; }
+.request-choice .request-choice-hours-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.request-choice .request-choice-hours-actions button { min-height: 40px; margin: 0; border: 1.5px solid color-mix(in srgb, var(--leave-choice-accent) 55%, #fff); border-radius: 999px; padding: 0 14px; background: var(--surface-high, #fff); color: var(--text); font: inherit; font-size: .86rem; font-weight: 800; box-shadow: none; cursor: pointer; }
+.request-choice .request-choice-hours-actions .primary { border-color: color-mix(in srgb, var(--leave-choice-accent) 55%, #1f2a33); background: color-mix(in srgb, var(--leave-choice-accent) 55%, #1f2a33); color: #fff; }
+.request-choice .request-choice-hours-actions button:disabled { opacity: .5; cursor: default; }

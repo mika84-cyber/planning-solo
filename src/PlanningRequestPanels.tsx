@@ -1,3 +1,4 @@
+import { AnnualDurationChoice } from "./AnnualDurationChoice";
 import { useState, type CSSProperties } from "react";
 import "./requestChoiceFamilies.css";
 import { minutesLabel } from "./overtime";
@@ -8,6 +9,9 @@ import {
   fromKey,
   longDate,
   type SelectionType,
+  type LeaveMoment,
+  type HalfMoment,
+  type LeaveHours,
 } from "./planningLogic";
 
 /** Bandeau de préparation d'une note posée sur plusieurs dates. */
@@ -115,6 +119,7 @@ export function RequestChooserDialog({
   pendingWishCount = 0,
   onClose,
   onChoose,
+  usualHalfHours,
   onChooseWish,
   onConvertWishes,
 }: {
@@ -126,7 +131,11 @@ export function RequestChooserDialog({
    *  lorsque la case touchée n'est pas elle-même un souhait. */
   pendingWishCount?: number;
   onClose: () => void;
-  onChoose: (kind: RequestKind, requestedType: SelectionType) => void;
+  /** Le congé choisi ; pour un CA, sa durée et ses heures quand elles sont
+   *  choisies ici. */
+  onChoose: (kind: RequestKind, requestedType: SelectionType, moment?: LeaveMoment, hours?: LeaveHours) => void;
+  /** Les heures habituelles d'une moitié de journée, proposées d'avance. */
+  usualHalfHours?: (moment: HalfMoment) => LeaveHours;
   onChooseWish?: () => void;
   onConvertWishes?: () => void;
 }) {
@@ -178,7 +187,10 @@ export function RequestChooserDialog({
           <section className="request-choice-family request-family-balance" aria-labelledby="request-family-balance">
             <h3 id="request-family-balance">Avec solde</h3>
             <div className="request-family-list">
-              <button type="button" className="request-choice-row leave-choice-annual" onClick={() => onChoose("leave", "annual")}><i aria-hidden="true" /><strong>CA</strong><span>{annualHint}</span></button>
+              {/* La durée d'un CA se choisit ici même, d'un toucher, et les
+                  heures d'une moitié de journée avant les dates. Un RTT ou
+                  un fractionnement se pose en journée. */}
+              <AnnualDurationChoice hint={annualHint} usualHalfHours={usualHalfHours} onChoose={(moment, hours) => onChoose("leave", "annual", moment, hours)} />
               <button type="button" className="request-choice-row leave-choice-rtt" onClick={() => onChoose("leave", "rtt")}><i aria-hidden="true" /><strong>RTT</strong><span>{rttHint}</span></button>
               <button type="button" className="request-choice-row leave-choice-fraction" onClick={() => onChoose("leave", "fraction")}><i aria-hidden="true" /><strong>Fractionnement</strong><span>{fractionHint}</span></button>
               <button type="button" className="request-choice-row leave-choice-cet" onClick={() => onChoose("leave", "cet")}><i aria-hidden="true" /><strong>CET</strong><span>{cetHint}</span></button>

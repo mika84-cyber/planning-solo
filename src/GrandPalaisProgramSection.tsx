@@ -645,7 +645,7 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
   const upcomingCountdown = countdown ? countdown.charAt(0).toUpperCase() + countdown.slice(1) : "";
   // Un tarif qui ne valait que pour un jour passé n'a plus à être montré.
   const visiblePrices = (entry.prices ?? []).filter((price) =>
-    (!price.until || price.until >= today) && !(price.amount === 0 && PAID_ONLY_VENUES.has(venueKey)));
+    (!price.until || price.until >= today) && !(price.amount === 0 && PAID_ONLY_VENUES.has(venueKey) && !entry.showFreePrices));
   const priceGroups = groupGrandPalaisPrices(visiblePrices);
   const officialUrl = safeGrandPalaisUrl(entry.officialUrl);
   // Le site tiers qui porte la billetterie — et les tarifs eux-mêmes quand

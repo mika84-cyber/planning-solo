@@ -110,7 +110,13 @@ const budgets = {
   // jusqu'au net, corrige le mois accepté et rédige le courrier à la
   // hiérarchie ; l'ancien relevé d'anomalies est retiré (2 077,0 / 688,3 Kio
   // mesurés).
-  totalJavaScript: { raw: 2_080 * KIB, gzip: 690 * KIB },
+  // Relevé le 26 octobre 2026 à 2 085 / 692 Kio, avec l'accord de
+  // l'administrateur : la durée d'un CA (Journée, Matin, Après-midi) se
+  // choisit sous sa ligne dans « Que voulez-vous poser ? », les heures
+  // d'une moitié de journée avant les dates, et le même sélecteur se
+  // retrouve au-dessus du planning pendant la demande (2 080,6 / 690,0 Kio
+  // mesurés).
+  totalJavaScript: { raw: 2_085 * KIB, gzip: 692 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

@@ -780,6 +780,9 @@
 .leave-moment-tabs button { min-width: 0; min-height: 38px; margin: 0; border: 1.5px solid color-mix(in srgb, var(--type-color) 55%, #fff); border-radius: 999px; padding: 0 8px; background: var(--surface-high, #fff); color: color-mix(in srgb, var(--type-color) 45%, var(--text)); font: inherit; font-size: .86rem; font-weight: 800; box-shadow: none; cursor: pointer; }
 .leave-moment-tabs button:hover:not(.active) { background: color-mix(in srgb, var(--type-color) 10%, var(--surface-high, #fff)); }
 .leave-moment-tabs button.active { border-color: color-mix(in srgb, var(--type-color) 55%, #1f2a33); background: color-mix(in srgb, var(--type-color) 55%, #1f2a33); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--type-color) 35%, transparent); }
+/* Au-dessus du planning, pendant une demande : la durée des dates qu'on va toucher. */
+.planning-request-duration { margin-bottom: 12px; padding: 10px 12px 12px; border: 1px solid #e3d9cf; border-radius: 16px; background: var(--surface-high, #fff); }
+.planning-request-duration .leave-moment-tabs { margin-top: 0; border-top: 0; padding-top: 0; }
 /* Le matin ou l'après-midi : les heures posées, sous la durée. */
 .leave-moment-hours { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
 .leave-moment-hours .clock-time-field { gap: 4px; }
