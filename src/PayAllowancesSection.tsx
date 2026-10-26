@@ -10,6 +10,7 @@ import {
   s,
   shortDate,
   sundayAllowance,
+  sundayCountLabel,
   type HolidayPay,
 } from "./planningLogic";
 
@@ -36,7 +37,7 @@ export type PayAllowancesModel = {
   sundaysScheduledPast: number;
   /** Les dimanches travaillés de l'année, dans l'ordre. `past` distingue ceux
    *  déjà faits de ceux que le cycle programme encore. */
-  sundays: Array<{ key: string; past: boolean }>;
+  sundays: Array<{ key: string; past: boolean; share: number }>;
   tier: { label: string };
   holidays: HolidayAllowanceItem[];
   cancelledHolidays: CancelledHolidayItem[];
@@ -130,7 +131,6 @@ export function PayAllowancesSection({
      résumé, et on ne déroule les dates que si on vient les vérifier. */
   const [sundayListOpen, setSundayListOpen] = useState(false);
   const [openedPrime, setOpenedPrime] = useState("");
-  const sundaysDone = allowances.sundays.filter((item) => item.past);
   /* Les fériés payés sur cette paie dont la compensation reste à choisir. */
   const holidaysToDecide = [...allowances.holidays, ...allowances.compensated].filter((item) => {
     if (item.choice) return false;
@@ -142,7 +142,7 @@ export function PayAllowancesSection({
     {
       label: "Dimanches",
       quantity: monthPay?.sundayCount
-        ? `${monthPay.sundayCount} dimanche${s(monthPay.sundayCount)} versé${s(monthPay.sundayCount)} sur cette paie`
+        ? `${sundayCountLabel(monthPay.sundayCount)} dimanche${s(monthPay.sundayCount)} versé${s(monthPay.sundayCount)} sur cette paie`
         : "Aucun dimanche versé sur cette paie",
       amount: monthPay?.sunday || 0,
     },
@@ -292,12 +292,12 @@ export function PayAllowancesSection({
           <header>
             <span>Dimanches {allowances.year}</span>
             <strong>
-              {allowances.sundayDone} <em>faits</em> · {allowances.sundayLeft}{" "}
+              {sundayCountLabel(allowances.sundayDone)} <em>faits</em> · {sundayCountLabel(allowances.sundayLeft)}{" "}
               <em>à venir</em>
             </strong>
           </header>
           <p className="allowance-note">
-            {allowances.sundayDone} dimanche{s(allowances.sundayDone)} effectué{s(allowances.sundayDone)} sur {allowances.sundaysScheduledPast}{" "}
+            {sundayCountLabel(allowances.sundayDone)} dimanche{s(allowances.sundayDone)} effectué{s(allowances.sundayDone)} sur {allowances.sundaysScheduledPast}{" "}
             à ce jour
           </p>
           <table className="allowance-table">
@@ -336,7 +336,7 @@ export function PayAllowancesSection({
             </tbody>
           </table>
           <p className="allowance-note">
-            {allowances.sundayCount} dimanches sur l’année.{" "}
+            {sundayCountLabel(allowances.sundayCount)} dimanches sur l’année.{" "}
             {sundayTotal.unpaid
               ? `${sundayTotal.unpaid} au-delà du ${SUNDAY_ALLOWANCE.paidUntil}e : travaillés pour rien.`
               : `Plafond à ${SUNDAY_ALLOWANCE.paidUntil}, vous restez en dessous.`}
@@ -360,9 +360,9 @@ export function PayAllowancesSection({
               <strong>Détails des dimanches</strong>
               <small>
                 {allowances.sundays.length
-                  ? `${allowances.sundays.length} dimanche${s(allowances.sundays.length)} · ${sundaysDone.length} fait${s(sundaysDone.length)}${
-                      allowances.sundays.length > sundaysDone.length
-                        ? `, ${allowances.sundays.length - sundaysDone.length} à venir`
+                  ? `${sundayCountLabel(allowances.sundayCount)} dimanche${s(allowances.sundayCount)} · ${sundayCountLabel(allowances.sundayDone)} fait${s(allowances.sundayDone)}${
+                      allowances.sundayLeft > 0
+                        ? `, ${sundayCountLabel(allowances.sundayLeft)} à venir`
                         : ""
                     }`
                   : "Aucun dimanche travaillé"}

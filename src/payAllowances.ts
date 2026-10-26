@@ -43,6 +43,25 @@ type CalendarContext = {
   recoveryUses?: ReadonlyArray<{ date: string }>;
 };
 
+/** Le nombre de dimanches d'une liste, demis compris. */
+export function shareTotal(items: ReadonlyArray<{ share: number }>) {
+  return items.reduce((total, item) => total + item.share, 0);
+}
+
+/** La part de chaque dimanche payée un par un : celle qui tombe entre le
+ *  onzième et le trente-et-unième, en comptant les demis. */
+function paidShares<T extends { share: number }>(items: T[]) {
+  let position = 0;
+  return items
+    .map((item) => {
+      const start = position;
+      position += item.share;
+      const portion = Math.max(0, Math.min(position, SUNDAY_ALLOWANCE.paidUntil) - Math.max(start, SUNDAY_ALLOWANCE.flatUntil));
+      return { item, portion };
+    })
+    .filter(({ portion }) => portion > 0);
+}
+
 /** Dimanches, fériés et fériés compensés d'une année, congés et
  *  récupérations déduits. */
 export function collectWorkedDays({
@@ -66,7 +85,18 @@ export function collectWorkedDays({
         key >= period.from &&
         key <= period.to,
     );
-  const sundays: Array<{ key: string; rank: number; past: boolean }> = [];
+  /** Part d'un dimanche encore travaillée : 1, ou 0,5 quand une seule
+   *  demi-journée de congé y est posée — la paie le compte alors par moitié.
+   *  Un congé de toute la journée, deux demi-journées, une récupération ou
+   *  une formation le retirent. */
+  const sundayShare = (key: string) => {
+    if (entries[key]?.leave || recoveryDates.has(key)) return 0;
+    const dayPeriods = periods.filter((period) => key >= period.from && key <= period.to);
+    if (!dayPeriods.length) return 1;
+    if (dayPeriods.some((period) => period.leaveType !== "half")) return 0;
+    return dayPeriods.length >= 2 ? 0 : 0.5;
+  };
+  const sundays: Array<{ key: string; rank: number; past: boolean; share: number }> = [];
   const holidays: Array<{
     key: string;
     name: string;
@@ -99,8 +129,9 @@ export function collectWorkedDays({
         if (info.holiday) {
           if (onLeave(key)) cancelledHolidays.push({ key, name: info.holiday });
           else holidays.push({ key, name: info.holiday, choice: entries[key]?.holidayPay || "", past: key <= todayKey });
-        } else if (!onLeave(key)) {
-          sundays.push({ key, rank: sundays.length + 1, past: key <= todayKey });
+        } else {
+          const share = sundayShare(key);
+          if (share > 0) sundays.push({ key, rank: sundays.length + 1, past: key <= todayKey, share });
         }
         continue;
       }
@@ -115,6 +146,11 @@ export function collectWorkedDays({
       }
       if (!info.holiday && date.getDay() === 0 && key <= todayKey)
         sundaysScheduledPast++;
+      if (!info.holiday && date.getDay() === 0) {
+        const share = sundayShare(key);
+        if (share > 0) sundays.push({ key, rank: sundays.length + 1, past: key <= todayKey, share });
+        continue;
+      }
       if (onLeave(key)) {
         if (info.holiday)
           cancelledHolidays.push({ key, name: info.holiday });
@@ -129,8 +165,6 @@ export function collectWorkedDays({
         });
         continue;
       }
-      if (date.getDay() === 0)
-        sundays.push({ key, rank: sundays.length + 1, past: key <= todayKey });
     }
   // Les personnes qui commencent à utiliser l'application en cours d'année
   // peuvent reprendre uniquement un nombre de dimanches déjà posés, sans
@@ -146,7 +180,7 @@ export function collectWorkedDays({
     octNov: manual.sundayLeaveOctNov,
     dec: manual.sundayLeaveDec,
   });
-  const worked = adjustedSundays.length;
+  const worked = shareTotal(adjustedSundays);
   const decided = holidays.filter((item) => item.choice);
   return {
     year,
@@ -231,25 +265,19 @@ export function computePayAllowances({
   // Seuls les dimanches du onzième au trente-et-unième se versent ; les
   // suivants ne sont pas majorés, ils n'apparaissent donc sur aucune paie.
   const payoutMonth = [6, 9, 11, 0];
-  for (const sunday of current.sundays.slice(
-    SUNDAY_ALLOWANCE.flatUntil,
-    SUNDAY_ALLOWANCE.paidUntil,
-  )) {
+  for (const { item: sunday, portion } of paidShares(current.sundays)) {
     const order = sundayPayslip(sunday.key).order;
     // Décembre relève de la paie de janvier de l'année suivante : hors de
     // l'année affichée, il n'est pas montré ici.
     if (order === 3) continue;
     const slot = monthly[payoutMonth[order]];
-    slot.sunday += SUNDAY_ALLOWANCE.perSunday;
-    slot.sundayCount++;
+    slot.sunday += portion * SUNDAY_ALLOWANCE.perSunday;
+    slot.sundayCount += portion;
   }
-  for (const sunday of previous.sundays.slice(
-    SUNDAY_ALLOWANCE.flatUntil,
-    SUNDAY_ALLOWANCE.paidUntil,
-  )) {
+  for (const { item: sunday, portion } of paidShares(previous.sundays)) {
     if (sundayPayslip(sunday.key).order !== 3) continue;
-    monthly[0].sunday += SUNDAY_ALLOWANCE.perSunday;
-    monthly[0].sundayCount++;
+    monthly[0].sunday += portion * SUNDAY_ALLOWANCE.perSunday;
+    monthly[0].sundayCount += portion;
   }
   // Un dimanche manqué sur un bulletin, reporté depuis « Vérifier mon
   // bulletin » : la paie a un délai de traitement, il n'apparaît qu'au
@@ -323,7 +351,7 @@ export function computePayAllowances({
       0,
     );
   }
-  const done = current.sundays.filter((item) => item.past).length;
+  const done = shareTotal(current.sundays.filter((item) => item.past));
   const months = monthly
     .map((slot, index) => ({
       ...slot,
@@ -341,10 +369,10 @@ export function computePayAllowances({
   return {
     ...current,
     sundayDone: done,
-    sundayLeft: current.sundays.length - done,
+    sundayLeft: current.sundayCount - done,
     // Le socle se lit sur les dimanches déjà faits. Tant qu'aucun n'est
     // travaillé, on annonce le premier socle plutôt que rien.
-    tier: sundayTierFor(Math.max(1, done)),
+    tier: sundayTierFor(Math.max(1, Math.ceil(done))),
     // Ceux de l'année précédente, ceux qui se paient en février : la carte
     // les liste, l'année affichée ne les verra qu'un an plus tard.
     compensatedPrevious: previous.compensated,

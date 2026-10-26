@@ -76,6 +76,32 @@ describe("report des dimanches manquants", () => {
     expect(kept).not.toContain(third);
   });
 
+  it("compte un demi-dimanche pour une demi-journée posée un dimanche, comme la paie", () => {
+    const base = { year: 2026, today: new Date(2026, 11, 31), entries: {}, group: 2, manualAdjustments: undefined, baseSalary: 2000, sundayCarryover: 0, sundayCarryoverYear: undefined, sundayCarryoverMonth: undefined, sundayCarryoverFromYear: undefined, sundayCarryoverFromMonth: undefined };
+    const full = computePayAllowances({ ...base, periods: [] });
+    // Un dimanche de septembre, payé un par un sur la paie d'octobre.
+    const september = full.sundays.filter((item) => item.key.startsWith("2026-09"));
+    const target = september[september.length - 1].key;
+    const half = computePayAllowances({
+      ...base,
+      periods: [{ id: "rtt", from: target, to: target, leaveType: "half", halfMoment: "morning", halfBalance: "rtt", group: 2 }] as never,
+    });
+    expect(half.sundays.find((item) => item.key === target)?.share).toBe(0.5);
+    expect(half.sundayCount).toBe(full.sundayCount - 0.5);
+    const october = (allowances: typeof full) => allowances.monthly.find((slot) => slot.index === 9)!;
+    expect(october(half).sundayCount).toBe(october(full).sundayCount - 0.5);
+    expect(october(half).sunday).toBeCloseTo(october(full).sunday - 54.93 / 2, 2);
+    // Le matin et l'après-midi posés : le dimanche n'est plus travaillé.
+    const both = computePayAllowances({
+      ...base,
+      periods: [
+        { id: "m", from: target, to: target, leaveType: "half", halfMoment: "morning", group: 2 },
+        { id: "a", from: target, to: target, leaveType: "half", halfMoment: "afternoon", group: 2 },
+      ] as never,
+    });
+    expect(both.sundays.map((item) => item.key)).not.toContain(target);
+  });
+
   it("ajoute un férié compensé au solde de récupération une fois sa date passée", () => {
     const days = Array.from({ length: 365 }, (_, index) => new Date(2026, 0, 1 + index, 12));
     const compensated = dateKey(days.find((date) => getDayInfo(date, 2).holiday && getDayInfo(date, 2).kind === "off")!);

@@ -315,6 +315,8 @@ describe("indemnité dominicale", () => {
   it("retire automatiquement les dimanches absents du bulletin", () => {
     expect(unpaidSundays(6, 4)).toBe(2);
     expect(unpaidSundays(4, 6)).toBe(0);
+    // Un bulletin qui paie 6,5 dimanches sur 7 attendus en laisse un demi.
+    expect(unpaidSundays(7, 6.5)).toBe(0.5);
   });
 
   it("ne verse que le forfait en deçà du onzième dimanche", () => {

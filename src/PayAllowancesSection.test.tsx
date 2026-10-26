@@ -13,8 +13,8 @@ const props = {
     sundaysScheduledPast: 13,
     sundays: [
       ...["01-04", "01-25", "02-15", "03-08", "03-29", "04-19", "05-10", "05-31", "06-21", "07-12", "08-02", "08-23"]
-        .map((day) => ({ key: `2026-${day}`, past: true })),
-      ...["09-13", "10-04", "10-25"].map((day) => ({ key: `2026-${day}`, past: false })),
+        .map((day) => ({ key: `2026-${day}`, past: true, share: 1 })),
+      ...["09-13", "10-04", "10-25"].map((day) => ({ key: `2026-${day}`, past: false, share: 1 })),
     ],
     tier: { label: "11 à 15" },
     holidays: [{ key: "2026-07-14", name: "Fête nationale", choice: "prime" as const }],

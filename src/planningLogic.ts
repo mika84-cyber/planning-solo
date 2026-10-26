@@ -541,7 +541,15 @@ export const SUNDAY_ALLOWANCE = {
  * payés. Le bulletin fait foi pour le net du mois ; les jours manquants restent
  * dus et seront reportés sur le prochain rappel. */
 export function unpaidSundays(expected: number, paid: number) {
-  return Math.max(0, Math.round(expected) - Math.round(paid));
+  // Les dimanches se comptent par moitié : une demi-journée posée un dimanche
+  // n'en laisse qu'un demi à payer.
+  const half = (value: number) => Math.round(value * 2) / 2;
+  return Math.max(0, half(expected) - half(paid));
+}
+
+/** « 6,5 » : un nombre de dimanches, demi compris. */
+export function sundayCountLabel(count: number) {
+  return count.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 }
 
 /** Coefficients de l'indemnité de jour férié travaillé, à multiplier par le

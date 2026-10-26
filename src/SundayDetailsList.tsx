@@ -1,6 +1,7 @@
 import { euros } from "./appModel";
 import type { PayAllowancesModel } from "./PayAllowancesSection";
-import { MONTHS, SUNDAY_ALLOWANCE, s, sundayPayslip } from "./planningLogic";
+import { shareTotal } from "./payAllowances";
+import { MONTHS, SUNDAY_ALLOWANCE, s, sundayCountLabel, sundayPayslip } from "./planningLogic";
 
 /** Le détail des dimanches de l'année, groupés par paie puis par mois : une
  *  pastille par dimanche, à la couleur de ce qu'il rapporte. */
@@ -38,10 +39,11 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
             const slot = order < 3 ? allowances.monthly?.find((item) => item.index === [6, 9, 11][order]) : undefined;
             const reported = Math.min(slot?.reported || 0, paidSundays.length);
             const carried = slot?.carryover || 0;
-            const reportedKeys = new Set(paidSundays.slice(paidSundays.length - reported).map((item) => item.key));
+            const reportedKeys = new Set(paidSundays.slice(paidSundays.length - Math.ceil(reported)).map((item) => item.key));
             const kept = paidSundays.filter((item) => !reportedKeys.has(item.key));
-            const paidHere = kept.length + carried;
-            const paidUpcoming = kept.filter((item) => !item.past).length;
+            // Un demi-dimanche compte pour moitié, dans le nombre comme dans le montant.
+            const paidHere = shareTotal(kept) + carried;
+            const paidUpcoming = shareTotal(kept.filter((item) => !item.past));
             const moves = `${reported && slot?.reportedTo ? ` · ${reported} reporté${s(reported)} sur ${MONTHS[slot.reportedTo.month]}` : ""}${
               carried && slot?.carriedFrom ? ` · dont ${carried} reporté${s(carried)} ${/^[aeio]/.test(MONTHS[slot.carriedFrom.month]) ? "d’" : "de "}${MONTHS[slot.carriedFrom.month]}` : ""
             }`;
@@ -55,7 +57,7 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
                 <div className="sunday-done-group-heading">
                   <span>
                     <strong>{payslipLabel.charAt(0).toUpperCase() + payslipLabel.slice(1)}</strong>
-                    <small>{paid.length} dimanche{s(paid.length)} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
+                    <small>{sundayCountLabel(shareTotal(paid))} dimanche{s(shareTotal(paid))} · n° {firstRank}{lastRank > firstRank ? ` à ${lastRank}` : ""}</small>
                   </span>
                   <b className={`sunday-done-group-amount ${amountTone}`}>{amountLabel}</b>
                 </div>
@@ -63,11 +65,11 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
                   {reported && !paidHere
                     ? `Aucun payé sur cette paie${moves}`
                     : paidHere
-                    ? `${paidHere} payé${s(paidHere)} sur cette paie${
+                    ? `${sundayCountLabel(paidHere)} payé${s(paidHere)} sur cette paie${
                         paidUpcoming
                           ? paidUpcoming === paidHere
                             ? " · à venir"
-                            : ` · ${paidHere - paidUpcoming} fait${s(paidHere - paidUpcoming)}, ${paidUpcoming} à venir`
+                            : ` · ${sundayCountLabel(paidHere - paidUpcoming)} fait${s(paidHere - paidUpcoming)}, ${sundayCountLabel(paidUpcoming)} à venir`
                           : ""
                       }${moves}`
                     : hasFlat
@@ -92,10 +94,11 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
                                 return (
                                   <span
                                     key={item.key}
-                                    className={`sunday-day ${kind}${moved ? " carried" : ""}${item.past ? "" : " upcoming"}`}
-                                    title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${moved ? `reporté sur ${MONTHS[moved.month]} ${moved.year}` : kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}${item.past ? "" : " · à venir"}`}
+                                    className={`sunday-day ${kind}${moved ? " carried" : ""}${item.past ? "" : " upcoming"}${item.share < 1 ? " half" : ""}`}
+                                    title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${moved ? `reporté sur ${MONTHS[moved.month]} ${moved.year}` : kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}${item.share < 1 ? " · demi-journée, compté pour moitié" : ""}${item.past ? "" : " · à venir"}`}
                                   >
                                     {Number(item.key.slice(8, 10))}
+                                    {item.share < 1 ? <sup>½</sup> : null}
                                   </span>
                                 );
                               })}

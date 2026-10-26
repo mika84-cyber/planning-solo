@@ -23,7 +23,7 @@ import {
   summarizePayslipReview,
 } from "./payslipReview";
 import { euros, type PayCalibrationRegime, type PayProfile } from "./appModel";
-import { MONTHS, SUNDAY_ALLOWANCE, s } from "./planningLogic";
+import { MONTHS, SUNDAY_ALLOWANCE, s, sundayCountLabel } from "./planningLogic";
 
 /** La paie du mois affiché, telle que l'assemble l'écran de paie. */
 type MonthPaySummary = {
@@ -212,18 +212,18 @@ export function buildPayContent({
     monthPay.sundayCount || monthPay.reported
       ? {
           key: "sundays",
-          label: `Dimanches (${monthPay.sundayCount})`,
+          label: `Dimanches (${sundayCountLabel(monthPay.sundayCount)})`,
           // Les dimanches se paient en juillet, octobre, décembre et janvier :
           // un dimanche manquant attend la paie primée suivante, qu'on nomme.
           detail: monthPay.carryover
             ? monthPay.carriedFrom
-              ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} de la paie ${ofPayMonth(payMonthKey(monthPay.carriedFrom.year, monthPay.carriedFrom.month))}`
-              : `dont ${monthPay.carryover} reporté${s(monthPay.carryover)} d’une paie précédente`
+              ? `dont ${sundayCountLabel(monthPay.carryover)} reporté${s(monthPay.carryover)} de la paie ${ofPayMonth(payMonthKey(monthPay.carriedFrom.year, monthPay.carriedFrom.month))}`
+              : `dont ${sundayCountLabel(monthPay.carryover)} reporté${s(monthPay.carryover)} d’une paie précédente`
             : monthPay.reported
               ? monthPay.reportedTo
                 ? `${monthPay.reported} pas encore payé${s(monthPay.reported)}, reporté${s(monthPay.reported)} sur la paie ${ofPayMonth(payMonthKey(monthPay.reportedTo.year, monthPay.reportedTo.month))}`
                 : `${monthPay.reported} pas encore payé${s(monthPay.reported)}, reporté${s(monthPay.reported)} sur la paie primée suivante`
-              : `${monthPay.sundayCount} × ${euros(SUNDAY_ALLOWANCE.perSunday)}`,
+              : `${sundayCountLabel(monthPay.sundayCount)} × ${euros(SUNDAY_ALLOWANCE.perSunday)}`,
           amount: monthPay.sunday,
         }
       : null,
@@ -565,7 +565,7 @@ export function buildPayContent({
         ? { key: "cia", label: "CIA", detail: "complément indemnitaire annuel", amount: monthPay.cia }
         : null,
       monthPay.sundayCount
-        ? { key: "sundays", label: `Dimanches (${monthPay.sundayCount})`, detail: monthPay.carryover ? `dont ${monthPay.carryover} reporté${s(monthPay.carryover)}` : "prime calculée", amount: monthPay.sunday }
+        ? { key: "sundays", label: `Dimanches (${sundayCountLabel(monthPay.sundayCount)})`, detail: monthPay.carryover ? `dont ${sundayCountLabel(monthPay.carryover)} reporté${s(monthPay.carryover)}` : "prime calculée", amount: monthPay.sunday }
         : null,
       monthPay.holidayCount
         ? { key: "holidays", label: `Jours fériés (${monthPay.holidayCount})`, detail: monthPay.holiday ? "compensation choisie" : "compensation à décider", amount: monthPay.holiday || null }

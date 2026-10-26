@@ -308,6 +308,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 - `src/planningLogic.ts` : cycle des groupes, jours, dates, libellés, congés,
   dimanches et primes de jours fériés.
+- Demi-dimanche : une seule demi-journée de congé posée un dimanche le
+  laisse compter pour moitié (`share: 0.5` dans `collectWorkedDays` de
+  `src/payAllowances.ts`), comme sur la paie ; la part payée un par un se
+  calcule demis compris (`paidShares`), et `unpaidSundays` repère un demi
+  dimanche manquant sur un bulletin. Les récupérations retirent toujours le
+  dimanche entier.
 - `src/appModel.ts` : types principaux et petits utilitaires partagés.
 - Demi-journées d’ASA et de Divers : `leaveType: "half"` avec `halfBalance`
   `exceptional` ou `other` (`isStoredHalfBalance`, `isCountedOnlyHalfBalance`
