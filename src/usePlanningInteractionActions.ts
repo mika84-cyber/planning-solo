@@ -100,6 +100,9 @@ type PlanningInteractionActionsOptions = {
   /** Solde proposé pour une nouvelle demi-journée à cette date : CA, puis
    *  RTT, puis fractionnement, selon ce qu'il reste. */
   proposeHalfBalance?: (date: string) => HalfBalance;
+  /** CA, RTT ou fractionnement : la date en journée entière ou en
+   *  demi-journée, selon la durée choisie dans le panneau. */
+  leaveDay?: (date: string, type: SelectionType) => SelectedDay;
 };
 
 export function usePlanningInteractionActions({
@@ -121,6 +124,7 @@ export function usePlanningInteractionActions({
   notify,
   isExchangeDate = () => false,
   proposeHalfBalance = () => "annual",
+  leaveDay = (date, type) => ({ date, type }),
 }: PlanningInteractionActionsOptions) {
   const {
     dayDate,
@@ -415,6 +419,7 @@ export function usePlanningInteractionActions({
       workQuota,
     });
     setActiveType(start.initialType);
+    planningUi.setLeaveMoment("full");
     setSickRequest(start.sickRequest);
     const seedDate = Object.keys(start.selections)[0] || null;
     // Divers : la date touchée ouvre d'abord le choix journée entière, matin
@@ -481,7 +486,7 @@ export function usePlanningInteractionActions({
     }
     setSelections((current) => ({
       ...current,
-      [key]: { date: key, type: activeType },
+      [key]: leaveDay(key, activeType),
     }));
   }
   function handleDay(date: Date) {

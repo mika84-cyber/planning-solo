@@ -4,6 +4,8 @@ import { RequestValidationSummary, type LeaveRemainingByYear } from "./RequestVa
 import type { RequestKind, SelectedDay } from "./appModel";
 import type { WorkQuota } from "./overtime";
 import {
+  DURATION_LEAVE_TYPES,
+  type LeaveMoment,
   TYPE_COLORS,
   TYPE_LABELS,
   type SelectionType,
@@ -28,6 +30,9 @@ export type RequestSelectionPanelProps = {
   selectionBlocked: boolean;
   onCancel: () => void;
   onSelectLeaveType: (type: SelectionType) => void;
+  /** CA, RTT, fractionnement : journée entière, matin ou après-midi. */
+  leaveMoment?: LeaveMoment;
+  onSelectLeaveMoment?: (moment: LeaveMoment) => void;
   onSelectRecoveryType: (type: SelectionType) => void;
   onValidateAndOpenForm: () => void;
   onSaveToPlanning: () => void;
@@ -51,6 +56,8 @@ export function RequestSelectionPanel({
   selectionBlocked,
   onCancel,
   onSelectLeaveType,
+  leaveMoment = "full",
+  onSelectLeaveMoment,
   onSelectRecoveryType,
   onValidateAndOpenForm,
   onSaveToPlanning,
@@ -184,12 +191,24 @@ export function RequestSelectionPanel({
           <section className="request-option-group request-option-group-primary">
             <h3>Choix courants</h3>
             <div className="type-tabs" role="group" aria-label="Choix courants">
-              {(["annual", "half", "rtt", "fraction"] as SelectionType[]).map((type) => (
+              {(["annual", "rtt", "fraction"] as SelectionType[]).map((type) => (
                 <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as CSSProperties} onClick={() => onSelectLeaveType(type)} key={type}>
                   <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
                 </button>
               ))}
             </div>
+            {/* CA, RTT, fractionnement : en journée entière ou en
+                demi-journée, pour les dates touchées ensuite. */}
+            {(DURATION_LEAVE_TYPES as readonly string[]).includes(activeType) && onSelectLeaveMoment ? (
+              <div className="leave-moment-tabs" role="group" aria-label="Durée du congé" style={{ "--type-color": TYPE_COLORS[activeType] } as CSSProperties}>
+                <span className="leave-moment-label" aria-hidden="true">Durée</span>
+                {([["full", "Journée"], ["morning", "Matin"], ["afternoon", "Après-midi"]] as const).map(([moment, label]) => (
+                  <button type="button" key={moment} className={leaveMoment === moment ? "active" : undefined} aria-pressed={leaveMoment === moment} onClick={() => onSelectLeaveMoment(moment)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </section>
           <details className="request-advanced-types" open={(["childcare", "exceptional", "cet"] as SelectionType[]).includes(activeType)}>
             <summary><span><strong>Autres types de congé</strong><small>Garde d’enfant, jour exceptionnel ou CET</small></span><b aria-hidden="true">⌄</b></summary>

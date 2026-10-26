@@ -266,7 +266,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   carte des primes), `src/useWorkProfileActions.ts` (groupe, statut, quotité,
   horaires habituels), `src/useLeaveBalances.ts` (soldes de l’année, report
   au 30 avril, soldes par type et par année, CET, détail d’un solde),
-  `src/useRequestTypeSelection.ts` (type choisi au départ d’une demande),
+  `src/useRequestTypeSelection.ts` (type choisi au départ d’une demande ;
+  CA, RTT et fractionnement en journée entière, matin ou après-midi :
+  `leaveMoment`, `selectLeaveMoment`, `leaveDay`, sélecteur « Durée du
+  congé » de `RequestSelectionPanel`),
   `src/useWorkedDaysOverview.ts` (jours travaillés, prochain extra, aperçu du
   jour), `src/useMecenatDraftCheck.ts` (mécénat en cours de saisie),
   `src/useDayDetailData.ts` (ce que la fiche du jour montre),

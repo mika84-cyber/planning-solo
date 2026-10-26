@@ -62,7 +62,7 @@ type Props = {
     ReturnType<typeof usePlanningUiState>,
     | "recoveryRangeSelecting" | "recoveryRangeDates" | "rangeSelecting" | "separatePeople" | "wishMoment"
     | "rangeLeaveType" | "separateDates" | "savingRange" | "noteSelecting" | "noteColor" | "noteText" | "noteDates"
-    | "savingDay" | "requestKind" | "sickRequest" | "activeType" | "setActiveType" | "savingRequest"
+    | "savingDay" | "requestKind" | "sickRequest" | "activeType" | "setActiveType" | "leaveMoment" | "savingRequest"
   >;
   workTime: Pick<
     ReturnType<typeof useWorkTimeUiState>,
@@ -72,7 +72,7 @@ type Props = {
   request: Pick<RequestSelectionProps, "selectedList" | "selectedCounts">
     & Pick<ReturnType<typeof useLeaveBalances>, "leaveRemainingByType" | "leaveRemainingByYear" | "leaveSelectionOverBalance">
     & Pick<ReturnType<typeof useMonthPayEstimate>, "recoveryBalance">
-    & Pick<ReturnType<typeof useRequestTypeSelection>, "selectLeaveType" | "selectRecoveryType">
+    & Pick<ReturnType<typeof useRequestTypeSelection>, "selectLeaveType" | "selectLeaveMoment" | "selectRecoveryType">
     & Pick<ReturnType<typeof usePlanningRequestActions>, "validateAndOpenForm" | "saveRequestToPlanning">
     & {
       recoverySelectionInsufficient: boolean;
@@ -116,14 +116,14 @@ export function PlanningWorkspace({
   const {
     recoveryRangeSelecting, recoveryRangeDates, rangeSelecting, separatePeople, wishMoment,
     rangeLeaveType, separateDates, savingRange, noteSelecting, noteColor, noteText, noteDates,
-    savingDay, requestKind, sickRequest, activeType, setActiveType, savingRequest,
+    savingDay, requestKind, sickRequest, activeType, setActiveType, leaveMoment, savingRequest,
   } = planning;
   const { recoveryDraft, setRecoveryDraft, savingOvertime, recoveryDatePicking, setRecoveryDatePicking, setRecoveryDialogOpen } = workTime;
   const { monthWorkedDays, remainingWorkedDays } = workedDays;
   const {
     selectedList, selectedCounts, leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
     recoveryBalance, recoverySelectionInsufficient, recoverySelectionIncomplete,
-    cancelRequest, selectLeaveType, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
+    cancelRequest, selectLeaveType, selectLeaveMoment, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
   } = request;
   const {
     calendarDeleteMode, calendarDeleteDates, deletingMultipleDates,
@@ -259,6 +259,8 @@ export function PlanningWorkspace({
         }
         onCancel={cancelRequest}
         onSelectLeaveType={selectLeaveType}
+        leaveMoment={leaveMoment}
+        onSelectLeaveMoment={selectLeaveMoment}
         onSelectRecoveryType={selectRecoveryType}
         onValidateAndOpenForm={() => void validateAndOpenForm()}
         onSaveToPlanning={() => void saveRequestToPlanning()}

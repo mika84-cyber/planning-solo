@@ -103,6 +103,11 @@ export function automaticHalfBalance(
   return order.find((type) => (remaining[type] ?? 0) - (pending[type] ?? 0) >= 0.5) ?? "annual";
 }
 /** Le solde d'une demi-journée : celui enregistré, sinon les congés annuels. */
+/** Les congés qui se posent en journée entière ou en demi-journée, au choix
+ *  dans le panneau de la demande. */
+export const DURATION_LEAVE_TYPES = ["annual", "rtt", "fraction"] as const;
+export type LeaveMoment = "full" | HalfMoment;
+
 export function halfBalanceOf(item: { halfBalance?: string }): HalfBalance {
   return isStoredHalfBalance(item.halfBalance) ? item.halfBalance : "annual";
 }

@@ -462,7 +462,7 @@ export default function Home() {
       ),
     [selectedList],
   );
-  const { selectRecoveryType, proposeHalfBalance, selectLeaveType } = useRequestTypeSelection({
+  const { selectRecoveryType, proposeHalfBalance, selectLeaveType, selectLeaveMoment, leaveDay } = useRequestTypeSelection({
     planningUi, formProfile, now, periods, group, selectedList,
   });
 
@@ -587,6 +587,7 @@ export default function Home() {
     notify,
     isExchangeDate: (key) => Boolean(entries[key]?.exchangeId),
     proposeHalfBalance: (key) => proposeHalfBalance(key, Object.values(selections)),
+    leaveDay: (key, type) => leaveDay(key, type),
   });
   const payMonthNavigation = usePayMonthNavigation({ payUi, allowancesSwipeStart });
   const { changeGroup, changeStatus, changeWorkQuota, changeWorkSchedule, saveCalculationProfile } = useWorkProfileActions({
@@ -1080,7 +1081,7 @@ export default function Home() {
         request={{
           selectedList, selectedCounts, leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
           recoveryBalance, recoverySelectionInsufficient, recoverySelectionIncomplete,
-          cancelRequest, selectLeaveType, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
+          cancelRequest, selectLeaveType, selectLeaveMoment, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
         }}
         cleanup={{
           calendarDeleteMode, calendarDeleteDates, deletingMultipleDates,

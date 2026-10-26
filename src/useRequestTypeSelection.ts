@@ -1,14 +1,14 @@
 import type { FormProfile, LeavePeriod, SelectedDay } from "./appModel";
 import { computeLeaveStats } from "./leaveStats";
 import { DEFAULT_WORK_SCHEDULE, usableWorkSchedule, workScheduleHalfTimes } from "./overtime";
-import { automaticHalfBalance, type SelectionType } from "./planningLogic";
+import { automaticHalfBalance, DURATION_LEAVE_TYPES, halfBalanceOf, type LeaveMoment, type SelectionType, type StoredHalfBalance } from "./planningLogic";
 import { requestLeaveBalanceUsage } from "./RequestValidationSummary";
 import type { usePlanningUiState } from "./usePlanningUiState";
 
 type RequestTypeSelectionOptions = {
   planningUi: Pick<
     ReturnType<typeof usePlanningUiState>,
-    "setActiveType" | "requestSeedDate" | "setSelections" | "setTimeStart" | "setTimeEnd" | "setTimeDate" | "setTimeHalfBalance"
+    "activeType" | "setActiveType" | "leaveMoment" | "setLeaveMoment" | "requestSeedDate" | "setSelections" | "setTimeStart" | "setTimeEnd" | "setTimeDate" | "setTimeHalfBalance"
   >;
   formProfile: FormProfile | null;
   now: Date;
@@ -22,7 +22,29 @@ type RequestTypeSelectionOptions = {
  *  date de départ avec les horaires habituels, et propose le solde d'une
  *  demi-journée. */
 export function useRequestTypeSelection({ planningUi, formProfile, now, periods, group, selectedList }: RequestTypeSelectionOptions) {
-  const { setActiveType, requestSeedDate, setSelections, setTimeStart, setTimeEnd, setTimeDate, setTimeHalfBalance } = planningUi;
+  const { activeType, setActiveType, leaveMoment, setLeaveMoment, requestSeedDate, setSelections, setTimeStart, setTimeEnd, setTimeDate, setTimeHalfBalance } = planningUi;
+  const isDurationLeave = (type: SelectionType): type is (typeof DURATION_LEAVE_TYPES)[number] =>
+    (DURATION_LEAVE_TYPES as readonly string[]).includes(type);
+  /** Une date de CA, RTT ou fractionnement : journée entière, ou demi-journée
+   *  aux horaires habituels (le moment seul, sans horaires enregistrés), tirée
+   *  du même solde. */
+  function leaveDay(date: string, type: SelectionType, moment: LeaveMoment = leaveMoment): SelectedDay {
+    if (!isDurationLeave(type) || moment === "full") return { date, type };
+    const balance = type === "annual" ? {} : { halfBalance: type as StoredHalfBalance };
+    const schedule = usableWorkSchedule(formProfile?.workSchedule);
+    if (!schedule) return { date, type: "half", halfMoment: moment, ...balance };
+    const times = workScheduleHalfTimes(schedule, moment);
+    return { date, type: "half", start: times.start, end: times.end, ...balance };
+  }
+  /** Changer la durée change aussi les dates déjà choisies de ce congé. */
+  function selectLeaveMoment(moment: LeaveMoment) {
+    setLeaveMoment(moment);
+    if (!isDurationLeave(activeType)) return;
+    setSelections((current) => Object.fromEntries(Object.entries(current).map(([key, item]) => {
+      const same = item.type === activeType || (item.type === "half" && halfBalanceOf(item) === activeType);
+      return [key, same ? leaveDay(key, activeType, moment) : item];
+    })));
+  }
   function selectRecoveryType(type: SelectionType) {
     setActiveType(type);
     if (!requestSeedDate) return;
@@ -79,7 +101,7 @@ export function useRequestTypeSelection({ planningUi, formProfile, now, periods,
           ? hasSchedule
             ? { date: requestSeedDate, type, start: halfTimes.start, end: halfTimes.end }
             : { date: requestSeedDate, type, halfMoment: "morning" }
-          : { date: requestSeedDate, type },
+          : leaveDay(requestSeedDate, type),
       };
     });
     if (type !== "half") return;
@@ -89,5 +111,5 @@ export function useRequestTypeSelection({ planningUi, formProfile, now, periods,
     setTimeDate(requestSeedDate);
   }
 
-  return { selectRecoveryType, proposeHalfBalance, selectLeaveType };
+  return { selectRecoveryType, proposeHalfBalance, selectLeaveType, selectLeaveMoment, leaveDay };
 }
