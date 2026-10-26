@@ -352,9 +352,13 @@ describe("lecture du nombre de dimanches", () => {
       { label: "Prime unique", amount: 25, recall: false, fixed: false },
       { label: "Rappel prime", amount: 12.5, recall: true },
       { label: "Retenue maladie", amount: -8.5, recall: false, sick: true },
+      // Rappels d'heures sup et de mécénats : déjà dans l'estimation.
+      { label: "Heures sup. de nuit", amount: 16.09, recall: true },
+      { label: "MECENATS DES 23 ET 30 SEPTEMBRE 2026", amount: 171.75, recall: true },
     ];
     expect(fixedExtraTotal(lines)).toBe(40);
-    // Ponctuelle et rappel pour ce mois ; l'arrêt maladie est déjà calculé.
+    // Ponctuelle et rappel pour ce mois ; l'arrêt maladie, les heures sup et
+    // les mécénats sont déjà calculés.
     expect(oneOffExtraTotal(lines)).toBe(37.5);
   });
 

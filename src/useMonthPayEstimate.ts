@@ -10,7 +10,7 @@ import {
   type RecoveryUse,
 } from "./overtime";
 import { computePayAllowances, holidayRecoverySources } from "./payAllowances";
-import { payEstimateReadiness, type PayEstimateField } from "./payEstimate";
+import { estimatedIncomeTax, payEstimateReadiness, type PayEstimateField } from "./payEstimate";
 import { monthGross, strikeDeduction } from "./payMonth";
 import { SUNDAY_ALLOWANCE, dateKey, fromKey, getDayInfo } from "./planningLogic";
 import { sickLeaveSummaryForYear } from "./sickLeaveSummary";
@@ -327,7 +327,13 @@ export function useMonthPayEstimate({
           // et 2025 : la ligne « Titres repas carte » y est absente.
           const mealVouchers = monthPay.index === 11 ? 0 : mealVoucherDeduction;
           const netBeforeTax = roundCurrency(netFromGross + navigo - mealVouchers);
-          const incomeTax = roundCurrency(netBeforeTax * (pasRate / 100) * pasBaseAdjustment);
+          // Heures sup et mécénats, exonérés, sortent du net imposable.
+          const incomeTax = estimatedIncomeTax(
+            netBeforeTax,
+            pasRate,
+            pasBaseAdjustment,
+            overtimeForPayMonth.amount + mecenatForCurrentPayMonth.grossAmountCents / 100,
+          );
           return {
             netFromGross,
             estimatedContributions: roundCurrency(monthPay.gross - netFromGross),

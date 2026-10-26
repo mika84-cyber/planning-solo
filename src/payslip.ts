@@ -141,11 +141,16 @@ export function fixedExtraTotal(lines: PayslipExtraLine[] | undefined) {
 }
 
 /** Les lignes inconnues qui ne valent que pour le mois du bulletin : les
- *  rappels et celles que l'utilisateur a dites ponctuelles. */
+ *  rappels et celles que l'utilisateur a dites ponctuelles. Un rappel
+ *  d'heures sup ou de mécénats n'en est pas : l'estimation le compte déjà,
+ *  sur la paie qui suit le mois où ils ont été faits. */
+export function oneOffExtraLines(lines: PayslipExtraLine[] | undefined) {
+  return (lines || []).filter((line) =>
+    !isComputedVariableLabel(line.label) && (line.recall || (line.fixed === false && !isAutomaticExtraLine(line))));
+}
+
 export function oneOffExtraTotal(lines: PayslipExtraLine[] | undefined) {
-  const total = (lines || [])
-    .filter((line) => line.recall || (line.fixed === false && !isAutomaticExtraLine(line)))
-    .reduce((sum, line) => sum + line.amount, 0);
+  const total = oneOffExtraLines(lines).reduce((sum, line) => sum + line.amount, 0);
   return Math.round(total * 100) / 100;
 }
 

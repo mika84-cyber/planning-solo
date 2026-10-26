@@ -53,7 +53,7 @@ export function PaySectionScreen({
     isContractuel, confirmedContractuel, workQuota, payYear, hasPayValue,
     baseSalary, ifse, carenceDay, otherFixed, cia, ciaMonth, residenceAllowance,
     viewedPayRegime, netRatioFixed, netRatioVariable, payslipRateCalibration,
-    navigo, mealVoucherDeduction, pasRate,
+    navigo, mealVoucherDeduction, pasRate, pasBaseAdjustment,
     sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth,
   } = profile;
   const {
@@ -135,6 +135,7 @@ export function PaySectionScreen({
             pasRate,
             netRatioFixed,
             netRatioVariable,
+            pasBaseAdjustment,
             sundayCarryover,
             sundayCarryoverMonth,
             sundayCarryoverYear,

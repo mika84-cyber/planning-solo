@@ -16,7 +16,8 @@ import type { StrikePayEstimate } from "./strike";
 import { DeductionSources, type DeductionSourceLine } from "./DeductionSources";
 import { ofPayMonth, payMonthKey } from "./deductionPayMonth";
 import type { sickLeaveSummaryForYear } from "./sickLeaveSummary";
-import { oneOffExtraTotal, type inspectNetRatioCalibration } from "./payslip";
+import { isMecenatLabel, isOvertimeLabel, oneOffExtraLines, oneOffExtraTotal, type inspectNetRatioCalibration } from "./payslip";
+import { mecenatRatesFor } from "./mecenat";
 import type { computePayAllowances } from "./payAllowances";
 import {
   isUnplannedPayslipCarence,
@@ -108,6 +109,8 @@ export type PayContentInput = {
   pasRate: number;
   netRatioFixed: number;
   netRatioVariable: number;
+  /** Le facteur du net imposable sur le net avant impôt. */
+  pasBaseAdjustment: number;
   sundayCarryover: number;
   sundayCarryoverMonth: number | undefined;
   sundayCarryoverYear: number | undefined;
@@ -160,6 +163,7 @@ export function buildPayContent({
   pasRate,
   netRatioFixed,
   netRatioVariable,
+  pasBaseAdjustment,
   sundayCarryover,
   sundayCarryoverMonth,
   sundayCarryoverYear,
@@ -345,6 +349,12 @@ export function buildPayContent({
   // Une ligne inconnue ponctuelle (ou un rappel) s'ajoute au brut attendu
   // de ce seul mois.
   const payslipRecallExtras = comparablePayslip ? oneOffExtraTotal(payslipCheck.reading.extraLines) : 0;
+  const paidOnLines = (matches: (label: string) => boolean) =>
+    comparablePayslip && payslipCheck.reading.gross !== undefined
+      ? Math.round((payslipCheck.reading.extraLines || []).filter((line) => matches(line.label)).reduce((sum, line) => sum + line.amount, 0) * 100) / 100
+      : undefined;
+  const payslipOvertimePaid = paidOnLines(isOvertimeLabel);
+  const payslipMecenatPaid = paidOnLines(isMecenatLabel);
   const payslipReview = comparablePayslip
     ? summarizePayslipReview([
         {
@@ -473,24 +483,28 @@ export function buildPayContent({
               },
             ]
           : []),
-        ...(overtimeForPayMonth.totalMinutes
+        // Le taux horaire des heures sup s'arrondit au centime sur le
+        // bulletin : quelques centimes d'écart ne comptent pas.
+        ...(overtimeForPayMonth.totalMinutes || (payslipOvertimePaid ?? 0) > 0
           ? [
               {
                 key: "overtime",
                 label: "Heures supplémentaires",
-                found: undefined,
+                found: payslipOvertimePaid,
                 expected: overtimeForPayMonth.amount,
+                tolerance: 0.5,
               },
             ]
           : []),
-        ...(mecenatForCurrentPayMonth.totalMinutes
+        ...(mecenatForCurrentPayMonth.totalMinutes || (payslipMecenatPaid ?? 0) > 0
           ? [
               {
                 key: "mecenat",
                 label: "Mécénats",
-                found: undefined,
+                found: payslipMecenatPaid,
                 expected:
                   mecenatForCurrentPayMonth.grossAmountCents / 100,
+                tolerance: 0.1,
               },
             ]
           : []),
@@ -517,6 +531,8 @@ export function buildPayContent({
           holidays: monthPay.holiday,
           "sunday-flat": SUNDAY_ALLOWANCE.monthlyFlat,
           sundays: allowances.monthly.find((slot) => slot.index === payView.getMonth())?.sundayCount || 0,
+          overtime: overtimeForPayMonth.amount,
+          mecenat: mecenatForCurrentPayMonth.grossAmountCents / 100,
         },
         netRatioFixed,
         netRatioVariable,
@@ -546,6 +562,24 @@ export function buildPayContent({
           ]),
       )
     : undefined;
+  // Des mécénats payés au seul taux de jour : la majoration de nuit, que
+  // fixe l'arrêté, manque.
+  const mecenatNight = (() => {
+    const lines = mecenatForCurrentPayMonth.lines;
+    const nightMinutes = lines.reduce((sum, entry) => sum + entry.nightMinutes, 0);
+    if (!nightMinutes || payslipMecenatPaid === undefined) return null;
+    const dayOnly = lines.reduce((sum, entry) => sum + ((entry.dayMinutes + entry.nightMinutes) / 60) * mecenatRatesFor(entry.date).dayRateCents, 0) / 100;
+    if (Math.abs(dayOnly - payslipMecenatPaid) >= 0.1) return null;
+    const rates = mecenatRatesFor(lines[0].date);
+    const nightFrom = `${rates.nightStartMinutes / 60 === 24 ? "minuit" : `${rates.nightStartMinutes / 60} heures`}`;
+    return {
+      detail: `${minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} payées au taux de jour (${euros(rates.dayRateCents / 100)}) : la majoration de nuit de ${minutesLabel(nightMinutes)} manque`,
+      reference: `article 2 de l’arrêté du 18 mai 2010, modifié par l’${rates.source}, fixe un taux majoré de ${euros(rates.nightRateCents / 100)} par heure effectuée de ${nightFrom} à 7 heures du matin`,
+    };
+  })();
+  // Des taux de cotisations recalés par la lecture du bulletin.
+  const ratesRecalibrated = snapshot !== null &&
+    (Math.abs(snapshot.netRatioFixed - netRatioFixed) >= 0.01 || Math.abs(snapshot.netRatioVariable - netRatioVariable) >= 0.01);
   // D'où vient l'écart, pas à pas, du brut jusqu'au net versé : contre
   // l'estimation d'avant la lecture quand elle a été gardée.
   const payslipGapExplanation = payslipReview && comparablePayslip
@@ -558,7 +592,22 @@ export function buildPayContent({
           netBeforeTax: netCalculation?.netBeforeTax,
           incomeTax: netCalculation?.incomeTax,
         },
-        applied: appliedByReading,
+        applied: {
+          ...appliedByReading,
+          ...(ratesRecalibrated ? { "contributions-other": "taux de cotisations recalés sur ce bulletin" } : {}),
+        },
+        details: {
+          ...(mecenatNight ? { mecenat: mecenatNight.detail } : {}),
+          ...(ratesRecalibrated ? { "contributions-other": "les taux de l’estimation ne suivaient pas encore vos bulletins" } : {}),
+        },
+        references: mecenatNight ? { mecenat: mecenatNight.reference } : undefined,
+        // L'impôt comme l'estimation le calcule, heures sup et mécénats
+        // payés exonérés.
+        taxBase: {
+          pasRate,
+          adjustment: pasBaseAdjustment,
+          exemptActual: (payslipOvertimePaid ?? 0) + (payslipMecenatPaid ?? 0),
+        },
         actual: {
           gross: payslipCheck.reading.gross,
           netBeforeTax: payslipCheck.reading.netBeforeTax,
@@ -569,9 +618,7 @@ export function buildPayContent({
         oneOff: payslipRecallExtras
           ? {
               amount: payslipRecallExtras,
-              labels: (payslipCheck.reading.extraLines || [])
-                .filter((line) => line.recall || line.fixed === false)
-                .map((line) => line.label),
+              labels: oneOffExtraLines(payslipCheck.reading.extraLines).map((line) => line.label),
             }
           : undefined,
       })

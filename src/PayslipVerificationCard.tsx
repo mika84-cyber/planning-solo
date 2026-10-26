@@ -9,7 +9,7 @@ import { payslipGapChoices, type PayslipGapAction, type PayslipGapChoice } from 
 import { payslipGapRecord, type PayslipGapLine } from "./payslipGapExplanation";
 import { PayslipDecisionOptions, PayslipGapResult, signedEuros } from "./PayslipGapResult";
 import { PayslipLetterSheet } from "./PayslipLetterSheet";
-import { isMecenatLabel, isOvertimeLabel, usesAverageNetRatios } from "./payslip";
+import { isComputedVariableLabel, isMecenatLabel, isOvertimeLabel, usesAverageNetRatios } from "./payslip";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 import {
   isPayslipImage,
@@ -414,6 +414,7 @@ export function PayslipVerificationCard({
       </p>
     </>
   ) : null;
+  const unknownLines = (payslipCheck?.reading.extraLines || []).filter((line) => !line.sick && !isComputedVariableLabel(line.label));
   // Ce que le bulletin apprend d'autre, avant de conclure.
   const resultNotices = payslipCheck ? (
     <>
@@ -422,19 +423,17 @@ export function PayslipVerificationCard({
           Jour de carence de {euros(payslipCheck.reading.carenceDay as number)} présent sur le bulletin, mais aucun arrêt maladie n’était prévu dans l’application pour ce mois.
         </p>
       ) : null}
-      {payslipCheck.reading.extraLines?.length ? (
+      {/* Seules les lignes vraiment inconnues se disent : heures sup,
+          mécénats et arrêts maladie, l'application les calcule déjà. */}
+      {unknownLines.length ? (
         <p className="allowance-note">
           Lignes que l’application ne connaissait pas, prises en compte :{" "}
-          {payslipCheck.reading.extraLines.map((line) => `${line.label} (${euros(line.amount)}, ${
+          {unknownLines.map((line) => `${line.label} (${euros(line.amount)}, ${
             line.recall
               ? "rappel compté pour ce mois seulement"
-              : line.sick
-                ? "arrêt maladie, déjà calculé par l’application"
-                : line.fixed === true
-                  ? "ajoutée aux autres éléments fixes"
-                  : line.fixed === false
-                    ? "ponctuelle, comptée pour ce mois seulement"
-                    : "déjà calculée par l’application"
+              : line.fixed === true
+                ? "ajoutée aux autres éléments fixes"
+                : "ponctuelle, comptée pour ce mois seulement"
           })`).join(" ; ")}.
         </p>
       ) : null}
@@ -604,17 +603,9 @@ export function PayslipVerificationCard({
             ) : null}
             {payslipImportMode === "verify" && payslipImportResult && (payslipNeedsPeriod || checkMatchesDisplayedPeriod) ? (
               <>
-                {/* Ce qui a été lu, dit sans alarme : une ligne absente est
-                    normale sur une page seule. Le rouge est réservé aux écarts. */}
-                <p className="allowance-note payslip-import-note">
-                  {payslipImportResult.applied.length} champ
-                  {s(payslipImportResult.applied.length)} rempli
-                  {s(payslipImportResult.applied.length)} :{" "}
-                  {payslipImportResult.applied
-                    .map((item) => `${item.label} (${item.value})`)
-                    .join(", ")}
-                  .
-                </p>
+                {/* Seul ce qui ne va pas se dit : les champs repris tels quels
+                    du bulletin ne se listent pas ; une ligne absente, dite
+                    sans alarme, est normale sur une page seule. */}
                 {payslipImportResult.missing.length ? (
                   <p className="allowance-note payslip-import-note">
                     Pas trouvé sur ces bulletins :{" "}
@@ -639,9 +630,6 @@ export function PayslipVerificationCard({
                   monthLabel={`${MONTHS[displayedMonth]} ${allowances.year}`}
                   choicesFor={choicesFor}
                   onRunChoice={(choice) => runGapAction(choice.action)}
-                  detailsOpen={payslipResultDetailsOpen}
-                  onToggleDetails={() => setPayslipResultDetailsOpen((current) => !current)}
-                  details={resultDetails}
                   notices={resultNotices}
                   acceptDetail={acceptDetail}
                   onAccept={() => recordDecision("ok")}

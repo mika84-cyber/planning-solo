@@ -1,4 +1,5 @@
 import { roundCurrency } from "./appModel";
+import { estimatedIncomeTax } from "./payEstimate";
 
 /**
  * L'année de paie en un coup d'œil : douze mois, du brut au net, avec les
@@ -18,6 +19,8 @@ export type YearPayMonthInput = {
     /** Dimanches, fériés et fériés compensés (forfait compris). */
     premiums: number;
     mecenat: number;
+    /** Heures sup et mécénats du mois, exonérés d'impôt. */
+    exempt?: number;
   } | null;
   /** Les taux et retenues du mois ; `null` tant que les taux ne sont pas renseignés. */
   ratios: {
@@ -76,7 +79,9 @@ export function yearPayOverview(year: number, inputs: YearPayMonthInput[], today
       const mealVouchers = index === 11 ? 0 : ratios.mealVoucherDeduction;
       netBeforeTax = roundCurrency(netFromGross + ratios.navigo - mealVouchers);
     }
-    const tax = netBeforeTax !== null && ratios ? roundCurrency(netBeforeTax * (ratios.pasRate / 100) * ratios.pasBaseAdjustment) : null;
+    const tax = netBeforeTax !== null && ratios
+      ? estimatedIncomeTax(netBeforeTax, ratios.pasRate, ratios.pasBaseAdjustment, real ? 0 : estimate?.exempt ?? 0)
+      : null;
     const net = netBeforeTax !== null && tax !== null ? roundCurrency(netBeforeTax - tax) : null;
     return {
       index,

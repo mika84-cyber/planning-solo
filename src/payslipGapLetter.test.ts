@@ -50,6 +50,22 @@ describe("payslipLetter", () => {
     expect(letter.recipient).toBe("Mme Martin");
   });
 
+  it("cite le texte d’une somme due, et ne réclame ni l’impôt ni des taux recalés", () => {
+    const letter = payslipLetter({
+      gap: { ...gap, lines: [
+        { key: "mecenat", title: "Mécénats : 30,25 € de moins que prévu", detail: "7 h 30 payées au taux de jour (22,90 €) : la majoration de nuit de 2 h 30 manque", amount: -30.25, kind: "cause", found: 171.75, expected: 202, reference: "article 2 de l’arrêté du 18 mai 2010, modifié par l’arrêté du 15 décembre 2023, fixe un taux majoré de 35,00 € par heure effectuée de 22 heures à 7 heures du matin" },
+        { key: "contributions-other", title: "Cotisations plus élevées que prévu", detail: "", amount: -43.29, kind: "cause", applied: "taux de cotisations recalés sur ce bulletin" },
+        { key: "pas-rate", title: "Taux d’imposition de 2,6 % au lieu de 2,2 %", detail: "", amount: -9.63, kind: "cause", found: 2.6, expected: 2.2 },
+      ] },
+      year: 2026, month: 9, date: new Date("2026-11-03T10:00:00"), recipient: "", message: "", fullName: "",
+    });
+    expect(letter.paragraphs.map(plain)).toEqual([
+      "Mon bulletin de paie d’octobre 2026 m’a versé 2 200,17 € net, alors que 2 224,24 € étaient attendus, soit un écart de 24,07 €.",
+      "Mécénats : 171,75 € versés, 202,00 € attendus — 7 h 30 payées au taux de jour (22,90 €) : la majoration de nuit de 2 h 30 manque. Or l’article 2 de l’arrêté du 18 mai 2010, modifié par l’arrêté du 15 décembre 2023, fixe un taux majoré de 35,00 € par heure effectuée de 22 heures à 7 heures du matin.",
+    ]);
+    expect(letter.table.map((row) => row.label)).toEqual(["Mécénats", "Brut", "Net avant impôt", "Net à payer"]);
+  });
+
   it("nomme le PDF d’après le mois du bulletin", () => {
     expect(payslipLetterPdfName(2026, 9)).toBe("courrier-bulletin-2026-10.pdf");
   });

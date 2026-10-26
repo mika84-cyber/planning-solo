@@ -40,8 +40,6 @@
 .payslip-gap-link { min-height: 0; margin: 0 0 0 4px; padding: 0; border: 0; background: none; color: #8a3d22; font: inherit; font-size: 0.78rem; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .payslip-gap-why small .payslip-gap-link { display: inline; }
 
-.payslip-gap-same { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #e3d9cf; border-radius: 14px; background: #fff; color: var(--muted); font-size: 0.82rem; font-weight: 700; }
-.payslip-gap-same span::before { content: "✓ "; color: #2f6e4a; font-weight: 900; }
 
 .payslip-gap-options { display: grid; gap: 8px; }
 .payslip-gap-option { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 11px 12px; border: 1.5px solid rgba(44, 38, 33, 0.4); border-radius: 16px; background: #fff; color: var(--text); font: inherit; text-align: left; cursor: pointer; }

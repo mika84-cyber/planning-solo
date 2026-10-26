@@ -181,8 +181,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   ce qui manque (ou est en plus) sur le net, le trio Prévu / Payé / Écart,
   « D'où vient l'écart » ligne à ligne jusqu'au net (chaque cause avec son
   geste en lien, ou « ✓ enregistré dans votre profil / reporté sur … »
-  quand la lecture l'a déjà pris en compte), « N lignes identiques au
-  centime · Voir » qui déplie le tableau Ligne / Bulletin / Appli, puis
+  quand la lecture l'a déjà pris en compte). Seul ce qui diffère se dit :
+  ni lignes identiques, ni tableau, ni liste des champs repris, ni lignes
+  d'heures sup ou de mécénats « prises en compte ». Puis
   « Que voulez-vous faire ? » : « C'est normal : corriger ma paie » (le mois
   prend les montants du bulletin) ou « C'est une erreur : écrire à ma
   hiérarchie » (le courrier passe devant quand une partie de l'écart reste
@@ -400,7 +401,16 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   s'explique donc contre l'estimation gardée juste avant
   (`PayEstimateSnapshot`, `payEstimateSnapshot` de `usePayUiState`, pris par
   `onImport` dans `payContent`). L'impôt prélevé se lit sur la ligne « PAS
-  prélèvement à la source » (`incomeTax`).
+  prélèvement à la source » (`incomeTax`). Les heures sup et les mécénats
+  payés se lisent sur leurs lignes et se comparent comme les autres causes ;
+  des mécénats payés au seul taux de jour disent la majoration de nuit qui
+  manque, avec le texte qui la fixe (`references`, cité dans le courrier).
+  Un rappel d'heures sup ou de mécénats n'est pas une ligne ponctuelle
+  (`oneOffExtraLines`) : l'estimation le compte déjà. L'impôt exonère heures
+  sup et mécénats (`estimatedIncomeTax` de `payEstimate.ts`, aussi pour
+  l'estimation du mois et l'année), et des taux de cotisations recalés par
+  la lecture se disent comme tels. Le courrier ne réclame ni le taux
+  d'imposition ni des taux recalés.
 - `src/payslipAcceptedGap.ts` : un écart accepté (décision « ok » gardée
   avec `gap` dans `payslip_verifications`) fait prendre au mois les
   montants du bulletin, en valeurs absolues (`correctedPayMonth`) ; Ma paie

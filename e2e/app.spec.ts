@@ -1568,7 +1568,9 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
       .map((token) => `(${token}) Tj`),
     "endstream", "%%EOF",
   ].join("\n"), "latin1");
-  const result = page.locator(".allowance-note").filter({ hasText: /champs? rempli/ });
+  // Les champs repris ne se listent plus : les taux se lisent dans ce que
+  // la lecture envoie au compte, puis dans « Profil et réglages ».
+  const lastSave = () => profileSaves.at(-1) ?? {};
 
   // Première visite : septembre seul. Ses montants sont gardés dans le
   // compte, et les deux taux de départ (79,41 % et 89,92 %) se calent déjà
@@ -1577,9 +1579,8 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
   await goToSection(page, "pay");
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-septembre.pdf", mimeType: "application/pdf", buffer: payslip("Septembre 2026", "2300.00", "1800.00") });
-  await expect(result).toContainText("Traitement de base (1 855,88");
-  await expect(result).toContainText("Taux net avant impôt — traitement (76,31 %)");
-  await expect(result).toContainText("Taux net avant impôt — primes (86,41 %)");
+  await expect(page.locator(".payslip-read-values")).toContainText(/net avant impôt 1.800,00.€/);
+  await expect.poll(() => lastSave().netRatioFixedBp).toBe(7631);
   const hint = page.getByRole("region", { name: "Pour un net encore plus juste" });
   await expect(hint).toContainText("calés sur ce seul bulletin");
   await expect(hint).toContainText("lors d’une prochaine visite");
@@ -1594,15 +1595,16 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
   await goToSection(page, "pay");
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-juillet.pdf", mimeType: "application/pdf", buffer: payslip("Juillet 2026", "2600.00", "2040.00") });
-  await expect(result).toContainText("Taux net avant impôt — traitement (77,84 %)");
-  await expect(result).toContainText("Taux net avant impôt — primes (80 %)");
+  await expect.poll(() => lastSave().netRatioFixedBp).toBe(7784);
   expect(profileSaves.at(-1)).toMatchObject({ netRatioFixedBp: 7784, netRatioVariableBp: 8000, netRatioRegime: "culture-psc" });
   await expect(page.getByRole("region", { name: "Pour un net encore plus juste" })).toHaveCount(0);
 
   // Un bulletin mal lu, rangé sous août : son net ne ressemble à rien. Il
   // est gardé, mais écarté du calcul : les taux ne bougent pas.
+  const savesBeforeAugust = profileSaves.length;
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "bulletin-aout.pdf", mimeType: "application/pdf", buffer: payslip("Août 2026", "2300.00", "1300.00") });
-  await expect(result).toContainText("Taux net avant impôt — traitement (77,84 %)");
+  await expect.poll(() => profileSaves.length).toBeGreaterThan(savesBeforeAugust);
+  expect(profileSaves.at(-1)).toMatchObject({ netRatioFixedBp: 7784, netRatioVariableBp: 8000 });
   // Le profil montre les bulletins qui calent les taux ; celui d'août se retire.
   await page.locator(".pay-bulletin-shortcut", { hasText: "Profil et réglages" }).click();
   const elements = page.locator(".pay-elements-card");
@@ -1726,21 +1728,19 @@ test("relire un bulletin mal lu retire le report de dimanches que la première l
   await expect(adjustment).toContainText(/dimanches? non payés? retirés? automatiquement du net d’octobre et reportés? sur décembre/);
   const reported = Number(/(\d+) dimanche/.exec(await adjustment.innerText())![1]);
   expect(reported).toBeGreaterThan(0);
-  // Le mois n'en attend plus aucun : la comparaison dit 0 pour 0, dans le
-  // tableau ligne à ligne, déplié sur demande.
-  await page.locator(".payslip-verify-card").getByRole("button", { name: /^Voir( le détail)?$/ }).click();
-  const sundaysRow = page.locator("table.allowance-table tr").filter({ hasText: "Dimanches payés" });
-  await expect(sundaysRow).toContainText("concorde");
-  await expect(sundaysRow.locator("td")).toHaveText(["0", "0"]);
+  // Le mois n'en attend plus aucun : aucun dimanche n'est en cause.
+  const result = page.locator(".payslip-gap-result");
+  await expect(result).toBeVisible();
+  await expect(result).not.toContainText("dimanche");
   // Relu, le bulletin paie bien ces dimanches : le report disparaît, et le
   // mois les attend de nouveau, payés.
   await page.locator(".payslip-file-drop input").setInputFiles({ name: "octobre-relu.pdf", mimeType: "application/pdf", buffer: pdf([
     ...october, "Indemnité trav. dom > 10 dim", "54.93", (reported * 54.93).toFixed(2), ...footer,
   ]) });
   await expect(adjustment).toContainText(`Le report de ${reported} dimanche${reported > 1 ? "s" : ""} d’octobre vers décembre, venu d’une lecture précédente, est retiré : ce bulletin les paie.`);
-  await page.locator(".payslip-verify-card").getByRole("button", { name: /^Voir( le détail)?$/ }).click();
-  await expect(sundaysRow).toContainText("concorde");
-  await expect(sundaysRow.locator("td")).toHaveText([String(reported), String(reported)]);
+  // Face à l'estimation d'avant la relecture, ces dimanches sont en plus ;
+  // la ligne dit qu'ils sont déjà pris en compte.
+  await expect(result.locator("li").filter({ hasText: "dimanche" })).toContainText("report retiré : ce bulletin les paie");
 });
 
 test("une seule photo, déclarée complète, se vérifie telle quelle", async ({ page }) => {

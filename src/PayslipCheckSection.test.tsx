@@ -193,7 +193,7 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Appliquer le taux du bulletin : 2,2 %");
     expect(html).toContain("Passer mon statut en Fonctionnaire");
     // Les gestes sont des liens sur leur cause ; l'ancienne liste disparaît.
-    expect(html.match(/payslip-gap-link"/g)?.length).toBe(3);
+    expect(html.match(/payslip-gap-link"/g)?.length).toBe(2);
     expect(html).not.toContain("Que s’est-il passé ?");
     const withoutStatus = renderToStaticMarkup(<PayslipCheckSection {...baseProps} check={check} review={review} gapExplanation={gapExplanation} />);
     expect(withoutStatus).not.toContain("Passer mon statut en Fonctionnaire");
@@ -318,16 +318,14 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("prélevées sur ce demi-dimanche");
     expect(html).toContain("Moins d’impôt");
     expect(html).toContain("Tout l’écart est expliqué");
-    expect(html).toContain("2 lignes identiques au centime");
-    // Le tableau ligne à ligne ne se déplie que sur demande.
+    // Seul ce qui diffère est dit : ni lignes identiques, ni tableau.
+    expect(html).not.toContain("identique");
     expect(html).not.toContain("<table");
     expect(html).toContain("C’est normal : corriger ma paie");
     expect(html).toContain("Octobre prend les montants du bulletin : net 2 200,17 €, dimanches 6,5.");
     expect(html).toContain("C’est une erreur : écrire à ma hiérarchie");
     expect(html).not.toContain("Conclusion de la vérification");
-    const open = renderToStaticMarkup(<PayslipCheckSection {...props} resultDetailsOpen />);
-    expect(open).toContain("<table");
-    expect(open.indexOf("<table")).toBeLessThan(open.indexOf("Que voulez-vous faire ?"));
+    expect(renderToStaticMarkup(<PayslipCheckSection {...props} resultDetailsOpen />)).not.toContain("<table");
   });
 
   it("conserve les arrêts maladie et l'édition des paramètres", () => {

@@ -43,6 +43,8 @@ const LINE_LABELS: Record<string, string> = {
   "meal-vouchers": "Titres repas",
   "pas-rate": "Taux d’imposition",
   carence: "Jour de carence",
+  overtime: "Heures supplémentaires",
+  mecenat: "Mécénats",
 };
 
 /** « d’octobre 2026 », « de mars 2026 ». */
@@ -64,6 +66,10 @@ function sentence(line: PayslipGapRecordLine, net: boolean) {
     return `Le taux de prélèvement à la source appliqué est de ${found.toLocaleString("fr-FR")} % au lieu de ${expected.toLocaleString("fr-FR")} %, soit ${amount} d’impôt ${line.amount < 0 ? "en plus" : "en moins"}.`;
   }
   if (line.key === "carence") return `Un jour de carence de ${amount} a été retenu alors qu’aucun arrêt maladie ne le justifie ce mois-ci.`;
+  // Une somme que fixe un texte : le constat, puis le texte.
+  if (line.reference && found !== undefined && expected !== undefined) {
+    return `${LINE_LABELS[line.key] ?? line.title} : ${euros(found)} versés, ${euros(expected)} attendus — ${line.detail}. Or l’${line.reference}.`;
+  }
   if (line.key === "gross-other") return `Une différence de ${amount} sur le brut ne correspond à aucune ligne que j’aie pu identifier.`;
   if (line.key === "contributions-other") return `Les cotisations prélevées sont ${line.amount < 0 ? "supérieures" : "inférieures"} de ${amount} à celles attendues.`;
   if (line.key === "income-tax") return `L’impôt prélevé est ${line.amount < 0 ? "supérieur" : "inférieur"} de ${amount} à celui attendu.`;
@@ -91,7 +97,10 @@ export function payslipLetter(input: PayslipLetterInput): PayslipLetter {
       ? `Mon bulletin de paie ${when} m’a versé ${euros(actualTotal)} net, alors que ${euros(expectedTotal)} étaient attendus, soit un écart de ${euros(Math.abs(gap.gap))}${gap.gap > 0 ? " en ma faveur" : ""}.`
       : `Mon bulletin de paie ${when} porte un brut de ${euros(actualTotal)}, alors que ${euros(expectedTotal)} étaient attendus, soit un écart de ${euros(Math.abs(gap.gap))}.`
     : `Mon bulletin de paie ${when} présente un écart avec ce qui était attendu.`;
-  const reasons = gap.lines.filter((line) => line.kind !== "follow");
+  // Ni le taux d'imposition, que fixent les impôts, ni des taux de
+  // cotisations que l'application vient de recaler : rien à réclamer.
+  const reasons = gap.lines.filter((line) =>
+    line.kind !== "follow" && line.key !== "pas-rate" && !(line.key === "contributions-other" && line.applied));
   // Le brut et les nets ont leurs propres lignes, en bas du tableau.
   const compared = reasons.filter((line) => line.found !== undefined && line.expected !== undefined && LINE_LABELS[line.key]);
   const total = (label: string, key: "gross" | "netBeforeTax" | "net") => {

@@ -6,6 +6,7 @@
  *  centime : ce que les lignes connues n'expliquent pas devient une ligne
  *  « inexpliquée », jamais un écart passé sous silence. */
 import { euros } from "./appModel";
+import { estimatedIncomeTax } from "./payEstimate";
 import { describePayslipGap, type PayslipReviewCheck } from "./payslipReview";
 import type { PayslipGapFigures, PayslipGapRecord } from "./payslipVerificationRecords";
 import { SUNDAY_ALLOWANCE, sundayCountLabel } from "./planningLogic";
@@ -25,6 +26,8 @@ export type PayslipGapLine = {
   /** Ce que l'application en a déjà fait à la lecture du bulletin :
    *  « enregistré dans votre profil », « reporté sur décembre 2026 ». */
   applied?: string;
+  /** Le texte qui fonde la somme due, cité dans le courrier. */
+  reference?: string;
 };
 
 /** L'estimation d'un mois telle qu'elle était avant la lecture de son
@@ -53,8 +56,6 @@ export type PayslipGapExplanation = {
   lines: PayslipGapLine[];
   /** La part de l'écart qu'aucune ligne n'explique. */
   unexplained: number;
-  /** Les lignes du bulletin identiques à l'estimation. */
-  matching: number;
   /** Aucune ligne ne diffère et l'écart n'est qu'un arrondi : le bulletin
    *  correspond à l'estimation. */
   matches: boolean;
@@ -70,8 +71,16 @@ export type PayslipGapInput = {
   /** Les rappels et lignes ponctuelles lus sur le bulletin, absents de
    *  l'estimation : une cause connue, pas un écart inexpliqué. */
   oneOff?: { amount: number; labels: string[] };
-  /** Les causes déjà prises en compte, et comment, sous la clé du contrôle. */
+  /** Les causes déjà prises en compte, et comment, sous la clé du contrôle
+   *  ou de la ligne. Une cause prise en compte n'est plus inexpliquée. */
   applied?: Record<string, string>;
+  /** Le détail d'une ligne, quand l'écran en sait plus (majoration de nuit
+   *  des mécénats non payée), et le texte qui fonde la somme due. */
+  details?: Record<string, string>;
+  references?: Record<string, string>;
+  /** L'impôt comme l'estimation le calcule : taux, facteur du net imposable,
+   *  et heures sup et mécénats payés, exonérés. */
+  taxBase?: { pasRate: number; adjustment: number; exemptActual: number };
 };
 
 /** En deçà, un écart n'est qu'un arrondi. */
@@ -89,6 +98,8 @@ const GROSS_PARTS: Record<string, "fixed" | "variable"> = {
   status: "fixed",
   carence: "fixed",
   cia: "variable",
+  overtime: "variable",
+  mecenat: "variable",
   "one-off": "variable",
   "sunday-flat": "variable",
   holidays: "variable",
@@ -144,6 +155,18 @@ function contributionSubject(causes: PayslipGapLine[]) {
 export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplanation | null {
   const { checks, expected, actual } = input;
   if (actual.gross === undefined) return null;
+  const finish = (line: PayslipGapLine): PayslipGapLine => {
+    const key = line.check?.key ?? line.key;
+    const applied = input.applied?.[key];
+    const detail = input.details?.[key];
+    const reference = input.references?.[key];
+    return {
+      ...line,
+      ...(detail ? { detail } : {}),
+      ...(reference ? { reference } : {}),
+      ...(applied ? { applied, kind: line.kind === "unknown" ? "cause" : line.kind } : {}),
+    };
+  };
   const issues = checks.filter(isIssue);
   const byKey = new Map(checks.map((check) => [check.key, check]));
   const residence = byKey.get("residence");
@@ -182,7 +205,6 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
         }]
       : []),
   ];
-  const matching = checks.filter((check) => check.found !== undefined && !isIssue(check)).length;
 
   if (actual.netBeforeTax === undefined || expected.netBeforeTax === undefined) {
     return {
@@ -190,12 +212,8 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
       expected: { gross: expected.gross },
       actual: { gross: actual.gross },
       gap: grossGap,
-      lines: grossLines.map((line) => {
-        const applied = line.check ? input.applied?.[line.check.key] : undefined;
-        return applied ? { ...line, applied } : line;
-      }),
+      lines: grossLines.map(finish),
       unexplained: unexplainedOnGross ? residual : 0,
-      matching,
       matches: !grossLines.length && Math.abs(grossGap) < PAYSLIP_GAP_TOLERANCE,
     };
   }
@@ -246,15 +264,26 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
     }
   }
 
-  // L'impôt : prélevé sur le net avant impôt, au taux du bulletin.
+  // L'impôt : prélevé sur le net imposable, au taux du bulletin ; les heures
+  // sup et les mécénats, exonérés, n'y entrent pas.
   const expectedTax = expected.incomeTax ?? 0;
   const rateCheck = byKey.get("pas-rate");
   const rateChanged = rateCheck ? isIssue(rateCheck) : false;
   const effectiveRate = expected.netBeforeTax ? expectedTax / expected.netBeforeTax : 0;
   const rateRatio = rateChanged && rateCheck?.expected ? (rateCheck.found as number) / rateCheck.expected : 1;
-  const actualTax = actual.incomeTax ?? cents(actual.netBeforeTax * effectiveRate * rateRatio);
+  const { taxBase } = input;
+  const paidRate = rateCheck?.found ?? taxBase?.pasRate;
+  const modelTax = taxBase && paidRate !== undefined
+    ? estimatedIncomeTax(actual.netBeforeTax, paidRate, taxBase.adjustment, taxBase.exemptActual)
+    : undefined;
+  const actualTax = actual.incomeTax ?? modelTax ?? cents(actual.netBeforeTax * effectiveRate * rateRatio);
   const taxEffect = cents(expectedTax - actualTax);
-  const predictedTax = cents((expected.netBeforeTax - actual.netBeforeTax) * effectiveRate * rateRatio + expectedTax * (1 - rateRatio));
+  const predictedTax = modelTax !== undefined
+    ? cents(expectedTax - modelTax)
+    : cents((expected.netBeforeTax - actual.netBeforeTax) * effectiveRate * rateRatio + expectedTax * (1 - rateRatio));
+  // Le net imposable n'est qu'approché : quelques pour cent de l'impôt près.
+  const taxTolerance = Math.max(PAYSLIP_GAP_TOLERANCE, actualTax * 0.02);
+  const exemptNote = taxBase && taxBase.exemptActual > 0 ? " ; heures sup et mécénats exonérés" : "";
   const rate = (rateCheck?.found ?? rateCheck?.expected ?? effectiveRate * 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 });
   const taxLines: PayslipGapLine[] = [];
   if (rateChanged && rateCheck) {
@@ -266,12 +295,12 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
       kind: "cause",
       check: rateCheck,
     });
-  } else if (Math.abs(taxEffect - predictedTax) < PAYSLIP_GAP_TOLERANCE) {
+  } else if (Math.abs(taxEffect - predictedTax) < taxTolerance) {
     if (Math.abs(taxEffect) >= 0.01) {
       taxLines.push({
         key: "income-tax",
         title: taxEffect > 0 ? "Moins d’impôt" : "Plus d’impôt",
-        detail: `${rate} % sur ce qui reste`,
+        detail: `${rate} % sur ce qui reste${exemptNote}`,
         amount: taxEffect,
         kind: "follow",
       });
@@ -292,10 +321,7 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
   // arrondi : rien à expliquer.
   const allLines = [...grossLines, ...contributionLines, ...netCauses, ...taxLines];
   const matches = allLines.every((line) => line.kind === "follow") && Math.abs(actualNet - expectedNet) < PAYSLIP_GAP_TOLERANCE;
-  const lines = matches ? [] : allLines.map((line) => {
-    const applied = line.check ? input.applied?.[line.check.key] : undefined;
-    return applied ? { ...line, applied } : line;
-  });
+  const lines = matches ? [] : allLines.map(finish);
   return {
     level: "net",
     expected: { gross: expected.gross, netBeforeTax: expected.netBeforeTax, incomeTax: expectedTax, net: expectedNet },
@@ -303,7 +329,6 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
     gap: cents(actualNet - expectedNet),
     lines,
     unexplained: cents(lines.filter((line) => line.kind === "unknown").reduce((sum, line) => sum + line.amount, 0)),
-    matching,
     matches,
   };
 }
@@ -335,7 +360,7 @@ export function payslipGapRecord(explanation: PayslipGapExplanation): PayslipGap
     expected: explanation.expected,
     actual: explanation.actual,
     gap: explanation.gap,
-    lines: explanation.lines.map(({ check, applied: _applied, ...line }) => ({
+    lines: explanation.lines.map(({ check, ...line }) => ({
       ...line,
       ...(check?.found === undefined ? {} : { found: check.found, expected: check.expected }),
     })),

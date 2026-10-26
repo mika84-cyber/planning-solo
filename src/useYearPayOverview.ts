@@ -105,7 +105,7 @@ export function useYearPayOverview({
       return {
         index: month,
         estimate: gross
-          ? { gross: gross.gross, grossFixed: gross.grossFixed, grossVariable: gross.grossVariable, premiums: SUNDAY_ALLOWANCE.monthlyFlat + sunday + holiday + compensated, mecenat }
+          ? { gross: gross.gross, grossFixed: gross.grossFixed, grossVariable: gross.grossVariable, premiums: SUNDAY_ALLOWANCE.monthlyFlat + sunday + holiday + compensated, mecenat, exempt: paidOvertimeForPayPeriod(year, month).amount + mecenat }
           : null,
         ratios: netRatioFixed > 0 && netRatioVariable > 0
           ? {

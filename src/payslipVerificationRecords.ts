@@ -26,6 +26,10 @@ export type PayslipGapRecordLine = {
   kind: "cause" | "follow" | "unknown";
   found?: number;
   expected?: number;
+  /** Le texte qui fonde la somme due, cité dans le courrier. */
+  reference?: string;
+  /** Ce que l'application en a déjà fait à la lecture du bulletin. */
+  applied?: string;
 };
 
 /** L'écart expliqué, gardé avec la décision : un mois accepté prend les
@@ -107,6 +111,8 @@ function sanitizeGapLine(value: unknown): PayslipGapRecordLine | null {
   if (lineAmount === undefined || (raw.kind !== "cause" && raw.kind !== "follow" && raw.kind !== "unknown")) return null;
   const found = amount(raw.found);
   const expected = amount(raw.expected);
+  const reference = text(raw.reference, 400);
+  const applied = text(raw.applied, 160);
   return {
     key: text(raw.key, 60),
     title: text(raw.title, 160),
@@ -115,6 +121,8 @@ function sanitizeGapLine(value: unknown): PayslipGapRecordLine | null {
     kind: raw.kind,
     ...(found === undefined ? {} : { found }),
     ...(expected === undefined ? {} : { expected }),
+    ...(reference ? { reference } : {}),
+    ...(applied ? { applied } : {}),
   };
 }
 

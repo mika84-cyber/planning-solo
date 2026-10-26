@@ -7,7 +7,6 @@ import {
   type PayslipGapExplanation,
   type PayslipGapLine,
 } from "./payslipGapExplanation";
-import { s } from "./planningLogic";
 import "./payslipGap.css";
 
 /** « − 24,07 € », « + 2,82 € ». */
@@ -19,18 +18,15 @@ const ICON_LETTER = <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y=
 /**
  * Le résultat de la vérification d'un bulletin : ce qui manque (ou est en
  * plus) sur le net, le prévu face au payé, puis d'où vient l'écart, ligne à
- * ligne jusqu'au net ; les lignes identiques se déplient sur demande. Deux
- * choix pour finir : l'écart est normal et la paie du mois se corrige, ou
- * c'est une erreur et un courrier part à la hiérarchie.
+ * ligne jusqu'au net. Seul ce qui diffère est dit : les lignes identiques ne
+ * sont pas listées. Deux choix pour finir : l'écart est normal et la paie du
+ * mois se corrige, ou c'est une erreur et un courrier part à la hiérarchie.
  */
 export function PayslipGapResult({
   explanation,
   monthLabel,
   choicesFor,
   onRunChoice,
-  detailsOpen,
-  onToggleDetails,
-  details,
   notices,
   acceptDetail,
   onAccept,
@@ -41,10 +37,6 @@ export function PayslipGapResult({
   monthLabel: string;
   choicesFor: (line: PayslipGapLine) => PayslipGapChoice[];
   onRunChoice: (choice: PayslipGapChoice) => void;
-  detailsOpen: boolean;
-  onToggleDetails: () => void;
-  /** Le tableau ligne à ligne et les notes du bulletin. */
-  details: ReactNode;
   /** Ce que le bulletin apprend d'autre (lignes inconnues, paiements en
    *  avance), juste avant de conclure. */
   notices?: ReactNode;
@@ -52,7 +44,7 @@ export function PayslipGapResult({
   onAccept: () => void;
   onWriteLetter: () => void;
 }) {
-  const { lines, gap, matching } = explanation;
+  const { lines, gap } = explanation;
   const net = explanation.level === "net";
   const expected = net ? explanation.expected.net : explanation.expected.gross;
   const actual = net ? explanation.actual.net : explanation.actual.gross;
@@ -109,13 +101,6 @@ export function PayslipGapResult({
           )}
         </section>
       ) : null}
-      <div className="payslip-gap-same">
-        <span>{matching} ligne{s(matching)} identique{s(matching)} au centime</span>
-        <button type="button" className="payslip-gap-link" aria-expanded={detailsOpen} onClick={onToggleDetails}>
-          {detailsOpen ? "Masquer" : "Voir"}
-        </button>
-      </div>
-      {detailsOpen ? details : null}
       {notices}
       <PayslipDecisionOptions hasGap={hasGap} recommendLetter={!explained} acceptDetail={acceptDetail} onAccept={onAccept} onWriteLetter={onWriteLetter} />
     </section>
