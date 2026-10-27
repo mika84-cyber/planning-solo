@@ -130,6 +130,18 @@ function remotePeriod(event: SharedGrandPalaisEvent) {
   return `Du ${formatFrenchDate(event.startDate)} au ${formatFrenchDate(event.endDate)}`;
 }
 
+/** Les tarifs relus — par la veille ou validés depuis une proposition —
+ *  remplacent ceux livrés ; mais une gratuité que l'administrateur a voulu
+ *  lisible (showFreePrices) et que la relecture ne dit pas reste à la suite :
+ *  la fiche officielle du Musée imaginaire d'Oli n'annonce aucun tarif, seule
+ *  sa billetterie vend le billet des moins de 5 ans à 0 €. */
+function withKnownFreePrices(prices: GrandPalaisPrice[], known: GrandPalaisProgramEntry | undefined) {
+  if (!known?.showFreePrices) return prices;
+  const labels = new Set(prices.map((price) => price.label.trim().toLowerCase()));
+  const kept = (known.prices ?? []).filter((price) => price.amount === 0 && !labels.has(price.label.trim().toLowerCase()));
+  return kept.length ? [...prices, ...kept] : prices;
+}
+
 export function mergeSharedGrandPalaisProgram(
   base: GrandPalaisProgramData,
   sharedEvents: SharedGrandPalaisEvent[],
@@ -156,7 +168,8 @@ export function mergeSharedGrandPalaisProgram(
     const replaced = Object.values(merged)
       .flatMap((venue) => Object.values(venue.schedule).flatMap((entries) => entries ?? []))
       .filter((entry) => isSameGrandPalaisEvent(entry, identity));
-    const knownPrices = replaced.find((entry) => entry.prices?.length)?.prices;
+    const knownEntry = replaced.find((entry) => entry.prices?.length);
+    const knownPrices = knownEntry?.prices;
     const known = <K extends keyof GrandPalaisProgramEntry>(field: K) => replaced.find((entry) => entry[field])?.[field];
     for (const venue of Object.values(merged))
       for (const year of Object.keys(venue.schedule))
@@ -181,7 +194,7 @@ export function mergeSharedGrandPalaisProgram(
       officialUrl,
       startsOn: shared.startDate,
       endsOn: shared.endDate,
-      ...(shared.prices?.length ? { prices: shared.prices } : knownPrices ? { prices: knownPrices } : {}),
+      ...(shared.prices?.length ? { prices: withKnownFreePrices(shared.prices, knownEntry) } : knownPrices ? { prices: knownPrices } : {}),
       ...(ticketingUrl ? { ticketingUrl } : {}),
       ...(audioguide ? { audioguide } : {}),
       ...(priceNote ? { priceNote } : {}),
@@ -236,7 +249,7 @@ export function applyGrandPalaisSitePrices(
     schedule: Object.fromEntries(Object.entries(venue.schedule).map(([year, entries]) => [year, (entries ?? []).map((entry) => {
       const site = matching(entry);
       if (!site) return entry;
-      return { ...entry, prices: site.prices, ...(entry.officialUrl || !site.url ? {} : { officialUrl: site.url }) };
+      return { ...entry, prices: withKnownFreePrices(site.prices, entry), ...(entry.officialUrl || !site.url ? {} : { officialUrl: site.url }) };
     })])),
   }])) as GrandPalaisProgramData;
 }

@@ -250,7 +250,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   galeries et au Palais des enfants (`PAID_ONLY_VENUES`), dite dans la Nef,
   ou dans une galerie quand la fiche le demande (`showFreePrices`, le Musée
   imaginaire d’Oli : la billetterie vend le billet des moins de 5 ans ; la
-  fusion d’une mise à jour de la veille le garde, comme `priceNote`) —,
+  fusion d’une mise à jour de la veille le garde, comme `priceNote`, et des
+  tarifs relus — validés ou relevés sur le site — gardent à leur suite la
+  ligne gratuite livrée qu’ils ne disent pas, `withKnownFreePrices`) —,
   condition en
   `priceNote` ; `ticketingUrl` est le site tiers qui porte la billetterie ou
   les tarifs quand le Grand Palais ne les publie pas. `grandPalaisTitleKey`

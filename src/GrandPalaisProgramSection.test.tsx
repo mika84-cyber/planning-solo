@@ -504,6 +504,25 @@ describe("programmation du Grand Palais", () => {
     expect(oliEntry).toMatchObject({ showFreePrices: true });
     expect(renderToStaticMarkup(<ExpoCard entry={oliEntry} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir" />))
       .toContain("<dt>Moins de 5 ans</dt><dd>Gratuit</dd>");
+    // Relue avec ses tarifs payants (la fiche officielle n'annonce pas la
+    // gratuité), la ligne gratuite livrée reste à la suite — une seule fois
+    // si la relecture la dit déjà.
+    const oliPaid = [{ label: "Plein", amount: 22 }, { label: "Réduit", amount: 17 }];
+    const oliShared = { id: "oli", title: "Le Musée Imaginaire d’Oli", startDate: "2026-12-02", endDate: "2027-02-21",
+      url: "https://www.grandpalais.fr/fr/programme/le-musee-imaginaire-doli", venueKey: "gallery7", venueLabel: "Galerie 7" };
+    const oliFree = { label: "Moins de 5 ans", amount: 0 };
+    const oliWithPrices = (mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{ ...oliShared, prices: oliPaid }]).gallery7.schedule[2026] ?? [])
+      .find((entry) => /Oli/.test(entry.title))!;
+    expect(oliWithPrices.prices).toEqual([...oliPaid, oliFree]);
+    expect(renderToStaticMarkup(<ExpoCard entry={oliWithPrices} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir" />))
+      .toContain("<dt>Moins de 5 ans</dt><dd>Gratuit</dd>");
+    const oliSaysFree = (mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{ ...oliShared, prices: [...oliPaid, { label: "moins de 5 ans", amount: 0 }] }]).gallery7.schedule[2026] ?? [])
+      .find((entry) => /Oli/.test(entry.title))!;
+    expect(oliSaysFree.prices).toEqual([...oliPaid, { label: "moins de 5 ans", amount: 0 }]);
+    // Les tarifs relevés sur le site par la veille la gardent de même.
+    const oliSite = (applyGrandPalaisSitePrices(GRAND_PALAIS_PROGRAM, [{ title: oliShared.title, url: oliShared.url, startDate: "2026-12-02", endDate: "2027-02-21", prices: oliPaid }])
+      .gallery7.schedule[2026] ?? []).find((entry) => /Oli/.test(entry.title))!;
+    expect(oliSite.prices).toEqual([...oliPaid, oliFree]);
     // Deux titres qui se ressemblent mais à des dates sans rapport : deux événements.
     const later = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{ ...shared, id: "2027", startDate: "2027-12-11", endDate: "2028-01-05" }]);
     expect(nef(later, 2026)).toHaveLength(1);
