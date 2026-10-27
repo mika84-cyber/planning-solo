@@ -5445,6 +5445,21 @@ test("les RTT et le fractionnement se posent en journée entière", async ({ pag
   // De retour aux congés annuels, la durée revient.
   await request.getByRole("button", { name: /^Congés annuels/ }).click();
   await expect(duration).toBeVisible();
+  // Au-dessus du planning, le congé des dates qu'on va toucher : deux RTT,
+  // puis un CA dans la même demande sans remonter au panneau ; les dates
+  // déjà choisies gardent leur type.
+  const nearCalendar = page.getByRole("group", { name: "Congé des dates touchées" });
+  await nearCalendar.getByRole("button", { name: /^RTT/ }).click();
+  await expect(nearCalendar.getByRole("button", { name: /^RTT/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("group", { name: "Durée des dates touchées" })).toHaveCount(0);
+  await page.locator(".month-card .day.work").nth(1).click();
+  await nearCalendar.getByRole("button", { name: /^CA/ }).click();
+  await expect(page.getByRole("group", { name: "Durée des dates touchées" })).toBeVisible();
+  await page.locator(".month-card .day.work").nth(2).click();
+  await expect(nearCalendar.getByRole("button", { name: /^RTT/ })).toContainText("2");
+  await expect(nearCalendar.getByRole("button", { name: /^CA/ })).toContainText("1");
+  await expect(summary).toContainText("RTT");
+  await expect(summary).toContainText("Congés annuels");
 });
 
 test("sans CA restant, une demi-journée de CA est bloquée ; en RTT, elle devient une journée entière", async ({ page }) => {

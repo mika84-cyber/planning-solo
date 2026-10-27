@@ -41,6 +41,14 @@ export function leaveHoursFor(hours: LeaveHoursByMoment, moment: LeaveMoment): L
 /** Une date de congé annuel : journée entière, ou demi-journée aux heures
  *  choisies (le moment seul tant qu'elles ne sont pas saisies). RTT et
  *  fractionnement se posent en journée entière. */
+/** La date de départ d'une demande suit le type choisi tant qu'elle est la
+ *  seule date : dès qu'une autre est touchée, le type ne vaut plus que pour
+ *  les dates touchées ensuite, comme la durée — un RTT, un CA et un
+ *  fractionnement se posent dans la même demande. */
+export function seedAlone(selections: Record<string, unknown>, seedDate: string) {
+  return Object.keys(selections).every((key) => key === seedDate);
+}
+
 export function durationLeaveDay(date: string, type: SelectionType, moment: LeaveMoment, hours: LeaveHours): SelectedDay {
   if (!(DURATION_LEAVE_TYPES as readonly string[]).includes(type) || moment === "full") return { date, type };
   return validLeaveHours(hours)
@@ -110,7 +118,7 @@ export function useRequestTypeSelection({ planningUi, formProfile }: RequestType
     );
     const hasSchedule = Boolean(usableWorkSchedule(formProfile?.workSchedule));
     setSelections((current) => {
-      if (!current[requestSeedDate]) return current;
+      if (!current[requestSeedDate] || !seedAlone(current, requestSeedDate)) return current;
       return {
         ...current,
         [requestSeedDate]: type === "half"

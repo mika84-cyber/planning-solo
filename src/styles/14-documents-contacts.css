@@ -42,13 +42,6 @@
   padding-bottom: clamp(24px, 4vw, 42px);
 }
 
-.useful-resource-intro>p:last-child {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: clamp(13px, 1.5vw, 15px);
-  line-height: 1.5;
-}
-
 .useful-resource-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .useful-resource-tab {

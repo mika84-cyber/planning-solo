@@ -71,7 +71,6 @@
 .pdf-year-more .choice-picker-trigger { justify-content: center; gap: 3px; width: 100%; min-height: 0; height: 30px; border: 1.5px dashed color-mix(in srgb, var(--setting-tone) 60%, #fff); border-radius: 999px; padding: 0 8px; background: var(--surface-high); color: var(--setting-tone); font: inherit; font-size: .86rem; font-weight: 850; font-variant-numeric: tabular-nums; box-shadow: none; }
 .pdf-year-more .choice-picker-trigger svg { width: 14px; stroke: currentColor; stroke-width: 2.4; }
 .pdf-year-more.active .choice-picker-trigger { border-style: solid; border-color: var(--setting-tone); background: var(--setting-tone); color: #fff; }
-.choice-picker-menu.choice-picker-menu-portal.pdf-year-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 238px; }
 
 /* Groupe : trois pastilles, chacune à la couleur de son groupe ; la choisie est pleine. */
 .pdf-group-pills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; min-height: 30px; }

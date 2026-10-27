@@ -33,7 +33,6 @@
 .pay-bulletin .pay-bulletin-hero .pay-bulletin-status { justify-content: center; }
 /* La frise : où va le brut (net, cotisations, titres repas, impôt). */
 .pay-bulletin .pay-bulletin-mix { margin-top: 14px; }
-.pay-bulletin .pay-bulletin-mix-title { margin: 0 0 5px; color: #6b5d50; font-size: 0.72rem; font-weight: 750; }
 .pay-bulletin .pay-bulletin-bar { display: flex; gap: 2px; overflow: hidden; height: 12px; border-radius: 999px; background: #f1ebe2; }
 .pay-bulletin .pay-bulletin-bar span { height: 100%; }
 .pay-bulletin .pay-bulletin-bar .net { background: #8a3d22; }

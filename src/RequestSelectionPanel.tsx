@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { RequestValidationSummary, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import type { RequestKind, SelectedDay } from "./appModel";
 import { LeaveDurationControl } from "./LeaveDurationControl";
+import { LeaveTypeTabs } from "./LeaveTypeTabs";
 import type { WorkQuota } from "./overtime";
 import {
   DURATION_LEAVE_TYPES,
@@ -196,13 +197,7 @@ export function RequestSelectionPanel({
         <div className="request-option-groups request-option-groups-guided">
           <section className="request-option-group request-option-group-primary">
             <h3>Choix courants</h3>
-            <div className="type-tabs" role="group" aria-label="Choix courants">
-              {(["annual", "rtt", "fraction"] as SelectionType[]).map((type) => (
-                <button type="button" className={activeType === type ? "active" : ""} style={{ "--type-color": TYPE_COLORS[type] } as CSSProperties} onClick={() => onSelectLeaveType(type)} key={type}>
-                  <i />{TYPE_LABELS[type]}{selectedCounts[type] ? <b>{selectedCounts[type]}</b> : null}
-                </button>
-              ))}
-            </div>
+            <LeaveTypeTabs types={["annual", "rtt", "fraction"]} activeType={activeType} selectedCounts={selectedCounts} ariaLabel="Choix courants" onSelect={onSelectLeaveType} />
             {/* Congés annuels : en journée entière ou en demi-journée, pour
                 les dates touchées ensuite ; le matin ou l'après-midi, aux
                 heures choisies. RTT et fractionnement : journée entière. */}

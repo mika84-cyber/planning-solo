@@ -312,7 +312,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   vaut pour les dates touchées ensuite — une journée entière et une
   demi-journée se posent dans la même demande — et le même sélecteur
   (`LeaveDurationControl`) se retrouve au-dessus du planning pendant la
-  demande (`planning-request-duration`) ; matin et après-midi gardent chacun
+  demande (`planning-request-duration`), sous le congé des dates qu’on va
+  toucher (`LeaveTypeTabs` : CA, RTT, fractionnement, et le type choisi s’il
+  est autre, avec le nombre de dates de chacun ; le même composant sert aux
+  « Choix courants » du panneau). Le type ne vaut que pour les dates touchées
+  ensuite : la date de départ ne le suit que tant qu’elle est seule
+  (`seedAlone`) ; matin et après-midi gardent chacun
   leurs heures (`LeaveHoursByMoment`, `leaveHoursFor`), et les heures
   saisies s’appliquent aux demi-journées déjà choisies de ce moment. Sur le
   formulaire, les journées vont dans « Congés annuels », les demi-journées

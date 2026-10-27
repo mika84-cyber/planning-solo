@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { durationLeaveDay, validLeaveHours } from "./useRequestTypeSelection";
+import { durationLeaveDay, seedAlone, validLeaveHours } from "./useRequestTypeSelection";
 
 describe("durée d’une date de congé", () => {
   it("pose un congé annuel le matin ou l’après-midi, aux heures choisies", () => {
@@ -17,6 +17,12 @@ describe("durée d’une date de congé", () => {
     expect(durationLeaveDay("2026-11-03", "annual", "morning", { start: "12:00", end: "09:00" }))
       .toEqual({ date: "2026-11-03", type: "half", halfMoment: "morning" });
     expect(validLeaveHours({ start: "09:00", end: "09:00" })).toBe(false);
+  });
+
+  it("ne change la date de départ que tant qu’elle est seule", () => {
+    expect(seedAlone({}, "2026-11-03")).toBe(true);
+    expect(seedAlone({ "2026-11-03": { date: "2026-11-03", type: "rtt" } }, "2026-11-03")).toBe(true);
+    expect(seedAlone({ "2026-11-03": { date: "2026-11-03", type: "rtt" }, "2026-11-04": { date: "2026-11-04", type: "rtt" } }, "2026-11-03")).toBe(false);
   });
 
   it("pose les RTT et le fractionnement en journée entière, quelle que soit la durée", () => {

@@ -16,33 +16,6 @@
 
 /* ---- Écran, tableau de bord et pages de détail ----------------------------- */
 
-.pay-nav-arrow {
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 999px;
-  padding: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-
-/* Un vrai effet de survol, pas juste un curseur qui change : c'est la souris
-  du PC qui en profite, le doigt garde le glissé déjà en place. */
-.pay-nav-arrow:hover { background: rgba(122, 111, 95, 0.14); color: var(--accent); }
-
-.pay-nav-arrow:active { background: rgba(122, 111, 95, 0.22); }
-
-.pay-nav-arrow svg {
-  width: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .pay-dedicated-content.pay-month-out-left { animation: pay-month-out-left 150ms ease-in forwards; }
 
 .pay-dedicated-content.pay-month-out-right { animation: pay-month-out-right 150ms ease-in forwards; }
@@ -149,15 +122,6 @@
 }
 
 .pay-detail-sticky-header .native-back-button { justify-content: center; width: 46px; padding: 0; }
-
-.pay-today-button {
-  border: 1px solid var(--border-control);
-  border-radius: 12px;
-  background: var(--surface-high);
-  color: var(--muted);
-  font-weight: 850;
-  cursor: pointer;
-}
 
 /* Tableau de bord mensuel de Ma paie. Les informations prioritaires restent
   visibles sans ouvrir les réglages ni les pages de détail. */
@@ -1646,18 +1610,6 @@
   }
   .pay-detail-sticky-header .native-back-button { width: 42px; min-height: 42px; }
   .pay-detail-sticky-header h2 { font-size: 16px; }
-  .pay-today-button { flex: 1 0 100%; }
-  .variable-pay-card .pay-month-nav.compact .pay-nav-arrow {
-    position: absolute;
-    top: 4px;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--border-control);
-    background: #fff;
-  }
-  .variable-pay-card .pay-month-nav.compact .pay-nav-arrow:first-child { right: 60px; }
-  .variable-pay-card .pay-month-nav.compact .pay-nav-arrow:nth-child(2) { right: 4px; }
-  .variable-pay-card .pay-month-nav.compact .pay-today-button { width: 168px; min-height: 46px; }
   #root .pay-app-screen:has(.pay-dashboard) {
     box-sizing: border-box;
     width: 100%;
