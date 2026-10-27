@@ -249,7 +249,7 @@ describe("PayslipCheckSection", () => {
     expect(html).not.toContain("<table");
     expect(html).not.toContain("Voir le détail");
     expect(html).toContain("Tout est juste : valider");
-    expect(html).toContain("Signaler une anomalie à ma hiérarchie");
+    expect(html).toContain("Signaler une anomalie : proposition de courrier à envoyer aux RH");
   });
 
   it("ne reporte pas les détails d’un bulletin sur un autre mois", () => {
@@ -323,7 +323,7 @@ describe("PayslipCheckSection", () => {
     expect(html).not.toContain("<table");
     expect(html).toContain("C’est normal : corriger ma paie");
     expect(html).toContain("Octobre prend les montants du bulletin : net 2 200,17 €, dimanches 6,5.");
-    expect(html).toContain("C’est une erreur : écrire à ma hiérarchie");
+    expect(html).toContain("C’est une erreur : proposition de courrier à envoyer aux RH");
     expect(html).not.toContain("Conclusion de la vérification");
   });
 

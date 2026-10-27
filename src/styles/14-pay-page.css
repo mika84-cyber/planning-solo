@@ -1108,6 +1108,11 @@
 
 .sunday-day.upcoming { background: none; outline: 1.5px dashed currentColor; outline-offset: -2px; }
 
+/* Un demi-dimanche : le ½ sur la même ligne que le chiffre, la pastille
+   s'allonge d'autant au lieu de se couper en deux. */
+.sunday-day.half { grid-auto-flow: column; gap: 1px; padding: 0 8px; border-radius: 999px; }
+.sunday-day small { font-size: .64em; font-weight: 800; line-height: 1; }
+
 .sunday-done-legend {
   display: flex;
   margin: 4px 0 0;

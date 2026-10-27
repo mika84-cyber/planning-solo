@@ -494,6 +494,16 @@ describe("programmation du Grand Palais", () => {
     }]);
     expect(nef(reread, 2026)[0].prices).toEqual([{ label: "Adultes", amount: 27, group: "Session du matin" }]);
     expect(nef(reread, 2026)[0].ticketingUrl).toBe("https://legrandpalaisdeglace.fr/billetterie/");
+    // Une fiche relue par la veille garde aussi sa gratuité voulue
+    // (showFreePrices) : le Musée imaginaire d'Oli dit « Moins de 5 ans ».
+    const oli = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{
+      id: "oli", title: "Le Musée Imaginaire d’Oli", startDate: "2026-12-02", endDate: "2027-02-21",
+      url: "https://www.grandpalais.fr/fr/programme/le-musee-imaginaire-doli", venueKey: "gallery7", venueLabel: "Galerie 7",
+    }]);
+    const oliEntry = (oli.gallery7.schedule[2026] ?? []).find((entry) => /Oli/.test(entry.title))!;
+    expect(oliEntry).toMatchObject({ showFreePrices: true });
+    expect(renderToStaticMarkup(<ExpoCard entry={oliEntry} venueKey="gallery7" today="2026-11-20" openingReady linkLabel="Voir" />))
+      .toContain("<dt>Moins de 5 ans</dt><dd>Gratuit</dd>");
     // Deux titres qui se ressemblent mais à des dates sans rapport : deux événements.
     const later = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{ ...shared, id: "2027", startDate: "2027-12-11", endDate: "2028-01-05" }]);
     expect(nef(later, 2026)).toHaveLength(1);

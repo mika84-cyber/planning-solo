@@ -292,8 +292,11 @@ summary.colleague-received-heading > div { flex: 1; }
 .colleague-day-steps .period-step:disabled { box-shadow: none; cursor: default; opacity: .35; }
 /* « Revenir à cette semaine » : un lien discret sous le titre, violet comme
    les flèches, qui ne prend pas de place à côté d'elles. */
-.colleague-sharing-page button.colleague-today-step { display: inline-flex; min-height: 0; margin: 3px 0 0; border: 0; padding: 0; background: none; box-shadow: none; color: #7255ad; font: inherit; font-size: .78rem; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.colleague-sharing-page button.colleague-today-step:hover { color: var(--accent-strong); }
+/* Le retour à aujourd'hui ou à cette semaine : une pastille claire qui le
+   dit, à côté des flèches, cercle et texte de leur violet. */
+.colleague-sharing-page button.colleague-today-step { display: inline-flex; align-items: center; gap: 5px; height: 30px; min-height: 30px; margin: 8px 0 0; border: 1px solid #7255ad; border-radius: 999px; padding: 0 11px 0 8px; background: #fff; color: #7255ad; font: inherit; font-size: .78rem; font-weight: 800; white-space: nowrap; box-shadow: none; cursor: pointer; }
+.colleague-sharing-page button.colleague-today-step:hover { background: #f1ecfa; }
+.colleague-sharing-page button.colleague-today-step svg { width: 16px; height: 16px; flex: none; }
 
 /* Planning d'un collègue : le mois et l'année comme sur votre planning, en
    capitales espacées reliées par un trait violet, entre deux flèches violettes. */

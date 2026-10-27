@@ -98,7 +98,8 @@ export function SundayDetailsList({ allowances, onClose }: { allowances: PayAllo
                                     title={`${rank}${rank === 1 ? "er" : "e"} dimanche · ${moved ? `reporté sur ${MONTHS[moved.month]} ${moved.year}` : kind === "paid" ? "payé" : kind === "flat" ? "dans le forfait" : "non payé"}${item.share < 1 ? " · demi-journée, compté pour moitié" : ""}${item.past ? "" : " · à venir"}`}
                                   >
                                     {Number(item.key.slice(8, 10))}
-                                    {item.share < 1 ? <sup>½</sup> : null}
+                                    {/* Un demi-dimanche : le ½ à côté du chiffre, dans la même pastille. */}
+                                    {item.share < 1 ? <small>½</small> : null}
                                   </span>
                                 );
                               })}

@@ -44,8 +44,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   gardée d'une exposition et celle lue par la veille (titre, précision,
   dates, espace, chaque tarif ajouté, retiré ou modifié) ; une proposition
   « Informations modifiées » l'affiche ancien → nouveau.
-- `src/PayYearOverview.tsx` : « L'année en un coup d'œil », quatrième carte de
-  Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,
+- `src/PayYearOverview.tsx` : « L'année en un coup d'œil » (dans l’en-tête,
+  « coup d’œil » reste sur la seconde ligne : espace insécable dans
+  `AppNavigation`), quatrième carte de Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,
   dans la langue des lignes de la paie), le net mois par mois en barres, les
   douze mois en tableau, chacun ouvrant son détail du calcul. Les chiffres
   viennent de `src/yearPayOverview.ts` (calcul pur, mêmes formules que la
@@ -137,23 +138,33 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   texte à la couleur foncée de l’en-tête. Sur téléphone, la zone des
   commandes de l’en-tête est en `display: contents` : chaque commande (mise à
   jour, compte, menu) passe elle-même devant le titre, qui s’étend sur toute
-  la largeur (`pageHeaders.css`), sinon le titre intercepte le toucher. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
+  la largeur (`pageHeaders.css`), sinon le titre intercepte le toucher ; le
+  menu du compte, qui fait contexte d’empilement, reste au-dessus de la
+  pastille (z-index 4 contre 3), sinon son menu déroulant passe dessous. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
   demande) : « Que cherchez-vous ? », trois groupes chacun à sa couleur
   (Trouver en bleu, Ma paie en vert, Déclarer en terracotta : titre, liseré,
   fond pâle, icônes), une fine bande aux couleurs de l’en-tête en haut. L’exposition des Galeries 3 et 4 (`galleryExpoFor`) y a deux
-  lignes à son nom : sa fiche d’expo, le PDF du dossier Expo téléchargé d’un
-  toucher (`expoSheetFor`, sinon le dossier s’ouvre), et son audioguide
-  (`AudioguideRow`), qui déplie sur place le QR code à scanner et le code
-  d’accès. `AppShellChrome` (`chooseHelp`) change de page ;
+  lignes à son nom, séparées : sa fiche d’expo avant « Les dates d’une
+  exposition », le PDF du dossier Expo téléchargé d’un toucher
+  (`expoSheetFor`, sinon le dossier s’ouvre ; `GalleryExpoRow`), et son
+  audioguide juste après (`GalleryAudioguideRow` → `AudioguideRow`), qui
+  déplie sur place le QR code à scanner et le code d’accès. Trouver suit
+  l’ordre voulu par l’administrateur : téléphone, formulaire, demande à la
+  main, fiche d’expo, dates d’une exposition, audioguide, planning en PDF,
+  inter-expos, partager mon planning, code radio. `AppShellChrome` (`chooseHelp`) change de page ;
   l’onglet ou la sous-page s’ouvre par `src/helpTargets.ts`
   (`requestHelpTarget` / `useHelpTarget`), lu par `UsefulResourcesHub`,
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,
   dossier Expo),
   `ColleaguePlanningPage` (« Partager mon planning » ouvre la liste des
-  collègues), `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
+  collègues ; hors d’aujourd’hui ou de la semaine en cours, une pastille
+  « Aujourd’hui » / « Cette semaine » sous le titre du tableau y ramène,
+  `colleague-today-step`), `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
   « Par espace » et descendent au choix des espaces, les inter-expos au
   détail des périodes) et `LeaveManagementPage` (heures et
-  mécénats, CET). Une demande non servie s’oublie après 8 s. « Poser un
+  mécénats, CET). Une demande non servie s’oublie après 8 s. « Remplir une
+  demande à la main » (le formulaire de demande, vierge) est dans Trouver,
+  après « Un formulaire ». « Poser un
   congé » ouvre le choix du congé ; le congé choisi, on arrive directement
   sur les jours du planning (`requestFromHelp` dans `App`, `beginRequest`
   avec `landing` « calendar »).
@@ -176,7 +187,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   aux trois écrans), `src/PayAllowancesSection.tsx` et
   `src/PayslipCheckSection.tsx` : navigation paie, primes et composition du
   contrôle du bulletin ; `src/SundayDetailsList.tsx`, chargé à l’ouverture,
-  détaille les dimanches par paie, reports compris. Le contrôle délègue les blocs autonomes à
+  détaille les dimanches par paie, reports compris (une demi-journée se lit
+  dans la pastille du jour, « 25½ », `.sunday-day.half`). Le contrôle délègue les blocs autonomes à
   `src/PayslipVerificationCard.tsx`, `src/PayslipCalibrationCard.tsx` et
   `src/PayslipSettingsSections.tsx` (résultat, calibration, arrêts et
   paramètres), sans changer la structure DOM attendue par les styles. Le
@@ -188,9 +200,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   ni lignes identiques, ni tableau, ni liste des champs repris, ni lignes
   d'heures sup ou de mécénats « prises en compte ». Puis
   « Que voulez-vous faire ? » : « C'est normal : corriger ma paie » (le mois
-  prend les montants du bulletin) ou « C'est une erreur : écrire à ma
-  hiérarchie » (le courrier passe devant quand une partie de l'écart reste
-  inexpliquée). Viennent ensuite « Ajouter une page » et « Vérifier un autre
+  prend les montants du bulletin) ou « C'est une erreur : proposition de
+  courrier à envoyer aux RH » (le courrier passe devant quand une partie de
+  l'écart reste inexpliquée). Viennent ensuite « Ajouter une page » et « Vérifier un autre
   bulletin ». Ce qui a été
   lu (champs remplis, lignes absentes) est dit sans alarme : le rouge est
   réservé aux écarts. Le brut et le net lus tiennent en une ligne sous la
@@ -237,7 +249,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   gratuité en montant nul — tue dans les
   galeries et au Palais des enfants (`PAID_ONLY_VENUES`), dite dans la Nef,
   ou dans une galerie quand la fiche le demande (`showFreePrices`, le Musée
-  imaginaire d’Oli : la billetterie vend le billet des moins de 5 ans) —,
+  imaginaire d’Oli : la billetterie vend le billet des moins de 5 ans ; la
+  fusion d’une mise à jour de la veille le garde, comme `priceNote`) —,
   condition en
   `priceNote` ; `ticketingUrl` est le site tiers qui porte la billetterie ou
   les tarifs quand le Grand Palais ne les publie pas. `grandPalaisTitleKey`

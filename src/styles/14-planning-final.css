@@ -208,20 +208,26 @@
   min-width: 0;
 }
 
+/* Second bouton du planning : le terracotta en creux, pendant du bouton
+   plein « Poser un congé » — le dernier bleu décoratif de l'application. */
 .planning-leave-panel .planning-exchange-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   min-height: 46px;
-  border: 2px solid #111820;
+  border: 2px solid var(--accent);
   border-radius: 12px;
-  color: #1f3240;
-  background: linear-gradient(145deg, #e6eef3, #b9cedb);
-  box-shadow: 0 5px 14px rgba(91, 134, 160, 0.18);
+  color: var(--accent-strong);
+  background: var(--surface);
+  box-shadow: none;
   font: inherit;
   font-weight: 900;
   cursor: pointer;
+}
+
+.planning-leave-panel .planning-exchange-action:hover {
+  background: var(--accent-soft);
 }
 
 .work-exchange-cycle-calendar {

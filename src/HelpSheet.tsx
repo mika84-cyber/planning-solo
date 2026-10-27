@@ -40,11 +40,15 @@ const QUESTIONS: Record<"find" | "pay" | "declare", Question[]> = {
   find: [
     { id: "phone", icon: "phone", question: "Un numéro de téléphone", where: "Docs · Contacts" },
     { id: "form", icon: "form", question: "Un formulaire", where: "Docs · Formulaires" },
-    { id: "planning-pdf", icon: "download", question: "Télécharger un planning", where: "Plannings en PDF" },
-    { id: "share-planning", icon: "share", question: "Partager mon planning avec un(e) collègue", where: "Planning partagé · Choisir un collègue" },
+    // Un contraste avec « Poser un congé », qui prépare la demande depuis le
+    // planning, et avec « Un formulaire », les documents à télécharger.
+    { id: "request-form", icon: "leave", question: "Remplir une demande à la main", where: "Formulaire de demande, vierge" },
+    // La fiche d'expo des Galeries 3 et 4 vient ici (GalleryExpoRow)…
     { id: "expo-dates", icon: "expo", question: "Les dates d’une exposition", where: "Expos · Par espace" },
-    // L'exposition des Galeries 3 et 4 vient ici (voir GalleryExpoRow).
+    // … et son audioguide là (GalleryAudioguideRow).
+    { id: "planning-pdf", icon: "download", question: "Télécharger un planning", where: "Plannings en PDF" },
     { id: "interexpo", icon: "inter", question: "Les dates d’inter-expos", where: "Expos · Inter-expos" },
+    { id: "share-planning", icon: "share", question: "Partager mon planning avec un(e) collègue", where: "Planning partagé · Choisir un collègue" },
     { id: "radio", icon: "radio", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio" },
   ],
   pay: [
@@ -56,7 +60,6 @@ const QUESTIONS: Record<"find" | "pay" | "declare", Question[]> = {
     { id: "request-leave", icon: "sun", question: "Poser un congé", where: "Accueil · Choix des dates" },
     { id: "exchange", icon: "swap", question: "Échanger un jour avec un collègue", where: "Accueil · Faire un échange" },
     { id: "overtime-mecenat", icon: "clock", question: "Un mécénat ou des heures supp", where: "Congés · Heures et mécénats" },
-    { id: "request-form", icon: "leave", question: "Ouvrir un formulaire d’absence ou de remplacement vierge", where: "Formulaire de demande" },
     { id: "cet", icon: "piggy", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET" },
     { id: "work-accident", icon: "accident", question: "Un accident de travail", where: "Docs · Accident de travail" },
   ],
@@ -133,8 +136,15 @@ export function AudioguideRow({ title, audioguide, initiallyOpen = false }: {
   );
 }
 
-/** L'exposition des Galeries 3 et 4, en deux lignes : sa fiche d'exposition
- *  (le PDF du dossier Expo) et son audioguide. */
+/** L'audioguide de l'exposition des Galeries 3 et 4, à sa place dans la
+ *  liste, séparé de la fiche d'exposition. */
+function GalleryAudioguideRow({ today }: { today: string }) {
+  const gallery = useMemo(() => galleryExpoFor(today), [today]);
+  if (!gallery?.entry.audioguide) return null;
+  return <AudioguideRow title={gallery.entry.title} audioguide={gallery.entry.audioguide} />;
+}
+
+/** La fiche d'exposition des Galeries 3 et 4 : le PDF du dossier Expo. */
 function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: HelpChoice) => void }) {
   const gallery = useMemo(() => galleryExpoFor(today), [today]);
   const [sharedDocuments, setSharedDocuments] = useState<ExpoDocument[]>([]);
@@ -169,10 +179,9 @@ function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: Hel
     }
   };
   const label = `Galeries 3 et 4 · ${current ? "en ce moment" : "prochainement"}`;
+  // Téléchargée d'un toucher quand le dossier Expo la contient, sinon le
+  // dossier s'ouvre.
   return (
-    <>
-      {/* La fiche d'exposition : téléchargée d'un toucher quand le dossier
-          Expo la contient, sinon le dossier s'ouvre. */}
       <li className="help-sheet-expo">
         <button
           type="button"
@@ -189,8 +198,6 @@ function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: Hel
         </button>
         {downloadState === "failed" ? <small className="help-sheet-error" role="alert">Le téléchargement n’a pas pu démarrer. Réessayez.</small> : null}
       </li>
-      {entry.audioguide ? <AudioguideRow title={entry.title} audioguide={entry.audioguide} /> : null}
-    </>
   );
 }
 
@@ -230,9 +237,11 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
         </header>
         <h3 className="help-sheet-group-title group-find">Trouver</h3>
         <ul className="help-sheet-group group-find" aria-label="Trouver">
-          {QUESTIONS.find.slice(0, 5).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
+          {QUESTIONS.find.slice(0, 3).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
           <GalleryExpoRow today={today} onChoose={onChoose} />
-          {QUESTIONS.find.slice(5).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
+          {QUESTIONS.find.slice(3, 4).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
+          <GalleryAudioguideRow today={today} />
+          {QUESTIONS.find.slice(4).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
         </ul>
         <h3 className="help-sheet-group-title group-pay">Ma paie</h3>
         <ul className="help-sheet-group group-pay" aria-label="Ma paie">

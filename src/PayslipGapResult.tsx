@@ -137,7 +137,7 @@ export function PayslipDecisionOptions({
     <button type="button" className="payslip-gap-option letter" onClick={onWriteLetter}>
       <span className="payslip-gap-option-icon">{ICON_LETTER}</span>
       <span>
-        <strong>{hasGap ? "C’est une erreur : écrire à ma hiérarchie" : "Signaler une anomalie à ma hiérarchie"}</strong>
+        <strong>{hasGap ? "C’est une erreur : proposition de courrier à envoyer aux RH" : "Signaler une anomalie : proposition de courrier à envoyer aux RH"}</strong>
         <small>{hasGap ? "Un courrier daté qui explique l’écart et demande la régularisation." : "Un courrier daté, avec votre message, pour signaler ce qui ne va pas."}</small>
       </span>
       <em aria-hidden="true">›</em>

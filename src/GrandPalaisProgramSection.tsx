@@ -173,6 +173,7 @@ export function mergeSharedGrandPalaisProgram(
     const audioguide = known("audioguide");
     const priceNote = known("priceNote");
     const priceGroupHours = known("priceGroupHours");
+    const showFreePrices = known("showFreePrices");
     const entry: GrandPalaisProgramEntry = {
       title: shared.title,
       ...(shared.details ? { details: shared.details } : {}),
@@ -185,6 +186,7 @@ export function mergeSharedGrandPalaisProgram(
       ...(audioguide ? { audioguide } : {}),
       ...(priceNote ? { priceNote } : {}),
       ...(priceGroupHours ? { priceGroupHours } : {}),
+      ...(showFreePrices ? { showFreePrices } : {}),
     };
     const firstYear = Number(shared.startDate.slice(0, 4));
     const lastYear = Number(shared.endDate.slice(0, 4));

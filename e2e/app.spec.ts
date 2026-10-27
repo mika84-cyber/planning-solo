@@ -1826,7 +1826,7 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
 
   // « C'est une erreur » : l'anomalie est gardée et le courrier s'ouvre.
   await greenCheck.click();
-  await decision.getByRole("button", { name: /^(C’est une erreur : écrire à ma hiérarchie|Signaler une anomalie à ma hiérarchie)/ }).click();
+  await decision.getByRole("button", { name: /^(C’est une erreur|Signaler une anomalie) : proposition de courrier/ }).click();
   const letter = page.getByRole("dialog", { name: "Écrire à ma hiérarchie" });
   await expect(letter).toBeVisible();
   await expect(letter.getByLabel("Destinataire")).toHaveValue("Service des ressources humaines");

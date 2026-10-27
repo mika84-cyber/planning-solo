@@ -732,10 +732,19 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
           <div>
             <p className="eyebrow">En un coup d’œil</p>
             <h4 id="colleague-tomorrow-title">{boardMode === "day" ? colleagueBoardTitle(boardOffset) : colleagueWeekTitle(weekOffset)}</h4>
-            {/* Hors de la semaine en cours, un lien discret sous le titre y
-                ramène, comme « Revenir à aujourd'hui » dans Ma paie. */}
+            {/* Hors d'aujourd'hui ou de la semaine en cours, une pastille
+                sous le titre, qui dit où elle ramène, d'un toucher. */}
+            {boardMode === "day" && boardOffset !== 0 ? (
+              <button className="colleague-today-step" type="button" aria-label="Revenir à aujourd’hui" title="Revenir à aujourd’hui" onClick={() => setBoardOffset(0)}>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" /><circle cx="10" cy="10" r="2.4" fill="currentColor" /></svg>
+                Aujourd’hui
+              </button>
+            ) : null}
             {boardMode === "week" && weekOffset !== 0 ? (
-              <button className="colleague-today-step" type="button" onClick={() => setWeekOffset(0)}>Revenir à cette semaine</button>
+              <button className="colleague-today-step" type="button" aria-label="Revenir à cette semaine" title="Revenir à cette semaine" onClick={() => setWeekOffset(0)}>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" /><circle cx="10" cy="10" r="2.4" fill="currentColor" /></svg>
+                Cette semaine
+              </button>
             ) : null}
           </div>
           <div className="colleague-day-steps">

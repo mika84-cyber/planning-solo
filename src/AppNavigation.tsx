@@ -76,7 +76,8 @@ function headerTitle(section: MainSection, payScreen: PayScreen) {
   if (section === "colleagues") return "Planning partagé";
   if (payScreen === "allowances") return "Primes et jours fériés";
   if (payScreen === "payslip") return "Détail du calcul";
-  if (payScreen === "year") return "L’année en un coup d’œil";
+  // « coup d’œil » reste ensemble : sur téléphone, « coup » ouvre la 2e ligne.
+  if (payScreen === "year") return "L’année en un coup d’œil";
   return "Ma paie";
 }
 
