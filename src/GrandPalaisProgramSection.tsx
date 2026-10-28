@@ -1116,17 +1116,18 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
         </section>
       ) : null}
 
+      {/* La recherche, puis les quatre vues en intercalaires posés sur la
+          carte qu'elles affichent (data-view : la couleur de chacune). */}
       <div className="grand-palais-view-tools">
-        <span className="grand-palais-view-label" aria-hidden="true">Afficher</span>
+        <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label>
         <div className="grand-palais-view-picker" role="tablist" aria-label="Vue de la programmation">
           {([["now", "En ce moment"], ["upcoming", "À venir"], ["space", "Par espace"], ["interexpo", "Inter-expos"]] as const).map(([value, label]) => (
-            <button key={value} type="button" role="tab" aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>
+            <button key={value} type="button" role="tab" data-view={value} aria-selected={programView === value} className={programView === value ? "active" : ""} onClick={() => setProgramView(value)}>
               {VIEW_ICONS[value]}
               <span>{label}</span>
             </button>
           ))}
         </div>
-        <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label>
       </div>
 
       {programView === "space" && !searchResults ? <section className="grand-palais-venue-navigation" id="grand-palais-spaces" aria-labelledby="grand-palais-spaces-title">

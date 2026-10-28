@@ -249,6 +249,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande (préparée au repos par
   `src/warmUpScreens.ts`), navigation par espace et périodes d’inter expos.
+  Sous la recherche, les quatre vues (En ce moment, À venir, Par espace,
+  Inter-expos) sont des intercalaires de classeur posés sur la carte qu’ils
+  affichent : chacune a sa couleur (`data-view` : vert, bleu, ocre,
+  terracotta) en liseré, dessin et teinte pâle ; la vue choisie, plus haute,
+  prend la teinte de l’en-tête de la carte et s’y ouvre sans filet. Le bloc
+  mord sur l’espacement de la page (même `clamp`, 12 px sur téléphone) :
+  changer l’un oblige à changer l’autre.
   « Par espace » montre une exposition à cheval sur deux années une seule
   fois (`venueYearGroups`, même titre et mêmes dates) ; une exposition « À
   confirmer » mais datée donne déjà son délai (« Dans 4 mois… »).

@@ -470,7 +470,7 @@
 
 /* Boutons terracotta : un liseré sombre très léger, comme les cases de
   l’accueil. */
-:root :is(.primary-action:not(.warning-button):not(.danger),.validate-button,.save-button,.today-button,.colleague-invite,.colleague-profile-save,.colleague-received-person button:not(.secondary),.payslip-file-drop,.home-add-note,.auth-submit,.document-share-dialog button,.grand-palais-view-picker button.active,.school-zone-picker button.active,.choice-picker-menu button.active) {
+:root :is(.primary-action:not(.warning-button):not(.danger),.validate-button,.save-button,.today-button,.colleague-invite,.colleague-profile-save,.colleague-received-person button:not(.secondary),.payslip-file-drop,.home-add-note,.auth-submit,.document-share-dialog button,.school-zone-picker button.active,.choice-picker-menu button.active) {
   border: 1px solid var(--border-control);
 }
 

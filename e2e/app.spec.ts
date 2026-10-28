@@ -2960,6 +2960,28 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(lastProgramme.locator(".grand-palais-interexpo-cut")).toHaveCount(0);
 });
 
+test("les vues des Expos sont des intercalaires posés sur la carte qu’elles affichent", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  const tabs = page.getByRole("tablist", { name: "Vue de la programmation" });
+  // La recherche est au-dessus des intercalaires.
+  const [searchBox, tabsBox] = await Promise.all([page.getByLabel("Rechercher une exposition").boundingBox(), tabs.boundingBox()]);
+  expect(searchBox!.y + searchBox!.height).toBeLessThan(tabsBox!.y);
+  for (const name of ["En ce moment", "À venir", "Par espace", "Inter-expos"]) {
+    const tab = tabs.getByRole("tab", { name });
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true");
+    // L'onglet choisi prend la teinte de l'en-tête de la carte qu'il affiche
+    // (une fois sa transition finie) et se pose sur son filet, sans trait
+    // entre les deux.
+    const card = page.locator(".grand-palais-view-tools + *");
+    const heading = await card.locator("> :first-child").evaluate((element) => getComputedStyle(element).backgroundColor);
+    await expect(tab).toHaveCSS("background-color", heading);
+    const [tabBox, cardBox] = await Promise.all([tab.boundingBox(), card.boundingBox()]);
+    expect(tabBox!.y + tabBox!.height - cardBox!.y).toBeCloseTo(1, 0);
+  }
+});
+
 test("pendant le choix des dates, une barre ramène à l’enregistrement resté hors de l’écran", async ({ page }) => {
   // Écran peu haut, comme un petit téléphone : boutons et calendrier n’y tiennent pas ensemble.
   await page.setViewportSize({ width: page.viewportSize()!.width, height: 560 });

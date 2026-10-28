@@ -32,9 +32,6 @@
 }
 
 .grand-palais-view-tools { display: grid; gap: 12px; }
-/* Les quatre vues sur une ligne ; sous 480 px, elles passent en deux lignes
-   de deux, sans media query (la base flex bascule d'elle-même). */
-.grand-palais-view-picker { display: flex; flex-wrap: wrap; gap: 7px; } .grand-palais-view-picker > button { flex: 1 1 clamp(0px, (480px - 100%) * 999, 50% - 4px); min-width: 0; }
 .grand-palais-search { display: grid; gap: 5px; color: var(--text); font-size: 12px; font-weight: 800; }
 .grand-palais-search input { min-height: 44px; border: 1px solid var(--section-outline); border-radius: 12px; padding: 0 13px; background: var(--surface); color: var(--text); font: inherit; }
 
@@ -527,23 +524,37 @@
   justify-items: start;
 }
 
-/* Choix de la vue : un plateau blanc à filet fin, sous le petit titre
-   « Afficher », qui porte quatre tuiles, chacune avec son dessin au trait.
-   La vue choisie prend une teinte chaude, son dessin et son libellé en
-   terracotta. */
-.grand-palais-view-label { margin: 0 0 -6px 4px; color: #6b5d50; font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
-:root .grand-palais-view-tools .grand-palais-view-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; border: 1px solid #ebe1d5; border-radius: 20px; padding: 5px; background: #fff; box-shadow: 0 1px 3px rgba(44, 38, 33, .05); }
-:root .grand-palais-view-tools .grand-palais-view-picker button { display: grid; justify-items: center; align-content: start; gap: 7px; min-height: 0; border: 1px solid transparent; border-radius: 12px; padding: 12px 4px 10px; background: transparent; color: #5e5146; font-size: .7rem; font-weight: 800; line-height: 1.15; text-align: center; white-space: normal; box-shadow: none; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
-:root .grand-palais-view-tools .grand-palais-view-picker button span { text-wrap: balance; }
-:root .grand-palais-view-tools .grand-palais-view-picker button svg { box-sizing: content-box; width: 28px; height: 28px; border-radius: 0; padding: 2px 0 0; background: none; color: #8a7d6e; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: background .15s, color .15s; }
+/* Choix de la vue : des intercalaires de classeur posés sur la carte du
+   dessous, la recherche au-dessus. Chaque vue a sa couleur (data-view) —
+   En ce moment en vert, À venir en bleu, Par espace en ocre, Inter-expos en
+   terracotta — en liseré au sommet de son onglet, sur son dessin et en
+   teinte très pâle. La vue choisie, plus haute, prend la teinte de l'en-tête
+   de la carte et s'y ouvre sans filet ; les autres laissent voir le filet de
+   la carte sous elles. Le bloc mord sur l'espacement de la page (le même
+   clamp, 12 px sur téléphone) pour poser les onglets sur ce filet. */
+.grand-palais-view-tools { position: relative; z-index: 1; margin-bottom: calc(-1px - clamp(16px, 2vw, 22px)); }
+.grand-palais-view-picker button[data-view="now"] { --tab: #2f7a52; }
+.grand-palais-view-picker button[data-view="upcoming"] { --tab: #2f6a95; }
+.grand-palais-view-picker button[data-view="space"] { --tab: #85631a; }
+.grand-palais-view-picker button[data-view="interexpo"] { --tab: #8a3d22; }
+:root .grand-palais-view-tools .grand-palais-view-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 5px; margin-top: 2px; padding: 0 12px; }
+:root .grand-palais-view-tools .grand-palais-view-picker button { position: relative; display: grid; justify-items: center; gap: 4px; min-height: 0; margin: 0 0 1px; border: 0; border-radius: 10px 10px 0 0; padding: 9px 3px; background: color-mix(in srgb, var(--tab) 8%, #fff); color: color-mix(in srgb, var(--tab) 70%, #5e5146); font-size: .68rem; font-weight: 750; line-height: 1.15; text-align: center; white-space: nowrap; box-shadow: inset 0 3px 0 var(--tab), inset 1px 0 0 color-mix(in srgb, var(--tab) 22%, #fff), inset -1px 0 0 color-mix(in srgb, var(--tab) 22%, #fff); cursor: pointer; transition: background .15s; }
+:root .grand-palais-view-tools .grand-palais-view-picker button svg { width: 20px; height: 20px; border-radius: 0; padding: 0; background: none; color: var(--tab); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 :root .grand-palais-view-tools .grand-palais-view-picker button svg .view-icon-dot { fill: #2f8a5b; stroke: none; }
-:root .grand-palais-view-tools .grand-palais-view-picker button:hover:not(.active) { background: #faf6f1; color: var(--text); }
-:root .grand-palais-view-tools .grand-palais-view-picker button.active { border-color: #2c2621; background: #fbf0e6; color: #7f3a1f; box-shadow: none; }
-:root .grand-palais-view-tools .grand-palais-view-picker button.active svg { background: none; color: #9a4a2e; stroke-width: 1.9; }
-/* Z Fold fermé et petits téléphones : « En ce moment » passe sur deux lignes. */
+:root .grand-palais-view-tools .grand-palais-view-picker button:hover:not(.active) { background: color-mix(in srgb, var(--tab) 14%, #fff); }
+:root .grand-palais-view-tools .grand-palais-view-picker button.active { margin-bottom: 0; padding-top: 14px; background: #f8ebe0; color: #2c2621; box-shadow: inset 0 3px 0 var(--tab), inset 1px 0 0 #968b80, inset -1px 0 0 #968b80; }
+@media (max-width: 720px) {
+  .grand-palais-view-tools { margin-bottom: -13px; }
+}
+/* Z Fold fermé et petits téléphones : « En ce moment » tient sur une ligne. */
 @media (max-width: 380px) {
-  :root .grand-palais-view-tools .grand-palais-view-picker { gap: 3px; padding: 4px; }
-  :root .grand-palais-view-tools .grand-palais-view-picker button { border-radius: 12px; padding: 10px 3px 9px; font-size: .66rem; }
+  :root .grand-palais-view-tools .grand-palais-view-picker { gap: 3px; padding: 0 8px; }
+  :root .grand-palais-view-tools .grand-palais-view-picker button { padding-inline: 1px; font-size: .62rem; }
+}
+@media (min-width: 721px) {
+  :root .grand-palais-view-tools .grand-palais-view-picker { grid-template-columns: repeat(4, minmax(0, 200px)); }
+  :root .grand-palais-view-tools .grand-palais-view-picker button { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 22px; font-size: .8rem; }
+  :root .grand-palais-view-tools .grand-palais-view-picker button.active { padding-top: 16px; }
 }
 
 /* Carte d'exposition : l'état en haut à droite, le temps restant sous la barre. */
