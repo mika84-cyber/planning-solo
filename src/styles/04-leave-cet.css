@@ -1,6 +1,5 @@
 /* Formulaires officiels et congés CET. La case CET du planning est dans
    06-planning-calendar.css. */
-.cet-leave-choice,
 .leave-choices .cet-day {
   border-color: var(--border-card) !important;
   background: var(--surface-high) !important;

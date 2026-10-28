@@ -1005,8 +1005,7 @@
   margin-top: 12px;
 }
 
-.useful-contact-card-tools .contact-admin-edit,
-.useful-contact-card-tools .resource-favorite-button {
+.useful-contact-card-tools .contact-admin-edit {
   position: static;
   display: grid;
   place-items: center;

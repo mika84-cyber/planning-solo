@@ -476,16 +476,6 @@
 .strike-request-options .request-option-group { gap: 12px; }
 .strike-request-options .request-help { margin-top: 5px; }
 
-/* Dans le premier écran de choix, Maladie et CET restent aussi neutres que
-   les autres entrées : leur couleur sert ensuite dans le planning. */
-
-.request-choice .choice-grid > button.cet-leave-choice {
-  border-color: color-mix(in srgb, var(--leave-choice-accent) 45%, var(--border-control)) !important;
-  color: var(--text) !important;
-  background: color-mix(in srgb, var(--leave-choice-accent) 8%, #fff) !important;
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--leave-choice-accent) 70%, #fff), 0 4px 10px #243b5410 !important;
-}
-
 /* L'ouverture officielle du CET est l'action principale ; la confirmation
    de droits déjà ouverts reste secondaire et sobre. */
 .cet-actions .cet-opening-request-action {
