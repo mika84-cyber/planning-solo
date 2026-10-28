@@ -134,6 +134,11 @@ export function AppShellChrome({
         open("home");
         help.openExchange();
         return;
+      default: {
+        // Une question ajoutée à la fenêtre d'aide sans chemin ici ne compile pas.
+        const unhandled: never = choice;
+        return unhandled;
+      }
     }
   };
   return (

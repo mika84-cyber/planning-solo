@@ -159,7 +159,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   le PDF du dossier Expo téléchargé d’un toucher (`useGalleryExpo` lit le
   dossier une fois à l’ouverture, `expoSheetFor`, sinon le dossier s’ouvre ;
   `GalleryExpoRow`), et son audioguide (`AudioguideRow`), qui déplie sur place
-  le QR code à scanner et le code d’accès. `AppShellChrome` (`chooseHelp`) change de page ;
+  le QR code à scanner et le code d’accès. `AppShellChrome` (`chooseHelp`) change de page,
+  et refuse de compiler si une question n’y a pas de chemin (`never`) ;
   l’onglet ou la sous-page s’ouvre par `src/helpTargets.ts`
   (`requestHelpTarget` / `useHelpTarget`), lu par `UsefulResourcesHub`,
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,
