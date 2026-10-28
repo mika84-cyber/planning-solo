@@ -120,11 +120,12 @@ describe("HomeDashboard", () => {
     expect(html).toContain("Prochaine note");
     expect(html).toContain("Jeu 10/09");
     expect(html).toContain("Réunion d’équipe");
-    // Au-delà de dix jours, la ligne n'apparaît pas.
+    // Même loin — le mois suivant —, la prochaine note se lit.
     const later = renderToStaticMarkup(<HomeDashboard
       {...baseProps}
-      upcoming={[{ key: "note-2", date: "2026-09-14", label: "Plus tard", detail: "", kind: "note", author: "mika" }]}
+      upcoming={[{ key: "note-2", date: "2026-10-14", label: "Plus tard", detail: "", kind: "note", author: "mika" }]}
     />);
-    expect(later).not.toContain("Prochaine note");
+    expect(later).toContain("Prochaine note");
+    expect(later).toContain("Plus tard");
   });
 });

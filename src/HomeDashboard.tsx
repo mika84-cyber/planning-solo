@@ -98,10 +98,9 @@ export function HomeDashboard({
   onAddNote,
 }: HomeDashboardProps) {
   const [notesOpen, setNotesOpen] = useState(false);
-  /** La première note des dix prochains jours, la mienne ou celle d’Agnès. */
-  const noteLimit = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 10);
-  const noteLimitKey = `${noteLimit.getFullYear()}-${String(noteLimit.getMonth() + 1).padStart(2, "0")}-${String(noteLimit.getDate()).padStart(2, "0")}`;
-  const nextNote = upcoming.find((item) => item.kind === "note" && item.date <= noteLimitKey) ?? null;
+  /** La prochaine note, la mienne ou celle d’Agnès, si loin soit-elle : le
+   *  mois suivant aussi. */
+  const nextNote = upcoming.find((item) => item.kind === "note") ?? null;
   const nextNoteText = nextNote ? (nextNote.notes?.map((note) => note.label).join(" · ") ?? nextNote.label) : "";
   const [dismissedSetupItems, setDismissedSetupItems] = useState<string[]>(() => {
     try {
