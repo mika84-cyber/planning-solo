@@ -4933,7 +4933,18 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
   await expect(hours).toContainText("Ces horaires seront repris automatiquement dans le formulaire.");
 });
 
+/** Midi d'un jour travaillé ordinaire du groupe 2, début octobre 2026 : le mois
+ *  affiché garde des jours travaillés à venir, même quand la suite tourne en
+ *  fin de mois sur des jours de repos (29 au 31 octobre). */
+async function fixClockOnWorkDay(page: Page) {
+  const closures = new Set(GRAND_PALAIS_EXCEPTIONAL_CLOSURES.map((closure) => closure.date));
+  let day = localDate(2026, 9, 5);
+  while (getDayInfo(day, 2).kind !== "work" || getDayInfo(day, 2).holiday || closures.has(dateKey(day))) day = addDays(day, 1);
+  await page.clock.setFixedTime(new Date(`${dateKey(day)}T12:00:00`));
+}
+
 test("Divers est explicite et le résumé apparaît avant validation", async ({ page }) => {
+  await fixClockOnWorkDay(page);
   await prepareDemo(page);
   const initialWorked = await workedDaysOnHome(page);
   await page.locator(".planning-leave-panel .planning-leave-action").click();
@@ -5014,6 +5025,7 @@ test("un férié couvert par une absence est annulé et retiré de la paie", asy
 });
 
 test("une grève met à jour le planning, les jours travaillés et la paie", async ({ page }) => {
+  await fixClockOnWorkDay(page);
   await prepareStrikeDemo(page);
   const initialWorked = await workedDaysOnHome(page);
 
