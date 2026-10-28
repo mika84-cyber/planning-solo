@@ -4378,7 +4378,9 @@ test("le formulaire de demande s’ouvre directement depuis Congés et récupér
   expect(Math.abs(formBox!.width - leaveBox!.width)).toBeLessThan(1);
   expect(Math.abs(formBox!.height - leaveBox!.height)).toBeLessThan(1);
   await formButton.click();
-  await expect(page).toHaveURL(/\/formulaire\/index\.html$/);
+  // Le formulaire vierge s'ouvre sur la demande de congés.
+  await expect(page).toHaveURL(/\/formulaire\/index\.html\?feuille=conges$/);
+  await expect(page.locator("#sheet option:checked")).toHaveText("Demande de congés");
 });
 
 test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, testInfo) => {
