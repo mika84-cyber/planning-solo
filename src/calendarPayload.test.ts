@@ -31,6 +31,15 @@ describe("parseCalendarSnapshot", () => {
           note_color: "#7358d8",
           note_author: "agnes",
           agnes_leave: true,
+        }, {
+          date: "2026-09-07",
+          note_text: "Dentiste 15 h",
+          note_color: "#7358d8",
+        }, {
+          date: "2026-09-08",
+          note_text: "Courses",
+          note_color: "#7358d8",
+          note_author: "mika",
         }],
         periods: [{ id: "agnes-1", person: "agnes", from: "2026-09-10", to: "2026-09-12" }],
       },
@@ -54,6 +63,10 @@ describe("parseCalendarSnapshot", () => {
     expect(snapshot.mecenatEntries[0].grossAmountCents).toBe(7500);
     expect(snapshot.mecenatSignups).toEqual([]);
     expect(snapshot.partnerSharingStatus).toBe("connected");
+    // Une note du planning d'Agnès sans auteur enregistré est la sienne ;
+    // seule une note signée Mika reste à lui.
+    expect(snapshot.partnerEntries["2026-09-07"]).toMatchObject({ noteText: "Dentiste 15 h", noteAuthor: "agnes" });
+    expect(snapshot.partnerEntries["2026-09-08"]).toMatchObject({ noteText: "Courses", noteAuthor: "mika" });
     expect(snapshot.partnerEntries["2026-09-06"]).toMatchObject({
       noteText: "Déjeuner avec Agnès",
       noteAuthor: "agnes",

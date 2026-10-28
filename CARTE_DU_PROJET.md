@@ -327,7 +327,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   jour), `src/useMecenatDraftCheck.ts` (mécénat en cours de saisie),
   `src/useDayDetailData.ts` (ce que la fiche du jour montre),
   `src/useNoteLists.ts` (notes à venir, recherche, congés d’Agnès),
-  `src/usePartnerNoteActions.ts` (suppression d’une note d’Agnès). La
+  `src/usePartnerNoteActions.ts` (suppression d’une note d’Agnès) ; une note
+  du planning d’Agnès sans auteur enregistré (les plus anciennes) est la
+  sienne (`partnerEntriesFromApi` dans `src/calendarPayload.ts`), seule une
+  note signée Mika reste à lui. La
   rubrique Ma paie construit son contenu dans `src/PayScreen.tsx`, livré avec
   les écrans différés et appelé par `src/PaySectionScreen.tsx` ; `src/DemoExpiredScreen.tsx` est l’écran d’une démo
   expirée.

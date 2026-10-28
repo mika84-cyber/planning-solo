@@ -225,10 +225,14 @@ function partnerEntriesFromApi(value: unknown): PartnerCalendarEntries {
     result[date] = {
       noteText: text(raw.note_text),
       noteColor: text(raw.note_color, "#7358d8"),
+      // Le planning d'Agnès est le sien : une note sans auteur enregistré (les
+      // plus anciennes) est d'elle ; seule une note signée Mika reste à lui.
       noteAuthor:
-        raw.note_author === "mika" || raw.note_author === "agnes"
-          ? raw.note_author
-          : "",
+        raw.note_author === "mika"
+          ? "mika"
+          : raw.note_author === "agnes" || text(raw.note_text)
+            ? "agnes"
+            : "",
       noteUpdatedAt: text(raw.note_updated_at),
       noteGroupId: text(raw.note_group_id),
       agnesLeave: raw.agnes_leave === true,
