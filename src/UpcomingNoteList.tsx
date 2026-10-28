@@ -49,12 +49,10 @@ export function UpcomingNoteList({
 }: UpcomingNoteListProps) {
   const renderItem = (item: NoteListItem) => {
     const hasOwnNote = item.author === "mika" || item.notes?.some((note) => note.author === "mika");
-    const ownEntry = hasOwnNote ? entries[item.date] : undefined;
-    const noteDates = ownEntry?.noteGroupId
-      ? Object.entries(entries)
-          .filter(([, entry]) => entry.noteGroupId === ownEntry.noteGroupId && Boolean(entry.noteText))
-          .map(([date]) => date)
-      : hasOwnNote ? [item.date] : [];
+    // Une ligne par jour, une croix par jour : elle n'efface que la note de
+    // ce jour, même posée sur plusieurs jours (la fiche du jour efface toute
+    // la période).
+    const noteDates = hasOwnNote && entries[item.date]?.noteText ? [item.date] : [];
     // Une carte par jour : la date en petit calendrier à gauche, puis chaque
     // note sur sa ligne, son auteur à sa couleur et une croix discrète.
     if (item.kind === "note" && item.notes) {

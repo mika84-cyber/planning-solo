@@ -326,7 +326,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/useWorkedDaysOverview.ts` (jours travaillés, prochain extra, aperçu du
   jour), `src/useMecenatDraftCheck.ts` (mécénat en cours de saisie),
   `src/useDayDetailData.ts` (ce que la fiche du jour montre),
-  `src/useNoteLists.ts` (notes à venir, recherche, congés d’Agnès),
+  `src/useNoteLists.ts` (notes à venir, recherche, congés d’Agnès ; une note
+  posée sur plusieurs jours a chacun de ses jours dans la liste et dans la
+  recherche, `upcomingNoteItems` et `noteSearchItems`, fonctions pures
+  testées ; la croix d’une ligne n’efface que ce jour-là),
   `src/usePartnerNoteActions.ts` (suppression d’une note d’Agnès) ; une note
   du planning d’Agnès sans auteur enregistré (les plus anciennes) est la
   sienne (`partnerEntriesFromApi` dans `src/calendarPayload.ts`), seule une
