@@ -16,7 +16,8 @@ export type HelpTarget =
   | "program-interexpo"
   | "overtime-mecenat"
   | "cet"
-  | "colleague-share";
+  | "colleague-share"
+  | "colleague-groups";
 
 const HELP_TARGET_EVENT = "planning:help-target";
 /** Une demande non servie s'oublie : elle ne doit pas rouvrir un onglet plus

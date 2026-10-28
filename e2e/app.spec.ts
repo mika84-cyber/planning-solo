@@ -6630,7 +6630,7 @@ test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la
   // Une sous-page d'une autre rubrique : les codes radio, dans Contacts,
   // trouvés par le champ de recherche, sans accent ni majuscule.
   await help.click();
-  await expect(sheet.getByRole("list", { name: "Documents" }).getByRole("button")).toHaveCount(4);
+  await expect(sheet.getByRole("list", { name: "Documents" }).getByRole("button")).toHaveCount(5);
   const search = sheet.getByRole("searchbox", { name: "Chercher une question" });
   await search.fill("xyz");
   await expect(sheet.getByRole("status")).toHaveText("Rien pour « xyz ». Essayez un autre mot.");
@@ -6676,6 +6676,16 @@ test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la
   await expect(page.getByRole("dialog", { name: "Partager mon planning" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toBeVisible();
   await page.keyboard.press("Escape");
+  // Les 3 groupes de collègues : la fenêtre des groupes du planning partagé,
+  // trouvée aussi par « équipe ».
+  await help.click();
+  await search.fill("équipe");
+  await sheet.getByRole("button", { name: /^Les 3 groupes de collègues/ }).click();
+  const groups = page.getByRole("dialog", { name: "Liste des 3 groupes" });
+  await expect(groups).toBeVisible();
+  await expect(groups.locator(".colleague-group-card")).toHaveCount(3);
+  await groups.getByRole("button", { name: "Fermer" }).click();
+  await expect(groups).toBeHidden();
   // Un volet de Congés : le CET s'ouvre.
   await help.click();
   await sheet.getByRole("button", { name: /Ouvrir ou alimenter mon CET/ }).click();

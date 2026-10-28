@@ -147,7 +147,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   majuscule, dans la question, son chemin, ses mots-clés ou son thème ; « Rien
   pour … » sinon). Les questions sont rangées en cinq thèmes courts
   (`THEME_COLUMNS`), sur deux colonnes à l’ordinateur : Documents (téléphone,
-  formulaire administratif, formulaire de congé, code radio) et Expositions (fiche d’expo,
+  formulaire administratif, formulaire de congé, les 3 groupes de collègues, code radio) et Expositions (fiche d’expo,
   dates d’une exposition, audioguide, inter-expos) ; Mon planning (planning en
   PDF, partager mon planning), Ma paie et Déclarer. Fond pâle, filets fins,
   liseré, titre et icônes à la couleur du thème (`group-${key}` : Documents
@@ -165,12 +165,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,
   dossier Expo),
   `ColleaguePlanningPage` (« Partager mon planning » ouvre la liste des
-  collègues ; hors d’aujourd’hui ou de la semaine en cours, une pastille
+  collègues, « Les 3 groupes de collègues » la fenêtre `ColleagueGroupsDialog`,
+  rendue hors du tableau pour s’ouvrir même quand il est absent ; hors d’aujourd’hui ou de la semaine en cours, une pastille
   « Aujourd’hui » / « Cette semaine » sous le titre du tableau y ramène,
   `colleague-today-step`), `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
   « Par espace » et descendent au choix des espaces, les inter-expos au
   détail des périodes) et `LeaveManagementPage` (heures et
-  mécénats, CET). Une demande non servie s’oublie après 8 s. « Remplir un
+  mécénats, CET). Une demande non servie s’oublie après 8 s. « Un
   formulaire de congé » (le formulaire de demande, vierge, `openBlankForm`,
   comme « Formulaire vierge » de Congés) est dans Documents, après « Un
   formulaire administratif » : il s’ouvre sur « Demande de congés » (`?feuille=conges`)

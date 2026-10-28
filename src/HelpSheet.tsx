@@ -8,7 +8,7 @@ import { getSharedUsefulDocuments } from "./usefulDocumentsApi";
 
 /** Ce que chaque question ouvre ; App.tsx fait le chemin. */
 export type HelpChoice =
-  | "phone" | "form" | "planning-pdf" | "share-planning" | "request-leave" | "exchange" | "expo-dates" | "expo-folder" | "interexpo" | "radio"
+  | "phone" | "colleague-groups" | "form" | "planning-pdf" | "share-planning" | "request-leave" | "exchange" | "expo-dates" | "expo-folder" | "interexpo" | "radio"
   | "allowances" | "payslip-check" | "pay-detail"
   | "overtime-mecenat" | "work-accident" | "request-form" | "cet";
 
@@ -27,6 +27,7 @@ const ICONS: Record<string, ReactNode> = {
   clock: icon(<><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></>),
   accident: icon(<><path d="M12 4 3 20h18z" /><path d="M12 10v4.5M12 17.2v.3" /></>),
   leave: icon(<><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4" /></>),
+  team: icon(<><circle cx="9" cy="8" r="3" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="9" r="2.4" /><path d="M16 14.1a4.5 4.5 0 0 1 4.5 4.9" /></>),
   share: icon(<path d="M10 14 21 3M21 3l-6.5 18-3.5-7-7-3.5z" />),
   sun: icon(<path d={NAVIGATION_ICON_PATHS.leave} />),
   swap: icon(<path d="M7 7h12l-3.5-3.5M17 17H5l3.5 3.5" />),
@@ -49,7 +50,8 @@ const THEME_COLUMNS: Theme[][] = [
       { id: "form", icon: "form", question: "Un formulaire administratif", where: "Docs · Formulaires" },
       // Un contraste avec « Poser un congé », qui prépare la demande depuis le
       // planning, et avec « Un formulaire administratif », les documents à télécharger.
-      { id: "request-form", icon: "leave", question: "Remplir un formulaire de congé", where: "Demande de congés, vierge", keywords: "à la main papier imprimer signer" },
+      { id: "request-form", icon: "leave", question: "Un formulaire de congé", where: "Demande de congés, vierge", keywords: "remplir à la main papier imprimer signer" },
+      { id: "colleague-groups", icon: "team", question: "Les 3 groupes de collègues", where: "Planning partagé · Liste des 3 groupes", keywords: "équipe annuaire noms qui" },
       { id: "radio", icon: "radio", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio", keywords: "talkie" },
     ] },
     { key: "expo", title: "Expositions", items: [

@@ -419,11 +419,12 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const [groupsOpen, setGroupsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  // « Partager mon planning » depuis « Que cherchez-vous ? » : la liste des
-  // collègues s'ouvre directement.
+  // « Partager mon planning » et « Les 3 groupes de collègues » depuis « Que
+  // cherchez-vous ? » : leur fenêtre s'ouvre directement.
   useHelpTarget((target) => {
-    if (target !== "colleague-share") return false;
-    setShareOpen(true);
+    if (target === "colleague-share") setShareOpen(true);
+    else if (target === "colleague-groups") setGroupsOpen(true);
+    else return false;
     return true;
   });
   const [weekOffset, setWeekOffset] = useState(0);
@@ -770,11 +771,6 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
             <span className="colleague-groups-open-badges" aria-hidden="true"><b className="group-1">1</b><b className="group-2">2</b><b className="group-3">3</b></span>
           </button>
         </div>
-        {groupsOpen ? <ColleagueGroupsDialog
-          groups={demoMode ? demoGroups : data?.groups}
-          isAdmin={isAdmin && !demoMode}
-          onClose={() => setGroupsOpen(false)}
-        /> : null}
         {received.some((share) => !tomorrowSummaries[share.ownerId] && !tomorrowFailed.includes(share.ownerId)) ? <div className="colleague-tomorrow-pending" role="status"><span className="colleague-loading-spinner" aria-hidden="true" /> Analyse des plannings en cours…</div> : null}
         {boardMode === "week" ? <ColleagueWeekTable
           days={colleagueWeekDays(weekOffset)}
@@ -873,6 +869,13 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
         {profileCard}
         {howItWorksCard}
       </ColleagueDialog> : null}
+      {/* Ouverte par « Liste des 3 groupes » du tableau, ou depuis « Que
+          cherchez-vous ? » même quand le tableau n'est pas affiché. */}
+      {groupsOpen ? <ColleagueGroupsDialog
+        groups={demoMode ? demoGroups : data?.groups}
+        isAdmin={isAdmin && !demoMode}
+        onClose={() => setGroupsOpen(false)}
+      /> : null}
       {shareOpen ? <ColleagueDialog id="colleague-share-title" eyebrow="Annuaire" title="Partager mon planning" className="colleague-share-dialog" onClose={() => setShareOpen(false)}>
         {error ? <p className="colleague-error" role="alert">{error}</p> : null}
         <div className="colleague-share-content">

@@ -23,7 +23,7 @@ describe("fenêtre d'aide", () => {
       const start = html.indexOf(`aria-label="${label}"`);
       return [...html.slice(start, html.indexOf("</ul>", start)).matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
     };
-    expect(group("Documents")).toEqual(["Un numéro de téléphone", "Un formulaire administratif", "Remplir un formulaire de congé", "Un code radio d’urgence"]);
+    expect(group("Documents")).toEqual(["Un numéro de téléphone", "Un formulaire administratif", "Un formulaire de congé", "Les 3 groupes de collègues", "Un code radio d’urgence"]);
     expect(group("Expositions")).toEqual(["Fiche d’expo · Cezanne et nous", "Les dates d’une exposition", "Audioguide · Cezanne et nous", "Les dates d’inter-expos"]);
     expect(group("Mon planning")).toEqual(["Télécharger un planning", "Partager mon planning avec un(e) collègue"]);
     expect(group("Ma paie")).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie"]);

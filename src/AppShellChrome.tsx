@@ -125,6 +125,7 @@ export function AppShellChrome({
         return;
       case "request-form": return help.openBlankForm();
       case "share-planning": return open("colleagues", "colleague-share");
+      case "colleague-groups": return open("colleagues", "colleague-groups");
       case "request-leave":
         open("home");
         help.requestLeave();
