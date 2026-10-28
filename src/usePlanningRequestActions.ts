@@ -133,12 +133,13 @@ export function usePlanningRequestActions({
 }: PlanningRequestActionsOptions) {
   const { requestKind, sickRequest, setSavingRequest } = planningUi;
 
-  /** Ouvre le formulaire vierge, sans rien pré-remplir depuis le planning. */
+  /** Ouvre le formulaire vierge, sans rien pré-remplir depuis le planning,
+   *  sur la demande de congés plutôt que sur la dernière feuille utilisée. */
   function openBlankForm() {
     try {
       localStorage.removeItem(HANDOFF_KEY);
     } catch {}
-    window.location.href = "/formulaire/index.html";
+    window.location.href = "/formulaire/index.html?feuille=conges";
   }
   async function validateAndOpenForm(destination: "form" | "planning" = "form") {
     if (!selectedList.length) {

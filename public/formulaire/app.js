@@ -2433,8 +2433,11 @@ function storedSheetIndex(v){
   return 0;
 }
 var exchangeImport=planningImportActive ? null : readExchangeImport();
+/* Une feuille demandée par l'adresse (?feuille=conges, le formulaire vierge
+   de Planning Solo) passe avant la dernière utilisée. */
+var askedSheet=planningImportActive || exchangeImport ? null : new URLSearchParams(location.search).get('feuille');
 var firstIndex=planningImportActive ? planningSheetIndex(planningImport)
-  : storedSheetIndex(exchangeImport ? (exchangeImport.sheet==='ferie' ? 'ferie' : 'echange') : lastSheetFast);
+  : storedSheetIndex(exchangeImport ? (exchangeImport.sheet==='ferie' ? 'ferie' : 'echange') : askedSheet || lastSheetFast);
 sel.value=firstIndex;
 bg.onload=function(){ bg.onload=null; layout(); };
 loadSheet(firstIndex).then(function(){
@@ -2447,7 +2450,7 @@ loadSheet(firstIndex).then(function(){
 /* Le stockage asynchrone est consulté après le premier affichage pour ne pas bloquer l'ouverture. */
 var afterFirstPaint=window.requestIdleCallback || function(fn){ setTimeout(fn,80); };
 afterFirstPaint(function(){
-  if(planningImportActive || exchangeImport) return;
+  if(planningImportActive || exchangeImport || askedSheet) return;
   store.get('demandes:v4:last').then(function(v){
     var i=v ? storedSheetIndex(v) : firstIndex;
     if(i!==firstIndex){ sel.value=i; bg.onload=function(){ bg.onload=null; layout(); }; loadSheet(i); }

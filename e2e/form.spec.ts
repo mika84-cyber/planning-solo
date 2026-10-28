@@ -21,6 +21,20 @@ test("le formulaire modulaire charge ses données et ses commandes", async ({ pa
   expect(runtimeErrors).toEqual([]);
 });
 
+test("le formulaire vierge de l’application s’ouvre sur la demande de congés, pas sur la dernière feuille", async ({ page }) => {
+  const sheet = page.locator("#sheet option:checked");
+  await page.goto("/formulaire/index.html");
+  await page.evaluate(() => localStorage.setItem("demandes:v4:last", "recup"));
+  // Sans demande dans l'adresse, la dernière feuille utilisée revient.
+  await page.reload();
+  await expect(sheet).toHaveText("Demande de récupérations");
+  await page.goto("/formulaire/index.html?feuille=conges");
+  await expect(sheet).toHaveText("Demande de congés");
+  // La lecture différée de la dernière feuille ne la remplace pas.
+  await page.waitForTimeout(400);
+  await expect(sheet).toHaveText("Demande de congés");
+});
+
 test("la barre du formulaire tient sur une ligne sur grand écran et met le PDF au-dessus des outils sur téléphone", async ({ page }, testInfo) => {
   await page.goto("/formulaire/index.html");
   const back = page.getByRole("link", { name: "Revenir à l’application" });

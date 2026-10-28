@@ -1,40 +1,41 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { AudioguideRow, expoSheetFor, galleryExpoFor, HelpSheet } from "./HelpSheet";
+import { AudioguideRow, expoSheetFor, galleryExpoFor, HelpSheet, matchesHelpQuery } from "./HelpSheet";
 import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 
 describe("fenêtre d'aide", () => {
-  it("pose les questions en trois groupes, le code radio en fin de « Trouver »", () => {
+  it("range les questions en cinq thèmes sur deux colonnes, sous un champ de recherche", () => {
     const html = renderToStaticMarkup(<HelpSheet today="2026-10-26" section="leave" onChoose={vi.fn()} onClose={vi.fn()} />);
     expect(html).toMatch(/^<dialog class="help-sheet" data-section="leave" aria-label="Que cherchez-vous \?">/);
     expect(html).toContain('<h2 id="help-sheet-title">Que cherchez-vous ?</h2>');
-    // Une couleur par groupe : Trouver, Ma paie, Déclarer.
-    expect(html).toContain('<h3 class="help-sheet-group-title group-find">Trouver</h3><ul class="help-sheet-group group-find" aria-label="Trouver">');
+    expect(html).toContain('<input type="search" class="help-sheet-search" placeholder="Un mot : congé, bulletin, radio…" aria-label="Chercher une question" value=""/>');
+    // Une couleur par thème.
+    expect(html).toContain('<h3 class="help-sheet-group-title group-docs">Documents</h3><ul class="help-sheet-group group-docs" aria-label="Documents">');
+    expect(html).toContain('<ul class="help-sheet-group group-expo" aria-label="Expositions">');
+    expect(html).toContain('<ul class="help-sheet-group group-planning" aria-label="Mon planning">');
     expect(html).toContain('<ul class="help-sheet-group group-pay" aria-label="Ma paie">');
     expect(html).toContain('<ul class="help-sheet-group group-declare" aria-label="Déclarer">');
-    expect(html).not.toContain("tone-");
-    expect(html.indexOf("Trouver</h3>")).toBeLessThan(html.indexOf("Ma paie</h3>"));
-    expect(html.indexOf("Ma paie</h3>")).toBeLessThan(html.indexOf("Déclarer</h3>"));
-    const find = html.slice(html.indexOf('aria-label="Trouver"'), html.indexOf("Ma paie</h3>"));
-    const questions = [...find.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
-    expect(questions).toEqual([
-      "Un numéro de téléphone",
-      "Un formulaire",
-      "Remplir une demande à la main",
-      "Fiche d’expo · Cezanne et nous",
-      "Les dates d’une exposition",
-      "Audioguide · Cezanne et nous",
-      "Télécharger un planning",
-      "Les dates d’inter-expos",
-      "Partager mon planning avec un(e) collègue",
-      "Un code radio d’urgence",
-    ]);
-    // Ma paie et Déclarer, dans l'ordre demandé.
-    const group = (label: string, next: string) => html.slice(html.indexOf(`aria-label="${label}"`), next ? html.indexOf(next) : undefined);
-    const titles = (part: string) => [...part.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
-    expect(titles(group("Ma paie", "Déclarer</h3>"))).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie"]);
-    expect(titles(group("Déclarer", ""))).toEqual(["Poser un congé", "Échanger un jour avec un collègue", "Un mécénat ou des heures supp", "Ouvrir ou alimenter mon CET", "Un accident de travail"]);
-    expect(html).not.toContain("help-sheet-lead");
+    // Documents et Expositions en première colonne, le reste en seconde.
+    const columns = html.split('<div class="help-sheet-column">').slice(1);
+    const headings = (part: string) => [...part.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
+    expect(columns.map(headings)).toEqual([["Documents", "Expositions"], ["Mon planning", "Ma paie", "Déclarer"]]);
+    const group = (label: string) => {
+      const start = html.indexOf(`aria-label="${label}"`);
+      return [...html.slice(start, html.indexOf("</ul>", start)).matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
+    };
+    expect(group("Documents")).toEqual(["Un numéro de téléphone", "Un formulaire administratif", "Remplir un formulaire de congé", "Un code radio d’urgence"]);
+    expect(group("Expositions")).toEqual(["Fiche d’expo · Cezanne et nous", "Les dates d’une exposition", "Audioguide · Cezanne et nous", "Les dates d’inter-expos"]);
+    expect(group("Mon planning")).toEqual(["Télécharger un planning", "Partager mon planning avec un(e) collègue"]);
+    expect(group("Ma paie")).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie"]);
+    expect(group("Déclarer")).toEqual(["Poser un congé", "Échanger un jour avec un collègue", "Un mécénat ou des heures supp", "Ouvrir ou alimenter mon CET", "Un accident de travail"]);
+    expect(html).not.toContain("help-sheet-empty");
+  });
+
+  it("trouve une question sans tenir compte des accents ni des majuscules", () => {
+    expect(matchesHelpQuery("Poser un congé Accueil · Choix des dates", "CONGE")).toBe(true);
+    expect(matchesHelpQuery("Un code radio d’urgence", "radio d'urg")).toBe(true);
+    expect(matchesHelpQuery("Un code radio d’urgence", "radio congé")).toBe(false);
+    expect(matchesHelpQuery("Un formulaire", "  ")).toBe(true);
   });
 
   it("donne à l'exposition des Galeries 3 et 4 deux lignes : sa fiche et son audioguide", () => {

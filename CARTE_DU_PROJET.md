@@ -141,17 +141,25 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   la largeur (`pageHeaders.css`), sinon le titre intercepte le toucher ; le
   menu du compte, qui fait contexte d’empilement, reste au-dessus de la
   pastille (z-index 4 contre 3), sinon son menu déroulant passe dessous. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
-  demande) : « Que cherchez-vous ? », trois groupes chacun à sa couleur
-  (Trouver en bleu, Ma paie en vert, Déclarer en terracotta : titre, liseré,
-  fond pâle, icônes), une fine bande aux couleurs de l’en-tête en haut. L’exposition des Galeries 3 et 4 (`galleryExpoFor`) y a deux
-  lignes à son nom, séparées : sa fiche d’expo avant « Les dates d’une
-  exposition », le PDF du dossier Expo téléchargé d’un toucher
-  (`expoSheetFor`, sinon le dossier s’ouvre ; `GalleryExpoRow`), et son
-  audioguide juste après (`GalleryAudioguideRow` → `AudioguideRow`), qui
-  déplie sur place le QR code à scanner et le code d’accès. Trouver suit
-  l’ordre voulu par l’administrateur : téléphone, formulaire, demande à la
-  main, fiche d’expo, dates d’une exposition, audioguide, planning en PDF,
-  inter-expos, partager mon planning, code radio. `AppShellChrome` (`chooseHelp`) change de page ;
+  demande) : « Que cherchez-vous ? », une fine bande aux couleurs de l’en-tête
+  en haut, puis un champ « Un mot : congé, bulletin, radio… » qui filtre les
+  questions à la frappe (`matchesHelpQuery` : chaque mot tapé, sans accent ni
+  majuscule, dans la question, son chemin, ses mots-clés ou son thème ; « Rien
+  pour … » sinon). Les questions sont rangées en cinq thèmes courts
+  (`THEME_COLUMNS`), sur deux colonnes à l’ordinateur : Documents (téléphone,
+  formulaire administratif, formulaire de congé, code radio) et Expositions (fiche d’expo,
+  dates d’une exposition, audioguide, inter-expos) ; Mon planning (planning en
+  PDF, partager mon planning), Ma paie et Déclarer. Fond pâle, filets fins,
+  liseré, titre et icônes à la couleur du thème (`group-${key}` : Documents
+  en bleu, Expositions en ocre, Mon planning en prune, Ma paie en vert,
+  Déclarer en terracotta ; teintes éclaircies dans `darkTheme.css`). Le
+  panneau garde sa hauteur pendant la recherche (téléphone) ou reste accroché
+  en haut (ordinateur) : le champ ne bouge pas. L’exposition des Galeries 3 et
+  4 (`galleryExpoFor`) y a deux lignes à son nom, séparées : sa fiche d’expo,
+  le PDF du dossier Expo téléchargé d’un toucher (`useGalleryExpo` lit le
+  dossier une fois à l’ouverture, `expoSheetFor`, sinon le dossier s’ouvre ;
+  `GalleryExpoRow`), et son audioguide (`AudioguideRow`), qui déplie sur place
+  le QR code à scanner et le code d’accès. `AppShellChrome` (`chooseHelp`) change de page ;
   l’onglet ou la sous-page s’ouvre par `src/helpTargets.ts`
   (`requestHelpTarget` / `useHelpTarget`), lu par `UsefulResourcesHub`,
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,
@@ -162,9 +170,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `colleague-today-step`), `GrandPalaisProgramSection` (onglets ; les dates d’une exposition ouvrent
   « Par espace » et descendent au choix des espaces, les inter-expos au
   détail des périodes) et `LeaveManagementPage` (heures et
-  mécénats, CET). Une demande non servie s’oublie après 8 s. « Remplir une
-  demande à la main » (le formulaire de demande, vierge) est dans Trouver,
-  après « Un formulaire ». « Poser un
+  mécénats, CET). Une demande non servie s’oublie après 8 s. « Remplir un
+  formulaire de congé » (le formulaire de demande, vierge, `openBlankForm`,
+  comme « Formulaire vierge » de Congés) est dans Documents, après « Un
+  formulaire administratif » : il s’ouvre sur « Demande de congés » (`?feuille=conges`)
+  plutôt que sur la dernière feuille utilisée. « Poser un
   congé » ouvre le choix du congé ; le congé choisi, on arrive directement
   sur les jours du planning (`requestFromHelp` dans `App`, `beginRequest`
   avec `landing` « calendar »).
@@ -531,6 +541,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   feuilles d'échange et de remplacement de jour férié qui n'ont pas cette case.
   Sous `/formulaire/` de Planning Solo, `app.js` retire ce choix d'après la
   balise `planning-api` et le bandeau renvoie à la case « Groupe ».
+  À l’ouverture, la feuille est celle d’un transfert (`?planning=1`,
+  `?echange=1`), sinon celle que demande l’adresse (`?feuille=conges`, le
+  formulaire vierge de l’application), sinon la dernière utilisée
+  (`demandes:v4:last`).
   Feuilles : congés, récupérations, échange (`form-bg-4.png`, dates et
   horaires recopiés chez le collègue via `mirror`), remplacement de jour férié
   (`form-bg-5.png`, calendrier limité aux fériés travaillés via `cal: 'holiday'`,

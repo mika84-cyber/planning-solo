@@ -6603,9 +6603,15 @@ test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la
   await goToSection(page, "leave");
   const help = page.locator("header.top-header").getByRole("button", { name: "Que cherchez-vous ?" });
   const sheet = page.getByRole("dialog", { name: "Que cherchez-vous ?" });
-  // Une sous-page d'une autre rubrique : les codes radio, dans Contacts.
+  // Une sous-page d'une autre rubrique : les codes radio, dans Contacts,
+  // trouvés par le champ de recherche, sans accent ni majuscule.
   await help.click();
-  await expect(sheet.getByRole("list", { name: "Trouver" }).getByRole("button")).not.toHaveCount(0);
+  await expect(sheet.getByRole("list", { name: "Documents" }).getByRole("button")).toHaveCount(4);
+  const search = sheet.getByRole("searchbox", { name: "Chercher une question" });
+  await search.fill("xyz");
+  await expect(sheet.getByRole("status")).toHaveText("Rien pour « xyz ». Essayez un autre mot.");
+  await search.fill("RADIO");
+  await expect(sheet.locator(".help-sheet-row")).toHaveCount(1);
   await sheet.getByRole("button", { name: /Un code radio d’urgence/ }).click();
   await expect(sheet).toBeHidden();
   await expect(page.getByRole("heading", { name: "Codes urgences radio" })).toBeVisible();

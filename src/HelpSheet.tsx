@@ -34,36 +34,59 @@ const ICONS: Record<string, ReactNode> = {
   headphones: icon(<><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3.5" y="14" width="4" height="6" rx="1.5" /><rect x="16.5" y="14" width="4" height="6" rx="1.5" /></>),
 };
 
-type Question = { id: HelpChoice; icon: string; question: string; where: string };
+type Question = { id: HelpChoice; icon: string; question: string; where: string; /** D'autres mots qui la font trouver. */ keywords?: string };
+/** Les deux lignes de l'exposition des Galeries 3 et 4, qui dépendent du jour. */
+type GalleryRow = "expo-sheet" | "audioguide";
+type Theme = { key: "docs" | "expo" | "planning" | "pay" | "declare"; title: string; items: Array<Question | GalleryRow> };
 
-const QUESTIONS: Record<"find" | "pay" | "declare", Question[]> = {
-  find: [
-    { id: "phone", icon: "phone", question: "Un numéro de téléphone", where: "Docs · Contacts" },
-    { id: "form", icon: "form", question: "Un formulaire", where: "Docs · Formulaires" },
-    // Un contraste avec « Poser un congé », qui prépare la demande depuis le
-    // planning, et avec « Un formulaire », les documents à télécharger.
-    { id: "request-form", icon: "leave", question: "Remplir une demande à la main", where: "Formulaire de demande, vierge" },
-    // La fiche d'expo des Galeries 3 et 4 vient ici (GalleryExpoRow)…
-    { id: "expo-dates", icon: "expo", question: "Les dates d’une exposition", where: "Expos · Par espace" },
-    // … et son audioguide là (GalleryAudioguideRow).
-    { id: "planning-pdf", icon: "download", question: "Télécharger un planning", where: "Plannings en PDF" },
-    { id: "interexpo", icon: "inter", question: "Les dates d’inter-expos", where: "Expos · Inter-expos" },
-    { id: "share-planning", icon: "share", question: "Partager mon planning avec un(e) collègue", where: "Planning partagé · Choisir un collègue" },
-    { id: "radio", icon: "radio", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio" },
+/** Cinq thèmes courts, sur deux colonnes à l'ordinateur, chacun à sa couleur
+ *  (`group-${key}`) : Documents en bleu, Expositions en ocre, Mon planning
+ *  en prune, Ma paie en vert, Déclarer en terracotta. */
+const THEME_COLUMNS: Theme[][] = [
+  [
+    { key: "docs", title: "Documents", items: [
+      { id: "phone", icon: "phone", question: "Un numéro de téléphone", where: "Docs · Contacts", keywords: "contact appeler" },
+      { id: "form", icon: "form", question: "Un formulaire administratif", where: "Docs · Formulaires" },
+      // Un contraste avec « Poser un congé », qui prépare la demande depuis le
+      // planning, et avec « Un formulaire administratif », les documents à télécharger.
+      { id: "request-form", icon: "leave", question: "Remplir un formulaire de congé", where: "Demande de congés, vierge", keywords: "à la main papier imprimer signer" },
+      { id: "radio", icon: "radio", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio", keywords: "talkie" },
+    ] },
+    { key: "expo", title: "Expositions", items: [
+      "expo-sheet",
+      { id: "expo-dates", icon: "expo", question: "Les dates d’une exposition", where: "Expos · Par espace" },
+      "audioguide",
+      { id: "interexpo", icon: "inter", question: "Les dates d’inter-expos", where: "Expos · Inter-expos" },
+    ] },
   ],
-  pay: [
-    { id: "payslip-check", icon: "check", question: "Vérifier un bulletin", where: "Ma paie · Vérifier le bulletin" },
-    { id: "allowances", icon: "prime", question: "Le détail de mes primes", where: "Ma paie · Primes et jours fériés" },
-    { id: "pay-detail", icon: "calc", question: "Comprendre ma paie", where: "Ma paie · Détail du calcul" },
+  [
+    { key: "planning", title: "Mon planning", items: [
+      { id: "planning-pdf", icon: "download", question: "Télécharger un planning", where: "Plannings en PDF", keywords: "imprimer" },
+      { id: "share-planning", icon: "share", question: "Partager mon planning avec un(e) collègue", where: "Planning partagé · Choisir un collègue" },
+    ] },
+    { key: "pay", title: "Ma paie", items: [
+      { id: "payslip-check", icon: "check", question: "Vérifier un bulletin", where: "Ma paie · Vérifier le bulletin", keywords: "fiche de paie salaire" },
+      { id: "allowances", icon: "prime", question: "Le détail de mes primes", where: "Ma paie · Primes et jours fériés", keywords: "dimanche" },
+      { id: "pay-detail", icon: "calc", question: "Comprendre ma paie", where: "Ma paie · Détail du calcul", keywords: "salaire net brut" },
+    ] },
+    { key: "declare", title: "Déclarer", items: [
+      { id: "request-leave", icon: "sun", question: "Poser un congé", where: "Accueil · Choix des dates", keywords: "vacances CA RTT" },
+      { id: "exchange", icon: "swap", question: "Échanger un jour avec un collègue", where: "Accueil · Faire un échange" },
+      { id: "overtime-mecenat", icon: "clock", question: "Un mécénat ou des heures supp", where: "Congés · Heures et mécénats", keywords: "supplémentaires" },
+      { id: "cet", icon: "piggy", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET", keywords: "compte épargne temps" },
+      { id: "work-accident", icon: "accident", question: "Un accident de travail", where: "Docs · Accident de travail", keywords: "blessure" },
+    ] },
   ],
-  declare: [
-    { id: "request-leave", icon: "sun", question: "Poser un congé", where: "Accueil · Choix des dates" },
-    { id: "exchange", icon: "swap", question: "Échanger un jour avec un collègue", where: "Accueil · Faire un échange" },
-    { id: "overtime-mecenat", icon: "clock", question: "Un mécénat ou des heures supp", where: "Congés · Heures et mécénats" },
-    { id: "cet", icon: "piggy", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET" },
-    { id: "work-accident", icon: "accident", question: "Un accident de travail", where: "Docs · Accident de travail" },
-  ],
-};
+];
+
+const fold = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/’/g, "'").toLowerCase();
+
+/** Chaque mot tapé se trouve dans le texte, sans tenir compte des accents ni
+ *  des majuscules ; un champ vide garde tout. */
+export function matchesHelpQuery(text: string, query: string) {
+  const haystack = fold(text);
+  return fold(query).split(/\s+/).filter(Boolean).every((word) => haystack.includes(word));
+}
 
 /** L'exposition des Galeries 3 et 4 du jour, ou la prochaine pendant une
  *  inter-expo. */
@@ -136,19 +159,14 @@ export function AudioguideRow({ title, audioguide, initiallyOpen = false }: {
   );
 }
 
-/** L'audioguide de l'exposition des Galeries 3 et 4, à sa place dans la
- *  liste, séparé de la fiche d'exposition. */
-function GalleryAudioguideRow({ today }: { today: string }) {
-  const gallery = useMemo(() => galleryExpoFor(today), [today]);
-  if (!gallery?.entry.audioguide) return null;
-  return <AudioguideRow title={gallery.entry.title} audioguide={gallery.entry.audioguide} />;
-}
+type GalleryExpo = NonNullable<ReturnType<typeof galleryExpoFor>>;
 
-/** La fiche d'exposition des Galeries 3 et 4 : le PDF du dossier Expo. */
-function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: HelpChoice) => void }) {
+/** L'exposition des Galeries 3 et 4 et sa fiche PDF du dossier Expo, lue une
+ *  fois à l'ouverture de la fenêtre : la recherche peut masquer puis rendre
+ *  la ligne sans relire le dossier. */
+function useGalleryExpo(today: string) {
   const gallery = useMemo(() => galleryExpoFor(today), [today]);
   const [sharedDocuments, setSharedDocuments] = useState<ExpoDocument[]>([]);
-  const [downloadState, setDownloadState] = useState<"idle" | "busy" | "failed">("idle");
   useEffect(() => {
     let active = true;
     getSharedUsefulDocuments()
@@ -166,7 +184,12 @@ function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: Hel
     const builtIn = usefulFormFoldersForDate(today).find((folder) => folder.key === "expo")?.documents ?? [];
     return expoSheetFor(gallery.entry.title, [...builtIn, ...sharedDocuments]);
   }, [gallery, today, sharedDocuments]);
-  if (!gallery) return null;
+  return { gallery, sheet };
+}
+
+/** La fiche d'exposition des Galeries 3 et 4 : le PDF du dossier Expo. */
+function GalleryExpoRow({ gallery, sheet, onChoose }: { gallery: GalleryExpo; sheet?: ExpoDocument; onChoose: (id: HelpChoice) => void }) {
+  const [downloadState, setDownloadState] = useState<"idle" | "busy" | "failed">("idle");
   const { entry, current } = gallery;
   const download = async () => {
     if (!sheet) return;
@@ -203,21 +226,37 @@ function GalleryExpoRow({ today, onChoose }: { today: string; onChoose: (id: Hel
 
 /**
  * « Que cherchez-vous ? » : la fenêtre ouverte par la pastille du même nom dans
- * l'en-tête de chaque page. Trois groupes de questions ; chacune ouvre
- * directement la page, l'onglet ou la sous-page qui y répond.
+ * l'en-tête de chaque page. Un champ filtre les questions, rangées en cinq
+ * thèmes ; chacune ouvre directement la page, l'onglet ou la sous-page qui y
+ * répond.
  */
 export function HelpSheet({ today, section, onChoose, onClose }: {
   today: string;
-  /** La page ouverte : les titres de groupe prennent la couleur de son en-tête. */
+  /** La page ouverte : la bande du haut prend les couleurs de son en-tête. */
   section?: string;
   onChoose: (id: HelpChoice) => void;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [query, setQuery] = useState("");
+  const { gallery, sheet } = useGalleryExpo(today);
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal?.();
   }, []);
+  const searchText = (item: Question | GalleryRow) => {
+    if (item === "expo-sheet") return gallery ? `Fiche d’expo ${gallery.entry.title} exposition PDF` : "";
+    if (item === "audioguide") return gallery?.entry.audioguide ? `Audioguide ${gallery.entry.title} audio guide QR code` : "";
+    return `${item.question} ${item.where} ${item.keywords ?? ""}`;
+  };
+  const columns = THEME_COLUMNS.map((themes) => themes
+    .map((theme) => ({ ...theme, rows: theme.items.filter((item) => searchText(item) && matchesHelpQuery(`${searchText(item)} ${theme.title}`, query)) }))
+    .filter((theme) => theme.rows.length));
+  const row = (item: Question | GalleryRow) => {
+    if (item === "expo-sheet") return gallery ? <GalleryExpoRow key={item} gallery={gallery} sheet={sheet} onChoose={onChoose} /> : null;
+    if (item === "audioguide") return gallery?.entry.audioguide ? <AudioguideRow key={item} title={gallery.entry.title} audioguide={gallery.entry.audioguide} /> : null;
+    return <QuestionRow key={item.id} item={item} onChoose={onChoose} />;
+  };
   return (
     <dialog
       ref={dialogRef}
@@ -235,22 +274,27 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
           <h2 id="help-sheet-title">Que cherchez-vous ?</h2>
           <button type="button" className="help-sheet-close" aria-label="Fermer" onClick={onClose}>×</button>
         </header>
-        <h3 className="help-sheet-group-title group-find">Trouver</h3>
-        <ul className="help-sheet-group group-find" aria-label="Trouver">
-          {QUESTIONS.find.slice(0, 3).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
-          <GalleryExpoRow today={today} onChoose={onChoose} />
-          {QUESTIONS.find.slice(3, 4).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
-          <GalleryAudioguideRow today={today} />
-          {QUESTIONS.find.slice(4).map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
-        </ul>
-        <h3 className="help-sheet-group-title group-pay">Ma paie</h3>
-        <ul className="help-sheet-group group-pay" aria-label="Ma paie">
-          {QUESTIONS.pay.map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
-        </ul>
-        <h3 className="help-sheet-group-title group-declare">Déclarer</h3>
-        <ul className="help-sheet-group group-declare" aria-label="Déclarer">
-          {QUESTIONS.declare.map((item) => <QuestionRow key={item.id} item={item} onChoose={onChoose} />)}
-        </ul>
+        <input
+          type="search"
+          className="help-sheet-search"
+          placeholder="Un mot : congé, bulletin, radio…"
+          aria-label="Chercher une question"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <div className="help-sheet-themes">
+          {columns.map((themes, index) => (
+            <div key={THEME_COLUMNS[index][0].key} className="help-sheet-column">
+              {themes.map((theme) => (
+                <section key={theme.key} className="help-sheet-theme">
+                  <h3 className={`help-sheet-group-title group-${theme.key}`}>{theme.title}</h3>
+                  <ul className={`help-sheet-group group-${theme.key}`} aria-label={theme.title}>{theme.rows.map(row)}</ul>
+                </section>
+              ))}
+            </div>
+          ))}
+        </div>
+        {columns.some((themes) => themes.length) ? null : <p className="help-sheet-empty" role="status">Rien pour « {query.trim()} ». Essayez un autre mot.</p>}
       </div>
     </dialog>
   );

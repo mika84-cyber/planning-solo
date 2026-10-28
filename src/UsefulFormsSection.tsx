@@ -202,7 +202,7 @@ export function UsefulFormsSection({
 }: UsefulFormsSectionProps = {}) {
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
   // « Un accident de travail » ouvre la déclaration, une fiche d'expo le
-  // dossier Expo ; « Un formulaire » revient à la liste des dossiers.
+  // dossier Expo ; « Un formulaire administratif » revient à la liste des dossiers.
   useHelpTarget((target) => {
     if (target === "work-accident") { setActiveFolder("work-accident"); return true; }
     if (target === "expo-folder") { setActiveFolder("expo"); return true; }
