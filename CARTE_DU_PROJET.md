@@ -129,6 +129,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/PlanningWorkspace.tsx` : l’espace du planning (barre de commandes,
   plannings PDF, panneaux d’une demande ou d’une sélection, calendrier du
   mois, échanges, effacement groupé ; `renderDay` reste dans `App.tsx`).
+  Pendant une demande, un souhait ou une récupération (`datePicking`), le
+  panneau sépare la barre du mois de la grille : `MonthNavigation`
+  (`PlanningView.tsx`, `month-card-nav`) répète le mois et ses flèches juste
+  au-dessus des jours ; un scénario e2e cible donc `.month-card-nav` ou
+  `.calendar-toolbar` plutôt que « Mois suivant » seul.
   `src/PlanningDialogLayer.tsx` : les fenêtres du planning (échange, choix
   d’une demande, souhaits, groupe, fiche du jour, détail d’un solde), rendues
   avant `AppDialogLayer`. `src/scrollWhenReady.ts` amène à une ancre d’un

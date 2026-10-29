@@ -3059,12 +3059,53 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(0);
 });
 
+test("pendant une demande, le mois et ses flèches se lisent au-dessus des jours", async ({ page }) => {
+  await prepareDemo(page);
+  // Hors demande, la barre du mois suffit : rien ne se répète.
+  await expect(page.locator(".month-card-nav")).toHaveCount(0);
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  // Le panneau de la demande sépare la barre du mois de la grille : le mois
+  // et ses flèches se répètent juste au-dessus des jours, et suivent la barre.
+  const nav = page.locator(".month-card-nav");
+  const title = nav.locator(".month-card-title");
+  const shownPeriod = async () => {
+    const [month, year] = await Promise.all([
+      page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").textContent(),
+      page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").textContent(),
+    ]);
+    return `${month!.trim()} ${year!.trim()}`;
+  };
+  const start = await shownPeriod();
+  const sameAs = (period: string) => new RegExp(`^${period}$`, "i");
+  await expect(title).toHaveText(sameAs(start));
+  // L'application défile d'abord, en douceur, jusqu'au panneau de la demande ;
+  // on descend ensuite aux jours, et l'on recommence si ce défilement nous
+  // rattrape (WebKit sous charge).
+  await expect(page.locator("#request-panel")).toBeInViewport();
+  await expect(async () => {
+    await page.locator(".month-card").evaluate((card) => card.scrollIntoView({ block: "start" }));
+    await expect(nav).toBeInViewport({ timeout: 1000 });
+    await expect(page.locator(".month-card .calendar-grid")).toBeInViewport({ ratio: 0.5, timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+  await nav.getByRole("button", { name: "Mois suivant" }).click();
+  await expect(title).not.toHaveText(sameAs(start));
+  await expect(title).toHaveText(sameAs(await shownPeriod()));
+  await nav.getByRole("button", { name: "Mois précédent" }).click();
+  await expect(title).toHaveText(sameAs(start));
+  // La demande annulée, la barre du mois reprend seule la main.
+  await page.locator("#request-panel").getByRole("button", { name: "Annuler la demande" }).first().click();
+  await expect(nav).toHaveCount(0);
+});
+
 test("un congé de l’année suivante se pose à l’avance sur le solde de cette année-là", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-10-04T12:00:00"));
   await prepareDemo(page);
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Mois suivant" }).click();
+  // Les flèches posées au-dessus des jours pendant la demande.
+  for (let step = 0; step < 3; step += 1) await page.locator(".month-card-nav").getByRole("button", { name: "Mois suivant" }).click();
+  await expect(page.locator(".month-card-title")).toHaveText("Janvier 2027");
   const day = page.locator(".calendar-grid .day.work").first();
   await expect(day).toHaveAttribute("aria-label", /janvier 2027/);
   await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
@@ -5250,13 +5291,14 @@ test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ pa
   // le mois suivant, avant d’enregistrer.
   const panel = page.locator("#range-selection-panel");
   await expect(panel.getByRole("heading")).toHaveText("1 souhait sélectionné");
-  await page.getByRole("button", { name: "Mois suivant" }).click();
+  // Pendant la sélection, le mois se change aussi au-dessus des jours.
+  await page.locator(".month-card-nav").getByRole("button", { name: "Mois suivant" }).click();
   const nextMonthDay = page.locator(".month-card .day.work").last();
   await nextMonthDay.click();
   await expect(panel.getByRole("heading")).toHaveText("2 souhaits sélectionnés");
   await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
   await expect(nextMonthDay).toHaveClass(/wish-day/);
-  await page.getByRole("button", { name: "Mois précédent" }).click();
+  await page.locator(".calendar-toolbar").getByRole("button", { name: "Mois précédent" }).click();
   await expect(workDay).toHaveClass(/wish-day/);
 
   await workDay.click();

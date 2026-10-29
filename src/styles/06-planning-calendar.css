@@ -89,6 +89,25 @@
 .weekdays {
   margin-bottom: 7px;
 }
+/* Pendant une demande, le panneau sépare la barre du mois de la grille : le
+   mois et ses flèches se répètent juste au-dessus des jours (MonthNavigation). */
+.month-card-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.month-card-title {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  text-align: center;
+}
 .weekdays span {
   padding: 8px 2px;
   border-radius: 8px;
@@ -698,6 +717,9 @@
 @media (max-width: 720px) {
   .month-card {
     padding: 7px;
+  }
+  .month-card-title {
+    font-size: 1.1rem;
   }
   .weekdays,
   .calendar-grid {
