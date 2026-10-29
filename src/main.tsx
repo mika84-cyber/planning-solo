@@ -40,8 +40,14 @@ if ("serviceWorker" in navigator) {
               void registration.update().catch(() => {});
           };
           checkForUpdate();
+          // Une version publiée se signale vite, sans rafraîchir : à chaque
+          // retour sur la fenêtre, au retour du réseau, et toutes les minutes.
+          // La fenêtre « Une mise à jour est disponible » laisse ensuite
+          // choisir le moment.
           document.addEventListener("visibilitychange", checkForUpdate);
-          window.setInterval(checkForUpdate, 2 * 60 * 1000);
+          window.addEventListener("focus", checkForUpdate);
+          window.addEventListener("online", checkForUpdate);
+          window.setInterval(checkForUpdate, 60 * 1000);
         })
         .catch(() => {});
     });

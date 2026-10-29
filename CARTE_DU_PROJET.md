@@ -616,7 +616,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
   version et remplit `PRECACHE` : code, styles, polices et images légères
   (≈ 3,7 Mo), téléchargés dès l’installation pour que l’application soit
-  complète hors ligne dès la première visite.
+  complète hors ligne dès la première visite. Une version publiée se signale
+  vite, sans rafraîchir (`src/main.tsx` : à l’ouverture, au retour sur la
+  fenêtre, au retour du réseau et toutes les minutes) ; la fenêtre « Une mise
+  à jour est disponible » laisse choisir le moment, et « Mettre à jour
+  maintenant » rouvre la page là où l’on était (`src/updateResume.ts` :
+  rubrique et sous-écran de Ma paie notés dans sessionStorage, relus par
+  `useAppShellUiState` et `usePayUiState`, puis « Application mise à jour. »).
 - `e2e-pwa/pwa.spec.ts` (`npm run test:pwa`) : la version de production,
   construite dans `dist-pwa-e2e` et servie par `scripts/serve-dist.mjs`, avec
   le service worker actif — mise en cache, réouverture hors ligne, annonce et

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { setInstallMetadataEnabled } from "./useInstallPrompt";
+import { rememberScreenBeforeUpdate, resumedScreen } from "./updateResume";
 import { warmUpScreens } from "./warmUpScreens";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useAuthUiState } from "./useAuthUiState";
@@ -10,6 +11,8 @@ type ShellEffectsOptions = {
   demoMode: boolean;
   /** L'installation sur l'écran d'accueil est proposée (compte connecté, hors démo). */
   installationEnabled: boolean;
+  /** Un mot (toast) une fois la nouvelle version en place. */
+  notifyUpdated: (text: string) => void;
   appShellUi: Pick<
     ReturnType<typeof useAppShellUiState>,
     "setFeedbackOpen" | "setHomeSection" | "setNarrowScreen" | "setAppUpdateAvailable" | "setAppUpdatePromptOpen"
@@ -21,11 +24,12 @@ type ShellEffectsOptions = {
 /**
  * L'enveloppe de l'application : les écrans préparés au repos, les
  * paramètres d'adresse qui ouvrent une rubrique, l'installation, la largeur
- * d'écran, la mise à jour annoncée par le service worker, la fermeture des
+ * d'écran, la mise à jour annoncée par le service worker puis dite une fois
+ * en place, la fermeture des
  * menus au clavier ou au clic ailleurs, et la taille de fenêtre affichée en
  * débogage.
  */
-export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installationEnabled, appShellUi }: ShellEffectsOptions) {
+export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installationEnabled, notifyUpdated, appShellUi }: ShellEffectsOptions) {
   const {
     setFeedbackOpen, setHomeSection, setNarrowScreen, setAppUpdateAvailable, setAppUpdatePromptOpen,
     accountMenuOpen, setAccountMenuOpen, accountMenuRef, accountButtonRef,
@@ -71,6 +75,10 @@ export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installa
     window.addEventListener("planning-app-update-available", showUpdateAlert);
     return () => window.removeEventListener("planning-app-update-available", showUpdateAlert);
   }, [setAppUpdateAvailable, setAppUpdatePromptOpen]);
+  // La page vient de repartir avec la nouvelle version : on le dit d'un mot.
+  useEffect(() => {
+    if (authStatus === "ready" && resumedScreen()) notifyUpdated("Application mise à jour.");
+  }, [authStatus, notifyUpdated]);
   useEffect(() => {
     if (!accountMenuOpen) return;
     const close = (event: MouseEvent) => {
@@ -114,6 +122,8 @@ export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installa
       // Le rechargement ci-dessous reste utile même si le contrôle du service
       // worker échoue (hors connexion, navigateur ancien ou cache corrompu).
     } finally {
+      // La page repart là où l'on était (updateResume).
+      rememberScreenBeforeUpdate();
       window.setTimeout(() => window.location.reload(), 250);
     }
   }

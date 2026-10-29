@@ -3,6 +3,7 @@ import type { PayslipReading } from "./payslip";
 import type { PayEstimateSnapshot } from "./payslipGapExplanation";
 import type { PayScreen } from "./PayPage";
 import { localDate } from "./planningLogic";
+import { resumedScreen } from "./updateResume";
 
 export type PayDraftKey =
   | "baseSalary"
@@ -30,8 +31,12 @@ export function usePayUiState() {
     const today = new Date();
     return localDate(today.getFullYear(), today.getMonth(), 1);
   });
-  const [payScreen, setPayScreenState] = useState<PayScreen>("overview");
-  const payScreenRef = useRef<PayScreen>("overview");
+  // Après une mise à jour, le sous-écran rouvre aussi.
+  const [payScreen, setPayScreenState] = useState<PayScreen>(() => {
+    const screen = resumedScreen()?.payScreen;
+    return screen === "allowances" || screen === "payslip" || screen === "year" ? screen : "overview";
+  });
+  const payScreenRef = useRef<PayScreen>(payScreen);
   /* Chaque sous-écran de Ma paie (primes, détail du calcul, année) est une
      entrée de l'historique, posée sur la rubrique paie : le bouton Retour du
      téléphone revient à l'écran précédent, et non à la page d'avant. Revenir

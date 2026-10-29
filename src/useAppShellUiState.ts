@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import type { MainSection } from "./AppNavigation";
+import { MAIN_SECTION_ORDER, type MainSection } from "./AppNavigation";
 import type { SharedGrandPalaisEvent } from "./grandPalaisProgramTypes";
 import type { UsefulContactsPayload } from "./usefulContactsTypes";
 import type { SchoolZone } from "./planningLogic";
+import { resumedScreen } from "./updateResume";
 
 const SCHOOL_VACATIONS_VISIBLE_KEY = "planning:school-vacations-v1";
 const SCHOOL_VACATIONS_ZONE_KEY = "planning:school-zone-v1";
@@ -11,7 +12,11 @@ const SCHOOL_VACATIONS_ZONE_KEY = "planning:school-zone-v1";
 export function useAppShellUiState() {
   const [quickNoteMode, setQuickNoteMode] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
-  const [homeSection, setHomeSection] = useState<MainSection>("home");
+  // Après une mise à jour, la page rouvre sa rubrique.
+  const [homeSection, setHomeSection] = useState<MainSection>(() => {
+    const section = resumedScreen()?.section;
+    return (MAIN_SECTION_ORDER as readonly string[]).includes(section ?? "") ? (section as MainSection) : "home";
+  });
   const [prefetchedContacts, setPrefetchedContacts] = useState<UsefulContactsPayload | null>(null);
   const [approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates] = useState<SharedGrandPalaisEvent[]>([]);
   const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);

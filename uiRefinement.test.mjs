@@ -436,7 +436,12 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Une mise à jour est disponible");
     expect(app).toContain("planning-app-update-available");
     expect(main).toContain('registration.addEventListener("updatefound"');
-    expect(main).toContain("2 * 60 * 1000");
+    // La version publiée se signale vite : au retour sur la fenêtre, au
+    // retour du réseau et toutes les minutes ; la page rouvre où l'on était.
+    expect(main).toContain('addEventListener("focus", checkForUpdate)');
+    expect(main).toContain('addEventListener("online", checkForUpdate)');
+    expect(main).toContain("60 * 1000");
+    expect(main).not.toContain("2 * 60 * 1000");
     expect(app).toContain("<AppUpdateDialog");
     expect(planningDialogs).toContain("Mettre à jour maintenant");
     expect(planningDialogs).toContain('className="save-button update-now-button"');

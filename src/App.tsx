@@ -269,7 +269,7 @@ export default function Home() {
     [entries, approvedGrandPalaisUpdates],
   );
   const feedbackMessaging = useFeedbackMessaging(isProgramAdmin, demoMode, authStatus === "ready");
-  const { checkForAppUpdate } = useShellEffects({ authStatus, isProgramAdmin, demoMode, installationEnabled, appShellUi });
+  const { checkForAppUpdate } = useShellEffects({ authStatus, isProgramAdmin, demoMode, installationEnabled, notifyUpdated: toastUi.confirm, appShellUi });
   const visibleSchoolVacations = useMemo<SchoolVacation[]>(
     () => showSchoolVacations ? schoolVacationsForZone(schoolZone) : [],
     [schoolZone, showSchoolVacations],
