@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { euros } from "./appModel";
+import { type HelpTarget, useHelpTarget } from "./helpTargets";
 import { MECENAT_REGULATORY_RATES } from "./mecenat";
 import { minutesLabel, type WorkQuota } from "./overtime";
 import { MONTHS, fromKey, longDate } from "./planningLogic";
@@ -210,6 +211,14 @@ export function PayEstimateDetails({
 }
 
 type TotalKey = "gross" | "variable" | "contributions" | "mealVouchers" | "navigo" | "netBeforeTax" | "tax" | "net";
+/** L'étape qu'une ligne de Ma paie demande d'ouvrir. */
+const PAY_TARGET_STEPS: Partial<Record<HelpTarget, TotalKey>> = {
+  "pay-gross": "gross",
+  "pay-contributions": "contributions",
+  "pay-meal-vouchers": "mealVouchers",
+  "pay-tax": "tax",
+  "pay-navigo": "navigo",
+};
 type ExplainStep = {
   label: string;
   detail?: string;
@@ -240,6 +249,20 @@ function PayTotalsExplained({
   calculation: PayCalculationBreakdown;
 }) {
   const [open, setOpen] = useState<TotalKey | null>(null);
+  // Une ligne de Ma paie : la page s'ouvre sur son calcul, déplié et à l'écran.
+  const [landing, setLanding] = useState(false);
+  useHelpTarget((target) => {
+    const key = PAY_TARGET_STEPS[target];
+    if (!key) return false;
+    setOpen(key);
+    setLanding(true);
+    return true;
+  });
+  useEffect(() => {
+    if (!landing) return;
+    document.querySelector(".pay-calculation-totals li.open")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setLanding(false);
+  }, [landing]);
   const brut = grossEstimateComplete ? gross : null;
   const { variableAdditions, estimatedContributions, netBeforeTax, incomeTax, navigo, mealVoucherDeduction, pasRate, netRatioFixed, netRatioVariable } = calculation;
   const fixedPart = gross - variableAdditions;

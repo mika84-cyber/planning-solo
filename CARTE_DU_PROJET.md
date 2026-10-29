@@ -204,7 +204,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/LeaveManagementPage.tsx` : composition de la page congés et
   récupérations.
 - `src/PayPage.tsx`, `src/PayDashboard.tsx` (Ma paie : le mois et le net,
-  les lignes de la paie, le bouton « Vérifier le bulletin », puis trois
+  les lignes de la paie — sous chaque montant, en toutes lettres, où la ligne
+  mène (`go`, `pay-bulletin-line-value em`) : le fixe « Voir le profil »
+  (Profil et réglages se déplie, l’écran y descend), les primes « Voir les
+  primes », chaque retenue « Voir le calcul », qui ouvre « Détail du calcul »
+  sur son étape dépliée (`requestHelpTarget("pay-…")`, lu par
+  `PayTotalsExplained` dans `PayEstimateDetails.tsx`) ; une ligne reprise du
+  bulletin ou barrée ne mène nulle part —, le bouton « Vérifier le bulletin », puis trois
   entrées de même facture — primes et jours fériés, détail du calcul, profil
   et réglages, ce dernier déplié sur place avec ses éléments de paie, sans
   volet intermédiaire), `src/PayMonthNav.tsx` (le navigateur de mois commun

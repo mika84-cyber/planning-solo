@@ -116,14 +116,20 @@ describe("PayDashboard", () => {
     expect(html).toContain("Fixe");
     expect(html).toContain("Primes du mois");
     expect(html).toContain("Retenues");
-    // Sous chaque titre, la part du groupe dans le brut (2 600 €) ; chaque
-    // ligne est un bouton qui s'ouvre sur son détail, et le dit.
+    // Sous chaque titre, la part du groupe dans le brut (2 600 €).
     expect(html).toMatch(/Fixe<\/span><b>2.272,44<\/b><\/p><span class="pay-bulletin-group-bar" aria-hidden="true"><i style="width:87%"><\/i>/);
     expect(html).toMatch(/Retenues<\/span><b>− 612,49<\/b><\/p><span class="pay-bulletin-group-bar" aria-hidden="true"><i style="width:24%">/);
     // L'espace des milliers est insécable : on ne l'épelle pas.
-    expect(html).toMatch(/aria-label="Traitement de base : 1.801,73\. Voir le détail"/);
-    expect((html.match(/<i aria-hidden="true">›<\/i><\/button>/g) || []).length).toBeGreaterThanOrEqual(7);
-    expect(html).not.toContain('<div class="pay-bulletin-line">');
+    expect(html).toMatch(/aria-label="Traitement de base : 1.801,73\. Voir le profil"/);
+    // Sous chaque montant, où la ligne mène : le fixe vers le profil, les
+    // primes vers leur page, chaque retenue vers son calcul ; la ligne barrée
+    // ne mène nulle part.
+    const goes = (label: string) => (html.match(new RegExp(`<em>${label}<i aria-hidden="true">›</i></em></span></button>`, "g")) || []).length;
+    expect(goes("Voir le profil")).toBe(2);
+    expect(goes("Voir les primes")).toBeGreaterThanOrEqual(3);
+    expect(goes("Voir le calcul")).toBeGreaterThanOrEqual(2);
+    expect(html).not.toContain("Voir le détail");
+    expect(html).toMatch(/<div class="pay-bulletin-line">[\s\S]*?Titres repas[\s\S]*?<s>− 72,00<\/s>/);
     // La frise dit la part du brut qui va au net, aux cotisations, à l'impôt.
     expect(html).toMatch(/de brut<\/p>/);
     expect(html).toMatch(/<li class="net"><span>Net<\/span><b>\d+\s%<\/b>/);

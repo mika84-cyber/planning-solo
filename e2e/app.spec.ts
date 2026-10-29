@@ -6202,6 +6202,40 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   await expect(dialog).toHaveCount(0);
 });
 
+test("chaque ligne de Ma paie dit où elle mène, et y mène", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  const lines = page.locator(".pay-bulletin-line");
+  const back = page.getByRole("button", { name: "Revenir au tableau de bord de paie" });
+  const detailTitle = page.locator(".pay-detail-sticky-header h2");
+  // Le fixe vers le profil, les primes vers leur page, chaque retenue vers
+  // son calcul : le mot est sous le montant, plus un même chevron partout.
+  await expect(lines.filter({ hasText: "Traitement de base" })).toContainText("Voir le profil");
+  await expect(lines.filter({ hasText: "Dimanches (" })).toContainText("Voir les primes");
+  await expect(lines.filter({ hasText: "Cotisations sociales" })).toContainText("Voir le calcul");
+  await expect(page.getByText("Voir le détail")).toHaveCount(0);
+  // Les cotisations : « Détail du calcul », ouvert sur leur calcul, à l'écran.
+  await lines.filter({ hasText: "Cotisations sociales" }).click();
+  await expect(detailTitle).toHaveText("Détail du calcul");
+  const openStep = page.locator(".pay-calculation-totals li.open");
+  await expect(openStep).toContainText("Cotisations sociales");
+  await expect(openStep.locator("#pay-total-explain h4")).toHaveText("Comment sont calculées les cotisations sociales");
+  await expect(openStep.locator("#pay-total-explain")).toBeInViewport();
+  await back.click();
+  // L'impôt : la même page, sur son calcul à lui.
+  await lines.filter({ hasText: "Impôt sur le revenu" }).click();
+  await expect(page.locator(".pay-calculation-totals li.open")).toContainText("Impôt sur le revenu");
+  await back.click();
+  // Les dimanches : « Primes et jours fériés ».
+  await lines.filter({ hasText: "Dimanches (" }).click();
+  await expect(detailTitle).toHaveText("Primes et jours fériés");
+  await back.click();
+  // Le traitement : « Profil et réglages » se déplie, à l'écran.
+  await lines.filter({ hasText: "Traitement de base" }).click();
+  await expect(page.locator("#pay-dashboard-tools")).toBeVisible();
+  await expect(page.locator("#pay-dashboard-tools")).toBeInViewport();
+});
+
 test("une paie incomplète conduit directement aux champs à renseigner", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "pay");

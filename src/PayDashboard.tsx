@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { euros } from "./appModel";
+import { type HelpTarget, requestHelpTarget } from "./helpTargets";
 import type { PayCalculationBreakdown, PayCalculationRow } from "./PayEstimateDetails";
 import { MONTHS, s } from "./planningLogic";
 import { PayMonthNav } from "./PayMonthNav";
@@ -129,7 +130,8 @@ type BulletinLine = {
   pending?: string;
   /** Montant habituel qui ne s'applique pas ce mois-ci : affiché barré. */
   waived?: boolean;
-  onOpen?: () => void;
+  /** Où la ligne mène, et le mot qui le dit sous le montant. */
+  go?: { label: string; open: () => void };
 };
 type BulletinGroup = {
   key: "fixed" | "variable" | "withheld";
@@ -202,6 +204,21 @@ export function PayDashboard({
     }
   };
 
+  // Une ligne du fixe : « Profil et réglages » se déplie et l'écran y descend.
+  const [profileFocus, setProfileFocus] = useState(false);
+  const openProfile = () => {
+    if (!showTools) {
+      setToolsOpen(true);
+      onOpenTools?.();
+    }
+    setProfileFocus(true);
+  };
+  useEffect(() => {
+    if (!profileFocus) return;
+    document.getElementById("pay-dashboard-tools")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setProfileFocus(false);
+  }, [profileFocus]);
+
   /* « Vérifier le bulletin » propose aussitôt le PDF ou les photos : la
      vérification ne s'affiche qu'une fois un fichier choisi. Sans champ de
      fichier (bulletin déjà conclu), elle s'ouvre pour montrer le résultat. */
@@ -258,18 +275,32 @@ export function PayDashboard({
     : null;
   const splitTotal = split ? split.reduce((total, part) => total + part.width, 0) : 0;
 
+  /* Où chaque ligne mène, dit en toutes lettres sous son montant : le fixe
+     vient du profil, les primes ont leur page, chaque retenue s'ouvre sur son
+     calcul dans « Détail du calcul » — plus un même chevron muet partout. */
+  const profileLink = { label: "Voir le profil", open: openProfile };
+  const allowancesLink = { label: "Voir les primes", open: onOpenAllowances };
+  const calculationLink = (target: HelpTarget) => ({
+    label: "Voir le calcul",
+    open: () => {
+      requestHelpTarget(target);
+      onOpenEstimateDetails();
+    },
+  });
+
   /* Le fixe : le traitement, puis les indemnités réunies sur une ligne dont
      le détail donne chaque montant. */
   const baseRow = composition.find((row) => row.key === "base");
   const indemnityRows = composition.filter((row) => row.key in INDEMNITY_NAMES && (row.amount ?? 0) !== 0);
   const fixedLines: BulletinLine[] = [
-    ...(baseRow ? [{ key: "base", label: baseRow.label, amount: baseRow.amount, sign: "" as const, pending: baseRow.amount === null ? "à compléter" : "" }] : []),
+    ...(baseRow ? [{ key: "base", label: baseRow.label, amount: baseRow.amount, sign: "" as const, pending: baseRow.amount === null ? "à compléter" : "", go: profileLink }] : []),
     ...(indemnityRows.length ? [{
       key: "indemnities",
       label: "Indemnités",
       detail: indemnityRows.map((row) => `${INDEMNITY_NAMES[row.key]} ${number.format(row.amount ?? 0)}`).join(" · "),
       amount: sum(indemnityRows, indemnityRows.map((row) => row.key)),
       sign: "" as const,
+      go: profileLink,
     }] : []),
   ];
 
@@ -277,7 +308,7 @@ export function PayDashboard({
      férié) ; un montant encore inconnu le dit au lieu de compter zéro. */
   const flatRow = composition.find((row) => row.key === "sunday-flat" && (row.amount ?? 0) !== 0);
   const primeLines: BulletinLine[] = [
-    ...(flatRow ? [{ key: "sunday-flat", label: "Forfait dimanches", detail: "le même chaque mois", amount: flatRow.amount, sign: "plus" as const }] : []),
+    ...(flatRow ? [{ key: "sunday-flat", label: "Forfait dimanches", detail: "le même chaque mois", amount: flatRow.amount, sign: "plus" as const, go: allowancesLink }] : []),
     ...variables
       .filter((item) => PRIME_KEYS.includes(item.key) || isPayslipLine(item.key))
       .map((item) => ({
@@ -287,7 +318,8 @@ export function PayDashboard({
         amount: item.amount,
         sign: (item.amount ?? 0) < 0 ? "minus" as const : "plus" as const,
         pending: pendingOf(item),
-        onOpen: onOpenAllowances,
+        // Une ligne reprise du bulletin n'a pas de page à elle.
+        go: isPayslipLine(item.key) ? undefined : allowancesLink,
       })),
   ];
 
@@ -306,7 +338,7 @@ export function PayDashboard({
         amount: item.amount === null ? null : Math.abs(item.amount),
         sign: "minus" as const,
         pending: pendingOf(item),
-        onOpen: onOpenEstimateDetails,
+        go: calculationLink("pay-gross"),
       })),
     ...(calculation ? [
       {
@@ -316,7 +348,7 @@ export function PayDashboard({
         amount: calculation.estimatedContributions,
         sign: "minus" as const,
         pending: calculation.estimatedContributions === null ? "à compléter" : "",
-        onOpen: onOpenEstimateDetails,
+        go: calculationLink("pay-contributions"),
       },
       ...(calculation.mealVoucherDeduction ? [{
         key: "meal",
@@ -324,7 +356,7 @@ export function PayDashboard({
         detail: "votre part du mois",
         amount: calculation.mealVoucherDeduction,
         sign: "minus" as const,
-        onOpen: onOpenEstimateDetails,
+        go: calculationLink("pay-meal-vouchers"),
       }] : []),
       {
         key: "tax",
@@ -333,7 +365,7 @@ export function PayDashboard({
         amount: calculation.incomeTax,
         sign: "minus" as const,
         pending: calculation.incomeTax === null ? "à compléter" : "",
-        onOpen: onOpenEstimateDetails,
+        go: calculationLink("pay-tax"),
       },
       ...(calculation.navigo ? [{
         key: "navigo",
@@ -341,7 +373,7 @@ export function PayDashboard({
         detail: "ajouté au net",
         amount: calculation.navigo,
         sign: "plus" as const,
-        onOpen: onOpenEstimateDetails,
+        go: calculationLink("pay-navigo"),
       }] : []),
     ] : []),
     ...(mealVoucher ? [{
@@ -368,7 +400,7 @@ export function PayDashboard({
 
   const lineAmount = (line: BulletinLine) =>
     line.pending || (line.amount === null ? "à compléter" : signed(line.amount, line.sign));
-  const lineAria = (line: BulletinLine) => `${line.label} : ${lineAmount(line)}. Voir le détail`;
+  const lineAria = (line: BulletinLine) => (line.go ? `${line.label} : ${lineAmount(line)}. ${line.go.label}` : undefined);
   // La part de chaque groupe dans le brut, pour sa barre.
   const share = (total: number) => (gross > 0 ? Math.min(100, Math.round((Math.abs(total) / gross) * 100)) : 0);
 
@@ -475,17 +507,21 @@ export function PayDashboard({
                           <span>{line.label}</span>
                           {line.detail ? <small>{line.detail}</small> : null}
                         </span>
-                        {/* Chaque ligne s'ouvre sur son calcul — le sien, ou celui du
-                            brut : un simple chevron le dit. */}
-                        <b className={line.pending ? "pending" : line.waived ? "waived" : line.sign}>
-                          {line.waived ? <s>{amount}</s> : amount}
-                        </b>
-                        <i aria-hidden="true">›</i>
+                        {/* Le montant et, dessous, en toutes lettres, où la ligne
+                            mène : son profil, sa page de primes ou son calcul. */}
+                        <span className="pay-bulletin-line-value">
+                          <b className={line.pending ? "pending" : line.waived ? "waived" : line.sign}>
+                            {line.waived ? <s>{amount}</s> : amount}
+                          </b>
+                          {line.go ? <em>{line.go.label}<i aria-hidden="true">›</i></em> : null}
+                        </span>
                       </>
                     );
                     return (
                       <li key={line.key}>
-                        <button type="button" className="pay-bulletin-line" onClick={line.onOpen ?? onOpenEstimateDetails} aria-label={lineAria(line)}>{content}</button>
+                        {line.go
+                          ? <button type="button" className="pay-bulletin-line" onClick={line.go.open} aria-label={lineAria(line)}>{content}</button>
+                          : <div className="pay-bulletin-line">{content}</div>}
                       </li>
                     );
                   })}

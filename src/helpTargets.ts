@@ -4,7 +4,8 @@ import { useEffect, useEffectEvent } from "react";
  * Où mène une question de la fenêtre d'aide, à l'intérieur d'une page : un
  * onglet, une sous-page ou un volet. La page change d'abord (App.tsx), puis
  * l'écran visé — souvent chargé à la demande — lit la demande en attente dès
- * qu'il s'affiche, ou l'entend s'il est déjà là.
+ * qu'il s'affiche, ou l'entend s'il est déjà là. Les lignes de Ma paie s'en
+ * servent aussi : « Détail du calcul » s'ouvre sur le calcul de la ligne.
  */
 export type HelpTarget =
   | "contacts"
@@ -17,7 +18,8 @@ export type HelpTarget =
   | "overtime-mecenat"
   | "cet"
   | "colleague-share"
-  | "colleague-groups";
+  | "colleague-groups"
+  | "pay-gross" | "pay-contributions" | "pay-meal-vouchers" | "pay-tax" | "pay-navigo";
 
 const HELP_TARGET_EVENT = "planning:help-target";
 /** Une demande non servie s'oublie : elle ne doit pas rouvrir un onglet plus
