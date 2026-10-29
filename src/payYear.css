@@ -1,7 +1,7 @@
 /* L'année en un coup d'œil : la même langue que les lignes de la paie et la
    cascade — titres en lettres à empattements, barres de part du brut,
    encadrés légers — puis les douze mois en barres et en tableau. */
-.pay-year { display: grid; gap: 12px; }
+.pay-year { display: grid; gap: 12px; min-width: 0; }
 .pay-year-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
 .pay-year-picker { display: grid; gap: 3px; font-size: 12px; font-weight: 700; }
 .pay-year-status { margin: 0 0 6px; color: var(--muted); font-size: 12px; font-weight: 650; text-align: right; }
@@ -32,6 +32,9 @@
 .pay-year-bar.future i { background: #e4dacd; }
 .pay-year-bar small { margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 700; text-align: center; }
 
+/* Quatre colonnes de montants : sur un petit écran à police agrandie, le
+   tableau défile de côté dans son cadre au lieu d'élargir la page. */
+.pay-year-table-shell { min-width: 0; overflow-x: auto; }
 .pay-year-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 .pay-year-table th, .pay-year-table td { padding: 7px 4px; border-top: 1px solid #f1e9de; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pay-year-table th[scope="col"] { padding-top: 0; border-top: 0; color: var(--muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -45,4 +48,10 @@
 .pay-year-table tr.future td.minus, .pay-year-table tr.future td.net { color: var(--muted); font-weight: 650; }
 .pay-year-table tfoot th, .pay-year-table tfoot td { border-top: 2px solid #2c2621; padding-top: 9px; font-weight: 850; }
 .pay-year-table tfoot td.net { font-size: 1.05rem; }
+/* Petit écran : les quatre colonnes tiennent sans défiler, à police normale. */
+@media (max-width: 400px) {
+  .pay-year-table { font-size: 0.78rem; }
+  .pay-year-table th, .pay-year-table td { padding: 7px 2px; }
+  .pay-year-table tfoot td.net { font-size: 0.95rem; }
+}
 .pay-year-note { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }

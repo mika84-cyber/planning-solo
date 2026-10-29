@@ -678,6 +678,12 @@
   line-height: 1.2;
   text-align: center;
 }
+/* Trois tuiles de front : un mot long (« récupérations », police agrandie)
+   se coupe plutôt que de déborder de sa tuile. */
+.leave-tool-disclosure > summary .leave-tool-copy > strong {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
 .leave-tool-disclosure[open] {
   grid-column: 1 / -1;
 }

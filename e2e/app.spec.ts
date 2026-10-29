@@ -3059,6 +3059,41 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(0);
 });
 
+test("aucun écran ne déborde à droite sur un petit téléphone, même avec la police agrandie", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "Un seul petit écran suffit.");
+  // 360 px de large : un Android courant. La police agrandie (réglage
+  // d'accessibilité) est imitée en grossissant la racine de 25 %.
+  await page.setViewportSize({ width: 360, height: 800 });
+  await prepareDemo(page);
+  const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  const back = page.getByRole("button", { name: "Revenir au tableau de bord de paie" });
+  const screens: Array<[string, () => Promise<void>]> = [
+    ["Expos · Inter-expos", async () => { await goToSection(page, "program"); await page.getByRole("tab", { name: "Inter-expos" }).click(); }],
+    ["Congés", async () => goToSection(page, "leave")],
+    ["Collègues", async () => goToSection(page, "colleagues")],
+    ["Docs · Contacts", async () => { await goToSection(page, "documents"); await page.getByRole("tab", { name: "Contacts" }).click(); }],
+    ["Ma paie · L’année", async () => {
+      await goToSection(page, "pay");
+      if (await back.count()) await back.click();
+      await page.locator(".pay-bulletin-shortcut", { hasText: "L’année" }).click();
+    }],
+  ];
+  for (const scale of ["100%", "125%"]) {
+    await page.evaluate((size) => { document.documentElement.style.fontSize = size; }, scale);
+    for (const [name, open] of screens) {
+      await open();
+      await expect.poll(overflow, { message: `${name} déborde à droite (police ${scale})` }).toBe(0);
+    }
+  }
+  // Le tableau de l'année tient sans défiler à police normale ; agrandie, il
+  // défile dans son cadre sans élargir la page.
+  await page.evaluate(() => { document.documentElement.style.fontSize = "100%"; });
+  await expect.poll(() => page.evaluate(() => {
+    const shell = document.querySelector(".pay-year-table-shell")!;
+    return shell.scrollWidth - shell.clientWidth;
+  })).toBe(0);
+});
+
 test("pendant une demande, le mois et ses flèches se lisent au-dessus des jours", async ({ page }) => {
   await prepareDemo(page);
   // Hors demande, la barre du mois suffit : rien ne se répète.

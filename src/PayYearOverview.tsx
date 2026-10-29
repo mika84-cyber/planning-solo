@@ -66,6 +66,9 @@ export function PayYearOverview({
         ))}
       </div>
 
+      {/* Le tableau défile de côté s'il le faut (petit écran, police
+          agrandie) : il n'élargit jamais la page. */}
+      <div className="pay-year-table-shell">
       <table className="pay-year-table">
         <thead>
           <tr>
@@ -99,6 +102,7 @@ export function PayYearOverview({
           </tr>
         </tfoot>
       </table>
+      </div>
       <p className="pay-year-note">
         Les mois à venir sont des estimations ; une coche marque un mois vérifié avec son bulletin. Touchez un mois pour voir son calcul.
       </p>

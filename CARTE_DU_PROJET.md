@@ -48,7 +48,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   « coup d’œil » reste sur la seconde ligne : espace insécable dans
   `AppNavigation`), quatrième carte de Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,
   dans la langue des lignes de la paie), le net mois par mois en barres, les
-  douze mois en tableau, chacun ouvrant son détail du calcul. Les chiffres
+  douze mois en tableau, chacun ouvrant son détail du calcul (dans
+  `.pay-year-table-shell`, qui défile de côté sans élargir la page ; sous
+  400 px le tableau se resserre pour tenir à police normale). Les chiffres
   viennent de `src/yearPayOverview.ts` (calcul pur, mêmes formules que la
   paie du mois) alimenté par `src/useYearPayOverview.ts` (profil de paie
   effectif de chaque mois, primes de l'année, maladie, grève, heures sup,
@@ -275,7 +277,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   terracotta) en liseré, dessin et teinte pâle ; la vue choisie, plus haute,
   prend la teinte de l’en-tête de la carte et s’y ouvre sans filet. Le bloc
   mord sur l’espacement de la page (même `clamp`, 12 px sur téléphone) :
-  changer l’un oblige à changer l’autre.
+  changer l’un oblige à changer l’autre. Les enfants de la grille de la page
+  ont `min-width: 0` (titres d’exposition en `nowrap`, quatre libellés
+  d’onglets qui passent à la ligne si la place manque) : sans cela, sur
+  téléphone à police agrandie, la colonne s’élargissait et tout l’écran
+  Inter-expos était coupé à droite. Le scénario e2e « aucun écran ne déborde
+  à droite sur un petit téléphone » (projet mobile, 360 px, racine à 100 % et
+  125 %) garde les écrans Expos, Congés, Collègues, Contacts et l’année de la
+  paie dans l’écran.
   « Par espace » montre une exposition à cheval sur deux années une seule
   fois (`venueYearGroups`, même titre et mêmes dates) ; une exposition « À
   confirmer » mais datée donne déjà son délai (« Dans 4 mois… »).
