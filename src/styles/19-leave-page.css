@@ -811,6 +811,23 @@
 .mecenat-balance-card {
   background: linear-gradient(145deg, var(--surface-high) 0%, var(--surface-high) 100%);
 }
+/* Les trois actions sur une rangée qui occupe toute la carte (plus de
+   boutons empilés à gauche et d'un grand vide à droite) : « Déclarer » au
+   premier plan, les deux volets à côté, à la même hauteur. Elles
+   s'empilent sous 680 px (variantes en fin de fichier). */
+.mecenat-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mecenat-actions > button {
+  width: 100%;
+  min-height: 46px;
+  text-wrap: balance;
+}
+.mecenat-actions > .soft-detail-button {
+  padding: 4px 14px;
+  font-size: 13px;
+}
 .mecenat-rate-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -909,14 +926,6 @@
     grid-column: auto;
     grid-row: auto;
     justify-self: auto;
-  }
-  /* Sur grand écran, les actions des mécénats reprennent strictement
-     l'encombrement et l'alignement de celles des heures supplémentaires. */
-  .mecenat-balance-card .overtime-actions,
-  .mecenat-balance-card .overtime-actions .mecenat-action,
-  .mecenat-balance-card .overtime-history-toggle {
-    width: auto;
-    justify-self: start;
   }
 }
 
@@ -1038,10 +1047,7 @@
     padding: 17px 14px;
   }
   .overtime-actions > button,
-  .solidarity-hours-action,
-  .mecenat-balance-card .overtime-actions,
-  .mecenat-balance-card .overtime-actions .mecenat-action,
-  .mecenat-balance-card .overtime-history-toggle {
+  .solidarity-hours-action {
     width: 100%;
   }
   .cet-section-static .cet-heading-static {

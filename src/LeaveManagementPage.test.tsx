@@ -39,6 +39,45 @@ const props = {
   onDeleteArchivedRequest: vi.fn(),
 };
 
+/** La rangée d'actions de la carte Mécénats, telle que rendue. */
+function mecenatActionsRow(html: string) {
+  const start = html.indexOf('<div class="overtime-actions mecenat-actions">');
+  expect(start).toBeGreaterThan(-1);
+  const end = html.indexOf("</div>", start);
+  return { row: html.slice(start, end), end };
+}
+
+describe("carte Mécénats", () => {
+  it("réunit les trois actions sur une rangée, les volets s’ouvrant dessous", () => {
+    // Avant, « Mes dates d’inscription » et « Voir l’historique » s'empilaient
+    // sous « Déclarer un mécénat » : sur Z Fold ouvert, un grand vide à droite.
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} mecenatSignupsOpen />);
+    const { row, end } = mecenatActionsRow(html);
+    expect(row.match(/<button/g)).toHaveLength(3);
+    expect(row).toContain('class="primary-action mecenat-action"');
+    expect(row).toContain("Déclarer un mécénat");
+    expect(row).toContain('aria-expanded="true">Masquer mes dates d’inscription');
+    expect(row).toContain('aria-expanded="false">Voir l’historique');
+    expect(html.indexOf('aria-label="Mes dates d’inscription"')).toBeGreaterThan(end);
+  });
+
+  it("compte les dates d’inscription sur le bouton fermé", () => {
+    const signups = Array.from({ length: 2 }, () => ({})) as unknown as typeof props.mecenatSignups;
+    const { row } = mecenatActionsRow(renderToStaticMarkup(<LeaveManagementPage {...props} mecenatSignups={signups} />));
+    expect(row).toContain("Mes dates d’inscription (2)");
+    expect(row).not.toContain("Masquer");
+  });
+});
+
+describe("demandes archivées", () => {
+  it("est réservée à l’administrateur, titrée et reliée à son titre", () => {
+    expect(renderToStaticMarkup(<LeaveManagementPage {...props} />)).not.toContain("leave-request-archive");
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} isProgramAdmin />);
+    expect(html).toContain('<section class="leave-request-archive" aria-labelledby="leave-request-archive-title">');
+    expect(html).toContain('<strong id="leave-request-archive-title">Demandes archivées</strong>');
+  });
+});
+
 describe("alerte des crédits de férié à confirmer", () => {
   it("ne s’affiche pas quand tout est confirmé", () => {
     const html = renderToStaticMarkup(<LeaveManagementPage {...props} />);

@@ -211,17 +211,22 @@ export function LeaveManagementPage({
               <article><span>{mecenatRateLabels().day}</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
               <article><span>{mecenatRateLabels().night}</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
             </div>
-            <div className="overtime-actions"><button type="button" className="primary-action mecenat-action" onClick={onOpenMecenat}>Déclarer un mécénat</button></div>
-            {/* Les dates où l'on s'est inscrit, à retenir (déclarer) ou à effacer. */}
-            <button type="button" className="soft-detail-button overtime-history-toggle mecenat-signups-toggle" onClick={onToggleMecenatSignups} aria-expanded={mecenatSignupsOpen}>
-              {mecenatSignupsOpen ? "Masquer mes dates d’inscription" : `Mes dates d’inscription${mecenatSignups.length ? ` (${mecenatSignups.length})` : ""}`}
-            </button>
+            {/* Les trois actions sur une rangée : déclarer, puis les deux
+                volets qui s'ouvrent dessous — les dates où l'on s'est inscrit
+                (à retenir ou à effacer) et l'historique. Sur téléphone, elles
+                s'empilent sur toute la largeur. */}
+            <div className="overtime-actions mecenat-actions">
+              <button type="button" className="primary-action mecenat-action" onClick={onOpenMecenat}>Déclarer un mécénat</button>
+              <button type="button" className="soft-detail-button mecenat-signups-toggle" onClick={onToggleMecenatSignups} aria-expanded={mecenatSignupsOpen}>
+                {mecenatSignupsOpen ? "Masquer mes dates d’inscription" : `Mes dates d’inscription${mecenatSignups.length ? ` (${mecenatSignups.length})` : ""}`}
+              </button>
+              <button type="button" className="soft-detail-button mecenat-history-toggle" onClick={onToggleMecenatHistory} aria-expanded={mecenatHistoryOpen}>
+                {mecenatHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
+              </button>
+            </div>
             {mecenatSignupsOpen ? (
               <MecenatSignupList signups={mecenatSignups} onAdd={onAddMecenatSignup} onRetain={onRetainMecenatSignup} onDelete={onDeleteMecenatSignup} />
             ) : null}
-            <button type="button" className="soft-detail-button overtime-history-toggle" onClick={onToggleMecenatHistory} aria-expanded={mecenatHistoryOpen}>
-              {mecenatHistoryOpen ? "Masquer l’historique" : "Voir l’historique"}
-            </button>
             {mecenatHistoryOpen ? (
               <div className="overtime-history mecenat-history">
                 {!mecenatEntries.length ? <p className="empty-state">Aucun mécénat enregistré.</p> : null}

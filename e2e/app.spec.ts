@@ -6710,6 +6710,72 @@ test("Z Fold ouvert : les infos congés restent empilées comme sur Z Fold ferm�
   expect(Math.abs(boxes[0].x - boxes[2].x)).toBeLessThanOrEqual(1);
 });
 
+test("Z Fold ouvert : les trois actions des mécénats tiennent sur une rangée qui occupe la carte", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "z-fold", "Scénario réservé au viewport Z Fold ouvert");
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  const card = page.locator(".mecenat-balance-card");
+  const actions = card.locator(".mecenat-actions > button");
+  await expect(actions).toHaveText([/^Déclarer un mécénat$/, /^Mes dates d’inscription/, /^Voir l’historique$/]);
+  const measure = () => actions.evaluateAll((items) => items.map((item) => {
+    const { x, y, right, height } = item.getBoundingClientRect();
+    return { x, y, right, height };
+  }));
+  const boxes = await measure();
+  // Une seule rangée de boutons de même hauteur…
+  for (const box of boxes) {
+    expect(Math.abs(box.y - boxes[0].y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(box.height - boxes[0].height)).toBeLessThanOrEqual(1);
+  }
+  // … aussi large que les tarifs au-dessus : plus de vide à droite.
+  const rates = (await card.locator(".mecenat-rate-summary").boundingBox())!;
+  expect(Math.abs(boxes[0].x - rates.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(boxes[2].right - (rates.x + rates.width))).toBeLessThanOrEqual(1);
+  // Le volet s'ouvre sous la rangée, qui reste en place.
+  await actions.nth(1).click();
+  const signups = page.getByRole("region", { name: "Mes dates d’inscription" });
+  await expect(signups).toBeVisible();
+  await expect(actions.nth(1)).toHaveText("Masquer mes dates d’inscription");
+  const after = await measure();
+  expect(Math.abs(after[2].y - after[0].y)).toBeLessThanOrEqual(1);
+  expect((await signups.boundingBox())!.y).toBeGreaterThan(after[0].y + after[0].height);
+});
+
+test("en mode sombre, les mois qui comptent pour le fractionnement se détachent des autres", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "ordinateur", "Les couleurs ne dépendent pas de l’écran.");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await prepareDemo(page);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await goToSection(page, "leave");
+  await page.locator("details.leave-info-card > summary").click();
+  await expect(page.locator("#planning-dark-theme")).toHaveCount(1);
+  const months = page.locator(".leave-info-months li");
+  await expect(months).toHaveCount(12);
+  // Contraste (WCAG) entre deux couleurs opaques.
+  const contrasts = await page.locator(".leave-info-fraction").evaluate((section) => {
+    const luminance = (color: string) => {
+      const [r, g, b] = color.match(/[\d.]+/g)!.slice(0, 3).map((value) => {
+        const channel = Number(value) / 255;
+        return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const ratio = (a: string, b: string) => {
+      const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (light + 0.05) / (dark + 0.05);
+    };
+    const counted = getComputedStyle(section.querySelector(".leave-info-months li.counts")!);
+    return {
+      fill: ratio(counted.backgroundColor, getComputedStyle(section).backgroundColor),
+      text: ratio(counted.color, counted.backgroundColor),
+    };
+  });
+  // Avant, le fond des mois qui comptent se confondait avec la carte (1,1).
+  expect(contrasts.fill).toBeGreaterThan(1.8);
+  expect(contrasts.text).toBeGreaterThan(4.5);
+});
+
 test("l’administrateur voit la date du dernier contrôle du site et peut en lancer un", async ({ page }) => {
   let checkRequested = false;
   await page.route("**/api/gp-program", async (route) => {

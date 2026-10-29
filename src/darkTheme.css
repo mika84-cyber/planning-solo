@@ -130,6 +130,11 @@ html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .meal,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .meal::before { background: #d9a27e; }
 /* Règles des congés : le liseré noir devient clair sur fond sombre. */
 html[data-theme="dark"] .leave-info-card { border-color: rgba(255, 255, 255, 0.55); }
+/* Fractionnement : la conversion automatique rendait les douze mois presque
+   pareils (deux fonds sombres voisins, deux textes clairs). Les mois qui
+   comptent gardent un fond vert franc ; les autres s'effacent. */
+html[data-theme="dark"] .leave-info-content section .leave-info-months li { background: rgba(255, 255, 255, 0.04); color: rgba(232, 226, 216, 0.34); }
+html[data-theme="dark"] .leave-info-content section .leave-info-months li.counts { background: #2b6b52; color: #e4f6ec; }
 html[data-theme="dark"] .payslip-gap-choice { border-color: #4a3a2d; border-left-color: #c9754f; background: #2a241f; }
 html[data-theme="dark"] .payslip-gap-choice p { color: #d8cfc4; }
 html[data-theme="dark"] .payslip-gap-choice p strong, html[data-theme="dark"] .payslip-gap-choices h4 { color: #f0c3ad; }

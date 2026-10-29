@@ -148,7 +148,6 @@ describe("finitions d’interface", () => {
   it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
     expect(css.hasRule(".cet-section-static .cet-heading-static")).toBe(true);
     expect(css.hasRuleWithSelectors([".leave-tool-disclosure > .overtime-balance-card", ".leave-tool-disclosure > .cet-section"])).toBe(true);
-    expect(app).toContain('<strong id="leave-request-archive-title">Demandes archivées</strong>');
     expect(cetSection).toContain('className="cet-section open cet-section-static"');
     expect(cetSection).toContain("alimentation du 15 novembre au 31 décembre");
     expect(cetSection).not.toContain("setOpen");

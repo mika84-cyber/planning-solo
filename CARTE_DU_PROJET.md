@@ -77,7 +77,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   avec la validation serveur des demandes.
 - `src/LeaveInfoCard.tsx` : ligne « Infos congés » au-dessus des soldes
   (report, fractionnement, congés exceptionnels ; les congés reportables au
-  30 avril l'un sous l'autre) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
+  30 avril l'un sous l'autre ; en sombre, les mois qui comptent pour le
+  fractionnement gardent un fond vert franc, retouche de `darkTheme.css`) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
   absences de 31 jours et plus et courrier de dérogation.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
   session, renouvellement du jeton au retour et nouvelle tentative des appels
@@ -443,7 +444,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `mecenat_signups`) : dans la carte Mécénats, « Mes dates d'inscription »
   (`src/MecenatSignupList.tsx`) ajoute une date et ses horaires s'ils sont
   connus, la retient (la déclaration s'ouvre, date et horaires remplis ; une fois le mécénat enregistré, la date s'efface —
-  `retainedSignupRef`) ou l'efface. Hors sauvegarde exportée.
+  `retainedSignupRef`) ou l'efface. Hors sauvegarde exportée. « Déclarer un
+  mécénat », « Mes dates d'inscription » et « Voir l'historique » forment une
+  rangée qui occupe la carte (`.mecenat-actions`, empilée sous 680 px) ; les
+  deux volets s'ouvrent dessous.
 - `src/mecenatRules.ts` : amplitude de 12 h, repos de 11 h et lundis, signalés
   sans bloquer l’inscription d’un mécénat.
 - `src/earlyPayment.ts` : mécénats et heures « à payer » qu’un bulletin vérifié
