@@ -305,7 +305,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   les tarifs quand le Grand Palais ne les publie pas. `grandPalaisTitleKey`
   reconnaît un même événement sous deux titres (« des Glaces » / « de
   Glace 2026 ») : une mise à jour acceptée remplace l’entrée livrée au lieu
-  de la doubler.
+  de la doubler. Un retrait validé, lui, ne retire que sa fiche : même page
+  officielle, ou même titre à des dates qui se chevauchent
+  (`isWithdrawnGrandPalaisEvent`). Sinon le retrait d’une page renommée
+  (« Gilles Caron ») effaçait la nouvelle (« Gilles Caron. J’ai voulu voir »).
 - `src/GrandPalaisCheckPanel.tsx` : « Veille du site », réservée à
   l’administrateur — un petit radar crème et terracotta (faisceau qui tourne,
   point allumé quand le contrôle a trouvé du nouveau), date du dernier

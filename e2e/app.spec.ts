@@ -3594,6 +3594,33 @@ test("le compte administrateur peut valider seul une mise à jour du Grand Palai
   await expect(page.getByRole("tab", { name: "Salon d’honneur", exact: true })).toBeVisible();
 });
 
+test("une exposition dont la page a été renommée reste affichée après le retrait de l’ancienne page", async ({ page }) => {
+  // Cas du 29 octobre 2026 : nouvelle page validée, puis retrait de
+  // l'ancienne. Les titres se contiennent, les dates sont les mêmes : le
+  // retrait effaçait aussi la nouvelle fiche, et la Galerie 6.1 disparaissait.
+  const renamed = {
+    id: "gilles-caron-jai-voulu-voir",
+    title: "Gilles Caron. J'ai voulu voir",
+    startDate: "2027-03-16",
+    endDate: "2027-07-24",
+    url: "https://www.grandpalais.fr/fr/programme/gilles-caron-jai-voulu-voir",
+    venueKey: "other:galerie-6-1",
+    venueLabel: "Galerie 6.1",
+  };
+  const withdrawn = { ...renamed, id: "gilles-caron", title: "Gilles Caron", url: "https://www.grandpalais.fr/fr/programme/gilles-caron", deleted: true };
+  await page.route("**/api/gp-program", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ approved: [renamed, withdrawn], pending: [], isAdmin: false }),
+  }));
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  await page.getByRole("tab", { name: "Par espace" }).click();
+  await page.getByRole("tab", { name: /Autres/ }).click();
+  await page.getByRole("tab", { name: "Galerie 6.1", exact: true }).click();
+  await expect(page.locator(".grand-palais-program-screen")).toContainText("Gilles Caron. J'ai voulu voir");
+});
+
 test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa gratuité et son site de billetterie", async ({ page }) => {
   // Une mise à jour acceptée sous un autre titre et un jour de décalage,
   // sans tarif : la veille l'avait proposée comme une nouveauté.

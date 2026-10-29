@@ -584,7 +584,6 @@ describe("finitions d’interface", () => {
   it("permet une note multi-jours et un crédit manuel de solidarité", () => {
     expect(app).toContain("Choisir le ou les jours");
     expect(app).toContain('aria-label="Date de la note"');
-    expect(workTimeDialogs).toContain("Ajouter des heures manuellement");
     expect(app).toContain('createClientId("solidarity")');
     expect(workTimeDialogs).toContain('disposition: "recovery"');
   });

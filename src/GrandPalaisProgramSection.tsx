@@ -113,15 +113,28 @@ export function ticketingHost(url: string) {
  *  World Supreme ») à des dates qui se chevauchent. Sans cela, une mise à
  *  jour acceptée sous un titre un peu différent s'ajoutait à l'entrée livrée
  *  au lieu de la remplacer : deux cartes pour la même patinoire. */
-function isSameGrandPalaisEvent(
-  entry: GrandPalaisProgramEntry,
-  shared: { title: string; officialUrl: string; startDate: string; endDate: string },
-) {
+type SharedEventIdentity = { title: string; officialUrl: string; startDate: string; endDate: string };
+
+function overlaps(entry: GrandPalaisProgramEntry, shared: SharedEventIdentity) {
+  return !entry.startsOn || !entry.endsOn || (shared.startDate <= entry.endsOn && entry.startsOn <= shared.endDate);
+}
+
+function isSameGrandPalaisEvent(entry: GrandPalaisProgramEntry, shared: SharedEventIdentity) {
   if (entry.officialUrl === shared.officialUrl || entry.title.toLowerCase() === shared.title.toLowerCase()) return true;
   const known = grandPalaisTitleKey(entry.title);
   const candidate = grandPalaisTitleKey(shared.title);
-  return Boolean(known && candidate && (known.includes(candidate) || candidate.includes(known)))
-    && (!entry.startsOn || !entry.endsOn || (shared.startDate <= entry.endsOn && entry.startsOn <= shared.endDate));
+  return Boolean(known && candidate && (known.includes(candidate) || candidate.includes(known))) && overlaps(entry, shared);
+}
+
+/** La fiche précise qu'un retrait validé vise : même page officielle, ou même
+ *  titre à des dates qui se chevauchent. Le rapprochement souple des titres
+ *  (`isSameGrandPalaisEvent`) sert aux mises à jour ; appliqué à un retrait,
+ *  il effaçait la fiche renommée qui remplace l'ancienne : le retrait de
+ *  « Gilles Caron » (page disparue) emportait « Gilles Caron. J'ai voulu
+ *  voir », sa nouvelle page, validée deux minutes plus tôt. */
+function isWithdrawnGrandPalaisEvent(entry: GrandPalaisProgramEntry, shared: SharedEventIdentity) {
+  return entry.officialUrl === shared.officialUrl
+    || (entry.title.toLowerCase() === shared.title.toLowerCase() && overlaps(entry, shared));
 }
 
 
@@ -162,18 +175,21 @@ export function mergeSharedGrandPalaisProgram(
     const officialUrl = safeGrandPalaisUrl(shared.url);
     if (!officialUrl) continue;
     const identity = { title: shared.title, officialUrl, startDate: shared.startDate, endDate: shared.endDate };
+    const matches = (entry: GrandPalaisProgramEntry) => shared.deleted
+      ? isWithdrawnGrandPalaisEvent(entry, identity)
+      : isSameGrandPalaisEvent(entry, identity);
     // L'entrée livrée que cette mise à jour remplace : ses tarifs, si la
     // fiche a été relue avant de les publier, son audioguide, son site de
     // billetterie et sa condition de tarif, que le site ne dit pas, restent.
     const replaced = Object.values(merged)
       .flatMap((venue) => Object.values(venue.schedule).flatMap((entries) => entries ?? []))
-      .filter((entry) => isSameGrandPalaisEvent(entry, identity));
+      .filter(matches);
     const knownEntry = replaced.find((entry) => entry.prices?.length);
     const knownPrices = knownEntry?.prices;
     const known = <K extends keyof GrandPalaisProgramEntry>(field: K) => replaced.find((entry) => entry[field])?.[field];
     for (const venue of Object.values(merged))
       for (const year of Object.keys(venue.schedule))
-        venue.schedule[Number(year)] = (venue.schedule[Number(year)] ?? []).filter((entry) => !isSameGrandPalaisEvent(entry, identity));
+        venue.schedule[Number(year)] = (venue.schedule[Number(year)] ?? []).filter((entry) => !matches(entry));
     if (shared.deleted) continue;
 
     const key = shared.venueKey;

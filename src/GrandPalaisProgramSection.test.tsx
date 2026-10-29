@@ -371,6 +371,59 @@ describe("programmation du Grand Palais", () => {
     expect(otherGrandPalaisVenueKeys(added, "2027-05-02")).not.toContain("other:salon-honneur");
   });
 
+  it("un retrait validé n’efface que sa fiche, pas la fiche renommée qui la remplace, cas de Gilles Caron", () => {
+    // 29 octobre 2026 : le Grand Palais renomme la page de l'exposition. La
+    // veille propose la nouvelle fiche et le retrait de l'ancienne ; les deux
+    // sont validés, l'ajout d'abord. Les titres se contiennent et les dates
+    // sont les mêmes : le retrait effaçait aussi la nouvelle fiche.
+    const prices = [{ label: "Plein", amount: 15 }];
+    const renamed = {
+      id: "dlipzevvrdky1v000000",
+      title: "Gilles Caron. J'ai voulu voir",
+      details: "Gilles Caron · J'ai voulu voir",
+      startDate: "2027-03-16",
+      endDate: "2027-07-24",
+      url: "https://www.grandpalais.fr/fr/programme/gilles-caron-jai-voulu-voir",
+      venueKey: "other:galerie-6-1",
+      venueLabel: "Galerie 6.1",
+      prices,
+    };
+    const withdrawn = {
+      ...renamed,
+      id: "1lc561a11ttc8y1g0000",
+      title: "Gilles Caron",
+      details: "J'ai voulu voir",
+      url: "https://www.grandpalais.fr/fr/programme/gilles-caron",
+      deleted: true,
+    };
+    const merged = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [renamed, withdrawn]);
+    expect(merged["other:galerie-6-1"]).toMatchObject({ label: "Galerie 6.1" });
+    expect(merged["other:galerie-6-1"].schedule[2027]?.map((entry) => entry.title)).toEqual(["Gilles Caron. J'ai voulu voir"]);
+    expect(otherGrandPalaisVenueKeys(merged, "2026-10-29")).toContain("other:galerie-6-1");
+    // Le retrait de la nouvelle page, lui, l'efface bien.
+    const both = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [renamed, withdrawn, { ...renamed, id: "retrait", deleted: true }]);
+    expect(both["other:galerie-6-1"].schedule[2027]).toEqual([]);
+  });
+
+  it("un retrait validé sous le même titre n’efface pas l’édition d’une autre année", () => {
+    const edition = (year: number) => ({
+      id: `salon-${year}`,
+      title: "Salon du dessin",
+      startDate: `${year}-03-25`,
+      endDate: `${year}-03-29`,
+      url: `https://www.grandpalais.fr/fr/programme/salon-du-dessin-${year}`,
+      venueKey: "other:salon-honneur",
+      venueLabel: "Salon d’honneur",
+    });
+    const merged = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [
+      edition(2027),
+      edition(2028),
+      { ...edition(2027), url: "https://www.grandpalais.fr/fr/programme/salon-du-dessin", deleted: true },
+    ]);
+    expect(merged["other:salon-honneur"].schedule[2027]).toEqual([]);
+    expect(merged["other:salon-honneur"].schedule[2028]?.map((entry) => entry.startsOn)).toEqual(["2028-03-25"]);
+  });
+
   it("ajoute une galerie nouvellement détectée dans Autres après validation", () => {
     const added = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [{
       id: "gallery-2",

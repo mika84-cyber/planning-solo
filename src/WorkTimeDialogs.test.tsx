@@ -165,7 +165,8 @@ describe("fenêtres de temps de travail", () => {
     expect(mecenat).not.toContain("Avant 22 h");
     expect(mecenat).toContain("Barème de l’arrêté du 15 décembre 2023");
     expect(mecenat).toContain("Total brut");
-    expect(solidarity).toContain("Ajouter des heures manuellement");
+    expect(solidarity).toContain('aria-labelledby="solidarity-hours-title"');
+    expect(solidarity).toContain('<h2 id="solidarity-hours-title">Ajouter des heures manuellement</h2>');
     expect(recovery).toContain("Ajouter une récupération");
     expect(recovery).toContain("Heures à poser");
     expect(recovery).toContain('class="overtime-choice-field recovery-duration-field"');
