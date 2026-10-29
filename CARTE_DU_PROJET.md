@@ -327,7 +327,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   fermeture des menus, vérification des mises à jour),
   `src/useSharedDataPrefetch.ts` (genres des collègues, programmation GP et
   rôle d’administrateur, contacts, groupes), `src/useSectionNavigation.ts`
-  (menu, glissement, bouton Retour), `src/usePayProfileValues.ts` (valeurs du
+  (glissement, bouton Retour : chaque rubrique a son entrée dans l’historique,
+  et chaque sous-écran de Ma paie la sienne — `usePayUiState.setPayScreen`
+  pousse `payScreen` ; la flèche ← retire l’entrée par Retour, ou la remplace
+  quand on venait d’une autre page, `payReturn`), `src/usePayProfileValues.ts` (valeurs du
   profil de paie du mois affiché), `src/useMonthPayEstimate.ts` (maladie,
   primes, crédits de récupération, heures sup, mécénats, grève, brut, net),
   `src/usePayMonthNavigation.ts` (mois affiché dans Ma paie, glissement de la

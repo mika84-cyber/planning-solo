@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PayslipReading } from "./payslip";
 import type { PayEstimateSnapshot } from "./payslipGapExplanation";
 import type { PayScreen } from "./PayPage";
@@ -30,7 +30,42 @@ export function usePayUiState() {
     const today = new Date();
     return localDate(today.getFullYear(), today.getMonth(), 1);
   });
-  const [payScreen, setPayScreen] = useState<PayScreen>("overview");
+  const [payScreen, setPayScreenState] = useState<PayScreen>("overview");
+  const payScreenRef = useRef<PayScreen>("overview");
+  /* Chaque sous-écran de Ma paie (primes, détail du calcul, année) est une
+     entrée de l'historique, posée sur la rubrique paie : le bouton Retour du
+     téléphone revient à l'écran précédent, et non à la page d'avant. Revenir
+     au tableau de bord retire l'entrée du sous-écran quitté : par Retour si
+     l'écran d'avant était dans la paie (`payReturn` « back »), en la
+     remplaçant si l'on venait d'une autre page (« stay » : la flèche ← promet
+     le tableau de bord, et Retour rendra ensuite la page de départ). */
+  const setPayScreen = useCallback((screen: PayScreen) => {
+    const current = payScreenRef.current;
+    if (screen === current) return;
+    const state = history.state || {};
+    if (screen === "overview" && state.payScreen === current) {
+      if (state.payReturn === "back") {
+        // L'écran se rétablit à l'arrivée de popstate.
+        payScreenRef.current = "overview";
+        history.back();
+        return;
+      }
+      history.replaceState({ ...state, payScreen: undefined, payReturn: undefined }, "", location.href);
+    } else if (screen !== "overview") {
+      history.pushState({ ...state, planningSection: "pay", payScreen: screen, payReturn: state.planningSection === "pay" ? "back" : "stay" }, "", location.href);
+    }
+    payScreenRef.current = screen;
+    setPayScreenState(screen);
+  }, []);
+  useEffect(() => {
+    const restore = (event: PopStateEvent) => {
+      const screen: PayScreen = event.state?.payScreen ?? "overview";
+      payScreenRef.current = screen;
+      setPayScreenState(screen);
+    };
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, []);
   const [payProfileOpen, setPayProfileOpen] = useState(false);
   const [payProfileFocusRequested, setPayProfileFocusRequested] = useState(false);
   const [payVerificationRequested, setPayVerificationRequested] = useState(false);

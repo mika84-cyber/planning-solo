@@ -13,7 +13,7 @@ type SectionNavigationOptions = {
 
 /** Le passage d'une rubrique à l'autre : depuis la barre du bas, par un glissement
  *  horizontal, ou par le bouton Retour, chaque rubrique ayant son entrée
- *  dans l'historique. */
+ *  dans l'historique ; les sous-écrans de Ma paie ont la leur (usePayUiState). */
 export function useSectionNavigation({ appShellUi, setPayScreen }: SectionNavigationOptions) {
   const {
     homeSection, setHomeSection,
@@ -37,9 +37,11 @@ export function useSectionNavigation({ appShellUi, setPayScreen }: SectionNaviga
 
   function navigateFromShell(section: MainSection, record = true) {
     if (section === homeSection) return;
-    if (record) history.pushState({ ...(history.state || {}), planningSection: section }, "", location.href);
+    // Une nouvelle rubrique : son entrée ne garde pas le sous-écran de paie.
+    if (record) history.pushState({ ...(history.state || {}), planningSection: section, payScreen: undefined, payReturn: undefined }, "", location.href);
     setHomeSection(section);
-    if (section === "pay") setPayScreen("overview");
+    // Par Retour, le sous-écran de paie se rétablit de lui-même (usePayUiState).
+    if (section === "pay" && record) setPayScreen("overview");
     setAccountMenuOpen(false);
     window.scrollTo({ top: 0, behavior: "auto" });
   }

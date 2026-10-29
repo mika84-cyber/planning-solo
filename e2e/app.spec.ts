@@ -6202,6 +6202,57 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   await expect(dialog).toHaveCount(0);
 });
 
+test("Retour ramène d’un sous-écran de Ma paie à l’écran précédent, pas à la page d’avant", async ({ page }) => {
+  await prepareDemo(page);
+  const title = page.locator("header.top-header h1");
+  const detailTitle = page.locator(".pay-detail-sticky-header h2");
+  const back = () => page.evaluate(() => history.back());
+  await goToSection(page, "pay");
+  await page.locator(".pay-bulletin-shortcut", { hasText: "Détail du calcul" }).click();
+  await expect(detailTitle).toHaveText("Détail du calcul");
+  // Retour : le tableau de bord de paie, puis seulement l'accueil.
+  await back();
+  await expect(detailTitle).toHaveCount(0);
+  await expect(title).toHaveText("Ma paie");
+  await back();
+  await expect(title).toHaveText("Accueil");
+  // Deux sous-écrans de suite, l'année puis un de ses mois : Retour les
+  // remonte un à un.
+  await goToSection(page, "pay");
+  await page.locator(".pay-bulletin-shortcut", { hasText: "L’année en un coup d’œil" }).click();
+  await expect(detailTitle).toHaveText("L’année en un coup d’œil");
+  await page.locator(".pay-year table button").first().click();
+  await expect(detailTitle).toHaveText("Détail du calcul");
+  await back();
+  await expect(detailTitle).toHaveText("L’année en un coup d’œil");
+  // La flèche ← vaut un Retour : l'historique n'en garde pas trace.
+  await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
+  await expect(detailTitle).toHaveCount(0);
+  await expect(title).toHaveText("Ma paie");
+  await back();
+  await expect(title).toHaveText("Accueil");
+  // Venu de l'accueil (les fériés de la mise en route), sans passer par le
+  // tableau de bord : la flèche ← le montre tout de même, et Retour rend
+  // ensuite l'accueil.
+  await page.getByRole("button", { name: /^Jours fériés \d{4}$/ }).click();
+  await expect(detailTitle).toHaveText("Primes et jours fériés");
+  await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
+  await expect(detailTitle).toHaveCount(0);
+  await expect(title).toHaveText("Ma paie");
+  await back();
+  await expect(title).toHaveText("Accueil");
+  // Depuis l'aide, la page des primes s'ouvre par la paie : Retour revient au
+  // tableau de bord, puis à la page de départ.
+  await page.locator("header.top-header").getByRole("button", { name: "Que cherchez-vous ?" }).click();
+  await page.getByRole("dialog", { name: "Que cherchez-vous ?" }).getByRole("button", { name: /Le détail de mes primes/ }).click();
+  await expect(detailTitle).toHaveText("Primes et jours fériés");
+  await back();
+  await expect(detailTitle).toHaveCount(0);
+  await expect(title).toHaveText("Ma paie");
+  await back();
+  await expect(title).toHaveText("Accueil");
+});
+
 test("chaque ligne de Ma paie dit où elle mène, et y mène", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "pay");
