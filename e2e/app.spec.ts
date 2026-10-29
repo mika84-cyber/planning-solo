@@ -226,11 +226,13 @@ test('le rappel des jours fériés part des outils administrateur et mène les i
   await expect(page.locator('#holiday-choices')).toBeInViewport();
 });
 
-async function openMainMenu(page: Page) {
-  const adaptiveMore = page.locator(".mobile-bottom-navigation:visible, .desktop-side-navigation:visible").getByRole("button", { name: "Plus" }).first();
-  if (await adaptiveMore.count()) await adaptiveMore.click();
-  else await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
-  await expect(page.getByRole("complementary", { name: "Menu principal" })).toBeVisible();
+/** Ouvre le menu du compte : il garde aussi Mes données, l'installation et,
+ *  pour l'administrateur, la messagerie interne. */
+async function openAccountMenu(page: Page) {
+  await page.getByRole("button", { name: /^Compte/ }).click();
+  const menu = page.getByRole("menu");
+  await expect(menu).toBeVisible();
+  return menu;
 }
 
 /** Les libellés de la navigation principale changent avec la largeur de
@@ -265,15 +267,8 @@ async function periodTextOffset(page: Page) {
   });
 }
 
-/** Ouvre une rubrique par le dock. Les rubriques ne sont plus dans le
- *  menu tiroir, qui ne garde que le compte et les réglages. */
+/** Ouvre une rubrique par le dock, seul chemin vers les pages. */
 async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
-  // Le tiroir resté ouvert recouvrirait la navigation : on le referme.
-  const drawer = page.getByRole("complementary", { name: "Menu principal" });
-  if (await drawer.isVisible().catch(() => false)) {
-    await page.getByRole("button", { name: "Fermer le menu" }).click();
-    await expect(drawer).toBeHidden();
-  }
   const tabs = await sectionDock(page);
   await tabs.getByRole("button", { name: SECTION_BUTTONS[section] }).click();
 }
@@ -400,12 +395,6 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   };
 
   await expectWhiteCard(".today-overview", accentSpine(page));
-  await openMainMenu(page);
-  await expect(page.getByRole("heading", { name: "Menu principal" })).toBeVisible();
-  // La mise à jour a quitté le menu : elle vit dans l'en-tête. La page
-  // ouverte se repère à son icône pleine, dans la couleur d'accent.
-  await expect(page.locator(".main-menu-refresh")).toHaveCount(0);
-  await expect(page.locator(".main-menu-pages button.active .main-menu-index")).toHaveCSS("background-color", await cssTokenRgb(page, "--accent"));
 
   await goToSection(page, "leave");
   await expectWhiteCard(".leave-balances-direct", accentSpine(page));
@@ -546,8 +535,7 @@ test("le mode d’emploi n’est plus proposé", async ({ page }) => {
   await prepareDemo(page);
   const navigation = await sectionDock(page);
   await expect(navigation.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
-  await openMainMenu(page);
-  await expect(page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
+  await expect((await openAccountMenu(page)).getByRole("menuitem", { name: /Mode d’emploi/ })).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "Planning Solo, simplement" })).toHaveCount(0);
 });
 
@@ -627,7 +615,8 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   await prepareDemo(page);
   if (page.viewportSize()!.width <= 720 || page.viewportSize()!.width >= 1280) {
     await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
+    // Plus de menu ☰ : le dock mène aux pages.
+    await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toHaveCount(0);
   }
   // Le dock, sur tous les écrans : une capsule sombre en bas de l'écran.
   // Chaque rubrique montre son nom ; la rubrique en cours se marque d'une
@@ -1082,10 +1071,10 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   await expect(tomorrowPreview.locator(".colleague-tomorrow-row").last().locator("td").first()).toHaveCSS("border-bottom-width", "0px");
   await expect(page.locator(".top-header-colleagues")).toHaveCSS("background-image", /linear-gradient/);
   await expect(page.locator(".top-header-colleagues .top-header-title h1")).toHaveText("Planning partagé");
-  const [colleagueHeaderBox, colleagueTitleBox, colleagueMenuBox] = await Promise.all([
+  const [colleagueHeaderBox, colleagueTitleBox, colleagueAccountBox] = await Promise.all([
     page.locator(".top-header-colleagues").boundingBox(),
     page.locator(".top-header-colleagues .top-header-title").boundingBox(),
-    page.locator(".top-header-colleagues .main-menu-button").boundingBox(),
+    page.locator(".top-header-colleagues .account-button").boundingBox(),
   ]);
   expect(Math.abs(colleagueHeaderBox!.height - referenceHeaderHeight), JSON.stringify({ referenceHeaderHeight, colleagueHeaderHeight: colleagueHeaderBox!.height })).toBeLessThanOrEqual(1);
   expect(colleagueTitleBox!.x - colleagueHeaderBox!.x).toBeLessThan(24);
@@ -1093,8 +1082,8 @@ test("le partage de planning reste lisible et privé sur tous les écrans", asyn
   const titleMiddle = colleagueTitleBox!.y + colleagueTitleBox!.height / 2;
   const headerMiddle = colleagueHeaderBox!.y + colleagueHeaderBox!.height / 2;
   expect(Math.abs(titleMiddle - headerMiddle)).toBeLessThan(16);
-  expect(colleagueHeaderBox!.x + colleagueHeaderBox!.width - colleagueMenuBox!.x - colleagueMenuBox!.width).toBeLessThan(26);
-  expect(colleagueMenuBox!.y - colleagueHeaderBox!.y).toBeLessThan(30);
+  expect(colleagueHeaderBox!.x + colleagueHeaderBox!.width - colleagueAccountBox!.x - colleagueAccountBox!.width).toBeLessThan(26);
+  expect(colleagueAccountBox!.y - colleagueHeaderBox!.y).toBeLessThan(30);
   await page.locator(".top-header-colleagues").screenshot({ path: `previews/colleague-header-${testInfo.project.name}.png` });
   await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
   await expect(page.locator(".top-header-colleagues .header-update-button")).toBeVisible();
@@ -1888,8 +1877,8 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(page.locator(".top-header .header-update-button")).toHaveAttribute("aria-label", "Vérifier les mises à jour");
   const accountButton = page.getByRole("button", { name: "Compte" });
   await accountButton.click();
-  // Le menu du compte ne garde que l'identité et la déconnexion ; la
-  // recherche de mise à jour est passée dans le menu tiroir.
+  // La recherche de mise à jour n'est pas dans le menu du compte : elle vit
+  // dans l'en-tête.
   await expect(page.locator(".account-menu-identity")).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Se déconnecter" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Vérifier les mises à jour" })).toHaveCount(0);
@@ -1897,29 +1886,16 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   const headerBoxWithMenu = await page.locator(".top-header").boundingBox();
   expect(accountPanelBox!.y + accountPanelBox!.height).toBeGreaterThan(headerBoxWithMenu!.y + headerBoxWithMenu!.height);
   expect(await page.getByRole("menu").evaluate((node) => getComputedStyle(node.closest(".top-header")!).overflow)).toBe("visible");
-  await accountButton.click();
-  await openMainMenu(page);
-
-  // Le menu tiroir est redevenu une porte vers chaque page ; le compte et
-  // l'état de sauvegarde sont ailleurs.
-  const menu = page.getByRole("complementary", { name: "Menu principal" });
-  await expect(menu.getByRole("navigation", { name: "Les pages de l’application" })).toBeVisible();
-  await expect(menu.locator(".main-menu-account-card")).toHaveCount(0);
-  await expect(menu.locator(".main-menu-save-status")).toHaveCount(0);
-  await expect(menu.getByRole("button", { name: /Vérifier les mises à jour|Installer la mise à jour/ })).toHaveCount(0);
-  await expect(menu.getByRole("button", { name: /Mes données/ })).toBeVisible();
-  for (const page_ of ["Congés et récupérations", "Planning partagé"])
-    await expect(menu.getByRole("button", { name: new RegExp(page_) })).toBeVisible();
-  const adminContact = menu.getByRole("button", { name: /Messagerie interne|Écrire à l’administrateur/ });
+  // Les outils de l'ancien menu ☰ ont rejoint le compte : Mes données et,
+  // pour l'administrateur, la messagerie interne.
+  const accountMenu = page.getByRole("menu");
+  await expect(accountMenu.getByRole("menuitem", { name: "Mes données" })).toBeVisible();
+  const adminContact = accountMenu.getByRole("menuitem", { name: /^Messagerie interne/ });
   await expect(adminContact).toBeVisible();
-  await expect(adminContact.locator("xpath=..")).toHaveClass(/main-menu-secondary/);
-  // Aucune rubrique ne doit y revenir en double.
-  await expect(menu.getByRole("button", { name: /Mode d’emploi/ })).toHaveCount(0);
-  // L'apparence n'est plus dans ce menu : elle vit avec le compte.
-  await expect(menu.getByRole("menuitemcheckbox", { name: /Mode sombre/ })).toHaveCount(0);
-  await expect(menu).toHaveCSS("background-image", /menu-art-fast.webp/);
-  await expect(menu.locator("nav > button").first().locator(".main-menu-index svg")).toBeVisible();
   await expect(adminContact).toHaveCSS("background-image", "none");
+  await expect(accountMenu.getByRole("menuitem", { name: /Mode d’emploi/ })).toHaveCount(0);
+  await accountButton.click();
+  await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toHaveCount(0);
 
   await goToSection(page, "leave");
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
@@ -1966,7 +1942,6 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(secondaryDisclosures.nth(1)).toHaveCSS("border-left-width", "1px");
   await expect(leaveTools.locator(".cet-disclosure")).toHaveCSS("border-left-width", "1px");
 
-  await openMainMenu(page);
   await goToSection(page, "pay");
   const payScreen = page.getByRole("region", { name: "Ma paie", exact: true });
   await expect(payScreen).toBeVisible();
@@ -2030,7 +2005,6 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   }
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
 
-  await openMainMenu(page);
   await openPlanningPdf(page);
   await expect(page.getByRole("heading", { name: "Télécharger les plannings en PDF" })).toBeVisible();
   const pdfScreen = page.locator(".pdf-download-screen");
@@ -2108,8 +2082,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
 test("la messagerie interne reste privée, compacte et utilisable avec une photo", async ({ page }) => {
   await prepareDemo(page);
   await expect(page.locator(".top-header").getByRole("status", { name: "1 message non lu" })).toHaveText("1");
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Messagerie interne/ }).click();
+  await (await openAccountMenu(page)).getByRole("menuitem", { name: /^Messagerie interne/ }).click();
 
   await expect(page.getByRole("heading", { name: "Messages reçus" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Camille Dupont" })).toBeVisible();
@@ -2148,10 +2121,9 @@ test("la messagerie interne reste privée, compacte et utilisable avec une photo
   await expect(page.getByRole("heading", { name: "Merci, votre message est bien arrivé." })).toBeVisible();
   await expect(page.getByText("Une alerte apparaîtra dans l’application")).toBeVisible();
   await page.getByRole("button", { name: "Terminer" }).click();
-  await openMainMenu(page);
-  const userMenu = page.getByRole("complementary", { name: "Menu principal" });
-  await expect(userMenu.getByRole("button", { name: /Écrire à l’administrateur/ })).toHaveCount(0);
-  await expect(userMenu.getByRole("button", { name: /Messagerie interne/ })).toHaveCount(0);
+  const userMenu = await openAccountMenu(page);
+  await expect(userMenu.getByRole("menuitem", { name: /Écrire à l’administrateur/ })).toHaveCount(0);
+  await expect(userMenu.getByRole("menuitem", { name: /Messagerie interne/ })).toHaveCount(0);
   await expect(userMenu.getByText("Aide rapide", { exact: true })).toHaveCount(0);
 
   await page.goto("/?local-test=1&preview-feedback-role=user&demo-feedback-reply=1");
@@ -2256,31 +2228,21 @@ test("le mode sombre s’applique à toute l’application et se mémorise", asy
   await expect(page.locator("#planning-dark-theme")).toHaveCount(0);
 });
 
-test("le menu principal mène aux pages et garde Mes données", async ({ page }) => {
+test("le menu du compte garde Mes données, l’installation et la messagerie", async ({ page }) => {
   await prepareDemo(page);
 
-  const accountButton = page.getByRole("button", { name: "Compte" });
-  await accountButton.click();
-  const accountMenu = page.getByRole("menu");
+  const accountMenu = await openAccountMenu(page);
   await expect(accountMenu.getByRole("menuitem")).toHaveText([
+    "Mes données",
+    /^Installer l’application/,
+    /^Messagerie interne/,
     "Outils administrateur",
     "Se déconnecter",
   ]);
-  await accountButton.click();
+  // La démo n'a pas de navigateur qui sache installer : l'entrée attend.
+  await expect(accountMenu.getByRole("menuitem", { name: /Installer l’application/ })).toBeDisabled();
 
-  await openMainMenu(page);
-  const mainMenu = page.getByRole("complementary", { name: "Menu principal" });
-  // Le menu est devenu une porte vers chaque page : le compte et l'état de
-  // sauvegarde ont quitté ce volet, mais la gestion des données y reste.
-  await expect(mainMenu.getByRole("navigation", { name: "Les pages de l’application" }).getByRole("button")).toHaveCount(6);
-  await expect(mainMenu.getByRole("button", { name: /Congés et récupérations/ })).toBeVisible();
-  await expect(mainMenu.getByRole("button", { name: /Planning partagé/ })).toBeVisible();
-  await expect(mainMenu.locator(".main-menu-refresh")).toHaveCount(0);
-  await expect(mainMenu.getByRole("button", { name: /Mes données/ })).toBeVisible();
-  await expect(mainMenu.getByRole("button", { name: /Installer l’application/ })).toBeDisabled();
-  await expect(mainMenu.locator(".main-menu-account-card")).toHaveCount(0);
-
-  await mainMenu.getByRole("button", { name: /Mes données/ }).click();
+  await accountMenu.getByRole("menuitem", { name: "Mes données" }).click();
   const dataDialog = page.getByRole("dialog", { name: "Mes données" });
   await expect(dataDialog.getByText("Tout est enregistré automatiquement.")).toBeVisible();
   await expect(dataDialog.getByRole("button", { name: /Sauvegarder une copie/ })).toBeVisible();
@@ -2526,8 +2488,7 @@ test("l’administrateur partage un document et l’alerte invitée ouvre la bon
 
 test("l’administrateur peut afficher un message collectif sans envoyer d’e-mail", async ({ page }) => {
   await prepareDemo(page);
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" }).getByRole("button", { name: /Messagerie interne/ }).click();
+  await (await openAccountMenu(page)).getByRole("menuitem", { name: /^Messagerie interne/ }).click();
   const broadcast = page.locator(".feedback-broadcast:not(.feedback-broadcast-history)");
   await expect(broadcast.getByText("Popup dans l’application uniquement · aucun e-mail")).toBeVisible();
   await broadcast.locator("summary").click();
@@ -2784,7 +2745,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.locator(".useful-expo-timeline .expo-month-heading")).toHaveCount(0);
   if (testInfo.project.name === "mobile") {
     await expect(page.locator(".section-dock")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ouvrir le menu principal" })).toHaveCount(0);
   }
   const [programHeaderBox, programScreenBox] = await Promise.all([
     page.locator(".top-header-program").boundingBox(),
@@ -4110,14 +4071,12 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   const header = page.locator(".top-header");
   const update = page.locator(".top-header .header-update-button");
   const account = page.getByRole("button", { name: "Compte" });
-  const menuButton = page.getByRole("button", { name: "Ouvrir le menu principal" });
 
   await expect(header).toBeVisible();
   // L'en-tête bicolore, sans cadre : ses deux aplats suffisent à le détacher.
   await expect(header).toHaveCSS("background-image", /linear-gradient/);
   await expect(header).toHaveCSS("border-top-width", "0px");
   await expect(account).toHaveCSS("border-top-color", await cardBorderColor(page));
-  await expect(menuButton).toBeVisible();
   await expect(page.locator(".section-dock")).toBeVisible();
   await expect(update).toBeVisible();
   await expect(page.locator(".today-overview")).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
@@ -6203,7 +6162,6 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
 
 test("une paie incomplète conduit directement aux champs à renseigner", async ({ page }) => {
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
   await goToSection(page, "pay");
   const guidance = page.locator(".pay-missing-guidance");
   await expect(guidance).toContainText("Ajoutez votre bulletin de paie");
@@ -6254,11 +6212,8 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
   await expect(note.locator("textarea")).toHaveValue("Contrôle du parcours de note");
   await note.getByRole("button", { name: "Fermer" }).click();
 
-  // La gestion des données est passée du menu du compte au menu tiroir.
-  await openMainMenu(page);
-  await page.getByRole("complementary", { name: "Menu principal" })
-    .getByRole("button", { name: /Mes données/ })
-    .click();
+  // La gestion des données est dans le menu du compte.
+  await (await openAccountMenu(page)).getByRole("menuitem", { name: "Mes données" }).click();
   await expect(page.getByRole("dialog")).toContainText(/sauvegarde|données/i);
 
   await page.goto("/formulaire/index.html?planning=1");

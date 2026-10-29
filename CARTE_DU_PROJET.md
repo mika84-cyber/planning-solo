@@ -86,8 +86,15 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/DataManagementDialog.tsx` et `src/dataManagement.css` : sauvegarde,
   import et suppression des données.
 - `src/ConnectionStatus.tsx` : état de la synchronisation.
-- `src/AppNavigation.tsx` : en-tête, compte et menu principal communs à tous
-  les écrans.
+- `src/AppNavigation.tsx` : en-tête et dock communs à tous les écrans. Plus
+  de menu ☰ (retiré en octobre 2026, il répétait le dock) : l’en-tête garde
+  deux boutons ronds, la mise à jour et le compte. Le menu du compte réunit
+  l’identité, le mode sombre, Mes données, Installer l’application (démo ou
+  navigateur qui sait installer), la messagerie interne et les outils de
+  l’administrateur, puis la déconnexion ; les messages non lus de
+  l’administrateur se lisent en pastille sur le bouton du compte
+  (`account-feedback-badge`). Styles du menu du compte et de la mise à jour :
+  `src/styles/18-account-and-update.css`.
 - `src/AdminToolsPanel.tsx`, `src/adminTools.css`, `netlify/functions/admin-tools.mts`
   et `netlify/lib/adminTools.mts` : aperçu invité, message temporaire, rappel
   des jours fériés (`HomeAdminMessage.tsx`, raccourci vers les choix), groupes,
@@ -108,8 +115,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’un hook (`appShellUi`, `planningUi`, `workTimeUi`, `payUi`,
   `calendarData`…) ou un objet `actions` — qu’il destructure sous les noms
   d’origine ; les états et les mutations restent dans `App.tsx`.
-  `src/AppShellChrome.tsx` : la coque (en-tête, navigation, propositions
-  d’installation, menu principal, aperçu invité et outils de
+  `src/AppShellChrome.tsx` : la coque (en-tête et menu du compte, navigation,
+  propositions d’installation, aperçu invité et outils de
   l’administrateur, rappel des jours fériés).
   `src/HomeSectionScreen.tsx` : l’accueil (tableau de bord, premières étapes,
   notes à venir ; charge `HomeDashboard` dès le module).

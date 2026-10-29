@@ -45,8 +45,8 @@ async function expectNoSeriousAccessibilityViolation(page: Page, context: string
   ).toEqual([]);
 }
 
-async function openMainMenu(page: Page) {
-  await page.getByRole("button", { name: "Ouvrir le menu principal" }).click();
+async function openAccountMenu(page: Page) {
+  await page.getByRole("button", { name: /^Compte/ }).click();
 }
 
 test("les parcours essentiels ne présentent pas de violation d’accessibilité grave", async ({ page }) => {
@@ -55,11 +55,12 @@ test("les parcours essentiels ne présentent pas de violation d’accessibilité
   await prepareDemo(page);
   await expectNoSeriousAccessibilityViolation(page, "sur l’accueil");
 
-  await openMainMenu(page);
-  const menu = page.getByRole("complementary", { name: "Menu principal" });
+  await openAccountMenu(page);
+  const menu = page.getByRole("menu");
   await expect(menu).toBeVisible();
-  await expectNoSeriousAccessibilityViolation(page, "dans le menu principal");
-  await menu.getByRole("button", { name: "Fermer le menu" }).click();
+  await expectNoSeriousAccessibilityViolation(page, "dans le menu du compte");
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
 
   // La navigation est un dock toujours visible en bas de l'écran.
   const navigation = page.locator('nav[aria-label="Navigation principale"]:visible');

@@ -412,15 +412,6 @@
 
 
 
-  .top-header.top-header-program .main-menu-button {
-    z-index: 8;
-    display: grid;
-    visibility: visible;
-    opacity: 1;
-    color: var(--text);
-    background: rgba(255, 255, 255, 0.9);
-  }
-
   .grand-palais-program-screen {
     width: 100%;
     margin-top: 10px;

@@ -635,33 +635,22 @@ describe("finitions d’interface", () => {
     expect(requestValidationSummary).toContain("Effet de la validation");
   });
 
-  it("réduit le menu principal aux pages de l’application", () => {
-    // Le menu ne fait plus qu'une chose : mener à une page. Le mode d'emploi
-    // l'accompagne parce qu'il explique ces pages-là.
-    expect(appNavigation).toContain("const MENU_PAGES");
-    expect(appNavigation).toContain("Les pages de l’application");
-    // La mise à jour a quitté le menu pour l'en-tête ; les pages puis les
-    // outils (données, installation, messagerie) s'y suivent.
-    expect(appNavigation).not.toContain("main-menu-refresh");
-    expect(appNavigation).toContain("main-menu-section-label");
-    expect(appNavigation).toContain("Installer l’application");
-    expect(appNavigation).toContain("Messagerie interne");
+  it("ne garde plus de menu principal : la barre du bas mène aux pages", () => {
+    // Le menu ☰ ne faisait que répéter la barre du bas ; ses outils (données,
+    // installation, messagerie) vivent dans le menu du compte, vérifié par
+    // AppNavigation.test.tsx.
+    expect(appNavigation).not.toContain("MainMenu");
+    expect(app).not.toContain("mainMenuOpen");
+    expect(css.anywhere("main-menu")).toBe(false);
     expect(appNavigation).not.toContain("Mode d’emploi");
     expect(appNavigation).not.toContain("Compte et réglages");
     expect(appNavigation).not.toContain("État de sauvegarde");
-    expect(appNavigation).toContain("Mes données");
-    expect(css.anywhere(".main-menu-refresh")).toBe(false);
     expect(documentsSectionScreen).toContain("<UsefulResourcesHub");
     // Les plannings PDF s'ouvrent depuis le calendrier, dans une fenêtre.
     expect(planningWorkspace).toContain("planning-pdf-dialog");
     expect(usefulResourcesHub).not.toContain('key: "pdf"');
     expect(usefulResourcesHub).toContain("useful-resources-screen");
     expect(app).not.toContain("Sauvegarde et restauration");
-    expect(css.mentions(".main-menu-secondary .guide-menu-entry")).toBe(true);
-    expect(css.usesValue("url(\"/menu-art-fast.webp\")")).toBe(true);
-    expect(css.mentions(".main-menu-drawer > .main-menu-hero")).toBe(true);
-    expect(app).toContain('className="main-menu-index"');
-    expect(app).toContain('className="main-menu-chevron"');
     expect(app).toContain("header-command-area");
     expect(app).toContain("header-update-button");
     expect(css.mentions(".header-update-button")).toBe(true);
@@ -697,9 +686,8 @@ describe("finitions d’interface", () => {
     expect(css.declares("border-color", "var(--border-card)")).toBe(true);
   });
 
-  it("ne garde plus d’image derrière les titres d’en-tête, seulement dans le menu", () => {
+  it("ne garde plus d’image derrière les titres d’en-tête", () => {
     expect(app).toContain('className="app-shell"');
-    expect(css.usesValue("url(\"/menu-art-fast.webp\")")).toBe(true);
     // Deux aplats de couleur ; les anciennes couches d'image sont masquées.
     expect(headers.anyRuleDeclares(":root .app-shell .top-header::after", { display: "none !important" })).toBe(true);
     expect(headers.usesValue("linear-gradient(112deg, var(--header-a) 0 57%")).toBe(true);
@@ -728,9 +716,7 @@ describe("finitions d’interface", () => {
     expect(css.declaresTogether({ width: "42px", height: "42px" })).toBe(true);
   });
 
-  it("renforce la lisibilité du menu et les contours de l’en-tête", () => {
-    expect(css.anyRuleDeclares(".main-menu-copy strong", { color: "#fff" })).toBe(true);
-    expect(css.anyRuleDeclares(".main-menu-copy small", { overflow: "hidden", color: "rgba(253, 250, 244, 0.9)" })).toBe(true);
+  it("renforce les contours des commandes de l’en-tête", () => {
     expect(css.mentions(".top-header .account-button")).toBe(true);
     expect(css.declares("border", "1.5px solid var(--border-card)")).toBe(true);
   });

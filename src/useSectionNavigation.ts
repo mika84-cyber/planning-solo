@@ -6,17 +6,17 @@ import type { usePayUiState } from "./usePayUiState";
 type SectionNavigationOptions = {
   appShellUi: Pick<
     ReturnType<typeof useAppShellUiState>,
-    "homeSection" | "setHomeSection" | "mainMenuOpen" | "setMainMenuOpen" | "accountMenuOpen" | "setAccountMenuOpen" | "feedbackOpen" | "setFeedbackOpen" | "sectionSwipeStartRef"
+    "homeSection" | "setHomeSection" | "accountMenuOpen" | "setAccountMenuOpen" | "feedbackOpen" | "setFeedbackOpen" | "sectionSwipeStartRef"
   >;
   setPayScreen: ReturnType<typeof usePayUiState>["setPayScreen"];
 };
 
-/** Le passage d'une rubrique à l'autre : depuis le menu, par un glissement
+/** Le passage d'une rubrique à l'autre : depuis la barre du bas, par un glissement
  *  horizontal, ou par le bouton Retour, chaque rubrique ayant son entrée
  *  dans l'historique. */
 export function useSectionNavigation({ appShellUi, setPayScreen }: SectionNavigationOptions) {
   const {
-    homeSection, setHomeSection, mainMenuOpen, setMainMenuOpen,
+    homeSection, setHomeSection,
     accountMenuOpen, setAccountMenuOpen, feedbackOpen, setFeedbackOpen, sectionSwipeStartRef,
   } = appShellUi;
   function startSectionSwipe(event: TouchEvent<HTMLElement>) {
@@ -25,7 +25,7 @@ export function useSectionNavigation({ appShellUi, setPayScreen }: SectionNaviga
     if (
       target instanceof Element &&
       target.closest(
-        "input, textarea, select, [role='dialog'], .modal-backdrop, .main-menu-backdrop, .main-menu-drawer, .choice-picker-menu, .month-card, .pay-dashboard-motion, .pay-dedicated-content, .pay-detail-sticky-header, .variable-pay-heading-actions",
+        "input, textarea, select, [role='dialog'], .modal-backdrop, .choice-picker-menu, .month-card, .pay-dashboard-motion, .pay-dedicated-content, .pay-detail-sticky-header, .variable-pay-heading-actions",
       )
     ) {
       sectionSwipeStartRef.current = null;
@@ -40,7 +40,6 @@ export function useSectionNavigation({ appShellUi, setPayScreen }: SectionNaviga
     if (record) history.pushState({ ...(history.state || {}), planningSection: section }, "", location.href);
     setHomeSection(section);
     if (section === "pay") setPayScreen("overview");
-    setMainMenuOpen(false);
     setAccountMenuOpen(false);
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -50,7 +49,6 @@ export function useSectionNavigation({ appShellUi, setPayScreen }: SectionNaviga
     if (!MAIN_SECTION_ORDER.includes(history.state?.planningSection))
       history.replaceState({ ...(history.state || {}), planningSection: homeSection }, "", location.href);
     const onPopState = (event: PopStateEvent) => {
-      if (mainMenuOpen) { setMainMenuOpen(false); return; }
       if (accountMenuOpen) { setAccountMenuOpen(false); return; }
       if (feedbackOpen) { setFeedbackOpen(false); return; }
       const section = event.state?.planningSection;
@@ -58,7 +56,7 @@ export function useSectionNavigation({ appShellUi, setPayScreen }: SectionNaviga
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [accountMenuOpen, feedbackOpen, homeSection, mainMenuOpen, setMainMenuOpen, setAccountMenuOpen, setFeedbackOpen]);
+  }, [accountMenuOpen, feedbackOpen, homeSection, setAccountMenuOpen, setFeedbackOpen]);
 
   function finishSectionSwipe(event: TouchEvent<HTMLElement>) {
     const start = sectionSwipeStartRef.current;

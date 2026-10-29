@@ -29,7 +29,6 @@
    plus de boîte, son z-index ne vaut rien, et ses boutons passeraient sous le
    titre, qui s'étend sur toute la largeur. Chaque commande passe donc
    elle-même devant le titre, pour recevoir le toucher. */
-:root .app-shell .top-header .header-control-cluster > button,
 :root .app-shell .top-header .header-actions > button { position: relative !important; z-index: 2 !important; }
 /* Le menu du compte fait contexte d'empilement : son menu déroulant doit
    rester au-dessus de la pastille « Que cherchez-vous ? » (z-index 3). */

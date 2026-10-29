@@ -28,8 +28,6 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
     setHomeSection: noop,
     accountMenuOpen: false,
     setAccountMenuOpen: noop,
-    mainMenuOpen: false,
-    setMainMenuOpen: noop,
     checkingAppUpdate: false,
     appUpdateAvailable: false,
     appUpdatePromptOpen: false,
@@ -66,8 +64,8 @@ describe("AppShellChrome", () => {
     // titre ; la fenêtre reste fermée.
     expect(html).toMatch(/<button type="button" class="header-help-button" aria-haspopup="dialog"><span class="header-help-mark" aria-hidden="true"><svg .*?<\/svg><\/span>Que cherchez-vous \?<span class="header-help-go" aria-hidden="true">›<\/span><\/button><\/header>/);
     expect(html).not.toContain("help-sheet");
-    // Fermés : ni menu principal, ni aperçu invité, ni proposition d’installation.
-    expect(html).not.toContain("Menu principal");
+    // Ni menu principal, ni aperçu invité, ni proposition d’installation.
+    expect(html).not.toContain("main-menu");
     expect(html).not.toContain("Quitter l’aperçu");
     expect(html).not.toContain("app-install-notice");
   });
@@ -97,12 +95,17 @@ describe("AppShellChrome", () => {
     expect(prompted).not.toContain("Faire la mise à jour");
   });
 
-  it("ouvre le menu principal à la demande", () => {
-    const html = renderToStaticMarkup(
-      <AppShellChrome {...baseProps} shell={{ ...baseProps.shell, mainMenuOpen: true }} />,
-    );
-    expect(html).toContain("Menu principal");
-    expect(html).toContain("Fermer le menu");
+  it("range les outils dans le menu du compte, la messagerie pour l’administrateur seulement", () => {
+    const open = { ...baseProps.shell, accountMenuOpen: true };
+    const guest = renderToStaticMarkup(<AppShellChrome {...baseProps} shell={open} />);
+    expect(guest).toContain(">Mes données</button>");
+    // Sans navigateur qui sache installer, l'entrée n'apparaît que dans la démo.
+    expect(guest).not.toContain("Installer l’application");
+    const demo = renderToStaticMarkup(<AppShellChrome {...baseProps} demoMode shell={open} />);
+    expect(demo).toContain("Installer l’application<small>Disponible après connexion</small>");
+    expect(guest).not.toContain("Messagerie interne");
+    const admin = renderToStaticMarkup(<AppShellChrome {...baseProps} isProgramAdmin shell={open} />);
+    expect(admin).toContain("Messagerie interne");
   });
 
   it("propose l’installation aux seuls invités, une fois le rôle connu", () => {

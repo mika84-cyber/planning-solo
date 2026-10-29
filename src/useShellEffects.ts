@@ -13,7 +13,7 @@ type ShellEffectsOptions = {
   appShellUi: Pick<
     ReturnType<typeof useAppShellUiState>,
     "setFeedbackOpen" | "setHomeSection" | "setNarrowScreen" | "setAppUpdateAvailable" | "setAppUpdatePromptOpen"
-    | "mainMenuOpen" | "setMainMenuOpen" | "accountMenuOpen" | "setAccountMenuOpen" | "accountMenuRef" | "accountButtonRef"
+    | "accountMenuOpen" | "setAccountMenuOpen" | "accountMenuRef" | "accountButtonRef"
     | "viewportDebugEnabled" | "setViewportSize" | "checkingAppUpdate" | "setCheckingAppUpdate"
   >;
 };
@@ -28,7 +28,7 @@ type ShellEffectsOptions = {
 export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installationEnabled, appShellUi }: ShellEffectsOptions) {
   const {
     setFeedbackOpen, setHomeSection, setNarrowScreen, setAppUpdateAvailable, setAppUpdatePromptOpen,
-    mainMenuOpen, setMainMenuOpen, accountMenuOpen, setAccountMenuOpen, accountMenuRef, accountButtonRef,
+    accountMenuOpen, setAccountMenuOpen, accountMenuRef, accountButtonRef,
     viewportDebugEnabled, setViewportSize, checkingAppUpdate, setCheckingAppUpdate,
   } = appShellUi;
   // Les écrans secondaires (fiche du jour, demandes, paie, formulaires…) sont
@@ -71,14 +71,6 @@ export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installa
     window.addEventListener("planning-app-update-available", showUpdateAlert);
     return () => window.removeEventListener("planning-app-update-available", showUpdateAlert);
   }, [setAppUpdateAvailable, setAppUpdatePromptOpen]);
-  useEffect(() => {
-    if (!mainMenuOpen) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMainMenuOpen(false);
-    };
-    document.addEventListener("keydown", close);
-    return () => document.removeEventListener("keydown", close);
-  }, [mainMenuOpen, setMainMenuOpen]);
   useEffect(() => {
     if (!accountMenuOpen) return;
     const close = (event: MouseEvent) => {

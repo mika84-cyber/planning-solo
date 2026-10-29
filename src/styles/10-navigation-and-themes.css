@@ -1,66 +1,7 @@
 /* Navigation principale 2026 : l'accueil redevient un véritable écran et les
    outils spécialisés quittent la zone quotidienne. */
-.main-menu-button {
-  flex: 0 0 46px;
-  display: grid;
-  place-content: center;
-  gap: 5px;
-  border-radius: 12px;
-  background: #fff;
-  color: var(--muted);
-  cursor: pointer; position: relative;
-  box-shadow: 0 5px 18px rgba(87, 78, 66, 0.08);
-}
-.main-menu-button span {
-  display: block;
-  width: 20px;
-  height: 2px;
-  border-radius: 99px;
-  background: currentColor;
-}.main-menu-feedback-badge{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;box-sizing:border-box;min-width:19px;height:19px;padding:0 4px;border:2px solid #fff;border-radius:99px;background:#d9342b;color:#fff;font:900 10px/1 Arial,sans-serif;box-shadow:0 3px 8px rgba(125,24,19,.3)}
-.main-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
-  animation: menu-fade-in 160ms ease-out;
-}
-.main-menu-drawer {
-  display: flex;
-  flex-direction: column;
-  animation: menu-slide-in 220ms cubic-bezier(.2,.7,.2,1);
-}
-.main-menu-drawer header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-.main-menu-drawer header h2 {
-  margin: 5px 0 0;
-}
-.main-menu-drawer header > button {
-  font-size: 1.8rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.main-menu-drawer nav {
-  display: grid;
-}
-.main-menu-drawer nav > button {
-  justify-content: space-between;
-  text-align: left;
-  cursor: pointer;
-  transition: 160ms ease;
-}
-.main-menu-secondary button {
-  min-height: 44px;
-  border: 0;
-  background: transparent;
-  font-weight: 700;
-  cursor: pointer;
-}
-@keyframes menu-fade-in { from { opacity: 0; } }
-@keyframes menu-slide-in { from { transform: translateX(-100%); } }
+/* Les messages non lus de l'administrateur, en pastille sur le bouton du compte. */
+.account-feedback-badge{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;box-sizing:border-box;min-width:19px;height:19px;padding:0 4px;border:2px solid #fff;border-radius:99px;background:#d9342b;color:#fff;font:900 10px/1 Arial,sans-serif;box-shadow:0 3px 8px rgba(125,24,19,.3)}
 .home-notes-section {
   margin-top: 22px;
   padding: 22px;
@@ -91,24 +32,14 @@
 }
 .leave-request-archive .request-archive-toggle { width: 100%; }
 @media (max-width: 720px) {
-  .main-menu-button { display: grid !important; flex-basis: 42px; border-radius: 12px; }
   .home-notes-section { margin-top: 14px; padding: 17px; border-radius: 18px; }
   .home-content-heading { align-items: flex-start; }
   .home-content-heading h2 { font-size: 1.25rem; }
   .home-content-heading > button { padding: 0 12px; }
   .app-shell { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
-  .main-menu-drawer { padding-left: 16px; padding-right: 16px; }
 }
-/* Où l'on se trouve doit se voir d'un coup d'œil : la couleur seule ne
-   suffisait pas — les deux teintes étaient presque identiques. La rubrique
-   courante change donc aussi de graisse et son trait d'icône s'épaissit. */
-.main-menu-index svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 @media (min-width: 721px) {
-  .main-menu-button { display: grid; }.app-shell{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
-}
-@media (prefers-reduced-motion: reduce) {
-  .main-menu-backdrop,
-  .main-menu-drawer { animation: none; }
+  .app-shell{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 }
 
 /* Expérience d'application : barre stable, navigation depuis la droite et
@@ -117,15 +48,6 @@
   z-index: 1000;
   backdrop-filter: blur(18px) saturate(1.15);
   -webkit-backdrop-filter: blur(18px) saturate(1.15);
-}
-.main-menu-backdrop {
-  justify-content: flex-end;
-}
-.main-menu-drawer {
-  animation-name: menu-slide-in-right;
-}
-@keyframes menu-slide-in-right {
-  from { transform: translateX(100%); }
 }
 .group-choice-modal { max-width: 480px; }
 /* Choix du groupe : trois tuiles identiques, le numéro dans la police des
@@ -209,7 +131,7 @@
     padding-bottom: 11px;
   }
   .top-header-title .eyebrow { font-size: 9px; }
-  .main-menu-button { order: 4; }  .pay-app-screen,
+  .pay-app-screen,
   .pdf-download-screen {
     min-height: calc(100dvh - 112px);
     border-radius: 18px;
@@ -247,24 +169,13 @@
   .app-shell .useful-forms-root .useful-form-work-accident-entry { grid-column: 1 / -1; }
 }
 
-/* Le mode d’emploi est volontairement la dernière commande du menu. */
-.main-menu-drawer {
-  height: 100dvh;
-  min-height: 0;
-  overflow-y: auto;
-}
-.main-menu-secondary .guide-menu-entry {
-  justify-content: space-between;
-}
-
 @media (max-width: 720px) {
   .top-header.top-header-forms {
     --art-h: 200px;
     min-height: 215px;
   }
   .top-header.top-header-forms .top-header-title,
-  .top-header.top-header-forms .account-menu,
-  .top-header.top-header-forms .main-menu-button {
+  .top-header.top-header-forms .account-menu {
     position: relative;
     z-index: 2;
   }

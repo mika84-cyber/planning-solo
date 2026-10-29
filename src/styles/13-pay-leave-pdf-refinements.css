@@ -14,9 +14,7 @@
 }
 
 .top-header.top-header-pay .account-menu,
-.top-header.top-header-pay .main-menu-button,
-.top-header.top-header-leave .account-menu,
-.top-header.top-header-leave .main-menu-button {
+.top-header.top-header-leave .account-menu {
   position: relative;
   z-index: 2;
 }

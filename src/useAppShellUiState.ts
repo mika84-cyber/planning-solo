@@ -15,7 +15,6 @@ export function useAppShellUiState() {
   const [prefetchedContacts, setPrefetchedContacts] = useState<UsefulContactsPayload | null>(null);
   const [approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates] = useState<SharedGrandPalaisEvent[]>([]);
   const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const [mainMenuOpen, setMainMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [groupChooserOpen, setGroupChooserOpen] = useState(false);
   const [noteQuery, setNoteQuery] = useState("");
@@ -57,7 +56,7 @@ export function useAppShellUiState() {
     quickNoteMode, setQuickNoteMode, notesOpen, setNotesOpen,
     homeSection, setHomeSection, prefetchedContacts, setPrefetchedContacts,
     approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
-    mainMenuOpen, setMainMenuOpen, groupChooserOpen, setGroupChooserOpen,
+    groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
     noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,

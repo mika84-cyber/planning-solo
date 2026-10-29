@@ -1,104 +1,52 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { AdaptiveNavigation, AppHeader, MainMenu } from "./AppNavigation";
+import { AdaptiveNavigation, AppHeader } from "./AppNavigation";
+
+const headerProps = {
+  homeSection: "home" as const, payScreen: "overview" as const, userEmail: "mika@example.fr", fullName: "Mika",
+  accountMenuOpen: false, checkingAppUpdate: false, appUpdateAvailable: false, demoMode: true, unreadFeedbackCount: 0,
+  notify: vi.fn(), accountMenuRef: createRef<HTMLDivElement>(), accountButtonRef: createRef<HTMLButtonElement>(),
+  onToggleAccount: vi.fn(), onDisconnect: vi.fn(), onCheckForUpdate: vi.fn(), onOpenDataManagement: vi.fn(),
+};
 
 describe("navigation principale", () => {
-  it("conserve le bouton de menu et le titre de la programmation GP", () => {
-    const html = renderToStaticMarkup(<AppHeader
-      homeSection="program"
-      payScreen="overview"
-      userEmail="mika@example.fr"
-      fullName="Mika"
-      accountMenuOpen={false}
-      mainMenuOpen={false}
-      checkingAppUpdate={false}
-      appUpdateAvailable={false}
-      demoMode
-      unreadFeedbackCount={2}
-      notify={vi.fn()}
-      accountMenuRef={createRef()}
-      accountButtonRef={createRef()}
-      onToggleAccount={vi.fn()}
-      onDisconnect={vi.fn()}
-      onOpenMainMenu={vi.fn()}
-      onCheckForUpdate={vi.fn()}
-    />);
+  it("garde deux commandes rondes, sans menu principal, et le titre de la programmation GP", () => {
+    const html = renderToStaticMarkup(<AppHeader {...headerProps} homeSection="program" unreadFeedbackCount={2} />);
     expect(html).toContain("<h1><span>Programme</span> <span>GP</span></h1>");
-    expect(html).toContain('aria-label="Ouvrir le menu principal"');
-    expect(html.match(/main-menu-button/g)).toHaveLength(1);
-    expect(html).toContain("2 messages non lus");
+    expect(html).not.toContain("main-menu");
+    expect(html).not.toContain("Ouvrir le menu principal");
+    // Les messages non lus de l'administrateur se lisent sur le bouton du compte.
+    expect(html).toMatch(/<button class="account-button"[^>]*>M<em class="account-feedback-badge" role="status" aria-label="2 messages non lus">2<\/em><\/button>/);
     expect(html).not.toContain("notification-button");
   });
 
-  it("signale la mise à jour par une seule pastille, sur l’icône ↻", () => {
-    const html = renderToStaticMarkup(<AppHeader
-      homeSection="home"
-      payScreen="overview"
-      userEmail="mika@example.fr"
-      fullName="Mika"
-      accountMenuOpen={false}
-      mainMenuOpen={false}
-      checkingAppUpdate={false}
-      appUpdateAvailable
-      demoMode
-      unreadFeedbackCount={0}
-      notify={vi.fn()}
-      accountMenuRef={createRef()}
-      accountButtonRef={createRef()}
-      onToggleAccount={vi.fn()}
-      onDisconnect={vi.fn()}
-      onOpenMainMenu={vi.fn()}
-      onCheckForUpdate={vi.fn()}
+  it("range Mes données, l’installation et la messagerie dans le menu du compte", () => {
+    const user = renderToStaticMarkup(<AppHeader {...headerProps} accountMenuOpen install={{ available: false, onInstall: vi.fn() }} />);
+    const items = (html: string) => [...html.matchAll(/role="menuitem"[^>]*>([^<]+)/g)].map((match) => match[1]);
+    expect(items(user)).toEqual(["Mes données", "Installer l’application", "Se déconnecter"]);
+    expect(user).toContain("Installer l’application<small>Disponible après connexion</small>");
+    // Les comptes non administrateurs n’ont pas de messagerie.
+    expect(user).not.toContain("Messagerie interne");
+    const admin = renderToStaticMarkup(<AppHeader
+      {...headerProps}
+      accountMenuOpen
+      unreadFeedbackCount={3}
+      onOpenFeedback={vi.fn()}
+      onOpenAdminTools={vi.fn()}
     />);
+    expect(items(admin)).toEqual(["Mes données", "Messagerie interne", "Outils administrateur", "Se déconnecter"]);
+    expect(admin).toContain("Messagerie interne<small>3 messages non lus</small>");
+  });
+
+  it("signale la mise à jour par une seule pastille, sur l’icône ↻", () => {
+    const html = renderToStaticMarkup(<AppHeader {...headerProps} appUpdateAvailable />);
     expect(html).toContain('aria-label="Compte — mise à jour disponible"');
     expect(html).not.toContain("account-update-dot");
     expect(html).toContain("header-update-dot");
   });
 
-  const menuBase = {
-    open: true, onClose: vi.fn(), onNavigate: vi.fn(), currentSection: "home" as const,
-    showInstallAction: true, canInstall: false, onInstall: vi.fn(), onOpenDataManagement: vi.fn(),
-    onOpenFeedback: vi.fn(), isAdmin: false, unreadFeedbackCount: 0,
-  };
-
-  it("mène aux pages puis aux outils, sans mise à jour dans le menu", () => {
-    const html = renderToStaticMarkup(<MainMenu {...menuBase} />);
-    expect(html).toContain("Planning Solo");
-    expect(html).toContain("<h2>Menu principal</h2>");
-    expect(html).not.toContain("main-menu-refresh");
-    expect(html).not.toContain("Vérifier les mises à jour");
-    expect(html.indexOf(">Pages<")).toBeLessThan(html.indexOf("Accueil"));
-    expect(html.indexOf("Accueil")).toBeLessThan(html.indexOf(">Outils<"));
-    expect(html.indexOf(">Outils<")).toBeLessThan(html.indexOf("Mes données"));
-    expect(html).toContain('aria-label="Les pages de l’application"');
-    expect(html).toContain("Congés et récupérations");
-    expect(html).toContain("Planning partagé");
-    expect(html).toContain("Programme GP");
-    expect(html).toContain("Documents et contacts");
-    expect(html).toContain('aria-current="page"');
-    expect(html).toContain("Installer l’application");
-    // Les comptes non administrateurs n’ont plus d’entrée pour écrire à l’administrateur.
-    expect(html).not.toContain("Écrire à l’administrateur");
-    expect(html).not.toContain("Messagerie interne");
-    expect(html).not.toContain("Mode d’emploi");
-    expect(html).not.toContain("Compte et réglages");
-    expect(html).toContain("Mes données");
-  });
-
-  it("ouvre la messagerie interne pour l’administrateur", () => {
-    const html = renderToStaticMarkup(<MainMenu {...menuBase} isAdmin unreadFeedbackCount={3} />);
-    expect(html).toContain("Messagerie interne");
-    expect(html).toContain("3 messages non lus");
-  });
-
   it("place la mise à jour dans l’en-tête, avec une pastille quand une version attend", () => {
-    const headerProps = {
-      homeSection: "home" as const, payScreen: "overview" as const, userEmail: "mika@example.fr", fullName: "Mika",
-      accountMenuOpen: false, mainMenuOpen: false, checkingAppUpdate: false, demoMode: true, unreadFeedbackCount: 0,
-      notify: vi.fn(), accountMenuRef: createRef<HTMLDivElement>(), accountButtonRef: createRef<HTMLButtonElement>(),
-      onToggleAccount: vi.fn(), onDisconnect: vi.fn(), onOpenMainMenu: vi.fn(), onCheckForUpdate: vi.fn(),
-    };
     const idle = renderToStaticMarkup(<AppHeader {...headerProps} appUpdateAvailable={false} />);
     expect(idle).toContain('class="header-update-button"');
     expect(idle).toContain('aria-label="Vérifier les mises à jour"');
@@ -110,7 +58,7 @@ describe("navigation principale", () => {
   });
 
   it("propose une navigation adaptative sans numéros et marque la rubrique active", () => {
-    const html = renderToStaticMarkup(<AdaptiveNavigation homeSection="colleagues" onNavigate={vi.fn()} onMore={vi.fn()} unreadFeedbackCount={2} />);
+    const html = renderToStaticMarkup(<AdaptiveNavigation homeSection="colleagues" onNavigate={vi.fn()} />);
     // Les six rubriques sont toujours dans le dock ; seule la rubrique en
     // cours porte aria-current.
     expect(html).toContain("section-dock");

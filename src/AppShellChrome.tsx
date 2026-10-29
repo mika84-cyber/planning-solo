@@ -1,5 +1,5 @@
 import { type Dispatch, lazy, type SetStateAction, Suspense, useState } from "react";
-import { AdaptiveNavigation, AppHeader, MainMenu } from "./AppNavigation";
+import { AdaptiveNavigation, AppHeader } from "./AppNavigation";
 import { AppleInstallNotice } from "./AppleInstallNotice";
 import { clearColleagueGroupsCache } from "./colleagueSharingApi";
 import { HomeAdminMessage } from "./HomeAdminMessage";
@@ -43,7 +43,7 @@ type Props = {
   installation: ReturnType<typeof useInstallPrompt> & { enabled: boolean };
   shell: Pick<
     ReturnType<typeof useAppShellUiState>,
-    | "homeSection" | "setHomeSection" | "accountMenuOpen" | "setAccountMenuOpen" | "mainMenuOpen" | "setMainMenuOpen"
+    | "homeSection" | "setHomeSection" | "accountMenuOpen" | "setAccountMenuOpen"
     | "checkingAppUpdate" | "appUpdateAvailable" | "appUpdatePromptOpen" | "accountMenuRef" | "accountButtonRef"
     | "setDataManagementOpen" | "setFeedbackOpen"
   >;
@@ -67,8 +67,8 @@ type Props = {
 };
 
 /**
- * La coque de l'application : en-tête, navigation, propositions
- * d'installation, menu principal, aperçu invité et outils de
+ * La coque de l'application : en-tête et menu du compte, navigation,
+ * propositions d'installation, aperçu invité et outils de
  * l'administrateur, rappel des jours fériés. Les états et les actions restent
  * dans App.tsx ; ce composant les relie aux éléments communs à tous les écrans.
  */
@@ -79,7 +79,7 @@ export function AppShellChrome({
   const { guestPreview, setGuestPreview, adminToolsOpen, setAdminToolsOpen, setAdminRevision } = admin;
   const { enabled: installationEnabled, installPrompt, installApp } = installation;
   const {
-    homeSection, setHomeSection, accountMenuOpen, setAccountMenuOpen, mainMenuOpen, setMainMenuOpen,
+    homeSection, setHomeSection, accountMenuOpen, setAccountMenuOpen,
     checkingAppUpdate, appUpdateAvailable, appUpdatePromptOpen, accountMenuRef, accountButtonRef,
     setDataManagementOpen, setFeedbackOpen,
   } = shell;
@@ -150,7 +150,6 @@ export function AppShellChrome({
         userEmail={userEmail}
         fullName={formProfile?.fullName || ""}
         accountMenuOpen={accountMenuOpen}
-        mainMenuOpen={mainMenuOpen}
         checkingAppUpdate={checkingAppUpdate}
         appUpdateAvailable={appUpdateAvailable}
         updateCallVisible={appUpdateAvailable && !appUpdatePromptOpen}
@@ -165,11 +164,22 @@ export function AppShellChrome({
           setAccountMenuOpen(false);
           void disconnect();
         }}
-        onOpenMainMenu={() => {
-          history.pushState({ ...(history.state || {}), planningSection: homeSection, planningOverlay: "menu" }, "", location.href);
-          setMainMenuOpen(true);
-        }}
         onCheckForUpdate={() => void checkForAppUpdate()}
+        onOpenDataManagement={() => {
+          setAccountMenuOpen(false);
+          setDataManagementOpen(true);
+        }}
+        install={demoMode || installPrompt ? {
+          available: Boolean(installationEnabled && installPrompt),
+          onInstall: () => {
+            setAccountMenuOpen(false);
+            void installApp();
+          },
+        } : undefined}
+        onOpenFeedback={isProgramAdmin ? () => {
+          setAccountMenuOpen(false);
+          setFeedbackOpen(true);
+        } : undefined}
         onOpenHelp={() => {
           setAccountMenuOpen(false);
           setHelpOpen(true);
@@ -183,11 +193,6 @@ export function AppShellChrome({
       <AdaptiveNavigation
         homeSection={homeSection}
         onNavigate={(section) => navigateFromShell(section)}
-        onMore={() => {
-          history.pushState({ ...(history.state || {}), planningSection: homeSection, planningOverlay: "menu" }, "", location.href);
-          setMainMenuOpen(true);
-        }}
-        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
       {/* Placé après la navigation : la marche à suivre s'affiche quelle que
           soit la rubrique ouverte au lancement. */}
@@ -197,25 +202,6 @@ export function AppShellChrome({
       <InstallAppNotice
         available={Boolean(installationEnabled && installPrompt && programAdminKnown && !isProgramAdmin)}
         onInstall={() => void installApp()}
-      />
-      <MainMenu
-        open={mainMenuOpen}
-        onClose={() => setMainMenuOpen(false)}
-        onNavigate={(section) => navigateFromShell(section)}
-        currentSection={homeSection}
-        showInstallAction={demoMode || Boolean(installPrompt)}
-        canInstall={Boolean(installationEnabled && installPrompt)}
-        onInstall={() => void installApp()}
-        onOpenDataManagement={() => {
-          setMainMenuOpen(false);
-          setDataManagementOpen(true);
-        }}
-        onOpenFeedback={() => {
-          setMainMenuOpen(false);
-          setFeedbackOpen(true);
-        }}
-        isAdmin={isProgramAdmin}
-        unreadFeedbackCount={isProgramAdmin ? feedbackMessaging.unreadCount : 0}
       />
       {actualProgramAdmin && guestPreview && <div className="admin-preview-banner" role="status">Aperçu invité · Vos données<button type="button" onClick={() => setGuestPreview(false)}>Quitter l’aperçu</button></div>}
       {isProgramAdmin && adminToolsOpen && <Suspense fallback={<p role="status">Ouverture des outils…</p>}><AdminToolsPanel demoMode={demoMode} onClose={() => setAdminToolsOpen(false)} onPreview={() => { setAdminToolsOpen(false); setGuestPreview(true); }} onChanged={() => { clearColleagueGroupsCache(); setAdminRevision(value => value + 1); }} /></Suspense>}

@@ -26,10 +26,9 @@ export const NAVIGATION_ICON_PATHS: Record<string, string> = {
   pdf: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 12.5h6M9 16.5h6",
   program: "M2.5 9.5 12 3.5l9.5 6M4 9.5h16M5.5 12v6.5m4.33-6.5v6.5m4.34-6.5v6.5m4.33-6.5v6.5M3 21h18",
   colleagues: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2.5 21v-.5a6.5 6.5 0 0 1 13 0v.5M16 3.2a4 4 0 0 1 0 7.6M21.5 21v-.5a6.5 6.5 0 0 0-4-6",
-  feedback: "M4 5h16v12H8l-4 4z", data: "M5 4h14v16H5zM8 8h8M8 12h8M8 16h5", install: "M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3",
 };
 
-function NavigationIcon({ section }: { section: (typeof MAIN_SECTION_ORDER)[number] | "feedback" | "data" | "install" }) {
+function NavigationIcon({ section }: { section: (typeof MAIN_SECTION_ORDER)[number] }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={NAVIGATION_ICON_PATHS[section]} /></svg>;
 }
 
@@ -45,7 +44,7 @@ const SECTION_TABS = MAIN_SECTION_ORDER.map((key) => ({
  *  montre son icône et son nom ; la rubrique ouverte passe en pastille
  *  claire. Sur petit écran, « Collègues » devient « Team ». */
 export function AdaptiveNavigation({ homeSection, onNavigate }: {
-  homeSection: MainSection; onNavigate: (section: MainSection) => void; onMore: () => void; unreadFeedbackCount: number;
+  homeSection: MainSection; onNavigate: (section: MainSection) => void;
 }) {
   const isActive = (key: MainSection) => homeSection === key || (key === "pdf" && homeSection === "forms");
   return (
@@ -94,7 +93,6 @@ type AppHeaderProps = {
   userEmail: string;
   fullName: string;
   accountMenuOpen: boolean;
-  mainMenuOpen: boolean;
   checkingAppUpdate: boolean;
   appUpdateAvailable: boolean;
   /** Une mise à jour attend et sa fenêtre a été fermée sans la faire. */
@@ -107,8 +105,13 @@ type AppHeaderProps = {
   accountButtonRef: RefObject<HTMLButtonElement | null>;
   onToggleAccount: () => void;
   onDisconnect: () => void;
-  onOpenMainMenu: () => void;
   onCheckForUpdate: () => void;
+  /** Les outils rangés dans le menu du compte. */
+  onOpenDataManagement: () => void;
+  /** « Installer l'application » : proposée quand le navigateur sait le faire. */
+  install?: { available: boolean; onInstall: () => void };
+  /** La messagerie interne, réservée à l'administrateur. */
+  onOpenFeedback?: () => void;
   onOpenAdminTools?: () => void;
   /** « Que cherchez-vous ? » : ouvre la fenêtre des questions. */
   onOpenHelp?: () => void;
@@ -120,7 +123,6 @@ export function AppHeader({
   userEmail,
   fullName,
   accountMenuOpen,
-  mainMenuOpen,
   checkingAppUpdate,
   appUpdateAvailable,
   updateCallVisible = false,
@@ -132,8 +134,10 @@ export function AppHeader({
   accountButtonRef,
   onToggleAccount,
   onDisconnect,
-  onOpenMainMenu,
   onCheckForUpdate,
+  onOpenDataManagement,
+  install,
+  onOpenFeedback,
   onOpenAdminTools,
   onOpenHelp,
 }: AppHeaderProps) {
@@ -142,6 +146,7 @@ export function AppHeader({
     : appUpdateAvailable
       ? "Installer la mise à jour"
       : "Vérifier les mises à jour";
+  const unreadLabel = `${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}`;
   return (
     <header className={headerClass(homeSection)} data-section={homeSection} data-pay-screen={homeSection === "pay" ? payScreen : undefined}>
       <div className="top-header-title header-section-title">
@@ -204,6 +209,7 @@ export function AppHeader({
                 aria-label={appUpdateAvailable ? "Compte — mise à jour disponible" : "Compte"}
               >
                 {(userEmail[0] || "M").toUpperCase()}
+                {unreadFeedbackCount > 0 ? <em className="account-feedback-badge" role="status" aria-label={unreadLabel}>{unreadFeedbackCount > 9 ? "9+" : unreadFeedbackCount}</em> : null}
               </button>
               {accountMenuOpen ? (
                 <div className="account-menu-panel" role="menu">
@@ -219,6 +225,14 @@ export function AppHeader({
                   ) : null}
                   {/* L'apparence est un réglage personnel : elle vit avec le compte. */}
                   <ThemeSwitch />
+                  {/* Les outils de l'ancien menu principal, sous l'apparence. */}
+                  <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenDataManagement}>Mes données</button>
+                  {install ? <button className="account-menu-data" type="button" role="menuitem" disabled={!install.available} onClick={install.onInstall}>
+                    Installer l’application{install.available ? null : <small>Disponible après connexion</small>}
+                  </button> : null}
+                  {onOpenFeedback ? <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenFeedback}>
+                    Messagerie interne{unreadFeedbackCount > 0 ? <small>{unreadLabel}</small> : null}
+                  </button> : null}
                   {onOpenAdminTools && <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenAdminTools}>Outils administrateur</button>}
                   <button className="account-menu-leave" type="button" role="menuitem" onClick={onDisconnect}>
                     Se déconnecter
@@ -227,19 +241,6 @@ export function AppHeader({
               ) : null}
             </div>
           </div>
-          <button
-            className="main-menu-button"
-            type="button"
-            onClick={onOpenMainMenu}
-            aria-label="Ouvrir le menu principal"
-            aria-expanded={mainMenuOpen}
-            aria-controls="main-menu-drawer"
-          >
-            <span aria-hidden="true" />
-            <span aria-hidden="true" />
-            <span aria-hidden="true" />
-            {unreadFeedbackCount > 0 ? <em className="main-menu-feedback-badge" role="status" aria-label={`${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}`}>{unreadFeedbackCount > 9 ? "9+" : unreadFeedbackCount}</em> : null}
-          </button>
         </div>
       </div>
       {/* « Que cherchez-vous ? » : au même endroit dans chaque en-tête, en bas
@@ -259,91 +260,3 @@ export function AppHeader({
   );
 }
 
-/** Les pages de l'application, dans l'ordre de la barre du bas. */
-const MENU_PAGES: ReadonlyArray<{ key: (typeof MAIN_SECTION_ORDER)[number]; titre: string; detail: string }> = [
-  { key: "home", titre: "Accueil", detail: "Aujourd’hui, le planning du mois et vos notes" },
-  { key: "leave", titre: "Congés et récupérations", detail: "Soldes, CET, heures supplémentaires" },
-  { key: "pay", titre: "Ma paie", detail: "Estimation, primes et vérification du bulletin" },
-  { key: "pdf", titre: "Documents et contacts", detail: "Formulaires et annuaire" },
-  { key: "program", titre: "Programme GP", detail: "Expositions et fermetures exceptionnelles" },
-  { key: "colleagues", titre: "Planning partagé", detail: "Les jours de présence des collègues, par nom" },
-];
-
-type MainMenuProps = {
-  open: boolean;
-  onClose: () => void;
-  onNavigate: (section: MainSection) => void;
-  currentSection: MainSection;
-  showInstallAction: boolean;
-  canInstall: boolean;
-  onInstall: () => void;
-  onOpenDataManagement: () => void;
-  onOpenFeedback: (view: "compose" | "inbox") => void;
-  isAdmin: boolean;
-  unreadFeedbackCount: number;
-};
-
-export function MainMenu({
-  open, onClose, onNavigate, currentSection, showInstallAction, canInstall, onInstall, onOpenDataManagement,
-  onOpenFeedback, isAdmin, unreadFeedbackCount,
-}: MainMenuProps) {
-  if (!open) return null;
-  return (
-    <div
-      className="main-menu-backdrop"
-      role="presentation"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-    >
-      <aside className="main-menu-drawer" id="main-menu-drawer" aria-label="Menu principal">
-        <header className="main-menu-hero">
-          <div className="main-menu-title">
-            <span>Planning Solo</span>
-            <h2>Menu principal</h2>
-            <small>{new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}</small>
-          </div>
-          <button className="main-menu-close" type="button" onClick={onClose} aria-label="Fermer le menu">×</button>
-        </header>
-        <p className="main-menu-section-label" aria-hidden="true">Pages</p>
-        <nav className="main-menu-pages" aria-label="Les pages de l’application">
-          {MENU_PAGES.map(({ key, titre, detail }) => (
-            <button
-              key={key}
-              type="button"
-              className={currentSection === key ? "active" : ""}
-              aria-current={currentSection === key ? "page" : undefined}
-              onClick={() => onNavigate(key)}
-            >
-              <span className="main-menu-index" aria-hidden="true"><NavigationIcon section={key} /></span>
-              <span className="main-menu-copy"><strong>{titre}</strong><small>{detail}</small></span>
-              <span className="main-menu-chevron" aria-hidden="true">›</span>
-            </button>
-          ))}
-        </nav>
-        <p className="main-menu-section-label" aria-hidden="true">Outils</p>
-        <div className="main-menu-secondary">
-          <button type="button" onClick={onOpenDataManagement}>
-            <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="data" /></span>
-            <span className="main-menu-copy"><strong>Mes données</strong><small>Sauvegarder, reprendre ou effacer mes informations</small></span>
-            <span className="main-menu-chevron" aria-hidden="true">›</span>
-          </button>
-          {showInstallAction ? (
-            <button type="button" onClick={onInstall} disabled={!canInstall}>
-              <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="install" /></span>
-              <span className="main-menu-copy"><strong>Installer l’application</strong><small>{canInstall ? "L’ajouter à l’écran d’accueil" : "Disponible après connexion"}</small></span>
-              <span className="main-menu-chevron" aria-hidden="true">›</span>
-            </button>
-          ) : null}
-          {/* Seul l'administrateur garde la messagerie dans le menu : les
-              autres comptes n'ont plus d'entrée pour lui écrire. */}
-          {isAdmin ? (
-            <button type="button" className="guide-menu-entry feedback-menu-entry" onClick={() => onOpenFeedback("inbox")}>
-              <span className="main-menu-index" aria-hidden="true"><NavigationIcon section="feedback" /></span>
-              <span className="main-menu-copy"><strong>Messagerie interne</strong><small>{`${unreadFeedbackCount} message${unreadFeedbackCount > 1 ? "s" : ""} non lu${unreadFeedbackCount > 1 ? "s" : ""}`}</small></span>
-              <span className="main-menu-chevron" aria-hidden="true">›</span>
-            </button>
-          ) : null}
-        </div>
-      </aside>
-    </div>
-  );
-}
