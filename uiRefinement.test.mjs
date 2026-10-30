@@ -376,7 +376,6 @@ describe("finitions d’interface", () => {
 
   it("compte Divers comme jour non travaillé et permet les suppressions multiples", () => {
     // Rangé sous « Repères du planning », Divers se dit en trois mots.
-    expect(app).toContain("<strong>Divers</strong><span>Jour non travaillé</span>");
     expect(app).toContain('period.leaveType === "recovery"');
     expect(calendarCleanup).toContain("Effacer plusieurs dates ou notes");
     expect(app).toContain('className={`holiday-pay-amount');

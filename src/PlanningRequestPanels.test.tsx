@@ -51,4 +51,14 @@ describe("fenêtre « Que voulez-vous poser ? »", () => {
     // RTT et fractionnement se posent en journée : pas de durée sous eux.
     expect(html.match(/request-choice-moments/g)).toHaveLength(1);
   });
+
+  it("range Divers parmi les absences et repères, dit en trois mots", () => {
+    const html = renderToStaticMarkup(
+      <RequestChooserDialog open requestChooserDate={null} onClose={vi.fn()} onChoose={vi.fn()} />,
+    );
+    const family = html.indexOf('<h3 id="request-family-absence">Absences et repères</h3>');
+    const divers = html.indexOf('<button type="button" class="request-choice-row leave-choice-other"><i aria-hidden="true"></i><strong>Divers</strong><span>Jour non travaillé</span></button>');
+    expect(family).toBeGreaterThan(-1);
+    expect(divers).toBeGreaterThan(family);
+  });
 });

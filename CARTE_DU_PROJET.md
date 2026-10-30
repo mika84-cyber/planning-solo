@@ -267,6 +267,24 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   travail marquées dans le planning sans carence ; seuls les CA superposés sont
   retirés et recrédités automatiquement, les autres congés restant modifiables.
 - `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
+  Données : `netlify/lib/usefulContactsData.mts`, en service tant que
+  l’administrateur n’a rien modifié depuis l’application (sinon l’annuaire vit
+  dans le blob `useful-contacts/admin-directory`). GP-RMN suit la fiche
+  « Service de l’accueil des publics » (octobre 2026), rangée par thème
+  (`theme` : Urgences, Encadrement, Hall, Rotonde, Visiteurs ; `contactThemes`,
+  les contacts ajoutés sans thème en dernier) et affichée par
+  `ContactThemePanels` : un panneau par thème à sa couleur, une ligne par
+  contact (nom sans le thème déjà écrit, `nameWithinTheme` ; numéros de même
+  largeur en colonne ; colonne SMS réservée seulement si un numéro du thème le
+  propose ; un nom long garde sa ligne et ses numéros passent dessous). Le
+  canal radio (`radioChannel`) est une pastille à côté du nom, la précision
+  (`context`) une petite ligne dessous ; `allowSms: false` retire le SMS d’un
+  portable (responsables et superviseurs). Une modification depuis
+  l’application garde ces réglages. Ailleurs (Pompidou, recherche), les
+  cartes de contact : le nom prend toute la largeur à côté de la pastille des
+  initiales (une ligne, deux au plus), la place du bouton ✎ n’est réservée
+  qu’à l’administrateur. Un test refuse tout doublon de nom, numéro ou
+  adresse.
   « Codes urgences radio » (FOX, TANGO…) : `netlify/lib/usefulRadioCodes.mts`,
   envoyés par `/api/contacts` aux seuls comptes connectés, jamais enregistrés.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :

@@ -47,7 +47,7 @@ describe("fonction sécurisée des contacts", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(payload.pompidou).toHaveLength(6);
-    expect(payload.gprmn).toHaveLength(2);
+    expect(payload.gprmn).toHaveLength(13);
   });
 
   it("envoie les codes radio aux comptes connectés sans jamais les enregistrer", async () => {
@@ -60,5 +60,31 @@ describe("fonction sécurisée des contacts", () => {
     const answer = await (await contactsHandler(new Request("https://example.test/api/contacts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "add", directory: "gprmn", contact: { name: "Nouveau", email: "nouveau@example.test" } }) }))).json();
     expect(answer.radioCodes).toHaveLength(10);
     expect(stored.get("useful-contacts/admin-directory")).not.toHaveProperty("radioCodes");
+  });
+
+  it("garde le SMS désactivé d’un numéro conservé lors d’une modification", async () => {
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    const initial = await (await contactsHandler(new Request("https://example.test/api/contacts"))).json() as { gprmn: { id: string; name: string }[] };
+    const supervisor = initial.gprmn.find((contact) => contact.name === "Superviseur PC")!;
+    const answer = await (await contactsHandler(new Request("https://example.test/api/contacts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "update", id: supervisor.id, contact: { name: "Superviseur PC", phones: [{ number: "0611793883" }, { number: "0144131724" }] } }),
+    }))).json() as { gprmn: { id: string; phones?: { number: string; allowSms?: boolean }[] }[] };
+    expect(answer.gprmn.find((contact) => contact.id === supervisor.id)?.phones).toEqual([
+      { number: "0611793883", allowSms: false },
+      { number: "0144131724" },
+    ]);
+  });
+
+  it("garde le canal radio, la précision et le thème d’un contact modifié depuis l’application", async () => {
+    // La fenêtre de modification n'envoie que le nom, l'e-mail et les numéros.
+    mockedGetUser.mockResolvedValue({ id: "admin", email: "admin@example.test" } as never);
+    const answer = await (await contactsHandler(new Request("https://example.test/api/contacts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "update", id: "gprmn-0", contact: { name: "Sûreté", phones: [{ number: "01 44 13 17 50" }] } }),
+    }))).json() as { gprmn: { id: string; name: string; radioChannel?: number; context?: string; theme?: string }[] };
+    expect(answer.gprmn[0]).toMatchObject({ id: "gprmn-0", name: "Sûreté", radioChannel: 2, context: "Malveillance, altercation", theme: "Urgences" });
   });
 });

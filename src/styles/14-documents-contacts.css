@@ -700,7 +700,27 @@
   color: #9a571e;
 }
 
-.useful-contact-identity strong { font-size: 14px; line-height: 1.25; }
+.useful-contact-identity strong { font-size: 14px; line-height: 1.25; text-wrap: balance; }
+.useful-contact-identity small { text-wrap: balance; }
+/* Le nom et son canal radio : la pastille suit le dernier mot, sur la même
+   ligne, et passe à la suivante avec lui si la place manque. */
+.useful-contact-title { font-size: 14px; line-height: 1.25; text-wrap: balance; }
+.useful-contact-title strong { display: inline; }
+.useful-contact-radio {
+  display: inline-block;
+  margin-left: 7px;
+  border: 1px solid var(--border-control);
+  border-radius: 999px;
+  padding: 0 7px;
+  background: var(--surface-high);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.45;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
 
 .useful-contact-actions { align-items: stretch; }
 
@@ -767,6 +787,110 @@
 .useful-contacts-subheader h2 { margin: 3px 0 0; color: #3a332c; }
 
 .useful-contact-list { display: grid; gap: 11px; }
+
+/* Annuaire GP-RMN : un panneau par thème, à sa couleur (liseré, signe et
+   en-tête teinté), une ligne par contact ; les numéros passent sous le nom
+   quand la ligne manque de place. */
+.contact-theme-panels { display: grid; gap: 12px; }
+.contact-theme-urgences { --tone: #b3261e; }
+.contact-theme-encadrement { --tone: #3a5f8f; }
+.contact-theme-hall { --tone: #2f7a52; }
+.contact-theme-rotonde { --tone: #a45f2d; }
+.contact-theme-visiteurs { --tone: #6a4fa3; }
+.contact-theme-autres { --tone: #7a6f5f; }
+.contact-theme-panel {
+  overflow: hidden;
+  border: 1px solid var(--border-control);
+  border-left: 5px solid var(--tone);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.contact-theme-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--tone) 10%, #fff);
+}
+.contact-theme-head > span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--tone);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.contact-theme-head h3 {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  color: var(--tone);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.contact-theme-head small { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 700; }
+.contact-theme-rows { margin: 0; padding: 0; list-style: none; }
+.contact-theme-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border-control);
+  padding: 11px 14px;
+}
+.contact-theme-row:first-child { border-top: 0; }
+/* Le nom se centre en hauteur face à ses numéros, un ou deux l'un sous
+   l'autre : pas de grand vide sous lui. 104 px lui suffisent : dès 360 px, numéros et
+   SMS restent sur sa ligne. Un nom long (« Responsables accueil et
+   caisses ») en demande 150 : il tient sur deux lignes, ou ses numéros
+   passent dessous plutôt que de le couper en trois. */
+.contact-theme-who { flex: 1 1 104px; min-width: 0; min-height: 36px; display: grid; align-content: center; gap: 2px; }
+.contact-theme-row-long .contact-theme-who { flex-basis: 150px; }
+.contact-theme-who small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; text-wrap: balance; }
+.contact-theme-actions { display: flex; align-items: center; gap: 5px; }
+.contact-theme-phones { display: grid; justify-items: end; gap: 6px; }
+.contact-theme-phone { display: flex; gap: 5px; }
+.contact-theme-number,
+.contact-theme-sms,
+.contact-theme-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border-radius: 11px;
+  font-size: 12.5px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+/* Même largeur pour toutes les pastilles : une colonne de numéros nette. */
+.contact-theme-number {
+  gap: 5px;
+  width: 130px;
+  border: 1px solid var(--border-control);
+  padding: 0 8px;
+  background: var(--surface-high);
+  color: inherit;
+}
+.contact-theme-number > span { opacity: 0.7; font-size: 11px; }
+.contact-theme-number.mobile { border-color: #cfe3d7; background: #e9f3ee; }
+.contact-theme-sms-space { flex: none; width: 38px; }
+.contact-theme-sms { width: 38px; padding: 0; background: #3d8a6f; color: #fff; font-size: 11px; font-weight: 800; }
+.contact-theme-edit {
+  width: 30px;
+  border: 1px solid var(--border-control);
+  padding: 0;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
 
 .useful-contact-card {
   display: grid;
@@ -869,7 +993,11 @@
   border-radius: 18px;
 }
 
+/* Le nom prend toute la place qui reste à côté de la pastille : il héritait
+   de sa base de 35 px (règle commune aux deux span), et chaque mot passait à
+   la ligne, jusqu'à trois lignes pour « Responsables accueil et caisses ». */
 .useful-contact-identity>span:last-child {
+  flex: 1 1 0;
   width: auto;
   height: auto;
   min-width: 0;
@@ -1173,7 +1301,10 @@
     grid-row: auto;
     margin-top: 0;
   }
-  .useful-contacts-screen .useful-contact-card>.useful-contact-identity { padding-right: 96px; }
+  /* Sur téléphone, le bouton ✎ (42 px, à 12 px du bord) flotte en haut à
+     droite : seul le nom d'une carte modifiable lui laisse sa place. Les
+     96 px réservés pour tous coupaient les noms en deux ou trois lignes. */
+  .useful-contacts-screen .useful-contact-card-editable>.useful-contact-identity { padding-right: 50px; }
   .useful-contact-card-single-line-label { width: 100%; grid-template-columns: minmax(0, 1fr); }
   .useful-contact-card-single-line-label .useful-contact-identity { gap: 7px; }
   .useful-contact-card-single-line-label .useful-contact-identity>span:first-child {

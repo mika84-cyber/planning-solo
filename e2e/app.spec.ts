@@ -3765,7 +3765,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   expect(new Set(categoryColors.map((color) => color.background)).size).toBeGreaterThanOrEqual(4);
   expect(new Set(categoryColors.map((color) => color.border)).size).toBe(6);
   await page.getByRole("button", { name: /^RAS/ }).click();
-  await expect(page.locator(".useful-contact-card")).toHaveCount(10);
+  await expect(page.locator(".useful-contact-card")).toHaveCount(12);
   await expect(page.getByText("Maarten Averink")).toBeVisible();
   const contactCard = page.locator('.useful-contact-card').first();
   await expect(contactCard).toHaveCSS('box-shadow', 'none');
@@ -3799,7 +3799,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await expect(rasGroupMail).toBeVisible();
   const rasGroupMailHref = await rasGroupMail.getAttribute("href");
   expect(rasGroupMailHref?.startsWith("mailto:")).toBe(true);
-  expect(rasGroupMailHref?.slice("mailto:".length).split(",")).toHaveLength(10);
+  expect(rasGroupMailHref?.slice("mailto:".length).split(",")).toHaveLength(12);
   expect(rasGroupMailHref).toContain("maarten.averink@centrepompidou.fr");
   await expect(page.getByRole("link", { name: /^Appeler.*06 21 68 83 08/i })).toHaveAttribute(
     "href",
@@ -3876,8 +3876,38 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await page.getByRole("button", { name: "Revenir aux contacts Pompidou" }).click();
   await page.getByRole("button", { name: "Revenir aux contacts utiles" }).click();
   await page.getByRole("button", { name: /Contact GP‑RMN/ }).click();
-  await expect(page.getByText("Accident · secourisme")).toBeVisible();
-  await expect(page.getByText("Superviseur Expo")).toBeVisible();
+  // Un panneau par thème, dans cet ordre, une ligne par contact.
+  await expect(page.locator(".contact-theme-head h3")).toHaveText(["Urgences", "Encadrement", "Hall", "Rotonde", "Visiteurs"]);
+  await expect(page.getByRole("region", { name: "Urgences" }).locator(".useful-contact-title strong")).toHaveText(["Sûreté", "Sécurité"]);
+  await expect(page.getByRole("region", { name: "Hall" }).locator(".useful-contact-title strong")).toHaveText(["Information", "Accueil groupes", "Billetterie"]);
+  await expect(page.getByRole("link", { name: "Appeler Information Hall au 01 44 13 17 64" })).toHaveAttribute("href", "tel:+33144131764");
+  const surete = page.locator(".contact-theme-row").filter({ hasText: "Malveillance, altercation" });
+  await expect(surete.locator(".useful-contact-title")).toHaveText("Sûretéradio, Canal 2");
+  await expect(surete.getByRole("link", { name: /^Appeler Sûreté au 01 44 13 17 50/ })).toHaveAttribute("href", "tel:+33144131750");
+  await expect(page.locator(".contact-theme-row").filter({ hasText: "Accident, incendie" }).locator(".useful-contact-radio")).toHaveText("radio, Canal 3");
+  // Le numéro d'une ligne de thème reste à l'écran, sans déborder du panneau.
+  const [sureteRow, sureteNumber] = await Promise.all([surete.boundingBox(), surete.locator(".contact-theme-number").boundingBox()]);
+  expect(sureteNumber!.x + sureteNumber!.width).toBeLessThanOrEqual(sureteRow!.x + sureteRow!.width);
+  // La pastille du canal est sur la ligne du nom.
+  const [sureteName, sureteChannel] = await Promise.all([
+    surete.locator(".useful-contact-title strong").boundingBox(),
+    surete.locator(".useful-contact-radio").boundingBox(),
+  ]);
+  expect(Math.abs((sureteName!.y + sureteName!.height / 2) - (sureteChannel!.y + sureteChannel!.height / 2))).toBeLessThan(6);
+  expect(sureteChannel!.x).toBeGreaterThan(sureteName!.x + sureteName!.width);
+  // Les titres tiennent sur une ligne, deux au plus quand la place manque,
+  // même à côté du bouton ✎ (avant, chaque mot passait à la ligne).
+  const titleLines = await page.locator(".useful-contact-title").evaluateAll((titles) => titles.map((title) => ({
+    name: title.querySelector("strong")?.textContent,
+    lines: Math.round(title.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(title).lineHeight)),
+  })));
+  expect(titleLines.filter((title) => title.lines > 2)).toEqual([]);
+  expect(titleLines.find((title) => title.name === "Superviseur PC")?.lines).toBe(1);
+  await expect(page.getByRole("link", { name: /^Appeler Superviseur PC au 06 11 79 38 83/ })).toHaveAttribute("href", "tel:+33611793883");
+  await expect(page.getByText("Superviseur expositions")).toBeVisible();
+  // Ni SMS pour les portables des responsables et des superviseurs.
+  await expect(page.getByRole("region", { name: "Encadrement" }).getByRole("link", { name: /^Envoyer un SMS/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Écrire à Réclamations visiteurs/ })).toHaveAttribute("href", "mailto:contact@grandpalaisrmn.fr");
   // Pour les visiteurs : les QR codes de réclamation et d'objet perdu.
   await page.getByRole("button", { name: "Revenir aux contacts utiles" }).click();
   await page.getByRole("button", { name: /Pour les visiteurs/ }).click();

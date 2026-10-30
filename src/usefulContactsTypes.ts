@@ -2,6 +2,8 @@ export type UsefulContactPhone = {
   label?: string;
   number: string;
   allowCall?: boolean;
+  /** false : un portable sans bouton SMS (superviseurs, responsables). */
+  allowSms?: boolean;
 };
 
 export type UsefulContact = {
@@ -11,6 +13,10 @@ export type UsefulContact = {
   phones?: UsefulContactPhone[];
   singleLineLabel?: boolean;
   context?: string;
+  /** Canal radio, montré à côté du nom : « Canal 2 ». */
+  radioChannel?: number;
+  /** Thème sous lequel l'annuaire GP-RMN range le contact : « Urgences ». */
+  theme?: string;
 };
 
 export type PompidouContactSectionKey =

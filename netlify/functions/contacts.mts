@@ -70,8 +70,23 @@ async function contactsHandler(request: Request): Promise<Response> {
   } else {
     if (!id || !all.some(contact => contact.id === id)) return json({ error: "Contact introuvable" }, 404);
     if (body.action === "update") {
-      const contact = parseContact(body.contact, id);
-      if (!contact) return json({ error: "Coordonnées invalides" }, 400);
+      const parsed = parseContact(body.contact, id);
+      if (!parsed) return json({ error: "Coordonnées invalides" }, 400);
+      // La fenêtre de modification ne connaît ni la précision sous le nom, ni
+      // le canal radio, ni le thème : ils restent ceux du contact modifié.
+      const existing = all.find(item => item.id === id)!;
+      // Un numéro gardé garde aussi son appel ou son SMS désactivé.
+      const phones = parsed.phones?.map(phone => {
+        const before = existing.phones?.find(item => item.number === phone.number);
+        return { ...phone, ...(before?.allowCall === false ? { allowCall: false } : {}), ...(before?.allowSms === false ? { allowSms: false } : {}) };
+      });
+      const contact: UsefulContact = {
+        ...parsed,
+        ...(phones ? { phones } : {}),
+        ...(existing.context ? { context: existing.context } : {}),
+        ...(existing.radioChannel ? { radioChannel: existing.radioChannel } : {}),
+        ...(existing.theme ? { theme: existing.theme } : {}),
+      };
       directory.pompidou.forEach(section => { section.contacts = section.contacts.map(item => item.id === id ? contact : item); });
       directory.gprmn = directory.gprmn.map(item => item.id === id ? contact : item);
     } else {

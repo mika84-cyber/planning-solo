@@ -135,6 +135,9 @@ html[data-theme="dark"] .leave-info-card { border-color: rgba(255, 255, 255, 0.5
    comptent gardent un fond vert franc ; les autres s'effacent. */
 html[data-theme="dark"] .leave-info-content section .leave-info-months li { background: rgba(255, 255, 255, 0.04); color: rgba(232, 226, 216, 0.34); }
 html[data-theme="dark"] .leave-info-content section .leave-info-months li.counts { background: #2b6b52; color: #e4f6ec; }
+/* Contacts GP-RMN : la couleur du thème, trop sombre sur fond sombre, est
+   éclaircie pour l'intitulé. */
+html[data-theme="dark"] .contact-theme-head h3 { color: color-mix(in srgb, var(--tone) 45%, #fff); }
 html[data-theme="dark"] .payslip-gap-choice { border-color: #4a3a2d; border-left-color: #c9754f; background: #2a241f; }
 html[data-theme="dark"] .payslip-gap-choice p { color: #d8cfc4; }
 html[data-theme="dark"] .payslip-gap-choice p strong, html[data-theme="dark"] .payslip-gap-choices h4 { color: #f0c3ad; }

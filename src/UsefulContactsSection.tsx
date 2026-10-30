@@ -6,6 +6,7 @@ import { ContactEditDialog } from "./ContactEditDialog";
 import type {
   PompidouContactSectionKey,
   UsefulContact,
+  UsefulContactPhone,
   UsefulContactsPayload,
   UsefulRadioCode,
 } from "./usefulContactsTypes";
@@ -30,6 +31,11 @@ function isMobilePhone(number: string) {
   return /^(06|07)/.test(number.replace(/\D/g, ""));
 }
 
+/** Un portable propose le SMS, sauf s'il est marqué sans (allowSms: false). */
+function offersSms(phone: UsefulContactPhone) {
+  return isMobilePhone(phone.number) && phone.allowSms !== false;
+}
+
 export function mailComposeHref(email: string | string[]) {
   const recipients = Array.isArray(email) ? email.join(",") : email;
   return `mailto:${recipients}`;
@@ -45,18 +51,131 @@ function contactInitials(name: string) {
     .join("");
 }
 
-function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]; isAdmin: boolean; onEdit: (contact: UsefulContact) => void }) {
+const OTHER_CONTACTS_THEME = "Autres contacts";
+
+/** Les contacts rangés par thème, dans l'ordre où les thèmes apparaissent ;
+ *  ceux ajoutés depuis l'application, sans thème, viennent en dernier. */
+export function contactThemes(contacts: UsefulContact[]) {
+  const themes: { theme: string; contacts: UsefulContact[] }[] = [];
+  for (const contact of contacts) {
+    const theme = contact.theme || OTHER_CONTACTS_THEME;
+    let group = themes.find((item) => item.theme === theme);
+    if (!group) {
+      group = { theme, contacts: [] };
+      themes.push(group);
+    }
+    group.contacts.push(contact);
+  }
+  return [
+    ...themes.filter((group) => group.theme !== OTHER_CONTACTS_THEME),
+    ...themes.filter((group) => group.theme === OTHER_CONTACTS_THEME),
+  ];
+}
+
+/** La couleur (classe) et le signe de chaque thème de l'annuaire GP-RMN. */
+const CONTACT_THEME_STYLES: Record<string, { slug: string; icon: string }> = {
+  Urgences: { slug: "urgences", icon: "!" },
+  Encadrement: { slug: "encadrement", icon: "★" },
+  Hall: { slug: "hall", icon: "H" },
+  Rotonde: { slug: "rotonde", icon: "R" },
+  Visiteurs: { slug: "visiteurs", icon: "✉" },
+};
+
+/** « Billetterie Rotonde milieu », sous l'intitulé « Rotonde », se lit
+ *  « Billetterie milieu » : le thème est déjà dit au-dessus. Les liens
+ *  d'appel et la recherche gardent le nom entier. */
+export function nameWithinTheme(name: string, theme: string) {
+  // Les thèmes sont des mots simples (Hall, Rotonde) : rien à échapper.
+  return name.replace(new RegExp(`\\s+${theme}(?=\\s|$)`, "i"), "").trim() || name;
+}
+
+/** Annuaire GP-RMN : un panneau par thème, à sa couleur, et une ligne par
+ *  contact — le nom et son canal radio, la précision dessous, les numéros à
+ *  droite (un toucher appelle ; un portable propose aussi le SMS). */
+export function ContactThemePanels({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]; isAdmin: boolean; onEdit: (contact: UsefulContact) => void }) {
+  return (
+    <div className="contact-theme-panels">
+      {contactThemes(contacts).map(({ theme, contacts: themed }, index) => {
+        const style = CONTACT_THEME_STYLES[theme] ?? { slug: "autres", icon: "•" };
+        const headingId = `gprmn-theme-${index}`;
+        // Un thème qui a des portables réserve la colonne du SMS à chaque
+        // numéro : les numéros s'alignent en colonne, d'une ligne à l'autre.
+        const smsColumn = themed.some((contact) => contact.phones?.some(offersSms));
+        const smsSpace = smsColumn ? <span className="contact-theme-sms-space" aria-hidden="true" /> : null;
+        return (
+          <section key={theme} className={`contact-theme-panel contact-theme-${style.slug}`} aria-labelledby={headingId}>
+            <header className="contact-theme-head">
+              <span aria-hidden="true">{style.icon}</span>
+              <h3 id={headingId}>{theme}</h3>
+              <small>{themed.length}<span className="visually-hidden"> contact{themed.length > 1 ? "s" : ""}</span></small>
+            </header>
+            <ul className="contact-theme-rows">
+              {themed.map((contact) => {
+                const name = nameWithinTheme(contact.name, theme);
+                // Un nom long, pastille du canal comprise, garde sa ligne entière.
+                const long = name.length + (contact.radioChannel ? 9 : 0) > 26;
+                return (
+                <li key={contact.id || contact.name} className={`contact-theme-row${long ? " contact-theme-row-long" : ""}`}>
+                  <span className="contact-theme-who">
+                    <span className="useful-contact-title">
+                      <strong>{name}</strong>
+                      {contact.radioChannel ? <em className="useful-contact-radio"><span className="visually-hidden">radio, </span>Canal {contact.radioChannel}</em> : null}
+                    </span>
+                    {contact.context || contact.email ? <small>{contact.context || contact.email}</small> : null}
+                  </span>
+                  <span className="contact-theme-actions">
+                    <span className="contact-theme-phones">
+                      {contact.phones?.map((phone) => {
+                        const mobile = isMobilePhone(phone.number);
+                        const displayed = formatPhone(phone.number);
+                        return (
+                          <span key={phone.number} className="contact-theme-phone">
+                            {phone.allowCall !== false ? (
+                              <a className={`contact-theme-number${mobile ? " mobile" : ""}`} href={phoneHref(phone.number)} aria-label={`Appeler ${contact.name} au ${displayed}`}>
+                                <span aria-hidden="true">☎</span>{displayed}
+                              </a>
+                            ) : <span className={`contact-theme-number${mobile ? " mobile" : ""}`}>{displayed}</span>}
+                            {offersSms(phone) ? <a className="contact-theme-sms" href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayed}`}>SMS</a> : smsSpace}
+                          </span>
+                        );
+                      })}
+                      {contact.email ? (
+                        <span className="contact-theme-phone">
+                          <a className="contact-theme-number" href={mailComposeHref(contact.email)} aria-label={`Écrire à ${contact.name} avec l’application de messagerie`}>
+                            <span aria-hidden="true">✉</span>Écrire
+                          </a>
+                          {smsSpace}
+                        </span>
+                      ) : null}
+                    </span>
+                    {isAdmin ? <button type="button" className="contact-theme-edit" aria-label={`Modifier ${contact.name}`} title="Modifier ce contact" onClick={() => onEdit(contact)}>✎</button> : null}
+                  </span>
+                </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+export function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]; isAdmin: boolean; onEdit: (contact: UsefulContact) => void }) {
   return (
     <div className="useful-contact-list">
       {contacts.map((contact) => (
         <article
-          className={`useful-contact-card${contact.singleLineLabel ? " useful-contact-card-single-line-label" : ""}`}
+          className={`useful-contact-card${contact.singleLineLabel ? " useful-contact-card-single-line-label" : ""}${isAdmin ? " useful-contact-card-editable" : ""}`}
           key={contact.id || `${contact.context || "contact"}-${contact.name}`}
         >
           <div className="useful-contact-identity">
             <span aria-hidden="true">{contactInitials(contact.name)}</span>
             <span>
-              <strong>{contact.name}</strong>
+              <span className="useful-contact-title">
+                <strong>{contact.name}</strong>
+                {contact.radioChannel ? <em className="useful-contact-radio"><span className="visually-hidden">radio, </span>Canal {contact.radioChannel}</em> : null}
+              </span>
               {contact.context ? <small>{contact.context}</small> : null}
             </span>
           </div>
@@ -88,7 +207,7 @@ function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulContact[]
                         <span aria-hidden="true">☎</span> Appeler
                       </a>
                     ) : null}
-                    {mobile ? (
+                    {offersSms(phone) ? (
                       <a href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayedNumber}`}>
                         <span aria-hidden="true">✉</span> SMS
                       </a>
@@ -177,8 +296,11 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
           const contact = { ...(body.contact as UsefulContact), id: `demo-${Date.now()}` };
           if (body.directory === "gprmn") next.gprmn.push(contact); else next.pompidou.find(section => section.key === body.section)?.contacts.push(contact);
         } else if (body.action === "update") {
-          next.pompidou.forEach(section => { section.contacts = section.contacts.map(item => item.id === body.id ? body.contact as UsefulContact : item); });
-          next.gprmn = next.gprmn.map(item => item.id === body.id ? body.contact as UsefulContact : item);
+          // En démonstration, la modification garde ce que la fenêtre ne
+          // montre pas (précision, canal, thème) ; le serveur fait de même.
+          const updated = (item: UsefulContact) => ({ ...item, ...(body.contact as UsefulContact) });
+          next.pompidou.forEach(section => { section.contacts = section.contacts.map(item => item.id === body.id ? updated(item) : item); });
+          next.gprmn = next.gprmn.map(item => item.id === body.id ? updated(item) : item);
         } else {
           next.pompidou.forEach(section => { section.contacts = section.contacts.filter(item => item.id !== body.id); });
           next.gprmn = next.gprmn.filter(item => item.id !== body.id);
@@ -294,7 +416,7 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
           <div><span className="step-label">Contacts utiles</span><h2 id="gprmn-contacts-title">Contact GP‑RMN</h2></div>
         </header>
         {adminDialog("gprmn")}
-        <ContactCards contacts={contacts.gprmn} isAdmin={isAdmin} onEdit={setEditingContact} />
+        <ContactThemePanels contacts={contacts.gprmn} isAdmin={isAdmin} onEdit={setEditingContact} />
       </section>
     );
   }
@@ -314,7 +436,7 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
       {searchQuery.trim() ? (
         <ContactCards
           contacts={[...contacts.pompidou.flatMap((section) => section.contacts), ...contacts.gprmn]
-            .filter((contact) => matchesSearch(`${contact.name} ${contact.context || ""}`, searchQuery.trim()))}
+            .filter((contact) => matchesSearch(`${contact.name} ${contact.context || ""} ${contact.radioChannel ? `canal ${contact.radioChannel}` : ""}`, searchQuery.trim()))}
           isAdmin={isAdmin}
           onEdit={setEditingContact}
         />
@@ -322,7 +444,7 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
       <div className="resource-folder-list">
           {([
             ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, tickets resto", "#3a5f8f"],
-            ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Accident, secourisme, supervision Expo", "#2f7a52"],
+            ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Sûreté, sécurité, superviseurs, billetteries", "#2f7a52"],
             ["visitors", "Pour les visiteurs", VISITOR_QR_LINKS.length, "Réclamation et objet perdu, en QR code", "#a45f2d"],
             ...(contacts.radioCodes?.length ? [["radio", "Codes urgences radio", contacts.radioCodes.length, "Codes d’urgence à la radio", "#b3261e"] as const] : []),
           ] as const).map(([key, title, count, description, tone]) => (
