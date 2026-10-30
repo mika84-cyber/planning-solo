@@ -116,7 +116,12 @@ const budgets = {
   // d'une moitié de journée avant les dates, et le même sélecteur se
   // retrouve au-dessus du planning pendant la demande (2 080,6 / 690,0 Kio
   // mesurés).
-  totalJavaScript: { raw: 2_085 * KIB, gzip: 692 * KIB },
+  // Relevé le 30 octobre 2026 à 2 088 Kio bruts (gzip inchangé), avec
+  // l'accord de l'administrateur, après un allègement de 0,4 Kio : l'annuaire
+  // GP-RMN en panneaux de thème (canal radio, numéros en colonne, SMS
+  // désactivable) et le plafond IM 473 des jours fériés (2 086,1 / 691,6 Kio
+  // mesurés).
+  totalJavaScript: { raw: 2_088 * KIB, gzip: 692 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
