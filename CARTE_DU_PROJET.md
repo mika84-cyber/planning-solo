@@ -440,7 +440,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 ## Logique métier
 
 - `src/planningLogic.ts` : cycle des groupes, jours, dates, libellés, congés,
-  dimanches et primes de jours fériés.
+  dimanches et primes de jours fériés (`holidayAllowance` : 3,59 ou 2,59 ×
+  traitement × 1,18 / 30, le traitement plafonné à l’IM 473, soit
+  `HOLIDAY_ALLOWANCE.salaryCap` = 473 × 4,92278 € ; plafond appliqué au
+  traitement enregistré, la règle ne disant rien du temps partiel).
 - Demi-dimanche : une seule demi-journée de congé posée un dimanche le
   laisse compter pour moitié (`share: 0.5` dans `collectWorkedDays` de
   `src/payAllowances.ts`), comme sur la paie ; la part payée un par un se

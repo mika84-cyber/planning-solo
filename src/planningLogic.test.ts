@@ -10,6 +10,7 @@ import {
   fromKey,
   getDayInfo,
   groupConsecutive,
+  HOLIDAY_ALLOWANCE,
   holidayAllowance,
   holidayName,
   holidayPayslip,
@@ -302,12 +303,23 @@ describe("indemnité de jour férié", () => {
     expect(rappel(1850.96)).toBeCloseTo(5.53, 2);
   });
 
-  it("rend la prime proportionnelle au traitement", () => {
+  it("rend la prime proportionnelle au traitement, sous le plafond", () => {
     expect(holidayAllowance(0, "prime")).toBe(0);
-    expect(holidayAllowance(traitement * 2, "prime")).toBeCloseTo(
-      holidayAllowance(traitement, "prime") * 2,
+    expect(holidayAllowance(traitement * 1.2, "prime")).toBeCloseTo(
+      holidayAllowance(traitement, "prime") * 1.2,
       6,
     );
+  });
+
+  it("retient le traitement dans la limite de l’indice majoré 473", () => {
+    // IM 473 × 4,92278 € = 2 328,47 € : le maximum d'un agent de catégorie C.
+    expect(HOLIDAY_ALLOWANCE.salaryCap).toBeCloseTo(2328.47, 2);
+    expect(holidayAllowance(2328.47, "prime")).toBeCloseTo((3.59 * 2328.47 * 1.18) / 30, 1);
+    // Au-delà, l'indemnité ne bouge plus.
+    expect(holidayAllowance(2953.67, "prime")).toBeCloseTo(holidayAllowance(2328.47, "prime"), 1);
+    expect(holidayAllowance(2953.67, "recovery")).toBeCloseTo((2.59 * 2328.47 * 1.18) / 30, 1);
+    // Le traitement d'octobre 2026 (IM 385) reste sous le plafond.
+    expect(holidayAllowance(1895.27, "prime")).toBeCloseTo((3.59 * 1895.27 * 1.18) / 30, 6);
   });
 });
 

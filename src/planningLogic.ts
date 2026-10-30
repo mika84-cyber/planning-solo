@@ -545,7 +545,9 @@ export function sundayCountLabel(count: number) {
 }
 
 /** Coefficients de l'indemnité de jour férié travaillé, à multiplier par le
- *  traitement de base mensuel : `coefficient × traitement × 1,18 / 30`. */
+ *  traitement de base mensuel : `coefficient × traitement × 1,18 / 30`, le
+ *  traitement étant retenu « dans la limite de l'indice majoré maximum d'un
+ *  agent de catégorie C, soit l'IM 473 » (note de calcul de l'indemnité). */
 export const HOLIDAY_ALLOWANCE = {
   /** Prime seule. */
   prime: 3.59,
@@ -563,6 +565,12 @@ export const HOLIDAY_ALLOWANCE = {
   recovery: 2.59,
   chargeRate: 1.18,
   daysPerMonth: 30,
+  /** Traitement retenu au plus : IM 473 × 4,92278 €, valeur mensuelle du
+   *  point d'indice depuis le 1er juillet 2023 (décret n° 2023-519), que le
+   *  traitement de base d'octobre 2026 confirme (1 895,27 € = IM 385).
+   *  Plafond appliqué au traitement enregistré, celui versé : à temps
+   *  partiel, la règle ne précise pas s'il faut le ramener à la quotité. */
+  salaryCap: 473 * 4.92278,
 } as const;
 
 /** Indemnité de résidence : 3 % du traitement de base, d'après la grille
@@ -635,7 +643,7 @@ export function holidayAllowance(baseSalary: number, choice: HolidayPay) {
   const coefficient =
     choice === "prime" ? HOLIDAY_ALLOWANCE.prime : HOLIDAY_ALLOWANCE.recovery;
   return (
-    (coefficient * baseSalary * HOLIDAY_ALLOWANCE.chargeRate) /
+    (coefficient * Math.min(baseSalary, HOLIDAY_ALLOWANCE.salaryCap) * HOLIDAY_ALLOWANCE.chargeRate) /
     HOLIDAY_ALLOWANCE.daysPerMonth
   );
 }
