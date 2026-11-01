@@ -6,8 +6,8 @@ import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 describe("fenêtre d'aide", () => {
   it("range les questions en cinq thèmes sur deux colonnes, sous un champ de recherche", () => {
     const html = renderToStaticMarkup(<HelpSheet today="2026-10-26" section="leave" onChoose={vi.fn()} onClose={vi.fn()} />);
-    expect(html).toMatch(/^<dialog class="help-sheet" data-section="leave" aria-label="Que cherchez-vous \?">/);
-    expect(html).toContain('<h2 id="help-sheet-title">Que cherchez-vous ?</h2>');
+    expect(html).toMatch(/^<dialog class="help-sheet" data-section="leave" aria-label="Liste des raccourcis">/);
+    expect(html).toContain('<h2 id="help-sheet-title">Liste des raccourcis</h2>');
     expect(html).toContain('<input type="search" class="help-sheet-search" placeholder="Un mot : congé, bulletin, radio…" aria-label="Chercher une question" value=""/>');
     // Une couleur par thème.
     expect(html).toContain('<h3 class="help-sheet-group-title group-docs">Documents</h3><ul class="help-sheet-group group-docs" aria-label="Documents">');

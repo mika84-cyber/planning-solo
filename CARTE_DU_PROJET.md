@@ -19,6 +19,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/styles/06-planning-calendar.css` : tout le calendrier du planning (mois,
   grille, case du jour et ses repères), un bloc par composant ; ses retouches
   sombres restent dans `src/darkTheme.css`.
+- `src/darkTheme.css` : retouches du mode sombre, là où la conversion
+  automatique (`src/darkStyles.ts`) rend deux teintes pâles identiques ou une
+  couleur foncée illisible. Chaque élément y garde sa couleur, éclaircie ou
+  fondue dans le sombre : règles des congés (`--info-soft` / `--info-ink`),
+  frise et groupes de Ma paie et du détail du calcul, états des dimanches,
+  onglets et salles des Expos, dossiers et annuaires, bouton de compte.
+  Vérifier en sombre (mesurer les couleurs calculées) après toute retouche ;
+  un scénario e2e mesure frise, dimanches et mois du fractionnement.
 - `src/styles/14-planning-commands.css` : commandes du planning (cadre de la
   rubrique, barre du mois, Aujourd’hui, jours travaillés, effacement, choix
   d’un planning PDF), un bloc par composant, importé après la feuille 14.
@@ -146,7 +154,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   test de rendu (`renderToStaticMarkup`, rubriques différées remplacées par
   des témoins ou rendues après leur chargement).
 - `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
-- « Que cherchez-vous ? » : une petite pastille crème au même endroit de
+- « Liste des raccourcis » (anciennement « Que cherchez-vous ? », renommée le
+  1er novembre 2026) : une petite pastille crème au même endroit de
   chaque en-tête, en bas à gauche, le titre centré au-dessus — loupe dans un
   rond, flèche au bout, entière dans la partie foncée avant la diagonale (`AppHeader`, style dans
   `src/pageHeaders.css`), même surface que les trois commandes du haut, le
@@ -156,7 +165,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   la largeur (`pageHeaders.css`), sinon le titre intercepte le toucher ; le
   menu du compte, qui fait contexte d’empilement, reste au-dessus de la
   pastille (z-index 4 contre 3), sinon son menu déroulant passe dessous. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
-  demande) : « Que cherchez-vous ? », une fine bande aux couleurs de l’en-tête
+  demande) : « Liste des raccourcis », une fine bande aux couleurs de l’en-tête
   en haut, puis un champ « Un mot : congé, bulletin, radio… » qui filtre les
   questions à la frappe (`matchesHelpQuery` : chaque mot tapé, sans accent ni
   majuscule, dans la question, son chemin, ses mots-clés ou son thème ; « Rien

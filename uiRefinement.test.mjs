@@ -404,10 +404,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain("balanceDetailPeriods");
     expect(app).toContain('key: "taken"');
     expect(app).toContain('key: "upcoming"');
-    expect(app).toContain('className="balance-detail-months"');
-    expect(app).toContain("balance-detail-${period.key}");
-    expect(app).toContain("period.units.toLocaleString");
-    expect(app).toContain("Aucun congé dans cette rubrique");
+    // L'affichage des rubriques : test de rendu dans BalanceDetailDialog.test.tsx.
     expect(css.mentions(".balance-detail-month > summary")).toBe(true);
     expect(css.mentions(".balance-detail-month[open]")).toBe(true);
   });

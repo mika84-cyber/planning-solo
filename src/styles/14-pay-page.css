@@ -1030,21 +1030,6 @@
 
 .sunday-done-group-heading small { color: var(--muted); font-size: .72rem; font-weight: 700; }
 
-.sunday-done-group-pay {
-  display: inline-flex;
-  margin: 6px 0 4px;
-  border-radius: 999px;
-  padding: 3px 10px;
-  background: #dcefe3;
-  color: #1d6b45;
-  font-size: .74rem;
-  font-weight: 800;
-}
-
-.sunday-done-group-pay.none { background: #efeae3; }
-
-.sunday-done-group-pay.unpaid { background: #fbe4e4; }
-
 .sunday-done-table { table-layout: fixed; width: 100%; }
 
 .sunday-done-table th { text-transform: capitalize; }

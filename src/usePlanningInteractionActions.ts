@@ -418,7 +418,7 @@ export function usePlanningInteractionActions({
   }
   /** `landing` : où la demande s'ouvre — sur son panneau (type, durée,
    *  boutons), ou directement sur les jours du planning, pour qui vient de
-   *  choisir son congé depuis « Que cherchez-vous ? ». `moment` et `hours` :
+   *  choisir son congé depuis « Liste des raccourcis ». `moment` et `hours` :
    *  la durée d'un CA choisie avec lui (le matin, l'après-midi) et ses heures,
    *  saisies dans la fenêtre, sinon les habituelles. */
   function beginRequest(

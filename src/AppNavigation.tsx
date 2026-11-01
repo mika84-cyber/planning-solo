@@ -15,7 +15,7 @@ export const MAIN_SECTION_ORDER = [
 export type MainSection = (typeof MAIN_SECTION_ORDER)[number] | "forms";
 export type PayScreen = "overview" | "allowances" | "payslip" | "year";
 
-/** Les icônes des rubriques, reprises aussi par « Que cherchez-vous ? ». */
+/** Les icônes des rubriques, reprises aussi par « Liste des raccourcis ». */
 export const NAVIGATION_ICON_PATHS: Record<string, string> = {
   // Chaque rubrique a une image qui se comprend seule : une maison, un
   // coucher de soleil sur la mer pour les congés, une pièce en euros pour la
@@ -113,7 +113,7 @@ type AppHeaderProps = {
   /** La messagerie interne, réservée à l'administrateur. */
   onOpenFeedback?: () => void;
   onOpenAdminTools?: () => void;
-  /** « Que cherchez-vous ? » : ouvre la fenêtre des questions. */
+  /** « Liste des raccourcis » : ouvre la fenêtre des questions. */
   onOpenHelp?: () => void;
 };
 
@@ -243,7 +243,7 @@ export function AppHeader({
           </div>
         </div>
       </div>
-      {/* « Que cherchez-vous ? » : au même endroit dans chaque en-tête, en bas
+      {/* « Liste des raccourcis » : au même endroit dans chaque en-tête, en bas
           à gauche, quelle que soit la longueur du titre. Une mise à jour en
           attente prend sa place, en bas de l'en-tête : la pastille revient
           une fois la mise à jour faite. */}
@@ -252,7 +252,7 @@ export function AppHeader({
           <span className="header-help-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
           </span>
-          Que cherchez-vous ?
+          Liste des raccourcis
           <span className="header-help-go" aria-hidden="true">›</span>
         </button>
       ) : null}

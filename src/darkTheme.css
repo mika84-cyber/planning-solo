@@ -38,6 +38,14 @@ html[data-theme="dark"] .expo-audioguide figure img { border-color: transparent;
 /* Choisir un espace : la teinte de chaque espace, sur fond sombre. */
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 18%, #1d1916); }
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 45%, #fff); }
+/* L'espace choisi, plus teinté que les autres : il l'était moins. */
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button.active { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 34%, #1d1916); }
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button.active > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 35%, #fff); }
+/* Les onglets des vues et les noms de salle (tarifs, inter-expos) : la couleur
+   de chacun, éclaircie pour rester lisible sur le sombre. */
+html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active) { background: color-mix(in srgb, var(--tab) 16%, #1f1d1b); color: color-mix(in srgb, var(--tab) 40%, #f3eee8); }
+html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button svg { color: color-mix(in srgb, var(--tab) 55%, #fff); }
+html[data-theme="dark"] :is(.expo-price-group, .grand-palais-interexpo-open li b) { color: color-mix(in srgb, var(--venue-accent, #c9754f) 50%, #fff); }
 
 /* Les illustrations dessinées sur fond clair gardent leur fond, sans éblouir. */
 html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: brightness(.88); }
@@ -45,6 +53,11 @@ html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: 
 /* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
 html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }
 html[data-theme="dark"] .section-dock > button.active { background: #f1e8df; color: #83452c; }
+/* Compte et mise à jour, dans l'en-tête : la couleur de la rubrique,
+   éclaircie ; foncée, la lettre se perdait dans le rond sombre. */
+html[data-theme="dark"] .top-header :is(.account-button:not(.open), .header-update-button) { color: color-mix(in srgb, var(--section-accent) 35%, #fff); }
+/* Mise en route : le reste à faire se voit sous la barre verte. */
+html[data-theme="dark"] .home-setup-progress { background: rgba(255, 255, 255, 0.12); }
 
 /* Échanges : le jour cédé garde le noir des repos, le jour repris le beige
    des jours travaillés ; le filet turquoise reste celui du mode clair. */
@@ -105,10 +118,17 @@ html[data-theme="dark"] .colleague-week-cell.half-marked .half-mark { color: #2c
 html[data-theme="dark"] .colleague-week-cell.half-marked.base-work .half-code { color: #0f3d25; }
 html[data-theme="dark"] .colleague-week-cell.half-marked.base-training .half-code { color: #4a3a02; }
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
+html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step { border-color: #9b84d6; background: transparent; color: #cbbcf3; }
+html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step:hover { background: rgba(155, 132, 214, 0.16); }
 html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620; --tile-ink: #f0a988; }
 html[data-theme="dark"] .useful-form-download-list > .useful-form-download-card > a { background: color-mix(in srgb, var(--contact-category-accent) 72%, #000); color: #fff; }
 html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
 html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
+/* Dossiers de formulaires et annuaires : icône, lettre, flèche et nombre de
+   documents dans la couleur du dossier, éclaircie. */
+html[data-theme="dark"] .resource-folder-row :is(.resource-folder-row-icon, .resource-folder-row-go) { color: color-mix(in srgb, var(--row-tone) 55%, #fff); }
+html[data-theme="dark"] .resource-folder-row .resource-folder-row-icon svg { stroke: currentColor; }
+html[data-theme="dark"] .useful-forms-folder-header small { color: color-mix(in srgb, var(--folder-accent) 50%, #fff); }
 html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .useful-resource-tab { border-color: color-mix(in srgb, var(--tile-ink) 40%, rgba(0, 0, 0, .5)); background: color-mix(in srgb, var(--tile-tint) 45%, #29231f); }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
    reconnaissables sur fond sombre. */
@@ -119,22 +139,56 @@ html[data-theme="dark"] .mecenat-early-payment { border-color: #2f5a42; border-l
 html[data-theme="dark"] .mecenat-early-payment p strong { color: #8fd1a8; }
 html[data-theme="dark"] .mecenat-early-payment li { border-color: #33443a; background: #262f29; }
 html[data-theme="dark"] .colleague-week-legend .colleague-week-cell.partial.legend-half { border-color: #8f7bbd; background: #cdb9f5; }
-/* Ma paie : la frise et le repère des retenues gardent un rose et un orangé
-   lisibles ; la conversion automatique les assombrissait jusqu'à les perdre. */
+/* Ma paie : la frise reprend les couleurs du mode clair, éclaircies — net
+   terracotta, cotisations roses comme les retenues, impôt vert ; les
+   cotisations, brun sombre sur brun sombre, ne se voyaient plus. Chaque
+   groupe garde un voile de sa couleur. */
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar { background: #2a2420; }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .net,
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .net::before { background: #c0623d; }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .contributions,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .contributions::before,
-html[data-theme="dark"] .pay-bulletin .pay-bulletin-group-bar { background: #3a322c; }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.withheld .pay-bulletin-group-bar i { background: #d9849a; }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-group-bar { background: #3a322c; }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.fixed { background: color-mix(in srgb, #6a9ec9 11%, #22201d); }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.variable { background: color-mix(in srgb, #5fb28e 11%, #22201d); }
+html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.withheld { background: color-mix(in srgb, #e88aa0 11%, #22201d); }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .meal,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .meal::before { background: #d9a27e; }
 /* Règles des congés : le liseré noir devient clair sur fond sombre. */
 html[data-theme="dark"] .leave-info-card { border-color: rgba(255, 255, 255, 0.55); }
+/* Chaque encadré garde sa couleur : pastilles, éphémérides et intitulé
+   teintés de son accent, au lieu du même brun sombre partout. */
+html[data-theme="dark"] .leave-info-content section {
+  --info-soft: color-mix(in srgb, var(--info-accent) 34%, #1f1d1b);
+  --info-ink: color-mix(in srgb, var(--info-accent) 42%, #fff);
+}
+html[data-theme="dark"] .leave-info-content section .leave-info-date { border-color: color-mix(in srgb, var(--info-accent) 60%, #1f1d1b); background: color-mix(in srgb, var(--info-accent) 14%, #1f1d1b); }
 /* Fractionnement : la conversion automatique rendait les douze mois presque
    pareils (deux fonds sombres voisins, deux textes clairs). Les mois qui
    comptent gardent un fond vert franc ; les autres s'effacent. */
 html[data-theme="dark"] .leave-info-content section .leave-info-months li { background: rgba(255, 255, 255, 0.04); color: rgba(232, 226, 216, 0.34); }
 html[data-theme="dark"] .leave-info-content section .leave-info-months li.counts { background: #2b6b52; color: #e4f6ec; }
+/* Détails des dimanches et primes du mois : payé, forfait, reporté et non
+   payé finissaient dans le même brun sombre. Chaque état reprend sa couleur ;
+   le forfait et les primes à zéro, neutres, s'effacent. Un dimanche à venir
+   garde son seul pointillé. */
+html[data-theme="dark"] .sunday-day.paid:not(.upcoming),
+html[data-theme="dark"] .sunday-done-group-amount.paid,
+html[data-theme="dark"] .variable-pay-card .variable-pay-pill.positive { background: #24543c; color: #cdeedb; }
+html[data-theme="dark"] .sunday-day.flat:not(.upcoming),
+html[data-theme="dark"] .sunday-done-group-amount.flat,
+html[data-theme="dark"] .variable-pay-card .variable-pay-pill.zero { background: rgba(255, 255, 255, 0.07); color: #a99d90; }
+html[data-theme="dark"] .sunday-day.carried:not(.upcoming),
+html[data-theme="dark"] .variable-pay-card .variable-pay-pill.pending { background: #5a3324; color: #f4c6a9; }
+html[data-theme="dark"] .sunday-day.unpaid { color: #f0939f; }
+html[data-theme="dark"] .sunday-done-group-amount.unpaid,
+html[data-theme="dark"] .variable-pay-card .variable-pay-pill.negative { background: #4c232b; color: #f5b0ba; }
+html[data-theme="dark"] .sunday-done-group-amount.upcoming { background: none; color: #a8dcbf; box-shadow: inset 0 0 0 1.5px #4f9c75; }
+html[data-theme="dark"] .sunday-done-legend .paid::before { background: #3f9a6c; }
+html[data-theme="dark"] .sunday-done-legend .flat::before { background: #6e655b; }
+html[data-theme="dark"] .sunday-done-legend .carried::before { background: #c7774f; }
+html[data-theme="dark"] .sunday-done-legend .unpaid::before { background: #d9707f; }
 /* Contacts GP-RMN : la couleur du thème, trop sombre sur fond sombre, est
    éclaircie pour l'intitulé. */
 html[data-theme="dark"] .contact-theme-head h3 { color: color-mix(in srgb, var(--tone) 45%, #fff); }
@@ -148,13 +202,18 @@ html[data-theme="dark"] .calendar-grid .day.exceptional-closure-day > .leave-cal
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-group,
 html[data-theme="dark"] .pay-total-group { border-color: rgba(243, 237, 230, 0.38); }
 html[data-theme="dark"] .pay-total-group > ol > li { border-top-color: #3a322c; }
+/* Du brut au net : le même voile que les lignes de la paie — bleu pour ce
+   que vous gagnez, rose pour ce qui est retenu, terracotta pour le reste. */
+html[data-theme="dark"] .pay-total-group { background: color-mix(in srgb, #6a9ec9 11%, #22201d); }
+html[data-theme="dark"] .pay-total-group.take { background: color-mix(in srgb, #e88aa0 11%, #22201d); }
+html[data-theme="dark"] .pay-total-group.keep { background: color-mix(in srgb, #c9754f 11%, #22201d); }
 html[data-theme="dark"] .pay-calculation-totals li > .pay-total-explain { background: rgba(0, 0, 0, 0.18); }
 /* « Pour aller plus loin » : la liste réunie, son liseré et ses filets. */
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-links { border-color: rgba(243, 237, 230, 0.38); background: #221d1a; }
 html[data-theme="dark"] .app-shell .pay-bulletin .pay-bulletin-shortcut + .pay-bulletin-shortcut { border-top-color: #3a322c; }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-shortcut em { background: #3d2a22; color: #f0c3ad; }
 
-/* « Que cherchez-vous ? » : texte clair sur la surface sombre des commandes. */
+/* « Liste des raccourcis » : texte clair sur la surface sombre des commandes. */
 html[data-theme="dark"] .app-shell .top-header > .header-help-button { color: #f3eee8; }
 html[data-theme="dark"] .header-help-mark { background: #f3eee8; color: var(--header-a); }
 /* La fenêtre d'aide : chaque thème garde sa couleur, éclaircie, sur un fond

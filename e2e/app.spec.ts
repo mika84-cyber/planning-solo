@@ -42,6 +42,13 @@ async function closePlanningPdf(page: Page) {
   await page.getByRole("dialog", { name: "Plannings PDF" }).getByRole("button", { name: "Fermer" }).click();
 }
 
+/** Date de référence des scénarios écrits sur le mois d'octobre 2026 de la
+ *  démo : le 1er du mois travaillé, une formation dans le mois, des dimanches
+ *  payés sur la paie du mois, des journées déjà passées. Certains mois n'ont
+ *  rien de cela (novembre 2026 : la Toussaint le 1er, la formation du groupe 2
+ *  absorbée par l'Armistice) ; ces scénarios fixent donc leur horloge. */
+const OCTOBER_REFERENCE = new Date("2026-10-30T12:00:00");
+
 async function prepareDemo(page: Page, withCurrentLeave = false) {
   await page.addInitScript((seedLeave) => {
     localStorage.setItem("planning:e2e-demo-enabled", "1");
@@ -564,6 +571,7 @@ test("les pages et la navigation suivent exactement la largeur de leur en-tête"
 });
 
 test("mon planning et ses réglages partagent un seul cadre et l’export conserve les congés", async ({ page }) => {
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
   await prepareDemo(page);
   const planning = page.locator(".planning-workspace-shell.framed .planning-command-section");
   await expect(planning).toBeVisible();
@@ -894,8 +902,7 @@ async function prepareCompletePayDemo(page: Page, withSundayCarryover = true) {
   await prepareDemo(page);
 }
 
-function currentMonthStrikeScenario(kind: "annual" | "rest") {
-  const now = new Date();
+function currentMonthStrikeScenario(kind: "annual" | "rest", now = new Date()) {
   const group = 2;
   const dates = Array.from(
     { length: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() },
@@ -944,8 +951,8 @@ function currentMonthStrikeScenario(kind: "annual" | "rest") {
   };
 }
 
-async function prepareStrikeContinuityDemo(page: Page, kind: "annual" | "rest") {
-  const scenario = currentMonthStrikeScenario(kind);
+async function prepareStrikeContinuityDemo(page: Page, kind: "annual" | "rest", now?: Date) {
+  const scenario = currentMonthStrikeScenario(kind, now);
   await page.addInitScript((periods) => {
     localStorage.setItem(
       "planning:demo-completed-request-v1",
@@ -2316,7 +2323,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
   expect(Math.abs(formsHeaderBox.width - homeHeaderBox.width)).toBeLessThan(0.5);
   // La hauteur commune des en-têtes : 170 px sur téléphone, 176 en grand pour
-  // laisser un titre de deux lignes au-dessus de « Que cherchez-vous ? ».
+  // laisser un titre de deux lignes au-dessus de « Liste des raccourcis ».
   expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 600 ? 170 : 176))).toBeLessThan(0.5);
   await expect(formsHeader.locator(".header-update-button")).toHaveCount(1);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
@@ -4923,6 +4930,7 @@ test("les heures supp en récupération s’effacent depuis la fiche du jour", a
 });
 
 test("une formation utilise le bon nombre d’heures et apparaît en REC", async ({ page }) => {
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
   await prepareDemo(page);
   await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
@@ -5327,7 +5335,9 @@ test("des CA validés entre deux grèves restent exclus de la retenue", async ({
 });
 
 test("des repos noirs entre deux grèves sont inclus automatiquement dans la retenue", async ({ page }) => {
-  const scenario = await prepareStrikeContinuityDemo(page, "rest");
+  // Les deux grèves doivent être passées pour que la retenue soit confirmée.
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
+  const scenario = await prepareStrikeContinuityDemo(page, "rest", OCTOBER_REFERENCE);
   const intermediateCount = Math.round(
     (new Date(`${scenario.last}T12:00:00`).getTime() - new Date(`${scenario.first}T12:00:00`).getTime()) /
       86400000,
@@ -5630,6 +5640,7 @@ test("sans CA restant, une demi-journée de CA est bloquée ; en RTT, elle devie
 });
 
 test("une récupération propose les cinq choix ensemble", async ({ page }) => {
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
   await prepareDemo(page);
   await goToSection(page, "leave");
   await openLeaveTool(page, "Heures supplémentaires et récupérations");
@@ -5671,6 +5682,7 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
 });
 
 test("une récupération lancée depuis une case suit aussi le calendrier", async ({ page }) => {
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
   await prepareDemo(page);
   await page.locator(".month-card .day").first().click();
   await (await openDayLeaveChooser(page.getByRole("dialog", { name: /2026/ })))
@@ -5815,6 +5827,7 @@ test("nettoyage et gestion d’un congé utilisent des actions directes", async 
 });
 
 test("les parcours congé, récupération et maladie s’ouvrent correctement", async ({ page }) => {
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
   await prepareDemo(page);
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
@@ -6335,8 +6348,8 @@ test("Retour ramène d’un sous-écran de Ma paie à l’écran précédent, pa
   await expect(title).toHaveText("Accueil");
   // Depuis l'aide, la page des primes s'ouvre par la paie : Retour revient au
   // tableau de bord, puis à la page de départ.
-  await page.locator("header.top-header").getByRole("button", { name: "Que cherchez-vous ?" }).click();
-  await page.getByRole("dialog", { name: "Que cherchez-vous ?" }).getByRole("button", { name: /Le détail de mes primes/ }).click();
+  await page.locator("header.top-header").getByRole("button", { name: "Liste des raccourcis" }).click();
+  await page.getByRole("dialog", { name: "Liste des raccourcis" }).getByRole("button", { name: /Le détail de mes primes/ }).click();
   await expect(detailTitle).toHaveText("Primes et jours fériés");
   await back();
   await expect(detailTitle).toHaveCount(0);
@@ -6346,6 +6359,7 @@ test("Retour ramène d’un sous-écran de Ma paie à l’écran précédent, pa
 });
 
 test("chaque ligne de Ma paie dit où elle mène, et y mène", async ({ page }) => {
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
   await prepareDemo(page);
   await goToSection(page, "pay");
   const lines = page.locator(".pay-bulletin-line");
@@ -6711,7 +6725,7 @@ test("une mise à jour ignorée laisse un bouton « Faire la mise à jour » dan
   await expect(call).toHaveCount(0);
   await page.getByRole("button", { name: "Plus tard" }).click();
   await expect(call).toBeVisible();
-  // Il prend la place de « Que cherchez-vous ? », qui ne le recouvre pas.
+  // Il prend la place de « Liste des raccourcis », qui ne le recouvre pas.
   await expect(page.locator("header.top-header > .header-help-button")).toHaveCount(0);
   // Au milieu de l'image, sans chevaucher les boutons ronds.
   const [header, button, controls] = await Promise.all([
@@ -6833,6 +6847,62 @@ test("en mode sombre, les mois qui comptent pour le fractionnement se détachent
   expect(contrasts.text).toBeGreaterThan(4.5);
 });
 
+test("en mode sombre, les cotisations de la frise et les dimanches payés gardent leur couleur", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "ordinateur", "Les couleurs ne dépendent pas de l’écran.");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await prepareDemo(page);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await goToSection(page, "pay");
+  await expect(page.locator("#planning-dark-theme")).toHaveCount(1);
+  // Contraste (WCAG) ; une couleur translucide est d'abord posée sur son fond.
+  const measure = (root: Element, pairs: Array<[string, string, "bg" | "color"]>) => {
+    const channels = (color: string) => color.match(/[\d.]+/g)!.map(Number);
+    const flatten = (color: string, under: string) => {
+      const [r, g, b, a = 1] = channels(color);
+      const base = channels(under);
+      return [r, g, b].map((value, index) => value * a + base[index] * (1 - a));
+    };
+    const luminance = (rgb: number[]) => {
+      const [r, g, b] = rgb.map((value) => {
+        const channel = value / 255;
+        return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const find = (selector: string) => {
+      const found = root.querySelector(selector);
+      if (!found) throw new Error(`Élément absent : ${selector}`);
+      return found;
+    };
+    return pairs.map(([selector, under, property]) => {
+      const element = getComputedStyle(find(selector));
+      const base = getComputedStyle(find(under)).backgroundColor;
+      const ground = flatten(base, "rgb(20, 17, 16)");
+      const top = flatten(property === "bg" ? element.backgroundColor : element.color, `rgb(${ground.join(",")})`);
+      const [light, dark] = [luminance(top), luminance(ground)].sort((x, y) => y - x);
+      return (light + 0.05) / (dark + 0.05);
+    });
+  };
+  // Les cotisations se confondaient avec le fond de la frise (1,1). Le profil
+  // de la démo est vide, la frise n'est pas tracée : on en pose une témoin.
+  const bulletin = page.locator(".pay-bulletin").first();
+  await bulletin.evaluate((root) => root.insertAdjacentHTML("beforeend", '<div class="pay-bulletin-bar e2e-probe"><span class="contributions"></span></div>'));
+  const [contributions] = await bulletin.evaluate(measure, [[".e2e-probe .contributions", ".e2e-probe", "bg"]]);
+  expect(contributions).toBeGreaterThan(3);
+
+  await page.getByRole("button", { name: /^Primes et jours fériés/ }).click();
+  await page.locator(".sunday-dates-toggle").click();
+  const [paidFill, paidText, flatFill] = await page.locator(".sunday-done-list").evaluate(measure, [
+    [".sunday-day.paid:not(.upcoming)", ".sunday-done-group", "bg"],
+    [".sunday-day.paid:not(.upcoming)", ".sunday-day.paid:not(.upcoming)", "color"],
+    [".sunday-day.flat:not(.upcoming)", ".sunday-done-group", "bg"],
+  ]);
+  // Un dimanche payé se détache nettement d'un dimanche du forfait, resté neutre.
+  expect(paidFill).toBeGreaterThan(1.6);
+  expect(paidText).toBeGreaterThan(4.5);
+  expect(paidFill - flatFill).toBeGreaterThan(0.4);
+});
+
 test("l’administrateur voit la date du dernier contrôle du site et peut en lancer un", async ({ page }) => {
   let checkRequested = false;
   await page.route("**/api/gp-program", async (route) => {
@@ -6872,13 +6942,13 @@ test("l’administrateur voit la date du dernier contrôle du site et peut en la
   expect(checkRequested).toBe(true);
 });
 
-test("« Que cherchez-vous ? » ouvre, de n’importe quelle page, la page ou la sous-page qui répond", async ({ page }) => {
+test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou la sous-page qui répond", async ({ page }) => {
   // Une dizaine de raccourcis parcourus l'un après l'autre : plus que la minute ordinaire.
   test.setTimeout(120_000);
   await prepareDemo(page);
   await goToSection(page, "leave");
-  const help = page.locator("header.top-header").getByRole("button", { name: "Que cherchez-vous ?" });
-  const sheet = page.getByRole("dialog", { name: "Que cherchez-vous ?" });
+  const help = page.locator("header.top-header").getByRole("button", { name: "Liste des raccourcis" });
+  const sheet = page.getByRole("dialog", { name: "Liste des raccourcis" });
   // Une sous-page d'une autre rubrique : les codes radio, dans Contacts,
   // trouvés par le champ de recherche, sans accent ni majuscule.
   await help.click();

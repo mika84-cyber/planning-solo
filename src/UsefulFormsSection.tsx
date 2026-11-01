@@ -55,7 +55,7 @@ type UsefulFormsFolder = {
 };
 
 /** Télécharge un document sous le nom donné (formulaires utiles, fiche
- *  d'expo de « Que cherchez-vous ? »). Lève une erreur si le serveur refuse. */
+ *  d'expo de « Liste des raccourcis »). Lève une erreur si le serveur refuse. */
 export async function downloadUsefulFile(href: string, name: string) {
   const response = await fetch(href, { credentials: "same-origin" });
   if (!response.ok) throw new Error(`Téléchargement impossible (${response.status})`);

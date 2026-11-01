@@ -227,7 +227,7 @@ function GalleryExpoRow({ gallery, sheet, onChoose }: { gallery: GalleryExpo; sh
 }
 
 /**
- * « Que cherchez-vous ? » : la fenêtre ouverte par la pastille du même nom dans
+ * « Liste des raccourcis » : la fenêtre ouverte par la pastille du même nom dans
  * l'en-tête de chaque page. Un champ filtre les questions, rangées en cinq
  * thèmes ; chacune ouvre directement la page, l'onglet ou la sous-page qui y
  * répond.
@@ -264,7 +264,7 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
       ref={dialogRef}
       className="help-sheet"
       data-section={section}
-      aria-label="Que cherchez-vous ?"
+      aria-label="Liste des raccourcis"
       onClose={onClose}
       onCancel={(event) => { event.preventDefault(); onClose(); }}
       // Un toucher sur le voile, hors du panneau, ferme la fenêtre.
@@ -273,7 +273,7 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
       <div className="help-sheet-panel">
         <span className="help-sheet-grip" aria-hidden="true" />
         <header className="help-sheet-head">
-          <h2 id="help-sheet-title">Que cherchez-vous ?</h2>
+          <h2 id="help-sheet-title">Liste des raccourcis</h2>
           <button type="button" className="help-sheet-close" aria-label="Fermer" onClick={onClose}>×</button>
         </header>
         <input

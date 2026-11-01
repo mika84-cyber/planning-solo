@@ -419,8 +419,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   const [groupsOpen, setGroupsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  // « Partager mon planning » et « Les 3 groupes de collègues » depuis « Que
-  // cherchez-vous ? » : leur fenêtre s'ouvre directement.
+  // « Partager mon planning » et « Les 3 groupes de collègues » depuis
+  // « Liste des raccourcis » : leur fenêtre s'ouvre directement.
   useHelpTarget((target) => {
     if (target === "colleague-share") setShareOpen(true);
     else if (target === "colleague-groups") setGroupsOpen(true);
@@ -869,8 +869,8 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
         {profileCard}
         {howItWorksCard}
       </ColleagueDialog> : null}
-      {/* Ouverte par « Liste des 3 groupes » du tableau, ou depuis « Que
-          cherchez-vous ? » même quand le tableau n'est pas affiché. */}
+      {/* Ouverte par « Liste des 3 groupes » du tableau, ou depuis « Liste des
+          raccourcis » même quand le tableau n'est pas affiché. */}
       {groupsOpen ? <ColleagueGroupsDialog
         groups={demoMode ? demoGroups : data?.groups}
         isAdmin={isAdmin && !demoMode}

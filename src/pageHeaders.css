@@ -31,7 +31,7 @@
    elle-même devant le titre, pour recevoir le toucher. */
 :root .app-shell .top-header .header-actions > button { position: relative !important; z-index: 2 !important; }
 /* Le menu du compte fait contexte d'empilement : son menu déroulant doit
-   rester au-dessus de la pastille « Que cherchez-vous ? » (z-index 3). */
+   rester au-dessus de la pastille « Liste des raccourcis » (z-index 3). */
 :root .app-shell .top-header .header-actions > .account-menu { position: relative !important; z-index: 4 !important; }
 :root .app-shell .top-header .top-header-title { position: relative !important; z-index: 1 !important; grid-column: 1 / -1 !important; grid-row: 1 !important; align-self: center !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; background: none !important; text-shadow: none !important; transform: translateY(7px) !important; }
 :root .app-shell .top-header .top-header-title::before { display: none !important; }
@@ -60,7 +60,7 @@
   :root .app-shell .top-header { height: 156px !important; min-height: 156px !important; padding: 18px 22px 22px !important; }
 }
 
-/* « Que cherchez-vous ? » : une petite pastille crème posée au même endroit
+/* « Liste des raccourcis » : une petite pastille crème posée au même endroit
    dans chaque en-tête, en bas à gauche, quelle que soit la longueur du titre ;
    le titre se centre dans l'espace laissé au-dessus. La loupe est dans un rond
    de la couleur foncée de l'en-tête, une flèche au bout. La pastille reste

@@ -60,9 +60,9 @@ describe("AppShellChrome", () => {
     expect(html).toContain('data-section="home"');
     expect(html).toContain('aria-label="Navigation principale"');
     expect(html).toContain('data-section="home" class="active" aria-current="page"');
-    // « Que cherchez-vous ? » au même endroit de chaque en-tête, hors du
+    // « Liste des raccourcis » au même endroit de chaque en-tête, hors du
     // titre ; la fenêtre reste fermée.
-    expect(html).toMatch(/<button type="button" class="header-help-button" aria-haspopup="dialog"><span class="header-help-mark" aria-hidden="true"><svg .*?<\/svg><\/span>Que cherchez-vous \?<span class="header-help-go" aria-hidden="true">›<\/span><\/button><\/header>/);
+    expect(html).toMatch(/<button type="button" class="header-help-button" aria-haspopup="dialog"><span class="header-help-mark" aria-hidden="true"><svg .*?<\/svg><\/span>Liste des raccourcis<span class="header-help-go" aria-hidden="true">›<\/span><\/button><\/header>/);
     expect(html).not.toContain("help-sheet");
     // Ni menu principal, ni aperçu invité, ni proposition d’installation.
     expect(html).not.toContain("main-menu");
@@ -87,7 +87,7 @@ describe("AppShellChrome", () => {
       <AppShellChrome {...baseProps} shell={{ ...baseProps.shell, appUpdateAvailable: true }} />,
     );
     expect(call).toContain("Faire la mise à jour");
-    // La mise à jour en attente prend la place de « Que cherchez-vous ? ».
+    // La mise à jour en attente prend la place de « Liste des raccourcis ».
     expect(call).not.toContain("header-help-button");
     const prompted = renderToStaticMarkup(
       <AppShellChrome {...baseProps} shell={{ ...baseProps.shell, appUpdateAvailable: true, appUpdatePromptOpen: true }} />,

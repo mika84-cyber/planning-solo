@@ -854,7 +854,7 @@ export default function Home() {
     post: postCalendar,
   });
 
-  // « Poser un congé » depuis « Que cherchez-vous ? » : le congé choisi,
+  // « Poser un congé » depuis « Liste des raccourcis » : le congé choisi,
   // on arrive directement sur les jours du planning.
   const requestFromHelp = useRef(false);
   function openRequestChooser(
