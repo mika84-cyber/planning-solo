@@ -164,10 +164,6 @@
   left: 22px;
   background: var(--surface);
 }
-/* Très grand écran : le titre en bandeau, les dossiers en deux colonnes. */
-@media (min-width: 1400px) {
-  .app-shell .useful-forms-root .useful-form-work-accident-entry { grid-column: 1 / -1; }
-}
 
 @media (max-width: 720px) {
   .top-header.top-header-forms {

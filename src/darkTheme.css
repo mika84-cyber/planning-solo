@@ -52,7 +52,20 @@ html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: 
 
 /* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
 html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }
-html[data-theme="dark"] .section-dock > button.active { background: #f1e8df; color: #83452c; }
+/* La rubrique ouverte prend la couleur de son en-tête : toute la case sur
+   grand écran ; sur téléphone, la pastille de l'icône, et le nom dans cette
+   couleur éclaircie. */
+.section-dock > [data-section="home"] { --tone: #b56; }
+.section-dock > [data-section="leave"] { --tone: #38b; }
+.section-dock > [data-section="pay"] { --tone: #589; }
+.section-dock > [data-section="pdf"] { --tone: #a83; }
+.section-dock > [data-section="program"] { --tone: #784; }
+.section-dock > [data-section="colleagues"] { --tone: #c64; }
+html[data-theme="dark"] .section-dock > button.active { background: var(--tone); color: #fff; }
+@media (max-width: 720px) {
+  html[data-theme="dark"] .section-dock > button.active { background: transparent; color: color-mix(in srgb, var(--tone) 45%, #fff); }
+  html[data-theme="dark"] .section-dock > button.active svg { background: var(--tone); color: #fff; }
+}
 /* Compte et mise à jour, dans l'en-tête : la couleur de la rubrique,
    éclaircie ; foncée, la lettre se perdait dans le rond sombre. */
 html[data-theme="dark"] .top-header :is(.account-button:not(.open), .header-update-button) { color: color-mix(in srgb, var(--section-accent) 35%, #fff); }
@@ -134,6 +147,13 @@ html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .usef
    reconnaissables sur fond sombre. */
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-agnes { background: #3a2029; }
+/* La date de chaque note garde son allure de petit calendrier, en terracotta
+   fondu dans le sombre ; le nom de l'auteur en vert ou en rose lisibles. */
+html[data-theme="dark"] .note-card-date { background: #443026; color: #f6dccb; }
+html[data-theme="dark"] .note-card .note-card-date small { color: #e2a383; }
+html[data-theme="dark"] .note-card .note-author-mika .note-card-open b { color: #a9cf6a; }
+html[data-theme="dark"] .note-card .note-author-agnes .note-card-open b { color: #f08fb0; }
+html[data-theme="dark"] .note-month[open] > summary { background: #2a211c; }
 html[data-theme="dark"] .mecenat-rule-alert { border-color: #7a5d1c; border-left-color: #e0a63a; background: #33291a; color: #f3dca0; }
 html[data-theme="dark"] .mecenat-early-payment { border-color: #2f5a42; border-left-color: #5fb483; background: #1f2a23; color: #e8e2d8; }
 html[data-theme="dark"] .mecenat-early-payment p strong { color: #8fd1a8; }

@@ -24,7 +24,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   couleur foncée illisible. Chaque élément y garde sa couleur, éclaircie ou
   fondue dans le sombre : règles des congés (`--info-soft` / `--info-ink`),
   frise et groupes de Ma paie et du détail du calcul, états des dimanches,
-  onglets et salles des Expos, dossiers et annuaires, bouton de compte.
+  onglets et salles des Expos, dossiers et annuaires, bouton de compte,
+  date des notes en petit calendrier terracotta, rubrique ouverte du dock à
+  la couleur de son en-tête (`--tone` par `data-section`). Budget CSS gzip
+  plein (quelques octets de marge) : retirer d'abord une règle morte ou
+  demander à l'administrateur de relever le plafond.
   Vérifier en sombre (mesurer les couleurs calculées) après toute retouche ;
   un scénario e2e mesure frise, dimanches et mois du fractionnement.
 - `src/styles/14-planning-commands.css` : commandes du planning (cadre de la

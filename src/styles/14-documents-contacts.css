@@ -83,8 +83,6 @@
 
 .useful-resources-screen.has-active-resource { gap: 20px; }
 
-.useful-resource-back:focus-visible { outline: 3px solid rgba(122, 111, 95, 0.3); outline-offset: 2px; }
-
 .has-active-resource .useful-resource-tabs { width: 100%; margin: 0 auto; }
 
 .has-active-resource .useful-resource-tab { grid-template-columns: minmax(0, 1fr); padding: 0; }

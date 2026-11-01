@@ -6847,12 +6847,11 @@ test("en mode sombre, les mois qui comptent pour le fractionnement se détachent
   expect(contrasts.text).toBeGreaterThan(4.5);
 });
 
-test("en mode sombre, les cotisations de la frise et les dimanches payés gardent leur couleur", async ({ page }, testInfo) => {
+test("en mode sombre, la frise, les dimanches et la date des notes gardent leur couleur", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "ordinateur", "Les couleurs ne dépendent pas de l’écran.");
   await page.emulateMedia({ colorScheme: "dark" });
   await prepareDemo(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await goToSection(page, "pay");
   await expect(page.locator("#planning-dark-theme")).toHaveCount(1);
   // Contraste (WCAG) ; une couleur translucide est d'abord posée sur son fond.
   const measure = (root: Element, pairs: Array<[string, string, "bg" | "color"]>) => {
@@ -6883,6 +6882,23 @@ test("en mode sombre, les cotisations de la frise et les dimanches payés garden
       return (light + 0.05) / (dark + 0.05);
     });
   };
+  // La date d'une note, en petit calendrier, se fondait dans sa carte : une
+  // carte témoin, les notes de la démo dépendant du jour.
+  const body = page.locator("body");
+  await body.evaluate((root) => root.insertAdjacentHTML("beforeend", '<article class="upcoming-item note note-card e2e-note"><button type="button" class="note-card-date"><small>lun</small><b>2</b><small>nov</small></button></article>'));
+  const [dateFill, dateText] = await body.evaluate(measure, [
+    [".e2e-note .note-card-date", ".e2e-note", "bg"],
+    [".e2e-note .note-card-date b", ".e2e-note .note-card-date", "color"],
+  ]);
+  // Avant : 1,1, la date se confondait avec la carte.
+  expect(dateFill).toBeGreaterThan(1.25);
+  expect(dateText).toBeGreaterThan(7);
+  // La rubrique ouverte du dock prend la couleur de son en-tête.
+  const activeTab = page.locator(".section-dock > button.active");
+  await expect(activeTab).toHaveCSS("background-color", "rgb(187, 85, 102)");
+
+  await goToSection(page, "pay");
+  await expect(activeTab).toHaveCSS("background-color", "rgb(85, 136, 153)");
   // Les cotisations se confondaient avec le fond de la frise (1,1). Le profil
   // de la démo est vide, la frise n'est pas tracée : on en pose une témoin.
   const bulletin = page.locator(".pay-bulletin").first();
