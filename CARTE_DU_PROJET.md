@@ -27,8 +27,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   onglets et salles des Expos, dossiers et annuaires, bouton de compte,
   date des notes en petit calendrier terracotta, rubrique ouverte du dock à
   la couleur de son en-tête (`--tone` par `data-section`). Budget CSS gzip
-  plein (quelques octets de marge) : retirer d'abord une règle morte ou
-  demander à l'administrateur de relever le plafond.
+  relevé à 102 Kio le 1er novembre 2026 (100,0 mesurés) : retirer d'abord
+  une règle morte avant d'en ajouter une, l'administrateur seul relève.
   Vérifier en sombre (mesurer les couleurs calculées) après toute retouche ;
   un scénario e2e mesure frise, dimanches et mois du fractionnement.
 - `src/styles/14-planning-commands.css` : commandes du planning (cadre de la

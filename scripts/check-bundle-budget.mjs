@@ -150,7 +150,10 @@ const budgets = {
   // Relevé le 15 octobre 2026 à 537 Kio bruts avec l'accord de
   // l'administrateur, pour la carte de l'audioguide et la veille du site
   // (536,0 / 100,0 Kio mesurés).
-  totalCss: { raw: 537 * KIB, gzip: 100 * KIB },
+  // Relevé le 1er novembre 2026 à 102 Kio gzip avec l'accord de
+  // l'administrateur, pour les retouches du mode sombre (darkTheme.css) :
+  // 102 399 octets mesurés, un seul de marge, après retrait des règles mortes.
+  totalCss: { raw: 537 * KIB, gzip: 102 * KIB },
 };
 
 async function filesUnder(directory) {
