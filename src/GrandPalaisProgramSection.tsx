@@ -695,6 +695,9 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
     >
       <span className="useful-expo-timeline-mark" aria-hidden="true" />
       <div>
+        {/* Les infos de l'exposition, regroupées : sur grand écran, elles se
+            placent à gauche des tarifs et se centrent en hauteur face à eux. */}
+        <div className="expo-card-info">
         {/* En tête de carte : la salle à gauche, l'état à droite. Une
             exposition à venir montre plutôt son compte à rebours exact, sous
             ses dates : trop long pour tenir en haut à côté de la salle. */}
@@ -748,6 +751,7 @@ export function ExpoCard({ entry, venueKey, venueLabel, today, openingReady, lin
             ) : null}
           </div>
         ) : null}
+        </div>
         {/* Les tarifs ferment la carte, juste avant le lien : on lit d'abord
             ce qu'est l'exposition, puis ce qu'elle coûte. */}
         {visiblePrices.length || entry.priceNote ? (

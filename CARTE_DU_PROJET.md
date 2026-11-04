@@ -247,7 +247,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   bulletin ou barrée ne mène nulle part —, le bouton « Vérifier le bulletin », puis trois
   entrées de même facture — primes et jours fériés, détail du calcul, profil
   et réglages, ce dernier déplié sur place avec ses éléments de paie, sans
-  volet intermédiaire), `src/PayMonthNav.tsx` (le navigateur de mois commun
+  volet intermédiaire ; dès 900 px, `payBulletin.css` range la paie du
+  mois, le bouton, son panneau ouvert et les raccourcis à gauche, les lignes
+  à droite sur toute la hauteur — `.pay-bulletin-layout` en `display:
+  contents`, aires de grille sur `.pay-dashboard.pay-bulletin`, dernière
+  rangée souple —, profil et réglages dépliés dessous ; sur téléphone,
+  l'ordre du code), `src/PayMonthNav.tsx` (le navigateur de mois commun
   aux trois écrans), `src/PayAllowancesSection.tsx` et
   `src/PayslipCheckSection.tsx` : navigation paie, primes et composition du
   contrôle du bulletin ; `src/SundayDetailsList.tsx`, chargé à l’ouverture,
@@ -331,6 +336,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande (préparée au repos par
   `src/warmUpScreens.ts`), navigation par espace et périodes d’inter expos.
+  L’encadré d’une exposition (`ExpoCard`) regroupe ses infos dans
+  `.expo-card-info`, puis les tarifs, puis les liens. Dès 1 000 px (souris)
+  ou 1 101 px, une exposition qui a des tarifs les place à droite, derrière
+  un filet à la couleur de la salle, deux par ligne ; les infos et les liens
+  restent à gauche, et le côté le plus court se centre en hauteur (rangées
+  souples `1fr auto auto 1fr`). Téléphone et Z Fold ouvert gardent l’encadré
+  empilé (variante A1 retenue le 4 novembre 2026).
   Sous la recherche, les quatre vues (En ce moment, À venir, Par espace,
   Inter-expos) sont des intercalaires de classeur posés sur la carte qu’ils
   affichent : chacune a sa couleur (`data-view` : vert, bleu, ocre,

@@ -3680,6 +3680,21 @@ test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa 
   await expect(glace.getByRole("link", { name: "Voir sur le site du Grand Palais" })).toBeVisible();
   // Le nom d'une grille prend la teinte de l'espace, sans encadré.
   await expect(glace.locator(".expo-price-group").first()).toHaveCSS("color", "rgb(53, 116, 90)");
+  // Sur grand écran, les infos (et les liens dessous) à gauche, les tarifs à
+  // droite ; le côté le plus court se centre en hauteur face à l'autre. Sur
+  // téléphone, les tarifs sous les infos, les liens à la fin.
+  const [glaceInfo, glacePrice, glaceLinks] = await Promise.all(
+    [".expo-card-info", ".expo-price", ".expo-card-links"].map((selector) => glace.locator(selector).boundingBox()),
+  );
+  if ((page.viewportSize()?.width ?? 0) >= 1000) {
+    expect(glacePrice!.x).toBeGreaterThan(glaceInfo!.x + glaceInfo!.width);
+    expect(Math.abs(glaceLinks!.x - glaceInfo!.x)).toBeLessThanOrEqual(1);
+    const leftMiddle = (glaceInfo!.y + glaceLinks!.y + glaceLinks!.height) / 2;
+    expect(Math.abs(leftMiddle - (glacePrice!.y + glacePrice!.height / 2))).toBeLessThanOrEqual(3);
+  } else {
+    expect(glacePrice!.y).toBeGreaterThan(glaceInfo!.y + glaceInfo!.height - 1);
+    expect(glaceLinks!.y).toBeGreaterThan(glacePrice!.y + glacePrice!.height - 1);
+  }
   // Adopt AI : les tarifs relevés sur son site d'inscription, et le lien vers lui.
   const adoptAi = nef2026.locator("article").filter({ hasText: "Adopt AI" });
   await expect(adoptAi.locator(".expo-price")).toContainText(/Accès 2 jours\s*510 €/);
@@ -6158,7 +6173,7 @@ test("Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordeme
   const dashboard = page.locator(".pay-dashboard");
   await expect(dashboard).toBeVisible();
   // À 900 px, le net et les lignes de la paie passent côte à côte.
-  const columns = await dashboard.locator(".pay-bulletin-layout").evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length);
+  const columns = await dashboard.evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length);
   expect(columns).toBe(2);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
@@ -6168,6 +6183,28 @@ test("Z Fold ouvert : le tableau de bord de paie garde sa grille sans débordeme
 test("le tableau de bord de paie ouvre ses deux pages détaillées", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "pay");
+
+  // Sur grand écran, la paie du mois, « Vérifier le bulletin » et les
+  // raccourcis forment la colonne de gauche, les lignes de la paie celle de
+  // droite : plus de grand vide sous la paie du mois. Sur téléphone, l'ordre
+  // reste la paie, ses lignes, le bouton puis les raccourcis.
+  const [hero, lines, actions, more] = await Promise.all(
+    [".pay-bulletin-hero", ".pay-bulletin-lines", ".pay-bulletin-actions", ".pay-bulletin-more"].map((selector) => page.locator(selector).boundingBox()),
+  );
+  const bottom = (box: typeof hero) => box!.y + box!.height;
+  if ((page.viewportSize()?.width ?? 0) >= 900) {
+    for (const box of [actions, more]) expect(Math.abs(box!.x - hero!.x)).toBeLessThanOrEqual(1);
+    expect(lines!.x).toBeGreaterThan(hero!.x + hero!.width);
+    expect(Math.abs(lines!.y - hero!.y)).toBeLessThanOrEqual(1);
+    expect(actions!.y).toBeGreaterThan(bottom(hero));
+    expect(actions!.y - bottom(hero)).toBeLessThanOrEqual(12);
+    expect(more!.y).toBeGreaterThan(bottom(actions));
+    expect(more!.y - bottom(actions)).toBeLessThanOrEqual(12);
+  } else {
+    expect(lines!.y).toBeGreaterThan(bottom(hero));
+    expect(actions!.y).toBeGreaterThan(bottom(lines));
+    expect(more!.y).toBeGreaterThan(bottom(actions));
+  }
 
   await page.getByRole("button", { name: /^Primes et jours fériés/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");

@@ -628,6 +628,12 @@ describe("programmation du Grand Palais", () => {
     expect(html).toContain('<span class="expo-price-note">Location des patins à glace incluse (tailles 25 à 50)</span>');
     expect(html).toContain('href="https://www.grandpalais.fr/fr/programme/le-grand-palais-de-glace-2026" target="_blank" rel="noreferrer">Voir le site officiel</a>');
     expect(html).toContain('href="https://legrandpalaisdeglace.fr/billetterie/" target="_blank" rel="noopener noreferrer">Billetterie sur legrandpalaisdeglace.fr</a>');
+    // Les infos regroupées, puis les tarifs, puis les liens : sur grand
+    // écran, les infos se placent à gauche des tarifs ; sur téléphone,
+    // l'ordre de lecture reste infos, tarifs, liens.
+    expect(html).toMatch(/^<article class="expo-card"[^>]*><span class="useful-expo-timeline-mark" aria-hidden="true"><\/span><div><div class="expo-card-info"><div class="expo-card-top">/);
+    expect(html).toContain('</div><div class="expo-price">');
+    expect(html.indexOf('<span class="expo-card-links">')).toBeGreaterThan(html.indexOf('<div class="expo-price">'));
     // Sans tarif sur la fiche officielle, le site tiers est celui des tarifs.
     const withoutPrices = { title: "Salon", period: "Les 3 et 4 décembre 2026", startsOn: "2026-12-03", endsOn: "2026-12-04", officialUrl: "https://www.grandpalais.fr/fr/programme/salon", ticketingUrl: "https://salon.example.com/inscription" };
     const salonHtml = renderToStaticMarkup(<ExpoCard entry={withoutPrices} venueKey="nef" today="2026-11-20" openingReady linkLabel="Voir le site officiel" />);

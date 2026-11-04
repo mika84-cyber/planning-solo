@@ -6,10 +6,23 @@
    mois (`.pay-bulletin-month-nav`) servent aussi aux primes et au détail du calcul. */
 .pay-dashboard.pay-bulletin { display: grid; gap: 10px; }
 
-/* Mise en page : une colonne, deux sur grand écran. */
+/* Mise en page : une colonne sur téléphone. Sur grand écran, deux : à
+   gauche la paie du mois, « Vérifier le bulletin » (et son panneau quand il
+   est ouvert) puis les raccourcis ; à droite les lignes de la paie, sur
+   toute la hauteur. La dernière rangée, souple, prend ce que les lignes ont
+   de plus que la colonne de gauche : les cartes de gauche restent serrées.
+   Profil et réglages, dépliés, passent dessous sur toute la largeur. */
 .pay-bulletin .pay-bulletin-layout { display: grid; gap: 10px; align-items: start; }
 @media (min-width: 900px) {
-  .pay-bulletin .pay-bulletin-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .pay-dashboard.pay-bulletin { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; grid-template-areas: "hero lines" "actions lines" "more lines" ". lines"; align-items: start; }
+  .pay-dashboard.pay-bulletin:has(> .pay-bulletin-panel:not([hidden])) { grid-template-rows: auto auto auto auto 1fr; grid-template-areas: "hero lines" "actions lines" "panel lines" "more lines" ". lines"; }
+  .pay-bulletin .pay-bulletin-layout { display: contents; }
+  .pay-bulletin .pay-bulletin-hero { grid-area: hero; }
+  .pay-bulletin .pay-bulletin-lines { grid-area: lines; }
+  .pay-bulletin .pay-bulletin-actions { grid-area: actions; }
+  .pay-bulletin .pay-bulletin-panel { grid-area: panel; }
+  .pay-bulletin .pay-bulletin-more { grid-area: more; }
+  .pay-bulletin .pay-bulletin-footer { grid-column: 1 / -1; }
 }
 
 /* Les deux cartes. */
