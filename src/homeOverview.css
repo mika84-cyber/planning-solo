@@ -1,9 +1,10 @@
-/* Accueil, « En un coup d'œil » : quatre blocs sous l'en-tête, tous au même
-   format. La journée d'abord, puis les trois compteurs. Sur téléphone,
-   comme sur le Z Fold ouvert, quatre lignes : icône, libellé en petites
-   capitales à la couleur du repère et précision à gauche, valeur à droite.
-   Sur grand écran, quatre cartes côte à côte. La journée prend la couleur
-   de sa situation sur son icône et son libellé, sans fond coloré. */
+/* Accueil, « En un coup d'œil » : des blocs sous l'en-tête, tous au même
+   format. La journée d'abord, puis les compteurs. Une ligne par bloc :
+   icône, libellé en petites capitales à la couleur du repère et précision à
+   gauche, valeur à droite. Sur téléphone et sur le Z Fold ouvert, les lignes
+   s'empilent ; sur grand écran, elles se répartissent en deux colonnes. La
+   journée prend la couleur de sa situation sur son icône et son libellé,
+   sans fond coloré. */
 .today-blocks { display: grid; margin: -12px calc(-1 * var(--chapter-pad, 18px)) calc(-1 * var(--chapter-pad, 18px)); }
 .today-block { --block-ink: #6b5a44; --block-soft: #f1ebe2; position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 12px; grid-template-areas: "icon label value go" "icon note value go"; align-items: center; column-gap: 12px; row-gap: 2px; min-width: 0; margin: 0; border: 0; border-radius: 0; padding: 12px var(--chapter-pad, 18px); background: transparent; color: var(--text); font: inherit; text-align: left; }
 .today-block:last-child { padding-bottom: calc(var(--chapter-pad, 18px) + 2px); }
@@ -14,7 +15,12 @@
 .today-next-holiday { --block-ink: #7b3f6e; --block-soft: #f3e4ef; }
 .today-next-extra { --block-ink: #2f6b5e; --block-soft: #e0f0eb; }
 .today-next-note { --block-ink: #a8434c; --block-soft: #f8e3e4; }
-.today-next-note .today-note-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* Plusieurs notes le même jour : la première, coupée si besoin, puis
+   « +2 (voir) », toujours entier. */
+.today-next-note .today-note-text { display: flex; gap: 5px; min-width: 0; white-space: nowrap; }
+.today-note-first { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.today-note-more { flex: none; color: var(--block-ink); font-weight: 800; }
+.today-note-more span { color: var(--muted); font-weight: 600; }
 button.today-block { cursor: pointer; transition: background-color .15s ease; }
 button.today-block:hover { background: color-mix(in srgb, var(--block-soft) 40%, #fff); }
 button.today-block:hover .today-block-go { color: var(--block-ink); }
@@ -45,17 +51,20 @@ button.today-block:hover .today-block-go { color: var(--block-ink); }
 .today-block > strong.is-date { font-size: 14px; }
 .today-block-go { grid-area: go; width: 12px; height: 12px; color: #c7b6a5; transition: color .15s ease; }
 
-/* Grand écran : les cartes côte à côte (cinq avec le prochain férié), la journée en premier. Le grand
-   écran tactile d'un téléphone pliable (Z Fold ouvert, de 721 à 1100 px)
-   garde les quatre lignes empilées du téléphone. */
+/* Grand écran : les mêmes lignes, en deux colonnes que l'on lit de haut en
+   bas (deux lignes chacune jusqu'à quatre blocs, trois au-delà), un filet
+   vertical entre elles. La journée ouvre la colonne de gauche ; le haut de
+   chaque colonne n'a pas de filet, le bas des deux garde la même marge. Le
+   grand écran tactile d'un téléphone pliable (Z Fold ouvert, de 721 à
+   1100 px) garde les lignes empilées du téléphone. */
 @media (min-width: 1101px), (min-width: 721px) and (pointer: fine) {
-  .today-blocks { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 12px; margin: 4px 0 0; }
-  .today-block, .today-block:last-child { grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: auto auto 1fr; grid-template-areas: "icon label" "icon note" "value value"; align-content: stretch; row-gap: 2px; border: 1px solid #eadbcb; border-radius: 18px; padding: 14px 16px 15px; background: #fff; }
-  .today-block + .today-block::before { display: none; }
-  button.today-block:hover { border-color: color-mix(in srgb, var(--block-ink) 35%, #eadbcb); }
-  .today-block-label { padding-right: 18px; }
-  .today-block > strong, .today-block > strong.is-date { align-self: end; max-width: none; margin-top: 14px; font-size: 18px; line-height: 1.15; text-align: left; }
-  .today-block-go { position: absolute; top: 25px; right: 14px; width: 14px; height: 14px; }
+  .today-blocks { position: relative; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, auto); grid-auto-flow: column; }
+  .today-blocks:has(> :nth-child(5)) { grid-template-rows: repeat(3, auto); }
+  .today-blocks::after { position: absolute; top: 12px; bottom: calc(var(--chapter-pad, 18px) + 2px); left: 50%; width: 1px; background: #efe5da; content: ""; }
+  .today-blocks:not(:has(> :nth-child(5))) > :nth-child(3)::before,
+  .today-blocks:has(> :nth-child(5)) > :nth-child(4)::before { display: none; }
+  .today-blocks:not(:has(> :nth-child(5))) > :nth-child(2),
+  .today-blocks:has(> :nth-child(5)) > :nth-child(3) { padding-bottom: calc(var(--chapter-pad, 18px) + 2px); }
 }
 
 /* Formation, fermeture ou demi-journée : une seconde ligne sous la date. */

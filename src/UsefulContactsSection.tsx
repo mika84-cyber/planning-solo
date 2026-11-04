@@ -426,7 +426,6 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
       <div className="native-screen-heading">
         <span className="step-label">Annuaire pratique</span>
         <h2 id="useful-contacts-title">Contacts utiles</h2>
-        <p>Choisissez un annuaire pour retrouver les personnes, services et numéros utiles.</p>
       </div>
       <label className="resource-search-field"><span>Rechercher une personne ou un service</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom ou service" /></label>
       <div className="resource-folder-stack">

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Entries, NoteListItem } from "./appModel";
-import { noteDateLabel } from "./appModel";
+import { noteDateLabel, noteLines } from "./appModel";
 import { fromKey } from "./planningLogic";
 
 const weekdayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
@@ -11,15 +11,11 @@ const monthTitleFormatter = new Intl.DateTimeFormat("fr-FR", { month: "long", ye
  *  même lorsque deux lignes portent le même texte. */
 function keyedNoteLines(value: string) {
   const occurrences = new Map<string, number>();
-  return value
-    .split("\n")
-    .map((line) => line.replace(/^[–—\-•>]\s*/, "").trim())
-    .filter(Boolean)
-    .map((label) => {
-      const occurrence = (occurrences.get(label) ?? 0) + 1;
-      occurrences.set(label, occurrence);
-      return { key: `${label}-${occurrence}`, label };
-    });
+  return noteLines(value).map((label) => {
+    const occurrence = (occurrences.get(label) ?? 0) + 1;
+    occurrences.set(label, occurrence);
+    return { key: `${label}-${occurrence}`, label };
+  });
 }
 
 export type UpcomingNoteListProps = {

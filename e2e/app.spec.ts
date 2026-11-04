@@ -351,22 +351,26 @@ test("le coup d’œil donne le prochain férié travaillé, même l’année su
 test("les cartes intérieures restent légères avec des bordures visibles et une ombre douce", async ({ page }, testInfo) => {
   await prepareDemo(page);
   const card = page.locator('.today-blocks');
-  // « En un coup d'œil » : sur téléphone, quatre lignes au même format posées
-  // dans la carte, séparées par des filets qui commencent après l'icône ; la
-  // journée n'a pas de fond coloré. Sur ordinateur, quatre cartes blanches
-  // côte à côte.
+  // « En un coup d'œil » : des lignes au même format posées dans la carte,
+  // séparées par des filets qui commencent après l'icône ; la journée n'a pas
+  // de fond coloré. Sur ordinateur, les mêmes lignes en deux colonnes, un
+  // filet vertical entre elles, sans filet en haut de chaque colonne.
   const phone = (page.viewportSize()?.width || 0) <= 720;
   await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  if (phone) {
-    await expect(page.locator('.today-status')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-    await expect(page.locator('.today-leave-balance')).toHaveCSS('border-top-width', '0px');
-    expect(await page.locator('.today-leave-balance').evaluate((node) => getComputedStyle(node, '::before').backgroundColor)).toBe('rgb(239, 229, 218)');
-    expect(await page.locator('.today-next-work').evaluate((node) => getComputedStyle(node, '::before').backgroundColor)).toBe('rgb(239, 229, 218)');
-    expect(await page.locator('.today-status').evaluate((node) => getComputedStyle(node, '::before').content)).toBe('none');
-  } else {
-    await expect(page.locator('.today-status')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    await expect(page.locator('.today-leave-balance')).toHaveCSS('border-top-width', '1px');
-    await expect(page.locator('.today-leave-balance')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.today-status')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(page.locator('.today-leave-balance')).toHaveCSS('border-top-width', '0px');
+  expect(await page.locator('.today-next-work').evaluate((node) => getComputedStyle(node, '::before').backgroundColor)).toBe('rgb(239, 229, 218)');
+  expect(await page.locator('.today-status').evaluate((node) => getComputedStyle(node, '::before').content)).toBe('none');
+  if (!phone) {
+    expect(await card.evaluate((node) => getComputedStyle(node, '::after').backgroundColor)).toBe('rgb(239, 229, 218)');
+    const columnHeads = await card.evaluate((node) => {
+      const blocks = [...node.children] as HTMLElement[];
+      const left = blocks[0].getBoundingClientRect().x;
+      const right = blocks.filter((block) => block.getBoundingClientRect().x > left + 1);
+      return { right: right.length, headLine: right.length ? getComputedStyle(right[0], '::before').display : 'none' };
+    });
+    expect(columnHeads.right).toBeGreaterThan(0);
+    expect(columnHeads.headLine).toBe('none');
   }
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/light-cards-${testInfo.project.name}.png` });
@@ -4275,17 +4279,23 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
     expect(statusBox).not.toBeNull();
     expect(nextWorkBox).not.toBeNull();
     expect(leaveBox).not.toBeNull();
-    // Les cartes côte à côte, de même largeur et de même hauteur, la
-    // journée en premier.
+    // Deux colonnes de même largeur, lues de haut en bas : la journée ouvre
+    // celle de gauche, le prochain jour travaillé la suit.
     await expect.poll(async () => {
-      const [status, nextWork, leave] = await Promise.all([
-        page.locator(".today-status").boundingBox(), page.locator(".today-next-work").boundingBox(), page.locator(".today-leave-balance").boundingBox(),
+      const [status, nextWork] = await Promise.all([
+        page.locator(".today-status").boundingBox(), page.locator(".today-next-work").boundingBox(),
       ]);
-      return Boolean(status && nextWork && leave
-        && nextWork.x >= status.x + status.width - 1 && leave.x >= nextWork.x + nextWork.width - 1
-        && Math.abs(status.y - leave.y) <= 1);
+      return Boolean(status && nextWork
+        && Math.abs(nextWork.x - status.x) <= 1 && nextWork.y >= status.y + status.height - 1);
     }).toBe(true);
-    expect(Math.abs(statusBox!.height - leaveBox!.height)).toBeLessThanOrEqual(1);
+    const columns = await page.locator(".today-blocks").evaluate((node) => {
+      const boxes = [...node.children].map((block) => block.getBoundingClientRect());
+      const right = boxes.filter((box) => box.x > boxes[0].x + boxes[0].width - 1);
+      return { right: right.length, sameWidth: right.every((box) => Math.abs(box.width - boxes[0].width) <= 2), sameTop: right.length > 0 && Math.abs(right[0].y - boxes[0].y) <= 1 };
+    });
+    expect(columns.right).toBeGreaterThan(0);
+    expect(columns.sameWidth).toBe(true);
+    expect(columns.sameTop).toBe(true);
     expect(Math.abs(statusBox!.width - leaveBox!.width)).toBeLessThanOrEqual(2);
   } else {
     const [statusBox, nextWorkBox, leaveBox] = await Promise.all([
@@ -6455,6 +6465,32 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
   await expect(back).toHaveAttribute("href", "/");
 });
 
+test("le coup d’œil montre la première note du jour, puis « +1 (voir) »", async ({ page }) => {
+  await prepareDemo(page);
+  // Demain, la démo porte une note de Mika et une d’Agnès : la première se
+  // lit, l’autre se compte.
+  const nextNote = page.locator(".today-next-note");
+  await expect(nextNote.locator(".today-note-first")).toHaveText("Préparer les documents pour notre rendez-vous");
+  await expect(nextNote.locator(".today-note-more")).toHaveText("+1 (voir)");
+  await expect(nextNote).not.toContainText("Je réserve la table");
+  await expect(nextNote).toHaveAttribute(
+    "aria-label",
+    /^Prochaines notes : .+, Préparer les documents pour notre rendez-vous, Je réserve la table pour 19 h 30\. Afficher ce jour\.$/,
+  );
+  // Une première note trop longue se coupe ; « +1 (voir) » reste entier,
+  // sur la même ligne, dans le bloc.
+  const more = nextNote.locator(".today-note-more");
+  const [textBox, moreBox] = await Promise.all([nextNote.locator(".today-note-text").boundingBox(), more.boundingBox()]);
+  expect(moreBox!.x + moreBox!.width).toBeLessThanOrEqual(textBox!.x + textBox!.width + 0.5);
+  expect(Math.abs(moreBox!.y - textBox!.y)).toBeLessThanOrEqual(1);
+  expect(await more.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+  // Toucher le bloc ouvre ce jour, avec toutes ses notes.
+  await nextNote.click();
+  const day = page.getByRole("dialog");
+  await expect(day).toContainText("Je réserve la table pour 19 h 30");
+  await expect(day).toContainText("Préparer les documents pour notre rendez-vous");
+});
+
 test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation", async ({ page }) => {
   await prepareDemo(page);
   // « Ajouter une note » occupe le côté droit de l’en-tête : on déplie par le titre.
@@ -6893,12 +6929,33 @@ test("en mode sombre, la frise, les dimanches et la date des notes gardent leur 
   // Avant : 1,1, la date se confondait avec la carte.
   expect(dateFill).toBeGreaterThan(1.25);
   expect(dateText).toBeGreaterThan(7);
-  // La rubrique ouverte du dock prend la couleur de son en-tête.
+  // La rubrique ouverte du dock prend sa couleur.
   const activeTab = page.locator(".section-dock > button.active");
   await expect(activeTab).toHaveCSS("background-color", "rgb(187, 85, 102)");
+  // Congés et Ma paie, Docs et Expos se confondaient (8 et 32 degrés de
+  // teinte d'écart) : chaque rubrique est maintenant loin de sa voisine.
+  const hues = await page.locator(".section-dock").evaluate((dock) => Object.fromEntries(
+    [...dock.querySelectorAll<HTMLElement>("button[data-section]")].map((button) => {
+      const probe = document.createElement("i");
+      probe.style.color = getComputedStyle(button).getPropertyValue("--tone");
+      button.append(probe);
+      const [r, g, b] = (getComputedStyle(probe).color.match(/\d+/g) ?? []).map((channel) => Number(channel) / 255);
+      probe.remove();
+      const max = Math.max(r, g, b);
+      const spread = max - Math.min(r, g, b);
+      const sector = max === r ? ((g - b) / spread) % 6 : max === g ? (b - r) / spread + 2 : (r - g) / spread + 4;
+      return [button.dataset.section, (sector * 60 + 360) % 360];
+    }),
+  ));
+  const hueGap = (a: string, b: string) => {
+    const gap = Math.abs(hues[a] - hues[b]) % 360;
+    return Math.min(gap, 360 - gap);
+  };
+  expect(hueGap("leave", "pay")).toBeGreaterThanOrEqual(45);
+  expect(hueGap("pdf", "program")).toBeGreaterThanOrEqual(45);
 
   await goToSection(page, "pay");
-  await expect(activeTab).toHaveCSS("background-color", "rgb(85, 136, 153)");
+  await expect(activeTab).toHaveCSS("background-color", "rgb(47, 138, 94)");
   // Les cotisations se confondaient avec le fond de la frise (1,1). Le profil
   // de la démo est vide, la frise n'est pas tracée : on en pose une témoin.
   const bulletin = page.locator(".pay-bulletin").first();
@@ -6965,15 +7022,40 @@ test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou l
   await goToSection(page, "leave");
   const help = page.locator("header.top-header").getByRole("button", { name: "Liste des raccourcis" });
   const sheet = page.getByRole("dialog", { name: "Liste des raccourcis" });
-  // Une sous-page d'une autre rubrique : les codes radio, dans Contacts,
-  // trouvés par le champ de recherche, sans accent ni majuscule.
+  // Plus de champ de recherche : tous les raccourcis se lisent d'emblée.
   await help.click();
   await expect(sheet.getByRole("list", { name: "Documents" }).getByRole("button")).toHaveCount(5);
-  const search = sheet.getByRole("searchbox", { name: "Chercher une question" });
-  await search.fill("xyz");
-  await expect(sheet.getByRole("status")).toHaveText("Rien pour « xyz ». Essayez un autre mot.");
-  await search.fill("RADIO");
-  await expect(sheet.locator(".help-sheet-row")).toHaveCount(1);
+  await expect(sheet.getByRole("searchbox")).toHaveCount(0);
+  // À l'ordinateur, deux colonnes : Documents et Expositions à gauche ; Ma
+  // paie, Déclarer puis Mon planning à droite. Sur téléphone, une colonne :
+  // Documents, Expositions, Mon planning, Ma paie, Déclarer.
+  const listBox = (name: string) => sheet.getByRole("list", { name, exact: true }).boundingBox();
+  const [docs, expo, planning, pay, declare] = await Promise.all(
+    ["Documents", "Expositions", "Mon planning", "Ma paie", "Déclarer"].map(listBox),
+  );
+  const bottom = (box: typeof docs) => box!.y + box!.height;
+  if ((page.viewportSize()?.width ?? 0) > 720) {
+    expect(Math.abs(pay!.y - docs!.y)).toBeLessThanOrEqual(1);
+    expect(pay!.x).toBeGreaterThan(docs!.x + docs!.width);
+    expect(Math.abs(expo!.x - docs!.x)).toBeLessThanOrEqual(1);
+    for (const box of [declare, planning]) expect(Math.abs(box!.x - pay!.x)).toBeLessThanOrEqual(1);
+    expect(declare!.y).toBeGreaterThan(bottom(pay));
+    expect(planning!.y).toBeGreaterThan(bottom(declare));
+    // Les deux colonnes finissent à deux lignes près.
+    expect(Math.abs(bottom(planning) - bottom(expo))).toBeLessThanOrEqual(130);
+    // L'espace sous Expositions reçoit le dessin du Grand Palais, qui
+    // s'arrête au bas de la colonne de droite.
+    const artBox = await sheet.locator(".help-sheet-art").boundingBox();
+    expect(artBox!.y).toBeGreaterThan(bottom(expo));
+    expect(Math.abs(artBox!.x - expo!.x)).toBeLessThanOrEqual(1);
+    expect(bottom(artBox)).toBeLessThanOrEqual(bottom(planning) + 1);
+  } else {
+    const order = [docs, expo, planning, pay, declare].map((box) => box!.y);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // Sur téléphone, pas d'espace vide à remplir : pas de dessin.
+    await expect(sheet.locator(".help-sheet-art")).toBeHidden();
+  }
+  // Une sous-page d'une autre rubrique : les codes radio, dans Contacts.
   await sheet.getByRole("button", { name: /Un code radio d’urgence/ }).click();
   await expect(sheet).toBeHidden();
   await expect(page.getByRole("heading", { name: "Codes urgences radio" })).toBeVisible();
@@ -7014,10 +7096,8 @@ test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou l
   await expect(page.getByRole("dialog", { name: "Partager mon planning" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choisir un collègue" })).toBeVisible();
   await page.keyboard.press("Escape");
-  // Les 3 groupes de collègues : la fenêtre des groupes du planning partagé,
-  // trouvée aussi par « équipe ».
+  // Les 3 groupes de collègues : la fenêtre des groupes du planning partagé.
   await help.click();
-  await search.fill("équipe");
   await sheet.getByRole("button", { name: /^Les 3 groupes de collègues/ }).click();
   const groups = page.getByRole("dialog", { name: "Liste des 3 groupes" });
   await expect(groups).toBeVisible();

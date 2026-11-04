@@ -35,24 +35,27 @@ const ICONS: Record<string, ReactNode> = {
   headphones: icon(<><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3.5" y="14" width="4" height="6" rx="1.5" /><rect x="16.5" y="14" width="4" height="6" rx="1.5" /></>),
 };
 
-type Question = { id: HelpChoice; icon: string; question: string; where: string; /** D'autres mots qui la font trouver. */ keywords?: string };
+type Question = { id: HelpChoice; icon: string; question: string; where: string };
 /** Les deux lignes de l'exposition des Galeries 3 et 4, qui dépendent du jour. */
 type GalleryRow = "expo-sheet" | "audioguide";
 type Theme = { key: "docs" | "expo" | "planning" | "pay" | "declare"; title: string; items: Array<Question | GalleryRow> };
 
-/** Cinq thèmes courts, sur deux colonnes à l'ordinateur, chacun à sa couleur
- *  (`group-${key}`) : Documents en bleu, Expositions en ocre, Mon planning
- *  en prune, Ma paie en vert, Déclarer en terracotta. */
+/** Cinq thèmes courts, chacun à sa couleur (`group-${key}`) : Documents en
+ *  bleu, Expositions en ocre, Mon planning en prune, Ma paie en vert,
+ *  Déclarer en terracotta. À l'ordinateur, deux colonnes de hauteur voisine :
+ *  Documents et Expositions à gauche ; Ma paie, Déclarer puis Mon planning à
+ *  droite. Sur téléphone, une seule colonne : Documents, Expositions, Mon
+ *  planning, Ma paie, Déclarer (l'ordre est rétabli par le style). */
 const THEME_COLUMNS: Theme[][] = [
   [
     { key: "docs", title: "Documents", items: [
-      { id: "phone", icon: "phone", question: "Un numéro de téléphone", where: "Docs · Contacts", keywords: "contact appeler" },
+      { id: "phone", icon: "phone", question: "Un numéro de téléphone", where: "Docs · Contacts" },
       { id: "form", icon: "form", question: "Un formulaire administratif", where: "Docs · Formulaires" },
       // Un contraste avec « Poser un congé », qui prépare la demande depuis le
       // planning, et avec « Un formulaire administratif », les documents à télécharger.
-      { id: "request-form", icon: "leave", question: "Un formulaire de congé", where: "Demande de congés, vierge", keywords: "remplir à la main papier imprimer signer" },
-      { id: "colleague-groups", icon: "team", question: "Les 3 groupes de collègues", where: "Planning partagé · Liste des 3 groupes", keywords: "équipe annuaire noms qui" },
-      { id: "radio", icon: "radio", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio", keywords: "talkie" },
+      { id: "request-form", icon: "leave", question: "Un formulaire de congé", where: "Demande de congés, vierge" },
+      { id: "colleague-groups", icon: "team", question: "Les 3 groupes de collègues", where: "Planning partagé · Liste des 3 groupes" },
+      { id: "radio", icon: "radio", question: "Un code radio d’urgence", where: "Docs · Contacts · Codes urgences radio" },
     ] },
     { key: "expo", title: "Expositions", items: [
       "expo-sheet",
@@ -62,32 +65,55 @@ const THEME_COLUMNS: Theme[][] = [
     ] },
   ],
   [
-    { key: "planning", title: "Mon planning", items: [
-      { id: "planning-pdf", icon: "download", question: "Télécharger un planning", where: "Plannings en PDF", keywords: "imprimer" },
-      { id: "share-planning", icon: "share", question: "Partager mon planning avec un(e) collègue", where: "Planning partagé · Choisir un collègue" },
-    ] },
     { key: "pay", title: "Ma paie", items: [
-      { id: "payslip-check", icon: "check", question: "Vérifier un bulletin", where: "Ma paie · Vérifier le bulletin", keywords: "fiche de paie salaire" },
-      { id: "allowances", icon: "prime", question: "Le détail de mes primes", where: "Ma paie · Primes et jours fériés", keywords: "dimanche" },
-      { id: "pay-detail", icon: "calc", question: "Comprendre ma paie", where: "Ma paie · Détail du calcul", keywords: "salaire net brut" },
+      { id: "payslip-check", icon: "check", question: "Vérifier un bulletin", where: "Ma paie · Vérifier le bulletin" },
+      { id: "allowances", icon: "prime", question: "Le détail de mes primes", where: "Ma paie · Primes et jours fériés" },
+      { id: "pay-detail", icon: "calc", question: "Comprendre ma paie", where: "Ma paie · Détail du calcul" },
     ] },
     { key: "declare", title: "Déclarer", items: [
-      { id: "request-leave", icon: "sun", question: "Poser un congé", where: "Accueil · Choix des dates", keywords: "vacances CA RTT" },
+      { id: "request-leave", icon: "sun", question: "Poser un congé", where: "Accueil · Choix des dates" },
       { id: "exchange", icon: "swap", question: "Échanger un jour avec un collègue", where: "Accueil · Faire un échange" },
-      { id: "overtime-mecenat", icon: "clock", question: "Un mécénat ou des heures supp", where: "Congés · Heures et mécénats", keywords: "supplémentaires" },
-      { id: "cet", icon: "piggy", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET", keywords: "compte épargne temps" },
-      { id: "work-accident", icon: "accident", question: "Un accident de travail", where: "Docs · Accident de travail", keywords: "blessure" },
+      { id: "overtime-mecenat", icon: "clock", question: "Un mécénat ou des heures supp", where: "Congés · Heures et mécénats" },
+      { id: "cet", icon: "piggy", question: "Ouvrir ou alimenter mon CET", where: "Congés · CET" },
+      { id: "work-accident", icon: "accident", question: "Un accident de travail", where: "Docs · Accident de travail" },
+    ] },
+    { key: "planning", title: "Mon planning", items: [
+      { id: "planning-pdf", icon: "download", question: "Télécharger un planning", where: "Plannings en PDF" },
+      { id: "share-planning", icon: "share", question: "Partager mon planning avec un(e) collègue", where: "Planning partagé · Choisir un collègue" },
     ] },
   ],
 ];
 
-const fold = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/’/g, "'").toLowerCase();
+/** Les montants des verrières et les colonnes de la façade, réguliers. */
+const steps = (count: number, from: number, step: number) => Array.from({ length: count }, (_, index) => from + index * step);
 
-/** Chaque mot tapé se trouve dans le texte, sans tenir compte des accents ni
- *  des majuscules ; un champ vide garde tout. */
-export function matchesHelpQuery(text: string, query: string) {
-  const haystack = fold(text);
-  return fold(query).split(/\s+/).filter(Boolean).every((word) => haystack.includes(word));
+/** Sous Expositions, dans l'espace que laisse la colonne de droite : le Grand
+ *  Palais au trait — la nef et ses verrières, le dôme et son drapeau, la
+ *  colonnade —, à l'ocre des Expositions. Décoratif, seulement à l'ordinateur. */
+function GrandPalaisArt() {
+  return (
+    <figure className="help-sheet-art group-expo" aria-hidden="true">
+      <svg viewBox="0 0 320 104">
+        <defs>
+          <clipPath id="help-art-vault-left"><path d="M40 60 Q82 34 126 44 V60Z" /></clipPath>
+          <clipPath id="help-art-vault-right"><path d="M194 44 Q238 34 280 60 H194Z" /></clipPath>
+          <clipPath id="help-art-dome"><path d="M126 52 C126 30 141 18 160 18 C179 18 194 30 194 52Z" /></clipPath>
+        </defs>
+        <path d="M40 60 Q82 34 126 44 M194 44 Q238 34 280 60" />
+        <g className="thin" clipPath="url(#help-art-vault-left)">{steps(11, 46, 8).map((x) => <path key={x} d={`M${x} 30 V60`} />)}</g>
+        <g className="thin" clipPath="url(#help-art-vault-right)">{steps(11, 198, 8).map((x) => <path key={x} d={`M${x} 30 V60`} />)}</g>
+        <path d="M126 52 C126 30 141 18 160 18 C179 18 194 30 194 52" />
+        <g className="thin" clipPath="url(#help-art-dome)">
+          <path d="M160 18 V52 M143 52 C144 34 151 22 160 18 M177 52 C176 34 169 22 160 18 M130 40 H190 M127 47 H193 M135 30 H185" />
+        </g>
+        <path d="M155 18 V12 H165 V18 M160 12 V5 l9 2.4 -9 2.4" />
+        <path d="M34 60 H286 M34 64 H286 M120 52 H200 M120 52 V60 M200 52 V60" />
+        {steps(17, 44, 14).map((x) => <path key={x} d={`M${x} 64 V90`} />)}
+        <path d="M30 90 H290 M22 96 H298" />
+      </svg>
+      <figcaption>Grand Palais</figcaption>
+    </figure>
+  );
 }
 
 /** L'exposition des Galeries 3 et 4 du jour, ou la prochaine pendant une
@@ -164,8 +190,7 @@ export function AudioguideRow({ title, audioguide, initiallyOpen = false }: {
 type GalleryExpo = NonNullable<ReturnType<typeof galleryExpoFor>>;
 
 /** L'exposition des Galeries 3 et 4 et sa fiche PDF du dossier Expo, lue une
- *  fois à l'ouverture de la fenêtre : la recherche peut masquer puis rendre
- *  la ligne sans relire le dossier. */
+ *  fois à l'ouverture de la fenêtre. */
 function useGalleryExpo(today: string) {
   const gallery = useMemo(() => galleryExpoFor(today), [today]);
   const [sharedDocuments, setSharedDocuments] = useState<ExpoDocument[]>([]);
@@ -228,9 +253,9 @@ function GalleryExpoRow({ gallery, sheet, onChoose }: { gallery: GalleryExpo; sh
 
 /**
  * « Liste des raccourcis » : la fenêtre ouverte par la pastille du même nom dans
- * l'en-tête de chaque page. Un champ filtre les questions, rangées en cinq
- * thèmes ; chacune ouvre directement la page, l'onglet ou la sous-page qui y
- * répond.
+ * l'en-tête de chaque page. Les questions, rangées en cinq thèmes, se lisent
+ * d'un coup d'œil, sans champ de recherche ; chacune ouvre directement la
+ * page, l'onglet ou la sous-page qui y répond.
  */
 export function HelpSheet({ today, section, onChoose, onClose }: {
   today: string;
@@ -240,25 +265,23 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [query, setQuery] = useState("");
   const { gallery, sheet } = useGalleryExpo(today);
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal?.();
   }, []);
-  const searchText = (item: Question | GalleryRow) => {
-    if (item === "expo-sheet") return gallery ? `Fiche d’expo ${gallery.entry.title} exposition PDF` : "";
-    if (item === "audioguide") return gallery?.entry.audioguide ? `Audioguide ${gallery.entry.title} audio guide QR code` : "";
-    return `${item.question} ${item.where} ${item.keywords ?? ""}`;
-  };
-  const columns = THEME_COLUMNS.map((themes) => themes
-    .map((theme) => ({ ...theme, rows: theme.items.filter((item) => searchText(item) && matchesHelpQuery(`${searchText(item)} ${theme.title}`, query)) }))
-    .filter((theme) => theme.rows.length));
+  /** Les lignes de l'exposition n'existent que si elle est connue ce jour-là. */
   const row = (item: Question | GalleryRow) => {
     if (item === "expo-sheet") return gallery ? <GalleryExpoRow key={item} gallery={gallery} sheet={sheet} onChoose={onChoose} /> : null;
     if (item === "audioguide") return gallery?.entry.audioguide ? <AudioguideRow key={item} title={gallery.entry.title} audioguide={gallery.entry.audioguide} /> : null;
     return <QuestionRow key={item.id} item={item} onChoose={onChoose} />;
   };
+  const themeSection = (theme: Theme) => (
+    <section key={theme.key} className={`help-sheet-theme theme-${theme.key}`}>
+      <h3 className={`help-sheet-group-title group-${theme.key}`}>{theme.title}</h3>
+      <ul className={`help-sheet-group group-${theme.key}`} aria-label={theme.title}>{theme.items.map(row)}</ul>
+    </section>
+  );
   return (
     <dialog
       ref={dialogRef}
@@ -276,27 +299,14 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
           <h2 id="help-sheet-title">Liste des raccourcis</h2>
           <button type="button" className="help-sheet-close" aria-label="Fermer" onClick={onClose}>×</button>
         </header>
-        <input
-          type="search"
-          className="help-sheet-search"
-          placeholder="Un mot : congé, bulletin, radio…"
-          aria-label="Chercher une question"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
         <div className="help-sheet-themes">
-          {columns.map((themes, index) => (
-            <div key={THEME_COLUMNS[index][0].key} className="help-sheet-column">
-              {themes.map((theme) => (
-                <section key={theme.key} className="help-sheet-theme">
-                  <h3 className={`help-sheet-group-title group-${theme.key}`}>{theme.title}</h3>
-                  <ul className={`help-sheet-group group-${theme.key}`} aria-label={theme.title}>{theme.rows.map(row)}</ul>
-                </section>
-              ))}
+          {THEME_COLUMNS.map((themes, index) => (
+            <div key={themes[0].key} className="help-sheet-column">
+              {themes.map(themeSection)}
+              {index === 0 ? <GrandPalaisArt /> : null}
             </div>
           ))}
         </div>
-        {columns.some((themes) => themes.length) ? null : <p className="help-sheet-empty" role="status">Rien pour « {query.trim()} ». Essayez un autre mot.</p>}
       </div>
     </dialog>
   );

@@ -30,6 +30,10 @@ describe("formulaires utiles", () => {
     expect(html).toContain("Déclarer un accident de travail");
     expect(html).toContain("resource-folder-row");
     expect(html).not.toContain("›");
+    // L'en-tête se limite au surtitre et au titre, sans phrase d'explication.
+    expect(html).toContain('<span class="step-label">Documents pratiques</span><h2 id="useful-forms-title">Formulaires utiles</h2></div>');
+    // L'accident de travail : une croix de secours, lisible d'un coup d'œil.
+    expect(html).toContain('<span class="resource-accident-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5Z"></path></svg></span>');
   });
 
   it("sépare documents et audioguides d’un même dossier, au singulier ou au pluriel", () => {

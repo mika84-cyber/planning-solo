@@ -1,24 +1,31 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { AudioguideRow, expoSheetFor, galleryExpoFor, HelpSheet, matchesHelpQuery } from "./HelpSheet";
+import { AudioguideRow, expoSheetFor, galleryExpoFor, HelpSheet } from "./HelpSheet";
 import { GRAND_PALAIS_PROGRAM } from "./grandPalaisProgramData";
 
 describe("fenêtre d'aide", () => {
-  it("range les questions en cinq thèmes sur deux colonnes, sous un champ de recherche", () => {
+  it("range les questions en cinq thèmes sur deux colonnes, Mon planning sous Déclarer", () => {
     const html = renderToStaticMarkup(<HelpSheet today="2026-10-26" section="leave" onChoose={vi.fn()} onClose={vi.fn()} />);
     expect(html).toMatch(/^<dialog class="help-sheet" data-section="leave" aria-label="Liste des raccourcis">/);
-    expect(html).toContain('<h2 id="help-sheet-title">Liste des raccourcis</h2>');
-    expect(html).toContain('<input type="search" class="help-sheet-search" placeholder="Un mot : congé, bulletin, radio…" aria-label="Chercher une question" value=""/>');
+    // Plus de champ de recherche : les thèmes suivent directement le titre.
+    expect(html).toContain('<h2 id="help-sheet-title">Liste des raccourcis</h2><button type="button" class="help-sheet-close" aria-label="Fermer">×</button></header><div class="help-sheet-themes">');
+    expect(html).not.toContain("<input");
     // Une couleur par thème.
     expect(html).toContain('<h3 class="help-sheet-group-title group-docs">Documents</h3><ul class="help-sheet-group group-docs" aria-label="Documents">');
     expect(html).toContain('<ul class="help-sheet-group group-expo" aria-label="Expositions">');
     expect(html).toContain('<ul class="help-sheet-group group-planning" aria-label="Mon planning">');
     expect(html).toContain('<ul class="help-sheet-group group-pay" aria-label="Ma paie">');
     expect(html).toContain('<ul class="help-sheet-group group-declare" aria-label="Déclarer">');
-    // Documents et Expositions en première colonne, le reste en seconde.
+    // Documents et Expositions en première colonne ; Ma paie, Déclarer puis
+    // Mon planning dans la seconde.
     const columns = html.split('<div class="help-sheet-column">').slice(1);
     const headings = (part: string) => [...part.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-    expect(columns.map(headings)).toEqual([["Documents", "Expositions"], ["Mon planning", "Ma paie", "Déclarer"]]);
+    expect(columns.map(headings)).toEqual([["Documents", "Expositions"], ["Ma paie", "Déclarer", "Mon planning"]]);
+    // Sous Expositions, le dessin décoratif du Grand Palais, à l'ocre du thème.
+    expect(columns[0]).toContain('<figure class="help-sheet-art group-expo" aria-hidden="true"><svg viewBox="0 0 320 104">');
+    expect(columns[0]).toContain("<figcaption>Grand Palais</figcaption></figure></div>");
+    expect(columns[1]).not.toContain("help-sheet-art");
+    expect(html).toContain('<section class="help-sheet-theme theme-planning">');
     const group = (label: string) => {
       const start = html.indexOf(`aria-label="${label}"`);
       return [...html.slice(start, html.indexOf("</ul>", start)).matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
@@ -28,14 +35,6 @@ describe("fenêtre d'aide", () => {
     expect(group("Mon planning")).toEqual(["Télécharger un planning", "Partager mon planning avec un(e) collègue"]);
     expect(group("Ma paie")).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie"]);
     expect(group("Déclarer")).toEqual(["Poser un congé", "Échanger un jour avec un collègue", "Un mécénat ou des heures supp", "Ouvrir ou alimenter mon CET", "Un accident de travail"]);
-    expect(html).not.toContain("help-sheet-empty");
-  });
-
-  it("trouve une question sans tenir compte des accents ni des majuscules", () => {
-    expect(matchesHelpQuery("Poser un congé Accueil · Choix des dates", "CONGE")).toBe(true);
-    expect(matchesHelpQuery("Un code radio d’urgence", "radio d'urg")).toBe(true);
-    expect(matchesHelpQuery("Un code radio d’urgence", "radio congé")).toBe(false);
-    expect(matchesHelpQuery("Un formulaire", "  ")).toBe(true);
   });
 
   it("donne à l'exposition des Galeries 3 et 4 deux lignes : sa fiche et son audioguide", () => {

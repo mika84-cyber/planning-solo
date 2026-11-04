@@ -207,11 +207,13 @@ describe("finitions d’interface", () => {
     expect(css.anywhere(".today-overview-grid")).toBe(false);
     expect(refinements.mentions(".today-overview-grid")).toBe(false);
     expect(home).not.toContain("ephemeris");
-    // Des lignes sur téléphone et sur le Z Fold ouvert (tactile, jusqu'à
-    // 1100 px), des cartes côte à côte sur grand écran, cinq avec le férié.
+    // Des lignes empilées sur téléphone et sur le Z Fold ouvert (tactile,
+    // jusqu'à 1100 px) ; sur grand écran, les mêmes lignes en deux colonnes
+    // lues de haut en bas (la disposition est mesurée par le scénario e2e).
     expect(overview.declares("grid-template-areas", '"icon label value go" "icon note value go"')).toBe(true);
     expect(overview.hasMedia("(min-width: 1101px), (min-width: 721px) and (pointer: fine)")).toBe(true);
-    expect(overview.declaresTogether({ "grid-auto-flow": "column", "grid-auto-columns": "minmax(0, 1fr)" })).toBe(true);
+    expect(overview.declaresTogether({ "grid-template-columns": "repeat(2, minmax(0, 1fr))", "grid-auto-flow": "column" })).toBe(true);
+    expect(overview.declaresTogether({ "grid-auto-flow": "column", "grid-auto-columns": "minmax(0, 1fr)" })).toBe(false);
     expect(home).toContain("Prochain férié travaillé");
     // La journée garde le même format que les autres lignes : sa couleur
     // n'est que sur l'icône et le libellé, sans fond coloré ni pastille.

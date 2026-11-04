@@ -423,7 +423,6 @@ export function UsefulFormsSection({
       <div className="native-screen-heading">
         <span className="step-label">Documents pratiques</span>
         <h2 id="useful-forms-title">Formulaires utiles</h2>
-        <p>Choisissez un dossier puis téléchargez directement le document dont vous avez besoin.</p>
       </div>
       <label className="resource-search-field"><span>Rechercher un document</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom du document" /></label>
       <div className="useful-form-content-stack">
@@ -452,12 +451,10 @@ export function UsefulFormsSection({
       <section className="resource-accident" aria-labelledby="resource-accident-title">
         <p className="resource-accident-label">En cas d’accident</p>
         <button className="resource-accident-card" type="button" onClick={() => openFolder("work-accident")}>
+          {/* La croix de secours, lisible d'un coup d'œil. */}
           <span className="resource-accident-icon" aria-hidden="true">
-            <svg viewBox="4 2.5 18 19">
-              <path d="M11 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" />
-              <path d="M5.5 21v-5a4.5 4.5 0 0 1 4.5-4.5h2a4.5 4.5 0 0 1 4.5 4.5v5" />
-              <path d="M14.5 12 8 18.5h6l2-2" />
-              <path d="M19.5 3v4M17.5 5h4" />
+            <svg viewBox="0 0 24 24">
+              <path d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5Z" />
             </svg>
           </span>
           <span className="resource-accident-copy">

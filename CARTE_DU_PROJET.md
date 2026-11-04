@@ -26,7 +26,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   frise et groupes de Ma paie et du détail du calcul, états des dimanches,
   onglets et salles des Expos, dossiers et annuaires, bouton de compte,
   date des notes en petit calendrier terracotta, rubrique ouverte du dock à
-  la couleur de son en-tête (`--tone` par `data-section`). Budget CSS gzip
+  sa couleur (`--tone` par `data-section` : Accueil bordeaux, Congés bleu,
+  Ma paie vert, Docs ocre, Expos prune, Collègues terracotta ; depuis le
+  4 novembre 2026, Ma paie et Expos ne reprennent plus le bleu-vert et
+  l'olive de leur en-tête, trop proches de Congés et Docs). Budget CSS gzip
   relevé à 102 Kio le 1er novembre 2026 (100,0 mesurés) : retirer d'abord
   une règle morte avant d'en ajouter une, l'administrateur seul relève.
   Vérifier en sombre (mesurer les couleurs calculées) après toute retouche ;
@@ -157,7 +160,16 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `AppShellChrome`, `HomeSectionScreen` et `DocumentsSectionScreen` ont un
   test de rendu (`renderToStaticMarkup`, rubriques différées remplacées par
   des témoins ou rendues après leur chargement).
-- `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ».
+- `src/HomeDashboard.tsx` : tableau d’accueil « en un coup d’œil ». La
+  prochaine note montre la première note du jour, puis « +N (voir) » quand
+  il y en a d’autres : chaque ligne d’une note compte, celles d’Agnès aussi
+  (`noteLines` dans `appModel.ts`, partagé avec « Mes notes ») ; le libellé
+  vocal les cite toutes. Les blocs sont des lignes (icône, libellé et
+  précision, valeur) : empilées sur téléphone et sur le Z Fold ouvert, en
+  deux colonnes lues de haut en bas sur grand écran (`homeOverview.css` :
+  deux lignes par colonne jusqu'à quatre blocs, trois au-delà, filet
+  vertical entre elles). Les cartes côte à côte ont été retirées le
+  4 novembre 2026 : à 160 px, libellés sur trois lignes et note illisible.
 - « Liste des raccourcis » (anciennement « Que cherchez-vous ? », renommée le
   1er novembre 2026) : une petite pastille crème au même endroit de
   chaque en-tête, en bas à gauche, le titre centré au-dessus — loupe dans un
@@ -170,19 +182,23 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   menu du compte, qui fait contexte d’empilement, reste au-dessus de la
   pastille (z-index 4 contre 3), sinon son menu déroulant passe dessous. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
   demande) : « Liste des raccourcis », une fine bande aux couleurs de l’en-tête
-  en haut, puis un champ « Un mot : congé, bulletin, radio… » qui filtre les
-  questions à la frappe (`matchesHelpQuery` : chaque mot tapé, sans accent ni
-  majuscule, dans la question, son chemin, ses mots-clés ou son thème ; « Rien
-  pour … » sinon). Les questions sont rangées en cinq thèmes courts
-  (`THEME_COLUMNS`), sur deux colonnes à l’ordinateur : Documents (téléphone,
+  en haut, puis directement les questions, sans champ de recherche (retiré le
+  4 novembre 2026). Elles sont rangées en cinq thèmes courts. À l’ordinateur,
+  deux colonnes (`THEME_COLUMNS`) : Documents (téléphone,
   formulaire administratif, formulaire de congé, les 3 groupes de collègues, code radio) et Expositions (fiche d’expo,
-  dates d’une exposition, audioguide, inter-expos) ; Mon planning (planning en
-  PDF, partager mon planning), Ma paie et Déclarer. Fond pâle, filets fins,
+  dates d’une exposition, audioguide, inter-expos) à gauche ; Ma paie,
+  Déclarer puis Mon planning (planning en PDF, partager mon planning) à
+  droite. Sur téléphone, une seule colonne dans l’ordre Documents,
+  Expositions, Mon planning, Ma paie, Déclarer (colonnes en `display:
+  contents` et `order` dans `helpSheet.css`). Fond pâle, filets fins,
   liseré, titre et icônes à la couleur du thème (`group-${key}` : Documents
   en bleu, Expositions en ocre, Mon planning en prune, Ma paie en vert,
   Déclarer en terracotta ; teintes éclaircies dans `darkTheme.css`). Le
-  panneau garde sa hauteur pendant la recherche (téléphone) ou reste accroché
-  en haut (ordinateur) : le champ ne bouge pas. L’exposition des Galeries 3 et
+  panneau monte à 90 % de l’écran sur téléphone ; à l’ordinateur, il reste
+  accroché en haut et tient sans défiler dès 846 px de haut. Les deux
+  colonnes y ont la même hauteur : sous Expositions, le Grand Palais au trait
+  (`GrandPalaisArt`, décoratif, à l’ocre des Expositions) prend la place
+  laissée par la colonne de droite ; masqué sur téléphone. L’exposition des Galeries 3 et
   4 (`galleryExpoFor`) y a deux lignes à son nom, séparées : sa fiche d’expo,
   le PDF du dossier Expo téléchargé d’un toucher (`useGalleryExpo` lit le
   dossier une fois à l’ouverture, `expoSheetFor`, sinon le dossier s’ouvre ;
@@ -270,6 +286,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `pdfYears`), « Plus » ouvre les années suivantes ; les vacances en
   pastilles Non / Oui, tuile rose.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
+  L’encadré « Déclarer un accident de travail » porte une croix de secours.
+  Comme `UsefulContactsSection.tsx`, l’en-tête se limite au surtitre et au
+  titre (phrases d’explication retirées le 4 novembre 2026).
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
   centrée des nouveaux documents, lecture et ajout administrateur.
 - `src/DocumentEditDialog.tsx` et `netlify/lib/documentVersions.mts` : remplacement

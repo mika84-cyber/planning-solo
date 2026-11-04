@@ -1233,10 +1233,6 @@
     margin: 3px 0 4px;
     font-size: 1.25rem;
   }
-  .useful-forms-screen:not(.useful-forms-folder-screen)>.native-screen-heading p {
-    font-size: 11px;
-    line-height: 1.42;
-  }
   .useful-resources-screen { margin-top: 18px; padding-bottom: 30px; }
   .has-active-resource .useful-resource-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));

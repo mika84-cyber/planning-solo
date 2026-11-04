@@ -227,6 +227,15 @@ export function groupNoteItemsByDate(items: NoteListItem[]) {
   return grouped;
 }
 
+/** Les lignes d'une note, débarrassées de leurs puces : chaque ligne écrite
+ *  compte comme une note du jour, dans « Mes notes » comme sur l'accueil. */
+export function noteLines(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.replace(/^[–—\-•>]\s*/, "").trim())
+    .filter(Boolean);
+}
+
 const NOTE_MONTHS = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
 export function noteDateLabel(key: string) {
   const date = fromKey(key);

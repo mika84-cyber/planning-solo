@@ -127,5 +127,31 @@ describe("HomeDashboard", () => {
     />);
     expect(later).toContain("Prochaine note");
     expect(later).toContain("Plus tard");
+    // Une seule note : pas de compteur.
+    expect(html).not.toContain("today-note-more");
+    expect(html).not.toContain("(voir)");
+  });
+
+  it("montre la première note du jour et compte les autres, avec « (voir) »", () => {
+    const html = renderToStaticMarkup(<HomeDashboard
+      {...baseProps}
+      upcoming={[{
+        key: "notes-2026-11-09",
+        date: "2026-11-09",
+        label: "– Psy 11h45\n– Mécénat 19h30 / minuit",
+        detail: "",
+        kind: "note",
+        author: "mika",
+        notes: [
+          { author: "mika", label: "– Psy 11h45\n– Mécénat 19h30 / minuit" },
+          { author: "agnes", label: "Courses" },
+        ],
+      }]}
+    />);
+    expect(html).toContain('<span class="today-note-first">Psy 11h45</span>');
+    expect(html).toContain('<span class="today-note-more">+2 <span>(voir)</span></span>');
+    expect(html).not.toContain("Mécénat 19h30 / minuit</span>");
+    // Le lecteur d’écran entend toutes les notes du jour.
+    expect(html).toContain('aria-label="Prochaines notes : Lun 09/11, Psy 11h45, Mécénat 19h30 / minuit, Courses. Afficher ce jour."');
   });
 });

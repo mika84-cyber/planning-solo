@@ -52,14 +52,16 @@ html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: 
 
 /* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
 html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }
-/* La rubrique ouverte prend la couleur de son en-tête : toute la case sur
-   grand écran ; sur téléphone, la pastille de l'icône, et le nom dans cette
-   couleur éclaircie. */
+/* La rubrique ouverte prend sa couleur : toute la case sur grand écran ; sur
+   téléphone, la pastille de l'icône, et le nom dans cette couleur éclaircie.
+   Six teintes bien séparées : Accueil bordeaux, Collègues terracotta, Docs
+   ocre, Ma paie vert (comme ses raccourcis), Congés bleu, Expos prune. Ma
+   paie bleu-vert et Expos olive se confondaient avec Congés et Docs. */
 .section-dock > [data-section="home"] { --tone: #b56; }
 .section-dock > [data-section="leave"] { --tone: #38b; }
-.section-dock > [data-section="pay"] { --tone: #589; }
+.section-dock > [data-section="pay"] { --tone: #2f8a5e; }
 .section-dock > [data-section="pdf"] { --tone: #a83; }
-.section-dock > [data-section="program"] { --tone: #784; }
+.section-dock > [data-section="program"] { --tone: #7d5fb2; }
 .section-dock > [data-section="colleagues"] { --tone: #c64; }
 html[data-theme="dark"] .section-dock > button.active { background: var(--tone); color: #fff; }
 @media (max-width: 720px) {

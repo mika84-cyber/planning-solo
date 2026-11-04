@@ -1,5 +1,5 @@
 import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import type { NoteListItem } from "./appModel";
+import { noteLines, type NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
 import "./homeOverview.css";
@@ -101,7 +101,13 @@ export function HomeDashboard({
   /** La prochaine note, la mienne ou celle d’Agnès, si loin soit-elle : le
    *  mois suivant aussi. */
   const nextNote = upcoming.find((item) => item.kind === "note") ?? null;
-  const nextNoteText = nextNote ? (nextNote.notes?.map((note) => note.label).join(" · ") ?? nextNote.label) : "";
+  /* Chaque ligne d’une note compte comme une note du jour, les miennes puis
+     celles d’Agnès : la première se lit, les autres se comptent (« +2 »). */
+  const nextNoteLines = nextNote
+    ? (nextNote.notes?.map((note) => note.label) ?? [nextNote.label]).flatMap(noteLines)
+    : [];
+  const nextNoteFirst = nextNoteLines[0] ?? nextNote?.label ?? "";
+  const nextNoteMore = Math.max(0, nextNoteLines.length - 1);
   const [dismissedSetupItems, setDismissedSetupItems] = useState<string[]>(() => {
     try {
       if (typeof localStorage === "undefined") return [];
@@ -325,7 +331,7 @@ export function HomeDashboard({
               className="today-block today-next-note"
               type="button"
               onClick={() => onOpenNextWork(new Date(`${nextNote.date}T12:00:00`))}
-              aria-label={`Prochaine note : ${extraWorkDate(nextNote.date, now)}, ${nextNoteText}. Afficher ce jour.`}
+              aria-label={`${nextNoteMore ? "Prochaines notes" : "Prochaine note"} : ${extraWorkDate(nextNote.date, now)}, ${nextNoteLines.join(", ") || nextNoteFirst}. Afficher ce jour.`}
             >
               <span className="today-block-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
@@ -336,7 +342,14 @@ export function HomeDashboard({
               </span>
               <span className="today-block-label">Prochaine note</span>
               <strong className="is-date">{extraWorkDate(nextNote.date, now)}</strong>
-              <small className="today-block-note today-note-text">{nextNoteText}</small>
+              <small className="today-block-note today-note-text">
+                <span className="today-note-first">{nextNoteFirst}</span>
+                {nextNoteMore ? (
+                  <span className="today-note-more">
+                    +{nextNoteMore} <span>(voir)</span>
+                  </span>
+                ) : null}
+              </small>
               {chevron}
             </button>
           ) : null}

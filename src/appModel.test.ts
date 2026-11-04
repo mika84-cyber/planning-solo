@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupNoteItemsByDate, noteDateLabel, personalPresenceForDate, roundCurrency, presenceShownToColleagues, workedDayCount, type Entries, type NoteListItem } from "./appModel";
+import { groupNoteItemsByDate, noteDateLabel, noteLines, personalPresenceForDate, roundCurrency, presenceShownToColleagues, workedDayCount, type Entries, type NoteListItem } from "./appModel";
 import { dateKey, getDayInfo } from "./planningLogic";
 
 describe("groupNoteItemsByDate", () => {
@@ -35,6 +35,12 @@ describe("groupNoteItemsByDate", () => {
 
   it("affiche une date courte sans zéro ni point", () => {
     expect(noteDateLabel("2026-09-02")).toBe("2 sept 2026");
+  });
+
+  it("compte chaque ligne d’une note comme une note, sans sa puce", () => {
+    expect(noteLines("– Psy 11h45\n– Mécénat 19h30 / minuit\n\n")).toEqual(["Psy 11h45", "Mécénat 19h30 / minuit"]);
+    expect(noteLines("• Un\n- Deux\n> Trois\nQuatre")).toEqual(["Un", "Deux", "Trois", "Quatre"]);
+    expect(noteLines("Réunion d’équipe")).toEqual(["Réunion d’équipe"]);
   });
 });
 
