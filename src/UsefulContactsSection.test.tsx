@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { ContactCards, ContactThemePanels, contactThemes, mailComposeHref, nameWithinTheme, UsefulContactsSection } from "./UsefulContactsSection";
+import { ContactCards, ContactThemePanels, contactThemes, mailComposeHref, nameHalves, nameWithinTheme, UsefulContactsSection } from "./UsefulContactsSection";
 import type { UsefulContactsPayload } from "./usefulContactsTypes";
 import { USEFUL_CONTACTS_DATA } from "../netlify/lib/usefulContactsData.mjs";
 
@@ -52,6 +52,22 @@ describe("carte de contact", () => {
     expect(nameWithinTheme("Réclamations visiteurs", "Visiteurs")).toBe("Réclamations");
     expect(nameWithinTheme("Superviseur PC", "Encadrement")).toBe("Superviseur PC");
     expect(nameWithinTheme("Hall", "Hall")).toBe("Hall");
+  });
+
+  it("coupe un nom long en deux moitiés égales, la pastille radio comptée avec la seconde", () => {
+    expect(nameHalves("Responsables accueil et caisses")).toEqual(["Responsables", "accueil et caisses"]);
+    expect(nameHalves("Responsables accueil et caisses", 9)).toEqual(["Responsables accueil", "et caisses"]);
+    expect(nameHalves("Billetterie")).toBeNull();
+  });
+
+  it("garde chaque moitié d’un nom long entière, la pastille collée à la seconde", () => {
+    const html = renderToStaticMarkup(<ContactThemePanels
+      contacts={[{ name: "Responsables accueil et caisses", theme: "Encadrement", radioChannel: 11, phones: [{ number: "0611000000" }] }]}
+      isAdmin={false}
+      onEdit={vi.fn()}
+    />);
+    expect(html).toContain('<li class="contact-theme-row contact-theme-row-long">');
+    expect(html).toContain('<span class="useful-contact-title"><strong><span class="contact-name-half">Responsables accueil</span> <span class="contact-name-half">et caisses<em class="useful-contact-radio"><span class="visually-hidden">radio, </span>Canal 11</em></span></strong></span>');
   });
 
   it("présente l’annuaire GP-RMN en panneaux de thème, une ligne par contact", () => {

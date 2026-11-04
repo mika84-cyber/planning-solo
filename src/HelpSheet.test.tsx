@@ -22,8 +22,7 @@ describe("fenêtre d'aide", () => {
     const headings = (part: string) => [...part.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
     expect(columns.map(headings)).toEqual([["Documents", "Expositions"], ["Ma paie", "Déclarer", "Mon planning"]]);
     // Sous Expositions, le dessin décoratif du Grand Palais, à l'ocre du thème.
-    expect(columns[0]).toContain('<figure class="help-sheet-art group-expo" aria-hidden="true"><svg viewBox="0 0 320 104">');
-    expect(columns[0]).toContain("<figcaption>Grand Palais</figcaption></figure></div>");
+    expect(columns[0]).toContain('<figure class="help-sheet-art group-expo" aria-hidden="true"><span class="help-sheet-art-drawing"></span><figcaption>Grand Palais</figcaption></figure></div>');
     expect(columns[1]).not.toContain("help-sheet-art");
     expect(html).toContain('<section class="help-sheet-theme theme-planning">');
     const group = (label: string) => {

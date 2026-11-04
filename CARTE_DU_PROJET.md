@@ -198,7 +198,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   accroché en haut et tient sans défiler dès 846 px de haut. Les deux
   colonnes y ont la même hauteur : sous Expositions, le Grand Palais au trait
   (`GrandPalaisArt`, décoratif, à l’ocre des Expositions) prend la place
-  laissée par la colonne de droite ; masqué sur téléphone. L’exposition des Galeries 3 et
+  laissée par la colonne de droite ; masqué sur téléphone. Le dessin est le
+  fichier `public/help-art-grand-palais.svg`, posé en masque CSS et teinté
+  par `currentColor` : il ne pèse pas dans le budget JavaScript. L’exposition des Galeries 3 et
   4 (`galleryExpoFor`) y a deux lignes à son nom, séparées : sa fiche d’expo,
   le PDF du dossier Expo téléchargé d’un toucher (`useGalleryExpo` lit le
   dossier une fois à l’ouverture, `expoSheetFor`, sinon le dossier s’ouvre ;
@@ -299,6 +301,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   travail marquées dans le planning sans carence ; seuls les CA superposés sont
   retirés et recrédités automatiquement, les autres congés restant modifiables.
 - `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
+  Dans l’annuaire GP-RMN, un nom long (« Responsables accueil et caisses »)
+  est coupé en deux moitiés qui restent entières (`nameHalves`, la pastille
+  radio collée à la seconde) : il tient sur deux lignes au plus, et ses
+  numéros passent dessous quand la place manque, quelle que soit la police.
+  Sur le serveur Linux de GitHub, plus large que Segoe UI, il passait sur
+  trois lignes (échec e2e mobile du 1er au 4 novembre 2026) ; le scénario
+  rejoue la mesure avec Verdana agrandie à 125 %.
   Données : `netlify/lib/usefulContactsData.mts`, en service tant que
   l’administrateur n’a rien modifié depuis l’application (sinon l’annuaire vit
   dans le blob `useful-contacts/admin-directory`). GP-RMN suit la fiche

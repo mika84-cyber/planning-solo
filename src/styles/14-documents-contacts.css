@@ -847,10 +847,13 @@
 /* Le nom se centre en hauteur face à ses numéros, un ou deux l'un sous
    l'autre : pas de grand vide sous lui. 104 px lui suffisent : dès 360 px, numéros et
    SMS restent sur sa ligne. Un nom long (« Responsables accueil et
-   caisses ») en demande 150 : il tient sur deux lignes, ou ses numéros
-   passent dessous plutôt que de le couper en trois. */
+   caisses ») en demande 150, et il est coupé en deux moitiés qui restent
+   entières (nameHalves) : sa colonne ne descend jamais sous la plus longue,
+   et ses numéros passent dessous plutôt que de le couper en trois, quelle
+   que soit la police (celle du serveur Linux, plus large) ou sa taille. */
 .contact-theme-who { flex: 1 1 104px; min-width: 0; min-height: 36px; display: grid; align-content: center; gap: 2px; }
-.contact-theme-row-long .contact-theme-who { flex-basis: 150px; }
+.contact-theme-row-long .contact-theme-who { flex-basis: 150px; min-width: min-content; }
+.contact-name-half { white-space: nowrap; }
 .contact-theme-who small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; text-wrap: balance; }
 .contact-theme-actions { display: flex; align-items: center; gap: 5px; }
 .contact-theme-phones { display: grid; justify-items: end; gap: 6px; }

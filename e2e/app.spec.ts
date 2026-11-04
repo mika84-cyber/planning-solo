@@ -3908,12 +3908,20 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   expect(sureteChannel!.x).toBeGreaterThan(sureteName!.x + sureteName!.width);
   // Les titres tiennent sur une ligne, deux au plus quand la place manque,
   // même à côté du bouton ✎ (avant, chaque mot passait à la ligne).
-  const titleLines = await page.locator(".useful-contact-title").evaluateAll((titles) => titles.map((title) => ({
+  const measureTitleLines = () => page.locator(".useful-contact-title").evaluateAll((titles) => titles.map((title) => ({
     name: title.querySelector("strong")?.textContent,
     lines: Math.round(title.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(title).lineHeight)),
   })));
+  const titleLines = await measureTitleLines();
   expect(titleLines.filter((title) => title.lines > 2)).toEqual([]);
   expect(titleLines.find((title) => title.name === "Superviseur PC")?.lines).toBe(1);
+  // Avec une police plus large (celle du serveur Linux, où « Responsables
+  // accueil et caisses » passait sur trois lignes) et agrandie à 125 %, un
+  // nom long reste sur deux lignes au plus : ses numéros passent dessous.
+  const widerFont = await page.addStyleTag({ content: ".contact-theme-panels, .contact-theme-panels * { font-family: Verdana, 'DejaVu Sans', sans-serif !important; } .contact-theme-panels .useful-contact-title { font-size: 17.5px !important; }" });
+  expect((await measureTitleLines()).filter((title) => title.lines > 2)).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await widerFont.evaluate((node) => node.remove());
   await expect(page.getByRole("link", { name: /^Appeler Superviseur PC au 06 11 79 38 83/ })).toHaveAttribute("href", "tel:+33611793883");
   await expect(page.getByText("Superviseur expositions")).toBeVisible();
   // Ni SMS pour les portables des responsables et des superviseurs.
@@ -7041,14 +7049,14 @@ test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou l
     for (const box of [declare, planning]) expect(Math.abs(box!.x - pay!.x)).toBeLessThanOrEqual(1);
     expect(declare!.y).toBeGreaterThan(bottom(pay));
     expect(planning!.y).toBeGreaterThan(bottom(declare));
-    // Les deux colonnes finissent à deux lignes près.
-    expect(Math.abs(bottom(planning) - bottom(expo))).toBeLessThanOrEqual(130);
-    // L'espace sous Expositions reçoit le dessin du Grand Palais, qui
-    // s'arrête au bas de la colonne de droite.
+    // L'espace sous Expositions reçoit le dessin du Grand Palais : il le
+    // comble jusqu'au bas de la colonne de droite, quelle que soit la police
+    // (une mesure de l'écart entre les colonnes échouait sur le serveur Linux,
+    // dont la police plus large allonge la colonne de droite).
     const artBox = await sheet.locator(".help-sheet-art").boundingBox();
     expect(artBox!.y).toBeGreaterThan(bottom(expo));
     expect(Math.abs(artBox!.x - expo!.x)).toBeLessThanOrEqual(1);
-    expect(bottom(artBox)).toBeLessThanOrEqual(bottom(planning) + 1);
+    expect(Math.abs(bottom(artBox) - bottom(planning))).toBeLessThanOrEqual(2);
   } else {
     const order = [docs, expo, planning, pay, declare].map((box) => box!.y);
     expect(order).toEqual([...order].sort((a, b) => a - b));

@@ -89,6 +89,20 @@ export function nameWithinTheme(name: string, theme: string) {
   return name.replace(new RegExp(`\\s+${theme}(?=\\s|$)`, "i"), "").trim() || name;
 }
 
+/** Un nom long coupé en deux moitiés les plus égales possible, entre deux
+ *  mots (« Responsables accueil » / « et caisses »). `tail` compte ce qui
+ *  suit la seconde moitié sur sa ligne, la pastille du canal radio. Chaque
+ *  moitié reste entière : le nom tient sur deux lignes au plus, quelle que
+ *  soit la police ou sa taille. Un seul mot : rien à couper. */
+export function nameHalves(name: string, tail = 0): [string, string] | null {
+  const words = name.split(/\s+/).filter(Boolean);
+  if (words.length < 2) return null;
+  const width = (cut: number) => Math.max(words.slice(0, cut).join(" ").length, words.slice(cut).join(" ").length + tail);
+  let best = 1;
+  for (let cut = 2; cut < words.length; cut += 1) if (width(cut) < width(best)) best = cut;
+  return [words.slice(0, best).join(" "), words.slice(best).join(" ")];
+}
+
 /** Annuaire GP-RMN : un panneau par thème, à sa couleur, et une ligne par
  *  contact — le nom et son canal radio, la précision dessous, les numéros à
  *  droite (un toucher appelle ; un portable propose aussi le SMS). */
@@ -112,14 +126,19 @@ export function ContactThemePanels({ contacts, isAdmin, onEdit }: { contacts: Us
             <ul className="contact-theme-rows">
               {themed.map((contact) => {
                 const name = nameWithinTheme(contact.name, theme);
-                // Un nom long, pastille du canal comprise, garde sa ligne entière.
+                // Un nom long, pastille du canal comprise, garde sa ligne entière
+                // et se coupe en deux moitiés qui ne se coupent pas elles-mêmes ;
+                // la pastille fait corps avec la seconde.
                 const long = name.length + (contact.radioChannel ? 9 : 0) > 26;
+                const halves = long ? nameHalves(name, contact.radioChannel ? 9 : 0) : null;
+                const radio = contact.radioChannel ? <em className="useful-contact-radio"><span className="visually-hidden">radio, </span>Canal {contact.radioChannel}</em> : null;
                 return (
                 <li key={contact.id || contact.name} className={`contact-theme-row${long ? " contact-theme-row-long" : ""}`}>
                   <span className="contact-theme-who">
                     <span className="useful-contact-title">
-                      <strong>{name}</strong>
-                      {contact.radioChannel ? <em className="useful-contact-radio"><span className="visually-hidden">radio, </span>Canal {contact.radioChannel}</em> : null}
+                      {halves ? (
+                        <strong><span className="contact-name-half">{halves[0]}</span> <span className="contact-name-half">{halves[1]}{radio}</span></strong>
+                      ) : <><strong>{name}</strong>{radio}</>}
                     </span>
                     {contact.context || contact.email ? <small>{contact.context || contact.email}</small> : null}
                   </span>

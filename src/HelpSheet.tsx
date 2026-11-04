@@ -84,33 +84,15 @@ const THEME_COLUMNS: Theme[][] = [
   ],
 ];
 
-/** Les montants des verrières et les colonnes de la façade, réguliers. */
-const steps = (count: number, from: number, step: number) => Array.from({ length: count }, (_, index) => from + index * step);
-
 /** Sous Expositions, dans l'espace que laisse la colonne de droite : le Grand
  *  Palais au trait — la nef et ses verrières, le dôme et son drapeau, la
- *  colonnade —, à l'ocre des Expositions. Décoratif, seulement à l'ordinateur. */
+ *  colonnade —, à l'ocre des Expositions. Le dessin est un fichier SVG posé
+ *  en masque (`public/help-art-grand-palais.svg`), teinté par le thème, hors
+ *  du budget JavaScript. Décoratif, seulement à l'ordinateur. */
 function GrandPalaisArt() {
   return (
     <figure className="help-sheet-art group-expo" aria-hidden="true">
-      <svg viewBox="0 0 320 104">
-        <defs>
-          <clipPath id="help-art-vault-left"><path d="M40 60 Q82 34 126 44 V60Z" /></clipPath>
-          <clipPath id="help-art-vault-right"><path d="M194 44 Q238 34 280 60 H194Z" /></clipPath>
-          <clipPath id="help-art-dome"><path d="M126 52 C126 30 141 18 160 18 C179 18 194 30 194 52Z" /></clipPath>
-        </defs>
-        <path d="M40 60 Q82 34 126 44 M194 44 Q238 34 280 60" />
-        <g className="thin" clipPath="url(#help-art-vault-left)">{steps(11, 46, 8).map((x) => <path key={x} d={`M${x} 30 V60`} />)}</g>
-        <g className="thin" clipPath="url(#help-art-vault-right)">{steps(11, 198, 8).map((x) => <path key={x} d={`M${x} 30 V60`} />)}</g>
-        <path d="M126 52 C126 30 141 18 160 18 C179 18 194 30 194 52" />
-        <g className="thin" clipPath="url(#help-art-dome)">
-          <path d="M160 18 V52 M143 52 C144 34 151 22 160 18 M177 52 C176 34 169 22 160 18 M130 40 H190 M127 47 H193 M135 30 H185" />
-        </g>
-        <path d="M155 18 V12 H165 V18 M160 12 V5 l9 2.4 -9 2.4" />
-        <path d="M34 60 H286 M34 64 H286 M120 52 H200 M120 52 V60 M200 52 V60" />
-        {steps(17, 44, 14).map((x) => <path key={x} d={`M${x} 64 V90`} />)}
-        <path d="M30 90 H290 M22 96 H298" />
-      </svg>
+      <span className="help-sheet-art-drawing" />
       <figcaption>Grand Palais</figcaption>
     </figure>
   );
