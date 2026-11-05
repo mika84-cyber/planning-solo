@@ -808,21 +808,10 @@ describe("finitions d’interface", () => {
   });
 
   it("organise l’accueil de Ma paie autour du mois et des accès directs", () => {
-    expect(payDashboard).toContain("<PayMonthNav");
+    // Le contenu de l'accueil se vérifie sur son rendu (PayDashboard.test.tsx).
     expect(payMonthNav).toContain('className="pay-bulletin-month pay-bulletin-month-nav"');
-    expect(payDashboard).toContain("Net estimé");
-    expect(payDashboard).toContain("Détail du calcul");
-    expect(payDashboard).not.toContain("Actions utiles");
-    expect(payDashboard).not.toContain("pay-dashboard-checks");
     expect(appRoot).not.toContain("Bulletin du mois non vérifié");
     expect(appRoot).not.toContain('actionLabel: "Choisir le PDF"');
-    expect(payDashboard).toContain("Primes et jours fériés");
-    expect(payDashboard).toContain("Vérifier mon bulletin");
-    // Trois entrées de même facture après le bouton du mois ; le profil et
-    // ses éléments se déplient d'un geste, sans volet « Affiner… ».
-    expect(payDashboard).toContain('className="pay-bulletin-more"');
-    expect(payDashboard).toContain("Profil et réglages");
-    expect(payDashboard).not.toContain("Profil · réglages");
     expect(app).not.toContain("Affiner les valeurs manuellement si besoin");
     expect(app).not.toContain("pay-dashboard-settings-toggle");
     expect(css.mentions(".pay-bulletin .pay-bulletin-layout")).toBe(true);
