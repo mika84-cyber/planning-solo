@@ -2,6 +2,7 @@ import { json, sanitizeCetAccount, type FormProfile, type ManualYearAdjustments 
 import type { CalendarActionContext } from "./context.mts";
 import { sanitizeDeductionPayMonths } from "../calendarValidation.mts";
 import { sanitizePayslipVerifications } from "../../../src/payslipVerificationRecords.ts";
+import { sanitizeMealVoucherPlans } from "../../../src/mealVouchers.ts";
 import { mergePayslipRateSamples } from "../../../src/payslipRateSamples.ts";
 import { readAtomic, writeAtomic } from "../calendarAtomic.mts";
 export async function handleSaveFormProfile(
@@ -198,6 +199,7 @@ export async function handleSaveFormProfile(
     cet_account: previousProfile?.cet_account,
     deduction_pay_months: previousProfile?.deduction_pay_months,
     payslip_verifications: previousProfile?.payslip_verifications,
+    meal_voucher_plans: previousProfile?.meal_voucher_plans,
     payslip_rate_samples: previousProfile?.payslip_rate_samples,
     updated_at: new Date().toISOString(),
   };
@@ -211,6 +213,17 @@ export async function handleSaveFormProfile(
     )
       return json({ error: "Mois de retenue invalides" }, 400);
     formProfile.deduction_pay_months = sanitizeDeductionPayMonths(body.deductionPayMonths);
+  }
+  // Les titres repas sont renvoyés entiers par leur écran ; les autres appels
+  // ne les touchent pas.
+  if (body.mealVoucherPlans !== undefined) {
+    if (
+      !body.mealVoucherPlans ||
+      typeof body.mealVoucherPlans !== "object" ||
+      Array.isArray(body.mealVoucherPlans)
+    )
+      return json({ error: "Titres repas invalides" }, 400);
+    formProfile.meal_voucher_plans = sanitizeMealVoucherPlans(body.mealVoucherPlans);
   }
   // Les décisions des bulletins sont renvoyées entières par l'écran de
   // vérification ; les autres appels ne les touchent pas.

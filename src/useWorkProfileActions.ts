@@ -54,6 +54,7 @@ export function useWorkProfileActions({
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
       deductionPayMonths: formProfile?.deductionPayMonths,
+      mealVoucherPlans: formProfile?.mealVoucherPlans,
       // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
       // ou le retirent : les autres enregistrements doivent le laisser tel quel.
       sundayCarryover: formProfile?.sundayCarryover,
@@ -106,6 +107,7 @@ export function useWorkProfileActions({
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
       deductionPayMonths: formProfile?.deductionPayMonths,
+      mealVoucherPlans: formProfile?.mealVoucherPlans,
       // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
       // ou le retirent : les autres enregistrements doivent le laisser tel quel.
       sundayCarryover: formProfile?.sundayCarryover,
@@ -154,6 +156,7 @@ export function useWorkProfileActions({
       manualAdjustments: formProfile?.manualAdjustments,
       cetAccount: formProfile?.cetAccount,
       deductionPayMonths: formProfile?.deductionPayMonths,
+      mealVoucherPlans: formProfile?.mealVoucherPlans,
       // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
       // ou le retirent : les autres enregistrements doivent le laisser tel quel.
       sundayCarryover: formProfile?.sundayCarryover,

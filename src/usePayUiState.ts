@@ -34,7 +34,7 @@ export function usePayUiState() {
   // Après une mise à jour, le sous-écran rouvre aussi.
   const [payScreen, setPayScreenState] = useState<PayScreen>(() => {
     const screen = resumedScreen()?.payScreen;
-    return screen === "allowances" || screen === "payslip" || screen === "year" ? screen : "overview";
+    return screen === "allowances" || screen === "payslip" || screen === "year" || screen === "meal" ? screen : "overview";
   });
   const payScreenRef = useRef<PayScreen>(payScreen);
   /* Chaque sous-écran de Ma paie (primes, détail du calcul, année) est une

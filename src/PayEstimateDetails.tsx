@@ -24,6 +24,9 @@ export type PayCalculationBreakdown = {
   estimatedContributions: number | null;
   navigo: number;
   mealVoucherDeduction: number;
+  /** Le nombre de titres du mois et la part de l'agent, s'ils ont été renseignés. */
+  mealVoucherCount?: number;
+  mealVoucherAgentPart?: number;
   netBeforeTax: number | null;
   pasRate: number;
   incomeTax: number | null;
@@ -264,7 +267,7 @@ function PayTotalsExplained({
     setLanding(false);
   }, [landing]);
   const brut = grossEstimateComplete ? gross : null;
-  const { variableAdditions, estimatedContributions, netBeforeTax, incomeTax, navigo, mealVoucherDeduction, pasRate, netRatioFixed, netRatioVariable } = calculation;
+  const { variableAdditions, estimatedContributions, netBeforeTax, incomeTax, navigo, mealVoucherDeduction, mealVoucherCount, mealVoucherAgentPart, pasRate, netRatioFixed, netRatioVariable } = calculation;
   const fixedPart = gross - variableAdditions;
   const round = (value: number) => Math.round(value * 100) / 100;
   const termsOf = (rows: PayCalculationRow[]): ExplainStep[] =>
@@ -305,8 +308,15 @@ function PayTotalsExplained({
     },
     mealVouchers: {
       title: "Les titres repas",
-      intro: "Votre part du mois, retenue sur le net — jamais en décembre.",
-      steps: [{ label: "Titres repas", amount: mealVoucherDeduction, sign: "=" }],
+      intro: mealVoucherCount === undefined
+        ? "Votre part du mois, retenue sur le net. Par défaut : 20 titres par mois, rien en décembre."
+        : "Votre part du mois, retenue sur le net.",
+      steps: [{
+        label: "Titres repas",
+        ...(mealVoucherCount ? { detail: `${mealVoucherCount} titre${mealVoucherCount > 1 ? "s" : ""} à ${euros(mealVoucherAgentPart ?? 0)}` } : {}),
+        amount: mealVoucherDeduction,
+        sign: "=",
+      }],
     },
     navigo: {
       title: "Le Navigo remboursé",

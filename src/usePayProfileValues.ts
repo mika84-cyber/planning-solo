@@ -1,4 +1,5 @@
 import type { FormProfile, PayProfile } from "./appModel";
+import { mealVoucherPlanFor } from "./mealVouchers";
 import { dailyMinutesForQuota, type WorkQuota } from "./overtime";
 import {
   defaultNetRatiosForPeriod,
@@ -125,6 +126,7 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
   const mealVoucherDeduction =
     activePayProfile.mealVoucherDeduction ??
     0;
+  const mealVoucherPlan = mealVoucherPlanFor(formProfile?.mealVoucherPlans, payView.getFullYear());
   const pasRate = activePayProfile.pasRate ?? 0;
   /** L'administration prélève le PAS sur une assiette « net imposable »
    *  toujours un peu plus large que le net avant impôt reconstitué ici —
@@ -164,6 +166,7 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
     payslipRateCalibration,
     navigo,
     mealVoucherDeduction,
+    mealVoucherPlan,
     pasRate,
     pasBaseAdjustment,
     sundayCarryover,

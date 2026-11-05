@@ -21,6 +21,8 @@ const baseProps = {
   onOpenEstimateDetails: vi.fn(),
   onOpenAllowances: vi.fn(),
   onOpenYear: vi.fn(),
+  onOpenMealVouchers: vi.fn(),
+  mealVoucherSummary: "20 par mois par défaut, rien en décembre",
 };
 
 describe("PayDashboard", () => {
@@ -45,12 +47,22 @@ describe("PayDashboard", () => {
     expect(html).toContain("Paie de");
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-label="Mois suivant"');
+    // Le mois d'abord, puis le net et les accès directs, sans volet d'actions.
+    expect(html).toContain('class="pay-bulletin-month pay-bulletin-month-nav"');
+    expect(html).toContain("Net estimé");
+    expect(html).toContain("Primes et jours fériés");
+    expect(html).toContain("Vérifier mon bulletin");
+    expect(html).toContain('class="pay-bulletin-more"');
+    expect(html).not.toContain("Actions utiles");
+    expect(html).not.toContain("pay-dashboard-checks");
     // Le geste du mois, seul : vérifier le bulletin.
     expect(html).toContain("Vérifier le bulletin");
     expect(html).toContain("L’année en un coup d’œil");
     expect(html).not.toContain("Profil · réglages");
-    // Puis trois entrées de même facture, le profil résumé sous la sienne.
-    expect(html.match(/class="pay-bulletin-shortcut"/g)).toHaveLength(4);
+    // Puis cinq entrées de même facture, le profil résumé sous la sienne.
+    expect(html.match(/class="pay-bulletin-shortcut"/g)).toHaveLength(5);
+    expect(html).toContain('<b class="pay-bulletin-shortcut-icon meal" aria-hidden="true">');
+    expect(html).toMatch(/Titres repas<\/strong><small>20 par mois par défaut, rien en décembre</);
     // Chaque entrée a sa pastille, de la couleur de son sujet.
     expect(html).toContain('<b class="pay-bulletin-shortcut-icon allowances" aria-hidden="true">');
     expect(html).toContain('<b class="pay-bulletin-shortcut-icon year" aria-hidden="true">');
@@ -92,7 +104,7 @@ describe("PayDashboard", () => {
       { key: "sundays", label: "Dimanches (9)", quantity: "dont 1 reporté", amount: 494.37 },
       { key: "holidays", label: "Jours fériés (1)", quantity: "compensation à décider", amount: 0 },
       { key: "overtime", label: "Heures supplémentaires (2 h 30)", quantity: "traitement de base à compléter", amount: null },
-      { key: "mealVoucher", label: "Titres repas", quantity: "jamais prélevés en décembre", amount: 72 },
+      { key: "mealVoucher", label: "Titres repas", quantity: "aucun titre en décembre", amount: 72 },
     ];
     const html = renderToStaticMarkup(<PayDashboard {...baseProps} calculation={calculation} variables={variables} />);
     expect(html).toContain("Traitement de base");
@@ -111,8 +123,8 @@ describe("PayDashboard", () => {
     expect(html).toMatch(/Heures supplémentaires \(2 h 30\)[\s\S]*class="pending">à vérifier</);
     expect(html).toContain("2 montants en attente");
     expect(html).toContain("Hors 2 montants en attente");
-    // En décembre, les titres repas non prélevés apparaissent barrés.
-    expect(html).toMatch(/Titres repas[\s\S]*jamais prélevés en décembre[\s\S]*<s>− 72,00<\/s>/);
+    // Un mois sans titre repas, la retenue d'un mois ordinaire apparaît barrée.
+    expect(html).toMatch(/Titres repas[\s\S]*aucun titre en décembre[\s\S]*<s>− 72,00<\/s>/);
     expect(html).toContain("Fixe");
     expect(html).toContain("Primes du mois");
     expect(html).toContain("Retenues");

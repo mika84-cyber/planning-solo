@@ -213,6 +213,21 @@
 
 .pay-field .salary-field { grid-column: 2; grid-row: 1; margin-top: 0; }
 
+.app-shell .pay-field-link {
+  justify-self: start;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  padding: 2px 0;
+  background: none;
+  box-shadow: none;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: underline;
+  transform: none;
+}
+
 .pay-field-automatic {
   grid-column: 2;
   grid-row: 1;

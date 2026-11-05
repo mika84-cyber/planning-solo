@@ -15,13 +15,14 @@ type PayScreenProps = {
   onExchangeHoliday: AllowancesProps["onExchangeHoliday"];
   /** L'année en un coup d'œil, construite par la rubrique. */
   yearContent: PayPageProps["yearContent"];
+  mealContent: PayPageProps["mealContent"];
   /** Les réglages de la page qui ne viennent pas du calcul : écran ouvert,
    *  profil, animation du mois et actions. */
   page: Omit<
     PayPageProps,
     | "month" | "year" | "gross" | "grossComplete" | "net" | "reliability" | "variables"
     | "calculation" | "allowancesPending" | "verification" | "savedVerification" | "acceptedGap" | "deductionContent"
-    | "allowancesContent" | "estimateContent" | "yearContent" | "verificationContent" | "settingsContent"
+    | "allowancesContent" | "estimateContent" | "yearContent" | "mealContent" | "verificationContent" | "settingsContent"
   >;
 };
 
@@ -38,6 +39,7 @@ export function PayScreen({
   onChooseHolidayPay,
   onExchangeHoliday,
   yearContent,
+  mealContent,
   page,
 }: PayScreenProps) {
   const payContent = buildPayContent(content);
@@ -84,6 +86,7 @@ export function PayScreen({
       allowancesContent={allowancesContent}
       estimateContent={payContent.estimateContent}
       yearContent={yearContent}
+      mealContent={mealContent}
       verificationContent={payContent.verificationContent}
       settingsContent={payContent.settingsContent}
     />

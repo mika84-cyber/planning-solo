@@ -10,8 +10,8 @@ describe("l'année de paie en un coup d'œil", () => {
       { index: 0, estimate, ratios },
       // Un bulletin vérifié : son brut et son net avant impôt remplacent l'estimation.
       { index: 1, estimate, ratios, real: { gross: 2600, netBeforeTax: 2100 } },
-      // Décembre : pas de titres repas.
-      { index: 11, estimate, ratios },
+      // Un mois sans titre repas : sa retenue arrive à zéro.
+      { index: 11, estimate, ratios: { ...ratios, mealVoucherDeduction: 0 } },
     ];
     const overview = yearPayOverview(2026, inputs, new Date(2026, 9, 24));
     expect(overview.months).toHaveLength(12);

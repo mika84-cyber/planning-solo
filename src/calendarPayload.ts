@@ -12,6 +12,7 @@ import { workPostOf } from "./appModel";
 import { cetAccountFromApi } from "./cet";
 import { sanitizeDeductionPayMonths } from "./deductionPayMonth";
 import { sanitizePayslipVerifications } from "./payslipVerificationRecords";
+import { sanitizeMealVoucherPlans } from "./mealVouchers";
 import { sanitizePayslipRateSamples } from "./payslipRateSamples";
 import type { MecenatEntry, MecenatSignup } from "./mecenat";
 import type { OvertimeEntry, RecoveryUse } from "./overtime";
@@ -142,6 +143,7 @@ function formProfileFromApi(value: unknown): FormProfile | null {
     deductionPayMonths: sanitizeDeductionPayMonths(raw.deduction_pay_months),
     payslipVerifications: sanitizePayslipVerifications(raw.payslip_verifications),
     payslipRateSamples: sanitizePayslipRateSamples(raw.payslip_rate_samples),
+    mealVoucherPlans: sanitizeMealVoucherPlans(raw.meal_voucher_plans),
   };
 }
 

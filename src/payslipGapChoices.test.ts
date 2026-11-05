@@ -28,8 +28,11 @@ describe("choix proposés devant un écart du bulletin", () => {
     const [ifse] = payslipGapChoices({ key: "ifse", label: "IFSE", found: 416.66, expected: 415 }, context);
     expect(ifse.action).toEqual({ kind: "save-amount", field: "ifse", value: 416.66 });
     expect(ifse.detail).toContain("l’IFSE");
+    // Les titres repas se corrigent sur leur écran : le nombre et la valeur font la retenue.
     const [meal] = payslipGapChoices({ key: "meal-vouchers", label: "Titres repas", found: 82.4, expected: 99 }, context);
-    expect(meal.action).toEqual({ kind: "save-amount", field: "mealVoucherDeduction", value: 82.4 });
+    expect(meal.action).toEqual({ kind: "open-meal-vouchers" });
+    expect(meal.label).toBe("Revoir mes titres repas");
+    expect(payslipGapChoices({ key: "meal-vouchers", label: "Titres repas", found: undefined, expected: 99 }, context)).toEqual([]);
     // L'indemnité de résidence suit le traitement : rien à enregistrer à part.
     expect(payslipGapChoices({ key: "residence", label: "Indemnité de résidence", found: 55.68, expected: 54.05 }, context)).toEqual([]);
     // Une ligne absente du bulletin ne donne aucun geste.

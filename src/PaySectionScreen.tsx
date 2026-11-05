@@ -1,5 +1,8 @@
 import { PayScreen } from "./PayScreen";
 import { useState } from "react";
+import { euros } from "./appModel";
+import { MealVouchersScreen } from "./MealVouchersScreen";
+import { mealVoucherTotal } from "./mealVouchers";
 import { PayYearOverview } from "./PayYearOverview";
 import { useYearPayOverview } from "./useYearPayOverview";
 import { localDate } from "./planningLogic";
@@ -53,7 +56,7 @@ export function PaySectionScreen({
     isContractuel, confirmedContractuel, workQuota, payYear, hasPayValue,
     baseSalary, ifse, carenceDay, otherFixed, cia, ciaMonth, residenceAllowance,
     viewedPayRegime, netRatioFixed, netRatioVariable, payslipRateCalibration,
-    navigo, mealVoucherDeduction, pasRate, pasBaseAdjustment,
+    navigo, mealVoucherDeduction, mealVoucherPlan, pasRate, pasBaseAdjustment,
     sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth,
   } = profile;
   const {
@@ -88,6 +91,9 @@ export function PaySectionScreen({
     values: profile,
     paidOvertimeForPayPeriod,
   });
+  const mealVoucherSummary = mealVoucherPlan
+    ? `${mealVoucherTotal(mealVoucherPlan.counts)} titres · ${euros(mealVoucherPlan.faceCents / 100)} le titre`
+    : "20 par mois par défaut, rien en décembre";
   return (
         <PayScreen
           content={{
@@ -110,6 +116,7 @@ export function PaySectionScreen({
               setPayScreen("allowances");
               scrollWhenReady("holiday-choices");
             },
+            onOpenMealVouchers: () => setPayScreen("meal"),
             strikeForCurrentPayMonth,
             netCalculation,
             monthNet,
@@ -132,6 +139,8 @@ export function PaySectionScreen({
             carenceDay,
             navigo,
             mealVoucherDeduction,
+            mealVoucherPlan,
+            mealVoucherSummary,
             pasRate,
             netRatioFixed,
             netRatioVariable,
@@ -161,8 +170,17 @@ export function PaySectionScreen({
               }}
             />
           }
+          mealContent={
+            <MealVouchersScreen
+              plans={formProfile?.mealVoucherPlans}
+              initialYear={payUi.payView.getFullYear()}
+              knownRetention={mealVoucherDeduction}
+              onSave={(year, plan) => void payActions.saveMealVoucherPlan(year, plan)}
+            />
+          }
           page={{
             screen: payScreen,
+            mealVoucherSummary,
             profileOpen: payProfileOpen,
             profileFocusRequested: payProfileFocusRequested,
             settingsOpen: payAdvancedOpen,

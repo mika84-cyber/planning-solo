@@ -1,3 +1,4 @@
+import { mealVoucherPlanFor, mealVoucherRetention } from "./mealVouchers";
 import { useMemo } from "react";
 import type { Entries, FormProfile, LeavePeriod, PayProfile } from "./appModel";
 import { mecenatForPayMonth, type MecenatEntry } from "./mecenat";
@@ -112,7 +113,7 @@ export function useYearPayOverview({
               netRatioFixed,
               netRatioVariable,
               navigo: profile.navigo ?? 0,
-              mealVoucherDeduction: profile.mealVoucherDeduction ?? 0,
+              mealVoucherDeduction: mealVoucherRetention(mealVoucherPlanFor(formProfile?.mealVoucherPlans, year), month, profile.mealVoucherDeduction ?? 0),
               pasRate: profile.pasRate ?? 0,
               pasBaseAdjustment,
             }

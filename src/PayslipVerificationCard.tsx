@@ -46,7 +46,7 @@ function PayslipGapList({ issues, label }: { issues: PayslipReviewCheck[]; label
 type Props = Pick<
   PayslipCheckSectionProps,
   "verificationRecords" | "onSaveVerification" | "onRemoveVerification" | "importBusy" | "importMode" | "importError" | "importResult" | "onImport" |
-  "photoPending" | "onFinishPhotos" | "onApplyPayslipValue" | "onDeferMecenats" | "onChangeStatus" | "onOpenHolidayChoices" | "holidayPending" |
+  "photoPending" | "onFinishPhotos" | "onApplyPayslipValue" | "onDeferMecenats" | "onChangeStatus" | "onOpenHolidayChoices" | "onOpenMealVouchers" | "holidayPending" |
   "check" | "checkError" | "needsPeriod" | "fallbackMonth" | "setFallbackMonth" |
   "fallbackYear" | "setFallbackYear" | "onApplyFallbackPeriod" | "allowances" |
   "displayedMonth" | "review" | "gapExplanation" | "fullName" | "signature" | "unplannedCarence" |
@@ -202,6 +202,7 @@ export function PayslipVerificationCard({
   onDeferMecenats,
   onChangeStatus,
   onOpenHolidayChoices,
+  onOpenMealVouchers,
   holidayPending = 0,
   onReportMissingSundays: reportMissingSundays,
   nextSundayPayout: nextSundayPayoutSlot,
@@ -290,7 +291,8 @@ export function PayslipVerificationCard({
     action.kind === "save-amount" || action.kind === "report-sundays" ||
     (action.kind === "defer-mecenats" && Boolean(onDeferMecenats)) ||
     (action.kind === "set-status" && Boolean(onChangeStatus)) ||
-    (action.kind === "open-holiday-choices" && Boolean(onOpenHolidayChoices));
+    (action.kind === "open-holiday-choices" && Boolean(onOpenHolidayChoices)) ||
+    (action.kind === "open-meal-vouchers" && Boolean(onOpenMealVouchers));
   // Le geste suit l'écart tel qu'il reste : une cause que la lecture a déjà
   // prise en compte n'en a plus besoin.
   const choicesFor = (line: PayslipGapLine) => {
@@ -303,6 +305,7 @@ export function PayslipVerificationCard({
     else if (action.kind === "defer-mecenats") onDeferMecenats?.(action.entries, action.year, action.month);
     else if (action.kind === "report-sundays") reportMissingSundays(allowances.year, displayedMonth, action.count);
     else if (action.kind === "set-status") onChangeStatus?.(action.status);
+    else if (action.kind === "open-meal-vouchers") onOpenMealVouchers?.();
     else onOpenHolidayChoices?.();
   };
   const recordDecision = (status: PayslipVerificationStatus) => {

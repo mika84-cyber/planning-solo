@@ -87,6 +87,7 @@ export type PayslipCheckSectionProps = {
   onDeferMecenats?: (entries: MecenatEntry[], year: number, month: number) => void;
   onChangeStatus?: (status: "fonctionnaire" | "contractuel") => void;
   onOpenHolidayChoices?: () => void;
+  onOpenMealVouchers?: () => void;
   /** Fériés travaillés dont la compensation reste à décider. */
   holidayPending?: number;
   onReportMissingSundays: (year: number, month: number, missing: number) => void;
@@ -107,7 +108,7 @@ export type PayslipCheckSectionProps = {
   netRatioFixed: number;
   netRatioVariable: number;
   navigo: number;
-  mealVoucherDeduction: number;
+  mealVoucherSummary: string;
   pasRate: number;
   payDrafts: Record<PayDraftKey, string>;
   setPayDrafts: Dispatch<SetStateAction<Record<PayDraftKey, string>>>;
@@ -164,6 +165,7 @@ export function PayslipCheckSection({
   onDeferMecenats,
   onChangeStatus,
   onOpenHolidayChoices,
+  onOpenMealVouchers,
   holidayPending,
   onReportMissingSundays: reportMissingSundays,
   nextSundayPayout: nextSundayPayoutSlot,
@@ -181,7 +183,7 @@ export function PayslipCheckSection({
   netRatioFixed,
   netRatioVariable,
   navigo,
-  mealVoucherDeduction,
+  mealVoucherSummary,
   pasRate,
   payDrafts,
   setPayDrafts,
@@ -238,6 +240,7 @@ export function PayslipCheckSection({
       onDeferMecenats={onDeferMecenats}
       onChangeStatus={onChangeStatus}
       onOpenHolidayChoices={onOpenHolidayChoices}
+      onOpenMealVouchers={onOpenMealVouchers}
       holidayPending={holidayPending}
       onReportMissingSundays={reportMissingSundays}
       nextSundayPayout={nextSundayPayoutSlot}
@@ -337,7 +340,8 @@ export function PayslipCheckSection({
           netRatioFixed={netRatioFixed}
           netRatioVariable={netRatioVariable}
           navigo={navigo}
-          mealVoucherDeduction={mealVoucherDeduction}
+          mealVoucherSummary={mealVoucherSummary}
+          onOpenMealVouchers={onOpenMealVouchers}
           pasRate={pasRate}
           payDrafts={payDrafts}
           setPayDrafts={setPayDrafts}

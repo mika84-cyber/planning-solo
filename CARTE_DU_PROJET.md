@@ -59,6 +59,19 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   gardée d'une exposition et celle lue par la veille (titre, précision,
   dates, espace, chaque tarif ajouté, retiré ou modifié) ; une proposition
   « Informations modifiées » l'affiche ancien → nouveau.
+- `src/MealVouchersScreen.tsx` (`mealVouchers.css`) : « Titres repas », un
+  sous-écran de Ma paie (`payScreen: "meal"`), ouvert depuis « Pour aller plus
+  loin », la liste des raccourcis, le profil (qui n'a plus de champ de retenue)
+  et le geste d'un écart du bulletin. La valeur du titre (10,30 € ou 9,90 €, qui
+  donnent la part de l'agent), puis le nombre de titres de chaque mois : deux
+  modèles et une saisie libre, avec de petites flèches (20 par mois au plus, 220
+  par an). Les règles sont dans `src/mealVouchers.ts` : `mealVoucherRetention`
+  donne la retenue du mois, à la paie du mois (`useMonthPayEstimate`) comme à
+  l'année (`useYearPayOverview`). Gardé dans le profil sous l'année
+  (`meal_voucher_plans`, envoyé entier, `sanitizeMealVoucherPlans`) ; une année
+  reprend le dernier choix fait avant elle, jamais l'inverse. Sans rien de
+  renseigné : 20 titres par mois, donc rien en décembre, au montant lu sur le
+  bulletin ; ce montant donne aussi d'emblée la valeur du titre.
 - `src/PayYearOverview.tsx` : « L'année en un coup d'œil » (dans l’en-tête,
   « coup d’œil » reste sur la seconde ligne : espace insécable dans
   `AppNavigation`), quatrième carte de Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,
@@ -195,7 +208,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   en bleu, Expositions en ocre, Mon planning en prune, Ma paie en vert,
   Déclarer en terracotta ; teintes éclaircies dans `darkTheme.css`). Le
   panneau monte à 90 % de l’écran sur téléphone ; à l’ordinateur, il reste
-  accroché en haut et tient sans défiler dès 846 px de haut. Les deux
+  accroché en haut et tient sans défiler dès 900 px de haut environ. Les deux
   colonnes y ont la même hauteur : sous Expositions, le Grand Palais au trait
   (`GrandPalaisArt`, décoratif, à l’ocre des Expositions) prend la place
   laissée par la colonne de droite ; masqué sur téléphone. Le dessin est le

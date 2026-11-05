@@ -13,7 +13,7 @@ export const MAIN_SECTION_ORDER = [
 ] as const;
 
 export type MainSection = (typeof MAIN_SECTION_ORDER)[number] | "forms";
-export type PayScreen = "overview" | "allowances" | "payslip" | "year";
+export type PayScreen = "overview" | "allowances" | "payslip" | "year" | "meal";
 
 /** Les icônes des rubriques, reprises aussi par « Liste des raccourcis ». */
 export const NAVIGATION_ICON_PATHS: Record<string, string> = {
@@ -77,6 +77,7 @@ function headerTitle(section: MainSection, payScreen: PayScreen) {
   if (payScreen === "payslip") return "Détail du calcul";
   // « coup d’œil » reste ensemble : sur téléphone, « coup » ouvre la 2e ligne.
   if (payScreen === "year") return "L’année en un coup d’œil";
+  if (payScreen === "meal") return "Titres repas";
   return "Ma paie";
 }
 

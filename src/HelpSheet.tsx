@@ -9,7 +9,7 @@ import { getSharedUsefulDocuments } from "./usefulDocumentsApi";
 /** Ce que chaque question ouvre ; App.tsx fait le chemin. */
 export type HelpChoice =
   | "phone" | "colleague-groups" | "form" | "planning-pdf" | "share-planning" | "request-leave" | "exchange" | "expo-dates" | "expo-folder" | "interexpo" | "radio"
-  | "allowances" | "payslip-check" | "pay-detail"
+  | "allowances" | "payslip-check" | "pay-detail" | "meal-vouchers"
   | "overtime-mecenat" | "work-accident" | "request-form" | "cet";
 
 const icon = (path: ReactNode) => <svg viewBox="0 0 24 24" aria-hidden="true">{path}</svg>;
@@ -32,6 +32,7 @@ const ICONS: Record<string, ReactNode> = {
   sun: icon(<path d={NAVIGATION_ICON_PATHS.leave} />),
   swap: icon(<path d="M7 7h12l-3.5-3.5M17 17H5l3.5 3.5" />),
   piggy: icon(<><path d="M5 11a7 6 0 0 1 12.5-3.3L20 7l-.6 3.3A6 6 0 0 1 18 15v4h-3v-2h-4v2H8v-3.4A6 6 0 0 1 5 11Z" /><path d="M10 8h3" /></>),
+  meal: icon(<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 21V3c-2.5 1.5-4 4.5-4 9h4" />),
   headphones: icon(<><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3.5" y="14" width="4" height="6" rx="1.5" /><rect x="16.5" y="14" width="4" height="6" rx="1.5" /></>),
 };
 
@@ -69,6 +70,7 @@ const THEME_COLUMNS: Theme[][] = [
       { id: "payslip-check", icon: "check", question: "Vérifier un bulletin", where: "Ma paie · Vérifier le bulletin" },
       { id: "allowances", icon: "prime", question: "Le détail de mes primes", where: "Ma paie · Primes et jours fériés" },
       { id: "pay-detail", icon: "calc", question: "Comprendre ma paie", where: "Ma paie · Détail du calcul" },
+      { id: "meal-vouchers", icon: "meal", question: "Mes titres repas", where: "Ma paie · Titres repas" },
     ] },
     { key: "declare", title: "Déclarer", items: [
       { id: "request-leave", icon: "sun", question: "Poser un congé", where: "Accueil · Choix des dates" },

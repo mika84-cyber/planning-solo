@@ -99,7 +99,7 @@ export function AppShellChrome({
       window.scrollTo({ top: 0, behavior: "auto" });
       if (target) requestHelpTarget(target);
     };
-    const openPay = (screen: "allowances" | "payslip" | "overview") => {
+    const openPay = (screen: "allowances" | "payslip" | "meal" | "overview") => {
       open("pay");
       setPayScreen(screen);
     };
@@ -113,6 +113,7 @@ export function AppShellChrome({
       case "interexpo": return open("program", "program-interexpo");
       case "allowances": return openPay("allowances");
       case "pay-detail": return openPay("payslip");
+      case "meal-vouchers": return openPay("meal");
       case "payslip-check":
         openPay("overview");
         pay.setPayVerificationRequested(true);

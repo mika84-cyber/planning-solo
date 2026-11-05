@@ -18,7 +18,8 @@ export type PayslipGapAction =
   | { kind: "defer-mecenats"; entries: MecenatEntry[]; year: number; month: number }
   | { kind: "report-sundays"; count: number }
   | { kind: "set-status"; status: "fonctionnaire" }
-  | { kind: "open-holiday-choices" };
+  | { kind: "open-holiday-choices" }
+  | { kind: "open-meal-vouchers" };
 
 export type PayslipGapChoice = {
   id: string;
@@ -49,7 +50,6 @@ const AMOUNT_FIELDS: Partial<Record<string, { field: PayDraftKey; what: string }
   "other-fixed": { field: "otherFixed", what: "les autres éléments fixes" },
   cia: { field: "cia", what: "le CIA" },
   navigo: { field: "navigo", what: "le Navigo remboursé" },
-  "meal-vouchers": { field: "mealVoucherDeduction", what: "la retenue des titres repas" },
 };
 
 const monthLabel = (year: number, month: number) => `${MONTHS[month]} ${year}`;
@@ -86,6 +86,15 @@ export function payslipGapChoices(issue: PayslipReviewCheck, context: PayslipGap
       label: `Enregistrer ${euros(found)} dans le profil`,
       detail: `L’application attendait ${euros(expected)} pour ${amountField.what} ; le bulletin fait foi, à partir de ${when}.`,
       action: { kind: "save-amount", field: amountField.field, value: found },
+    }];
+  }
+
+  if (issue.key === "meal-vouchers" && found !== undefined) {
+    return [{
+      id: "meal-vouchers",
+      label: "Revoir mes titres repas",
+      detail: `Le bulletin retient ${euros(found)}, l’application attendait ${euros(expected)} : indiquez vos titres de ${when} et la valeur du titre.`,
+      action: { kind: "open-meal-vouchers" },
     }];
   }
 

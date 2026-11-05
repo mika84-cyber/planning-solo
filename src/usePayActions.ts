@@ -1,3 +1,4 @@
+import type { MealVoucherPlan } from "./mealVouchers";
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   Entries,
@@ -190,6 +191,7 @@ export function payProfileBase(
     manualAdjustments: formProfile?.manualAdjustments,
     cetAccount: formProfile?.cetAccount,
     deductionPayMonths: formProfile?.deductionPayMonths,
+    mealVoucherPlans: formProfile?.mealVoucherPlans,
     // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
     // ou le retirent : les autres enregistrements doivent le laisser tel quel.
     sundayCarryover: formProfile?.sundayCarryover,
@@ -532,6 +534,29 @@ export function usePayActions(options: PayActionsOptions) {
       // La liste et les deux taux se mettent à jour sous les yeux : pas de message.
     } catch {
       notify("Le bulletin n’a pas pu être retiré. Réessayez.");
+    }
+  }
+
+  /** Le choix de l'année part entier : les autres années restent telles quelles. */
+  async function saveMealVoucherPlan(year: number, plan: MealVoucherPlan) {
+    const previous = formProfile;
+    const nextProfile: FormProfile = {
+      ...payProfileBase(formProfile, group),
+      mealVoucherPlans: { ...formProfile?.mealVoucherPlans, [year]: plan },
+    };
+    setFormProfile(nextProfile);
+    if (demoMode) return;
+    try {
+      await post({
+        action: "save-form-profile",
+        fullName: nextProfile.fullName,
+        group: nextProfile.group,
+        signature: nextProfile.signature,
+        mealVoucherPlans: nextProfile.mealVoucherPlans,
+      });
+    } catch {
+      setFormProfile(previous);
+      notify("Vos titres repas n’ont pas pu être enregistrés. Réessayez.");
     }
   }
 
@@ -1291,6 +1316,7 @@ export function usePayActions(options: PayActionsOptions) {
     savePayAmount,
     saveAnnualPayProfile,
     saveCiaMonth,
+    saveMealVoucherPlan,
     removePayslipRateSample,
     nextSundayPayoutSlot,
     reportMissingSundays,

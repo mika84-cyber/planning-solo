@@ -1,3 +1,4 @@
+import { mealVoucherRetention } from "./mealVouchers";
 import { useMemo } from "react";
 import type { Entries, FormProfile, LeavePeriod, PayProfile } from "./appModel";
 import { roundCurrency } from "./appModel";
@@ -71,6 +72,7 @@ export function useMonthPayEstimate({
     netRatioVariable,
     navigo,
     mealVoucherDeduction,
+    mealVoucherPlan,
     pasRate,
     pasBaseAdjustment,
     sundayCarryover,
@@ -323,9 +325,9 @@ export function useMonthPayEstimate({
             monthPay.grossFixed * (netRatioFixed / 100) +
             monthPay.grossVariable * (netRatioVariable / 100),
           );
-          // Jamais prélevés en décembre, confirmé sur les bulletins de 2024
-          // et 2025 : la ligne « Titres repas carte » y est absente.
-          const mealVouchers = monthPay.index === 11 ? 0 : mealVoucherDeduction;
+          // Le nombre de titres choisi pour ce mois ; sans choix, 20 par mois
+          // et rien en décembre (mealVouchers.ts).
+          const mealVouchers = mealVoucherRetention(mealVoucherPlan, monthPay.index, mealVoucherDeduction);
           const netBeforeTax = roundCurrency(netFromGross + navigo - mealVouchers);
           // Heures sup et mécénats, exonérés, sortent du net imposable.
           const incomeTax = estimatedIncomeTax(

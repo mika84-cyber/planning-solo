@@ -27,6 +27,7 @@ export type YearPayMonthInput = {
     netRatioFixed: number;
     netRatioVariable: number;
     navigo: number;
+    /** La retenue des titres repas de ce mois-là. */
     mealVoucherDeduction: number;
     pasRate: number;
     pasBaseAdjustment: number;
@@ -70,14 +71,13 @@ export function yearPayOverview(year: number, inputs: YearPayMonthInput[], today
     const premiums = estimate?.premiums ?? 0;
     const mecenat = estimate?.mecenat ?? 0;
     // Le net : cotisations d'abord, avec les deux taux, puis Navigo et titres
-    // repas (jamais en décembre), puis l'impôt sur le net imposable.
+    // repas du mois, puis l'impôt sur le net imposable.
     let netBeforeTax: number | null = real ? real.netBeforeTax : null;
     if (netBeforeTax === null && estimate && ratios) {
       const netFromGross = roundCurrency(
         estimate.grossFixed * (ratios.netRatioFixed / 100) + estimate.grossVariable * (ratios.netRatioVariable / 100),
       );
-      const mealVouchers = index === 11 ? 0 : ratios.mealVoucherDeduction;
-      netBeforeTax = roundCurrency(netFromGross + ratios.navigo - mealVouchers);
+      netBeforeTax = roundCurrency(netFromGross + ratios.navigo - ratios.mealVoucherDeduction);
     }
     const tax = netBeforeTax !== null && ratios
       ? estimatedIncomeTax(netBeforeTax, ratios.pasRate, ratios.pasBaseAdjustment, real ? 0 : estimate?.exempt ?? 0)

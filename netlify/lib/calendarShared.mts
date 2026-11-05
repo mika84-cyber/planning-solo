@@ -1,5 +1,6 @@
 import type { getStore } from "@netlify/blobs";
 import type { PayslipVerificationRecords } from "../../src/payslipVerificationRecords.ts";
+import type { MealVoucherPlans } from "../../src/mealVouchers.ts";
 import type { PayslipRateSamples } from "../../src/payslipRateSamples.ts";
 import { isValidDateKey } from "./calendarValidation.mts";
 
@@ -186,6 +187,8 @@ export type FormProfile = {
   deduction_pay_months?: Record<string, string>;
   /** Décisions après vérification des bulletins, sous « AAAA-MM ». */
   payslip_verifications?: PayslipVerificationRecords;
+  /** Titres repas de chaque année, sous « AAAA » : valeur du titre et nombre par mois. */
+  meal_voucher_plans?: MealVoucherPlans;
   /** Montants des bulletins vérifiés (jamais le fichier), sous « AAAA-MM »,
    *  qui affinent les deux taux net avant impôt d'une visite à l'autre. */
   payslip_rate_samples?: PayslipRateSamples;

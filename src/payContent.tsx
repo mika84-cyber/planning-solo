@@ -1,3 +1,4 @@
+import { mealVoucherAgentPart, mealVoucherWaived, type MealVoucherPlan } from "./mealVouchers";
 import { payslipVerificationFor } from "./payslipVerificationRecords";
 import type { usePayslipVerifications } from "./usePayslipVerifications";
 import { Suspense } from "react";
@@ -83,6 +84,7 @@ export type PayContentInput = {
   onDeferMecenats: PayslipCheckSectionProps["onDeferMecenats"];
   onChangeStatus: PayslipCheckSectionProps["onChangeStatus"];
   onOpenHolidayChoices: PayslipCheckSectionProps["onOpenHolidayChoices"];
+  onOpenMealVouchers: PayslipCheckSectionProps["onOpenMealVouchers"];
   strikeForCurrentPayMonth: StrikePayEstimate;
   netCalculation: NetCalculation | null;
   monthNet: number | null;
@@ -106,6 +108,8 @@ export type PayContentInput = {
   carenceDay: number;
   navigo: number;
   mealVoucherDeduction: number;
+  mealVoucherPlan: MealVoucherPlan | null;
+  mealVoucherSummary: string;
   pasRate: number;
   netRatioFixed: number;
   netRatioVariable: number;
@@ -139,6 +143,7 @@ export function buildPayContent({
   onDeferMecenats,
   onChangeStatus,
   onOpenHolidayChoices,
+  onOpenMealVouchers,
   strikeForCurrentPayMonth,
   netCalculation,
   monthNet,
@@ -160,6 +165,8 @@ export function buildPayContent({
   carenceDay,
   navigo,
   mealVoucherDeduction,
+  mealVoucherPlan,
+  mealVoucherSummary,
   pasRate,
   netRatioFixed,
   netRatioVariable,
@@ -316,15 +323,14 @@ export function buildPayContent({
               : null,
         }
       : null,
-    // Jamais prélevés en décembre (confirmé sur les bulletins de 2024 et
-    // 2025) : signalé ici comme les autres lignes qui varient d'un mois
-    // sur l'autre, plutôt que de laisser deviner pourquoi le net grimpe.
-    monthPay.index === 11 && mealVoucherDeduction
+    // Un mois sans titre : signalé ici comme les autres lignes qui varient
+    // d'un mois sur l'autre, plutôt que de laisser deviner pourquoi le net grimpe.
+    mealVoucherWaived(mealVoucherPlan, monthPay.index, mealVoucherDeduction)
       ? {
           key: "mealVoucher",
           label: "Titres repas",
-          detail: "jamais prélevés en décembre",
-          amount: mealVoucherDeduction,
+          detail: `aucun titre en ${MONTHS[monthPay.index]}`,
+          amount: mealVoucherWaived(mealVoucherPlan, monthPay.index, mealVoucherDeduction),
         }
       : null,
   ].filter((row): row is NonNullable<typeof row> => Boolean(row));
@@ -723,6 +729,7 @@ export function buildPayContent({
     estimatedContributions: netCalculation?.estimatedContributions ?? null,
     navigo,
     mealVoucherDeduction: netCalculation?.mealVouchers ?? 0,
+    ...(mealVoucherPlan ? { mealVoucherCount: mealVoucherPlan.counts[monthPay.index], mealVoucherAgentPart: mealVoucherAgentPart(mealVoucherPlan) } : {}),
     netBeforeTax: netCalculation?.netBeforeTax ?? null,
     pasRate,
     incomeTax: netCalculation?.incomeTax ?? null,
@@ -814,6 +821,7 @@ export function buildPayContent({
     onDeferMecenats,
     onChangeStatus,
     onOpenHolidayChoices,
+    onOpenMealVouchers,
     onApplyPayslipValue: (field, value) => void savePayAmount(field, value),
     holidayPending: allowances.holidayPending,
     onReportMissingSundays: (year, month, missingSundays) =>
@@ -835,7 +843,7 @@ export function buildPayContent({
     netRatioFixed,
     netRatioVariable,
     navigo,
-    mealVoucherDeduction,
+    mealVoucherSummary,
     pasRate,
     payDrafts,
     setPayDrafts,

@@ -9,7 +9,7 @@ type Props = Pick<
   "allowances" | "isContractuel" | "sickLeaves" | "paySettingsOpen" |
   "setPaySettingsOpen" | "missing" | "missingFields" | "baseSalary" | "ifse" |
   "carenceDay" | "otherFixed" | "cia" | "netRatioFixed" | "netRatioVariable" |
-  "navigo" | "mealVoucherDeduction" | "pasRate" | "payDrafts" |
+  "navigo" | "mealVoucherSummary" | "onOpenMealVouchers" | "pasRate" | "payDrafts" |
   "setPayDrafts" | "savingPay" | "onSavePayAmount" | "ciaMonth" | "onSaveCiaMonth" |
   "rateCalibration" | "onRemoveRateSample"
 >;
@@ -30,7 +30,8 @@ export function PayslipSettingsSections({
   netRatioFixed,
   netRatioVariable,
   navigo,
-  mealVoucherDeduction,
+  mealVoucherSummary,
+  onOpenMealVouchers,
   pasRate,
   payDrafts,
   setPayDrafts,
@@ -165,13 +166,6 @@ export function PayslipSettingsSections({
                 use: "hors cumul brut, ajouté tel quel au net",
               },
               {
-                field: "mealVoucherDeduction" as const,
-                label: "Titres repas (retenue)",
-                value: mealVoucherDeduction,
-                hint: "Ex. 82,40",
-                use: "hors cumul brut, retiré tel quel du net — jamais en décembre",
-              },
-              {
                 field: "pasRate" as const,
                 label: "Taux d’imposition (PAS)",
                 value: pasRate,
@@ -241,6 +235,12 @@ export function PayslipSettingsSections({
               )}
             </div>
           ))}
+          {/* Le nombre de titres et leur valeur ont leur écran : la retenue en découle. */}
+          <div className="pay-field">
+            <span className="pay-field-head">Titres repas</span>
+            <small>{mealVoucherSummary}</small>
+            <button type="button" className="pay-field-link" onClick={onOpenMealVouchers}>Renseigner mes titres</button>
+          </div>
           {!isContractuel && (
           <div className="pay-field">
             <span className="pay-field-head">

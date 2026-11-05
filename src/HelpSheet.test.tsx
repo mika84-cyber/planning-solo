@@ -32,7 +32,7 @@ describe("fenêtre d'aide", () => {
     expect(group("Documents")).toEqual(["Un numéro de téléphone", "Un formulaire administratif", "Un formulaire de congé", "Les 3 groupes de collègues", "Un code radio d’urgence"]);
     expect(group("Expositions")).toEqual(["Fiche d’expo · Cezanne et nous", "Les dates d’une exposition", "Audioguide · Cezanne et nous", "Les dates d’inter-expos"]);
     expect(group("Mon planning")).toEqual(["Télécharger un planning", "Partager mon planning avec un(e) collègue"]);
-    expect(group("Ma paie")).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie"]);
+    expect(group("Ma paie")).toEqual(["Vérifier un bulletin", "Le détail de mes primes", "Comprendre ma paie", "Mes titres repas"]);
     expect(group("Déclarer")).toEqual(["Poser un congé", "Échanger un jour avec un collègue", "Un mécénat ou des heures supp", "Ouvrir ou alimenter mon CET", "Un accident de travail"]);
   });
 

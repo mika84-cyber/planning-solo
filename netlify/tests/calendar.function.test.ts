@@ -1426,6 +1426,30 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/form-profile")).toMatchObject({ payslip_verifications: {} });
   });
 
+  it("garde dans le compte les titres repas de chaque année, s'ils respectent les droits", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const counts = [18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 20, 20];
+    const response = await calendarHandler(request({
+      action: "save-form-profile",
+      fullName: "Mika",
+      group: "2",
+      signature: "",
+      mealVoucherPlans: {
+        "2026": { faceCents: 990, counts },
+        "2027": { faceCents: 800, counts },
+        "2028": { faceCents: 990, counts: counts.map(() => 20) },
+      },
+    }));
+    expect(response.status).toBe(200);
+    const stored = data.get("user/user-a/form-profile") as { meal_voucher_plans: Record<string, unknown> };
+    expect(stored.meal_voucher_plans).toEqual({ "2026": { faceCents: 990, counts } });
+    // Un autre écran qui enregistre le profil sans eux ne les efface pas.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "", navigoCents: 6810 }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ navigo_cents: 6810, meal_voucher_plans: { "2026": { faceCents: 990 } } });
+    const refused = await calendarHandler(request({ action: "save-form-profile", mealVoucherPlans: ["2026"] }));
+    expect(refused.status).toBe(400);
+  });
+
   it("efface un montant du profil quand l'application envoie null", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "", ifseCents: 41666 }));

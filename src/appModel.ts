@@ -15,6 +15,7 @@ import type { WorkQuota, WorkSchedule } from "./overtime";
 import type { CetAccount } from "./cet";
 import type { PayslipVerificationRecords } from "./payslipVerificationRecords";
 import type { PayslipRateSamples } from "./payslipRateSamples";
+import type { MealVoucherPlans } from "./mealVouchers";
 
 export type ViewMode = "month" | "year";
 export type RequestKind = "leave" | "recovery" | "other" | "strike";
@@ -173,6 +174,8 @@ export type FormProfile = {
   /** Montants des bulletins vérifiés qui affinent les taux net avant impôt,
    *  d'une visite à l'autre (voir payslipRateSamples.ts). */
   payslipRateSamples?: PayslipRateSamples;
+  /** Valeur du titre et nombre de titres par mois, année par année. */
+  mealVoucherPlans?: MealVoucherPlans;
 };
 export type SelectedDay = {
   date: string;

@@ -78,7 +78,7 @@ const baseProps = {
   netRatioFixed: 79.41,
   netRatioVariable: 89.92,
   navigo: 0,
-  mealVoucherDeduction: 0,
+  mealVoucherSummary: "20 par mois par défaut, rien en décembre",
   pasRate: 0,
   payDrafts,
   setPayDrafts: vi.fn(),

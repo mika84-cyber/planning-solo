@@ -417,7 +417,7 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(page.locator(".pay-bulletin-hero .pay-bulletin-month")).toBeVisible();
   await expectWhiteCard(".pay-bulletin-hero");
   await expectWhiteCard(".pay-bulletin-lines");
-  await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(4);
+  await expect(page.locator(".pay-bulletin-shortcut")).toHaveCount(5);
   // La vérification (repliée jusqu'au choix d'un bulletin) reste sur blanc.
   await expect(page.locator(".pay-bulletin-panel")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await page.getByRole("button", { name: "Profil et réglages" }).click();
@@ -6429,6 +6429,63 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
+});
+
+test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste des raccourcis", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  const shortcut = page.locator(".pay-bulletin-shortcut", { hasText: "Titres repas" });
+  // Sans rien de renseigné : 20 par mois, rien en décembre.
+  await expect(shortcut).toContainText("20 par mois par défaut, rien en décembre");
+  await shortcut.click();
+  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
+  const screen = page.getByRole("region", { name: "Mes titres repas" });
+  const month = (name: string) => screen.getByRole("textbox", { name: `Titres repas en ${name}` });
+  await expect(screen).toContainText("Par défaut : 20 par mois, rien en décembre");
+  await expect(month("novembre")).toHaveValue("20");
+  await expect(month("décembre")).toHaveValue("0");
+  await expect(screen.getByRole("radio", { name: /^20 par mois/ })).toHaveAttribute("aria-checked", "true");
+  // La valeur du titre d'abord : sans elle, rien à enregistrer.
+  const save = screen.getByRole("button", { name: "Enregistrer" });
+  await expect(save).toBeDisabled();
+  await screen.getByRole("radio", { name: /^9,90/ }).click();
+  await expect(save).toBeEnabled();
+  await expect(screen).toContainText("Votre part sur l’année");
+  // Un modèle tout prêt : 18 de janvier à octobre, 20 en novembre et décembre.
+  await screen.getByRole("radio", { name: /^18 par mois/ }).click();
+  await expect(month("janvier")).toHaveValue("18");
+  await expect(month("décembre")).toHaveValue("20");
+  await expect(screen).toContainText("220 titres sur 220");
+  // Sur mesure : un mois de plus dépasse les droits, et bloque l'enregistrement.
+  await month("janvier").fill("20");
+  await expect(screen.getByRole("radio", { name: /^Sur mesure/ })).toHaveAttribute("aria-checked", "true");
+  await expect(screen.getByRole("alert")).toContainText("2 titres de trop");
+  await expect(save).toBeDisabled();
+  // Jamais plus de 20 titres un mois.
+  await month("février").fill("35");
+  await expect(month("février")).toHaveValue("20");
+  await expect(screen.getByRole("button", { name: "Un titre de plus en février" })).toBeDisabled();
+  // Les petites flèches font la même chose que la saisie, un titre à la fois.
+  await screen.getByRole("button", { name: "Un titre de moins en février" }).click();
+  await expect(month("février")).toHaveValue("19");
+  await screen.getByRole("button", { name: "Un titre de plus en février" }).click();
+  await expect(month("février")).toHaveValue("20");
+  await month("janvier").fill("18");
+  await month("février").fill("18");
+  await expect(screen.getByRole("alert")).toHaveCount(0);
+  await save.click();
+  await expect(screen).toContainText("Enregistré pour");
+  await expect(screen.getByRole("button", { name: "Enregistré" })).toBeDisabled();
+  // Retour à Ma paie : l'entrée résume le choix.
+  await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
+  await expect(shortcut).toContainText(/220 titres · 9,90\s*€ le titre/);
+  // Depuis la liste des raccourcis, sur un autre écran : le choix est là.
+  await goToSection(page, "leave");
+  await page.locator("header.top-header").getByRole("button", { name: "Liste des raccourcis" }).click();
+  await page.getByRole("dialog", { name: "Liste des raccourcis" }).getByRole("button", { name: /Mes titres repas/ }).click();
+  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
+  await expect(month("décembre")).toHaveValue("20");
+  await expect(screen.getByRole("radio", { name: /^9,90/ })).toHaveAttribute("aria-checked", "true");
 });
 
 test("Retour ramène d’un sous-écran de Ma paie à l’écran précédent, pas à la page d’avant", async ({ page }) => {

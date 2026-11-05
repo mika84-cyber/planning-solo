@@ -72,6 +72,9 @@ type PayDashboardProps = {
   onOpenAllowances: () => void;
   /** L'année en un coup d'œil : net, primes, mécénats, impôt sur douze mois. */
   onOpenYear?: () => void;
+  /** Les titres repas : valeur du titre et nombre par mois. */
+  onOpenMealVouchers?: () => void;
+  mealVoucherSummary?: string;
   /** « Profil et réglages » s'ouvre : le profil de paie et ses éléments se
    *  déplient avec, d'un seul geste. */
   onOpenTools?: () => void;
@@ -81,13 +84,14 @@ type PayDashboardProps = {
 
 /** La pastille ronde de chaque entrée de « Pour aller plus loin » : son
  *  icône sur la couleur de son sujet. */
-function ShortcutIcon({ tone }: { tone: "allowances" | "calculation" | "year" | "profile" }) {
+function ShortcutIcon({ tone }: { tone: "allowances" | "calculation" | "year" | "meal" | "profile" }) {
   return (
     <b className={`pay-bulletin-shortcut-icon ${tone}`} aria-hidden="true">
       <svg viewBox="0 0 24 24">
         {tone === "allowances" ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></> : null}
         {tone === "calculation" ? <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18h8" /></> : null}
         {tone === "year" ? <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> : null}
+        {tone === "meal" ? <path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 21V3c-2.5 1.5-4 4.5-4 9h4" /> : null}
         {tone === "profile" ? <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></> : null}
       </svg>
     </b>
@@ -187,6 +191,8 @@ export function PayDashboard({
   onOpenEstimateDetails,
   onOpenAllowances,
   onOpenYear,
+  onOpenMealVouchers,
+  mealVoucherSummary,
   onOpenTools,
   onCloseTools,
 }: PayDashboardProps) {
@@ -325,8 +331,8 @@ export function PayDashboard({
 
   /* Les retenues : maladie et grève, puis les cotisations, les titres
      repas et l'impôt, chacun sur sa ligne comme dans la frise ; le Navigo
-     remboursé vient en déduction. En décembre, les titres repas non
-     prélevés apparaissent barrés. */
+     remboursé vient en déduction. Un mois sans titre repas, la retenue d'un
+     mois ordinaire apparaît barrée. */
   const mealVoucher = variables.find((item) => item.key === "mealVoucher");
   const withheldLines: BulletinLine[] = [
     ...variables
@@ -353,7 +359,7 @@ export function PayDashboard({
       ...(calculation.mealVoucherDeduction ? [{
         key: "meal",
         label: "Titres repas",
-        detail: "votre part du mois",
+        detail: calculation.mealVoucherCount ? `${calculation.mealVoucherCount} titre${s(calculation.mealVoucherCount)} · votre part` : "votre part du mois",
         amount: calculation.mealVoucherDeduction,
         sign: "minus" as const,
         go: calculationLink("pay-meal-vouchers"),
@@ -566,10 +572,10 @@ export function PayDashboard({
         {verificationContent}
       </section>
 
-      {/* Pour aller plus loin : quatre entrées réunies dans une seule liste,
-          chacune avec sa pastille de couleur. Les primes, le détail du calcul
-          et l'année ouvrent leur page ; le profil et les réglages se déplient
-          ici même, d'un seul geste. */}
+      {/* Pour aller plus loin : cinq entrées réunies dans une seule liste,
+          chacune avec sa pastille de couleur. Les primes, le détail du calcul,
+          l'année et les titres repas ouvrent leur page ; le profil et les
+          réglages se déplient ici même, d'un seul geste. */}
       <section className="pay-bulletin-more" aria-label="Pour aller plus loin">
         <div className="pay-bulletin-links">
           <button type="button" className="pay-bulletin-shortcut" onClick={onOpenAllowances}>
@@ -595,6 +601,16 @@ export function PayDashboard({
               <span>
                 <strong>L’année en un coup d’œil</strong>
                 <small>Net, primes, mécénats, impôt · {year}</small>
+              </span>
+              <i aria-hidden="true">›</i>
+            </button>
+          ) : null}
+          {onOpenMealVouchers ? (
+            <button type="button" className="pay-bulletin-shortcut" onClick={onOpenMealVouchers}>
+              <ShortcutIcon tone="meal" />
+              <span>
+                <strong>Titres repas</strong>
+                <small>{mealVoucherSummary}</small>
               </span>
               <i aria-hidden="true">›</i>
             </button>
