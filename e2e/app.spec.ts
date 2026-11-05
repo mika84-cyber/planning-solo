@@ -3565,6 +3565,34 @@ test("une modification repérée par la veille montre l’ancien et le nouveau t
   await expect(changes.locator("li").last()).toContainText("17 €");
 });
 
+test("une soirée d’ouverture validée s’ajoute à son exposition sans la remplacer, cas de Girls", async ({ page }) => {
+  const soiree = {
+    id: "soiree-girls",
+    title: "Soirée d'ouverture ! Exposition \"Girls. Adolescence, mode, rébellion\"",
+    startDate: "2026-12-11",
+    endDate: "2026-12-11",
+    url: "https://www.grandpalais.fr/fr/programme/soiree-douverture-exposition-girls-adolescence-mode-rebellion",
+    venueKey: "gallery8",
+    venueLabel: "Galerie 8",
+    prices: [{ label: "Gratuit", amount: 0 }],
+  };
+  await page.route("**/api/gp-program", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+    approved: [soiree],
+    pending: [],
+    isAdmin: false,
+    sitePrices: [{ title: soiree.title, url: soiree.url, startDate: soiree.startDate, endDate: soiree.endDate, prices: soiree.prices }],
+  }) }));
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  await page.getByRole("tab", { name: "Par espace" }).click();
+  await page.getByRole("tab", { name: /Galerie 8/ }).click();
+  const cards = page.locator(".grand-palais-venue-panel .useful-expo-timeline article");
+  // L'exposition garde sa carte et son tarif ; la soirée a la sienne.
+  await expect(cards.filter({ hasText: "Girls - Adolescence, mode et rébellion" })).toHaveCount(1);
+  await expect(cards.filter({ hasText: "Girls - Adolescence, mode et rébellion" })).toContainText(/15\s*€/);
+  await expect(cards.filter({ hasText: "Soirée d'ouverture !" })).toHaveCount(1);
+});
+
 test("le compte administrateur peut valider seul une mise à jour du Grand Palais", async ({ page }) => {
   const event = {
     id: "event-salon",

@@ -110,20 +110,32 @@ export function ticketingHost(url: string) {
 
 /** Deux écritures du même événement : même fiche officielle, même titre, ou
  *  des titres qui se contiennent (« Paris Photo 2026 » dans « Paris Photo
- *  World Supreme ») à des dates qui se chevauchent. Sans cela, une mise à
- *  jour acceptée sous un titre un peu différent s'ajoutait à l'entrée livrée
- *  au lieu de la remplacer : deux cartes pour la même patinoire. */
+ *  World Supreme ») à peu près aux mêmes dates (`sameSpan`). Sans cela, une
+ *  mise à jour acceptée sous un titre un peu différent s'ajoutait à l'entrée
+ *  livrée au lieu de la remplacer : deux cartes pour la même patinoire. */
 type SharedEventIdentity = { title: string; officialUrl: string; startDate: string; endDate: string };
 
 function overlaps(entry: GrandPalaisProgramEntry, shared: SharedEventIdentity) {
   return !entry.startsOn || !entry.endsOn || (shared.startDate <= entry.endsOn && entry.startsOn <= shared.endDate);
 }
 
+/** Deux périodes dont les jours communs couvrent au moins la moitié de la
+ *  plus longue. Une soirée d'ouverture d'un soir, pendant les trois mois de
+ *  son exposition, en reprend le titre (« Soirée d'ouverture ! Exposition
+ *  "Girls…" ») : c'est un autre événement, qui s'ajoute à l'exposition au
+ *  lieu de la remplacer. */
+function sameSpan(startA: string, endA: string, startB: string, endB: string) {
+  const day = (key: string) => Date.parse(`${key}T12:00:00Z`) / 86_400_000;
+  const common = Math.min(day(endA), day(endB)) - Math.max(day(startA), day(startB)) + 1;
+  return common * 2 >= Math.max(day(endA) - day(startA), day(endB) - day(startB)) + 1;
+}
+
 function isSameGrandPalaisEvent(entry: GrandPalaisProgramEntry, shared: SharedEventIdentity) {
   if (entry.officialUrl === shared.officialUrl || entry.title.toLowerCase() === shared.title.toLowerCase()) return true;
   const known = grandPalaisTitleKey(entry.title);
   const candidate = grandPalaisTitleKey(shared.title);
-  return Boolean(known && candidate && (known.includes(candidate) || candidate.includes(known))) && overlaps(entry, shared);
+  return Boolean(known && candidate && (known.includes(candidate) || candidate.includes(known)))
+    && (!entry.startsOn || !entry.endsOn || sameSpan(entry.startsOn, entry.endsOn, shared.startDate, shared.endDate));
 }
 
 /** La fiche précise qu'un retrait validé vise : même page officielle, ou même
@@ -234,8 +246,9 @@ const titleWords = grandPalaisTitleKey;
 /** Les tarifs relevés sur le site à chaque passage de la veille, appliqués
  *  aux événements du programme qui n'ont pas été validés depuis la veille :
  *  « Paris Photo World Supreme » reprend ceux de la fiche « Paris Photo
- *  2026 ». Une fiche correspond si l'un des titres contient l'autre et si
- *  leurs dates se chevauchent, ou, à défaut, si elle est la seule à avoir
+ *  2026 ». Une fiche correspond si l'un des titres contient l'autre à peu
+ *  près aux mêmes dates (`sameSpan` : la soirée d'ouverture gratuite ne donne
+ *  pas son tarif à l'exposition), ou, à défaut, si elle est la seule à avoir
  *  exactement les mêmes dates ; elle remplace les tarifs connus. */
 export function applyGrandPalaisSitePrices(
   program: GrandPalaisProgramData,
@@ -252,7 +265,7 @@ export function applyGrandPalaisSitePrices(
     const byTitle = sites.find((site) =>
       (site.url && entry.officialUrl === site.url) ||
       (words && (words.includes(site.words) || site.words.includes(words)) &&
-        site.startDate <= entry.endsOn! && entry.startsOn! <= site.endDate));
+        sameSpan(site.startDate, site.endDate, entry.startsOn!, entry.endsOn!)));
     if (byTitle) return byTitle;
     /* Titres différents (« Arabian Horse Championship » dans l'application,
        « Championnat du Monde du Cheval Arabe » sur le site) : une fiche aux

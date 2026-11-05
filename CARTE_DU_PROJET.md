@@ -385,8 +385,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `priceNote` ; `ticketingUrl` est le site tiers qui porte la billetterie ou
   les tarifs quand le Grand Palais ne les publie pas. `grandPalaisTitleKey`
   reconnaît un même événement sous deux titres (« des Glaces » / « de
-  Glace 2026 ») : une mise à jour acceptée remplace l’entrée livrée au lieu
-  de la doubler. Un retrait validé, lui, ne retire que sa fiche : même page
+  Glace 2026 ») à peu près aux mêmes dates (`sameSpan`) : une mise à jour
+  acceptée remplace l’entrée livrée au lieu de la doubler, mais une soirée
+  d’ouverture d’un soir, dont le titre reprend celui de son exposition
+  (Girls), s’y ajoute sans la remplacer ni lui donner son tarif. Un retrait
+  validé, lui, ne retire que sa fiche : même page
   officielle, ou même titre à des dates qui se chevauchent
   (`isWithdrawnGrandPalaisEvent`). Sinon le retrait d’une page renommée
   (« Gilles Caron ») effaçait la nouvelle (« Gilles Caron. J’ai voulu voir »).

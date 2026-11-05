@@ -514,6 +514,45 @@ describe("programmation du Grand Palais", () => {
     expect(twins?.prices?.[0]).toEqual({ label: "Adulte · journée", amount: 15 });
   });
 
+  it("ajoute la soirée d’ouverture à son exposition au lieu de la remplacer, cas de Girls", () => {
+    // La proposition validée le 5 novembre 2026 : son titre contient celui de
+    // l'exposition, et sa date tombe pendant l'exposition.
+    const soiree = {
+      id: "1m9xt4019afc5q2t0000",
+      title: "Soirée d'ouverture ! Exposition \"Girls. Adolescence, mode, rébellion\"",
+      details: "Soirée d'ouverture ! · Exposition Girls. Adolescence, mode, rébellion",
+      startDate: "2026-12-11",
+      endDate: "2026-12-11",
+      url: "https://www.grandpalais.fr/fr/programme/soiree-douverture-exposition-girls-adolescence-mode-rebellion",
+      venueKey: "gallery8",
+      venueLabel: "Galerie 8",
+      prices: [{ label: "Gratuit", amount: 0 }],
+    };
+    const gallery8 = (program: ReturnType<typeof mergeSharedGrandPalaisProgram>) => program.gallery8.schedule[2026] ?? [];
+    const merged = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [soiree]);
+    expect(gallery8(merged).map((entry) => entry.title)).toEqual(expect.arrayContaining(["Girls - Adolescence, mode et rébellion", soiree.title]));
+    const girlsPrices = [{ label: "Plein", amount: 15 }, { label: "Réduit", amount: 12 }];
+    expect(gallery8(merged).find((entry) => entry.title.startsWith("Girls"))).toMatchObject({ startsOn: "2026-12-09", endsOn: "2027-03-21", prices: girlsPrices });
+    expect(gallery8(merged).find((entry) => entry.title === soiree.title)).toMatchObject({ startsOn: "2026-12-11", endsOn: "2026-12-11" });
+    // L'exposition reste : pas de fausse coupure autour de la soirée.
+    expect(calculateInterExhibitionPeriods("2026-11-05", merged)).toEqual(calculateInterExhibitionPeriods("2026-11-05"));
+    // Relevé sur le site, le tarif gratuit de la soirée reste à la soirée.
+    const priced = applyGrandPalaisSitePrices(merged, [{ title: soiree.title, url: soiree.url, startDate: soiree.startDate, endDate: soiree.endDate, prices: soiree.prices }]);
+    expect(gallery8(priced).find((entry) => entry.title.startsWith("Girls"))?.prices).toEqual(girlsPrices);
+    expect(gallery8(priced).find((entry) => entry.title === soiree.title)?.prices).toEqual(soiree.prices);
+    // La fiche de l'exposition relue, elle, remplace toujours l'entrée livrée.
+    const reread = mergeSharedGrandPalaisProgram(GRAND_PALAIS_PROGRAM, [soiree, {
+      id: "girls",
+      title: "Girls. Adolescence, mode, rébellion",
+      startDate: "2026-12-09",
+      endDate: "2027-03-21",
+      url: "https://www.grandpalais.fr/fr/programme/girls-adolescence-mode-rebellion",
+      venueKey: "gallery8",
+      venueLabel: "Galerie 8",
+    }]);
+    expect(gallery8(reread).map((entry) => entry.title)).toEqual(["Hilma af Klint - Les peintures du Temple (1906-1915)", "Girls. Adolescence, mode, rébellion", soiree.title]);
+  });
+
   it("ne fait qu’une carte d’une mise à jour acceptée sous un titre un peu différent, cas du Grand Palais de Glace", () => {
     const nef = (program: ReturnType<typeof mergeSharedGrandPalaisProgram>, year: number) =>
       (program.nef.schedule[year] ?? []).filter((entry) => /palais de(?:s)? glace/i.test(entry.title));
