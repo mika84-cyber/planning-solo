@@ -25,6 +25,8 @@ type Props = {
   allowTraining?: boolean;
   /** Seuls les mercredis de formation du groupe, où l'autre travaille. */
   trainingOnly?: boolean;
+  /** Le calendrier s'ouvre d'emblée tant qu'aucune date n'est choisie. */
+  initiallyOpen?: boolean;
 };
 
 function initialView(value: string) {
@@ -42,9 +44,10 @@ export function WorkExchangeDatePicker({
   excludeHolidays = false,
   allowTraining = false,
   trainingOnly = false,
+  initiallyOpen = false,
 }: Props) {
   const others = otherGroup ? [otherGroup] : [1, 2, 3].filter((item) => item !== ownerGroup);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen && !value);
   const [view, setView] = useState(() => initialView(value));
 
   function toggle() {

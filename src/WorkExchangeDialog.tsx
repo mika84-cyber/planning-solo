@@ -95,14 +95,29 @@ export function WorkExchangeDialog({
   const offGroups = agreementInfo?.kind === "work" || trainingSwap
     ? [1, 2, 3].filter((other) => other !== group && getDayInfo(fromKey(draft.agreementDate), other).kind === (trainingSwap ? "work" : "off"))
     : [];
+  /* Le collègue d'abord : tous ceux des autres groupes ; si un jour est déjà
+     choisi (depuis Ma paie), ceux qui sont libres ce jour-là passent devant. */
+  const fits = (other: number) => !offGroups.length || offGroups.includes(other);
   const suggestions = searchColleagueGroups(annuaire, draft.partnerName)
-    .filter((item) => item.group !== group && (!offGroups.length || offGroups.includes(item.group)))
-    .sort((a, b) => Number(commencePar(b.member)) - Number(commencePar(a.member)) || a.member.localeCompare(b.member, "fr"))
+    .filter((item) => item.group !== group)
+    .sort((a, b) => Number(fits(b.group)) - Number(fits(a.group)) || Number(commencePar(b.member)) - Number(commencePar(a.member)) || a.member.localeCompare(b.member, "fr"))
     .slice(0, 6);
   const listeVisible = suggestionsOuvertes && suggestions.length > 0;
+  /* Un collègue d'un autre groupe : vos dates restent si elles lui
+     conviennent encore, sinon elles sont à refaire. */
+  const kindOf = (key: string, other: number) => getDayInfo(fromKey(key), other).kind;
+  const chooseGroup = (partnerGroup: number, partnerName?: string) =>
+    setDraft((current) => partnerGroup === current.partnerGroup
+      ? { ...current, partnerName: partnerName ?? current.partnerName }
+      : {
+        ...current,
+        partnerName: partnerName ?? current.partnerName,
+        partnerGroup,
+        agreementDate: fits(partnerGroup) ? current.agreementDate : "",
+        returnDate: current.returnDate && kindOf(current.returnDate, partnerGroup) === kindOf(current.returnDate, current.partnerGroup) ? current.returnDate : "",
+      });
   const choisirCollegue = (nom: string, groupe: number) => {
-    // Un autre groupe : sa journée ou son férié est à refaire.
-    setDraft((current) => ({ ...current, partnerName: nom, partnerGroup: groupe, returnDate: groupe === current.partnerGroup ? current.returnDate : "" }));
+    chooseGroup(groupe, nom);
     setSuggestionsOuvertes(false);
     setSuggestionActive(-1);
   };
@@ -139,21 +154,20 @@ export function WorkExchangeDialog({
     setHolidayTab(holiday);
     setDraft((current) => ({ ...current, agreementDate: "", returnDate: "", replacement: false }));
   };
-  /* Votre journée fixe le groupe du collègue : l'un de ceux qui sont en
-     repos ce jour-là. Sa journée est à refaire si le groupe change. */
-  const chooseAgreement = (agreementDate: string, partnerGroup?: number) =>
+  /* Votre date, parmi celles où votre collègue peut vous remplacer. Sa date
+     reste si elle convient encore : même année pour un férié, formation
+     contre formation pour une journée. */
+  const chooseAgreement = (agreementDate: string) =>
     setDraft((current) => {
-      const wanted = getDayInfo(fromKey(agreementDate), group).kind === "training" ? "work" : "off";
-      const off = [1, 2, 3].filter((other) => other !== group && getDayInfo(fromKey(agreementDate), other).kind === wanted);
-      const nextGroup = partnerGroup ?? (off.includes(current.partnerGroup) ? current.partnerGroup : off[0] ?? current.partnerGroup);
-      return { ...current, agreementDate, partnerGroup: nextGroup, returnDate: nextGroup === current.partnerGroup ? current.returnDate : "" };
+      const training = (key: string) => Boolean(key) && getDayInfo(fromKey(key), group).kind === "training";
+      const keep = holidayTab ? current.returnDate.slice(0, 4) === agreementDate.slice(0, 4) : training(current.agreementDate) === training(agreementDate);
+      return { ...current, agreementDate, returnDate: keep ? current.returnDate : "" };
     });
   const dayLabel = (key: string) => fromKey(key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const holidayButton = (holiday: { key: string; name: string }, selected: boolean, onPick: () => void, reason = "") => (
-    <button key={holiday.key} type="button" role="radio" aria-checked={selected} disabled={Boolean(reason)} className={`xch-choice${selected ? " selected" : ""}`} onClick={onPick}>
+  const holidayButton = (holiday: { key: string; name: string }, selected: boolean, onPick: () => void) => (
+    <button key={holiday.key} type="button" role="radio" aria-checked={selected} className={`xch-choice${selected ? " selected" : ""}`} onClick={onPick}>
       <strong>{holiday.name}</strong>
       <small>{dayLabel(holiday.key)}</small>
-      {reason ? <em>{reason}</em> : null}
     </button>
   );
   /* Les horaires de chaque journée figurent sur la demande. */
@@ -217,41 +231,6 @@ export function WorkExchangeDialog({
           <li>
             <header>
               <b aria-hidden="true">1</b>
-              <div>
-                <strong>Votre {noun}</strong>
-                <small>Groupe {group} · {partner || "Votre collègue"} vous remplace</small>
-              </div>
-            </header>
-            {holidayTab ? (
-              <div className="xch-choices" role="radiogroup" aria-label="Choisir le férié que vous cédez">
-                {giveHolidays.length ? giveHolidays.map((holiday) => holidayButton(holiday, draft.agreementDate === holiday.key, () =>
-                  chooseAgreement(holiday.key, partner ? draft.partnerGroup : holiday.partnerGroup), holiday.reason,
-                )) : <p className="xch-empty">Aucun férié travaillé dans les douze prochains mois.</p>}
-              </div>
-            ) : (
-              <WorkExchangeDatePicker
-                value={draft.agreementDate}
-                ownerGroup={group}
-                otherGroup={partner ? draft.partnerGroup : 0}
-                excludeHolidays
-                allowTraining
-                ariaLabel="Choisir la journée de votre cycle"
-                onChange={(agreementDate) => chooseAgreement(agreementDate)}
-              />
-            )}
-            {!holidayTab && draft.agreementDate && fromKey(draft.agreementDate).getDay() === 3 ? (
-              <p className="xch-warning" role="note">
-                {trainingSwap
-                  ? "Mercredi de formation : il s’échange uniquement contre un mercredi de formation de votre collègue."
-                  : "Un mercredi : vérifiez qu’il ne s’agit pas d’un jour de formation."}
-              </p>
-            ) : null}
-            {hours("Horaires de la journée de votre cycle", "agreementStart", "agreementEnd")}
-          </li>
-
-          <li>
-            <header>
-              <b aria-hidden="true">2</b>
               <div>
                 <strong>Votre collègue</strong>
                 <small>
@@ -319,28 +298,59 @@ export function WorkExchangeDialog({
                 </ul>
               ) : null}
             </label>
-            {/* Le groupe se déduit de votre journée ; seuls ceux en repos ce
-                jour-là restent possibles. */}
+            {/* Le groupe vient de l'annuaire ; à défaut, il se choisit ici. */}
             <div className="xch-groups" role="radiogroup" aria-label="Choisir le groupe du collègue">
-              {[1, 2, 3].filter((other) => other !== group).map((other) => {
-                const possible = !offGroups.length || offGroups.includes(other);
-                return (
-                  <button
-                    key={other}
-                    type="button"
-                    role="radio"
-                    aria-checked={draft.partnerGroup === other}
-                    disabled={!possible}
-                    className={`group-${other}${draft.partnerGroup === other ? " selected" : ""}`}
-                    onClick={() => setDraft((current) => ({ ...current, partnerGroup: other, returnDate: other === current.partnerGroup ? current.returnDate : "" }))}
-                  >
-                    Groupe {other}
-                  </button>
-                );
-              })}
+              {[1, 2, 3].filter((other) => other !== group).map((other) => (
+                <button
+                  key={other}
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.partnerGroup === other}
+                  className={`group-${other}${draft.partnerGroup === other ? " selected" : ""}`}
+                  onClick={() => chooseGroup(other)}
+                >
+                  Groupe {other}
+                </button>
+              ))}
             </div>
           </li>
 
+          <li>
+            <header>
+              <b aria-hidden="true">2</b>
+              <div>
+                <strong>Votre {noun}</strong>
+                <small>Groupe {group} · {partner || "Votre collègue"} vous remplace</small>
+              </div>
+            </header>
+            {!partner ? (
+              <p className="xch-empty">Choisissez d’abord votre collègue.</p>
+            ) : holidayTab ? (
+              <div className="xch-choices" role="radiogroup" aria-label="Choisir le férié que vous cédez">
+                {giveHolidays.length ? giveHolidays.map((holiday) => holidayButton(holiday, draft.agreementDate === holiday.key, () => chooseAgreement(holiday.key)))
+                  : <p className="xch-empty">Aucun férié où vous travaillez et où {partner} est en repos dans les douze prochains mois.</p>}
+              </div>
+            ) : (
+              <WorkExchangeDatePicker
+                value={draft.agreementDate}
+                ownerGroup={group}
+                otherGroup={draft.partnerGroup}
+                excludeHolidays
+                allowTraining
+                initiallyOpen
+                ariaLabel="Choisir la journée de votre cycle"
+                onChange={chooseAgreement}
+              />
+            )}
+            {!holidayTab && draft.agreementDate && fromKey(draft.agreementDate).getDay() === 3 ? (
+              <p className="xch-warning" role="note">
+                {trainingSwap
+                  ? "Mercredi de formation : il s’échange uniquement contre un mercredi de formation de votre collègue."
+                  : "Un mercredi : vérifiez qu’il ne s’agit pas d’un jour de formation."}
+              </p>
+            ) : null}
+            {partner ? hours("Horaires de la journée de votre cycle", "agreementStart", "agreementEnd") : null}
+          </li>
           {replacement ? null : (
             <li>
               <header>
@@ -350,12 +360,14 @@ export function WorkExchangeDialog({
                   <small>Groupe {draft.partnerGroup} · Vous remplacez {partner || "votre collègue"}</small>
                 </div>
               </header>
-              {holidayTab ? (
-                /* Un férié se rend par un férié : la liste de ceux possibles. */
+              {!partner ? (
+                <p className="xch-empty">Choisissez d’abord votre collègue.</p>
+              ) : holidayTab ? (
+                /* Un férié se rend par un férié : ceux possibles, d'emblée. */
                 <div className="xch-choices" role="radiogroup" aria-label="Choisir le férié du cycle du collègue">
                   {returnHolidays.length ? returnHolidays.map((holiday) => holidayButton(holiday, draft.returnDate === holiday.key, () =>
                     setDraft((current) => ({ ...current, returnDate: holiday.key })),
-                  )) : <p className="xch-empty">Aucun férié travaillé par le groupe {draft.partnerGroup} où vous êtes en repos.</p>}
+                  )) : <p className="xch-empty">Aucun férié travaillé par {partner} où vous êtes en repos.</p>}
                 </div>
               ) : !draft.agreementDate ? (
                 <p className="xch-empty">Choisissez d’abord votre journée.</p>
@@ -366,11 +378,12 @@ export function WorkExchangeDialog({
                   otherGroup={group}
                   excludeHolidays
                   trainingOnly={trainingSwap}
+                  initiallyOpen
                   ariaLabel="Choisir la journée du cycle du collègue"
                   onChange={(returnDate) => setDraft((current) => ({ ...current, returnDate }))}
                 />
               )}
-              {hours("Horaires de la journée de son cycle", "returnStart", "returnEnd")}
+              {partner ? hours("Horaires de la journée de son cycle", "returnStart", "returnEnd") : null}
             </li>
           )}
         </ol>

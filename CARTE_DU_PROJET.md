@@ -232,10 +232,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/workExchange.ts` et `src/useWorkExchangeActions.ts` : échanges complets
   entre collègues, toujours constitués d’une date cédée et d’une date rendue,
   sans ordre chronologique imposé et sans effet sur la paie ni les congés.
-  Onglet « Jour férié » : les deux listes s’affichent d’emblée et s’accordent
-  dans un ordre ou dans l’autre (`holidayExchangeChoices`) : vos fériés où le
-  collègue est en repos, les siens de la même année ; un férié impossible
-  reste visible, grisé, avec sa raison.
+  L’écran demande d’abord le collègue (son groupe vient de l’annuaire), puis
+  propose seulement les dates adaptées : calendrier ouvert d’emblée
+  (`WorkExchangeDatePicker`, `initiallyOpen`) sur vos journées où son groupe
+  est en repos, puis sur les siennes ; dans l’onglet « Jour férié », vos
+  fériés où il est en repos et les siens de la même année
+  (`holidayExchangeChoices`). Changer de groupe garde les dates qui
+  conviennent encore. En mode sombre, le calendrier reprend les couleurs du
+  planning (`darkTheme.css`).
   Un échange proposé par un collègue (`netlify/functions/colleagues.mts`,
   `src/ColleagueRequestNotice.tsx`) est contrôlé à l’acceptation avec les mêmes
   règles (`validateWorkExchange`, groupe du profil du destinataire).

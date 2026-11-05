@@ -13,6 +13,16 @@ html[data-theme="dark"] .calendar-grid .day.off { border: 2px solid #9d8b7b !imp
 html[data-theme="dark"] .calendar-grid .day.training,
 html[data-theme="dark"] .calendar-grid .day.training :is(.date-number, span, b) { color: #211c18; }
 
+/* Calendrier d'un échange : les couleurs du planning. Jour possible en beige
+   coquille d'œuf, jour travaillé impossible en beige éteint sous sa croix,
+   repos noir cerné, formation grise ; la légende suit. */
+html[data-theme="dark"] .work-exchange-cycle-calendar :is(.exchange-cycle-day, .work-exchange-cycle-legend span) { border: 1px solid #9d8b7b; background: #0a0807; color: #c6b8ab; box-shadow: none; }
+html[data-theme="dark"] .work-exchange-cycle-calendar :is(.exchange-cycle-day.selectable, .work-exchange-cycle-legend .work) { border-color: #c9bda6; background: #ece2cd; color: #2c2621; }
+html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.incompatible { border-color: #4a423b; background: #6d655b; color: #2c2621; }
+html[data-theme="dark"] .work-exchange-cycle-calendar :is(.exchange-cycle-day.training:not(.selectable), .work-exchange-cycle-legend .training) { border-color: #b4b4b4; background: #b4b4b4; color: #211c18; }
+html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.selectable:hover { border-color: var(--accent); }
+html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
+
 /* Soldes et choix de congés : la carte suit le fond sombre, mais le chiffre
    et le repère gardent la couleur du type de congé, éclaircie pour rester
    lisible sur sombre. */

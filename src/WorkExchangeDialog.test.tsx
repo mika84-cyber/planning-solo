@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkExchangeDialog } from "./WorkExchangeDialog";
 
 describe("WorkExchangeDialog", () => {
-  it("présente la feuille à signer puis trois étapes : votre journée, votre collègue, sa journée", () => {
+  it("présente trois étapes : votre collègue d’abord, puis votre journée et la sienne", () => {
     const html = renderToStaticMarkup(
       <WorkExchangeDialog
         open
@@ -38,6 +38,10 @@ describe("WorkExchangeDialog", () => {
     expect(html).toContain("Votre collègue");
     expect(html).toContain("Sa journée");
     expect(html).toContain("Groupe 1 · Vous remplacez Camille");
+    // Le collègue d'abord : il ouvre le calendrier de vos journées possibles.
+    expect(html.indexOf("Votre collègue")).toBeLessThan(html.indexOf("Votre journée"));
+    expect(html.indexOf("Votre journée")).toBeLessThan(html.indexOf("Sa journée"));
+    expect(html).toContain('aria-label="Cycle de travail du groupe 2"');
     // Sa journée attend la vôtre.
     expect(html).toContain("Choisissez d’abord votre journée.");
     expect(html).toContain("Les deux dates de l’échange sont obligatoires.");
@@ -78,7 +82,18 @@ describe("WorkExchangeDialog", () => {
     expect(html).toMatch(/<input type="checkbox" role="switch"\/><span>Remplir la demande ensuite<\/span>/);
   });
 
-  it("déduit de votre journée le groupe du collègue, seul choix possible", async () => {
+  it("attend le collègue avant de proposer des dates", () => {
+    const html = renderToStaticMarkup(
+      <WorkExchangeDialog open group={2}
+        draft={{ id: "", partnerName: "", partnerGroup: 1, agreementDate: "", returnDate: "", agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "" }}
+        setDraft={vi.fn()} error="" saving={false} onClose={vi.fn()} onSave={vi.fn()} onDelete={vi.fn()} />,
+    );
+    expect((html.match(/Choisissez d’abord votre collègue\./g) || []).length).toBe(2);
+    expect(html).not.toContain("Choisir la journée de votre cycle");
+    expect(html).not.toContain("Horaires de la journée");
+  });
+
+  it("propose d’abord les collègues libres le jour déjà choisi, sans griser les autres groupes", async () => {
     const { getDayInfo, dateKey } = await import("./planningLogic");
     const day = Array.from({ length: 31 }, (_, index) => new Date(2026, 11, index + 1, 12))
       .find((date) => getDayInfo(date, 2).kind === "work" && !getDayInfo(date, 2).holiday
@@ -90,14 +105,13 @@ describe("WorkExchangeDialog", () => {
         setDraft={vi.fn()} error="" saving={false} onClose={vi.fn()} onSave={vi.fn()} onDelete={vi.fn()} />,
     );
     expect(html).toContain(`En repos ce jour-là : groupe ${offGroup}`);
-    const other = offGroup === 1 ? 3 : 1;
-    expect(html).toMatch(new RegExp(`aria-checked="false" disabled="" class="group-${other}"`));
+    expect(html).not.toMatch(/disabled="" class="group-/);
   });
 
   describe("onglet Jour férié", () => {
     afterEach(() => vi.useRealTimers());
 
-    it("affiche d’emblée ses fériés et grise les vôtres où votre collègue travaille", () => {
+    it("ne propose que vos fériés où votre collègue est en repos, et les siens d’emblée", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date(2026, 10, 5, 12));
       const html = renderToStaticMarkup(
@@ -107,9 +121,9 @@ describe("WorkExchangeDialog", () => {
       );
       expect(html).toContain('aria-selected="true" class="active">Jour férié<');
       expect(html).toContain("chacun cède le sien, la même année, sur une demande de remplacement");
-      // Vos fériés : la Pentecôte choisie, l'Assomption grisée avec sa raison.
+      // Vos fériés : la Pentecôte, où Maurizio est en repos ; pas l'Assomption, où il travaille.
       expect(html).toMatch(/aria-checked="true" class="xch-choice selected"><strong>Dimanche de Pentecôte<\/strong>/);
-      expect(html).toMatch(/aria-checked="false" disabled="" class="xch-choice"><strong>Assomption<\/strong><small>[^<]+<\/small><em>Maurizio Campani travaille ce jour-là<\/em>/);
+      expect(html).not.toContain("Assomption");
       // Ses fériés de 2027, où vous le remplacez.
       expect(html).toContain('aria-label="Choisir le férié du cycle du collègue"');
       expect(html).toContain("Groupe 1 · Vous remplacez Maurizio Campani");

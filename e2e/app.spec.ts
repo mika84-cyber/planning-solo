@@ -3971,8 +3971,9 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await page.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   await page.getByRole("button", { name: "Valider l’échange" }).click();
   await expect(page.getByRole("alert")).toContainText("deux dates");
-  await page.getByRole("button", { name: "Choisir la journée de votre cycle" }).click();
+  // Le collègue choisi, le calendrier de vos journées possibles est déjà ouvert.
   const myCycle = page.getByRole("region", { name: "Cycle de travail du groupe 2" });
+  await expect(myCycle).toBeVisible();
   await expect(myCycle.getByLabel("Légende du groupe 2")).toContainText("TravailReposFormation");
   expect(await myCycle.locator(".exchange-cycle-day.selectable").count()).toBeGreaterThan(0);
   await expect(myCycle.locator(".exchange-cycle-day.off").first()).toHaveCSS("background-color", "rgb(44, 38, 33)");
@@ -3988,9 +3989,18 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await expect(myCycle.locator(".exchange-cycle-day.off .exchange-cycle-unavailable")).toHaveCount(0);
   await expect(myCycle.locator(".exchange-cycle-day.training .exchange-cycle-unavailable")).toHaveCount(0);
   await expect(myCycle.locator(".exchange-cycle-day.incompatible .exchange-cycle-unavailable").first()).toHaveCSS("inset", "0px");
+  // En mode sombre, les couleurs du planning : jour possible beige, repos
+  // noir, jour impossible éteint ; aucun des trois ne se confond.
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(myCycle.locator(".exchange-cycle-day.selectable").first()).toHaveCSS("background-color", "rgb(236, 226, 205)");
+  await expect(myCycle.locator(".exchange-cycle-day.off").first()).toHaveCSS("background-color", "rgb(10, 8, 7)");
+  await expect(myCycle.locator(".exchange-cycle-day.incompatible").first()).toHaveCSS("background-color", "rgb(109, 101, 91)");
+  await expect(myCycle.locator(".work-exchange-cycle-legend .work")).toHaveCSS("background-color", "rgb(236, 226, 205)");
+  await page.emulateMedia({ colorScheme: "light" });
   await myCycle.locator(`[data-date="${dateKey(agreement)}"]`).click();
-  await page.getByRole("button", { name: "Choisir la journée du cycle du collègue" }).click();
+  // Votre journée choisie, celui de votre collègue s'ouvre à son tour.
   const partnerCycle = page.getByRole("region", { name: "Cycle de travail du groupe 1" });
+  await expect(partnerCycle).toBeVisible();
   await expect(partnerCycle.getByLabel("Légende du groupe 1")).toContainText("TravailReposFormation");
   await partnerCycle.locator(`[data-date="${dateKey(returned)}"]`).click();
   const exchangeDialog = page.getByRole("dialog", { name: "Faire un échange" });
@@ -4094,7 +4104,7 @@ test("un mercredi de formation s’échange, depuis l’onglet Journée, contre 
   await prepareDemo(page);
   await page.getByRole("button", { name: "Faire un échange" }).click();
   const dialog = page.getByRole("dialog", { name: "Faire un échange" });
-  await dialog.getByRole("button", { name: "Choisir la journée de votre cycle" }).click();
+  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   const myCycle = page.getByRole("region", { name: "Cycle de travail du groupe 2" });
   while (!(await myCycle.locator(`[data-date="${dateKey(mine)}"]`).count()))
     await myCycle.getByRole("button", { name: "Mois suivant" }).click();
@@ -4102,7 +4112,6 @@ test("un mercredi de formation s’échange, depuis l’onglet Journée, contre 
   // Un mercredi : l'avertissement ; le collègue travaille ce jour-là.
   await expect(dialog.locator(".xch-warning")).toContainText("uniquement contre un mercredi de formation");
   await expect(dialog.locator(".xch-steps")).toContainText("Au travail ce jour-là");
-  await dialog.getByRole("button", { name: "Choisir la journée du cycle du collègue" }).click();
   const partnerCycle = page.getByRole("region", { name: /Cycle de travail du groupe [13]/ });
   const choices = await partnerCycle.locator(".exchange-cycle-day.selectable").evaluateAll((items) => items.map((item) => (item as HTMLElement).dataset.date || ""));
   // Seuls ses mercredis de formation sont proposés.
@@ -4119,13 +4128,14 @@ test("l’onglet Jour férié explique le remplacement et prépare les deux feui
   await expect(dialog.locator(".xch-sheet")).toContainText("2 demandes de remplacement");
   await expect(dialog.locator(".xch-sheet")).toContainText("Vous signerez deux feuilles");
   await expect(dialog.getByRole("switch", { name: "Remplacement seul, sans férié rendu" })).not.toBeChecked();
+  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   const give = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" });
+  if (!(await give.getByRole("radio").count())) return; // aucun férié où le groupe de Camille est en repos
   await give.getByRole("radio").first().click();
   const back = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" });
   const returns = back.getByRole("radio");
   if (!(await returns.count())) return; // aucun férié à rendre cette année-là
   await returns.first().click();
-  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   await setExchangeHours(dialog);
   await dialog.getByRole("button", { name: "Valider l’échange" }).click();
 
@@ -4191,33 +4201,31 @@ test("l’onglet Jour férié explique le remplacement et prépare les deux feui
   for (const count of images) expect(count).toBeGreaterThanOrEqual(2);
 });
 
-test("dans l’onglet Jour férié, ses fériés s’affichent d’emblée et les deux listes s’accordent avec le collègue", async ({ page }) => {
+test("dans l’onglet Jour férié, le collègue d’abord, puis seulement les fériés adaptés à son groupe", async ({ page }) => {
   await prepareDemo(page);
   await page.getByRole("button", { name: "Faire un échange" }).click();
   const dialog = page.getByRole("dialog", { name: "Faire un échange" });
   await dialog.getByRole("tab", { name: "Jour férié" }).click();
+  // Avant le collègue, aucune date : on ne sait pas encore qui peut remplacer.
+  await expect(dialog.getByText("Choisissez d’abord votre collègue.")).toHaveCount(2);
   const give = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" }).getByRole("radio");
   const back = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" }).getByRole("radio");
-  if (!(await give.count())) return; // aucun férié travaillé dans l'année qui vient
-  // Les fériés où vous remplacez votre collègue, avant même de choisir le vôtre.
-  await expect(dialog.getByText(/Choisissez d’abord/)).toHaveCount(0);
-  await expect(back.first()).toBeVisible();
+  await expect(give).toHaveCount(0);
 
-  // Le collègue choisi : vos fériés où il travaille restent visibles, grisés, avec la raison.
+  /** Vos fériés travaillés de l'année qui vient où le groupe donné est en repos. */
+  const expected = (partnerGroup: number) => Array.from({ length: 366 }, (_, index) => addDays(new Date(), index))
+    .filter((date) => getDayInfo(date, 2).holiday && getDayInfo(date, 2).kind === "work" && getDayInfo(date, partnerGroup).kind === "off")
+    .map((date) => getDayInfo(date, 2).holiday);
   await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   await dialog.getByRole("option", { name: /Camille Durand/ }).click();
-  const pill = dialog.getByRole("radiogroup", { name: "Choisir le groupe du collègue" }).getByRole("radio", { checked: true });
-  const pillName = (await pill.textContent())!.trim();
-  for (const radio of await give.all()) {
-    if (await radio.isDisabled()) await expect(radio).toContainText("Camille Durand travaille ce jour-là");
-    else await expect(radio).not.toContainText("travaille ce jour-là");
-  }
-  const possible = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" }).locator("button:not([disabled])");
-  if (!(await possible.count())) return;
-  await possible.first().click();
-  await expect(possible.first()).toHaveAttribute("aria-checked", "true");
-  // Le groupe du collègue ne bascule plus vers un autre.
-  await expect(dialog.getByRole("radiogroup", { name: "Choisir le groupe du collègue" }).getByRole("radio", { checked: true })).toHaveText(pillName);
+  await expect(give.locator("strong")).toHaveText(expected(1));
+  // Un autre groupe : la liste suit.
+  await dialog.getByRole("radiogroup", { name: "Choisir le groupe du collègue" }).getByRole("radio", { name: "Groupe 3" }).click();
+  await expect(give.locator("strong")).toHaveText(expected(3));
+  if (!(await give.count())) return;
+  await give.first().click();
+  await expect(give.first()).toHaveAttribute("aria-checked", "true");
+  // Ses fériés, où vous le remplacez, sont déjà là.
   if (!(await back.count())) return;
   await back.first().click();
   await expect(dialog.locator(".xch-recap")).toContainText("Camille Durand vous remplace le");
@@ -4234,11 +4242,11 @@ test("un férié peut être simplement remplacé, sans férié rendu ni seconde 
   await expect(replacement.locator(".xch-sheet")).toContainText("1 demande de remplacement");
   // Pas de férié rendu : l'étape « Son férié » disparaît.
   await expect(replacement.getByText("Son férié", { exact: true })).toHaveCount(0);
+  await replacement.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   const give = replacement.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" });
   const first = give.getByRole("radio").first();
   const holidayName = (await first.locator("strong").textContent())!.trim();
   await first.click();
-  await replacement.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   const hours = replacement.getByRole("group", { name: "Horaires de la journée de votre cycle" });
   await hours.getByLabel("De — heures").selectOption("10");
   await hours.getByLabel("À — heures").selectOption("18");
@@ -7266,10 +7274,12 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
   await expect(dialog.locator(".xch-steps")).toContainText(/En repos ce jour-là : groupes? [13]/);
   // En retour, la liste des fériés de l'année que le collègue travaille.
   await expect(dialog.getByText("Son férié", { exact: true })).toBeVisible();
+  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
+  // Le férié venu de Ma paie reste choisi dans la liste des vôtres.
+  await expect(dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" }).getByRole("radio", { checked: true })).toContainText(givenName);
   const returnList = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" });
   const firstReturn = returnList.getByRole("radio").first();
   const returnedName = (await firstReturn.locator("strong").textContent())!.trim();
-  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
   await firstReturn.click();
   await expect(firstReturn).toHaveAttribute("aria-checked", "true");
   // Un férié cédé ouvre l'onglet des fériés.
