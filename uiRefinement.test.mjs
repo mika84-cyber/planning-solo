@@ -89,6 +89,7 @@ const leaveForm = [
 ].map((file) => readFileSync(new URL(`./public/formulaire/${file}`, import.meta.url), "utf8")).join("\n");
 const main = readFileSync(new URL("./src/main.tsx", import.meta.url), "utf8");
 const serviceWorker = readFileSync(new URL("./public/sw.js", import.meta.url), "utf8");
+const appUpdate = readFileSync(new URL("./src/appUpdate.ts", import.meta.url), "utf8");
 const calendarCleanup = readFileSync(new URL("./src/CalendarCleanup.tsx", import.meta.url), "utf8");
 const leaveBalancesSection = readFileSync(new URL("./src/LeaveBalancesSection.tsx", import.meta.url), "utf8");
 const payEstimateDetails = readFileSync(new URL("./src/PayEstimateDetails.tsx", import.meta.url), "utf8");
@@ -418,12 +419,15 @@ describe("finitions d’interface", () => {
     expect(css.anyRuleDeclares(".calendar-cleanup-label-short", { display: "none" })).toBe(true);
   });
 
-  it("attend l’accord de l’utilisateur avant d’actualiser l’application installée", () => {
+  it("ouvre la dernière version, et attend l’accord de l’utilisateur pendant qu’il s’en sert", () => {
     expect(main).toContain('updateViaCache: "none"');
+    expect(main).toContain(".then(watchAppUpdates)");
+    // Le choix lui-même (adopter, recharger à l'ouverture, demander) : tests
+    // unitaires dans src/appUpdate.test.ts, parcours réels dans e2e-pwa.
     expect(main).not.toContain('addEventListener("controllerchange"');
     expect(main).not.toContain("window.location.reload()");
-    expect(main).toContain('addEventListener("visibilitychange"');
-    expect(main).toContain("registration.update()");
+    expect(appUpdate).toContain('addEventListener("visibilitychange"');
+    expect(appUpdate).toContain("registration.update()");
     expect(serviceWorker).toContain('fetch(event.request, { cache: "no-store" })');
     expect(serviceWorker).toContain('event.data?.type === "SKIP_WAITING"');
     expect(serviceWorker.match(/self\.addEventListener\("install"[\s\S]*?\n\}\);/)?.[0]).not.toContain("skipWaiting");
@@ -432,13 +436,13 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Vérifier les mises à jour");
     expect(app).toContain("Une mise à jour est disponible");
     expect(app).toContain("planning-app-update-available");
-    expect(main).toContain('registration.addEventListener("updatefound"');
+    expect(appUpdate).toContain('registration.addEventListener("updatefound"');
     // La version publiée se signale vite : au retour sur la fenêtre, au
     // retour du réseau et toutes les minutes ; la page rouvre où l'on était.
-    expect(main).toContain('addEventListener("focus", checkForUpdate)');
-    expect(main).toContain('addEventListener("online", checkForUpdate)');
-    expect(main).toContain("60 * 1000");
-    expect(main).not.toContain("2 * 60 * 1000");
+    expect(appUpdate).toContain('addEventListener("focus", checkForUpdate)');
+    expect(appUpdate).toContain('addEventListener("online", checkForUpdate)');
+    expect(appUpdate).toContain("60 * 1000");
+    expect(appUpdate).not.toContain("2 * 60 * 1000");
     expect(app).toContain("<AppUpdateDialog");
     expect(planningDialogs).toContain("Mettre à jour maintenant");
     expect(planningDialogs).toContain('className="save-button update-now-button"');

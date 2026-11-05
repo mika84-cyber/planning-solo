@@ -1,4 +1,6 @@
 import { getStore } from "@netlify/blobs";
+import { emailEnvironment, sendAdminEmail } from "./adminEmail.mts";
+import { sendGmailEmail, type GmailSender } from "./gmailEmail.mts";
 
 type LoginAlertEnvironment = Record<string, string | undefined>;
 
@@ -12,21 +14,9 @@ type LoginAlertStore = {
 export type GuestLoginAlertStatus = "sent" | "administrator" | "throttled";
 
 const ALERT_THROTTLE_MS = 30 * 60 * 1000;
-const RESEND_TIMEOUT_MS = 10_000;
 
 function normalizedEmail(value: string | undefined) {
   return (value || "").trim().toLowerCase();
-}
-
-function runtimeEnv(): LoginAlertEnvironment {
-  const netlifyEnv = (globalThis as typeof globalThis & {
-    Netlify?: { env?: { get(name: string): string | undefined } };
-  }).Netlify?.env;
-  return {
-    PROGRAM_ADMIN_EMAIL: netlifyEnv?.get("PROGRAM_ADMIN_EMAIL"),
-    PROGRAM_ALERT_FROM: netlifyEnv?.get("PROGRAM_ALERT_FROM"),
-    RESEND_API_KEY: netlifyEnv?.get("RESEND_API_KEY"),
-  };
 }
 
 export function shouldSendGuestLoginAlert(
@@ -60,55 +50,41 @@ function formatLoginDate(date: Date) {
   }).format(date);
 }
 
+/** Prévient le compte administrateur, par le même moyen d'envoi que ses
+ *  autres alertes (adminEmail : Gmail, puis SendGrid, puis Resend). */
 export async function sendGuestLoginAlert(
   connectedEmail: string | undefined,
   connectedAt = new Date(),
-  env: LoginAlertEnvironment = runtimeEnv(),
+  env: LoginAlertEnvironment = emailEnvironment(),
   fetcher: typeof fetch = fetch,
+  gmailSender: GmailSender = sendGmailEmail,
 ) {
-  const administratorEmail = env.PROGRAM_ADMIN_EMAIL;
-  if (!shouldSendGuestLoginAlert(connectedEmail, administratorEmail)) return false;
-  if (!env.RESEND_API_KEY || !env.PROGRAM_ALERT_FROM)
-    throw new Error("Les variables d’alerte e-mail de Planning Solo sont incomplètes");
-
+  if (!shouldSendGuestLoginAlert(connectedEmail, env.PROGRAM_ADMIN_EMAIL)) return false;
   const guestEmail = normalizedEmail(connectedEmail);
   const displayedDate = formatLoginDate(connectedAt);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), RESEND_TIMEOUT_MS);
-  const response = await fetcher("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      from: env.PROGRAM_ALERT_FROM,
-      to: [administratorEmail],
-      subject: "Connexion d’un compte invité sur Planning Solo",
-      html: [
-        "<p>Un compte invité vient de se connecter à Planning Solo.</p>",
-        `<p><strong>Compte :</strong> ${escapeHtml(guestEmail)}<br>`,
-        `<strong>Date :</strong> ${escapeHtml(displayedDate)}</p>`,
-        "<p>Cette alerte est réservée au compte administrateur.</p>",
-      ].join(""),
-    }),
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timeout));
-  if (!response.ok) throw new Error(`Envoi de l’alerte de connexion impossible (${response.status})`);
-  return true;
+  return sendAdminEmail({
+    subject: "Connexion d’un compte invité sur Planning Solo",
+    text: `Un compte invité vient de se connecter à Planning Solo.\n\nCompte : ${guestEmail}\nDate : ${displayedDate}\n\nCette alerte est réservée au compte administrateur.`,
+    html: [
+      "<p>Un compte invité vient de se connecter à Planning Solo.</p>",
+      `<p><strong>Compte :</strong> ${escapeHtml(guestEmail)}<br>`,
+      `<strong>Date :</strong> ${escapeHtml(displayedDate)}</p>`,
+      "<p>Cette alerte est réservée au compte administrateur.</p>",
+    ].join(""),
+  }, env, fetcher, gmailSender);
 }
-
 
 export async function sendGuestLoginAlertOnce(
   userId: string,
   connectedEmail: string | undefined,
   connectedAt = new Date(),
-  env: LoginAlertEnvironment = runtimeEnv(),
+  env: LoginAlertEnvironment = emailEnvironment(),
   fetcher: typeof fetch = fetch,
   store: LoginAlertStore = getStore({
     name: "planning-solo-login-alerts",
     consistency: "strong",
   }) as LoginAlertStore,
+  gmailSender: GmailSender = sendGmailEmail,
 ): Promise<GuestLoginAlertStatus> {
   if (!shouldSendGuestLoginAlert(connectedEmail, env.PROGRAM_ADMIN_EMAIL))
     return "administrator";
@@ -119,7 +95,7 @@ export async function sendGuestLoginAlertOnce(
   if (Number.isFinite(previousTime) && connectedAt.getTime() - previousTime < ALERT_THROTTLE_MS)
     return "throttled";
 
-  await sendGuestLoginAlert(connectedEmail, connectedAt, env, fetcher);
+  await sendGuestLoginAlert(connectedEmail, connectedAt, env, fetcher, gmailSender);
   await store.setJSON(key, { sentAt: connectedAt.toISOString() });
   return "sent";
 }

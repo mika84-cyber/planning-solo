@@ -4117,7 +4117,7 @@ test("l’onglet Jour férié explique le remplacement et prépare les deux feui
   await dialog.getByRole("tab", { name: "Jour férié" }).click();
   // Un férié se cède par une demande de remplacement : deux feuilles pour un échange.
   await expect(dialog.locator(".xch-sheet")).toContainText("2 demandes de remplacement");
-  await expect(dialog.locator(".xch-sheet")).toContainText("Vous signerez donc deux feuilles");
+  await expect(dialog.locator(".xch-sheet")).toContainText("Vous signerez deux feuilles");
   await expect(dialog.getByRole("switch", { name: "Remplacement seul, sans férié rendu" })).not.toBeChecked();
   const give = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" });
   await give.getByRole("radio").first().click();
@@ -4189,6 +4189,39 @@ test("l’onglet Jour férié explique le remplacement et prépare les deux feui
   expect(images).toHaveLength(2);
   // Le fond de la feuille et la signature, sur chaque page.
   for (const count of images) expect(count).toBeGreaterThanOrEqual(2);
+});
+
+test("dans l’onglet Jour férié, ses fériés s’affichent d’emblée et les deux listes s’accordent avec le collègue", async ({ page }) => {
+  await prepareDemo(page);
+  await page.getByRole("button", { name: "Faire un échange" }).click();
+  const dialog = page.getByRole("dialog", { name: "Faire un échange" });
+  await dialog.getByRole("tab", { name: "Jour férié" }).click();
+  const give = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" }).getByRole("radio");
+  const back = dialog.getByRole("radiogroup", { name: "Choisir le férié du cycle du collègue" }).getByRole("radio");
+  if (!(await give.count())) return; // aucun férié travaillé dans l'année qui vient
+  // Les fériés où vous remplacez votre collègue, avant même de choisir le vôtre.
+  await expect(dialog.getByText(/Choisissez d’abord/)).toHaveCount(0);
+  await expect(back.first()).toBeVisible();
+
+  // Le collègue choisi : vos fériés où il travaille restent visibles, grisés, avec la raison.
+  await dialog.getByPlaceholder("Prénom et/ou nom").fill("Camille");
+  await dialog.getByRole("option", { name: /Camille Durand/ }).click();
+  const pill = dialog.getByRole("radiogroup", { name: "Choisir le groupe du collègue" }).getByRole("radio", { checked: true });
+  const pillName = (await pill.textContent())!.trim();
+  for (const radio of await give.all()) {
+    if (await radio.isDisabled()) await expect(radio).toContainText("Camille Durand travaille ce jour-là");
+    else await expect(radio).not.toContainText("travaille ce jour-là");
+  }
+  const possible = dialog.getByRole("radiogroup", { name: "Choisir le férié que vous cédez" }).locator("button:not([disabled])");
+  if (!(await possible.count())) return;
+  await possible.first().click();
+  await expect(possible.first()).toHaveAttribute("aria-checked", "true");
+  // Le groupe du collègue ne bascule plus vers un autre.
+  await expect(dialog.getByRole("radiogroup", { name: "Choisir le groupe du collègue" }).getByRole("radio", { checked: true })).toHaveText(pillName);
+  if (!(await back.count())) return;
+  await back.first().click();
+  await expect(dialog.locator(".xch-recap")).toContainText("Camille Durand vous remplace le");
+  await expect(dialog.locator(".xch-recap")).toContainText("Vous remplacez Camille Durand le");
 });
 
 test("un férié peut être simplement remplacé, sans férié rendu ni seconde feuille", async ({ page }) => {
@@ -7071,6 +7104,9 @@ test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou l
   await help.click();
   await expect(sheet.getByRole("list", { name: "Documents" }).getByRole("button")).toHaveCount(5);
   await expect(sheet.getByRole("searchbox")).toHaveCount(0);
+  // La feuille monte en glissant : on mesure une fois arrivée, sans quoi
+  // deux mesures prises à des instants différents ne se comparent pas.
+  await sheet.locator(".help-sheet-panel").evaluate((panel) => Promise.all(panel.getAnimations().map((animation) => animation.finished)));
   // À l'ordinateur, deux colonnes : Documents et Expositions à gauche ; Ma
   // paie, Déclarer puis Mon planning à droite. Sur téléphone, une colonne :
   // Documents, Expositions, Mon planning, Ma paie, Déclarer.

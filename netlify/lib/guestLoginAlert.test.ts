@@ -38,7 +38,7 @@ describe("alerte de connexion invitée", () => {
       sendGuestLoginAlert("invite@example.com", new Date(), {
         PROGRAM_ADMIN_EMAIL: "admin@example.com",
       }),
-    ).rejects.toThrow("incomplètes");
+    ).rejects.toThrow("incomplète");
   });
 
   it("interrompt l’appel Resend après dix secondes", async () => {
@@ -83,5 +83,26 @@ describe("alerte de connexion invitée", () => {
       ),
     ).resolves.toBe("throttled");
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("passe par Gmail, comme les autres alertes, quand Gmail est configuré", async () => {
+    // Avant, l'alerte partait toujours par Resend et son expéditeur d'essai
+    // (resend.dev), accepté par Resend mais jamais reçu.
+    const fetcher = vi.fn<typeof fetch>();
+    const gmailSender = vi.fn(async () => undefined);
+    const withGmail = { ...env, GMAIL_APP_PASSWORD: "mot-de-passe", SENDGRID_FROM_EMAIL: "planning@gmail.com" };
+    await expect(
+      sendGuestLoginAlert("Audrey@example.com", new Date("2026-11-05T09:00:00Z"), withGmail, fetcher, gmailSender),
+    ).resolves.toBe(true);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(gmailSender).toHaveBeenCalledWith(
+      { user: "planning@gmail.com", appPassword: "mot-de-passe" },
+      expect.objectContaining({
+        to: "admin@example.com",
+        subject: "Connexion d’un compte invité sur Planning Solo",
+        text: expect.stringContaining("audrey@example.com"),
+        html: expect.stringContaining("5 novembre 2026"),
+      }),
+    );
   });
 });

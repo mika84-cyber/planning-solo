@@ -4,8 +4,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 
 ## Point d'entrée
 
-- `src/main.tsx` : montage React, import des styles, enregistrement et mise à
-  jour du service worker.
+- `src/main.tsx` : montage React, import des styles, enregistrement du
+  service worker ; le suivi des mises à jour vit dans `src/appUpdate.ts`.
 - `src/App.tsx` : orchestration générale (environ 1 180 lignes) : les états
   partagés, les hooks d'actions et de calculs, puis les messages et alertes
   et l'appel des composants de rubrique listés plus bas (`AppShellChrome`,
@@ -232,6 +232,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/workExchange.ts` et `src/useWorkExchangeActions.ts` : échanges complets
   entre collègues, toujours constitués d’une date cédée et d’une date rendue,
   sans ordre chronologique imposé et sans effet sur la paie ni les congés.
+  Onglet « Jour férié » : les deux listes s’affichent d’emblée et s’accordent
+  dans un ordre ou dans l’autre (`holidayExchangeChoices`) : vos fériés où le
+  collègue est en repos, les siens de la même année ; un férié impossible
+  reste visible, grisé, avec sa raison.
   Un échange proposé par un collègue (`netlify/functions/colleagues.mts`,
   `src/ColleagueRequestNotice.tsx`) est contrôlé à l’acceptation avec les mêmes
   règles (`validateWorkExchange`, groupe du profil du destinataire).
@@ -651,6 +655,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   l’administrateur, stockage, alertes par compte invité et téléchargement.
 - `netlify/lib/documentAnnouncementEmail.mts` : e-mail individuel annonçant un
   nouveau document aux comptes invités.
+- `netlify/lib/adminEmail.mts` : envoi des alertes au compte administrateur
+  par le premier moyen configuré (Gmail, puis SendGrid, puis Resend). S’en
+  servent la messagerie (`feedbackEmail.mts`) et l’alerte de connexion d’un
+  invité (`guestLoginAlert.mts`, appelée par `/api/guest-session` à chaque
+  ouverture de session, au plus une fois par demi-heure et par compte). La
+  veille du Grand Palais et le contrôle mensuel (`grandPalaisMonitor.mts`,
+  `sendPlanningEmail`) passent encore par Resend seul.
 - `netlify/lib/` : validation, stockage par utilisatrice et sauvegardes.
 - `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles
@@ -704,20 +715,34 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   partagé avec la construction du site Congé CP.
 - `public/sw.js` : cache hors ligne et activation des mises à jour. À la
   construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
-  version et remplit `PRECACHE` : code, styles, polices et images légères
-  (≈ 3,7 Mo), téléchargés dès l’installation pour que l’application soit
-  complète hors ligne dès la première visite. Une version publiée se signale
-  vite, sans rafraîchir (`src/main.tsx` : à l’ouverture, au retour sur la
-  fenêtre, au retour du réseau et toutes les minutes) ; la fenêtre « Une mise
-  à jour est disponible » laisse choisir le moment, et « Mettre à jour
-  maintenant » rouvre la page là où l’on était (`src/updateResume.ts` :
-  rubrique et sous-écran de Ma paie notés dans sessionStorage, relus par
-  `useAppShellUiState` et `usePayUiState`, puis « Application mise à jour. »).
+  version, pose la même empreinte dans la page (balise `planning-build`
+  d’`index.html`) et remplit `PRECACHE` : code, styles, polices et images
+  légères (≈ 3,7 Mo), téléchargés dès l’installation pour que l’application
+  soit complète hors ligne dès la première visite.
+- `src/appUpdate.ts` : l’application s’ouvre toujours dans sa dernière
+  version. Une version publiée est cherchée au lancement, au retour sur la
+  fenêtre, au retour du réseau et toutes les minutes. Quand une version
+  installée attend son tour, la page compare son empreinte au dernier cache
+  créé, celui de cette version (`isNewestBuild`, puis `updateChoice`) : si
+  elle la porte déjà (lancée depuis le réseau après la publication), le
+  service worker prend la main sans fenêtre ; à l’ouverture (30 s après le
+  lancement, ou après un retour d’au moins une minute d’absence : le
+  téléphone rouvre sinon la page laissée en arrière-plan, dans l’ancienne
+  version), la page se recharge d’elle-même, y compris hors connexion avec la
+  version déjà téléchargée ; pendant qu’on s’en sert, ou si une fenêtre est
+  ouverte ou un texte en cours de saisie (`pageBusy`), la fenêtre « Une mise
+  à jour est disponible » laisse choisir le moment, une fois par version.
+  Après un rechargement, la page rouvre là où l’on était
+  (`src/updateResume.ts` : rubrique et sous-écran de Ma paie notés dans
+  sessionStorage, relus par `useAppShellUiState` et `usePayUiState`, puis
+  « Application mise à jour. »). Tests dans `src/appUpdate.test.ts`.
 - `e2e-pwa/pwa.spec.ts` (`npm run test:pwa`) : la version de production,
   construite dans `dist-pwa-e2e` et servie par `scripts/serve-dist.mjs`, avec
-  le service worker actif — mise en cache, réouverture hors ligne, annonce et
-  activation d’une nouvelle version. À lancer dès qu’on touche `public/sw.js`,
-  `src/main.tsx` ou `scripts/stamp-sw.mjs`.
+  le service worker actif — mise en cache, réouverture hors ligne, et chaque
+  cas de mise à jour : retour après une absence, usage en cours, saisie en
+  cours, page déjà à jour, « Plus tard » puis retour hors connexion. À lancer
+  dès qu’on touche `public/sw.js`, `src/main.tsx`, `src/appUpdate.ts` ou
+  `scripts/stamp-sw.mjs`.
 - `public/manifest.webmanifest` : installation de la PWA.
 - `src/InstallAppNotice.tsx` : bandeau « Installer l’application sur votre
   téléphone ou ordinateur » proposé aux invités dont le navigateur sait

@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkExchangeDialog } from "./WorkExchangeDialog";
 
 describe("WorkExchangeDialog", () => {
@@ -92,5 +92,29 @@ describe("WorkExchangeDialog", () => {
     expect(html).toContain(`En repos ce jour-là : groupe ${offGroup}`);
     const other = offGroup === 1 ? 3 : 1;
     expect(html).toMatch(new RegExp(`aria-checked="false" disabled="" class="group-${other}"`));
+  });
+
+  describe("onglet Jour férié", () => {
+    afterEach(() => vi.useRealTimers());
+
+    it("affiche d’emblée ses fériés et grise les vôtres où votre collègue travaille", () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(2026, 10, 5, 12));
+      const html = renderToStaticMarkup(
+        <WorkExchangeDialog open group={2}
+          draft={{ id: "", partnerName: "Maurizio Campani", partnerGroup: 1, agreementDate: "2027-05-16", returnDate: "", agreementStart: "", agreementEnd: "", returnStart: "", returnEnd: "" }}
+          setDraft={vi.fn()} error="" saving={false} onClose={vi.fn()} onSave={vi.fn()} onDelete={vi.fn()} />,
+      );
+      expect(html).toContain('aria-selected="true" class="active">Jour férié<');
+      expect(html).toContain("chacun cède le sien, la même année, sur une demande de remplacement");
+      // Vos fériés : la Pentecôte choisie, l'Assomption grisée avec sa raison.
+      expect(html).toMatch(/aria-checked="true" class="xch-choice selected"><strong>Dimanche de Pentecôte<\/strong>/);
+      expect(html).toMatch(/aria-checked="false" disabled="" class="xch-choice"><strong>Assomption<\/strong><small>[^<]+<\/small><em>Maurizio Campani travaille ce jour-là<\/em>/);
+      // Ses fériés de 2027, où vous le remplacez.
+      expect(html).toContain('aria-label="Choisir le férié du cycle du collègue"');
+      expect(html).toContain("Groupe 1 · Vous remplacez Maurizio Campani");
+      expect(html).toContain("Jour de l’an");
+      expect(html).not.toContain("Choisissez d’abord");
+    });
   });
 });

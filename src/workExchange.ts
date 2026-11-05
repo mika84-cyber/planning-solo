@@ -193,6 +193,31 @@ export function holidaysForExchangeReturn(agreementDate: string, group: number, 
   return holidays;
 }
 
+/** L'onglet « Jour férié » : vos fériés et les siens, accordés entre eux
+ *  dans un ordre ou dans l'autre. Vos fériés où votre collègue est en repos ;
+ *  les siens de la même année que le vôtre, affichés d'emblée pour l'année de
+ *  vos fériés possibles. Un férié impossible reste listé avec sa raison. */
+export function holidayExchangeChoices(
+  draft: Pick<WorkExchangeDraft, "partnerName" | "partnerGroup" | "agreementDate" | "returnDate">,
+  group: number,
+  from: Date,
+) {
+  const partner = draft.partnerName.trim();
+  const partnerOff = (key: string) => getDayInfo(fromKey(key), draft.partnerGroup).kind === "off";
+  const year = (key: string) => key.slice(0, 4);
+  const all = holidaysForExchangeGive(group, from);
+  const possible = all.filter((holiday) => !partner || partnerOff(holiday.key));
+  const give = all.map((holiday) => ({
+    ...holiday,
+    reason: partner && !partnerOff(holiday.key)
+      ? `${partner} travaille ce jour-là`
+      : draft.returnDate && year(holiday.key) !== year(draft.returnDate) ? "Pas la même année que son férié" : "",
+  }));
+  const years = new Set(draft.agreementDate ? [year(draft.agreementDate)] : (possible.length ? possible : all).map((holiday) => year(holiday.key)));
+  const returns = [...years].flatMap((each) => holidaysForExchangeReturn(`${each}-01-01`, group, draft.partnerGroup));
+  return { give, returns };
+}
+
 export function exchangeDraftFromExchange(exchange: WorkExchange, schedule?: Schedule): WorkExchangeDraft {
   return {
     id: exchange.id,

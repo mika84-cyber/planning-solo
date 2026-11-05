@@ -10,6 +10,7 @@ import "./planningCalendarRefinement.css";
 import "./pageHeaders.css";
 import "./darkTheme.css";
 import { initTheme } from "./theme";
+import { watchAppUpdates } from "./appUpdate";
 
 // Le thème est posé avant le premier rendu : pas d'éclair clair au lancement.
 initTheme();
@@ -20,35 +21,12 @@ if ("serviceWorker" in navigator) {
   const publicDemoBuild = Boolean(import.meta.env.VITE_PUBLIC_DEMO_UNTIL);
   if (import.meta.env.PROD && !publicDemoBuild) {
     window.addEventListener("load", () => {
+      // L'application s'ouvre toujours dans sa dernière version ; pendant
+      // qu'on s'en sert, la fenêtre « Une mise à jour est disponible » laisse
+      // choisir le moment (appUpdate.ts).
       void navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
-        .then((registration) => {
-          const notifyUpdateAvailable = () =>
-            window.dispatchEvent(new Event("planning-app-update-available"));
-          const watchInstallingWorker = () => {
-            const worker = registration.installing;
-            if (!worker) return;
-            worker.addEventListener("statechange", () => {
-              if (worker.state === "installed" && navigator.serviceWorker.controller)
-                notifyUpdateAvailable();
-            });
-          };
-          if (registration.waiting) notifyUpdateAvailable();
-          registration.addEventListener("updatefound", watchInstallingWorker);
-          const checkForUpdate = () => {
-            if (document.visibilityState === "visible")
-              void registration.update().catch(() => {});
-          };
-          checkForUpdate();
-          // Une version publiée se signale vite, sans rafraîchir : à chaque
-          // retour sur la fenêtre, au retour du réseau, et toutes les minutes.
-          // La fenêtre « Une mise à jour est disponible » laisse ensuite
-          // choisir le moment.
-          document.addEventListener("visibilitychange", checkForUpdate);
-          window.addEventListener("focus", checkForUpdate);
-          window.addEventListener("online", checkForUpdate);
-          window.setInterval(checkForUpdate, 60 * 1000);
-        })
+        .then(watchAppUpdates)
         .catch(() => {});
     });
   } else {

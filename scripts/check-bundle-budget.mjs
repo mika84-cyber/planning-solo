@@ -121,7 +121,12 @@ const budgets = {
   // GP-RMN en panneaux de thème (canal radio, numéros en colonne, SMS
   // désactivable) et le plafond IM 473 des jours fériés (2 086,1 / 691,6 Kio
   // mesurés).
-  totalJavaScript: { raw: 2_088 * KIB, gzip: 692 * KIB },
+  // Relevé le 5 novembre 2026 de 692 à 693 Kio compressés, avec l'accord de
+  // l'administrateur : l'application installée s'ouvre toujours dans sa
+  // dernière version (appUpdate.ts) et les deux listes de fériés de l'échange
+  // s'accordent (holidayExchangeChoices) ; le code ajouté a d'abord été
+  // compacté (2 087,0 / 692,0 Kio mesurés, 2 octets de marge).
+  totalJavaScript: { raw: 2_088 * KIB, gzip: 693 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
