@@ -236,8 +236,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   propose seulement les dates adaptées : calendrier ouvert d’emblée
   (`WorkExchangeDatePicker`, `initiallyOpen`) sur vos journées où son groupe
   est en repos, puis sur les siennes ; dans l’onglet « Jour férié », vos
-  fériés où il est en repos et les siens de la même année
-  (`holidayExchangeChoices`). Changer de groupe garde les dates qui
+  fériés où il est en repos, puis les siens : ceux de l’année du vôtre et tous
+  ceux encore à venir, même d’une autre année et avant le vôtre
+  (`holidayExchangeChoices`) ; un férié s’échange contre un férié de n’importe
+  quelle année. Changer de groupe garde les dates qui
   conviennent encore. En mode sombre, le calendrier reprend les couleurs du
   planning (`darkTheme.css`).
   Un échange proposé par un collègue (`netlify/functions/colleagues.mts`,

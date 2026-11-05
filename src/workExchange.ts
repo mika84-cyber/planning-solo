@@ -156,13 +156,9 @@ export function validateWorkExchange(
     if (returnMine !== "off" || returnPartner !== "work")
       return "Pour la journée du cycle du collègue, vous devez être en repos et votre collègue doit travailler.";
   }
-  // Un férié cédé se rend par un autre férié.
-  if (getDayInfo(fromKey(draft.agreementDate), group).holiday) {
-    if (!getDayInfo(fromKey(draft.returnDate), draft.partnerGroup).holiday)
-      return "Un jour férié s’échange contre un autre jour férié : choisissez un férié où votre collègue travaille.";
-    if (draft.returnDate.slice(0, 4) !== draft.agreementDate.slice(0, 4))
-      return "Un jour férié s’échange contre un férié de la même année.";
-  }
+  // Un férié cédé se rend par un autre férié, de la même année ou non.
+  if (getDayInfo(fromKey(draft.agreementDate), group).holiday && !getDayInfo(fromKey(draft.returnDate), draft.partnerGroup).holiday)
+    return "Un jour férié s’échange contre un autre jour férié : choisissez un férié où votre collègue travaille.";
 
   for (const date of [draft.agreementDate, draft.returnDate]) {
     if (isExceptionallyClosed(date))
@@ -176,16 +172,13 @@ export function validateWorkExchange(
   return "";
 }
 
-/** Les fériés qu'un collègue du groupe donné travaille et où vous êtes en
- *  repos, dans la même année que le férié cédé : ceux qu'il peut vous rendre. */
-export function holidaysForExchangeReturn(agreementDate: string, group: number, partnerGroup: number) {
-  if (!agreementDate || partnerGroup === group) return [];
-  const year = fromKey(agreementDate).getFullYear();
-  const start = new Date(year, 0, 1, 12);
+/** Les fériés que le groupe du collègue travaille et où vous êtes en repos,
+ *  sur un an à partir de `start` (ou jusqu'à la fin de l'année de `start`). */
+function partnerHolidays(group: number, partnerGroup: number, start: Date, sameYear: boolean) {
   const holidays: Array<{ key: string; name: string }> = [];
   for (let offset = 0; offset < 366; offset++) {
     const date = addDays(start, offset);
-    if (date.getFullYear() !== year) break;
+    if (sameYear && date.getFullYear() !== start.getFullYear()) break;
     const partner = getDayInfo(date, partnerGroup);
     if (partner.holiday && partner.kind === "work" && getDayInfo(date, group).kind === "off")
       holidays.push({ key: dateKey(date), name: partner.holiday });
@@ -193,10 +186,17 @@ export function holidaysForExchangeReturn(agreementDate: string, group: number, 
   return holidays;
 }
 
+/** Les fériés du collègue de l'année du férié cédé, passés compris. */
+export function holidaysForExchangeReturn(agreementDate: string, group: number, partnerGroup: number) {
+  if (!agreementDate || partnerGroup === group) return [];
+  return partnerHolidays(group, partnerGroup, new Date(fromKey(agreementDate).getFullYear(), 0, 1, 12), true);
+}
+
 /** L'onglet « Jour férié », une fois le collègue choisi : vos fériés où il
- *  est en repos, et les siens que vous pouvez reprendre, de la même année que
- *  le vôtre ou, tant que vous n'avez pas choisi, de l'année de vos fériés
- *  possibles. Un férié déjà choisi (depuis Ma paie) reste dans la liste. */
+ *  est en repos, et les siens que vous pouvez reprendre : ceux de l'année du
+ *  vôtre (ou, tant que vous n'avez pas choisi, de l'année de vos fériés
+ *  possibles), et tous ceux encore à venir, même d'une autre année et avant
+ *  le vôtre. Un férié déjà choisi (depuis Ma paie) reste dans la liste. */
 export function holidayExchangeChoices(
   draft: Pick<WorkExchangeDraft, "partnerGroup" | "agreementDate">,
   group: number,
@@ -208,7 +208,10 @@ export function holidayExchangeChoices(
   if (chosen && !give.some((holiday) => holiday.key === draft.agreementDate))
     give.unshift({ key: draft.agreementDate, name: chosen, partnerGroup: draft.partnerGroup });
   const years = new Set(draft.agreementDate ? [year(draft.agreementDate)] : give.map((holiday) => year(holiday.key)));
-  const returns = [...years].flatMap((each) => holidaysForExchangeReturn(`${each}-01-01`, group, draft.partnerGroup));
+  const returns = [...years].flatMap((each) => holidaysForExchangeReturn(`${each}-01-01`, group, draft.partnerGroup))
+    .concat(partnerHolidays(group, draft.partnerGroup, from, false))
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .filter((holiday, index, list) => holiday.key !== list[index - 1]?.key);
   return { give, returns };
 }
 

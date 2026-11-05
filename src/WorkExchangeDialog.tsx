@@ -155,12 +155,14 @@ export function WorkExchangeDialog({
     setDraft((current) => ({ ...current, agreementDate: "", returnDate: "", replacement: false }));
   };
   /* Votre date, parmi celles où votre collègue peut vous remplacer. Sa date
-     reste si elle convient encore : même année pour un férié, formation
-     contre formation pour une journée. */
+     reste si elle convient encore : toujours proposée pour un férié,
+     formation contre formation pour une journée. */
   const chooseAgreement = (agreementDate: string) =>
     setDraft((current) => {
       const training = (key: string) => Boolean(key) && getDayInfo(fromKey(key), group).kind === "training";
-      const keep = holidayTab ? current.returnDate.slice(0, 4) === agreementDate.slice(0, 4) : training(current.agreementDate) === training(agreementDate);
+      const keep = holidayTab
+        ? holidayExchangeChoices({ ...current, agreementDate }, group, new Date()).returns.some((holiday) => holiday.key === current.returnDate)
+        : training(current.agreementDate) === training(agreementDate);
       return { ...current, agreementDate, returnDate: keep ? current.returnDate : "" };
     });
   const dayLabel = (key: string) => fromKey(key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -179,7 +181,7 @@ export function WorkExchangeDialog({
   );
   const sheet = replacement
     ? { title: "1 demande de remplacement", detail: "Votre collègue travaille votre férié, sans férié rendu en retour." }
-    : { title: "2 demandes de remplacement", detail: "Un férié ne passe pas par la demande d’échange : chacun cède le sien, la même année, sur une demande de remplacement. Vous signerez deux feuilles, une par férié." };
+    : { title: "2 demandes de remplacement", detail: "Un férié ne passe pas par la demande d’échange : chacun cède le sien sur une demande de remplacement. Vous signerez deux feuilles, une par férié." };
   const noun = holidayTab ? "férié" : "journée";
   const complete = Boolean(draft.agreementDate && partner && (replacement || draft.returnDate));
   return (

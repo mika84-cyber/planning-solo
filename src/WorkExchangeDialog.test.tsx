@@ -120,7 +120,7 @@ describe("WorkExchangeDialog", () => {
           setDraft={vi.fn()} error="" saving={false} onClose={vi.fn()} onSave={vi.fn()} onDelete={vi.fn()} />,
       );
       expect(html).toContain('aria-selected="true" class="active">Jour férié<');
-      expect(html).toContain("chacun cède le sien, la même année, sur une demande de remplacement");
+      expect(html).toContain("chacun cède le sien sur une demande de remplacement");
       // Vos fériés : la Pentecôte, où Maurizio est en repos ; pas l'Assomption, où il travaille.
       expect(html).toMatch(/aria-checked="true" class="xch-choice selected"><strong>Dimanche de Pentecôte<\/strong>/);
       expect(html).not.toContain("Assomption");
@@ -128,6 +128,8 @@ describe("WorkExchangeDialog", () => {
       expect(html).toContain('aria-label="Choisir le férié du cycle du collègue"');
       expect(html).toContain("Groupe 1 · Vous remplacez Maurizio Campani");
       expect(html).toContain("Jour de l’an");
+      // Et ceux encore à venir en 2026, avant votre férié.
+      expect(html).toContain("mercredi 11 novembre 2026");
       expect(html).not.toContain("Choisissez d’abord");
     });
   });

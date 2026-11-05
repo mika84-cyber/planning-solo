@@ -65,7 +65,10 @@ describe("échanges de journées", () => {
       const draft = { ...emptyWorkExchangeDraft(2), partnerName: "Camille", partnerGroup, agreementDate: dateKey(agreement) };
       expect(validateWorkExchange({ ...draft, returnDate: dateKey(plainReturn) }, context)).toContain("un autre jour férié");
       expect(validateWorkExchange({ ...draft, returnDate: dateKey(holidayReturn) }, context)).toBe("");
-      // La liste proposée : les fériés possibles de la même année seulement.
+      // Un férié d'une autre année convient aussi.
+      const otherYear = days.find((date) => date.getFullYear() !== agreement.getFullYear() && getDayInfo(date, partnerGroup).holiday && getDayInfo(date, partnerGroup).kind === "work" && getDayInfo(date, 2).kind === "off");
+      if (otherYear) expect(validateWorkExchange({ ...draft, returnDate: dateKey(otherYear) }, context)).toBe("");
+      // La liste de l'année du férié cédé.
       const list = holidaysForExchangeReturn(draft.agreementDate, 2, partnerGroup);
       expect(list.map((item) => item.key)).toContain(dateKey(holidayReturn));
       expect(list.every((item) => item.key.slice(0, 4) === draft.agreementDate.slice(0, 4))).toBe(true);
@@ -82,16 +85,19 @@ describe("échanges de journées", () => {
     const withGroup1 = holidayExchangeChoices({ partnerGroup: 1, agreementDate: "" }, 2, from);
     expect(keys(withGroup1.give)).toEqual(["2027-05-16"]);
     expect(keys(holidayExchangeChoices({ partnerGroup: 3, agreementDate: "" }, 2, from).give)).toEqual(["2027-08-15"]);
-    // Ses fériés s'affichent d'emblée : ceux de 2027, l'année des vôtres.
-    expect(withGroup1.returns.length).toBeGreaterThan(0);
+    // Ses fériés s'affichent d'emblée : ceux de 2027, l'année des vôtres, et
+    // ceux encore à venir en 2026, même avant le vôtre (l'Armistice 2026).
+    expect(keys(withGroup1.returns)[0]).toBe("2026-11-11");
+    expect(withGroup1.returns.length).toBeGreaterThan(1);
+    expect(new Set(keys(withGroup1.returns)).size).toBe(withGroup1.returns.length);
     for (const holiday of withGroup1.returns) {
-      expect(holiday.key.startsWith("2027-")).toBe(true);
+      expect(holiday.key >= "2026-11-05").toBe(true);
       expect(getDayInfo(new Date(`${holiday.key}T12:00:00`), 1).kind).toBe("work");
       expect(getDayInfo(new Date(`${holiday.key}T12:00:00`), 2).kind).toBe("off");
     }
-    // Votre férié choisi : ses fériés de la même année.
+    // Votre férié choisi : ses fériés de cette année-là, et ceux encore à venir.
     const chosen = holidayExchangeChoices({ partnerGroup: 1, agreementDate: "2027-05-16" }, 2, from);
-    expect(keys(chosen.returns)).toEqual(keys(holidaysForExchangeReturn("2027-05-16", 2, 1)));
+    expect(keys(chosen.returns)).toEqual(["2026-11-11", ...keys(holidaysForExchangeReturn("2027-05-16", 2, 1))]);
 
     // Depuis Ma paie, un férié déjà passé de l'année reste dans la liste.
     const past = Array.from({ length: 300 }, (_, index) => addDays(localDate(2026, 0, 1), index))
@@ -100,7 +106,8 @@ describe("échanges de journées", () => {
     const partnerGroup = [1, 3].find((other) => getDayInfo(past, other).kind === "off") as number;
     const fromPay = holidayExchangeChoices({ partnerGroup, agreementDate: dateKey(past) }, 2, from);
     expect(keys(fromPay.give)[0]).toBe(dateKey(past));
-    expect(fromPay.returns.every((holiday) => holiday.key.startsWith(String(past.getFullYear())))).toBe(true);
+    // Ses fériés de cette année-là, passés compris, puis ceux encore à venir.
+    expect(keys(fromPay.returns)).toEqual(expect.arrayContaining(keys(holidaysForExchangeReturn(dateKey(past), 2, partnerGroup))));
   });
 
   it("reconstitue le même échange depuis chacune de ses deux cases", () => {
