@@ -569,6 +569,8 @@
   border: 1.5px solid var(--border-card);
   color: var(--section-accent);
 }
+/* Menu ouvert, la pastille prend la couleur de la rubrique : l'initiale passe en blanc. */
+.top-header .account-button.open { color: #fff; }
 
 @media (max-width: 720px) {
   .app-shell { overscroll-behavior-x: contain; touch-action: pan-y; }

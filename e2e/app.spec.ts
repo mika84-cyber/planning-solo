@@ -4082,7 +4082,10 @@ test("un échange exige et modifie toujours ses deux journées ensemble", async 
   await expect(narrowExchangeCell.locator(".exchange-calendar-marker")).toHaveCSS("border-top-width", "0px");
   await expect(narrowExchangeCell.locator(".exchange-calendar-marker")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(narrowCellBox!.x + narrowCellBox!.width - (narrowMarkerBox!.x + narrowMarkerBox!.width)).toBeLessThanOrEqual(5);
-  expect(narrowMarkerBox!.y - narrowCellBox!.y).toBeLessThanOrEqual(5);
+  // Un jour avec note, le repère descend sous elle ; la démo place ses notes
+  // autour d'aujourd'hui, et elles tombent parfois sur le jour repris.
+  const dayWithNote = await narrowExchangeCell.evaluate((cell) => cell.classList.contains("has-note"));
+  expect(narrowMarkerBox!.y - narrowCellBox!.y).toBeLessThanOrEqual(dayWithNote ? 11 : 5);
   expect(narrowCellBox!.y + narrowCellBox!.height - (narrowLabelBox!.y + narrowLabelBox!.height)).toBeLessThanOrEqual(4);
   expect(Math.abs((narrowDateBox!.y + narrowDateBox!.height / 2) - (narrowCellBox!.y + narrowCellBox!.height / 2))).toBeLessThanOrEqual(1);
   expect(Math.abs((narrowDateBox!.x + narrowDateBox!.width / 2) - (narrowCellBox!.x + narrowCellBox!.width / 2))).toBeLessThanOrEqual(1);
@@ -6442,6 +6445,8 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   const screen = page.getByRole("region", { name: "Mes titres repas" });
   const month = (name: string) => screen.getByRole("textbox", { name: `Titres repas en ${name}` });
   await expect(screen).toContainText("Par défaut : 20 par mois, rien en décembre");
+  // Changer son nombre de titres passe par un mail : l'adresse s'ouvre d'un geste.
+  await expect(screen.getByRole("link", { name: "bimpli@centrepompidou.fr" })).toHaveAttribute("href", "mailto:bimpli@centrepompidou.fr");
   await expect(month("novembre")).toHaveValue("20");
   await expect(month("décembre")).toHaveValue("0");
   await expect(screen.getByRole("radio", { name: /^20 par mois/ })).toHaveAttribute("aria-checked", "true");
@@ -6489,6 +6494,47 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
   await expect(month("décembre")).toHaveValue("20");
   await expect(screen.getByRole("radio", { name: /^9,90/ })).toHaveAttribute("aria-checked", "true");
+});
+
+test("le menu du compte reste devant la page, sur les sous-écrans de Ma paie comme sur Collègues", async ({ page }) => {
+  await prepareDemo(page);
+  const expectMenuInFront = async () => {
+    const button = page.locator(".account-button:visible").first();
+    await button.click();
+    const panel = page.locator(".account-menu-panel");
+    await expect(panel).toBeVisible();
+    // L'initiale reste lisible sur la pastille, qui prend la couleur de la rubrique.
+    await expect(button).toHaveCSS("color", "rgb(255, 255, 255)");
+    // Une grille de points sur tout le panneau : aucun n'appartient à autre chose.
+    const covering = await panel.evaluate((menu) => {
+      const box = menu.getBoundingClientRect();
+      const names = new Set<string>();
+      for (let x = box.left + 6; x < box.right - 2; x += 18)
+        for (let y = box.top + 6; y < box.bottom - 2; y += 14) {
+          if (x >= innerWidth || y >= innerHeight) continue;
+          const top = document.elementFromPoint(x, y);
+          if (top && !menu.contains(top)) names.add(top.tagName + "." + String(top.getAttribute("class")));
+        }
+      return [...names];
+    });
+    expect(covering).toEqual([]);
+    await button.click();
+    await expect(panel).toBeHidden();
+  };
+
+  await goToSection(page, "pay");
+  for (const name of ["Titres repas", "Primes"]) {
+    await page.locator(".pay-bulletin-shortcut", { hasText: name }).first().click();
+    await expect(page.locator(".pay-detail-sticky-header")).toBeVisible();
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await expectMenuInFront();
+    await page.locator(".pay-detail-sticky-header .native-back-button").click();
+    await expect(page.locator(".pay-bulletin-shortcut").first()).toBeVisible();
+  }
+  // Sur téléphone, la pastille « Liste des raccourcis » passe sous le menu ouvert.
+  await goToSection(page, "colleagues");
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await expectMenuInFront();
 });
 
 test("les titres repas s’ouvrent en haut de page, la valeur du titre en vue, d’où qu’on vienne", async ({ page }) => {
