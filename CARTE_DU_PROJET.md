@@ -62,7 +62,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/MealVouchersScreen.tsx` (`mealVouchers.css`) : « Titres repas », un
   sous-écran de Ma paie (`payScreen: "meal"`), ouvert depuis « Pour aller plus
   loin », la liste des raccourcis, le profil (qui n'a plus de champ de retenue)
-  et le geste d'un écart du bulletin. La valeur du titre (10,30 € ou 9,90 €, qui
+  et le geste d'un écart du bulletin, toujours en haut de page (`setPayScreen`,
+  `usePayUiState.ts`). La valeur du titre (10,30 € ou 9,90 €, qui
   donnent la part de l'agent), puis le nombre de titres de chaque mois : deux
   modèles et une saisie libre, avec de petites flèches (20 par mois au plus, 220
   par an). Les règles sont dans `src/mealVouchers.ts` : `mealVoucherRetention`
