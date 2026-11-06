@@ -66,7 +66,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `usePayUiState.ts`). La valeur du titre (10,30 € ou 9,90 €, qui
   donnent la part de l'agent), puis le nombre de titres de chaque mois : deux
   modèles et une saisie libre, avec de petites flèches (20 par mois au plus, 220
-  par an). Les règles sont dans `src/mealVouchers.ts` : `mealVoucherRetention`
+  par an). L’écran dit à qui écrire pour changer son nombre de titres
+  (bimpli@centrepompidou.fr). Les règles sont dans `src/mealVouchers.ts` : `mealVoucherRetention`
   donne la retenue du mois, à la paie du mois (`useMonthPayEstimate`) comme à
   l'année (`useYearPayOverview`). Gardé dans le profil sous l'année
   (`meal_voucher_plans`, envoyé entier, `sanitizeMealVoucherPlans`) ; une année

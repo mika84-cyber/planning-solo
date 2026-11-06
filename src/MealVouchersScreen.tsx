@@ -101,6 +101,9 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
       <div className="meal-vouchers-card">
         <h3 id="meal-vouchers-months">Vos titres, mois par mois</h3>
         <p>{MEAL_VOUCHERS_PER_MONTH} titres par mois au plus, {MEAL_VOUCHERS_PER_YEAR} sur l’année.</p>
+        <p className="meal-vouchers-contact">
+          Pour changer votre nombre de titres par mois, écrivez à <a href="mailto:bimpli@centrepompidou.fr">bimpli@centrepompidou.fr</a>.
+        </p>
         <div className="meal-vouchers-presets" role="radiogroup" aria-label="Répartition des titres sur l’année">
           {MEAL_VOUCHER_PRESETS.map((item) => (
             <button key={item.key} type="button" role="radio" aria-checked={preset?.key === item.key} onClick={() => { setCustom(false); setCounts(item.counts); }}>

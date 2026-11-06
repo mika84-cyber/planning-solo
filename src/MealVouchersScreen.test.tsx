@@ -32,6 +32,15 @@ describe("l'écran des titres repas", () => {
     expect(html).not.toContain("3,70 €");
   });
 
+  it("dit à qui écrire pour changer son nombre de titres", () => {
+    const html = render();
+    expect(html).toContain("Pour changer votre nombre de titres par mois, écrivez à");
+    expect(html).toContain('<a href="mailto:bimpli@centrepompidou.fr">bimpli@centrepompidou.fr</a>');
+    // Dans l'encadré des mois, avant le choix de la répartition.
+    expect(html.indexOf("bimpli@centrepompidou.fr")).toBeGreaterThan(html.indexOf("Vos titres, mois par mois"));
+    expect(html.indexOf("bimpli@centrepompidou.fr")).toBeLessThan(html.indexOf("meal-vouchers-presets"));
+  });
+
   it("donne à chaque mois deux petites flèches, arrêtées à 20 et à 0", () => {
     const html = render();
     expect(html.match(/aria-label="Un titre de plus en /g)).toHaveLength(12);

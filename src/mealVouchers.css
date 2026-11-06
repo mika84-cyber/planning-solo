@@ -7,6 +7,8 @@
 .meal-vouchers-card { display: grid; gap: 10px; min-width: 0; border: 1px solid rgba(44, 38, 33, 0.4); border-radius: 14px; padding: 14px; background: #fdfbf8; }
 .meal-vouchers-card h3 { margin: 0; font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; }
 .meal-vouchers-card h3 + p { margin: -6px 0 0; color: var(--muted); font-size: 0.8rem; font-weight: 550; line-height: 1.35; }
+.meal-vouchers-contact { margin: 0; font-size: 0.8rem; font-weight: 550; line-height: 1.35; }
+.meal-vouchers-contact a { color: #8a3d22; font-weight: 700; overflow-wrap: anywhere; }
 
 .meal-vouchers-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .meal-vouchers-presets { display: grid; gap: 8px; }
