@@ -5,6 +5,8 @@
  */
 
 import type { BoundaryReport } from "../../src/grandPalaisProgramTypes.ts";
+import { adminEmailChannel, emailEnvironment, type AdminEmailChannel, type EmailEnvironment } from "./adminEmail.mts";
+import { verifyGmailLogin, type GmailVerifier } from "./gmailEmail.mts";
 
 export type { BoundaryReport };
 
@@ -12,12 +14,6 @@ export type { BoundaryReport };
  *  l'application ; le détail dit ce qu'il faut savoir — le nombre
  *  d'appareils inscrits, la cause d'un échec. */
 export type BoundaryStatus = BoundaryReport["boundaries"][number];
-
-function environment(name: string) {
-  return (globalThis as typeof globalThis & {
-    Netlify?: { env?: { get(key: string): string | undefined } };
-  }).Netlify?.env?.get(name);
-}
 
 /** Le site officiel se lit-il encore ? Une refonte de sa structure ferait
  *  tomber le nombre d'événements à zéro sans lever d'erreur. */
@@ -64,38 +60,46 @@ export async function checkNotificationChannel(
   }
 }
 
-/** La configuration d'envoi tient-elle ? On interroge Resend sans envoyer :
- *  une clé révoquée est le défaut le plus probable, et l'expéditeur de
- *  démonstration ne livre qu'au titulaire du compte. */
+/** Le moyen d'envoi des alertes répond-il ? On interroge celui qui sert
+ *  vraiment (adminEmailChannel), sans rien envoyer : un mot de passe ou une
+ *  clé révoqués sont le défaut le plus probable. La preuve qu'un message
+ *  arrive vient de l'envoi mensuel (deliveryProofDue). */
 export async function checkEmailChannel(
   fetcher: typeof fetch = fetch,
-  env = {
-    apiKey: environment("RESEND_API_KEY"),
-    recipient: environment("PROGRAM_ADMIN_EMAIL"),
-    from: environment("PROGRAM_ALERT_FROM"),
-  },
+  env: EmailEnvironment = emailEnvironment(),
+  gmailVerifier: GmailVerifier = verifyGmailLogin,
 ): Promise<BoundaryStatus> {
   const name = "Alerte par e-mail";
-  const missing = [
-    env.apiKey ? "" : "RESEND_API_KEY",
-    env.recipient ? "" : "PROGRAM_ADMIN_EMAIL",
-    env.from ? "" : "PROGRAM_ALERT_FROM",
-  ].filter(Boolean);
-  if (missing.length)
-    return { name, ok: false, detail: `Configuration incomplète : ${missing.join(", ")}` };
+  if (!env.PROGRAM_ADMIN_EMAIL)
+    return { name, ok: false, detail: "Configuration incomplète : PROGRAM_ADMIN_EMAIL" };
+  let channel: AdminEmailChannel;
+  try {
+    channel = adminEmailChannel(env);
+  } catch (error) {
+    return { name, ok: false, detail: error instanceof Error ? error.message : "Configuration incomplète" };
+  }
+  if (channel.kind === "gmail") {
+    try {
+      await gmailVerifier({ user: channel.user, appPassword: channel.appPassword });
+      return { name, ok: true, detail: "Gmail accepte la connexion" };
+    } catch (error) {
+      return { name, ok: false, detail: `Connexion à Gmail impossible : ${error instanceof Error ? error.message : "cause inconnue"}` };
+    }
+  }
+  const useSendGrid = channel.kind === "sendgrid";
   let response: Response;
   try {
-    response = await fetcher("https://api.resend.com/domains", {
-      headers: { authorization: `Bearer ${env.apiKey}` },
+    response = await fetcher(useSendGrid ? "https://api.sendgrid.com/v3/scopes" : "https://api.resend.com/domains", {
+      headers: { authorization: `Bearer ${channel.apiKey}` },
     });
   } catch (error) {
     return { name, ok: false, detail: error instanceof Error ? error.message : "Service injoignable" };
   }
   if (!response.ok)
-    return { name, ok: false, detail: `Clé refusée par Resend (${response.status})` };
+    return { name, ok: false, detail: `Clé refusée par ${useSendGrid ? "SendGrid" : "Resend"} (${response.status})` };
   // Avec l'expéditeur de démonstration, Resend ne livre qu'à l'adresse du
   // titulaire du compte, et les messages partent souvent en indésirables.
-  if ((env.from || "").includes("onboarding@resend.dev"))
+  if (channel.kind === "resend" && channel.from.includes("onboarding@resend.dev"))
     return {
       name,
       ok: true,

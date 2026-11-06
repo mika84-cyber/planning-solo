@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { sendAdminEmail } from "../lib/adminEmail.mts";
 import {
   checkEmailChannel,
   checkGrandPalaisSite,
@@ -6,10 +7,7 @@ import {
   deliveryProofDue,
   type BoundaryReport,
 } from "../lib/boundaryChecks.mts";
-import {
-  collectGrandPalaisEvents,
-  sendPlanningEmail,
-} from "../lib/grandPalaisMonitor.mts";
+import { collectGrandPalaisEvents } from "../lib/grandPalaisMonitor.mts";
 import {
   checkSharedNotificationChannel,
   sendSharedPlanningNotification,
@@ -67,10 +65,13 @@ export default async function checkBoundaries() {
       results.push(`notification en échec (${error instanceof Error ? error.message : "cause inconnue"})`);
     }
     try {
-      await sendPlanningEmail(
-        `Planning Solo — contrôle mensuel des alertes (${stamp})`,
-        `<p>Ce message ne signale aucun changement : il prouve simplement que les alertes de Planning Solo vous parviennent.</p><p>Contrôle du ${stamp}.</p>`,
-      );
+      // Son propre sujet : parler d'un changement inexistant ferait ignorer les vrais.
+      const proof = "Ce message ne signale aucun changement : il prouve simplement que les alertes de Planning Solo vous parviennent.";
+      await sendAdminEmail({
+        subject: `Planning Solo — contrôle mensuel des alertes (${stamp})`,
+        text: `${proof}\n\nContrôle du ${stamp}.`,
+        html: `<p>${proof}</p><p>Contrôle du ${stamp}.</p>`,
+      });
       results.push("e-mail envoyé");
     } catch (error) {
       results.push(`e-mail en échec (${error instanceof Error ? error.message : "cause inconnue"})`);

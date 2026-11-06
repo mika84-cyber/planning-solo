@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 
+export type GmailCredentials = { user: string; appPassword: string };
+
 export type GmailMessage = {
   from: string;
   to: string;
@@ -9,22 +11,28 @@ export type GmailMessage = {
   html: string;
 };
 
-export type GmailSender = (
-  credentials: { user: string; appPassword: string },
-  message: GmailMessage,
-) => Promise<void>;
+export type GmailSender = (credentials: GmailCredentials, message: GmailMessage) => Promise<void>;
+export type GmailVerifier = (credentials: GmailCredentials) => Promise<void>;
 
-export const sendGmailEmail: GmailSender = async (credentials, message) => {
-  const transporter = nodemailer.createTransport({
+function gmailTransport(credentials: GmailCredentials) {
+  return nodemailer.createTransport({
     service: "gmail",
     auth: { user: credentials.user, pass: credentials.appPassword },
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 15_000,
   });
-  await transporter.sendMail({
+}
+
+export const sendGmailEmail: GmailSender = async (credentials, message) => {
+  await gmailTransport(credentials).sendMail({
     ...message,
     disableFileAccess: true,
     disableUrlAccess: true,
   });
+};
+
+/** Gmail accepte-t-il ces identifiants ? Se connecte sans rien envoyer. */
+export const verifyGmailLogin: GmailVerifier = async (credentials) => {
+  await gmailTransport(credentials).verify();
 };

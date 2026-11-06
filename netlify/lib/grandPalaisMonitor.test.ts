@@ -14,6 +14,7 @@ import {
   sendGrandPalaisAlertEmail,
   syncGrandPalaisPrices,
 } from "./grandPalaisMonitor.mts";
+import type { GmailMessage } from "./gmailEmail.mts";
 
 const eventPage = (overrides: Record<string, string> = {}) => `
   <script type="application/ld+json">${JSON.stringify({
@@ -232,6 +233,43 @@ describe("surveillance de la programmation du Grand Palais", () => {
     const html = JSON.parse(sent).html as string;
     expect(html).toContain("COLLECTOR 2027 · Étienne Daho — Nef");
     expect(html).toContain("— À partir de 45 €");
+  });
+
+  it("envoie l’alerte par Gmail dès qu’il est configuré, sans passer par Resend", async () => {
+    // Resend reste configuré en production, mais rien n'en arrive (expéditeur d'essai).
+    const messages: GmailMessage[] = [];
+    let fetched = false;
+    const sent = await sendGrandPalaisAlertEmail([{
+      id: "p",
+      kind: "new",
+      detectedAt: "2026-09-24T22:05:00.000Z",
+      next: {
+        id: "c", title: "Rock & <Roll>", startDate: "2027-01-15", endDate: "2027-01-16",
+        url: "https://www.grandpalais.fr/fr/programme/rock", venueKey: "nef", venueLabel: "Nef",
+      },
+    }], {
+      PROGRAM_ADMIN_EMAIL: "admin@example.test",
+      GMAIL_APP_PASSWORD: "mot-de-passe",
+      SENDGRID_FROM_EMAIL: "compte@example.test",
+      RESEND_API_KEY: "k",
+      PROGRAM_ALERT_FROM: "essai@resend.dev",
+    }, (async () => {
+      fetched = true;
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch, async (_credentials, message) => {
+      messages.push(message);
+    });
+    expect(sent).toBe(true);
+    expect(fetched).toBe(false);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      to: "admin@example.test",
+      from: "Planning Solo <compte@example.test>",
+      subject: "1 changement dans la programmation du Grand Palais",
+    });
+    // Le titre tel quel en texte, échappé en HTML.
+    expect(messages[0].text).toContain("- Nouvelle programmation : Rock & <Roll> — Nef (2027-01-15 au 2027-01-16)");
+    expect(messages[0].html).toContain("<strong>Nouvelle programmation :</strong> Rock &amp; &lt;Roll&gt; — Nef");
   });
 
   it("extrait les dates, le titre et la galerie depuis une fiche", () => {

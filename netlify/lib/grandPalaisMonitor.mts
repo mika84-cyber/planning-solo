@@ -6,6 +6,8 @@ import type {
   GrandPalaisSitePrices,
   SharedGrandPalaisEvent,
 } from "../../src/grandPalaisProgramTypes.ts";
+import { emailEnvironment, sendAdminEmail, type EmailEnvironment } from "./adminEmail.mts";
+import { sendGmailEmail, type GmailSender } from "./gmailEmail.mts";
 
 const OFFICIAL_ORIGIN = "https://www.grandpalais.fr";
 const GRAND_PALAIS_FETCH_TIMEOUT_MS = 12_000;
@@ -85,17 +87,6 @@ function stableId(value: string, length = 20) {
   }
   return `${(first >>> 0).toString(36)}${(second >>> 0).toString(36)}${value.length.toString(36)}`
     .padEnd(length, "0").slice(0, length);
-}
-
-function runtimeEnv() {
-  const netlify = (globalThis as typeof globalThis & {
-    Netlify?: { env?: { get(name: string): string | undefined } };
-  }).Netlify;
-  return {
-    RESEND_API_KEY: netlify?.env?.get("RESEND_API_KEY"),
-    PROGRAM_ADMIN_EMAIL: netlify?.env?.get("PROGRAM_ADMIN_EMAIL"),
-    PROGRAM_ALERT_FROM: netlify?.env?.get("PROGRAM_ALERT_FROM"),
-  };
 }
 
 export type GrandPalaisMonitorState = {
@@ -722,68 +713,36 @@ export function detectGrandPalaisChanges(
 
 export async function sendGrandPalaisAlertEmail(
   proposals: GrandPalaisProgramProposal[],
-  env: Record<string, string | undefined> = runtimeEnv(),
+  env: EmailEnvironment = emailEnvironment(),
   fetcher: typeof fetch = fetch,
+  gmailSender: GmailSender = sendGmailEmail,
 ) {
-  const apiKey = env.RESEND_API_KEY;
-  const recipient = env.PROGRAM_ADMIN_EMAIL;
-  const from = env.PROGRAM_ALERT_FROM;
   if (!proposals.length) return false;
-  if (!apiKey || !recipient || !from)
-    throw new Error("Les variables d’alerte e-mail de la programmation GP sont incomplètes");
   const labels = { new: "Nouvelle programmation", changed: "Modification détectée", removed: "Retrait détecté" };
   const htmlEntities: Record<string, string> = {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   };
   const escapeHtml = (value: string) =>
     value.replace(/[&<>"']/g, (character) => htmlEntities[character] ?? character);
-  const items = proposals.map((proposal) => {
+  const lines = proposals.map((proposal) => {
     const event = proposal.next ?? proposal.previous;
     if (!event) throw new Error("Proposition Grand Palais incomplète");
     const label = event.venueKey === "exceptional-closure" ? "Fermeture complète détectée" : labels[proposal.kind];
     // L'artiste et le tarif relevés accompagnent le titre : « COLLECTOR 2027
     // · Étienne Daho », « À partir de 45 € ».
-    const details = event.details ? ` · ${escapeHtml(event.details)}` : "";
+    const details = event.details ? ` · ${event.details}` : "";
     const prices = event.prices?.length
-      ? ` — ${event.prices.map((price) => `${price.group ? `${escapeHtml(price.group)} · ` : ""}${price.amount === 0
-        ? (/^gratuit$/i.test(price.label) ? "Gratuit" : `${escapeHtml(price.label)} gratuit`)
-        : `${escapeHtml(price.label)} ${price.amount.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`}`).join(" · ")}`
+      ? ` — ${event.prices.map((price) => `${price.group ? `${price.group} · ` : ""}${price.amount === 0
+        ? (/^gratuit$/i.test(price.label) ? "Gratuit" : `${price.label} gratuit`)
+        : `${price.label} ${price.amount.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`}`).join(" · ")}`
       : "";
-    return `<li><strong>${label} :</strong> ${escapeHtml(event.title)}${details} — ${escapeHtml(event.venueLabel)} (${escapeHtml(event.startDate)} au ${escapeHtml(event.endDate)})${prices}</li>`;
-  }).join("");
-  return sendPlanningEmail(
-    `${proposals.length} changement${proposals.length > 1 ? "s" : ""} dans la programmation du Grand Palais`,
-    `<p>Planning Solo a détecté une évolution du site officiel :</p><ul>${items}</ul><p>Ouvrez la rubrique Programme GP pour accepter ou ignorer.</p>`,
-    { apiKey, recipient, from },
-    fetcher,
-  );
-}
-
-/** L'envoi lui-même, sans rien supposer du contenu. L'alerte d'un changement
- *  et le contrôle mensuel n'annoncent pas la même chose, et un sujet qui
- *  parle d'un changement inexistant est la meilleure façon de faire ignorer
- *  les vrais. */
-export async function sendPlanningEmail(
-  subject: string,
-  html: string,
-  credentials: { apiKey?: string; recipient?: string; from?: string } = {
-    apiKey: runtimeEnv().RESEND_API_KEY,
-    recipient: runtimeEnv().PROGRAM_ADMIN_EMAIL,
-    from: runtimeEnv().PROGRAM_ALERT_FROM,
-  },
-  fetcher: typeof fetch = fetch,
-) {
-  const { apiKey, recipient, from } = credentials;
-  if (!apiKey || !recipient || !from)
-    throw new Error("Les variables d’alerte e-mail de la programmation GP sont incomplètes");
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), GRAND_PALAIS_FETCH_TIMEOUT_MS);
-  const response = await fetcher("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({ from, to: [recipient], subject, html }),
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timeout));
-  if (!response.ok) throw new Error(`Envoi de l’alerte impossible (${response.status})`);
-  return true;
+    return { label, description: `${event.title}${details} — ${event.venueLabel} (${event.startDate} au ${event.endDate})${prices}` };
+  });
+  const intro = "Planning Solo a détecté une évolution du site officiel :";
+  const outro = "Ouvrez la rubrique Programme GP pour accepter ou ignorer.";
+  return sendAdminEmail({
+    subject: `${proposals.length} changement${proposals.length > 1 ? "s" : ""} dans la programmation du Grand Palais`,
+    text: `${intro}\n\n${lines.map(({ label, description }) => `- ${label} : ${description}`).join("\n")}\n\n${outro}`,
+    html: `<p>${intro}</p><ul>${lines.map(({ label, description }) => `<li><strong>${label} :</strong> ${escapeHtml(description)}</li>`).join("")}</ul><p>${outro}</p>`,
+  }, env, fetcher, gmailSender);
 }

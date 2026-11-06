@@ -7,10 +7,18 @@ import {
 } from "./boundaryChecks.mts";
 
 const credentials = {
-  apiKey: "re_clé",
-  recipient: "mika@exemple.test",
-  from: "Planning Solo <alertes@exemple.test>",
+  RESEND_API_KEY: "re_clé",
+  PROGRAM_ADMIN_EMAIL: "mika@exemple.test",
+  PROGRAM_ALERT_FROM: "Planning Solo <alertes@exemple.test>",
 };
+const gmailCredentials = {
+  ...credentials,
+  GMAIL_APP_PASSWORD: "mot-de-passe",
+  SENDGRID_FROM_EMAIL: "compte@exemple.test",
+};
+const noFetch = (async () => {
+  throw new Error("Aucun autre service ne doit être interrogé");
+}) as typeof fetch;
 
 describe("contrôle des frontières", () => {
   it("reconnaît un programme officiel encore lisible", async () => {
@@ -58,14 +66,45 @@ describe("contrôle des frontières", () => {
     expect(status).toMatchObject({ ok: true, detail: "Clé valide" });
   });
 
-  it("nomme les variables manquantes", async () => {
+  it("contrôle Gmail quand c’est lui qui envoie, sans interroger Resend ni rien envoyer", async () => {
+    const logins: Array<{ user: string; appPassword: string }> = [];
+    const status = await checkEmailChannel(noFetch, gmailCredentials, async (login) => {
+      logins.push(login);
+    });
+    expect(status).toMatchObject({ ok: true, detail: "Gmail accepte la connexion" });
+    expect(logins).toEqual([{ user: "compte@exemple.test", appPassword: "mot-de-passe" }]);
+  });
+
+  it("signale un mot de passe Gmail refusé", async () => {
+    const status = await checkEmailChannel(noFetch, gmailCredentials, async () => {
+      throw new Error("Invalid login");
+    });
+    expect(status).toMatchObject({ ok: false, detail: "Connexion à Gmail impossible : Invalid login" });
+  });
+
+  it("signale une configuration Gmail incomplète", async () => {
+    const status = await checkEmailChannel(noFetch, { ...credentials, GMAIL_APP_PASSWORD: "mot-de-passe" });
+    expect(status).toMatchObject({ ok: false, detail: "La configuration Gmail est incomplète" });
+  });
+
+  it("interroge SendGrid quand c’est lui qui envoie", async () => {
+    const urls: string[] = [];
     const status = await checkEmailChannel(
-      async () => new Response("{}", { status: 200 }),
-      { apiKey: "", recipient: "", from: credentials.from },
+      (async (url: string) => {
+        urls.push(url);
+        return new Response("{}", { status: 403 });
+      }) as typeof fetch,
+      { ...credentials, SENDGRID_API_KEY: "sg_clé", SENDGRID_FROM_EMAIL: "compte@exemple.test" },
     );
-    expect(status.ok).toBe(false);
-    expect(status.detail).toContain("RESEND_API_KEY");
-    expect(status.detail).toContain("PROGRAM_ADMIN_EMAIL");
+    expect(urls).toEqual(["https://api.sendgrid.com/v3/scopes"]);
+    expect(status).toMatchObject({ ok: false, detail: "Clé refusée par SendGrid (403)" });
+  });
+
+  it("dit ce qui manque", async () => {
+    const withoutRecipient = await checkEmailChannel(noFetch, { ...gmailCredentials, PROGRAM_ADMIN_EMAIL: "" });
+    expect(withoutRecipient).toMatchObject({ ok: false, detail: "Configuration incomplète : PROGRAM_ADMIN_EMAIL" });
+    const withoutSender = await checkEmailChannel(noFetch, { ...credentials, RESEND_API_KEY: "" });
+    expect(withoutSender).toMatchObject({ ok: false, detail: "La configuration d’envoi d’e-mail est incomplète" });
   });
 
   it("signale une clé refusée", async () => {
@@ -81,7 +120,7 @@ describe("contrôle des frontières", () => {
     // pas à corriger en urgence.
     const status = await checkEmailChannel(
       async () => new Response("{}", { status: 200 }),
-      { ...credentials, from: "Planning Solo <onboarding@resend.dev>" },
+      { ...credentials, PROGRAM_ALERT_FROM: "Planning Solo <onboarding@resend.dev>" },
     );
     expect(status.ok).toBe(true);
     expect(status.detail).toContain("titulaire du compte");

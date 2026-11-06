@@ -682,11 +682,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   nouveau document aux comptes invités.
 - `netlify/lib/adminEmail.mts` : envoi des alertes au compte administrateur
   par le premier moyen configuré (Gmail, puis SendGrid, puis Resend). S’en
-  servent la messagerie (`feedbackEmail.mts`) et l’alerte de connexion d’un
+  servent la messagerie (`feedbackEmail.mts`), l’alerte de connexion d’un
   invité (`guestLoginAlert.mts`, appelée par `/api/guest-session` à chaque
-  ouverture de session, au plus une fois par demi-heure et par compte). La
-  veille du Grand Palais et le contrôle mensuel (`grandPalaisMonitor.mts`,
-  `sendPlanningEmail`) passent encore par Resend seul.
+  ouverture de session, au plus une fois par demi-heure et par compte), la
+  veille du Grand Palais (`sendGrandPalaisAlertEmail`) et le contrôle mensuel
+  (`boundary-check.mts`). Le contrôle « Alerte par e-mail »
+  (`checkEmailChannel`, `boundaryChecks.mts`) interroge le moyen retenu par
+  `adminEmailChannel`, sans rien envoyer : la connexion pour Gmail, la clé pour
+  SendGrid et Resend.
 - `netlify/lib/` : validation, stockage par utilisatrice et sauvegardes.
 - `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles

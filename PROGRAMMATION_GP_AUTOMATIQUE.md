@@ -20,12 +20,15 @@ avec celui du contrôle précédent.
 ## Variables Netlify nécessaires
 
 - `PROGRAM_ADMIN_EMAIL` : adresse du seul compte autorisé à valider.
-- `RESEND_API_KEY` : clé d’envoi des alertes par e-mail.
-- `PROGRAM_ALERT_FROM` : expéditeur validé chez Resend, par exemple
-  `Planning Solo <alertes@votre-domaine.fr>`.
+- `GMAIL_APP_PASSWORD` : mot de passe d’application du compte Gmail qui envoie
+  les alertes par e-mail, avec son adresse dans `GMAIL_SMTP_USER` ou, à défaut,
+  `SENDGRID_FROM_EMAIL`.
+
+Sans Gmail, les alertes passent par SendGrid (`SENDGRID_API_KEY`,
+`SENDGRID_FROM_EMAIL`), puis par Resend (`RESEND_API_KEY`, `PROGRAM_ALERT_FROM`).
 
 Ces variables restent côté serveur et ne sont jamais envoyées au navigateur.
-Si Resend est momentanément indisponible, les propositions détectées restent
+Si l’envoi est momentanément indisponible, les propositions détectées restent
 enregistrées pour ne perdre aucune mise à jour ; l’exécution signale simplement
 que l’alerte n’a pas pu être envoyée. Il faut donc configurer et surveiller les
 variables d’e-mail en production.
