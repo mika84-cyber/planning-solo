@@ -22,7 +22,7 @@ const repeat = (count: number, times: number) => Array.from({ length: times }, (
 export const DEFAULT_MEAL_VOUCHER_COUNTS = [...repeat(20, 11), 0];
 export const MEAL_VOUCHER_PRESETS = [
   { key: "default", label: "20 par mois", detail: "Rien en décembre", counts: DEFAULT_MEAL_VOUCHER_COUNTS },
-  { key: "spread", label: "18 par mois", detail: "20 en novembre et décembre", counts: [...repeat(18, 10), 20, 20] },
+  { key: "spread", label: "18 par mois", detail: "+ 20 en novembre et décembre", counts: [...repeat(18, 10), 20, 20] },
 ];
 
 export const mealVoucherTotal = (counts: readonly number[]) => counts.reduce((sum, count) => sum + count, 0);

@@ -14,6 +14,7 @@ describe("l'écran des titres repas", () => {
     expect(html).toContain("Par défaut : 20 par mois, rien en décembre");
     expect(months(html)).toEqual([20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 0]);
     expect(checked(html)).toEqual(["20 par mois"]);
+    expect(html).toContain("+ 20 en novembre et décembre");
     expect(html).toContain("220 titres sur 220");
     // Sans valeur, ni part à afficher ni enregistrement possible.
     expect(html).toContain("Choisissez d’abord la valeur de votre titre.");
