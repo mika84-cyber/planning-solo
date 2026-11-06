@@ -40,17 +40,6 @@ for (const file of files) {
 }
 const digest = hash.digest("hex").slice(0, 12);
 
-// La page porte la même empreinte que le cache : elle sait ainsi si le
-// service worker qui attend est sa propre version ou une plus récente
-// (src/appUpdate.ts). Posée après le calcul, elle ne le change pas.
-const indexPath = join(distDir, "index.html");
-const indexHtml = readFileSync(indexPath, "utf8");
-const stampedIndex = indexHtml.replace("</head>", `<meta name="planning-build" content="${digest}" /></head>`);
-if (stampedIndex === indexHtml) {
-  throw new Error("stamp-sw: </head> not found in index.html");
-}
-writeFileSync(indexPath, stampedIndex);
-
 const swContent = readFileSync(swPath, "utf8");
 const stamped = swContent.replace(
   /const CACHE = "[^"]*";/,

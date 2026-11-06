@@ -739,23 +739,18 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   partagé avec la construction du site Congé CP.
 - `public/sw.js` : cache hors ligne et activation des mises à jour. À la
   construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
-  version, pose la même empreinte dans la page (balise `planning-build`
-  d’`index.html`) et remplit `PRECACHE` : code, styles, polices et images
+  version et remplit `PRECACHE` : code, styles, polices et images
   légères (≈ 3,7 Mo), téléchargés dès l’installation pour que l’application
   soit complète hors ligne dès la première visite.
-- `src/appUpdate.ts` : l’application s’ouvre toujours dans sa dernière
-  version. Une version publiée est cherchée au lancement, au retour sur la
-  fenêtre, au retour du réseau et toutes les minutes. Quand une version
-  installée attend son tour, la page compare son empreinte au dernier cache
-  créé, celui de cette version (`isNewestBuild`, puis `updateChoice`) : si
-  elle la porte déjà (lancée depuis le réseau après la publication), le
-  service worker prend la main sans fenêtre ; à l’ouverture (30 s après le
-  lancement, ou après un retour d’au moins une minute d’absence : le
-  téléphone rouvre sinon la page laissée en arrière-plan, dans l’ancienne
-  version), la page se recharge d’elle-même, y compris hors connexion avec la
-  version déjà téléchargée ; pendant qu’on s’en sert, ou si une fenêtre est
-  ouverte ou un texte en cours de saisie (`pageBusy`), la fenêtre « Une mise
-  à jour est disponible » laisse choisir le moment, une fois par version.
+- `src/appUpdate.ts` : dès qu’une nouvelle version est prête, la fenêtre « Une
+  mise à jour est disponible » le dit, une fois par version, et rien ne se
+  recharge sans accord. Une version publiée est cherchée au lancement, au
+  retour sur la fenêtre, au retour du réseau et toutes les minutes. Après
+  « Plus tard », la fenêtre revient à la réouverture (retour après au moins une
+  minute d’absence, `AWAY_MS`) : le téléphone rouvre sinon la page laissée en
+  arrière-plan, dans l’ancienne version. « Mettre à jour maintenant »
+  (`checkForAppUpdate`, `useShellEffects.ts`) installe la version prête, même
+  hors connexion, attend qu’elle prenne la main, puis recharge.
   Après un rechargement, la page rouvre là où l’on était
   (`src/updateResume.ts` : rubrique et sous-écran de Ma paie notés dans
   sessionStorage, relus par `useAppShellUiState` et `usePayUiState`, puis

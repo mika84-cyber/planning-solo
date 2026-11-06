@@ -115,8 +115,16 @@ export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installa
           (await navigator.serviceWorker.register("/sw.js", {
             updateViaCache: "none",
           }));
-        await registration.update();
-        registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+        // Hors connexion, la recherche échoue : la version déjà téléchargée
+        // s'installe quand même.
+        await registration.update().catch(() => {});
+        const waiting = registration.waiting;
+        if (waiting)
+          await new Promise((resolve) => {
+            navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
+            waiting.postMessage({ type: "SKIP_WAITING" });
+            window.setTimeout(resolve, 3000);
+          });
       }
     } catch {
       // Le rechargement ci-dessous reste utile même si le contrôle du service

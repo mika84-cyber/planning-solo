@@ -21,9 +21,8 @@ if ("serviceWorker" in navigator) {
   const publicDemoBuild = Boolean(import.meta.env.VITE_PUBLIC_DEMO_UNTIL);
   if (import.meta.env.PROD && !publicDemoBuild) {
     window.addEventListener("load", () => {
-      // L'application s'ouvre toujours dans sa dernière version ; pendant
-      // qu'on s'en sert, la fenêtre « Une mise à jour est disponible » laisse
-      // choisir le moment (appUpdate.ts).
+      // Une nouvelle version prête : la fenêtre « Une mise à jour est
+      // disponible » laisse choisir le moment (appUpdate.ts).
       void navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
         .then(watchAppUpdates)
