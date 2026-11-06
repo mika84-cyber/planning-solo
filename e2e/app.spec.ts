@@ -6445,11 +6445,13 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await expect(month("novembre")).toHaveValue("20");
   await expect(month("décembre")).toHaveValue("0");
   await expect(screen.getByRole("radio", { name: /^20 par mois/ })).toHaveAttribute("aria-checked", "true");
-  // La valeur du titre d'abord : sans elle, rien à enregistrer.
+  // La valeur du titre d'abord : sans elle, l'écran le dit au lieu de ne rien faire.
   const save = screen.getByRole("button", { name: "Enregistrer" });
-  await expect(save).toBeDisabled();
+  await save.click();
+  await expect(screen.getByRole("alert")).toContainText("Choisissez la valeur de votre titre");
+  await expect(screen.getByRole("status")).toHaveCount(0);
   await screen.getByRole("radio", { name: /^9,90/ }).click();
-  await expect(save).toBeEnabled();
+  await expect(screen.getByRole("alert")).toHaveCount(0);
   await expect(screen).toContainText("Votre part sur l’année");
   // Un modèle tout prêt : 18 de janvier à octobre, 20 en novembre et décembre.
   await screen.getByRole("radio", { name: /^18 par mois/ }).click();
@@ -6475,7 +6477,8 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await expect(screen.getByRole("alert")).toHaveCount(0);
   await save.click();
   await expect(screen).toContainText("Enregistré pour");
-  await expect(screen.getByRole("button", { name: "Enregistré" })).toBeDisabled();
+  await expect(screen.getByRole("status")).toContainText("Pour en changer, choisissez une autre formule");
+  await expect(save).toHaveCount(0);
   // Retour à Ma paie : l'entrée résume le choix.
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await expect(shortcut).toContainText(/220 titres · 9,90\s*€ le titre/);
@@ -6486,6 +6489,89 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
   await expect(month("décembre")).toHaveValue("20");
   await expect(screen.getByRole("radio", { name: /^9,90/ })).toHaveAttribute("aria-checked", "true");
+});
+
+test("les titres repas s’enregistrent dans le compte, et la formule se change ensuite", async ({ page }) => {
+  // Un vrai compte (hors démo) ; le serveur simulé garde le choix d'une visite à l'autre.
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const base64url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const token = `${base64url({ alg: "HS256", typ: "JWT" })}.${base64url({ sub: "u-repas", email: "agent@example.test", exp })}.signature`;
+  await page.addInitScript(({ accessToken, expiresAt }) => {
+    localStorage.setItem("gotrue.user", JSON.stringify({
+      id: "u-repas",
+      email: "agent@example.test",
+      url: `${location.origin}/.netlify/identity`,
+      audience: "",
+      token: { access_token: accessToken, token_type: "bearer", expires_in: 3600, refresh_token: "r1", expires_at: expiresAt * 1000 },
+    }));
+    localStorage.setItem("planning:install-notice-dismissed-v1", "1");
+    document.cookie = `nf_jwt=${accessToken}; path=/`;
+  }, { accessToken: token, expiresAt: exp });
+  let profile: Record<string, unknown> = { full_name: "Agent", group: "2", signature: "", status: "fonctionnaire", work_quota: "full" };
+  const saves: Array<Record<string, unknown>> = [];
+  await page.route("**/api/**", (route) => route.fulfill({ status: 503, json: { error: "Indisponible" } }));
+  await page.route("**/api/calendar", async (route) => {
+    const request = route.request();
+    if (request.method() !== "POST") {
+      await route.fulfill({ json: { email: "agent@example.test", entries: [], form_profile: profile } });
+      return;
+    }
+    const body = request.postDataJSON() as Record<string, unknown>;
+    if (body.action === "save-form-profile" && body.mealVoucherPlans) {
+      saves.push(body);
+      profile = { ...profile, meal_voucher_plans: body.mealVoucherPlans };
+    }
+    await route.fulfill({ json: { ok: true, form_profile: profile } });
+  });
+  const year = new Date().getFullYear();
+  await page.goto("/");
+  await goToSection(page, "pay");
+  await page.locator(".pay-bulletin-shortcut", { hasText: "Titres repas" }).click();
+  const screen = page.getByRole("region", { name: "Mes titres repas" });
+  const month = (name: string) => screen.getByRole("textbox", { name: `Titres repas en ${name}` });
+  await screen.getByRole("radio", { name: /^9,90/ }).click();
+  await screen.getByRole("radio", { name: /^18 par mois/ }).click();
+  await screen.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(screen).toContainText(`Enregistré pour ${year}`);
+  await expect.poll(() => saves.length).toBe(1);
+  expect(saves[0].mealVoucherPlans).toEqual({ [year]: { faceCents: 990, counts: [18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 20, 20] } });
+
+  // Une autre formule, une fois enregistré : un modèle, l'autre valeur du titre.
+  await screen.getByRole("radio", { name: /^20 par mois/ }).click();
+  await expect(screen.getByRole("radio", { name: /^20 par mois/ })).toHaveAttribute("aria-checked", "true");
+  await expect(month("décembre")).toHaveValue("0");
+  await screen.getByRole("radio", { name: /^10,30/ }).click();
+  await expect(screen).toContainText("Modifications à enregistrer");
+  await screen.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(screen).toContainText(`Enregistré pour ${year}`);
+  await expect.poll(() => saves.length).toBe(2);
+  expect(saves[1].mealVoucherPlans).toEqual({ [year]: { faceCents: 1030, counts: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 0] } });
+
+  // « Sur mesure » se choisit d'un geste, même si les mois valent encore un modèle.
+  const custom = screen.getByRole("radio", { name: /^Sur mesure/ });
+  await custom.click();
+  await expect(custom).toHaveAttribute("aria-checked", "true");
+  await expect(screen.getByRole("radio", { name: /^20 par mois/ })).toHaveAttribute("aria-checked", "false");
+  await screen.getByRole("button", { name: "Un titre de plus en décembre" }).click();
+  await screen.getByRole("button", { name: "Un titre de moins en janvier" }).click();
+  await expect(custom).toHaveAttribute("aria-checked", "true");
+  await screen.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(screen).toContainText(`Enregistré pour ${year}`);
+  await expect.poll(() => saves.length).toBe(3);
+
+  // Une nouvelle visite : le choix est là, et reste modifiable.
+  await page.reload();
+  await goToSection(page, "pay");
+  const shortcut = page.locator(".pay-bulletin-shortcut", { hasText: "Titres repas" });
+  await expect(shortcut).toContainText(/220 titres · 10,30\s*€ le titre/);
+  await shortcut.click();
+  await expect(screen).toContainText(`Enregistré pour ${year}`);
+  await expect(month("janvier")).toHaveValue("19");
+  await expect(month("décembre")).toHaveValue("1");
+  await expect(custom).toHaveAttribute("aria-checked", "true");
+  await screen.getByRole("radio", { name: /^18 par mois/ }).click();
+  await expect(month("janvier")).toHaveValue("18");
+  await expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
 });
 
 test("Retour ramène d’un sous-écran de Ma paie à l’écran précédent, pas à la page d’avant", async ({ page }) => {

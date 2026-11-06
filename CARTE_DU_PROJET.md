@@ -71,7 +71,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   (`meal_voucher_plans`, envoyé entier, `sanitizeMealVoucherPlans`) ; une année
   reprend le dernier choix fait avant elle, jamais l'inverse. Sans rien de
   renseigné : 20 titres par mois, donc rien en décembre, au montant lu sur le
-  bulletin ; ce montant donne aussi d'emblée la valeur du titre.
+  bulletin ; ce montant donne aussi d'emblée la valeur du titre. Sans valeur,
+  « Enregistrer » répond en le disant sur sa carte ; une fois enregistré, une
+  confirmation prend sa place, et il revient au moindre changement de formule.
 - `src/PayYearOverview.tsx` : « L'année en un coup d'œil » (dans l’en-tête,
   « coup d’œil » reste sur la seconde ligne : espace insécable dans
   `AppNavigation`), quatrième carte de Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,

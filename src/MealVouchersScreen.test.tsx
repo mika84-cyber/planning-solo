@@ -18,7 +18,9 @@ describe("l'écran des titres repas", () => {
     // Sans valeur, ni part à afficher ni enregistrement possible.
     expect(html).toContain("Choisissez d’abord la valeur de votre titre.");
     expect(html).not.toContain("Votre part sur l’année");
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Enregistrer</);
+    // Le bouton répond : un clic sans valeur dit ce qui manque, au lieu de ne rien faire.
+    expect(html).toMatch(/<button[^>]*primary-action[^>]*>Enregistrer</);
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Enregistrer</);
   });
 
   it("propose les deux valeurs, leur indice et la part de l'agent", () => {
@@ -56,7 +58,10 @@ describe("l'écran des titres repas", () => {
     expect(saved).toContain("Enregistré pour 2026");
     expect(checked(saved)).toEqual(["10,30 €", "18 par mois"]);
     expect(months(saved)).toEqual([18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 20, 20]);
-    expect(saved).toMatch(/<button[^>]*disabled=""[^>]*>Enregistré</);
+    // Une confirmation qui dit comment changer de formule, pas un bouton éteint.
+    expect(saved).toMatch(/role="status"><strong>Enregistré pour 2026<\/strong>/);
+    expect(saved).toContain("Pour en changer, choisissez une autre formule");
+    expect(saved).not.toContain(">Enregistrer<");
     const next = render({ plans, initialYear: 2027 });
     expect(next).toContain("Repris de votre dernier choix");
     expect(months(next)).toEqual([18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 20, 20]);

@@ -40,11 +40,16 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
   const known = mealVoucherPlanFor(plans, year);
   const [faceCents, setFaceCents] = useState(known?.faceCents ?? faceCentsFromRetention(knownRetention));
   const [counts, setCounts] = useState(known?.counts ?? DEFAULT_MEAL_VOUCHER_COUNTS);
+  // « Sur mesure » se choisit aussi d'un geste, même si les mois valent encore un modèle.
+  const [custom, setCustom] = useState(false);
+  // Un essai d'enregistrement sans valeur du titre : la carte le signale.
+  const [valueMissing, setValueMissing] = useState(false);
   const months = useRef<HTMLDivElement>(null);
+  const valueCard = useRef<HTMLDivElement>(null);
   const total = mealVoucherTotal(counts);
   const excess = total - MEAL_VOUCHERS_PER_YEAR;
   const tier = MEAL_VOUCHER_TIERS.find((item) => item.faceCents === faceCents);
-  const preset = MEAL_VOUCHER_PRESETS.find((item) => sameCounts(item.counts, counts));
+  const preset = custom ? undefined : MEAL_VOUCHER_PRESETS.find((item) => sameCounts(item.counts, counts));
   const unchanged = saved !== undefined && saved.faceCents === faceCents && sameCounts(saved.counts, counts);
   const status = unchanged
     ? `Enregistré pour ${year}`
@@ -55,7 +60,17 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
         : "Par défaut : 20 par mois, rien en décembre";
   const setMonth = (month: number, wanted: number) => {
     const count = Math.max(0, Math.min(MEAL_VOUCHERS_PER_MONTH, wanted));
+    setCustom(true);
     setCounts((current) => current.map((value, index) => (index === month ? count : value)));
+  };
+
+  const save = () => {
+    if (!faceCents || !tier) {
+      setValueMissing(true);
+      valueCard.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    onSave(year, { faceCents, counts });
   };
 
   return (
@@ -68,7 +83,7 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
         <p className="meal-vouchers-status">{status}</p>
       </div>
 
-      <div className="meal-vouchers-card">
+      <div className={`meal-vouchers-card${valueMissing && !tier ? " missing" : ""}`} ref={valueCard}>
         <h3 id="meal-vouchers-value">La valeur de votre titre</h3>
         <p>Elle dépend de votre indice de rémunération.</p>
         <div className="meal-vouchers-values" role="radiogroup" aria-labelledby="meal-vouchers-value">
@@ -80,6 +95,7 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
             </button>
           ))}
         </div>
+        {valueMissing && !tier ? <p className="meal-vouchers-alert" role="alert">Choisissez la valeur de votre titre pour enregistrer.</p> : null}
       </div>
 
       <div className="meal-vouchers-card">
@@ -87,12 +103,12 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
         <p>{MEAL_VOUCHERS_PER_MONTH} titres par mois au plus, {MEAL_VOUCHERS_PER_YEAR} sur l’année.</p>
         <div className="meal-vouchers-presets" role="radiogroup" aria-label="Répartition des titres sur l’année">
           {MEAL_VOUCHER_PRESETS.map((item) => (
-            <button key={item.key} type="button" role="radio" aria-checked={preset?.key === item.key} onClick={() => setCounts(item.counts)}>
+            <button key={item.key} type="button" role="radio" aria-checked={preset?.key === item.key} onClick={() => { setCustom(false); setCounts(item.counts); }}>
               <strong>{item.label}</strong>
               <small>{item.detail}</small>
             </button>
           ))}
-          <button type="button" role="radio" aria-checked={!preset} onClick={() => months.current?.querySelector("input")?.focus()}>
+          <button type="button" role="radio" aria-checked={!preset} onClick={() => { setCustom(true); months.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }}>
             <strong>Sur mesure</strong>
             <small>Le nombre de votre choix, chaque mois</small>
           </button>
@@ -131,14 +147,16 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
       </div>
 
       {tier ? null : <p className="meal-vouchers-hint">Choisissez d’abord la valeur de votre titre.</p>}
-      <button
-        type="button"
-        className="primary-action meal-vouchers-save"
-        disabled={!tier || excess > 0 || unchanged}
-        onClick={() => { if (faceCents) onSave(year, { faceCents, counts }); }}
-      >
-        {unchanged ? "Enregistré" : "Enregistrer"}
-      </button>
+      {/* Une fois enregistré, une confirmation plutôt qu'un bouton éteint : le
+          moindre changement de formule fait revenir « Enregistrer ». */}
+      {unchanged ? (
+        <p className="meal-vouchers-saved" role="status">
+          <strong>Enregistré pour {year}</strong>
+          <span>La paie suit ce choix. Pour en changer, choisissez une autre formule et enregistrez de nouveau.</span>
+        </p>
+      ) : (
+        <button type="button" className="primary-action meal-vouchers-save" disabled={excess > 0} onClick={save}>Enregistrer</button>
+      )}
     </section>
   );
 }
