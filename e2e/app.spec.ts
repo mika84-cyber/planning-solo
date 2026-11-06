@@ -6491,6 +6491,44 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await expect(screen.getByRole("radio", { name: /^9,90/ })).toHaveAttribute("aria-checked", "true");
 });
 
+test("les titres repas s’ouvrent en haut de page, la valeur du titre en vue, d’où qu’on vienne", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  // Redemandé tant que la page, chargée à part, n'est pas assez haute pour défiler.
+  const scrollDown = () => expect.poll(() => page.evaluate(() => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+    return window.scrollY;
+  })).toBeGreaterThan(0);
+  const expectOpenedAtTop = async () => {
+    await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await expect(page.getByRole("heading", { name: "La valeur de votre titre" })).toBeInViewport();
+  };
+  const backToDashboard = () => page.locator(".pay-detail-sticky-header .native-back-button").click();
+
+  // Le raccourci du tableau de bord, qu'il faut descendre chercher.
+  await scrollDown();
+  await page.locator(".pay-bulletin-shortcut", { hasText: "Titres repas" }).click();
+  await expectOpenedAtTop();
+
+  // Le lien des éléments de paie, au fond de « Profil et réglages ».
+  await backToDashboard();
+  await page.getByRole("button", { name: "Profil et réglages" }).click();
+  const link = page.getByRole("button", { name: "Renseigner mes titres" });
+  await link.scrollIntoViewIfNeeded();
+  await scrollDown();
+  await link.click();
+  await expectOpenedAtTop();
+
+  // La liste des raccourcis, depuis le bas d'une autre page.
+  await backToDashboard();
+  await goToSection(page, "leave");
+  await scrollDown();
+  await page.locator("header.top-header").getByRole("button", { name: "Liste des raccourcis" }).click();
+  await page.getByRole("dialog", { name: "Liste des raccourcis" }).getByRole("button", { name: /Mes titres repas/ }).click();
+  await expectOpenedAtTop();
+});
+
 test("les titres repas s’enregistrent dans le compte, et la formule se change ensuite", async ({ page }) => {
   // Un vrai compte (hors démo) ; le serveur simulé garde le choix d'une visite à l'autre.
   const exp = Math.floor(Date.now() / 1000) + 3600;

@@ -61,6 +61,9 @@ export function usePayUiState() {
     }
     payScreenRef.current = screen;
     setPayScreenState(screen);
+    // Titres repas s'ouvre en haut : la valeur du titre, à choisir d'abord, y est.
+    // « instant » : la page défile sinon en douceur (scroll-behavior).
+    if (screen === "meal") window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
   useEffect(() => {
     const restore = (event: PopStateEvent) => {
