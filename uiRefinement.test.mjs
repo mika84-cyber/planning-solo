@@ -315,14 +315,8 @@ describe("finitions d’interface", () => {
     expect(app).toContain('inputMode: "range"');
   });
 
-  it("garde le titre des catégories de paie accessible et permet de revenir aujourd’hui", () => {
-    expect(app).toContain('className="pay-detail-sticky-header"');
-    // Un seul retour, la flèche : plus de croix qui faisait double emploi.
-    expect(app).not.toContain('aria-label="Fermer cette page"');
-    expect(app).not.toContain("pay-detail-close");
-    expect(app).toContain('className={`pay-profile-open-copy');
-    expect(app).toContain('{netEstimateComplete ? "Profil complet" : "À compléter"}');
-    expect(app).not.toContain('profileOpen ? "Replier"');
+  // Le titre des sous-écrans et l'état du profil : voir PayPage.test.tsx.
+  it("garde le titre des catégories de paie collant et permet de revenir aujourd’hui", () => {
     // « Revenir à aujourd’hui » vit dans le navigateur commun, une seule fois.
     expect((payMonthNav.match(/className="pay-bulletin-today"/g) || []).length).toBe(1);
     expect(payDashboard).not.toContain("pay-bulletin-today");
@@ -330,16 +324,10 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Aucun dimanche versé sur cette paie");
     expect(css.mentions(".pay-detail-sticky-header")).toBe(true);
     expect(css.declares("position", "sticky")).toBe(true);
-  });
-
-  it("rend toute la zone de titre refermable et garde le mois dans la barre sticky", () => {
-    expect(app).toContain('className="pay-detail-title-button"');
-    expect(app).toContain('aria-label="Fermer cette page et revenir à Ma paie"');
     expect(css.mentions(".pay-detail-title-button")).toBe(true);
   });
 
   it("affiche l’état du profil dans son action et agrandit le calendrier mobile", () => {
-    expect(app).toContain('pay-profile-open-copy${netEstimateComplete ? " complete" : " missing"}');
     expect(app).not.toContain('"Informations manquantes"');
     expect(css.mentions(".pay-profile-open-copy.complete")).toBe(true);
     expect(css.declares("min-height", "54px")).toBe(true);
