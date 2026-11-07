@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupNoteItemsByDate, noteDateLabel, noteLines, personalPresenceForDate, roundCurrency, presenceShownToColleagues, workedDayCount, type Entries, type NoteListItem } from "./appModel";
+import { appendNoteBullet, groupNoteItemsByDate, noteDateLabel, noteDisplayLines, noteLines, personalPresenceForDate, roundCurrency, presenceShownToColleagues, workedDayCount, type Entries, type NoteListItem } from "./appModel";
 import { dateKey, getDayInfo } from "./planningLogic";
 
 describe("groupNoteItemsByDate", () => {
@@ -41,6 +41,24 @@ describe("groupNoteItemsByDate", () => {
     expect(noteLines("– Psy 11h45\n– Mécénat 19h30 / minuit\n\n")).toEqual(["Psy 11h45", "Mécénat 19h30 / minuit"]);
     expect(noteLines("• Un\n- Deux\n> Trois\nQuatre")).toEqual(["Un", "Deux", "Trois", "Quatre"]);
     expect(noteLines("Réunion d’équipe")).toEqual(["Réunion d’équipe"]);
+  });
+
+  it("ajoute une note avec un point rond, et le donne aux lignes déjà écrites", () => {
+    expect(appendNoteBullet("Psy 11h45")).toBe("• Psy 11h45\n\n• ");
+    expect(appendNoteBullet("– Psy 11h45\n\n– Mécénat  \n")).toBe("• Psy 11h45\n\n• Mécénat\n\n• ");
+    expect(appendNoteBullet("• Un\n> Deux\n-5 % sur le billet")).toBe("• Un\n\n> Deux\n\n• -5 % sur le billet\n\n• ");
+  });
+
+  it("repère les puces d’une note à l’affichage, sans perdre les lignes vides", () => {
+    expect(noteDisplayLines("– Psy\n\n• Mécénat\nSans puce").map(({ bullet, text }) => [bullet, text])).toEqual([
+      [true, "Psy"],
+      [false, ""],
+      [true, "Mécénat"],
+      [false, "Sans puce"],
+    ]);
+    // Deux lignes identiques gardent chacune leur clé.
+    const [first, second] = noteDisplayLines("– Psy\n– Psy");
+    expect(first.key).not.toBe(second.key);
   });
 });
 

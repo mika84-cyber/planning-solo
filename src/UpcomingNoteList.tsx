@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Entries, NoteListItem } from "./appModel";
 import { noteDateLabel, noteLines } from "./appModel";
+import { NoteText } from "./NoteText";
 import { fromKey } from "./planningLogic";
 
 const weekdayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
@@ -74,7 +75,7 @@ export function UpcomingNoteList({
                 <div className={`note-card-part note-author-${note.author}`} key={`${item.key}-${note.author}`}>
                   <button type="button" className="note-card-open" onClick={() => onOpenDate(date)}>
                     <b>{author}</b>
-                    <strong>{note.label}</strong>
+                    <strong><NoteText text={note.label} /></strong>
                   </button>
                   {deletable ? (
                     <button
@@ -124,7 +125,7 @@ export function UpcomingNoteList({
                 key={`${item.key}-${note.author}`}
               >
                 <b>{note.author === "mika" ? ownNoteAuthorLabel : "Agnès"}</b>
-                <strong>{note.label}</strong>
+                <strong><NoteText text={note.label} /></strong>
               </span>
             ))}
           </span>

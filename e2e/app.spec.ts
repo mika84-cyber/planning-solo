@@ -2742,14 +2742,14 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.locator(".top-header h1")).toHaveText("Programme GP");
 
   // « En ce moment » se lit toujours dans le même ordre d'espaces : les
-  // quatre grands d'abord, la Nef en dernier, quelles que soient les dates.
+  // quatre grands, la Nef, puis tous les autres, quelles que soient les dates.
   await page.getByRole("tab", { name: "En ce moment" }).click();
   const openVenues = await page.locator(".useful-expo-timeline .expo-card").evaluateAll((cards) =>
     cards.map((card) => card.getAttribute("data-venue") ?? ""),
   );
   const rank = (venue: string) => {
     const primary = ["galleries34", "gallery8", "gallery7", "childrenPalace"].indexOf(venue);
-    return primary === -1 ? (venue === "nef" ? 104 : 4) : primary;
+    return primary === -1 ? (venue === "nef" ? 4 : 5) : primary;
   };
   expect(openVenues.length).toBeGreaterThan(0);
   expect(openVenues.map(rank)).toEqual([...openVenues.map(rank)].sort((left, right) => left - right));
@@ -3415,6 +3415,65 @@ test("le tampon de fermeture conserve la date lisible sur ordinateur et téléph
   expect(markerBox).not.toBeNull();
   expect(Math.abs(dayBox!.width - markerBox!.width)).toBeLessThanOrEqual(2);
   expect(Math.abs(dayBox!.height - markerBox!.height)).toBeLessThanOrEqual(2);
+});
+
+test("une galerie d’« Ouvert aujourd’hui » affiche sa programmation", async ({ page }) => {
+  // Le 28 août 2026, une grande galerie et un autre espace sont ouverts.
+  await page.clock.setFixedTime(new Date("2026-08-28T12:00:00"));
+  await prepareDemo(page);
+  await goToSection(page, "program");
+  const chips = page.locator(".grand-palais-summary-list button");
+  await expect(chips.first()).toBeVisible();
+  const labels = await chips.allInnerTexts();
+  expect(labels).toContain("Galeries 9 et 10");
+  expect(labels.length).toBeGreaterThan(1);
+  const search = page.getByPlaceholder("Titre de l’exposition");
+  for (const label of [labels[0], "Galeries 9 et 10"]) {
+    // Une recherche en cours ne cache pas la programmation demandée.
+    await search.fill("Exposition");
+    await page.getByRole("button", { name: `Voir la programmation : ${label}` }).click();
+    await expect(page.getByRole("tab", { name: "Par espace" })).toHaveAttribute("aria-selected", "true");
+    await expect(search).toHaveValue("");
+    const panel = page.getByRole("region", { name: `Programmation ${label}` });
+    await expect(panel.getByRole("heading", { level: 3 })).toHaveText(label);
+    await expect(panel).toBeInViewport();
+    await page.getByRole("tab", { name: "En ce moment" }).click();
+  }
+});
+
+test("les notes d’une journée portent un point rond, même celles écrites avec un trait", async ({ page }) => {
+  await prepareDemo(page);
+  const free = page.locator(".calendar-grid .day.work:not(.has-note)").last();
+  const dayName = (await free.getAttribute("aria-label"))!.split(",")[0];
+  const cell = page.locator(`.calendar-grid .day[aria-label^="${dayName},"]`);
+  const dialog = page.getByRole("dialog", { name: new RegExp(dayName, "i") });
+  const open = async () => {
+    await cell.evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
+    await cell.click();
+    await expect(dialog).toBeVisible();
+  };
+  const save = async () => {
+    await dialog.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    await expect(dialog).toBeHidden();
+  };
+  // Une note écrite avant ce changement, avec son trait.
+  await open();
+  await dialog.getByRole("button", { name: "Ajouter une note" }).click();
+  await dialog.locator("textarea").fill("– Psy 11h45");
+  await save();
+  await open();
+  const saved = dialog.locator(".saved-note-card");
+  await expect(saved.locator(".note-text-line.bullet")).toHaveCount(1);
+  await expect(saved).toContainText("•Psy 11h45");
+  await expect(saved).not.toContainText("–");
+  // « Ajouter une note » écrit le point rond, et le donne aussi à la ligne déjà là.
+  await dialog.getByRole("button", { name: "Ajouter une note" }).click();
+  await expect(dialog.locator("textarea")).toHaveValue("• Psy 11h45\n\n• ");
+  await dialog.locator("textarea").pressSequentially("Mécénat 18h30 / 22h30");
+  await save();
+  await open();
+  await expect(saved.locator(".note-text-line.bullet")).toHaveCount(2);
+  await expect(saved).toContainText("•Mécénat 18h30 / 22h30");
 });
 
 test("un congé posé un jour de fermeture garde sa nature par-dessus le tampon", async ({ page }) => {

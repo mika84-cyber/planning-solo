@@ -239,6 +239,32 @@ export function noteLines(value: string) {
     .filter(Boolean);
 }
 
+/** Les lignes d'une note telles qu'elles s'affichent : un tiret ou un point en
+ *  tête de ligne devient un point rond. Le texte enregistré ne change pas, et
+ *  les notes écrites avec un tiret gardent le leur. */
+export function noteDisplayLines(value: string) {
+  const occurrences = new Map<string, number>();
+  return value.split("\n").map((line) => {
+    const occurrence = (occurrences.get(line) ?? 0) + 1;
+    occurrences.set(line, occurrence);
+    const bullet = /^\s*[–—•-]\s+(.*)$/.exec(line);
+    return { key: `${line}-${occurrence}`, bullet: Boolean(bullet), text: bullet ? bullet[1] : line };
+  });
+}
+
+/** « Ajouter une note » : un point rond marque le début de l'ajout, une ligne
+ *  vide le sépare du reste. Les lignes déjà écrites reçoivent le leur aussi :
+ *  sans quoi la première se distinguerait des suivantes sans raison. */
+export function appendNoteBullet(current: string) {
+  const previous = current
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => (/^[•>]/.test(line) ? line : `• ${line.replace(/^[–—-]\s+/, "")}`))
+    .join("\n\n");
+  return `${previous}\n\n• `;
+}
+
 const NOTE_MONTHS = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
 export function noteDateLabel(key: string) {
   const date = fromKey(key);

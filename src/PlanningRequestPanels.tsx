@@ -3,6 +3,7 @@ import { useState, type CSSProperties } from "react";
 import "./requestChoiceFamilies.css";
 import { minutesLabel } from "./overtime";
 import type { RequestKind } from "./appModel";
+import { NoteText } from "./NoteText";
 import {
   GROUP_OPTIONS,
   TYPE_COLORS,
@@ -49,7 +50,7 @@ export function NoteSelectionPanel({
           Annuler
         </button>
       </div>
-      <p className="request-help">{noteText}</p>
+      <p className="request-help"><NoteText text={noteText} /></p>
       <div className="request-bottom">
         <p>
           <strong>{noteDates.length}</strong>{" "}

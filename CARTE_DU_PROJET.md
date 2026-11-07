@@ -181,7 +181,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   prochaine note montre la première note du jour, puis « +N (voir) » quand
   il y en a d’autres : chaque ligne d’une note compte, celles d’Agnès aussi
   (`noteLines` dans `appModel.ts`, partagé avec « Mes notes ») ; le libellé
-  vocal les cite toutes. Les blocs sont des lignes (icône, libellé et
+  vocal les cite toutes. Sur la fiche du jour et dans « Mes notes », `NoteText`
+  affiche un point rond devant chaque ajout (`noteDisplayLines`), même si le
+  texte enregistré porte encore un trait ; « Ajouter une note » écrit « • »
+  (`appendNoteBullet`). Les blocs sont des lignes (icône, libellé et
   précision, valeur) : empilées sur téléphone et sur le Z Fold ouvert, en
   deux colonnes lues de haut en bas sur grand écran (`homeOverview.css` :
   deux lignes par colonne jusqu'à quatre blocs, trois au-delà, filet
@@ -363,7 +366,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/GrandPalaisProgramSection.tsx` et `src/grandPalaisProgram.css` :
   programmation GP chargée à la demande (préparée au repos par
   `src/warmUpScreens.ts`), navigation par espace et périodes d’inter expos.
-  L’encadré d’une exposition (`ExpoCard`) regroupe ses infos dans
+  Une galerie d’« Ouvert aujourd’hui » ouvre sa programmation dans « Par espace »
+  (`openVenueProgram`). L’encadré d’une exposition (`ExpoCard`) regroupe ses infos dans
   `.expo-card-info`, puis les tarifs, puis les liens. Dès 1 000 px (souris)
   ou 1 101 px, une exposition qui a des tarifs les place à droite, derrière
   un filet à la couleur de la salle, deux par ligne ; les infos et les liens

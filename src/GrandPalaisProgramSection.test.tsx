@@ -243,11 +243,11 @@ describe("programmation du Grand Palais", () => {
     expect(exhibitionsAfterInterExhibitions([])).toEqual([]);
   });
 
-  it("range « En ce moment » par espace : les quatre grands d'abord, la Nef en dernier", () => {
-    const order = ["nef", "gallery910", "childrenPalace", "gallery7", "other:grand-palais", "gallery8", "galleries34"]
+  it("range « En ce moment » par espace : les quatre grands, la Nef, puis tous les autres", () => {
+    const order = ["other:salon-honneur", "nef", "gallery910", "childrenPalace", "gallery7", "other:grand-palais", "gallery8", "galleries34"]
       .sort((left, right) => currentVenueRank(left) - currentVenueRank(right));
-    expect(order.slice(0, 4)).toEqual(["galleries34", "gallery8", "gallery7", "childrenPalace"]);
-    expect(order.at(-1)).toBe("nef");
+    expect(order.slice(0, 5)).toEqual(["galleries34", "gallery8", "gallery7", "childrenPalace", "nef"]);
+    expect(order.slice(5).sort()).toEqual(["gallery910", "other:grand-palais", "other:salon-honneur"]);
   });
 
   it("dit un délai en années, mois et jours sans énoncer les unités nulles", () => {

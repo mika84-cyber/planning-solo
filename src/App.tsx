@@ -78,6 +78,7 @@ import {
   postCalendarBatch,
 } from "./calendarApi";
 import {
+  appendNoteBullet,
   emptyEntry,
   fullDayRecoveryMinutes,
   type BalanceType,
@@ -365,22 +366,10 @@ export default function Home() {
     // Le champ de note ne s'ouvre qu'à la demande, par « Ajouter une note ».
     setNoteEditorOpen(false);
   }, [dayDate]);
-  /** Ouvre une entrée sous la note existante : une ligne vide pour aérer, puis
-   *  un tiret qui marque le début de l'ajout. */
+  /** Ouvre une entrée sous la note existante. */
   function appendNoteLine() {
     setNoteEditorOpen(true);
-    setNoteText((current) => {
-      // La note déjà présente reçoit son tiret elle aussi : sans quoi la
-      // première ligne se distinguerait des suivantes sans raison.
-      const previous = current
-        .replace(/\s+$/, "")
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => (/^[–—\-•>]\s*/.test(line) ? line : `– ${line}`))
-        .join("\n");
-      return `${previous}\n\n– `;
-    });
+    setNoteText(appendNoteBullet);
     // Le champ n'a pas encore la nouvelle valeur au moment du clic : on attend
     // le rendu pour poser le curseur à la fin.
     requestAnimationFrame(() => {

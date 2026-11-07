@@ -81,6 +81,9 @@ html[data-theme="dark"] .section-dock > button.active { background: var(--tone);
 /* Compte et mise à jour, dans l'en-tête : la couleur de la rubrique,
    éclaircie ; foncée, la lettre se perdait dans le rond sombre. */
 html[data-theme="dark"] .top-header :is(.account-button:not(.open), .header-update-button) { color: color-mix(in srgb, var(--section-accent) 35%, #fff); }
+/* Galeries ouvertes aujourd'hui : un nom lisible sur fond sombre, et un survol sans fond pâle. */
+html[data-theme="dark"] .grand-palais-summary-list strong { color: color-mix(in srgb, var(--venue-accent) 45%, #fff); }
+html[data-theme="dark"] .app-shell .grand-palais-summary-list button:hover { background: color-mix(in srgb, var(--venue-accent) 22%, transparent); }
 /* Mise en route : le reste à faire se voit sous la barre verte. */
 html[data-theme="dark"] .home-setup-progress { background: rgba(255, 255, 255, 0.12); }
 

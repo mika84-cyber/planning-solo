@@ -18,6 +18,10 @@
 .note-card-date { display: grid; justify-items: center; align-content: center; gap: 1px; width: 50px; min-height: 58px; border: 0; border-radius: 11px; padding: 6px 0; background: #f6efe8; color: #6b4a36; font: inherit; cursor: pointer; }
 .note-card-date b { font-size: 1.3rem; font-weight: 850; line-height: 1; }
 .upcoming-item.note-card .note-card-date small { color: #8a6a55; font-size: .62rem; font-weight: 800; letter-spacing: .06em; line-height: 1.2; text-transform: uppercase; }
+/* Une note ligne à ligne : le point rond a sa colonne, le texte s'aligne en revenant à la ligne. */
+.note-text-line { display: block; }
+.note-text-line.bullet { display: grid; grid-template-columns: 0.9em minmax(0, 1fr); }
+.note-text-line i { font-style: normal; }
 .note-card-parts { display: grid; min-width: 0; }
 .upcoming-item.note-card .note-card-part { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; border: 0; border-radius: 0; padding: 3px 0; background: transparent; }
 .upcoming-item.note-card .note-card-part + .note-card-part { margin-top: 5px; border-top: 1px solid #efe5da; padding-top: 8px; }

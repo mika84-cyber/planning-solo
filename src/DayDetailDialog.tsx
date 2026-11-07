@@ -16,6 +16,7 @@ import type {
   WorkExchange,
 } from "./appModel";
 import { HOLIDAY_PAY_OPTIONS, WORK_POSTS, euros, noteDateLabel } from "./appModel";
+import { NoteText } from "./NoteText";
 import { minutesLabel, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import {
   HALF_MOMENT_OPTIONS,
@@ -246,7 +247,7 @@ export function DayDetailDialog({
               style={{ position: "relative", paddingRight: 52 }}
             >
               <strong>Agnès</strong>
-              <p>{partnerEntries[dayDate].noteText}</p>
+              <p><NoteText text={partnerEntries[dayDate].noteText} /></p>
               <button
                 className="note-delete-button"
                 type="button"
@@ -266,7 +267,7 @@ export function DayDetailDialog({
               aria-label={`Modifier la note de ${ownNoteAuthorLabel}`}
             >
               <strong>{ownNoteAuthorLabel}</strong>
-              <p>{entries[dayDate].noteText}</p>
+              <p><NoteText text={entries[dayDate].noteText} /></p>
             </button>
           ) : null}
           {/* Le champ ne s'ouvre qu'à la demande, par la tuile « Notes ». */}

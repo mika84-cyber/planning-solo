@@ -293,11 +293,11 @@ const OTHER_VENUES = ["nef", "gallery910"] as const;
 const INTEREXPO_VENUES = ["galleries34", "gallery8", "gallery7"] as const;
 
 /** « En ce moment » se lit toujours dans le même ordre : les quatre grands
- *  espaces d'abord, les autres ensuite, la Nef en dernier. */
+ *  espaces, la Nef, puis tous les autres. */
 export function currentVenueRank(venueKey: string) {
   const primary = PRIMARY_VENUES.indexOf(venueKey as (typeof PRIMARY_VENUES)[number]);
   if (primary !== -1) return primary;
-  return venueKey === "nef" ? PRIMARY_VENUES.length + 100 : PRIMARY_VENUES.length;
+  return venueKey === "nef" ? PRIMARY_VENUES.length : PRIMARY_VENUES.length + 1;
 }
 
 type PrimaryChoice = GrandPalaisVenueKey | "other";
@@ -1050,6 +1050,19 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
     setVenueScrollRequest((count) => count + 1);
   };
 
+  // Une galerie d'« Ouvert aujourd'hui » mène à sa programmation : l'onglet
+  // « Par espace », déjà sur elle. Une recherche en cours masquerait ce panneau.
+  const openVenueProgram = (venueKey: string) => {
+    setSearchQuery("");
+    setProgramView("space");
+    if ((PRIMARY_VENUES as readonly string[]).includes(venueKey)) {
+      selectVenue(venueKey as PrimaryChoice);
+    } else {
+      setPrimaryChoice("other");
+      selectOtherVenue(venueKey);
+    }
+  };
+
   return (
     <section className="grand-palais-program-screen" aria-labelledby="grand-palais-program-title">
       <div className="grand-palais-program-intro">
@@ -1072,7 +1085,9 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
                 <ul className="grand-palais-summary-list">
                   {openVenues.map(({ venueKey, venueLabel }) => (
                     <li key={venueKey} style={grandPalaisVenueStyle(venueKey)}>
-                      <strong>{venueLabel}</strong>
+                      <button type="button" aria-label={`Voir la programmation : ${venueLabel}`} onClick={() => openVenueProgram(venueKey)}>
+                        <strong>{venueLabel}</strong>
+                      </button>
                     </li>
                   ))}
                 </ul>
