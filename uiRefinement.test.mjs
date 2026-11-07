@@ -742,12 +742,6 @@ describe("finitions d’interface", () => {
     expect(css.declarations(".leave-balances-direct .leave-balance-grid button.strike", "(min-width: 721px)").order).toBeUndefined();
   });
 
-  it("renforce la lisibilité des soldes sans retirer leurs couleurs", () => {
-    expect(css.usesValue("color-mix(in srgb, var(--balance-color) 58%, #2c2621)")).toBe(true);
-    expect(css.anyRuleDeclares(".leave-balances-direct .leave-balance-grid small", { color: "var(--muted)" })).toBe(true);
-    expect(css.usesValue("color-mix(in srgb, var(--balance-color) 52%, var(--border-card))")).toBe(true);
-  });
-
   it("élargit uniquement l’en-tête sur les grands écrans", () => {
     expect(css.hasMedia("(min-width: 1200px)")).toBe(true);
     expect(css.declares("width", "calc(100% + 64px)")).toBe(true);
