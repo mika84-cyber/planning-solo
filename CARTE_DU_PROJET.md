@@ -196,8 +196,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   affiche un point rond devant chaque ajout (`noteDisplayLines`), même si le
   texte enregistré porte encore un trait ; « Ajouter une note » écrit « • »
   (`appendNoteBullet`). La carte « Mes notes » garde son fond sable quadrillé
-  comme un bloc-notes (`productRefinements.css`) ; sa barre de recherche a été
-  retirée le 8 novembre 2026 (`NotesPanelContent`, `useNoteLists`) ; son
+  comme un bloc-notes (`productRefinements.css`) ; sa barre de recherche
+  n'apparaît que dans le volet déplié (`NotesPanelContent`, `useNoteLists` ;
+  retirée puis rétablie le 8 novembre 2026) ; son
   bouton « Ajouter une note » est posé à 30 px de la flèche, 26 sur écran
   étroit (`sharedNotes.css`). Les blocs sont des lignes (icône, libellé et
   précision, valeur) : empilées sur téléphone et sur le Z Fold ouvert, en
@@ -215,8 +216,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   depuis le 8 novembre 2026 (170 auparavant) : l'étiquette « Planning solo »
   en haut de la case, à hauteur des commandes ; le titre centré dans la
   colonne de gauche, sur deux lignes s'il est long (« Congés et
-  récupérations », « Documents et contacts »), jamais sous un bouton ; la
-  pastille à 12 px du bas. Le corps du titre ne dépasse pas 14 % de la largeur
+  récupérations », « Documents et contacts ») ou s'il est fait de deux mots
+  posés chacun dans un `span` (« Programme / GP », « Planning / partagé », à
+  toutes les largeurs), jamais sous un bouton ; la pastille à 12 px du bas.
+  Le corps du titre va de 1,55 à 2,1 rem selon la largeur (1,7 à 2,3 jusqu'au
+  8 novembre 2026) et ne dépasse pas 14 % de la largeur
   de sa colonne (unité `cqi`, le bloc du titre étant un conteneur) : à 344 px,
   « récupérations » tient même en police agrandie ; 6 px de marge au-dessus
   et au-dessous font plutôt allonger l'en-tête que toucher l'étiquette ou la
@@ -513,7 +517,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/useNoteLists.ts` (notes à venir et congés d’Agnès ; une note posée
   sur plusieurs jours a chacun de ses jours dans la liste, `upcomingNoteItems`,
   fonction pure testée ; la croix d’une ligne n’efface que ce jour-là ; la
-  recherche dans les notes a été retirée le 8 novembre 2026),
+  recherche dans les notes, `noteQuery`, ne se voit que dans le volet déplié),
   `src/usePartnerNoteActions.ts` (suppression d’une note d’Agnès) ; une note
   du planning d’Agnès sans auteur enregistré (les plus anciennes) est la
   sienne (`partnerEntriesFromApi` dans `src/calendarPayload.ts`), seule une

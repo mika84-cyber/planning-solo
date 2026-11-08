@@ -9,12 +9,15 @@ import {
   type PartnerLeavePeriod,
 } from "./appModel";
 import { dateKey, periodLabel } from "./planningLogic";
+import { matchesSearch } from "./searchMatching";
 
 type NoteListsInput = {
   entries: Entries;
   partnerEntries: PartnerCalendarEntries;
   partnerPeriods: PartnerLeavePeriod[];
   now: Date;
+  /** La recherche en cours dans les notes. */
+  noteQuery: string;
   showNotes: boolean;
 };
 
@@ -57,12 +60,45 @@ export function upcomingNoteItems(entries: Entries, partnerEntries: PartnerCalen
   ));
 }
 
+/** Les notes qui répondent à une recherche, passées comme à venir, une
+ *  ligne par jour là aussi. */
+export function noteSearchItems(entries: Entries, partnerEntries: PartnerCalendarEntries, noteQuery: string) {
+  const query = noteQuery.trim();
+  if (!query) return [];
+  const items: NoteListItem[] = [];
+  for (const [key, entry] of Object.entries(entries).sort(([a], [b]) => a.localeCompare(b))) {
+    if (!entry.noteText || !matchesSearch(entry.noteText, query)) continue;
+    const notePeriod = notePeriodFor(entries, key, entry);
+    items.push({
+      key: `search-${key}`,
+      date: key,
+      label: entry.noteText,
+      detail: periodLabel(notePeriod.from, notePeriod.to),
+      kind: "note",
+      color: "#d65e68",
+      author: "mika",
+    });
+  }
+  for (const [key, entry] of Object.entries(partnerEntries).sort(([a], [b]) => a.localeCompare(b))) {
+    if (entry.noteAuthor !== "agnes" || !matchesSearch(entry.noteText, query)) continue;
+    items.push({
+      key: `search-agnes-${key}`,
+      date: key,
+      label: entry.noteText,
+      detail: periodLabel(key, key),
+      kind: "note",
+      color: "#f2c84b",
+      author: "agnes",
+    });
+  }
+  return groupNoteItemsByDate(items);
+}
+
 /**
- * Les notes du planning telles que l'accueil les liste : celles à venir, et
- * les congés d'Agnès marqués sur le calendrier (la recherche dans les notes
- * a été retirée le 8 novembre 2026).
+ * Les notes du planning telles que l'accueil les liste : celles à venir, le
+ * résultat d'une recherche, et les congés d'Agnès marqués sur le calendrier.
  */
-export function useNoteLists({ entries, partnerEntries, partnerPeriods, now, showNotes }: NoteListsInput) {
+export function useNoteLists({ entries, partnerEntries, partnerPeriods, now, noteQuery, showNotes }: NoteListsInput) {
   const agnesLeaveDates = useMemo(() => {
     const dates = new Set(
       Object.entries(partnerEntries)
@@ -79,5 +115,20 @@ export function useNoteLists({ entries, partnerEntries, partnerPeriods, now, sho
     [entries, now, partnerEntries, showNotes],
   );
 
-  return { agnesLeaveDates, upcoming };
+  const hasAnyNote = useMemo(
+    () =>
+      Object.values(entries).some((entry) => entry.noteText) ||
+      Object.values(partnerEntries).some(
+        (entry) => entry.noteAuthor === "agnes" && entry.noteText,
+      ),
+    [entries, partnerEntries],
+  );
+
+  /** Recherche sur toutes les notes enregistrées, passées comme à venir. */
+  const noteSearchResults = useMemo(
+    () => noteSearchItems(entries, partnerEntries, noteQuery),
+    [entries, noteQuery, partnerEntries],
+  );
+
+  return { agnesLeaveDates, upcoming, hasAnyNote, noteSearchResults };
 }

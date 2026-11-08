@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { noteLines, type NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
@@ -65,8 +65,12 @@ type HomeDashboardProps = {
   nextExtraWork: { kind: "mecenat" | "overtime"; date: string; start: string; end: string } | null;
   setupItems: HomeSetupItem[];
   setupDismissKey: string;
+  hasAnyNote: boolean;
+  noteQuery: string;
+  onNoteQueryChange: Dispatch<SetStateAction<string>>;
+  noteSearchResults: NoteListItem[];
   upcoming: NoteListItem[];
-  renderNoteItems: (items: NoteListItem[]) => ReactNode;
+  renderNoteItems: (items: NoteListItem[], searching?: boolean) => ReactNode;
   onChooseGroup: () => void;
   onOpenNextWork: (date: Date) => void;
   onOpenLeave: () => void;
@@ -82,6 +86,10 @@ export function HomeDashboard({
   nextExtraWork,
   setupItems,
   setupDismissKey,
+  hasAnyNote,
+  noteQuery,
+  onNoteQueryChange,
+  noteSearchResults,
   upcoming,
   renderNoteItems,
   onChooseGroup,
@@ -370,7 +378,14 @@ export function HomeDashboard({
         </div>
         {notesOpen ? (
           <div id="home-notes-content" className="home-notes-content">
-            <NotesPanelContent upcoming={upcoming} renderItems={renderNoteItems} />
+            <NotesPanelContent
+              hasAnyNote={hasAnyNote}
+              query={noteQuery}
+              onQueryChange={onNoteQueryChange}
+              searchResults={noteSearchResults}
+              upcoming={upcoming}
+              renderItems={renderNoteItems}
+            />
           </div>
         ) : null}
       </section>

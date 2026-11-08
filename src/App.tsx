@@ -249,6 +249,7 @@ export default function Home() {
     homeSection, setHomeSection,
     approvedGrandPalaisUpdates,
     feedbackOpen, setFeedbackOpen,
+    noteQuery,
     setAppUpdatePromptOpen,
     setDataManagementOpen, setDataManagementBusy,
     viewportDebugEnabled, viewportSize,
@@ -509,7 +510,9 @@ export default function Home() {
     cetPlannedLeaveDays,
   } = leaveBalances;
 
-  const { agnesLeaveDates, upcoming } = useNoteLists({ entries, partnerEntries, partnerPeriods, now, showNotes });
+  const { agnesLeaveDates, upcoming, hasAnyNote, noteSearchResults } = useNoteLists({
+    entries, partnerEntries, partnerPeriods, now, noteQuery, showNotes,
+  });
   const ownNoteAuthorLabel = partnerSharingStatus !== "disabled" || demoMode
     ? "Mika"
     : formProfile?.fullName.trim().split(/\s+/)[0] || "Moi";
@@ -993,7 +996,7 @@ export default function Home() {
           formProfile={formProfile}
           entries={entries}
           ownNoteAuthorLabel={ownNoteAuthorLabel}
-          overview={{ ...workedDaysOverview, totalLeaveRemaining, upcoming }}
+          overview={{ ...workedDaysOverview, totalLeaveRemaining, upcoming, hasAnyNote, noteSearchResults }}
           setup={{ missingCalculationProfile, missingHolidayChoices, missingPayValues }}
           shell={appShellUi}
           pay={payUi}

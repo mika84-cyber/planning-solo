@@ -6953,6 +6953,12 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
   await agnesDeleteButtons.first().click();
   await answerConfirm(page, true, "Supprimer la note d’Agnès du");
   await expect(agnesDeleteButtons).toHaveCount(1);
+
+  // La barre de recherche n'existe que dans le volet déplié ; une recherche
+  // ouvre les mois qui contiennent ses résultats.
+  await page.getByRole("searchbox", { name: "Rechercher dans les notes" }).fill("colis");
+  await expect(page.locator(".home-notes-content .note-month[open]")).toHaveCount(1);
+  await expect(page.locator(".home-notes-content .note-month[open]")).toContainText("Récupérer le colis");
 });
 
 test("le détail des dimanches suit le report d'une paie primée à la suivante", async ({ page }) => {

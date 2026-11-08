@@ -22,6 +22,7 @@ export function useAppShellUiState() {
   const sectionSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [groupChooserOpen, setGroupChooserOpen] = useState(false);
+  const [noteQuery, setNoteQuery] = useState("");
   const [narrowScreen, setNarrowScreen] = useState(() => window.matchMedia("(max-width: 720px)").matches);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -62,7 +63,7 @@ export function useAppShellUiState() {
     approvedGrandPalaisUpdates, setApprovedGrandPalaisUpdates, sectionSwipeStartRef,
     groupChooserOpen, setGroupChooserOpen,
     feedbackOpen, setFeedbackOpen,
-    narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
+    noteQuery, setNoteQuery, narrowScreen, setNarrowScreen, pdfOpen, setPdfOpen,
     accountMenuOpen, setAccountMenuOpen, checkingAppUpdate, setCheckingAppUpdate,
     appUpdateAvailable, setAppUpdateAvailable, appUpdatePromptOpen, setAppUpdatePromptOpen,
     dataManagementOpen, setDataManagementOpen, dataManagementBusy, setDataManagementBusy,

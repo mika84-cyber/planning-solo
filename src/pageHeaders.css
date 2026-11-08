@@ -43,13 +43,14 @@
 :root .app-shell .top-header .top-header-title { position: relative !important; z-index: 1 !important; grid-column: 1 / -1 !important; grid-row: 1 !important; align-self: center !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; background: none !important; text-shadow: none !important; transform: translateY(7px) !important; }
 :root .app-shell .top-header .top-header-title::before { display: none !important; }
 :root .app-shell .top-header .top-header-title .eyebrow { margin: 0 0 3px !important; color: rgba(255, 255, 255, 0.82) !important; text-shadow: none !important; font-size: 0.62rem !important; letter-spacing: 0.14em !important; }
-:root .app-shell .top-header .top-header-title h1 { display: -webkit-box !important; overflow: hidden !important; padding-bottom: 0.14em !important; color: #fff !important; font-size: clamp(1.7rem, 7vw, 2.3rem) !important; line-height: 1.08 !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.25) !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* Le corps du titre : 1,55 à 2,1 rem selon la largeur (1,7 à 2,3 jusqu'au
+   8 novembre 2026, jugé un peu grand). */
+:root .app-shell .top-header .top-header-title h1 { display: -webkit-box !important; overflow: hidden !important; padding-bottom: 0.14em !important; color: #fff !important; font-size: clamp(1.55rem, 6.3vw, 2.1rem) !important; line-height: 1.08 !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.25) !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 :root .app-shell .top-header .top-header-title h1 span { display: inline !important; }
-/* « Programme / GP » : sur deux lignes sur grand écran, où l'en-tête en garde
-   la place ; sur une ligne sur téléphone, comme « Planning partagé ». */
-@media (min-width: 601px) {
-  :root .app-shell .top-header-program .top-header-title h1 span { display: block !important; }
-}
+/* « Programme / GP » et « Planning / partagé » : sur deux lignes à toutes les
+   largeurs (sur téléphone aussi depuis le 8 novembre 2026, comme « Congés et
+   récupérations » ou « Documents et contacts »). */
+:root .app-shell :is(.top-header-program, .top-header-colleagues) .top-header-title h1 span { display: block !important; }
 /* Téléphone : l'étiquette « Planning solo » en haut de la case, à hauteur des
    commandes ; le titre, dans la colonne de gauche (il ne passe jamais sous un
    bouton), centré entre l'étiquette et « Liste des raccourcis », sur deux
@@ -69,7 +70,7 @@
      la suit (« récupérations » tient à 344 px, même en police agrandie).
      6 px de marge au-dessus et au-dessous : deux lignes de grand corps
      allongent l'en-tête plutôt que de toucher l'étiquette ou la pastille. */
-  :root .app-shell .top-header .top-header-title h1 { margin: 6px 0 !important; font-size: min(clamp(1.7rem, 7vw, 2.3rem), 14cqi) !important; }
+  :root .app-shell .top-header .top-header-title h1 { margin: 6px 0 !important; font-size: min(clamp(1.55rem, 6.3vw, 2.1rem), 14cqi) !important; }
 }
 
 /* Les couleurs de chaque page, tirées de l'œuvre qui l'illustrait. */
