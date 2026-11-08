@@ -19,7 +19,10 @@
 .request-choice .request-choice-row {
   --leave-choice-accent: #9b8e7c;
   display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  /* Le nom garde au moins sa largeur : à 344 px en police agrandie, c'est le
+     solde à droite qui passe sur deux lignes au lieu de se faire recouvrir
+     par « Fractionnement » ou « Récupération » (jusqu'au 9 novembre 2026). */
+  grid-template-columns: 12px minmax(min-content, 1fr) auto;
   align-items: center;
   gap: 11px;
   width: 100%;
@@ -51,8 +54,8 @@
   color: var(--muted);
   font-size: .78rem;
   font-weight: 650;
+  line-height: 1.25;
   text-align: right;
-  white-space: nowrap;
 }
 .request-choice .request-choice-row.leave-choice-annual { --leave-choice-accent: var(--leave-annual); }
 .request-choice .request-choice-row.leave-choice-rtt { --leave-choice-accent: var(--leave-rtt); }
@@ -95,11 +98,19 @@
   .request-choice .request-choice-families .request-wish-choices { grid-area: wish; align-self: start; }
 }
 
-/* Sous la ligne CA : sa durée, en pastilles de la couleur du congé. */
-.request-choice .request-choice-moments { --leave-choice-accent: var(--leave-annual); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 14px 10px 37px; border-bottom: 1px solid color-mix(in srgb, var(--border-control) 55%, transparent); }
-.request-choice .request-choice-moments button { min-width: 0; min-height: 34px; margin: 0; border: 1.5px solid color-mix(in srgb, var(--leave-choice-accent) 55%, #fff); border-radius: 999px; padding: 0 6px; background: var(--surface-high, #fff); color: color-mix(in srgb, var(--leave-choice-accent) 45%, var(--text)); font: inherit; font-size: .82rem; font-weight: 800; white-space: nowrap; box-shadow: none; cursor: pointer; }
-.request-choice .request-choice-moments button:hover { background: color-mix(in srgb, var(--leave-choice-accent) 12%, var(--surface-high, #fff)); }
-.request-choice .request-choice-moments button:focus-visible { outline: 2px solid var(--leave-choice-accent); outline-offset: 2px; }
+/* Sous la ligne CA : sa durée, une seule pilule segmentée en trois cases de la
+   couleur du congé (depuis le 9 novembre 2026 ; trois pastilles séparées
+   auparavant). Les cases partagent le cadre, un trait fin les sépare ; le fond
+   part de la surface pour rester sombre en mode sombre. Les cases sont égales
+   tant que « Après-midi » y tient (sinon, à 344 px en police agrandie, elle
+   prend sa largeur et les deux autres se partagent le reste). */
+.request-choice .request-choice-moments { --leave-choice-accent: var(--leave-annual); display: grid; grid-template-columns: repeat(3, minmax(max-content, 1fr)); gap: 0; padding: 0 14px 10px 37px; border-bottom: 1px solid color-mix(in srgb, var(--border-control) 55%, transparent); }
+.request-choice .request-choice-moments button { min-width: 0; min-height: 34px; margin: 0; border: 1.5px solid color-mix(in srgb, var(--leave-choice-accent) 55%, #fff); border-width: 1.5px 0; border-radius: 0; padding: 0 6px; background: color-mix(in srgb, var(--leave-choice-accent) 6%, var(--surface-high, #fff)); color: color-mix(in srgb, var(--leave-choice-accent) 45%, var(--text)); font: inherit; font-size: .8rem; font-weight: 800; white-space: nowrap; box-shadow: none; cursor: pointer; }
+.request-choice .request-choice-moments button:first-child { border-left-width: 1.5px; border-radius: 999px 0 0 999px; }
+.request-choice .request-choice-moments button:last-child { border-right-width: 1.5px; border-radius: 0 999px 999px 0; }
+.request-choice .request-choice-moments button + button { box-shadow: inset 1.5px 0 0 color-mix(in srgb, var(--leave-choice-accent) 40%, #fff); }
+.request-choice .request-choice-moments button:hover { background: color-mix(in srgb, var(--leave-choice-accent) 14%, var(--surface-high, #fff)); }
+.request-choice .request-choice-moments button:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--leave-choice-accent); outline-offset: -2px; }
 
 /* Le matin ou l'après-midi choisi : ses heures, avant les dates. */
 .request-choice .request-choice-hours { --leave-choice-accent: var(--leave-annual); display: grid; gap: 8px; padding: 2px 14px 12px 37px; border-bottom: 1px solid color-mix(in srgb, var(--border-control) 55%, transparent); }

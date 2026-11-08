@@ -506,7 +506,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   entière, et une demi-journée est toujours prise sur les congés annuels :
   plus de choix « Prise sur » dans les fenêtres). La durée se choisit aussi
   d’un toucher sous la ligne CA de « Que voulez-vous poser ? »
-  (`AnnualDurationChoice` : `request-choice-moments`, puis, pour le matin ou
+  (`AnnualDurationChoice` : `request-choice-moments`, une seule pilule
+  segmentée en trois cases Journée / Matin / Après-midi depuis le 9 novembre
+  2026, `requestChoiceFamilies.css` ; puis, pour le matin ou
   l’après-midi, les heures à saisir avant les dates, `request-choice-hours`,
   proposées aux habituelles ; `onChoose(kind, type, moment, hours)` →
   `beginRequest(…, moment, hours)`, qui pose la date de départ). La durée
